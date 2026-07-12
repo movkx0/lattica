@@ -3216,7 +3216,7 @@ mod tests {
 
         // Build the trace + fill the witnessed Lagrange selectors at ζ (is_first/is_last/inv_van).
         let mut trace = monolith_build_trace(
-            &air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None,
+            &air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None, None,
         );
         let (isf, isl, iv) = (cc(is_first), cc(is_last), cc(inv_van));
         let (fw, sb) = (air.fused_w(), air.sel_base());
@@ -8193,7 +8193,7 @@ mod tests {
             pis.extend_from_slice(ce);
         }
         let inner_trace = monolith_build_trace(
-            &inner, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None,
+            &inner, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None, None,
         );
         let inner_prf = prove(&config, &inner, inner_trace, &pis);
         assert!(verify(&config, &inner, &inner_prf, &pis).is_ok(), "inner ConstAir monolith proves");
@@ -8368,7 +8368,7 @@ mod tests {
             pis.extend_from_slice(ce);
         }
         let inner_trace = monolith_build_trace(
-            &inner, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None,
+            &inner, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None, None,
         );
         let inner_prf = prove(&config, &inner, inner_trace, &pis);
         assert!(verify(&config, &inner, &inner_prf, &pis).is_ok(), "inner ConstAir monolith proves");

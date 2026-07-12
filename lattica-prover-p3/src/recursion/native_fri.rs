@@ -586,6 +586,51 @@ where
         .collect()
 }
 
+/// **Format bridge — the LookupProof quotient recompose weights.** The `quotient_recompose_weights` analogue
+/// for a `LookupProof`: the `zps_i = Π_{j≠i}(Z_{H_j}(ζ))/(Z_{H_j}(first_i))` weights that recompose
+/// `quotient(ζ) = Σ_i zps_i·chunk_i`, a function ONLY of ζ + degree_bits + the quotient sub-domains (log_nqc
+/// from `combined_constraint_layout`), independent of the opened values — so it takes the transcript ζ + shape
+/// directly (no p3 `Proof`).
+#[cfg(test)]
+pub(crate) fn lookup_quotient_recompose_weights(config: &MyConfig, zeta_p: [Val; 2], degree_bits: usize, log_nqc: usize) -> Vec<Challenge> {
+    use p3_commit::PolynomialSpace;
+    use p3_field::BasedVectorSpace;
+    let zeta = Challenge::from_basis_coefficients_fn(|i| zeta_p[i]);
+    let pcs = config.pcs();
+    let (_, degree) = validate_degree_bits(None, degree_bits, 0, <MyPcs as Pcs<Challenge, Chal>>::log_max_lde_height(pcs)).unwrap();
+    let trace_domain = <MyPcs as Pcs<Challenge, Chal>>::natural_domain_for_degree(pcs, degree);
+    let nqc = 1usize << log_nqc;
+    let qd = trace_domain.create_disjoint_domain(1 << (degree_bits + log_nqc));
+    let qcd = qd.split_domains(nqc);
+    (0..nqc)
+        .map(|i| {
+            let mut zp = Challenge::ONE;
+            for j in 0..nqc {
+                if j != i {
+                    zp *= qcd[j].vanishing_poly_at_point(zeta) * qcd[j].vanishing_poly_at_point(qcd[i].first_point()).inverse();
+                }
+            }
+            zp
+        })
+        .collect()
+}
+
+/// **Format bridge — the LookupProof trace-domain Lagrange selectors at ζ.** The three witnessed selectors
+/// (`is_first_row`, `is_last_row`, `inv_vanishing`) the monolith epilogue binds to their ζ-definitions and folds
+/// the inner constraints with — computed from the SAME `natural_domain_for_degree(pcs, degree).selectors_at_point(ζ)`
+/// as `verify_lookup_proof_native` (is_zk=0). `is_transition = ζ − g^{-1}` is computed inline by the monolith.
+#[cfg(test)]
+pub(crate) fn lookup_selectors(config: &MyConfig, zeta_p: [Val; 2], degree_bits: usize) -> (Challenge, Challenge, Challenge) {
+    use p3_commit::PolynomialSpace;
+    use p3_field::BasedVectorSpace;
+    let zeta = Challenge::from_basis_coefficients_fn(|i| zeta_p[i]);
+    let pcs = config.pcs();
+    let (_, degree) = validate_degree_bits(None, degree_bits, 0, <MyPcs as Pcs<Challenge, Chal>>::log_max_lde_height(pcs)).unwrap();
+    let domain = <MyPcs as Pcs<Challenge, Chal>>::natural_domain_for_degree(pcs, degree);
+    let sels = domain.selectors_at_point(zeta);
+    (sels.is_first_row, sels.is_last_row, sels.inv_vanishing)
+}
+
 /// A `MerkleCap` commitment flattened to its felt sequence (roots in order) — EXACTLY the felts the
 /// challenger observes via `observe(cap)`. The monolith transcript region must absorb this same sequence.
 #[cfg(test)]

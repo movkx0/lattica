@@ -145,7 +145,7 @@ pub(crate) fn sim_full_lookup<A>(
     air: &A,
     proof: &crate::lookup::prover::LookupProof<crate::recursion::native_fri::PcsOpeningProof>,
     pis: &[Val],
-) -> (Vec<[Val; W]>, Vec<u8>, Vec<usize>, Vec<[Val; 2]>, Vec<(usize, usize)>, Vec<Val>, Vec<[Val; 2]>)
+) -> (Vec<[Val; W]>, Vec<u8>, Vec<usize>, Vec<[Val; 2]>, Vec<(usize, usize)>, Vec<Val>, Vec<[Val; 2]>, Vec<usize>, Vec<usize>)
 where
     A: crate::lookup::prover::LookupAir,
 {
@@ -160,11 +160,19 @@ where
     for &p in pis {
         s.observe(p);
     }
-    // (2) the LogUp challenges — 2 ext elements per lookup (α_L denominator + β tuple-combine).
+    // (2) the LogUp challenges — 2 ext elements per lookup (α_L denominator + β tuple-combine). Their squeeze
+    // blocks (lc_binds) + first-squeeze lanes (lc_lanes) drive the in-circuit challenge-bind loop (they precede
+    // α_stark/ζ/α_fri/β in `binds`). These are squeezed CONSECUTIVELY, so several share a duplex block at
+    // descending lanes — captured per challenge via `sample_base` (c0 = lane L, c1 = lane L−1).
     let mut lookup_challenges = Vec::new();
+    let mut lc_binds = Vec::new();
+    let mut lc_lanes = Vec::new();
     for _ in 0..2 * lookups.len() {
-        let (lc, _b) = s.sample_ext();
-        lookup_challenges.push(lc);
+        let (c0, b, lane) = s.sample_base();
+        let (c1, _, _) = s.sample_base();
+        lookup_challenges.push([c0, c1]);
+        lc_binds.push(b);
+        lc_lanes.push(lane);
     }
     // (3) the aux (permutation) cap, then α_stark; then the quotient cap, then ζ.
     for f in cap_felts(&proof.aux_commit) {
@@ -222,7 +230,7 @@ where
         index_binds.push((blk, lane));
         index_felts.push(f);
     }
-    (s.block_inputs, s.counts, binds, chs, index_binds, index_felts, lookup_challenges)
+    (s.block_inputs, s.counts, binds, chs, index_binds, index_felts, lookup_challenges, lc_binds, lc_lanes)
 }
 
 /// **Format-bridge Brick 2a — the LookupProof transcript sim is faithful.** `sim_full_lookup` (the sponge
@@ -243,7 +251,7 @@ fn lookup_transcript_sim_matches_challenger() {
     let pis: Vec<Val> = vec![];
     let proof: LookupProof<PcsOpeningProof> = prove_lookup_inner(&air, balanced_main(1 << 6), &pis, false, &config);
 
-    let (_bi, _counts, _binds, chs, _index_binds, index_felts, lc) = sim_full_lookup(&air, &proof, &pis);
+    let (_bi, _counts, _binds, chs, _index_binds, index_felts, lc, _lcb, _lcl) = sim_full_lookup(&air, &proof, &pis);
 
     // Ground truth: the real challenger, mirroring `verify_lookup`'s sequence exactly.
     let pair = |x: Challenge| -> [Val; 2] { x.as_basis_coefficients_slice().try_into().unwrap() };
@@ -1249,21 +1257,21 @@ fn run_monolith(n_queries: usize, column_window: bool) -> (u32, u64) {
         // COLUMN-WINDOW: the inner-proof pis live in a held witness column window; NOTHING is public. The
         // internal binds (squeeze↦challenge, terminal↦cap, SB↦index, OOD↦pub) pin the window. This is the
         // tileable form the aggregator uses (per-instance witness data, only the tx-root public).
-        let trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &pis, None);
+        let trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &pis, None, None);
         println!("column-window monolith @ {n_queries} queries: 2^{} rows (width {})", hh.trailing_zeros(), air.fused_w());
         let prf = prove(&config, &air, trace, &[]);
         assert!(verify(&config, &air, &prf, &[]).is_ok(), "column-window monolith proves (inner pis in witness columns)");
         // tamper a challenge felt in the window ⇒ the squeeze↦window bind fails ⇒ reject.
         let mut bw = pis.clone();
         bw[0] += Val::ONE;
-        let bt = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &bw, None);
+        let bt = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &bw, None, None);
         let bp = prove(&config, &air, bt, &[]);
         assert!(verify(&config, &air, &bp, &[]).is_err(), "tampered pis window ⇒ internal bind fails ⇒ reject");
         let rss = peak_rss_bytes();
         println!("  -> peak RSS {} MiB", rss / (1 << 20));
         return (hh.trailing_zeros(), rss);
     }
-    let trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None);
+    let trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None, None);
     println!("monolith @ {n_queries} queries: 2^{} rows (width {}, {} transcript blocks)", hh.trailing_zeros(), air.fused_w(), counts.len());
     let prf = prove(&config, &air, trace, &pis);
     assert!(verify(&config, &air, &prf, &pis).is_ok(), "monolith proves @ {n_queries}: transcript + super-tiles + all openings authenticate + OOD");
@@ -1360,7 +1368,7 @@ fn build_inner_window(config: &MyConfig, value: u64, n_queries: usize) -> (Vec<V
     for ce in &ccap0 {
         pis.extend_from_slice(ce);
     }
-    let trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &pis, None);
+    let trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &pis, None, None);
     (trace.values, counts, binds, index_binds, n_terms, pvs[0])
 }
 
@@ -1482,7 +1490,7 @@ where
     }
     assert_eq!(pis.len(), air.pis_count(), "symbolic column-window pis layout matches pis_count");
     // monolith_build_trace fills the pis window + the ζ-squaring chain (column-window branch).
-    let mut trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &pis, None);
+    let mut trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &pis, None, None);
     // witnessed Lagrange selectors at ζ (bound in-circuit to their ζ-defs via the halved-domain z_h chain).
     let (isf, isl, iv) = (cc(is_first), cc(is_last), cc(inv_van));
     let fw = air.fused_w();
@@ -2240,7 +2248,7 @@ fn phase9_self_recursion_probe() {
     for ce in &ccap0 {
         pis.extend_from_slice(ce);
     }
-    let inner_trace = monolith_build_trace(&inner, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None);
+    let inner_trace = monolith_build_trace(&inner, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None, None);
     let inner_prf = prove(&config, &inner, inner_trace, &pis);
     assert!(verify(&config, &inner, &inner_prf, &pis).is_ok(), "inner ConstAir monolith proves");
     let (w_in, np_in, nper_in) = (inner.fused_w(), pis.len(), BaseAir::<Val>::num_periodic_columns(&inner));
@@ -2367,7 +2375,7 @@ fn run_counter_monolith(n_queries: usize) -> (u32, u64) {
             pis.extend_from_slice(e);
         }
     }
-    let trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None);
+    let trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None, None);
     let hh = air.height();
     println!("counter monolith @ {n_queries} queries: 2^{} rows (width {}, full caps + cap-mux)", hh.trailing_zeros(), air.fused_w());
     let prf = prove(&config, &air, trace, &pis);
@@ -2492,7 +2500,7 @@ where
         }
         assert_eq!(folded * inv_van, eo_quot, "{label} PRE-CHECK: native symbolic fold == quot(ζ)");
     }
-    let mut trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None);
+    let mut trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None, None);
     // fill the witnessed Lagrange selectors at ζ (is_first/is_last/inv_van), bound in-circuit to their ζ-defs.
     let (isf, isl, iv) = (cc(is_first), cc(is_last), cc(inv_van));
     let fw = air.fused_w();
@@ -3047,6 +3055,261 @@ fn phase7_symbolic_epilogue_matches_oracle() {
     let bp = prove(&config, &air, bad, &pis);
     assert!(verify(&config, &air, &bp, &pis).is_err(), "tampered quotient ⇒ reject");
     println!("Phase 7.5: in-circuit generic symbolic epilogue verifies Fibonacci from its constraint trees (data-driven)");
+}
+
+/// **Format bridge Brick 4 — assemble a lookup `MonolithAir` + trace + pis from a real `LookupProof`.**
+/// The `build_symbolic_inner_window` analogue for a `LookupProof` inner (`--features lookup`): swaps the p3
+/// per-query oracles for the LOOKUP oracles (`sim_full_lookup` + `multicol_query_terms_lookup` +
+/// `query_aux_merkle` + `query_fold_data_lookup`), populates the aux round's per-query Merkle path + the
+/// `2·|lookups|` lookup-challenge binds (prepended to `binds`/`chs` — they are squeezed first) + the LogUp
+/// `ext_constraints`, and builds the `MonolithAir` with `lookup: Some(..)` in PUBLIC-VALUES mode
+/// (`column_window: false`) so it proves directly (num_public_values == pis_count). Returns `(air, trace, pis)`.
+#[cfg(test)]
+#[allow(clippy::type_complexity)]
+fn build_lookup_monolith<A>(
+    config: &MyConfig,
+    inner: &A,
+    proof: &crate::lookup::prover::LookupProof<crate::recursion::native_fri::PcsOpeningProof>,
+    pis_inner: &[Val],
+) -> (super::MonolithAir, p3_matrix::dense::RowMajorMatrix<Val>, Vec<Val>)
+where
+    A: crate::lookup::prover::LookupAir,
+{
+    use super::{monolith_build_trace, LookupCfg, MonolithAir};
+    use crate::recursion::fri_fold::native_fold;
+    use crate::recursion::native_fri::{multicol_query_terms_lookup, query_aux_merkle, query_fold_data_lookup};
+    use p3_air::symbolic::AirLayout;
+    use p3_air::BaseAir;
+    use p3_field::{BasedVectorSpace, PrimeCharacteristicRing, PrimeField64};
+    use p3_lookup::{InteractionSymbolicBuilder, LogUpGadget, LookupProtocol, Lookups};
+
+    let cc = |x: Challenge| -> [Val; 2] { x.as_basis_coefficients_slice().try_into().unwrap() };
+    let flat = |g0: Challenge, g1: Challenge| -> [Val; 4] {
+        let (a, b) = (cc(g0), cc(g1));
+        [a[0], a[1], b[0], b[1]]
+    };
+    let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(inner);
+    let (block_inputs, counts, binds, chs, index_binds, index_felts, lookup_challenges, lc_binds, lc_lanes) =
+        sim_full_lookup(inner, proof, pis_inner);
+    let n_queries = proof.opening_proof.query_proofs.len();
+    let fri = &proof.opening_proof;
+    let log_global: usize = fri.query_proofs[0].commit_phase_openings.iter().map(|o| o.log_arity as usize).sum::<usize>() + 4;
+
+    // full binds/chs: the lookup challenges are squeezed FIRST, so they lead the challenge region.
+    let mut full_binds = lc_binds.clone();
+    full_binds.extend_from_slice(&binds);
+    let mut full_chs = lookup_challenges.clone();
+    full_chs.extend_from_slice(&chs);
+
+    // the inner's base + LogUp ext constraint trees, exactly as `combined_constraint_layout` builds them.
+    let layout = AirLayout {
+        permutation_width: lookups.len() + 1,
+        num_permutation_challenges: 2 * lookups.len(),
+        num_permutation_values: 1,
+        ..AirLayout::from_air::<Val>(inner)
+    };
+    let mut isb = InteractionSymbolicBuilder::<Val, Challenge>::new(layout);
+    inner.eval(&mut isb);
+    LogUpGadget::new().eval_all(&mut isb, &lookups);
+    let base = isb.base_constraints();
+    let ext = isb.extension_constraints();
+
+    // per-query witness data (reduced opening + the 4 Merkle rounds: trace, aux, quotient, commit phase).
+    let mut per_query = Vec::new();
+    let mut quot_paths = Vec::new();
+    let mut commit_data = Vec::new();
+    let mut aux_paths = Vec::new();
+    let mut n_terms = 0;
+    let mut final0 = Challenge::ZERO;
+    for q in 0..n_queries {
+        let (terms, _x, alpha, ro, _w, _aw) = multicol_query_terms_lookup(config, inner, proof, pis_inner, q);
+        let (_ro2, rounds, _folded, f0) = query_fold_data_lookup(config, inner, proof, pis_inner, q);
+        if q == 0 {
+            final0 = f0;
+        }
+        n_terms = terms.len();
+        let index = (index_felts[q].as_canonical_u64() as usize) & ((1 << log_global) - 1);
+        // trace round (input_proof[0], max height 2^log_global): path bits from the raw index.
+        let tb = &fri.query_proofs[q].input_proof[0];
+        let trace_path: Vec<([Val; 4], bool)> = tb.opening_proof.iter().enumerate().map(|(l, &s)| (s, (index >> l) & 1 == 1)).collect();
+        // aux round (input_proof[1]): the same shape (query_aux_merkle gives the authenticated path).
+        let (_al, aux_path, _ace) = query_aux_merkle(config, inner, proof, pis_inner, q);
+        // quotient round (input_proof[2], possibly reduced height): reduced index path.
+        let qb = &fri.query_proofs[q].input_proof[2];
+        let qdepth = qb.opening_proof.len();
+        let qcap_h = proof.quotient_commit.roots().len().trailing_zeros() as usize;
+        let qreduced = index >> ((log_global - qcap_h) - qdepth);
+        let quot_path: Vec<([Val; 4], bool)> = qb.opening_proof.iter().enumerate().map(|(l, &s)| (s, (qreduced >> l) & 1 == 1)).collect();
+        // commit phase: the bit-ordered fold group {e_r, sib_r} + its Merkle path (leaf/cap recomputed in build).
+        let mut e = ro;
+        let mut start = index;
+        let mut cm: Vec<([Val; 4], [Val; 4], Vec<([Val; 4], bool)>, [Val; 4])> = Vec::new();
+        for (r, step) in fri.query_proofs[q].commit_phase_openings.iter().enumerate() {
+            let la = step.log_arity as usize;
+            let (sibling, beta, bit, s) = rounds[r];
+            let (g0, g1) = if !bit { (e, sibling) } else { (sibling, e) };
+            let group = flat(g0, g1);
+            start >>= la;
+            let cpath: Vec<([Val; 4], bool)> = step.opening_proof.iter().enumerate().map(|(l, &sb)| (sb, (start >> l) & 1 == 1)).collect();
+            cm.push((group, [Val::ZERO; 4], cpath, [Val::ZERO; 4]));
+            e = native_fold(g0, g1, beta, s);
+        }
+        per_query.push(((index, terms, alpha, ro, rounds), Val::ZERO, trace_path));
+        quot_paths.push(quot_path);
+        commit_data.push(cm);
+        aux_paths.push(aux_path);
+    }
+
+    let air = MonolithAir {
+        counts: counts.clone(),
+        binds: full_binds,
+        index_binds: index_binds.clone(),
+        n_queries,
+        n_terms,
+        inner_counter: false,
+        column_window: false,
+        k_instances: 1,
+        fold: false,
+        fold_txstmt: false,
+        constraints: base,
+        w_inner_f: BaseAir::<Val>::width(inner),
+        n_pub_f: pis_inner.len(),
+        n_periodic_f: inner.periodic_columns().len(),
+        is_zk: 0,
+        cap_height: proof.trace_commit.roots().len().trailing_zeros() as usize,
+        narrow_arith: false,
+        narrow_caps: false,
+        narrow_openings: false,
+        narrow_ov: false,
+        lookup: Some(LookupCfg {
+            aux_ext_w: proof.aux_width,
+            n_lookup_challenges: 2 * lookups.len(),
+            lookup_bind_lanes: lc_lanes,
+            ext_constraints: ext,
+        }),
+    };
+    // sanity: n_terms decomposes as 2·W (trace) + 2·aux_base_w (aux) + 2·nqc (quotient).
+    assert_eq!(
+        n_terms,
+        2 * air.w_inner() + air.aux_terms() + 2 * air.nqc(),
+        "lookup n_terms = 2·W + 2·aux_base_w + 2·nqc"
+    );
+
+    // pis (public-values mode) — the same order as `pis_count`: challenges (lookup ‖ α_stark/ζ/α_fri/β),
+    // index felts, final_poly, trace cap, quotient cap, inner pubs, commit caps, periodic, qwt, AUX cap, terminal.
+    let mut pis = Vec::new();
+    for ch in &full_chs {
+        pis.push(ch[0]);
+        pis.push(ch[1]);
+    }
+    for f in &index_felts {
+        pis.push(*f);
+    }
+    let fp = cc(final0);
+    pis.push(fp[0]);
+    pis.push(fp[1]);
+    for e in proof.trace_commit.roots().iter() {
+        pis.extend_from_slice(e);
+    }
+    for e in proof.quotient_commit.roots().iter() {
+        pis.extend_from_slice(e);
+    }
+    for &pv in pis_inner {
+        pis.push(pv);
+    }
+    for cm in proof.opening_proof.commit_phase_commits.iter() {
+        for e in cm.roots().iter() {
+            pis.extend_from_slice(e);
+        }
+    }
+    // periodic-column values at ζ (none for RangeCheckAir; periodic inners not yet wired).
+    assert_eq!(air.n_periodic(), 0, "periodic-column lookup inners are not yet wired");
+    // quotient recompose weights zps_i (nqc>1): verifier-computed from ζ + the quotient sub-domains.
+    if air.qwt_len() > 0 {
+        let zps = crate::recursion::native_fri::lookup_quotient_recompose_weights(config, chs[1], proof.degree_bits, air.nqc().trailing_zeros() as usize);
+        for z in &zps {
+            let c = cc(*z);
+            pis.push(c[0]);
+            pis.push(c[1]);
+        }
+    }
+    for e in proof.aux_commit.roots().iter() {
+        pis.extend_from_slice(e);
+    }
+    let term = cc(proof.terminal.0);
+    pis.push(term[0]);
+    pis.push(term[1]);
+    assert_eq!(pis.len(), air.pis_count(), "lookup column pis layout matches pis_count");
+
+    let mut trace = monolith_build_trace(
+        &air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None, Some(&aux_paths),
+    );
+    // fill the witnessed Lagrange selectors at ζ (is_first/is_last/inv_van), bound in-circuit to their ζ-defs.
+    let (is_first, is_last, inv_van) = crate::recursion::native_fri::lookup_selectors(config, chs[1], proof.degree_bits);
+    let (isf, isl, iv) = (cc(is_first), cc(is_last), cc(inv_van));
+    let fw = air.fused_w();
+    let sb = air.sel_base();
+    for r in 0..air.height() {
+        trace.values[r * fw + sb..r * fw + sb + 2].copy_from_slice(&isf);
+        trace.values[r * fw + sb + 2..r * fw + sb + 4].copy_from_slice(&isl);
+        trace.values[r * fw + sb + 4..r * fw + sb + 6].copy_from_slice(&iv);
+    }
+    (air, trace, pis)
+}
+
+/// **Format bridge Brick 4 (COMPOSE) — the lookup `MonolithAir` stays within the outer degree budget.** The
+/// fused verifier of a real `RangeCheckAir` `LookupProof` (base + LogUp OOD fold + aux Merkle round) composes at
+/// `log_nqc ≤ LOG_BLOWUP` — so the outer quotient commits at the recursion blowup (the self-composition gate).
+#[test]
+fn lookup_monolith_composes() {
+    use crate::config::LOG_BLOWUP;
+    use crate::lookup::prover::{balanced_main, prove_lookup_inner, LookupProof, RangeCheckAir};
+    use crate::recursion::native_fri::{make_config, PcsOpeningProof};
+    use p3_air::symbolic::AirLayout;
+    use p3_uni_stark::get_log_num_quotient_chunks;
+    let inner = RangeCheckAir;
+    let config = make_config(1, 4);
+    let pis_inner: Vec<Val> = vec![];
+    let proof: LookupProof<PcsOpeningProof> = prove_lookup_inner(&inner, balanced_main(1 << 6), &pis_inner, false, &config);
+    let (air, _trace, _pis) = build_lookup_monolith(&config, &inner, &proof, &pis_inner);
+    let layout = AirLayout::from_air::<Val>(&air);
+    let log_nqc = get_log_num_quotient_chunks::<Val, super::MonolithAir>(&air, layout, 0);
+    println!("lookup MonolithAir (RangeCheck): fused_w = {}, log_nqc = {log_nqc} (budget {LOG_BLOWUP})", air.fused_w());
+    assert!(log_nqc <= LOG_BLOWUP, "the lookup MonolithAir must compose within the outer degree budget");
+}
+
+/// **Format bridge Brick 4 (PROVE) — the lookup `MonolithAir` proves + verifies + rejects tampers.** Proves a
+/// real `RangeCheckAir` `LookupProof` end-to-end at reduced queries (accept-iff-verify), then rejects a
+/// tampered committed terminal (the LogUp balance check) and a tampered selected aux cap (the aux Merkle round).
+#[test]
+fn lookup_monolith_proves() {
+    use crate::lookup::prover::{balanced_main, prove_lookup_inner, LookupProof, RangeCheckAir};
+    use crate::recursion::native_fri::{lookup_transcript_challenges, make_config, PcsOpeningProof};
+    use p3_field::PrimeField64;
+    let inner = RangeCheckAir;
+    let config = make_config(1, 2); // reduced queries (fast; research prove-gate)
+    let pis_inner: Vec<Val> = vec![];
+    let proof: LookupProof<PcsOpeningProof> = prove_lookup_inner(&inner, balanced_main(1 << 6), &pis_inner, false, &config);
+    let (air, trace, pis) = build_lookup_monolith(&config, &inner, &proof, &pis_inner);
+    let outer = make_config(1, 4);
+    println!("lookup MonolithAir prove: 2^{} rows, width {}", air.height().trailing_zeros(), air.fused_w());
+    // fast pre-validation (no FRI): every constraint vanishes on the assembled trace.
+    p3_air::check_constraints(&air, &trace, &pis);
+    let prf = prove(&outer, &air, trace, &pis);
+    if let Err(e) = verify(&outer, &air, &prf, &pis) {
+        panic!("lookup MonolithAir rejected a valid LookupProof: {e:?}");
+    }
+    // tamper the committed terminal (must be 0) ⇒ the LogUp balance / OOD fold rejects.
+    let mut bad_term = pis.clone();
+    bad_term[air.term_pi()] += Val::ONE;
+    assert!(verify(&outer, &air, &prf, &bad_term).is_err(), "tampered LogUp terminal ⇒ reject");
+    // tamper the aux cap entry query 0 selects (index0 >> input_depth) ⇒ the aux cap-mux rejects.
+    let (_lc, _a, _z, _af, _b, idx) = lookup_transcript_challenges(&config, &inner, &proof, &pis_inner);
+    let log_global = proof.opening_proof.query_proofs[0].commit_phase_openings.len() + 4;
+    let sel0 = ((idx[0].as_canonical_u64() as usize) & ((1 << log_global) - 1)) >> air.input_depth();
+    let mut bad_aux = pis.clone();
+    bad_aux[air.aux_cap_base() + sel0 * 4] += Val::ONE;
+    assert!(verify(&outer, &air, &prf, &bad_aux).is_err(), "tampered selected aux cap ⇒ cap-mux reject");
 }
 
 /// **Format-bridge Brick 3 (in-circuit) — the LogUp OOD fold reproduces the native fold, IN CONSTRAINTS.**

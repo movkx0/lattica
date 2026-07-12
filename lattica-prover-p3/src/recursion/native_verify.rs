@@ -1716,7 +1716,7 @@ mod tests {
         }
         assert_eq!(pis.len(), air.pis_count(), "assembled pis length must match the geometry's pis_count");
 
-        let trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], Some(&hiding));
+        let trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], Some(&hiding), None);
         let hh = air.height();
         println!("hiding monolith @ {n_queries} queries: 2^{} rows (width {}, is_zk=1, arity-2)", hh.trailing_zeros(), air.fused_w());
         // per-query masked indices — for correlating an index-dependent failure with the triggering query.
@@ -1917,7 +1917,7 @@ mod tests {
             pis.extend_from_slice(e);
         }
         assert_eq!(pis.len(), air.pis_count(), "{label}: pis layout matches pis_count");
-        let mut trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], Some(&hiding));
+        let mut trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], Some(&hiding), None);
         // fill the witnessed Lagrange selectors at ζ (HALVED domain), bound in-circuit to their ζ-defs.
         let (isf, isl, iv) = (cc(is_first), cc(is_last), cc(inv_van));
         let fw = air.fused_w();

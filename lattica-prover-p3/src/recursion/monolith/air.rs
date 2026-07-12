@@ -23,6 +23,11 @@ pub(crate) struct LookupCfg {
     /// The number of lookup challenges `= 2·|lookups|` (`α_L` denominator + `β` tuple-combine per lookup),
     /// squeezed from the sponge AFTER the trace commit + pis and BEFORE the aux commit / α_stark.
     pub n_lookup_challenges: usize,
+    /// The sponge RATE-lane where each lookup challenge's FIRST base squeeze lands (its `c1` is at `lane−1`).
+    /// The lookup challenges are squeezed CONSECUTIVELY, so several share one duplex block at descending lanes
+    /// (e.g. lanes 3,1 for two ext challenges at RATE=4) — unlike α_stark/ζ/α_fri/β which each follow an observe
+    /// and land at lane RATE−1. The generic bind reads `cur[3]/cur[2]`; these lanes redirect the lookup binds.
+    pub lookup_bind_lanes: Vec<usize>,
     /// The inner AIR's LogUp fraction/accumulator constraints as ext `SymbolicExpressionExt` trees (from
     /// `InteractionSymbolicBuilder::extension_constraints()`), α-Horner-folded after the base constraints.
     pub ext_constraints: Vec<p3_air::symbolic::SymbolicExpressionExt<Val, Challenge>>,
@@ -150,9 +155,11 @@ pub(crate) struct MonolithAir {
 
 #[allow(dead_code)]
 impl MonolithAir {
-    // symbolic (data-driven multi-column) mode iff the inner AIR's constraint trees are provided.
+    // symbolic (data-driven multi-column) mode iff the inner AIR's constraint trees are provided OR it is a
+    // LookupProof (which may have 0 BASE constraints — e.g. RangeCheckAir — yet is a multi-column inner whose
+    // LogUp ext constraints + aux round need the symbolic machinery). Byte-identical without lookup.
     pub(crate) fn symbolic(&self) -> bool {
-        !self.constraints.is_empty()
+        !self.constraints.is_empty() || self.is_lookup()
     }
     // inner trace width W (columns): the provided width in symbolic mode, else 1 (ConstAir/CounterAir).
     pub(crate) fn w_inner(&self) -> usize {
@@ -454,6 +461,21 @@ impl MonolithAir {
     pub(crate) fn lg(&self) -> usize {
         self.cm_rounds() + LOG_BLOWUP
     }
+    // ---- transcript CHALLENGE indices (into the pis/binds challenge region). The lookup challenges occupy
+    // the first `nlc` slots (squeezed first), so α_stark/ζ/α_fri/β shift right by `nlc`. nlc = 0 without
+    // lookup ⇒ 0/1/2/3+r (the exact legacy indices, byte-identical). ----
+    pub(crate) fn ch_alpha_stark(&self) -> usize {
+        self.nlc()
+    }
+    pub(crate) fn ch_zeta(&self) -> usize {
+        self.nlc() + 1
+    }
+    pub(crate) fn ch_alpha_fri(&self) -> usize {
+        self.nlc() + 2
+    }
+    pub(crate) fn ch_beta(&self, r: usize) -> usize {
+        self.nlc() + 3 + r
+    }
     // arith-tile column layout (was the QT_ACC/QT_ALPHA/QT_TERMS consts): the DEEP index bits + acc chain scale
     // with log_global, so the per-term region base is runtime.
     pub(crate) fn qt_acc(&self) -> usize {
@@ -604,9 +626,18 @@ impl MonolithAir {
             0
         }
     }
-    pub(crate) fn pis_count(&self) -> usize {
-        // + the random cap (is_zk=1) or the aux cap (lookup) — mutually exclusive full-cap pis slices.
+    // end of the aux Merkle cap pis slice (== pis_count without lookup; the terminal follows in lookup mode).
+    pub(crate) fn aux_cap_end(&self) -> usize {
         self.aux_cap_base() + if self.is_lookup() { self.pis_cap_stride() } else { 0 }
+    }
+    // committed LogUp terminal pis slot (F_p² = 2 felts), lookup only — the epilogue folds it as the LogUp
+    // PermutationValue AND constrains it `== 0` (the terminal-sum balance). Placed last so no other region shifts.
+    pub(crate) fn term_pi(&self) -> usize {
+        self.aux_cap_end()
+    }
+    pub(crate) fn pis_count(&self) -> usize {
+        // + the random cap (is_zk=1) or the aux cap (lookup); + the LogUp terminal (2 felts, lookup only).
+        self.aux_cap_end() + if self.is_lookup() { 2 } else { 0 }
     }
     // pis cap layout — the FULL cap (2^cap_height entries) for a non-constant inner (so the cap-mux can select
     // cap[index>>shift] by the index bits), a single shared entry (stride 4) for ConstAir. For ConstAir these
@@ -1209,6 +1240,28 @@ impl MonolithAir {
                 }
             }
         }
+        // LOOKUP aux-round leaf one-hots: the LogUp aux commitment's UNSALTED leaf (blocks M_INPUT_LEAF..
+        // +aux_leaf_blocks) + input_depth path + terminal, mirroring the trace leaf. Appended AFTER the random
+        // region (aux_absorb_base = random_absorb_base + n_random_periodic); absent without lookup (byte-for-byte).
+        if self.is_lookup() {
+            cols.push(tiled(M_INPUT_LEAF * BLOCK)); // p_aux_leaf (aux leaf-hash head)
+            cols.push(tiled(self.m_aux_term() * BLOCK + BLOCK - 1)); // p_aux_term (aux terminal)
+            if self.aux_leaf_blocks() > 1 {
+                for b in 1..self.aux_leaf_blocks() {
+                    cols.push(tiled((M_INPUT_LEAF + b) * BLOCK)); // p_aux_absorb(b)
+                }
+                let mut aboundary = vec![Val::ZERO; h];
+                for q in 0..self.n_queries {
+                    for b in 1..self.aux_leaf_blocks() {
+                        aboundary[st_off(q, (M_INPUT_LEAF + b) * BLOCK - 1)] = Val::ONE;
+                    }
+                }
+                cols.push(aboundary); // p_aux_boundary
+                if self.aux_leaf_felts() % RATE != 0 {
+                    cols.push(tiled((M_INPUT_LEAF + self.aux_leaf_blocks() - 1) * BLOCK - 1)); // p_aux_last_carry
+                }
+            }
+        }
         // HIDING commit-leaf internal boundary (is_zk=1, 2-block salted commit leaf): a single UNION one-hot over
         // every round's block-0→block-1 boundary (block cm_leaf(r)'s last row) — the capacity carry.
         if self.is_zk == 1 && self.cm_leaf_blocks() > 1 {
@@ -1528,8 +1581,16 @@ impl MonolithAir {
         }
         for j in 0..self.nb() {
             let b = p[FT_BIND_START + j].clone();
-            builder.assert_zero(b.clone() * (cur[3].clone() - pis[2 * j].clone()));
-            builder.assert_zero(b * (cur[2].clone() - pis[2 * j + 1].clone()));
+            // The challenge's first squeeze lands at lane `L` (its second at `L−1`). Standard challenges
+            // (α_stark/ζ/α_fri/β) each follow an observe ⇒ fresh duplex ⇒ L = RATE−1 = 3 (cur[3]/cur[2],
+            // byte-identical). The CONSECUTIVE lookup challenges (first `nlc`) share a block at descending lanes,
+            // so LookupCfg.lookup_bind_lanes redirects them (e.g. the 2nd lands at lane 1 ⇒ cur[1]/cur[0]).
+            let lane = match &self.lookup {
+                Some(lk) if j < self.nlc() => lk.lookup_bind_lanes[j],
+                _ => 3,
+            };
+            builder.assert_zero(b.clone() * (cur[lane].clone() - pis[2 * j].clone()));
+            builder.assert_zero(b * (cur[lane - 1].clone() - pis[2 * j + 1].clone()));
         }
         let idx_start = FT_BIND_START + self.nb();
         for (k, &(_blk, lane)) in self.index_binds.iter().enumerate() {
@@ -1543,7 +1604,7 @@ impl MonolithAir {
         let not_inst_last = one.clone() - p[self.p_inst_last()].clone();
         builder.when_transition().assert_zero(not_inst_last.clone() * (nxt[carry].clone() - cur[carry].clone()));
         builder.when_transition().assert_zero(not_inst_last.clone() * (nxt[carry + 1].clone() - cur[carry + 1].clone()));
-        let alpha_bind = p[FT_BIND_START + 2].clone();
+        let alpha_bind = p[FT_BIND_START + self.ch_alpha_fri()].clone();
         builder.assert_zero(alpha_bind.clone() * (cur[carry].clone() - cur[3].clone()));
         builder.assert_zero(alpha_bind * (cur[carry + 1].clone() - cur[2].clone()));
 
@@ -1563,10 +1624,10 @@ impl MonolithAir {
         // Factored through the B/C/I strategy: `InlineBci` re-emits the `9·n_terms`-COLUMN inline fold verbatim
         // (byte-identical); a narrow-tall strategy witnesses `ro` from slack ROWS (the deep-tree size lever).
         bci.emit_arith(builder, self, &cur, &tf, &one, &w);
-        // β_r binding (per-round one-hots → public β_r = binds[3+r])
-        for r in 0..(self.nb() - 3) {
+        // β_r binding (per-round one-hots → public β_r = binds[ch_beta(r)], shifted past the lookup challenges)
+        for r in 0..self.cm_rounds() {
             let pr = p[self.p_round(r)].clone();
-            let bidx = 3 + r;
+            let bidx = self.ch_beta(r);
             builder.assert_zero(pr.clone() * (cur[QT_B].clone() - pis[2 * bidx].clone()));
             builder.assert_zero(pr * (cur[QT_B + 1].clone() - pis[2 * bidx + 1].clone()));
         }
@@ -1603,7 +1664,7 @@ impl MonolithAir {
         }
         builder.assert_zero(tf.clone() * (cur[self.idx_rem()].clone() - qidx));
         let mut round_mask = AB::Expr::ZERO;
-        for r in 0..(self.nb() - 3) {
+        for r in 0..self.cm_rounds() {
             round_mask = round_mask + p[self.p_round(r)].clone();
         }
         builder
@@ -1636,8 +1697,8 @@ impl MonolithAir {
         // openings QT_pz(0..3). Multiply through by Z_H·(ζ−1) to avoid inverses:
         //   z_h·α·(local−pub) + is_trans·(ζ−1)·(next−local) == z_h·(ζ−1)·(c0 + c1·X),   quotient(ζ)=c0+c1·X.
         {
-            let alpha_stark = (pis[0].clone(), pis[1].clone());
-            let zeta = (pis[2].clone(), pis[3].clone());
+            let alpha_stark = (pis[2 * self.ch_alpha_stark()].clone(), pis[2 * self.ch_alpha_stark() + 1].clone());
+            let zeta = (pis[2 * self.ch_zeta()].clone(), pis[2 * self.ch_zeta() + 1].clone());
             // S_6 = ζ^(2^degree_bits). In pis mode ζ is a degree-0 public constant ⇒ inline squaring (degree 0).
             // In column-window ζ is a degree-1 witness ⇒ use the witnessed squaring chain (S_{i+1}=S_i², bound
             // degree 2) so z_h stays degree 1 and the OOD constraint doesn't blow up.
@@ -1719,13 +1780,54 @@ impl MonolithAir {
                 let pubs: Vec<(AB::Expr, AB::Expr)> = (0..self.n_pub()).map(|i| (pis[self.pub_pi() + i].clone(), AB::Expr::ZERO)).collect();
                 // periodic column values at ζ (verifier-computed publics in the periodic pis region).
                 let periodic: Vec<(AB::Expr, AB::Expr)> = (0..self.n_periodic()).map(|i| (pis[self.periodic_base() + 2 * i].clone(), pis[self.periodic_base() + 2 * i + 1].clone())).collect();
-                // B/C (OOD epilogue fold) — routed through the strategy so the wrap can replace the inline
-                // eval_symbolic_circuit + α-Horner with lookups (byte-identical under InlineBci; the reused
-                // selector binds + openings above stay inline).
-                bci.emit_epilogue(
-                    builder, self, &cur, &tf, &w, &local, &next, &pubs, &periodic, &is_first, &is_last,
-                    &is_trans, &alpha_stark, &inv_van, &quot,
-                );
+                if let Some(lk) = &self.lookup {
+                    // FORMAT BRIDGE — the LogUp OOD fold. The α-Horner fold continues past the base constraints
+                    // with the inner's LogUp fraction/accumulator EXT constraints (eval_symbolic_ext_circuit),
+                    // matching the native `batched_constraints_at_point` order (base then ext). The aux ext rows
+                    // are RECONSTRUCTED from the D=2 flattened base-column openings (pz(trm_aux(2c)),
+                    // pz(trm_aux(2c+1))) via aux_ext = d0 + d1·X — the same combine as the quotient chunk recompose.
+                    let combine = |d0: (AB::Expr, AB::Expr), d1: (AB::Expr, AB::Expr)| -> (AB::Expr, AB::Expr) {
+                        (d0.0 + w.clone() * d1.1, d0.1 + d1.0)
+                    };
+                    let aux_local: Vec<(AB::Expr, AB::Expr)> =
+                        (0..self.aux_ext_w()).map(|c| combine(gg(self.pz(self.trm_aux(2 * c))), gg(self.pz(self.trm_aux(2 * c + 1))))).collect();
+                    let aux_next: Vec<(AB::Expr, AB::Expr)> =
+                        (0..self.aux_ext_w()).map(|c| combine(gg(self.pz(self.trm_aux_next(2 * c))), gg(self.pz(self.trm_aux_next(2 * c + 1))))).collect();
+                    // the lookup challenges (α_L,β) are the first `nlc` transcript challenges (pis[0..2·nlc]).
+                    let challenges: Vec<(AB::Expr, AB::Expr)> =
+                        (0..self.nlc()).map(|i| (pis[2 * i].clone(), pis[2 * i + 1].clone())).collect();
+                    // the committed terminal (a claimed F_p² value): folded as the LogUp PermutationValue AND
+                    // constrained == 0 (the multiset-balance check `verify_terminal_sum`).
+                    let terminal = (pis[self.term_pi()].clone(), pis[self.term_pi() + 1].clone());
+                    let mut folded = (AB::Expr::ZERO, AB::Expr::ZERO);
+                    for c in &self.constraints {
+                        let ci = eval_symbolic_circuit::<AB>(c, &local, &next, &pubs, &periodic, &is_first, &is_last, &is_trans, &w);
+                        let fa = emul(folded.clone(), alpha_stark.clone());
+                        folded = (fa.0 + ci.0, fa.1 + ci.1);
+                    }
+                    for c in &lk.ext_constraints {
+                        let ci = eval_symbolic_ext_circuit::<AB>(
+                            c, &local, &next, &pubs, &periodic, &is_first, &is_last, &is_trans, &aux_local,
+                            &aux_next, &challenges, &[terminal.clone()], &w,
+                        );
+                        let fa = emul(folded.clone(), alpha_stark.clone());
+                        folded = (fa.0 + ci.0, fa.1 + ci.1);
+                    }
+                    let chk = emul(folded, inv_van.clone());
+                    builder.assert_zero(tf.clone() * (chk.0 - quot.0.clone()));
+                    builder.assert_zero(tf.clone() * (chk.1 - quot.1.clone()));
+                    // the LogUp terminal must balance (Σ fractions == 0).
+                    builder.assert_zero(tf.clone() * terminal.0);
+                    builder.assert_zero(tf.clone() * terminal.1);
+                } else {
+                    // B/C (OOD epilogue fold) — routed through the strategy so the wrap can replace the inline
+                    // eval_symbolic_circuit + α-Horner with lookups (byte-identical under InlineBci; the reused
+                    // selector binds + openings above stay inline).
+                    bci.emit_epilogue(
+                        builder, self, &cur, &tf, &w, &local, &next, &pubs, &periodic, &is_first, &is_last,
+                        &is_trans, &alpha_stark, &inv_van, &quot,
+                    );
+                }
             } else {
                 // 1-COLUMN ConstAir/CounterAir: the 2-constraint form (1 first-row + 1 transition):
                 //   z_h·α·(local−pub) + is_trans·(ζ−1)·(next−local[−1]) == z_h·(ζ−1)·(c0+c1·X).
@@ -1764,15 +1866,18 @@ impl MonolithAir {
                 builder.assert_zero(tf.clone() * (t1.1 + t2.1 - rhs.1));
             }
             // z-term binding: bind each opened point z to its transcript-derived value — ζ for the random,
-            // trace-ζ, and quotient terms; ζ·g_trace (the HALVED constraint-domain generator) for the trace-ζ_next
-            // block [trm_next_base, trm_quot_base). is_zk=0 ⇒ [0,W)→ζ, [W,2W)→ζ·g, [2W,·)→ζ (byte-for-byte). So
-            // each QT_pz(k) is genuinely the opening AT its point.
+            // trace-ζ, aux-ζ, and quotient terms; ζ·g_trace (the HALVED constraint-domain generator) for the
+            // trace-ζ_next block [trm_next_base, trm_next_base+W) AND the aux-ζ_next block [trm_aux_next(0),
+            // trm_quot_base). is_zk=0/no-lookup ⇒ [0,W)→ζ, [W,2W)→ζ·g, [2W,·)→ζ (byte-for-byte). So each
+            // QT_pz(k) is genuinely the opening AT its point.
             // NARROW-ARITH: `z` is not stored (re-derived = ζ / ζ·g); the wrap binds the re-derived z via its
             // input bus, so there is no z column to bind here. FULL: bind each stored z(k) to its ζ-value.
             if !self.narrow_arith {
                 let g_trace = AB::Expr::from(Goldilocks::two_adic_generator(cdb));
                 for k in 0..self.n_terms {
-                    let at_next = k >= self.trm_next_base() && k < self.trm_quot_base();
+                    let trace_next = k >= self.trm_next_base() && k < self.trm_next_base() + self.trm_committed_w();
+                    let aux_next = self.is_lookup() && k >= self.trm_aux_next(0) && k < self.trm_quot_base();
+                    let at_next = trace_next || aux_next;
                     let (zx, zy) = if at_next {
                         (zeta.0.clone() * g_trace.clone(), zeta.1.clone() * g_trace.clone())
                     } else {
@@ -1814,6 +1919,17 @@ impl MonolithAir {
                 if c < self.random_committed_w() {
                     builder.assert_zero(tf.clone() * (cur[ovr].clone() - cur[self.px(c)].clone()));
                 }
+            }
+        }
+        // LOOKUP aux-round carrier (aux_base_w felts): the committed LogUp aux row, held; px-bound to BOTH its ζ
+        // term px(trm_aux(c)) AND its ζ_next term px(trm_aux_next(c)) (aux opens at two points — like the trace
+        // ov, unlike the random round's single point). No salt (is_zk=0). Absent without lookup.
+        if self.is_lookup() && !self.narrow_arith {
+            for c in 0..self.aux_base_w() {
+                let ova = self.ov_aux(c);
+                builder.when_transition().assert_zero(hold.clone() * (nxt[ova].clone() - cur[ova].clone()));
+                builder.assert_zero(tf.clone() * (cur[ova].clone() - cur[self.px(self.trm_aux(c))].clone())); // @ ζ
+                builder.assert_zero(tf.clone() * (cur[ova].clone() - cur[self.px(self.trm_aux_next(c))].clone())); // @ ζ_next
             }
         }
         // quotient opened-value carriers (quot_leaf_felts felts): the multi-matrix concat over nqc chunks. Each
@@ -1961,6 +2077,46 @@ impl MonolithAir {
                 builder.assert_zero(rterm.clone() * (cur[k].clone() - cur[self.cap_c(8 + 4 * self.cm_rounds() + k)].clone()));
             }
         }
+        // LOOKUP aux-round leaf (blocks M_INPUT_LEAF..+aux_leaf_blocks): an UNSALTED PaddingFreeSponge over the
+        // committed LogUp aux row (aux_base_w felts), RATE/block — the SAME multi-block machinery as the trace
+        // leaf, then input_depth merges (via the generic merge link) to the aux cap. The aux terminal binds to
+        // the aux cap carrier (a full cap; the aux commitment varies per query). Mirrors the random round.
+        if self.is_lookup() {
+            let aleaf = p[self.p_aux_leaf()].clone();
+            let alc0 = core::cmp::min(self.aux_leaf_felts(), RATE);
+            for c in 0..alc0 {
+                builder.assert_zero(aleaf.clone() * (cur[c].clone() - cur[self.ov_aux(c)].clone()));
+            }
+            for i in alc0..W {
+                builder.assert_zero(aleaf.clone() * cur[i].clone());
+            }
+            for b in 1..self.aux_leaf_blocks() {
+                let ia = p[self.p_aux_absorb(b)].clone();
+                let clen = core::cmp::min(RATE, self.aux_leaf_felts() - b * RATE);
+                for k in 0..clen {
+                    builder.assert_zero(ia.clone() * (cur[k].clone() - cur[self.ov_aux(b * RATE + k)].clone()));
+                }
+            }
+            if self.aux_leaf_blocks() > 1 {
+                let bnd = p[self.p_aux_boundary()].clone();
+                for k in RATE..W {
+                    builder.when_transition().assert_zero(bnd.clone() * (nxt[k].clone() - cur[k].clone())); // capacity carry
+                }
+                if self.aux_leaf_felts() % RATE != 0 {
+                    let lc = p[self.p_aux_last_carry()].clone();
+                    let rem = self.aux_leaf_felts() - (self.aux_leaf_blocks() - 1) * RATE;
+                    for k in rem..RATE {
+                        builder.when_transition().assert_zero(lc.clone() * (nxt[k].clone() - cur[k].clone())); // short-final rate carry
+                    }
+                }
+            }
+            // aux terminal (block m_aux_term) == the query's index-selected aux cap entry, carried per super-tile
+            // in cap_c group (8 + 4·cm_rounds) and seeded at the arith head by the cap-mux below.
+            let aterm = p[self.p_aux_term()].clone();
+            for k in 0..4 {
+                builder.assert_zero(aterm.clone() * (cur[k].clone() - cur[self.cap_c(8 + 4 * self.cm_rounds() + k)].clone()));
+            }
+        }
         // commit-phase leaves (blocks CM_LEAF[r]): absorb the bit-ordered fold group carried in cg(r,·).
         for r in 0..self.cm_rounds() {
             let cl = p[self.c_leaf(r)].clone();
@@ -2017,6 +2173,12 @@ impl MonolithAir {
                         term_sum = term_sum + p[self.c_bnd()].clone(); // commit-leaf block-0→block-1 boundary
                     }
                 }
+                if self.is_lookup() {
+                    term_sum = term_sum + p[self.p_aux_term()].clone(); // aux-round terminal (not a merge)
+                    if self.aux_leaf_blocks() > 1 {
+                        term_sum = term_sum + p[self.p_aux_boundary()].clone(); // aux-leaf internal boundary
+                    }
+                }
                 one.clone() - term_sum
             };
             let link = s_merkle.clone() * p[FT_P_BLOCK_LAST].clone() * (one.clone() - p[self.p_st_last()].clone()) * not_term;
@@ -2062,6 +2224,11 @@ impl MonolithAir {
             // (8 + 4·cm_rounds), selecting cap[index>>input_depth] from the random commitment's cap pis region.
             if self.is_zk == 1 {
                 openings.push((8 + 4 * self.cm_rounds(), self.input_depth(), self.cap_height, self.random_cap_base()));
+            }
+            // LOOKUP aux round: a full cap at max height (shift = input_depth), the SAME cap_c group
+            // (8 + 4·cm_rounds; is_zk ⟂ lookup), selecting cap[index>>input_depth] from the aux cap pis region.
+            if self.is_lookup() {
+                openings.push((8 + 4 * self.cm_rounds(), self.input_depth(), self.cap_height, self.aux_cap_base()));
             }
             bci.emit_capmux(builder, self, &cur, &pis, &one, &tf, &openings);
         } else {

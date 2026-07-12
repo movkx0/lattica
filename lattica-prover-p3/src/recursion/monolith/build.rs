@@ -59,6 +59,7 @@ pub(crate) fn monolith_build_trace(
     commit_data: &[Vec<([Val; 4], [Val; 4], Vec<([Val; 4], bool)>, [Val; 4])>],
     pub_window: &[Val],                  // column-window mode: the inner-proof pis values (empty otherwise)
     hiding: Option<&[HidingWitness]>,    // is_zk=1 only: per-query salts + random-round path (None for is_zk=0)
+    aux_paths: Option<&[Vec<([Val; 4], bool)>]>, // LOOKUP only: per-query aux-round Merkle path (None otherwise)
 ) -> RowMajorMatrix<Val> {
     use crate::recursion::fri_fold::native_fold;
     use p3_field::{BasedVectorSpace, PrimeField64};
@@ -228,6 +229,20 @@ pub(crate) fn monolith_build_trace(
         } else {
             [Val::ZERO; 4]
         };
+        // LOOKUP aux-round leaf (blocks M_INPUT_LEAF.., UNSALTED): the committed aux row (aux_base_w px felts)
+        // hashed then input_depth merges → the aux cap entry. Prepended like the random round; the trace leaf
+        // moves to m_input_leaf(). aux_preimage = the aux terms' authenticated px (shared across ζ / ζ_next).
+        let (aux_preimage, aux_cap_entry): (Vec<Val>, [Val; 4]) = if air.is_lookup() {
+            let pre: Vec<Val> = (0..air.aux_base_w()).map(|cc| terms[air.trm_aux(cc)].2).collect();
+            let mut node = leaf_hash(&mut t, off, M_INPUT_LEAF, &pre);
+            let start = M_INPUT_LEAF + air.aux_leaf_blocks();
+            for (l, &(sib, b)) in aux_paths.unwrap()[q].iter().enumerate() {
+                node = merge_block(&mut t, off, start + l, node, sib, b);
+            }
+            (pre, node)
+        } else {
+            (Vec::new(), [Val::ZERO; 4])
+        };
         // inline (trace) input-Merkle: multi-block salted leaf (blocks m_input_leaf..) + input_depth merges.
         let trace_cap_entry = {
             let mut node = leaf_hash(&mut t, off, air.m_input_leaf(), &input_preimage);
@@ -278,6 +293,11 @@ pub(crate) fn monolith_build_trace(
                     t[(off + r) * w + air.ov_random(cc)] = v;
                 }
             }
+            if air.is_lookup() {
+                for (cc, &v) in aux_preimage.iter().enumerate() {
+                    t[(off + r) * w + air.ov_aux(cc)] = v;
+                }
+            }
             for (cc, &qv) in quot_preimage.iter().enumerate() {
                 t[(off + r) * w + air.qc(cc)] = qv;
             }
@@ -295,6 +315,9 @@ pub(crate) fn monolith_build_trace(
                     }
                     if air.is_zk == 1 {
                         t[(off + r) * w + air.cap_c(8 + 4 * air.cm_rounds() + k)] = random_cap_entry[k];
+                    }
+                    if air.is_lookup() {
+                        t[(off + r) * w + air.cap_c(8 + 4 * air.cm_rounds() + k)] = aux_cap_entry[k];
                     }
                 }
             }
