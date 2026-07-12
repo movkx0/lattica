@@ -580,7 +580,13 @@ pub fn prove_lookup_lean_gpu<A: LookupAir>(
 
 /// The prover core — generic over the PCS (production hiding or the lean non-hiding config). `forge_aux`
 /// (test-only) corrupts one committed aux fraction so the batched constraints no longer vanish on `H`.
-fn prove_lookup_inner<A, SC>(
+///
+/// Exposed `pub(crate)` so the recursion **format-bridge blueprint** (`native_fri::verify_lookup_proof_native`)
+/// can produce a `LookupProof` under the NON-salted recursion config (`native_fri::make_config`) — the merged
+/// wrap emits a `LookupProof` under the salted lean MMCS, but the aux-round / LogUp-constraint / terminal
+/// surface the outer in-circuit verifier must learn (delta a) is validated from scratch on a non-salted proof
+/// first; the salt (delta b) is orthogonal and already handled by the hiding path.
+pub(crate) fn prove_lookup_inner<A, SC>(
     air: &A,
     main: RowMajorMatrix<Val>,
     pis: &[Val],
