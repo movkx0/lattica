@@ -128,6 +128,165 @@ pub(crate) fn sim_full( // W2-assemble (research): exposed to the wrap as the in
     (s.block_inputs, s.counts, binds, chs, index_binds, index_felts)
 }
 
+/// **Format-bridge Brick 2a — the LookupProof transcript sim.** The `sim_full` analogue for a `LookupProof`
+/// inner (what the deep-tree self-composition verifies): replays the SAME sponge (`Sim`) but over
+/// `verify_lookup`'s transcript, which differs from a p3 `Proof`'s in three ways the outer in-circuit
+/// transcript region must mirror:
+///   1. **preamble** — NO `degree_bits`/`base`/`preprocessed` absorbs; observe the trace cap felts directly;
+///   2. **lookup challenges** — after trace+pis, sample `2·|lookups|` ext challenges `(α_L,β)`;
+///   3. **aux round** — observe the LogUp aux cap felts before sampling α_stark, and interleave the aux
+///      opened values (`aux_local`/`aux_next`) into the opened-value absorb between trace and quotient.
+/// The FRI tail (α_fri, per-round β, final_poly, arities, query-PoW, index squeeze) is byte-identical to
+/// `sim_full`. Returns `sim_full`'s tuple plus the sampled `lookup_challenges` (as `[Val;2]` pairs). Additive
+/// — the p3-`Proof` path (`sim_full`) is untouched. Validated against a real-challenger ground truth by
+/// `lookup_transcript_sim_matches_challenger`.
+#[allow(clippy::type_complexity)]
+pub(crate) fn sim_full_lookup<A>(
+    air: &A,
+    proof: &crate::lookup::prover::LookupProof<crate::recursion::native_fri::PcsOpeningProof>,
+    pis: &[Val],
+) -> (Vec<[Val; W]>, Vec<u8>, Vec<usize>, Vec<[Val; 2]>, Vec<(usize, usize)>, Vec<Val>, Vec<[Val; 2]>)
+where
+    A: crate::lookup::prover::LookupAir,
+{
+    use p3_lookup::Lookups;
+    let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(air);
+    let mut s = Sim::new();
+
+    // (1) preamble: observe the trace cap felts, then the public values (no degree_bits/base/preproc absorbs).
+    for f in cap_felts(&proof.trace_commit) {
+        s.observe(f);
+    }
+    for &p in pis {
+        s.observe(p);
+    }
+    // (2) the LogUp challenges — 2 ext elements per lookup (α_L denominator + β tuple-combine).
+    let mut lookup_challenges = Vec::new();
+    for _ in 0..2 * lookups.len() {
+        let (lc, _b) = s.sample_ext();
+        lookup_challenges.push(lc);
+    }
+    // (3) the aux (permutation) cap, then α_stark; then the quotient cap, then ζ.
+    for f in cap_felts(&proof.aux_commit) {
+        s.observe(f);
+    }
+    let (a_stark, b0) = s.sample_ext();
+    for f in cap_felts(&proof.quotient_commit) {
+        s.observe(f);
+    }
+    let (zeta, b1) = s.sample_ext();
+    // opened values in round order: trace {ζ,ζ_next}, AUX {ζ,ζ_next}, quotient chunks.
+    for &x in &proof.opened.trace_local {
+        s.observe_ext(x);
+    }
+    for &x in &proof.opened.trace_next {
+        s.observe_ext(x);
+    }
+    for &x in &proof.opened.aux_local {
+        s.observe_ext(x);
+    }
+    for &x in &proof.opened.aux_next {
+        s.observe_ext(x);
+    }
+    for c in &proof.opened.quotient_chunks {
+        for &x in c {
+            s.observe_ext(x);
+        }
+    }
+    let (a_fri, b2) = s.sample_ext();
+    let mut binds = vec![b0, b1, b2];
+    let mut chs = vec![a_stark, zeta, a_fri];
+    // FRI tail — identical to `sim_full` (the format bridge does not touch the commit phase).
+    let fri = &proof.opening_proof;
+    for comm in &fri.commit_phase_commits {
+        for f in cap_felts(comm) {
+            s.observe(f);
+        }
+        let (beta, bb) = s.sample_ext();
+        binds.push(bb);
+        chs.push(beta);
+    }
+    for &x in &fri.final_poly {
+        s.observe_ext(x);
+    }
+    let log_arities: Vec<usize> = fri.query_proofs[0].commit_phase_openings.iter().map(|o| o.log_arity as usize).collect();
+    for &la in &log_arities {
+        s.observe(Val::from_usize(la));
+    }
+    s.observe(fri.query_pow_witness);
+    let _ = s.sample_base();
+    let mut index_binds = Vec::new();
+    let mut index_felts = Vec::new();
+    for _ in 0..fri.query_proofs.len() {
+        let (f, blk, lane) = s.sample_base();
+        index_binds.push((blk, lane));
+        index_felts.push(f);
+    }
+    (s.block_inputs, s.counts, binds, chs, index_binds, index_felts, lookup_challenges)
+}
+
+/// **Format-bridge Brick 2a — the LookupProof transcript sim is faithful.** `sim_full_lookup` (the sponge
+/// mirror the in-circuit transcript region will reproduce) derives the SAME `(α_L,β)`, α_stark, ζ, α_fri,
+/// per-round β, and query indices as the real `DuplexChallenger` running `verify_lookup`'s sequence. Ground
+/// truth is a from-scratch challenger replay here (non-circular; no `sim_full_lookup` internals reused). If
+/// the aux round / lookup-challenge / shorter-preamble sequencing were wrong, the squeezed challenges would
+/// diverge — this pins the deepest, riskiest piece of the format bridge before it drives an outer trace.
+#[test]
+fn lookup_transcript_sim_matches_challenger() {
+    use crate::lookup::prover::{balanced_main, prove_lookup_inner, LookupProof, RangeCheckAir};
+    use crate::recursion::native_fri::PcsOpeningProof;
+    use p3_challenger::{CanObserve, CanSample, FieldChallenger, GrindingChallenger};
+    use p3_lookup::Lookups;
+    use p3_uni_stark::StarkGenericConfig;
+    let air = RangeCheckAir;
+    let config = make_config(1, 4);
+    let pis: Vec<Val> = vec![];
+    let proof: LookupProof<PcsOpeningProof> = prove_lookup_inner(&air, balanced_main(1 << 6), &pis, false, &config);
+
+    let (_bi, _counts, _binds, chs, _index_binds, index_felts, lc) = sim_full_lookup(&air, &proof, &pis);
+
+    // Ground truth: the real challenger, mirroring `verify_lookup`'s sequence exactly.
+    let pair = |x: Challenge| -> [Val; 2] { x.as_basis_coefficients_slice().try_into().unwrap() };
+    let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(&air);
+    let mut ch = config.initialise_challenger();
+    ch.observe(proof.trace_commit.clone());
+    ch.observe_slice(&pis);
+    let lc_gt: Vec<[Val; 2]> = (0..2 * lookups.len()).map(|_| pair(ch.sample_algebra_element())).collect();
+    ch.observe(proof.aux_commit.clone());
+    let a_stark_gt = pair(ch.sample_algebra_element());
+    ch.observe(proof.quotient_commit.clone());
+    let zeta_gt = pair(ch.sample_algebra_element());
+    ch.observe_algebra_slice(&proof.opened.trace_local);
+    ch.observe_algebra_slice(&proof.opened.trace_next);
+    ch.observe_algebra_slice(&proof.opened.aux_local);
+    ch.observe_algebra_slice(&proof.opened.aux_next);
+    for c in &proof.opened.quotient_chunks {
+        ch.observe_algebra_slice(c);
+    }
+    let a_fri_gt = pair(ch.sample_algebra_element());
+    let fri = &proof.opening_proof;
+    let mut betas_gt = Vec::new();
+    for (comm, w) in fri.commit_phase_commits.iter().zip(&fri.commit_pow_witnesses) {
+        ch.observe(comm.clone());
+        assert!(ch.check_witness(0, *w), "commit pow (0 bits)");
+        betas_gt.push(pair(ch.sample_algebra_element::<Challenge>()));
+    }
+    ch.observe_algebra_slice(&fri.final_poly);
+    let arities: Vec<usize> = fri.query_proofs[0].commit_phase_openings.iter().map(|o| o.log_arity as usize).collect();
+    for &la in &arities {
+        ch.observe(Val::from_usize(la));
+    }
+    assert!(ch.check_witness(16, fri.query_pow_witness), "query pow (16 bits)");
+    let idx_gt: Vec<Val> = (0..fri.query_proofs.len()).map(|_| ch.sample()).collect();
+
+    assert_eq!(lc, lc_gt, "the lookup challenges (α_L,β) must match the challenger");
+    assert_eq!(chs[0], a_stark_gt, "α_stark must match");
+    assert_eq!(chs[1], zeta_gt, "ζ must match");
+    assert_eq!(chs[2], a_fri_gt, "α_fri must match");
+    assert_eq!(&chs[3..], &betas_gt[..], "the per-round β must match");
+    assert_eq!(index_felts, idx_gt, "the query index felts must match");
+}
+
 /// AA5 ordered-sponge-cap-bus feasibility seam (non-hiding): replay `sim_full`'s exact transcript schedule
 /// while recording, for every commitment-cap felt the sponge ABSORBS, the `(cap_id, entry, k, block, lane)`
 /// where it lands — `cap_id` 0=trace, 1=quotient, 2+r=commit-round r; `entry`/`k` = the `roots()[entry][k]`
