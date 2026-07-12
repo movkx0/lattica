@@ -3257,6 +3257,292 @@ where
     (air, trace, pis)
 }
 
+/// **CANONICAL SELF-COMPOSITION assembler** — the merge of [`build_symbolic_inner_window`] (COLUMN-WINDOW +
+/// PERIODIC + FOLD_CHUNK, for a p3 `Proof`) and [`build_lookup_monolith`] (the LogUp aux round + ext
+/// constraints + lc-binds, for a `LookupProof`). Produces the outer `MonolithAir` that verifies an INNER
+/// `LookupProof` in COLUMN-WINDOW mode (the inner pis live in a witness window, so the degree-1 α_stark forces
+/// the chunked fold) — so a wrap (itself a LookupAir verifying a join-split) can verify ITS OWN proof. Unlike
+/// `build_lookup_monolith` this does NOT assert `n_periodic == 0` (the wrap has op/cap periodics), and it fills
+/// the FOLD_CHUNK accumulators over the base THEN ext constraints (the degree crux). Returns `(air, trace, pis)`.
+///
+/// `narrow_*` flags are threaded into the AIR (for the fused_w WIDTH measurement of the wrap-externalized
+/// geometry); the returned TRACE is only valid at the FULL geometry (`narrow_arith/openings=false`) — the
+/// narrow arith/openings epilogue is wrap-coupled (`OpeningsBci` + slack regions), so a bare `InlineBci` trace
+/// cannot be proven narrow (documented in the self-composition report).
+#[cfg(test)]
+#[allow(clippy::type_complexity, clippy::too_many_arguments)]
+pub(crate) fn build_symbolic_inner_window_lookup<A>(
+    config: &MyConfig,
+    inner: &A,
+    proof: &crate::lookup::prover::LookupProof<crate::recursion::native_fri::PcsOpeningProof>,
+    pis_inner: &[Val],
+    narrow_caps: bool,
+    narrow_arith: bool,
+    narrow_openings: bool,
+    narrow_ov: bool,
+    build_trace: bool, // false ⇒ AIR + pis + the native-fold diagnostic only (skip the height-sized trace, for compose)
+) -> (super::MonolithAir, p3_matrix::dense::RowMajorMatrix<Val>, Vec<Val>)
+where
+    A: crate::lookup::prover::LookupAir,
+{
+    use super::{monolith_build_trace, LookupCfg, MonolithAir};
+    use crate::lookup::prover::batched_constraints_at_point;
+    use crate::recursion::fri_fold::native_fold;
+    use crate::recursion::native_fri::{
+        eval_symbolic_ext_native, eval_symbolic_native, lookup_quotient_recompose_weights, lookup_selectors,
+        multicol_query_terms_lookup, query_aux_merkle, query_fold_data_lookup, Chal, MyPcs,
+    };
+    use p3_air::symbolic::AirLayout;
+    use p3_air::BaseAir;
+    use p3_commit::{Pcs, PolynomialSpace};
+    use p3_field::{BasedVectorSpace, ExtensionField, PrimeCharacteristicRing, PrimeField64};
+    use p3_lookup::{InteractionSymbolicBuilder, LogUpGadget, LookupProtocol, Lookups};
+    use p3_uni_stark::StarkGenericConfig;
+
+    let cc = |x: Challenge| -> [Val; 2] { x.as_basis_coefficients_slice().try_into().unwrap() };
+    let to_ext = |p: [Val; 2]| Challenge::from_basis_coefficients_fn(|i| p[i]);
+    let flat = |g0: Challenge, g1: Challenge| -> [Val; 4] {
+        let (a, b) = (cc(g0), cc(g1));
+        [a[0], a[1], b[0], b[1]]
+    };
+    let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(inner);
+    let (block_inputs, counts, binds, chs, index_binds, index_felts, lookup_challenges, lc_binds, lc_lanes) =
+        sim_full_lookup(inner, proof, pis_inner);
+    let n_queries = proof.opening_proof.query_proofs.len();
+    let fri = &proof.opening_proof;
+    let log_global: usize = fri.query_proofs[0].commit_phase_openings.iter().map(|o| o.log_arity as usize).sum::<usize>() + 4;
+
+    // the lookup challenges are squeezed FIRST, so they LEAD the challenge region (binds + chs).
+    let mut full_binds = lc_binds.clone();
+    full_binds.extend_from_slice(&binds);
+    let mut full_chs = lookup_challenges.clone();
+    full_chs.extend_from_slice(&chs);
+
+    // the inner's base + LogUp ext constraint trees (exactly `combined_constraint_layout`'s layout).
+    let layout = AirLayout {
+        permutation_width: lookups.len() + 1,
+        num_permutation_challenges: 2 * lookups.len(),
+        num_permutation_values: 1,
+        ..AirLayout::from_air::<Val>(inner)
+    };
+    let mut isb = InteractionSymbolicBuilder::<Val, Challenge>::new(layout);
+    inner.eval(&mut isb);
+    LogUpGadget::new().eval_all(&mut isb, &lookups);
+    let base = isb.base_constraints();
+    let ext = isb.extension_constraints();
+
+    // per-query witness data (reduced opening + the 4 Merkle rounds: trace, aux, quotient, commit phase) —
+    // identical to `build_lookup_monolith` (the per-query oracle data does not depend on column_window).
+    let mut per_query = Vec::new();
+    let mut quot_paths = Vec::new();
+    let mut commit_data = Vec::new();
+    let mut aux_paths = Vec::new();
+    let mut n_terms = 0;
+    let mut final0 = Challenge::ZERO;
+    for q in 0..n_queries {
+        let (terms, _x, alpha, ro, _w, _aw) = multicol_query_terms_lookup(config, inner, proof, pis_inner, q);
+        let (_ro2, rounds, _folded, f0) = query_fold_data_lookup(config, inner, proof, pis_inner, q);
+        if q == 0 {
+            final0 = f0;
+        }
+        n_terms = terms.len();
+        let index = (index_felts[q].as_canonical_u64() as usize) & ((1 << log_global) - 1);
+        let tb = &fri.query_proofs[q].input_proof[0];
+        let trace_path: Vec<([Val; 4], bool)> = tb.opening_proof.iter().enumerate().map(|(l, &s)| (s, (index >> l) & 1 == 1)).collect();
+        let (_al, aux_path, _ace) = query_aux_merkle(config, inner, proof, pis_inner, q);
+        let qb = &fri.query_proofs[q].input_proof[2];
+        let qdepth = qb.opening_proof.len();
+        let qcap_h = proof.quotient_commit.roots().len().trailing_zeros() as usize;
+        let qreduced = index >> ((log_global - qcap_h) - qdepth);
+        let quot_path: Vec<([Val; 4], bool)> = qb.opening_proof.iter().enumerate().map(|(l, &s)| (s, (qreduced >> l) & 1 == 1)).collect();
+        let mut e = ro;
+        let mut start = index;
+        let mut cm: Vec<([Val; 4], [Val; 4], Vec<([Val; 4], bool)>, [Val; 4])> = Vec::new();
+        for (r, step) in fri.query_proofs[q].commit_phase_openings.iter().enumerate() {
+            let la = step.log_arity as usize;
+            let (sibling, beta, bit, s) = rounds[r];
+            let (g0, g1) = if !bit { (e, sibling) } else { (sibling, e) };
+            let group = flat(g0, g1);
+            start >>= la;
+            let cpath: Vec<([Val; 4], bool)> = step.opening_proof.iter().enumerate().map(|(l, &sb)| (sb, (start >> l) & 1 == 1)).collect();
+            cm.push((group, [Val::ZERO; 4], cpath, [Val::ZERO; 4]));
+            e = native_fold(g0, g1, beta, s);
+        }
+        per_query.push(((index, terms, alpha, ro, rounds), Val::ZERO, trace_path));
+        quot_paths.push(quot_path);
+        commit_data.push(cm);
+        aux_paths.push(aux_path);
+    }
+
+    let air = MonolithAir {
+        counts: counts.clone(),
+        binds: full_binds,
+        index_binds: index_binds.clone(),
+        n_queries,
+        n_terms,
+        inner_counter: false,
+        column_window: true, // the self-composition mode (inner pis in the witness window ⇒ chunked fold)
+        k_instances: 1,
+        fold: false,
+        fold_txstmt: false,
+        constraints: base.clone(),
+        w_inner_f: BaseAir::<Val>::width(inner),
+        n_pub_f: pis_inner.len(),
+        n_periodic_f: inner.periodic_columns().len(), // the wrap HAS periodics (do NOT assert 0)
+        is_zk: 0,
+        cap_height: proof.trace_commit.roots().len().trailing_zeros() as usize,
+        narrow_arith,
+        narrow_caps,
+        narrow_openings,
+        narrow_ov,
+        lookup: Some(LookupCfg {
+            aux_ext_w: proof.aux_width,
+            n_lookup_challenges: 2 * lookups.len(),
+            lookup_bind_lanes: lc_lanes,
+            ext_constraints: ext.clone(),
+        }),
+    };
+    assert_eq!(n_terms, 2 * air.w_inner() + air.aux_terms() + 2 * air.nqc(), "lookup n_terms = 2·W + 2·aux_base_w + 2·nqc");
+
+    // periodic-column values at ζ (verifier-computed publics), like `verify_lookup_proof_native`. is_zk=0 ⇒
+    // init_trace_domain == ext_trace_domain.
+    let pcs = config.pcs();
+    let degree = 1usize << proof.degree_bits;
+    let dom = <MyPcs as Pcs<Challenge, Chal>>::natural_domain_for_degree(pcs, degree);
+    let zeta = to_ext(chs[1]);
+    let periodic_at_zeta: Vec<Challenge> =
+        inner.periodic_columns().iter().map(|col| dom.evaluate_periodic_column_at(col, zeta)).collect();
+
+    // pis — the same order as `pis_count`, filling the WINDOW (column-window): challenges (lookup ‖ α_stark/ζ/
+    // α_fri/β), index felts, final_poly, [trace cap, quot cap], pubs, [commit caps], PERIODIC, qwt, [aux cap],
+    // terminal. The `[...]` cap slices are DROPPED under `narrow_caps` (pis_cap_stride/pis_commit_caps_len → 0).
+    let mut pis = Vec::new();
+    for ch in &full_chs {
+        pis.push(ch[0]);
+        pis.push(ch[1]);
+    }
+    for f in &index_felts {
+        pis.push(*f);
+    }
+    let fp = cc(final0);
+    pis.push(fp[0]);
+    pis.push(fp[1]);
+    if !narrow_caps {
+        for e in proof.trace_commit.roots().iter() {
+            pis.extend_from_slice(e);
+        }
+        for e in proof.quotient_commit.roots().iter() {
+            pis.extend_from_slice(e);
+        }
+    }
+    for &pv in pis_inner {
+        pis.push(pv);
+    }
+    if !narrow_caps {
+        for cm in proof.opening_proof.commit_phase_commits.iter() {
+            for e in cm.roots().iter() {
+                pis.extend_from_slice(e);
+            }
+        }
+    }
+    for pv in &periodic_at_zeta {
+        let c = cc(*pv);
+        pis.push(c[0]);
+        pis.push(c[1]);
+    }
+    if air.qwt_len() > 0 {
+        let zps = lookup_quotient_recompose_weights(config, chs[1], proof.degree_bits, air.nqc().trailing_zeros() as usize);
+        for z in &zps {
+            let c = cc(*z);
+            pis.push(c[0]);
+            pis.push(c[1]);
+        }
+    }
+    if !narrow_caps {
+        for e in proof.aux_commit.roots().iter() {
+            pis.extend_from_slice(e);
+        }
+    }
+    let term = cc(proof.terminal.0);
+    pis.push(term[0]);
+    pis.push(term[1]);
+    assert_eq!(pis.len(), air.pis_count(), "self-composition column-window lookup pis layout matches pis_count");
+
+    let fw = air.fused_w();
+    // monolith_build_trace fills the pis WINDOW (column-window) + the aux round (Some(&aux_paths)); the witnessed
+    // Lagrange selectors at ζ are bound in-circuit to their ζ-defs. Skipped (empty trace) when !build_trace.
+    let mut trace = if build_trace {
+        let mut t = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &pis, None, Some(&aux_paths));
+        let (is_first, is_last, inv_van) = lookup_selectors(config, chs[1], proof.degree_bits);
+        let (isf, isl, iv) = (cc(is_first), cc(is_last), cc(inv_van));
+        let sb = air.sel_base();
+        for r in 0..air.height() {
+            t.values[r * fw + sb..r * fw + sb + 2].copy_from_slice(&isf);
+            t.values[r * fw + sb + 2..r * fw + sb + 4].copy_from_slice(&isl);
+            t.values[r * fw + sb + 4..r * fw + sb + 6].copy_from_slice(&iv);
+        }
+        t
+    } else {
+        p3_matrix::dense::RowMajorMatrix::new(Vec::new(), fw)
+    };
+
+    // witnessed constraint-fold accumulators (column-window: α_stark degree-1 ⇒ chunk the base+ext Horner every
+    // FOLD_CHUNK, mirroring the in-circuit epilogue EXACTLY). The reconstructed aux ext-rows / terminal / lookup
+    // challenges match `batched_constraints_at_point`. FULL geometry only (narrow arith/openings drop the tile).
+    if air.n_fold_acc() > 0 {
+        let d = <Challenge as BasedVectorSpace<Val>>::DIMENSION;
+        let sels = dom.selectors_at_point(zeta);
+        let alpha_stark = to_ext(chs[0]);
+        let local = &proof.opened.trace_local;
+        let next = &proof.opened.trace_next;
+        let aux_local: Vec<Challenge> = (0..proof.aux_width)
+            .map(|c| <Challenge as ExtensionField<Val>>::from_ext_basis_coefficients(&proof.opened.aux_local[c * d..(c + 1) * d]).unwrap())
+            .collect();
+        let aux_next: Vec<Challenge> = (0..proof.aux_width)
+            .map(|c| <Challenge as ExtensionField<Val>>::from_ext_basis_coefficients(&proof.opened.aux_next[c * d..(c + 1) * d]).unwrap())
+            .collect();
+        let pubs: Vec<Challenge> = pis_inner.iter().map(|&p| Challenge::from(p)).collect();
+        let lc: Vec<Challenge> = lookup_challenges.iter().map(|&p| to_ext(p)).collect();
+        let terminal = proof.terminal.0;
+        let n_c = base.len() + ext.len();
+        let mut folded = Challenge::ZERO;
+        let mut acc_i = 0usize;
+        let mut k = 0usize;
+        let store = |folded: Challenge, acc_i: usize, trace: &mut p3_matrix::dense::RowMajorMatrix<Val>| {
+            let fcc = cc(folded);
+            let col = air.fold_acc(acc_i);
+            for r in 0..air.height() {
+                trace.values[r * fw + col..r * fw + col + 2].copy_from_slice(&fcc);
+            }
+        };
+        for c in &base {
+            folded = folded * alpha_stark + eval_symbolic_native(c, local, next, &pubs, &periodic_at_zeta, sels.is_first_row, sels.is_last_row, sels.is_transition);
+            if (k + 1) % MonolithAir::FOLD_CHUNK == 0 && k + 1 < n_c {
+                if build_trace {
+                    store(folded, acc_i, &mut trace);
+                }
+                acc_i += 1;
+            }
+            k += 1;
+        }
+        for c in &ext {
+            folded = folded * alpha_stark
+                + eval_symbolic_ext_native(c, local, next, &pubs, &periodic_at_zeta, sels.is_first_row, sels.is_last_row, sels.is_transition, &aux_local, &aux_next, &lc, &[terminal]);
+            if (k + 1) % MonolithAir::FOLD_CHUNK == 0 && k + 1 < n_c {
+                if build_trace {
+                    store(folded, acc_i, &mut trace);
+                }
+                acc_i += 1;
+            }
+            k += 1;
+        }
+        // DIAGNOSTIC — the native full fold must reproduce the real lookup verifier's fold AND == quot(ζ)·Z_H.
+        let bref = batched_constraints_at_point(inner, &lookups, local, next, &aux_local, &aux_next, sels.is_first_row, sels.is_last_row, sels.is_transition, alpha_stark, &lc, &[terminal], pis_inner, &periodic_at_zeta);
+        assert_eq!(folded, bref, "self-composition native chunked fold == batched_constraints_at_point");
+    }
+    (air, trace, pis)
+}
+
 /// **Format bridge Brick 4 (COMPOSE) — the lookup `MonolithAir` stays within the outer degree budget.** The
 /// fused verifier of a real `RangeCheckAir` `LookupProof` (base + LogUp OOD fold + aux Merkle round) composes at
 /// `log_nqc ≤ LOG_BLOWUP` — so the outer quotient commits at the recursion blowup (the self-composition gate).

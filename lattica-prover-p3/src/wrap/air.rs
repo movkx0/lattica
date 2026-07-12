@@ -6609,6 +6609,79 @@ mod tests {
         assert!(rejected, "a corrupted cap-row digest must be rejected in the full 4-way merge");
     }
 
+    /// **CANONICAL SELF-COMPOSITION (compose) — the outer lookup-monolith verifies the MERGED WRAP's own
+    /// LookupProof, at log_nqc ≤ LOG_BLOWUP.** Step 1: assemble the merged caps⊕openings wrap (a LookupAir that
+    /// verifies a join-split) and prove ITS proof NON-SALTED (`prove_lookup_inner` + `make_config_cap` — the
+    /// non-salted recursion PCS the outer consumes). Step 2/3: build the outer via
+    /// `build_symbolic_inner_window_lookup` (column-window + periodic + FOLD_CHUNK, verifying the wrap's
+    /// LookupProof) and measure its quotient degree. The FOLD_CHUNK-chunked base+ext fold keeps the outer within
+    /// the recursion blowup — wrap-verifies-wrap composes. Prints the FULL fused_w (provable) + the narrow fused_w
+    /// (the wrap-externalized width; measured, not provable by a bare InlineBci trace).
+    #[cfg(feature = "recursion")]
+    #[test]
+    fn self_composition_wrap_verifies_wrap_composes() {
+        use crate::config::LOG_BLOWUP;
+        use crate::joinsplit_air::{build_trace, demo_witness, public_values, JoinSplitAir};
+        use crate::lookup::prover::prove_lookup_inner;
+        use crate::recursion::monolith::tests::build_symbolic_inner_window_lookup;
+        use crate::recursion::monolith::MonolithAir;
+        use crate::recursion::native_fri::{make_config, verify_lookup_proof_native};
+        use p3_air::symbolic::AirLayout;
+        use p3_uni_stark::{get_log_num_quotient_chunks, prove};
+
+        // ── Step 1: the merged wrap (verifies a join-split), proven NON-SALTED (the outer-consumable format). ──
+        let config = make_config(1, 4);
+        let w = demo_witness();
+        let pvs = public_values(&w);
+        let proof = prove(&config, &JoinSplitAir, build_trace(&w), &pvs);
+        let (asm, wtrace, wpis) = assemble_openings_wrap_cw(&config, &proof, &pvs, false, false, true);
+        let wrap_w = <AssembledOpeningsWrapCwAir as BaseAir<Val>>::width(&asm);
+        // reduced queries ⇒ short transcript ⇒ a tractable outer height; cap 6 (the default) so the Step-1
+        // native verify (which builds its input-MMCS at the default cap) accepts. `make_config_cap` unused here.
+        let wrap_cfg = make_config(1, 2);
+        let wrap_proof = prove_lookup_inner(&asm, wtrace, &wpis, false, &wrap_cfg);
+        // the non-salted wrap proof round-trips through the native format-bridge verifier (Step 1 gate).
+        verify_lookup_proof_native(&wrap_cfg, &asm, &wrap_proof, &wpis).expect("the merged wrap's non-salted LookupProof must verify");
+        println!(
+            "SELF-COMPOSITION Step 1: merged wrap (width {wrap_w}, 2^{} rows) proven NON-SALTED — degree_bits {}, {} queries, aux_width {}",
+            asm.m.height().trailing_zeros(),
+            wrap_proof.degree_bits,
+            wrap_proof.opening_proof.query_proofs.len(),
+            wrap_proof.aux_width,
+        );
+
+        // ── Step 2/3: the OUTER verifies the wrap's LookupProof (FULL geometry; AIR-only for the degree gate). ──
+        let (outer, _otrace, _opis) = build_symbolic_inner_window_lookup(&wrap_cfg, &asm, &wrap_proof, &wpis, false, false, false, false, false);
+        let (outer_fw, outer_h) = (outer.fused_w(), outer.height().trailing_zeros());
+        let layout = AirLayout::from_air::<Val>(&outer);
+        let log_nqc = get_log_num_quotient_chunks::<Val, MonolithAir>(&outer, layout, 0);
+        println!("SELF-COMPOSITION compose: outer lookup-monolith verifying the wrap — 2^{outer_h} rows, FULL fused_w {outer_fw}, log_nqc {log_nqc} (budget {LOG_BLOWUP})");
+
+        // DIAGNOSTIC — per-constraint degree histogram of the OUTER (which region blows up log_nqc).
+        {
+            use p3_uni_stark::get_symbolic_constraints;
+            let cons = get_symbolic_constraints::<Val, MonolithAir>(&outer, AirLayout::from_air::<Val>(&outer));
+            let mut degs: Vec<usize> = cons.iter().map(|c| c.degree_multiple()).collect();
+            degs.sort_unstable();
+            let n = degs.len();
+            let over: Vec<usize> = degs.iter().rev().take_while(|&&d| d > 17).copied().collect();
+            println!("OUTER constraints: {n} total, max degree {}, #(deg>17) = {}, top {:?}", degs[n - 1], over.len(), &degs[n.saturating_sub(8)..]);
+            // the WRAP's own constraint degree (the D fed into the chunked fold).
+            let lookups: p3_lookup::Lookups<Val> = p3_lookup::Lookups::from_air::<Challenge, _>(&asm);
+            let (_l, wlog) = crate::lookup::prover::combined_constraint_layout(&asm, &lookups, 0);
+            println!("WRAP own log_nqc {wlog}; outer n_fold_acc {}, outer constraints.len {}", outer.n_fold_acc(), outer.constraints.len());
+        }
+
+        // the narrow (wrap-externalized) fused_w — a WIDTH measurement only (the narrow arith/openings epilogue is
+        // wrap-coupled, so this air is not provable by a bare InlineBci trace; the width is what the wrap realizes).
+        let narrow_air = MonolithAir { narrow_arith: true, narrow_caps: true, narrow_openings: true, narrow_ov: true, ..outer };
+        println!("SELF-COMPOSITION narrow (wrap-externalized) fused_w {} (vs FULL {outer_fw})", narrow_air.fused_w());
+
+        if log_nqc > LOG_BLOWUP {
+            println!("DEGREE-GATE: log_nqc {log_nqc} > budget {LOG_BLOWUP} — see the histogram above for the blow-up region");
+        }
+    }
+
     /// **Tier-1 merge M1c/M3 — the merged caps ⊕ openings wrap PROVES (lean).** The 9.2× width merge as a SOUND
     /// STARK: assemble the `narrow_caps` + `narrow_openings` + `narrow_arith` wrap (width ~545 — BOTH the
     /// `2^cap_height` cap COLUMNS and the `2·n_terms` pz opening columns GONE) and prove + verify end-to-end through
