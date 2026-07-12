@@ -709,7 +709,11 @@ impl MonolithAir {
     pub(crate) const FOLD_CHUNK: usize = 7;
     pub(crate) fn n_fold_acc(&self) -> usize {
         if self.symbolic() && self.column_window {
-            self.constraints.len().div_ceil(Self::FOLD_CHUNK).saturating_sub(1) // chunk boundaries = n_chunks − 1
+            // The chunked α-Horner fold spans the base constraints THEN (lookup) the LogUp ext constraints in one
+            // sequence (matching `batched_constraints_at_point`'s base-then-ext order), so the accumulators count
+            // over BOTH. Without lookup `ext=0` ⇒ byte-identical (the non-lookup join-split wrap is unaffected).
+            let n = self.constraints.len() + self.lookup.as_ref().map_or(0, |l| l.ext_constraints.len());
+            n.div_ceil(Self::FOLD_CHUNK).saturating_sub(1) // chunk boundaries = n_chunks − 1
         } else {
             0
         }
@@ -1799,11 +1803,32 @@ impl MonolithAir {
                     // the committed terminal (a claimed F_p² value): folded as the LogUp PermutationValue AND
                     // constrained == 0 (the multiset-balance check `verify_terminal_sum`).
                     let terminal = (pis[self.term_pi()].clone(), pis[self.term_pi() + 1].clone());
+                    // COLUMN-WINDOW: α_stark is a degree-1 witness, so folding all base+ext constraints inline
+                    // makes the fold expression degree ≈ base + (n_base+n_ext) — the R5 explosion (log_nqc ≫ 4).
+                    // CHUNK it exactly like the non-lookup epilogue (`emit_epilogue`): witness the running partial
+                    // fold every FOLD_CHUNK constraints (`fold_acc`, spanning base THEN ext in one sequence) and
+                    // continue the Horner from that degree-1 column. pis-mode (`column_window=false`, every existing
+                    // lookup test) folds α as a degree-0 constant ⇒ no chunking ⇒ byte-identical.
+                    let chunked = self.column_window;
+                    let n_c = self.constraints.len() + lk.ext_constraints.len();
                     let mut folded = (AB::Expr::ZERO, AB::Expr::ZERO);
+                    let mut acc_i = 0usize;
+                    let mut k = 0usize;
+                    let chunk_fold = |builder: &mut AB, folded: &mut (AB::Expr, AB::Expr), acc_i: &mut usize, k: &mut usize| {
+                        if chunked && (*k + 1) % MonolithAir::FOLD_CHUNK == 0 && *k + 1 < n_c {
+                            let a = gg(self.fold_acc(*acc_i)); // bind the witnessed partial fold, then Horner on from it
+                            builder.assert_zero(tf.clone() * (a.0.clone() - folded.0.clone()));
+                            builder.assert_zero(tf.clone() * (a.1.clone() - folded.1.clone()));
+                            *folded = a;
+                            *acc_i += 1;
+                        }
+                        *k += 1;
+                    };
                     for c in &self.constraints {
                         let ci = eval_symbolic_circuit::<AB>(c, &local, &next, &pubs, &periodic, &is_first, &is_last, &is_trans, &w);
                         let fa = emul(folded.clone(), alpha_stark.clone());
                         folded = (fa.0 + ci.0, fa.1 + ci.1);
+                        chunk_fold(builder, &mut folded, &mut acc_i, &mut k);
                     }
                     for c in &lk.ext_constraints {
                         let ci = eval_symbolic_ext_circuit::<AB>(
@@ -1812,6 +1837,7 @@ impl MonolithAir {
                         );
                         let fa = emul(folded.clone(), alpha_stark.clone());
                         folded = (fa.0 + ci.0, fa.1 + ci.1);
+                        chunk_fold(builder, &mut folded, &mut acc_i, &mut k);
                     }
                     let chk = emul(folded, inv_van.clone());
                     builder.assert_zero(tf.clone() * (chk.0 - quot.0.clone()));
