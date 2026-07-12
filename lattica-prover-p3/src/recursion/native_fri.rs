@@ -1022,6 +1022,59 @@ pub(crate) fn eval_symbolic_native(
     }
 }
 
+/// **Format-bridge Brick 3 (native blueprint for the in-circuit LogUp OOD epilogue).** The extension-field twin
+/// of [`eval_symbolic_native`]: it walks a LogUp constraint's `SymbolicExpressionExt` tree (the fraction /
+/// accumulator constraints `LogUpGadget::eval_all` emits, over F_p²). The NEW leaf classes vs the base evaluator
+/// are exactly the format bridge's LogUp surface — extension **Permutation** variables (the aux trace columns,
+/// `offset` 0/1 = local/next), permutation **Challenge**s (`[α_L, β]`), and the committed **PermutationValue**
+/// (the terminal); a `Base` leaf is a lifted base sub-tree, evaluated by the existing base walker. This is the
+/// exact algorithm the outer in-circuit epilogue must witness to fold the inner's LogUp constraints. Validated
+/// (an algebraic identity, no proof) by `logup_ext_symbolic_evaluator_matches_batched`: the α-Horner fold of the
+/// base + ext constraint trees reproduces `batched_constraints_at_point` (the real lookup verifier's fold).
+#[cfg(test)]
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn eval_symbolic_ext_native(
+    e: &p3_air::symbolic::SymbolicExpressionExt<Val, Challenge>,
+    local: &[Challenge],
+    next: &[Challenge],
+    pubs: &[Challenge],
+    periodic: &[Challenge],
+    is_first: Challenge,
+    is_last: Challenge,
+    is_trans: Challenge,
+    perm_local: &[Challenge], // the LogUp aux (permutation) trace at ζ
+    perm_next: &[Challenge],  // …at ζ·g
+    challenges: &[Challenge], // the permutation challenges [α_L, β, …]
+    perm_values: &[Challenge], // the committed permutation values [terminal]
+) -> Challenge {
+    use p3_air::symbolic::{ExtEntry, ExtLeaf};
+    use p3_uni_stark::SymbolicExpr;
+    let rec = |x: &p3_air::symbolic::SymbolicExpressionExt<Val, Challenge>| {
+        eval_symbolic_ext_native(x, local, next, pubs, periodic, is_first, is_last, is_trans, perm_local, perm_next, challenges, perm_values)
+    };
+    match e {
+        SymbolicExpr::Leaf(leaf) => match leaf {
+            ExtLeaf::Base(be) => eval_symbolic_native(be, local, next, pubs, periodic, is_first, is_last, is_trans),
+            ExtLeaf::ExtVariable(v) => match v.entry {
+                ExtEntry::Permutation { offset } => {
+                    if offset == 0 {
+                        perm_local[v.index]
+                    } else {
+                        perm_next[v.index]
+                    }
+                }
+                ExtEntry::Challenge => challenges[v.index],
+                ExtEntry::PermutationValue => perm_values[v.index],
+            },
+            ExtLeaf::ExtConstant(c) => *c,
+        },
+        SymbolicExpr::Add { x, y, .. } => rec(x) + rec(y),
+        SymbolicExpr::Sub { x, y, .. } => rec(x) - rec(y),
+        SymbolicExpr::Neg { x, .. } => -rec(x),
+        SymbolicExpr::Mul { x, y, .. } => rec(x) * rec(y),
+    }
+}
+
 /// Phase 7.5 (generic): the OOD epilogue INPUTS for an ARBITRARY inner AIR — the trace openings at ζ/ζ_next,
 /// the three Lagrange selectors + inv_van at ζ, quotient(ζ), α_stark, ζ. AIR-generic (the only AIR-specific
 /// step is the quotient-chunk count via `get_log_num_quotient_chunks`); the symbolic evaluator does the fold.
@@ -1911,6 +1964,76 @@ mod tests {
             assert_eq!(node, cap_entry, "q{q}: the aux leaf must authenticate to its aux-commit cap entry");
             assert!(proof.aux_commit.roots().contains(&cap_entry), "q{q}: the cap entry must be in the aux commitment");
         }
+    }
+
+    /// **Format-bridge Brick 3 (native blueprint) — the LogUp OOD constraint evaluator is faithful.** The
+    /// α-Horner fold of the inner's symbolic constraint trees — base (`eval_symbolic_native`) then the LogUp
+    /// extension constraints (`eval_symbolic_ext_native`, the NEW evaluator over the aux / challenge / terminal
+    /// leaf classes) — reproduces `batched_constraints_at_point`, the fold the real lookup verifier's OOD check
+    /// uses. This is an algebraic identity (evaluated at an arbitrary point, no proof), pinning the exact
+    /// LogUp-constraint algebra the outer in-circuit epilogue must witness — the genuinely-new soundness surface
+    /// of the format bridge. Non-circular: it re-folds the extracted trees rather than calling the verifier.
+    #[test]
+    fn logup_ext_symbolic_evaluator_matches_batched() {
+        use crate::lookup::prover::{batched_constraints_at_point, RangeCheckAir};
+        use p3_air::symbolic::AirLayout;
+        use p3_air::Air;
+        use p3_field::PrimeCharacteristicRing;
+        use p3_lookup::{InteractionSymbolicBuilder, LogUpGadget, LookupProtocol, Lookups};
+        let air = RangeCheckAir;
+        let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(&air);
+
+        // Extract the base + ext constraint trees exactly as `combined_constraint_layout` builds them.
+        let layout = AirLayout {
+            permutation_width: lookups.len() + 1,
+            num_permutation_challenges: 2 * lookups.len(),
+            num_permutation_values: 1,
+            ..AirLayout::from_air::<Val>(&air)
+        };
+        let mut isb = InteractionSymbolicBuilder::<Val, Challenge>::new(layout);
+        air.eval(&mut isb);
+        LogUpGadget::new().eval_all(&mut isb, &lookups);
+        let base = isb.base_constraints();
+        let ext = isb.extension_constraints();
+        assert!(!ext.is_empty(), "the LogUp fraction/accumulator constraints must be present as ext trees");
+
+        // An arbitrary OOD point (the identity is algebraic — it need not be a valid trace row).
+        let c = |n: u32| Challenge::from_u32(n);
+        let trace_local = vec![c(3), c(5), c(7)];
+        let trace_next = vec![c(11), c(13), c(17)];
+        let aux_local = vec![c(19), c(23)]; // aux_width = |lookups|+1 = 2 (reconstructed ext rows)
+        let aux_next = vec![c(29), c(31)];
+        let lookup_challenges = vec![c(37), c(41)]; // [α_L, β]
+        let terminal = c(43);
+        let alpha = c(47); // the constraint-fold α
+        let (is_first, is_last, is_trans) = (c(2), c(3), c(5));
+        let pubs_ext: Vec<Challenge> = vec![];
+        let periodic: Vec<Challenge> = vec![];
+
+        // Ground truth — the real lookup verifier's fold.
+        let folded_gt = batched_constraints_at_point(
+            &air, &lookups, &trace_local, &trace_next, &aux_local, &aux_next, is_first, is_last, is_trans, alpha,
+            &lookup_challenges, &[terminal], &[], &periodic,
+        );
+
+        // Reproduce via the symbolic evaluators: base constraints then ext, α-Horner (matches the folder order).
+        let mut acc = Challenge::ZERO;
+        for cst in &base {
+            acc = acc * alpha + eval_symbolic_native(cst, &trace_local, &trace_next, &pubs_ext, &periodic, is_first, is_last, is_trans);
+        }
+        for cst in &ext {
+            acc = acc * alpha
+                + eval_symbolic_ext_native(
+                    cst, &trace_local, &trace_next, &pubs_ext, &periodic, is_first, is_last, is_trans,
+                    &aux_local, &aux_next, &lookup_challenges, &[terminal],
+                );
+        }
+        println!(
+            "Brick 3 blueprint: LogUp OOD fold — {} base + {} ext constraint trees reproduce batched_constraints_at_point",
+            base.len(),
+            ext.len()
+        );
+        assert_eq!(acc, folded_gt, "the symbolic base+ext α-Horner fold must equal batched_constraints_at_point");
     }
 
     /// **Format-bridge blueprint (Brick 1), validated non-circularly.** The native re-verifier

@@ -35,7 +35,7 @@ use p3_lookup::folder::VerifierConstraintFolderWithLookups;
 use p3_matrix::dense::{RowMajorMatrix, RowMajorMatrixView};
 use p3_matrix::stack::VerticalPair;
 use p3_matrix::Matrix;
-use p3_uni_stark::{recompose_quotient_from_chunks, StarkConfig, StarkGenericConfig, VerifierConstraintFolder};
+use p3_uni_stark::{recompose_quotient_from_chunks, StarkGenericConfig, VerifierConstraintFolder};
 
 /// The production config's PCS + Challenger (pinned so the generic `Pcs` methods resolve).
 type Cha = <MyConfig as StarkGenericConfig>::Challenger;
