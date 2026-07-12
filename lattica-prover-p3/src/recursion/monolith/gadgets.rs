@@ -972,6 +972,79 @@ pub(crate) fn eval_symbolic_circuit<AB: AirBuilder<F = Goldilocks>>(
     }
 }
 
+/// **Format-bridge Brick 3 (in-circuit) — the LogUp OOD constraint evaluator, in constraints.** The
+/// extension-field twin of [`eval_symbolic_circuit`] (the in-circuit port of [`crate::recursion::native_fri::eval_symbolic_ext_native`]):
+/// it walks a LogUp constraint's `SymbolicExpressionExt` tree as F_p² `(AB::Expr, AB::Expr)` pairs, so the
+/// outer verifier folds the inner's LogUp fraction/accumulator constraints in-circuit. The NEW leaf classes vs
+/// the base walker are the format bridge's LogUp surface — extension **Permutation** variables (the aux trace,
+/// `offset` 0/1 = local/next), permutation **Challenge**s (`[α_L, β]`), the committed **PermutationValue** (the
+/// terminal); a `Base` leaf reuses the VALIDATED [`eval_symbolic_circuit`]. Same `emul` (F_p² multiply by the
+/// non-residue `w_ext`) as the base epilogue, so the added degree is the (low) LogUp-constraint degree. Validated
+/// against the native fold by `lookup_epilogue_air_checks_logup_ood`.
+// (not #[cfg(test)]: the fused monolith epilogue will call this when it folds an inner LookupProof's LogUp
+// constraints; until that fusion lands it is exercised only by the standalone gadget, so allow dead_code.)
+#[allow(clippy::too_many_arguments, dead_code)]
+pub(crate) fn eval_symbolic_ext_circuit<AB: AirBuilder<F = Goldilocks>>(
+    e: &p3_air::symbolic::SymbolicExpressionExt<Val, Challenge>,
+    local: &[(AB::Expr, AB::Expr)],
+    next: &[(AB::Expr, AB::Expr)],
+    pubs: &[(AB::Expr, AB::Expr)],
+    periodic: &[(AB::Expr, AB::Expr)],
+    is_first: &(AB::Expr, AB::Expr),
+    is_last: &(AB::Expr, AB::Expr),
+    is_trans: &(AB::Expr, AB::Expr),
+    perm_local: &[(AB::Expr, AB::Expr)],
+    perm_next: &[(AB::Expr, AB::Expr)],
+    challenges: &[(AB::Expr, AB::Expr)],
+    perm_values: &[(AB::Expr, AB::Expr)],
+    w_ext: &AB::Expr,
+) -> (AB::Expr, AB::Expr) {
+    use p3_air::symbolic::{ExtEntry, ExtLeaf};
+    use p3_field::BasedVectorSpace;
+    use p3_uni_stark::SymbolicExpr;
+    let emul = |a: (AB::Expr, AB::Expr), b: (AB::Expr, AB::Expr)| -> (AB::Expr, AB::Expr) {
+        (a.0.clone() * b.0.clone() + w_ext.clone() * a.1.clone() * b.1.clone(), a.0.clone() * b.1.clone() + a.1.clone() * b.0.clone())
+    };
+    let rec = |x: &p3_air::symbolic::SymbolicExpressionExt<Val, Challenge>| {
+        eval_symbolic_ext_circuit::<AB>(x, local, next, pubs, periodic, is_first, is_last, is_trans, perm_local, perm_next, challenges, perm_values, w_ext)
+    };
+    match e {
+        SymbolicExpr::Leaf(leaf) => match leaf {
+            ExtLeaf::Base(be) => eval_symbolic_circuit::<AB>(be, local, next, pubs, periodic, is_first, is_last, is_trans, w_ext),
+            ExtLeaf::ExtVariable(v) => match v.entry {
+                ExtEntry::Permutation { offset } => {
+                    if offset == 0 {
+                        perm_local[v.index].clone()
+                    } else {
+                        perm_next[v.index].clone()
+                    }
+                }
+                ExtEntry::Challenge => challenges[v.index].clone(),
+                ExtEntry::PermutationValue => perm_values[v.index].clone(),
+            },
+            ExtLeaf::ExtConstant(c) => {
+                let cc = <Challenge as BasedVectorSpace<Val>>::as_basis_coefficients_slice(c);
+                (AB::Expr::from(cc[0]), AB::Expr::from(cc[1]))
+            }
+        },
+        SymbolicExpr::Add { x, y, .. } => {
+            let a = rec(x);
+            let b = rec(y);
+            (a.0 + b.0, a.1 + b.1)
+        }
+        SymbolicExpr::Sub { x, y, .. } => {
+            let a = rec(x);
+            let b = rec(y);
+            (a.0 - b.0, a.1 - b.1)
+        }
+        SymbolicExpr::Neg { x, .. } => {
+            let a = rec(x);
+            (AB::Expr::ZERO - a.0, AB::Expr::ZERO - a.1)
+        }
+        SymbolicExpr::Mul { x, y, .. } => emul(rec(x), rec(y)),
+    }
+}
+
 #[cfg(test)]
 pub(crate) struct SymbolicEpilogueAir {
     pub(crate) constraints: Vec<p3_uni_stark::SymbolicExpression<Val>>,
@@ -1099,4 +1172,79 @@ pub(crate) fn build_symbolic_epilogue_trace(
         vals.extend_from_slice(&r0);
     }
     RowMajorMatrix::new(vals, width)
+}
+
+/// **Format-bridge Brick 3 (in-circuit) — a standalone gadget isolating [`eval_symbolic_ext_circuit`].** It
+/// witnesses the trace + LogUp aux OOD openings (F_p² pairs), the lookup challenges, and the terminal, then
+/// α-Horner-folds the base constraints ([`eval_symbolic_circuit`]) followed by the LogUp ext constraints
+/// ([`eval_symbolic_ext_circuit`]) and asserts the fold equals a public expected value. This is the LogUp OOD
+/// surface the outer verifier ports into its epilogue; validated in-circuit (`check_constraints`) against the
+/// native fold by `lookup_epilogue_air_checks_logup_ood`.
+#[cfg(test)]
+pub(crate) struct LogupFoldCheckAir {
+    pub base: Vec<p3_uni_stark::SymbolicExpression<Val>>,
+    pub ext: Vec<p3_air::symbolic::SymbolicExpressionExt<Val, Challenge>>,
+    pub w: usize,
+    pub aux_w: usize,
+    pub n_lc: usize,
+}
+#[cfg(test)]
+impl BaseAir<Goldilocks> for LogupFoldCheckAir {
+    fn width(&self) -> usize {
+        4 * self.w + 4 * self.aux_w + 6 // local, next, aux_local, aux_next, is_first, is_last, is_trans (F_p² pairs)
+    }
+    fn num_public_values(&self) -> usize {
+        2 + 2 * self.n_lc + 2 + 2 // α, lookup challenges, terminal, expected fold
+    }
+}
+#[cfg(test)]
+impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for LogupFoldCheckAir {
+    fn eval(&self, builder: &mut AB) {
+        let main = builder.main();
+        let cur: Vec<AB::Expr> = main.current_slice().iter().map(|&x| x.into()).collect();
+        let pis: Vec<AB::Expr> = builder.public_values().iter().map(|&x| x.into()).collect();
+        let w_ext = AB::Expr::from(Goldilocks::from_u64(MRO_W_EXT));
+        let emul = |a: (AB::Expr, AB::Expr), b: (AB::Expr, AB::Expr)| -> (AB::Expr, AB::Expr) {
+            (a.0.clone() * b.0.clone() + w_ext.clone() * a.1.clone() * b.1.clone(), a.0.clone() * b.1.clone() + a.1.clone() * b.0.clone())
+        };
+        let pair = |b: usize| (cur[b].clone(), cur[b + 1].clone());
+        let mut o = 0;
+        let local: Vec<(AB::Expr, AB::Expr)> = (0..self.w).map(|c| pair(o + 2 * c)).collect();
+        o += 2 * self.w;
+        let next: Vec<(AB::Expr, AB::Expr)> = (0..self.w).map(|c| pair(o + 2 * c)).collect();
+        o += 2 * self.w;
+        let aux_local: Vec<(AB::Expr, AB::Expr)> = (0..self.aux_w).map(|c| pair(o + 2 * c)).collect();
+        o += 2 * self.aux_w;
+        let aux_next: Vec<(AB::Expr, AB::Expr)> = (0..self.aux_w).map(|c| pair(o + 2 * c)).collect();
+        o += 2 * self.aux_w;
+        let is_first = pair(o);
+        let is_last = pair(o + 2);
+        let is_trans = pair(o + 4);
+        let alpha = (pis[0].clone(), pis[1].clone());
+        let challenges: Vec<(AB::Expr, AB::Expr)> =
+            (0..self.n_lc).map(|i| (pis[2 + 2 * i].clone(), pis[2 + 2 * i + 1].clone())).collect();
+        let tb = 2 + 2 * self.n_lc;
+        let terminal = (pis[tb].clone(), pis[tb + 1].clone());
+        let expected = (pis[tb + 2].clone(), pis[tb + 3].clone());
+        let pubs: Vec<(AB::Expr, AB::Expr)> = Vec::new(); // (the RangeCheck inner has no public values)
+        let periodic: Vec<(AB::Expr, AB::Expr)> = Vec::new();
+        // α-Horner fold: base constraints then LogUp ext constraints (matches the folder's emission order).
+        let mut folded = (AB::Expr::ZERO, AB::Expr::ZERO);
+        for c in &self.base {
+            let ci = eval_symbolic_circuit::<AB>(c, &local, &next, &pubs, &periodic, &is_first, &is_last, &is_trans, &w_ext);
+            let fa = emul(folded.clone(), alpha.clone());
+            folded = (fa.0 + ci.0, fa.1 + ci.1);
+        }
+        for c in &self.ext {
+            let ci = eval_symbolic_ext_circuit::<AB>(
+                c, &local, &next, &pubs, &periodic, &is_first, &is_last, &is_trans, &aux_local, &aux_next,
+                &challenges, &[terminal.clone()], &w_ext,
+            );
+            let fa = emul(folded.clone(), alpha.clone());
+            folded = (fa.0 + ci.0, fa.1 + ci.1);
+        }
+        let mut fr = builder.when_first_row();
+        fr.assert_zero(folded.0 - expected.0);
+        fr.assert_zero(folded.1 - expected.1);
+    }
 }

@@ -3049,6 +3049,110 @@ fn phase7_symbolic_epilogue_matches_oracle() {
     println!("Phase 7.5: in-circuit generic symbolic epilogue verifies Fibonacci from its constraint trees (data-driven)");
 }
 
+/// **Format-bridge Brick 3 (in-circuit) — the LogUp OOD fold reproduces the native fold, IN CONSTRAINTS.**
+/// `LogupFoldCheckAir` (driving `eval_symbolic_ext_circuit`) α-Horner-folds the inner's base + LogUp ext
+/// constraint trees; `check_constraints` accepts iff the in-circuit fold equals the native
+/// `batched_constraints_at_point` value (fed as the public `expected`), and rejects a wrong one. This is the
+/// in-circuit port of the format bridge's LogUp OOD surface, validated against the native blueprint
+/// (`eval_symbolic_ext_native`). Fast (no prove) — the fold identity is what the port must preserve.
+#[test]
+fn lookup_epilogue_air_checks_logup_ood() {
+    use super::LogupFoldCheckAir;
+    use crate::lookup::prover::RangeCheckAir;
+    use crate::recursion::native_fri::{eval_symbolic_ext_native, eval_symbolic_native};
+    use p3_air::symbolic::AirLayout;
+    use p3_air::Air;
+    use p3_field::{BasedVectorSpace, PrimeCharacteristicRing};
+    use p3_lookup::{InteractionSymbolicBuilder, LogUpGadget, LookupProtocol, Lookups};
+
+    let air = RangeCheckAir;
+    let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(&air);
+    let layout = AirLayout {
+        permutation_width: lookups.len() + 1,
+        num_permutation_challenges: 2 * lookups.len(),
+        num_permutation_values: 1,
+        ..AirLayout::from_air::<Val>(&air)
+    };
+    let mut isb = InteractionSymbolicBuilder::<Val, Challenge>::new(layout);
+    air.eval(&mut isb);
+    LogUpGadget::new().eval_all(&mut isb, &lookups);
+    let base = isb.base_constraints();
+    let ext = isb.extension_constraints();
+
+    let (w, aux_w, n_lc) = (3usize, lookups.len() + 1, 2 * lookups.len());
+    let c = |n: u32| Challenge::from_u32(n);
+    let local = vec![c(3), c(5), c(7)];
+    let next = vec![c(11), c(13), c(17)];
+    let aux_local = vec![c(19), c(23)];
+    let aux_next = vec![c(29), c(31)];
+    let lc = vec![c(37), c(41)];
+    let terminal = c(43);
+    let alpha = c(47);
+    let (is_first, is_last, is_trans) = (c(2), c(3), c(5));
+
+    // Native expected fold (base then ext, α-Horner) — the ground truth the in-circuit fold must match.
+    let empty: &[Challenge] = &[]; // no public / periodic values for the RangeCheck inner
+    let mut expected = Challenge::ZERO;
+    for cst in &base {
+        expected = expected * alpha + eval_symbolic_native(cst, &local, &next, empty, empty, is_first, is_last, is_trans);
+    }
+    for cst in &ext {
+        expected = expected * alpha
+            + eval_symbolic_ext_native(cst, &local, &next, empty, empty, is_first, is_last, is_trans, &aux_local, &aux_next, &lc, &[terminal]);
+    }
+
+    // One-row trace (repeated): the OOD openings + selectors as F_p² pairs.
+    let cc = |x: Challenge| -> [Val; 2] { x.as_basis_coefficients_slice().try_into().unwrap() };
+    let width = 4 * w + 4 * aux_w + 6;
+    let mut row = vec![Val::ZERO; width];
+    let mut o = 0usize;
+    for (i, v) in local.iter().enumerate() {
+        row[o + 2 * i..o + 2 * i + 2].copy_from_slice(&cc(*v));
+    }
+    o += 2 * w;
+    for (i, v) in next.iter().enumerate() {
+        row[o + 2 * i..o + 2 * i + 2].copy_from_slice(&cc(*v));
+    }
+    o += 2 * w;
+    for (i, v) in aux_local.iter().enumerate() {
+        row[o + 2 * i..o + 2 * i + 2].copy_from_slice(&cc(*v));
+    }
+    o += 2 * aux_w;
+    for (i, v) in aux_next.iter().enumerate() {
+        row[o + 2 * i..o + 2 * i + 2].copy_from_slice(&cc(*v));
+    }
+    o += 2 * aux_w;
+    row[o..o + 2].copy_from_slice(&cc(is_first));
+    row[o + 2..o + 4].copy_from_slice(&cc(is_last));
+    row[o + 4..o + 6].copy_from_slice(&cc(is_trans));
+    let height = 4usize;
+    let mut vals = Vec::with_capacity(height * width);
+    for _ in 0..height {
+        vals.extend_from_slice(&row);
+    }
+    let trace = p3_matrix::dense::RowMajorMatrix::new(vals, width);
+
+    // Public: α, lookup challenges, terminal, expected fold.
+    let mut pubs = Vec::new();
+    pubs.extend_from_slice(&cc(alpha));
+    for v in &lc {
+        pubs.extend_from_slice(&cc(*v));
+    }
+    pubs.extend_from_slice(&cc(terminal));
+    pubs.extend_from_slice(&cc(expected));
+
+    let gadget = LogupFoldCheckAir { base: base.clone(), ext: ext.clone(), w, aux_w, n_lc };
+    // accept: the in-circuit LogUp fold matches the native fold.
+    p3_air::check_constraints(&gadget, &trace, &pubs);
+    // reject: a wrong expected fold ⇒ the constraint is violated.
+    let mut bad = pubs.clone();
+    let last = bad.len() - 2;
+    bad[last] += Val::ONE;
+    let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| p3_air::check_constraints(&gadget, &trace, &bad)));
+    assert!(caught.is_err(), "a wrong expected fold must be rejected by the in-circuit LogUp epilogue");
+    println!("Brick 3 in-circuit: LogUp OOD fold ({} base + {} ext) reproduces the native fold in constraints", base.len(), ext.len());
+}
+
 /// Phase 7.5 (DEGREE-2): the in-circuit generic symbolic epilogue verifies a NON-AFFINE inner — `MulAir`
 /// (3 cols, `c = a·b`), whose product constraint is a Mul of two trace variables — via the SAME data-driven
 /// tree walk (no code change, just different constraints + W=3), matching p3. Proves the evaluator handles
