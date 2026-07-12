@@ -3042,7 +3042,7 @@ mod tests {
         let (terms, _x, _a, _ro, _wt) = multicol_query_terms(&config, &JoinSplitAir, &proof, &pvs, 0);
         let constraints =
             get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let air = MonolithAir {
+        let air = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -3153,7 +3153,7 @@ mod tests {
         }
         let nqc = proof.opened_values.quotient_chunks.len();
         let constraints = get_symbolic_constraints::<Val, _>(&inner, AirLayout::from_air::<Val>(&inner));
-        let air = MonolithAir {
+        let air = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -3668,7 +3668,7 @@ mod tests {
         let (_bi, counts, binds, _chs, index_binds, index_felts) = sim_full(&config, &proof, &pvs);
         let (terms, _x, _a, _ro, _wt) = multicol_query_terms(&config, &JoinSplitAir, &proof, &pvs, 0);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let mk = |narrow_caps: bool| MonolithAir {
+        let mk = |narrow_caps: bool| MonolithAir { lookup: None,
             counts: counts.clone(),
             binds: binds.clone(),
             index_binds: index_binds.clone(),
@@ -3748,7 +3748,7 @@ mod tests {
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
         // `narrow_arith` is the baseline (`[pz]` only, stride 2); `narrow_openings` extends it (stride 0). Hold
         // everything else equal so the ONLY delta is the pz opening columns.
-        let mk = |narrow_openings: bool| MonolithAir {
+        let mk = |narrow_openings: bool| MonolithAir { lookup: None,
             counts: counts.clone(),
             binds: binds.clone(),
             index_binds: index_binds.clone(),
@@ -3820,7 +3820,7 @@ mod tests {
         let (terms, _x, _a, _ro, _wt) = multicol_query_terms(&config, &JoinSplitAir, &proof, &pvs, 0);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
         // baseline = narrow_openings (the ov carrier still WIDE); narrow_ov extends it (ov carrier → rows).
-        let mk = |narrow_ov: bool| MonolithAir {
+        let mk = |narrow_ov: bool| MonolithAir { lookup: None,
             counts: counts.clone(),
             binds: binds.clone(),
             index_binds: index_binds.clone(),
@@ -3894,7 +3894,7 @@ mod tests {
         let (tr, counts, binds, index_binds, n_terms, _pv0) =
             build_symbolic_inner_window(&config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, false, false, false, false);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let m = MonolithAir {
+        let m = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -3978,7 +3978,7 @@ mod tests {
             let (tr, counts, binds, index_binds, n_terms, _pv0) = build_symbolic_inner_window(
                 &config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, false, true, true, narrow_ov,
             );
-            let m = MonolithAir {
+            let m = MonolithAir { lookup: None,
                 counts,
                 binds,
                 index_binds,
@@ -4145,7 +4145,7 @@ mod tests {
         let (_bi, counts, binds, _chs, index_binds, index_felts) = sim_full(&config, &proof, &pvs);
         let (terms, _x, _a, _ro, _wt) = multicol_query_terms(&config, &JoinSplitAir, &proof, &pvs, 0);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let m = MonolithAir {
+        let m = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -4198,7 +4198,7 @@ mod tests {
         let (_bi, counts, binds, _chs, index_binds, index_felts) = sim_full(&config, &proof, &pvs);
         let (terms, _x, _a, _ro, _wt) = multicol_query_terms(&config, &JoinSplitAir, &proof, &pvs, 0);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let mk = |narrow_ov: bool| MonolithAir {
+        let mk = |narrow_ov: bool| MonolithAir { lookup: None,
             counts: counts.clone(),
             binds: binds.clone(),
             index_binds: index_binds.clone(),
@@ -4259,7 +4259,7 @@ mod tests {
         let (_tr, counts, binds, index_binds, n_terms, _pv0) =
             build_symbolic_inner_window(&config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, false, true, true, false);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let m = MonolithAir {
+        let m = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -4391,7 +4391,7 @@ mod tests {
         let (tr, counts, binds, index_binds, n_terms, _pv0) =
             build_symbolic_inner_window(&config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, false, true, true, true);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let m = MonolithAir {
+        let m = MonolithAir { lookup: None,
             counts, binds, index_binds,
             n_queries: proof.opening_proof.query_proofs.len(),
             n_terms, inner_counter: false, column_window: true, k_instances: 1,
@@ -4480,7 +4480,7 @@ mod tests {
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
         let cap_h = proof.commitments.trace.roots().len().trailing_zeros() as usize;
         // narrow toggles arith(9→2)+caps; nopen ADDS openings (arith_stride→0); nov ADDS the ov carrier (brick 4b).
-        let mk = |w_inner: usize, nt: usize, narrow: bool, nopen: bool, nov: bool| MonolithAir {
+        let mk = |w_inner: usize, nt: usize, narrow: bool, nopen: bool, nov: bool| MonolithAir { lookup: None,
             counts: counts.clone(), binds: binds.clone(), index_binds: index_binds.clone(),
             n_queries: proof.opening_proof.query_proofs.len(), n_terms: nt,
             inner_counter: false, column_window: true, k_instances: 1, fold: false, fold_txstmt: false,
@@ -4541,7 +4541,7 @@ mod tests {
 
         // reconstruct the narrow air the trace was built for; the trace width == its (reduced) fused_w.
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let air = MonolithAir {
+        let air = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -4595,7 +4595,7 @@ mod tests {
         let (tr, counts, binds, index_binds, n_terms, _pv0) =
             build_symbolic_inner_window(&config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, true, false, false, false);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let air = MonolithAir {
+        let air = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -4647,7 +4647,7 @@ mod tests {
         let (mono_tr, counts, binds, index_binds, n_terms, _pv0) =
             build_symbolic_inner_window(config, &JoinSplitAir, proof, pvs, WIDTH, N_PUBLIC, N_PERIODIC, true, false, false, false);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let m = MonolithAir {
+        let m = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -4816,7 +4816,7 @@ mod tests {
         let (_tr, counts, binds, index_binds, n_terms, _pv0) =
             build_symbolic_inner_window(&config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, true, false, false, false);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let m = MonolithAir {
+        let m = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -4883,7 +4883,7 @@ mod tests {
         let (_tr, counts, binds, index_binds, n_terms, _pv0) =
             build_symbolic_inner_window(&config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, false, true, true, false);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let m = MonolithAir {
+        let m = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -4945,7 +4945,7 @@ mod tests {
         let (_tr, counts, binds, index_binds, n_terms, _pv0) =
             build_symbolic_inner_window(&config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, false, true, true, false);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let m = MonolithAir {
+        let m = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -5011,7 +5011,7 @@ mod tests {
         let (_tr, counts, binds, index_binds, n_terms, _pv0) =
             build_symbolic_inner_window(&config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, false, true, true, false);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let m = MonolithAir {
+        let m = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -5081,7 +5081,7 @@ mod tests {
         let (_tr, counts, binds, index_binds, n_terms, _pv0) =
             build_symbolic_inner_window(&config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, false, false, false, false);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let m = MonolithAir {
+        let m = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -5163,7 +5163,7 @@ mod tests {
         let (_tr, counts, binds, index_binds, n_terms, _pv0) =
             build_symbolic_inner_window(&config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, false, false, false, false);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let m = MonolithAir {
+        let m = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -5235,7 +5235,7 @@ mod tests {
         let (_tr, counts, binds, index_binds, n_terms, _pv0) =
             build_symbolic_inner_window(&config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, false, true, true, true);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let m = MonolithAir {
+        let m = MonolithAir { lookup: None,
             counts, binds, index_binds,
             n_queries: proof.opening_proof.query_proofs.len(), n_terms,
             inner_counter: false, column_window: true, k_instances: 1, fold: false, fold_txstmt: false,
@@ -5286,7 +5286,7 @@ mod tests {
         let (_tr, counts, binds, index_binds, n_terms, _pv0) =
             build_symbolic_inner_window(&config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, true, true, true, false);
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let m = MonolithAir {
+        let m = MonolithAir { lookup: None,
             counts, binds, index_binds,
             n_queries: proof.opening_proof.query_proofs.len(), n_terms,
             inner_counter: false, column_window: true, k_instances: 1, fold: false, fold_txstmt: false,
@@ -5360,7 +5360,7 @@ mod tests {
             let (_tr, counts, binds, index_binds, n_terms, _pv0) = build_symbolic_inner_window(
                 &config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, ncaps, narith, nopen, nov,
             );
-            MonolithAir {
+            MonolithAir { lookup: None,
                 counts, binds, index_binds,
                 n_queries: proof.opening_proof.query_proofs.len(), n_terms,
                 inner_counter: false, column_window: true, k_instances: 1, fold: false, fold_txstmt: false,
@@ -5435,7 +5435,7 @@ mod tests {
             config, &JoinSplitAir, proof, pvs, WIDTH, N_PUBLIC, N_PERIODIC, bind_caps, true, true, narrow_ov,
         );
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let m = MonolithAir {
+        let m = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -7340,7 +7340,7 @@ mod tests {
         let (terms, _x, _a, _ro, _wt) = multicol_query_terms(&config, &JoinSplitAir, &proof, &pvs, 0);
         let constraints =
             get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let air = MonolithAir {
+        let air = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -7398,7 +7398,7 @@ mod tests {
         let (terms, _x, _a, _ro, _wt) = multicol_query_terms(&config, &JoinSplitAir, &proof, &pvs, 0);
         let constraints =
             get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let air = MonolithAir {
+        let air = MonolithAir { lookup: None,
             counts,
             binds,
             index_binds,
@@ -7499,7 +7499,7 @@ mod tests {
             get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
         // Build the same monolith at FULL vs NARROW arith to MEASURE the AA5.2 width harvest. Narrow drops the
         // inline fold's `inv`+`apow` (4 felts/term); `[z, pz, px]` stay (the wrap externalizes only the fold).
-        let mk = |narrow: bool| MonolithAir {
+        let mk = |narrow: bool| MonolithAir { lookup: None,
             counts: counts.clone(),
             binds: binds.clone(),
             index_binds: index_binds.clone(),
@@ -7573,7 +7573,7 @@ mod tests {
         let (terms, _x, _a, _ro, _wt) = multicol_query_terms(&config, &JoinSplitAir, &proof, &pvs, 0);
         let constraints =
             get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
-        let mk = |narrow: bool, column_window: bool, narrow_caps: bool| MonolithAir {
+        let mk = |narrow: bool, column_window: bool, narrow_caps: bool| MonolithAir { lookup: None,
             counts: counts.clone(),
             binds: binds.clone(),
             index_binds: index_binds.clone(),
@@ -7743,7 +7743,7 @@ mod tests {
         let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
         let cap_h = proof.commitments.trace.roots().len().trailing_zeros() as usize;
         // the fully-narrowed cw=true monolith (arith + caps + openings + ov all externalized — the converged geometry).
-        let mk = |w_inner: usize, nt: usize| MonolithAir {
+        let mk = |w_inner: usize, nt: usize| MonolithAir { lookup: None,
             counts: counts.clone(), binds: binds.clone(), index_binds: index_binds.clone(),
             n_queries: proof.opening_proof.query_proofs.len(), n_terms: nt,
             inner_counter: false, column_window: true, k_instances: 1, fold: false, fold_txstmt: false,
@@ -8171,7 +8171,7 @@ mod tests {
             quot_paths.push(qpath);
             commit_data.push(cm);
         }
-        let inner = MonolithAir {
+        let inner = MonolithAir { lookup: None,
             counts: counts.clone(), binds, index_binds, n_queries: 4, n_terms, inner_counter: false,
             column_window: false, k_instances: 1, fold: false, fold_txstmt: false, constraints: vec![],
             w_inner_f: 1, n_pub_f: 1, n_periodic_f: 0, is_zk: 0, cap_height: 6, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false };
@@ -8205,7 +8205,7 @@ mod tests {
         let (_otr, ocounts, obinds, oib, ont, _pv0) =
             build_symbolic_inner_window(&config, &inner, &inner_prf, &pis, w_in, np_in, nper_in, false, false, false, false);
         let cap_h = inner_prf.commitments.trace.roots().len().trailing_zeros() as usize;
-        let outer = MonolithAir {
+        let outer = MonolithAir { lookup: None,
             counts: ocounts.clone(), binds: obinds.clone(), index_binds: oib.clone(), n_queries: 4, n_terms: ont,
             inner_counter: false, column_window: true, k_instances: 1, fold: false, fold_txstmt: false,
             constraints: inner_cs.clone(), w_inner_f: w_in, n_pub_f: np_in, n_periodic_f: nper_in, is_zk: 0,
@@ -8265,7 +8265,7 @@ mod tests {
         use crate::lookup::prover::combined_constraint_layout;
         use p3_lookup::Lookups;
         let asm = AssembledWrapAir {
-            m: MonolithAir {
+            m: MonolithAir { lookup: None,
                 counts: ocounts, binds: obinds, index_binds: oib, n_queries: 4, n_terms: ont, inner_counter: false,
                 column_window: true, k_instances: 1, fold: false, fold_txstmt: false, constraints: inner_cs.clone(),
                 w_inner_f: w_in, n_pub_f: np_in, n_periodic_f: nper_in, is_zk: 0, cap_height: cap_h, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false },
@@ -8346,7 +8346,7 @@ mod tests {
             quot_paths.push(qpath);
             commit_data.push(cm);
         }
-        let inner = MonolithAir {
+        let inner = MonolithAir { lookup: None,
             counts: counts.clone(), binds, index_binds, n_queries: 4, n_terms, inner_counter: false,
             column_window: false, k_instances: 1, fold: false, fold_txstmt: false, constraints: vec![],
             w_inner_f: 1, n_pub_f: 1, n_periodic_f: 0, is_zk: 0, cap_height: 6, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false };
@@ -8389,7 +8389,7 @@ mod tests {
         // geometry points are FULL / arith+caps / +openings. (narrow_openings REQUIRES narrow_arith, so OR it in.)
         // `narrow` toggles arith(9→2)+caps; `nopen` ADDS the openings externalization (arith_stride→0); `nov` ADDS
         // the ov opened-row carrier externalization (brick 4b — the REAL 4th narrow flag, no longer a projection).
-        let mk_outer = |w_inner: usize, nt: usize, narrow: bool, nopen: bool, nov: bool| MonolithAir {
+        let mk_outer = |w_inner: usize, nt: usize, narrow: bool, nopen: bool, nov: bool| MonolithAir { lookup: None,
             counts: ocounts.clone(), binds: obinds.clone(), index_binds: oib.clone(), n_queries: 4, n_terms: nt,
             inner_counter: false, column_window: true, k_instances: 1, fold: false, fold_txstmt: false,
             constraints: inner_cs.clone(), w_inner_f: w_inner, n_pub_f: np_in, n_periodic_f: nper_in, is_zk: 0,

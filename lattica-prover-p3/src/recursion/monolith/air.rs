@@ -3,9 +3,30 @@ use p3_field::{Field, PrimeCharacteristicRing, TwoAdicField};
 use p3_goldilocks::Goldilocks;
 
 use crate::poseidon2_air::{ext_linear, int_linear, periodic_table, pow7, BLOCK, W};
-use crate::recursion::native_fri::Val;
+use crate::recursion::native_fri::{Challenge, Val};
 
 use super::*;
+
+/// **Format bridge (`--features lookup`) — the LookupProof surface a `MonolithAir` verifies.** Present
+/// (`lookup: Some(..)`) iff the inner proof is a `LookupProof` (a p3 `Proof` PLUS a committed LogUp aux
+/// matrix opened at ζ/ζ_next, the `2·|lookups|` lookup challenges squeezed before α_stark, the LogUp
+/// fraction/accumulator ext constraints, and a committed terminal checked `== 0`). `None` = the exact p3
+/// `Proof` path every non-lookup construction uses, BYTE-IDENTICAL (the `pinned_constraint_fingerprints`
+/// guard covers it). The aux round is templated 1:1 on the is_zk=1 random round, but opens at TWO points
+/// (ζ + ζ_next) so its carrier px-binds into two DEEP-term regions (like the trace `ov`).
+#[allow(dead_code)]
+pub(crate) struct LookupCfg {
+    /// The LogUp aux (permutation) matrix EXTENSION width `= |lookups| + 1` (1 accumulator + |lookups|
+    /// fractions). The COMMITTED base width is `aux_ext_w · D` (each ext column flattens to `D=2` base
+    /// columns); the reconstructed ext rows fed to the LogUp OOD fold are `aux_ext_w` wide.
+    pub aux_ext_w: usize,
+    /// The number of lookup challenges `= 2·|lookups|` (`α_L` denominator + `β` tuple-combine per lookup),
+    /// squeezed from the sponge AFTER the trace commit + pis and BEFORE the aux commit / α_stark.
+    pub n_lookup_challenges: usize,
+    /// The inner AIR's LogUp fraction/accumulator constraints as ext `SymbolicExpressionExt` trees (from
+    /// `InteractionSymbolicBuilder::extension_constraints()`), α-Horner-folded after the base constraints.
+    pub ext_constraints: Vec<p3_air::symbolic::SymbolicExpressionExt<Val, Challenge>>,
+}
 
 // =================================================================================================
 // Phase 4.D — THE MONOLITH: the transcript region + the super-tile region fused into ONE AIR. The transcript
@@ -121,6 +142,10 @@ pub(crate) struct MonolithAir {
     /// existing layout (`pinned_constraint_fingerprints` guards it). Requires `narrow_openings`; the flag-on trace
     /// (px re-source + the Merkle bus re-anchor) is the sound-brick work — this flag is the geometry/measurement.
     pub narrow_ov: bool,
+    /// **Format bridge — the LookupProof config** (`--features lookup`). `Some` iff the inner is a
+    /// `LookupProof`; `None` = the exact p3-`Proof` path, BYTE-IDENTICAL (all `pinned_constraint_fingerprints`
+    /// shapes are `None`). See [`LookupCfg`].
+    pub lookup: Option<LookupCfg>,
 }
 
 #[allow(dead_code)]
@@ -144,6 +169,67 @@ impl MonolithAir {
         } else {
             1
         }
+    }
+    // ---- FORMAT BRIDGE (`--features lookup`) — the LogUp aux-round geometry. All ZERO when `lookup` is None,
+    // so every non-lookup construction is byte-identical. `lookup` is is_zk=0 (the recursion config is
+    // non-hiding), so it never coexists with the is_zk=1 random round. ----
+    pub(crate) fn is_lookup(&self) -> bool {
+        self.lookup.is_some()
+    }
+    // number of lookup challenges (2·|lookups|), squeezed BEFORE α_stark ⇒ they occupy the first `nlc` slots
+    // of the transcript-bind / pis challenge region, so α_stark/ζ/α_fri/β shift right by `nlc`.
+    pub(crate) fn nlc(&self) -> usize {
+        self.lookup.as_ref().map_or(0, |l| l.n_lookup_challenges)
+    }
+    // reconstructed aux EXTENSION width (= |lookups|+1) fed to the LogUp OOD fold.
+    pub(crate) fn aux_ext_w(&self) -> usize {
+        self.lookup.as_ref().map_or(0, |l| l.aux_ext_w)
+    }
+    // committed aux BASE width (aux_ext_w · D=2 flattened columns) — the leaf preimage / px-carrier width.
+    pub(crate) fn aux_base_w(&self) -> usize {
+        self.aux_ext_w() * 2
+    }
+    // reduced-opening terms the aux round adds: it opens at ζ AND ζ_next, so 2·aux_base_w terms slotted
+    // between the trace and the quotient (0 without lookup ⇒ trm_quot_base / n_quot byte-identical).
+    pub(crate) fn aux_terms(&self) -> usize {
+        2 * self.aux_base_w()
+    }
+    // aux ζ / ζ_next reduced-opening term base — right after the trace ζ_next block (the OLD trm_quot_base).
+    pub(crate) fn trm_aux(&self, c: usize) -> usize {
+        self.trm_next_base() + self.trm_committed_w() + c
+    }
+    pub(crate) fn trm_aux_next(&self, c: usize) -> usize {
+        self.trm_aux(0) + self.aux_base_w() + c
+    }
+    // aux opened-row carrier (aux_base_w felts): the authenticated aux-leaf preimage, held within the
+    // super-tile, px-bound to BOTH its ζ term (trm_aux) and its ζ_next term (trm_aux_next). After the trace ov
+    // carrier (random_carriers = 0 in lookup mode). 0-width without lookup.
+    pub(crate) fn aux_carriers(&self) -> usize {
+        if self.is_lookup() {
+            self.aux_base_w()
+        } else {
+            0
+        }
+    }
+    pub(crate) fn ov_aux(&self, c: usize) -> usize {
+        self.ov() + self.ov_carrier_w() + self.random_carriers() + c
+    }
+    // aux-round leaf: the committed aux row hashed to the leaf (is_zk=0 ⇒ NO salt), mirroring the trace leaf.
+    pub(crate) fn aux_leaf_felts(&self) -> usize {
+        self.aux_base_w()
+    }
+    pub(crate) fn aux_leaf_blocks(&self) -> usize {
+        self.aux_leaf_felts().div_ceil(RATE)
+    }
+    // aux-round terminal block: leaf + input_depth path, prepended at M_INPUT_LEAF (like the random round).
+    pub(crate) fn m_aux_term(&self) -> usize {
+        M_INPUT_LEAF + (self.aux_leaf_blocks() - 1) + self.input_depth()
+    }
+    // pis slot for the aux Merkle cap (a FULL cap; the aux commitment varies per query so the cap-mux selects
+    // cap[index>>input_depth]). Placed after the random cap (absent at is_zk=0) — i.e. == random_cap_base in
+    // lookup mode. Its width is a full cap; 0 in the (mutually exclusive) is_zk path.
+    pub(crate) fn aux_cap_base(&self) -> usize {
+        self.random_cap_base() + if self.is_zk == 1 { self.pis_cap_stride() } else { 0 }
     }
     // ---- RUNTIME super-tile geometry (the leaf-block / nqc dimensions vary per inner; the FRI depth stays
     // compile-time). All derived from the SAME formula as `commit_layout`/the compile-time consts, so at
@@ -213,10 +299,13 @@ impl MonolithAir {
     pub(crate) fn m_random_term(&self) -> usize {
         M_INPUT_LEAF + (self.random_leaf_blocks() - 1) + self.input_depth()
     }
-    // first input-(trace-)leaf block: M_INPUT_LEAF (is_zk=0), else after the random-round region (is_zk=1).
+    // first input-(trace-)leaf block: M_INPUT_LEAF, else after the prepended random round (is_zk=1) or aux
+    // round (lookup). is_zk and lookup are mutually exclusive.
     pub(crate) fn m_input_leaf(&self) -> usize {
         if self.is_zk == 1 {
             self.m_random_term() + 1
+        } else if self.is_lookup() {
+            self.m_aux_term() + 1
         } else {
             M_INPUT_LEAF
         }
@@ -259,7 +348,7 @@ impl MonolithAir {
     // a NON-CONSTANT inner (counter or any symbolic multi-column) needs the full committed cap + the
     // index-selecting cap-mux (per-query cap entries differ), rather than ConstAir's single shared entry.
     pub(crate) fn full_cap(&self) -> bool {
-        self.inner_counter || self.symbolic() || self.is_zk == 1
+        self.inner_counter || self.symbolic() || self.is_zk == 1 || self.is_lookup()
     }
     // symbolic mode witnesses the three Lagrange selectors at ζ (is_first, is_last, inv_van = 3 ext = 6 felts),
     // bound to their ζ-definitions, so the constraint tree is evaluated with selector VALUES (no per-constraint
@@ -270,9 +359,9 @@ impl MonolithAir {
     pub(crate) fn sel(&self, i: usize) -> usize {
         self.sel_base() + i // 0,1 = is_first; 2,3 = is_last; 4,5 = inv_van
     }
-    // quotient DEEP terms = n_terms − the 2·W trace terms.
+    // quotient DEEP terms = n_terms − the 2·W trace terms − the 2·aux_base_w aux terms (lookup; 0 otherwise).
     pub(crate) fn n_quot(&self) -> usize {
-        self.n_terms - 2 * self.w_inner()
+        self.n_terms - 2 * self.w_inner() - self.aux_terms()
     }
 
     // ---- HIDING (is_zk=1) reduced-opening TERM offsets. is_zk=1 prepends a random round (RAND_PUB+CW terms) and
@@ -294,7 +383,8 @@ impl MonolithAir {
         self.trm_trace_base() + self.trm_committed_w()
     }
     pub(crate) fn trm_quot_base(&self) -> usize {
-        self.trm_next_base() + self.trm_committed_w()
+        // + the aux round's 2·aux_base_w ζ/ζ_next terms (0 without lookup ⇒ byte-identical).
+        self.trm_next_base() + self.trm_committed_w() + self.aux_terms()
     }
     // committed quotient-chunk width (2 F_p^2 components + CW codewords hiding).
     pub(crate) fn trm_chunk_w(&self) -> usize {
@@ -344,7 +434,7 @@ impl MonolithAir {
     // (nqc multi-matrix ‖ salt) preimages. (input_leaf_felts/quot_leaf_felts equal w_inner/2·nqc at is_zk=0,
     // so this is byte-for-byte there.)
     pub(crate) fn carriers_base(&self) -> usize {
-        self.ov() + self.ov_carrier_w() + self.random_carriers() + self.quot_leaf_felts()
+        self.ov() + self.ov_carrier_w() + self.random_carriers() + self.aux_carriers() + self.quot_leaf_felts()
     }
     pub(crate) fn nb(&self) -> usize {
         self.binds.len()
@@ -357,7 +447,9 @@ impl MonolithAir {
     // inner's degree_bits = cm_rounds. No field / no constructor change (db=6: nb=9 ⇒ cm_rounds=6, lg=10 —
     // exactly the old DP_LOG_HEIGHT=10 / CM_ROUNDS=6 / M_DEGREE_BITS=6 consts). ----
     pub(crate) fn cm_rounds(&self) -> usize {
-        self.nb() - 3
+        // nb = nlc (lookup challenges) + 3 (α_stark, ζ, α_fri) + cm_rounds (β_r); the lookup challenges are
+        // squeezed first so they do NOT count toward the FRI depth. nlc = 0 without lookup (byte-identical).
+        self.nb() - 3 - self.nlc()
     }
     pub(crate) fn lg(&self) -> usize {
         self.cm_rounds() + LOG_BLOWUP
@@ -447,9 +539,9 @@ impl MonolithAir {
         self.carry() + 2 // opened-value carrier (the input-Merkle leaf preimage)
     }
     pub(crate) fn qc(&self, i: usize) -> usize {
-        // quotient-leaf-preimage carriers, after the trace-leaf (+ random-leaf when is_zk=1) carriers. is_zk=0:
-        // ov + w_inner + i (2·nqc felts, unchanged); is_zk=1: after the trace + random leaf preimages.
-        self.ov() + self.ov_carrier_w() + self.random_carriers() + i
+        // quotient-leaf-preimage carriers, after the trace-leaf (+ random-leaf is_zk=1, + aux-leaf lookup)
+        // carriers. is_zk=0/no-lookup: ov + w_inner + i (2·nqc felts, unchanged).
+        self.ov() + self.ov_carrier_w() + self.random_carriers() + self.aux_carriers() + i
     }
     pub(crate) fn cg(&self, r: usize, k: usize) -> usize {
         self.carriers_base() + 4 * r + k // commit-phase group carriers: 6 rounds × 4 felts (the fold group {e_r, sib_r})
@@ -460,8 +552,9 @@ impl MonolithAir {
         self.carriers_base() + 4 * self.cm_rounds() + g // g: input 0..4, quotient 4..8, commit r 8+4r..8+4r+4
     }
     pub(crate) fn n_cap_c(&self) -> usize {
-        // cap-entry carriers: input + quotient + cm_rounds commit (2+R), plus the RANDOM round when is_zk=1.
-        (2 + self.is_zk + self.cm_rounds()) * 4
+        // cap-entry carriers: input + quotient + cm_rounds commit (2+R), plus the RANDOM round (is_zk=1) or the
+        // AUX round (lookup) — mutually exclusive, so at most one of the two extra groups.
+        (2 + self.is_zk + usize::from(self.is_lookup()) + self.cm_rounds()) * 4
     }
     // column-window: the inner-proof "pis" as a witness column window (held constant across the instance) so
     // the monolith can be tiled. Placed after all other columns.
@@ -512,7 +605,8 @@ impl MonolithAir {
         }
     }
     pub(crate) fn pis_count(&self) -> usize {
-        self.random_cap_base() + if self.is_zk == 1 { self.pis_cap_stride() } else { 0 }
+        // + the random cap (is_zk=1) or the aux cap (lookup) — mutually exclusive full-cap pis slices.
+        self.aux_cap_base() + if self.is_lookup() { self.pis_cap_stride() } else { 0 }
     }
     // pis cap layout — the FULL cap (2^cap_height entries) for a non-constant inner (so the cap-mux can select
     // cap[index>>shift] by the index bits), a single shared entry (stride 4) for ConstAir. For ConstAir these
@@ -839,10 +933,41 @@ impl MonolithAir {
     pub(crate) fn p_random_last_carry(&self) -> usize {
         self.p_random_boundary() + 1
     }
-    // HIDING commit-leaf internal boundary (is_zk=1, 2-block salted commit leaf): a capacity-carry one-hot at
-    // each round's block-0→block-1 boundary. Appended after the random region. Absent at is_zk=0 (byte-for-byte).
-    pub(crate) fn commit_absorb_base(&self) -> usize {
+    // ---- FORMAT BRIDGE (lookup) — the aux-round leaf periodic selectors: the LogUp aux commitment opens as a
+    // THIRD input round (an UNSALTED leaf, blocks M_INPUT_LEAF..) + input_depth path, mirroring the trace leaf.
+    // Appended AFTER the random region so is_zk=0/no-lookup keeps p_inst_first/p_inst_last byte-for-byte. ----
+    pub(crate) fn aux_absorb_base(&self) -> usize {
         self.random_absorb_base() + self.n_random_periodic()
+    }
+    pub(crate) fn n_aux_periodic(&self) -> usize {
+        if self.is_lookup() {
+            2 // p_aux_leaf (head) + p_aux_term (terminal)
+                + (self.aux_leaf_blocks() - 1) // subsequent-block absorb heads
+                + usize::from(self.aux_leaf_blocks() > 1) // capacity-carry boundary
+                + usize::from(self.aux_leaf_blocks() > 1 && self.aux_leaf_felts() % RATE != 0) // short-final
+        } else {
+            0
+        }
+    }
+    pub(crate) fn p_aux_leaf(&self) -> usize {
+        self.aux_absorb_base()
+    }
+    pub(crate) fn p_aux_term(&self) -> usize {
+        self.aux_absorb_base() + 1
+    }
+    pub(crate) fn p_aux_absorb(&self, b: usize) -> usize {
+        self.aux_absorb_base() + 2 + (b - 1)
+    }
+    pub(crate) fn p_aux_boundary(&self) -> usize {
+        self.aux_absorb_base() + 2 + (self.aux_leaf_blocks() - 1)
+    }
+    pub(crate) fn p_aux_last_carry(&self) -> usize {
+        self.p_aux_boundary() + 1
+    }
+    // HIDING commit-leaf internal boundary (is_zk=1, 2-block salted commit leaf): a capacity-carry one-hot at
+    // each round's block-0→block-1 boundary. Appended after the random + aux regions. Absent at is_zk=0 (byte).
+    pub(crate) fn commit_absorb_base(&self) -> usize {
+        self.aux_absorb_base() + self.n_aux_periodic()
     }
     pub(crate) fn n_commit_absorb(&self) -> usize {
         if self.is_zk == 1 && self.cm_leaf_blocks() > 1 {
