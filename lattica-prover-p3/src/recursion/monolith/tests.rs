@@ -3264,17 +3264,17 @@ where
 fn lookup_monolith_composes() {
     use crate::config::LOG_BLOWUP;
     use crate::lookup::prover::{balanced_main, prove_lookup_inner, LookupProof, RangeCheckAir};
-    use crate::recursion::native_fri::{make_config, PcsOpeningProof};
+    use crate::recursion::native_fri::{make_config_cap, PcsOpeningProof};
     use p3_air::symbolic::AirLayout;
     use p3_uni_stark::get_log_num_quotient_chunks;
     let inner = RangeCheckAir;
-    let config = make_config(1, 4);
+    let config = make_config_cap(1, 2, 2); // small cap ⇒ short transcript (fast prove); reduced queries
     let pis_inner: Vec<Val> = vec![];
-    let proof: LookupProof<PcsOpeningProof> = prove_lookup_inner(&inner, balanced_main(1 << 6), &pis_inner, false, &config);
+    let proof: LookupProof<PcsOpeningProof> = prove_lookup_inner(&inner, balanced_main(1 << 4), &pis_inner, false, &config);
     let (air, _trace, _pis) = build_lookup_monolith(&config, &inner, &proof, &pis_inner);
     let layout = AirLayout::from_air::<Val>(&air);
     let log_nqc = get_log_num_quotient_chunks::<Val, super::MonolithAir>(&air, layout, 0);
-    println!("lookup MonolithAir (RangeCheck): fused_w = {}, log_nqc = {log_nqc} (budget {LOG_BLOWUP})", air.fused_w());
+    println!("lookup MonolithAir (RangeCheck): 2^{} rows, fused_w = {}, log_nqc = {log_nqc} (budget {LOG_BLOWUP})", air.height().trailing_zeros(), air.fused_w());
     assert!(log_nqc <= LOG_BLOWUP, "the lookup MonolithAir must compose within the outer degree budget");
 }
 
@@ -3284,12 +3284,12 @@ fn lookup_monolith_composes() {
 #[test]
 fn lookup_monolith_proves() {
     use crate::lookup::prover::{balanced_main, prove_lookup_inner, LookupProof, RangeCheckAir};
-    use crate::recursion::native_fri::{lookup_transcript_challenges, make_config, PcsOpeningProof};
+    use crate::recursion::native_fri::{lookup_transcript_challenges, make_config, make_config_cap, PcsOpeningProof};
     use p3_field::PrimeField64;
     let inner = RangeCheckAir;
-    let config = make_config(1, 2); // reduced queries (fast; research prove-gate)
+    let config = make_config_cap(1, 2, 2); // small cap + reduced queries ⇒ fast prove (research gate)
     let pis_inner: Vec<Val> = vec![];
-    let proof: LookupProof<PcsOpeningProof> = prove_lookup_inner(&inner, balanced_main(1 << 6), &pis_inner, false, &config);
+    let proof: LookupProof<PcsOpeningProof> = prove_lookup_inner(&inner, balanced_main(1 << 4), &pis_inner, false, &config);
     let (air, trace, pis) = build_lookup_monolith(&config, &inner, &proof, &pis_inner);
     let outer = make_config(1, 4);
     println!("lookup MonolithAir prove: 2^{} rows, width {}", air.height().trailing_zeros(), air.fused_w());
