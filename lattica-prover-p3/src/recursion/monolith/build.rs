@@ -332,7 +332,11 @@ pub(crate) fn monolith_build_trace(
     if air.column_window {
         use p3_field::BasedVectorSpace;
         let cc = |x: Challenge| -> [Val; 2] { x.as_basis_coefficients_slice().try_into().unwrap() };
-        let zeta = Challenge::from_basis_coefficients_fn(|k| pub_window[2 + k]); // ζ = pis[2,3]
+        // ζ = the STARK OOD point = pis[2,3] AFTER any LOOKUP challenges that LEAD the window (each 2 felts). The
+        // squaring-chain constraints read ζ from the same window offset (`pw(2·n_lookup_challenges + 2)`), so the
+        // seed MUST match; `n_lookup_challenges()==0` for the non-lookup wrap ⇒ pis[2,3], byte-identical.
+        let zc = 2 * air.nlc() + 2;
+        let zeta = Challenge::from_basis_coefficients_fn(|k| pub_window[zc + k]);
         let mut sch_vals = vec![[Val::ZERO; 2]; air.cm_rounds()];
         let mut s = zeta;
         for sv in sch_vals.iter_mut() {

@@ -5418,8 +5418,31 @@ mod tests {
         narrow_ov: bool,
         bind_caps: bool,
     ) -> (AssembledOpeningsWrapCwAir, RowMajorMatrix<Val>, Vec<Val>) {
-        use crate::config::Challenge;
         use crate::joinsplit_air::{JoinSplitAir, N_PERIODIC, N_PUBLIC, WIDTH};
+        assemble_openings_wrap_cw_for(config, &JoinSplitAir, proof, pvs, WIDTH, N_PUBLIC, N_PERIODIC, bind_optable, narrow_ov, bind_caps)
+    }
+
+    /// Generalized [`assemble_openings_wrap_cw`] over the inner AIR + its dims (the JoinSplit-specific entry above
+    /// delegates here). Everything downstream is generic over the monolith's `counts`/`binds`/`n_terms`/`constraints`,
+    /// so the inner AIR + `(w_inner, n_pub, n_periodic)` are the only join-split couplings threaded out. Used by the
+    /// CANONICAL small-inner self-composition — a tiny `ConstAir` wrap ⇒ a small outer that fits in RAM to PROVE.
+    #[cfg(feature = "recursion")]
+    fn assemble_openings_wrap_cw_for<A>(
+        config: &crate::recursion::native_fri::MyConfig,
+        inner: &A,
+        proof: &p3_uni_stark::Proof<crate::recursion::native_fri::MyConfig>,
+        pvs: &[Val],
+        w_inner: usize,
+        n_pub: usize,
+        n_periodic: usize,
+        bind_optable: bool,
+        narrow_ov: bool,
+        bind_caps: bool,
+    ) -> (AssembledOpeningsWrapCwAir, RowMajorMatrix<Val>, Vec<Val>)
+    where
+        A: p3_air::Air<p3_uni_stark::SymbolicAirBuilder<Val>>,
+    {
+        use crate::config::Challenge;
         use crate::poseidon2_air::BLOCK;
         use crate::recursion::monolith::tests::{build_symbolic_inner_window, sim_cap_positions, sim_opening_positions};
         use crate::recursion::monolith::MonolithAir;
@@ -5432,9 +5455,9 @@ mod tests {
 
         // narrow cw=true monolith trace + air (narrow_arith + narrow_openings [+ narrow_caps when bind_caps]).
         let (mono_tr, counts, binds, index_binds, n_terms, _pv0) = build_symbolic_inner_window(
-            config, &JoinSplitAir, proof, pvs, WIDTH, N_PUBLIC, N_PERIODIC, bind_caps, true, true, narrow_ov,
+            config, inner, proof, pvs, w_inner, n_pub, n_periodic, bind_caps, true, true, narrow_ov,
         );
-        let constraints = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
+        let constraints = get_symbolic_constraints::<Val, _>(inner, AirLayout::from_air::<Val>(inner));
         let m = MonolithAir { lookup: None,
             counts,
             binds,
@@ -5447,9 +5470,9 @@ mod tests {
             fold: false,
             fold_txstmt: false,
             constraints,
-            w_inner_f: WIDTH,
-            n_pub_f: N_PUBLIC,
-            n_periodic_f: N_PERIODIC,
+            w_inner_f: w_inner,
+            n_pub_f: n_pub,
+            n_periodic_f: n_periodic,
             is_zk: 0,
             cap_height: proof.commitments.trace.roots().len().trailing_zeros() as usize,
             narrow_arith: true,
@@ -5723,13 +5746,13 @@ mod tests {
             let op_base = st_base + 2 * rate;
             let (op_sel_c, is_tr_leaf_c, leaf_key_c) = (op_base + 13, op_base + 14, op_base + 15);
             let op_is_ch = |g: usize| op_base + 16 + g;
-            let cs = get_symbolic_constraints::<Val, _>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
+            let cs = get_symbolic_constraints::<Val, _>(inner, AirLayout::from_air::<Val>(inner));
             let (wu, npu, nperu) = (m.w_inner() as u64, m.n_pub() as u64, m.n_periodic() as u64);
 
             // Native OOD openings at ζ (the leaf values) + the nqc quotient-recompose weights zps_i.
             let (_eo_local, _eo_next, is_first, is_last, is_trans, _iv, _eo_quot, eo_alpha, _z, eo_periodic) =
-                epilogue_openings(config, &JoinSplitAir, proof, pvs);
-            let zps = quotient_recompose_weights(config, &JoinSplitAir, proof, pvs);
+                epilogue_openings(config, inner, proof, pvs);
+            let zps = quotient_recompose_weights(config, inner, proof, pvs);
             let pubs: Vec<Challenge> = pvs.iter().map(|&p| Challenge::from(p)).collect();
             let opening = |term: usize| Challenge::from_basis_coefficients_fn(|i| committed[2 * term + i]);
 
@@ -6775,6 +6798,107 @@ mod tests {
         // `otrace`/`opis` are the height-sized trace (build_trace=true), kept so the prove drops straight in.
         let _ = (otrace.values.len(), opis.len());
         assert!(log_nqc <= LOG_BLOWUP, "the product-chunk must compose the cap-2 self-composition within the outer degree budget (cap-independent)");
+    }
+
+    /// **CANONICAL SELF-COMPOSITION (ConstAir compose probe) — a TINY inner ⇒ a small outer.** The generalized
+    /// assembler wraps a minimal `ConstAir` proof (WIDTH=1) instead of a join-split (WIDTH=19); the outer verifying
+    /// that wrap's LookupProof is ~18× narrower than the join-split outer, so it fits in RAM to PROVE (the heavy
+    /// `_proves` companion below). This probe assembles the ConstAir wrap, proves it NON-SALTED, then builds the
+    /// outer AIR-only (build_trace=false — the soundness cross-check asserts still fire: the native chunked fold ==
+    /// `batched_constraints_at_point`, and D·frac−S == the generic ext eval) and confirms it composes at log_nqc ≤ 4.
+    #[cfg(feature = "recursion")]
+    #[test]
+    fn self_composition_const_wrap_composes() {
+        use crate::config::LOG_BLOWUP;
+        use crate::lookup::prover::prove_lookup_inner;
+        use crate::recursion::monolith::tests::build_symbolic_inner_window_lookup;
+        use crate::recursion::monolith::MonolithAir;
+        use crate::recursion::native_fri::{gen_const_proof, make_config_cap};
+        use crate::recursion::native_verify::ConstAir;
+        use p3_air::symbolic::AirLayout;
+        use p3_uni_stark::get_log_num_quotient_chunks;
+
+        // a tiny ConstAir inner (WIDTH=1, N_PUBLIC=1, N_PERIODIC=0) at cap 2, wrapped via the generalized assembler.
+        // (The wrap floors at 2^12 for ANY inner height/cap-2 query count, so the outer floors at 2^15 — measured.)
+        let inner_cfg = make_config_cap(1, 2, 2);
+        let (proof, pvs) = gen_const_proof(&inner_cfg, 7, 2);
+        let (asm, wtrace, wpis) = assemble_openings_wrap_cw_for(&inner_cfg, &ConstAir, &proof, &pvs, 1, 1, 0, false, false, true);
+        let wrap_w = <AssembledOpeningsWrapCwAir as BaseAir<Val>>::width(&asm);
+        let wrap_cfg = make_config_cap(1, 2, 2);
+        let wrap_proof = prove_lookup_inner(&asm, wtrace, &wpis, false, &wrap_cfg);
+        let (outer, _t, _p) = build_symbolic_inner_window_lookup(&wrap_cfg, &asm, &wrap_proof, &wpis, false, false, false, false, false);
+        let log_nqc = get_log_num_quotient_chunks::<Val, MonolithAir>(&outer, AirLayout::from_air::<Val>(&outer), 0);
+        let (ow, oh) = (outer.fused_w(), outer.height().trailing_zeros());
+        // rough LDE-domain cell count = fused_w · 2^(outer_h + LOG_BLOWUP) — the dominant prove-RAM term.
+        let lde_gib = (ow as f64) * (1u64 << (oh as usize + LOG_BLOWUP)) as f64 * 8.0 / (1u64 << 30) as f64;
+        println!("CONST self-comp: wrap width {wrap_w}/2^{} rows, {} queries; outer 2^{oh} rows, FULL fused_w {ow}, log_nqc {log_nqc} (budget {LOG_BLOWUP}); ~{lde_gib:.1} GiB LDE",
+            asm.m.height().trailing_zeros(), wrap_proof.opening_proof.query_proofs.len());
+        assert!(log_nqc <= LOG_BLOWUP, "the ConstAir self-composition outer must compose within the outer degree budget");
+    }
+
+    /// **CANONICAL SELF-COMPOSITION (ConstAir PROVE) — wrap-verifies-wrap, end to end.** The full canonical result:
+    /// the outer lookup-`MonolithAir` accept-iff-verifies the ConstAir wrap's own LookupProof, PROVES + verifies +
+    /// tamper-rejects (a tampered LogUp terminal ⇒ the outer's OOD fold rejects). A tiny inner keeps the outer small
+    /// enough to prove in single-digit GB — the RAM-bounded self-composition prove the join-split outer (~100 GB
+    /// OOM) can't reach. Reports peak RSS + the outer width/log_nqc. Heavy; `--release --features lookup,recursion -j1`.
+    #[cfg(feature = "recursion")]
+    #[test]
+    #[ignore = "heavy: the canonical ConstAir wrap-verifies-wrap PROVE (proves+verifies+tamper-rejects, reports RSS); run `--release --features lookup,recursion -j1 -- --ignored`"]
+    fn self_composition_const_wrap_proves() {
+        use crate::config::{Challenge, LOG_BLOWUP};
+        use crate::lookup::prover::prove_lookup_inner;
+        use crate::recursion::monolith::tests::build_symbolic_inner_window_lookup;
+        use crate::recursion::monolith::MonolithAir;
+        use crate::recursion::native_fri::{gen_const_proof, make_config_cap};
+        use crate::recursion::native_verify::ConstAir;
+        use p3_air::symbolic::AirLayout;
+        use p3_field::PrimeCharacteristicRing;
+        use p3_uni_stark::{get_log_num_quotient_chunks, prove, verify};
+
+        let peak_rss_mib = || -> u64 {
+            std::fs::read_to_string("/proc/self/status")
+                .ok()
+                .and_then(|s| s.lines().find(|l| l.starts_with("VmHWM")).map(String::from))
+                .and_then(|l| l.split_whitespace().nth(1).and_then(|v| v.parse::<u64>().ok()))
+                .map(|kib| kib / 1024)
+                .unwrap_or(0)
+        };
+
+        // ── Step 1/2: a tiny ConstAir inner (WIDTH=1) at cap 2, wrapped (bind_caps=true, narrow arith/openings). ──
+        let inner_cfg = make_config_cap(1, 2, 2);
+        let (proof, pvs) = gen_const_proof(&inner_cfg, 7, 4);
+        let (asm, wtrace, wpis) = assemble_openings_wrap_cw_for(&inner_cfg, &ConstAir, &proof, &pvs, 1, 1, 0, false, false, true);
+        let wrap_w = <AssembledOpeningsWrapCwAir as BaseAir<Val>>::width(&asm);
+        let wrap_cfg = make_config_cap(1, 2, 2);
+        let wrap_proof = prove_lookup_inner(&asm, wtrace, &wpis, false, &wrap_cfg);
+        println!("CONST self-comp PROVE: wrap width {wrap_w}, 2^{} rows, {} queries, aux_width {}",
+            asm.m.height().trailing_zeros(), wrap_proof.opening_proof.query_proofs.len(), wrap_proof.aux_width);
+
+        // ── Step 3: build the provable outer verifying the wrap's LookupProof (build_trace=true). ──
+        let (outer, otrace, opis) = build_symbolic_inner_window_lookup(&wrap_cfg, &asm, &wrap_proof, &wpis, false, false, false, false, true);
+        let log_nqc = get_log_num_quotient_chunks::<Val, MonolithAir>(&outer, AirLayout::from_air::<Val>(&outer), 0);
+        println!("CONST self-comp PROVE: outer 2^{} rows, fused_w {}, log_nqc {log_nqc} (budget {LOG_BLOWUP})",
+            outer.height().trailing_zeros(), outer.fused_w());
+        assert!(log_nqc <= LOG_BLOWUP, "the ConstAir self-composition outer must compose within the outer degree budget");
+
+        // ── Step 4: PROVE + verify + tamper-reject — the canonical wrap-verifies-wrap prove. ──
+        // column-window ⇒ num_public_values()==0: the inner-proof pis live in the committed WINDOW columns (a
+        // self-contained recursive proof), so prove/verify take EMPTY public values. `opis` filled the trace.
+        let _ = opis;
+        p3_air::check_constraints(&outer, &otrace, &[]);
+        let outer_cfg = make_config_cap(1, 4, 2);
+        let prf = prove(&outer_cfg, &outer, otrace, &[]);
+        if let Err(e) = verify(&outer_cfg, &outer, &prf, &[]) {
+            panic!("the ConstAir self-composition outer rejected its own valid proof: {e:?}");
+        }
+        // tamper a committed opened value ⇒ the quotient identity at ζ fails ⇒ reject (proof soundness).
+        let mut bad = prf;
+        bad.opened_values.trace_local[0] += Challenge::ONE;
+        assert!(verify(&outer_cfg, &outer, &bad, &[]).is_err(), "a tampered opened value ⇒ reject");
+        println!(
+            "CANONICAL SELF-COMPOSITION: ConstAir wrap-verifies-wrap PROVED + verified + tamper-rejected (outer 2^{} rows, fused_w {}, log_nqc {log_nqc}). Peak RSS {} MiB",
+            outer.height().trailing_zeros(), outer.fused_w(), peak_rss_mib()
+        );
     }
 
     /// **Tier-1 merge M1c/M3 — the merged caps ⊕ openings wrap PROVES (lean).** The 9.2× width merge as a SOUND
