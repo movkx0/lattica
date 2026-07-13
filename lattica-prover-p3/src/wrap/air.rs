@@ -6730,15 +6730,17 @@ mod tests {
         println!("WRAP EXT DEGREES: {} lookups, {} ext constraints, degrees {ext_degs:?}; base max {base_max}", lookups.len(), ext.len());
     }
 
-    /// **Low-degree wrap arc (Step 2 diag) — the SMALL-CAP shortcut does NOT fix the degree (measured).** The
-    /// hypothesis: at cap 2 the cap SELECT bus is 4-sided (vs 64 at cap 6), so maybe the outer composes ≤ 4
-    /// without the product-chunk. RESULT: NO — the outer verifying a cap-2 wrap is STILL log_nqc 7 (measured),
-    /// because the deg-78 blow-up is the OPENING / SPONGE bus (arity ~ n_terms, INDEPENDENT of cap), not the cap
-    /// SELECT. ⇒ the product-chunk fix (witness partial products of the LogUp `common_denom` in the outer) is
-    /// genuinely required. This test pins that negative result so the wrong shortcut isn't re-tried.
+    /// **Low-degree wrap arc — the PRODUCT-CHUNK composes the self-composition at SMALL CAP too (cap-independent).**
+    /// History: the deg-78 blow-up was NOT the cap SELECT bus (4-sided at cap 2, 64 at cap 6) but the OPENING /
+    /// SPONGE bus, whose LogUp fraction `common_denom = Π_i(α_L − e_i)` is degree ~77 in the outer (α_L a degree-1
+    /// window column) REGARDLESS of cap — so a small cap alone left log_nqc at 7. The fix is the outer's
+    /// PRODUCT-CHUNK (evaluate each fraction via the witnessed rational recurrence D/S, per `MonolithAir::PROD_CHUNK`),
+    /// which is cap-INDEPENDENT: this test confirms the cap-2 outer now ALSO composes at `log_nqc ≤ LOG_BLOWUP` (a
+    /// second geometry beyond the default cap-6 compose gate). `build_trace=true` here, so it also exercises the
+    /// native `prod_acc` fill + the per-fraction cross-check (`D·frac − S == the generic ext value`).
     #[cfg(feature = "recursion")]
     #[test]
-    #[ignore = "heavy: measures that the small-cap shortcut does NOT drop the self-composition log_nqc (still 7)"]
+    #[ignore = "heavy (build_trace=true): confirms the product-chunk composes the cap-2 self-composition at log_nqc ≤ 4"]
     fn self_composition_small_cap_is_not_the_blowup() {
         use crate::config::LOG_BLOWUP;
         use crate::joinsplit_air::{build_trace, demo_witness, public_values, JoinSplitAir};
@@ -6767,15 +6769,12 @@ mod tests {
         let log_nqc = get_log_num_quotient_chunks::<Val, MonolithAir>(&outer, AirLayout::from_air::<Val>(&outer), 0);
         println!("SMALL-CAP self-comp: outer 2^{} rows, fused_w {}, log_nqc {log_nqc} (budget {LOG_BLOWUP})",
             outer.height().trailing_zeros(), outer.fused_w(), );
-        // FINDING (negative — the small-cap shortcut does NOT work): at cap 2 the cap SELECT bus is 4-sided,
-        // yet log_nqc is STILL 7. So the deg-78 blow-up is NOT the cap SELECT (cap-arity) but the OPENING /
-        // SPONGE bus, whose arity ~ n_terms (~1000), INDEPENDENT of cap: its elements are PUBLICS in the wrap
-        // (degree 0) but degree-1 WINDOW columns in the outer, so common_denom = Π(α_L − e_i) over ~77 sides is
-        // degree ~77 in the outer regardless of cap. ⇒ the PRODUCT-CHUNK fix (witness partial products of
-        // common_denom) is the required next increment; the prove is deferred until it lands. `otrace`/`opis`
-        // are the height-sized trace, kept so the prove drops straight in after the fix.
+        // FINDING (positive): the product-chunk drops the cap-2 outer to log_nqc ≤ 4 — the opening-arity blow-up
+        // (common_denom = Π(α_L − e_i) over ~77 sides, degree ~77 regardless of cap) is dissolved by evaluating the
+        // fraction via the witnessed D/S recurrence, so the fix holds at ANY cap (not a small-cap shortcut).
+        // `otrace`/`opis` are the height-sized trace (build_trace=true), kept so the prove drops straight in.
         let _ = (otrace.values.len(), opis.len());
-        assert!(log_nqc > LOG_BLOWUP, "cap-2 self-composition STILL exceeds budget ⇒ the blow-up is opening-arity, not cap-arity (the product-chunk fix is required, not a small cap)");
+        assert!(log_nqc <= LOG_BLOWUP, "the product-chunk must compose the cap-2 self-composition within the outer degree budget (cap-independent)");
     }
 
     /// **Tier-1 merge M1c/M3 — the merged caps ⊕ openings wrap PROVES (lean).** The 9.2× width merge as a SOUND

@@ -32,6 +32,15 @@ pub(crate) struct LookupCfg {
     /// The inner AIR's LogUp fraction/accumulator constraints as ext `SymbolicExpressionExt` trees (from
     /// `InteractionSymbolicBuilder::extension_constraints()`), α-Horner-folded after the base constraints.
     pub ext_constraints: Vec<p3_air::symbolic::SymbolicExpressionExt<Val, Challenge>>,
+    /// The inner AIR's LogUp lookups (element tuples + multiplicities per bus), in the SAME order as the first
+    /// `|lookups|` `ext_constraints` (the per-lookup fraction constraints). **Column-window only**: the outer
+    /// re-evaluates each fraction constraint SEMANTICALLY from these — `common_denom·frac − numerator` where
+    /// `common_denom = Π_i(α_L − e_i)` — with the running products PRODUCT-CHUNKED (witnessed every `PROD_CHUNK`
+    /// sides in `prod_acc` columns) so the ~N-sided product never exceeds a bounded degree. This is the
+    /// extension-field analogue of `FOLD_CHUNK` (which chunks the α-Horner SUM): in column-window mode `α_L` is a
+    /// degree-1 window column, so the naive `Π(α_L − e_i)` tree is degree ~N (the R5 blow-up) — chunking caps it.
+    /// The pis-mode fold (every RangeCheck test) ignores this and walks the `ext_constraints` tree verbatim.
+    pub lookups: Vec<p3_lookup::Lookup<Val>>,
 }
 
 // =================================================================================================
@@ -697,8 +706,9 @@ impl MonolithAir {
     }
     pub(crate) fn fused_w(&self) -> usize {
         // sel_base = pw_base (+ column-window window); + 3 witnessed Lagrange selectors (6 felts, symbolic);
-        // + the witnessed constraint-fold accumulators (column-window only — see fold_acc / FOLD_CHUNK).
-        self.sel_base() + if self.symbolic() { 6 + 2 * self.n_fold_acc() } else { 0 }
+        // + the witnessed constraint-fold accumulators (column-window only — see fold_acc / FOLD_CHUNK);
+        // + the witnessed LogUp product-chunk accumulators (column-window lookup only — see prod_acc / PROD_CHUNK).
+        self.sel_base() + if self.symbolic() { 6 + 2 * self.n_fold_acc() + 4 * self.n_prod_acc() } else { 0 }
     }
     // The α-Horner fold of the inner AIR's C_inner constraints (`folded = folded·α_stark + c_k`) is checked
     // against quotient(ζ) in ONE expression. In COLUMN-WINDOW mode α_stark is a degree-1 witness column (the
@@ -723,6 +733,48 @@ impl MonolithAir {
     // witnessed constraint-fold accumulator i (F_p² pair), after the 3 Lagrange selectors in the fused region.
     pub(crate) fn fold_acc(&self, i: usize) -> usize {
         self.sel_base() + 6 + 2 * i
+    }
+    // ---- LogUp PRODUCT-CHUNK (the deep-tree self-composition degree lever) — the extension-field twin of
+    // FOLD_CHUNK. In column-window mode the lookup challenge α_L is a degree-1 window column, so a fraction
+    // constraint's `common_denom = Π_i(α_L − e_i)` over an N-sided bus is degree ~N in the outer (the R5 blow-up;
+    // the ~77-sided opening/sponge bus measured deg-78 ⇒ log_nqc 7). Fix: evaluate each fraction SEMANTICALLY via
+    // the running rational recurrence `D_i = D_{i−1}·t_i`, `S_i = S_{i−1}·t_i + m_i·D_{i−1}` (D = common_denom,
+    // S = numerator, t_i = α_L − e_i), and WITNESS (D,S) every PROD_CHUNK sides — continuing the recurrence from
+    // that degree-1 column, capping the product degree at ≈ 1 + PROD_CHUNK. The final fraction value
+    // `D·frac − S` then folds into the α-Horner at bounded degree. pis-mode ignores this (α_L degree-0 ⇒ no
+    // blow-up), so every RangeCheck / non-column-window construction is byte-identical (0 accumulators).
+    pub(crate) const PROD_CHUNK: usize = 1;
+    // per-lookup number of witnessed (D,S) product-chunk boundaries: n_chunks − 1 (the last chunk's running
+    // value feeds the fraction constraint directly, like FOLD_CHUNK's final fold). 0 for a bus with ≤ PROD_CHUNK
+    // sides (the whole product stays low-degree inline).
+    pub(crate) fn n_prod_acc_for(&self, sides: usize) -> usize {
+        sides.div_ceil(Self::PROD_CHUNK).saturating_sub(1)
+    }
+    // total witnessed product-chunk (D,S) slots across all lookups (column-window lookup only; each slot = 4
+    // felts: D at prod_acc(s), S at prod_acc(s)+2). 0 in pis-mode / non-lookup ⇒ fused_w byte-identical.
+    pub(crate) fn n_prod_acc(&self) -> usize {
+        // Product-chunk reconstructs each fraction from the inner's trace/aux OPENINGS (local/next); under
+        // narrow_openings those are externalized to the sponge bus (empty here), so the lever does not apply.
+        if !self.column_window || self.narrow_openings {
+            return 0;
+        }
+        self.lookup
+            .as_ref()
+            .map_or(0, |l| l.lookups.iter().map(|lu| self.n_prod_acc_for(lu.elements.len())).sum())
+    }
+    // the product-chunk region base (after the fold_acc accumulators in the fused region).
+    pub(crate) fn prod_acc_base(&self) -> usize {
+        self.sel_base() + 6 + 2 * self.n_fold_acc()
+    }
+    // witnessed product-chunk slot s (D at the returned offset, S at +2 — an F_p² pair each).
+    pub(crate) fn prod_acc(&self, s: usize) -> usize {
+        self.prod_acc_base() + 4 * s
+    }
+    // the global product-chunk slot cursor at which lookup `j`'s boundaries begin (prefix sum over prior lookups).
+    pub(crate) fn prod_acc_lookup_base(&self, j: usize) -> usize {
+        self.lookup.as_ref().map_or(0, |l| {
+            l.lookups[..j].iter().map(|lu| self.n_prod_acc_for(lu.elements.len())).sum()
+        })
     }
     // aggregator fold columns (only when `fold`): 8 Poseidon lanes (the two merge permutations) + 4 lanes for
     // the global-persistent running root, appended after the column-window window.
@@ -1832,11 +1884,68 @@ impl MonolithAir {
                         folded = (fa.0 + ci.0, fa.1 + ci.1);
                         chunk_fold(builder, &mut folded, &mut acc_i, &mut k);
                     }
-                    for c in &lk.ext_constraints {
-                        let ci = eval_symbolic_ext_circuit::<AB>(
-                            c, &local, &next, &pubs, &periodic, &is_first, &is_last, &is_trans, &aux_local,
-                            &aux_next, &challenges, &[terminal.clone()], &w,
-                        );
+                    // The ext constraints are [frac_0..frac_{L−1} | acc_first, acc_trans, acc_last]: the first
+                    // `n_look` are the per-lookup fraction constraints (lookup j pins aux column j+1), the last 3
+                    // the shared accumulator constraints. In COLUMN-WINDOW mode the fraction constraints are the
+                    // deg-N blow-up (α_L degree-1 ⇒ common_denom = Π(α_L−e_i) degree ~N), so re-evaluate them
+                    // SEMANTICALLY with the PRODUCT-CHUNKED rational recurrence; the low-degree accumulator
+                    // constraints (and every pis-mode constraint) walk the generic tree verbatim.
+                    let n_look = lk.lookups.len();
+                    let prod_chunked = self.column_window && !self.narrow_openings;
+                    for (j, c) in lk.ext_constraints.iter().enumerate() {
+                        let ci = if prod_chunked && j < n_look {
+                            let lu = &lk.lookups[j];
+                            let col = lu.column;
+                            let alpha_l = challenges[2 * col].clone();
+                            let beta = challenges[2 * col + 1].clone();
+                            let frac = aux_local[col + 1].clone();
+                            let slot_base = self.prod_acc_lookup_base(j);
+                            let n_sides = lu.elements.len();
+                            // running common_denom D = Π t_i (init 1) and numerator S = Σ m_i ∏_{j≠i} t_j (init 0),
+                            // with t_i = α_L − combined_e_i. Witness (D,S) every PROD_CHUNK sides to cap the degree.
+                            let mut dd = (one.clone(), AB::Expr::ZERO);
+                            let mut ss = (AB::Expr::ZERO, AB::Expr::ZERO);
+                            let mut s_slot = 0usize;
+                            let mut in_chunk = 0usize;
+                            for (i, elem_tuple) in lu.elements.iter().enumerate() {
+                                // combined element = β-Horner over the tuple (F_p²): comb ← comb·β + e_{i,j}.
+                                let mut comb = (AB::Expr::ZERO, AB::Expr::ZERO);
+                                for elem in elem_tuple {
+                                    let ev = eval_symbolic_circuit::<AB>(elem, &local, &next, &pubs, &periodic, &is_first, &is_last, &is_trans, &w);
+                                    let cb = emul(comb.clone(), beta.clone());
+                                    comb = (cb.0 + ev.0, cb.1 + ev.1);
+                                }
+                                let term = (alpha_l.0.clone() - comb.0, alpha_l.1.clone() - comb.1);
+                                let mv = eval_symbolic_circuit::<AB>(&lu.multiplicities[i], &local, &next, &pubs, &periodic, &is_first, &is_last, &is_trans, &w);
+                                // S ← S·t + m·D ; D ← D·t (m is a base value, so emul lifts it as (m,0)).
+                                let st = emul(ss.clone(), term.clone());
+                                let md = emul(mv, dd.clone());
+                                ss = (st.0 + md.0, st.1 + md.1);
+                                dd = emul(dd, term);
+                                in_chunk += 1;
+                                if in_chunk == MonolithAir::PROD_CHUNK && i + 1 < n_sides {
+                                    let d0 = self.prod_acc(slot_base + s_slot);
+                                    let dcol = gg(d0);
+                                    let scol = gg(d0 + 2);
+                                    builder.assert_zero(tf.clone() * (dcol.0.clone() - dd.0));
+                                    builder.assert_zero(tf.clone() * (dcol.1.clone() - dd.1));
+                                    builder.assert_zero(tf.clone() * (scol.0.clone() - ss.0));
+                                    builder.assert_zero(tf.clone() * (scol.1.clone() - ss.1));
+                                    dd = dcol;
+                                    ss = scol;
+                                    s_slot += 1;
+                                    in_chunk = 0;
+                                }
+                            }
+                            // the fraction constraint value: common_denom·frac − numerator = D·frac − S.
+                            let df = emul(dd, frac);
+                            (df.0 - ss.0, df.1 - ss.1)
+                        } else {
+                            eval_symbolic_ext_circuit::<AB>(
+                                c, &local, &next, &pubs, &periodic, &is_first, &is_last, &is_trans, &aux_local,
+                                &aux_next, &challenges, &[terminal.clone()], &w,
+                            )
+                        };
                         let fa = emul(folded.clone(), alpha_stark.clone());
                         folded = (fa.0 + ci.0, fa.1 + ci.1);
                         chunk_fold(builder, &mut folded, &mut acc_i, &mut k);

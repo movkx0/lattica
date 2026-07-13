@@ -3186,6 +3186,7 @@ where
             n_lookup_challenges: 2 * lookups.len(),
             lookup_bind_lanes: lc_lanes,
             ext_constraints: ext,
+            lookups: lookups.to_vec(), // pis-mode ignores these (n_prod_acc = 0); populated for the shared field
         }),
     };
     // sanity: n_terms decomposes as 2·W (trace) + 2·aux_base_w (aux) + 2·nqc (quotient).
@@ -3400,6 +3401,7 @@ where
             n_lookup_challenges: 2 * lookups.len(),
             lookup_bind_lanes: lc_lanes,
             ext_constraints: ext.clone(),
+            lookups: lookups.to_vec(), // column-window: the outer product-chunks each fraction from these
         }),
     };
     assert_eq!(n_terms, 2 * air.w_inner() + air.aux_terms() + 2 * air.nqc(), "lookup n_terms = 2·W + 2·aux_base_w + 2·nqc");
@@ -3539,6 +3541,63 @@ where
         // DIAGNOSTIC — the native full fold must reproduce the real lookup verifier's fold AND == quot(ζ)·Z_H.
         let bref = batched_constraints_at_point(inner, &lookups, local, next, &aux_local, &aux_next, sels.is_first_row, sels.is_last_row, sels.is_transition, alpha_stark, &lc, &[terminal], pis_inner, &periodic_at_zeta);
         assert_eq!(folded, bref, "self-composition native chunked fold == batched_constraints_at_point");
+    }
+
+    // LogUp PRODUCT-CHUNK native fill + soundness anchor (column-window). For each lookup, run the rational
+    // recurrence D_i=D_{i−1}·t_i, S_i=S_{i−1}·t_i+m_i·D_{i−1} (t_i = α_L − combined_e_i) and CROSS-CHECK that
+    // D·frac − S reproduces the generic ext fraction value (the exact thing the in-circuit product-chunk folds).
+    // This runs even without `build_trace` (a pure identity — the compose gate's degree measurement rides on it);
+    // the boundary partials are stored into the `prod_acc` columns only when the height-sized trace is built.
+    if air.n_prod_acc() > 0 {
+        let d = <Challenge as BasedVectorSpace<Val>>::DIMENSION;
+        let sels = dom.selectors_at_point(zeta);
+        let local = &proof.opened.trace_local;
+        let next = &proof.opened.trace_next;
+        let aux_local: Vec<Challenge> = (0..proof.aux_width)
+            .map(|c| <Challenge as ExtensionField<Val>>::from_ext_basis_coefficients(&proof.opened.aux_local[c * d..(c + 1) * d]).unwrap())
+            .collect();
+        let aux_next: Vec<Challenge> = (0..proof.aux_width)
+            .map(|c| <Challenge as ExtensionField<Val>>::from_ext_basis_coefficients(&proof.opened.aux_next[c * d..(c + 1) * d]).unwrap())
+            .collect();
+        let pubs: Vec<Challenge> = pis_inner.iter().map(|&p| Challenge::from(p)).collect();
+        let lc: Vec<Challenge> = lookup_challenges.iter().map(|&p| to_ext(p)).collect();
+        let terminal = proof.terminal.0;
+        let fw = air.fused_w();
+        for (j, lu) in lookups.iter().enumerate() {
+            let col = lu.column;
+            let (alpha_l, beta, frac) = (lc[2 * col], lc[2 * col + 1], aux_local[col + 1]);
+            let slot_base = air.prod_acc_lookup_base(j);
+            let n_sides = lu.elements.len();
+            let (mut dd, mut ss) = (Challenge::ONE, Challenge::ZERO);
+            let (mut s_slot, mut in_chunk) = (0usize, 0usize);
+            for (i, elem_tuple) in lu.elements.iter().enumerate() {
+                let mut comb = Challenge::ZERO;
+                for elem in elem_tuple {
+                    comb = comb * beta
+                        + eval_symbolic_native(elem, local, next, &pubs, &periodic_at_zeta, sels.is_first_row, sels.is_last_row, sels.is_transition);
+                }
+                let term = alpha_l - comb;
+                let m = eval_symbolic_native(&lu.multiplicities[i], local, next, &pubs, &periodic_at_zeta, sels.is_first_row, sels.is_last_row, sels.is_transition);
+                ss = ss * term + m * dd;
+                dd *= term;
+                in_chunk += 1;
+                if in_chunk == MonolithAir::PROD_CHUNK && i + 1 < n_sides {
+                    if build_trace {
+                        let d0 = air.prod_acc(slot_base + s_slot);
+                        let (dcc, scc) = (cc(dd), cc(ss));
+                        for r in 0..air.height() {
+                            trace.values[r * fw + d0..r * fw + d0 + 2].copy_from_slice(&dcc);
+                            trace.values[r * fw + d0 + 2..r * fw + d0 + 4].copy_from_slice(&scc);
+                        }
+                    }
+                    s_slot += 1;
+                    in_chunk = 0;
+                }
+            }
+            let semantic = dd * frac - ss;
+            let tree = eval_symbolic_ext_native(&ext[j], local, next, &pubs, &periodic_at_zeta, sels.is_first_row, sels.is_last_row, sels.is_transition, &aux_local, &aux_next, &lc, &[terminal]);
+            assert_eq!(semantic, tree, "self-composition product-chunk fraction[{j}] == the generic ext fold value");
+        }
     }
     (air, trace, pis)
 }
