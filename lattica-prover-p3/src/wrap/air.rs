@@ -6666,10 +6666,21 @@ mod tests {
             let n = degs.len();
             let over: Vec<usize> = degs.iter().rev().take_while(|&&d| d > 17).copied().collect();
             println!("OUTER constraints: {n} total, max degree {}, #(deg>17) = {}, top {:?}", degs[n - 1], over.len(), &degs[n.saturating_sub(8)..]);
-            // the WRAP's own constraint degree (the D fed into the chunked fold).
+            // the WRAP's own constraint degree (log_nqc 4 ⇒ its true max degree is ≤16 — so the deg-78 is
+            // OUTER-side fold processing, not a raw wrap bus).
             let lookups: p3_lookup::Lookups<Val> = p3_lookup::Lookups::from_air::<Challenge, _>(&asm);
             let (_l, wlog) = crate::lookup::prover::combined_constraint_layout(&asm, &lookups, 0);
             println!("WRAP own log_nqc {wlog}; outer n_fold_acc {}, outer constraints.len {}", outer.n_fold_acc(), outer.constraints.len());
+
+            // BISECTION — which OUTER fold produces the deg-78 blow-up? Rebuild the outer with the LogUp EXT
+            // fold DISABLED (ext_constraints = []) so only the base-constraint fold + reduced opening remain.
+            let mut o2 = outer.clone();
+            o2.lookup.as_mut().unwrap().ext_constraints = Vec::new();
+            let d2: Vec<usize> = get_symbolic_constraints::<Val, MonolithAir>(&o2, AirLayout::from_air::<Val>(&o2)).iter().map(|c| c.degree_multiple()).collect();
+            let log_nqc_no_ext = get_log_num_quotient_chunks::<Val, MonolithAir>(&o2, AirLayout::from_air::<Val>(&o2), 0);
+            println!("BISECTION: outer WITHOUT the LogUp ext fold → max degree {}, log_nqc {log_nqc_no_ext} (vs FULL log_nqc {log_nqc}) ⇒ {}",
+                d2.iter().copied().max().unwrap_or(0),
+                if log_nqc_no_ext <= LOG_BLOWUP { "the LogUp EXT fold is the blow-up (restructure the buses)" } else { "the BASE fold / reduced opening blows up (fix the outer chunking)" });
         }
 
         // the narrow (wrap-externalized) fused_w — a WIDTH measurement only (the narrow arith/openings epilogue is
@@ -6680,6 +6691,43 @@ mod tests {
         if log_nqc > LOG_BLOWUP {
             println!("DEGREE-GATE: log_nqc {log_nqc} > budget {LOG_BLOWUP} — see the histogram above for the blow-up region");
         }
+    }
+
+    /// **Low-degree wrap arc (diag) — the wrap's LogUp ext-constraint degrees.** Localizes the deg-78 outer
+    /// blow-up, which the bisection pinned to the LogUp EXT fold. Prints each of the merged wrap's LogUp
+    /// fraction/accumulator constraint degrees (`degree_multiple`). A degree ~77 here means a high-degree BUS
+    /// ELEMENT (a bus payload is a high-degree wrap expression, e.g. a Poseidon output / a wide combine), so
+    /// the outer inherits it when it folds that LogUp constraint on its openings — the fix is to witness /
+    /// flatten that element to low degree in the wrap. FAST (no wrap prove; just the symbolic constraints).
+    #[cfg(feature = "recursion")]
+    #[test]
+    fn wrap_ext_constraint_degrees() {
+        use crate::joinsplit_air::{build_trace, demo_witness, public_values, JoinSplitAir};
+        use crate::recursion::native_fri::make_config;
+        use p3_air::symbolic::AirLayout;
+        use p3_lookup::{InteractionSymbolicBuilder, LogUpGadget, LookupProtocol, Lookups};
+        use p3_uni_stark::prove;
+        let config = make_config(1, 4);
+        let w = demo_witness();
+        let pvs = public_values(&w);
+        let proof = prove(&config, &JoinSplitAir, build_trace(&w), &pvs);
+        let (asm, _t, _p) = assemble_openings_wrap_cw(&config, &proof, &pvs, false, false, true);
+        let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(&asm);
+        let layout = AirLayout {
+            permutation_width: lookups.len() + 1,
+            num_permutation_challenges: 2 * lookups.len(),
+            num_permutation_values: 1,
+            ..AirLayout::from_air::<Val>(&asm)
+        };
+        let mut isb = InteractionSymbolicBuilder::<Val, Challenge>::new(layout);
+        asm.eval(&mut isb);
+        LogUpGadget::new().eval_all(&mut isb, &lookups);
+        let base = isb.base_constraints();
+        let ext = isb.extension_constraints();
+        let base_max = base.iter().map(|c| c.degree_multiple()).max().unwrap_or(0);
+        let mut ext_degs: Vec<usize> = ext.iter().map(|c| c.degree_multiple()).collect();
+        ext_degs.sort_unstable();
+        println!("WRAP EXT DEGREES: {} lookups, {} ext constraints, degrees {ext_degs:?}; base max {base_max}", lookups.len(), ext.len());
     }
 
     /// **Tier-1 merge M1c/M3 — the merged caps ⊕ openings wrap PROVES (lean).** The 9.2× width merge as a SOUND

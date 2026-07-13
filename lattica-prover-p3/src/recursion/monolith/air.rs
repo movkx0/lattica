@@ -15,6 +15,7 @@ use super::*;
 /// guard covers it). The aux round is templated 1:1 on the is_zk=1 random round, but opens at TWO points
 /// (ζ + ζ_next) so its carrier px-binds into two DEEP-term regions (like the trace `ov`).
 #[allow(dead_code)]
+#[derive(Clone)]
 pub(crate) struct LookupCfg {
     /// The LogUp aux (permutation) matrix EXTENSION width `= |lookups| + 1` (1 accumulator + |lookups|
     /// fractions). The COMMITTED base width is `aux_ext_w · D` (each ext column flattens to `D=2` base
@@ -44,6 +45,7 @@ pub(crate) struct LookupCfg {
 // =================================================================================================
 
 #[allow(dead_code)]
+#[derive(Clone)]
 pub(crate) struct MonolithAir {
     pub counts: Vec<u8>,
     pub binds: Vec<usize>,
