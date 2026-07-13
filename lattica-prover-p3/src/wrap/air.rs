@@ -6730,6 +6730,54 @@ mod tests {
         println!("WRAP EXT DEGREES: {} lookups, {} ext constraints, degrees {ext_degs:?}; base max {base_max}", lookups.len(), ext.len());
     }
 
+    /// **Low-degree wrap arc (Step 2 diag) — the SMALL-CAP shortcut does NOT fix the degree (measured).** The
+    /// hypothesis: at cap 2 the cap SELECT bus is 4-sided (vs 64 at cap 6), so maybe the outer composes ≤ 4
+    /// without the product-chunk. RESULT: NO — the outer verifying a cap-2 wrap is STILL log_nqc 7 (measured),
+    /// because the deg-78 blow-up is the OPENING / SPONGE bus (arity ~ n_terms, INDEPENDENT of cap), not the cap
+    /// SELECT. ⇒ the product-chunk fix (witness partial products of the LogUp `common_denom` in the outer) is
+    /// genuinely required. This test pins that negative result so the wrong shortcut isn't re-tried.
+    #[cfg(feature = "recursion")]
+    #[test]
+    #[ignore = "heavy: measures that the small-cap shortcut does NOT drop the self-composition log_nqc (still 7)"]
+    fn self_composition_small_cap_is_not_the_blowup() {
+        use crate::config::LOG_BLOWUP;
+        use crate::joinsplit_air::{build_trace, demo_witness, public_values, JoinSplitAir};
+        use crate::lookup::prover::prove_lookup_inner;
+        use crate::recursion::monolith::tests::build_symbolic_inner_window_lookup;
+        use crate::recursion::monolith::MonolithAir;
+        use crate::recursion::native_fri::make_config_cap;
+        use p3_air::symbolic::AirLayout;
+        use p3_uni_stark::{get_log_num_quotient_chunks, prove};
+
+        // inner join-split at cap 2 ⇒ the cap SELECT bus is 4-sided (low-arity).
+        let inner_cfg = make_config_cap(1, 2, 2);
+        let w = demo_witness();
+        let pvs = public_values(&w);
+        let proof = prove(&inner_cfg, &JoinSplitAir, build_trace(&w), &pvs);
+        let (asm, wtrace, wpis) = assemble_openings_wrap_cw(&inner_cfg, &proof, &pvs, false, false, true);
+        let wrap_w = <AssembledOpeningsWrapCwAir as BaseAir<Val>>::width(&asm);
+        // prove the wrap NON-SALTED at cap 2, 2 queries — the outer-consumable LookupProof.
+        let wrap_cfg = make_config_cap(1, 2, 2);
+        let wrap_proof = prove_lookup_inner(&asm, wtrace, &wpis, false, &wrap_cfg);
+        println!("SMALL-CAP self-comp: wrap width {wrap_w}, 2^{} rows, {} queries, aux_width {}",
+            asm.m.height().trailing_zeros(), wrap_proof.opening_proof.query_proofs.len(), wrap_proof.aux_width);
+
+        // build + measure the outer verifying the wrap's LookupProof.
+        let (outer, otrace, opis) = build_symbolic_inner_window_lookup(&wrap_cfg, &asm, &wrap_proof, &wpis, false, false, false, false, true);
+        let log_nqc = get_log_num_quotient_chunks::<Val, MonolithAir>(&outer, AirLayout::from_air::<Val>(&outer), 0);
+        println!("SMALL-CAP self-comp: outer 2^{} rows, fused_w {}, log_nqc {log_nqc} (budget {LOG_BLOWUP})",
+            outer.height().trailing_zeros(), outer.fused_w(), );
+        // FINDING (negative — the small-cap shortcut does NOT work): at cap 2 the cap SELECT bus is 4-sided,
+        // yet log_nqc is STILL 7. So the deg-78 blow-up is NOT the cap SELECT (cap-arity) but the OPENING /
+        // SPONGE bus, whose arity ~ n_terms (~1000), INDEPENDENT of cap: its elements are PUBLICS in the wrap
+        // (degree 0) but degree-1 WINDOW columns in the outer, so common_denom = Π(α_L − e_i) over ~77 sides is
+        // degree ~77 in the outer regardless of cap. ⇒ the PRODUCT-CHUNK fix (witness partial products of
+        // common_denom) is the required next increment; the prove is deferred until it lands. `otrace`/`opis`
+        // are the height-sized trace, kept so the prove drops straight in after the fix.
+        let _ = (otrace.values.len(), opis.len());
+        assert!(log_nqc > LOG_BLOWUP, "cap-2 self-composition STILL exceeds budget ⇒ the blow-up is opening-arity, not cap-arity (the product-chunk fix is required, not a small cap)");
+    }
+
     /// **Tier-1 merge M1c/M3 — the merged caps ⊕ openings wrap PROVES (lean).** The 9.2× width merge as a SOUND
     /// STARK: assemble the `narrow_caps` + `narrow_openings` + `narrow_arith` wrap (width ~545 — BOTH the
     /// `2^cap_height` cap COLUMNS and the `2·n_terms` pz opening columns GONE) and prove + verify end-to-end through
