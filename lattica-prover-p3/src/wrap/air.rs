@@ -6901,6 +6901,39 @@ mod tests {
         );
     }
 
+    /// **F1 fix — the fast FORGE-REJECTION gate (the soundness proof of `bind_fs`).** Build a SMALL RangeCheck
+    /// column-window lookup outer WITH `bind_fs`, confirm the honest trace passes `check_constraints` (the
+    /// `cur[lane]==pis[idx]` bindings hold — absorbed == committed by construction), then TAMPER one bound
+    /// FS-absorbed felt so it differs from its committed pis (the exact F1 grind: absorb ≠ what you commit) and
+    /// confirm the outer now REJECTS. Without the fix this tamper is invisible; with it, the binding fires. Small
+    /// inner ⇒ ~minutes vs the 53-min ConstAir-wrap forge test.
+    #[cfg(feature = "recursion")]
+    #[test]
+    #[ignore = "moderate: a column-window lookup outer + 2 check_constraints scans (the F1 forge-rejection proof)"]
+    fn fs_bind_forge_rejects_fast() {
+        use crate::lookup::prover::{balanced_main, prove_lookup_inner, LookupProof, RangeCheckAir};
+        use crate::poseidon2_air::BLOCK;
+        use crate::recursion::monolith::tests::build_symbolic_inner_window_lookup;
+        use crate::recursion::native_fri::{make_config_cap, PcsOpeningProof};
+        let cfg = make_config_cap(1, 2, 2);
+        let inner = RangeCheckAir;
+        let proof: LookupProof<PcsOpeningProof> = prove_lookup_inner(&inner, balanced_main(1 << 4), &[], false, &cfg);
+        let (outer, trace, _opis) =
+            build_symbolic_inner_window_lookup(&cfg, &inner, &proof, &[], false, false, false, false, true, true);
+        assert!(outer.n_fs_bind() > 0, "bind_fs must record ≥1 FS-absorb binding");
+        let width = outer.fused_w();
+        // honest trace accepts — the bindings hold (this also validates the (block,lane,idx) position mapping).
+        p3_air::check_constraints(&outer, &trace, &[]);
+        // forge: tamper the first bound absorbed felt at its absorb row ⇒ cur[lane] ≠ pis[idx] ⇒ binding fires ⇒ reject.
+        let (block, lanes) = outer.fs_binds()[0].clone();
+        let (lane, _idx) = lanes[0];
+        let mut bad = trace;
+        bad.values[block * BLOCK * width + lane] += Val::ONE;
+        let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| p3_air::check_constraints(&outer, &bad, &[])));
+        assert!(caught.is_err(), "F1 fix: a tampered FS-absorbed felt (≠ its committed pis) MUST be rejected");
+        println!("F1 forge-rejection CONFIRMED: {} FS-absorb bindings; honest accepts, tampered felt rejected", outer.n_fs_bind());
+    }
+
     /// **F1 FIX (degree) — the FS-absorb binding composes.** The ConstAir self-composition outer with `bind_fs`
     /// (the F1 soundness fix: every FS-absorbed committed cap/pis felt bound `cur[lane] == pis[idx]`) still
     /// composes at `log_nqc ≤ LOG_BLOWUP` — the added binds are degree-2 (periodic·(witness−witness), the SAME
