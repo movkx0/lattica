@@ -3187,6 +3187,7 @@ where
             lookup_bind_lanes: lc_lanes,
             ext_constraints: ext,
             lookups: lookups.to_vec(), // pis-mode ignores these (n_prod_acc = 0); populated for the shared field
+            fs_binds: Vec::new(),      // pis-mode: no FS-absorb binding (byte-identical)
         }),
     };
     // sanity: n_terms decomposes as 2·W (trace) + 2·aux_base_w (aux) + 2·nqc (quotient).
@@ -3281,6 +3282,7 @@ pub(crate) fn build_symbolic_inner_window_lookup<A>(
     narrow_arith: bool,
     narrow_openings: bool,
     narrow_ov: bool,
+    bind_fs: bool,     // F1 fix: bind the FS-absorbed caps/pis to the committed window pis (soundness); false = byte-identical
     build_trace: bool, // false ⇒ AIR + pis + the native-fold diagnostic only (skip the height-sized trace, for compose)
 ) -> (super::MonolithAir, p3_matrix::dense::RowMajorMatrix<Val>, Vec<Val>)
 where
@@ -3375,7 +3377,7 @@ where
         aux_paths.push(aux_path);
     }
 
-    let air = MonolithAir {
+    let mut air = MonolithAir {
         counts: counts.clone(),
         binds: full_binds,
         index_binds: index_binds.clone(),
@@ -3402,8 +3404,80 @@ where
             lookup_bind_lanes: lc_lanes,
             ext_constraints: ext.clone(),
             lookups: lookups.to_vec(), // column-window: the outer product-chunks each fraction from these
+            fs_binds: Vec::new(),      // populated below when `bind_fs` (the F1 FS-absorb soundness bind)
         }),
     };
+    // F1 FIX: record the (block, lane, committed-pis-index) of every FS-absorbed cap/pis felt so the AIR can
+    // bind each absorbed rate lane to its committed window value (closing the challenge-grinding forge). The
+    // replay mirrors `sim_full_lookup`'s absorb schedule EXACTLY; the committed pis indices reuse the SAME
+    // accessors the cap-mux binds against (`cap_base`/`qcap_base`/`aux_cap_base`/`commit_cap_base`/`pub_pi`),
+    // so the absorbed felt is tied to precisely the value the openings authenticate. Requires `!narrow_caps`
+    // (the caps must live in the pis window). Opened values (ζ→α_fri) are the arith-tile `pz` columns — a
+    // CROSS-ROW bind not expressible as this same-row window equality — so they are absorbed but NOT bound here.
+    if bind_fs {
+        assert!(!narrow_caps, "bind_fs needs the caps in the pis window (narrow_caps externalizes them to the sponge bus)");
+        let mut positions: Vec<(usize, usize, usize)> = Vec::new(); // (block, lane, committed pis index)
+        let mut s = Sim::new();
+        // (1) trace cap felts, then inner public values.
+        for (i, &f) in cap_felts(&proof.trace_commit).iter().enumerate() {
+            positions.push((s.block_inputs.len(), s.input.len(), air.cap_base() + i));
+            s.observe(f);
+        }
+        for (pi, &pv) in pis_inner.iter().enumerate() {
+            positions.push((s.block_inputs.len(), s.input.len(), air.pub_pi() + pi));
+            s.observe(pv);
+        }
+        // (2) the lookup challenges (squeeze-only — nothing absorbed).
+        for _ in 0..air.nlc() {
+            let _ = s.sample_base();
+            let _ = s.sample_base();
+        }
+        // (3) the aux (permutation) cap, then α_stark.
+        for (i, &f) in cap_felts(&proof.aux_commit).iter().enumerate() {
+            positions.push((s.block_inputs.len(), s.input.len(), air.aux_cap_base() + i));
+            s.observe(f);
+        }
+        let _ = s.sample_ext();
+        // (4) the quotient cap, then ζ.
+        for (i, &f) in cap_felts(&proof.quotient_commit).iter().enumerate() {
+            positions.push((s.block_inputs.len(), s.input.len(), air.qcap_base() + i));
+            s.observe(f);
+        }
+        let _ = s.sample_ext();
+        // (5) the opened values (absorbed but bound elsewhere — the arith-tile pz columns / OOD fold).
+        for &x in &proof.opened.trace_local {
+            s.observe_ext(x);
+        }
+        for &x in &proof.opened.trace_next {
+            s.observe_ext(x);
+        }
+        for &x in &proof.opened.aux_local {
+            s.observe_ext(x);
+        }
+        for &x in &proof.opened.aux_next {
+            s.observe_ext(x);
+        }
+        for c in &proof.opened.quotient_chunks {
+            for &x in c {
+                s.observe_ext(x);
+            }
+        }
+        let _ = s.sample_ext(); // α_fri
+        // (6) the FRI commit-phase caps (each round observes its cap, then squeezes β_r).
+        for (r, comm) in proof.opening_proof.commit_phase_commits.iter().enumerate() {
+            for (i, &f) in cap_felts(comm).iter().enumerate() {
+                positions.push((s.block_inputs.len(), s.input.len(), air.commit_cap_base(r) + i));
+                s.observe(f);
+            }
+            let _ = s.sample_ext();
+        }
+        // group per absorbing block (one periodic one-hot each).
+        let mut by_block: std::collections::BTreeMap<usize, Vec<(usize, usize)>> = std::collections::BTreeMap::new();
+        for (blk, lane, idx) in positions {
+            by_block.entry(blk).or_default().push((lane, idx));
+        }
+        air.lookup.as_mut().unwrap().fs_binds = by_block.into_iter().collect();
+    }
     assert_eq!(n_terms, 2 * air.w_inner() + air.aux_terms() + 2 * air.nqc(), "lookup n_terms = 2·W + 2·aux_base_w + 2·nqc");
 
     // periodic-column values at ζ (verifier-computed publics), like `verify_lookup_proof_native`. is_zk=0 ⇒

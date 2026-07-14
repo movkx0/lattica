@@ -41,6 +41,19 @@ pub(crate) struct LookupCfg {
     /// degree-1 window column, so the naive `Π(α_L − e_i)` tree is degree ~N (the R5 blow-up) — chunking caps it.
     /// The pis-mode fold (every RangeCheck test) ignores this and walks the `ext_constraints` tree verbatim.
     pub lookups: Vec<p3_lookup::Lookup<Val>>,
+    /// **F1 FS-absorb binding (soundness fix — column-window only).** The FS transcript sponge ABSORBS the
+    /// inner proof's committed cap felts (trace/aux/quotient/commit-round) and inner public values into the
+    /// rate lanes `cur[0..RATE]` at each block's INPUT row, but those absorbed lanes are FREE WITNESSES —
+    /// they are NOT bound to the committed `pis` the openings authenticate against. Only the SQUEEZE outputs
+    /// are pinned (the challenge/index binds), so a malicious prover can absorb values ≠ the committed pis,
+    /// GRIND the FS challenges (α_L/α_stark/ζ/α_fri/β — landing hardest on the LogUp α_L, whose soundness is
+    /// pure challenge-after-commitment), and forge acceptance while the native verifier (recomputing the
+    /// challenge from the REAL committed caps) rejects. This binds each such absorbed felt to its committed
+    /// value: per distinct absorbing sponge block, `(block, Vec<(rate_lane, committed_pis_index)>)`; the AIR
+    /// asserts `cur[lane] == pis[idx]` at row `block·BLOCK`. Empty ⇒ NO binding (byte-identical — every
+    /// existing construction); populated ONLY by `build_symbolic_inner_window_lookup(bind_fs=true)`. Openings
+    /// (the ζ→α_fri absorbs) are the arith-tile `pz` columns, a CROSS-ROW bind NOT covered here (see notes).
+    pub fs_binds: Vec<(usize, Vec<(usize, usize)>)>,
 }
 
 // =================================================================================================
@@ -1068,8 +1081,22 @@ impl MonolithAir {
     pub(crate) fn c_bnd(&self) -> usize {
         self.commit_absorb_base()
     }
-    pub(crate) fn p_inst_first(&self) -> usize {
+    // ---- F1 FS-absorb binding periodics: one one-hot per distinct sponge block that absorbs a committed
+    // cap/pis felt, firing at the block's INPUT row (blk·BLOCK). Appended AFTER the commit-absorb region so
+    // an EMPTY `fs_binds` (every non-`bind_fs` construction) keeps p_inst_first/p_inst_last byte-for-byte. ----
+    pub(crate) fn fs_bind_base(&self) -> usize {
         self.commit_absorb_base() + self.n_commit_absorb()
+    }
+    // the recorded (block, [(rate_lane, committed_pis_index)]) groups — one per absorbing block; empty
+    // (no columns, no constraints) unless the column-window lookup builder populated them with `bind_fs`.
+    pub(crate) fn fs_binds(&self) -> &[(usize, Vec<(usize, usize)>)] {
+        self.lookup.as_ref().map_or(&[][..], |l| l.fs_binds.as_slice())
+    }
+    pub(crate) fn n_fs_bind(&self) -> usize {
+        self.fs_binds().len()
+    }
+    pub(crate) fn p_inst_first(&self) -> usize {
+        self.fs_bind_base() + self.n_fs_bind()
     }
     pub(crate) fn p_inst_last(&self) -> usize {
         self.p_inst_first() + 1
@@ -1330,6 +1357,14 @@ impl MonolithAir {
                 }
             }
             cols.push(cbnd); // c_bnd (union)
+        }
+        // F1 FS-absorb binding one-hots (column-window lookup, `bind_fs`): one per distinct sponge block that
+        // absorbs a committed cap/pis felt, firing at that block's INPUT row (blk·BLOCK) where cur[0..RATE]
+        // holds the absorbed rate lanes. Empty (0 columns) unless populated ⇒ byte-identical.
+        for &(blk, _) in self.fs_binds() {
+            let mut col = vec![Val::ZERO; h];
+            col[blk * BLOCK] = Val::ONE;
+            cols.push(col);
         }
         cols
     }
@@ -1654,6 +1689,20 @@ impl MonolithAir {
         for (k, &(_blk, lane)) in self.index_binds.iter().enumerate() {
             let b = p[idx_start + k].clone();
             builder.assert_zero(b * (cur[lane].clone() - pis[ext_pubs + k].clone()));
+        }
+        // ---------- F1 FIX (soundness): bind the FS-ABSORBED committed felts to their committed window pis.
+        // The sponge absorbs the inner proof's cap felts (trace/aux/quotient/commit-round) + inner public
+        // values into cur[0..RATE] at each block's INPUT row, but those rate lanes are FREE WITNESSES — the
+        // squeeze-binds above pin only the OUTPUT challenges, NOT these inputs. A malicious prover could grind
+        // them (≠ the committed pis) to forge the FS challenges (α_L/α_stark/ζ/…) and forge acceptance while
+        // the native verifier — recomputing the challenge from the REAL committed caps — rejects. Each
+        // recorded (block, [(lane, idx)]) group fires its periodic one-hot at row block·BLOCK and asserts the
+        // absorbed rate lane == the committed window value. Empty `fs_binds` ⇒ no constraints (byte-identical).
+        for (i, (_blk, lanes)) in self.fs_binds().iter().enumerate() {
+            let oh = p[self.fs_bind_base() + i].clone();
+            for &(lane, idx) in lanes {
+                builder.assert_zero(oh.clone() * (cur[lane].clone() - pis[idx].clone()));
+            }
         }
 
         // ---------- α_fri carrier (per-instance-persistent): held (except across instance boundaries); pinned

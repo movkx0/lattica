@@ -6674,7 +6674,7 @@ mod tests {
         );
 
         // ── Step 2/3: the OUTER verifies the wrap's LookupProof (FULL geometry; AIR-only for the degree gate). ──
-        let (outer, _otrace, _opis) = build_symbolic_inner_window_lookup(&wrap_cfg, &asm, &wrap_proof, &wpis, false, false, false, false, false);
+        let (outer, _otrace, _opis) = build_symbolic_inner_window_lookup(&wrap_cfg, &asm, &wrap_proof, &wpis, false, false, false, false, false, false);
         let (outer_fw, outer_h) = (outer.fused_w(), outer.height().trailing_zeros());
         let layout = AirLayout::from_air::<Val>(&outer);
         let log_nqc = get_log_num_quotient_chunks::<Val, MonolithAir>(&outer, layout, 0);
@@ -6788,7 +6788,7 @@ mod tests {
             asm.m.height().trailing_zeros(), wrap_proof.opening_proof.query_proofs.len(), wrap_proof.aux_width);
 
         // build + measure the outer verifying the wrap's LookupProof.
-        let (outer, otrace, opis) = build_symbolic_inner_window_lookup(&wrap_cfg, &asm, &wrap_proof, &wpis, false, false, false, false, true);
+        let (outer, otrace, opis) = build_symbolic_inner_window_lookup(&wrap_cfg, &asm, &wrap_proof, &wpis, false, false, false, false, false, true);
         let log_nqc = get_log_num_quotient_chunks::<Val, MonolithAir>(&outer, AirLayout::from_air::<Val>(&outer), 0);
         println!("SMALL-CAP self-comp: outer 2^{} rows, fused_w {}, log_nqc {log_nqc} (budget {LOG_BLOWUP})",
             outer.height().trailing_zeros(), outer.fused_w(), );
@@ -6826,7 +6826,7 @@ mod tests {
         let wrap_w = <AssembledOpeningsWrapCwAir as BaseAir<Val>>::width(&asm);
         let wrap_cfg = make_config_cap(1, 2, 2);
         let wrap_proof = prove_lookup_inner(&asm, wtrace, &wpis, false, &wrap_cfg);
-        let (outer, _t, _p) = build_symbolic_inner_window_lookup(&wrap_cfg, &asm, &wrap_proof, &wpis, false, false, false, false, false);
+        let (outer, _t, _p) = build_symbolic_inner_window_lookup(&wrap_cfg, &asm, &wrap_proof, &wpis, false, false, false, false, false, false);
         let log_nqc = get_log_num_quotient_chunks::<Val, MonolithAir>(&outer, AirLayout::from_air::<Val>(&outer), 0);
         let (ow, oh) = (outer.fused_w(), outer.height().trailing_zeros());
         // rough LDE-domain cell count = fused_w · 2^(outer_h + LOG_BLOWUP) — the dominant prove-RAM term.
@@ -6875,7 +6875,7 @@ mod tests {
             asm.m.height().trailing_zeros(), wrap_proof.opening_proof.query_proofs.len(), wrap_proof.aux_width);
 
         // ── Step 3: build the provable outer verifying the wrap's LookupProof (build_trace=true). ──
-        let (outer, otrace, opis) = build_symbolic_inner_window_lookup(&wrap_cfg, &asm, &wrap_proof, &wpis, false, false, false, false, true);
+        let (outer, otrace, opis) = build_symbolic_inner_window_lookup(&wrap_cfg, &asm, &wrap_proof, &wpis, false, false, false, false, false, true);
         let log_nqc = get_log_num_quotient_chunks::<Val, MonolithAir>(&outer, AirLayout::from_air::<Val>(&outer), 0);
         println!("CONST self-comp PROVE: outer 2^{} rows, fused_w {}, log_nqc {log_nqc} (budget {LOG_BLOWUP})",
             outer.height().trailing_zeros(), outer.fused_w());
@@ -6898,6 +6898,127 @@ mod tests {
         println!(
             "CANONICAL SELF-COMPOSITION: ConstAir wrap-verifies-wrap PROVED + verified + tamper-rejected (outer 2^{} rows, fused_w {}, log_nqc {log_nqc}). Peak RSS {} MiB",
             outer.height().trailing_zeros(), outer.fused_w(), peak_rss_mib()
+        );
+    }
+
+    /// **F1 FIX (degree) — the FS-absorb binding composes.** The ConstAir self-composition outer with `bind_fs`
+    /// (the F1 soundness fix: every FS-absorbed committed cap/pis felt bound `cur[lane] == pis[idx]`) still
+    /// composes at `log_nqc ≤ LOG_BLOWUP` — the added binds are degree-2 (periodic·(witness−witness), the SAME
+    /// shape as the challenge binds), so they do not blow the outer degree budget. Also asserts ≥1 felt is bound.
+    #[cfg(feature = "recursion")]
+    #[test]
+    fn self_composition_const_wrap_bind_fs_composes() {
+        use crate::lookup::prover::prove_lookup_inner;
+        use crate::recursion::monolith::tests::build_symbolic_inner_window_lookup;
+        use crate::recursion::monolith::MonolithAir;
+        use crate::recursion::native_fri::{gen_const_proof, make_config_cap};
+        use crate::recursion::native_verify::ConstAir;
+        use p3_air::symbolic::AirLayout;
+        use p3_uni_stark::get_log_num_quotient_chunks;
+
+        let inner_cfg = make_config_cap(1, 2, 2);
+        let (proof, pvs) = gen_const_proof(&inner_cfg, 7, 2);
+        let (asm, wtrace, wpis) = assemble_openings_wrap_cw_for(&inner_cfg, &ConstAir, &proof, &pvs, 1, 1, 0, false, false, true);
+        let wrap_cfg = make_config_cap(1, 2, 2);
+        let wrap_proof = prove_lookup_inner(&asm, wtrace, &wpis, false, &wrap_cfg);
+        // bind_fs=true (build_trace=false — AIR-only compose): the F1 binding is wired into the outer.
+        let (bound, _t, _p) = build_symbolic_inner_window_lookup(&wrap_cfg, &asm, &wrap_proof, &wpis, false, false, false, false, true, false);
+        let log_nqc = get_log_num_quotient_chunks::<Val, MonolithAir>(&bound, AirLayout::from_air::<Val>(&bound), 0);
+        let n_binds: usize = bound.fs_binds().iter().map(|(_, l)| l.len()).sum();
+        println!(
+            "CONST self-comp bind_fs: fused_w {}, {n_binds} FS-absorb binds over {} blocks, log_nqc {log_nqc} (budget {LOG_BLOWUP})",
+            bound.fused_w(),
+            bound.fs_binds().len()
+        );
+        assert!(n_binds > 0, "the FS-absorb binding must bind ≥1 absorbed cap/pis felt");
+        assert!(log_nqc <= LOG_BLOWUP, "the FS-absorb binding must compose within the outer degree budget");
+    }
+
+    /// **F1 FIX — the DECISIVE forge-rejection gate.** F1: the transcript sponge ABSORBS the inner proof's
+    /// committed cap felts as FREE WITNESSES, decoupled from the committed pis the openings authenticate against
+    /// — so a malicious prover can absorb values ≠ the committed caps, GRIND the FS challenges (landing hardest
+    /// on the LogUp α_L), and forge acceptance while the native verifier rejects. The `bind_fs` fix ties each
+    /// absorbed cap felt to its committed window value. This test CONSTRUCTS the forge and proves the fix
+    /// catches it: (1) the honest bound trace passes; (2) a forged trace — the committed WINDOW cap value of a
+    /// cap-mux-UNSELECTED entry set ≠ its FS-absorbed value (exactly the F1 decoupling, invisible to everything
+    /// but the binding) — is ACCEPTED by the un-fixed outer (the vulnerability) yet REJECTED by the fixed one.
+    /// A fix that fails to reject the forge is worthless, so this rejection IS the fix's validation. Uses
+    /// `check_constraints` (not a full FRI prove) to stay affordable; the honest FRI prove is the companion
+    /// `self_composition_const_wrap_proves`. Heavy-ish; `--release --features lookup,recursion -- --ignored`.
+    #[cfg(feature = "recursion")]
+    #[test]
+    #[ignore = "the F1 forge-rejection gate (check_constraints on the ConstAir self-comp outer); run `--release --features lookup,recursion -- --ignored`"]
+    fn self_composition_const_wrap_forge_rejects() {
+        use crate::lookup::prover::prove_lookup_inner;
+        use crate::recursion::monolith::tests::{build_symbolic_inner_window_lookup, sim_full_lookup};
+        use crate::recursion::monolith::MonolithAir;
+        use crate::recursion::native_fri::{gen_const_proof, make_config_cap};
+        use crate::recursion::native_verify::ConstAir;
+        use p3_air::symbolic::AirLayout;
+        use p3_field::PrimeField64;
+        use p3_uni_stark::get_log_num_quotient_chunks;
+
+        // ── Build + prove the ConstAir wrap (a tiny inner ⇒ a RAM-affordable outer). ──
+        let inner_cfg = make_config_cap(1, 2, 2);
+        let (proof, pvs) = gen_const_proof(&inner_cfg, 7, 2);
+        let (asm, wtrace, wpis) = assemble_openings_wrap_cw_for(&inner_cfg, &ConstAir, &proof, &pvs, 1, 1, 0, false, false, true);
+        let wrap_cfg = make_config_cap(1, 2, 2);
+        let wrap_proof = prove_lookup_inner(&asm, wtrace, &wpis, false, &wrap_cfg);
+
+        // ── The FIXED (bind_fs=true, build_trace=true) and BUGGY (bind_fs=false, AIR-only) outers. Both verify
+        // the SAME wrap LookupProof and share the SAME main trace (fs_binds add only periodic one-hots). ──
+        let (bound, trace, _pis) =
+            build_symbolic_inner_window_lookup(&wrap_cfg, &asm, &wrap_proof, &wpis, false, false, false, false, true, true);
+        let log_nqc = get_log_num_quotient_chunks::<Val, MonolithAir>(&bound, AirLayout::from_air::<Val>(&bound), 0);
+        assert!(log_nqc <= LOG_BLOWUP, "the FS-absorb binding must not blow the outer degree budget (log_nqc {log_nqc})");
+        let (buggy, _t, _p) =
+            build_symbolic_inner_window_lookup(&wrap_cfg, &asm, &wrap_proof, &wpis, false, false, false, false, false, false);
+
+        // A check_constraints that catches the debug-assert panic quietly ⇒ true = accepts, false = rejects.
+        let accepts = |air: &MonolithAir, tr: &RowMajorMatrix<Val>| -> bool {
+            let prev = std::panic::take_hook();
+            std::panic::set_hook(Box::new(|_| {}));
+            let ok = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| p3_air::check_constraints(air, tr, &[]))).is_ok();
+            std::panic::set_hook(prev);
+            ok
+        };
+
+        // ── Step 2: the HONEST trace passes BOTH (absorbed == committed by construction). ──
+        assert!(accepts(&bound, &trace), "the honest self-composition must pass WITH the binding");
+        assert!(accepts(&buggy, &trace), "the honest self-composition must pass without the binding (baseline)");
+
+        // ── Step 3: build the FORGE. Pick a trace-cap ENTRY the cap-mux never selects (2 queries < 4 entries),
+        // then set its committed WINDOW value ≠ its FS-absorbed value — the exact F1 decoupling. Nothing but the
+        // binding reads an unselected entry (the cap-mux selector is 0 there), so it is otherwise invisible. ──
+        let (_bi, _c, _b, _ch, _ib, index_felts, _lc, _lcb, _lcl) = sim_full_lookup(&asm, &wrap_proof, &wpis);
+        let log_global: usize =
+            wrap_proof.opening_proof.query_proofs[0].commit_phase_openings.iter().map(|o| o.log_arity as usize).sum::<usize>() + 4;
+        let (shift, size) = (bound.input_depth(), 1usize << bound.cap_height);
+        let mut selected = std::collections::BTreeSet::new();
+        for f in &index_felts {
+            let index = (f.as_canonical_u64() as usize) & ((1 << log_global) - 1);
+            selected.insert((index >> shift) & (size - 1));
+        }
+        let unselected = (0..size).find(|e| !selected.contains(e)).expect("a trace-cap entry the cap-mux never selects (2 queries < 4 entries)");
+        let idx = bound.cap_base() + unselected * 4; // the committed pis index of that entry's first felt
+        let (fw, col) = (bound.fused_w(), bound.pw(idx)); // the held window column mirroring pis[idx]
+        let mut forged = trace.clone();
+        let tampered = forged.values[col] + Val::ONE;
+        for r in 0..bound.height() {
+            forged.values[r * fw + col] = tampered; // held across the instance ⇒ persistence still holds
+        }
+
+        // ── Step 4: WITHOUT the fix the forge is INVISIBLE; WITH the fix it is REJECTED. This is the gate. ──
+        assert!(
+            accepts(&buggy, &forged),
+            "F1 (the vulnerability): the forged cap MUST be invisible without the binding — else this is not the F1 decoupling"
+        );
+        assert!(
+            !accepts(&bound, &forged),
+            "F1 FIX (the decisive result): the FS-absorb binding MUST reject the forged cap"
+        );
+        println!(
+            "F1 FORGE-REJECTION GATE PASSED: forged trace-cap entry {unselected} (committed pis {idx}) — INVISIBLE to the un-fixed outer, REJECTED by the fixed outer (log_nqc {log_nqc})."
         );
     }
 
