@@ -52,8 +52,19 @@ pub(crate) struct LookupCfg {
     /// value: per distinct absorbing sponge block, `(block, Vec<(rate_lane, committed_pis_index)>)`; the AIR
     /// asserts `cur[lane] == pis[idx]` at row `block·BLOCK`. Empty ⇒ NO binding (byte-identical — every
     /// existing construction); populated ONLY by `build_symbolic_inner_window_lookup(bind_fs=true)`. Openings
-    /// (the ζ→α_fri absorbs) are the arith-tile `pz` columns, a CROSS-ROW bind NOT covered here (see notes).
+    /// (the ζ→α_fri absorbs) are the arith-tile `pz` columns, a CROSS-ROW bind bridged via `fs_openings`.
     pub fs_binds: Vec<(usize, Vec<(usize, usize)>)>,
+    /// **F1 FS-absorb OPENED-VALUE binding (the LAST unbound absorb).** The transcript ALSO absorbs the inner
+    /// proof's opened values (`opened.{trace_local, trace_next, aux_local, aux_next, quotient_chunks}` — the
+    /// ζ→α_fri absorbs) to derive α_fri, but those absorbed felts are FREE WITNESSES, NOT tied to the arith-tile
+    /// `pz` columns the reduced-opening fold consumes — so a prover could absorb FAKE openings, grind α_fri, and
+    /// weaken FRI soundness. This is a CROSS-ROW bind (the absorb sits at a transcript row, `pz(k)` at the
+    /// super-tile arith head), bridged transitively through a HELD pis-window slot: this is the count of the
+    /// `2·n_terms` opening felts APPENDED to the pis window under `bind_fs` (`pw_opening`). bind 1 (via
+    /// `fs_binds`) pins each absorbed felt to its window slot at the absorb row; bind 2 (`eval_bci`, gated by the
+    /// arith-head selector) pins `cur[pz(k)]` to the SAME slot ⇒ absorbed == window == pz. 0 ⇒ absent
+    /// (byte-identical — every non-`bind_fs` build); `2·n_terms` under `build_symbolic_inner_window_lookup(bind_fs=true)`.
+    pub fs_openings: usize,
 }
 
 // =================================================================================================
@@ -659,9 +670,24 @@ impl MonolithAir {
     pub(crate) fn term_pi(&self) -> usize {
         self.aux_cap_end()
     }
-    pub(crate) fn pis_count(&self) -> usize {
-        // + the random cap (is_zk=1) or the aux cap (lookup); + the LogUp terminal (2 felts, lookup only).
+    // F1 opened-value bind: the pis-index where the FS-absorbed opening region begins — appended AFTER the LogUp
+    // terminal, so NO existing pis offset shifts. Equals the pre-opening pis_count; `n_fs_openings()` felts follow.
+    pub(crate) fn pis_openings_base(&self) -> usize {
         self.aux_cap_end() + if self.is_lookup() { 2 } else { 0 }
+    }
+    // F1 opened-value bind: 2·n_terms opening felts held in the pis window ONLY under bind_fs (0 otherwise ⇒
+    // byte-identical, and never present in pis-mode). See `LookupCfg::fs_openings`.
+    pub(crate) fn n_fs_openings(&self) -> usize {
+        self.lookup.as_ref().map_or(0, |l| l.fs_openings)
+    }
+    pub(crate) fn pis_count(&self) -> usize {
+        // + the random cap (is_zk=1) or the aux cap (lookup); + the LogUp terminal (2 felts, lookup only);
+        // + the FS-absorbed opening region (2·n_terms, bind_fs only — appended last so nothing above shifts).
+        self.pis_openings_base() + self.n_fs_openings()
+    }
+    // F1 opened-value bind: absolute column of the k-th FS-absorbed opening felt in the (held) pis window.
+    pub(crate) fn pw_opening(&self, k: usize) -> usize {
+        self.pw(self.pis_openings_base() + k)
     }
     // pis cap layout — the FULL cap (2^cap_height entries) for a non-constant inner (so the cap-mux can select
     // cap[index>>shift] by the index bits), a single shared entry (stride 4) for ConstAir. For ConstAir these
@@ -1702,6 +1728,20 @@ impl MonolithAir {
             let oh = p[self.fs_bind_base() + i].clone();
             for &(lane, idx) in lanes {
                 builder.assert_zero(oh.clone() * (cur[lane].clone() - pis[idx].clone()));
+            }
+        }
+        // ---------- F1 FIX (soundness, cross-row) — bind 2: pin the arith-tile `pz` (the reduced-opening fold's
+        // INPUT) to the SAME held window slot the FS-absorbed opened value is pinned to (bind 1, above, via
+        // `fs_binds` with idx = the opening slot). The absorb sits at a transcript row and `pz(k)` at the arith
+        // head, so no same-row equality reaches across; the constant pis window is the bridge. At the arith head
+        // (`tf`), `cur[pz(k)] == pw_opening(2k)`; combined with bind 1 (`absorbed == pw_opening(2k)`) this closes
+        // `absorbed == pz` transitively — the prover can no longer grind α_fri on fake openings. Degree 2 (tf ·
+        // (witness − witness)), the SAME shape as the challenge binds. Present ONLY under bind_fs (empty else ⇒
+        // byte-identical); requires the `pz` tile (FULL / narrow_arith — NOT narrow_openings, where pz is externalized).
+        if self.n_fs_openings() > 0 {
+            for k in 0..self.n_terms {
+                builder.assert_zero(tf.clone() * (cur[self.pz(k)].clone() - cur[self.pw_opening(2 * k)].clone()));
+                builder.assert_zero(tf.clone() * (cur[self.pz(k) + 1].clone() - cur[self.pw_opening(2 * k + 1)].clone()));
             }
         }
 

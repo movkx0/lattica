@@ -6902,11 +6902,14 @@ mod tests {
     }
 
     /// **F1 fix — the fast FORGE-REJECTION gate (the soundness proof of `bind_fs`).** Build a SMALL RangeCheck
-    /// column-window lookup outer WITH `bind_fs`, confirm the honest trace passes `check_constraints` (the
-    /// `cur[lane]==pis[idx]` bindings hold — absorbed == committed by construction), then TAMPER one bound
-    /// FS-absorbed felt so it differs from its committed pis (the exact F1 grind: absorb ≠ what you commit) and
-    /// confirm the outer now REJECTS. Without the fix this tamper is invisible; with it, the binding fires. Small
-    /// inner ⇒ ~minutes vs the 53-min ConstAir-wrap forge test.
+    /// column-window lookup outer WITH `bind_fs`, confirm the honest trace passes `check_constraints` (every
+    /// `cur[lane]==pis[idx]` binding holds — absorbed == committed by construction), then TAMPER a bound felt so
+    /// it differs from its committed pis (the exact F1 grind: absorb ≠ what you commit) and confirm the outer now
+    /// REJECTS. Covers all THREE surfaces: (a-cap) a FS-absorbed CAP felt; (b) a FS-absorbed OPENED value (the
+    /// last unbound absorb — the α_fri grind) pinned to its held window slot by bind 1; (c) the arith-tile `pz`
+    /// the reduced-opening fold consumes, pinned to the SAME slot by bind 2 — so (b)+(c) prove `absorbed == pz`
+    /// transitively from both sides. Without the fix these tampers are invisible; with it, the binding fires.
+    /// Small inner ⇒ ~minutes vs the 53-min ConstAir-wrap forge test.
     #[cfg(feature = "recursion")]
     #[test]
     #[ignore = "moderate: a column-window lookup outer + 2 check_constraints scans (the F1 forge-rejection proof)"]
@@ -6922,16 +6925,52 @@ mod tests {
             build_symbolic_inner_window_lookup(&cfg, &inner, &proof, &[], false, false, false, false, true, true);
         assert!(outer.n_fs_bind() > 0, "bind_fs must record ≥1 FS-absorb binding");
         let width = outer.fused_w();
-        // honest trace accepts — the bindings hold (this also validates the (block,lane,idx) position mapping).
+        // the FS-opening region delta under bind_fs (2·n_terms held pis-window opening felts), cross-checked
+        // against a bind_fs=false build (AIR-only): flag-off is byte-identical width, so the delta IS the region.
+        let (outer_off, _t, _p) =
+            build_symbolic_inner_window_lookup(&cfg, &inner, &proof, &[], false, false, false, false, false, false);
+        let delta = width - outer_off.fused_w();
+        assert_eq!(delta, 2 * outer.n_terms, "the bind_fs fused_w delta == the 2·n_terms opening region");
+
+        // (a) honest trace accepts — every bind holds (validates the window-fill + the (block,lane,idx) position
+        // mapping for BOTH the caps and the new opened values, AND bind 2 `cur[pz(k)] == pw_opening(2k)`).
         p3_air::check_constraints(&outer, &trace, &[]);
-        // forge: tamper the first bound absorbed felt at its absorb row ⇒ cur[lane] ≠ pis[idx] ⇒ binding fires ⇒ reject.
+
+        // (a-cap) forge a CAP felt: tamper the first bound absorbed felt at its absorb row ⇒ cur[lane] ≠ pis[idx] ⇒ reject.
         let (block, lanes) = outer.fs_binds()[0].clone();
         let (lane, _idx) = lanes[0];
-        let mut bad = trace;
-        bad.values[block * BLOCK * width + lane] += Val::ONE;
-        let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| p3_air::check_constraints(&outer, &bad, &[])));
-        assert!(caught.is_err(), "F1 fix: a tampered FS-absorbed felt (≠ its committed pis) MUST be rejected");
-        println!("F1 forge-rejection CONFIRMED: {} FS-absorb bindings; honest accepts, tampered felt rejected", outer.n_fs_bind());
+        let mut bad_cap = trace.clone();
+        bad_cap.values[block * BLOCK * width + lane] += Val::ONE;
+        let caught_cap = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| p3_air::check_constraints(&outer, &bad_cap, &[])));
+        assert!(caught_cap.is_err(), "F1: a tampered FS-absorbed CAP felt (≠ its committed pis) MUST be rejected");
+
+        // (b) forge an OPENED VALUE (the F1 α_fri grind): find an opening bind (idx ≥ pis_openings_base) and tamper
+        // its absorbed felt at its absorb row ⇒ bind 1 (`cur[lane] == pw_opening`) fires ⇒ reject. This IS the last
+        // unbound absorb: a fake opening steering α_fri that no longer matches the committed/folded pz.
+        let ob = outer.pis_openings_base();
+        let (oblock, olane) = outer
+            .fs_binds()
+            .iter()
+            .find_map(|(blk, lanes)| lanes.iter().find(|(_, idx)| *idx >= ob).map(|&(l, _)| (*blk, l)))
+            .expect("bind_fs must bind ≥1 FS-absorbed OPENED value to the window");
+        let mut bad_open = trace.clone();
+        bad_open.values[oblock * BLOCK * width + olane] += Val::ONE;
+        let caught_open = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| p3_air::check_constraints(&outer, &bad_open, &[])));
+        assert!(caught_open.is_err(), "F1: a tampered FS-absorbed OPENED value (≠ its window slot) MUST be rejected");
+
+        // (c) forge the consumed `pz`: tamper pz(0) at query 0's arith head (row `tr`, tf=1) ⇒ bind 2
+        // (`cur[pz(0)] == pw_opening(0)`) fires ⇒ reject. (b)+(c) pin absorbed == window == pz from BOTH sides.
+        let mut bad_pz = trace.clone();
+        bad_pz.values[outer.tr() * width + outer.pz(0)] += Val::ONE;
+        let caught_pz = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| p3_air::check_constraints(&outer, &bad_pz, &[])));
+        assert!(caught_pz.is_err(), "F1: a tampered arith-tile `pz` felt (≠ its window slot) MUST be rejected");
+
+        let felts: usize = outer.fs_binds().iter().map(|(_, l)| l.len()).sum();
+        println!(
+            "F1 forge-rejection CONFIRMED: {} FS-absorb blocks / {felts} bound felts ({} opened-value felts, fused_w +{delta}); honest ACCEPTS; tampered CAP, OPENED-value, and pz felts ALL rejected",
+            outer.n_fs_bind(),
+            2 * outer.n_terms
+        );
     }
 
     /// **F1 FIX (degree) — the FS-absorb binding composes.** The ConstAir self-composition outer with `bind_fs`

@@ -3188,6 +3188,7 @@ where
             ext_constraints: ext,
             lookups: lookups.to_vec(), // pis-mode ignores these (n_prod_acc = 0); populated for the shared field
             fs_binds: Vec::new(),      // pis-mode: no FS-absorb binding (byte-identical)
+            fs_openings: 0,            // pis-mode: no FS-absorb opening bind (byte-identical)
         }),
     };
     // sanity: n_terms decomposes as 2·W (trace) + 2·aux_base_w (aux) + 2·nqc (quotient).
@@ -3405,17 +3406,37 @@ where
             ext_constraints: ext.clone(),
             lookups: lookups.to_vec(), // column-window: the outer product-chunks each fraction from these
             fs_binds: Vec::new(),      // populated below when `bind_fs` (the F1 FS-absorb soundness bind)
+            fs_openings: if bind_fs { 2 * n_terms } else { 0 }, // F1 opened-value bind: the held pis-window opening region
         }),
     };
+    // F1 opened-value bind: the inner proof's opened values in the reduced-opening FOLD order (trace_local ‖
+    // trace_next ‖ aux_local ‖ aux_next ‖ quotient_chunks — EXACTLY `multicol_query_terms_lookup`'s term order
+    // AND `sim_full_lookup`'s absorb order), each an F_p² element ⇒ 2 base felts. Held in the pis window
+    // (`pw_opening`) so bind 1 (absorb row) pins the ABSORBED felt and bind 2 (arith head) pins the consumed
+    // `pz`, to the SAME slot ⇒ absorbed == pz. Used below (section 5 positions + the pis-window append), bind_fs only.
+    let opening_vals: Vec<Challenge> = {
+        let mut v = Vec::new();
+        v.extend_from_slice(&proof.opened.trace_local);
+        v.extend_from_slice(&proof.opened.trace_next);
+        v.extend_from_slice(&proof.opened.aux_local);
+        v.extend_from_slice(&proof.opened.aux_next);
+        for c in &proof.opened.quotient_chunks {
+            v.extend_from_slice(c);
+        }
+        v
+    };
+    assert_eq!(opening_vals.len(), n_terms, "F1 opened-value bind: opened-value count == reduced-opening fold term count");
     // F1 FIX: record the (block, lane, committed-pis-index) of every FS-absorbed cap/pis felt so the AIR can
     // bind each absorbed rate lane to its committed window value (closing the challenge-grinding forge). The
     // replay mirrors `sim_full_lookup`'s absorb schedule EXACTLY; the committed pis indices reuse the SAME
     // accessors the cap-mux binds against (`cap_base`/`qcap_base`/`aux_cap_base`/`commit_cap_base`/`pub_pi`),
     // so the absorbed felt is tied to precisely the value the openings authenticate. Requires `!narrow_caps`
-    // (the caps must live in the pis window). Opened values (ζ→α_fri) are the arith-tile `pz` columns — a
-    // CROSS-ROW bind not expressible as this same-row window equality — so they are absorbed but NOT bound here.
+    // (the caps must live in the pis window). The opened values (ζ→α_fri) are ALSO bound here (section 5): the
+    // absorbed opening felt is pinned to a HELD pis-window opening slot (`pw_opening`, appended under bind_fs) —
+    // bind 1 of the cross-row transitive bind whose bind 2 (`cur[pz(k)] == pw_opening`) lives in `eval_bci`.
     if bind_fs {
         assert!(!narrow_caps, "bind_fs needs the caps in the pis window (narrow_caps externalizes them to the sponge bus)");
+        assert!(!narrow_openings, "bind_fs binds the opened values to the `pz` tile (narrow_openings externalizes pz to the sponge-opening bus)");
         let mut positions: Vec<(usize, usize, usize)> = Vec::new(); // (block, lane, committed pis index)
         let mut s = Sim::new();
         // (1) trace cap felts, then inner public values.
@@ -3444,22 +3465,16 @@ where
             s.observe(f);
         }
         let _ = s.sample_ext();
-        // (5) the opened values (absorbed but bound elsewhere — the arith-tile pz columns / OOD fold).
-        for &x in &proof.opened.trace_local {
-            s.observe_ext(x);
-        }
-        for &x in &proof.opened.trace_next {
-            s.observe_ext(x);
-        }
-        for &x in &proof.opened.aux_local {
-            s.observe_ext(x);
-        }
-        for &x in &proof.opened.aux_next {
-            s.observe_ext(x);
-        }
-        for c in &proof.opened.quotient_chunks {
-            for &x in c {
-                s.observe_ext(x);
+        // (5) the opened values — bind 1 of the cross-row transitive bind: record each absorbed felt's
+        // (block, lane) AND map it to its HELD pis-window opening slot `pis_openings_base() + 2·gi + kk`
+        // (gi = the fold-term index in `opening_vals`, kk = the F_p² coefficient). `observe_ext` = `observe(c0);
+        // observe(c1)`, so unrolling to per-coefficient `observe` is byte-identical to the prior absorb schedule
+        // (α_fri/β unchanged) — it only ADDS the position recording. The window slot holds cc(opening_vals[gi]),
+        // and bind 2 pins `cur[pz(gi)]` to the same slot, so binding lane==slot ties absorbed to the folded pz.
+        for (gi, x) in opening_vals.iter().enumerate() {
+            for (kk, &c) in x.as_basis_coefficients_slice().iter().enumerate() {
+                positions.push((s.block_inputs.len(), s.input.len(), air.pis_openings_base() + 2 * gi + kk));
+                s.observe(c);
             }
         }
         let _ = s.sample_ext(); // α_fri
@@ -3542,6 +3557,16 @@ where
     let term = cc(proof.terminal.0);
     pis.push(term[0]);
     pis.push(term[1]);
+    // F1 opened-value bind: APPEND the 2·n_terms opening felts LAST (so no offset above shifts), filling the held
+    // pis-window opening region (`pw_opening`). The trace-fill loop writes them into `pw(pis_openings_base()+j)`;
+    // bind 1 pins each absorbed felt to `pis[pis_openings_base()+2·gi+kk]`, bind 2 pins `cur[pz(gi)]` to the same.
+    if bind_fs {
+        for x in &opening_vals {
+            let c = cc(*x);
+            pis.push(c[0]);
+            pis.push(c[1]);
+        }
+    }
     assert_eq!(pis.len(), air.pis_count(), "self-composition column-window lookup pis layout matches pis_count");
 
     let fw = air.fused_w();
