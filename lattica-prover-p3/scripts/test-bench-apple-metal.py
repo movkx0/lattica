@@ -31,6 +31,15 @@ class Experiment(unittest.TestCase):
         self.assertEqual(set(counts.values()), {3})
         self.assertEqual({a["threads"] for a in measured if a["level"] == "baseline"}, {8, 16, 18, 24})
 
+    def test_full_matrix_qualifies_quotient_at_24_threads_before_all_measurements(self):
+        trials = B.schedule(pipeline_threads=(18,24), pilot_level="quotient")
+        self.assertEqual(len(trials), 74)
+        self.assertEqual({t["backend"] for t in trials[:2]}, {"shared", "copy"})
+        self.assertTrue(all(t["phase"] == "pilot" and t["threads"] == 24 and t["quotient"] == 1 and t["fusion"] == 1 and t["readback"] == 1 for t in trials[:2]))
+        measured = trials[2:]
+        self.assertEqual(sum(t["threads"] == 18 for t in measured), 27)
+        self.assertEqual(sum(t["threads"] == 24 for t in measured), 27)
+
     def test_18_thread_extension_is_fresh_balanced_and_reverses_second_round(self):
         trials = B.schedule((18,), baseline_only=True, pilots=False)
         self.assertEqual(len(trials), 9)

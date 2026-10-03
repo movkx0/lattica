@@ -34,12 +34,15 @@ def arm(backend, threads, level="baseline", repeat=1, phase="measured"):
             "readback": int(level != "baseline"), "fusion": int(level in ("fusion", "quotient")),
             "quotient": int(level == "quotient"), "repeat": repeat, "phase": phase}
 
-def schedule(threads=(8, 16, 18, 24), *, baseline_only=False, pipeline_threads=(24,), pilots=True):
+def schedule(threads=(8, 16, 18, 24), *, baseline_only=False, pipeline_threads=(24,), pilots=True, pilot_level="baseline"):
     if not threads or len(set(threads)) != len(threads) or any(t not in (8, 16, 18, 24) for t in threads):
         raise ValueError("thread settings must be distinct selections from 8, 16, 18, 24")
     if len(set(pipeline_threads)) != len(pipeline_threads) or any(t not in (8, 16, 18, 24) for t in pipeline_threads):
         raise ValueError("invalid pipeline thread settings")
-    pilot_trials = [arm(mode, max(threads), phase="pilot") for mode in ("shared", "copy")] if pilots else []
+    if pilot_level not in ("baseline", "quotient"):
+        raise ValueError("pilot level must be baseline or quotient")
+    largest_thread_count = max((*threads, *(() if baseline_only else pipeline_threads)))
+    pilot_trials = [arm(mode, largest_thread_count, level=pilot_level, phase="pilot") for mode in ("shared", "copy")] if pilots else []
     base = [(mode, count) for count in threads for mode in ("cpu", "shared", "copy")]
     measured = []
     for repeat in (1, 2, 3):
@@ -102,6 +105,7 @@ def main():
     parser.add_argument("--linux", type=Path, required=True)
     parser.add_argument("--qualification", type=Path, required=True)
     parser.add_argument("--pilots-only", action="store_true")
+    parser.add_argument("--pilot-level", choices=("baseline", "quotient"), default="baseline", help="qualify the largest enabled pipeline before measured trials")
     parser.add_argument("--threads", nargs="+", type=int, choices=(8, 16, 18, 24), default=(8, 16, 18, 24))
     parser.add_argument("--baseline-only", action="store_true")
     parser.add_argument("--pipeline-threads", nargs="+", type=int, choices=(8, 16, 18, 24), default=(24,))
@@ -109,7 +113,7 @@ def main():
     args = parser.parse_args()
     if args.pilots_only and args.reuse_pilots_from:
         parser.error("--pilots-only cannot reuse pilots")
-    selected_schedule = schedule(args.threads, baseline_only=args.baseline_only, pipeline_threads=args.pipeline_threads, pilots=not args.reuse_pilots_from)
+    selected_schedule = schedule(args.threads, baseline_only=args.baseline_only, pipeline_threads=args.pipeline_threads, pilots=not args.reuse_pilots_from, pilot_level=args.pilot_level)
     if platform.system() != "Darwin" or platform.machine() != "arm64":
         parser.error("requires Apple Silicon macOS")
     os.umask(0o077)

@@ -4,6 +4,9 @@
 //! band over a large spill-backed row-major matrix repeatedly dirties the same
 //! pages. Append each band contiguously instead, then fill whole row blocks once.
 //! This is host layout work only: no arithmetic, randomness, or transcript change.
+//! Quotient outputs use explicitly bounded heap storage, matching the CPU
+//! quotient profile; retaining these outputs must not consume the separate
+//! mapping budget intended for the large main/preprocessing matrices.
 
 use crate::config::Val;
 use p3_matrix::dense::RowMajorMatrix;
@@ -23,6 +26,7 @@ pub(super) struct HostReadback {
     elements: usize,
     values: Vec<Val>,
     parallel_decode: bool,
+    heap_output: bool,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -34,6 +38,45 @@ pub(super) struct ReorderStats {
 
 impl HostReadback {
     pub fn new(height: usize, width: usize, columns_per_band: usize) -> Result<Self, String> {
+        Self::new_with_storage(height, width, columns_per_band, false)
+    }
+
+    /// Match the CPU quotient profile's explicitly retained heap storage. Each
+    /// matrix is bounded to 2 GiB; the commit plan charges every retained output
+    /// and its reorder workspace, and the worker still enforces its RSS limit.
+    pub fn new_quotient(
+        height: usize,
+        width: usize,
+        columns_per_band: usize,
+    ) -> Result<Self, String> {
+        Self::new_with_storage(height, width, columns_per_band, true)
+    }
+
+    fn reserve(elements: usize, heap_output: bool) -> Result<Vec<Val>, String> {
+        if heap_output {
+            if elements
+                .checked_mul(size_of::<Val>())
+                .is_none_or(|n| n > (2 << 30))
+            {
+                return Err("quotient readback exceeds the 2 GiB per-matrix heap bound".into());
+            }
+            #[cfg(feature = "stream")]
+            return crate::spill_alloc::heap_with_capacity(elements, 2 << 30)
+                .ok_or_else(|| "bounded quotient heap reservation failed".into());
+        }
+        let mut values = Vec::new();
+        values
+            .try_reserve_exact(elements)
+            .map_err(|e| format!("LDE readback reservation: {e}"))?;
+        Ok(values)
+    }
+
+    fn new_with_storage(
+        height: usize,
+        width: usize,
+        columns_per_band: usize,
+        heap_output: bool,
+    ) -> Result<Self, String> {
         if height == 0 || width == 0 || columns_per_band == 0 {
             return Err("LDE readback dimensions must be nonzero".into());
         }
@@ -46,10 +89,7 @@ impl HostReadback {
         if bytes > isize::MAX as usize {
             return Err("LDE readback exceeds allocation range".into());
         }
-        let mut values = Vec::new();
-        values
-            .try_reserve_exact(elements)
-            .map_err(|e| format!("LDE readback reservation: {e}"))?;
+        let values = Self::reserve(elements, heap_output)?;
         Ok(Self {
             height,
             width,
@@ -57,6 +97,7 @@ impl HostReadback {
             elements,
             values,
             parallel_decode: false,
+            heap_output,
         })
     }
 
@@ -140,9 +181,7 @@ impl HostReadback {
         }
         let started = Instant::now();
         let bytes = self.elements * size_of::<Val>();
-        let mut output = Vec::<Val>::new();
-        output
-            .try_reserve_exact(self.elements)
+        let mut output = Self::reserve(self.elements, self.heap_output)
             .map_err(|e| format!("LDE row-major reservation: {e}"))?;
         let rows_per_task = (ROW_TASK_BYTES / size_of::<Val>() / self.width).max(1);
         let task_elements = rows_per_task * self.width;
@@ -246,6 +285,64 @@ mod tests {
         assert_eq!(output.values.as_ptr(), address);
         assert_eq!(stats.bytes, 0);
         assert_eq!(stats.workspace_bytes, 0);
+    }
+
+    #[cfg(feature = "stream")]
+    #[test]
+    fn quotient_readback_retains_bounded_heap_without_spill_fallback() {
+        const FLAG: &str = "LATTICA_QUOTIENT_HEAP_READBACK_TEST";
+        if std::env::var_os(FLAG).is_none() {
+            let status = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "block_v2::gpu_hash::engine::lde_readback::tests::quotient_readback_retains_bounded_heap_without_spill_fallback",
+                    "--test-threads=1",
+                ])
+                .env(FLAG, "1")
+                .env("LATTICA_SPILL_BACKING", "memory")
+                .env("LATTICA_SPILL_MAX_BYTES", "1")
+                .status()
+                .unwrap();
+            assert!(status.success());
+            return;
+        }
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(2)
+            .build()
+            .unwrap();
+        pool.install(|| {
+            let _scope = crate::spill_alloc::SpillScope::arm();
+            // 96 MiB exceeds the spill threshold. Exercise both a partial final
+            // band and single-band ownership, under a one-byte mapping budget.
+            let height = 1 << 22;
+            let width = 3;
+            for band in [2, 3] {
+                let mut writer = HostReadback::new_quotient(height, width, band)
+                    .unwrap()
+                    .with_parallel_decode(true);
+                for first in (0..width).step_by(band) {
+                    let columns = band.min(width - first);
+                    for row0 in (0..height).step_by(4096) {
+                        let rows = 4096.min(height - row0);
+                        let raw: Vec<_> = (row0..row0 + rows)
+                            .flat_map(|row| (first..first + columns).map(move |col| word(row, col)))
+                            .collect();
+                        writer.append_rows(first, columns, row0, &raw).unwrap();
+                    }
+                }
+                let (matrix, _) = writer.finish().unwrap();
+                assert_eq!(matrix.values.len(), height * width);
+                for (index, value) in matrix.values.iter().enumerate() {
+                    assert_eq!(*value, Val::new(word(index / width, index % width)));
+                }
+                assert_eq!(crate::spill_alloc::spill_stats(), (0, 0));
+                drop(matrix);
+            }
+            let mut ordinary = Vec::<Val>::new();
+            assert!(ordinary.try_reserve_exact(height * width).is_err());
+            assert!(HostReadback::new_quotient((2 << 30) / 8 + 1, 1, 1).is_err());
+            assert_eq!(crate::spill_alloc::spill_stats(), (0, 0));
+        });
     }
 
     #[test]

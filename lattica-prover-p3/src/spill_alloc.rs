@@ -204,31 +204,41 @@ pub struct SpillAlloc;
 /// This is not a mapping-failure fallback. Callers still need a process RAM cap.
 #[cfg(any(feature = "block-v2", test))]
 pub(crate) fn copy_to_heap<T: Copy>(source: &[T], byte_limit: usize) -> Option<Vec<T>> {
+    let mut values = heap_with_capacity(source.len(), byte_limit)?;
+    values.extend_from_slice(source);
+    Some(values)
+}
+
+/// Explicit bounded heap storage, including while spilling is armed. The caller
+/// owns initialization and must account for retained buffers in its host/RSS
+/// budget. This never retries a failed mapped allocation on the heap.
+#[cfg(any(feature = "block-v2", test))]
+pub(crate) fn heap_with_capacity<T>(capacity: usize, byte_limit: usize) -> Option<Vec<T>> {
     const MAX_WORKSPACE: usize = 2 << 30;
-    let layout = Layout::array::<T>(source.len()).ok()?;
+    let layout = Layout::array::<T>(capacity).ok()?;
     if byte_limit > MAX_WORKSPACE || layout.size() > byte_limit {
         return None;
     }
     if layout.size() < THRESHOLD || layout.align() > PAGE {
         // These allocations already take the direct System path, even armed.
-        return Some(source.to_vec());
+        let mut values = Vec::new();
+        values.try_reserve_exact(capacity).ok()?;
+        return Some(values);
     }
     let payload = layout.size().checked_add(PAGE - 1)? & !(PAGE - 1);
     let total = payload.checked_add(PAGE)?;
     let system_layout = Layout::from_size_align(total, PAGE).ok()?;
     // SAFETY: the allocation has the exact header layout expected by SpillAlloc
-    // for this Vec's capacity/alignment. T is Copy, all elements are initialized,
-    // the source does not overlap this fresh allocation, and ownership is moved
-    // to Vec exactly once. Allocation failure never returns an invalid Vec.
+    // for this Vec's capacity/alignment. Length is zero, so no uninitialized
+    // element is exposed or dropped. Ownership moves to Vec exactly once.
     unsafe {
         let base = System.alloc(system_layout);
         if base.is_null() {
-            std::alloc::handle_alloc_error(system_layout);
+            return None;
         }
         write_hdr(base, MAGIC_SYS, -1, total as u64);
         let data = base.add(PAGE).cast::<T>();
-        std::ptr::copy_nonoverlapping(source.as_ptr(), data, source.len());
-        Some(Vec::from_raw_parts(data, source.len(), source.len()))
+        Some(Vec::from_raw_parts(data, 0, capacity))
     }
 }
 

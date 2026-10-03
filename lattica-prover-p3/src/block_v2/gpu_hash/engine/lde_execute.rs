@@ -528,8 +528,12 @@ impl Engine {
         })?;
         for (matrix_index, input) in inputs.iter().enumerate() {
             let shape = shapes[matrix_index];
-            let mut readback = HostReadback::new(height, shape.width, plan.columns_per_tile())?
-                .with_parallel_decode(parallel_readback);
+            let mut readback = if masks.is_some() {
+                HostReadback::new_quotient(height, shape.width, plan.columns_per_tile())?
+            } else {
+                HostReadback::new(height, shape.width, plan.columns_per_tile())?
+            }
+            .with_parallel_decode(parallel_readback);
             for tile in plan.tiles().filter(|t| t.matrix == matrix_index) {
                 buffers
                     .b
