@@ -37,6 +37,31 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run all unit + integration tests");
     test_step.dependOn(&run_tests.step);
 
+    // Opt-in research statement calculator: native Zig only, no Rust linkage
+    // or recursive-proof acceptance. The caller supplies the trusted context.
+    const commitment_mod = b.createModule(.{
+        .root_source_file = b.path("src/block_v2.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const expected_root_mod = b.createModule(.{
+        .root_source_file = b.path("src/block_v2_expected_root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    expected_root_mod.addImport("commitment", commitment_mod);
+    const expected_root = b.addExecutable(.{
+        .name = "block-v2-expected-root",
+        .root_module = expected_root_mod,
+    });
+    const install_expected_root = b.addInstallArtifact(expected_root, .{});
+    b.step("block-v2-expected-root", "Build the research grouped-eight statement calculator")
+        .dependOn(&install_expected_root.step);
+    const expected_root_tests = b.addTest(.{ .root_module = expected_root_mod });
+    const run_expected_root_tests = b.addRunArtifact(expected_root_tests);
+    b.step("test-block-v2-expected-root", "Test native grouped-eight statement derivation")
+        .dependOn(&run_expected_root_tests.step);
+
     // Production-mode compile probe (audit M-09/M-10): builds the consensus surface with
     // `lattica_production = true`, so `node.bootstrapMint` and `node.mock` are compiled out — a
     // successful compile proves the live path uses no genesis/test-only helpers. Compiling is the test.

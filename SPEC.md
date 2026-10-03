@@ -20,6 +20,27 @@ alongside it in this repository; see [§10](#10-implementation-map).
 > formats see `docs/soundness-budget.md` and `docs/wire-format.md`. The protocol sections (§1–§7)
 > remain normative.
 
+### Candidate / inactive block-proving v2 boundary
+
+The approved [incremental recursive block-proving v2 architecture](docs/block-proving-v2.md) is a
+separate, **CANDIDATE / INACTIVE** block-proof family, not a live consensus change. Historical v1
+proof bytes, parameters, transaction-root rules, and verification remain unchanged. The new family
+targets an ordered 64-leaf Merkle commitment, at most 64 total transactions including issuance,
+one final aggregate proof ≤2 MiB, and a host-controlled 12-minute transaction-block cadence.
+
+Wallet witnesses stay local; aggregators receive only proofs and public data. In-block individual
+proof containers, direct witness batches, and curve/SNARK wraps are excluded. Root-only verification
+without inner proofs has been demonstrated by the candidate's four-transaction,
+two-level research proof after deleting all inner artifacts. This is not a
+production acceptance ABI or an activated block format. The full depth-six,
+64-transaction feasibility/performance and security gates remain unmet; see the
+[current evidence](docs/bounded-execution-engine.md).
+
+The candidate cubic-extension, binary-FRI profile and resource budgets are recorded in the linked
+architecture, not frozen here. Activation requires fixed-geometry recursion, complete-tree soundness,
+full join-split/HTLC/issuance coverage, reviewed encodings, and explicit host-chain activation. No v2
+proof-byte schema or consensus version/tag assignment is defined by this documentation change.
+
 ---
 
 ## 1. Motivation

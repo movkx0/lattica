@@ -129,7 +129,15 @@ Poseidon2 is **width 16** (298 cols vs 180); (2) the **extension field is ~16 by
 Net ~4% for a full circuit rewrite plus multi-limb `u64` value/range/balance arithmetic. **Not
 worth it** — Goldilocks stays.
 
-## Batch aggregation — one proof per block (implemented: `batch_joinsplit_air`)
+## Batch aggregation — legacy circuit and frozen measurements
+
+> **Superseded block-path guidance:** the measurements and v1 circuit limits below remain historical
+> evidence. [Block-proving v2](block-proving-v2.md) excludes direct witness batches and individual
+> proofs retained in blocks, even as interim paths. Its separate cubic/q128 profile is candidate/inactive,
+> unfrozen pending complete-tree soundness and bounded recursion. This document's per-proof v1
+> figures are not v2 security or performance results. Four-transaction/two-level v2
+> measurements now exist; the depth-six/64-transaction and incremental deadline
+> gates remain unqualified. See the [current evidence](bounded-execution-engine.md).
 
 The production batch circuit `lattica-prover-p3::batch_joinsplit_air` proves `n` **distinct** join-split
 transactions as a **single** proof (the spend AIR tiled `n` times, per-tile self-contained, with an
@@ -140,9 +148,9 @@ the staging columns + the fold (a few extra columns + the trailing free padding 
 
 **Proven-soundness floor ⇒ `MAX_BATCH_TILES = 64`.** Recomputed at batch height (`batch_proven_security_bits`):
 103 bits through n=8, 102 @ n=16, 101 @ n=32, **100 @ n=64 (height 2^18)**, 99 @ n=128. So one proof
-covers up to **64** transactions at the ≥100-bit floor; a larger block emits **multiple** batch proofs of
-≤64 tiles each (or a future config raises `num_queries`). Enforced by `prove_batch_to_bytes` + the
-`batch_proven_security_floor` test.
+covers up to **64** transactions at the ≥100-bit floor. The previous suggestion to use multiple
+batch proofs for larger blocks is superseded and is not an approved v2 fallback. The legacy limit
+is enforced by `prove_batch_to_bytes` + the `batch_proven_security_floor` test.
 
 > **Frozen measurement** — the one-shot `batch` harness has been removed (the batch circuit lives in
 > `batch_joinsplit_air.rs` with its `--ignored` proving tests); the numbers remain the decision record.
@@ -164,22 +172,25 @@ spend AIR tiled `n` times in one trace) at the production FRI params:
   ~431 MB as separate proofs (**~600×**).
 - **Verify is ~constant** (7–9 ms) regardless of n — a validator checks **one** proof per block.
 - Security holds (proven ≥ 102 through n=32).
-- **Cost: proving is monolithic and ~linear in n** (n=32 ≈ 70 s) — the block producer proves the
-  whole block. This is the batch AIR's limit vs *true recursion* (each user proves their own spend;
-  the producer aggregates fixed-size proofs in parallel). The batch AIR needs **no recursive
-  verifier**, so it's the pragmatic first step; recursion is the scale-out when monolithic / per-user
-  independent proving becomes the constraint. (The `n` spans here are identical — size-representative;
-  a production batch carries distinct spends bound by an aggregate public-input hash, same size.)
+- **Cost: proving is monolithic and ~linear in n** (n=32 ≈ 70 s), and the prover needs every private
+  transaction witness. That custody requirement excludes this circuit as the permissionless v2
+  block path. The `n` spans here are identical and size-representative; the implemented batch
+  circuit carries distinct spends bound by an aggregate public-input hash.
 
-**Conclusion:** the realized per-proof win is the FRI encoding (arity + cap, −49%, adopted). The
-field and trace levers don't help proof size (≤5% / ~4%). The structural lever — **batching toward
-one proof per block** — is the real headroom: measured ~log(n) growth ⇒ ~600× smaller and constant
-verify at block scale, at the cost of monolithic proving (which true recursion later removes). The
-batch is implemented (`batch_joinsplit_air`/`batch_htlc_air`, + the node `applyBatch`/`applyHtlcBatch`
-path); the trustless per-user-proving scale-out beyond it is designed in **`docs/recursion-design.md`**
-(deferred — it requires a recursive STARK verifier circuit, which Plonky3 0.6.1 does not provide). The
-chosen block cadence (one batch proof per 12-min transaction block ⇒ ~320 tx/hr baseline) and how
-recursion is the scaling path beyond it are documented in **`docs/block-production-consensus.md`**.
+**Historical conclusion:** FRI encoding (arity + cap, −49%) and the batch circuit demonstrated ways
+to amortize proof size. The extrapolation to 1024 spends above is not a supported legacy batch size
+or a v2 benchmark. The implemented batch circuits and their audit facts are retained unchanged.
+
+**Current block-path decision:** [block-proving-v2.md](block-proving-v2.md) requires wallet-local
+proofs and incremental hash/FRI recursion, with one final proof ≤2 MiB and a new ordered64 root for
+at most 64 total transactions including issuance. The 12-minute cadence is a host design target.
+The bounded engine now demonstrates a real four-transaction/two-level proof with
+root-only verification after deleting inner artifacts; see the
+[current evidence](bounded-execution-engine.md). That acceptance result is not a
+complete-tree soundness or zero-knowledge proof. Per-proof estimates, old batch
+measurements, and resource preflights also do not establish the full v2 security
+or depth-six/64-transaction performance gates.
+
 
 ## Parameter hardening (was demo-sized in M4c)
 

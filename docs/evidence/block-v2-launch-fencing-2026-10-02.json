@@ -1,0 +1,97 @@
+{
+  "schema": "block-v2-launch-fencing-checkpoint-v1",
+  "captured_utc": "2026-10-02T07:55:35Z",
+  "status": "DURABLE_SINGLE_USE_CPU_LAUNCH_GATE_VALIDATED_SUPERVISOR_PENDING",
+  "production_ready": false,
+  "default_enabled": false,
+  "worker_supervisor_complete": false,
+  "arrival_harness_complete": false,
+  "scope": "Linux local launch permission and revocation for exact durably committed CPU leases. No worker request decoder, service transport, OS budget enforcement, automatic reconciliation, or new cryptographic proving in this checkpoint.",
+  "native_validation": {
+    "exit_code": 0,
+    "session": 24543,
+    "unit": "lattica-v2-launch-native-20261002-b.service",
+    "runtime_seconds": 93.469,
+    "cpu_seconds": 92.351,
+    "memory_peak_formatted": "1.5G",
+    "swap_bytes": 0,
+    "native_checks": 69,
+    "explicit_cpu_checks": 4,
+    "status": "PASS",
+    "launch_native_checks": 16,
+    "lease_identity_checks": 1,
+    "new_abrupt_exit_cases": 10,
+    "total_abrupt_exit_cases_in_execution_suite": 19,
+    "live_owned_child_lock_reap_cases": 1,
+    "ignored_in_default_filter": 9,
+    "ignored_explanation": "Four CPU fixture checks explicitly run; three subprocess helpers run through their parent tests; two real CPU proving/output replay tests remain outside this 3 GiB validation and retain the prior CPU-adapter evidence.",
+    "service_ram_limit_bytes": 3221225472,
+    "service_swap_limit_bytes": 0,
+    "service_runtime_limit_seconds": 1200,
+    "warnings": 0,
+    "checks": [
+      "69 selected execution native checks, including 16 new launch checks and one exact lease-key check",
+      "Four explicit pinned CPU fixture checks: job acceptance, artifact recovery, journal recovery, worker input preparation",
+      "Release narrow block-v2/default/all-features-all-targets checks",
+      "Rustfmt and diff checks",
+      "Complete source archive comparison"
+    ],
+    "coverage": [
+      "Canonical fixed 148-byte local tokens bind exact session/epoch/attempt/job/worker/deadline key, captured directory device/inode, CPU reservation and bounded opaque request digest.",
+      "Single-owner descriptor-anchored store, private regular files, link/path/lock replacement checks, bounded inventory, fail-closed partial intent handling.",
+      "Permission cannot be reissued or entered twice, including after guard release and store reopening. Wrong requests do not consume valid entry.",
+      "Durable started marker precedes successful worker admission; crashes after marker creation or sync prevent reuse and require a fresh lease.",
+      "Durable revocation precedes permit removal; never-issued leases may also be tombstoned. Late entry fails after revocation.",
+      "Existing-record revocation works at record capacity. Failed admission/revocation does not acknowledge scheduler stop or release reserved resources.",
+      "Ten abrupt-exit subprocess cases cover issuance (4), revocation (4), single-use entry (2); a separate live child retains the lock after revocation and store reopen until the exact spawned Child is killed/reaped.",
+      "An idle gate is explicitly not proof of OS/cgroup or verifier termination."
+    ]
+  },
+  "prior_validation": {
+    "exit_code": 0,
+    "session": 29098,
+    "unit": "lattica-v2-launch-native-20261002-a.service",
+    "runtime_seconds": 101.944,
+    "cpu_seconds": 98.871,
+    "memory_peak_formatted": "1.9G",
+    "observed_peak_bytes": 2108231680,
+    "swap_bytes": 0,
+    "native_checks": 69,
+    "explicit_cpu_checks": 4,
+    "caveat": "Successful initial run contains a test-only unused-must-use guard warning. A clean rerun follows after binding that guard.",
+    "status": "PASS_WITH_TEST_ONLY_WARNING",
+    "follow_up": "Bound the guard returned in the abrupt-exit helper rather than discard it. The clean run b repeats all checks with a fresh archive and executable; production sources are unchanged between a and b."
+  },
+  "pins": {
+    "lattica-prover-p3/target/block-v2-launch-native-20261002-b/source.tar.gz": "baa4ea43cb7a8690e17d9a8b0815e29483f7915d090e23229dc3592bc4e96418",
+    "lattica-prover-p3/target/block-v2-launch-native-20261002-b/cpu-lib-tests": "0e7af792a89274bf41f817318b39654dc67785c4a82f53755df8c33d6c5c7fdc",
+    "lattica-prover-p3/target/block-v2-launch-native-20261002-b.log": "a8e6fef325eb223dd750fe5e2eed8f4eabb78b9544cb136106a6f88a2e995ef6",
+    "lattica-prover-p3/target/block-v2-launch-native-20261002-b-invocation.json": "301f3e41109817e6dc6b5b92f71a980824f9a1c6f3206fad60aee38d69ac96f1",
+    "lattica-prover-p3/target/block-v2-launch-native-20261002-a/source.tar.gz": "67bc9d2d744908c2489f3bb1181c3d0cbe0ac68933bf432808588dc13b6ce602",
+    "lattica-prover-p3/target/block-v2-launch-native-20261002-a/cpu-lib-tests": "b1c65b37e7a2bb6bc8ad6ee4deb553841692b83b4a321da5d57cc0070b75368e",
+    "lattica-prover-p3/target/block-v2-launch-native-20261002-a.log": "8354440030b1919c3125239a0c23846769669718e0517dd0b14a059f299b85b2",
+    "lattica-prover-p3/target/block-v2-launch-native-20261002-a-invocation.json": "7288e30eb6d77de8e5942262255c3b698e782f0969c6368f0047a85d4b8c80d1"
+  },
+  "preservation": {
+    "docs/dag-gpu-implementation.md": "c23df407b56a47b1ec66f6821349d38be258ea4f7c43db432086124580a27ae7",
+    "lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+    "lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+    "lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614"
+  },
+  "limitations": [
+    "No new block proof or performance claim. Earlier real WrapPair and eight-wallet root evidence are preserved separately.",
+    "Public issue validates the current durable assignment. Crash helpers interrupt the same private filesystem primitives after that validation boundary using structural fixtures; they are not cryptographic admission tests.",
+    "The worker guard must span proving, cleanup and descendant lifetime. The future supervisor must additionally confirm exact service/cgroup exit and drain verification before acknowledging stop.",
+    "Checksums and directory identity are not authentication against malicious same-uid software. Same-uid processes, kernel and filesystem remain trusted.",
+    "Private directory bounds are logical inventory bounds, not a physical filesystem quota; abrupt exits do not qualify power-loss durability.",
+    "No launch-record reuse or pruning. Runtime admission must provision record capacity for every unresolved lease, including never-issued leases, and retain reservations on revocation failure."
+  ],
+  "remaining": [
+    "Bounded canonical local request/result decoder and worker executable binding the exact profile/registry/lease/input manifest and executable identity.",
+    "Durable lease-to-systemd/cgroup lifecycle, no automatic restart/replacement, uncertain/delayed launch handling, revocation before stop, authoritative termination and verifier drain.",
+    "Physical aggregate RAM/scratch enforcement, future device accounting, and reference-aware launch-record pruning.",
+    "Real adapter-driven SingleWallet/Empty/Merge generation; arrival-driven complete candidates and full-type host checks.",
+    "GPU data-movement reduction against retained-hashing control, at least five alternating matched pairs after a promising change.",
+    "Full64 cold and complete post-seal deadlines, full-tree soundness/zero knowledge, unchanged CPU verification and explicit production activation."
+  ]
+}

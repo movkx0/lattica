@@ -118,6 +118,12 @@ The configured STARK uses:
 
 The repository reports approximately **103-bit proven soundness** and **127-bit conjectured effective soundness**, with machine-checked gates requiring at least 100 bits for the production circuits.
 
+These numbers and quadratic-extension parameters describe the frozen v1 proof family, not recursive
+block security. [Block-proving v2](docs/block-proving-v2.md) proposes a separate cubic-extension,
+binary-FRI profile (128 queries, log blowup 4, cap 6, four random codewords, query grinding 16).
+It is **candidate/inactive**, unfrozen until complete-tree soundness and fixed-geometry recursion are
+established; historical v1 parameters and verification remain unchanged.
+
 ## Note encryption
 
 The zero-knowledge proof hides the transaction witness, while a separate encryption layer lets recipients discover and recover output notes:
@@ -148,6 +154,27 @@ Node atomically records nullifiers and appends outputs
 ```
 
 One important distinction is that the current shielded transaction does not depend on an ML-DSA binding signature. Spend authorization is knowledge of the spending key inside the STARK, while the public `tx_binding` value binds the proof to the exact canonical transaction body.
+
+### Target block lifecycle — not implemented
+
+Under the approved [incremental recursive v2 plan](docs/block-proving-v2.md), the wallet's witness
+stays local. Wallet proofs and public inputs are submitted off-chain, checked and wrapped by the
+aggregator, then combined incrementally using cached subtrees. Sealing fixes the transaction order;
+later arrivals wait for another candidate. The block would retain only one root proof plus transaction
+data and encrypted outputs, not the individual proofs. Validators would check that proof without
+the inners, then enforce state rules and apply atomically.
+
+Individual-proof containers in blocks and direct batches requiring users' witnesses are excluded
+deployment paths; no curve/SNARK wrap is allowed. The bounded verifier now has a
+real four-transaction/two-level recursive proof, verified from the root after
+deleting inner artifacts; see the [measured evidence](docs/bounded-execution-engine.md).
+That research milestone does not implement this whole lifecycle. Full-depth
+performance, complete-tree soundness/zero knowledge, HTLC/issuance, coordinator
+and network integration, and explicit activation remain open. No production
+readiness is claimed. Candidate-only GPU hashing passed five two-level trials
+(23.396 minutes median, 24.488 minutes worst), with all roots below 2 MiB and CPU
+verification repeated after shared wallet-proof pruning. This is not full-depth
+or incremental-deadline qualification.
 
 ## Current limitations
 

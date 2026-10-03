@@ -2,6 +2,14 @@
 
 > **Integration contract:** Required host-chain controls that are outside this repository's audited circuit and state-machine boundary.
 
+> **Current block-path boundary:** [Incremental block-proving v2](block-proving-v2.md) is the approved
+> **CANDIDATE / INACTIVE** direction. It supersedes batch-as-interim block guidance; neither direct
+> witness batches nor individual-proof containers are deployment fallbacks. The
+> bounded engine now has a real four-transaction/two-level recursive proof with
+> root-only verification after inner-artifact deletion. See the [evidence](bounded-execution-engine.md).
+> Full-depth performance/security and integration gates remain open. This document
+> is a host handoff, not a claim of network changes.
+
 **Status:** production integration guidance  
 **Basepoints:** `docs/audit-scope.md`, `docs/transaction-stack-audit.md`, `docs/remediation-status.md`, `SPEC.md`  
 **Audience:** full-node, consensus, wallet, prover, and audit-tool implementers
@@ -17,11 +25,12 @@ This document turns the transaction-stack audit and supply-audit discussion into
 
 ## Current Repo Status
 
-- Live transaction validation now uses the Plonky3 join-split proof path end to end: ownership, commitment opening, Merkle membership, nullifier derivation, value range, balance, output commitments, `mint`, and `tx_binding` are proven by `lattica-prover-p3` and checked through the Rust C ABI.
+- The implemented transaction state machine uses the Plonky3 join-split proof path end to end: ownership, commitment opening, Merkle membership, nullifier derivation, value range, balance, output commitments, `mint`, and `tx_binding` are proven by `lattica-prover-p3` and checked through the Rust C ABI. This is not evidence of a live v2 network.
 - The original C-01 ghost-coin output-commitment binding bug is remediated; see `docs/lattica-implementation-audit.md`.
 - Round 2 verified live-node state-update atomicity, transmitted-note ownership, and admission size checks. Round 3 added reusable verifier-boundary size limits (M-08), and **compile-gated** the genesis/test issuance API (`bootstrapMint`) and the mock backend out of production builds (M-09/M-10, via `lattica_production`; see `src/production_probe.zig` / `zig build check-production`). Remaining blockers are host-chain consensus integration: canonical live transaction/block encoding, state-root / nullifier-set-root / event-root commitments, reorg undo logs, snapshot validation, and mempool proof-cache policy.
 - The v3 HTLC layer adds `htlc_air` and `ShieldedHtlcTx`: HTLC note ownership, redeem/refund party tags, hashlock binding, timeout checks, hidden asset id, and mode-independent nullifier are proven in-circuit, while the node pins `current_height` to the consensus block height and derives `redeem_hashlock = SHA256(preimage)`.
 - This document remains the full-node production checklist: `src/node.zig` is an in-memory shielded transaction state machine, not a complete production consensus node.
+- The approved v2 block path is an additional prerequisite. The candidate now demonstrates root-only verification using the final proof, expected public statement, and pinned registry after inner-artifact deletion. The legacy monolith still requires inner proofs. Neither result establishes a reviewed production acceptance ABI, full-depth feasibility, complete-tree security, or host integration.
 
 ## HTLC Full-Node Requirements
 
@@ -65,8 +74,9 @@ Block production is host-chain (`rubble-node-zig`) scope; the agreed design is r
 - **Cadence:** a header-only **heartbeat block every 1.5 min** at uniform PoW difficulty, and a
   **transaction block every 12 min** — each 12-min cycle = 7 heartbeats + 1 transaction block.
   Heartbeats are ~240 B and carry no shielded-state delta (so shallow reorgs that land on them need no
-  per-block undo data — see Reorg and Snapshot Safety); transaction blocks carry one batch proof
-  (≤64 txs). Steady cadence keeps height a reliable proxy for time, which the height-denominated HTLC
+  per-block undo data — see Reorg and Snapshot Safety); v2 transaction blocks target one recursive
+  proof ≤2 MiB for ≤64 total transactions including issuance, with an ordered 64-leaf Merkle root.
+  These are targets, not demonstrated capacity. Steady cadence keeps height a reliable proxy for time, which the height-denominated HTLC
   timeouts and the anchor window depend on.
 - **Rewards:** heartbeats name a payout address in the PoW-committed header but mint no in-block note;
   subsidies settle lazily in the next transaction block's coinbase via the gated `applyCoinbase` under
@@ -74,13 +84,27 @@ Block production is host-chain (`rubble-node-zig`) scope; the agreed design is r
 - **Fees:** a transaction block's fees + accrued subsidies are split **deterministically, weighted toward
   the transaction-block producer**, remainder equally among the cycle's 7 heartbeat miners — a function
   of the block + the committed heartbeat headers (anti-fee-sniping). Realized via a multi-payee coinbase
-  (8 payees ⇒ 4 outputs at `M_OUT = 2`); the recommended mechanism (coinbase tiles inside the batch) is a
-  noted future lattica-side change.
+  (8 payees ⇒ 4 issuance transactions / 8 output notes at `M_OUT = 2`). Typed recursive issuance
+  leaves and host checks of authorized totals/payees are required before activation; do not substitute
+  coinbase tiles in a direct witness batch. Issuance transactions count toward the 64-transaction cap.
 - **Payout addresses:** the shared-KEM exchange-deposit scheme (O(1) detection) for pools/exchanges.
-- **Scaling:** baseline ~320 tx/hr (64 / 12 min); the scaling path is **recursion** (`recursion-design.md`),
-  not linear block growth.
+- **Capacity target:** ~320 total tx/hr (64 / 12 min), including issuance; not a benchmark.
+  [Block-proving v2](block-proving-v2.md) requires bounded hash/FRI recursion, new versioned root/profile
+  handling, and 48 GiB RAM / 12 GiB VRAM / 128 GiB scratch gates. Curve/SNARK wraps are excluded.
 
 ## Consensus-Critical Full Node Pipeline
+
+### Proposed distributed proving boundary
+
+The [distributed proving roadmap](distributed-proving.md) adds a proposed service
+boundary, not a new consensus acceptance path. A host must derive the expected
+ordered root from its canonical block body and approved profile, verify the final
+proof and perform the state checks below. Worker identity, completion receipts,
+telemetry and coordinator assertions cannot replace those checks. Selection,
+sealing, HTLC height, conflicts and reorg eligibility remain host responsibilities.
+Neither remote execution nor worker payments change capacity/cadence or activate
+a new proof family. Historical verification must remain independent of the
+worker network and off-chain inner-artifact retention.
 
 ### 1. Decode and Canonicalize
 
@@ -124,8 +148,17 @@ The production spend proof must prove all private spend facts in one statement:
 - output commitments encrypt/commit to the same values used in balance;
 - transaction digest is bound into the proof.
 
-**Default:** vetted transparent FRI-STARK framework with extension-field challenges and a documented soundness target above 120 bits.  
+**Default:** vetted transparent FRI-STARK with extension-field challenges. The frozen v1 accounting is
+approximately 103 bits proven / 127 conjectured; the separate v2 target is at least 100 bits proven
+for the complete maximum-size tree under documented assumptions, not merely for each constituent proof.
 **Option:** keep the Zig reference STARK as a differential-test oracle only; it should not be the production verifier.
+
+For the **inactive v2 target**, wallet proofs are verified at off-chain admission and recursively
+aggregated; blocks retain only the final proof, public transaction data, and encrypted outputs.
+Block validation must recompute the ordered root and verify the final proof against the registered
+profile without inner proofs, a prover cache, or private witnesses. All state-dependent checks below
+remain necessary. Legacy verification rules remain available for historical replay only as governed
+by host activation rules, not as an automatic downgrade for rejected v2 blocks.
 
 ### 4. Enforce Nullifier and Anchor Rules
 
@@ -218,6 +251,10 @@ consensus_params_hash
 
 These are implementation targets, not current Zig APIs.
 
+V2 additionally targets versioned public-only leaf wrapping, pairwise merging, standalone root
+verification, and a submit/status/seal/cancel coordinator. Wallet witness APIs must remain separate.
+No byte schema, feature activation, or new host-network API is established by this document.
+
 ```zig
 const SupplyState = struct {
     issued: u128,
@@ -281,6 +318,15 @@ Required policy:
 - cache proof verification by canonical transaction hash and consensus parameter hash;
 - evict cached results when consensus parameters change.
 
+For v2, individual proofs and completed subtrees are temporary off-chain artifacts, not ledger data.
+Bound their queues, cache, and worker resources; bind cached verification to canonical statements,
+profiles/proof identities, and relevant execution context. Seal an immutable ordered selection so
+new arrivals do not restart its proof; defer late work. Recheck anchors, conflicts, issuance, and HTLC
+height at sealing and application. Reorgs invalidate eligibility even when proof verification remains
+cached. Validate artifacts on restart and prune after a bounded recovery window; historical root
+verification must succeed after pruning. Deadlines, resource failures, and cancellation must fail
+explicitly without switching to witness batches, proof containers, or weakened parameters.
+
 Recommended options:
 
 - **Strict mode:** preverify every proof before relay. Best for security, more CPU.
@@ -333,6 +379,8 @@ Recommended alerts:
 - anchor-window failure spike;
 - snapshot root mismatch;
 - verifier implementation disagreement.
+- v2 aggregation queue/deadline overruns, resource-admission failures, scratch/cache exhaustion,
+  restart recovery failures, and final proof-size violations (instrumentation targets, not live metrics).
 
 Optional non-consensus tooling:
 
@@ -342,6 +390,11 @@ Optional non-consensus tooling:
 - periodic signed audit statements over public counters.
 
 ## Implementation Phases
+
+The host phases below are separate from the Lattica v2 milestones in
+[block-proving-v2.md](block-proving-v2.md). Lattica delivers libraries, the coordinator, block-apply
+interface, and a simulated-host harness/handoff; actual network, persistence, consensus, reorg,
+emission, and activation work belongs to the host. Neither phase list records a completed v2 rollout.
 
 ### P1: Protocol Finalization
 
@@ -420,6 +473,9 @@ Do not enable value-bearing production use until:
 6. nullifier set and note tree are authenticated and snapshot-safe;
 7. at least two independent implementations or verifier paths replay the same chain to the same roots;
 8. monitoring and incident response procedures exist for invariant drift and verifier disagreement.
+9. for v2 activation, bounded full-strength recursion, complete-tree soundness, root-only verification,
+   full join-split/HTLC/issuance coverage, resource/latency gates, and dedicated cryptographic review
+   are evidenced; versioned encodings and activation are explicit, with no excluded fallback paths.
 
 ## Non-Goals
 

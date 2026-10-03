@@ -1,0 +1,108 @@
+{
+  "schema": "block-v2-verifier-process-crash-evidence-v1",
+  "captured_utc": "2026-10-02 17:21:26 UTC",
+  "status": "MANAGED_TASK_AND_RESULT_PROCESS_LOSS_VALIDATED_RESEARCH_ONLY",
+  "production_ready": false,
+  "default_enabled": false,
+  "source_files": [
+    "lattica-prover-p3/src/block_v2/execution/verification_tests.rs",
+    "lattica-prover-p3/src/block_v2/execution/verification_process_tests.rs"
+  ],
+  "validation": {
+    "exit_code": 0,
+    "runtime_seconds": 120.1,
+    "cpu_seconds": 120.216,
+    "memory_peak": "1.9G",
+    "swap": 0,
+    "session": 9882,
+    "unit": "lattica-v2-verifier-crash-native-20261002-a.service",
+    "invocation": "b7a04952f75747c5a3e42d1fd949a715",
+    "native_passed": 134,
+    "native_ignored": 38,
+    "explicit_cpu_passed": 15,
+    "zig_tests": 10,
+    "compiler_warnings": 0,
+    "process_loss_cases": [
+      "task",
+      "result"
+    ],
+    "production_ready": false,
+    "new_prover_run": false,
+    "pins": {
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-verifier-crash-native-20261002-a/source.tar.gz": "6b7505ade8e2aab69eddd60494e093d616757dd0ebbc8cce18efa1b7ff548d8c",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-verifier-crash-native-20261002-a/cpu-lib-tests": "d894a81cf8a11c394bd6b5f5015edde40573f4117bb83332fec9f94df5e0eb26",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-verifier-crash-native-20261002-a/cpu-worker": "552deaea1fd758f60a9b0a7ad2debb86943dfe79b7fdb8c8775a470a30eca3a9",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-verifier-crash-native-20261002-a/single-probe": "a8b71e8ee4fc79b781ed2ebc6299a65d94257d3d3560f1a25362234270a00fb8",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-verifier-crash-native-20261002-a/public-export": "5e1cefe7c6e3943d2ef4040d8498903261cac406d1cbfc0d3b576fa8f4a3a7d2",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-verifier-crash-native-20261002-a/zig-out/bin/block-v2-expected-root": "29751d1c43f350ad0fbd3e91fe216894ea6060d93cca7e331881e0e650fca920"
+    }
+  },
+  "cases": [
+    {
+      "phase": "task",
+      "boundary": "Guarded task retained on local thread before its CPU call; coordinator handle dropped.",
+      "proof_verified_before_kill": false
+    },
+    {
+      "phase": "result",
+      "boundary": "Strict CPU verification succeeded; unaccepted guarded result retained on local thread; coordinator handle dropped.",
+      "proof_verified_before_kill": true
+    }
+  ],
+  "assertions": {
+    "ready_phase_and_exact_child_pid_checked": true,
+    "recovery_locked_while_child_alive": true,
+    "child_killed_with_sigkill_and_reaped": true,
+    "durable_verification_active_after_crash": true,
+    "explicit_reconciliation_still_required": true,
+    "old_eligibility_not_revived": true,
+    "valid_stale_result_rejected": true,
+    "new_attempt_mutation_rejected": true
+  },
+  "scope": {
+    "proof_source": "Existing full-strength public pair proof; no wallets' private witnesses, no prover launched.",
+    "kill_during_cryptographic_computation": false,
+    "general_external_verifier_drain_authority": false,
+    "hostile_same_uid_authentication": false,
+    "proof_or_snapshot_encoding_change": false,
+    "production_verifier_hook_added": false,
+    "production_abi_change": false,
+    "matched_speedup_claim": false,
+    "arrival_trial_rerun": false,
+    "nine_stage_guard_trial_rerun": false,
+    "full_default_test_suite_claimed": false
+  },
+  "formatting": {
+    "execution_module_check": "passed",
+    "whole_crate_cargo_fmt_check": "Pre-existing module ordering differences in lattica-prover-p3/src/block_v2/mod.rs; preserved, not a claimed full-crate formatting pass."
+  },
+  "prior_guard": {
+    "evidence": "docs/evidence/block-v2-verifier-guard-2026-10-02.json",
+    "manifest": "lattica-prover-p3/target/block-v2-verifier-guard-live-20261002-a/pins.sha256",
+    "manifest_entries": 325,
+    "manifest_passed_before_current_test_and_doc_edits": true,
+    "worker_binary_byte_identical": true
+  },
+  "cache_lifecycle_finding": "Current DAG verification requires worker termination and reservations are per attempt. Warm preprocessing needs independently reserved session lifetime; do not report a still-live cached worker as stopped.",
+  "remaining": [
+    "Resource-accounted persistent preprocessing and measured acceleration.",
+    "Mid-computation faults, general external verifier reconciliation, no-identity startup liveness, OOM and timeout qualification.",
+    "Physical scratch enforcement and reference-aware task/launch/artifact retention.",
+    "Live-network arrival/deadline admission, issuance/HTLC, host eligibility/reorg/state application.",
+    "64 total transactions including issuance at12-minute cadence; cold<=600s, complete post-seal<=180s, root<=2MiB, aggregate RAM48/VRAM12/scratch128GiB.",
+    "Full-tree soundness/ZK review and explicit production activation."
+  ],
+  "preservation": {
+    "manifest": "lattica-prover-p3/target/block-v2-verifier-crash-native-20261002-a/pins.sha256",
+    "manifest_entries": 340,
+    "source_archive_matches": true,
+    "frozen_files": {
+      "docs/dag-gpu-implementation.md": "c23df407b56a47b1ec66f6821349d38be258ea4f7c43db432086124580a27ae7",
+      "lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614"
+    },
+    "committed": false,
+    "production_activated": false
+  }
+}

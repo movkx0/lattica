@@ -7,6 +7,8 @@
 pub mod batch_common; // shared batch machinery: MAX_BATCH_TILES, tile padding, the fold-block writer
 pub mod batch_htlc_air; // batch aggregation for the v3 shielded-HTLC spend (mirrors batch_joinsplit_air)
 pub mod batch_joinsplit_air; // batch aggregation: one proof per block (join-split tiling + tx-root fold)
+#[cfg(feature = "block-v2")]
+pub mod block_v2; // candidate only: ordered commitments, cubic leaf probe, feasibility accounting
 pub mod config; // crate-wide STARK config: the production (wire-pinned) + demo parameter families
 pub mod domains; // consensus-frozen domain-separation tags (the normative table; mirrored by the Zig node)
 #[cfg(feature = "gpu")]

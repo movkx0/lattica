@@ -2,6 +2,94 @@
 
 > **Research status:** Feature-gated, prove-only, and outside the production audit. The CPU verifier and proof format remain authoritative.
 
+## Selected GPU pipeline implementation priority
+
+The [execution DAG and GPU implementation plan](dag-gpu-implementation.md)
+makes candidate GPU arithmetic and data reuse the immediate acceleration work.
+Start with transforms feeding commitments through retained device buffers, then
+extend quotient/opening/FRI operations while preserving the exact transcript and
+cubic profile. Build a minimal local proof DAG alongside it; qualify per-device
+concurrency and remote subtree placement afterward. A complete remote CPU pool
+is not a prerequisite for this work.
+
+The plan defines device matrix ownership, tiling, memory/event lifetimes, CPU
+verification and matched end-to-end gates. Candidate research now includes
+resident LDE/commitment and tiled opening-reduction prototypes, not only hashing.
+The [opening runner/controller checkpoint](evidence/block-v2-gpu-openings-runner-2026-10-02.json)
+records explicit default-off selection, bounded accounting and independently
+reproduced full-size preprocessing keys. Host LDE readback, CPU barycentric
+evaluation and upstream FRI work remain: this is not a fully resident prover.
+A [complete opening-enabled count-eight trial](evidence/block-v2-gpu-openings-recursive-2026-10-02.json)
+now passes local pruning and independent CPU-only root audit in **686.046 seconds**,
+with a **1,683,948-byte** root. The final merge took **92.427 seconds**; that is
+not complete post-seal latency. The [fresh same-build retained-hashing control](evidence/block-v2-gpu-openings-matched-pilot-2026-10-02.json)
+passes in **607.112 seconds**, with a **71.812-second** final merge and the same
+root size. The opening-enabled resident backend was **13.002% slower** in this
+one pair, so it is not promoted. Repeated matched qualification remains open.
+Historical legacy speedups below do not change production defaults.
+
+The [local in-memory DAG](evidence/block-v2-local-dag-2026-10-02.json) now has
+validated dependency readiness, candidate/attempt fencing and aggregate
+reservations. It does not yet dispatch real GPU workers, enforce device quotas
+or provide durable recovery. Its synthetic scheduling tests are not GPU or
+full-block performance evidence.
+
+## Separate block-v2 hashing path
+
+The cubic-extension block-v2 candidate uses a different, explicitly bounded
+prove-side MMCS adapter. It shares the bit-exact Poseidon2 kernels, **not** the
+legacy GPU PCS, DFT or thread-local allocation model described below. CPU remains
+the default; compiling `gpu` alone does not select this candidate path.
+
+Five full four-transaction/two-level trials passed in **23.396 minutes median,
+24.488 minutes worst**, with roots below 2 MiB and CPU-only verification repeated
+after all inner artifacts and shared wallet-proof fixtures were deleted. Sampled
+process VRAM peaked at 1,222 MiB; this is not a hard physical VRAM quota. See the
+[implementation, resource limits and reproduction instructions](bounded-execution-engine.md#candidate-only-bounded-gpu-hashing)
+and [dated evidence](bounded-execution-engine.md#gpu-hashing-experiment-2026-09-30).
+The older speedup numbers below are **not block-v2 measurements**. Those historical candidate
+hashing runs retained CPU polynomial arithmetic. The newer research prototypes
+above preserve strict CPU verification, with no production activation or
+parameter reduction.
+
+### Latest candidate measurement — 2026-10-01
+
+Five matched retention-off/on pairs with serial transfers held fixed reduced
+median four-transaction recursive proving time from **19.627 to 17.642 minutes**
+(**10.114%**). The final-merge median changed from 170.902 to 167.426 seconds,
+but its worst observed time increased from 187.451 to **201.993 seconds**.
+Both variants exceeded three minutes for the final merge alone in two trials.
+All ten roots plus the retained pilot passed fresh unchanged CPU verification
+after shared wallet-proof pruning, with no inner proofs loaded.
+
+Retention cut downloads from **39,728,434,880 to 7,297,536 bytes** per trial,
+while uploads remained **328,028,118,272 bytes**. Managed GPU peak increased
+from 1,006,633,672 to 7,449,083,816 bytes; sampled prover VRAM increased from
+1,222 to 7,366 MiB. Allocation accounting and sampling are not a physical quota.
+Keep retention experimental/opt-in; prefer it for bounded research when admission
+succeeds. CPU defaults, strict CPU verification and security parameters remain
+unchanged. Transfer overlap remains experimental; it was not enabled in this
+retention comparison. Neither experiment qualifies full-block performance.
+
+See the [completed measurement and decision](evidence/block-v2-retention-matched-2026-10-01.json).
+The polynomial/data-movement work now follows the primary pipeline sequence above;
+grouped constructions retain their separate registration and security gates.
+The earlier measurements above and legacy results below retain their original scope.
+
+### Proposed multiple-GPU and remote-worker support
+
+The [distributed proving roadmap](distributed-proving.md) defines complete
+public-proof jobs as the first distribution boundary. The current candidate
+engine still has one mutex-protected engine and a per-user exclusive process
+lease; a device selector does not provide concurrent multiple-GPU scheduling.
+The proposed service uses per-device ownership, aggregate host admission and
+independently verified results. Removing locks is not an implementation of it.
+Intel/AMD backends also need correctness/performance qualification and a
+replacement for the current NVIDIA-specific monitoring path. No distributed
+or multiple-GPU speedup is claimed by the measurements above.
+
+## Legacy GPU backend
+
 `lattica-prover-p3` can offload the heavy proving steps — the low-degree extension (LDE), the Merkle
 tree build, and the hiding PCS's quotient-randomization pipeline — to a GPU via OpenCL, for a
 **measured ~4.6× speedup over an AVX2-optimized CPU** on the production (hiding) config, with the GPU

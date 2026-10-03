@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "recorded_date_utc": "2026-10-01",
+  "status": "SINGLE_EIGHT_CONTROL_VALIDATED_SHARED_INPUTS_PINNED_MATCHED_CPU_PILOT_RUNNING",
+  "production_ready": false,
+  "purpose": "Fair same-eight-public-wallet-proof CPU comparison with the grouped-pair construction",
+  "construction": {
+    "wrapper": "SingleWallet",
+    "wallets": 8,
+    "level0_wrappers": 8,
+    "merges": 7,
+    "total_recursive_proofs": 15,
+    "local_inner_artifacts_to_prune": 22,
+    "root_statement": "MERGE/level3/count8, not padded level6",
+    "wallet_witness_aggregation": false
+  },
+  "implementation": {
+    "runner": "lattica-prover-p3/src/bin/block_v2_single_eight_probe.rs",
+    "controller": "lattica-prover-p3/scripts/block-v2-single-eight-trial.py",
+    "controller_tests": "lattica-prover-p3/scripts/test-block-v2-single-eight-trial.py",
+    "lifecycle_test": "lattica-prover-p3/scripts/test-block-v2-single-eight-lifecycle.py",
+    "shared_auditor": "lattica-prover-p3/src/bin/block_v2_grouped_artifact_audit.rs",
+    "cargo_feature_gate": [
+      "block-v2",
+      "stream"
+    ],
+    "new_production_abi": false
+  },
+  "validation": {
+    "synthetic_controller_tests": {
+      "passed": 31,
+      "failed": 0,
+      "real_proofs": false
+    },
+    "cpu_all_target_release_check": true,
+    "native_tests": {
+      "single_eight_runner": 7,
+      "grouped_runner": 7,
+      "shared_auditor": 8,
+      "public_export": 4,
+      "total_passed": 26,
+      "failed": 0,
+      "ignored": 0
+    },
+    "release_binaries_built": true,
+    "rustfmt_check": true,
+    "diff_check": true,
+    "build_log": "lattica-prover-p3/target/block-v2-single-eight-build-20261001-a.log",
+    "build_log_sha256": "bb5b396d2d3b15c317aa8f2801f235737519fab5056e87732eb120cda79accdc",
+    "build_service": {
+      "unit": "lattica-v2-single-eight-build-20261001-a.service",
+      "exit_code": 0,
+      "runtime_seconds": 31.149,
+      "memory_peak_systemd_display": "1.1G",
+      "swap_bytes": 0
+    },
+    "lifecycle": {
+      "status": "REAL_NON_PROVING_LIFECYCLE_PASSED",
+      "record": "lattica-prover-p3/target/block-v2-single-eight-lifecycle-20261001-a/result.json",
+      "record_sha256": "4b92689b08f9a4afcb055d73f962396a2fce03eefa689e54267e02cda3c2d166",
+      "actual_controller_sigkill": true,
+      "released_lock_while_worker_stopping": true,
+      "overlap_refused": true,
+      "cleanup_observed": true,
+      "fresh_admission_passed": true,
+      "real_proofs": false
+    }
+  },
+  "preserved_artifacts": {
+    "directory": "lattica-prover-p3/target/block-v2-eight-comparison-binaries-20261001-a",
+    "binary_sha256": {
+      "block-v2-single-eight-probe": "0b9bec408bf5a64796291cae9856ec21e6ff1359709d181df7c704c3bd73508d",
+      "block-v2-grouped-probe": "d10eabc1abab220e8121582e3d591f045e3ca28b5565f487e14188044f4bdbcc",
+      "block-v2-grouped-artifact-audit": "ec2bdf2bb80e06352aabefca1fcfe4345ab77e677419f27b3dbf4a166a52cd16",
+      "block-v2-grouped-publics": "b1ecaa61ab366634939ff473158bb2e1a61aa13b240161df9eed1dfd75d79a43",
+      "block-v2-expected-root": "4208bd2399b05fbab5efea3db4ad3d40a649c409cc74f7cfe7fbbe49c00a9f9a"
+    },
+    "source_archive": "lattica-prover-p3/target/block-v2-eight-comparison-sources-20261001-a.tar.gz",
+    "source_archive_sha256": "5cba5c6a59b873a940c78d60ab075f4f9043009a943508a1d642d00028958c90",
+    "existing_grouped_runner_auditor_public_export_byte_identical_after_build": true
+  },
+  "preparation": {
+    "status": "PREPARED_UNAPPROVED",
+    "controller": "lattica-v2-single-eight-prepare-20261001-a.service",
+    "job": "lattica-prover-p3/target/block-v2-single-eight-prepared-job-20261001-a",
+    "evidence": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a",
+    "controller_exit_code": 0,
+    "manifest_sha256": "8d55cb3d629c0005a9316972e9b692b96ddf9b2b0234577d1857f9a74c8f93a4",
+    "registration_evidence": {
+      "height": {
+        "bytes": 4,
+        "sha256": "c9c7e8c63836a93f6d8c04598b6503d2863a2df7b86366157178234175704dcc"
+      },
+      "keys": {
+        "key.1": {
+          "bytes": 2048,
+          "sha256": "b16cc406fc43b2cd95929bed0a95e6b2eb1f9192a2a3ab66ddbf2163cee16383"
+        },
+        "key.2": {
+          "bytes": 2048,
+          "sha256": "23c014bd0cc4af3fdfedae55a0a060e3469edf001267d23f29f3d5b82bd286db"
+        },
+        "key.3": {
+          "bytes": 2048,
+          "sha256": "a42b9a30fe35034313d2ec0a92ee5aee3278c926ef53407e9e8b1cb14bbf384d"
+        }
+      },
+      "matches_previously_preserved_single_wallet_keys": true,
+      "scope": "Fresh CPU generation matches fixed, previously reproduced research caps byte-for-byte; not production approval"
+    }
+  },
+  "gates": {
+    "keys_reproduced": true,
+    "external_expected_statement": true,
+    "real_single_eight_proof": false,
+    "fair_same_eight_backend_comparison": false,
+    "repeated_comparison": false,
+    "matched_series_orchestration_implemented": false,
+    "polynomial_data_movement_optimization_implemented": false,
+    "depth_six_qualified": false,
+    "production_ready": false,
+    "durable_matched_pilot_orchestration_implemented": true
+  },
+  "required_comparison_conditions": [
+    "Exactly the same eight serialized public wallet proofs, order and backend on both constructions",
+    "Separate reviewed research-profile pins and native-Zig-derived external expected statements",
+    "Identical8-thread CPU/resource/allocator/profiling settings and sequential controlled runs",
+    "Source, binary, input and output hashes; no restart of uncertain stage attempts",
+    "Proving/setup/helper accounting and root-only CPU replay after local and shared-fixture pruning",
+    "Five matched pairs for a repeat-qualified performance claim; pilots and models remain separately labeled"
+  ],
+  "remaining_scope": [
+    "Finish the15-proof single-eight and7-proof grouped-eight pilot from identical public proof inputs; do not restart uncertain attempts",
+    "Independently validate/report comparison outputs and perform required post-pruning replay",
+    "Implement durable repeated matched-series orchestration and qualify at least five pairs before a repeat-qualified speed claim",
+    "Continue bounded polynomial/data-movement implementation and measured architecture/security decisions; later full-depth and production gates remain open"
+  ],
+  "external_handoff": {
+    "status": "EXACT_SHARED_INPUTS_AND_BOTH_EXTERNAL_STATEMENTS_VALIDATED",
+    "record": "lattica-prover-p3/target/block-v2-eight-comparison-inputs-20261001-a/expected-statements.json",
+    "record_sha256": "d9a936a822f5ab2555a782712299c0ec837a08c1e39ceb6f99376f393d7c799b",
+    "source": "lattica-prover-p3/target/block-v2-eight-comparison-inputs-20261001-a/public-handoff.py",
+    "source_sha256": "d1a239959d797a1d48448810b8939955ef467f4b2a80d0622d121c26941f248e",
+    "identical_serialized_wallets": 8,
+    "inputs": {
+      "wallet.0": {
+        "bytes": 853675,
+        "sha256": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973"
+      },
+      "wallet.1": {
+        "bytes": 853491,
+        "sha256": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79"
+      },
+      "wallet.2": {
+        "bytes": 854047,
+        "sha256": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5"
+      },
+      "wallet.3": {
+        "bytes": 853795,
+        "sha256": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b"
+      },
+      "wallet.4": {
+        "bytes": 853725,
+        "sha256": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b"
+      },
+      "wallet.5": {
+        "bytes": 853855,
+        "sha256": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa"
+      },
+      "wallet.6": {
+        "bytes": 853977,
+        "sha256": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117"
+      },
+      "wallet.7": {
+        "bytes": 853568,
+        "sha256": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5"
+      }
+    },
+    "expected": {
+      "grouped": {
+        "chain": "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+        "count": 8,
+        "level": 3,
+        "mode": 3,
+        "profile": "af4bfe518efc2cde1a9c972e913e4307e3fd8b60ab6671961936c87b99a8ec31",
+        "root": "2ef361a059b06a72cc05a3aac2c5ed9c4e75a0ad70081875459a6961414e9d52"
+      },
+      "single": {
+        "chain": "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+        "count": 8,
+        "level": 3,
+        "mode": 3,
+        "profile": "e90be22347a149b82c2a961cb14a33414b6db2d8221d0eda9fdfc174bf0143be",
+        "root": "4eff965b19b0ea3832f61ee2fedf89ef46dfb89fb4bc80118388580ff0a385f9"
+      }
+    },
+    "negative_checks_rejected": 8,
+    "no_aggregation_during_handoff": true,
+    "profile_authority": "Reuse of exact previously reproduced research keys only; not production or independent security approval"
+  },
+  "pilot": {
+    "status": "RUNNING",
+    "controller": "lattica-v2-eight-comparison-pilot-20261001-a.service",
+    "evidence": "lattica-prover-p3/target/block-v2-eight-comparison-pilot-20261001-a",
+    "launcher": "lattica-prover-p3/target/block-v2-eight-comparison-pilot-20261001-a/launcher.py",
+    "launcher_sha256": "b71eeff1d7d4696417527fb95eeb5c6c2c6e8347011f98ecb910c4fde5a5e4d3",
+    "synthetic_outer_controller_tests_passed": 4,
+    "real_historical_completed_grouped_report_parse_passed": true,
+    "tests": "lattica-prover-p3/target/block-v2-eight-comparison-pilot-20261001-a/orchestration-tests.py",
+    "test_sha256": "0eccf0a15d4a493f095841f39404baf99b02559d0dafcc7fdecbf6112223a2e4",
+    "order": [
+      "single",
+      "grouped"
+    ],
+    "cpu_only": true,
+    "rayon_threads": 8,
+    "combined_ram_cap_bytes": 51539607552,
+    "worker_ram_cap_bytes": 47244640256,
+    "controller_ram_cap_bytes": 3221225472,
+    "swap_bytes": 0,
+    "managed_spill_cap_bytes": 128849018880,
+    "automatic_retry_of_uncertain_attempts": false,
+    "repeat_qualified": false,
+    "production_ready": false
+  }
+}

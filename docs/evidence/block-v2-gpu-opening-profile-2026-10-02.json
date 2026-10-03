@@ -1,0 +1,245 @@
+{
+  "schema": "block-v2-gpu-opening-profile-v1",
+  "captured_utc": "2026-10-02 19:51:07 UTC",
+  "status": "TIMING_DIAGNOSTIC_AND_GPU_REGRESSIONS_PASSED_NO_SPEEDUP_CLAIM",
+  "production_ready": false,
+  "default_enabled": false,
+  "performance_promoted": false,
+  "implementation": {
+    "source_files": [
+      "lattica-prover-p3/src/block_v2/gpu_hash/engine.rs",
+      "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce.rs"
+    ],
+    "timing_fields": [
+      "marshal_ns",
+      "upload_api_ns",
+      "upload_device_ns",
+      "kernel_build_ns",
+      "kernel_enqueue_ns",
+      "kernel_wait_ns",
+      "download_api_ns",
+      "download_device_ns",
+      "decode_ns"
+    ],
+    "old_checkpoint_preserved": true,
+    "arithmetic_or_proof_format_changed": false,
+    "default_verifier_changed": false,
+    "profiling_overhead_included": true,
+    "timing_spans_are_nonadditive": true
+  },
+  "native_validation": {
+    "status": "PASS",
+    "exit_code": 0,
+    "unit": "lattica-v2-gpu-opening-profile-native-20261002-a.service",
+    "invocation": "6b561a30e53345f59c74c9754ce688ea",
+    "session": 76845,
+    "runtime_seconds": 122.323,
+    "cpu_seconds": 120.572,
+    "memory_peak_rounded": "2.9G",
+    "swap_bytes": 0,
+    "unique_selected_tests_passed": 39,
+    "unique_ignored_tests": 24,
+    "compiler_warnings": 0,
+    "pins": {
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-native-20261002-a/source.tar.gz": "a694e9e70dcc87a412e2e9757449b0c7159b40c240f4391cf2af96002d6f9869",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-native-20261002-a/gpu-lib-tests": "abd054f89de99ccfdcb3c0f4783ec51135088ff1347e4d19a6d1e8ba3027d879"
+    },
+    "source_archive_matches": true,
+    "formatting_check_passed": true,
+    "diff_check_passed": true
+  },
+  "qualification": {
+    "unit": "lattica-v2-gpu-opening-profile-qualification-20261002-a.service",
+    "invocation": "d3ab3eeb2c0d4244a8d10012dd661b52",
+    "session": 78679,
+    "exit_code": 0,
+    "runtime_seconds": 10.083,
+    "cpu_seconds": 10.969,
+    "explicit_gpu_tests": 12,
+    "memory_peak_bytes": 2386403328,
+    "memory_max_bytes": 3221225472,
+    "swap_peak_bytes": 0,
+    "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+    "resource_scope": "Cumulative qualification-service cgroup accounting, not individual concurrent worker peaks or sampled physical VRAM.",
+    "source_and_binary_pins_checked": true,
+    "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-qualification-20261002-a/manifest.json",
+    "scratch_empty_after_each_test": true,
+    "tests": [
+      {
+        "name": "block_v2::gpu_hash::engine::opening_reduce::tests::gpu_opening_reduction_matches_cpu_all_points_and_unequal_heights",
+        "exit_code": 0,
+        "elapsed_ns": 571337588,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-qualification-20261002-a/gpu-1.log",
+        "log_sha256": "adf036be226c2c87266b4595a07e3699a34d05ea0b1af446e2529a029fef416e",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::engine::tests::gpu_opening_error_and_unwind_drain_before_allocations_release",
+        "exit_code": 0,
+        "elapsed_ns": 432999507,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-qualification-20261002-a/gpu-2.log",
+        "log_sha256": "8796bcd1244c9b9b88b888bc5a8e4271dc38a4fc57fb97d9e0314c05b96dc02e",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::resident_pcs_tests::gpu_openings_match_reference_transcript_and_preprocessing",
+        "exit_code": 0,
+        "elapsed_ns": 884599721,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-qualification-20261002-a/gpu-3.log",
+        "log_sha256": "e2e94157646e9a3ad0ea494aad44c4965257328a550cfcf9226e26340b1e69fd",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::resident_pcs_tests::gpu_openings_full_strength_cubic_proofs_replay_through_original_cpu_pcs",
+        "exit_code": 0,
+        "elapsed_ns": 1172612606,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-qualification-20261002-a/gpu-4.log",
+        "log_sha256": "57199ad6dd663b671893576cd9ec9c8ff41c75daa817cdc0df161bd36cfa0fde",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::engine::lde_execute::tests::gpu_resident_lde_columns_caps_and_paths_match_cpu",
+        "exit_code": 0,
+        "elapsed_ns": 370144079,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-qualification-20261002-a/gpu-5.log",
+        "log_sha256": "1e1c0a8142d9f3e0eb0d503c73a3b2213073ac60034440837abf2f423f73817a",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::engine::lde_execute::tests::gpu_resident_lde_multigroup_ntt_and_unequal_input_heights_match_cpu",
+        "exit_code": 0,
+        "elapsed_ns": 469727466,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-qualification-20261002-a/gpu-6.log",
+        "log_sha256": "de6236f0aa9de46c9aa3d1c22eb715cae706e21bbad24ea81ba4d6178c4e6917",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_matches_all_cpu_commitment_streams_across_active_clones",
+        "exit_code": 0,
+        "elapsed_ns": 382648227,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-qualification-20261002-a/gpu-7.log",
+        "log_sha256": "92814336cfd1a9ea1e7e3aa5d9dde579c15d504dfa131c39121eb092e5ebc682",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_admission_errors_do_not_consume_masks_or_salts",
+        "exit_code": 0,
+        "elapsed_ns": 383922560,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-qualification-20261002-a/gpu-8.log",
+        "log_sha256": "c5c757bfa4c19937951c24f28a9e7a64ac62d38847276baa70705bfed6ca08c5",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_research_switch_only_selects_explicit_proving_configs",
+        "exit_code": 0,
+        "elapsed_ns": 633803090,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-qualification-20261002-a/gpu-9.log",
+        "log_sha256": "e4da8587bc8b0edd7d49fc6936df6a44021c3488579fbc2c36d8a11e4d815dba",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_full_strength_cubic_proofs_replay_through_original_cpu_pcs",
+        "exit_code": 0,
+        "elapsed_ns": 1170442339,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-qualification-20261002-a/gpu-10.log",
+        "log_sha256": "1080e5ddab734254b0c3f7a818e42a3bf384be1ec7c6df2aaa56457567c297cf",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::tests::gpu_spill_backed_bit_reversed_inputs_match_resident_cpu_openings",
+        "exit_code": 0,
+        "elapsed_ns": 1422131918,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-qualification-20261002-a/gpu-11.log",
+        "log_sha256": "b1c431d8633e52e8a35ffba2d0158d9279050bb833513c2f0f76fdb1d87fb9bc",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::engine::opening_reduce::tests::gpu_opening_large_input_reports_host_device_costs_with_closed_form_reference",
+        "exit_code": 0,
+        "elapsed_ns": 1775877114,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-qualification-20261002-a/gpu-12.log",
+        "log_sha256": "974db081d8a92f12644610ccfb17726d9d76b50077089f867338ca0efe6e6de3",
+        "scratch_empty": true
+      }
+    ]
+  },
+  "diagnostic": {
+    "calls": 1,
+    "tiles": 53,
+    "uploaded_bytes": 1728058144,
+    "downloaded_bytes": 25165824,
+    "kernel_ns": 3917728,
+    "wall_ns": 1179035791,
+    "marshal_ns": 113882665,
+    "upload_api_ns": 1025227550,
+    "upload_device_ns": 1011556896,
+    "kernel_build_ns": 645609,
+    "kernel_enqueue_ns": 1619982,
+    "kernel_wait_ns": 18036021,
+    "download_api_ns": 14708347,
+    "download_device_ns": 8558336,
+    "decode_ns": 4330271,
+    "timings": "nonadditive",
+    "opening_large_input": "PASS",
+    "height": 1048576,
+    "width": 200,
+    "input_bytes": 1677721600,
+    "checked_rows": 1048576,
+    "prepare_ns": 179419487,
+    "reduce_ns": 1179471433,
+    "reference_ns": 52302991,
+    "isolated_component": "true",
+    "full_proof": "false",
+    "production_ready": false,
+    "matrix": "M[row,col] = constant + row_scale*row + column_scale*col over Goldilocks",
+    "reference": "Every output row checked using independent closed-form weighted affine compression plus the existing cubic reduction formula.",
+    "points": 2,
+    "alpha_coefficients": [
+      2,
+      3,
+      4
+    ],
+    "managed_gpu_limit_bytes": 134217728,
+    "tile_bytes": 33554432,
+    "staging_bytes": 16777216,
+    "transfer_mode": "serial",
+    "input_is_real_proof_witness": false,
+    "denominators": "Supplied public arithmetic coefficients, not an actual FRI transcript.",
+    "no_managed_allocation_leak": true
+  },
+  "interpretation": {
+    "claim": "Blocking host-to-device uploads are the largest recorded span in this isolated affine-input opening diagnostic.",
+    "not_established": [
+      "Full-proof speedup or a promoted GPU backend.",
+      "Production latency, throughput, or tail bounds.",
+      "A causal attribution of prior GPU pilot regression.",
+      "Absence of concurrent GPU load during this test.",
+      "Raw PCIe bandwidth from OpenCL transfer timings."
+    ],
+    "timing_note": "Host API spans include blocking waits; OpenCL device intervals overlap them. Do not add these spans, or add component wall time to containing proof time.",
+    "hardware_note": "Post-test GPU/PCIe snapshot preserved separately; not in-test contention or causal evidence."
+  },
+  "next": {
+    "immediate": "Prototype reuse of already-reserved pinned staging for opening uploads with same-binary pageable/pinned controls and bounded arithmetic/failure regression tests.",
+    "subsequent": "If beneficial, qualify realistic proof workloads and remove redundant host materialization/re-upload through bounded device-local consumers or validated recomputation.",
+    "promotion": "At least five alternating matched end-to-end pairs after a meaningful implementation change; no rerun of unchanged slower full backend for promotion."
+  },
+  "remaining": [
+    "Autonomous supervised cached-worker lifecycle and cancellation/OOM/timeouts.",
+    "No-identity startup liveness and general external-verifier reconciliation.",
+    "Physical scratch quotas and reference-aware retention.",
+    "Real arrivals/deadlines, reorgs, issuance/HTLC and reviewed host integration.",
+    "Full64 cold<=600s and complete post-seal<=180s at 12-minute cadence under one-root<=2MiB and aggregate RAM48/VRAM12/scratch128GiB.",
+    "Full-tree soundness/ZK review and explicit activation."
+  ],
+  "preservation": {
+    "native_root": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-native-20261002-a",
+    "source_archive_matches_after_tests": true,
+    "source_immutable_during_validation": true,
+    "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-native-20261002-a/pins.sha256",
+    "documentation_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-profile-native-20261002-a/documentation.tar.gz",
+    "committed": false,
+    "activated": false
+  }
+}

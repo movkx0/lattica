@@ -1,0 +1,1042 @@
+{
+  "schema_version": 1,
+  "recorded_date_utc": "2026-10-01",
+  "status": "HISTORICAL_SCALABILITY_EVIDENCE_WITH_COMPLETED_RETENTION_SUPERSESSION",
+  "production_ready": false,
+  "fresh_public_fixture": {
+    "directory": "lattica-prover-p3/target/block-v2-scalability-fixture-20261001",
+    "controller": "lattica-scalability-fixture-controller-20261001.service",
+    "generation": "Four fresh randomized CPU wallet proofs; three independently computed CPU preprocessing caps; finish-registry and check-registered",
+    "prior_cpu_keys_expected_height_and_profile_match_byte_for_byte": true,
+    "wallet_sha256": [
+      "81d90e5c7d430aa3d3c23ee99b56fbc2157f8515bf4511b265fd238636eca826",
+      "0312fc17107e309d97d15306f825e4d7d75b2015f6ac3a1ec877989d011fe285",
+      "497bf89565ece9dc7d7b0cf44b96722a9f0314d3821bf1ba37e26e1b6a2a2f2d",
+      "bf99eef838d6ef997ed0ae8ebf05b2c5a98e091f725b477865fd1be798990793"
+    ],
+    "shared_wallet_proofs_pruned": true
+  },
+  "matched_series": {
+    "directory": "lattica-prover-p3/target/block-v2-scalability-matched-b-20261001",
+    "controller": "lattica-scalability-matched-b-20261001.service",
+    "planned_pairs": 5,
+    "status": "MATCHED_COMPARISON_AND_POST_PRUNING_REPLAY_PASSED",
+    "fully_measured_pair_requirement": 5,
+    "performance_conclusion": "MODEST_MIXED_END_TO_END_GAIN_WITH_WORSE_FINAL_MERGE_TAIL_KEEP_OVERLAP_OPT_IN",
+    "authoritative_live_progress": "The frozen series manifest/summary describe the completed timed run. Subsequent shared-fixture pruning and CPU replay are recorded separately in this ledger."
+  },
+  "preserved_current_binaries": {
+    "directory": "lattica-prover-p3/target/block-v2-scalability-binaries-20261001",
+    "runner_sha256": "4e588b5de2c7a2e2de4b526bb12e78eb5beeff1406d9bf290d187dbb19233585",
+    "unchanged_cpu_auditor_sha256": "c9d4b084e46675707ed172e0d9d46444c1a891e184ee146ad57e664b69a3758b"
+  },
+  "additional_regression": {
+    "broad_service": "lattica-scalability-build-20261001.service",
+    "broad_run_passed": 196,
+    "broad_run_failed": 1,
+    "broad_run_ignored": 46,
+    "broad_run_seconds": 436.48,
+    "failure": "stream_prove::tests::stream_commit_quotient_matches_pcs: legacy ProQue default selected platform 0 (AMD, zero devices), CL_DEVICE_NOT_FOUND",
+    "platform_inspection": "AMD platform 0 has zero devices; POCL platform 1 has a CPU; NVIDIA platform 2 has the RTX 5080",
+    "targeted_retry_service": "lattica-scalability-build-b-20261001.service",
+    "targeted_retry_environment": {
+      "OCL_DEFAULT_PLATFORM_IDX": "2"
+    },
+    "targeted_retry_passed": 1,
+    "targeted_retry_failed": 0,
+    "targeted_retry_seconds": 0.38,
+    "legacy_source_changed": false,
+    "claim": "196 broad-run passes plus the isolated remaining test passing with explicit NVIDIA platform selection; not a single clean 197-test invocation"
+  },
+  "active_scope": [
+    "Reproducible baseline, phase/resource accounting and 64-transaction model",
+    "Bounded transfer overlap",
+    "Completed five fully measured matched pairs, pruned-fixture CPU replay and explicit optimization/redesign decision",
+    "Compile, validate and measure the selected further real-proof-producing prototype; reporting tests and drafts are not completion",
+    "Later padding/depth/full-workload qualification remains conditional on feasibility; no production activation"
+  ],
+  "profile_id_hex": "e90be22347a149b82c2a961cb14a33414b6db2d8221d0eda9fdfc174bf0143be",
+  "source_and_baseline_sha256": {
+    "docs/evidence/block-v2-gpu-hash-2026-09-30.json": "6b3d0064c31053f291a71fdaffe09a7801586aec5eed7b3372222a8c67f4053a",
+    "lattica-prover-p3/src/block_v2/perf.rs": "632796ba86623a01aa58fe4b3a4e5ee5086e5adca5592304c5e58413cf802ff2",
+    "lattica-prover-p3/src/block_v2/perf/timeline.rs": "0b14c986f5725b9d2a62b56d3b0f4c14d72d52fef2eae7e5e0421d5df89d07cd",
+    "lattica-prover-p3/src/block_v2/gpu_hash.rs": "d335795730be2c79fe71744f802908616ae2fc7a8a3bc28ebcc9c711ce1c35e9",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine.rs": "d6cba594088f4793d5cbb94b4b21548ae6c18fdea0a126b7a231db95e1b3a257",
+    "lattica-prover-p3/scripts/block-v2-scalability.py": "ef0e45b8a9eaef6ad7ac34279b531e55616207e0135564bb7377e0a3d4e2cf8a",
+    "lattica-prover-p3/scripts/test-block-v2-scalability.py": "4e9d1c74d10a8fd44eea9c49f070da39745de1735f411c7e1d2e619d97ad78a8",
+    "lattica-prover-p3/scripts/block-v2-gpu-trial.sh": "b47b949fad69574199def6e8d54d120d0b28a5d1172527f1f4c6de296de937f3",
+    "lattica-prover-p3/scripts/block-v2-two-level.sh": "d2e1f7bad2738b2447cde44329e2ad8dafb612afc872600e396d39312f240888",
+    "lattica-prover-p3/target/block-v2-scalability-baseline-20260930/block-v2-recursion-probe": "a11d1cc50cae7f19fa7260ef62166e99be8c687a04f3f8af60f0b3323c041526",
+    "lattica-prover-p3/target/block-v2-scalability-baseline-20260930/block-v2-artifact-audit": "c9d4b084e46675707ed172e0d9d46444c1a891e184ee146ad57e664b69a3758b",
+    "lattica-prover-p3/target/block-v2-scalability-baseline-20260930/source-and-docs.tar.gz": "2f931bf287e6321dca684198ee3c3758a04569d10cc9d30359a5f3206387c7b2"
+  },
+  "component_validation": {
+    "service": "lattica-scalability-profile-checks-c-20261001.service",
+    "all_target_compile": "PASS",
+    "profiler_tests_passed": 12,
+    "non_device_gpu_tests_passed": 5,
+    "device_tests_passed": 5,
+    "report_parser_tests_passed": 5,
+    "host_peak_bytes": 1862778880,
+    "swap_peak_bytes": 0,
+    "service_memory_max_bytes": 3221225472,
+    "component_gpu_managed_limit_bytes": 268435456,
+    "rayon_threads": 2,
+    "cargo_build_jobs": 1,
+    "coverage": [
+      "122 same-seed commitments/openings per serial and overlap mode",
+      "real cubic wallet proof CPU cross-verification for both modes",
+      "async upload error and unwind drain before reuse",
+      "child process death followed by lease reacquisition and valid hashing",
+      "greater-than-64-MiB mapped spill input and bit-reversed/tiled GPU vs resident CPU openings",
+      "host nested/cross-thread spans, overflow/malformed exits, no secret field visits",
+      "device timeline boundedness and nonmonotonic interval rejection",
+      "report parser rejects missing correctness/cleanup, timing losses and per-thread overlapping intervals"
+    ]
+  },
+  "conditional_baseline_cost_model": {
+    "source": "block-v2-gpu-hash-2026-09-30.json trial 2",
+    "measured_transactions": 4,
+    "measured_recursive_proofs": 7,
+    "measured_recursive_command_seconds": 1403.783,
+    "assumed_recursive_proofs_for_64": 127,
+    "unchanged_serial_extrapolation_minutes": 424.47724047619045,
+    "required_average_recursive_seconds_for_600_second_gate": 4.724409448818897,
+    "required_speedup_under_unchanged_serial_model": 42.44772404761904,
+    "free_hash_seconds_holding_other_costs_fixed": 1045.421848004,
+    "free_upload_wall_seconds_holding_other_costs_fixed": 1211.433546454,
+    "cache_hit_upload_bytes": 44023413504,
+    "estimated_127_cache_hit_upload_bytes": 5590973515008,
+    "pcie4_x4_ideal_one_way_upload_floor_seconds_if_volume_and_link_unchanged": 709.7915595224999,
+    "is_64_transaction_benchmark": false
+  },
+  "not_demonstrated": [
+    "grouped registered recursive closure and real proof measurement",
+    "64-transaction/depth-six qualification",
+    "three-minute incremental finalization",
+    "common-height padding qualification",
+    "complete-tree soundness and zero-knowledge review",
+    "HTLC/issuance and production coordinator/network activation"
+  ],
+  "caveats": [
+    "Historical source pins still identify historical measurements, not the new implementation.",
+    "Entered-thread wall segments are disjoint only within each thread; they are not CPU-time samples.",
+    "Process counter deltas and original span lifetimes are inclusive and non-additive.",
+    "Host and OpenCL timestamp domains cannot be directly aligned.",
+    "Upload API/enqueue duration is not actual physical copy duration.",
+    "Managed budgets and sampled VRAM monitoring do not enforce a physical driver quota.",
+    "Process-death test covers lease recovery, not every possible in-flight driver cancellation point.",
+    "The spill input test is component-scale, not a full retained-LDE or recursive benchmark."
+  ],
+  "reporting_recovery": {
+    "original_series": "lattica-prover-p3/target/block-v2-scalability-matched-20261001",
+    "original_controller_status": "FAILED_ACCOUNTING_AFTER_SUCCESSFUL_FIRST_SERIAL_TRIAL",
+    "cause": "Four short helper services did not emit the expected final cgroup journal accounting; both long proving services have exact final records.",
+    "recovery_service": "lattica-scalability-report-recovery-20261001.service",
+    "recovery_provers_started": 0,
+    "successful_recursive_command_ms": 1378591,
+    "final_merge_ms": 191881,
+    "root_bytes": 1913277,
+    "original_trial_fully_measured": false,
+    "original_trial_proving_resources_measured": true,
+    "missing_accounting_policy": "unknown/null, never zero; excluded from fully measured comparison pairs",
+    "reporter_and_accounting_tests_passed": 11,
+    "shell_syntax": "PASS",
+    "live_snapshot_smoke": "PASS: lattica-v2-accounting-smoke-20261001.service",
+    "live_real_helper_snapshot": "PASS: lattica-v2-1529191-1.service; 10,555,392-byte memory peak; zero swap",
+    "snapshot_scope": "ExecStopPost after main process, excluding cleanup after snapshot. Final journal records preferred and cross-checked when available.",
+    "schema2_resume": "Exclusive controller lock, identical pins, reuse complete logs only, never restart incomplete logs automatically.",
+    "source_sha256": {
+      "lattica-prover-p3/scripts/block-v2-scalability.py": "81890959e39a8925791473c0c86421dddf2a7f2792369acff48d993a5188f91d",
+      "lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "lattica-prover-p3/scripts/block-v2-two-level.sh": "556e5a343c80530056f9030c6f0cb9edc380b125fa1a235e5d29bc896f7f7ca3",
+      "lattica-prover-p3/scripts/test-block-v2-scalability.py": "bf1052eb3e44d75f08902d63b83d04a86648166bd10878c1e080633b09dea704",
+      "lattica-prover-p3/target/block-v2-scalability-matched-20261001/original-reporting-sources.tar.gz": "d10f83d2eca98b4fe7108d0c85ea735586f4fff67608fc3ef0dc0485bd5a0900"
+    }
+  },
+  "compiler_target_check": {
+    "rustflags": [
+      "-C",
+      "target-cpu=x86-64-v3"
+    ],
+    "packing": "upstream PackedGoldilocksAVX2",
+    "runner_matches_preserved_sha256": "4e588b5de2c7a2e2de4b526bb12e78eb5beeff1406d9bf290d187dbb19233585",
+    "fingerprint": "lattica-prover-p3/target/release/.fingerprint/lattica-prover-p3-c3de782d023557ac/bin-block-v2-recursion-probe.json",
+    "scope": "Read-only build metadata check; no rebuild or flags changed during the timed series. This is not a scalar-only baseline."
+  },
+  "retained_merkle_draft": {
+    "directory": "/tmp/lattica-retained-merkle-20261001",
+    "archive": "lattica-prover-p3/target/block-v2-retained-merkle-draft-f-20261001.tar.gz",
+    "status": "INTEGRATED_COMPILED_TESTED_FULL_SIZE_RECURSIVE_PILOT_PASSED_REPETITION_PENDING",
+    "integrated": true,
+    "compiled": true,
+    "proof_produced": true,
+    "performance_claim": false,
+    "source_sha256": {
+      "/tmp/lattica-retained-merkle-20261001/engine.rs": "287a64f87c31376082c5a3c695bf810b1b22c5447342d73c07e36a2ba2449af1",
+      "/tmp/lattica-retained-merkle-20261001/gpu_hash.rs": "633e3659dba3cd24c1d56d232f380135b62930c785bcef42a7eedf72dabc0f81",
+      "/tmp/lattica-retained-merkle-20261001/block-v2-scalability.py": "c16d076e21a6841701c93ecc553a810db917c468a861f5b20f4f17c4a3eee098",
+      "/tmp/lattica-retained-merkle-20261001/test-block-v2-scalability.py": "b8802c5e4f8280ab858ec0bd85659fe8eedb61f3b2f22808d0d5a58ea7c1d7e7",
+      "/tmp/lattica-retained-merkle-20261001/block-v2-two-level.sh": "50075d4e85f0a3fbec31c686fb6f77c48275f4dc1c02fb7f836ef0694990a92a",
+      "/tmp/lattica-retained-merkle-20261001/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "/tmp/lattica-retained-merkle-20261001/manifest.json": "e53799028d37a9de350447aa7ec3b06a9b044cfe76ef40f4c549e0aeb54ba15b",
+      "lattica-prover-p3/target/block-v2-retained-merkle-draft-f-20261001.tar.gz": "dd72dbafab5720d1fcd8af31827bdc2205e35363309cffc7030d8527632660ad"
+    },
+    "new_tests_drafted": 9,
+    "implementation": "Flat immutable device trees, cap/query-path retrieval, complete live-allocation admission, shared job/context lease, fail-closed live-handle teardown, error/unwind cleanup, retention counters.",
+    "caveat": "Does not reduce host-to-device matrix volume or recursive node count. It does not substitute for the architecture decision or prove production feasibility.",
+    "rust_gpu_tests_executed": true,
+    "reporting_draft": {
+      "integrated": true,
+      "runtime_controller_launchable_from_scratch_directory": false,
+      "features": [
+        "Explicit --retain-trees setting pinned for both serial/overlap modes, resume validation, and environment forwarding",
+        "Per-service cumulative retention counter deltas plus live/peak/tree-count gauges",
+        "Exact retain_copy/path_gather device-event agreement and managed-allocation cross-checks",
+        "Missing historical retention telemetry remains unknown; required/mixed-mode measurements fail closed"
+      ],
+      "validation": {
+        "command": "python3 -B /tmp/lattica-retained-merkle-20261001/test-block-v2-scalability.py",
+        "passed": 16,
+        "failed": 0,
+        "elapsed_seconds": 0.084,
+        "scope": "synthetic parser/accounting regression tests, not Rust/GPU validation",
+        "shell_syntax": "bash -n passed",
+        "recorded_utc": "2026-10-01T02:38:10Z"
+      }
+    },
+    "failure_test_update": "Copy-error, copy-unwind and query-error hooks now check pending status behind an unreleased user event before notifying its release helper. RAII joins helpers and restores checked engine shutdown on unexpected assertions. The integrated pending-event tests have now compiled and passed.",
+    "pinned_benchmark_files_unchanged_check_utc": "2026-10-01 04:24:37 UTC",
+    "previous_archives": [
+      {
+        "path": "lattica-prover-p3/target/block-v2-retained-merkle-draft-20261001.tar.gz",
+        "sha256": "5fe59e5b0b2cd197d0a928d93db4113db043acf70e478e27f13553e63b56afa4",
+        "status": "earlier syntax-only draft; preserved"
+      },
+      {
+        "path": "lattica-prover-p3/target/block-v2-retained-merkle-draft-b-20261001.tar.gz",
+        "sha256": "7111c392507fbd60eb7264d6fb448a3cfe708f174447acb24d3290367127bac8",
+        "status": "earlier isolated uncompiled draft; preserved"
+      },
+      {
+        "path": "lattica-prover-p3/target/block-v2-retained-merkle-draft-c-20261001.tar.gz",
+        "sha256": "866e31bd64c277a9b6d5b7885810d61fc964cadb459afd738f38383f7a16dbb3",
+        "status": "earlier isolated uncompiled draft; preserved"
+      },
+      {
+        "path": "lattica-prover-p3/target/block-v2-retained-merkle-draft-d-20261001.tar.gz",
+        "sha256": "b9692e5384cfd029babb80d3ee764a64b3d3f9fadd4e7e39409201d05b26efb7",
+        "status": "earlier isolated uncompiled draft; preserved"
+      },
+      {
+        "path": "lattica-prover-p3/target/block-v2-retained-merkle-draft-e-20261001.tar.gz",
+        "sha256": "d3789a538308d074314d110aaf036c014b58df8177459b4d6923fe6a008e4206",
+        "status": "earlier isolated uncompiled draft; preserved"
+      }
+    ],
+    "atomic_accounting_revision": {
+      "status": "INTEGRATED_COMPILED_AND_TESTED",
+      "finding": "Separate ordinary/retained lease drops exposed inconsistent intermediate totals to a concurrent observer.",
+      "change": "The allocation's single lease marks retained ownership and releases total bytes, retained bytes and tree count in one Accounting lock.",
+      "new_test": "retained_reservations_drop_atomically_under_concurrent_observation",
+      "benchmark_engine_unchanged_sha256": "d6cba594088f4793d5cbb94b4b21548ae6c18fdea0a126b7a231db95e1b3a257"
+    },
+    "staging_admission_revision": {
+      "status": "INTEGRATED_COMPILED_AND_TESTED",
+      "finding": "Admitting a narrow input row did not ensure that a staging slot held the four fields decoded per digest.",
+      "change": "Require at least 32 bytes in each staging slot in plan_slots, which also runs before device-buffer initialization.",
+      "new_test": "staging_pool_admits_a_complete_digest_in_each_slot",
+      "default_benchmark_limits_affected": false
+    },
+    "teardown_and_test_revision": {
+      "status": "INTEGRATED_COMPILED_AND_TESTED",
+      "review": "read-only static review; not an independent security audit",
+      "changes": [
+        "QueueFence Drop aborts on failed draining instead of releasing accounting and permitting recovery with uncertain device ownership",
+        "Staging Drop explicitly enqueues unmapping, checks its result and waits for completion; Engine Drop drains queues first",
+        "Copy error and unwind injections follow enqueuing behind an unreleased user event; hooks verify pending status before notifying the release helper",
+        "Query failure now verifies pending status before releasing its gate, and marker/user-event handles drop before shutdown",
+        "RAII test engine and gate-worker cleanup covers unexpected assertions; helper release errors fail-stop",
+        "New one-MiB GPU test admits a tree, rejects a second live tree, and accepts it after releasing the first",
+        "New Linux subprocess test simulates drain failure, requires SIGABRT and the cleanup diagnostic, then checks lease reacquisition with a real retained tree",
+        "Accounting test assertions operate on copied counters after unlocking; all GPU adapter tests have last-drop shutdown guards; the older async engine test also uses checked restoration and joined helpers"
+      ],
+      "caveat": "No actual driver-failure recovery or instantaneous physical VRAM isolation is claimed. Component simulations passed; full-size recursive proving remains pending.",
+      "benchmark_engine_unchanged_sha256": "d6cba594088f4793d5cbb94b4b21548ae6c18fdea0a126b7a231db95e1b3a257",
+      "final_static_review": "No further blocking findings by source inspection; the integrated implementation subsequently compiled and passed the recorded component/regression tests.",
+      "test_harness_caveat": "The simulated-drain subprocess's piped stderr is read after exit. Excessively verbose driver output could cause a bounded false timeout/test failure, not a false pass."
+    },
+    "runner_compiled": true,
+    "test_binary_compiled": true,
+    "build_service": "lattica-v2-retained-build-20261001-a.service",
+    "integration_utc": "2026-10-01 04:57:40 UTC",
+    "archive_status": "Archive F preserves the syntax-formatted, uncompiled source snapshot before integration.",
+    "new_tests_executed": 9
+  },
+  "retained_merkle_validation": {
+    "status": "BUILD_COMPONENTS_REGRESSION_AND_FULL_SIZE_RECURSIVE_PILOT_PASSED",
+    "recorded_utc": "2026-10-01 05:24:06 UTC",
+    "build": {
+      "unit": "lattica-v2-retained-build-20261001-a.service",
+      "log": "lattica-prover-p3/target/block-v2-retained-build-20261001-a.log",
+      "runner_compiled": true,
+      "test_binary_compiled": true,
+      "offline_locked": true,
+      "compiler": "rustc 1.96.0; LLVM 22.1.2",
+      "target_cpu": "x86-64-v3",
+      "memory_peak_bytes": 2431541248,
+      "swap_peak_bytes": 0
+    },
+    "components": {
+      "unit": "lattica-v2-retained-components-20261001-a.service",
+      "log": "lattica-prover-p3/target/block-v2-retained-components-20261001-a.log",
+      "python_reporting_tests_passed": 16,
+      "shell_syntax_passed": true,
+      "targeted_cpu_tests_passed": 9,
+      "explicit_gpu_tests_passed": 10,
+      "new_tests_executed": 9,
+      "memory_peak_bytes": 726519808,
+      "swap_peak_bytes": 0,
+      "scope": "CPU-equivalent commitments/openings, a real cubic wallet proof verified using CPU types, spill-backed inputs, allocation/lifetime and injected failure tests. Not a full-size recursive proof."
+    },
+    "regression": {
+      "unit": "lattica-v2-retained-regression-20261001-a.service",
+      "log": "lattica-prover-p3/target/block-v2-retained-regression-20261001-a.log",
+      "log_sha256": "7cdf39b0ffa55bb6f8df051def93335d31910f737191ce5150c1462d5e3b5553",
+      "passed": 201,
+      "failed": 0,
+      "ignored": 51,
+      "elapsed_seconds": 118.71,
+      "memory_peak_bytes": 2168573952,
+      "swap_peak_bytes": 0,
+      "scope": "Ten ignored GPU tests executed separately above; targeted CPU tests are included in the broad total, not additional distinct tests."
+    },
+    "preserved_binaries": {
+      "directory": "lattica-prover-p3/target/block-v2-retained-binaries-20261001",
+      "runner_sha256": "dacfb2343b935c8f9b9cbdfd39d5552c630b791f5548b7849bdaa52d8364f1b3",
+      "test_binary_sha256": "895c0227ee3d5e05f118a850b7fcfc92d15e986b9237e8311f4af54f1323e2e7",
+      "unchanged_cpu_auditor": "lattica-prover-p3/target/block-v2-scalability-binaries-20261001/block-v2-artifact-audit",
+      "cpu_auditor_sha256": "c9d4b084e46675707ed172e0d9d46444c1a891e184ee146ad57e664b69a3758b"
+    },
+    "fresh_fixture": {
+      "directory": "lattica-prover-p3/target/block-v2-retained-fixture-20261001",
+      "unit": "lattica-v2-retained-fixture-20261001-a.service",
+      "log": "lattica-prover-p3/target/block-v2-retained-fixture-20261001-a.log",
+      "log_sha256": "0e5d89206eb6734a29dcbeb09ec012f45e29fe14360313650667a9a8a3b34e1b",
+      "wallets": 4,
+      "keys_expected_height_profile_match_baseline": true,
+      "registered_checkpoint_passed": true,
+      "wallet_sha256": [
+        "ef819005bc2517549d43a518c4e849efbcfd1bca58047d4a2d8a9b040a943e3c",
+        "355428c92c8cf29081ae9fd700578b8af7580a12e9d686d8d67d59c2c696206a",
+        "2adea3fed1b6f3e62e3bb1ee91a4c837083bb93d28f7f065a8bbe3b04cce50fe",
+        "c8e25d401258da5a30891a1b7f4b709e4157ac812fd577efe8a50d0132638123"
+      ],
+      "profile": "e90be22347a149b82c2a961cb14a33414b6db2d8221d0eda9fdfc174bf0143be",
+      "height": 524288,
+      "memory_peak_bytes": 1078542336,
+      "swap_peak_bytes": 0,
+      "original_shared_wallet_files_remain_pruned": true
+    },
+    "full_size_recursive_proof_produced": true,
+    "repeat_qualified_performance": false,
+    "production_ready": false,
+    "next_gate": "Five matched retention-off/on pairs at fixed serial transfer, then shared-fixture pruning and fresh CPU replay of all roots. The pilot alone does not qualify a speedup."
+  },
+  "retained_merkle_pilot": {
+    "status": "FULL_SIZE_RETAINED_TREE_PILOT_AND_CPU_ROOT_AUDIT_PASSED_REPETITION_PENDING",
+    "directory": "lattica-prover-p3/target/block-v2-retained-pilot-20261001-a",
+    "unit": "lattica-v2-retained-pilot-20261001-a.service",
+    "controller_exit_code": 0,
+    "controller_wall_seconds": 1043.567,
+    "profile": "e90be22347a149b82c2a961cb14a33414b6db2d8221d0eda9fdfc174bf0143be",
+    "recursive_nodes": 7,
+    "transactions": 4,
+    "gpu_transfer_mode": "serial",
+    "gpu_tree_retention_enabled": true,
+    "metrics": {
+      "recursive_command_ms": 1042021,
+      "final_merge_ms": 133367,
+      "root_bytes": 1913496,
+      "root_sha256": "e3413de319967d147ed9a8e0bce0f73be178c49373eb9df7e35c392ad62e46cd",
+      "max_cgroup_memory_bytes": 42962817024,
+      "max_spill_bytes": 41670574080,
+      "max_managed_gpu_bytes": 7449083816,
+      "max_retained_gpu_bytes": 6442449120,
+      "sampled_prover_vram_mib": 7366,
+      "uploaded_bytes": 328028118272,
+      "downloaded_bytes": 7297536,
+      "upload_device_ns": 166956484608,
+      "download_device_ns": 18717440,
+      "physical_vram_quota": false,
+      "source_pins_checked": true,
+      "repeat_qualified": false
+    },
+    "root_audit": {
+      "unchanged_cpu_auditor": true,
+      "native_mutation_rejections": 38,
+      "registry_policy_rejections": 4,
+      "inner_proofs_loaded": 0,
+      "local_inner_artifacts_pruned": 10,
+      "shared_fixture_pruned": false
+    },
+    "source_archive_sha256": "3d5f073750b559ea872e82a5999f51db056ed5e7d28765fc93eb6746b2c26a09",
+    "raw_log_sha256": "616982c4618be70e7c2764346d64c81f76ab3321f2c8e66b0e8d9f02866ac48a",
+    "proving_only_log_sha256": "8a2bbecdf68fdeb67f720694770c112bff60894a73c93e07996552356dcca50b",
+    "reporting_note": "Raw log is preserved. The outer controller's final cgroup snapshot is strictly checked separately; the proving-only log retains strict service binding. Physical upload/download durations match labeled device events. Missing historical values remain unknown.",
+    "performance_claim": "One full-size pilot, not a matched speedup claim or repetition gate. Matrix upload volume and recursive node count are unchanged. Shared public fixture is deliberately retained for the next five-pair comparison.",
+    "production_ready": false
+  },
+  "retention_comparison_controller": {
+    "utc": "2026-10-01 05:55:25 UTC",
+    "files": [
+      "lattica-prover-p3/scripts/block-v2-scalability.py",
+      "lattica-prover-p3/scripts/test-block-v2-scalability.py",
+      "lattica-prover-p3/scripts/report-retained-pilot.py"
+    ],
+    "python_tests_passed": 30,
+    "shell_syntax_passed": true,
+    "review": "No remaining blocking finding in scoped static review after durable attempt-history fix",
+    "real_logs_validated": [
+      "historical pair1 serial",
+      "retained pilot serial"
+    ],
+    "rust_sources_changed": false,
+    "status": "INTEGRATED_VALIDATED_MATCHED_RETENTION_SERIES_PENDING",
+    "comparison": "retention-off/on at fixed serial transfers",
+    "manifest_schema": 3,
+    "legacy_reports_recovery_only": true,
+    "durable_attempt_history": true,
+    "report_hash_preservation": true,
+    "physical_device_event_crosschecks": true,
+    "gpu_inventory_pinned": true,
+    "pilot_report_final_unit": "lattica-v2-retained-pilot-report-20261001-b.service",
+    "pilot_report_final_log": "lattica-prover-p3/target/block-v2-retained-pilot-20261001-a/report-final.log"
+  },
+  "lookup_mask_investigation": {
+    "evidence": "docs/evidence/block-v2-lookup-mask-model-2026-10-01.json",
+    "status": "CONDITIONAL_ALGEBRA_ONLY_NOT_A_PROTOCOL",
+    "tests_passed": 5,
+    "implemented_in_prover": false,
+    "complete_tree_security_established": false,
+    "caveat": "Do not relax single-zero-terminal enforcement. Joint-transcript hiding, Fiat-Shamir and quantum assumptions, lookup soundness, recursive closure and actual performance are still unestablished."
+  },
+  "first_matched_pair_snapshot": {
+    "recorded_utc": "2026-10-01T02:08:24Z",
+    "completed_pairs": 1,
+    "required_pairs": 5,
+    "results": [
+      {
+        "mode": "serial",
+        "recursive_command_ms": 1233029,
+        "final_merge_ms": 165467,
+        "root_bytes": 1913618,
+        "resource_telemetry_complete": true,
+        "device_upload_compute_overlap_ns": 0,
+        "hashing_wall_ns": 301699491711,
+        "upload_wall_ns": 163951593416,
+        "leaf_kernel_ns": 75252179712,
+        "cpu_usage_nsec": 3705965337000,
+        "largest_cgroup_memory_peak": 42966130688,
+        "vram": {
+          "largest_sampled_prover_sum_mib": 1222,
+          "physical_quota": false,
+          "readings": 2327
+        }
+      },
+      {
+        "mode": "overlap",
+        "recursive_command_ms": 1261478,
+        "final_merge_ms": 169153,
+        "root_bytes": 1912926,
+        "resource_telemetry_complete": true,
+        "device_upload_compute_overlap_ns": 141754503200,
+        "hashing_wall_ns": 336138917867,
+        "upload_wall_ns": 865108731,
+        "leaf_kernel_ns": 265663462496,
+        "cpu_usage_nsec": 3736185868000,
+        "largest_cgroup_memory_peak": 42966937600,
+        "vram": {
+          "largest_sampled_prover_sum_mib": 1224,
+          "physical_quota": false,
+          "readings": 2374
+        }
+      }
+    ],
+    "overlap_wall_change_percent": 2.3072450039699044,
+    "comparison_conclusion": "NOT_ESTABLISHED_ONE_PAIR_ONLY",
+    "caution": "upload_wall_ns is blocking API time in serial mode but enqueue time in overlap mode; it is not a comparable measure of physical transfer duration.",
+    "observations": "Device copy/compute overlap is nonzero, but this first overlap trial is slower end-to-end; causes and repeatability require the remaining pairs."
+  },
+  "grouped_wrapper_draft": {
+    "status": "ISOLATED_UNCOMPILED_GROUPED_WRAPPER_DRAFT",
+    "created_utc": "2026-10-01T02:47:51Z",
+    "source_base": "lattica-prover-p3/src/block_v2/machine/programs.rs",
+    "base_sha256": "09b17474b5f32eba6bc55ee5c322d3f1cf88d3ab3cd1f597bbb1c1d04029285a",
+    "draft_sha256": "c1a4618d99fdffa69f97612d18124f183889c20ef3222b17783253ec0d413e5f",
+    "previous_draft_sha256": "77a67c96d4de1bbde0483ef6951191b16baa16eb48561a176864492574793667",
+    "integrated": false,
+    "compiled": false,
+    "tests_executed": false,
+    "recursive_proof_produced": false,
+    "performance_claim": false,
+    "production_ready": false,
+    "do_not_integrate_or_build_during_matched_series": true,
+    "implementation": [
+      "Additional wrapper_pair compiler accepts exactly two completed public wallet proofs and public statements, never wallet witnesses",
+      "Both unchanged cubic wallet verifiers always execute; public count is constrained to one or two and public level to one",
+      "Count one uses canonical right-empty leaf padding; a caller can repeat its existing public wallet proof in the second slot",
+      "Ordered roots and counts use the unchanged binary commitment construction",
+      "Single AIR, zero lookup terminal requirement, proof parameters, original wrapper and original registration/verification policy remain untouched"
+    ],
+    "draft_test": "paired_wrapper_binds_order_count_padding_and_both_full_wallet_verifiers",
+    "draft_test_scope": [
+      "Two real distinct demo wallet proofs under a common anchor",
+      "Compiler height check against current common height 524288",
+      "Interpreter checks for one/two entries, context, mode, order, count and padding",
+      "Malformed public statements are tested against consistently recomputed roots in both slots, including the unused second slot at count one",
+      "Invalid counts zero and three use roots matching the compiler's arithmetic to isolate the count-range constraint",
+      "Both slots have final-polynomial and trace-commitment mutations while statements and roots remain unchanged, at counts one and two",
+      "Witness values, order and repeated second proof do not change program manifest"
+    ],
+    "validation_so_far": "rustfmt syntax parsing/formatting and read-only review only; no compilation, geometry execution, interpreter evaluation, or recursive proof",
+    "negative_test_revision": {
+      "status": "ISOLATED_UNCOMPILED_TEST_STRENGTHENING",
+      "finding": "A stale root could reject some count/statement mutations without demonstrating the intended count or wallet-verifier constraint.",
+      "change": "Recompute roots for those malformed statements/counts and add proof-only mutations with unchanged statements and roots.",
+      "benchmark_program_source_unchanged_sha256": "09b17474b5f32eba6bc55ee5c322d3f1cf88d3ab3cd1f597bbb1c1d04029285a"
+    },
+    "conditional_count_model": {
+      "kind": "node-count arithmetic only, holding common geometry and every recursive proof cost unchanged",
+      "total_transactions": 64,
+      "original_recursive_proofs": 127,
+      "pair_wrapper_recursive_proofs": 63,
+      "maximum_speedup_from_count_change_under_these_assumptions": 2.015873015873016,
+      "historical_baseline_64_model_minutes": 424.47724047619045,
+      "paired_wrapper_64_model_minutes": 210.56744999999998,
+      "target_cold_seconds": 600,
+      "required_further_speedup_under_model": 21.056745,
+      "is_benchmark": false,
+      "does_not_establish_geometric_closure": true
+    },
+    "required_next_steps": [
+      "Wait for the existing pinned comparison and preserve all benchmark artifacts",
+      "Compile and run the bounded full-parameter wallet/interpreter test; reject unchanged-geometry model if the compiler exceeds height 524288",
+      "Keep this a separate registry choice and independently pinned profile; never pass grouped-wrapper keys off as approved legacy-wrapper keys",
+      "If selected, implement explicit registration/prover/auditor policy for the grouped construction without weakening original policy",
+      "Produce actual pair wrapper, merge and second merge proofs; verify a root with the strict CPU verifier after pruning inners",
+      "Measure actual latency/resources/proof size and perform full-tree soundness/ZK review before any qualification claim"
+    ],
+    "caveats": [
+      "About a twofold count improvement cannot close the roughly 42-fold historical projected gap on its own",
+      "Doubling wallet verification may change padding, trace cost, closure or memory; no compiler result exists yet",
+      "JoinSplit-only draft; HTLC/issuance qualification, padding/depth-six workloads and coordinator remain pending",
+      "This draft is not the device-retention prototype and does not validate or replace it"
+    ],
+    "directory": "/tmp/lattica-grouped-wrapper-20261001",
+    "archive": "lattica-prover-p3/target/block-v2-grouped-wrapper-draft-b-20261001.tar.gz",
+    "archive_sha256": "0da2b4dcd7e3e0381e32c39c4549e2975b784ee29bef8b54ef34e846fb6b804d",
+    "manifest_sha256": "580575c2adda6045139ca479e5c39928405d389c71aadf56b61145bcc15e8182",
+    "previous_archive": {
+      "archive": "lattica-prover-p3/target/block-v2-grouped-wrapper-draft-20261001.tar.gz",
+      "sha256": "6d3446e725620caeeb03d5da1aaf70345637dca75d50faf65e0e7a5d85c4d856"
+    }
+  },
+  "matched_progress_snapshot": {
+    "observed_utc": "2026-10-01T04:50:44Z",
+    "active_trial": null,
+    "controller_session": 86046,
+    "completed_pairs": 5,
+    "required_pairs": 5,
+    "results": [
+      {
+        "pair": 1,
+        "serial_ms": 1233029,
+        "overlap_ms": 1261478,
+        "overlap_wall_change_percent": 2.3072450039699044,
+        "serial_final_merge_ms": 165467,
+        "overlap_final_merge_ms": 169153,
+        "both_resource_telemetry_complete": true,
+        "root_bytes": {
+          "serial": 1913618,
+          "overlap": 1912926
+        }
+      },
+      {
+        "pair": 2,
+        "serial_ms": 1147139,
+        "overlap_ms": 1195977,
+        "overlap_wall_change_percent": 4.257374215330478,
+        "serial_final_merge_ms": 136643,
+        "overlap_final_merge_ms": 171761,
+        "both_resource_telemetry_complete": true,
+        "root_bytes": {
+          "serial": 1912973,
+          "overlap": 1913463
+        }
+      },
+      {
+        "pair": 3,
+        "serial_ms": 1152787,
+        "overlap_ms": 1124461,
+        "overlap_wall_change_percent": -2.4571755233187,
+        "serial_final_merge_ms": 140392,
+        "overlap_final_merge_ms": 165131,
+        "both_resource_telemetry_complete": true,
+        "root_bytes": {
+          "serial": 1913386,
+          "overlap": 1913541
+        }
+      },
+      {
+        "pair": 4,
+        "serial_ms": 1396506,
+        "overlap_ms": 1146007,
+        "overlap_wall_change_percent": -17.937552720861927,
+        "serial_final_merge_ms": 181385,
+        "overlap_final_merge_ms": 171445,
+        "both_resource_telemetry_complete": true,
+        "root_bytes": {
+          "serial": 1913291,
+          "overlap": 1913861
+        }
+      },
+      {
+        "pair": 5,
+        "serial_ms": 1328331,
+        "overlap_ms": 1293280,
+        "overlap_wall_change_percent": -2.6387248359030946,
+        "serial_final_merge_ms": 181908,
+        "overlap_final_merge_ms": 209843,
+        "both_resource_telemetry_complete": true,
+        "root_bytes": {
+          "serial": 1913673,
+          "overlap": 1913529
+        }
+      }
+    ],
+    "conclusion": "COMPLETE_PAIRED_COMPARISON_KEEP_OVERLAP_OPT_IN",
+    "shared_fixture_pruned": true,
+    "post_shared_fixture_pruning_cpu_replay": true,
+    "caveat": "This is a four-transaction/seven-recursive-proof benchmark, not a measured 64-transaction or incremental-arrival qualification.",
+    "completed_trials": 10
+  },
+  "completed_matched_comparison": {
+    "finished_utc": "2026-10-01T04:50:44Z",
+    "controller_exit_code": 0,
+    "controller_result": "success",
+    "summary": {
+      "architecture_decision": "REQUIRES_REVIEW_OF_MEASUREMENTS_AND_STRUCTURAL_PROTOTYPES",
+      "completed_pairs": 5,
+      "depth_six_qualified": false,
+      "fully_measured_pairs": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "incremental_qualified": false,
+      "minimum_repetition_gate_passed": true,
+      "overlap_median_ms": 1195977,
+      "paired_speedup_ratios": [
+        0.9774478825631521,
+        0.9591647665465138,
+        1.025190735828099,
+        1.2185841796777857,
+        1.0271024062847953
+      ],
+      "serial_cost_models": [
+        {
+          "cache_hit_upload_bytes_per_node": 44023413504,
+          "estimated_64_cache_hit_upload_bytes": 5590973515008,
+          "estimated_64_minutes": 372.8444833333333,
+          "four_tx_seconds_with_zero_hashing_holding_other_costs_fixed": 931.3295082889999,
+          "four_tx_seconds_with_zero_upload_wall_holding_other_costs_fixed": 1069.077406584,
+          "kind": "conditional_unchanged_geometry_serial_extrapolation_not_measurement",
+          "pcie4_x4_theoretical_upload_floor_seconds_if_link_and_volume_unchanged": 709.7915595225,
+          "recursive_proofs_for_64": 127,
+          "required_speedup_over_this_serial_trial": 37.28444833333333,
+          "target_average_seconds_per_recursive_proof": 4.724409448818897
+        },
+        {
+          "cache_hit_upload_bytes_per_node": 44023413504,
+          "estimated_64_cache_hit_upload_bytes": 5590973515008,
+          "estimated_64_minutes": 346.8729833333333,
+          "four_tx_seconds_with_zero_hashing_holding_other_costs_fixed": 845.1403378619999,
+          "four_tx_seconds_with_zero_upload_wall_holding_other_costs_fixed": 982.7251444439999,
+          "kind": "conditional_unchanged_geometry_serial_extrapolation_not_measurement",
+          "pcie4_x4_theoretical_upload_floor_seconds_if_link_and_volume_unchanged": 709.7915595225,
+          "recursive_proofs_for_64": 127,
+          "required_speedup_over_this_serial_trial": 34.68729833333333,
+          "target_average_seconds_per_recursive_proof": 4.724409448818897
+        },
+        {
+          "cache_hit_upload_bytes_per_node": 44023413504,
+          "estimated_64_cache_hit_upload_bytes": 5590973515008,
+          "estimated_64_minutes": 348.58083095238095,
+          "four_tx_seconds_with_zero_hashing_holding_other_costs_fixed": 851.4793820100001,
+          "four_tx_seconds_with_zero_upload_wall_holding_other_costs_fixed": 987.795154279,
+          "kind": "conditional_unchanged_geometry_serial_extrapolation_not_measurement",
+          "pcie4_x4_theoretical_upload_floor_seconds_if_link_and_volume_unchanged": 709.7915595225,
+          "recursive_proofs_for_64": 127,
+          "required_speedup_over_this_serial_trial": 34.858083095238094,
+          "target_average_seconds_per_recursive_proof": 4.724409448818897
+        },
+        {
+          "cache_hit_upload_bytes_per_node": 44023413504,
+          "estimated_64_cache_hit_upload_bytes": 5590973515008,
+          "estimated_64_minutes": 422.27681428571424,
+          "four_tx_seconds_with_zero_hashing_holding_other_costs_fixed": 1077.652061197,
+          "four_tx_seconds_with_zero_upload_wall_holding_other_costs_fixed": 1229.386032914,
+          "kind": "conditional_unchanged_geometry_serial_extrapolation_not_measurement",
+          "pcie4_x4_theoretical_upload_floor_seconds_if_link_and_volume_unchanged": 709.7915595225,
+          "recursive_proofs_for_64": 127,
+          "required_speedup_over_this_serial_trial": 42.22768142857142,
+          "target_average_seconds_per_recursive_proof": 4.724409448818897
+        },
+        {
+          "cache_hit_upload_bytes_per_node": 44023413504,
+          "estimated_64_cache_hit_upload_bytes": 5590973515008,
+          "estimated_64_minutes": 401.6619928571428,
+          "four_tx_seconds_with_zero_hashing_holding_other_costs_fixed": 1011.8373412889998,
+          "four_tx_seconds_with_zero_upload_wall_holding_other_costs_fixed": 1160.581599428,
+          "kind": "conditional_unchanged_geometry_serial_extrapolation_not_measurement",
+          "pcie4_x4_theoretical_upload_floor_seconds_if_link_and_volume_unchanged": 709.7915595225,
+          "recursive_proofs_for_64": 127,
+          "required_speedup_over_this_serial_trial": 40.166199285714285,
+          "target_average_seconds_per_recursive_proof": 4.724409448818897
+        }
+      ],
+      "serial_median_ms": 1233029
+    },
+    "metrics": {
+      "serial": {
+        "median_ms": 1233029,
+        "worst_ms": 1396506,
+        "final_merge_median_ms": 165467,
+        "final_merge_worst_ms": 181908,
+        "hashing_median_ns": 301998662138,
+        "sampled_vram_mib": 1222
+      },
+      "overlap": {
+        "median_ms": 1195977,
+        "worst_ms": 1293280,
+        "final_merge_median_ms": 171445,
+        "final_merge_worst_ms": 209843,
+        "hashing_median_ns": 340059941315,
+        "sampled_vram_mib": 1224
+      },
+      "median_wall_reduction_percent": 3.004957709834888,
+      "paired_changes_percent": [
+        2.3072450039699044,
+        4.257374215330478,
+        -2.4571755233187,
+        -17.937552720861927,
+        -2.6387248359030946
+      ],
+      "paired_median_wall_reduction_percent": 2.4571755233187,
+      "maximum_cgroup_memory_bytes": 42967019520,
+      "maximum_spill_bytes": 47442042880,
+      "root_bytes_range": [
+        1912926,
+        1913861
+      ]
+    },
+    "records": [
+      {
+        "pair": 1,
+        "mode": "serial",
+        "recursive_command_ms": 1233029,
+        "final_merge_ms": 165467,
+        "root_bytes": 1913618,
+        "root_sha256": "6b12b3a104f1b686b2877a7dbd571a31a1f6c6a0bea9502e13c87a78d31e07a9",
+        "log_sha256": "342ed67634ca3f357070a5ceb7c900b49600ca7c567be0ec77d2425f75f29177",
+        "job_directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-1-serial",
+        "resource_telemetry_complete": true,
+        "vram": {
+          "largest_sampled_prover_sum_mib": 1222,
+          "physical_quota": false,
+          "readings": 2327
+        },
+        "max_cgroup_memory_bytes": 42966130688,
+        "max_spill_bytes": 47442042880,
+        "max_managed_gpu_bytes": 1006633672,
+        "hashing_wall_ns": 301699491711,
+        "upload_compute_overlap_ns": 0,
+        "downloaded_bytes": 39728434880
+      },
+      {
+        "pair": 1,
+        "mode": "overlap",
+        "recursive_command_ms": 1261478,
+        "final_merge_ms": 169153,
+        "root_bytes": 1912926,
+        "root_sha256": "ed64fe7888f05613bf916a155a6b02efe76bdac7cba9bba86d6efd009e27b6cc",
+        "log_sha256": "26b3ad86826b1e9320e78eafd6b6224ba30c04c73f62baf407476e86907c56a5",
+        "job_directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-1-overlap",
+        "resource_telemetry_complete": true,
+        "vram": {
+          "largest_sampled_prover_sum_mib": 1224,
+          "physical_quota": false,
+          "readings": 2374
+        },
+        "max_cgroup_memory_bytes": 42966937600,
+        "max_spill_bytes": 47442042880,
+        "max_managed_gpu_bytes": 1006633584,
+        "hashing_wall_ns": 336138917867,
+        "upload_compute_overlap_ns": 141754503200,
+        "downloaded_bytes": 39728434880
+      },
+      {
+        "pair": 2,
+        "mode": "serial",
+        "recursive_command_ms": 1147139,
+        "final_merge_ms": 136643,
+        "root_bytes": 1912973,
+        "root_sha256": "7c6e332ac4ea6e2839fd554ac6074301f2a871d7472c750625e3e1bf1bb22a30",
+        "log_sha256": "75ecfc1c58f80d36dcc2b98137c28c05c9006a9272f7d2fcdf720c7f10925e98",
+        "job_directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-2-serial",
+        "resource_telemetry_complete": true,
+        "vram": {
+          "largest_sampled_prover_sum_mib": 1222,
+          "physical_quota": false,
+          "readings": 2159
+        },
+        "max_cgroup_memory_bytes": 42967019520,
+        "max_spill_bytes": 47442042880,
+        "max_managed_gpu_bytes": 1006633672,
+        "hashing_wall_ns": 301998662138,
+        "upload_compute_overlap_ns": 0,
+        "downloaded_bytes": 39728434880
+      },
+      {
+        "pair": 2,
+        "mode": "overlap",
+        "recursive_command_ms": 1195977,
+        "final_merge_ms": 171761,
+        "root_bytes": 1913463,
+        "root_sha256": "6cff74d29db8f2b3328243251a91489f6873c93f0d9d3e0a2e5c630040fe921c",
+        "log_sha256": "346c92f7f2ab70fd49955348090cf0da2af46b1dba87915fa29977000bd0fcdb",
+        "job_directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-2-overlap",
+        "resource_telemetry_complete": true,
+        "vram": {
+          "largest_sampled_prover_sum_mib": 1224,
+          "physical_quota": false,
+          "readings": 2246
+        },
+        "max_cgroup_memory_bytes": 42964418560,
+        "max_spill_bytes": 47442042880,
+        "max_managed_gpu_bytes": 1006633584,
+        "hashing_wall_ns": 336736828649,
+        "upload_compute_overlap_ns": 141549619008,
+        "downloaded_bytes": 39728434880
+      },
+      {
+        "pair": 3,
+        "mode": "serial",
+        "recursive_command_ms": 1152787,
+        "final_merge_ms": 140392,
+        "root_bytes": 1913386,
+        "root_sha256": "43dbaca7f2e4c42998c55728868117b24188c88c4a0f6dcf5865f42d3dcaed03",
+        "log_sha256": "09032f908bd96f2fba5b7d436593219f6326d467507a8fb73dda705059cb26b5",
+        "job_directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-3-serial",
+        "resource_telemetry_complete": true,
+        "vram": {
+          "largest_sampled_prover_sum_mib": 1222,
+          "physical_quota": false,
+          "readings": 2165
+        },
+        "max_cgroup_memory_bytes": 42966409216,
+        "max_spill_bytes": 47442042880,
+        "max_managed_gpu_bytes": 1006633672,
+        "hashing_wall_ns": 301307617990,
+        "upload_compute_overlap_ns": 0,
+        "downloaded_bytes": 39728434880
+      },
+      {
+        "pair": 3,
+        "mode": "overlap",
+        "recursive_command_ms": 1124461,
+        "final_merge_ms": 165131,
+        "root_bytes": 1913541,
+        "root_sha256": "b209b0c2fc3339f6bb36a51044f6869d2610adaf3f0491bd1bafd408570772cc",
+        "log_sha256": "3a20f021efdbf74054669c3e60744844d82ad68e2b3d1daf38e11ae8938cb9b5",
+        "job_directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-3-overlap",
+        "resource_telemetry_complete": true,
+        "vram": {
+          "largest_sampled_prover_sum_mib": 1224,
+          "physical_quota": false,
+          "readings": 2123
+        },
+        "max_cgroup_memory_bytes": 42964021248,
+        "max_spill_bytes": 47442042880,
+        "max_managed_gpu_bytes": 1006633584,
+        "hashing_wall_ns": 340400333358,
+        "upload_compute_overlap_ns": 140591834208,
+        "downloaded_bytes": 39728434880
+      },
+      {
+        "pair": 4,
+        "mode": "serial",
+        "recursive_command_ms": 1396506,
+        "final_merge_ms": 181385,
+        "root_bytes": 1913291,
+        "root_sha256": "3e993da86ad323aed58c667852a26fd82df7b20a57c9d27423dd2cf5de213d88",
+        "log_sha256": "19ac84881203f59429f82a0155090dc31ddc440cf7affda1cc56bf89168d01ab",
+        "job_directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-4-serial",
+        "resource_telemetry_complete": true,
+        "vram": {
+          "largest_sampled_prover_sum_mib": 1222,
+          "physical_quota": false,
+          "readings": 2591
+        },
+        "max_cgroup_memory_bytes": 42965913600,
+        "max_spill_bytes": 47442042880,
+        "max_managed_gpu_bytes": 1006633672,
+        "hashing_wall_ns": 318853938803,
+        "upload_compute_overlap_ns": 0,
+        "downloaded_bytes": 39728434880
+      },
+      {
+        "pair": 4,
+        "mode": "overlap",
+        "recursive_command_ms": 1146007,
+        "final_merge_ms": 171445,
+        "root_bytes": 1913861,
+        "root_sha256": "756cc84a535551ed4777ccc0b5898006eabe5082e17fb7ca82e0f3f21f9f9b81",
+        "log_sha256": "a4db042a0bf269c83c8669422a60f88884aa2d9cd371b703378c94072b055238",
+        "job_directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-4-overlap",
+        "resource_telemetry_complete": true,
+        "vram": {
+          "largest_sampled_prover_sum_mib": 1224,
+          "physical_quota": false,
+          "readings": 2164
+        },
+        "max_cgroup_memory_bytes": 42964410368,
+        "max_spill_bytes": 47442042880,
+        "max_managed_gpu_bytes": 1006633584,
+        "hashing_wall_ns": 340059941315,
+        "upload_compute_overlap_ns": 141143558176,
+        "downloaded_bytes": 39728434880
+      },
+      {
+        "pair": 5,
+        "mode": "serial",
+        "recursive_command_ms": 1328331,
+        "final_merge_ms": 181908,
+        "root_bytes": 1913673,
+        "root_sha256": "a8e9e14f24b120b2b6eccfa993e8fbfa859f3cee55399ac53e319d05cbbe083d",
+        "log_sha256": "fddd0d62e391b58a9211e7a5ed984bca38f07dc865dd74b1ee12bce033081f95",
+        "job_directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-5-serial",
+        "resource_telemetry_complete": true,
+        "vram": {
+          "largest_sampled_prover_sum_mib": 1222,
+          "physical_quota": false,
+          "readings": 2484
+        },
+        "max_cgroup_memory_bytes": 42966138880,
+        "max_spill_bytes": 47442042880,
+        "max_managed_gpu_bytes": 1006633672,
+        "hashing_wall_ns": 316493658711,
+        "upload_compute_overlap_ns": 0,
+        "downloaded_bytes": 39728434880
+      },
+      {
+        "pair": 5,
+        "mode": "overlap",
+        "recursive_command_ms": 1293280,
+        "final_merge_ms": 209843,
+        "root_bytes": 1913529,
+        "root_sha256": "3aad818a843e6d95bcebae24d3b944977dc26dd25a7704704274ce323ecff60e",
+        "log_sha256": "34e08f93b959c93e300426291c9f0f067c50ff8f45499390cfed0c333fbb0951",
+        "job_directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-5-overlap",
+        "resource_telemetry_complete": true,
+        "vram": {
+          "largest_sampled_prover_sum_mib": 1224,
+          "physical_quota": false,
+          "readings": 2424
+        },
+        "max_cgroup_memory_bytes": 42966392832,
+        "max_spill_bytes": 47442042880,
+        "max_managed_gpu_bytes": 1006633584,
+        "hashing_wall_ns": 385417066307,
+        "upload_compute_overlap_ns": 144061555168,
+        "downloaded_bytes": 39728434880
+      }
+    ],
+    "source_archive": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pinned-sources.tar.gz",
+      "hashes": "71766f0f5f625da37bbc9030ae4e9d9ea50a7cedec12bad9c1b3701798adddaf  /home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pinned-sources.tar.gz\n3e53c2589d496b9e70431c6a097f5221051128f646009694eb35e487e0518ab4  lattica-prover-p3/.cargo/config.toml\n"
+    }
+  },
+  "post_shared_fixture_pruning_cpu_replay": {
+    "status": "PASS",
+    "unit": "lattica-v2-root-replay-20261001-0455.service",
+    "roots": [
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-1-serial",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-1-overlap",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-2-serial",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-2-overlap",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-3-serial",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-3-overlap",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-4-serial",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-4-overlap",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-5-serial",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/pair-5-overlap",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-scalability-matched-20261001/pair-1-serial"
+    ],
+    "root_count": 11,
+    "native_mutation_rejections_per_root": 38,
+    "registry_policy_rejections_per_root": 4,
+    "inner_proofs_loaded": 0,
+    "cpu_only_auditor_sha256": "c9d4b084e46675707ed172e0d9d46444c1a891e184ee146ad57e664b69a3758b",
+    "requested_gpu_flags": true,
+    "invalid_gpu_device": "invalid-device-for-cpu-replay",
+    "memory_max_bytes": 3221225472,
+    "memory_snapshot_peak_bytes": 16535552,
+    "swap_peak_bytes": 0,
+    "snapshot_cpu_usage_usec": 2392878,
+    "snapshot_excludes_later_cleanup": true,
+    "log": "lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/post-pruning-cpu-replay.log",
+    "first_attempt": {
+      "proof_audits_passed": 11,
+      "service_exit_code": 1,
+      "cause": "ExecStopPost accounting helper rejected the ad hoc service-name prefix; the complete short CPU replay was repeated under the required lattica-v2 prefix.",
+      "log": "lattica-prover-p3/target/block-v2-scalability-matched-b-20261001/post-pruning-cpu-replay-accounting-failure.log"
+    }
+  },
+  "optimization_redesign_decision": {
+    "status": "COMPATIBLE_OPTIMIZATION_INSUFFICIENT_STRUCTURAL_WORK_REQUIRED",
+    "transfer_overlap": "Keep experimental and opt-in. Three pairs improved and two regressed; median wall reduction 3.005%, paired median reduction 2.457%, and final-merge median/worst increased.",
+    "next_selected_proof_producing_prototype": "Device-retained Merkle trees, unchanged proof encoding/profile and preserved CPU auditor; integrate, compile, execute component tests, then measure actual recursive proofs.",
+    "structural_priorities": [
+      "Reduce matrix movement across transform, quotient, commitment and opening phases with bounded producer/consumer reuse; an isolated GPU FFT roundtrip is insufficient.",
+      "Compile and prove the public-proof pair-wrapper candidate under separately approved keys; its roughly twofold node-count benefit alone is insufficient.",
+      "A split-AIR approach must address witness-dependent public lookup terminals and full hiding/composition review; do not relax the single-zero-terminal rule based on the algebra model."
+    ],
+    "conditional_current_serial_64_minutes": 372.8444833333333,
+    "conditional_pcie4_x4_upload_floor_seconds": 709.7915595225,
+    "models_are_not_benchmarks": true,
+    "production_activation": false,
+    "depth_six_qualification": false,
+    "incremental_qualification": false
+  },
+  "historical_status_before_retention_completion": "MATCHED_COMPARISON_AND_RETAINED_FULL_SIZE_PILOT_PASSED_RETENTION_AB_PENDING",
+  "superseding_retention_checkpoint": {
+    "evidence": "docs/evidence/block-v2-retention-matched-2026-10-01.json",
+    "status": "FIVE_MATCHED_RETENTION_PAIRS_AND_POST_PRUNING_CPU_REPLAY_PASSED",
+    "completed_trials": 10,
+    "matched_pairs": 5,
+    "cpu_replayed_roots_after_shared_fixture_pruning": 11,
+    "median_minutes_off": 19.62685,
+    "median_minutes_on": 17.64175,
+    "median_wall_reduction_percent": 10.114205794612996,
+    "retention": "EXPERIMENTAL_OPT_IN",
+    "cpu_default_unchanged": true,
+    "production_ready": false,
+    "next_proof_producing_prototype": "Integrate, compile, validate and measure grouped-eight paired-wrapper construction under reviewed keys and external native-Zig expected root.",
+    "historical_fields_policy": "Dated snapshots, models, validation records and earlier optimization decision below retain the evidence available at their original checkpoints."
+  },
+  "subsequent_grouped_integration_checkpoint": "docs/evidence/block-v2-grouped-integration-2026-10-01.json"
+}

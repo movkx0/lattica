@@ -1,0 +1,535 @@
+{
+  "schema": 1,
+  "captured_utc": "2026-10-01 14:53:30 UTC",
+  "status": "ONE_MATCHED_FUSION_PAIR_NOT_REPEAT_QUALIFIED",
+  "production_ready": false,
+  "repeat_qualified": false,
+  "depth_six_qualified": false,
+  "full_tree_security_reviewed": false,
+  "scope": "One matched CPU on-then-off quotient-fusion pair, same candidate binary, source archive, exact eight public wallet proofs, registered caps, external statement and controls; level-three/count-eight, not padded depth-six.",
+  "comparison": {
+    "changes": {
+      "final_merge_ms": {
+        "off": 270047,
+        "on": 252026,
+        "reduction_percent": 6.673282798920188
+      },
+      "peak_live_mapped_spill_bytes": {
+        "off": 47442042880,
+        "on": 47442042880,
+        "reduction_percent": 0
+      },
+      "peak_worker_cgroup_bytes": {
+        "off": 42965905408,
+        "on": 42968530944,
+        "reduction_percent": -0.006110742867090008
+      },
+      "recursive_command_ms": {
+        "off": 1931865,
+        "on": 1738999,
+        "reduction_percent": 9.983409813832747
+      }
+    },
+    "depth_six_qualified": false,
+    "limitations": [
+      "One matched research pair, not tail-latency qualification or an arrival simulation.",
+      "Final-merge time is not complete post-seal finalization time.",
+      "Inclusive profiler spans overlap; never add them into a total-time breakdown.",
+      "Mapped spill is not additional RSS; cgroup values are worker, not sampled aggregate peaks.",
+      "No independent governor/load/thermal normalization or GPU comparison.",
+      "Recorded CPU audits were rechecked; reporter did not run a fresh cryptographic audit.",
+      "Shared fixtures/registration wallet copies still require final pruning and replay."
+    ],
+    "off": {
+      "depth_six_qualified": false,
+      "external": [
+        "af4bfe518efc2cde1a9c972e913e4307e3fd8b60ab6671961936c87b99a8ec31",
+        "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+        "2ef361a059b06a72cc05a3aac2c5ed9c4e75a0ad70081875459a6961414e9d52"
+      ],
+      "final_merge_ms": 270047,
+      "finished_utc": "2026-10-01T14:44:31Z",
+      "fresh_cpu_audit_by_reporter": false,
+      "fusion": 0,
+      "height_and_caps": {
+        "height": {
+          "bytes": 4,
+          "sha256": "c9c7e8c63836a93f6d8c04598b6503d2863a2df7b86366157178234175704dcc"
+        },
+        "key.1": {
+          "bytes": 2048,
+          "sha256": "dea6d8cd5ec78aece7514e1b79f03be9968589cb6f68892b5130c11b6b4e2fa0"
+        },
+        "key.2": {
+          "bytes": 2048,
+          "sha256": "23c014bd0cc4af3fdfedae55a0a060e3469edf001267d23f29f3d5b82bd286db"
+        },
+        "key.3": {
+          "bytes": 2048,
+          "sha256": "a42b9a30fe35034313d2ec0a92ee5aee3278c926ef53407e9e8b1cb14bbf384d"
+        }
+      },
+      "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-fusion-off-proof-20261001-b/manifest.json",
+      "manifest_sha256": "638e0ed87739277cbc34d8d020346652437d3eb405850ee17012b822f25dfc5f",
+      "nodes": [
+        {
+          "artifact": "node.1.0",
+          "cache_hits": 0,
+          "elapsed_ms": 280852,
+          "setups": 1
+        },
+        {
+          "artifact": "node.1.1",
+          "cache_hits": 1,
+          "elapsed_ms": 233099,
+          "setups": 1
+        },
+        {
+          "artifact": "node.1.2",
+          "cache_hits": 2,
+          "elapsed_ms": 287167,
+          "setups": 1
+        },
+        {
+          "artifact": "node.1.3",
+          "cache_hits": 3,
+          "elapsed_ms": 277697,
+          "setups": 1
+        },
+        {
+          "artifact": "node.2.0",
+          "cache_hits": 0,
+          "elapsed_ms": 298561,
+          "setups": 1
+        },
+        {
+          "artifact": "node.2.1",
+          "cache_hits": 1,
+          "elapsed_ms": 282493,
+          "setups": 1
+        },
+        {
+          "artifact": "node.3.0",
+          "cache_hits": 2,
+          "elapsed_ms": 270047,
+          "setups": 1
+        }
+      ],
+      "peak_live_mapped_spill_bytes": 47442042880,
+      "peak_worker_cgroup_bytes": 42965905408,
+      "pins": {
+        "accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+        "auditor": "ec2bdf2bb80e06352aabefca1fcfe4345ab77e677419f27b3dbf4a166a52cd16",
+        "fusion-controller.py": "cb36fd551f3442a4eaa534536691cca8a0bda01c1b7dbe7bf7cfccfb87ec8e2c",
+        "grouped-controller.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+        "handoff.json": "d9a936a822f5ab2555a782712299c0ec837a08c1e39ceb6f99376f393d7c799b",
+        "registration": "347022c38d3ae965ae7e5111d2383d8da7ee8be1dbfe5000b51d487ad68d0aee",
+        "runner": "57d5354780c94714f0ba8c8dd5fa10239681d21373eb6760b4e3b0bfaf18a2c4",
+        "source-archive": "3e9a69a1c070d89d421991301bdc0aa3a324f1485bb93e3f98f72cb901650d5b"
+      },
+      "production_ready": false,
+      "recorded_preserved_cpu_audit": "PASS",
+      "recursive_command_ms": 1931865,
+      "registration_manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-fusion-off-key-repro-20261001-b/manifest.json",
+      "registration_sha256": "347022c38d3ae965ae7e5111d2383d8da7ee8be1dbfe5000b51d487ad68d0aee",
+      "repeat_qualified": false,
+      "root": {
+        "bytes": 1913317,
+        "sha256": "10f75a758d9415bcb6855c43cc1f33062dd2e5ccd5c04d2f3fa6e7d174e4ca8b"
+      },
+      "shared_fixture_pruned": false,
+      "started_utc": "2026-10-01T14:12:18Z",
+      "swap_peak_bytes": 0,
+      "wallets": {
+        "wallet.0": {
+          "bytes": 853675,
+          "sha256": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973"
+        },
+        "wallet.1": {
+          "bytes": 853491,
+          "sha256": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79"
+        },
+        "wallet.2": {
+          "bytes": 854047,
+          "sha256": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5"
+        },
+        "wallet.3": {
+          "bytes": 853795,
+          "sha256": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b"
+        },
+        "wallet.4": {
+          "bytes": 853725,
+          "sha256": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b"
+        },
+        "wallet.5": {
+          "bytes": 853855,
+          "sha256": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa"
+        },
+        "wallet.6": {
+          "bytes": 853977,
+          "sha256": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117"
+        },
+        "wallet.7": {
+          "bytes": 853568,
+          "sha256": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5"
+        }
+      }
+    },
+    "on": {
+      "depth_six_qualified": false,
+      "external": [
+        "af4bfe518efc2cde1a9c972e913e4307e3fd8b60ab6671961936c87b99a8ec31",
+        "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+        "2ef361a059b06a72cc05a3aac2c5ed9c4e75a0ad70081875459a6961414e9d52"
+      ],
+      "final_merge_ms": 252026,
+      "finished_utc": "2026-10-01T14:06:22Z",
+      "fresh_cpu_audit_by_reporter": false,
+      "fusion": 1,
+      "height_and_caps": {
+        "height": {
+          "bytes": 4,
+          "sha256": "c9c7e8c63836a93f6d8c04598b6503d2863a2df7b86366157178234175704dcc"
+        },
+        "key.1": {
+          "bytes": 2048,
+          "sha256": "dea6d8cd5ec78aece7514e1b79f03be9968589cb6f68892b5130c11b6b4e2fa0"
+        },
+        "key.2": {
+          "bytes": 2048,
+          "sha256": "23c014bd0cc4af3fdfedae55a0a060e3469edf001267d23f29f3d5b82bd286db"
+        },
+        "key.3": {
+          "bytes": 2048,
+          "sha256": "a42b9a30fe35034313d2ec0a92ee5aee3278c926ef53407e9e8b1cb14bbf384d"
+        }
+      },
+      "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/manifest.json",
+      "manifest_sha256": "29b887b9c4f0937d8121b07b83793d708f38b4c9741d0d9c2c1c66cae62ab061",
+      "nodes": [
+        {
+          "artifact": "node.1.0",
+          "cache_hits": 0,
+          "elapsed_ms": 254271,
+          "setups": 1
+        },
+        {
+          "artifact": "node.1.1",
+          "cache_hits": 1,
+          "elapsed_ms": 246107,
+          "setups": 1
+        },
+        {
+          "artifact": "node.1.2",
+          "cache_hits": 2,
+          "elapsed_ms": 240172,
+          "setups": 1
+        },
+        {
+          "artifact": "node.1.3",
+          "cache_hits": 3,
+          "elapsed_ms": 240153,
+          "setups": 1
+        },
+        {
+          "artifact": "node.2.0",
+          "cache_hits": 0,
+          "elapsed_ms": 252861,
+          "setups": 1
+        },
+        {
+          "artifact": "node.2.1",
+          "cache_hits": 1,
+          "elapsed_ms": 251480,
+          "setups": 1
+        },
+        {
+          "artifact": "node.3.0",
+          "cache_hits": 2,
+          "elapsed_ms": 252026,
+          "setups": 1
+        }
+      ],
+      "peak_live_mapped_spill_bytes": 47442042880,
+      "peak_worker_cgroup_bytes": 42968530944,
+      "pins": {
+        "accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+        "auditor": "ec2bdf2bb80e06352aabefca1fcfe4345ab77e677419f27b3dbf4a166a52cd16",
+        "fusion-controller.py": "cb36fd551f3442a4eaa534536691cca8a0bda01c1b7dbe7bf7cfccfb87ec8e2c",
+        "grouped-controller.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+        "handoff.json": "d9a936a822f5ab2555a782712299c0ec837a08c1e39ceb6f99376f393d7c799b",
+        "registration": "1008dd7eb12fb1b50f3a51e4ef4a3f12505efac784b7b93f3ad6289d3d5230bb",
+        "runner": "57d5354780c94714f0ba8c8dd5fa10239681d21373eb6760b4e3b0bfaf18a2c4",
+        "source-archive": "3e9a69a1c070d89d421991301bdc0aa3a324f1485bb93e3f98f72cb901650d5b"
+      },
+      "production_ready": false,
+      "recorded_preserved_cpu_audit": "PASS",
+      "recursive_command_ms": 1738999,
+      "registration_manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/manifest.json",
+      "registration_sha256": "1008dd7eb12fb1b50f3a51e4ef4a3f12505efac784b7b93f3ad6289d3d5230bb",
+      "repeat_qualified": false,
+      "root": {
+        "bytes": 1913701,
+        "sha256": "9a16a96ee74d7045af2aac2d24da6291e936e088a9e0f3ed8f3f73bc4b4fd8e1"
+      },
+      "shared_fixture_pruned": false,
+      "started_utc": "2026-10-01T13:37:22Z",
+      "swap_peak_bytes": 0,
+      "wallets": {
+        "wallet.0": {
+          "bytes": 853675,
+          "sha256": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973"
+        },
+        "wallet.1": {
+          "bytes": 853491,
+          "sha256": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79"
+        },
+        "wallet.2": {
+          "bytes": 854047,
+          "sha256": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5"
+        },
+        "wallet.3": {
+          "bytes": 853795,
+          "sha256": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b"
+        },
+        "wallet.4": {
+          "bytes": 853725,
+          "sha256": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b"
+        },
+        "wallet.5": {
+          "bytes": 853855,
+          "sha256": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa"
+        },
+        "wallet.6": {
+          "bytes": 853977,
+          "sha256": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117"
+        },
+        "wallet.7": {
+          "bytes": 853568,
+          "sha256": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5"
+        }
+      }
+    },
+    "order": [
+      "on",
+      "off"
+    ],
+    "pairs": 1,
+    "production_ready": false,
+    "repeat_qualified": false,
+    "status": "ONE_MATCHED_FUSION_PAIR_NOT_REPEAT_QUALIFIED"
+  },
+  "full_checked_report": {
+    "path": "lattica-prover-p3/target/block-v2-fusion-matched-20261001-b.json",
+    "sha256": "77ab56688aecffed020ab8b8c84ae53b9d30c940d330ab7029e89c3ae645a663"
+  },
+  "checked_report_artifacts": {
+    "lattica-prover-p3/target/block-v2-fusion-root-replay-20261001-b.log": "6142cc62183e62286658f128c4bebfda29857d94ab59aa7b0529916e711902e9",
+    "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/checked-report.json": "9a3237012525af13f746f0e8c42ee765cd75f6ae86ae965d12d5b3ab80cc245a",
+    "lattica-prover-p3/target/block-v2-fusion-off-root-replay-20261001-b.log": "ed6e8e4d1a2c57948512c97202aa68357f9fee95e7a92bc9517615a430211d67",
+    "lattica-prover-p3/target/block-v2-fusion-off-proof-20261001-b/checked-report.json": "6416e0c43ceb4bd67ee58caa9f42ce5a48e8e7272cb78f0062c3e72891c0c2fd",
+    "lattica-prover-p3/scripts/report-block-v2-fusion.py": "07a8a626880ddf41e64e1936070ca8d5cd4be059c566a20200ac041bf65ade7e",
+    "lattica-prover-p3/scripts/test-report-block-v2-fusion.py": "f095d638775588279592e28e1cdd0087d015b708b99a5ce5fe490db754178e56"
+  },
+  "independent_additional_cpu_replays": {
+    "on": {
+      "exit_code": 0,
+      "stdout": "grouped_artifact_audit=PASS kind=level3-count8-subtree proof_bytes=1913701 native_mutation_rejections=38 registry_policy_rejections=4 expected_statement_policy_rejections=2 bundle_files=5 inner_proofs_loaded=0 level6_qualified=false full_tree_security=UNREVIEWED production_ready=false\ngrouped_audit_elapsed_ms=229\n",
+      "required_markers": {
+        "grouped_artifact_audit": "PASS",
+        "kind": "level3-count8-subtree",
+        "proof_bytes": "1913701",
+        "native_mutation_rejections": "38",
+        "registry_policy_rejections": "4",
+        "expected_statement_policy_rejections": "2",
+        "bundle_files": "5",
+        "inner_proofs_loaded": "0",
+        "level6_qualified": "false",
+        "full_tree_security": "UNREVIEWED",
+        "production_ready": "false"
+      },
+      "cpu_only_preserved_auditor": true,
+      "gpu_requested_with_invalid_device": true,
+      "memory_max_bytes": 3221225472,
+      "swap_max_bytes": 0,
+      "shared_fixture_pruned": false
+    },
+    "off": {
+      "exit_code": 0,
+      "stdout": "grouped_artifact_audit=PASS kind=level3-count8-subtree proof_bytes=1913317 native_mutation_rejections=38 registry_policy_rejections=4 expected_statement_policy_rejections=2 bundle_files=5 inner_proofs_loaded=0 level6_qualified=false full_tree_security=UNREVIEWED production_ready=false\ngrouped_audit_elapsed_ms=222\n",
+      "required_markers": {
+        "grouped_artifact_audit": "PASS",
+        "kind": "level3-count8-subtree",
+        "proof_bytes": "1913317",
+        "native_mutation_rejections": "38",
+        "registry_policy_rejections": "4",
+        "expected_statement_policy_rejections": "2",
+        "bundle_files": "5",
+        "inner_proofs_loaded": "0",
+        "level6_qualified": "false",
+        "full_tree_security": "UNREVIEWED",
+        "production_ready": "false"
+      },
+      "cpu_only_preserved_auditor": true,
+      "gpu_requested_with_invalid_device": true,
+      "memory_max_bytes": 3221225472,
+      "swap_max_bytes": 0,
+      "shared_fixture_pruned": false
+    }
+  },
+  "final_merge_inclusive_profiles": {
+    "on": [
+      {
+        "artifact": "node.3.0",
+        "checkpoint_elapsed_ms": 252027,
+        "spans": [
+          {
+            "calls": 16,
+            "max_ns": 1060173310,
+            "name": "fused quotient chunk",
+            "target": "lattica_block_v2_perf",
+            "total_ns": 12844265508
+          },
+          {
+            "calls": 1,
+            "max_ns": 13325152585,
+            "name": "fused quotient ldes",
+            "target": "lattica_block_v2_perf",
+            "total_ns": 13325152585
+          },
+          {
+            "calls": 1,
+            "max_ns": 241719626705,
+            "name": "native batch prove",
+            "target": "lattica_block_v2_perf",
+            "total_ns": 241719626705
+          },
+          {
+            "calls": 1,
+            "max_ns": 25437264155,
+            "name": "compute quotient",
+            "target": "p3_batch_stark::prover",
+            "total_ns": 25437264155
+          },
+          {
+            "calls": 1,
+            "max_ns": 12070607806,
+            "name": "compute quotient polynomial",
+            "target": "p3_batch_stark::prover",
+            "total_ns": 12070607806
+          },
+          {
+            "calls": 1,
+            "max_ns": 10588374175,
+            "name": "FRI prover",
+            "target": "p3_fri::prover",
+            "total_ns": 10588374175
+          },
+          {
+            "calls": 20,
+            "max_ns": 31445695411,
+            "name": "compress mat",
+            "target": "p3_fri::two_adic_pcs",
+            "total_ns": 39433639843
+          },
+          {
+            "calls": 20,
+            "max_ns": 31681815766,
+            "name": "reduce matrix quotient",
+            "target": "p3_fri::two_adic_pcs",
+            "total_ns": 45228762236
+          },
+          {
+            "calls": 24,
+            "max_ns": 60658368574,
+            "name": "build merkle tree",
+            "target": "p3_merkle_tree::merkle_tree",
+            "total_ns": 127968120026
+          },
+          {
+            "calls": 24,
+            "max_ns": 58731280173,
+            "name": "first digest layer",
+            "target": "p3_merkle_tree::merkle_tree",
+            "total_ns": 119302083313
+          }
+        ],
+        "timings": "inclusive_nonadditive"
+      }
+    ],
+    "off": [
+      {
+        "artifact": "node.3.0",
+        "checkpoint_elapsed_ms": 270048,
+        "spans": [
+          {
+            "calls": 1,
+            "max_ns": 267992226516,
+            "name": "native batch prove",
+            "target": "lattica_block_v2_perf",
+            "total_ns": 267992226516
+          },
+          {
+            "calls": 1,
+            "max_ns": 48597305730,
+            "name": "compute quotient",
+            "target": "p3_batch_stark::prover",
+            "total_ns": 48597305730
+          },
+          {
+            "calls": 1,
+            "max_ns": 10563232677,
+            "name": "compute quotient polynomial",
+            "target": "p3_batch_stark::prover",
+            "total_ns": 10563232677
+          },
+          {
+            "calls": 1,
+            "max_ns": 10655821395,
+            "name": "FRI prover",
+            "target": "p3_fri::prover",
+            "total_ns": 10655821395
+          },
+          {
+            "calls": 20,
+            "max_ns": 28780861884,
+            "name": "compress mat",
+            "target": "p3_fri::two_adic_pcs",
+            "total_ns": 41168075138
+          },
+          {
+            "calls": 20,
+            "max_ns": 29029091740,
+            "name": "reduce matrix quotient",
+            "target": "p3_fri::two_adic_pcs",
+            "total_ns": 47111062627
+          },
+          {
+            "calls": 24,
+            "max_ns": 61279659345,
+            "name": "build merkle tree",
+            "target": "p3_merkle_tree::merkle_tree",
+            "total_ns": 131450002610
+          },
+          {
+            "calls": 24,
+            "max_ns": 59440604090,
+            "name": "first digest layer",
+            "target": "p3_merkle_tree::merkle_tree",
+            "total_ns": 115989311877
+          }
+        ],
+        "timings": "inclusive_nonadditive"
+      }
+    ],
+    "interpretation": "Individual inclusive span observations only. Nested/concurrent lifetimes are not an additive breakdown and are not summed into percentages."
+  },
+  "decision": {
+    "fusion_default": "disabled",
+    "result": "Retain the opt-in implementation as a validated optimization candidate. One pair observed 9.9834% lower total recursive-command time and 6.6733% lower final-merge time.",
+    "resource_result": "No retained-geometry reduction: mapped spill identical, worker RAM peaks essentially unchanged. No GPU upload-volume reduction follows from this fusion alone.",
+    "release_gates": "The fused final merge alone was 252.026 seconds, above the complete finalization target of 180 seconds. No 64-transaction cold, incremental-arrival, full-tree-security or production gate passed.",
+    "next": "Complete the five original matched single/grouped pairs and all required pruning/replay. Then continue measured hashing/opening/data-movement and architecture work; do not extrapolate this eight-transaction CPU pair into a production throughput claim.",
+    "final_cleanup": "The shared wallet fixture and both registration-job wallet copies are still retained. Final shared/registration pruning and fresh CPU replay of both fusion roots remain required, in addition to the original series/pilot roots."
+  }
+}

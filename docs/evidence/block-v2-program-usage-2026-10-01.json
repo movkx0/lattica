@@ -1,0 +1,424 @@
+{
+  "schema": 1,
+  "captured_utc": "2026-10-01 16:42:55 UTC",
+  "status": "NATIVE_VALIDATED_FULL_SIZE_ATTRIBUTION_RECORDED_NO_GEOMETRY_CHANGE",
+  "purpose": "Attribute compiled recursive verifier operations, physical rows, lane occupancy and natural-main-trace assignments before choosing a geometry rewrite.",
+  "source_sha256": {
+    "lattica-prover-p3/src/block_v2/machine/usage.rs": "7252562fe2e425bdf296b2f784c67bd746e7e85fb11feb49782581a560018ea5",
+    "lattica-prover-p3/src/block_v2/machine/mod.rs": "2407cccf9e07c78e142e0be556a5c7d2729958f5bcd941d6beef362acaed7db3",
+    "lattica-prover-p3/src/bin/block_v2_grouped_probe.rs": "2ea93df34408fc37f46d130985d41946a767feaf61e4cfda76666c32c775d7d8"
+  },
+  "checks": [
+    {
+      "command": "rustfmt --edition 2021 --check lattica-prover-p3/src/block_v2/machine/usage.rs lattica-prover-p3/src/bin/block_v2_grouped_probe.rs",
+      "exit_code": 0,
+      "scope": "Rust syntax/formatting only; not compilation or tests"
+    }
+  ],
+  "added_tests": {
+    "library": 8,
+    "diagnostic_cli": 2,
+    "executed": 10
+  },
+  "native_compile_passed": true,
+  "native_tests_passed": true,
+  "full_size_report_executed": true,
+  "diagnostic": "block-v2-grouped-probe geometry-report DIR",
+  "output_scope": [
+    "Actual compiled program counts, not a proof of valid execution.",
+    "Distinct input, bit-hint, selection-hint, scalar arithmetic, cubic arithmetic and Poseidon operations.",
+    "Physical public/ALU/cubic/Poseidon rows, padding, lane occupancy and authenticated reference counts.",
+    "Current 94-column natural main-trace assignments, including assignment of zero; not LDE storage or observed peak memory.",
+    "Half-height row reduction is occupancy arithmetic, not recursive closure, feasibility or a speed estimate.",
+    "Wrapper/empty/merge templates at the supplied recorded child height; fitting a structural template does not approve keys or a registry.",
+    "The command verifies existing public wallet proofs but generates no proofs/keys and writes no job artifacts."
+  ],
+  "deferred_validation": [
+    "Implement and validate a separately gated structural candidate; keep the original five-pair series on preserved executables and pins.",
+    "Recompute actual AIR/lookup/PCS geometry and child/merge/second-merge closure before any structural performance claim.",
+    "Complete remaining original matched pairs; preserve fixtures until all consumers finish, then perform planned pruning and fresh CPU root replay.",
+    "Retain all full-depth, mixed-workload, incremental, resource, size and security gates."
+  ],
+  "security_boundary": [
+    "No AIR, lookup, transcript, randomness, security parameter, wire format or C ABI was modified.",
+    "Existing compiler expressions and row packing are unchanged.",
+    "Specialization still requires authenticated cross-table wiring and a complete hiding/composition argument.",
+    "No complete-tree soundness/ZK, depth-six or production qualification follows."
+  ],
+  "measured_speedup": false,
+  "measured_memory_reduction": false,
+  "production_ready": false,
+  "native_validation": {
+    "library": {
+      "passed": 8,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 234,
+      "elapsed_seconds": 0,
+      "compile": "1m 03s",
+      "log": "lattica-prover-p3/target/block-v2-usage-native-20261001-a.log",
+      "exit_code": 0
+    },
+    "limits": {
+      "memory_max_bytes": 3221225472,
+      "swap_max_bytes": 0,
+      "runtime_seconds": 600
+    },
+    "cpu_only": true,
+    "cli": {
+      "passed": 9,
+      "failed": 0,
+      "ignored": 0,
+      "new_diagnostic_tests": 2,
+      "log": "lattica-prover-p3/target/block-v2-usage-cli-20261001-a.log",
+      "compile_seconds": 53.83,
+      "exit_code": 0
+    },
+    "cpu_library_regression": {
+      "passed": 212,
+      "failed": 0,
+      "ignored": 30,
+      "elapsed_seconds": 109.99,
+      "log": "lattica-prover-p3/target/block-v2-usage-cpu-regression-20261001-a.log",
+      "exit_code": 0
+    },
+    "abi": {
+      "exit_code": 0,
+      "exports": 12,
+      "recursion_symbols": 0,
+      "block_v2_symbols": 0,
+      "log": "lattica-prover-p3/target/block-v2-usage-abi-20261001-a.log"
+    },
+    "zig_debug": {
+      "exit_code": 0,
+      "steps_passed": 7,
+      "tests_passed": 111,
+      "core_tests_passed": 105,
+      "expected_root_tests_passed": 6,
+      "log": "lattica-prover-p3/target/block-v2-usage-zig-debug-20261001-a.log"
+    },
+    "zig_release_safe": {
+      "exit_code": 0,
+      "steps_passed": 10,
+      "tests_passed": 143,
+      "core_tests_passed": 105,
+      "expected_root_tests_passed": 6,
+      "ffi_tests_passed": 32,
+      "log": "lattica-prover-p3/target/block-v2-usage-zig-release-20261001-a.log"
+    }
+  },
+  "validation_log_sha256": {
+    "lattica-prover-p3/target/block-v2-usage-native-20261001-a.log": "08081182f84957fdaf7548a5c1e90d6e59d824cd4ed267c4812b233d633a8051",
+    "lattica-prover-p3/target/block-v2-usage-cli-20261001-a.log": "fdb5e28f01deec23b8ddbe3c3e65931d75a6da4d0a910cba16d9bb9e7a396c98",
+    "lattica-prover-p3/target/block-v2-usage-cpu-regression-20261001-a.log": "4cbfccaa0d25d4f00bce9517abf9a80c7e325511dfcf0db2b6a27cc98a4a9197",
+    "lattica-prover-p3/target/block-v2-usage-abi-20261001-a.log": "a76655e0de7f82023b4fecda981ec7b555efa85d455625f0bb46de91284e5c03",
+    "lattica-prover-p3/target/block-v2-usage-zig-debug-20261001-a.log": "0d214f05b0c921b358dd81aee201b375b71721bc1862cfe1aa8eb589f3e03abd",
+    "lattica-prover-p3/target/block-v2-usage-zig-release-20261001-a.log": "09365384784029613e861e21fc22d81fa1a22812a258ccbcc51f76b228fb41cf"
+  },
+  "preserved_runner": {
+    "path": "lattica-prover-p3/target/block-v2-program-usage-binaries-20261001-a/block-v2-grouped-probe",
+    "sha256": "d8f62de525836f145b4a3f4d694603913d51b8a3cc3a70a6a31af17debc0462d"
+  },
+  "source_archive": {
+    "path": "lattica-prover-p3/target/block-v2-program-usage-sources-20261001-b.tar.gz",
+    "sha256": "8bb691a9ed18ae2d02f91729182fba7c988c31b82f7848f15fec9708d254db02",
+    "archive_exit_code": 0,
+    "excluded_failed_attempt": "lattica-prover-p3/target/block-v2-program-usage-sources-20261001-a.tar.gz",
+    "failed_attempt_reason": "tar exited 2 because build.zig.zon does not exist; a is not a valid preservation record."
+  },
+  "native_build": {
+    "exit_code": 0,
+    "log": "lattica-prover-p3/target/block-v2-usage-build-20261001-a.log",
+    "compile_seconds": 19.84,
+    "memory_limit_bytes": 3221225472,
+    "swap_limit_bytes": 0,
+    "source_archive_compare_exit_code": 0
+  },
+  "registered_input_check": {
+    "exit_code": 0,
+    "log": "lattica-prover-p3/target/block-v2-usage-registered-check-20261001-a.log",
+    "wallets": 8,
+    "existing_nodes_verified": 0,
+    "external_statement_checked": true,
+    "registered_profile": "af4bfe518efc2cde1a9c972e913e4307e3fd8b60ab6671961936c87b99a8ec31",
+    "fresh_key_reproduction": false
+  },
+  "full_size_report": {
+    "log": "lattica-prover-p3/target/block-v2-program-usage-report-20261001-a.log",
+    "sha256": "72f454f69ae51073fe33ac86fa136c3fe7420571fd74f6e6cb7904415c617c6b",
+    "exit_code": 0,
+    "elapsed_ms": 4002,
+    "input_registration_manifest": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/manifest.json",
+    "input_registration_manifest_sha256": "1008dd7eb12fb1b50f3a51e4ef4a3f12505efac784b7b93f3ad6289d3d5230bb",
+    "all_12_input_artifacts_match_original_registration_after_report": true,
+    "input_artifacts": {
+      "height": "c9c7e8c63836a93f6d8c04598b6503d2863a2df7b86366157178234175704dcc",
+      "key.1": "dea6d8cd5ec78aece7514e1b79f03be9968589cb6f68892b5130c11b6b4e2fa0",
+      "key.2": "23c014bd0cc4af3fdfedae55a0a060e3469edf001267d23f29f3d5b82bd286db",
+      "key.3": "a42b9a30fe35034313d2ec0a92ee5aee3278c926ef53407e9e8b1cb14bbf384d",
+      "wallet.0": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973",
+      "wallet.1": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79",
+      "wallet.2": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5",
+      "wallet.3": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b",
+      "wallet.4": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b",
+      "wallet.5": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa",
+      "wallet.6": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117",
+      "wallet.7": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5"
+    },
+    "peak_worker_cgroup_bytes": 928354304,
+    "peak_mapped_spill_bytes": 855646208,
+    "swap_peak_bytes": 0,
+    "limits": {
+      "memory_high_bytes": 42949672960,
+      "memory_max_bytes": 47244640256,
+      "swap_max_bytes": 0,
+      "runtime_seconds": 600,
+      "spill_max_bytes": 128849018880,
+      "rayon_threads": 8,
+      "shared_slice_max_bytes": 51539607552
+    },
+    "modes": [
+      {
+        "mode": 1,
+        "rows": {
+          "kind": "program_usage",
+          "construction": "GroupedPair",
+          "mode": 1,
+          "child_height": 524288,
+          "height": 524288,
+          "active_rows": 340437,
+          "padding_rows": 183851,
+          "public_rows": 1,
+          "alu_rows": 167997,
+          "cubic_rows": 97974,
+          "poseidon_rows": 74465,
+          "total_operations": 1614386,
+          "authenticated_reads": 4224804,
+          "wires": 2484677,
+          "structural_fit": true,
+          "proof_produced": false,
+          "production_ready": false
+        },
+        "lanes": {
+          "kind": "program_usage_lanes",
+          "mode": 1,
+          "public_unused": 9,
+          "alu_used": 1343973,
+          "alu_unused": 3,
+          "cubic_used": 195948,
+          "cubic_unused": 0
+        },
+        "cells": {
+          "kind": "program_usage_main_cells",
+          "mode": 1,
+          "allocated": 49283072,
+          "assigned": 12517728,
+          "unassigned": 36765344,
+          "scope": "natural_main_trace_only",
+          "removable_without_redesign": false,
+          "measured_peak_memory": false
+        },
+        "geometry": {
+          "kind": "program_usage_geometry",
+          "mode": 1,
+          "main_width": 94,
+          "preprocessing_width": 70,
+          "permutation_width_base": 21,
+          "quotient_chunks": 16,
+          "constraint_degree": 8,
+          "retained_lde_bytes": 41875931136,
+          "half_height_target": 262144,
+          "rows_to_remove_for_half_height": 78293,
+          "half_height_is_recompiled_or_qualified": false
+        },
+        "operations": {
+          "input": 177562,
+          "bit_hint": 17024,
+          "select_hint": 95232,
+          "constant": 28600,
+          "add": 342766,
+          "multiply": 212386,
+          "equal": 25859,
+          "boolean": 17024,
+          "inverse": 3328,
+          "select": 424192,
+          "cubic_multiply": 195430,
+          "cubic_inverse": 518,
+          "poseidon": 74465
+        }
+      },
+      {
+        "mode": 2,
+        "rows": {
+          "kind": "program_usage",
+          "construction": "GroupedPair",
+          "mode": 2,
+          "child_height": 524288,
+          "height": 524288,
+          "active_rows": 680,
+          "padding_rows": 523608,
+          "public_rows": 1,
+          "alu_rows": 455,
+          "cubic_rows": 0,
+          "poseidon_rows": 224,
+          "total_operations": 3862,
+          "authenticated_reads": 5796,
+          "wires": 4786,
+          "structural_fit": true,
+          "proof_produced": false,
+          "production_ready": false
+        },
+        "lanes": {
+          "kind": "program_usage_lanes",
+          "mode": 2,
+          "public_unused": 9,
+          "alu_used": 3638,
+          "alu_unused": 2,
+          "cubic_used": 0,
+          "cubic_unused": 0
+        },
+        "cells": {
+          "kind": "program_usage_main_cells",
+          "mode": 2,
+          "allocated": 49283072,
+          "assigned": 28031,
+          "unassigned": 49255041,
+          "scope": "natural_main_trace_only",
+          "removable_without_redesign": false,
+          "measured_peak_memory": false
+        },
+        "geometry": {
+          "kind": "program_usage_geometry",
+          "mode": 2,
+          "main_width": 94,
+          "preprocessing_width": 70,
+          "permutation_width_base": 21,
+          "quotient_chunks": 16,
+          "constraint_degree": 8,
+          "retained_lde_bytes": 41875931136,
+          "half_height_target": 262144,
+          "rows_to_remove_for_half_height": 0,
+          "half_height_is_recompiled_or_qualified": false
+        },
+        "operations": {
+          "input": 768,
+          "bit_hint": 512,
+          "select_hint": 0,
+          "constant": 100,
+          "add": 654,
+          "multiply": 937,
+          "equal": 155,
+          "boolean": 512,
+          "inverse": 0,
+          "select": 0,
+          "cubic_multiply": 0,
+          "cubic_inverse": 0,
+          "poseidon": 224
+        }
+      },
+      {
+        "mode": 3,
+        "rows": {
+          "kind": "program_usage",
+          "construction": "GroupedPair",
+          "mode": 3,
+          "child_height": 524288,
+          "height": 524288,
+          "active_rows": 439125,
+          "padding_rows": 85163,
+          "public_rows": 1,
+          "alu_rows": 281067,
+          "cubic_rows": 10417,
+          "poseidon_rows": 147640,
+          "total_operations": 2417009,
+          "authenticated_reads": 5543658,
+          "wires": 3440038,
+          "structural_fit": true,
+          "proof_produced": false,
+          "production_ready": false
+        },
+        "lanes": {
+          "kind": "program_usage_lanes",
+          "mode": 3,
+          "public_unused": 9,
+          "alu_used": 2248535,
+          "alu_unused": 1,
+          "cubic_used": 20834,
+          "cubic_unused": 0
+        },
+        "cells": {
+          "kind": "program_usage_main_cells",
+          "mode": 3,
+          "allocated": 49283072,
+          "assigned": 20499593,
+          "unassigned": 28783479,
+          "scope": "natural_main_trace_only",
+          "removable_without_redesign": false,
+          "measured_peak_memory": false
+        },
+        "geometry": {
+          "kind": "program_usage_geometry",
+          "mode": 3,
+          "main_width": 94,
+          "preprocessing_width": 70,
+          "permutation_width_base": 21,
+          "quotient_chunks": 16,
+          "constraint_degree": 8,
+          "retained_lde_bytes": 41875931136,
+          "half_height_target": 262144,
+          "rows_to_remove_for_half_height": 176981,
+          "half_height_is_recompiled_or_qualified": false
+        },
+        "operations": {
+          "input": 399522,
+          "bit_hint": 17024,
+          "select_hint": 150528,
+          "constant": 253,
+          "add": 324640,
+          "multiply": 400490,
+          "equal": 35118,
+          "boolean": 17024,
+          "inverse": 5120,
+          "select": 898816,
+          "cubic_multiply": 20316,
+          "cubic_inverse": 518,
+          "poseidon": 147640
+        }
+      }
+    ],
+    "keys_generated": false,
+    "proof_produced": false,
+    "profile_approved": false,
+    "shared_or_registration_fixtures_pruned": false
+  },
+  "decision": {
+    "result": "Validate a wider-lane single-table candidate before considering specialized AIRs. Existing scalar/cubic packing is already essentially full; source-attributed unassigned cells do not authorize removing storage.",
+    "measured_active_rows": {
+      "paired_wrapper": 340437,
+      "empty": 680,
+      "merge": 439125
+    },
+    "unchanged_child_shape_rows_to_remove_for_half_height": {
+      "paired_wrapper": 78293,
+      "merge": 176981
+    },
+    "next_experiment": "Investigate more scalar/cubic lanes by separating their main-trace offsets from the fixed Poseidon layout. Account for wider preprocessing, authenticated lookup multiplicities/degree, retained LDEs and proof size, then recompile recursive closure. Preserve the single-zero-lookup-terminal rule and all security parameters.",
+    "unchanged_operation_count_illustration": {
+      "scalar_lanes": 21,
+      "cubic_lanes": 7,
+      "paired_wrapper_rows": 166458,
+      "merge_rows": 257692,
+      "target_height": 262144,
+      "arithmetic_only": true,
+      "recompiled": false,
+      "preprocessing_lookup_costs_not_included": true,
+      "speedup_established": false
+    },
+    "limitations": [
+      "The diagnostic compiles templates but does not reproduce preprocessing caps or produce aggregate proofs.",
+      "Natural-main-trace unassigned cells and occupied-row counts are not LDE, RSS, or removable-storage measurements.",
+      "A wider-lane layout changes preprocessing and lookup costs and requires new candidate identities/keys and recursive closure/security review.",
+      "No modified geometry, full-depth proof, mixed-workload, deadline, tail-latency or security gate passed."
+    ]
+  }
+}

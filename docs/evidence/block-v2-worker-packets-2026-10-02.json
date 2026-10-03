@@ -1,0 +1,123 @@
+{
+  "schema": "block-v2-worker-packet-checkpoint-v1",
+  "captured_utc": "2026-10-02T08:15:37Z",
+  "status": "BOUNDED_CPU_PACKETS_AND_GUARDED_PAIR_PROOF_VALIDATED_PROCESS_RUNTIME_PENDING",
+  "production_ready": false,
+  "default_enabled": false,
+  "worker_executable_complete": false,
+  "worker_supervisor_complete": false,
+  "arrival_harness_complete": false,
+  "scope": "Bounded public-only local request/result codecs and CPU-worker packet APIs under an existing single-use launch guard. No network format, wallet-witness API, new C ABI, autonomous executable, service transport or durable lease-to-OS supervisor.",
+  "native_validation": {
+    "exit_code": 0,
+    "session": 52876,
+    "unit": "lattica-v2-packet-native-20261002-a.service",
+    "runtime_seconds": 106.577,
+    "cpu_seconds": 105.979,
+    "memory_peak_formatted": "1.5G",
+    "swap_bytes": 0,
+    "native_checks": 77,
+    "explicit_cpu_checks": 6,
+    "status": "PASS",
+    "new_packet_structural_checks": 8,
+    "new_packet_cpu_fixture_checks": 2,
+    "ignored_in_default_filter": 12,
+    "ignored_explanation": "Six CPU fixture checks run explicitly. Three subprocess helpers run through their parent tests. Packet-driven generation and the existing fresh raw-node replay run separately under the proof controller. Earlier direct CPU generation is not rerun here.",
+    "service_ram_limit_bytes": 3221225472,
+    "service_swap_limit_bytes": 0,
+    "service_runtime_limit_seconds": 1200,
+    "warnings": 0,
+    "checks": [
+      "77 execution native checks",
+      "Six explicit CPU fixture checks: existing job/store/journal/worker checks plus packet pair/empty preparation and two real merge-child verifications",
+      "Release narrow block-v2/default/all-features-all-targets checks",
+      "Rustfmt, diff check and complete source archive comparison"
+    ],
+    "coverage": [
+      "Canonical encoding, truncation/trailing data, count/length bounds before copying, canonical fields, operation geometry and ordered contiguous child statements.",
+      "Exact immutable assignment key, resources, expected profile/construction/chain, semantic job identity and artifact manifests.",
+      "Launch binding rejects wrong encoded process key/resources even when an opaque launch token hashes that packet.",
+      "CPU preparation verifies supplied wallet/node proofs against external registry and expected statements before large proving allocations.",
+      "Bounded result decoding binds the owner's original assignment and exact request, but returns only UnverifiedResult; well-formed wrong-job proof bytes fail subsequent owner CPU verification.",
+      "Worker-reported timings/cache counters are observational, not authority for acceptance, resource release or job eligibility."
+    ],
+    "merge_fixture_scope": "Setup reads retained pinned wallet fixtures to construct the expected DAG and reuses the known eight-wallet root at two ordered ranges. The worker receives/verifies two root proofs only. Repeated spends are not host-eligible; no 16-transaction proof, throughput or archive-pruning qualification is claimed."
+  },
+  "real_proof": {
+    "exit_code": 0,
+    "session": 80731,
+    "unit": "lattica-v2-packet-proof-controller-20261002-a.service",
+    "runtime_seconds": 188.331,
+    "cpu_seconds": 0.094,
+    "memory_peak_formatted": "15.8M",
+    "swap_bytes": 0,
+    "status": "PASS",
+    "operation": "WrapPair",
+    "transactions": 2,
+    "node_level": 1,
+    "full_block": false,
+    "worker_unit": "lattica-v2-packet-pair-20261002-a.service",
+    "worker_service_runtime_seconds": 187.227,
+    "worker_cpu_usage_usec": 1142606723,
+    "worker_peak_ram_bytes": 41294438400,
+    "worker_swap_peak_bytes": 0,
+    "worker_ram_max_bytes": 47244640256,
+    "worker_memory_high_bytes": 42949672960,
+    "worker_timeout_seconds": 1800,
+    "spill_peak_bytes": 34003439616,
+    "spill_limit_bytes": 128849018880,
+    "aggregate_slice_ram_max_bytes": 51539607552,
+    "proof_bytes": 1683948,
+    "request_bytes": 1707443,
+    "result_bytes": 1684129,
+    "input_verification_ms": 435,
+    "proving_ms": 184807,
+    "serialization_ms": 1,
+    "execution_acceptance_and_output_wall_ms": 185854,
+    "stats": {
+      "setups": 1,
+      "hits": 0
+    },
+    "timing_scope": "Packet decoding/binding and input verification; shared proving/setup/cleanup; result decode; revocation/idle checks; independent owner CPU verification and durable acceptance; output file publication. Initial fixture loading/admission/launch issuance excluded. Serialization metric is node-codec time, not all result-envelope work. No recovery replay or complete post-seal measurement in this trial.",
+    "cleanup": "No live spill mappings before result acknowledgement. Test-held launch guard blocks idle acquisition until proving/cleanup finishes and guard is dropped. Owner CPU-verifies and journals acceptance before resource ledger is empty. Synchronous test inside existing bounded experiment controller, not an autonomous OS worker supervisor."
+  },
+  "independent_replay": {
+    "status": "PASS",
+    "unit": "lattica-v2-packet-replay-20261002-a.service",
+    "runtime_seconds": 0.968,
+    "cpu_usage_usec": 1013926,
+    "memory_peak_bytes": 26304512,
+    "swap_peak_bytes": 0,
+    "service_ram_max_bytes": 3221225472,
+    "checks": [
+      "Separate process CPU-verifies the newly generated raw 1,683,948-byte paired-wrapper proof against the pinned derived Job.",
+      "Wrong wallet order and mutated proof bytes rejected."
+    ],
+    "scope": "Raw node replay, not a recovered request/response transport or full-block root audit."
+  },
+  "pins": {
+    "lattica-prover-p3/target/block-v2-packet-native-20261002-a/source.tar.gz": "efeb4c957d0b90ecc23979d7c7cc87a970ba6ba8bc1b1c4b43f4a9149bd32ca8",
+    "lattica-prover-p3/target/block-v2-packet-native-20261002-a/cpu-lib-tests": "4c3e8cb9efcd176f58479575510d0e008f84c916b410aff259cc5c5c34494005",
+    "lattica-prover-p3/target/block-v2-packet-native-20261002-a.log": "2d7047d006ee76266a60658cdd4a7a01585afde3164385c053b30bfaa1f38558",
+    "lattica-prover-p3/target/block-v2-packet-native-20261002-a-invocation.json": "b7621eae6e0dd5d02e9e644d7f88da260e4834f6fcee0723783b6c89a6c30857",
+    "lattica-prover-p3/target/block-v2-packet-proof-20261002-a/pair.1.0": "f56eb8e7299e5d76a45438f26d251171ee6b1fb76eb86728172a0e7e729760cd",
+    "lattica-prover-p3/target/block-v2-packet-proof-20261002-a/pair.1.packet": "d9526a945234dd5446c74a27ca2a63979773a43773ac8fa742c6761c380e8e02",
+    "lattica-prover-p3/target/block-v2-packet-proof-20261002-a/pair.log": "6295ccc1bd5ca12809668aeb61e22e5d4768e40961435002de429954bc5582db",
+    "lattica-prover-p3/target/block-v2-packet-proof-20261002-a/replay.log": "cd3e9b7056f250209ac7f0d94211a24bca3d5d3df014489554812f05b823fbf2",
+    "lattica-prover-p3/target/block-v2-packet-proof-20261002-a-controller.log": "31c5d4a23d4e55b82c9a5f7e18b9d2f88cef2b93960da70520d7ea49c793b95c",
+    "lattica-prover-p3/target/block-v2-packet-proof-20261002-a-invocation.json": "9dc3bf8ce128a8a5bdcc6f9229333dc993e5130eceeb0227c0f1f182be353811"
+  },
+  "preservation": {
+    "docs/dag-gpu-implementation.md": "c23df407b56a47b1ec66f6821349d38be258ea4f7c43db432086124580a27ae7",
+    "lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+    "lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+    "lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614"
+  },
+  "remaining": [
+    "Autonomous worker executable, bounded immutable request/result file transport and executable/config identity binding.",
+    "Durable exact lease-to-systemd/cgroup dispatch/stop/reconciliation, retaining reservations until OS work and verification drain; physical resource enforcement and launch-record admission/pruning.",
+    "Real adapter/packet-driven SingleWallet, Empty and Merge generation; the new packet proof covers WrapPair only.",
+    "Arrival-driven candidates and host eligibility/transaction-type checks, cold64 and complete post-seal qualification.",
+    "GPU data-movement optimization against retained hashing, repeated matched performance evidence, full-tree soundness/ZK review and explicit activation."
+  ]
+}

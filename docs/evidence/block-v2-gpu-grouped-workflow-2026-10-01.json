@@ -1,0 +1,288 @@
+{
+  "schema": "block-v2-gpu-grouped-workflow-v1",
+  "captured_utc": "2026-10-02 00:38:55 UTC",
+  "status": "RESIDENT_KEYS_MATCH_INDEPENDENT_CPU_REFERENCE",
+  "production_ready": false,
+  "default_enabled": false,
+  "scope": "Separate bounded GPU grouped runner/controller, native policy and executable/lifecycle validation, full-size compact-profile resident preprocessing-key equivalence. Not recursive proof/performance qualification.",
+  "profile": {
+    "field": "Goldilocks",
+    "extension_degree": 3,
+    "fri_queries": 128,
+    "blowup": 16,
+    "cap_height": 6,
+    "random_codewords": 4,
+    "query_pow_bits": 16,
+    "quotient_fusion": false,
+    "profile": "8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb",
+    "chain": "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+    "root": "23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8",
+    "level": 3,
+    "count": 8,
+    "one_air": true,
+    "strict_single_zero_terminal": true
+  },
+  "implementation": {
+    "gpu_worker": "lattica-prover-p3/src/bin/block_v2_gpu_grouped_probe.rs",
+    "shared_operations": "lattica-prover-p3/src/bin/grouped_common/mod.rs",
+    "controller": "lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py",
+    "cpu_runner_gpu_gate": "Preserved: GPU-enabled build and nonzero/invalid resident selection are rejected. No GPU initialization/shutdown.",
+    "controller_policy": [
+      "Exact backend/device/fusion/external-statement and binary/source/helper bindings.",
+      "Durable attempted record before launch/artifact writes; failed/interrupted stages never automatically retried.",
+      "Registration caps must match independently registered CPU keys before any proof workflow is admitted.",
+      "Full-trial exclusive lease; controller-bound sibling workers; authoritative live-service inventory checked before advancing.",
+      "Stage log hashes, parsed telemetry, device index, and VRAM summaries rechecked on resume and before each stage.",
+      "Failure is recorded before stop/observation; stop failure is retained without erasing the original failure.",
+      "Only public proof artifacts are copied; final root gets separate CPU audit after local inner-artifact pruning."
+    ]
+  },
+  "limits": {
+    "aggregate_ram_bytes": 51539607552,
+    "controller_ram_bytes": 3221225472,
+    "worker_ram_bytes": 47244640256,
+    "swap_bytes": 0,
+    "worker_spill_bytes": 128849018880,
+    "aggregate_scratch_bytes": 137438953472,
+    "sampled_worker_vram_limit_mib": 12288,
+    "vram_scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota",
+    "stage_log_bytes": 67108864,
+    "vram_log_bytes": 8388608,
+    "worker_runtime_seconds": 7200,
+    "controller_runtime_seconds_at_most": 21600,
+    "admission_gpu_managed_bytes": 8589934592,
+    "admission_gpu_driver_reserve_bytes": 4294967296
+  },
+  "validation": {
+    "native_controller": {
+      "passed": 30,
+      "seconds": 0.035,
+      "scope": "Native parser/hash/registration/monitor/capture/cleanup checks; no GPU/prover/services."
+    },
+    "synthetic_lifecycle": {
+      "passed": 3,
+      "unit": "lattica-v2-gpu-grouped-lifecycle-20261001-a.service",
+      "service_seconds": 0.447,
+      "manifest": "lattica-prover-p3/target/block-v2-gpu-grouped-lifecycle-20261001-a/manifest.json",
+      "manifest_sha256": "1f3f67e4caad57b6122bd0d09e4273bc497ac250ac4a1b9938851bc5f75dadb3",
+      "scope": "Actual bounded Python services: exit propagation, live-worker observation failure cleanup, controller SIGKILL and BindsTo worker cleanup. No GPU/prover."
+    },
+    "executable_gates": {
+      "passed": 18,
+      "status": "PASS",
+      "unit": "lattica-v2-gpu-grouped-qualification-20261001-b.service",
+      "service_seconds": 0.327,
+      "scope": "Actual GPU/CPU-enabled/CPU-only binary rejection paths. No GPU initialization/proof."
+    },
+    "build": {
+      "unit": "lattica-v2-gpu-grouped-qualification-20261001-a.service",
+      "status": "BINARIES_BUILT_ENTRYPOINT_ASSERTION_CORRECTED",
+      "service_seconds": 99.874,
+      "reason": "Both feature builds succeeded. First entrypoint assertion omitted 'the' in expected error. Corrected assertion passed in new validation service; no proof attempted.",
+      "source_coherence": "Source archive A matches working tree except corrected entrypoint test; archive B matches all included sources. Both tar --compare checks exited 0."
+    }
+  },
+  "registration": {
+    "status": "GPU_KEYS_MATCH_CPU_RESEARCH_ONLY",
+    "unit": "lattica-v2-gpu-grouped-resident-registration-20261001-a.service",
+    "service_seconds": 244.444,
+    "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/manifest.json",
+    "manifest_sha256": "30f1d988c8faf9bd506fec282a5c0aa6fe330d72071a2b701fb6cdfa2c076dc7",
+    "reference": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/reproduction-job",
+    "reference_note": "Original primary wallet artifacts were pruned; independently registered reproduction fixture survives. All 12 reproduction artifacts match both recorded registration manifests.",
+    "binary_cpu": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-probe",
+    "binary_auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-artifact-audit",
+    "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "backend": "resident",
+    "keys": [
+      {
+        "name": "key-1",
+        "unit": "lattica-v2-gpu-grouped-523973-3.service",
+        "cpu_key_equivalence": {
+          "bytes": 2048,
+          "sha256": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5"
+        },
+        "elapsed_ms": 82837,
+        "peak_cgroup_bytes": 15429636096,
+        "swap_bytes": 0,
+        "peak_mapped_spill_bytes": 14814298112,
+        "vram": {
+          "limit_mib": 12288,
+          "peak_mib": 4934,
+          "positive_samples": 158,
+          "samples": 160,
+          "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+        },
+        "gpu_checkpoint": {
+          "allocations": "14",
+          "commits": "1",
+          "compress_kernel_ns": "11265216",
+          "counters": "cumulative",
+          "decode_ns": "65916280302",
+          "download_and_decode_ns": "69466502904",
+          "download_wall_ns": "3546315759",
+          "downloaded_bytes": "13421774848",
+          "hashing_wall_ns": "0",
+          "label": "GPU grouped process remainder",
+          "leaf_kernel_ns": "512242720",
+          "managed_live_bytes": "603980112",
+          "managed_peak_bytes": "5972689568",
+          "marshal_ns": "54107282",
+          "staging_bytes": "67108864",
+          "upload_and_marshal_ns": "590735998",
+          "upload_wall_ns": "536491570",
+          "uploaded_bytes": "1107296624"
+        },
+        "lde_checkpoint": {
+          "column_tiles": "7",
+          "commits": "1",
+          "counters": "cumulative",
+          "label": "GPU grouped process remainder",
+          "sponge_device_ns": "512242720",
+          "transform_device_ns": "425197920",
+          "wall_ns": "75175860412"
+        }
+      },
+      {
+        "name": "key-2",
+        "unit": "lattica-v2-gpu-grouped-523973-4.service",
+        "cpu_key_equivalence": {
+          "bytes": 2048,
+          "sha256": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802"
+        },
+        "elapsed_ms": 75308,
+        "peak_cgroup_bytes": 14807220224,
+        "swap_bytes": 0,
+        "peak_mapped_spill_bytes": 14529081344,
+        "vram": {
+          "limit_mib": 12288,
+          "peak_mib": 4934,
+          "positive_samples": 144,
+          "samples": 146,
+          "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+        },
+        "gpu_checkpoint": {
+          "allocations": "14",
+          "commits": "1",
+          "compress_kernel_ns": "9543520",
+          "counters": "cumulative",
+          "decode_ns": "64119453888",
+          "download_and_decode_ns": "67673182592",
+          "download_wall_ns": "3549869016",
+          "downloaded_bytes": "13421774848",
+          "hashing_wall_ns": "0",
+          "label": "GPU grouped process remainder",
+          "leaf_kernel_ns": "488614464",
+          "managed_live_bytes": "603980112",
+          "managed_peak_bytes": "5972689568",
+          "marshal_ns": "62187358",
+          "staging_bytes": "67108864",
+          "upload_and_marshal_ns": "603779167",
+          "upload_wall_ns": "541462667",
+          "uploaded_bytes": "1107296624"
+        },
+        "lde_checkpoint": {
+          "column_tiles": "7",
+          "commits": "1",
+          "counters": "cumulative",
+          "label": "GPU grouped process remainder",
+          "sponge_device_ns": "488614464",
+          "transform_device_ns": "400000768",
+          "wall_ns": "72931153602"
+        }
+      },
+      {
+        "name": "key-3",
+        "unit": "lattica-v2-gpu-grouped-523973-5.service",
+        "cpu_key_equivalence": {
+          "bytes": 2048,
+          "sha256": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99"
+        },
+        "elapsed_ms": 84685,
+        "peak_cgroup_bytes": 15790399488,
+        "swap_bytes": 0,
+        "peak_mapped_spill_bytes": 15099510784,
+        "vram": {
+          "limit_mib": 12288,
+          "peak_mib": 4934,
+          "positive_samples": 162,
+          "samples": 163,
+          "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+        },
+        "gpu_checkpoint": {
+          "allocations": "14",
+          "commits": "1",
+          "compress_kernel_ns": "9552160",
+          "counters": "cumulative",
+          "decode_ns": "65122270597",
+          "download_and_decode_ns": "68679084560",
+          "download_wall_ns": "3553194621",
+          "downloaded_bytes": "13421774848",
+          "hashing_wall_ns": "0",
+          "label": "GPU grouped process remainder",
+          "leaf_kernel_ns": "487511744",
+          "managed_live_bytes": "603980112",
+          "managed_peak_bytes": "5972689568",
+          "marshal_ns": "54304322",
+          "staging_bytes": "67108864",
+          "upload_and_marshal_ns": "592890792",
+          "upload_wall_ns": "538442449",
+          "uploaded_bytes": "1107296624"
+        },
+        "lde_checkpoint": {
+          "column_tiles": "7",
+          "commits": "1",
+          "counters": "cumulative",
+          "label": "GPU grouped process remainder",
+          "sponge_device_ns": "487511744",
+          "transform_device_ns": "395139232",
+          "wall_ns": "74088169319"
+        }
+      }
+    ],
+    "full_size_recursive_proofs_generated": false
+  },
+  "preservation": {
+    "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-qualification-20261001-b/source.tar.gz",
+    "source_archive_sha256": "fb526e8c007132032124165a25a4b83681f0ebb5ec1b0e17ab7b67a971c0d091",
+    "gpu_worker": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-qualification-20261001-b/block-v2-gpu-grouped-probe",
+    "gpu_worker_sha256": "2239ea178e99db2646be5f5996a9afd00346db1051537dcef5c814931d125b31",
+    "source_and_log_sha256": {
+      "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/manifest.json": "30f1d988c8faf9bd506fec282a5c0aa6fe330d72071a2b701fb6cdfa2c076dc7",
+      "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a.log": "d314b0060f0e6b085fca936f0600d874a03a46554d71aaa05760e26d9d9ca9d3",
+      "lattica-prover-p3/target/block-v2-gpu-grouped-lifecycle-20261001-a/manifest.json": "1f3f67e4caad57b6122bd0d09e4273bc497ac250ac4a1b9938851bc5f75dadb3",
+      "lattica-prover-p3/target/block-v2-gpu-grouped-lifecycle-20261001-a.log": "9f22da5b39f3ef232774d10f0df71c0ccf8dab987f872c3d3ce9adf0ab59f81a",
+      "lattica-prover-p3/target/block-v2-gpu-grouped-qualification-20261001-a.log": "23cba05594058f244bf8dfef8152910b9a7924cfec736b8685e76530462f27fb",
+      "lattica-prover-p3/target/block-v2-gpu-grouped-qualification-20261001-b.log": "ff4e42e71bb8f790927ef68c41263fd27d06e8ec7db1ff5f9a030381ec700935",
+      "lattica-prover-p3/src/bin/block_v2_gpu_grouped_probe.rs": "d865ea0bd6c2cbb1e1f414469a40228931be94aaafaa7f384c2dfff54b8f9d6b",
+      "lattica-prover-p3/src/bin/block_v2_grouped_probe.rs": "5dc1228753b0679ae26278c177bf1b3a0c7a9d5acf6eca437c75f9d41c6aa093",
+      "lattica-prover-p3/src/bin/grouped_common/mod.rs": "48377eb7a2b06c2f18d5c11d17dfc5eca278ee8fb3c532f1123f54ebae0de56a",
+      "lattica-prover-p3/Cargo.toml": "66491f8b4f40fc7ce6ed5a9cbf2081258084a44ce2a686a6d399703cd43863b7",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-qualification-20261001-b/source.tar.gz": "fb526e8c007132032124165a25a4b83681f0ebb5ec1b0e17ab7b67a971c0d091",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-qualification-20261001-b/block-v2-gpu-grouped-probe": "2239ea178e99db2646be5f5996a9afd00346db1051537dcef5c814931d125b31",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-qualification-20261001-b/block-v2-grouped-probe-gpu-rejection": "4ce7b8f5a64927e1b123e70b4cd1cdffe4f82544a05f62742addb916499ac42b",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-qualification-20261001-b/block-v2-grouped-probe-cpu-only": "e4722ba5d151bfb8d19f26d2e1e79d3f9ef488043ee8b9a080a8946e673bddb8",
+      "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py": "e4457748787437d55a0d399580a35323fe567d2afb86f2e1f82f4f7633733465",
+      "/home/access/code/lattica/lattica-prover-p3/scripts/test-block-v2-gpu-grouped-trial.py": "02a9a41cdefc55105ee77bd76debe85f7759db7c3845f39dc0e9176e71230e7b",
+      "/home/access/code/lattica/lattica-prover-p3/scripts/test-block-v2-gpu-grouped-lifecycle.py": "acb76c504fc8ddf5bd2166c38aaa682502a8c962ed68dfc19f5c60d2a1d8781f",
+      "/home/access/code/lattica/lattica-prover-p3/scripts/test-block-v2-gpu-grouped-entrypoints.py": "bfccd0b7856c411c660eb52e4e6233f9f2a656260594f495ffa71ce9eb5a8a15"
+    },
+    "registration_pins": {
+      "accounting": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "auditor": "ae9ea1ddf846771c373b3dd5cf2e188087819de4294e25d27b85500e66f1af53",
+      "controller": "e4457748787437d55a0d399580a35323fe567d2afb86f2e1f82f4f7633733465",
+      "cpu_runner": "2383b260de5283ddcb6c1ce2408fb8139065fc109c8181ec602cc20ca095db3c",
+      "gpu_runner": "2239ea178e99db2646be5f5996a9afd00346db1051537dcef5c814931d125b31",
+      "helpers": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "source_archive": "fb526e8c007132032124165a25a4b83681f0ebb5ec1b0e17ab7b67a971c0d091"
+    }
+  },
+  "remaining": [
+    "Complete recursive compact-eight resident proof, local pruning, and CPU root-only audit; currently not qualified.",
+    "Retained-backend key reproduction and at least five alternating matched backend pairs before speedup claims.",
+    "Investigate host readback conversion/scatter: first-key decode counter is 65.916 s versus 0.425 s transform device time; this registration observation is not an end-to-end speedup measurement.",
+    "Minimal incremental DAG; odd/irregular/mixed/issuance/full64 cold and complete post-seal qualification.",
+    "One <=2 MiB root; unchanged RAM48/VRAM12/scratch128 budgets; complete-tree soundness/ZK and host integration/activation review.",
+    "Original repeated series remains 2/5 pairs and has separate shared-fixture pruning/replay obligations; completed historical experiments were not rerun."
+  ]
+}

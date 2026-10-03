@@ -1,0 +1,206 @@
+{
+  "schema": "block-v2-cached-cpu-evidence-v1",
+  "captured_utc": "2026-10-02 18:52:02 UTC",
+  "status": "INLINE_CACHED_CPU_ADAPTER_TWO_PROOFS_AND_REPLAY_VALIDATED_RESEARCH_ONLY",
+  "production_ready": false,
+  "default_enabled": false,
+  "implementation": {
+    "source_files": [
+      "lattica-prover-p3/src/block_v2/execution/worker_cached.rs",
+      "lattica-prover-p3/src/block_v2/execution/worker_cached_tests.rs",
+      "lattica-prover-p3/src/block_v2/execution/worker.rs",
+      "lattica-prover-p3/src/block_v2/execution/dag.rs",
+      "lattica-prover-p3/src/block_v2/execution/journal_workspace.rs",
+      "lattica-prover-p3/src/block_v2/execution/launch.rs"
+    ],
+    "inline_serial": true,
+    "autonomous_warm_worker": false,
+    "whole_session_reservation": {
+      "ram_bytes": 47244640256,
+      "vram_bytes": 0,
+      "scratch_bytes": 128849018880,
+      "threads": 8
+    },
+    "per_job_reservation": {
+      "ram_bytes": 1073741824,
+      "vram_bytes": 0,
+      "scratch_bytes": 8589934592,
+      "threads": 1
+    },
+    "retained_programs_max": 1,
+    "mode_switch_evicts": true,
+    "exact_immutable_program_and_cap_checks": true,
+    "fresh_rng_per_proof": true,
+    "public_proof_only": true,
+    "owner_side_cpu_acceptance": true,
+    "consumes_single_use_inline_gate": true,
+    "rejects_process_bound_tokens": true,
+    "completion_receipt_claims_carrier_exit": false,
+    "cache_drops_before_reservation_release": true,
+    "prover_error_clears_cache": true,
+    "panic_scope": "After taking the proving session, unwind drops it and leaves session=None; not a guarantee for every preflight panic.",
+    "physical_scratch_quotas": false
+  },
+  "native_validation": {
+    "exit_code": 0,
+    "runtime_seconds": 223.495,
+    "cpu_seconds": 224.284,
+    "memory_peak": "1.8G",
+    "swap": 0,
+    "native_passed": 146,
+    "native_ignored": 43,
+    "explicit_cpu_passed": 18,
+    "zig_tests": 10,
+    "compiler_warnings": 0,
+    "unit": "lattica-v2-cached-native-20261002-a.service",
+    "session": 89892,
+    "invocation": "79853ed3d0f64ab2abd489bb28117750",
+    "new_prover_run": false,
+    "pins": {
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-cached-native-20261002-a/source.tar.gz": "36901ec1f9f4a8c99565a89dd4bee546e096e7605f973ffc515b9dd308c6acdb",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-cached-native-20261002-a/cpu-lib-tests": "de4790bbbe2a6e3dfd088b52f0411448c893d5c160e04e1a456f316dc92ebeb5",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-cached-native-20261002-a/cpu-worker": "73f16d3803f3e22a0942bda0df4b2c8c512d4665e5eb9f7c299348b5eb9d7299",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-cached-native-20261002-a/single-probe": "091eef0198ca03565d7739ea0fca7861c5564bd6f92d77a77e34a23a7194850b",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-cached-native-20261002-a/public-export": "5e1cefe7c6e3943d2ef4040d8498903261cac406d1cbfc0d3b576fa8f4a3a7d2",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-cached-native-20261002-a/zig-out/bin/block-v2-expected-root": "29751d1c43f350ad0fbd3e91fe216894ea6060d93cca7e331881e0e650fca920"
+    }
+  },
+  "live_trial": {
+    "schema": "block-v2-cached-cpu-trial-summary-v1",
+    "status": "TWO_PAIRED_PROOFS_AND_FRESH_CPU_REPLAY_PASSED",
+    "production_ready": false,
+    "full_block": false,
+    "matched_speedup": false,
+    "controller": {
+      "unit": "lattica-v2-cached-live-controller-20261002-b.service",
+      "invocation": "229a0f96d7cb487baad031c4311368e6",
+      "exit_code": 0,
+      "runtime_seconds": 276.155,
+      "cpu_seconds": 0.122,
+      "memory_peak_rounded": "17.7M",
+      "swap_peak_bytes": 0,
+      "terminal_observed_utc": "2026-10-02 18:33:18 UTC"
+    },
+    "proof": {
+      "unit": "lattica-v2-cached-proof-20261002-b.service",
+      "invocation": "11676fd44d9b409faafba8d939b4a0fa",
+      "exit_code": 0,
+      "runtime_seconds": 274.689,
+      "memory_peak_bytes": 42950197248,
+      "memory_max_bytes": 47244640256,
+      "swap_peak_bytes": 0,
+      "cpu_usage_usec": 1759697149,
+      "pairs": [
+        {
+          "index": 0,
+          "level": 1,
+          "count": 2,
+          "proof_bytes": 1683948,
+          "sha256": "218770abb4294bf41181a95b4ce0f5b36fe306ddb2e4cf6ae634f29968f47e1a",
+          "input_verification_ms": 184,
+          "worker_proving_ms": 158441,
+          "serialization_ms": 0,
+          "setup_ms": 45980,
+          "registered_prove_and_verify_ms": 109778,
+          "cache_setups": 1,
+          "cache_hits": 0,
+          "retained_mapped_bytes": 14445207552,
+          "loop_elapsed_through_acceptance_ms": 159493
+        },
+        {
+          "index": 1,
+          "level": 1,
+          "count": 2,
+          "proof_bytes": 1683948,
+          "sha256": "1ca6b18415540170e496aa75102b079014a244d92673ecdd1c0e7b4cc75bb1de",
+          "input_verification_ms": 211,
+          "worker_proving_ms": 112056,
+          "serialization_ms": 0,
+          "setup_ms": 108,
+          "registered_prove_and_verify_ms": 109337,
+          "cache_setups": 1,
+          "cache_hits": 1,
+          "retained_mapped_bytes": 14445207552,
+          "loop_elapsed_through_acceptance_ms": 272821
+        }
+      ],
+      "cache_closed": true,
+      "spill_live_bytes_after_close": 0,
+      "mapped_spill_peak_bytes": null,
+      "mapped_spill_peak_asserted_max_bytes": 128849018880,
+      "all_logical_reservations_released_after_close": true,
+      "timing_boundary": "Loop starts after fixture loading and candidate admission; per-pair elapsed timestamps include acceptance but precede final exports, revocation and cache close. Whole proof-service wall time is reported separately, not full-block finalization."
+    },
+    "replay": {
+      "unit": "lattica-v2-cached-replay-20261002-b.service",
+      "invocation": "37ced7ab9bff43cbbc8dedcc26316e41",
+      "exit_code": 0,
+      "runtime_seconds": 1.04,
+      "memory_peak_bytes": 37126144,
+      "swap_peak_bytes": 0,
+      "cpu_usage_usec": 1087582,
+      "verified_pairs": 2,
+      "wrong_order_rejected": true,
+      "mutation_rejected": true,
+      "loads_pinned_public_fixtures_and_registry": true,
+      "root_only_block_replay": false
+    },
+    "constraints": {
+      "proof_memory_max_gib": 44,
+      "proof_memory_high_gib": 40,
+      "aggregate_memory_max_gib": 48,
+      "swap_allowed": false,
+      "cpu_quota_percent": 800,
+      "tasks_max": 16,
+      "observed_live_tasks": 10,
+      "internal_spill_max_gib": 120,
+      "free_nvme_gate_gib": 132,
+      "physical_scratch_quota": false
+    },
+    "prior_failed_controller": {
+      "exit_code": 1,
+      "runtime_seconds": 0.076,
+      "cpu_seconds": 0.049,
+      "memory_peak": "12.4M",
+      "swap": 0,
+      "invocation": "b823ccf7667b481ab11c8c41a2f6eb15",
+      "stages_launched": 0,
+      "new_proofs": 0,
+      "reason": "Controller used nonexistent H.sha; existing frozen helper is H.digest.",
+      "source_changed": false,
+      "description": "Controller used nonexistent H.sha; failed before any stage/proof launch. Corrected to frozen helper H.digest; prover source unchanged."
+    }
+  },
+  "scope": {
+    "new_complete_block_root": false,
+    "matched_speedup": false,
+    "arrival_trial_rerun": false,
+    "full_default_test_suite_claimed": false,
+    "proof_parameters_changed": false,
+    "production_abi_changed": false,
+    "production_activation": false
+  },
+  "remaining": [
+    "Matched cold/retained repeated- and mixed-mode work; at least five alternating pairs before performance promotion.",
+    "Deadline-aware local integration and measured proving/GPU data-movement improvements; GPU opening regression remains unpromoted.",
+    "Autonomous warm-worker lifecycle, no-identity startup liveness, general external-verifier reconciliation, cancellation/panic/OOM/timeouts under load.",
+    "Physical scratch quotas and reference-aware retention.",
+    "Real arrivals, issuance/HTLC, reorg/eligibility and full host finalization.",
+    "64 total transactions including issuance at12-minute cadence; cold<=600s, complete post-seal<=180s, one root<=2MiB, aggregate RAM48/VRAM12/scratch128GiB.",
+    "Full-tree soundness/ZK review and explicit activation."
+  ],
+  "preservation": {
+    "manifest": "lattica-prover-p3/target/block-v2-cached-native-20261002-a/pins.sha256",
+    "manifest_entries": 411,
+    "source_archive_matches": true,
+    "documentation_archive": "lattica-prover-p3/target/block-v2-cached-native-20261002-a/documentation.tar.gz",
+    "frozen_files": {
+      "docs/dag-gpu-implementation.md": "c23df407b56a47b1ec66f6821349d38be258ea4f7c43db432086124580a27ae7",
+      "lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614"
+    },
+    "previous_manifests_remain_historical": true,
+    "committed": false
+  }
+}

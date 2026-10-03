@@ -1,0 +1,156 @@
+{
+  "schema": "block-v2-cpu-worker-checkpoint-v1",
+  "captured_utc": "2026-10-02T07:27:43Z",
+  "status": "SYNCHRONOUS_CPU_ADAPTER_AND_ONE_LEASED_PAIR_PROOF_VALIDATED_RUNTIME_PENDING",
+  "production_ready": false,
+  "default_enabled": false,
+  "worker_supervisor_complete": false,
+  "arrival_harness_complete": false,
+  "scope": "Exact leased public-input adapter around registered CPU proving. One full-strength paired-wrapper proof exercises the durable owner, then independent fresh-process CPU replay. Not an autonomous worker service, full block, throughput comparison or deadline qualification.",
+  "implementation": {
+    "assignment": "Only the scheduler constructs Assignment. It captures lease/job identity, ordered dependency Jobs, exact artifact manifest and Arc-backed immutable public bytes. DurableDag exports only after successful journal ownership/health checks.",
+    "input_validation": "Checks exact bytes, operation arity, profile/construction, ordered dependencies and derived job semantics. CPU verifies wallets/child nodes before large proving allocations; no wallet witness input API.",
+    "proving": "Dispatches Wrap, WrapPair, Empty and Merge through existing ConstructionSession. Only paired-wrapper generation is newly exercised by this checkpoint; the other operation routes still need real adapter-driven proving coverage.",
+    "backend": "Rejects GPU-feature builds, active quotient fusion and nonzero/malformed alternate proving switches. No default proof/verifier/ABI changes; approved cubic profile and fresh per-proof CSPRNG retained.",
+    "lifetime": "A per-call local preprocessing session is cleared before return and dropped on unwinding. No cache/RNG retained across released job reservations. Warm preprocessing reuse requires a separately accounted persistent-worker lifetime.",
+    "acceptance": "Output contains bytes, lease/job IDs and timing/cache statistics, not a VerifiedNode ticket. The owner separately marks work stopped, invokes CPU verification against its leased Job, and durably commits completion."
+  },
+  "native_validation": {
+    "exit_code": 0,
+    "session": 63794,
+    "runtime_seconds": 97.059,
+    "cpu_seconds": 96.328,
+    "memory_peak_formatted": "1.5G",
+    "swap_bytes": 0,
+    "native_checks": 52,
+    "explicit_cpu_replays": 4,
+    "unit": "lattica-v2-worker-native-20261002-a.service",
+    "status": "PASS",
+    "worker_structural_checks": 4,
+    "ignored_in_default_filter": 8,
+    "ignored_explanation": "Four pinned CPU checks explicitly run in the 3 GiB native service; two crash-test helpers invoked by parent tests. Real worker generation and fresh output replay run separately.",
+    "service_ram_limit_bytes": 3221225472,
+    "service_swap_limit_bytes": 0,
+    "service_runtime_limit_seconds": 1200,
+    "checks": [
+      "52 execution native checks",
+      "Existing job, artifact-store and journal CPU fixture replays",
+      "CPU worker real paired-wallet/empty input preparation and substitution rejection",
+      "Release narrow block-v2/default/all-features-all-targets checks",
+      "Rustfmt, diff check, complete source archive comparison"
+    ],
+    "coverage": [
+      "Exact immutable lease inputs survive duplicate randomized-wallet admission; cancelled leases cannot export new assignments.",
+      "Wrong job/bytes/manifests/counts and ordered child identity/arity fail.",
+      "Reference backend selection rejects malformed/non-CPU switches.",
+      "Pinned wallet inputs CPU-verify; wrong ordering and recursive-node-for-wallet substitution reject before proving."
+    ]
+  },
+  "real_proof": {
+    "exit_code": 0,
+    "session": 76300,
+    "controller_runtime_seconds": 236.714,
+    "controller_cpu_seconds": 0.117,
+    "controller_memory_peak_formatted": "17.5M",
+    "worker_peak_ram_bytes": 39931117568,
+    "worker_swap_bytes": 0,
+    "worker_cpu_usage_usec": 1208946379,
+    "spill_peak_bytes": 34003439616,
+    "proof_bytes": 1683948,
+    "input_verification_ms": 218,
+    "proving_ms": 226157,
+    "serialization_ms": 4,
+    "leased_execution_and_recovery_wall_ms": 231705,
+    "status": "PASS",
+    "unit": "lattica-v2-worker-pair-20261002-a.service",
+    "operation": "WrapPair",
+    "transactions": 2,
+    "node_level": 1,
+    "full_block": false,
+    "profile": "8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb",
+    "source_fixture": "Existing independently pinned eight-wallet fixture; only wallets 0 and 1 are wrapped by this new proof. No wallet proof generation or key registration in the measured path.",
+    "service_runtime_seconds": 233.374,
+    "service_cpu_seconds": 1208.95,
+    "service_ram_max_bytes": 47244640256,
+    "service_memory_high_bytes": 42949672960,
+    "service_swap_max_bytes": 0,
+    "service_timeout_seconds": 1800,
+    "spill_limit_bytes": 128849018880,
+    "aggregate_slice_ram_max_bytes": 51539607552,
+    "aggregate_slice_swap_max_bytes": 0,
+    "controller_unit": "lattica-v2-worker-proof-controller-20261002-a.service",
+    "controller_ram_max_bytes": 3221225472,
+    "stats": {
+      "setups": 1,
+      "hits": 0
+    },
+    "cleanup": "All spill mappings gone before acknowledgement, reservation released after owner CPU verification; durable reopen CPU-reverifies the newly accepted pair. Only private temporary store/journal copies are cleaned.",
+    "timing_scope": "231.705 s from leased execution through owner acceptance/persistence/recovery. Excludes initial public fixture loading/admission; includes later owner verification and recovery. 226.157 s proving metric includes compilation/setup, proving/native verification and workspace release. Not complete block finalization."
+  },
+  "independent_replay": {
+    "status": "PASS",
+    "unit": "lattica-v2-worker-replay-20261002-a.service",
+    "runtime_seconds": 3.105,
+    "cpu_seconds": 2.285,
+    "memory_peak_bytes": 31346688,
+    "swap_peak_bytes": 0,
+    "service_ram_max_bytes": 3221225472,
+    "checks": [
+      "Fresh process loads saved 1,683,948-byte pair proof and independently verifies against the pinned derived expected Job.",
+      "Wrong wallet order and mutated proof bytes rejected."
+    ],
+    "caveat": "This adapter test derives the expected pair statement from the pinned public fixture. It is not a new root-only block replay qualification."
+  },
+  "orchestration": "Existing frozen exclusive experiment lease and no-overlap checks; 3 GiB controller, bounded child systemd service with BindsTo/control-group termination, bounded output capture and frozen ExecStopPost accounting. This external experiment harness does not implement a durable coordinator-to-process supervisor.",
+  "pins": {
+    "source_archive": {
+      "path": "lattica-prover-p3/target/block-v2-worker-native-20261002-a/source.tar.gz",
+      "sha256": "d9a340e2fa5224ecdc6a41be648f86f55f27deedfaf703e348d327c1ae7b45e4"
+    },
+    "executable": {
+      "path": "lattica-prover-p3/target/block-v2-worker-native-20261002-a/cpu-lib-tests",
+      "sha256": "401c28f984309108f055712ea47a506390c602bfb0b955e66cbb26de93ec2f59"
+    },
+    "native_log": {
+      "path": "lattica-prover-p3/target/block-v2-worker-native-20261002-a.log",
+      "sha256": "c4d50bb0e11582cd3ca0fd42169d4354f1986a1e69846ea0575271fcc27573a8"
+    },
+    "native_invocation": {
+      "path": "lattica-prover-p3/target/block-v2-worker-native-20261002-a-invocation.json",
+      "sha256": "fd667498a4714f3666a92cfffff9561897381bc7caeb6ce998814cccfdbcd633"
+    },
+    "proof": {
+      "path": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a/pair.1.0",
+      "sha256": "60a5b9f47467a013d3e2a42b656ccee090e2b171bd1b04a69845c8687119a549"
+    },
+    "proof_log": {
+      "path": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a/pair.log",
+      "sha256": "7ca8c303eace147d0839079a2dcbc2512f9bec2f8b8ad62eca49b9e2d8fccd8a"
+    },
+    "replay_log": {
+      "path": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a/replay.log",
+      "sha256": "e760ace2c374ad40c6c85a99be803309d72d9a6c8e6235632a0aba6e58f8ed2b"
+    },
+    "controller_log": {
+      "path": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a-controller.log",
+      "sha256": "19df671e5547d9f990e3f5252416b3816075bfd38a4879a2cf1bf7d16a80585f"
+    },
+    "proof_invocation": {
+      "path": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a-invocation.json",
+      "sha256": "7bc82bd6f498b44fe26f025a7266ad0b8da1cf711645b10304c9693557276590"
+    }
+  },
+  "preservation": {
+    "docs/dag-gpu-implementation.md": "c23df407b56a47b1ec66f6821349d38be258ea4f7c43db432086124580a27ae7",
+    "lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+    "lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+    "lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614"
+  },
+  "remaining": [
+    "Durable mapping of exact leases to OS worker identity, dispatch-at-most-once/termination/reconciliation and resource enforcement.",
+    "Expose/check each assignment's reserved resource class when integrating the supervisor; the current synchronous adapter relies on a trusted runtime to enforce budgets.",
+    "Real adapter-driven SingleWallet/Empty/Merge proving and failure/cancellation coverage, followed by arrival-driven complete candidate runs.",
+    "Warm workspace reuse only under persistent resource ownership; GPU adapter/transfer-reduction work and repeated controls.",
+    "Full64 cold/complete post-seal targets, general padding and full transaction types, complete-tree security, host integration and explicit activation."
+  ]
+}

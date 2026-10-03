@@ -1,0 +1,108 @@
+{
+  "schema": "block-v2-journal-checkpoint-v1",
+  "captured_utc": "2026-10-02T07:03:41Z",
+  "status": "LINUX_SNAPSHOT_JOURNAL_AND_CPU_RECOVERY_VALIDATED_RUNTIME_PENDING",
+  "production_ready": false,
+  "default_enabled": false,
+  "durable_worker_service_complete": false,
+  "scope": "Bounded local snapshot journal, graph reconstruction, explicit reconciliation boundary and reference-aware artifact garbage collection. No OS worker supervisor, host eligibility implementation, live proving or performance qualification.",
+  "implementation": {
+    "feature_gate": "block-v2; Linux only. Default verifier, historical proof bytes, ABI and activation unchanged.",
+    "format": "Local LVDAG001 metadata in an LVJRN001 generation/length/Poseidon2-checksummed frame. Bounded manual codec; not a consensus/network format or append-only audit history.",
+    "publication": "Create-new private staging file, write, file fsync, atomic rename of authoritative state, directory fsync. Every core mutation commits before returning; failed/uncertain commits disable further dispatch.",
+    "recovery": "Exact profile/construction/chain/configuration match and strictly newer epoch. Bounded structural metadata checks precede CPU wallet/node verification. Jobs reconstructed through original constructors. Old candidates become reports only; completed caches remain, unfinished jobs are dormant.",
+    "reconciliation": "Recovery exposes no dispatch API. Caller must authoritatively stop/drain every recorded unresolved exact worker/device/verifier lease before resume. A failed callback leaves previous durable state retryable. Resume rebases retention and commits a fresh session before returning.",
+    "admission_errors": "Pre-write malformed input and quota rejection no longer poison the whole coordinator unless the artifact store itself requires recovery. Such rejection neither accepts proof results nor releases active verifier reservations.",
+    "gc": "Commit removed DAG references before deleting unreferenced recognized store artifacts. Retained dependency closure and unreleased reservations remain protected. Published orphan proofs are never inferred to be completed jobs.",
+    "journal_snapshot_bytes_max": 8388608,
+    "journal_pending_entries_max": 16,
+    "trust_boundary": "Dedicated private Linux directory; procfs, exclusive kernel lock, atomic rename and directory fsync required. Same-uid processes/kernel/filesystem trusted. Logical byte bounds are not physical disk quotas; subprocess exits do not qualify physical power-loss durability."
+  },
+  "validation": {
+    "unit": "lattica-v2-journal-native-20261002-a.service",
+    "status": "PASS",
+    "exit_code": 0,
+    "runtime_seconds": 95.48,
+    "cpu_seconds": 94.171,
+    "native_checks_passed": 48,
+    "journal_native_checks": 16,
+    "explicit_cpu_replays_passed": 3,
+    "journal_abrupt_exit_cases": 4,
+    "artifact_store_abrupt_exit_cases": 5,
+    "abrupt_exit_cases_are_nested_in_two_native_checks": true,
+    "ignored_in_default_filter": 5,
+    "ignored_explanation": "Three pinned CPU fixture tests are run explicitly afterward; two subprocess helpers are explicitly invoked by the artifact-store and journal crash tests.",
+    "service_ram_limit_bytes": 3221225472,
+    "service_swap_limit_bytes": 0,
+    "service_runtime_limit_seconds": 1200,
+    "observed_memory_peak_formatted": "1.5G",
+    "observed_swap_bytes": 0,
+    "exclusive_lease": true,
+    "gpu_disabled": true,
+    "checks": [
+      "Release CPU test build: block-v2-wide-lanes,stream",
+      "48 execution native checks",
+      "Three explicit pinned CPU replays",
+      "Release narrow block-v2 library check",
+      "Release all-features/all-targets check",
+      "Release default library check",
+      "Rustfmt edition 2021 --check over execution module tree",
+      "git diff --check",
+      "Complete source archive byte comparison"
+    ]
+  },
+  "coverage": {
+    "structural": [
+      "Checksummed frame corruption/truncation/trailing bytes/generation/size limits.",
+      "Exclusive ownership, captured-directory authority after path replacement, changed locks, private modes, symlinks, unknown entries and bounded pending inventory.",
+      "Four injected errors and four abrupt subprocess exits across write/file-fsync/rename/directory-fsync boundaries; staging never substitutes for missing or corrupt authoritative state.",
+      "Completed-cache recovery with fresh sessions; old candidate/lease rejection, explicit new eligibility and sealing.",
+      "Unresolved worker and active verifier reconciliation; failed reconciliation retry, retention rebasing and eventual GC.",
+      "Durability after mutations and error paths; duplicate accepted completions, conflicting replacements and cancelled verification.",
+      "Ordinary input/quota rejection preserves service availability and active verifier accounting.",
+      "Failed completion commit cannot promote its published orphan; failed prune commit cannot delete still-referenced artifacts.",
+      "Invalid snapshot counts, configuration, epoch, operation/range/arity/lifecycle/manifests rejected before proof callbacks; corrupt/missing referenced artifacts rejected."
+    ],
+    "real_cpu": [
+      "Existing pinned job-contract and artifact-store replays repeated.",
+      "Public DurableDag::recover re-verifies eight real wallets and their cached level-three/count-eight root against independent profile/registry/root pins.",
+      "Wrong chain/epoch and mutated stored root rejected; partial root is not accepted as a block candidate.",
+      "Fresh-session recovery preserves seven semantic jobs and nine artifacts; retention-aware journaled pruning removes only temporary store copies.",
+      "Standalone CPU root verification passes after those temporary artifacts are removed; recovery of the durably empty graph succeeds. Original source fixtures preserved."
+    ]
+  },
+  "pins": {
+    "source_archive": {
+      "path": "lattica-prover-p3/target/block-v2-journal-native-20261002-a/source.tar.gz",
+      "sha256": "1fee0be7b5506767692726810e1aec1c18caa0bf8c3923dc30f0479c7da6e4be"
+    },
+    "test_executable": {
+      "path": "lattica-prover-p3/target/block-v2-journal-native-20261002-a/cpu-lib-tests",
+      "sha256": "de63d850d655694b080580094e4afaf555f3eb2eb3fc905bd089713e6bc6f07b"
+    },
+    "log": {
+      "path": "lattica-prover-p3/target/block-v2-journal-native-20261002-a.log",
+      "sha256": "86ea71384e1ececa33f9f9c690ba8f0971039d8d709bca6d063cb2acacc9bd41"
+    },
+    "invocation": {
+      "path": "lattica-prover-p3/target/block-v2-journal-native-20261002-a-invocation.json",
+      "sha256": "8fd72ab538738ed78226ef39ec2da7e31b63d79c01247a25d6a8e35055ae1888"
+    },
+    "profile": "8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb",
+    "fixture_root": "23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"
+  },
+  "preservation": {
+    "docs/dag-gpu-implementation.md": "c23df407b56a47b1ec66f6821349d38be258ea4f7c43db432086124580a27ae7",
+    "lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+    "lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+    "lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614"
+  },
+  "remaining": [
+    "Real bounded CPU worker adapter, OS process identity/reconciliation and physical aggregate resource enforcement.",
+    "Host eligibility revalidation and versioned host integration; recovery reports are not block acceptance.",
+    "Arrival-driven tests with real proving, cancellation/restart and complete seal-to-host-ready timing.",
+    "GPU transfer-reduction work and controlled, repeated matched performance measurements.",
+    "Full64 cold/complete post-seal gates, mixed transaction types/issuance, full-tree soundness/ZK review and explicit activation.",
+    "Storage-device/filesystem power-loss qualification and sustained operational testing."
+  ]
+}

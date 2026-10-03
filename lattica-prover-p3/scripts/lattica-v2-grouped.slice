@@ -1,0 +1,9 @@
+# Research-only configuration. Link at runtime only after checking existing units.
+# The controller and every grouped proving stage must share this hard RAM cap.
+[Unit]
+Description=Lattica grouped recursion research memory boundary
+
+[Slice]
+MemoryAccounting=yes
+MemoryMax=48G
+MemorySwapMax=0

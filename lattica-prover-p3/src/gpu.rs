@@ -73,7 +73,7 @@ pub fn prof_report() -> (f64, u64, f64, u64) {
 }
 
 /// OpenCL C: Goldilocks field ops (matching p3's reduce128/add) + a radix-2 DIT NTT.
-const KERNEL_SRC: &str = r#"
+pub(crate) const KERNEL_SRC: &str = r#"
 #define NEG_ORDER 0xFFFFFFFFUL
 #define GP        0xFFFFFFFF00000001UL
 inline ulong gl_reduce128(ulong lo,ulong hi){ uint hh=(uint)(hi>>32),hl=(uint)(hi&0xFFFFFFFFUL);
@@ -902,7 +902,7 @@ impl TwoAdicSubgroupDft<Goldilocks> for GpuDft {
 /// expect (`rci`: 4×8 external-initial, `rcp`: 22 internal, `rcf`: 4×8 external-final, `diag`: 8).
 /// Sourced from p3's exported constants — the same ones `default_goldilocks_poseidon2_8` uses, so the
 /// GPU permutation is bit-identical to the CPU hasher used in `verify_batch`.
-fn poseidon2_consts() -> (Vec<u64>, Vec<u64>, Vec<u64>, Vec<u64>) {
+pub(crate) fn poseidon2_consts() -> (Vec<u64>, Vec<u64>, Vec<u64>, Vec<u64>) {
     let flat = |rows: &[[Goldilocks; 8]]| {
         rows.iter()
             .flatten()

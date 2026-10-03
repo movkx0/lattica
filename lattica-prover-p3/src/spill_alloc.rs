@@ -70,6 +70,9 @@ static MMAP_PEAK: AtomicU64 = AtomicU64::new(0);
 struct Cfg {
     dir: [u8; 256],
     dir_len: usize,
+    // Opt-in ceiling for controlled research jobs. A configured spill failure
+    // must fail closed rather than silently falling back to heap allocation.
+    max_bytes: Option<u64>,
 }
 static CFG: OnceLock<Cfg> = OnceLock::new();
 
@@ -86,6 +89,9 @@ fn cfg() -> &'static Cfg {
         Cfg {
             dir: buf,
             dir_len: n,
+            max_bytes: std::env::var("LATTICA_SPILL_MAX_BYTES")
+                .ok()
+                .map(|v| v.parse().unwrap_or(0)),
         }
     })
 }
@@ -173,6 +179,40 @@ unsafe fn read_hdr(base: *const u8) -> (u64, i64, u64) {
 /// The out-of-core global allocator. See the module docs.
 pub struct SpillAlloc;
 
+/// Explicit heap workspace for bounded, repeatedly modified temporary buffers.
+/// Unlike disarming the allocator, this does not affect any other allocation or
+/// thread. The normal allocator can free the returned Vec after its scope ends.
+/// This is not a mapping-failure fallback. Callers still need a process RAM cap.
+#[cfg(any(feature = "block-v2", test))]
+pub(crate) fn copy_to_heap<T: Copy>(source: &[T], byte_limit: usize) -> Option<Vec<T>> {
+    const MAX_WORKSPACE: usize = 2 << 30;
+    let layout = Layout::array::<T>(source.len()).ok()?;
+    if byte_limit > MAX_WORKSPACE || layout.size() > byte_limit {
+        return None;
+    }
+    if layout.size() < THRESHOLD || layout.align() > PAGE {
+        // These allocations already take the direct System path, even armed.
+        return Some(source.to_vec());
+    }
+    let payload = layout.size().checked_add(PAGE - 1)? & !(PAGE - 1);
+    let total = payload.checked_add(PAGE)?;
+    let system_layout = Layout::from_size_align(total, PAGE).ok()?;
+    // SAFETY: the allocation has the exact header layout expected by SpillAlloc
+    // for this Vec's capacity/alignment. T is Copy, all elements are initialized,
+    // the source does not overlap this fresh allocation, and ownership is moved
+    // to Vec exactly once. Allocation failure never returns an invalid Vec.
+    unsafe {
+        let base = System.alloc(system_layout);
+        if base.is_null() {
+            std::alloc::handle_alloc_error(system_layout);
+        }
+        write_hdr(base, MAGIC_SYS, -1, total as u64);
+        let data = base.add(PAGE).cast::<T>();
+        std::ptr::copy_nonoverlapping(source.as_ptr(), data, source.len());
+        Some(Vec::from_raw_parts(data, source.len(), source.len()))
+    }
+}
+
 impl SpillAlloc {
     /// Cold path for `>= THRESHOLD` allocations: an mmap-backed block if armed (else a `System` block),
     /// each carrying a one-page header before the returned (page-aligned) payload pointer.
@@ -181,12 +221,26 @@ impl SpillAlloc {
         let payload = (layout.size() + PAGE - 1) & !(PAGE - 1);
         let total = PAGE + payload;
         if ARMED.load(Ordering::Relaxed) > 0 {
+            let limit = cfg().max_bytes;
+            if MMAP_BYTES
+                .fetch_update(Ordering::SeqCst, Ordering::Relaxed, |live| {
+                    live.checked_add(total as u64)
+                        .filter(|&next| next <= limit.unwrap_or(u64::MAX))
+                })
+                .is_err()
+            {
+                return std::ptr::null_mut();
+            }
             if let Some((base, fd)) = map_file(total) {
                 write_hdr(base, MAGIC_MMAP, fd, total as u64);
                 MMAP_COUNT.fetch_add(1, Ordering::Relaxed);
-                let live = MMAP_BYTES.fetch_add(total as u64, Ordering::Relaxed) + total as u64;
+                let live = MMAP_BYTES.load(Ordering::Relaxed);
                 MMAP_PEAK.fetch_max(live, Ordering::Relaxed);
                 return base.add(PAGE);
+            }
+            MMAP_BYTES.fetch_sub(total as u64, Ordering::Relaxed);
+            if limit.is_some() {
+                return std::ptr::null_mut();
             }
             // mmap failed (e.g. scratch full) → fall through to a plain in-RAM System block.
         }
@@ -308,6 +362,91 @@ pub fn reset_spill_peak() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn explicit_heap_copy_preserves_ownership_without_disarming_other_allocations() {
+        let scope = SpillScope::arm();
+        let n = THRESHOLD / core::mem::size_of::<u64>();
+        let source: Vec<u64> = (0..n as u64).collect();
+        let mut copied = copy_to_heap(&source, THRESHOLD).unwrap();
+        assert_eq!(source, copied);
+        unsafe {
+            assert_eq!(
+                read_hdr(copied.as_ptr().cast::<u8>().sub(PAGE)).0,
+                MAGIC_SYS
+            );
+        }
+        let another: Vec<u64> = vec![7; n];
+        unsafe {
+            assert_eq!(
+                read_hdr(another.as_ptr().cast::<u8>().sub(PAGE)).0,
+                MAGIC_MMAP
+            );
+        }
+        assert!(copy_to_heap(&source, THRESHOLD - 1).is_none());
+        assert!(copy_to_heap(&[1u8], (2 << 30) + 1).is_none());
+        drop(scope);
+        copied[0] = 91;
+        assert_eq!(source[0], 0);
+        // Growing and dropping the explicitly owned Vec uses the normal global
+        // allocator/header machinery; no special caller-side free is needed.
+        copied.push(93);
+        assert_eq!(copied[n], 93);
+        drop((source, copied, another));
+        assert_eq!(copy_to_heap(&[(); 4], 0).unwrap().len(), 4);
+    }
+
+    #[test]
+    fn spill_budget_is_enforced_in_subprocess() {
+        const FLAG: &str = "LATTICA_SPILL_BUDGET_TEST";
+        if let Ok(mode) = std::env::var(FLAG) {
+            let _scope = SpillScope::arm();
+            let layout = Layout::from_size_align(THRESHOLD, PAGE).unwrap();
+            let allocator = SpillAlloc;
+            unsafe {
+                let first = allocator.alloc(layout);
+                if mode != "budget" {
+                    assert!(first.is_null());
+                    assert_eq!(spill_stats(), (0, 0));
+                    return;
+                }
+                assert!(!first.is_null());
+                assert_eq!(spill_stats(), (1, (THRESHOLD + PAGE) as u64));
+                assert!(allocator.alloc(layout).is_null());
+                assert_eq!(spill_stats(), (1, (THRESHOLD + PAGE) as u64));
+                allocator.dealloc(first, layout);
+                assert_eq!(spill_stats(), (0, 0));
+                let again = allocator.alloc(layout);
+                assert!(!again.is_null());
+                allocator.dealloc(again, layout);
+                assert_eq!(spill_stats(), (0, 0));
+            }
+            return;
+        }
+        for mode in ["budget", "invalid", "failed_mapping"] {
+            let executable = std::env::current_exe().unwrap();
+            let mut command = std::process::Command::new(&executable);
+            command
+                .args([
+                    "--exact",
+                    "spill_alloc::tests::spill_budget_is_enforced_in_subprocess",
+                    "--test-threads=1",
+                ])
+                .env(FLAG, mode)
+                .env(
+                    "LATTICA_SPILL_MAX_BYTES",
+                    if mode == "invalid" {
+                        "invalid".to_string()
+                    } else {
+                        (THRESHOLD + PAGE).to_string()
+                    },
+                );
+            if mode == "failed_mapping" {
+                command.env("LATTICA_SPILL_DIR", executable.join("not-a-directory"));
+            }
+            assert!(command.status().unwrap().success(), "mode={mode}");
+        }
+    }
 
     /// The allocator round-trips large armed (mmap) and unarmed (system-with-header) allocations without
     /// corruption, and spilling actually engages while armed.

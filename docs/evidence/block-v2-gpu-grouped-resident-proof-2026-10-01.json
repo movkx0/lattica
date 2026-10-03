@@ -1,0 +1,1476 @@
+{
+  "schema": "block-v2-gpu-grouped-resident-proof-v1",
+  "captured_utc": "2026-10-02 00:53:51 UTC",
+  "status": "SINGLE_COMPACT_EIGHT_RESIDENT_GPU_ROOT_VERIFIED",
+  "production_ready": false,
+  "default_enabled": false,
+  "scope": "One full-strength compact eight-wallet grouped resident-GPU recursive proof, local inner-artifact pruning, and preserved CPU-only root audit. Not a matched speedup series, full-count/depth-six block, or complete post-seal measurement.",
+  "profile": {
+    "profile": "8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb",
+    "chain": "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+    "root": "23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8",
+    "extension": "cubic Goldilocks",
+    "fri_queries": 128,
+    "blowup": 16,
+    "cap_height": 6,
+    "random_codewords": 4,
+    "query_pow_bits": 16,
+    "one_air": true,
+    "strict_single_zero_terminal": true,
+    "fresh_csprng": true,
+    "proof_input": "public wallet proofs and public statement only",
+    "quotient_fusion": false
+  },
+  "workflow_qualification": {
+    "evidence": "docs/evidence/block-v2-gpu-grouped-workflow-2026-10-01.json",
+    "sha256": "76b7c2e6f3ea7422504b434ab96a105565389ec2a1151eb516ce126062a06582",
+    "registration_manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/manifest.json",
+    "registration_manifest_sha256": "30f1d988c8faf9bd506fec282a5c0aa6fe330d72071a2b701fb6cdfa2c076dc7"
+  },
+  "execution": {
+    "unit": "lattica-v2-gpu-grouped-resident-proof-20261001-a.service",
+    "status": "GPU_PROOF_VERIFIED_RESEARCH_ONLY",
+    "service_seconds": 844.647,
+    "recursive_command_ms": 842100,
+    "recursive_minutes": 14.035,
+    "stage_timings_scope": "Four grouped wrappers and three merges, including their in-process setup; excludes separate key registration and initial wallet proving.",
+    "root": {
+      "bytes": 1683948,
+      "sha256": "ff5f28b3e2d1835176b02007ba3da2fc8aa34d014dcda8e0fe40fa3d20921b44"
+    },
+    "final_merge_ms": 84524,
+    "stages": [
+      {
+        "name": "pairs",
+        "unit": "lattica-v2-gpu-grouped-528727-3.service",
+        "elapsed_ms": 485648,
+        "peak_worker_ram_bytes": 39912570880,
+        "swap_bytes": 0,
+        "peak_mapped_spill_bytes": 31386120192,
+        "vram": {
+          "limit_mib": 12288,
+          "peak_mib": 5960,
+          "positive_samples": 914,
+          "samples": 916,
+          "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+        },
+        "nodes": [
+          {
+            "artifact": "node.1.0",
+            "cache_hits": 0,
+            "elapsed_ms": 178748,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.1",
+            "cache_hits": 1,
+            "elapsed_ms": 90246,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.2",
+            "cache_hits": 2,
+            "elapsed_ms": 106240,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.3",
+            "cache_hits": 3,
+            "elapsed_ms": 108956,
+            "setups": 1
+          }
+        ],
+        "gpu_checkpoint": {
+          "allocations": "215",
+          "commits": "93",
+          "compress_kernel_ns": "241225824",
+          "counters": "cumulative",
+          "decode_ns": "153802484584",
+          "download_and_decode_ns": "169867239490",
+          "download_wall_ns": "16035517245",
+          "downloaded_bytes": "56375246848",
+          "hashing_wall_ns": "33784200971",
+          "label": "GPU grouped process remainder",
+          "leaf_kernel_ns": "7146972384",
+          "managed_live_bytes": "603981512",
+          "managed_peak_bytes": "7046432488",
+          "marshal_ns": "3211361351",
+          "staging_bytes": "67108864",
+          "upload_and_marshal_ns": "32774924155",
+          "upload_wall_ns": "29556008195",
+          "uploaded_bytes": "56941870768"
+        },
+        "lde_checkpoint": {
+          "column_tiles": "39",
+          "commits": "13",
+          "counters": "cumulative",
+          "label": "GPU grouped process remainder",
+          "sponge_device_ns": "2427344544",
+          "transform_device_ns": "1940173184",
+          "wall_ns": "194672325916"
+        }
+      },
+      {
+        "name": "merges",
+        "unit": "lattica-v2-gpu-grouped-528727-4.service",
+        "elapsed_ms": 356452,
+        "peak_worker_ram_bytes": 40276992000,
+        "swap_bytes": 0,
+        "peak_mapped_spill_bytes": 31671332864,
+        "vram": {
+          "limit_mib": 12288,
+          "peak_mib": 5960,
+          "positive_samples": 673,
+          "samples": 675,
+          "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+        },
+        "nodes": [
+          {
+            "artifact": "node.2.0",
+            "cache_hits": 0,
+            "elapsed_ms": 177023,
+            "setups": 1
+          },
+          {
+            "artifact": "node.2.1",
+            "cache_hits": 1,
+            "elapsed_ms": 93284,
+            "setups": 1
+          },
+          {
+            "artifact": "node.3.0",
+            "cache_hits": 2,
+            "elapsed_ms": 84524,
+            "setups": 1
+          }
+        ],
+        "gpu_checkpoint": {
+          "allocations": "165",
+          "commits": "70",
+          "compress_kernel_ns": "170910720",
+          "counters": "cumulative",
+          "decode_ns": "130083569369",
+          "download_and_decode_ns": "142453681766",
+          "download_wall_ns": "12346228905",
+          "downloaded_bytes": "45636878848",
+          "hashing_wall_ns": "23586653753",
+          "label": "GPU grouped process remainder",
+          "leaf_kernel_ns": "5095249888",
+          "managed_live_bytes": "603981512",
+          "managed_peak_bytes": "7046432488",
+          "marshal_ns": "2110972511",
+          "staging_bytes": "67108864",
+          "upload_and_marshal_ns": "23113009495",
+          "upload_wall_ns": "20996612150",
+          "uploaded_bytes": "42983227232"
+        },
+        "lde_checkpoint": {
+          "column_tiles": "31",
+          "commits": "10",
+          "counters": "cumulative",
+          "label": "GPU grouped process remainder",
+          "sponge_device_ns": "1823710144",
+          "transform_device_ns": "1500008736",
+          "wall_ns": "162209085639"
+        }
+      }
+    ],
+    "controller_peak_memory_display": "69.6M (systemd rounded display)",
+    "accounting_note": "Worker cgroup RAM and mapped-spill measurements overlap; do not add them. Parent slice enforced 48 GiB/no swap; sampled VRAM is not an instantaneous driver quota.",
+    "live_service_inventory_after_completion": "empty"
+  },
+  "root_only_validation": {
+    "status": "PASS",
+    "local_artifacts_remaining": [
+      "height",
+      "key.1",
+      "key.2",
+      "key.3",
+      "node.3.0"
+    ],
+    "local_inner_artifacts_removed": 14,
+    "bundle_files": 5,
+    "inner_proofs_loaded": 0,
+    "native_mutation_rejections": 38,
+    "registry_policy_rejections": 4,
+    "expected_statement_policy_rejections": 2,
+    "cpu_only_auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-artifact-audit",
+    "cpu_only_auditor_sha256": "ae9ea1ddf846771c373b3dd5cf2e188087819de4294e25d27b85500e66f1af53",
+    "auditor_environment": "GPU_HASH=1, GPU_DEVICE=4294967295, GPU_RESIDENT_LDE=0; CPU-only auditor must not initialize GPU.",
+    "root_only_bundle": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-resident-proof-20261001-a-evidence/root-only",
+    "shared_reference_pruned": false,
+    "shared_reference_note": "Retained independent public fixture is required for matched comparisons; no claim of complete shared-fixture pruning."
+  },
+  "resource_limits": {
+    "aggregate_ram_bytes": 51539607552,
+    "aggregate_scratch_bytes": 137438953472,
+    "controller_ram_bytes_at_most": 3221225472,
+    "controller_runtime_seconds_at_most": 21600,
+    "log_bytes_per_stage": 67108864,
+    "spill_bytes": 128849018880,
+    "swap_bytes": 0,
+    "vram_log_bytes_per_stage": 8388608,
+    "worker_ram_bytes": 47244640256,
+    "worker_runtime_seconds": 7200,
+    "worker_vram_limit_mib": 12288
+  },
+  "preservation": {
+    "config": {
+      "accounting": "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py",
+      "auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-artifact-audit",
+      "backend": "resident",
+      "cpu_runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-probe",
+      "evidence": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-resident-proof-20261001-a-evidence",
+      "external": [
+        "8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb",
+        "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+        "23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"
+      ],
+      "gpu_index": 0,
+      "gpu_runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-qualification-20261001-b/block-v2-gpu-grouped-probe",
+      "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-resident-proof-20261001-a-job",
+      "mode": "prove",
+      "quotient_fusion": 0,
+      "reference": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/reproduction-job",
+      "registration": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/manifest.json",
+      "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-qualification-20261001-b/source.tar.gz"
+    },
+    "pins": {
+      "accounting": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "auditor": "ae9ea1ddf846771c373b3dd5cf2e188087819de4294e25d27b85500e66f1af53",
+      "controller": "e4457748787437d55a0d399580a35323fe567d2afb86f2e1f82f4f7633733465",
+      "cpu_runner": "2383b260de5283ddcb6c1ce2408fb8139065fc109c8181ec602cc20ca095db3c",
+      "gpu_runner": "2239ea178e99db2646be5f5996a9afd00346db1051537dcef5c814931d125b31",
+      "helpers": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "registration": "30f1d988c8faf9bd506fec282a5c0aa6fe330d72071a2b701fb6cdfa2c076dc7",
+      "source_archive": "fb526e8c007132032124165a25a4b83681f0ebb5ec1b0e17ab7b67a971c0d091"
+    },
+    "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-resident-proof-20261001-a-evidence/manifest.json",
+    "manifest_sha256": "b31d7ea857331e04bd958b6cac07bd28c1e43d4a165ae00774b3f405606b4afa",
+    "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-qualification-20261001-b/source.tar.gz",
+    "source_archive_sha256": "fb526e8c007132032124165a25a4b83681f0ebb5ec1b0e17ab7b67a971c0d091",
+    "additional_sha256": {
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-resident-proof-20261001-a-evidence/manifest.json": "b31d7ea857331e04bd958b6cac07bd28c1e43d4a165ae00774b3f405606b4afa",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-resident-proof-20261001-a.log": "a034650fe7dcb1a9cdce46e134e1ce5551e5c4db969b070a51b61b9e932b9ac1",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-resident-proof-20261001-a-evidence/08-audit.log": "9bf3ee8287fa642f14205043bd4b6e3c1a16e25c94bacc1abf2dd999ed6dea5f",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-resident-proof-20261001-a-evidence/root-only/node.3.0": "ff5f28b3e2d1835176b02007ba3da2fc8aa34d014dcda8e0fe40fa3d20921b44",
+      "docs/evidence/block-v2-gpu-grouped-workflow-2026-10-01.json": "76b7c2e6f3ea7422504b434ab96a105565389ec2a1151eb516ce126062a06582"
+    }
+  },
+  "profiling": {
+    "interpretation": "Host spans are inclusive/nonadditive; GPU counters are cumulative per worker. Do not sum nested spans or CPU/GPU durations to derive wall time.",
+    "wrapper_stage_host_decode_seconds": 153.802484584,
+    "wrapper_stage_device_transform_seconds": 1.940173184,
+    "wrapper_phase_samples": {
+      "node.1.0": [
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "bounded GPU commitment",
+          "calls": 20,
+          "seconds": 13.302358101
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "execution trace",
+          "calls": 1,
+          "seconds": 1.643263257
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "native batch prove",
+          "calls": 1,
+          "seconds": 95.721592554
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "native verification",
+          "calls": 1,
+          "seconds": 0.049160372
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "node serialization",
+          "calls": 1,
+          "seconds": 0.001448535
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "paired wrapper compilation",
+          "calls": 1,
+          "seconds": 2.804549077
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "preprocessing setup",
+          "calls": 1,
+          "seconds": 78.401657374
+        },
+        {
+          "target": "p3_air::symbolic::builder",
+          "name": "evaluate all constraints symbolically",
+          "calls": 12,
+          "seconds": 0.00038408
+        },
+        {
+          "target": "p3_air::symbolic::builder",
+          "name": "evaluate base constraints symbolically",
+          "calls": 2,
+          "seconds": 0.000067403
+        },
+        {
+          "target": "p3_air::symbolic::builder",
+          "name": "infer base and extension constraint degree",
+          "calls": 12,
+          "seconds": 0.000653186
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "Compute Selectors",
+          "calls": 1,
+          "seconds": 0.056923849
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "compute quotient",
+          "calls": 1,
+          "seconds": 32.062292849
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "compute quotient polynomial",
+          "calls": 1,
+          "seconds": 9.833621092
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "infer log of constraint degree",
+          "calls": 1,
+          "seconds": 0.000859408
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "prove_batch",
+          "calls": 1,
+          "seconds": 95.716232202
+        },
+        {
+          "target": "p3_batch_stark::symbolic",
+          "name": "compute constraint layout with lookups",
+          "calls": 31,
+          "seconds": 0.018370774
+        },
+        {
+          "target": "p3_batch_stark::symbolic",
+          "name": "evaluate constraints symbolically",
+          "calls": 51,
+          "seconds": 0.015833274
+        },
+        {
+          "target": "p3_batch_stark::symbolic",
+          "name": "infer constraint degree",
+          "calls": 36,
+          "seconds": 0.021994547
+        },
+        {
+          "target": "p3_batch_stark::verifier",
+          "name": "infer log of constraint degree",
+          "calls": 2,
+          "seconds": 0.001344781
+        },
+        {
+          "target": "p3_batch_stark::verifier",
+          "name": "verify constraints",
+          "calls": 2,
+          "seconds": 0.000330252
+        },
+        {
+          "target": "p3_batch_stark::verifier",
+          "name": "verify_batch",
+          "calls": 2,
+          "seconds": 0.084016341
+        },
+        {
+          "target": "p3_challenger::grinding_challenger",
+          "name": "grind for proof-of-work witness",
+          "calls": 20,
+          "seconds": 0.000650773
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "coset_dft",
+          "calls": 16,
+          "seconds": 0.262492345
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "coset_dft_oop",
+          "calls": 496,
+          "seconds": 7.733028127
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "coset_lde_batch_with_transform",
+          "calls": 16,
+          "seconds": 8.210554967
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "first_half",
+          "calls": 32,
+          "seconds": 2.269274792
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "first_half_general",
+          "calls": 16,
+          "seconds": 0.165993107
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "first_half_general_oop",
+          "calls": 496,
+          "seconds": 5.100608358
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "reserve_exact",
+          "calls": 16,
+          "seconds": 0.12873873
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "second_half",
+          "calls": 32,
+          "seconds": 1.053576692
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "second_half_general",
+          "calls": 512,
+          "seconds": 1.493797153
+        },
+        {
+          "target": "p3_field::batch_inverse",
+          "name": "batch_multiplicative_inverse",
+          "calls": 22096,
+          "seconds": 2.086071994
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "FRI prover",
+          "calls": 1,
+          "seconds": 2.591610495
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "commit phase",
+          "calls": 1,
+          "seconds": 1.614233544
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "idft final poly",
+          "calls": 1,
+          "seconds": 0.001668732
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "query phase",
+          "calls": 1,
+          "seconds": 0.951974793
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "compress mat",
+          "calls": 20,
+          "seconds": 4.972349071
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "compute opened values with Lagrange interpolation",
+          "calls": 21,
+          "seconds": 0.297886325
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "compute_inverse_denominators",
+          "calls": 1,
+          "seconds": 0.433220631
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "evaluate matrix",
+          "calls": 21,
+          "seconds": 0.298525881
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "fold_matrix",
+          "calls": 19,
+          "seconds": 0.072797235
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "reduce matrix quotient",
+          "calls": 20,
+          "seconds": 8.395922733
+        },
+        {
+          "target": "p3_lookup::logup",
+          "name": "generate lookup permutation",
+          "calls": 1,
+          "seconds": 0.744651655
+        },
+        {
+          "target": "p3_matrix",
+          "name": "columnwise_dot_product",
+          "calls": 351,
+          "seconds": 0.308848216
+        },
+        {
+          "target": "p3_matrix::dense",
+          "name": "with_random_cols",
+          "calls": 18,
+          "seconds": 1.671170595
+        },
+        {
+          "target": "p3_matrix::dense",
+          "name": "with_zero_cols",
+          "calls": 1,
+          "seconds": 0.940842339
+        },
+        {
+          "target": "p3_matrix::util",
+          "name": "reverse_matrix_index_bits",
+          "calls": 625,
+          "seconds": 4.024759659
+        },
+        {
+          "target": "p3_uni_stark::symbolic",
+          "name": "get_log_num_quotient_chunks",
+          "calls": 12,
+          "seconds": 0.000665275
+        },
+        {
+          "target": "p3_uni_stark::symbolic",
+          "name": "infer log of base and extension constraint degree",
+          "calls": 12,
+          "seconds": 0.000658741
+        },
+        {
+          "target": "p3_uni_stark::verifier",
+          "name": "verify",
+          "calls": 10,
+          "seconds": 0.219385988
+        },
+        {
+          "target": "p3_uni_stark::verifier",
+          "name": "verify_with_preprocessed",
+          "calls": 10,
+          "seconds": 0.21937867
+        }
+      ],
+      "node.1.1": [
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "bounded GPU commitment",
+          "calls": 20,
+          "seconds": 11.618262769
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "execution trace",
+          "calls": 1,
+          "seconds": 0.181801331
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "native batch prove",
+          "calls": 1,
+          "seconds": 84.261789135
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "native verification",
+          "calls": 1,
+          "seconds": 0.039527447
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "node serialization",
+          "calls": 1,
+          "seconds": 0.001333443
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "paired wrapper compilation",
+          "calls": 1,
+          "seconds": 5.473049144
+        },
+        {
+          "target": "p3_air::symbolic::builder",
+          "name": "evaluate all constraints symbolically",
+          "calls": 4,
+          "seconds": 0.000157483
+        },
+        {
+          "target": "p3_air::symbolic::builder",
+          "name": "evaluate base constraints symbolically",
+          "calls": 2,
+          "seconds": 0.000074015
+        },
+        {
+          "target": "p3_air::symbolic::builder",
+          "name": "infer base and extension constraint degree",
+          "calls": 4,
+          "seconds": 0.000249535
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "Compute Selectors",
+          "calls": 1,
+          "seconds": 0.054177431
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "compute quotient",
+          "calls": 1,
+          "seconds": 29.865622133
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "compute quotient polynomial",
+          "calls": 1,
+          "seconds": 10.368596128
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "infer log of constraint degree",
+          "calls": 1,
+          "seconds": 0.000856426
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "prove_batch",
+          "calls": 1,
+          "seconds": 84.259728373
+        },
+        {
+          "target": "p3_batch_stark::symbolic",
+          "name": "compute constraint layout with lookups",
+          "calls": 9,
+          "seconds": 0.006237619
+        },
+        {
+          "target": "p3_batch_stark::symbolic",
+          "name": "evaluate constraints symbolically",
+          "calls": 17,
+          "seconds": 0.006010485
+        },
+        {
+          "target": "p3_batch_stark::symbolic",
+          "name": "infer constraint degree",
+          "calls": 13,
+          "seconds": 0.008918343
+        },
+        {
+          "target": "p3_batch_stark::verifier",
+          "name": "infer log of constraint degree",
+          "calls": 2,
+          "seconds": 0.001248155
+        },
+        {
+          "target": "p3_batch_stark::verifier",
+          "name": "verify constraints",
+          "calls": 2,
+          "seconds": 0.000395906
+        },
+        {
+          "target": "p3_batch_stark::verifier",
+          "name": "verify_batch",
+          "calls": 2,
+          "seconds": 0.075328139
+        },
+        {
+          "target": "p3_challenger::grinding_challenger",
+          "name": "grind for proof-of-work witness",
+          "calls": 20,
+          "seconds": 0.013794496
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "coset_dft",
+          "calls": 16,
+          "seconds": 0.232825672
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "coset_dft_oop",
+          "calls": 496,
+          "seconds": 6.841039347
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "coset_lde_batch_with_transform",
+          "calls": 16,
+          "seconds": 7.309317653
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "first_half",
+          "calls": 32,
+          "seconds": 2.352916498
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "first_half_general",
+          "calls": 16,
+          "seconds": 0.149830975
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "first_half_general_oop",
+          "calls": 496,
+          "seconds": 4.766912606
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "reserve_exact",
+          "calls": 16,
+          "seconds": 0.143703697
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "second_half",
+          "calls": 32,
+          "seconds": 1.070055546
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "second_half_general",
+          "calls": 512,
+          "seconds": 1.227538635
+        },
+        {
+          "target": "p3_field::batch_inverse",
+          "name": "batch_multiplicative_inverse",
+          "calls": 8520,
+          "seconds": 2.045624707
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "FRI prover",
+          "calls": 1,
+          "seconds": 2.464819292
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "commit phase",
+          "calls": 1,
+          "seconds": 1.226582701
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "idft final poly",
+          "calls": 1,
+          "seconds": 0.000655548
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "query phase",
+          "calls": 1,
+          "seconds": 1.203555799
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "compress mat",
+          "calls": 20,
+          "seconds": 4.686004034
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "compute opened values with Lagrange interpolation",
+          "calls": 21,
+          "seconds": 0.218441395
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "compute_inverse_denominators",
+          "calls": 1,
+          "seconds": 0.633071761
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "evaluate matrix",
+          "calls": 21,
+          "seconds": 0.2194756
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "fold_matrix",
+          "calls": 19,
+          "seconds": 0.06927079
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "reduce matrix quotient",
+          "calls": 20,
+          "seconds": 7.947372508
+        },
+        {
+          "target": "p3_lookup::logup",
+          "name": "generate lookup permutation",
+          "calls": 1,
+          "seconds": 0.646900332
+        },
+        {
+          "target": "p3_matrix",
+          "name": "columnwise_dot_product",
+          "calls": 87,
+          "seconds": 0.225231131
+        },
+        {
+          "target": "p3_matrix::dense",
+          "name": "with_random_cols",
+          "calls": 18,
+          "seconds": 0.608135146
+        },
+        {
+          "target": "p3_matrix::util",
+          "name": "reverse_matrix_index_bits",
+          "calls": 625,
+          "seconds": 3.728836936
+        },
+        {
+          "target": "p3_uni_stark::symbolic",
+          "name": "get_log_num_quotient_chunks",
+          "calls": 4,
+          "seconds": 0.000254377
+        },
+        {
+          "target": "p3_uni_stark::symbolic",
+          "name": "infer log of base and extension constraint degree",
+          "calls": 4,
+          "seconds": 0.000251565
+        },
+        {
+          "target": "p3_uni_stark::verifier",
+          "name": "verify",
+          "calls": 2,
+          "seconds": 0.05287241
+        },
+        {
+          "target": "p3_uni_stark::verifier",
+          "name": "verify_with_preprocessed",
+          "calls": 2,
+          "seconds": 0.052870554
+        }
+      ],
+      "node.1.2": [
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "bounded GPU commitment",
+          "calls": 20,
+          "seconds": 11.718891901
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "execution trace",
+          "calls": 1,
+          "seconds": 0.231784779
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "native batch prove",
+          "calls": 1,
+          "seconds": 102.539996092
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "native verification",
+          "calls": 1,
+          "seconds": 0.034587607
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "node serialization",
+          "calls": 1,
+          "seconds": 0.001154025
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "paired wrapper compilation",
+          "calls": 1,
+          "seconds": 3.164546208
+        },
+        {
+          "target": "p3_air::symbolic::builder",
+          "name": "evaluate all constraints symbolically",
+          "calls": 4,
+          "seconds": 0.00014052
+        },
+        {
+          "target": "p3_air::symbolic::builder",
+          "name": "evaluate base constraints symbolically",
+          "calls": 2,
+          "seconds": 0.000082198
+        },
+        {
+          "target": "p3_air::symbolic::builder",
+          "name": "infer base and extension constraint degree",
+          "calls": 4,
+          "seconds": 0.000227315
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "Compute Selectors",
+          "calls": 1,
+          "seconds": 0.049925799
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "compute quotient",
+          "calls": 1,
+          "seconds": 28.59677678
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "compute quotient polynomial",
+          "calls": 1,
+          "seconds": 9.787878419
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "infer log of constraint degree",
+          "calls": 1,
+          "seconds": 0.001420772
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "prove_batch",
+          "calls": 1,
+          "seconds": 102.536609853
+        },
+        {
+          "target": "p3_batch_stark::symbolic",
+          "name": "compute constraint layout with lookups",
+          "calls": 9,
+          "seconds": 0.005643244
+        },
+        {
+          "target": "p3_batch_stark::symbolic",
+          "name": "evaluate constraints symbolically",
+          "calls": 17,
+          "seconds": 0.0064276
+        },
+        {
+          "target": "p3_batch_stark::symbolic",
+          "name": "infer constraint degree",
+          "calls": 13,
+          "seconds": 0.009497682
+        },
+        {
+          "target": "p3_batch_stark::verifier",
+          "name": "infer log of constraint degree",
+          "calls": 2,
+          "seconds": 0.001267472
+        },
+        {
+          "target": "p3_batch_stark::verifier",
+          "name": "verify constraints",
+          "calls": 2,
+          "seconds": 0.00028894
+        },
+        {
+          "target": "p3_batch_stark::verifier",
+          "name": "verify_batch",
+          "calls": 2,
+          "seconds": 0.06797888
+        },
+        {
+          "target": "p3_challenger::grinding_challenger",
+          "name": "grind for proof-of-work witness",
+          "calls": 20,
+          "seconds": 0.003119096
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "coset_dft",
+          "calls": 16,
+          "seconds": 0.242276292
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "coset_dft_oop",
+          "calls": 496,
+          "seconds": 7.075346478
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "coset_lde_batch_with_transform",
+          "calls": 16,
+          "seconds": 7.518721264
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "first_half",
+          "calls": 32,
+          "seconds": 2.001957288
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "first_half_general",
+          "calls": 16,
+          "seconds": 0.152464051
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "first_half_general_oop",
+          "calls": 496,
+          "seconds": 4.591763419
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "reserve_exact",
+          "calls": 16,
+          "seconds": 0.121569864
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "second_half",
+          "calls": 32,
+          "seconds": 0.933328851
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "second_half_general",
+          "calls": 512,
+          "seconds": 1.278485717
+        },
+        {
+          "target": "p3_field::batch_inverse",
+          "name": "batch_multiplicative_inverse",
+          "calls": 8520,
+          "seconds": 1.924216962
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "FRI prover",
+          "calls": 1,
+          "seconds": 1.683315938
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "commit phase",
+          "calls": 1,
+          "seconds": 1.21702695
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "idft final poly",
+          "calls": 1,
+          "seconds": 0.000004078
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "query phase",
+          "calls": 1,
+          "seconds": 0.449435356
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "compress mat",
+          "calls": 20,
+          "seconds": 20.232935657
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "compute opened values with Lagrange interpolation",
+          "calls": 21,
+          "seconds": 0.262103865
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "compute_inverse_denominators",
+          "calls": 1,
+          "seconds": 0.389545512
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "evaluate matrix",
+          "calls": 21,
+          "seconds": 0.262803655
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "fold_matrix",
+          "calls": 19,
+          "seconds": 0.063031397
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "reduce matrix quotient",
+          "calls": 20,
+          "seconds": 23.32567404
+        },
+        {
+          "target": "p3_lookup::logup",
+          "name": "generate lookup permutation",
+          "calls": 1,
+          "seconds": 0.715760501
+        },
+        {
+          "target": "p3_matrix",
+          "name": "columnwise_dot_product",
+          "calls": 87,
+          "seconds": 0.263955093
+        },
+        {
+          "target": "p3_matrix::dense",
+          "name": "with_random_cols",
+          "calls": 18,
+          "seconds": 1.839260385
+        },
+        {
+          "target": "p3_matrix::util",
+          "name": "reverse_matrix_index_bits",
+          "calls": 625,
+          "seconds": 3.948151472
+        },
+        {
+          "target": "p3_uni_stark::symbolic",
+          "name": "get_log_num_quotient_chunks",
+          "calls": 4,
+          "seconds": 0.000231594
+        },
+        {
+          "target": "p3_uni_stark::symbolic",
+          "name": "infer log of base and extension constraint degree",
+          "calls": 4,
+          "seconds": 0.000229338
+        },
+        {
+          "target": "p3_uni_stark::verifier",
+          "name": "verify",
+          "calls": 2,
+          "seconds": 0.044150654
+        },
+        {
+          "target": "p3_uni_stark::verifier",
+          "name": "verify_with_preprocessed",
+          "calls": 2,
+          "seconds": 0.044148945
+        }
+      ],
+      "node.1.3": [
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "bounded GPU commitment",
+          "calls": 20,
+          "seconds": 12.343654855
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "execution trace",
+          "calls": 1,
+          "seconds": 2.110408843
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "native batch prove",
+          "calls": 1,
+          "seconds": 103.027966899
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "native verification",
+          "calls": 1,
+          "seconds": 0.046613726
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "node serialization",
+          "calls": 1,
+          "seconds": 0.001455018
+        },
+        {
+          "target": "lattica_block_v2_perf",
+          "name": "paired wrapper compilation",
+          "calls": 1,
+          "seconds": 3.489824479
+        },
+        {
+          "target": "p3_air::symbolic::builder",
+          "name": "evaluate all constraints symbolically",
+          "calls": 4,
+          "seconds": 0.000133594
+        },
+        {
+          "target": "p3_air::symbolic::builder",
+          "name": "evaluate base constraints symbolically",
+          "calls": 2,
+          "seconds": 0.000072505
+        },
+        {
+          "target": "p3_air::symbolic::builder",
+          "name": "infer base and extension constraint degree",
+          "calls": 4,
+          "seconds": 0.000214235
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "Compute Selectors",
+          "calls": 1,
+          "seconds": 0.054942837
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "compute quotient",
+          "calls": 1,
+          "seconds": 38.258145278
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "compute quotient polynomial",
+          "calls": 1,
+          "seconds": 9.674136837
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "infer log of constraint degree",
+          "calls": 1,
+          "seconds": 0.001279918
+        },
+        {
+          "target": "p3_batch_stark::prover",
+          "name": "prove_batch",
+          "calls": 1,
+          "seconds": 103.023503148
+        },
+        {
+          "target": "p3_batch_stark::symbolic",
+          "name": "compute constraint layout with lookups",
+          "calls": 9,
+          "seconds": 0.005978043
+        },
+        {
+          "target": "p3_batch_stark::symbolic",
+          "name": "evaluate constraints symbolically",
+          "calls": 17,
+          "seconds": 0.005957415
+        },
+        {
+          "target": "p3_batch_stark::symbolic",
+          "name": "infer constraint degree",
+          "calls": 13,
+          "seconds": 0.009481908
+        },
+        {
+          "target": "p3_batch_stark::verifier",
+          "name": "infer log of constraint degree",
+          "calls": 2,
+          "seconds": 0.001518303
+        },
+        {
+          "target": "p3_batch_stark::verifier",
+          "name": "verify constraints",
+          "calls": 2,
+          "seconds": 0.000789392
+        },
+        {
+          "target": "p3_batch_stark::verifier",
+          "name": "verify_batch",
+          "calls": 2,
+          "seconds": 0.086113936
+        },
+        {
+          "target": "p3_challenger::grinding_challenger",
+          "name": "grind for proof-of-work witness",
+          "calls": 20,
+          "seconds": 0.000396245
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "coset_dft",
+          "calls": 16,
+          "seconds": 1.152262258
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "coset_dft_oop",
+          "calls": 496,
+          "seconds": 15.28956683
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "coset_lde_batch_with_transform",
+          "calls": 16,
+          "seconds": 16.686686574
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "first_half",
+          "calls": 32,
+          "seconds": 2.20494176
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "first_half_general",
+          "calls": 16,
+          "seconds": 0.148855049
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "first_half_general_oop",
+          "calls": 496,
+          "seconds": 4.525339648
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "reserve_exact",
+          "calls": 16,
+          "seconds": 0.163344283
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "second_half",
+          "calls": 32,
+          "seconds": 0.980837899
+        },
+        {
+          "target": "p3_dft::radix_2_dit_parallel",
+          "name": "second_half_general",
+          "calls": 512,
+          "seconds": 1.568037727
+        },
+        {
+          "target": "p3_field::batch_inverse",
+          "name": "batch_multiplicative_inverse",
+          "calls": 8520,
+          "seconds": 2.104968235
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "FRI prover",
+          "calls": 1,
+          "seconds": 1.648834373
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "commit phase",
+          "calls": 1,
+          "seconds": 1.301905852
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "idft final poly",
+          "calls": 1,
+          "seconds": 0.000474824
+        },
+        {
+          "target": "p3_fri::prover",
+          "name": "query phase",
+          "calls": 1,
+          "seconds": 0.318506535
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "compress mat",
+          "calls": 20,
+          "seconds": 12.783769727
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "compute opened values with Lagrange interpolation",
+          "calls": 21,
+          "seconds": 0.214022516
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "compute_inverse_denominators",
+          "calls": 1,
+          "seconds": 0.685924869
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "evaluate matrix",
+          "calls": 21,
+          "seconds": 0.214864534
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "fold_matrix",
+          "calls": 19,
+          "seconds": 0.078594023
+        },
+        {
+          "target": "p3_fri::two_adic_pcs",
+          "name": "reduce matrix quotient",
+          "calls": 20,
+          "seconds": 15.968702144
+        },
+        {
+          "target": "p3_lookup::logup",
+          "name": "generate lookup permutation",
+          "calls": 1,
+          "seconds": 0.687039482
+        },
+        {
+          "target": "p3_matrix",
+          "name": "columnwise_dot_product",
+          "calls": 87,
+          "seconds": 0.216523151
+        },
+        {
+          "target": "p3_matrix::dense",
+          "name": "with_random_cols",
+          "calls": 18,
+          "seconds": 0.62464924
+        },
+        {
+          "target": "p3_matrix::util",
+          "name": "reverse_matrix_index_bits",
+          "calls": 625,
+          "seconds": 12.968058889
+        },
+        {
+          "target": "p3_uni_stark::symbolic",
+          "name": "get_log_num_quotient_chunks",
+          "calls": 4,
+          "seconds": 0.000218332
+        },
+        {
+          "target": "p3_uni_stark::symbolic",
+          "name": "infer log of base and extension constraint degree",
+          "calls": 4,
+          "seconds": 0.000216307
+        },
+        {
+          "target": "p3_uni_stark::verifier",
+          "name": "verify",
+          "calls": 2,
+          "seconds": 0.049105042
+        },
+        {
+          "target": "p3_uni_stark::verifier",
+          "name": "verify_with_preprocessed",
+          "calls": 2,
+          "seconds": 0.04910338
+        }
+      ],
+      "GPU grouped process remainder": []
+    },
+    "host_vm_at_observation": {
+      "dirty_bytes": 268435456,
+      "dirty_background_bytes": 67108864
+    },
+    "host_settings_changed": false
+  },
+  "remaining": [
+    "Retained-hash control key reproduction and complete matched proof, then at least five alternating matched backend pairs before speedup claims.",
+    "Complete shared-fixture pruning/replay at the declared comparison boundary; original 2/5 series obligations remain distinct.",
+    "Local incremental DAG, odd/irregular/mixed/issuance/full64 qualification, cold <=10 minutes and complete post-seal <=3 minutes.",
+    "One <=2 MiB root under unchanged RAM48/VRAM12/scratch128 GiB budgets, complete-tree soundness/ZK review, host integration and explicit activation."
+  ]
+}

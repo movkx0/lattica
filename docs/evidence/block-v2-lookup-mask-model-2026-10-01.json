@@ -1,0 +1,62 @@
+{
+  "assumptions": [
+    "Irreducible cubic extension; uniform beta independent of hidden mask values.",
+    "Three independent full-entropy base-field values per cycle edge.",
+    "The unmasked table contributions do not depend on the newly sampled dummy tuples.",
+    "Participating tables use the same alpha/beta bus challenges; alpha may include the upstream bus prefix.",
+    "All dummy tuples committed before alpha/beta; no adaptive cancellation.",
+    "Distinct constrained domain tags separate real wire tuples from dummy masks.",
+    "Each edge tuple occurs once positively and once negatively in the complete batch.",
+    "The inverse-mask argument accounts for zero denominators as an exceptional event, not a silently accepted proof."
+  ],
+  "base_modulus": "18446744069414584321",
+  "complete_tree_security_bound": false,
+  "conditional_component_error_bound": {
+    "denominator": "6277101731002175853884774869567645561244584131361410908161",
+    "expression": "statements * (1/p^2 + tables/p^3)",
+    "floor_inverse_bits": 120,
+    "numerator": "3523328117258185605693"
+  },
+  "conservative_statement_count": 191,
+  "cycle": "Table i adds delta_i and subtracts delta_(i-1), preserving the total terminal sum. Uniform independent extension masks hide individual terminals subject to that sum.",
+  "extension_modulus": "X^3-X-1",
+  "illustrative_tables": 2,
+  "implemented_in_prover": false,
+  "lemma": "For beta outside the base field in a degree-three extension, the three columns form a base-field basis. Independent uniform base coefficients give a uniform extension-field denominator for any fixed alpha/tag/edge.",
+  "not_established": [
+    "A proof-producing specialized AIR or recursive verifier.",
+    "Hiding of the joint PCS/lookup transcript conditional on these public terminals.",
+    "Fiat-Shamir dependence, simulator construction, or quantum random-oracle security.",
+    "Lookup soundness with wider tuples, multiplicities, challenge sharing, and padding.",
+    "Non-mask zero denominators or the existing hiding PCS statistical error.",
+    "Complete-tree zero knowledge or soundness.",
+    "Performance, proof size, recursion closure, or production readiness."
+  ],
+  "production_ready": false,
+  "random_coefficient_columns_in_upstream_horner_order": [
+    "beta^2",
+    "beta",
+    "1"
+  ],
+  "status": "CONDITIONAL_ALGEBRA_ONLY_NOT_A_PROTOCOL",
+  "tuple": [
+    "public_domain_tag",
+    "public_edge_id",
+    "random_base_0",
+    "random_base_1",
+    "random_base_2"
+  ],
+  "validation": {
+    "tests_passed": 5,
+    "command": "python3 -B lattica-prover-p3/scripts/test-block-v2-lookup-mask-model.py",
+    "kind": "small algebra tests only; no STARK proving"
+  },
+  "source_sha256": {
+    "lattica-prover-p3/scripts/block-v2-lookup-mask-model.py": "fb4410f6c83037209d736d0f40165113cbad426ccc9c91fa9dadfff308354d80",
+    "lattica-prover-p3/scripts/test-block-v2-lookup-mask-model.py": "88b6591b51995ecec2dc6497d845ff504276e75644d60ce9eabb7f89c3c32521",
+    "/home/access/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/p3-lookup-0.6.1/src/logup.rs": "2be0968bc048d18d7ac35623552fb49991d174dc4b9995d94d78bdde211f0f49",
+    "/home/access/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/p3-lookup-0.6.1/src/challenges.rs": "e945e87b02878a93f79afc70dedc5999563e07cdc8d83f8eb543c45c57f384f3",
+    "/home/access/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/p3-batch-stark-0.6.1/src/proof.rs": "1deb2b328fa5e39eff4b04f4a778960e03cb82050ab5e6216712784f6c8e8351",
+    "/home/access/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/p3-batch-stark-0.6.1/src/prover.rs": "187a2d56e80f692171894aec7af88a618c11c2ae840d54ecec08a4f354cc0948"
+  }
+}

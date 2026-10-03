@@ -1,0 +1,787 @@
+{
+  "schema": 1,
+  "captured_utc": "2026-10-01 19:35:33 UTC",
+  "status": "TWO_PAIRS_COMPLETE_WIDE23_STRUCTURAL_CHECKPOINT_NOT_REPEAT_QUALIFIED",
+  "shared_fixture_pruned": false,
+  "production_ready": false,
+  "repeat_qualified": false,
+  "depth_six_qualified": false,
+  "tail_latency_qualified": false,
+  "requested_pairs": 5,
+  "completed_trials": 4,
+  "completed_pairs": 2,
+  "source": "lattica-prover-p3/target/block-v2-eight-matched-series-20261001-b/manifest.json",
+  "authoritative_runtime_unit": "lattica-v2-eight-series-pair2-20261001-b.service",
+  "config": {
+    "handoff_sha256": "d9a936a822f5ab2555a782712299c0ec837a08c1e39ceb6f99376f393d7c799b",
+    "helper": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-comparison-pilot-20261001-a/launcher.py",
+    "helper_sha256": "b71eeff1d7d4696417527fb95eeb5c6c2c6e8347011f98ecb910c4fde5a5e4d3",
+    "output": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-matched-series-20261001-b",
+    "pairs": 5,
+    "pilot_manifest_sha256": "f0f3747df4d5f54485e89d8d3c0995dc4a38c786a6f2029605674509e731f2d4",
+    "series_sha256": "31d6f084965ad61ae8ae6faca2f249db01353894c6c5f06c71a40cee6ea16ea1"
+  },
+  "order": [
+    [
+      1,
+      "single"
+    ],
+    [
+      1,
+      "grouped"
+    ],
+    [
+      2,
+      "grouped"
+    ],
+    [
+      2,
+      "single"
+    ],
+    [
+      3,
+      "single"
+    ],
+    [
+      3,
+      "grouped"
+    ],
+    [
+      4,
+      "grouped"
+    ],
+    [
+      4,
+      "single"
+    ],
+    [
+      5,
+      "single"
+    ],
+    [
+      5,
+      "grouped"
+    ]
+  ],
+  "current_attempt": null,
+  "preflight": {
+    "status": "READ_ONLY_SERIES_PIN_AND_PILOT_PREFLIGHT_PASSED",
+    "config": {
+      "pairs": 5,
+      "output": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-matched-series-20261001-b",
+      "helper": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-comparison-pilot-20261001-a/launcher.py",
+      "helper_sha256": "b71eeff1d7d4696417527fb95eeb5c6c2c6e8347011f98ecb910c4fde5a5e4d3",
+      "handoff_sha256": "d9a936a822f5ab2555a782712299c0ec837a08c1e39ceb6f99376f393d7c799b",
+      "series_sha256": "31d6f084965ad61ae8ae6faca2f249db01353894c6c5f06c71a40cee6ea16ea1",
+      "pilot_manifest_sha256": "f0f3747df4d5f54485e89d8d3c0995dc4a38c786a6f2029605674509e731f2d4"
+    },
+    "order": [
+      [
+        1,
+        "single"
+      ],
+      [
+        1,
+        "grouped"
+      ],
+      [
+        2,
+        "grouped"
+      ],
+      [
+        2,
+        "single"
+      ],
+      [
+        3,
+        "single"
+      ],
+      [
+        3,
+        "grouped"
+      ],
+      [
+        4,
+        "grouped"
+      ],
+      [
+        4,
+        "single"
+      ],
+      [
+        5,
+        "single"
+      ],
+      [
+        5,
+        "grouped"
+      ]
+    ],
+    "pilot_status": "MATCHED_CPU_PILOT_COMPLETE_SHARED_FIXTURE_RETAINED",
+    "shared_wallets_retained": 8,
+    "series_started": false,
+    "fresh_cryptographic_audit": false,
+    "admission_service_check": "deferred until active fusion control is terminal",
+    "production_ready": false
+  },
+  "measurement_scope": "Preserved original baseline single-wrapper vs grouped-pair CPU binaries; exact same eight wallet-proof bytes. Fusion comparison is separate and does not alter these binaries.",
+  "constraints": {
+    "controller_ram_max_gib": 3,
+    "worker_ram_high_gib": 40,
+    "worker_ram_max_gib": 44,
+    "aggregate_ram_max_gib": 48,
+    "swap_bytes": 0,
+    "managed_spill_gib": 120,
+    "worker_runtime_seconds": 7200,
+    "controller_runtime_seconds": 21600,
+    "rayon_threads": 8,
+    "one_pair_per_invocation": true
+  },
+  "finalization_requirements": [
+    "All ten original series trials must complete in the fixed alternating order.",
+    "Never retry an attempted, failed, or uncertain trial automatically; inspect authoritative state first.",
+    "After all intended consumers finish, prune copied fusion-registration wallets with checked identities, preserving their evidence and caps.",
+    "Complete original series shared-fixture pruning and fresh CPU replay of all ten series and both pilot roots.",
+    "Freshly CPU-replay both fusion roots after final shared/registration-fixture pruning.",
+    "Do not equate research repeat qualification with production, tail-latency, depth-six or security qualification."
+  ],
+  "initial_capture_utc": "2026-10-01 14:53:30 UTC",
+  "observed_stage_progress": {
+    "observed_utc": "2026-10-01 18:38:10 UTC",
+    "controller": "lattica-v2-eight-series-pair2-20261001-b.service",
+    "controller_and_worker_live": false,
+    "status": "CLEAN_WHOLE_PAIR_CHECKPOINT",
+    "completed_trials": 4,
+    "completed_pairs": 2,
+    "root_audit_completed": true,
+    "note": "Both pair-2 trials, local pruning and recorded root-only CPU audits completed. Controller/session exited 0; no experiment services were active before the separately bounded native validation was launched."
+  },
+  "completed_trials_evidence": [
+    {
+      "pair": 1,
+      "variant": "single",
+      "status": "complete",
+      "started_utc": "2026-10-01T14:47:25Z",
+      "result": {
+        "final_merge_ms": 266774,
+        "inner_proofs_loaded_by_auditor": 0,
+        "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-matched-series-20261001-b/pair-01-single-evidence/manifest.json",
+        "manifest_sha256": "92dda91b8d28f73ba5a5d8c8e15e03727bbd5dfaf7d7d67a88012cdda4515a80",
+        "nodes": [
+          {
+            "artifact": "node.0.0",
+            "cache_hits": 0,
+            "elapsed_ms": 267778,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.1",
+            "cache_hits": 1,
+            "elapsed_ms": 226003,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.2",
+            "cache_hits": 2,
+            "elapsed_ms": 241866,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.3",
+            "cache_hits": 3,
+            "elapsed_ms": 252282,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.4",
+            "cache_hits": 4,
+            "elapsed_ms": 251751,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.5",
+            "cache_hits": 5,
+            "elapsed_ms": 272033,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.6",
+            "cache_hits": 6,
+            "elapsed_ms": 269713,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.7",
+            "cache_hits": 7,
+            "elapsed_ms": 248025,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.0",
+            "cache_hits": 0,
+            "elapsed_ms": 268673,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.1",
+            "cache_hits": 1,
+            "elapsed_ms": 266271,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.2",
+            "cache_hits": 2,
+            "elapsed_ms": 276433,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.3",
+            "cache_hits": 3,
+            "elapsed_ms": 276042,
+            "setups": 1
+          },
+          {
+            "artifact": "node.2.0",
+            "cache_hits": 4,
+            "elapsed_ms": 272028,
+            "setups": 1
+          },
+          {
+            "artifact": "node.2.1",
+            "cache_hits": 5,
+            "elapsed_ms": 285585,
+            "setups": 1
+          },
+          {
+            "artifact": "node.3.0",
+            "cache_hits": 6,
+            "elapsed_ms": 266774,
+            "setups": 1
+          }
+        ],
+        "peak_live_mapped_spill_bytes": 47442042880,
+        "peak_proving_stage_cgroup_bytes": 42966364160,
+        "production_ready": false,
+        "recursive_command_ms": 3943403,
+        "recursive_proofs": 15,
+        "root": {
+          "bytes": 1913436,
+          "sha256": "01628906c743de38b4c16f8c02ab7f805564b1b7cfe8f67a8b4b9a44bd14223c"
+        },
+        "sum_stage_wall_seconds": 3944.6766538990005
+      },
+      "verified_manifest_sha256": "92dda91b8d28f73ba5a5d8c8e15e03727bbd5dfaf7d7d67a88012cdda4515a80",
+      "recorded_cpu_audit": {
+        "log": "lattica-prover-p3/target/block-v2-eight-matched-series-20261001-b/pair-01-single-evidence/07-audit.log",
+        "sha256": "15d529cdd86f3a120aa428cbc8942e2f4d5567660536306a26dee7bf2c25a6b7",
+        "status": "PASS",
+        "proof_bytes": 1913436,
+        "native_mutation_rejections": 38,
+        "registry_policy_rejections": 4,
+        "expected_statement_policy_rejections": 2,
+        "bundle_files": 5,
+        "inner_proofs_loaded": 0,
+        "elapsed_ms": 230,
+        "fresh_post_shared_pruning_replay": false,
+        "full_tree_security": "UNREVIEWED",
+        "production_ready": false
+      }
+    },
+    {
+      "pair": 1,
+      "variant": "grouped",
+      "status": "complete",
+      "started_utc": "2026-10-01T15:53:11Z",
+      "result": {
+        "final_merge_ms": 282205,
+        "inner_proofs_loaded_by_auditor": 0,
+        "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-matched-series-20261001-b/pair-01-grouped-evidence/manifest.json",
+        "manifest_sha256": "05e7296e1203e342a2d461256152dbd547649b84890e76d64bce0274f97b145d",
+        "nodes": [
+          {
+            "artifact": "node.1.0",
+            "cache_hits": 0,
+            "elapsed_ms": 300273,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.1",
+            "cache_hits": 1,
+            "elapsed_ms": 268714,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.2",
+            "cache_hits": 2,
+            "elapsed_ms": 273073,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.3",
+            "cache_hits": 3,
+            "elapsed_ms": 286025,
+            "setups": 1
+          },
+          {
+            "artifact": "node.2.0",
+            "cache_hits": 0,
+            "elapsed_ms": 306342,
+            "setups": 1
+          },
+          {
+            "artifact": "node.2.1",
+            "cache_hits": 1,
+            "elapsed_ms": 231294,
+            "setups": 1
+          },
+          {
+            "artifact": "node.3.0",
+            "cache_hits": 2,
+            "elapsed_ms": 282205,
+            "setups": 1
+          }
+        ],
+        "peak_live_mapped_spill_bytes": 47442042880,
+        "peak_proving_stage_cgroup_bytes": 42966777856,
+        "production_ready": false,
+        "recursive_command_ms": 1949942,
+        "recursive_proofs": 7,
+        "root": {
+          "bytes": 1913221,
+          "sha256": "c3ffde28336dadbb3394597e38f689aee0d08fb467d2f1c05704713400055af2"
+        },
+        "sum_stage_wall_seconds": 1951.226241446997
+      },
+      "verified_manifest_sha256": "05e7296e1203e342a2d461256152dbd547649b84890e76d64bce0274f97b145d",
+      "recorded_cpu_audit": {
+        "log": "lattica-prover-p3/target/block-v2-eight-matched-series-20261001-b/pair-01-grouped-evidence/07-audit.log",
+        "sha256": "010a1a2e1ad1551799dc7a5fa8af00eb0e4308afacf10db514bbb002ab5edefe",
+        "status": "PASS",
+        "proof_bytes": 1913221,
+        "native_mutation_rejections": 38,
+        "registry_policy_rejections": 4,
+        "expected_statement_policy_rejections": 2,
+        "bundle_files": 5,
+        "inner_proofs_loaded": 0,
+        "elapsed_ms": 215,
+        "fresh_post_shared_pruning_replay": false,
+        "full_tree_security": "UNREVIEWED",
+        "production_ready": false
+      }
+    },
+    {
+      "pair": 2,
+      "variant": "grouped",
+      "status": "complete",
+      "started_utc": "2026-10-01T16:48:51Z",
+      "result": {
+        "final_merge_ms": 263058,
+        "inner_proofs_loaded_by_auditor": 0,
+        "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-matched-series-20261001-b/pair-02-grouped-evidence/manifest.json",
+        "manifest_sha256": "9b95145c49a739506532184800abdb887853c8f921dae87e3aa8a07bd35f8b0b",
+        "nodes": [
+          {
+            "artifact": "node.1.0",
+            "cache_hits": 0,
+            "elapsed_ms": 285262,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.1",
+            "cache_hits": 1,
+            "elapsed_ms": 277300,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.2",
+            "cache_hits": 2,
+            "elapsed_ms": 252847,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.3",
+            "cache_hits": 3,
+            "elapsed_ms": 294924,
+            "setups": 1
+          },
+          {
+            "artifact": "node.2.0",
+            "cache_hits": 0,
+            "elapsed_ms": 292554,
+            "setups": 1
+          },
+          {
+            "artifact": "node.2.1",
+            "cache_hits": 1,
+            "elapsed_ms": 272306,
+            "setups": 1
+          },
+          {
+            "artifact": "node.3.0",
+            "cache_hits": 2,
+            "elapsed_ms": 263058,
+            "setups": 1
+          }
+        ],
+        "peak_live_mapped_spill_bytes": 47442042880,
+        "peak_proving_stage_cgroup_bytes": 42967207936,
+        "production_ready": false,
+        "recursive_command_ms": 1939981,
+        "recursive_proofs": 7,
+        "root": {
+          "bytes": 1913303,
+          "sha256": "054b17c007966e3244b845b5a347a1c108e1fb0a3187ccb74ebbd060f595607b"
+        },
+        "sum_stage_wall_seconds": 1941.1567549770007
+      },
+      "verified_manifest_sha256": "9b95145c49a739506532184800abdb887853c8f921dae87e3aa8a07bd35f8b0b",
+      "verified_root_sha256": "054b17c007966e3244b845b5a347a1c108e1fb0a3187ccb74ebbd060f595607b",
+      "recorded_logs_hash_checked": 6,
+      "local_inner_artifacts_removed": 14,
+      "recorded_cpu_audit": {
+        "log": "lattica-prover-p3/target/block-v2-eight-matched-series-20261001-b/pair-02-grouped-evidence/07-audit.log",
+        "sha256": "aa739fe92372d4e22006758f4bddd95991ec1e677a786829b18b7dbc51e10e5a",
+        "status": "PASS",
+        "proof_bytes": 1913303,
+        "native_mutation_rejections": 38,
+        "registry_policy_rejections": 4,
+        "expected_statement_policy_rejections": 2,
+        "bundle_files": 5,
+        "inner_proofs_loaded": 0,
+        "elapsed_ms": 216,
+        "fresh_post_shared_pruning_replay": false,
+        "full_tree_security": "UNREVIEWED",
+        "production_ready": false
+      }
+    },
+    {
+      "pair": 2,
+      "variant": "single",
+      "status": "complete",
+      "started_utc": "2026-10-01T17:21:13Z",
+      "result": {
+        "final_merge_ms": 286794,
+        "inner_proofs_loaded_by_auditor": 0,
+        "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-matched-series-20261001-b/pair-02-single-evidence/manifest.json",
+        "manifest_sha256": "67438c0e12ece5cbfd9e6d9964694842481012b99aedbbe835001419168d3b41",
+        "nodes": [
+          {
+            "artifact": "node.0.0",
+            "cache_hits": 0,
+            "elapsed_ms": 310906,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.1",
+            "cache_hits": 1,
+            "elapsed_ms": 276444,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.2",
+            "cache_hits": 2,
+            "elapsed_ms": 274440,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.3",
+            "cache_hits": 3,
+            "elapsed_ms": 304023,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.4",
+            "cache_hits": 4,
+            "elapsed_ms": 270963,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.5",
+            "cache_hits": 5,
+            "elapsed_ms": 274452,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.6",
+            "cache_hits": 6,
+            "elapsed_ms": 265207,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.7",
+            "cache_hits": 7,
+            "elapsed_ms": 272623,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.0",
+            "cache_hits": 0,
+            "elapsed_ms": 300487,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.1",
+            "cache_hits": 1,
+            "elapsed_ms": 295049,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.2",
+            "cache_hits": 2,
+            "elapsed_ms": 265797,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.3",
+            "cache_hits": 3,
+            "elapsed_ms": 291029,
+            "setups": 1
+          },
+          {
+            "artifact": "node.2.0",
+            "cache_hits": 4,
+            "elapsed_ms": 276137,
+            "setups": 1
+          },
+          {
+            "artifact": "node.2.1",
+            "cache_hits": 5,
+            "elapsed_ms": 279977,
+            "setups": 1
+          },
+          {
+            "artifact": "node.3.0",
+            "cache_hits": 6,
+            "elapsed_ms": 286794,
+            "setups": 1
+          }
+        ],
+        "peak_live_mapped_spill_bytes": 47442042880,
+        "peak_proving_stage_cgroup_bytes": 42963881984,
+        "production_ready": false,
+        "recursive_command_ms": 4247146,
+        "recursive_proofs": 15,
+        "root": {
+          "bytes": 1913124,
+          "sha256": "466623cfaaf3ee7b7e3979fdb39cc50084941d82db62f68537c81258bfeb4339"
+        },
+        "sum_stage_wall_seconds": 4248.498040586004
+      },
+      "verified_manifest_sha256": "67438c0e12ece5cbfd9e6d9964694842481012b99aedbbe835001419168d3b41",
+      "verified_root_sha256": "466623cfaaf3ee7b7e3979fdb39cc50084941d82db62f68537c81258bfeb4339",
+      "recorded_logs_hash_checked": 6,
+      "local_inner_artifacts_removed": 22,
+      "recorded_cpu_audit": {
+        "log": "lattica-prover-p3/target/block-v2-eight-matched-series-20261001-b/pair-02-single-evidence/07-audit.log",
+        "sha256": "25577bb51256f2d4f6dadd5b11d70730966683f5e2fd66627553f63f1a0633a1",
+        "status": "PASS",
+        "proof_bytes": 1913124,
+        "native_mutation_rejections": 38,
+        "registry_policy_rejections": 4,
+        "expected_statement_policy_rejections": 2,
+        "bundle_files": 5,
+        "inner_proofs_loaded": 0,
+        "elapsed_ms": 269,
+        "fresh_post_shared_pruning_replay": false,
+        "full_tree_security": "UNREVIEWED",
+        "production_ready": false
+      }
+    }
+  ],
+  "previous_stage_observation": {
+    "observed_utc": "2026-10-01 18:00:30 UTC",
+    "controller": "lattica-v2-eight-series-pair2-20261001-b.service",
+    "worker": "lattica-v2-single-eight-161233-3.service",
+    "controller_and_worker_live": true,
+    "pair": 2,
+    "variant": "single",
+    "worker_stage": "merges",
+    "stage_started_utc": "2026-10-01T17:58:44Z",
+    "completed_trials": 3,
+    "completed_pairs": 1,
+    "completed_wrapper_nodes": 8,
+    "completed_wrapper_command_ms": 2250523,
+    "wrapper_worker_peak_bytes": 42963881984,
+    "wrapper_peak_mapped_spill_bytes": 46942916608,
+    "root_audit_completed": false,
+    "note": "All eight wrappers completed successfully; seven merge proofs and final root audit remain within the active trial. No second complete pair or repeat qualification."
+  },
+  "completed_pair_comparisons": [
+    {
+      "pair": 1,
+      "order": [
+        "single",
+        "grouped"
+      ],
+      "recursive_command_ms": {
+        "single": 3943403,
+        "grouped": 1949942,
+        "reduction_percent": 50.55179498519426
+      },
+      "final_merge_ms": {
+        "single": 266774,
+        "grouped": 282205,
+        "reduction_percent": -5.784296820529744
+      },
+      "interpretation": "One original-series pair, not repeat qualification. Final merge alone still exceeds the complete 180-second finalization target; shared-fixture pruning and fresh CPU replay remain pending."
+    },
+    {
+      "pair": 2,
+      "order": [
+        "grouped",
+        "single"
+      ],
+      "recursive_command_ms": {
+        "single": 4247146,
+        "grouped": 1939981,
+        "reduction_percent": 54.32271459469489
+      },
+      "final_merge_ms": {
+        "single": 286794,
+        "grouped": 263058,
+        "reduction_percent": 8.276323772463856
+      },
+      "interpretation": "Second original-series pair, not five-pair or tail-latency qualification. Both final merges alone exceed 180 seconds; full post-seal finalization, depth-six and security qualification remain open."
+    }
+  ],
+  "clean_controller_checkpoint": {
+    "unit": "lattica-v2-eight-series-pair2-20261001-b.service",
+    "exec_session": 54237,
+    "exit_code": 0,
+    "result": "success",
+    "series_manifest_sha256_at_checkpoint": "7b28ed0b9d875f16b0e35f0334e56c4b84b535207e3531554e130c3a606e8863",
+    "series_status": "READY_FOR_NEXT_TRIAL",
+    "no_other_experiment_services_observed": true,
+    "observed_utc": "2026-10-01 18:33:51 UTC",
+    "next": "Default/wide native validation and separate geometry admission at this clean checkpoint. Pair3 remains unstarted; all original binary/source/controller pins and shared fixtures retained."
+  },
+  "active_attempt": null,
+  "previous_partial_trial_evidence": {
+    "pair": 2,
+    "variant": "single",
+    "scope": "Completed wrapper stage only; not a finished trial, pair, root audit or production gate.",
+    "completed_stage": {
+      "log": "02-leaves.log",
+      "log_sha256": "866b1a01e11d3f6cb473f6fbdf9fbf2c4c7b1d70002f857a7adf5e7a69347e01",
+      "name": "leaves",
+      "started_utc": "2026-10-01T17:21:13Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 12160252895,
+          "memory_max": 47244640256,
+          "memory_peak": 42963881984,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 2250523,
+          "spill_peak_bytes": 46942916608
+        },
+        "nodes": [
+          {
+            "artifact": "node.0.0",
+            "cache_hits": 0,
+            "elapsed_ms": 310906,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.1",
+            "cache_hits": 1,
+            "elapsed_ms": 276444,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.2",
+            "cache_hits": 2,
+            "elapsed_ms": 274440,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.3",
+            "cache_hits": 3,
+            "elapsed_ms": 304023,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.4",
+            "cache_hits": 4,
+            "elapsed_ms": 270963,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.5",
+            "cache_hits": 5,
+            "elapsed_ms": 274452,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.6",
+            "cache_hits": 6,
+            "elapsed_ms": 265207,
+            "setups": 1
+          },
+          {
+            "artifact": "node.0.7",
+            "cache_hits": 7,
+            "elapsed_ms": 272623,
+            "setups": 1
+          }
+        ]
+      },
+      "unit": "lattica-v2-single-eight-161233-2.service",
+      "wall_seconds": 2250.6479235589995,
+      "log_path": "lattica-prover-p3/target/block-v2-eight-matched-series-20261001-b/pair-02-single-evidence/02-leaves.log",
+      "verified_log_sha256": "866b1a01e11d3f6cb473f6fbdf9fbf2c4c7b1d70002f857a7adf5e7a69347e01"
+    },
+    "completed_wrapper_nodes": 8,
+    "root_audit_completed": false,
+    "source": "lattica-prover-p3/target/block-v2-eight-matched-series-20261001-b/pair-02-single-evidence/manifest.json",
+    "original_series_pins_preserved": true,
+    "no_new_proving_or_validation_started": true
+  },
+  "earlier_clean_controller_checkpoint": {
+    "unit": "lattica-v2-eight-series-pair1-20261001-b.service",
+    "exec_session": 54122,
+    "exit_code": 0,
+    "result": "success",
+    "series_manifest_sha256_at_checkpoint": "baa6fb7c0d4a0a52b9d0891c96aadd7e851b9f997135318d26b16131cf947423",
+    "series_status": "READY_FOR_NEXT_TRIAL",
+    "no_other_experiment_services_observed": true,
+    "next": "The idle first-pair checkpoint completed native/CPU/ABI/Zig validation and read-only full-size geometry attribution. Original pair 2 then resumed in grouped/single order; see active_attempt."
+  },
+  "running_native_validation": {
+    "status": "NONE_AT_COMPLETED_CHECKPOINT",
+    "last_unit": "lattica-v2-wide3-geometry-20261001-a.service",
+    "last_session": 3649,
+    "exit_code": 0,
+    "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide3-geometry-20261001-a.log",
+    "log_sha256": "43c84aac93fb18336088f3719c85c4ad99f6a7d78523987d1af5b9da6af90674",
+    "observed_utc": "2026-10-01 19:35:33 UTC",
+    "scope": "23-lane structural geometry passed; envelope remains 2849 bytes above 2 MiB. No full-size key/proof admitted; no original pair3 started."
+  },
+  "default_compatibility_checkpoint": {
+    "status": "PASS",
+    "unit": "lattica-v2-wide2-default-compat-20261001-a.service",
+    "session": 62185,
+    "exit_code": 0,
+    "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-default-compat-20261001-a.log",
+    "log_sha256": "732117a0117abea41ef55210cae267492b9d0bd65f894adfba5180fcb194be2f",
+    "peak_cgroup_bytes": 51478528,
+    "peak_swap_bytes": 0,
+    "original_roots_replayed": 6,
+    "original_registry_checked": true,
+    "root_audit_rejections_each": {
+      "native": 38,
+      "registry_policy": 4,
+      "external_statement": 2
+    },
+    "registry_negative_checks": 4,
+    "input_hashes_checked_before_and_after": 44,
+    "inner_proofs_loaded_by_auditor": 0,
+    "shared_fixtures_pruned": false,
+    "compatibility_job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-default-binaries-20261001-a/compatibility-job",
+    "scope": "Two original pilot roots and four series roots (both original constructions), original grouped registry and public-wallet statements. Not full-tree security or post-shared-pruning replay."
+  }
+}

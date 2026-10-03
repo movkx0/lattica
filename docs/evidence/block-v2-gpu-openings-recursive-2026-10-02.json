@@ -1,0 +1,319 @@
+{
+  "schema": "block-v2-gpu-openings-recursive-v1",
+  "captured_utc": "2026-10-02 04:51:45 UTC",
+  "status": "SINGLE_COMPACT_EIGHT_OPENING_GPU_ROOT_VERIFIED",
+  "production_ready": false,
+  "default_enabled": false,
+  "repeat_qualified": false,
+  "full64_qualified": false,
+  "scope": "One fresh-randomness compact-profile eight-wallet/seven-proof recursive workload through the tiled GPU opening consumer, with local pruning and independent CPU-only root audit. Not a full64 or complete post-seal benchmark.",
+  "profile": {
+    "field": "Goldilocks",
+    "challenge_extension": "X^3-X-1",
+    "extension_degree": 3,
+    "num_queries": 128,
+    "blowup": 16,
+    "cap_height": 6,
+    "random_codewords": 4,
+    "query_pow_bits": 16,
+    "construction": "registered grouped pair; four wrappers and three merges; level3/count8 subtree",
+    "air": "single table",
+    "cpu_terminal_policy": "single zero terminal"
+  },
+  "execution": {
+    "unit": "lattica-v2-gpu-openings-proof-20261002-a.service",
+    "service_result": "success",
+    "service_exit_code": 0,
+    "service_runtime_seconds": 688.474,
+    "manifest": "lattica-prover-p3/target/block-v2-gpu-openings-proof-20261002-a-evidence/manifest.json",
+    "manifest_sha256": "d960f6c30125af401cf81017aa03d2cd7d1746bcfc35c3ae682b69f0f6485eaf",
+    "invocation": "lattica-prover-p3/target/block-v2-gpu-openings-proof-20261002-a-invocation.json",
+    "invocation_sha256": "eb3593856bfbd7aed1d9fd23489b1585d037c7efccb34c7d3d26b9c1f905eed8",
+    "status": "GPU_PROOF_VERIFIED_RESEARCH_ONLY",
+    "backend": "resident",
+    "gpu_openings": 1,
+    "quotient_fusion": 0,
+    "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "recursive_command_ms": 686046,
+    "final_merge_ms": 92427,
+    "root": {
+      "bytes": 1683948,
+      "sha256": "05b5ac4593b40d63b5866269a631b5675b73c3da15afbb899ffe7c9437912d08"
+    },
+    "peak_proving_worker_ram_bytes": 40534675456,
+    "peak_proving_worker_mapped_spill_bytes": 31671332864,
+    "peak_sampled_proving_worker_vram_mib": 5960,
+    "swap_peak_bytes": 0,
+    "resource_scope": "Per-worker observed peaks; sampled physical VRAM is not an instantaneous driver quota. Aggregate slice enforced RAM48/no-swap; worker RAM44 and controller RAM3. Mapped spill accounting is not physical filesystem allocation or whole-process RSS.",
+    "stages": [
+      {
+        "name": "seed",
+        "status": "complete",
+        "wall_seconds": 0.13318627599983301
+      },
+      {
+        "name": "check",
+        "status": "complete",
+        "wall_seconds": 0.3587121210002806,
+        "duration": {
+          "elapsed_ms": 291,
+          "spill_peak_bytes": 0
+        },
+        "nodes": [],
+        "accounting": {
+          "cpu_usage_usec": 436597,
+          "memory_max": 47244640256,
+          "memory_peak": 15937536,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        }
+      },
+      {
+        "name": "pairs",
+        "status": "complete",
+        "wall_seconds": 401.6909000879996,
+        "duration": {
+          "elapsed_ms": 401349,
+          "spill_peak_bytes": 31386120192
+        },
+        "nodes": [
+          {
+            "artifact": "node.1.0",
+            "cache_hits": 0,
+            "elapsed_ms": 110698,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.1",
+            "cache_hits": 1,
+            "elapsed_ms": 117846,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.2",
+            "cache_hits": 2,
+            "elapsed_ms": 87958,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.3",
+            "cache_hits": 3,
+            "elapsed_ms": 83728,
+            "setups": 1
+          }
+        ],
+        "opening": {
+          "calls": 4,
+          "downloaded_bytes": 805306368,
+          "kernel_ns": 495872832,
+          "tiles": 10240,
+          "uploaded_bytes": 143613018304,
+          "wall_ns": 143546053989
+        },
+        "recorded_host_device_transfers": {
+          "core_downloaded_bytes": 56375246848,
+          "core_uploaded_bytes": 56941870768,
+          "downloaded_bytes": 57180553216,
+          "opening_downloaded_bytes": 805306368,
+          "opening_uploaded_bytes": 143613018304,
+          "uploaded_bytes": 200554889072
+        },
+        "accounting": {
+          "cpu_usage_usec": 989472200,
+          "memory_max": 47244640256,
+          "memory_peak": 39994548224,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "vram": {
+          "limit_mib": 12288,
+          "peak_mib": 5960,
+          "positive_samples": 754,
+          "samples": 756,
+          "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+        }
+      },
+      {
+        "name": "merges",
+        "status": "complete",
+        "wall_seconds": 285.00841843499984,
+        "duration": {
+          "elapsed_ms": 284697,
+          "spill_peak_bytes": 31671332864
+        },
+        "nodes": [
+          {
+            "artifact": "node.2.0",
+            "cache_hits": 0,
+            "elapsed_ms": 106012,
+            "setups": 1
+          },
+          {
+            "artifact": "node.2.1",
+            "cache_hits": 1,
+            "elapsed_ms": 84996,
+            "setups": 1
+          },
+          {
+            "artifact": "node.3.0",
+            "cache_hits": 2,
+            "elapsed_ms": 92427,
+            "setups": 1
+          }
+        ],
+        "opening": {
+          "calls": 3,
+          "downloaded_bytes": 603979776,
+          "kernel_ns": 368828224,
+          "tiles": 7680,
+          "uploaded_bytes": 107709763728,
+          "wall_ns": 83891025003
+        },
+        "recorded_host_device_transfers": {
+          "core_downloaded_bytes": 45636878848,
+          "core_uploaded_bytes": 42983227232,
+          "downloaded_bytes": 46240858624,
+          "opening_downloaded_bytes": 603979776,
+          "opening_uploaded_bytes": 107709763728,
+          "uploaded_bytes": 150692990960
+        },
+        "accounting": {
+          "cpu_usage_usec": 743060870,
+          "memory_max": 47244640256,
+          "memory_peak": 40534675456,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "vram": {
+          "limit_mib": 12288,
+          "peak_mib": 5960,
+          "positive_samples": 533,
+          "samples": 535,
+          "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+        }
+      },
+      {
+        "name": "prune",
+        "status": "complete",
+        "wall_seconds": 0.21823595100067905,
+        "duration": {
+          "elapsed_ms": 132,
+          "spill_peak_bytes": 0
+        },
+        "nodes": [],
+        "accounting": {
+          "cpu_usage_usec": 152625,
+          "memory_max": 47244640256,
+          "memory_peak": 10457088,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        }
+      },
+      {
+        "name": "root",
+        "status": "complete",
+        "wall_seconds": 0.1294041199998901,
+        "duration": {
+          "elapsed_ms": 72,
+          "spill_peak_bytes": 0
+        },
+        "nodes": [],
+        "accounting": {
+          "cpu_usage_usec": 92814,
+          "memory_max": 47244640256,
+          "memory_peak": 7909376,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        }
+      },
+      {
+        "name": "export",
+        "status": "complete",
+        "wall_seconds": 0.03669163299855427
+      },
+      {
+        "name": "audit",
+        "status": "complete",
+        "wall_seconds": 0.3402579980011069,
+        "duration": null,
+        "nodes": [],
+        "accounting": {
+          "cpu_usage_usec": 288666,
+          "memory_max": 47244640256,
+          "memory_peak": 13930496,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        }
+      }
+    ]
+  },
+  "transfers": {
+    "core_downloaded_bytes": 102012125696,
+    "core_uploaded_bytes": 99925098000,
+    "downloaded_bytes": 103421411840,
+    "opening_calls": 7,
+    "opening_downloaded_bytes": 1409286144,
+    "opening_uploaded_bytes": 251322782032,
+    "uploaded_bytes": 351247880032,
+    "total_recorded_uploaded_plus_downloaded_bytes": 454669291872,
+    "scope": "Proof stages only. Core and opening counters are disjoint and added exactly once; registrations are excluded."
+  },
+  "opening_timing": {
+    "calls": 7,
+    "tiles": 17920,
+    "kernel_ns": 864701056,
+    "wall_ns": 227437078992,
+    "scope": "Cumulative opening spans within the two serial recursive commands; nonadditive with command elapsed time."
+  },
+  "root_only_validation": {
+    "status": "PASS",
+    "local_artifacts": [
+      "height",
+      "key.1",
+      "key.2",
+      "key.3",
+      "node.3.0"
+    ],
+    "inner_proofs_loaded": 0,
+    "native_mutation_rejections": 38,
+    "registry_policy_rejections": 4,
+    "expected_statement_policy_rejections": 2,
+    "audit_elapsed_ms": 269,
+    "shared_reference_pruned": false,
+    "scope": "Local wallet/intermediate copies pruned; independent shared CPU fixture intentionally retained for matched controls. No shared-fixture pruning claim."
+  },
+  "resource_limits": {
+    "aggregate_ram_bytes": 51539607552,
+    "aggregate_scratch_bytes": 137438953472,
+    "controller_ram_bytes_at_most": 3221225472,
+    "controller_runtime_seconds_at_most": 21600,
+    "log_bytes_per_stage": 67108864,
+    "spill_bytes": 128849018880,
+    "swap_bytes": 0,
+    "vram_log_bytes_per_stage": 8388608,
+    "worker_ram_bytes": 47244640256,
+    "worker_runtime_seconds": 7200,
+    "worker_vram_limit_mib": 12288
+  },
+  "pins": {
+    "accounting": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+    "auditor": "ae9ea1ddf846771c373b3dd5cf2e188087819de4294e25d27b85500e66f1af53",
+    "controller": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614",
+    "cpu_runner": "2383b260de5283ddcb6c1ce2408fb8139065fc109c8181ec602cc20ca095db3c",
+    "gpu_runner": "fc608cdadade7ed13d9d3e7ddb5cd6f96dd26e90a7d167ccc5a9fb00e35729dd",
+    "helpers": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+    "registration": "eb06ae502cece850e24105a426cd6a26ad9d6339a237ca49e64b6613dd7e28b1",
+    "source_archive": "6f0d258df141d301dbbff1a860deb274c9bed401625fbb49d76d44ea3eff55ef"
+  },
+  "decision": {
+    "performance_promotion": "WITHHELD",
+    "reason": "One correctness-qualified opening-enabled run. A fresh same-build retained-hashing control is required; previous readback timings are a separate build/checkpoint.",
+    "not_fully_resident": "Host LDE materialization, CPU barycentric/inverse-denominator work and upstream FRI remain. Opening reduction uploads host tiles.",
+    "remaining": [
+      "Fresh same-build matched controls and repeat qualification before any speedup claim.",
+      "Local incremental DAG, irregular/odd/mixed/issuance and full64 recursive closure.",
+      "Cold64 <=10 minutes and complete post-seal <=3 minutes with root <=2 MiB under RAM48/VRAM12/scratch128 GiB.",
+      "Complete-tree soundness/ZK review, versioned Zig/host integration and explicit activation."
+    ]
+  }
+}

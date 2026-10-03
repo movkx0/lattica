@@ -1,0 +1,234 @@
+{
+  "schema": "lattica-block-v2-cpu-worker-start-checkpoint-v1",
+  "status": "task-bound-startup-recovery-qualified-production-gates-open",
+  "production_ready": false,
+  "default_enabled": false,
+  "worker_supervisor_complete": false,
+  "full64_gates_demonstrated": false,
+  "complete_post_seal_gate_demonstrated": false,
+  "previous_checkpoint": "docs/evidence/block-v2-cpu-preparation-2026-10-02.json",
+  "scope": "Worker-published task-bound startup identity and exact OS termination reconciliation when live coordinator observation was missed; native compatibility checks and nine actual CPU lifecycle/proof/replay stages. No production ABI or proof-format change.",
+  "implementation": {
+    "record": "Optional immutable worker-start file, LVWST001, complete execution-bound Token plus boot/invocation/PID/start ticks/cgroup/dev/inode; bounded cgroup and total bytes.",
+    "publication": "Current process checks exact service, image, argv, boot, PID birth, cgroup and pidfd before publishing. Happens before WorkerGate entry, Rayon, spill allocation or proving; failed publication prevents proving.",
+    "validation": "Token, spec digest, pinned image and task dev/inode must match. Missing file yields None, not stop authority. Rejects directory copy, substitution, unsafe files, extra/truncated data and incomplete hard-linked publication.",
+    "observation": "Live kernel observation first; validated durable record is fallback only when no live process is observable. Persisted identity continues to use existing observation journal.",
+    "race_fix": "Final revision reproduces the temporary nlink=2 publication window while the worker is live, rejects the durable file in that window, and successfully captures/persists the live kernel identity.",
+    "stop_authority": "Revoke, check exact kernel process and cgroup termination, acquire idle launch gate and persist stop receipt. Startup record, helper exit, absent service and elapsed time are not stop receipts.",
+    "limits": "No-identity delayed launches and partial publication remain quarantined without authoritative live observation. Record grants no verifier-drain or proof-validity authority.",
+    "trust_boundary": "Trusted local runtime with exclusive service namespace; not authentication against hostile same-UID software.",
+    "compatibility": "Existing launch-token, task/spec, snapshot, proof, default verifier and production ABI encodings unchanged; new optional local task file only."
+  },
+  "native_validation": {
+    "exit_code": 0,
+    "runtime_seconds": 199.937,
+    "cpu_seconds": 198.149,
+    "memory_peak": "2.1G",
+    "swap_bytes": 0,
+    "unit": "lattica-v2-birth-native-20261002-b.service",
+    "session": 82548,
+    "invocation": "lattica-prover-p3/target/block-v2-birth-native-20261002-b/invocation.json",
+    "log": "lattica-prover-p3/target/block-v2-birth-native-20261002-b.log",
+    "native_passed": 122,
+    "native_ignored": 31,
+    "explicit_passed": 11,
+    "compiler_warnings": 0,
+    "checks": [
+      "Bounded worker-start codec exact token/identity and malformed/truncated rejection",
+      "Copied task, pinned-image/spec/token substitution and unsafe startup files",
+      "Six abrupt worker-start atomic publication boundaries; synthetic identities never grant release",
+      "Existing unknown-dispatch quarantine and eleven selected pinned CPU checks",
+      "Worker build; narrow/default/all-feature/all-target compatibility checks; formatting, whitespace and archived-source comparison"
+    ],
+    "limits": "Offline, exclusive frozen harness, build jobs1, Rayon8, GPU disabled, RAM3GiB/no swap.",
+    "memory_peak_note": "Rounded terminal systemd report, not an exact byte measurement."
+  },
+  "proof": {
+    "construction": "GroupedPair",
+    "operation": "WrapPair",
+    "level": 1,
+    "transactions": 2,
+    "bytes": 1683948,
+    "result_envelope_bytes": 1684129,
+    "dispatch_to_acceptance_export_ms": 164410,
+    "worker_reported_input_verification_ms": 390,
+    "worker_reported_proving_ms": 162365,
+    "exclusions": "Timing excludes fixture loading, initial admission and task/launch publication; neither full64 nor complete post-seal finalization.",
+    "performance_claim": "None: recovery correctness, not matched optimization.",
+    "worker_accounting": {
+      "unit": "lattica-v2-worker-00449dd4886a2158a88bf31d573dff0d88cad1ba8d70f80f7b066cf201cc04cd.service",
+      "invocation": "1d21c4163947469194de2c3bfa665d2e",
+      "memory_peak_bytes": 42729635840,
+      "memory_swap_peak_bytes": 0,
+      "cpu_usage_nsec": 1039606061000,
+      "wall_runtime_ms_from_systemd_message": 163303,
+      "spill_peak_bytes": 34003439616,
+      "source": "proof/worker-journal.jsonl; invocation matches persisted identity and live snapshot"
+    },
+    "profile_observations": {
+      "mode": 1,
+      "height": 262144,
+      "active_rows": 160893,
+      "setup_ms": 47625,
+      "preprocessing_cache_hit": false,
+      "prove_and_verify_ms": 111386
+    }
+  },
+  "live_trial": {
+    "exit_code": 0,
+    "runtime_seconds": 191.515,
+    "cpu_seconds": 0.137,
+    "memory_peak": "15.4M",
+    "swap": 0,
+    "stages_passed": 9,
+    "unit": "lattica-v2-birth-live-controller-20261002-b.service",
+    "session": 46744,
+    "invocation": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/invocation.json",
+    "controller_log": "lattica-prover-p3/target/block-v2-birth-live-20261002-b-controller.log",
+    "stages": [
+      {
+        "case": "check",
+        "unit": "lattica-v2-birth-check-20261002-b.service",
+        "expected_exit_code": 0,
+        "observed_exit_code": 0
+      },
+      {
+        "case": "cancel",
+        "unit": "lattica-v2-birth-cancel-20261002-b.service",
+        "expected_exit_code": 0,
+        "observed_exit_code": 0
+      },
+      {
+        "case": "crash",
+        "unit": "lattica-v2-birth-crash-20261002-b.service",
+        "expected_exit_code": 73,
+        "observed_exit_code": 73
+      },
+      {
+        "case": "recover",
+        "unit": "lattica-v2-birth-recover-20261002-b.service",
+        "expected_exit_code": 0,
+        "observed_exit_code": 0
+      },
+      {
+        "case": "missed-check",
+        "unit": "lattica-v2-birth-missed-check-20261002-b.service",
+        "expected_exit_code": 0,
+        "observed_exit_code": 0
+      },
+      {
+        "case": "missed-crash",
+        "unit": "lattica-v2-birth-missed-crash-20261002-b.service",
+        "expected_exit_code": 73,
+        "observed_exit_code": 73
+      },
+      {
+        "case": "missed-recover",
+        "unit": "lattica-v2-birth-missed-recover-20261002-b.service",
+        "expected_exit_code": 0,
+        "observed_exit_code": 0
+      },
+      {
+        "case": "proof",
+        "unit": "lattica-v2-birth-proof-20261002-b.service",
+        "expected_exit_code": 0,
+        "observed_exit_code": 0
+      },
+      {
+        "case": "replay",
+        "unit": "lattica-v2-birth-replay-20261002-b.service",
+        "expected_exit_code": 0,
+        "observed_exit_code": 0
+      }
+    ],
+    "publication_window_regression": "PASS kernel_capture_first=true persisted_identity=true",
+    "missed_observation_recovery": {
+      "same_actor": true,
+      "fresh_actor_after_exit73": true,
+      "exact_kernel_stop": true,
+      "resources_released": true,
+      "epoch": 2,
+      "historical_eligibility_revived": false,
+      "prior_verifier_active": false
+    },
+    "concurrent_verifier_recovery_qualified": false,
+    "worker_limits": {
+      "ram_bytes": 47244640256,
+      "swap_bytes": 0,
+      "scratch_reservation_bytes": 128849018880,
+      "threads": 8,
+      "cpu_quota_percent": 800,
+      "tasks_max": 16,
+      "aggregate_ram_bytes": 51539607552
+    },
+    "scratch_note": "Free-space gate and internal spill ceiling, not a physical filesystem quota.",
+    "controller_accounting_note": "Controller memory and CPU figures are not worker accounting."
+  },
+  "prior_attempts": [
+    {
+      "native": "block-v2-worker-start-native-20261002-a",
+      "exit_code": 0,
+      "native_passed": 122,
+      "explicit_passed": 11,
+      "compiler_warnings": 0,
+      "runtime_seconds": 171.132
+    },
+    {
+      "live": "block-v2-birth-live-20261002-a",
+      "exit_code": 0,
+      "stages_passed": 9,
+      "runtime_seconds": 191.857,
+      "proof_bytes": 1683948,
+      "dispatch_to_acceptance_export_ms": 166541,
+      "scope": "Prior revision before live-kernel-first ordering fix; preserved but not final-source validation or a matched performance control."
+    }
+  ],
+  "security": {
+    "fixed_parameters": "Cubic Goldilocks X^3-X-1; q128; blowup16; cap6; four random codewords; PoW16; one AIR; fresh CSPRNG and strict CPU single-zero-terminal verification.",
+    "aggregation": "Public-proof-only; no aggregator wallet witnesses, individual proofs in blocks, curve/SNARK wraps, weakened parameters or multiple roots.",
+    "backend": "Zig frontend with approved Plonky3 backend exception."
+  },
+  "remaining": [
+    "Same-boot delayed dispatch without durable identity and partial-startup publication liveness; retain quarantine absent authoritative stop evidence.",
+    "Concurrent verifier drain/recovery, OOM/timeout and repeated lifecycle qualification.",
+    "Physical scratch enforcement and reference-aware launch/task/artifact retention.",
+    "Actual SingleWallet/Empty/Merge operation generation, arrival-driven host eligibility/reorgs, issuance and HTLC.",
+    "Profile immutable preprocessing reuse: CpuWorker creates a local ConstructionSession and clears it for every job. Cached work must remain public, identity-bound and resource-accounted, with fresh proof randomness.",
+    "GPU redundant-transfer reduction followed by at least five alternating matched comparisons; unchanged pilot not promoted.",
+    "Full64 cold<=600s and complete post-seal<=180s at12-minute cadence, one root<=2MiB and aggregate RAM48/VRAM12/scratch128GiB.",
+    "Full-tree soundness/ZK review, host integration and explicit activation."
+  ],
+  "preservation": {
+    "frozen_four_hashes_match": true,
+    "source_archive_matches_after_run": true,
+    "default_verifier_or_abi_change": false,
+    "production_activation": false,
+    "committed": false,
+    "live_experimental_services_at_end": [],
+    "source_edits_during_validation_or_live_proving": false,
+    "prior_native_and_live_revision_preserved": true
+  },
+  "captured_utc": "2026-10-02 14:22:36 UTC",
+  "pins_manifest": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/pins.sha256",
+  "pins_manifest_entries": 368,
+  "pins": {
+    "lattica-prover-p3/target/block-v2-birth-native-20261002-b/source.tar.gz": "c38ff56f0642541d88c315f3cc7cc74175171f23f1da25781be2142bd2dfdd3b",
+    "lattica-prover-p3/target/block-v2-birth-native-20261002-b/cpu-lib-tests": "6d302c21ca63f605d4cfc139d17b74ba4f93be79febf7322b17c9d2d4ac9b6d5",
+    "lattica-prover-p3/target/block-v2-birth-native-20261002-b/cpu-worker": "d153912bcb64eae935851dd553d791e6da37c737d90ef65bab43d4b1afd70216",
+    "docs/dag-gpu-implementation.md": "c23df407b56a47b1ec66f6821349d38be258ea4f7c43db432086124580a27ae7",
+    "lattica-prover-p3/target/block-v2-birth-live-20261002-b/cancel/task/worker-start": "27ae6712c5a752b7b0b33f02a73ff9391b1b00c79d9d922b1d384482cb66beea",
+    "lattica-prover-p3/target/block-v2-birth-live-20261002-b/check/task/worker-start": "e73127efb4386ca548778a821c312bcf6e2611a1f3af7420634369072935f3ae",
+    "lattica-prover-p3/target/block-v2-birth-live-20261002-b/crash/recovered.txt": "b78b9018dd7f5d008242151969815f7f98f39143499e849e15a6069ab572bb55",
+    "lattica-prover-p3/target/block-v2-birth-live-20261002-b/crash/task/worker-start": "3785711046586678e40d5ca531a7586b1c09550a401239301f4133f8cd5f47c5",
+    "lattica-prover-p3/target/block-v2-birth-live-20261002-b/invocation.json": "1fb1edb6928df951a1f2489969557a22e15dc3881507f208b38d115e31a0d440",
+    "lattica-prover-p3/target/block-v2-birth-live-20261002-b/missed-check/recovered.txt": "c034cbf491889125603d27e450db69431ded3b7388b2a079c6d876f154ad73ad",
+    "lattica-prover-p3/target/block-v2-birth-live-20261002-b/missed-check/task/worker-start": "73e27028c6442dff4c943f8dfd6480d33859ffa38eaca279bb2dbf940dfcf374",
+    "lattica-prover-p3/target/block-v2-birth-live-20261002-b/missed-crash/recovered.txt": "726954edb069aea27aff64f88b295f962d0fcc73a33db700db07ad33730ce7b7",
+    "lattica-prover-p3/target/block-v2-birth-live-20261002-b/missed-crash/task/worker-start": "ca93a2e7f3be3e8fbc4a6d3849d0b0906612f0d572008599065cc22174fc9c3e",
+    "lattica-prover-p3/target/block-v2-birth-live-20261002-b/proof/live-resource-snapshot.txt": "11815d1cee4d0f950554a5f3d9111ed9bc78b1ee38997389f63597f5c2bde1d3",
+    "lattica-prover-p3/target/block-v2-birth-live-20261002-b/proof/pair.1.0": "5240ba166486dbe82fb7804203bddbfa245949f7e3222f7440e572d82975ecca",
+    "lattica-prover-p3/target/block-v2-birth-live-20261002-b/proof/task/result": "83c8a66711ffba938890d789bc7c600e27dc0273455de2f3c021cf022c28634f",
+    "lattica-prover-p3/target/block-v2-birth-live-20261002-b/proof/task/worker-start": "b804c03b9e1e373d0de928fc195da2fe13abec876fa27fa1a40e278242445ba8",
+    "lattica-prover-p3/target/block-v2-birth-live-20261002-b/proof/worker-journal.jsonl": "cfa6b517813fe1ae097cc71042504f0d121f84dc2bcc19043b08bfc932e0f5a4"
+  }
+}

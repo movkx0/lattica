@@ -1,0 +1,1122 @@
+{
+  "schema": 1,
+  "captured_utc": "2026-10-01 15:07:55 UTC",
+  "status": "ONE_MATCHED_FUSION_PAIR_COMPLETE_ORIGINAL_REPEATED_SERIES_STARTED",
+  "production_ready": false,
+  "full_tree_security_reviewed": false,
+  "depth_six_qualified": false,
+  "fusion_performance_qualified": false,
+  "scope": "Candidate-only prove-side quotient interpolation/masking transform fusion. No wire-format, verifier, security-parameter or production-default change.",
+  "source_sha256": {
+    "lattica-prover-p3/src/block_v2/quotient_pcs.rs": "05a0141402339f65b1d4d915f70597e796e873aeb77a4e2939ac8336adbb9944",
+    "lattica-prover-p3/src/block_v2/profile.rs": "07e8cf731524260cfa3b31ff8c5eb44a45735095147e0167781109290a163497",
+    "lattica-prover-p3/src/block_v2/machine/backend.rs": "3ee5fb73cdfab8f55956f8e30ea0a760fad85f8cd9338be611db498e9bc58f97",
+    "lattica-prover-p3/scripts/block-v2-fusion-trial.py": "cb36fd551f3442a4eaa534536691cca8a0bda01c1b7dbe7bf7cfccfb87ec8e2c",
+    "lattica-prover-p3/scripts/test-block-v2-fusion-trial.py": "9731157ec1c710906274b0864c66a6de553c368b6312b868aeada34472adee54",
+    "lattica-prover-p3/scripts/block-v2-eight-series.py": "31d6f084965ad61ae8ae6faca2f249db01353894c6c5f06c71a40cee6ea16ea1",
+    "lattica-prover-p3/target/block-v2-fusion-native-recheck-20261001-b.log": "d46acba9e0f63c76ee7ee4443b2331157501225efb3fc3ebfd694346654bca12",
+    "lattica-prover-p3/target/block-v2-fusion-workspace-recheck-20261001-b.log": "aa8ebdd5e221397641fd278c8321ce191f0cca11fa9dc2e17e7526cfe0b53768",
+    "lattica-prover-p3/target/block-v2-fusion-cpu-regression-20261001-b.log": "950e906184353e8bdadeb7dface977482c811dbd0599629a13460e285294f5b4",
+    "lattica-prover-p3/target/block-v2-eight-series-lifecycle-20261001-a/result.json": "452c5a878cfcec598351d9e7341df40ee8ae20d0eb5089612744b8f1c8e3591a",
+    "lattica-prover-p3/scripts/report-block-v2-fusion.py": "07a8a626880ddf41e64e1936070ca8d5cd4be059c566a20200ac041bf65ade7e",
+    "lattica-prover-p3/scripts/test-report-block-v2-fusion.py": "f095d638775588279592e28e1cdd0087d015b708b99a5ce5fe490db754178e56",
+    "lattica-prover-p3/target/block-v2-fusion-root-replay-20261001-b.log": "6142cc62183e62286658f128c4bebfda29857d94ab59aa7b0529916e711902e9",
+    "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/checked-report.json": "9a3237012525af13f746f0e8c42ee765cd75f6ae86ae965d12d5b3ab80cc245a"
+  },
+  "preserved_runner": {
+    "path": "lattica-prover-p3/target/block-v2-quotient-fusion-binaries-20261001-a/block-v2-grouped-probe",
+    "sha256": "57d5354780c94714f0ba8c8dd5fa10239681d21373eb6760b4e3b0bfaf18a2c4",
+    "cpu_only": true
+  },
+  "runner_source_archive": {
+    "path": "lattica-prover-p3/target/block-v2-quotient-fusion-sources-20261001-a.tar.gz",
+    "sha256": "3e9a69a1c070d89d421991301bdc0aa3a324f1485bb93e3f98f72cb901650d5b",
+    "note": "Created before the fusion trial controller. Its controller sources are separately pinned and archived per trial."
+  },
+  "native_validation": {
+    "regular_fusion_tests": {
+      "passed": 10,
+      "failed": 0,
+      "ignored": 1,
+      "elapsed_seconds": 0.17,
+      "log": "lattica-prover-p3/target/block-v2-fusion-native-recheck-20261001-b.log",
+      "coverage": [
+        "Exact upstream quotient matrix equivalence, including repeated calls",
+        "Shared clone RNG progression; independent quotient randomness",
+        "Strict immutable opt-in mode; disabled-mode delegation",
+        "Deterministic preprocessing caps on component geometry",
+        "Full-strength small cubic proofs verified through unwrapped CPU PCS",
+        "Malformed shapes, overlap, workspace limits and parameter rejection"
+      ]
+    },
+    "workspace_equivalence": {
+      "passed": 1,
+      "failed": 0,
+      "elapsed_seconds": 0.77,
+      "log": "lattica-prover-p3/target/block-v2-fusion-workspace-recheck-20261001-b.log",
+      "input_height": 65536,
+      "chunks": 2,
+      "output_bytes_each": 117440512,
+      "observed_peak_mapped_bytes": 117444608,
+      "retained_output_mappings": 0,
+      "full_recursive_geometry": false
+    },
+    "cpu_library_regression": {
+      "passed": 204,
+      "failed": 0,
+      "ignored": 30,
+      "elapsed_seconds": 115.45,
+      "log": "lattica-prover-p3/target/block-v2-fusion-cpu-regression-20261001-b.log",
+      "note": "Includes the ten regular fusion tests; ignored workspace case was run separately."
+    },
+    "limits": {
+      "memory_max_bytes": 3221225472,
+      "swap_max_bytes": 0,
+      "runtime_seconds": 600
+    },
+    "prior_turn_checks": "Previous checkpoint reported GPU-feature release compile, default ABI gate and Zig Debug/ReleaseSafe/FFI checks. Not repeated in this ledger; this record's fresh logs cover CPU/native/controller tests only."
+  },
+  "controller_validation": {
+    "exit_code": 0,
+    "output": "..................\n----------------------------------------------------------------------\nRan 18 tests in 0.118s\n\nOK\n{\"status\": \"FULL_SIZE_PREPROCESSING_REPRODUCED_RESEARCH_ONLY\", \"production_ready\": false, \"manifest\": \"/tmp/lattica-fusion-test-66yx4sz4/output/manifest.json\"}\n{\"status\": \"FULL_SIZE_PREPROCESSING_REPRODUCED_RESEARCH_ONLY\", \"production_ready\": false, \"manifest\": \"/tmp/lattica-fusion-test-drx82a8o/output/manifest.json\"}\n"
+  },
+  "series_controller": {
+    "path": "lattica-prover-p3/scripts/block-v2-eight-series.py",
+    "repeated_proof_series_started": true,
+    "real_nonproving_lifecycle": {
+      "abrupt_controller_death": true,
+      "complete_cli_test": false,
+      "controller_limits": {
+        "aggregate_memory_max": 51539607552,
+        "aggregate_swap_max": 0,
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-grouped.slice/lattica-v2-eight-series-lifecycle-3b4c1aa032684d6a-controller.service",
+        "memory_high": "max",
+        "memory_max": 3221225472,
+        "parent": "lattica-v2-grouped.slice",
+        "swap_max": 0
+      },
+      "fixture_and_crypto_checks_stubbed": true,
+      "journal_sha256": "834aeddaf03d52c2935152544480292f25aa4c73070eb014c14d3958da26bd84",
+      "live_overlap_refused": true,
+      "production_ready": false,
+      "real_proofs": false,
+      "released_locks_with_stopping_worker_observed": true,
+      "source_pins": {
+        "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+        "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-eight-series.py": "31d6f084965ad61ae8ae6faca2f249db01353894c6c5f06c71a40cee6ea16ea1",
+        "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+        "/home/access/code/lattica/lattica-prover-p3/scripts/test-block-v2-eight-series-lifecycle.py": "d58864bdcd7d7ad23ebeedb261318229066ba5a74aa4b7b611dfa4075a7709d3"
+      },
+      "status": "REAL_SERIES_JOURNAL_SERVICE_LIFECYCLE_PASSED",
+      "uncertain_trial_not_rerun": true,
+      "units": {
+        "controller": "lattica-v2-eight-series-lifecycle-3b4c1aa032684d6a-controller.service",
+        "recover": "lattica-v2-eight-series-lifecycle-3b4c1aa032684d6a-recover.service",
+        "retry": "lattica-v2-eight-series-lifecycle-3b4c1aa032684d6a-retry.service",
+        "worker": "lattica-v2-eight-series-lifecycle-3b4c1aa032684d6a-worker.service"
+      },
+      "wall_seconds": 5.527704806008842,
+      "worker_cleanup_observed": true,
+      "worker_limits": {
+        "aggregate_memory_max": 51539607552,
+        "aggregate_swap_max": 0,
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-grouped.slice/lattica-v2-eight-series-lifecycle-3b4c1aa032684d6a-worker.service",
+        "memory_high": "42949672960",
+        "memory_max": 47244640256,
+        "parent": "lattica-v2-grouped.slice",
+        "swap_max": 0
+      }
+    },
+    "helper_archive": "lattica-prover-p3/target/block-v2-eight-comparison-pilot-20261001-a/launcher.py",
+    "helper_sha256": "b71eeff1d7d4696417527fb95eeb5c6c2c6e8347011f98ecb910c4fde5a5e4d3",
+    "notes": "Archived launcher exactly matches the original temporary helper. Temporary files were lost on reboot. Real lifecycle test uses stubbed fixtures/cryptographic checks, not complete CLI/proof qualification.",
+    "read_only_preflight": {
+      "status": "READ_ONLY_SERIES_PIN_AND_PILOT_PREFLIGHT_PASSED",
+      "config": {
+        "pairs": 5,
+        "output": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-matched-series-20261001-b",
+        "helper": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-comparison-pilot-20261001-a/launcher.py",
+        "helper_sha256": "b71eeff1d7d4696417527fb95eeb5c6c2c6e8347011f98ecb910c4fde5a5e4d3",
+        "handoff_sha256": "d9a936a822f5ab2555a782712299c0ec837a08c1e39ceb6f99376f393d7c799b",
+        "series_sha256": "31d6f084965ad61ae8ae6faca2f249db01353894c6c5f06c71a40cee6ea16ea1",
+        "pilot_manifest_sha256": "f0f3747df4d5f54485e89d8d3c0995dc4a38c786a6f2029605674509e731f2d4"
+      },
+      "order": [
+        [
+          1,
+          "single"
+        ],
+        [
+          1,
+          "grouped"
+        ],
+        [
+          2,
+          "grouped"
+        ],
+        [
+          2,
+          "single"
+        ],
+        [
+          3,
+          "single"
+        ],
+        [
+          3,
+          "grouped"
+        ],
+        [
+          4,
+          "grouped"
+        ],
+        [
+          4,
+          "single"
+        ],
+        [
+          5,
+          "single"
+        ],
+        [
+          5,
+          "grouped"
+        ]
+      ],
+      "pilot_status": "MATCHED_CPU_PILOT_COMPLETE_SHARED_FIXTURE_RETAINED",
+      "shared_wallets_retained": 8,
+      "series_started": false,
+      "fresh_cryptographic_audit": false,
+      "admission_service_check": "deferred until active fusion control is terminal",
+      "production_ready": false,
+      "observed_utc": "2026-10-01T14:18:31Z"
+    },
+    "started_series": {
+      "evidence": "docs/evidence/block-v2-eight-repeated-series-2026-10-01.json",
+      "manifest": "lattica-prover-p3/target/block-v2-eight-matched-series-20261001-b/manifest.json",
+      "unit": "lattica-v2-eight-series-pair1-20261001-b.service",
+      "started_utc": "2026-10-01T14:47:25Z",
+      "observed_utc": "2026-10-01T15:04:23Z",
+      "observed_unit_state": "active/running",
+      "captured_completed_trials": 0,
+      "current_trial": {
+        "pair": 1,
+        "variant": "single",
+        "status": "attempted"
+      },
+      "original_non_fused_binaries": true,
+      "repeat_qualified": false,
+      "production_ready": false
+    }
+  },
+  "full_size_key_reproduction": {
+    "status": "FULL_SIZE_PREPROCESSING_REPRODUCED_RESEARCH_ONLY",
+    "unit": "lattica-v2-fusion-key-repro-20261001-b.service",
+    "exit_code": 0,
+    "manifest": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/manifest.json",
+    "manifest_sha256": "1008dd7eb12fb1b50f3a51e4ef4a3f12505efac784b7b93f3ad6289d3d5230bb",
+    "fusion_mode": 1,
+    "height": 524288,
+    "cap_bytes_each": 2048,
+    "artifact_pins": {
+      "height": {
+        "bytes": 4,
+        "sha256": "c9c7e8c63836a93f6d8c04598b6503d2863a2df7b86366157178234175704dcc"
+      },
+      "key.1": {
+        "bytes": 2048,
+        "sha256": "dea6d8cd5ec78aece7514e1b79f03be9968589cb6f68892b5130c11b6b4e2fa0"
+      },
+      "key.2": {
+        "bytes": 2048,
+        "sha256": "23c014bd0cc4af3fdfedae55a0a060e3469edf001267d23f29f3d5b82bd286db"
+      },
+      "key.3": {
+        "bytes": 2048,
+        "sha256": "a42b9a30fe35034313d2ec0a92ee5aee3278c926ef53407e9e8b1cb14bbf384d"
+      },
+      "wallet.0": {
+        "bytes": 853675,
+        "sha256": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973"
+      },
+      "wallet.1": {
+        "bytes": 853491,
+        "sha256": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79"
+      },
+      "wallet.2": {
+        "bytes": 854047,
+        "sha256": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5"
+      },
+      "wallet.3": {
+        "bytes": 853795,
+        "sha256": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b"
+      },
+      "wallet.4": {
+        "bytes": 853725,
+        "sha256": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b"
+      },
+      "wallet.5": {
+        "bytes": 853855,
+        "sha256": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa"
+      },
+      "wallet.6": {
+        "bytes": 853977,
+        "sha256": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117"
+      },
+      "wallet.7": {
+        "bytes": 853568,
+        "sha256": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5"
+      }
+    },
+    "attempts": [
+      {
+        "log": "01-key-1.log",
+        "log_sha256": "a87938714ae1b5d6d25470ec6b1a534955f0512f89b6cc0f0450f7e0604112b6",
+        "name": "key-1",
+        "started_utc": "2026-10-01T13:33:43Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 251767734,
+            "memory_max": 47244640256,
+            "memory_peak": 12047937536,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 44883,
+            "spill_peak_bytes": 11719286784
+          },
+          "nodes": [],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-36843-1.service",
+        "wall_seconds": 44.934434235000026
+      },
+      {
+        "log": "02-key-2.log",
+        "log_sha256": "f8a03606d6f1fcbf53b7b5967c80b57f0709ad558957a22606da11bac0864158",
+        "name": "key-2",
+        "started_utc": "2026-10-01T13:34:28Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 246071188,
+            "memory_max": 47244640256,
+            "memory_peak": 11185160192,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 36847,
+            "spill_peak_bytes": 10938769408
+          },
+          "nodes": [],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-36843-2.service",
+        "wall_seconds": 36.89782449099994
+      },
+      {
+        "log": "03-key-3.log",
+        "log_sha256": "1d14a22e8a7438c96b92a1cdea53d9a5bcbca5122d1efeabdcd1e2ec8e9d73a6",
+        "name": "key-3",
+        "started_utc": "2026-10-01T13:35:05Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 250265887,
+            "memory_max": 47244640256,
+            "memory_peak": 12402225152,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 42296,
+            "spill_peak_bytes": 12191002624
+          },
+          "nodes": [],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-36843-3.service",
+        "wall_seconds": 42.36513409600002
+      },
+      {
+        "log": "04-check.log",
+        "log_sha256": "664f9cd173c7c9f1d4d789090bc048a76ee9332e91894cc1e9c7b6c0da65ed61",
+        "name": "check",
+        "started_utc": "2026-10-01T13:35:47Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 377444,
+            "memory_max": 47244640256,
+            "memory_peak": 14417920,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 246,
+            "spill_peak_bytes": 0
+          },
+          "nodes": [],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-36843-4.service",
+        "wall_seconds": 0.314476988000024
+      }
+    ],
+    "finished_utc": "2026-10-01T13:35:48Z",
+    "deterministic_preprocessing_selected_fusion": false,
+    "external_statement_passed": true,
+    "recursive_proof_generated": false,
+    "peak_worker_cgroup_bytes": 12402225152,
+    "peak_worker_mapped_spill_bytes": 12191002624,
+    "swap_peak_bytes": 0,
+    "temporary_wallet_copies": "Retained only for the mandatory proof-admission gate; prune after all matching proof trials and before final shared-fixture deletion."
+  },
+  "remaining_gates": [
+    "Repeat qualification of the opt-in fusion optimization; one matched pair is not a production tail-latency bound",
+    "Five matched original single/grouped pairs with final shared pruning and fresh replay of all series and pilot roots",
+    "Depth-six padding, mixed transactions, whole-tree security and production coordination/latency gates",
+    "Prune copied registration-wallet artifacts after their proving consumers complete and before final shared-fixture deletion/replay.",
+    "Fresh CPU replay of fusion-on/off roots after final shared/registration-fixture pruning, in addition to all original series and pilot roots."
+  ],
+  "implementation_limits": [
+    "Independent full-entropy quotient RNG; clones share one stream",
+    "Only registered execution proving selects fusion; wallet proofs, verifiers and deterministic preprocessing stay disabled",
+    "One large forward transform per quotient chunk after small IDFT and coefficient fusion",
+    "Normalized vanishing-polynomial weights and final-mask cancellation preserved",
+    "2..16 power-of-two chunks and <=2 GiB per-output workspace; no security parameter reduction",
+    "Owned bit-reversed output; unchanged retained geometry and GPU upload volume",
+    "48 GiB aggregate; 3 GiB controller; 40 GiB worker high/44 GiB max; zero swap; 120 GiB managed spill; eight Rayon threads"
+  ],
+  "supersedes": "The lost temporary /tmp/lattica-quotient-fusion-draft-20261001-a/draft-status.json described uncompiled isolated work and a still-running pilot. Repository source and this ledger supersede that checkpoint; no temp draft is authoritative.",
+  "full_size_fused_root": {
+    "status": "FUSION_TRIAL_CPU_AUDITED_RESEARCH_ONLY",
+    "exit_code": 0,
+    "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/manifest.json",
+    "manifest_sha256": "29b887b9c4f0937d8121b07b83793d708f38b4c9741d0d9c2c1c66cae62ab061",
+    "registration_sha256": "1008dd7eb12fb1b50f3a51e4ef4a3f12505efac784b7b93f3ad6289d3d5230bb",
+    "unit": "lattica-v2-fusion-proof-20261001-b.service",
+    "started_utc": "2026-10-01T13:37:22Z",
+    "finished_utc": "2026-10-01T14:06:22Z",
+    "mode": 1,
+    "root": {
+      "bytes": 1913701,
+      "sha256": "9a16a96ee74d7045af2aac2d24da6291e936e088a9e0f3ed8f3f73bc4b4fd8e1"
+    },
+    "recursive_command_ms": 1738999,
+    "final_merge_ms": 252026,
+    "peak_proving_worker_cgroup_bytes": 42968530944,
+    "peak_live_mapped_spill_bytes": 47442042880,
+    "swap_peak_bytes": 0,
+    "local_inner_artifacts_removed": 14,
+    "inner_proofs_loaded_by_auditor": 0,
+    "shared_fixture_pruned": false,
+    "nodes": [
+      {
+        "artifact": "node.1.0",
+        "cache_hits": 0,
+        "elapsed_ms": 254271,
+        "setups": 1
+      },
+      {
+        "artifact": "node.1.1",
+        "cache_hits": 1,
+        "elapsed_ms": 246107,
+        "setups": 1
+      },
+      {
+        "artifact": "node.1.2",
+        "cache_hits": 2,
+        "elapsed_ms": 240172,
+        "setups": 1
+      },
+      {
+        "artifact": "node.1.3",
+        "cache_hits": 3,
+        "elapsed_ms": 240153,
+        "setups": 1
+      },
+      {
+        "artifact": "node.2.0",
+        "cache_hits": 0,
+        "elapsed_ms": 252861,
+        "setups": 1
+      },
+      {
+        "artifact": "node.2.1",
+        "cache_hits": 1,
+        "elapsed_ms": 251480,
+        "setups": 1
+      },
+      {
+        "artifact": "node.3.0",
+        "cache_hits": 2,
+        "elapsed_ms": 252026,
+        "setups": 1
+      }
+    ],
+    "attempts": [
+      {
+        "log": "01-check.log",
+        "log_sha256": "82ce2d8c7c892f5f9e8120c7678c312d8c3bba6c51db828a8e657e317915f538",
+        "name": "check",
+        "started_utc": "2026-10-01T13:37:22Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 402972,
+            "memory_max": 47244640256,
+            "memory_peak": 16199680,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 254,
+            "spill_peak_bytes": 0
+          },
+          "nodes": [],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-39597-1.service",
+        "wall_seconds": 0.32863977200008776
+      },
+      {
+        "log": "02-pairs.log",
+        "log_sha256": "54a3fc1cebd462a1c703e80eeb7d6028c1f88fc8997fa520fcd4fa4b58dde772",
+        "name": "pairs",
+        "started_utc": "2026-10-01T13:37:22Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 5389837812,
+            "memory_max": 47244640256,
+            "memory_peak": 42968530944,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 981581,
+            "spill_peak_bytes": 47156830208
+          },
+          "nodes": [
+            {
+              "artifact": "node.1.0",
+              "cache_hits": 0,
+              "elapsed_ms": 254271,
+              "setups": 1
+            },
+            {
+              "artifact": "node.1.1",
+              "cache_hits": 1,
+              "elapsed_ms": 246107,
+              "setups": 1
+            },
+            {
+              "artifact": "node.1.2",
+              "cache_hits": 2,
+              "elapsed_ms": 240172,
+              "setups": 1
+            },
+            {
+              "artifact": "node.1.3",
+              "cache_hits": 3,
+              "elapsed_ms": 240153,
+              "setups": 1
+            }
+          ],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-39597-2.service",
+        "wall_seconds": 981.6857232289999
+      },
+      {
+        "log": "03-merges.log",
+        "log_sha256": "54ffd813c75d05adcc294ed6cf817f9e344514c5dcae0abbe1cdcc42583453b3",
+        "name": "merges",
+        "started_utc": "2026-10-01T13:53:44Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 4029948222,
+            "memory_max": 47244640256,
+            "memory_peak": 42965766144,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 757418,
+            "spill_peak_bytes": 47442042880
+          },
+          "nodes": [
+            {
+              "artifact": "node.2.0",
+              "cache_hits": 0,
+              "elapsed_ms": 252861,
+              "setups": 1
+            },
+            {
+              "artifact": "node.2.1",
+              "cache_hits": 1,
+              "elapsed_ms": 251480,
+              "setups": 1
+            },
+            {
+              "artifact": "node.3.0",
+              "cache_hits": 2,
+              "elapsed_ms": 252026,
+              "setups": 1
+            }
+          ],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-39597-3.service",
+        "wall_seconds": 757.5348087549996
+      },
+      {
+        "log": "04-prune.log",
+        "log_sha256": "88f0db32a942e19ccb6f9334826ac3f57ec0569ee89be916cb67bba3e3ce234a",
+        "name": "prune",
+        "started_utc": "2026-10-01T14:06:22Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 131793,
+            "memory_max": 47244640256,
+            "memory_peak": 11452416,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 110,
+            "spill_peak_bytes": 0
+          },
+          "nodes": [],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-39597-4.service",
+        "wall_seconds": 0.18039929399992616
+      },
+      {
+        "log": "05-root.log",
+        "log_sha256": "4495368e5d2689b1de0f40a1a00274628951e13a203fdd6a2f3735a029100725",
+        "name": "root",
+        "started_utc": "2026-10-01T14:06:22Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 77376,
+            "memory_max": 47244640256,
+            "memory_peak": 7958528,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 56,
+            "spill_peak_bytes": 0
+          },
+          "nodes": [],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-39597-5.service",
+        "wall_seconds": 0.13462816199989902
+      },
+      {
+        "bundle": {
+          "height": "c9c7e8c63836a93f6d8c04598b6503d2863a2df7b86366157178234175704dcc",
+          "key.1": "dea6d8cd5ec78aece7514e1b79f03be9968589cb6f68892b5130c11b6b4e2fa0",
+          "key.2": "23c014bd0cc4af3fdfedae55a0a060e3469edf001267d23f29f3d5b82bd286db",
+          "key.3": "a42b9a30fe35034313d2ec0a92ee5aee3278c926ef53407e9e8b1cb14bbf384d",
+          "node.3.0": "9a16a96ee74d7045af2aac2d24da6291e936e088a9e0f3ed8f3f73bc4b4fd8e1"
+        },
+        "log": "06-export.log",
+        "name": "export",
+        "started_utc": "2026-10-01T14:06:22Z",
+        "status": "complete",
+        "unit": "lattica-v2-grouped-39597-6.service",
+        "wall_seconds": 0.05848833400023068
+      },
+      {
+        "log": "07-audit.log",
+        "log_sha256": "82160a0e2099920fbca7298e9dd7227eb8677a16be77b2f6055f50db4dde3727",
+        "name": "audit",
+        "started_utc": "2026-10-01T14:06:22Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 238558,
+            "memory_max": 47244640256,
+            "memory_peak": 15822848,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": 1913701,
+          "duration": null,
+          "nodes": [],
+          "preserved_auditor": true,
+          "quotient_fusion_requested": false
+        },
+        "unit": "lattica-v2-grouped-39597-7.service",
+        "wall_seconds": 0.2916852899998048
+      }
+    ],
+    "checked_report": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/checked-report.json",
+    "checked_report_sha256": "9a3237012525af13f746f0e8c42ee765cd75f6ae86ae965d12d5b3ab80cc245a",
+    "observed_fused_lde_calls": 7,
+    "observed_chunks_per_call": 16,
+    "independent_additional_cpu_replay": {
+      "exit_code": 0,
+      "stdout": "grouped_artifact_audit=PASS kind=level3-count8-subtree proof_bytes=1913701 native_mutation_rejections=38 registry_policy_rejections=4 expected_statement_policy_rejections=2 bundle_files=5 inner_proofs_loaded=0 level6_qualified=false full_tree_security=UNREVIEWED production_ready=false\ngrouped_audit_elapsed_ms=229\n",
+      "required_markers": {
+        "grouped_artifact_audit": "PASS",
+        "kind": "level3-count8-subtree",
+        "proof_bytes": "1913701",
+        "native_mutation_rejections": "38",
+        "registry_policy_rejections": "4",
+        "expected_statement_policy_rejections": "2",
+        "bundle_files": "5",
+        "inner_proofs_loaded": "0",
+        "level6_qualified": "false",
+        "full_tree_security": "UNREVIEWED",
+        "production_ready": "false"
+      },
+      "cpu_only_preserved_auditor": true,
+      "gpu_requested_with_invalid_device": true,
+      "memory_max_bytes": 3221225472,
+      "swap_max_bytes": 0,
+      "shared_fixture_pruned": false
+    },
+    "scope": "One level-three/count-eight sample. Not a padded depth-six block, not a matched speedup result and not production/security approval.",
+    "latency_gate_note": "Final merge alone exceeds 180 seconds; complete post-seal finalization was not measured."
+  },
+  "reporter_validation": {
+    "status": "SYNTHETIC_AND_LIVE_INCOMPLETE_REFUSAL_PASSED",
+    "synthetic_tests": {
+      "passed": 20,
+      "failed": 0,
+      "command": "python3 -B lattica-prover-p3/scripts/test-report-block-v2-fusion.py",
+      "elapsed_seconds": 0.043
+    },
+    "live_incomplete_trial_refusal": {
+      "exit_code": 1,
+      "output": "Traceback (most recent call last):\n  File \"/home/access/code/lattica/lattica-prover-p3/scripts/report-block-v2-fusion.py\", line 256, in <module>\n    main()\n    ~~~~^^\n  File \"/home/access/code/lattica/lattica-prover-p3/scripts/report-block-v2-fusion.py\", line 250, in main\n    results.append(inspect(paths[0].resolve(), getattr(args, label + \"_sha256\"),\n                   ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n                           paths[1].resolve(), getattr(args, label + \"_registration_sha256\")))\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/access/code/lattica/lattica-prover-p3/scripts/report-block-v2-fusion.py\", line 115, in inspect\n    require(state[\"schema\"] == 1 and state[\"status\"] == \"FUSION_TRIAL_CPU_AUDITED_RESEARCH_ONLY\"\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n            and state[\"production_ready\"] is False and state[\"repeat_qualified\"] is False\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n            and state[\"level6_qualified\"] is False and state[\"full_tree_security\"] == \"UNREVIEWED\",\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n            \"trial incomplete, interrupted, or outside research scope\")\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/access/code/lattica/lattica-prover-p3/scripts/report-block-v2-fusion.py\", line 23, in require\n    raise ValueError(message)\nValueError: trial incomplete, interrupted, or outside research scope\n"
+    },
+    "read_only": true,
+    "completed_full_size_trial_inspection": {
+      "status": "PASS",
+      "profiles_checked": 7,
+      "source_and_artifact_pins_checked": true,
+      "external_statement_and_audit_bundle_bound": true,
+      "recorded_cpu_audit": "PASS",
+      "fresh_cpu_audit_by_reporter": false
+    },
+    "coverage": [
+      "Pinned implementation, registration, source/log/artifact identities",
+      "Exact binding of exported audited root to the measured job",
+      "Per-node quotient profiler mode and chunk-count validation",
+      "Nonadditive inclusive spans remain separate; no fabricated sum",
+      "Identical off/on inputs, keys, binary and controls required; overlap refused",
+      "Total command time and final-merge latency reported separately",
+      "No repeat, depth-six, tail-latency or production qualification from one pair"
+    ],
+    "real_completed_stage_profiling": {
+      "status": "PASS",
+      "phase": "pairs",
+      "nodes": 4,
+      "fused_lde_calls_each": 1,
+      "fused_chunk_calls_each": 16,
+      "full_trial_inspection": false
+    }
+  },
+  "fusion_off_control": {
+    "status": "FUSION_TRIAL_CPU_AUDITED_RESEARCH_ONLY",
+    "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-fusion-off-proof-20261001-b/manifest.json",
+    "manifest_sha256": "638e0ed87739277cbc34d8d020346652437d3eb405850ee17012b822f25dfc5f",
+    "registration_manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-fusion-off-key-repro-20261001-b/manifest.json",
+    "registration_sha256": "347022c38d3ae965ae7e5111d2383d8da7ee8be1dbfe5000b51d487ad68d0aee",
+    "finished_utc": "2026-10-01T14:44:31Z",
+    "recursive_command_ms": 1931865,
+    "final_merge_ms": 270047,
+    "root": {
+      "bytes": 1913317,
+      "sha256": "10f75a758d9415bcb6855c43cc1f33062dd2e5ccd5c04d2f3fa6e7d174e4ca8b"
+    },
+    "additional_cpu_replay": {
+      "exit_code": 0,
+      "stdout": "grouped_artifact_audit=PASS kind=level3-count8-subtree proof_bytes=1913317 native_mutation_rejections=38 registry_policy_rejections=4 expected_statement_policy_rejections=2 bundle_files=5 inner_proofs_loaded=0 level6_qualified=false full_tree_security=UNREVIEWED production_ready=false\ngrouped_audit_elapsed_ms=222\n",
+      "required_markers": {
+        "grouped_artifact_audit": "PASS",
+        "kind": "level3-count8-subtree",
+        "proof_bytes": "1913317",
+        "native_mutation_rejections": "38",
+        "registry_policy_rejections": "4",
+        "expected_statement_policy_rejections": "2",
+        "bundle_files": "5",
+        "inner_proofs_loaded": "0",
+        "level6_qualified": "false",
+        "full_tree_security": "UNREVIEWED",
+        "production_ready": "false"
+      },
+      "cpu_only_preserved_auditor": true,
+      "gpu_requested_with_invalid_device": true,
+      "memory_max_bytes": 3221225472,
+      "swap_max_bytes": 0,
+      "shared_fixture_pruned": false
+    },
+    "previous_in_progress_observation": {
+      "status": "PROVING_RUNNING",
+      "mode": 0,
+      "unit": "lattica-v2-fusion-off-proof-20261001-b.service",
+      "manifest": "lattica-prover-p3/target/block-v2-fusion-off-proof-20261001-b/manifest.json",
+      "same_runner_source_inputs_and_limits": true,
+      "registration": {
+        "status": "FULL_SIZE_PREPROCESSING_REPRODUCED_RESEARCH_ONLY",
+        "exit_code": 0,
+        "manifest": "lattica-prover-p3/target/block-v2-fusion-off-key-repro-20261001-b/manifest.json",
+        "manifest_sha256": "347022c38d3ae965ae7e5111d2383d8da7ee8be1dbfe5000b51d487ad68d0aee",
+        "finished_utc": "2026-10-01T14:09:59Z",
+        "three_caps_equal_original": true,
+        "attempts": [
+          {
+            "log": "01-key-1.log",
+            "log_sha256": "ec31938a4a6db6e482449be6254268dbb815e33c27fa0c09c1e6f5f8543167a7",
+            "name": "key-1",
+            "started_utc": "2026-10-01T14:08:01Z",
+            "status": "complete",
+            "telemetry": {
+              "accounting": {
+                "cpu_usage_usec": 239803941,
+                "memory_max": 47244640256,
+                "memory_peak": 12048211968,
+                "memory_swap_max": 0,
+                "memory_swap_peak": 0
+              },
+              "audit_proof_bytes": null,
+              "duration": {
+                "elapsed_ms": 40853,
+                "spill_peak_bytes": 11719286784
+              },
+              "nodes": [],
+              "preserved_auditor": false,
+              "quotient_fusion_requested": false
+            },
+            "unit": "lattica-v2-grouped-59374-1.service",
+            "wall_seconds": 40.9232627639999
+          },
+          {
+            "log": "02-key-2.log",
+            "log_sha256": "6a98f4007b1b84957beb1c45ef54b0e50fce3a90dded78075bf9487d168d670f",
+            "name": "key-2",
+            "started_utc": "2026-10-01T14:08:42Z",
+            "status": "complete",
+            "telemetry": {
+              "accounting": {
+                "cpu_usage_usec": 235907590,
+                "memory_max": 47244640256,
+                "memory_peak": 11185020928,
+                "memory_swap_max": 0,
+                "memory_swap_peak": 0
+              },
+              "audit_proof_bytes": null,
+              "duration": {
+                "elapsed_ms": 35511,
+                "spill_peak_bytes": 10938769408
+              },
+              "nodes": [],
+              "preserved_auditor": false,
+              "quotient_fusion_requested": false
+            },
+            "unit": "lattica-v2-grouped-59374-2.service",
+            "wall_seconds": 35.56293788699986
+          },
+          {
+            "log": "03-key-3.log",
+            "log_sha256": "f054a678107c7f2c17b902546d0528d3dbea10763f107d222d5a8b61c30f1bd6",
+            "name": "key-3",
+            "started_utc": "2026-10-01T14:09:17Z",
+            "status": "complete",
+            "telemetry": {
+              "accounting": {
+                "cpu_usage_usec": 243189080,
+                "memory_max": 47244640256,
+                "memory_peak": 12403179520,
+                "memory_swap_max": 0,
+                "memory_swap_peak": 0
+              },
+              "audit_proof_bytes": null,
+              "duration": {
+                "elapsed_ms": 41405,
+                "spill_peak_bytes": 12191002624
+              },
+              "nodes": [],
+              "preserved_auditor": false,
+              "quotient_fusion_requested": false
+            },
+            "unit": "lattica-v2-grouped-59374-3.service",
+            "wall_seconds": 41.478889064000214
+          },
+          {
+            "log": "04-check.log",
+            "log_sha256": "c4aa60f773fec27f1c8efd4fe39fcfa112fa63082e5ccb43d7fd93954fa2527e",
+            "name": "check",
+            "started_utc": "2026-10-01T14:09:59Z",
+            "status": "complete",
+            "telemetry": {
+              "accounting": {
+                "cpu_usage_usec": 384629,
+                "memory_max": 47244640256,
+                "memory_peak": 15675392,
+                "memory_swap_max": 0,
+                "memory_swap_peak": 0
+              },
+              "audit_proof_bytes": null,
+              "duration": {
+                "elapsed_ms": 255,
+                "spill_peak_bytes": 0
+              },
+              "nodes": [],
+              "preserved_auditor": false,
+              "quotient_fusion_requested": false
+            },
+            "unit": "lattica-v2-grouped-59374-4.service",
+            "wall_seconds": 0.3288291669996397
+          }
+        ]
+      },
+      "last_observed_utc": "2026-10-01 14:31:28 UTC",
+      "observation": "All four control paired wrappers completed; mode-off and per-node profiling checks passed. Merge worker lattica-v2-grouped-62308-3.service active. Final root and audit not yet complete.",
+      "completed_pairs": {
+        "log": "02-pairs.log",
+        "log_sha256": "a09a8d83a09613cad91bc1a6e83a1a579a2f23484a96da88e0e40487f35263c4",
+        "name": "pairs",
+        "started_utc": "2026-10-01T14:12:18Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 5858202252,
+            "memory_max": 47244640256,
+            "memory_peak": 42965905408,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 1079691,
+            "spill_peak_bytes": 47156830208
+          },
+          "nodes": [
+            {
+              "artifact": "node.1.0",
+              "cache_hits": 0,
+              "elapsed_ms": 280852,
+              "setups": 1
+            },
+            {
+              "artifact": "node.1.1",
+              "cache_hits": 1,
+              "elapsed_ms": 233099,
+              "setups": 1
+            },
+            {
+              "artifact": "node.1.2",
+              "cache_hits": 2,
+              "elapsed_ms": 287167,
+              "setups": 1
+            },
+            {
+              "artifact": "node.1.3",
+              "cache_hits": 3,
+              "elapsed_ms": 277697,
+              "setups": 1
+            }
+          ],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": false
+        },
+        "unit": "lattica-v2-grouped-62308-2.service",
+        "wall_seconds": 1079.8121704629998
+      },
+      "completed_pair_profiles": [
+        {
+          "artifact": "node.1.0",
+          "checkpoint_elapsed_ms": 281122,
+          "timings": "inclusive_nonadditive",
+          "spans": [
+            {
+              "target": "lattica_block_v2_perf",
+              "name": "native batch prove",
+              "calls": 1,
+              "total_ns": 239676894594,
+              "max_ns": 239676894594
+            },
+            {
+              "target": "p3_batch_stark::prover",
+              "name": "compute quotient",
+              "calls": 1,
+              "total_ns": 48965764430,
+              "max_ns": 48965764430
+            },
+            {
+              "target": "p3_batch_stark::prover",
+              "name": "compute quotient polynomial",
+              "calls": 1,
+              "total_ns": 9033423907,
+              "max_ns": 9033423907
+            }
+          ]
+        },
+        {
+          "artifact": "node.1.1",
+          "checkpoint_elapsed_ms": 233099,
+          "timings": "inclusive_nonadditive",
+          "spans": [
+            {
+              "target": "lattica_block_v2_perf",
+              "name": "native batch prove",
+              "calls": 1,
+              "total_ns": 229783674237,
+              "max_ns": 229783674237
+            },
+            {
+              "target": "p3_batch_stark::prover",
+              "name": "compute quotient",
+              "calls": 1,
+              "total_ns": 45570795514,
+              "max_ns": 45570795514
+            },
+            {
+              "target": "p3_batch_stark::prover",
+              "name": "compute quotient polynomial",
+              "calls": 1,
+              "total_ns": 9858958136,
+              "max_ns": 9858958136
+            }
+          ]
+        },
+        {
+          "artifact": "node.1.2",
+          "checkpoint_elapsed_ms": 287167,
+          "timings": "inclusive_nonadditive",
+          "spans": [
+            {
+              "target": "lattica_block_v2_perf",
+              "name": "native batch prove",
+              "calls": 1,
+              "total_ns": 277667098660,
+              "max_ns": 277667098660
+            },
+            {
+              "target": "p3_batch_stark::prover",
+              "name": "compute quotient",
+              "calls": 1,
+              "total_ns": 66506496080,
+              "max_ns": 66506496080
+            },
+            {
+              "target": "p3_batch_stark::prover",
+              "name": "compute quotient polynomial",
+              "calls": 1,
+              "total_ns": 31533190202,
+              "max_ns": 31533190202
+            }
+          ]
+        },
+        {
+          "artifact": "node.1.3",
+          "checkpoint_elapsed_ms": 277697,
+          "timings": "inclusive_nonadditive",
+          "spans": [
+            {
+              "target": "lattica_block_v2_perf",
+              "name": "native batch prove",
+              "calls": 1,
+              "total_ns": 268003390715,
+              "max_ns": 268003390715
+            },
+            {
+              "target": "p3_batch_stark::prover",
+              "name": "compute quotient",
+              "calls": 1,
+              "total_ns": 53078977181,
+              "max_ns": 53078977181
+            },
+            {
+              "target": "p3_batch_stark::prover",
+              "name": "compute quotient polynomial",
+              "calls": 1,
+              "total_ns": 10301033153,
+              "max_ns": 10301033153
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "matched_comparison": {
+    "evidence": "docs/evidence/block-v2-quotient-fusion-matched-2026-10-01.json",
+    "evidence_sha256": "313bd638d3e4e75c52e36fd38f3caeec0ac2c924b96124bac3635b85fdd2dcbf",
+    "checked_report": {
+      "path": "lattica-prover-p3/target/block-v2-fusion-matched-20261001-b.json",
+      "sha256": "77ab56688aecffed020ab8b8c84ae53b9d30c940d330ab7029e89c3ae645a663"
+    },
+    "status": "ONE_MATCHED_FUSION_PAIR_NOT_REPEAT_QUALIFIED",
+    "pairs": 1,
+    "order": [
+      "on",
+      "off"
+    ],
+    "changes": {
+      "final_merge_ms": {
+        "off": 270047,
+        "on": 252026,
+        "reduction_percent": 6.673282798920188
+      },
+      "peak_live_mapped_spill_bytes": {
+        "off": 47442042880,
+        "on": 47442042880,
+        "reduction_percent": 0
+      },
+      "peak_worker_cgroup_bytes": {
+        "off": 42965905408,
+        "on": 42968530944,
+        "reduction_percent": -0.006110742867090008
+      },
+      "recursive_command_ms": {
+        "off": 1931865,
+        "on": 1738999,
+        "reduction_percent": 9.983409813832747
+      }
+    },
+    "repeat_qualified": false,
+    "depth_six_qualified": false,
+    "production_ready": false,
+    "decision": {
+      "fusion_default": "disabled",
+      "result": "Retain the opt-in implementation as a validated optimization candidate. One pair observed 9.9834% lower total recursive-command time and 6.6733% lower final-merge time.",
+      "resource_result": "No retained-geometry reduction: mapped spill identical, worker RAM peaks essentially unchanged. No GPU upload-volume reduction follows from this fusion alone.",
+      "release_gates": "The fused final merge alone was 252.026 seconds, above the complete finalization target of 180 seconds. No 64-transaction cold, incremental-arrival, full-tree-security or production gate passed.",
+      "next": "Complete the five original matched single/grouped pairs and all required pruning/replay. Then continue measured hashing/opening/data-movement and architecture work; do not extrapolate this eight-transaction CPU pair into a production throughput claim.",
+      "final_cleanup": "The shared wallet fixture and both registration-job wallet copies are still retained. Final shared/registration pruning and fresh CPU replay of both fusion roots remain required, in addition to the original series/pilot roots."
+    }
+  }
+}

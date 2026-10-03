@@ -2,32 +2,43 @@
 
 > **Research specification:** Parameters for experimental recursive aggregation; not part of the production C ABI or audit boundary.
 
-**Status: design + measurement, on branch `v3`.** Companion to `docs/recursion-design.md` (what recursion
-buys) and `docs/recursion-verifier-audit.md` (the in-circuit verifier spec). This doc fixes the
-**parameters** of the recursive aggregation tree so its soundness clears the same **≥100-bit proven**
-floor the batch path enforces (`docs/soundness-budget.md`), and records the measured feasibility curve
-that constrains them.
+> **SUPERSEDED PARAMETER ROADMAP:** [Block-proving v2](block-proving-v2.md) specifies a separate,
+> **CANDIDATE / INACTIVE** cubic-extension binary-FRI profile (q128/lb4/cap6/cw4/pow16), not the
+> quadratic/q96 experiments below. It is unfrozen pending complete-tree soundness
+> and full-depth qualification. The bounded engine has a real two-level recursive
+> proof and root-only verification after inner-artifact deletion; see the
+> [current measurements](bounded-execution-engine.md). Depth-six/64-transaction
+> performance and security gates remain open. Historical v1 parameters are unchanged.
+
+**Status: historical design + measurement, on branch `v3`.** Companion to `docs/recursion-design.md`
+and `docs/recursion-verifier-audit.md`. The measurements and monolith feasibility curve below are
+retained as research evidence, not as approved v2 parameters, a whole-tree security proof, or an
+operator hardware recommendation.
 
 Prerequisite achieved (2026-07-03, commits `165a577` + `7d6a5ad`): the monolith
 (`recursion/monolith`) accept-iff-`p3::verify`s a **real production `JoinSplitAir` proof**, both
 non-hiding and hiding (`is_zk=1`), through the data-driven symbolic epilogue. So the in-circuit verifier
-is no longer the unknown; the aggregation **parameters** are.
+has standalone research evidence. Bounded self-composition and independent root-only verification
+remain unresolved; choosing parameters alone does not implement them.
 
-## 1. The soundness identity for the tree
+## 1. Per-proof accounting is not complete-tree soundness
 
-A recursive proof's soundness is **`min` over every level** of that level's FRI soundness
-`f(num_queries, log_blowup)`. Why: a level's outer proof proves the statement "the level below verified"
-only to the strength of its **own** FRI parameters; and preserving the level-below proof's
-`f(q, lb)` requires the monolith to **replay all `q` of its queries in-circuit** (replaying only `q' < q`
-re-establishes just `f(q', lb)`). There is **no soundness-preserving shortcut** that checks fewer queries.
+The original roadmap used the minimum per-level FRI bit count as a tree security argument. That is
+not sufficient: complete-tree accounting must include all relevant proof instances and composition
+losses, transcript/hash assumptions, registered verifier identities, and actual geometry/degree.
+The v2 target is at least 100 bits proven for the complete maximum-size tree, not merely each proof.
+The candidate profile must not be frozen until that analysis and bounded recursion are established.
+
+The historical monolith must replay every query required by its selected inner verifier; checking
+fewer is not an equivalent verification. The q96 figures below describe the legacy per-proof
+configuration, not a sufficient v2 tree security claim.
 
 Consequences, from `soundness-budget.md`'s accounting (`p3-uni-stark` / soundcalc):
 - Proven unique-decoding ≥100 bits needs **`num_queries = 96` at `log_blowup = 4`**; `≤80` queries sit on
   the 96-bit list-decoding plateau. Grinding does **not** lift the *proven* bound (it lifts conjectured).
-- Therefore **every level** of the tree — leaf user proofs, every aggregator, the root — must be a
-  **q96 / lb4** proof to keep the whole chain at proven-100. Reduced-query configs (the phase-6/7
-  monolith milestones) are correctness milestones only; they do **not** clear the floor (as flagged at
-  `MAX_AGG_TILES`).
+- The old proposal used **q96 / lb4 at every level**. Matching these parameters is not a proof that
+  the complete chain clears 100 bits. Reduced-query configs (the phase-6/7 monolith milestones)
+  remain correctness experiments only, not production-strength feasibility evidence.
 
 So the aggregation tree does **not** reduce per-proof cost: each aggregator must replay `K × 96` inner
 queries (K inners × 96 each). What the tree buys is **parallelism** (independent aggregators on separate
@@ -65,7 +76,12 @@ production-prover (128 GB+) capability, just past this 62 GB dev box. The dev bo
 reduced queries (the correctness milestone, done: `phase8_joinsplit_monolith` /
 `phase8_joinsplit_hiding_monolith`); the ≥100-bit-proven full-query proof runs on a server.
 
-## 3. Recommended architecture
+## 3. Historical architecture proposal — superseded for v2
+
+The numbered proposal below records the q96/legacy-root design, not the active roadmap. In
+particular, its per-proof security claim, unchanged-node seam, and multiple-root block rule must not
+be carried into v2. The new target is one final proof for an ordered64 commitment, under the bounded
+workstation gates in [block-proving-v2.md](block-proving-v2.md).
 
 1. **Every level is q96 / lb4** (proven-100), per §1 — no reduced-query intermediate levels. The
    reduced-query monoliths are correctness milestones only.
@@ -87,13 +103,12 @@ reduced queries (the correctness milestone, done: `phase8_joinsplit_monolith` /
 5. **`MAX_AGG_TILES`** mirrors `MAX_BATCH_TILES = 64` at the ≥100-bit floor; a block beyond one tree emits
    multiple roots (same as the batch's multiple-proof rule).
 
-**Honest hardware requirement:** the recursive prover targets a **≥128 GB server** (256 GB for K≥2
-aggregators). The node/consensus seam (the block tx-root + one `verifyBatch`-shaped check) is **unchanged**
-— so the batch path (`batch_joinsplit_air`, proven-100, ≤64 tx/proof) carries production until the
-recursive prover is deployed; recursion is the trustless-per-user / parallel-proving scale-out, slotted
-underneath the same seam.
+**Historical resource projection:** this monolith design suggested a ≥128 GB server (256 GB for
+K≥2). That is not a v2 hardware recommendation or measured v2 result. Direct witness batches and
+in-block individual-proof containers are excluded deployment paths; they do not carry production
+while v2 remains incomplete. The v2 commitment/profile require a new versioned node seam.
 
-## 4. Verification
+## 4. Historical verification checklist (not v2 evidence)
 
 - Soundness: `proven_security_bits` gates each level's config at ≥100 (the same test the batch uses);
   the aggregator config reuses `production_fri` (q96/lb4/pow16/cap6). A `recursion_proven_security_floor`
@@ -129,13 +144,11 @@ inherits) are each far larger than a leaf join-split's (W=19, 81 constraints, de
 is strictly bigger and higher-degree than level N−1 — **naive tree self-recursion diverges**, exactly the
 concern §3.4 raised.
 
-**Consequence — a WRAP (or a different outer system) is required, and it is a distinct future effort.** To make
-the tree converge, each level's output must be re-attested at a *canonical, small, low-degree* shape before the
-next level verifies it. Two viable directions, neither in scope here: (a) a purpose-built **uniform/wrap
-verifier** whose size and constraint degree are fixed (independent of what it verifies) — a substantially
-different circuit than the current inner-specific monolith; (b) a **SNARK wrap** (e.g. verify the STARK inside a
-constant-size pairing proof) — needs proving infrastructure this crate does not have. Until then, the
-production scale-out is the **flat aggregation tree of depth 1** (R4): one aggregator over K leaves per proof,
-the node folding multiple aggregate roots exactly as it folds multiple batch roots (`MAX_AGG_TILES`, §3.5) —
-which needs no self-recursion. R5's deliverable is this determination; deep self-recursion is deferred behind
-the wrap.
+**Consequence for the approved v2 direction:** implement and validate a bounded, fixed-width,
+low-degree **uniform recursive verifier**, substantially different from the inner-specific monolith.
+The candidate bounded engine now implements that alternative and demonstrates a
+two-level recursive proof; [current evidence](bounded-execution-engine.md) records
+the measurements and remaining full-depth/security gates. The formerly suggested curve/SNARK wrap is
+excluded by the post-quantum hash/FRI requirement. A flat depth-one aggregate or multiple roots in a
+block is not an approved production fallback. The R5 measurements establish the limitation of naive
+self-composition, not a working v2 tree or a passed feasibility gate.

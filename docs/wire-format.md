@@ -4,8 +4,54 @@
 
 The Zig node and the Rust prover (`lattica-prover-p3`) exchange bytes across the C ABI declared in
 `lattica-prover-p3/include/lattica_prover_p3.h` (mirrored by `src/ffi_integration.zig`,
-`src/integration_node.zig`, `lattica-prover-p3/tests/ffi_integration.c`). Everything on this page is
-**frozen**: a change is a node-seam break, and for the starred (★) items a consensus break.
+`src/integration_node.zig`, `lattica-prover-p3/tests/ffi_integration.c`). The legacy contracts below
+are **frozen**: a change is a node-seam break, and for the starred (★) items a consensus break.
+
+## Candidate / inactive v2 boundary — no new byte schema
+
+[Block-proving v2](block-proving-v2.md) introduces a separately versioned candidate profile and a new
+ordered 64-leaf Merkle commitment; it does **not** reinterpret the unversioned legacy proof bytes or
+the batch tx-root below. Historical v1 decoding and verification remain unchanged. The v2 target is
+one aggregate proof ≤2 MiB for at most 64 total transactions including issuance, with no individual
+proofs retained in the block. Aggregator interfaces must accept only proofs and public inputs, never
+wallet witnesses; the witness ABI below is not a network submission format.
+
+**CANDIDATE / INACTIVE:** exact v2 identifiers, domain tags, public-input encodings, and proof-byte
+layout are not assigned here. The candidate cubic-extension/binary-FRI profile remains unfrozen
+pending complete-tree soundness and full-depth qualification. The bounded verifier
+has a real four-transaction/two-level proof and root-only verification after inner
+artifact deletion, but no production acceptance ABI or network format. The local
+research envelopes in the [evidence report](bounded-execution-engine.md) are not
+new normative wire assignments. Depth-six/64-transaction performance and activation
+remain open. Activation requires reviewed encodings and explicit host consensus
+changes. Neither a v2 failure nor this section authorizes a downgrade to witness
+batches or individual-proof containers.
+
+### Local research node files — not network wire assignments
+
+The bounded recursion tools select their node format from the locally trusted
+build/profile, never by using an untrusted file header to choose a verifier:
+
+| Research build | Header | Payload |
+|---|---|---|
+| Default `block-v2` | `LBV2RC01` | Original Postcard representation, unchanged |
+| Opt-in `block-v2-wide-lanes` | `LBV2RC02` | Postcard framing with each Serde `u64` value encoded as exactly eight little-endian bytes |
+
+The adapter applies recursively, including scalar types that Serde represents
+as `u64`; sequence lengths and enum discriminants retain Postcard framing.
+Wallet artifacts (`LBV2WL02`) retain the legacy encoding and wallet profile.
+Both node formats retain the **2 MiB total envelope limit including the header**.
+The encoder writes into a fixed-capacity buffer. Decoding enforces canonical
+re-encoding, field canonicality, sequence/item/depth budgets and exact input
+consumption. Schema-known tuple lengths remain bounded even when their fields
+encode to zero bytes; variable-length inputs still require checked length hints.
+Wrong, unknown and downgrade headers are rejected by the selected decoder.
+
+The wide program manifest is version six and its registry binds node-codec
+revision two. Default program/registry identities remain unchanged. This is a
+research representation change, not weaker proof parameters, a production ABI,
+or authorization to activate a network format. Passing codec tests does not
+establish full-size recursive closure, resource feasibility or tree security.
 
 ## Proof bytes
 

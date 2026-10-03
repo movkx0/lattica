@@ -2,12 +2,22 @@
 
 > **Research design:** Motivation and architecture for recursive aggregation; not a production commitment.
 
-**Status: design doc for deferred future work.** This is *not* implemented. The batch-aggregation
-circuit (`batch_joinsplit_air` / `batch_htlc_air`, "one proof per block") is the implemented, validated
-interim that already handles realistic block sizes; recursion is the scale-out beyond it. This document
-records what recursion buys, why it is a large project (not a session task), the concrete design, the
-feasibility on the current stack, and — importantly — why the work already done is **forward-compatible**
-with it.
+> **SUPERSEDED ROADMAP:** [Incremental recursive block proving v2](block-proving-v2.md) now controls
+> the block-path design. The original model/build log below is retained as research history, not a
+> recommendation to deploy witness batches, in-block proof containers, or a curve/SNARK wrap.
+> Claims below about an unchanged node/root interface, quadratic/q96 tree parameters, or recursion
+> being optional do not apply to v2. V2 has a new ordered64 root and separate candidate profile.
+
+**Current boundary:** v2 is **CANDIDATE / INACTIVE**. The bounded fixed-width
+verifier, wrapper/empty/merge programs, and a real four-transaction/two-level
+recursive proof are now demonstrated. Root-only verification passed after all
+inner artifacts were deleted; see the [current evidence](bounded-execution-engine.md).
+The legacy monolith API below still requires inner proofs. Common-height padding,
+depth-six/64-transaction performance, complete-tree soundness/zero knowledge,
+and production integration remain open; no live-network readiness is claimed.
+
+The B1–B5 entries below record the original investigation and its standalone primitive/monolith
+results. They do not demonstrate fixed-geometry recursive composition or live-network readiness.
 
 ## 1. What recursion buys (over the batch)
 The batch proves N transactions as one proof by tiling them in one trace, proven **monolithically by one
@@ -18,13 +28,13 @@ party that holds all N witnesses**. That has three real limits:
 - **Prove time ~linear in N**, single-threaded over the whole block (n=32 ≈ 70 s measured).
 - **`MAX_BATCH_TILES = 64`** at the ≥100-bit proven floor — bigger blocks need multiple batch proofs.
 
-**Recursion** removes all three: **each user proves their own spend** (the existing single-tx
-join-split/HTLC proof, on their own hardware, revealing no witness), and a **recursive aggregation
-circuit verifies K inner proofs and emits one outer proof**. Aggregation parallelizes (a tree of
-aggregators), so block proving is `O(log N)` depth instead of `O(N)` serial, with no party holding all
-witnesses and no per-proof soundness decay with N.
+**Recursion** allows each user to prove a spend locally, with the aggregator verifying proofs rather
+than collecting private witnesses. A bounded recursive tree can provide logarithmic merge depth
+with parallel work; that is not a wall-clock or memory guarantee. Every level still incurs proving
+cost, and complete-tree soundness must account for composition losses. Those properties have not
+been established for the approved v2 construction.
 
-## 2. The model
+## 2. The original model (superseded for v2)
 - **Inner proof (per user):** exactly today's `lattica_joinsplit_prove` / `lattica_htlc_prove` single-tx
   proof. Unchanged.
 - **Aggregation circuit (the new, hard part):** an AIR that, given K inner proofs + their public
@@ -75,16 +85,15 @@ checks, and wiring the full transcript — i.e. the bulk of a STARK verifier, ex
   **not** a session-scale increment, which is why it is staged as future work rather than rushed (a wrong
   in-circuit verifier is a silent soundness hole).
 
-## 5. Why this is staged, not done now
-The batch ("one proof per block", implemented + real-prover-validated + now with the node batch-apply
-path) already delivers the on-chain win — one verification per block, ~log-n proof size — for realistic
-block sizes (≤64 txs/proof, multiple proofs/block for larger). Recursion is required only when you need
-**trustless per-user proving** or **unbounded block size with parallel proving**. Building it correctly
-is a project in its own right; doing it carelessly at the tail of the batch work would risk a soundness
-bug in an audited consensus circuit. The interface is already in place (the tx-root + the verify seam),
-so recursion can be slotted underneath without touching the node when it is built.
+## 5. Original staging decision — superseded
 
-## 6. Concrete next steps (when this is picked up)
+The original roadmap treated the implemented batch circuits as an interim block path. The approved
+v2 requirements exclude that path because it requires users' private witnesses; individual proofs
+stored in blocks are also excluded for storage/bandwidth reasons. Bounded hash/FRI recursion is now
+a prerequisite for deployment, not an optional scale-out upgrade. Legacy batch validation remains
+historical evidence, not a fallback, and the v2 ordered root/profile require a versioned node seam.
+
+## 6. Original next steps (historical; use the v2 milestones for new work)
 1. Spike: a minimal in-circuit FRI **query-path verifier** over F_p² reusing the membership gadget +
    `poseidon2_air` — the riskiest sub-component — and benchmark its trace size.
 2. Decide path (1) vs (2) in §4 from the spike + a PQ-recursion-stack survey.
@@ -94,6 +103,10 @@ so recursion can be slotted underneath without touching the node when it is buil
    `joinsplit_air`/`htlc_air`.
 
 ## 7. B1 spike result — **GO (on the p3 path)**
+
+> Historical primitive-scale result. Its early size extrapolation is not evidence of bounded
+> full-strength recursion; the later R5 expansion and current v2 feasibility blocker take precedence.
+
 Built and validated `lattica-prover-p3/src/recursion/fri_merkle.rs` — an in-circuit FRI-query
 Merkle-opening verifier (the dominant, most-repeated FRI operation). Findings:
 - **Correctness / reuse proven.** `merge` is bit-identical to the FRI MMCS compression

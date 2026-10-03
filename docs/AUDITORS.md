@@ -2,6 +2,19 @@
 
 > **Document role:** Current audit entry point for the frozen production CPU surface. For navigation and historical records, see [`README.md`](README.md).
 
+> **New block-path work outside this audit:** [Block-proving v2](block-proving-v2.md)
+> remains **CANDIDATE / INACTIVE**. Its constrained verifier and wrapper/empty/merge
+> programs now have a real four-transaction/two-level recursive proof: the root
+> verifies after all inner artifacts are deleted, within the measured per-stage
+> resource caps and 2 MiB envelope limit. See the [evidence](bounded-execution-engine.md).
+> This is not a passed 64-transaction performance gate or a security audit.
+> Common-height padding, complete-tree soundness/zero knowledge, production
+> registry approval, HTLC/issuance, and host integration remain open. Review scope
+> includes the cubic/select ISA, authenticated cap hints, PCS/FRI/lookup checks,
+> program-key/profile binding, bounded decoder, and memory ownership.
+> Frozen audit facts below remain unchanged; witness batches and individual-proof
+> containers are not approved block fallbacks.
+
 Lattica is a **quantum-safe, Zcash-style shielded transaction layer** (it replaces Zcash
 Sapling/Orchard): a Plonky3 zero-knowledge circuit + a Zig protocol layer, on a shielded-only value
 model. This is the entry point for the external security audit. Read this first, then the deep-dive
@@ -142,10 +155,11 @@ here for the batch-aggregation delta: its constraint audit, C-ABI fuzz, and inte
 `docs/audit-readiness-status.md` (audit-readiness status + roadmap),
 `docs/lattica-implementation-audit.md` (the implementation audit + remediation log) and
 `docs/remediation-status.md` (live status). `docs/full-node-security-integration.md` is the production
-full-node checklist (host-chain scope). A **pre-v1 forward-looking** design note,
+full-node checklist (host-chain scope). [Block-proving v2](block-proving-v2.md) controls the new
+block-path architecture and evidence ledger, outside the frozen audit. A **pre-v1 forward-looking** design note,
 `docs/hash-function-analysis.md` (why Poseidon2 stays the in-circuit/on-chain hash for v1, vs Monolith/Tip5),
-is **not part of the audit artifact**. **Everything else in `docs/` is historical / reference-only**
-(each carries a banner pointing back here) — `audit-scope.md`, `soundness.md`,
+is **not part of the audit artifact**. The [documentation index](README.md) distinguishes current
+guides from research and historical records. Historical/reference documents include `audit-scope.md`, `soundness.md`,
 `transaction-stack-audit.md`, `framework-decision.md`, `plonky3-port-plan.md`, `production-readiness.md`,
 and `parameters.md` predate the Plonky3 cutover and are not part of the audit artifact.
 
@@ -218,5 +232,12 @@ on no production path, not externally audited, and the deeper self-recursion tre
 wrap. It is **not part of this audit gate**; the consolidated status + the review/improvement surface is
 **`docs/recursion-aggregation-status.md`** (with `docs/recursion-design.md` §10,
 `docs/recursion-verifier-audit.md`, and `docs/recursion-aggregation-params.md`).
-**Batch aggregation, by contrast, IS production + validated** (`batch_joinsplit_air`/
-`batch_htlc_air` + the node `applyBatch` path); include it in scope if this round covers the batch path.
+**Batch aggregation is part of the frozen CPU review** (`batch_joinsplit_air`/`batch_htlc_air` + the
+node `applyBatch` path). Preserve that audit scope and legacy verification. Its witness requirements
+exclude it from the approved v2 deployment architecture, regardless of the circuit's audit status.
+
+V2 requires a new ordered64 commitment and separately versioned profile, not the historical
+`batch_root` seam. The current research aggregate verifier still needs inner proofs; a standalone
+root-only verifier is a target and must receive separate review. Full-tree soundness, zero knowledge,
+bounded recursion, all transaction types, and host activation remain release gates. No curve/SNARK
+wrap, witness-batch fallback, or in-block individual-proof container is approved.

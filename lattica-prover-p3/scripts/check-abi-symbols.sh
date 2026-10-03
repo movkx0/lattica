@@ -29,8 +29,9 @@ EOF
 EXPECTED="$(echo "$EXPECTED" | sort -u)"
 
 # The #[no_mangle] extern "C" entries appear verbatim (unmangled); the crate's own mangled symbols are
-# `..lattica_prover_p3..`, which never match `lattica_(batch|htlc|joinsplit)*`.
-GOT="$(nm -g --defined-only "$LIB" 2>/dev/null | grep -oE 'lattica_(batch|htlc|joinsplit)[a-z_]*' | sort -u)"
+# Rust-mangled names do not match the anchored unmangled-symbol pattern below.
+# Check ALL unmangled lattica_* exports; a new prefix must not evade the gate.
+GOT="$(nm -j -g --defined-only "$LIB" 2>/dev/null | grep -E '^lattica_[a-zA-Z0-9_]+$' | sort -u)"
 
 if [ "$GOT" != "$EXPECTED" ]; then
   echo "FAIL: lattica_* extern set drifted from the current node seam:"
@@ -48,3 +49,10 @@ if [ "${REC:-0}" -ne 0 ]; then
   exit 1
 fi
 echo "OK: zero recursion symbols in the default staticlib (feature-gated out; enable with --features recursion)."
+
+V2="$(nm "$LIB" 2>/dev/null | grep -ic 'block_v2' || true)"
+if [ "${V2:-0}" -ne 0 ]; then
+  echo "FAIL: $V2 candidate block-v2 symbols in DEFAULT staticlib."
+  exit 1
+fi
+echo "OK: zero candidate block-v2 symbols in default staticlib."

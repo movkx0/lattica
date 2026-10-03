@@ -1,0 +1,418 @@
+{
+  "schema": 1,
+  "captured_utc": "2026-10-01 19:18:28 UTC",
+  "status": "WIDE21_REVISION2_REJECTED_BY_GEOMETRY_RAM_AND_FULL_HEIGHT_ENVELOPE",
+  "feature": "block-v2-wide-lanes",
+  "production_ready": false,
+  "default_enabled": false,
+  "native_compile_passed": true,
+  "native_tests_passed": false,
+  "default_compatibility_revalidated": true,
+  "recursive_closure_proved": false,
+  "full_size_geometry_measured": true,
+  "measured_speedup": false,
+  "full_tree_security_reviewed": false,
+  "motivation": {
+    "source_evidence": "docs/evidence/block-v2-program-usage-2026-10-01.json",
+    "baseline_merge_active_rows": 439125,
+    "baseline_merge_unused_scalar_slots": 1,
+    "baseline_merge_unused_cubic_slots": 0,
+    "selected_scalar_lanes": 21,
+    "selected_cubic_lanes": 7,
+    "unchanged_operations_merge_rows_illustration": 257692,
+    "illustration_is_recompiled_geometry": false,
+    "half_height_illustration_headroom_rows": 4452,
+    "preprocessing_cell_ratio_if_half_height": 1.3142857142857143,
+    "caveat": "The half-height illustration holds the old operation counts fixed. Wider preprocessing has 31.4% more cells even at half height; no recompiled recursive geometry, memory saving or speedup is established."
+  },
+  "source_sha256": {
+    "lattica-prover-p3/.cargo/config.toml": "3e53c2589d496b9e70431c6a097f5221051128f646009694eb35e487e0518ab4",
+    "lattica-prover-p3/Cargo.toml": "61d037ffd35caeb9d610e4ef27be7c848d10937f8cb2bfbd9c1240c720252fd1",
+    "lattica-prover-p3/src/block_v2/machine/air.rs": "611aff9c398e8cf1c1c5fc4b1d9a12742039d41ff74e2ac84c9370a1b50dda50",
+    "lattica-prover-p3/src/block_v2/machine/program.rs": "ec4e772b6428a4854556d10c5c0b0c6b78b70b71439b0d3f093f1dcec9ffee62",
+    "lattica-prover-p3/src/block_v2/machine/backend.rs": "d16e9b56d7d56ad49a9c04a2c6f6fbe07aff96e4fa974ee5d99f6ef46a68617e",
+    "lattica-prover-p3/src/block_v2/machine/usage.rs": "05f392e9526b8a0ef542c9faa0eede69704a74fbbb2bcc30cf8436a731293436",
+    "lattica-prover-p3/src/bin/block_v2_grouped_probe.rs": "3c99ea02ef0b27dd79c2d91a905ce105a6d77f7a90a0cb2e7e1576264d30161a",
+    "lattica-prover-p3/src/block_v2/recursive.rs": "50e278425ab60838ef837d9605be91c4b248092450c31aeba32562437ba06c51"
+  },
+  "implementation": {
+    "scope": "Separate opt-in CPU research layout; no C ABI or activation. Existing measured executables/controllers are preserved.",
+    "main_width": 94,
+    "hash_port_offsets": [
+      0,
+      8,
+      16,
+      24
+    ],
+    "hash_aux_start": 32,
+    "arithmetic_columns": 84,
+    "public_values_per_bank": 32,
+    "max_public_values": 64,
+    "preprocessed_width_from_source": 184,
+    "default_preprocessed_width": 70,
+    "canonical_columns": "First-eight A uses (1-read_a)*a; high A uses (1-read_a-IS_HASH)*a. B/D retain hash-row exemptions, C uses ordinary write/public-row constraints. Extra hash-row values are permutation checkpoints; columns 84..93 are zero off hash rows.",
+    "identity": "Lookup bus lattica-v2-ssa-wire-wide21-v2; version-four program manifest binds lane/public-bank counts. Registry binds full AIR/lookup fingerprints and dimensions. New independently reproduced keys and externally pinned profile are mandatory.",
+    "preserved": "q128, cubic Goldilocks, blowup16, cap6, four random codewords, PoW16, fresh CSPRNG randomness, one AIR and strict single-zero-lookup-terminal verification.",
+    "default_compatibility_intent": "Without the feature, use eight/two lanes, the original bus/domain and version-three manifest. Legacy numerical offsets/constraints are intended unchanged; native/default root and registry replay still mandatory.",
+    "arithmetic_column_map": {
+      "first_eight": "port * 8 + lane",
+      "extra_lanes": "32 + port * (LANES - 8) + lane - 8",
+      "ports": "A=0, B=1, C=2, D=3",
+      "extra_ranges_inclusive": {
+        "A": [
+          32,
+          44
+        ],
+        "B": [
+          45,
+          57
+        ],
+        "C": [
+          58,
+          70
+        ],
+        "D": [
+          71,
+          83
+        ]
+      },
+      "shared_helpers": "a_column/b_column/c_column/d_column are shared by native trace writing, scalar/cubic AIR and adversarial test offsets; cubic groups can cross lane 7/8."
+    },
+    "hash_preprocessing": "All scalar opcodes are zero/input on hash rows; only the first eight lanes have hash A/C addresses and output multiplicities. Extra addresses/multiplicities and all B/D addresses/cubic flags are zero.",
+    "hash_bus": "The first eight A/C ports share the ordinary lookup entries. No separate hash-only lookup loop and no 1 - IS_HASH multiplication of scalar equations or lookup counts.",
+    "expected_constraint_degree": 8,
+    "degree_measured": true
+  },
+  "validation": {
+    "rustfmt_edition_2021_check": "PASS",
+    "git_diff_check": "PASS",
+    "cargo_feature_metadata_locked_offline_no_deps": "PASS; confirms opt-in dependency and no default activation; not compilation",
+    "newly_added_tests": {
+      "row_layout_and_native_trace": 4,
+      "wide_real_proof_mutation": 1,
+      "wide_mutation_cases": 17,
+      "executed": 5,
+      "wide_mutation_additions": [
+        "hash high-A checkpoint",
+        "padding high-A",
+        "padding high-B"
+      ],
+      "degree_eight_assertion": true,
+      "default_layout_tests_executed": 4,
+      "wide_layout_tests_executed": 4,
+      "wide_real_proof_tests_executed": 1
+    },
+    "existing_tests_updated": "Use actual scalar output/input offsets for three adversarial trace tests and layout capacity for usage packing tests; rejection assertions retained.",
+    "does_not_establish": [
+      "Wide full-size envelope admission or complete passing suite",
+      "Full-size recursive geometry/closure, memory, or latency savings",
+      "Full-tree soundness/zero-knowledge review or production qualification"
+    ],
+    "revision_two_changes": "Column-map uniqueness/coverage, first-eight default positions, cross-boundary cubic mapping, all-zero hash opcodes and extra-port metadata are asserted. Existing mutation assertions retained.",
+    "frozen_original_controller_pins": "All five source/helper/controller pins rechecked unchanged at this revision checkpoint."
+  },
+  "input_retention": {
+    "additional_consumer": "The wide-layout full-size compiler/closure investigation will need the existing completed public wallet proofs. Keep the shared and fusion-registration fixtures until this and all other intended consumers finish.",
+    "no_fixture_changes": true,
+    "no_cleanup_performed": true,
+    "extra_compatibility_copy": {
+      "directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-default-binaries-20261001-a/compatibility-job",
+      "public_wallet_proofs": 8,
+      "source": "Pinned original shared public-wallet fixture; no witness data",
+      "cleanup_pending": true
+    },
+    "wide_geometry_copy": {
+      "directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-geometry-20261001-a",
+      "public_wallet_proofs": 8,
+      "keys": 0,
+      "recursive_proofs": 0,
+      "cleanup_pending": true
+    }
+  },
+  "next_gates": [
+    "Wide21 revision2 is rejected. Preserve all logs, binaries and source archives, including the original failed tests; the test-only fixture padding correction passed both layouts.",
+    "Evaluate a separately identified 23-scalar/seven-cubic-lane revision using remaining columns within WIDTH=94. Recompute preprocessing, lookup widths, degree, actual recursive geometry and worst-case envelope at any admitted height; all existing resource/security limits remain unchanged.",
+    "Only a candidate passing all native, geometry, size and resource gates may proceed to independent new keys, real recursive proofs and CPU root-only pruning/replay.",
+    "Original series remains at two completed pairs with preserved binary/controller pins; never overlap its remaining pairs with native/candidate validation. All shared/registration/new diagnostic public-proof copies remain tracked consumers until checked cleanup.",
+    "Full-depth/padding/mixed-workload/incremental benchmarks and full-tree security/host integration remain open. No production activation."
+  ],
+  "current_original_benchmark": {
+    "controller": "lattica-v2-eight-series-pair2-20261001-b.service",
+    "active": false,
+    "stage": "CLEAN_WHOLE_PAIR_CHECKPOINT",
+    "controller_exit_code": 0,
+    "observed_utc": "2026-10-01 18:33:51 UTC",
+    "completed_trials": 4,
+    "completed_pairs": 2,
+    "all_five_pairs_complete": false,
+    "series_manifest_sha256": "7b28ed0b9d875f16b0e35f0334e56c4b84b535207e3531554e130c3a606e8863",
+    "note": "Both pair-2 variants, local pruning and recorded audits completed. No active experiment services at checkpoint; separate native validation now runs before any next original pair. Shared fixtures retained."
+  },
+  "layout_revision": 2,
+  "superseded_source_draft": {
+    "revision": 1,
+    "archive": "lattica-prover-p3/target/block-v2-wide-lanes-uncompiled-v1-20261001.tar.gz",
+    "sha256": "02b3b449f4eca1d352a94755746f56aba5b2b9d5c9c9932816750dfbcbd25ed4",
+    "scope": "Seven selected configuration/source files only; not a complete project archive.",
+    "native_compile_passed": false,
+    "native_tests_passed": false,
+    "change": "Contiguous 0/21/42/63 arithmetic ports, hash-specific lookups and arithmetic/count gating were replaced by shared first-eight ports and extra lanes in hash-only columns."
+  },
+  "native_validation_scope": "Top-level compile/test flags refer to the opt-in wider build. See default_native_validation for the default eight-lane branch.",
+  "default_native_validation": {
+    "status": "PASS_DEFAULT_NATIVE_AND_PRESERVED_ROOT_COMPATIBILITY",
+    "unit": "lattica-v2-wide2-default-cpu-20261001-a.service",
+    "session": 5127,
+    "exit_code": 0,
+    "compile_seconds": 93,
+    "passed": 216,
+    "failed": 0,
+    "ignored": 30,
+    "elapsed_seconds": 113.35,
+    "peak_cgroup_bytes": 2868379648,
+    "peak_swap_bytes": 0,
+    "memory_max_bytes": 3221225472,
+    "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-default-cpu-20261001-a.log",
+    "scope": "Default block-v2,stream CPU library; wide feature disabled. Does not establish preserved-root/registry compatibility, wide correctness or production readiness.",
+    "cli": {
+      "status": "PASS",
+      "unit": "lattica-v2-wide2-default-cli-20261001-a.service",
+      "session": 11042,
+      "exit_code": 0,
+      "compile_seconds": 53.73,
+      "passed": 9,
+      "failed": 0,
+      "ignored": 0,
+      "elapsed_seconds": 0,
+      "peak_cgroup_bytes": 1332592640,
+      "peak_swap_bytes": 0,
+      "memory_max_bytes": 3221225472,
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-default-cli-20261001-a.log",
+      "log_sha256": "a4a957ed05e762de9746bef3fcc25c69c7e58b7fb701ec9bf27e18ab396dfbe0"
+    },
+    "abi_passed": true,
+    "zig_debug_passed": true,
+    "zig_release_safe_passed": true,
+    "legacy_root_and_registry_replayed": true,
+    "log_sha256": "e04d11336d6629c8800d81118037c3bd227fd7bfb1c7f103454c98f7a426c40f",
+    "abi": {
+      "status": "PASS",
+      "unit": "lattica-v2-wide2-default-abi-20261001-a.service",
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-default-abi-20261001-a.log",
+      "log_sha256": "54717a6cfa7eba24a7f8b408e8a00dbce0d1d640a20088a717fc78cf01eae70d",
+      "peak_cgroup_bytes": 755712000,
+      "peak_swap_bytes": 0,
+      "exit_code": 0,
+      "exports": 12,
+      "recursion_exports": 0,
+      "block_v2_exports": 0
+    },
+    "zig_debug": {
+      "status": "PASS",
+      "unit": "lattica-v2-wide2-default-zig-debug-20261001-a.service",
+      "session": 91225,
+      "exit_code": 0,
+      "passed": 105,
+      "failed": 0,
+      "peak_cgroup_bytes": 486572032,
+      "peak_swap_bytes": 0,
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-default-zig-debug-20261001-a.log",
+      "log_sha256": "60df880238c1b7eaa12549d5e8f3b56165c11e1cc543842b7fa7b43cd16673bf",
+      "expected_root_tests_included": false
+    },
+    "zig_release_safe": {
+      "status": "PASS",
+      "unit": "lattica-v2-wide2-default-zig-safe-20261001-a.service",
+      "session": 43425,
+      "exit_code": 0,
+      "passed": 137,
+      "zig_unit_tests": 105,
+      "real_ffi_tests": 32,
+      "failed": 0,
+      "peak_cgroup_bytes": 1201491968,
+      "peak_swap_bytes": 0,
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-default-zig-safe-20261001-a.log",
+      "log_sha256": "53a2aa9a13e749603463c3a69f49228c5dcbee862fd5685415323c95be08751b",
+      "expected_root_tests_included": false
+    },
+    "zig_expected_root": {
+      "status": "PASS",
+      "unit": "lattica-v2-wide2-default-zig-root-20261001-a.service",
+      "session": 64007,
+      "exit_code": 0,
+      "passed_debug": 6,
+      "passed_release_safe": 6,
+      "failed": 0,
+      "peak_cgroup_bytes": 531144704,
+      "peak_swap_bytes": 0,
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-default-zig-root-20261001-a.log",
+      "log_sha256": "5f99344f6ef16c7c2097eadfc0165eeb54bf859e5d0e780176cf778516101245"
+    },
+    "zig_debug_total_with_expected_root": 111,
+    "zig_release_safe_total_with_expected_root": 143,
+    "preserved_build": {
+      "status": "PASS",
+      "unit": "lattica-v2-wide2-default-build-20261001-a.service",
+      "exit_code": 0,
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-default-build-20261001-a.log",
+      "log_sha256": "8ac16110ce90220891585d2edf1cb4b4a06695e663c94d2723a7ebcefa569c9c",
+      "peak_cgroup_bytes": 1166565376,
+      "peak_swap_bytes": 0,
+      "directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-default-binaries-20261001-a",
+      "source_archive_sha256": "7feccafea7fe5e3968389610cac9176439016c4c832d43c4bd040aba67eb03e9",
+      "cpu_auditor_sha256": "063198d5291ad0991d015397e65854df93de69e8a4cf8ca81e2a4703592106cd",
+      "grouped_runner_sha256": "7eec0b0f58a40877c2b18f67b2457ea08db622715ba3160a6f1bc9b36c3d923e",
+      "includes_cargo_config": true,
+      "features": {
+        "cpu_auditor": "block-v2",
+        "grouped_runner": "block-v2,stream"
+      }
+    },
+    "compatibility": {
+      "status": "PASS",
+      "unit": "lattica-v2-wide2-default-compat-20261001-a.service",
+      "session": 62185,
+      "exit_code": 0,
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-default-compat-20261001-a.log",
+      "log_sha256": "732117a0117abea41ef55210cae267492b9d0bd65f894adfba5180fcb194be2f",
+      "peak_cgroup_bytes": 51478528,
+      "peak_swap_bytes": 0,
+      "original_roots_replayed": 6,
+      "original_registry_checked": true,
+      "root_audit_rejections_each": {
+        "native": 38,
+        "registry_policy": 4,
+        "external_statement": 2
+      },
+      "registry_negative_checks": 4,
+      "input_hashes_checked_before_and_after": 44,
+      "inner_proofs_loaded_by_auditor": 0,
+      "shared_fixtures_pruned": false,
+      "compatibility_job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-default-binaries-20261001-a/compatibility-job",
+      "scope": "Two original pilot roots and four series roots (both original constructions), original grouped registry and public-wallet statements. Not full-tree security or post-shared-pruning replay."
+    }
+  },
+  "wide_native_validation": {
+    "status": "FAIL",
+    "unit": "lattica-v2-wide2-wide-cpu-20261001-a.service",
+    "session": 17339,
+    "exit_code": 101,
+    "compile_seconds": 65,
+    "passed": 214,
+    "failed": 3,
+    "ignored": 30,
+    "elapsed_seconds": 117.76,
+    "peak_cgroup_bytes": 2231558144,
+    "peak_swap_bytes": 0,
+    "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-wide-cpu-20261001-a.log",
+    "log_sha256": "3891e707c80a669c774b26162509e18dd8791c9252ed60880fd80e795eb91c5e",
+    "failed_tests": [
+      "block_v2::codec::tests::common_height_worst_case_field_encoding_fits_the_envelope",
+      "block_v2::recursive::session_tests::session_reuses_only_preprocessing_with_fresh_hiding_and_explicit_eviction",
+      "block_v2::recursive::session_tests::switching_modes_evicts_the_previous_workspace_before_a_failed_setup"
+    ],
+    "worst_case_envelope_bytes_at_height_524288": 2199832,
+    "proof_limit_bytes": 2097152,
+    "wide_real_mutation_test_passed": true,
+    "wide_mutation_cases": 17,
+    "measured_constraint_degree": 8,
+    "exactly_one_zero_lookup_terminal": true,
+    "recursive_closure_proved": false
+  },
+  "fixture_padding_followup": {
+    "status": "PASS",
+    "unit": "lattica-v2-wide2-wide-session-20261001-a.service",
+    "session": 20790,
+    "exit_code": 0,
+    "compile_seconds": 66,
+    "passed": 3,
+    "failed": 0,
+    "ignored": 0,
+    "elapsed_seconds": 3.55,
+    "peak_cgroup_bytes": 1473720320,
+    "peak_swap_bytes": 0,
+    "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-wide-session-20261001-a.log",
+    "log_sha256": "9da93773e6b3eb5efba037ad2d1ac0ad48104d60ca2fc523a28da148674ab213",
+    "source_sha256": "50e278425ab60838ef837d9605be91c4b248092450c31aeba32562437ba06c51",
+    "scope": "Test-only explicit registration padding. Does not clear envelope failure.",
+    "default_session_regression": {
+      "status": "PASS",
+      "tests": 3,
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-wide-build-20261001-a.log",
+      "log_sha256": "eeb4dd52c54301825bbb115fd48837aa888e3bc7fd94ed2c0965cb67a3a3f075"
+    }
+  },
+  "native_gate_failure": {
+    "worst_case_envelope_bytes": 2199832,
+    "template_height": 524288,
+    "limit_bytes": 2097152,
+    "over_limit_bytes": 102680,
+    "actual_recursive_proof": false,
+    "decision": "Do not waive or enlarge envelope limit. Fix only test-fixture padding, then diagnose actual common-height feedback with separate preserved tools; no new full-size keys/proofs admitted."
+  },
+  "wide_diagnostic_build": {
+    "status": "PASS_DIAGNOSTIC_TOOLS_ONLY",
+    "unit": "lattica-v2-wide2-wide-build-20261001-a.service",
+    "session": 74178,
+    "exit_code": 0,
+    "elapsed_seconds": 242.153,
+    "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-wide-build-20261001-a.log",
+    "peak_cgroup_bytes": 1466085376,
+    "peak_swap_bytes": 0,
+    "directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-wide-binaries-20261001-a",
+    "default_session_tests": 3,
+    "wide_cli_tests": 9,
+    "wide_auditor_tests": 8,
+    "source_archive_sha256": "3383f366e03edabd15226ff265683633ca0602fc7d91f42af56c1956257016d3",
+    "cpu_auditor_sha256": "23f8caee65569e15e9078a50e02ee2632f157ed015b63aede8c2fa79bb19690d",
+    "grouped_runner_sha256": "b6fc8e4407327fd9727bdb893b47bc672f8452f4bd1ea6fe7746b5fdede6182f",
+    "envelope_gate_cleared": false,
+    "includes_cargo_config": true,
+    "log_sha256": "eeb4dd52c54301825bbb115fd48837aa888e3bc7fd94ed2c0965cb67a3a3f075"
+  },
+  "geometry_preflight": {
+    "status": "REJECTED_RAM_LOWER_BOUND_AFTER_HALF_HEIGHT_MISS",
+    "unit": "lattica-v2-wide2-geometry-20261001-a.service",
+    "session": 36257,
+    "exit_code": 1,
+    "elapsed_ms": 8057,
+    "peak_cgroup_bytes": 1201065984,
+    "peak_swap_bytes": 0,
+    "peak_mapped_spill_bytes": 855646208,
+    "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-geometry-20261001-a",
+    "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide2-geometry-20261001-a.log",
+    "log_sha256": "dcaed80cd69f0202bd044bff1f4825fde46132a2c92a556d2721176df982f9e9",
+    "geometries": [
+      {
+        "child_height": 262144,
+        "wrapper_rows": 166458,
+        "empty_rows": 399,
+        "merge_rows": 266034,
+        "required_height": 524288
+      },
+      {
+        "child_height": 524288,
+        "wrapper_rows": 166458,
+        "empty_rows": 399,
+        "merge_rows": 279404,
+        "required_height": 524288
+      }
+    ],
+    "half_height_overrun_rows": 3890,
+    "retained_lde_bytes": 60800630784,
+    "ram_budget_bytes": 51539607552,
+    "geometry_report_ran": false,
+    "height_file_written": false,
+    "keys_generated": false,
+    "recursive_proofs_generated": false,
+    "shared_wallet_hashes_unchanged": true,
+    "artifact_membership": "Exactly the eight copied public wallet proofs"
+  },
+  "decision": {
+    "result": "REJECTED; do not generate full-size keys or recursive proofs with wide21 revision2",
+    "reason": "At child height 262144, actual merge has 266034 rows and rounds to 524288. At that height retained LDE alone is 60800630784 bytes (56.625 GiB), above the unchanged 48 GiB budget; the full-height worst-case encoded envelope also exceeds 2 MiB.",
+    "static_illustration_not_a_measurement": "The earlier 257692-row arithmetic illustration missed recursive feedback; measured 266034 rows exceeds it by 8342.",
+    "next_candidate": "Consider 23 scalar/seven cubic lanes within the unchanged 94-column single AIR; this needs a distinct lookup domain/program identity, fresh native validation and actual geometry/size gates. Do not assume that extra lanes will improve the result.",
+    "production_ready": false
+  }
+}

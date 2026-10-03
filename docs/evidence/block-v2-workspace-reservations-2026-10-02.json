@@ -1,0 +1,139 @@
+{
+  "schema": "block-v2-persistent-workspace-evidence-v1",
+  "captured_utc": "2026-10-02 17:52:13 UTC",
+  "status": "PERSISTENT_WORKSPACE_RESERVATION_FOUNDATION_VALIDATED_RESEARCH_ONLY",
+  "production_ready": false,
+  "default_enabled": false,
+  "implementation": {
+    "source_files": [
+      "lattica-prover-p3/src/block_v2/execution/mod.rs",
+      "lattica-prover-p3/src/block_v2/execution/workspace.rs",
+      "lattica-prover-p3/src/block_v2/execution/dag.rs",
+      "lattica-prover-p3/src/block_v2/execution/dag_snapshot.rs",
+      "lattica-prover-p3/src/block_v2/execution/journal.rs",
+      "lattica-prover-p3/src/block_v2/execution/journal_workspace.rs",
+      "lattica-prover-p3/src/block_v2/execution/journal_tests.rs",
+      "lattica-prover-p3/src/block_v2/execution/workspace_tests.rs"
+    ],
+    "separate_persistent_resource_ledger": true,
+    "idle_resources_remain_charged": true,
+    "cold_worker_identity_alias_rejected": true,
+    "duplicate_journal_lock_lifetime": true,
+    "local_user_guards_block_close_and_recovery": true,
+    "failed_close_preconditions_preserve_handle": true,
+    "exact_issuing_owner_and_directory_and_lock_identity": true,
+    "explicit_workspace_reconciliation_required": true,
+    "old_resume_rejects_unresolved_workspaces": true,
+    "automatic_external_drain_authority": false,
+    "physical_resource_enforcement": false,
+    "actual_preprocessing_cache": false,
+    "warm_prover_adapter": false
+  },
+  "snapshot": {
+    "new_local_envelope": "LVDAG004",
+    "base_encodings": [
+      "LVDAG001",
+      "LVDAG002",
+      "LVDAG003"
+    ],
+    "cold_encoding_preserved": true,
+    "no_nested_workspace_envelopes": true,
+    "bounded_canonical_inventory": true,
+    "combined_workspace_and_attempt_budget_checked": true,
+    "malformed_metadata_rejected_before_proof_loading": true,
+    "old_host_eligibility_not_revived": true,
+    "public_proof_encoding_changed": false
+  },
+  "native_validation": {
+    "schema": "workspace-native-summary-v1",
+    "exit_code": 0,
+    "runtime_seconds": 162.699,
+    "cpu_seconds": 162.93,
+    "memory_peak": "1.8G",
+    "swap": 0,
+    "native_passed": 144,
+    "native_ignored": 39,
+    "explicit_cpu_passed": 16,
+    "zig_tests": 10,
+    "compiler_warnings": 0,
+    "new_structural_tests": 10,
+    "new_cpu_tests": 1,
+    "session": 32910,
+    "unit": "lattica-v2-workspace-native-20261002-b.service",
+    "invocation": "745587721ddd42d1b471409adc303675",
+    "new_prover_run": false,
+    "actual_preprocessing_cache": false,
+    "production_ready": false,
+    "pins": {
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-workspace-native-20261002-b/source.tar.gz": "ab31af7920a1f739bf72bdccf5d37e88f8ac2fe54c2389a31dc9179413c5d963",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-workspace-native-20261002-b/cpu-lib-tests": "6d21735a39d12deb73ad19e489b047055db4d597d0b4d40f0709005baa904a14",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-workspace-native-20261002-b/cpu-worker": "75545ba79f200e0fd3652ab3f1d4cd362e119ddb97f8b48f4e60c873386cce9d",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-workspace-native-20261002-b/single-probe": "1841ee4e1dfb0b7d67d5d02a699d6dc83267a4c8edeacd2fcb114d15693dd085",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-workspace-native-20261002-b/public-export": "5e1cefe7c6e3943d2ef4040d8498903261cac406d1cbfc0d3b576fa8f4a3a7d2",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-workspace-native-20261002-b/zig-out/bin/block-v2-expected-root": "29751d1c43f350ad0fbd3e91fe216894ea6060d93cca7e331881e0e650fca920"
+    }
+  },
+  "real_cpu_case": {
+    "test": "block_v2::execution::journal::tests::workspace::cpu_workspace_snapshot_replays_cached_pair_and_requires_explicit_drain",
+    "existing_public_pair_accepted_and_reverified": true,
+    "explicit_workspace_drain_checked": true,
+    "old_eligibility_revived": false,
+    "mutated_proof_rejected": true,
+    "new_prover_run": false,
+    "actual_preprocessing_allocated": false,
+    "timing_is_benchmark": false
+  },
+  "prior_failed_attempt": {
+    "directory": "lattica-prover-p3/target/block-v2-workspace-native-20261002-a",
+    "status": "TEST_FIXTURE_FAILURE",
+    "exit_code": 1,
+    "runtime_seconds": 138.572,
+    "cpu_seconds": 136.721,
+    "memory_peak": "1.8G",
+    "swap": 0,
+    "native_passed": 141,
+    "native_failed": 3,
+    "native_ignored": 39,
+    "explicit_cpu_checks_run": false,
+    "zig_checks_run": false,
+    "reason": "New workspace tests used the epoch-1 assert_durable helper after recovery to epoch2; helper attempted another recovery to epoch2, correctly rejected by strict epoch monotonicity.",
+    "correction": "New assert_recovered_durable helper explicitly verifies a next-epoch3 replay. No production logic changed for this correction."
+  },
+  "formatting": {
+    "execution_module": "passed",
+    "whole_crate": "Previously observed block_v2/mod.rs module-order differences remain unchanged; no whole-crate formatting pass claimed."
+  },
+  "scope": {
+    "production_abi_change": false,
+    "proof_parameters_changed": false,
+    "proof_rng_changed": false,
+    "live_warm_process_qualified": false,
+    "nine_stage_live_trial_rerun": false,
+    "arrival_trial_rerun": false,
+    "full_default_test_suite_claimed": false,
+    "matched_speedup_claim": false
+  },
+  "remaining": [
+    "Cache-owning CPU adapter with independently budgeted whole-session and per-job lifetimes; actual retained preprocessing and measured cache hits.",
+    "General external-verifier reconciliation, no-identity startup liveness, OOM/timeouts and sustained lifecycle qualification.",
+    "Physical scratch quotas and reference-aware retention.",
+    "Real network/deadline-aware admission, issuance/HTLC, host eligibility/reorg/state application.",
+    "64 total transactions including issuance at12-minute cadence, cold<=600s, complete post-seal<=180s, one root<=2MiB, aggregate RAM48/VRAM12/scratch128GiB.",
+    "Full-tree soundness/ZK review and explicit activation."
+  ],
+  "preservation": {
+    "manifest": "lattica-prover-p3/target/block-v2-workspace-native-20261002-b/pins.sha256",
+    "manifest_entries": 365,
+    "source_archive_matches": true,
+    "documentation_archive": "lattica-prover-p3/target/block-v2-workspace-native-20261002-b/documentation.tar.gz",
+    "frozen_files": {
+      "docs/dag-gpu-implementation.md": "c23df407b56a47b1ec66f6821349d38be258ea4f7c43db432086124580a27ae7",
+      "lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614"
+    },
+    "previous_manifests_remain_historical": true,
+    "committed": false,
+    "production_activated": false
+  }
+}

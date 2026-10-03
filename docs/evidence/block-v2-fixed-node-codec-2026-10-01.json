@@ -1,0 +1,860 @@
+{
+  "schema": 1,
+  "captured_utc": "2026-10-01 21:07:17 UTC",
+  "status": "COUNT8_LEVEL3_RECURSIVE_CLOSURE_AND_CPU_ROOT_ONLY_AUDIT_PASSED",
+  "feature": "block-v2-wide-lanes",
+  "layout_revision": 3,
+  "node_codec_revision": 2,
+  "program_manifest_version": 6,
+  "default_enabled": false,
+  "production_ready": false,
+  "scope": "Separately versioned research-node encoding and bounded decoding, not new proof contents, reduced security, or production activation.",
+  "formats": {
+    "default": {
+      "magic": "LBV2RC01",
+      "payload": "Original Postcard",
+      "unchanged": true
+    },
+    "wide": {
+      "magic": "LBV2RC02",
+      "payload": "Postcard framing; recursively encode Serde u64 values as fixed eight-byte little-endian words",
+      "selection": "Locally trusted build/profile; never header-driven verifier selection"
+    },
+    "wallet": {
+      "magic": "LBV2WL02",
+      "payload": "Legacy encoding unchanged",
+      "profile_unchanged": true
+    }
+  },
+  "security_parameters_unchanged": {
+    "field": "Goldilocks cubic",
+    "fri_queries": 128,
+    "blowup": 16,
+    "cap_height": 6,
+    "random_codewords": 4,
+    "query_pow_bits": 16,
+    "fresh_csprng": true,
+    "single_air": true,
+    "strict_single_zero_lookup_terminal": true,
+    "public_proof_only_aggregation": true
+  },
+  "resource_limits": {
+    "node_envelope_bytes": 2097152,
+    "combined_ram_gib": 48,
+    "combined_vram_gib": 12,
+    "combined_scratch_gib": 128,
+    "validation_ram_gib": 3,
+    "validation_swap_bytes": 0,
+    "validation_runtime_seconds": 600
+  },
+  "implementation": {
+    "bounded_output_buffer": true,
+    "canonical_input_sized_reencoding": true,
+    "length_checks_before_sequence_allocation": true,
+    "sequence_depth_and_total_item_budgets": true,
+    "static_tuple_arity_checked_for_zero_byte_fields": true,
+    "wrong_unknown_and_downgrade_headers_rejected": true,
+    "wide_registry_binds_codec_revision": true,
+    "default_registry_identity_unchanged_by_design": true,
+    "node_io_and_prover_size_checks_use_selected_codec": true,
+    "new_c_abi": false
+  },
+  "envelope": {
+    "status": "PASSED_BOTH_ENCODINGS",
+    "default": {
+      "tests": 14,
+      "height": 524288,
+      "maximum_value_template_bytes": 2014183,
+      "encoding": "LBV2RC01"
+    },
+    "wide": {
+      "tests": 15,
+      "height": 262144,
+      "maximum_value_template_bytes": 1683948,
+      "encoding": "LBV2RC02",
+      "rejected_legacy_full_height_bytes": 2224812
+    },
+    "limit_bytes": 2097152,
+    "headroom_bytes": 413204,
+    "recursive_closure_proved": false,
+    "full_size_keys_generated": false,
+    "full_size_proofs_generated": false,
+    "scope": "Historical codec-envelope tests only; full-size proof outcome is recorded under proving."
+  },
+  "validation": {
+    "attempts": [
+      {
+        "status": "COMPILE_FAILED_TEST_IMPORT",
+        "unit": "lattica-v2-codec2-focused-20261001-a.service",
+        "exit_code": 1,
+        "cargo_exit_code": 101,
+        "peak_cgroup_bytes": 319320064,
+        "peak_swap_bytes": 0,
+        "correction": "Use public machine::MachineAir re-export in new codec test; no production-code compile error reported."
+      },
+      {
+        "status": "DEFAULT_COMPOSITE_ROUNDTRIP_FAILED",
+        "unit": "lattica-v2-codec2-focused-20261001-b.service",
+        "exit_code": 1,
+        "cargo_exit_code": 101,
+        "default_codec_passed": 12,
+        "default_codec_failed": 1,
+        "failed_test": "nested_serde_forms_round_trip_in_both_encodings",
+        "peak_cgroup_bytes": 1536081920,
+        "peak_swap_bytes": 0,
+        "service_seconds": 76.201,
+        "default_maximum_value_bytes": 2014183,
+        "default_admitted_height": 524288,
+        "wide_tests_run": false
+      },
+      {
+        "status": "CODEC_PASSED_CLI_DIAGNOSTIC_COMPILE_FAILED",
+        "unit": "lattica-v2-codec2-focused-20261001-c.service",
+        "exit_code": 1,
+        "cargo_exit_code": 101,
+        "default_codec_passed": 14,
+        "wide_codec_passed": 15,
+        "default_maximum_value_bytes": 2014183,
+        "wide_maximum_value_bytes": 1683948,
+        "rejected_legacy_full_height_bytes": 2224812,
+        "peak_cgroup_bytes": 1532239872,
+        "peak_swap_bytes": 0,
+        "service_seconds": 255.592,
+        "source_sha256": "756edb401e1f0a0d39392a3238b85bec4187fe0f6c958469564e2fa4022fbeef",
+        "error": "New CLI diagnostic used ? in main returning (). Corrected infallible static-ASCII display and restricted diagnostic to wide feature; full regression pending."
+      }
+    ],
+    "wide_regression": {
+      "status": "PASS",
+      "unit": "lattica-v2-codec2-wide-20261001-a.service",
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a.log",
+      "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/source.tar.gz",
+      "service_seconds": 238.321,
+      "exit_code": 0,
+      "library": {
+        "passed": 225,
+        "failed": 0,
+        "ignored": 30,
+        "seconds": 119.54
+      },
+      "binaries": {
+        "artifact_audit": 2,
+        "grouped_artifact_audit": 8,
+        "grouped_probe": 9,
+        "recursion_probe": 0,
+        "single_eight_probe": 7
+      },
+      "cli_tests": 26,
+      "peak_cgroup_bytes": 2208952320,
+      "peak_swap_bytes": 0,
+      "hashes": {
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/source.tar.gz": "354a5c6cfdd5b9f358605b107daeb2e2bb1e6f941cdfbe5a9c14d350587ca49f",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-probe": "2383b260de5283ddcb6c1ce2408fb8139065fc109c8181ec602cc20ca095db3c",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-single-eight-probe": "3bf814ca8bd0e89d17b2a5b4790b739c400bbcf010dc84e8c7d5706ebe5f6b3d",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-recursion-probe": "d95605d5439df95f3b85184db31ff853d6dc915724e5d027dc331cb256df5919",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-artifact-audit": "ae9ea1ddf846771c373b3dd5cf2e188087819de4294e25d27b85500e66f1af53",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-artifact-audit": "2b04daa12d6edc84c66b5ff1ac45985342999457cf4a6cc8e482dd6faa47a5ac"
+      },
+      "full_size_keys_generated": false,
+      "full_size_proofs_generated": false,
+      "log_sha256": "ea23acbebdc21c85e54fa020f0739aa483ff48cdc151a3bac7ac4f7eaeb7ab28"
+    },
+    "default_regression": {
+      "status": "PASS",
+      "unit": "lattica-v2-codec2-default-20261001-a.service",
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-default-20261001-a.log",
+      "log_sha256": "feb716851b850451984d585de1c2992711782b881ffe931e88a7cd0d895480ca",
+      "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-default-20261001-a/source.tar.gz",
+      "service_seconds": 363.429,
+      "exit_code": 0,
+      "library": {
+        "passed": 223,
+        "failed": 0,
+        "ignored": 30,
+        "seconds": 118.64
+      },
+      "cli_tests": 26,
+      "binaries": {
+        "artifact_audit": 2,
+        "grouped_artifact_audit": 8,
+        "grouped_probe": 9,
+        "recursion_probe": 0,
+        "single_eight_probe": 7
+      },
+      "peak_cgroup_bytes": 2224381952,
+      "peak_swap_bytes": 0,
+      "hashes": {
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-default-20261001-a/source.tar.gz": "354a5c6cfdd5b9f358605b107daeb2e2bb1e6f941cdfbe5a9c14d350587ca49f",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-default-20261001-a/block-v2-grouped-probe": "97f3dc6f2990d63d57f4b01373c5d7cd6f137f740168bd8f22263cec85b19bde",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-default-20261001-a/block-v2-single-eight-probe": "c07950b8d521250e878169a74b610f6aa5bced6ef0fb5806a6e546457600dc81",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-default-20261001-a/block-v2-recursion-probe": "4591217d30cf9ad99b1f385b5c82a2d83985c19a5612d25f1bae6ecff92a94e8",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-default-20261001-a/block-v2-grouped-artifact-audit": "1219403b877372ea3a64a709121c5f5943f35bee724ae720611a4eff63742f6d",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-default-20261001-a/block-v2-artifact-audit": "de5d7f694519c20e14ea248519ad9accbfab4858ffad90fa21a8dff071ed4326"
+      }
+    },
+    "default_root_replay": {
+      "status": "PASS",
+      "unit": "lattica-v2-codec2-default-compat-20261001-a.service",
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-default-compat-20261001-a.log",
+      "log_sha256": "883b10a81233d20e122d1f73477b188c09b20d5214030982e625f6de6dc28006",
+      "exit_code": 0,
+      "service_seconds": 2.518,
+      "peak_cgroup_bytes": 40804352,
+      "peak_swap_bytes": 0,
+      "original_roots": 6,
+      "external_negative_checks": 4,
+      "input_hashes_verified_before_and_after": 44,
+      "per_root": {
+        "native_mutation_rejections": 38,
+        "registry_policy_rejections": 4,
+        "external_statement_rejections": 2,
+        "inner_proofs_loaded": 0
+      },
+      "compatibility_job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-default-20261001-a/compatibility-job",
+      "shared_fixtures_pruned": false
+    },
+    "abi_zig": {
+      "status": "PASS",
+      "unit": "lattica-v2-codec2-abi-zig-20261001-a.service",
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-abi-zig-20261001-a.log",
+      "log_sha256": "98aaedc4d5f5eb420a98b46f1202a92c8de89bddccf3b79eda443577eec07b6c",
+      "exit_code": 0,
+      "abi_exports": 12,
+      "recursion_symbols": false,
+      "block_v2_symbols": false,
+      "zig_debug_tests": 111,
+      "zig_release_safe_tests": 143,
+      "real_ffi_tests": 32,
+      "peak_cgroup_bytes": 381054976,
+      "peak_swap_bytes": 0
+    }
+  },
+  "fresh_geometry": {
+    "status": "STRUCTURAL_GEOMETRY_AND_ENVELOPE_PASSED_NOT_RECURSIVE_CLOSURE",
+    "unit": "lattica-v2-codec2-geometry-20261001-a.service",
+    "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-geometry-20261001-a.log",
+    "log_sha256": "b939dd35c0c3becf7bb89267ce1686e72b3476ed847b27b1a38fbe9f00143c27",
+    "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-geometry-20261001-a",
+    "exit_code": 0,
+    "service_seconds": 9.731,
+    "common_height_ms": 5147,
+    "geometry_report_ms": 4275,
+    "peak_cgroup_bytes": 1124691968,
+    "peak_swap_bytes": 0,
+    "peak_mapped_spill_bytes": 855646208,
+    "common_height": 262144,
+    "wrapper_active_rows": 160893,
+    "empty_active_rows": 384,
+    "merge_active_rows": 258973,
+    "merge_padding_rows": 3171,
+    "main_width": 94,
+    "preprocessing_width": 200,
+    "permutation_width_base": 51,
+    "quotient_chunks": 16,
+    "constraint_degree": 8,
+    "retained_lde_bytes": 31675383808,
+    "retained_lde_gib": 29.5,
+    "not_measured_proving_memory": true,
+    "not_measured_speedup": true,
+    "keys_generated": false,
+    "recursive_proofs_generated": false,
+    "shared_wallet_hashes_unchanged": true,
+    "artifacts": "Eight copied public wallet proofs and computed height only; no keys or recursive proofs",
+    "modes": [
+      {
+        "construction": "GroupedPair",
+        "mode": "1",
+        "child_height": "262144",
+        "height": "262144",
+        "active_rows": "160893",
+        "padding_rows": "101251",
+        "public_rows": "1",
+        "alu_rows": "58434",
+        "cubic_rows": "27993",
+        "poseidon_rows": "74465",
+        "total_operations": "1614388",
+        "authenticated_reads": "4224804",
+        "wires": "2484679",
+        "structural_fit": "true",
+        "proof_produced": "false",
+        "production_ready": "false"
+      },
+      {
+        "construction": "GroupedPair",
+        "mode": "2",
+        "child_height": "262144",
+        "height": "262144",
+        "active_rows": "384",
+        "padding_rows": "261760",
+        "public_rows": "1",
+        "alu_rows": "159",
+        "cubic_rows": "0",
+        "poseidon_rows": "224",
+        "total_operations": "3863",
+        "authenticated_reads": "5796",
+        "wires": "4787",
+        "structural_fit": "true",
+        "proof_produced": "false",
+        "production_ready": "false"
+      },
+      {
+        "construction": "GroupedPair",
+        "mode": "3",
+        "child_height": "262144",
+        "height": "262144",
+        "active_rows": "258973",
+        "padding_rows": "3171",
+        "public_rows": "1",
+        "alu_rows": "105965",
+        "cubic_rows": "3287",
+        "poseidon_rows": "149720",
+        "total_operations": "2609910",
+        "authenticated_reads": "5863874",
+        "wires": "3652871",
+        "structural_fit": "true",
+        "proof_produced": "false",
+        "production_ready": "false"
+      }
+    ]
+  },
+  "full_size_keys_generated": true,
+  "full_size_recursive_proofs_generated": true,
+  "full_size_proving_admitted": true,
+  "full_tree_security_reviewed": false,
+  "depth_six_qualified": false,
+  "repeat_qualified": false,
+  "preservation": {
+    "original_series_completed_pairs": 2,
+    "original_series_manifest_sha256": "7b28ed0b9d875f16b0e35f0334e56c4b84b535207e3531554e130c3a606e8863",
+    "original_controllers_unmodified": true,
+    "shared_fixtures_pruned": false
+  },
+  "remaining": [
+    "Real common-height empty proofs and padded/irregular recursive trees; then depth-six/64 and mixed/incremental workloads. Never automatically retry failed or uncertain proof attempts.",
+    "Complete original repeated series and checked final fixture pruning/replay.",
+    "GPU arithmetic and local incremental DAG; full 64/depth-six, padded and mixed workloads, full-tree security review and host integration."
+  ],
+  "registration": {
+    "status": "KEYS_REPRODUCED_RESEARCH_ONLY",
+    "initialization_failure": {
+      "root": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-a",
+      "unit": "lattica-v2-codec2-register-primary-20261001-a.service",
+      "exit_code": 1,
+      "status": "FAILED_BEFORE_ANY_NATIVE_WORKER_LAUNCH",
+      "reason": "copied job missing required private scratch directory",
+      "job_contains": "eight copied public wallet proofs and height only",
+      "keys_generated": false,
+      "proofs_generated": false,
+      "active_services": false,
+      "retained_for_evidence": true
+    },
+    "root": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b",
+    "launcher_sha256": "1b8bfc461356fc0791b439e1c386e84eac2b2db48538fb5fa46b8a2e9aa7661d",
+    "primary_manifest_sha256": "5bc9d048c250f835e9d88f8be458f73e596a8af32025df11f3faf2bf87b3bbc2",
+    "reproduction_manifest_sha256": "2d0c8cd199cf0d2b63691491e364816888af4fece77cd2b1e1cf4fe4b666d7d0",
+    "primary_stages": [
+      {
+        "log": "01-key-1.log",
+        "log_sha256": "340013483b8af4a4519a77fd90d348903d088318b8c4021feadfaaa3ad057730",
+        "name": "key-1",
+        "started_utc": "2026-10-01T20:36:24Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 326047655,
+            "memory_max": 47244640256,
+            "memory_peak": 15807889408,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 53750,
+            "spill_peak_bytes": 14860582912
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-347655-1.service",
+        "wall_seconds": 53.8215775389981
+      },
+      {
+        "log": "02-key-2.log",
+        "log_sha256": "0019e4e9ccada89d4cbc7b775bc0287ea083f646dcbf92dec45dd8f2d8f1f57f",
+        "name": "key-2",
+        "started_utc": "2026-10-01T20:37:18Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 316712065,
+            "memory_max": 47244640256,
+            "memory_peak": 15214989312,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 47727,
+            "spill_peak_bytes": 14159990784
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-347655-2.service",
+        "wall_seconds": 47.787373491002654
+      },
+      {
+        "log": "03-key-3.log",
+        "log_sha256": "f5be07614edf96e5d2bde80a150d05db67d86c4ad9e2504571c889a1bb6cb5b9",
+        "name": "key-3",
+        "started_utc": "2026-10-01T20:38:05Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 319174301,
+            "memory_max": 47244640256,
+            "memory_peak": 16160096256,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 52004,
+            "spill_peak_bytes": 15360835584
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-347655-3.service",
+        "wall_seconds": 52.0757421269991
+      },
+      {
+        "log": "04-describe.log",
+        "log_sha256": "55d71eae5c24f15f55aefcc60f25f8d042512042a3e577b6a163bededf6162a0",
+        "name": "describe",
+        "started_utc": "2026-10-01T20:38:58Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 33504,
+            "memory_max": 47244640256,
+            "memory_peak": 6692864,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 13,
+            "spill_peak_bytes": 0
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-347655-4.service",
+        "wall_seconds": 0.07051735400091275
+      }
+    ],
+    "reproduction_stages": [
+      {
+        "log": "01-key-1.log",
+        "log_sha256": "78c87b85bf30db3e6af2bec1537e45b50bf3b82acf4e562fb6fa18fe2955da17",
+        "name": "key-1",
+        "started_utc": "2026-10-01T20:39:57Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 325757066,
+            "memory_max": 47244640256,
+            "memory_peak": 15807946752,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 54443,
+            "spill_peak_bytes": 14860582912
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-350305-1.service",
+        "wall_seconds": 54.51301326900284
+      },
+      {
+        "log": "02-key-2.log",
+        "log_sha256": "d808918599e31b3836aba515f6e03576d27aaf15df9099feeaabad5a221d2fb2",
+        "name": "key-2",
+        "started_utc": "2026-10-01T20:40:52Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 316014275,
+            "memory_max": 47244640256,
+            "memory_peak": 15214260224,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 47351,
+            "spill_peak_bytes": 14159990784
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-350305-2.service",
+        "wall_seconds": 47.411502846000076
+      },
+      {
+        "log": "03-key-3.log",
+        "log_sha256": "3806796568f6df663bc73022db39e512797bb2c9aaaa4a34cd5c5296aca3eed8",
+        "name": "key-3",
+        "started_utc": "2026-10-01T20:41:39Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 317571594,
+            "memory_max": 47244640256,
+            "memory_peak": 16160698368,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 55920,
+            "spill_peak_bytes": 15360835584
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-350305-3.service",
+        "wall_seconds": 55.99492999300128
+      },
+      {
+        "log": "04-describe.log",
+        "log_sha256": "e02311c7ed7be15a2f27319d26333e5a47a1bf5ce95a12a9b3d15d0743819e82",
+        "name": "describe",
+        "started_utc": "2026-10-01T20:42:36Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 33628,
+            "memory_max": 47244640256,
+            "memory_peak": 6565888,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 13,
+            "spill_peak_bytes": 0
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-350305-4.service",
+        "wall_seconds": 0.06995955500315176
+      }
+    ],
+    "identical_key_bytes": true,
+    "independent_reproduction_complete": true,
+    "peak_registration_worker_bytes": 16160698368,
+    "peak_registration_mapped_spill_bytes": 15360835584,
+    "swap_bytes": 0,
+    "not_proving_memory_measurement": true,
+    "external_handoff": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/expected-statement.json",
+    "external_handoff_sha256": "5cf5904f55f262848402e80b93ea528629b908000e96077c80bb5e7f1e98e1ac",
+    "pin_validation": {
+      "status": "PASS_RESEARCH_PINS_NOT_PRODUCTION_APPROVAL",
+      "profile": "8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb",
+      "chain": "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+      "root": "23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8",
+      "keys_reproduced": true,
+      "native_zig": true,
+      "mode": 3,
+      "level": 3,
+      "count": 8,
+      "negative_checks": 4,
+      "proofs_generated": false,
+      "production_ready": false,
+      "unit": "lattica-v2-codec2-key-pinning-20261001-a.service",
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/key-pinning.log",
+      "log_sha256": "98d0c8c1dadc6df4604a232d8b9255e31d485836132e492531379f0412377f6a",
+      "service_seconds": 1.865,
+      "exit_code": 0,
+      "peak_cgroup_bytes": 38191104,
+      "peak_swap_bytes": 0
+    }
+  },
+  "proving": {
+    "status": "PROOF_VERIFIED_RESEARCH_ONLY",
+    "unit": "lattica-v2-codec2-proving-20261001-a.service",
+    "session": 4151,
+    "exit_code": 0,
+    "observed_utc": "2026-10-01 21:07:17 UTC",
+    "final_audit_started_utc": "2026-10-01T21:05:58Z",
+    "completion_observed_utc": "2026-10-01 21:06:09 UTC",
+    "controller_active": false,
+    "worker_active": false,
+    "automatic_retry_allowed": false,
+    "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/primary-job",
+    "evidence": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/proof-evidence",
+    "root_only": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/proof-evidence/root-only",
+    "manifest_sha256": "b389eaa432c2ca03023af51a45770cb7b67d9e93f5e9d795d5fe29d31874221b",
+    "pins": {
+      "accounting": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "auditor": "ae9ea1ddf846771c373b3dd5cf2e188087819de4294e25d27b85500e66f1af53",
+      "controller": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "runner": "2383b260de5283ddcb6c1ce2408fb8139065fc109c8181ec602cc20ca095db3c",
+      "source_archive": "354a5c6cfdd5b9f358605b107daeb2e2bb1e6f941cdfbe5a9c14d350587ca49f"
+    },
+    "external": [
+      "8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb",
+      "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+      "23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"
+    ],
+    "construction": "GroupedPair",
+    "mode": 3,
+    "level": 3,
+    "count": 8,
+    "quotient_fusion": false,
+    "gpu_hashing": false,
+    "root": {
+      "bytes": 1683948,
+      "sha256": "61f67b618e987068d4b8f23431759aa06bed465127a3ff36e14a1cf4fb6be17e"
+    },
+    "recursive_command_ms": 1166413,
+    "controller_service_seconds": 1168.178,
+    "final_merge_ms": 157817,
+    "peak_worker_cgroup_bytes": 42950197248,
+    "peak_controller_cgroup_bytes": 34820096,
+    "peak_mapped_spill_bytes": 34288652288,
+    "peak_swap_bytes": 0,
+    "configured_limits": {
+      "aggregate_ram_bytes": 51539607552,
+      "controller_ram_bytes_at_most": 3221225472,
+      "controller_runtime_seconds_at_most": 21600,
+      "log_bytes_per_stage": 67108864,
+      "slice": "lattica-v2-grouped.slice",
+      "spill_bytes": 128849018880,
+      "swap_bytes": 0,
+      "worker_ram_bytes": 47244640256
+    },
+    "registered_input_check": "PASS",
+    "final_root_generated": true,
+    "local_pruning_complete": true,
+    "local_inner_artifacts_removed": 14,
+    "cpu_root_only_replay_complete": true,
+    "audit": {
+      "native_mutation_rejections": 38,
+      "registry_policy_rejections": 4,
+      "expected_statement_policy_rejections": 2,
+      "bundle_files": 5,
+      "inner_proofs_loaded": 0
+    },
+    "post_run_pin_checks": {
+      "source_binary_stage_log_and_job_hashes_matched": 16,
+      "exported_artifact_hashes_matched": 5
+    },
+    "stages": [
+      {
+        "log": "01-check.log",
+        "log_sha256": "47520fda38a77ecc1fd8a05d77601f6aad5bb91c43d370b110e8bada099cfe87",
+        "name": "check",
+        "started_utc": "2026-10-01T20:46:31Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 430226,
+            "memory_max": 47244640256,
+            "memory_peak": 16457728,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 299,
+            "spill_peak_bytes": 0
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-354697-1.service",
+        "wall_seconds": 0.368378274000861
+      },
+      {
+        "log": "02-pairs.log",
+        "log_sha256": "6d3f340f2237a9f1db2b26115c09f4a5dccdfa58eb982d4fb7146126f0d7cbcc",
+        "name": "pairs",
+        "started_utc": "2026-10-01T20:46:31Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 3878099455,
+            "memory_max": 47244640256,
+            "memory_peak": 42901069824,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 647635,
+            "spill_peak_bytes": 34003439616
+          },
+          "nodes": [
+            {
+              "artifact": "node.1.0",
+              "cache_hits": 0,
+              "elapsed_ms": 179723,
+              "setups": 1
+            },
+            {
+              "artifact": "node.1.1",
+              "cache_hits": 1,
+              "elapsed_ms": 187550,
+              "setups": 1
+            },
+            {
+              "artifact": "node.1.2",
+              "cache_hits": 2,
+              "elapsed_ms": 134986,
+              "setups": 1
+            },
+            {
+              "artifact": "node.1.3",
+              "cache_hits": 3,
+              "elapsed_ms": 144320,
+              "setups": 1
+            }
+          ]
+        },
+        "unit": "lattica-v2-grouped-354697-2.service",
+        "wall_seconds": 647.7399698080008
+      },
+      {
+        "log": "03-merges.log",
+        "log_sha256": "0dae9f93f1800d2512c9ebf11af21d967908be801cff226378228670210e74fe",
+        "name": "merges",
+        "started_utc": "2026-10-01T20:57:19Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 2972455627,
+            "memory_max": 47244640256,
+            "memory_peak": 42950197248,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 518778,
+            "spill_peak_bytes": 34288652288
+          },
+          "nodes": [
+            {
+              "artifact": "node.2.0",
+              "cache_hits": 0,
+              "elapsed_ms": 215984,
+              "setups": 1
+            },
+            {
+              "artifact": "node.2.1",
+              "cache_hits": 1,
+              "elapsed_ms": 142074,
+              "setups": 1
+            },
+            {
+              "artifact": "node.3.0",
+              "cache_hits": 2,
+              "elapsed_ms": 157817,
+              "setups": 1
+            }
+          ]
+        },
+        "unit": "lattica-v2-grouped-354697-3.service",
+        "wall_seconds": 518.9648582109985
+      },
+      {
+        "log": "04-prune.log",
+        "log_sha256": "04721c3eaa7c846b7a8017ce383804aae7e7f07e64ee1e67150848b0c9c5192a",
+        "name": "prune",
+        "started_utc": "2026-10-01T21:05:58Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 143656,
+            "memory_max": 47244640256,
+            "memory_peak": 10907648,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 121,
+            "spill_peak_bytes": 0
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-354697-4.service",
+        "wall_seconds": 0.18834727500143345
+      },
+      {
+        "log": "05-root.log",
+        "log_sha256": "1569804fdc129c2b4bddfb3ef4b53be646ec24f4be1d09631b2b7d5359dd2828",
+        "name": "root",
+        "started_utc": "2026-10-01T21:05:58Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 104285,
+            "memory_max": 47244640256,
+            "memory_peak": 7794688,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 76,
+            "spill_peak_bytes": 0
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-354697-5.service",
+        "wall_seconds": 0.13022610799816903
+      },
+      {
+        "bundle": {
+          "height": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60",
+          "key.1": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5",
+          "key.2": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802",
+          "key.3": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99",
+          "node.3.0": "61f67b618e987068d4b8f23431759aa06bed465127a3ff36e14a1cf4fb6be17e"
+        },
+        "log": "06-export.log",
+        "name": "export",
+        "started_utc": "2026-10-01T21:05:58Z",
+        "status": "complete",
+        "unit": "lattica-v2-grouped-354697-6.service",
+        "wall_seconds": 0.03754109500005143
+      },
+      {
+        "log": "07-audit.log",
+        "log_sha256": "ae704fe26039217aaf9d0341ee0e32a3fdc1c2bbc29828ac9357539a5e8980ba",
+        "name": "audit",
+        "started_utc": "2026-10-01T21:05:59Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 287613,
+            "memory_max": 47244640256,
+            "memory_peak": 13508608,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": 1683948,
+          "duration": null,
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-354697-7.service",
+        "wall_seconds": 0.3180446270016546
+      }
+    ],
+    "measurement_scope": "One CPU level-three/count-eight research run. Command time excludes wallet proving and key setup; final merge is not complete post-seal finalization. Per-service memory peaks are not measured combined simultaneous peaks; mapped spill is not additional RSS.",
+    "matched_speedup_established": false,
+    "repeat_qualified": false,
+    "level6_qualified": false,
+    "full_tree_security_reviewed": false,
+    "production_ready": false
+  }
+}

@@ -1,0 +1,237 @@
+{
+  "schema": "lattica-block-v2-resident-pcs-v1",
+  "status": "SMALL_PROOF_GPU_PCS_EQUIVALENCE_VERIFIED_FULL_SIZE_PENDING",
+  "production_ready": false,
+  "default_enabled": false,
+  "scope": "Candidate hiding-PCS integration with exact CPU commitments/openings, small full-strength cubic uni-STARK proof replay, and explicit research-only runner selection. Not recursive block or performance qualification.",
+  "implementation": {
+    "files": [
+      "lattica-prover-p3/src/block_v2/resident_pcs.rs",
+      "lattica-prover-p3/src/block_v2/quotient_pcs.rs",
+      "lattica-prover-p3/src/block_v2/gpu_hash.rs",
+      "lattica-prover-p3/src/block_v2/profile.rs",
+      "lattica-prover-p3/src/bin/block_v2_recursion_probe.rs"
+    ],
+    "architecture": "Reference/resident enum; active resident clones share the complete upstream PCS attempt via Arc. Ordinary reference/MMCS clone semantics remain unchanged. No upstream fork or private-RNG replay.",
+    "replaced_operations": [
+      "main commitments",
+      "public preprocessing commitments",
+      "randomization-polynomial commitments"
+    ],
+    "delegated_operations": [
+      "quotient LDE generation",
+      "commit_ldes",
+      "periodic LDEs and domain evaluation",
+      "openings including preprocessing",
+      "verification"
+    ],
+    "randomness": "Shared hiding and input-MMCS salt streams continue across resident and upstream operations. Configuration still obtains fresh CSPRNG seeds per proof; optional quotient fusion has an independent seed. Deterministic seeds are confined to test fixtures and existing public-only preprocessing.",
+    "selection": {
+      "flag": "LATTICA_V2_GPU_RESIDENT_LDE",
+      "values": [
+        "0",
+        "1"
+      ],
+      "requires": [
+        "Explicit research initialization",
+        "LATTICA_V2_GPU_HASH=1",
+        "LATTICA_V2_GPU_RETAIN_TREES=1"
+      ],
+      "immutable": true,
+      "environment_alone_selects_backend": false,
+      "default_or_wallet_config_selects_resident": false,
+      "available_runner": "block-v2-recursion-probe",
+      "grouped_runner": "CPU-only gate unchanged; separate GPU grouped runner/controller still required",
+      "transfer_overlap": "Distinct from LATTICA_V2_GPU_PIPELINE. Resident transforms/readbacks are synchronous."
+    },
+    "host_output_budget_bytes": 34359738368,
+    "budget_scope": "Per-commit output admission only; not total proving RAM. Host LDE readback remains.",
+    "protocol_changes": "No AIR, parameters, wire/proof types, C ABI, default activation or verifier change."
+  },
+  "profile": {
+    "field": "Goldilocks",
+    "challenge_extension_degree": 3,
+    "num_queries": 128,
+    "blowup": 16,
+    "cap_height": 6,
+    "random_codewords": 4,
+    "query_pow_bits": 16
+  },
+  "validation": {
+    "native_initial": {
+      "unit": "lattica-v2-gpu-resident-native-20261001-a.service",
+      "status": "COMPILE_FAILED_CORRECTED",
+      "exit_code": 1,
+      "service_seconds": 2.321,
+      "peak_cgroup_bytes": 381792256,
+      "swap_bytes": 0,
+      "reason": "Fixture height integer type and BasedVectorSpace<Val> dimension needed explicit annotations; two unused imports removed."
+    },
+    "native_intermediate": {
+      "unit": "lattica-v2-gpu-resident-native-20261001-b.service",
+      "status": "PASS_WITH_WARNINGS_CORRECTED",
+      "tests_passed": 16,
+      "service_seconds": 100.601,
+      "peak_cgroup_bytes": 2059685888,
+      "swap_bytes": 0,
+      "warnings": "Two must-use admission-plan results explicitly acknowledged in the final revision."
+    },
+    "gpu_intermediate": {
+      "unit": "lattica-v2-gpu-resident-device-20261001-a.service",
+      "status": "PASS",
+      "tests_passed": 15,
+      "service_seconds": 12.438,
+      "peak_cgroup_bytes": 456982528,
+      "swap_bytes": 0
+    },
+    "native_final": {
+      "unit": "lattica-v2-gpu-resident-native-20261001-c.service",
+      "status": "PASS",
+      "tests_passed": 17,
+      "filters": [
+        {
+          "filter": "resident",
+          "passed": 7,
+          "ignored": 8
+        },
+        {
+          "filter": "block_v2::quotient_pcs::",
+          "passed": 10,
+          "ignored": 1
+        }
+      ],
+      "runner_check": "PASS: release block-v2-wide-lanes,stream,gpu recursion probe",
+      "warnings": 0,
+      "service_seconds": 104.252,
+      "peak_cgroup_bytes": 2058162176,
+      "swap_bytes": 0
+    },
+    "gpu_final": {
+      "unit": "lattica-v2-gpu-resident-device-20261001-b.service",
+      "status": "PASS",
+      "device": "NVIDIA GeForce RTX 5080",
+      "tests_passed": 17,
+      "new_adapter_tests": 4,
+      "prior_executor_and_gpu_regressions": 13,
+      "isolated_selection_child_tests": 1,
+      "service_seconds": 11.741,
+      "test_seconds": 11.61,
+      "peak_cgroup_bytes": 462458880,
+      "swap_bytes": 0,
+      "coverage": [
+        "Exact bit-reversed LDE values, caps and sampled CPU-verified MMCS openings; main, preprocessing, quotient and randomization commitments.",
+        "Interleaved original/cloned handles preserve upstream hiding-mask and salt sequences across repeated operations.",
+        "Both domain evaluation methods match the original CPU PCS.",
+        "Invalid shape/count and unequal-output-height admission fails before mask/salt consumption.",
+        "Four full-strength cubic uni-STARK proofs with quotient fusion off/on, through original/cloned resident configurations, decoded and verified by original CPU PCS proof types; changed public statements rejected.",
+        "Environment alone cannot select resident proving; GPU/retained-tree prerequisites and immutable mode enforced; default/wallet config remains non-resident."
+      ]
+    },
+    "broad_gpu_feature_regression": {
+      "unit": "lattica-v2-gpu-resident-regression-20261001-a.service",
+      "status": "PASS",
+      "passed": 248,
+      "ignored": 64,
+      "service_seconds": 122.423,
+      "test_seconds": 122.29,
+      "peak_cgroup_bytes": 2214744064,
+      "swap_bytes": 0,
+      "env": {
+        "OCL_DEFAULT_PLATFORM_IDX": "2",
+        "OCL_DEFAULT_DEVICE_TYPE": "GPU"
+      },
+      "scope": "Same preserved GPU-suite binary, unignored library tests; includes the 17 targeted native tests. Not CPU-only because the legacy streaming test runs GPU arithmetic."
+    },
+    "default_cpu_regression": {
+      "unit": "lattica-v2-resident-default-regression-20261001-a.service",
+      "status": "PASS",
+      "features": "block-v2,stream",
+      "passed": 223,
+      "ignored": 30,
+      "service_seconds": 186.682,
+      "test_seconds": 115.95,
+      "peak_cgroup_bytes": 2261016576,
+      "swap_bytes": 0,
+      "checks": [
+        "CPU-only block-v2,stream recursion runner",
+        "No-feature release library"
+      ],
+      "warnings": 0
+    },
+    "feature_checks": {
+      "unit": "lattica-v2-resident-feature-check-20261001-a.service",
+      "status": "PASS",
+      "checks": [
+        "release all-features/all-targets",
+        "release block-v2-wide-lanes,stream CPU-only all-targets"
+      ],
+      "warnings": 0,
+      "service_seconds": 11.19,
+      "peak_cgroup_bytes": 560033792,
+      "swap_bytes": 0
+    }
+  },
+  "limits": {
+    "component_service_ram_bytes": 3221225472,
+    "component_service_swap_bytes": 0,
+    "component_service_timeout_seconds": 600,
+    "cargo_jobs": 1,
+    "rayon_threads": 8,
+    "shared_exclusive_lease": true,
+    "competing_jobs": false
+  },
+  "pins": {
+    "lattica-prover-p3/src/block_v2/mod.rs": "0314e5cc8c5f3df901512595ac128a252261213bc00574d12658db96ecfd7d0d",
+    "lattica-prover-p3/src/block_v2/quotient_pcs.rs": "f349ce4a67fb806afec11035c8db3795ab546bc151c1164e6083430468ee6139",
+    "lattica-prover-p3/src/block_v2/resident_pcs.rs": "77a6973bcb126ddaec271914cd2d05bd1dfb5f5389648e6ad5cbf97ec8011d45",
+    "lattica-prover-p3/src/block_v2/resident_pcs_tests.rs": "bb501add61a0a036fcfe0275e9108d0f35c48cebcbb1b6fe275cca97931c329b",
+    "lattica-prover-p3/src/block_v2/gpu_hash.rs": "58ee2d0f1db763bd9a7ad9a6b9d5c27411d44b065ae9b4dd6d53250fa3d660f0",
+    "lattica-prover-p3/src/block_v2/profile.rs": "fffde1829768df7c3b5ea1411237db49c4b439bc6812c3d2eda3a378eae3ec14",
+    "lattica-prover-p3/src/bin/block_v2_recursion_probe.rs": "82e2a15af1f57ce96504524f94941dd4a60b8163341f134f6e77f11321468448",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine.rs": "87cf4726ba40981cbac5b1e643554389a659462489102248e6110069eb60a48f",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_plan.rs": "821ec1f7b26678b2394a8b025963fe03547df29b83ff7e294e1ded025a8db7da",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_execute.rs": "381b457bd7f1877a314692a8618a8e2a8a2df1d892061de63b92c8d064ce80f6",
+    "lattica-prover-p3/Cargo.toml": "2dd51016c0de41b66582ea54bf62ed3b165642c2521ba34098a1823d15a16e08",
+    "lattica-prover-p3/Cargo.lock": "796853faa58f6c5fb2944b57de36331801f14a832619f8453685bf02ed3c61c8",
+    "docs/dag-gpu-implementation.md": "c23df407b56a47b1ec66f6821349d38be258ea4f7c43db432086124580a27ae7",
+    "lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+    "lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+    "lattica-prover-p3/target/block-v2-gpu-resident-native-20261001-a.log": "a348a038742153912db7e51236e4e2a12a321af9e05f3c7b47ef5850e6c0daae",
+    "lattica-prover-p3/target/block-v2-gpu-resident-native-20261001-a/source.tar.gz": "c6b2642973c8759d523e9e5ace65c0957154ab93b11817a2cd2ac2efcd16e625",
+    "lattica-prover-p3/target/block-v2-gpu-resident-native-20261001-b.log": "2248f27ed83623783774f373350205f5a8eefeab8a12a9f292c0f47eb79f1196",
+    "lattica-prover-p3/target/block-v2-gpu-resident-native-20261001-b/source.tar.gz": "36cbfd97bdfc17e32c6e320690d6c56ad63df9f23e8c7d05b188634e4a9c3b10",
+    "lattica-prover-p3/target/block-v2-gpu-resident-native-20261001-c.log": "dba89a541ec3fa01ff95f8e0d2e52b2705995aeae39e7c030e22a3c9a7a9e820",
+    "lattica-prover-p3/target/block-v2-gpu-resident-native-20261001-c/source.tar.gz": "3c05077410207b7a5420d683456467101765cf908ab22bc4202264916716760c",
+    "lattica-prover-p3/target/block-v2-gpu-resident-device-20261001-a.log": "f3cfeb926f769f07e1ea1bf3dff7f43d59e2ccc69f9dc4a6b96d65f8335cdd51",
+    "lattica-prover-p3/target/block-v2-gpu-resident-device-20261001-a/gpu-tests": "0e7238a9db4b4202437dfae776a897018abf53f23663e5cca7ae3640f1acc752",
+    "lattica-prover-p3/target/block-v2-gpu-resident-device-20261001-a/source.tar.gz": "36cbfd97bdfc17e32c6e320690d6c56ad63df9f23e8c7d05b188634e4a9c3b10",
+    "lattica-prover-p3/target/block-v2-gpu-resident-device-20261001-b.log": "6043b7f5c55c27bc45297368a7c05b8a59a03f9cfae7daf169ab4fb1888ad9c1",
+    "lattica-prover-p3/target/block-v2-gpu-resident-device-20261001-b/gpu-tests": "db73acb99d1ee04e08b536edbe104ceec637dbb257a31b1185b84780b5e627e4",
+    "lattica-prover-p3/target/block-v2-gpu-resident-device-20261001-b/source.tar.gz": "3c05077410207b7a5420d683456467101765cf908ab22bc4202264916716760c",
+    "lattica-prover-p3/target/block-v2-gpu-resident-regression-20261001-a.log": "ac4fdb59bb8792f2bb9a8c5cc243a3b18214ca04ed8a632619a823730972e1c9",
+    "lattica-prover-p3/target/block-v2-gpu-resident-regression-20261001-a/native-tests": "db73acb99d1ee04e08b536edbe104ceec637dbb257a31b1185b84780b5e627e4",
+    "lattica-prover-p3/target/block-v2-gpu-resident-regression-20261001-a/source.tar.gz": "3c05077410207b7a5420d683456467101765cf908ab22bc4202264916716760c",
+    "lattica-prover-p3/target/block-v2-resident-default-regression-20261001-a.log": "63ba175cd5ea76a538bf64e092a1cffa3b4768f5eb0029977982d0aca91e64f4",
+    "lattica-prover-p3/target/block-v2-resident-default-regression-20261001-a/source.tar.gz": "3c05077410207b7a5420d683456467101765cf908ab22bc4202264916716760c",
+    "lattica-prover-p3/target/block-v2-resident-default-regression-20261001-a/native-tests": "acbfa93812e53e296157ac08c0d27102471dc0c36916a524a05d91473dcd6825",
+    "lattica-prover-p3/target/block-v2-resident-feature-check-20261001-a.log": "4b4684cb20b3dd48401a395f525e20d2c7357f2eb555d65d6e0d751a207ee5ff",
+    "lattica-prover-p3/target/block-v2-resident-feature-check-20261001-a/source.tar.gz": "3c05077410207b7a5420d683456467101765cf908ab22bc4202264916716760c"
+  },
+  "remaining": [
+    "Separate explicit bounded GPU grouped runner/controller; keep the existing CPU-only runner gate and frozen Python helpers.",
+    "Reproduce independently registered full-size compact-profile preprocessing keys/caps, then real recursive proof, inner-artifact pruning and unchanged CPU root audit.",
+    "At least five alternating matched compact-profile end-to-end comparisons including all transfers, CPU work, RAM/VRAM/scratch and complete finalization; no speedup claim from these suite times.",
+    "Minimal local incremental DAG, irregular/odd/mixed/issuance/full64 correctness, cold64 <=10 min and complete post-seal <=3 min under RAM48/VRAM12/scratch128 GiB; one root <=2 MiB.",
+    "Complete-tree soundness/zero-knowledge review, versioned Zig/host integration and explicit activation remain open.",
+    "Original repeated series remains 2/5 pairs complete with separate checked shared-fixture pruning/replay obligations; do not rerun completed historical experiments."
+  ],
+  "post_validation_checks": {
+    "compiled_archive_files_matched": 12,
+    "dag_plan_unchanged": true,
+    "historical_evidence_not_rewritten": true,
+    "git_diff_check": "PASS",
+    "all_required_services_terminal": true,
+    "pinned_files_matched": 35
+  },
+  "captured_utc": "2026-10-01 23:38:37 UTC"
+}

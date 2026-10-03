@@ -1,0 +1,144 @@
+{
+  "schema": "block-v2-gpu-openings-matched-pilot-v1",
+  "captured_utc": "2026-10-02 05:06:53 UTC",
+  "status": "ONE_MATCHED_PAIR_COMPLETE_OPENING_BACKEND_REGRESSION_OBSERVED",
+  "production_ready": false,
+  "default_enabled": false,
+  "repeat_qualified": false,
+  "pairs_complete": 1,
+  "pairs_required_before_speedup_claim": 5,
+  "scope": "One serial compact eight-wallet/seven-proof backend comparison, resident+GPU openings versus retained hashing, on the same preserved prover build. Not a full64 or complete post-seal test.",
+  "order": [
+    "resident_openings_enabled",
+    "retained_hashing_openings_disabled"
+  ],
+  "order_caveat": "A separate retained key-registration run occurred between proofs. No competing build/proof was launched. This single pair is not production latency-distribution evidence. No resident/openings-disabled same-build control is included, so the isolated contribution of opening offload is not established.",
+  "matched_checks": {
+    "same_public_source_artifacts": true,
+    "same_external_statement": true,
+    "same_binary_and_source_pins": true,
+    "same_gpu_index_and_uuid": true,
+    "same_declared_resource_limits": true,
+    "same_four_wrappers_three_merges": true,
+    "both_registrations_match_independent_cpu_keys": true,
+    "config_differences": [
+      "backend",
+      "evidence",
+      "gpu_openings",
+      "job",
+      "registration"
+    ],
+    "pin_differences": [
+      "registration"
+    ]
+  },
+  "opening": {
+    "status": "GPU_PROOF_VERIFIED_RESEARCH_ONLY",
+    "recursive_command_ms": 686046,
+    "root": {
+      "bytes": 1683948,
+      "sha256": "05b5ac4593b40d63b5866269a631b5675b73c3da15afbb899ffe7c9437912d08"
+    },
+    "final_merge_ms": 92427,
+    "peak_worker_ram_bytes": 40534675456,
+    "peak_mapped_spill_bytes": 31671332864,
+    "peak_sampled_vram_mib": 5960,
+    "swap_peak_bytes": 0,
+    "transfers": {
+      "core_downloaded_bytes": 102012125696,
+      "core_uploaded_bytes": 99925098000,
+      "downloaded_bytes": 103421411840,
+      "opening_calls": 7,
+      "opening_downloaded_bytes": 1409286144,
+      "opening_uploaded_bytes": 251322782032,
+      "uploaded_bytes": 351247880032
+    },
+    "shared_reference_pruned": false,
+    "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-openings-proof-20261002-a-evidence/manifest.json"
+  },
+  "retained": {
+    "status": "GPU_PROOF_VERIFIED_RESEARCH_ONLY",
+    "recursive_command_ms": 607112,
+    "root": {
+      "bytes": 1683948,
+      "sha256": "1a8d92c2a4fdd3c0bd067e23e3cfa77d295508593eccf9af994ad335915619d8"
+    },
+    "final_merge_ms": 71812,
+    "peak_worker_ram_bytes": 40715051008,
+    "peak_mapped_spill_bytes": 31671332864,
+    "peak_sampled_vram_mib": 3910,
+    "swap_peak_bytes": 0,
+    "transfers": {
+      "core_downloaded_bytes": 6652416,
+      "core_uploaded_bytes": 195555220736,
+      "downloaded_bytes": 6652416,
+      "opening_calls": 0,
+      "opening_downloaded_bytes": 0,
+      "opening_uploaded_bytes": 0,
+      "uploaded_bytes": 195555220736
+    },
+    "shared_reference_pruned": false,
+    "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-openings-retained-proof-20261002-a-evidence/manifest.json"
+  },
+  "observed_difference": {
+    "opening_backend_recursive_wall_increase_ms": 78934,
+    "opening_backend_recursive_wall_increase_percent": 13.001554902555057,
+    "opening_backend_final_merge_increase_ms": 20615,
+    "recorded_uploaded_plus_downloaded_bytes": {
+      "opening": 454669291872,
+      "retained": 195561873152
+    },
+    "opening_timing_is_nonadditive_subset": true,
+    "not_a_repeated_performance_claim": true
+  },
+  "audit": {
+    "both_local_inner_artifacts_pruned": true,
+    "both_cpu_root_only_audits_passed": true,
+    "inner_proofs_loaded": 0,
+    "native_mutations_rejected_per_root": 38,
+    "registry_policy_rejections_per_root": 4,
+    "expected_statement_policy_rejections_per_root": 2,
+    "shared_reference_pruned": false
+  },
+  "resource_scope": "Per-worker cgroup RAM/swap and mapped spill peaks; physical VRAM sampled, not instantaneous. Existing aggregate admission/slice limits enforced. These are not fleet measurements.",
+  "resource_limits": {
+    "aggregate_ram_bytes": 51539607552,
+    "aggregate_scratch_bytes": 137438953472,
+    "controller_ram_bytes_at_most": 3221225472,
+    "controller_runtime_seconds_at_most": 21600,
+    "log_bytes_per_stage": 67108864,
+    "spill_bytes": 128849018880,
+    "swap_bytes": 0,
+    "vram_log_bytes_per_stage": 8388608,
+    "worker_ram_bytes": 47244640256,
+    "worker_runtime_seconds": 7200,
+    "worker_vram_limit_mib": 12288
+  },
+  "preservation": {
+    "opening_manifest_sha256": "d960f6c30125af401cf81017aa03d2cd7d1746bcfc35c3ae682b69f0f6485eaf",
+    "retained_manifest_sha256": "6bc9a13dbcb5587a04f7a0ca352b717ef7ce78b7d121304de47149d5db3d9124",
+    "retained_registration_manifest_sha256": "d0d3754262c8674552509e9a82bae321e9128d332840a06b9c06b137f55b202e",
+    "benchmark_pins": {
+      "accounting": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "auditor": "ae9ea1ddf846771c373b3dd5cf2e188087819de4294e25d27b85500e66f1af53",
+      "controller": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614",
+      "cpu_runner": "2383b260de5283ddcb6c1ce2408fb8139065fc109c8181ec602cc20ca095db3c",
+      "gpu_runner": "fc608cdadade7ed13d9d3e7ddb5cd6f96dd26e90a7d167ccc5a9fb00e35729dd",
+      "helpers": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "registration": "eb06ae502cece850e24105a426cd6a26ad9d6339a237ca49e64b6613dd7e28b1",
+      "source_archive": "6f0d258df141d301dbbff1a860deb274c9bed401625fbb49d76d44ea3eff55ef"
+    },
+    "archive_comparison_after_both_proofs": "PASS before connecting new local job-contract module; all archived source inputs remained unchanged during both trials."
+  },
+  "decision": {
+    "status": "DO_NOT_PROMOTE_OPENING_BACKEND_PERFORMANCE",
+    "reason": "Correctness-qualified opening-enabled backend was slower than the retained-hashing control in this pilot and moved more recorded host/device bytes. Kernel or component correctness does not satisfy end-to-end performance gates.",
+    "next": "Keep retained hashing as control. Continue local incremental job/DAG work and investigate resident consumer access/recomputation that removes host LDE readback and re-upload; profile host staging, transfers and CPU work before another performance revision. At least five alternating matched pairs remain required before any eventual speedup claim.",
+    "local_dag_pending": true,
+    "full64_pending": true,
+    "complete_post_seal_pending": true,
+    "full_tree_security_pending": true,
+    "host_integration_pending": true,
+    "production_activation": false
+  }
+}

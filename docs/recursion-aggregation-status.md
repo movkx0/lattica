@@ -1,6 +1,112 @@
 # Recursion — recursive-aggregation status & review guide
 
-> **Research status:** Active, feature-gated work. No recursion symbol is exposed through the production C ABI, and the production-scale proof gate remains resource-blocked.
+> **Research status:** Active, feature-gated work. The candidate has a verified two-level recursive proof; the production-scale feasibility and security gates remain unmet. No recursion symbol is exposed through the production C ABI.
+
+## Current direction — candidate/inactive block-proving v2
+
+The [bounded execution engine](bounded-execution-engine.md) provides the
+single-table lookup AIR, full candidate proof-verifier compilers, and constrained
+wrapper/empty/merge programs. On 2026-09-30 it completed four real wallet proofs →
+four wrappers → two sibling merges → final merge. The **1,913,373-byte** root
+verified in a fresh process after all ten inner files were deleted. The separate
+checker rejected 38 native mutations and four registry-policy mutations; repeat
+root-only checks passed.
+
+Common geometry closes at height 524,288. The selected CPU/disk-backed run took
+**34.002 minutes** across seven serial recursive proving stages, with a **40.015
+GiB** maximum proving-service memory peak and **44.184 GiB** peak live mapped
+spill, zero swap. This excludes original wallet proving/registration and earlier
+failed trials. It demonstrates two-level recursion, not 64-transaction throughput,
+a three-minute finalization window, full-tree security, or live-network readiness.
+The execution-only probe still intentionally exits 2; it does not test recursion.
+
+[Block-proving v2](block-proving-v2.md) is the authoritative approved architecture and milestone
+ledger. It supersedes the historical roadmap recommendations below: no direct witness batches or
+individual-proof containers in blocks, no multiple-root fallback, and no curve/SNARK wrap. The target
+uses wallet-local witnesses, public-only aggregation, a new ordered64 Merkle root, and a separate
+cubic-extension binary-FRI candidate profile. Historical v1 parameters and encodings are unchanged.
+
+**Phase A: two-level implementation demonstrated; full feasibility gate open.**
+The earlier
+[leaf/legacy-geometry diagnostic](block-proving-v2.md#phase-a-diagnostic-reproduction--experimental-not-an-aggregate-benchmark)
+still exits 2 / `BLOCKED`: it tests the inherited monolith, whose trace-commit
+lower bound exceeds the scratch budget, not the new recursive runner. Current
+evidence is in the
+[two-level report](bounded-execution-engine.md#completed-two-level-recursive-proof-2026-09-30).
+Common-height empty/padding proofs, depth-six/64-transaction measurements,
+complete-tree soundness/zero knowledge, HTLC/issuance, coordinator integration,
+and production activation remain later gates. Five
+[bounded GPU-hashing trials](bounded-execution-engine.md#gpu-hashing-experiment-2026-09-30)
+passed in 23.396 minutes median and 24.488 minutes worst, with CPU root-only
+verification repeated after shared wallet-proof pruning. **No passed
+64-transaction performance gate is claimed.**
+
+The dated continuations and measurement tables below are historical research evidence. Their use
+of “production” means experiments with the legacy production-parameter family, not deployable
+recursive block proving. Reduced-query results and resource-preflight early returns do not satisfy
+the v2 depth-six, full-strength feasibility gate or its 48 GiB RAM / 12 GiB VRAM / 128 GiB scratch
+budgets. Older batch-root compatibility is not compatibility with the new v2 commitment.
+
+## Latest candidate continuation — 2026-10-01
+
+The latest [compact-node-codec checkpoint](evidence/block-v2-fixed-node-codec-2026-10-01.json)
+resolves the wide23 envelope blocker at **1,683,948 bytes** under unchanged
+2 MiB limits. Default/wallet encoding remains unchanged; the opt-in registry
+binds `LBV2RC02`, codec revision two and program manifest six. Default/wide
+native and CLI regressions, ABI/Zig checks and six preserved default root replays
+pass. Fresh geometry remains 262,144 rows / 29.5 GiB retained-LDE estimate.
+The candidate keys now match across two independent registrations, and the
+external statement is pinned through native Zig/Rust checks. The first
+full-strength eight-transaction candidate run now passes recursive closure and
+preserved CPU root-only auditing after local inner-artifact pruning. The
+**1,683,948-byte** root took **19.440 minutes** of recursive-command time; the
+final merge took **157.817 seconds**. Peak proving-worker memory was **40.000 GiB**,
+with zero swap. This is one level-three/count-eight CPU observation, not a
+matched speedup or a measurement of complete post-seal finalization.
+Padded/depth-six/64-transaction qualification, full-tree security and activation
+remain open.
+
+
+The [completed retention comparison](evidence/block-v2-retention-matched-2026-10-01.json)
+contains five matched pairs with identical public wallet inputs and serial GPU
+transfers. Retention reduced median four-transaction/seven-proof time from
+**19.627 to 17.642 minutes (10.114%)**. Its worst observed final merge was
+**201.993 seconds**. All ten roots plus the retained pilot passed fresh CPU-only
+verification after shared-fixture pruning; each rejected 38 native and four
+registry-policy mutations, with no inner proofs loaded. This is not an independent
+cryptographic audit or a full-block performance result.
+
+Retention remains experimental/opt-in. The original grouped-eight CPU prototype
+completed four paired wrappers and three merges at height 524,288, with separately
+reproduced research keys and a native-Zig-derived expected statement. Its
+1,914,091-byte root passed fresh CPU replay after pruning 14 local inner artifacts
+(33.133 minutes total; 280.993-second final merge).
+The later [same-eight CPU pilot](evidence/block-v2-eight-matched-pilot-2026-10-01.json)
+used identical wallet-proof bytes and measured **69.941 minutes single / 33.552
+minutes grouped**, a **52.028%** reduction in that one pair. Its grouped final
+merge was slower: **287.332 versus 264.760 seconds**. Both roots passed recorded
+post-local-pruning CPU audits; the shared fixture is preserved for the repeated
+series and final post-shared-pruning replay. This is not repeated qualification,
+a padded level-six block or either production latency gate. Full-tree soundness/ZK,
+padding, mixed workloads and activation remain open. See also the original
+[grouped evidence](evidence/block-v2-grouped-integration-2026-10-01.json).
+
+The separate [quotient-fusion candidate](evidence/block-v2-quotient-fusion-2026-10-01.json)
+passed exact full-size key reproduction and a complete eight-wallet/seven-proof
+CPU run. Its **1,913,701-byte** root passed the preserved CPU auditor after all
+14 local inner artifacts were pruned, followed by an additional independent
+CPU-only replay. Recursive commands took **28.983 minutes**, with a **252.026-second**
+final merge. The completed [same-binary matched comparison](evidence/block-v2-quotient-fusion-matched-2026-10-01.json)
+measured **32.198 minutes off / 28.983 minutes on**, a **9.983%** reduction in
+one pair. Final merge was **270.047 / 252.026 seconds**. Both roots passed
+additional CPU-only replay; retained spill was identical and worker memory
+essentially unchanged. Fusion remains opt-in, not repeat- or depth-six-qualified;
+neither the three-minute finalization gate nor complete-tree security is qualified.
+The [original five-pair single/grouped series](evidence/block-v2-eight-repeated-series-2026-10-01.json)
+passed read-only input/source/pilot-integrity preflight and started its first
+pair with the original non-fused binaries. Shared and registration wallet
+fixtures remain retained for final pruning and fresh root replay.
+Dated entries below remain historical evidence.
 
 ## Latest continuation — 2026-07-07 owned trace-store stream proof path
 
@@ -263,6 +369,9 @@ This makes the current production blocker concrete: q96 recursive aggregation ne
 
 **Status (2026-07-05): monolith BUILT + VALIDATED (R1–R5); the R4 flat aggregator is built + measured; R5 self-recursion is deferred behind a wrap.** RESEARCH — feature-gated behind `--features recursion` (`scripts/check-abi-symbols.sh` proves zero recursion symbols in the default staticlib), NOT on any production path, NOT externally audited. The node consensus seam is unchanged (the aggregate tx-root is byte-identical to `batch_joinsplit_air::batch_root`), so the **batch** path carries production.
 
+> The preceding dated snapshot is retained as history. Its “batch carries production” and unchanged
+> node-seam guidance is superseded by v2; neither is an approved deployment recommendation.
+
 This doc **consolidates** the recursion family for review and gives an explicit **improvement surface** (§5) — it does not restate the siblings. Read those for the primitives/soundness detail:
 
 - `docs/recursion-design.md` — what recursion buys over the batch, the model, feasibility (§10 = build status).
@@ -330,7 +439,12 @@ Production rollout is sequenced so each step has a verifier-facing acceptance ga
 6. **R5 wrap** — design fixed-size/low-degree wrap before any recursive tree deeper than flat R4; direct monolith-over-monolith remains non-convergent.
 7. **C-ABI/Zig seam + audit** — only after steps 1–6 pass gates; default staticlib remains recursion-free until explicitly moved into scope.
 
-## 4. Remaining to production (roadmap)
+## 4. Historical roadmap — superseded by the v2 milestones
+
+The list below preserves the earlier q96/legacy-root plan, not the approved implementation order.
+Use [block-proving-v2.md](block-proving-v2.md) for complete-tree soundness, bounded recursion,
+standalone root verification, and new commitment/profile/host interfaces. No item here authorizes
+deployment of an excluded fallback.
 
 1. Raise the outer config from the dev-box milestone (arity-2 / 32-query) to the batch's **q96 / lb4** and enforce the ≥100-bit proven-security floor **per aggregation level** (`recursion-aggregation-params.md` §1, §4).
 2. The **R5 wrap** — a fixed-size, low-degree re-proof per tree level so self-composition converges (`recursion-aggregation-params.md` §5). Blocks any tree deeper than depth-1.
@@ -342,10 +456,10 @@ Production rollout is sequenced so each step has a verifier-facing acceptance ga
 
 Prioritized. Each item is the issue, why it matters, and where to look. Items 1–6 are correctness/soundness/architecture; 7–10 are code health.
 
-1. **The ≥100-bit proven-security floor is unenforced for the aggregator.** The milestone runs arity-2 / 32-query (`monolith/mod.rs:198-205`, `tests.rs:139` `MILESTONE_QUERIES = 32`, `native_fri.rs:376`); production needs q96/lb4 at *every* tree level (`recursion-aggregation-params.md` §1). No `proven_security_bits` / floor assertion exists in `src/recursion/` (the batch has one via `soundness-budget.md`). **Ask:** add the aggregation-level floor assertion and wire the query-count lift; confirm the construction is query-count-agnostic as claimed (`native_fri.rs:377`).
+1. **Complete-tree security remains to be established.** Historical milestone configs used reduced queries; per-level q96 floors do not establish whole-tree soundness. **Ask:** review the separate v2 cubic/q128 candidate against actual bounded geometry and all composition losses. Partial A1 profile/instrumentation foundations are implemented, not a passed recursive security gate; the 119-bit composition figure is conditional on future AIR bounds, not an established tree bound.
 2. **`MonolithAir::eval` is one ~750-line function** (`air.rs:1023` to end of file) holding the entire soundness surface — and it is the named audit target (`recursion-verifier-audit.md` §0.6). **Ask:** decompose into per-region functions (transcript / super-tile / OOD epilogue / fold) with region-level unit tests, so the §0.2 binding table can be checked region-by-region against small functions rather than one monolith.
 3. **The degree ≤ 16 / `log_num_quotient_chunks ≤ log_blowup` budget is a silent-corruption cliff.** p3-0.6.1 silently produces unverifiable proofs above it (`air.rs:1578` "SILENTLY corrupts the quotient"; the always-on guard `native_verify.rs:2141-2151`). The `is_zk=0` merge-link was migrated from the product form to a disjoint-one-hot **sum** form to hold ≤ 16 at the real db=12 join-split shape; the **`is_zk=1` branch still uses the pre-fix product form** under a standing "LATENT DEGREE BUDGET" note. **Ask:** migrate `is_zk=1` to the sum form (or prove it never crosses 16 for any shippable config); keep the guard always-on.
-4. **R5 self-recursion needs a wrap.** Verifying the smallest monolith (W=193, 384 constraints) yields an outer of W≈8520 (~44×), ~133 GB LDE, `log_nqc = 7 > 4` — size- and degree-explosive per level, so naive tree self-composition diverges (`tests.rs:1919`; `recursion-verifier-audit.md` §0.5; `recursion-aggregation-params.md` §5). This blocks any tree deeper than the flat depth-1 aggregator (see §3). **Ask:** design the fixed-size/low-degree wrap (uniform verifier at a canonical small shape), or evaluate a SNARK wrap; this is R5's open problem.
+4. **R5 self-recursion needs bounded uniform verification.** Verifying the smallest monolith (W=193, 384 constraints) yields an outer of W≈8520 (~44×), ~133 GB LDE, `log_nqc = 7 > 4` — size- and degree-explosive per level (`tests.rs:1919`; `recursion-verifier-audit.md` §0.5; `recursion-aggregation-params.md` §5). **Ask:** build a fixed-width/low-degree hash/FRI verifier at a canonical shape and prove depth-six feasibility. This remains unresolved; a curve/SNARK wrap is excluded.
 5. **Dummy-proof padding is noted but unimplemented.** `MAX_AGG_TILES = 64` and K must be a power of two (`mod.rs:198-205`); the fold gadget pads absent tiles with a **zero public value**, not a verifiable dummy proof (`gadgets.rs:490`, `gadgets.rs:635` `padding tiles fold pvs0 = 0`). A real aggregator folding K′ < K genuine inners up to a power of two needs synthesized *verifiable* dummy inner proofs (design intent), not zero-value fold tiles. **Ask:** implement/spec dummy-proof instances and their soundness (a padded slot must not stand in for a real tx).
 6. **B5 C-ABI / Zig node seam is entirely unbuilt** and gated out of the shipped staticlib (`Cargo.toml` `recursion` feature; `scripts/check-abi-symbols.sh`). The aggregator emits a `batch_root`-compatible tx-root but no `extern "C"` entry constructs or verifies an aggregate proof (`recursion-design.md` B4/B5). **Ask:** the callable aggregator entry + the seam (needs items 1 and 4 first for a production-parameter, tree-scalable path).
 7. **Duplication / structure.** Two parallel re-verifier stacks — `native_fri.rs` (non-hiding) and `native_verify.rs` (hiding) — repeat the `log_nqc` / `create_disjoint_domain` prologue ~8×; the `as_basis_coefficients_slice(…).try_into()` "c/cc/pair" closure is re-declared ~15× across the module; a compile-time geometry twin (`mod.rs` `commit_layout`) and a runtime twin (`MonolithAir` methods) must agree, guarded only by `geometry_matches_milestone`. File sizes: `tests.rs` 3132, `lineage.rs` 2764, `native_verify.rs` ~2200, `air.rs` 1771. **Ask:** shared helpers; unify the two verifier stacks where sound; consider whether the geometry twins can be a single source of truth.
@@ -357,12 +471,16 @@ Prioritized. Each item is the issue, why it matters, and where to look. Items 1�
 
 ## 6. Scope & audit posture
 
-RESEARCH, feature-gated (`--features recursion`), NOT on any production path, NOT externally audited. Zero of the frozen `lattica_*` externs reach it; the default staticlib is recursion-free (`scripts/check-abi-symbols.sh`). The node consensus seam is unchanged regardless — the aggregate tx-root byte-matches `batch_joinsplit_air::batch_root` — so the **batch** path (which *is* in the production audit) carries production.
+RESEARCH, feature-gated (`--features recursion`), NOT on any production path, NOT externally audited.
+Zero of the frozen `lattica_*` externs reach it. The historical research root byte-matches
+`batch_joinsplit_air::batch_root`; that does not apply to the candidate v2 ordered root. The frozen
+batch audit remains evidence for its named artifact, not a production fallback while v2 is incomplete.
 
 `docs/AUDITORS.md` §7 and `docs/audit-scope-p3.md` point here and have been corrected — their earlier "the in-circuit recursive verifier is NOT built" wording was stale; it **is** built + validated (R1–R5), it simply remains research and out of the production audit gate. Reviewing this work for improvement (this doc's §5) is distinct from auditing it as production.
 
 ## 7. See also
 
+- [Block-proving v2](block-proving-v2.md) — authoritative architecture, inactive candidate profile, partial foundation evidence, and unmet recursive/benchmark gates.
 - `docs/recursion-design.md` — feasibility + what recursion buys (client-side proving, distribution, tree scaling).
 - `docs/recursion-verifier-audit.md` — the built verifier's constraint self-audit (§0).
 - `docs/recursion-aggregation-params.md` — aggregation-tree soundness parameters + the R5 wrap (§5).
