@@ -14,6 +14,7 @@ use std::{mem::size_of, time::Instant};
 // if a row is larger. No per-task allocation is made. All storage is charged by
 // the commit plan's host-output plus largest reorder-workspace allowance.
 const ROW_TASK_BYTES: usize = 4 * 1024 * 1024;
+const DECODE_TASK_ELEMENTS: usize = ROW_TASK_BYTES / size_of::<Val>();
 
 pub(super) struct HostReadback {
     height: usize,
@@ -21,6 +22,7 @@ pub(super) struct HostReadback {
     columns_per_band: usize,
     elements: usize,
     values: Vec<Val>,
+    parallel_decode: bool,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -54,7 +56,17 @@ impl HostReadback {
             columns_per_band: columns_per_band.min(width),
             elements,
             values,
+            parallel_decode: false,
         })
+    }
+
+    pub fn with_parallel_decode(mut self, enabled: bool) -> Self {
+        self.parallel_decode = enabled;
+        self
+    }
+
+    pub fn uses_parallel_decode(&self, elements: usize) -> bool {
+        self.parallel_decode && elements >= DECODE_TASK_ELEMENTS
     }
 
     pub fn height(&self) -> usize {
@@ -95,7 +107,24 @@ impl HostReadback {
         }
         // The full allocation was reserved at admission. extend initializes only
         // this contiguous prefix, avoiding an initial full-matrix zero write.
-        self.values.extend(raw.iter().map(|&word| Val::new(word)));
+        if self.uses_parallel_decode(raw.len()) {
+            let initialized = self.values.len();
+            self.values.spare_capacity_mut()[..raw.len()]
+                .par_chunks_mut(DECODE_TASK_ELEMENTS)
+                .zip(raw.par_chunks(DECODE_TASK_ELEMENTS))
+                .for_each(|(destination, source)| {
+                    for (slot, &word) in destination.iter_mut().zip(source) {
+                        slot.write(Val::new(word));
+                    }
+                });
+            // SAFETY: Admission reserved the complete output and the bounds above
+            // checked this append. Disjoint tasks initialize every new element;
+            // Rayon joins before publishing the length. On unwind the original
+            // length is retained, and Val has no destructor.
+            unsafe { self.values.set_len(initialized + raw.len()) };
+        } else {
+            self.values.extend(raw.iter().map(|&word| Val::new(word)));
+        }
         Ok(())
     }
 
@@ -217,6 +246,62 @@ mod tests {
         assert_eq!(output.values.as_ptr(), address);
         assert_eq!(stats.bytes, 0);
         assert_eq!(stats.workspace_bytes, 0);
+    }
+
+    #[test]
+    fn parallel_decode_matches_reference_at_chunk_and_field_boundaries() {
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(2)
+            .build()
+            .unwrap();
+        let edges = [0, 1, Val::ORDER_U64 - 1, Val::ORDER_U64, u64::MAX];
+        for elements in [
+            DECODE_TASK_ELEMENTS - 1,
+            DECODE_TASK_ELEMENTS,
+            DECODE_TASK_ELEMENTS + 1,
+            2 * DECODE_TASK_ELEMENTS + 7,
+        ] {
+            let raw: Vec<_> = (0..elements).map(|i| edges[i % edges.len()]).collect();
+            let mut reference = HostReadback::new(elements, 1, 1).unwrap();
+            let mut candidate = HostReadback::new(elements, 1, 1)
+                .unwrap()
+                .with_parallel_decode(true);
+            let pointer = candidate.values.as_ptr();
+            let capacity = candidate.values.capacity();
+            reference.append_rows(0, 1, 0, &raw).unwrap();
+            pool.install(|| candidate.append_rows(0, 1, 0, &raw))
+                .unwrap();
+            assert_eq!(candidate.values.as_ptr(), pointer);
+            assert_eq!(candidate.values.capacity(), capacity);
+            assert_eq!(candidate.values, reference.values);
+            assert_eq!(
+                candidate.finish().unwrap().0.values,
+                reference.finish().unwrap().0.values
+            );
+        }
+    }
+
+    #[test]
+    fn parallel_decode_preserves_partial_bands_and_rejects_out_of_order_rows() {
+        let height = DECODE_TASK_ELEMENTS / 3 + 5;
+        let mut reference = HostReadback::new(height, 5, 3).unwrap();
+        let mut candidate = HostReadback::new(height, 5, 3)
+            .unwrap()
+            .with_parallel_decode(true);
+        for (first, columns) in [(0, 3), (3, 2)] {
+            let raw: Vec<_> = (0..height)
+                .flat_map(|row| (first..first + columns).map(move |col| word(row, col)))
+                .collect();
+            let initialized = candidate.values.len();
+            assert!(candidate.append_rows(first, columns, 1, &raw).is_err());
+            assert_eq!(candidate.values.len(), initialized);
+            reference.append_rows(first, columns, 0, &raw).unwrap();
+            candidate.append_rows(first, columns, 0, &raw).unwrap();
+        }
+        assert_eq!(
+            candidate.finish().unwrap().0.values,
+            reference.finish().unwrap().0.values
+        );
     }
 
     #[test]

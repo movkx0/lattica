@@ -3816,3 +3816,77 @@ the one-root/public-proof-only design, historical verifier/ABI paths and the
 production-disabled state remain unchanged. The frozen plan and three
 experiment/accounting scripts retain their prior hashes; final live-service
 inventory was empty. No commit was made.
+
+### Eight-wallet GPU performance implementation (2026-10-03)
+
+The current paired-wrapper workload has two new, independent research switches.
+Both default to **off** until matched full-size runs establish their benefit.
+The completed 2026-10-02 baseline remains **377.197 s median at 24 threads**;
+this implementation does not establish a new solving-time result.
+
+| Change | Implementation and status |
+|---|---|
+| Parallel host readback | `LATTICA_V2_GPU_PARALLEL_READBACK=1` decodes sufficiently large GPU readback buffers in disjoint Rayon tasks. It retains the admitted allocation and canonical field conversion. |
+| GPU quotient transforms and commitment | `LATTICA_V2_GPU_QUOTIENT_LDE=1` requires resident LDEs and `LATTICA_V2_QUOTIENT_FUSION=1`. It sends small quotient evaluations and balanced hiding masks to the GPU, performs the inverse transform, masking and forward transform, then hashes and retains the Merkle tree on device. |
+| Controlled comparison | `scripts/prepare-block-v2-pipeline-bench.py` prepares one qualification pair or five alternating pairs. Both arms use the same preserved binary, source archive, 24 threads, RAM scratch, retained trees and compact openings. Readback, CPU fusion and GPU quotient settings can be isolated. CPU audit children receive GPU switches set to zero. |
+| Four-wallet wrappers | Implemented as a compiler/interpreter experiment, with no proving-session selection. **Rejected by RAM admission.** |
+| Multiple AIR tables | **Deferred at the privacy construction gate.** The verifier still requires the existing single zero lookup terminal. |
+
+The quotient path shares the CPU implementation's exact random-codeword and
+balanced-mask draw order. Its seed remains independent of the inner hiding PCS.
+A narrow adaptation of `p3-batch-stark 0.6.1` changes quotient commitment assembly;
+source hashes and the Apache-2.0 license accompany it. The adaptation uses the
+upstream quotient evaluator and retains debug constraint checks, transcript
+ordering, proof structure and the existing CPU verifier. It currently admits
+exactly one AIR. Admission or execution failure does not fall back to another
+backend after randomness has been consumed.
+
+This moves **quotient transforms**, not constraint evaluation, onto the GPU.
+The prover still downloads the resulting matrices for existing host consumers.
+The additional readback and masking cost must be included in any timing result;
+a smaller upload alone is not a speedup measurement. None of q128, blowup16,
+cubic challenges, PoW, salts or hiding parameters changed.
+
+Validation covers serial/parallel decoding at chunk and field boundaries;
+CPU/GPU equality of quotient matrices, caps and Merkle openings; rejected
+geometry before RNG consumption; and a full-strength small proof that matches
+the upstream prover byte for byte and verifies on the CPU. A GPU run with large
+staging buffers exercised **29,360,128 parallel-decoded bytes in four chunks**.
+Small component tests do not establish full-size memory use or throughput.
+CPU-only builds with `--no-default-features` remain supported.
+
+The four-wallet experiment uses existing completed public wallet proofs. All
+four proof slots are verified even when the public count selects padding.
+Interpreter checks passed for counts 1–4, 24 statement mutations and a corrupted
+padded-slot statement. The actual compiler fixed point is:
+
+| Program | Child height | Active rows | Required padded height |
+|---|---:|---:|---:|
+| Four-wallet wrapper | 262,144 | 320,186 | 524,288 |
+| Merge before height increase | 262,144 | 258,973 | 262,144 |
+| Merge at the new fixed point | 524,288 | 271,896 | 524,288 |
+
+At that height, retained LDEs alone require **63,350,767,616 bytes (59 GiB)**,
+above the 48 GiB aggregate RAM budget before other working memory is counted.
+No preprocessing keys or recursive proofs were generated for this construction.
+Reproduce the read-only experiment in a bounded service with
+`block-v2-four-wallet-geometry EXISTING_FIXTURE_DIR`; its source is separate
+from the paired-wrapper proving-session selection.
+
+The two-table construction remains blocked by the obligations described in the
+lookup-mask section above. Before implementing it, the construction needs a
+joint PCS/lookup Fiat–Shamir simulation argument, treatment of exceptional
+challenges and real zero denominators, tagged-tuple soundness and multiplicity
+bounds, padding/empty-table rules, and a complete recursive composition bound.
+The existing five algebra-model tests still pass, but their conditional
+component bound cannot justify exposing multiple lookup terminals. A later
+implementation also needs a separate registered profile/codec, heterogeneous
+height commitments, and both native and constrained verifier changes.
+
+Full-size qualification remains pending the existing **46 GiB MemAvailable**
+preflight. The gate is unchanged. No unrelated applications were stopped.
+The comparison harness preserves the worker 44 GiB maximum, 48 GiB aggregate
+limit, zero swap, 12 GiB VRAM budget, scratch limits, 2 MiB proof bound and
+independent CPU root audit. Interrupted attempts require fresh attempt records.
+Results and exact artifact paths are recorded in
+[eight-wallet pipeline implementation evidence](evidence/block-v2-pipeline-implementation-2026-10-03.json).

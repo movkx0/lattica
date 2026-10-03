@@ -221,6 +221,23 @@ impl RegisteredProgram {
             trace: &trace,
             public_values: public.to_vec(),
         };
+        #[cfg(feature = "gpu")]
+        if super::super::quotient_pcs::gpu_quotient_enabled() {
+            return Ok(
+                tracing::info_span!(target: "lattica_block_v2_perf", "native batch prove")
+                    .in_scope(|| {
+                        super::super::gpu_quotient_prover::prove_batch(
+                            &profile::make_proving_config(),
+                            &[instance],
+                            &self.data,
+                            |pcs, groups| {
+                                pcs.commit_quotient_evaluations(groups)
+                                    .expect("GPU quotient commitment failed; no silent fallback")
+                            },
+                        )
+                    }),
+            );
+        }
         Ok(
             tracing::info_span!(target: "lattica_block_v2_perf", "native batch prove")
                 .in_scope(|| prove_batch(&profile::make_proving_config(), &[instance], &self.data)),

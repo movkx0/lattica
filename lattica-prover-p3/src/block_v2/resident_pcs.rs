@@ -129,11 +129,11 @@ pub(super) struct ResidentState {
     opening_fri: FriParameters<ChallengeMmcs>,
     pub(super) gpu_openings: bool,
     opening_mode_locked: std::sync::atomic::AtomicBool,
-    mmcs: CandidateMmcs,
+    pub(super) mmcs: CandidateMmcs,
     rng: SharedProofRng,
     random_columns: usize,
     log_blowup: usize,
-    host_budget: usize,
+    pub(super) host_budget: usize,
 }
 
 fn collect<T>(values: impl IntoIterator<Item = T>) -> Result<Vec<T>, String> {

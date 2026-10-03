@@ -7,23 +7,25 @@
 
 pub mod codec;
 pub mod commitment;
-pub mod execution;
 #[cfg(feature = "stream")]
 pub mod coset_workspace;
+pub mod execution;
 pub mod feasibility;
 #[cfg(feature = "gpu")]
 pub mod gpu_hash;
+#[cfg(feature = "gpu")]
+mod gpu_quotient_prover;
 #[cfg(feature = "stream")]
 pub mod heap_dft;
 pub mod leaf;
 pub mod machine;
 #[cfg(feature = "stream")]
 pub mod normalization_workspace;
+#[cfg(feature = "gpu")]
+mod opening_pcs;
 pub mod perf;
 pub mod profile;
 pub mod quotient_pcs;
-#[cfg(feature = "gpu")]
-mod opening_pcs;
 pub mod recursive;
 #[cfg(feature = "gpu")]
 mod resident_pcs;

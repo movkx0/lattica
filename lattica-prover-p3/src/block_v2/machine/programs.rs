@@ -372,6 +372,155 @@ pub fn wrapper_pair(
     finish(b, inputs)
 }
 
+/// Geometry research only. Four unconditional public-wallet verifiers feed a
+/// level-two subtree with canonical empty padding. Its compiled program has a
+/// distinct manifest; no session, registry, or wire codec selects it for proving.
+pub fn wrapper_four(
+    height: usize,
+    caps: &Caps,
+    wallet_public: [&[Val]; 4],
+    proofs: [&Proof<Config>; 4],
+) -> Result<Compiled, CompileError> {
+    if wallet_public
+        .iter()
+        .any(|values| values.len() != js::N_PUBLIC)
+    {
+        return Err(CompileError::Shape("four-wallet statements"));
+    }
+    let mut b = ProgramBuilder::new(PUBLIC_VALUES).unwrap();
+    let public = public(&b);
+    let mut inputs = ProofInputs::default();
+    registry(&mut b, &mut inputs, &public, height, caps)?;
+    assert_constant(&mut b, public[MODE], WRAPPER);
+    assert_constant(&mut b, public[LEVEL], 2);
+    let masks = selectors(&mut b, public[COUNT], 1, 4);
+    let zero = b.constant(Val::ZERO);
+    let one = b.constant(Val::ONE);
+    let two = b.constant(Val::TWO);
+    let inner_context = Context {
+        profile_id: profile::CANDIDATE_PROFILE_ID,
+        chain_id: [0; 32],
+    }
+    .to_fields();
+    let empty = b.hash_fields(commitment::EMPTY, &public[..16]);
+    let mut roots = Vec::with_capacity(4);
+    let mut counts = Vec::with_capacity(4);
+    for slot in 0..4 {
+        let wallet = inputs.bases(&mut b, wallet_public[slot]);
+        let mut inner = wallet.clone();
+        inner.extend(
+            inner_context[..8]
+                .iter()
+                .map(|&v| b.constant(Val::from_u64(v))),
+        );
+        inner.extend_from_slice(&public[8..16]);
+        verifier::uni::verify(
+            &mut b,
+            &mut inputs,
+            &ContextJoinSplitAir,
+            js::HEIGHT,
+            &inner,
+            proofs[slot],
+        )?;
+        let digest = b.hash_fields(commitment::STATEMENT + 1, &wallet);
+        let mut fields = public[..16].to_vec();
+        fields.push(one);
+        fields.extend(digest);
+        let leaf = b.hash_fields(commitment::LEAF, &fields);
+        let present = masks[slot..]
+            .iter()
+            .fold(zero, |sum, &mask| b.add(sum, mask));
+        let mut root = [zero; 4];
+        for i in 0..4 {
+            let difference = b.sub(leaf[i], empty[i]);
+            let selected = b.mul(present, difference);
+            root[i] = b.add(empty[i], selected);
+        }
+        roots.push(root);
+        counts.push(present);
+    }
+    let left = parent_root(&mut b, one, counts[0], counts[1], &roots[0], &roots[1]);
+    let right = parent_root(&mut b, one, counts[2], counts[3], &roots[2], &roots[3]);
+    let left_count = b.add(counts[0], counts[1]);
+    let right_count = b.add(counts[2], counts[3]);
+    let root = parent_root(&mut b, two, left_count, right_count, &left, &right);
+    for i in 0..4 {
+        b.assert_equal(root[i], public[ROOT + i]);
+    }
+    finish(b, inputs)
+}
+
+/// Interpreter checks for the four-wallet geometry experiment; no proof is produced.
+pub fn check_four_wallet_template(
+    height: usize,
+    caps: &Caps,
+    wallets: &[crate::block_v2::recursive::WalletProof],
+    compiled: &Compiled,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let context = commitment::Context {
+        profile_id: profile_id(height, caps)?,
+        chain_id: wallets[0].chain,
+    };
+    let leaves: Vec<_> = wallets[..4]
+        .iter()
+        .map(|wallet| {
+            let fields: Vec<_> = wallet.public.iter().map(|v| v.as_canonical_u64()).collect();
+            commitment::leaf(
+                context,
+                commitment::Entry {
+                    kind: commitment::Kind::JoinSplit,
+                    statement_digest: commitment::statement_digest(1, &fields).unwrap(),
+                },
+            )
+            .unwrap()
+        })
+        .collect();
+    let empty = commitment::empty_subtree(context, 0)?;
+    for count in 1..=4 {
+        let nodes: Vec<_> = (0..4)
+            .map(|i| if i < count { leaves[i] } else { empty })
+            .collect();
+        let root = commitment::merge_nodes(
+            commitment::merge_nodes(nodes[0], nodes[1])?,
+            commitment::merge_nodes(nodes[2], nodes[3])?,
+        )?;
+        let public = statement(root, WRAPPER);
+        compiled
+            .program
+            .evaluate(&public, &compiled.witness)
+            .map_err(|e| format!("{e:?}"))?;
+        for index in [0, 8, MODE, LEVEL, COUNT, ROOT] {
+            let mut wrong = public;
+            wrong[index] += Val::ONE;
+            if compiled.program.evaluate(&wrong, &compiled.witness).is_ok() {
+                return Err("four-wallet template accepted mutated statement".into());
+            }
+        }
+        if count == 1 {
+            let mut wrong_wallet = wallets[3].public.clone();
+            wrong_wallet[js::PI_FEE] += Val::ONE;
+            let bad = wrapper_four(
+                height,
+                caps,
+                [
+                    &wallets[0].public,
+                    &wallets[1].public,
+                    &wallets[2].public,
+                    &wrong_wallet,
+                ],
+                std::array::from_fn(|i| &wallets[i].proof),
+            )?;
+            if compiled.program.manifest_fields() != bad.program.manifest_fields()
+                || compiled.program.evaluate(&public, &bad.witness).is_ok()
+            {
+                return Err("four-wallet template did not bind padded wallet verifier".into());
+            }
+        }
+    }
+    println!("four_wallet_template_checks=PASS counts=1,2,3,4 statement_mutations=24 padded_verifier_mutations=1 proof_produced=false");
+    Ok(())
+}
+
 pub fn empty(height: usize, caps: &Caps) -> Result<Compiled, CompileError> {
     let mut b = ProgramBuilder::new(PUBLIC_VALUES).unwrap();
     let public = public(&b);

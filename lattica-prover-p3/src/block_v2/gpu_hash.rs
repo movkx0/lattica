@@ -111,6 +111,25 @@ impl CandidateMmcs {
         ),
         String,
     > {
+        self.commit_resident_with_masks(inputs, added_bits, host_output_budget_bytes, None)
+    }
+
+    pub(crate) fn commit_resident_with_masks(
+        &self,
+        inputs: Vec<(
+            p3_field::coset::TwoAdicMultiplicativeCoset<Val>,
+            RowMajorMatrix<Val>,
+        )>,
+        added_bits: usize,
+        host_output_budget_bytes: usize,
+        masks: Option<&[RowMajorMatrix<Val>]>,
+    ) -> Result<
+        (
+            <Self as Mmcs<Val>>::Commitment,
+            ProverData<RowMajorMatrix<Val>>,
+        ),
+        String,
+    > {
         use p3_field::Field;
         let mut shapes = Vec::with_capacity(inputs.len());
         for (domain, matrix) in &inputs {
@@ -149,7 +168,15 @@ impl CandidateMmcs {
                 shift: Val::GENERATOR / domain.shift(),
             })
             .collect();
-        let output = coset_lde_commit(&requests, self.cap_height, host_output_budget_bytes)?;
+        let output = match masks {
+            None => coset_lde_commit(&requests, self.cap_height, host_output_budget_bytes)?,
+            Some(masks) => engine::lde_execute::quotient_lde_commit(
+                &requests,
+                masks,
+                self.cap_height,
+                host_output_budget_bytes,
+            )?,
+        };
         let cap = <Self as Mmcs<Val>>::Commitment::new(output.cap().to_vec());
         Ok((
             cap,

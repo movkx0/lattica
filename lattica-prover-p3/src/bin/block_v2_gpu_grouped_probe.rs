@@ -53,6 +53,14 @@ fn optional_policy_env(name: &str) -> Result<String, Error> {
     }
 }
 
+fn parse_parallel_readback(value: &str, resident: bool) -> Result<bool, Error> {
+    match value {
+        "0" => Ok(false),
+        "1" if resident => Ok(true),
+        _ => Err("GPU parallel readback requires 0 or 1 and the resident backend".into()),
+    }
+}
+
 fn parse_opening_policy(
     compact: &str,
     pinned: &str,
@@ -211,6 +219,10 @@ fn run(args: &[String]) -> Result<(), Error> {
         &std::env::var("LATTICA_V2_GPU_RESIDENT_LDE")?,
     )?;
     let openings = parse_openings(&std::env::var("LATTICA_V2_GPU_OPENINGS")?, resident)?;
+    let parallel_readback = parse_parallel_readback(
+        &optional_policy_env("LATTICA_V2_GPU_PARALLEL_READBACK")?,
+        resident,
+    )?;
     let compact = parse_opening_policy(
         &optional_policy_env("LATTICA_V2_GPU_OPENING_COMPACT")?,
         &optional_policy_env("LATTICA_V2_GPU_OPENING_PINNED")?,
@@ -224,7 +236,15 @@ fn run(args: &[String]) -> Result<(), Error> {
     };
     require_worker_limits()?;
     let fusion = quotient_pcs::initialize_research_from_env()?;
+    let gpu_quotient = quotient_pcs::initialize_gpu_quotient_from_env(resident, fusion)?;
+    let expected_quotients = if gpu_quotient {
+        expected_opening_calls(&command)
+    } else {
+        0
+    };
+    println!("gpu_quotient_research enabled={gpu_quotient} production_ready=false");
     println!("quotient_fusion_research enabled={fusion} production_ready=false");
+    println!("gpu_readback_research parallel={parallel_readback} production_ready=false");
     println!("machine_layout_research name=wide23 revision=3 scalar_lanes=23 cubic_lanes=7 main_width=94 public_bank_width=32 separate_registry_required=true production_ready=false");
     println!(
         "node_codec_research revision={} magic={} profile_bound=true production_ready=false",
@@ -247,6 +267,14 @@ fn run(args: &[String]) -> Result<(), Error> {
     let stats = gpu_hash::report("GPU grouped process remainder").ok_or("GPU telemetry missing")?;
     guard.finish()?;
     result?;
+    if stats.quotient_lde_commits != expected_quotients {
+        return Err("GPU quotient work differs from requested policy".into());
+    }
+    if parallel_readback != (stats.lde_parallel_decode_bytes > 0)
+        || parallel_readback != (stats.lde_parallel_decode_chunks > 0)
+    {
+        return Err("GPU readback work differs from requested policy".into());
+    }
     validate_opening_work(&stats, expected_openings, compact)?;
     if stats.commits == 0
         || (resident && stats.lde_commits == 0)
@@ -270,6 +298,17 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parallel_readback_policy_requires_explicit_resident_selection() {
+        assert!(!parse_parallel_readback("0", false).unwrap());
+        assert!(!parse_parallel_readback("0", true).unwrap());
+        assert!(parse_parallel_readback("1", true).unwrap());
+        assert!(parse_parallel_readback("1", false).is_err());
+        for value in ["", "true", "01", " 1", "2"] {
+            assert!(parse_parallel_readback(value, true).is_err());
+        }
+    }
 
     #[test]
     fn compact_policy_is_explicit_compatible_and_never_pinned() {

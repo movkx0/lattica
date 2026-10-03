@@ -405,6 +405,10 @@ pub struct Snapshot {
     pub lde_sponge_ns: u128,
     pub lde_wall_ns: u128,
     pub lde_host_reorder_ns: u128,
+    pub lde_parallel_decode_bytes: u64,
+    pub lde_parallel_decode_chunks: u64,
+    pub quotient_lde_commits: u64,
+    pub quotient_mask_ns: u128,
     pub lde_host_reordered_bytes: u64,
     pub lde_host_workspace_peak_bytes: usize,
     pub opening_calls: u64,
@@ -1630,6 +1634,14 @@ pub fn report(label: &str) -> Option<Snapshot> {
         s.lde_host_reorder_ns,
         s.lde_host_reordered_bytes,
         s.lde_host_workspace_peak_bytes
+    );
+    println!(
+        "bounded_gpu_quotient_checkpoint label={label:?} counters=cumulative commits={} mask_ns={}",
+        s.quotient_lde_commits, s.quotient_mask_ns
+    );
+    println!(
+        "bounded_gpu_readback_checkpoint label={label:?} counters=cumulative parallel_decode_bytes={} parallel_decode_chunks={}",
+        s.lde_parallel_decode_bytes, s.lde_parallel_decode_chunks
     );
     println!(
         "bounded_gpu_opening_checkpoint label={label:?} counters=cumulative calls={} tiles={} uploaded_bytes={} downloaded_bytes={} kernel_ns={} wall_ns={}",

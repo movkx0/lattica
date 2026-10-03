@@ -88,6 +88,9 @@ fn matrix(height: usize, width: usize, offset: usize) -> RowMajorMatrix<Val> {
     )
 }
 
+#[path = "quotient_pipeline_tests.rs"]
+mod quotient_pipeline_tests;
+
 fn compare(
     cpu: &ValMmcs,
     gpu: &CandidateMmcs,

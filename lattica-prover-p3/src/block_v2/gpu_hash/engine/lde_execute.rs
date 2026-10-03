@@ -45,6 +45,17 @@ __kernel void lde_leaf_finalize(__global const ulong *states, __global ulong *le
     if (rate_offset != 0) perm8(s, rci, rcp, rcf, diag);
     for (uint k = 0; k < 4; ++k) leaves[row * 4 + k] = gl_canon(s[k]);
 }
+// IDFT already multiplied coefficient i by (generator / domain_shift)^i.
+// This applies the same balanced hiding polynomial as CPU fused_ldes.
+__kernel void quotient_mask(__global ulong *coefficients, __global const ulong *masks,
+    uint height, uint width, ulong generator, ulong ratio_h) {
+    size_t index = get_global_id(0);
+    size_t elements = (size_t)height * width;
+    if (index >= elements) return;
+    ulong masked = gl_mul(masks[index], gl_pow(generator, (ulong)(index / width)));
+    coefficients[index] = gl_sub(coefficients[index], masked);
+    coefficients[elements + index] = gl_mul(ratio_h, masked);
+}
 "#;
 
 /// Natural-order evaluations and per-output-row salts. The caller must supply
@@ -126,6 +137,24 @@ pub fn coset_lde_commit(
     slot.as_mut()
         .ok_or("GPU hashing shut down")?
         .coset_lde_commit(inputs, cap_height, host_output_budget_bytes)
+}
+
+/// Commit quotient chunks after CPU generation of the balanced hiding masks.
+/// Inputs and masks belong to this attempt; the device never draws randomness.
+pub fn quotient_lde_commit(
+    inputs: &[LdeInput<'_>],
+    masks: &[RowMajorMatrix<Val>],
+    cap_height: usize,
+    host_output_budget_bytes: usize,
+) -> Result<LdeCommitOutput, String> {
+    let mut slot = ENGINE
+        .get()
+        .ok_or("GPU hashing was not initialized")?
+        .lock()
+        .map_err(|_| "GPU engine poisoned")?;
+    slot.as_mut()
+        .ok_or("GPU hashing shut down")?
+        .coset_lde_commit_with_masks(inputs, Some(masks), cap_height, host_output_budget_bytes)
 }
 
 /// Kernel scheduling shared with the existing tiled-NTT arithmetic, without
@@ -240,6 +269,10 @@ impl Engine {
                 &self.staging[0].map[..count * columns],
             )?;
             self.stats.decode_ns += decode.elapsed().as_nanos();
+            if output.uses_parallel_decode(count * columns) {
+                self.stats.lde_parallel_decode_bytes += (count * columns * 8) as u64;
+                self.stats.lde_parallel_decode_chunks += 1;
+            }
             self.stats.downloaded_bytes += (count * columns * 8) as u64;
         }
         self.stats.download_and_decode_ns += started.elapsed().as_nanos();
@@ -392,11 +425,33 @@ impl Engine {
         cap_height: usize,
         host_budget: usize,
     ) -> Result<LdeCommitOutput, String> {
+        self.coset_lde_commit_with_masks(inputs, None, cap_height, host_budget)
+    }
+
+    fn coset_lde_commit_with_masks(
+        &mut self,
+        inputs: &[LdeInput<'_>],
+        masks: Option<&[RowMajorMatrix<Val>]>,
+        cap_height: usize,
+        host_budget: usize,
+    ) -> Result<LdeCommitOutput, String> {
+        let parallel_readback = super::switch("LATTICA_V2_GPU_PARALLEL_READBACK")?;
         let started = Instant::now();
         if !self.retain_trees {
             return Err("resident LDE requires retained commitments".into());
         }
         let shapes = validate_inputs(inputs)?;
+        if let Some(masks) = masks {
+            if masks.len() != inputs.len()
+                || masks.iter().zip(inputs).any(|(mask, input)| {
+                    mask.width != input.evaluations.width
+                        || mask.values.len() != input.evaluations.values.len()
+                        || input.added_bits != crate::block_v2::profile::LOG_BLOWUP + 1
+                })
+            {
+                return Err("quotient mask dimensions or hiding blowup mismatch".into());
+            }
+        }
         let live = self
             .accounting
             .lock()
@@ -472,7 +527,8 @@ impl Engine {
         })?;
         for (matrix_index, input) in inputs.iter().enumerate() {
             let shape = shapes[matrix_index];
-            let mut readback = HostReadback::new(height, shape.width, plan.columns_per_tile())?;
+            let mut readback = HostReadback::new(height, shape.width, plan.columns_per_tile())?
+                .with_parallel_decode(parallel_readback);
             for tile in plan.tiles().filter(|t| t.matrix == matrix_index) {
                 buffers
                     .b
@@ -500,6 +556,43 @@ impl Engine {
                     false,
                     false,
                 )?;
+                if let Some(masks) = masks {
+                    let mask = &masks[matrix_index];
+                    self.lde_upload_rows(
+                        &buffers.a.buffer,
+                        shape.height,
+                        tile.columns,
+                        |row, dst| {
+                            for (out, value) in dst
+                                .iter_mut()
+                                .zip(&mask.values[row * shape.width + tile.first_column..])
+                            {
+                                *out = value.as_canonical_u64();
+                            }
+                        },
+                    )?;
+                    let mut event = Event::empty();
+                    // SAFETY: Admission covers the doubled polynomial. The mask
+                    // and coefficients use the same full-height column tile.
+                    unsafe {
+                        self.pq
+                            .kernel_builder("quotient_mask")
+                            .arg(&buffers.b.buffer)
+                            .arg(&buffers.a.buffer)
+                            .arg(shape.height as u32)
+                            .arg(tile.columns as u32)
+                            .arg(Val::GENERATOR.as_canonical_u64())
+                            .arg(input.shift.exp_u64(shape.height as u64).as_canonical_u64())
+                            .global_work_size(shape.height * tile.columns)
+                            .build()
+                            .map_err(|e| e.to_string())?
+                            .cmd()
+                            .enew(&mut event)
+                            .enq()
+                            .map_err(|e| e.to_string())?;
+                    }
+                    self.stats.quotient_mask_ns += self.timeline.record("quotient_mask", &event)?;
+                }
                 let in_a = self.lde_ntt(
                     &buffers.b.buffer,
                     &buffers.a.buffer,
@@ -596,6 +689,9 @@ impl Engine {
         fence.finish()?;
         self.stats.commits += 1;
         self.stats.lde_commits += 1;
+        if masks.is_some() {
+            self.stats.quotient_lde_commits += 1;
+        }
         self.stats.lde_wall_ns += started.elapsed().as_nanos();
         Ok(LdeCommitOutput {
             matrices,

@@ -38,6 +38,36 @@ const MAX_CHUNK_LDE_BYTES: usize = 2 << 30;
 const MAX_CHUNKS: usize = 1 << profile::LOG_BLOWUP;
 
 static RESEARCH_FUSION: OnceLock<bool> = OnceLock::new();
+#[cfg(feature = "gpu")]
+static RESEARCH_GPU_QUOTIENT: OnceLock<bool> = OnceLock::new();
+
+#[cfg(feature = "gpu")]
+fn parse_gpu_quotient(value: Option<&str>, resident: bool, fusion: bool) -> Result<bool, String> {
+    match value {
+        None | Some("0") => Ok(false),
+        Some("1") if resident && fusion => Ok(true),
+        _ => {
+            Err("GPU quotient LDE requires ASCII 0 or 1, resident LDEs and quotient fusion".into())
+        }
+    }
+}
+
+#[cfg(feature = "gpu")]
+pub fn initialize_gpu_quotient_from_env(resident: bool, fusion: bool) -> Result<bool, String> {
+    let value = match std::env::var("LATTICA_V2_GPU_QUOTIENT_LDE") {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(error) => return Err(error.to_string()),
+    };
+    let enabled = parse_gpu_quotient(value.as_deref(), resident, fusion)?;
+    record_research_mode(&RESEARCH_GPU_QUOTIENT, enabled).map_err(str::to_owned)?;
+    Ok(enabled)
+}
+
+#[cfg(feature = "gpu")]
+pub(crate) fn gpu_quotient_enabled() -> bool {
+    RESEARCH_GPU_QUOTIENT.get().copied().unwrap_or(false)
+}
 
 fn parse_research_mode(value: Option<&str>) -> Result<bool, &'static str> {
     match value {
@@ -232,25 +262,15 @@ fn preflight(
     Ok((geometry, batch_multiplicative_inverse(&denominators)))
 }
 
-fn fused_ldes<D: TwoAdicSubgroupDft<Val>>(
-    dft: &D,
+// Shared by CPU fusion and GPU quotient commitments. Admission must precede RNG draws.
+fn randomized_quotients(
     evaluations: Vec<(Domain, RowMajorMatrix<Val>)>,
-    chunks: usize,
-    log_blowup: usize,
+    geometry: Geometry,
+    weights: &[Val],
     random_columns: usize,
     rng: &Mutex<ChaCha20Rng>,
-) -> Result<Vec<RowMajorMatrix<Val>>, FusionError>
-where
-    D::Evaluations: BitReversibleMatrix<Val, BitRev = RowMajorMatrix<Val>>,
-{
-    let (geometry, weights) = preflight(&evaluations, chunks, log_blowup, random_columns)?;
-    let _phase = tracing::info_span!(
-        target: "lattica_block_v2_perf", "fused quotient ldes",
-        chunks, height = geometry.height, width = geometry.width,
-        chunk_lde_bytes = geometry.chunk_lde_bytes,
-        retained_lde_bytes = geometry.retained_lde_bytes,
-    )
-    .entered();
+) -> (Vec<(Domain, RowMajorMatrix<Val>)>, Vec<Val>) {
+    let chunks = evaluations.len();
     let (randomized, mut masks) = {
         let mut rng = rng.lock().expect("quotient RNG poisoned");
         // Exact upstream component draw ordering: widen ALL matrices first,
@@ -278,6 +298,30 @@ where
             masks[last_offset + j] -= value;
         }
     }
+    (randomized, masks)
+}
+
+fn fused_ldes<D: TwoAdicSubgroupDft<Val>>(
+    dft: &D,
+    evaluations: Vec<(Domain, RowMajorMatrix<Val>)>,
+    chunks: usize,
+    log_blowup: usize,
+    random_columns: usize,
+    rng: &Mutex<ChaCha20Rng>,
+) -> Result<Vec<RowMajorMatrix<Val>>, FusionError>
+where
+    D::Evaluations: BitReversibleMatrix<Val, BitRev = RowMajorMatrix<Val>>,
+{
+    let (geometry, weights) = preflight(&evaluations, chunks, log_blowup, random_columns)?;
+    let _phase = tracing::info_span!(
+        target: "lattica_block_v2_perf", "fused quotient ldes",
+        chunks, height = geometry.height, width = geometry.width,
+        chunk_lde_bytes = geometry.chunk_lde_bytes,
+        retained_lde_bytes = geometry.retained_lde_bytes,
+    )
+    .entered();
+    let (randomized, masks) =
+        randomized_quotients(evaluations, geometry, &weights, random_columns, rng);
     randomized
         .into_iter()
         .enumerate()
@@ -366,6 +410,65 @@ pub struct CandidatePcs {
 }
 
 impl CandidatePcs {
+    /// Single-table research hook; keeps small quotient evaluations until the
+    /// masked GPU transform and commitment. No expanded LDE upload or fallback.
+    #[cfg(feature = "gpu")]
+    pub(crate) fn commit_quotient_evaluations(
+        &self,
+        groups: Vec<(Vec<Domain>, Vec<RowMajorMatrix<Val>>)>,
+    ) -> Result<
+        (
+            <Self as Pcs<Challenge, Challenger>>::Commitment,
+            <Self as Pcs<Challenge, Challenger>>::ProverData,
+        ),
+        String,
+    > {
+        if groups.len() != 1 {
+            return Err("GPU quotient commitment currently admits exactly one AIR".into());
+        }
+        let Backend::Resident(state) = &self.inner else {
+            return Err("GPU quotient commitment requires resident PCS".into());
+        };
+        state.lock_opening_mode();
+        let rng = self
+            .quotient_rng
+            .as_ref()
+            .ok_or("GPU quotient requires independent fusion RNG")?;
+        let (domains, matrices) = groups.into_iter().next().unwrap();
+        if domains.len() != matrices.len() {
+            return Err("GPU quotient domain/matrix count mismatch".into());
+        }
+        let chunks = domains.len();
+        let evaluations: Vec<_> = domains.into_iter().zip(matrices).collect();
+        let (geometry, weights) =
+            preflight(&evaluations, chunks, self.log_blowup, self.random_columns)
+                .map_err(|e| format!("GPU quotient geometry: {e:?}"))?;
+        let _plan = state.mmcs.preflight_resident(
+            &vec![
+                super::gpu_hash::LdeInputShape {
+                    height: geometry.height,
+                    width: geometry.width,
+                    added_bits: self.log_blowup + 1,
+                };
+                chunks
+            ],
+            state.host_budget,
+        )?;
+        let (randomized, masks) =
+            randomized_quotients(evaluations, geometry, &weights, self.random_columns, rng);
+        let chunk_masks: Vec<_> = masks
+            .chunks_exact(geometry.chunk_elements)
+            .map(|values| RowMajorMatrix::new(values.to_vec(), geometry.width))
+            .collect();
+        drop(masks);
+        state.mmcs.commit_resident_with_masks(
+            randomized,
+            self.log_blowup + 1,
+            state.host_budget,
+            Some(&chunk_masks),
+        )
+    }
+
     /// Select before sharing/using a newly constructed resident proof attempt.
     /// There is no per-call switching or fallback after randomness is consumed.
     #[cfg(feature = "gpu")]
@@ -641,6 +744,24 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[cfg(feature = "gpu")]
+    fn gpu_quotient_policy_requires_both_dependencies_and_explicit_opt_in() {
+        for resident in [false, true] {
+            for fusion in [false, true] {
+                assert!(!parse_gpu_quotient(None, resident, fusion).unwrap());
+                assert!(!parse_gpu_quotient(Some("0"), resident, fusion).unwrap());
+                assert_eq!(
+                    parse_gpu_quotient(Some("1"), resident, fusion).is_ok(),
+                    resident && fusion
+                );
+                for value in ["", "true", "2", " 1"] {
+                    assert!(parse_gpu_quotient(Some(value), resident, fusion).is_err());
+                }
+            }
+        }
+    }
     use crate::config::{MyCompress, MyHash};
     use p3_field::PrimeField64;
     use p3_goldilocks::default_goldilocks_poseidon2_8;

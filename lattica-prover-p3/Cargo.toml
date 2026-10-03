@@ -63,6 +63,11 @@ path = "src/bin/block_v2_grouped_publics.rs"
 required-features = ["block-v2", "stream"]
 
 [[bin]]
+name = "block-v2-four-wallet-geometry"
+path = "src/bin/block_v2_four_wallet_geometry.rs"
+required-features = ["block-v2-wide-lanes", "stream"]
+
+[[bin]]
 name = "block-v2-single-eight-probe"
 path = "src/bin/block_v2_single_eight_probe.rs"
 required-features = ["block-v2", "stream"]

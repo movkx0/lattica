@@ -96,6 +96,7 @@ pub(super) enum Preparation {
     Register(u64),
     DescribeRegistry,
     GeometryReport,
+    FourWalletGeometry,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -158,6 +159,7 @@ pub(super) fn parse_command(args: &[String]) -> Result<Command, Error> {
         "common-height" => Some(Preparation::CommonHeight),
         "describe-registry" => Some(Preparation::DescribeRegistry),
         "geometry-report" => Some(Preparation::GeometryReport),
+        "four-wallet-geometry" => Some(Preparation::FourWalletGeometry),
         "register" => {
             exact_args(args, 3)?;
             let mode: u64 = args[2].parse()?;
@@ -722,6 +724,44 @@ fn register(dir: &Path, mode: u64, cpu_only: bool) -> Result<(), Error> {
     Ok(())
 }
 
+fn four_wallet_geometry(dir: &Path) -> Result<(), Error> {
+    let wallets = load_verified_wallets(dir, Some(recursive::DEMO_CHAIN))?;
+    let caps = std::array::from_fn(|_| vec![[Val::ZERO; 4]; 1 << profile::CAP_HEIGHT]);
+    let mut height = read_height(dir)?;
+    for iteration in 0..4 {
+        let mut required = height;
+        for mode in [programs::WRAPPER, programs::EMPTY, programs::MERGE] {
+            let compiled = if mode == programs::WRAPPER {
+                programs::wrapper_four(
+                    height,
+                    &caps,
+                    std::array::from_fn(|i| wallets[i].public.as_slice()),
+                    std::array::from_fn(|i| &wallets[i].proof),
+                )?
+            } else {
+                CONSTRUCTION.compile_registration(height, mode, Some(&wallets[0]))?
+            };
+            if mode == programs::WRAPPER && iteration == 0 {
+                programs::check_four_wallet_template(height, &caps, &wallets, &compiled)?;
+            }
+            required = required.max(compiled.program.height());
+            println!("four_wallet_geometry iteration={iteration} mode={mode} child_height={height} active_rows={} required_height={} proof_produced=false",
+                compiled.program.active_rows(), compiled.program.height());
+        }
+        if required == height {
+            let a = analysis::analyze(&programs::shape(height)?).map_err(|e| format!("{e:?}"))?;
+            println!("four_wallet_geometry_result height={height} retained_lde_bytes={} ram_lower_bound_admitted={} proof_produced=false production_ready=false",
+                a.retained_lde_bytes, a.check_ram_lower_bound().is_ok());
+            return Ok(());
+        }
+        height = required;
+        if height > 1 << 21 {
+            break;
+        }
+    }
+    Err("four-wallet recursive geometry did not close within the research limit".into())
+}
+
 fn geometry_report(dir: &Path) -> Result<(), Error> {
     // Existing completed PUBLIC wallet proofs only. No wallet witness, proof
     // generation, registration, artifact writes, or self-derived trust pin.
@@ -778,6 +818,7 @@ pub(super) fn run(
                 Preparation::CommonHeight => prepare_common_height(&dir),
                 Preparation::Register(mode) => register(&dir, mode, cpu_only),
                 Preparation::GeometryReport => geometry_report(&dir),
+                Preparation::FourWalletGeometry => four_wallet_geometry(&dir),
                 Preparation::DescribeRegistry => {
                     let registry = read_registry(&dir)?;
                     println!(
