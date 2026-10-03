@@ -246,7 +246,12 @@ fn gpu_resident_matches_all_cpu_commitment_streams_across_active_clones() {
         );
     }
     let stats = super::report("resident PCS commitment equivalence").unwrap();
-    assert!(stats.upload_device_ns > 0 && stats.download_device_ns > 0);
+    assert_eq!(stats.upload_device_ns > 0, engine::test_device_transfers());
+    assert_eq!(
+        stats.download_device_ns > 0,
+        engine::test_device_transfers()
+    );
+    assert!(stats.upload_wall_ns > 0 && stats.download_wall_ns > 0);
 }
 
 #[test]

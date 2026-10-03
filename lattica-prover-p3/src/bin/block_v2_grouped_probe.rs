@@ -20,7 +20,7 @@ fn main() {
     // This binary has no GPU initialization or shutdown calls. Reject GPU-enabled
     // builds before setup, proof verification or any stage work; do not silently
     // treat a GPU-feature build/environment as the CPU-only registration gate.
-    if cfg!(feature = "gpu") {
+    if cfg!(any(feature = "gpu", feature = "gpu-metal")) {
         eprintln!("FAILED: grouped research requires a CPU-only build without the gpu feature");
         std::process::exit(1);
     }

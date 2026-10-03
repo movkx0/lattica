@@ -126,7 +126,7 @@ pub(super) enum Command {
 impl Command {
     /// The separate GPU entry point handles only actual setup/proving work.
     /// Preparation, state checks, pruning and root audits stay on CPU tools.
-    #[cfg(feature = "gpu")]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     #[allow(dead_code)] // The CPU binary also compiles this module in GPU rejection builds.
     pub(super) fn is_gpu_work(&self) -> bool {
         matches!(
@@ -544,7 +544,7 @@ fn report_node(
     if let Some(profiler) = profiler {
         profiler.report(filename);
     }
-    #[cfg(feature = "gpu")]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     lattica_prover_p3::block_v2::gpu_hash::report(filename);
 }
 

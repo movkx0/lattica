@@ -99,7 +99,7 @@ fn cached_policy_keeps_one_session_and_one_job_within_aggregate_budgets() {
 }
 
 #[test]
-#[cfg(not(feature = "gpu"))]
+#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
 fn cached_cpu_owner_tasks_and_completions_can_move_to_threads() {
     fn is_send<T: Send>() {}
     is_send::<Task>();

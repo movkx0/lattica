@@ -221,7 +221,7 @@ impl RegisteredProgram {
             trace: &trace,
             public_values: public.to_vec(),
         };
-        #[cfg(feature = "gpu")]
+        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         if super::super::quotient_pcs::gpu_quotient_enabled() {
             return Ok(
                 tracing::info_span!(target: "lattica_block_v2_perf", "native batch prove")

@@ -70,6 +70,9 @@ static MMAP_PEAK: AtomicU64 = AtomicU64::new(0);
 struct Cfg {
     dir: [u8; 256],
     dir_len: usize,
+    // Benchmark portability: anonymous RAM mappings substitute for Linux tmpfs.
+    // Explicit opt-in; the existing file-backed streaming path remains the default.
+    memory_backed: bool,
     // Opt-in ceiling for controlled research jobs. A configured spill failure
     // must fail closed rather than silently falling back to heap allocation.
     max_bytes: Option<u64>,
@@ -89,6 +92,11 @@ fn cfg() -> &'static Cfg {
         Cfg {
             dir: buf,
             dir_len: n,
+            memory_backed: match std::env::var("LATTICA_SPILL_BACKING").as_deref() {
+                Err(std::env::VarError::NotPresent) | Ok("file") => false,
+                Ok("memory") => true,
+                _ => panic!("LATTICA_SPILL_BACKING must be file or memory"),
+            },
             max_bytes: std::env::var("LATTICA_SPILL_MAX_BYTES")
                 .ok()
                 .map(|v| v.parse().unwrap_or(0)),
@@ -121,6 +129,17 @@ fn put_u64(buf: &mut [u8], p: usize, v: u64) -> usize {
 /// heap: the path is built in a stack buffer.
 unsafe fn map_file(total: usize) -> Option<(*mut u8, i64)> {
     let c = cfg();
+    if c.memory_backed {
+        let addr = libc::mmap(
+            std::ptr::null_mut(),
+            total,
+            libc::PROT_READ | libc::PROT_WRITE,
+            libc::MAP_PRIVATE | libc::MAP_ANON,
+            -1,
+            0,
+        );
+        return (addr != libc::MAP_FAILED).then_some((addr as *mut u8, -1));
+    }
     let mut path = [0u8; 384];
     let mut p = c.dir_len.min(path.len());
     path[..p].copy_from_slice(&c.dir[..p]);
@@ -277,7 +296,9 @@ unsafe impl GlobalAlloc for SpillAlloc {
         match magic {
             MAGIC_MMAP => {
                 libc::munmap(base as *mut libc::c_void, total as usize);
-                libc::close(fd as libc::c_int);
+                if fd >= 0 {
+                    libc::close(fd as libc::c_int);
+                }
                 MMAP_COUNT.fetch_sub(1, Ordering::Relaxed);
                 MMAP_BYTES.fetch_sub(total, Ordering::Relaxed);
             }
@@ -442,6 +463,7 @@ mod tests {
                     },
                 );
             if mode == "failed_mapping" {
+                command.env("LATTICA_SPILL_BACKING", "file");
                 command.env("LATTICA_SPILL_DIR", executable.join("not-a-directory"));
             }
             assert!(command.status().unwrap().success(), "mode={mode}");

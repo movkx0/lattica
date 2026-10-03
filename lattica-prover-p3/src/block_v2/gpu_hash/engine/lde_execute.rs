@@ -8,8 +8,9 @@ use super::{
     lde_readback::HostReadback,
     plan_slots, retained_layout, Allocation, Engine, RetainedTree, ENGINE,
 };
+use crate::block_v2::compute;
 use crate::config::Val;
-use ocl::{Buffer, Event};
+use compute::{Buffer, Event};
 use p3_field::{Field, PrimeCharacteristicRing, PrimeField64, TwoAdicField};
 use p3_matrix::dense::RowMajorMatrix;
 use rayon::prelude::*;
@@ -354,7 +355,7 @@ impl Engine {
             if let Some(unwind) = self.fail_lde_after_enqueue.take() {
                 self.injected_event = Some(event.clone());
                 if let Some(notify) = self.lde_submitted.take() {
-                    use ocl::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
+                    use compute::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
                     assert!(!matches!(
                         event.info(EventInfo::CommandExecutionStatus).unwrap(),
                         EventInfoResult::CommandExecutionStatus(CommandExecutionStatus::Complete)
@@ -493,7 +494,7 @@ impl Engine {
                 self.limits,
                 self.max_alloc,
                 bytes / 8,
-                ocl::flags::MEM_READ_WRITE,
+                compute::flags::MEM_READ_WRITE,
             )
         };
         let buffers = TransformBuffers {
@@ -966,13 +967,17 @@ mod tests {
     #[ignore = "requires OpenCL GPU, LATTICA_V2_GPU_RETAIN_TREES=1; run serially in <=3 GiB service"]
     fn gpu_resident_lde_multigroup_ntt_and_unequal_input_heights_match_cpu() {
         let _shutdown = super::super::TestShutdownGuard;
+        #[cfg(feature = "gpu")]
+        let mode = super::super::TransferMode::Overlap;
+        #[cfg(feature = "gpu-metal")]
+        let mode = super::super::TransferMode::Serial;
         super::super::initialize_mode(
             super::super::Limits {
                 managed_bytes: 32 * 1024 * 1024,
                 tile_bytes: 64 * 1024,
                 staging_bytes: 32 * 1024,
             },
-            super::super::TransferMode::Overlap,
+            mode,
         )
         .unwrap();
         let a = matrix(8192, 3, 17);

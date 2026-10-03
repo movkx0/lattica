@@ -9,13 +9,13 @@ use p3_uni_stark::{AirLayout, ProvenSecurity, StarkConfig, StarkSecurityParams};
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 use super::gpu_hash::CandidateMmcs as ValMmcs;
 #[cfg(feature = "stream")]
 use super::normalization_workspace::HeapNormalizedDft as Dft;
 #[cfg(not(feature = "stream"))]
 use crate::config::Dft;
-#[cfg(not(feature = "gpu"))]
+#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
 use crate::config::ValMmcs;
 use crate::config::{Challenger, MyCompress, MyHash, Val};
 
@@ -104,11 +104,11 @@ pub(crate) fn preprocessing_config() -> Config {
 }
 
 fn resident_research_enabled() -> bool {
-    #[cfg(feature = "gpu")]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     {
         super::resident_pcs::research_enabled()
     }
-    #[cfg(not(feature = "gpu"))]
+    #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
     {
         false
     }
@@ -129,7 +129,7 @@ fn config_with_rngs(
     );
     let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
     let pcs = if resident {
-        #[cfg(feature = "gpu")]
+        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         {
             Pcs::new_resident(
                 Dft::default(),
@@ -141,7 +141,7 @@ fn config_with_rngs(
             )
             .expect("resident PCS configuration failed; no silent fallback")
         }
-        #[cfg(not(feature = "gpu"))]
+        #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
         {
             panic!("resident PCS requires the gpu feature")
         }
@@ -154,7 +154,7 @@ fn config_with_rngs(
             hiding_rng,
         )
     };
-    #[cfg(feature = "gpu")]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     let pcs = if resident && super::resident_pcs::research_openings_enabled() {
         pcs.with_gpu_openings()
             .expect("GPU opening selection failed; no silent fallback")

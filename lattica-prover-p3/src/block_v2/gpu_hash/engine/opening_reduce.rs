@@ -5,9 +5,10 @@
 //! This first consumer still reads host-backed LDEs. It is not a claim that the
 //! whole prover is resident, nor a replacement for whole-job resource admission.
 use super::{allocation, Allocation, Engine, ENGINE};
+use crate::block_v2::compute;
 use crate::block_v2::profile::Challenge;
 use crate::config::Val;
-use ocl::Event;
+use compute::Event;
 use p3_field::{BasedVectorSpace, PrimeCharacteristicRing, PrimeField64};
 use std::collections::BTreeMap;
 use std::time::Instant;
@@ -323,7 +324,7 @@ impl Engine {
                 self.limits,
                 self.max_alloc,
                 words,
-                ocl::flags::MEM_READ_WRITE,
+                compute::flags::MEM_READ_WRITE,
             )
         };
         let outputs = plan
@@ -647,12 +648,18 @@ mod tests {
         assert_eq!(after.managed_live_bytes, before.managed_live_bytes);
         assert!(after.opening_marshal_ns > before.opening_marshal_ns);
         assert!(after.opening_upload_api_ns > before.opening_upload_api_ns);
-        assert!(after.opening_upload_device_ns > before.opening_upload_device_ns);
+        assert_eq!(
+            after.opening_upload_device_ns > before.opening_upload_device_ns,
+            super::super::test_device_transfers()
+        );
         assert!(after.opening_kernel_build_ns > before.opening_kernel_build_ns);
         assert!(after.opening_kernel_enqueue_ns > before.opening_kernel_enqueue_ns);
         assert!(after.opening_kernel_wait_ns > before.opening_kernel_wait_ns);
         assert!(after.opening_download_api_ns > before.opening_download_api_ns);
-        assert!(after.opening_download_device_ns > before.opening_download_device_ns);
+        assert_eq!(
+            after.opening_download_device_ns > before.opening_download_device_ns,
+            super::super::test_device_transfers()
+        );
         assert!(after.opening_decode_ns > before.opening_decode_ns);
         // Host/API and device intervals overlap; their sum is not wall time.
 
@@ -783,7 +790,7 @@ mod tests {
             engine.limits,
             engine.max_alloc,
             8,
-            ocl::flags::MEM_READ_WRITE,
+            compute::flags::MEM_READ_WRITE,
         )
         .unwrap();
         for words in [0, 9] {

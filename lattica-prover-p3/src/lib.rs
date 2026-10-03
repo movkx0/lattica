@@ -13,10 +13,18 @@ pub mod config; // crate-wide STARK config: the production (wire-pinned) + demo 
 pub mod domains; // consensus-frozen domain-separation tags (the normative table; mirrored by the Zig node)
 #[cfg(feature = "gpu")]
 pub mod gpu; // opt-in OpenCL LDE acceleration (additive, prove-only; --features gpu)
+#[cfg(all(feature = "gpu", feature = "gpu-metal"))]
+compile_error!("select one GPU transport: gpu or gpu-metal, with --no-default-features for Metal");
+#[cfg(all(feature = "gpu-metal", not(target_os = "macos")))]
+compile_error!("gpu-metal requires macOS");
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+mod gpu_constants;
 #[cfg(feature = "gpu")]
 pub mod gpu_pcs; // GPU-hiding PCS wrapper: quotient randomization pipeline device-side
 pub mod htlc_air; // v3: shielded HTLC spend (redeem/refund) — clone of joinsplit_air, extended
 pub mod joinsplit_air;
+#[cfg(all(feature = "gpu-metal", target_os = "macos"))]
+pub(crate) mod metal_compute;
 pub mod poseidon2_air;
 #[cfg(feature = "gpu")]
 pub mod quotient_gpu;

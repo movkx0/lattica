@@ -1,11 +1,12 @@
 //! One serialized OpenCL context, with aggregate allocation accounting and a
 //! process-lifetime exclusive lease shared by all candidate hashing jobs of a user.
+use crate::block_v2::compute;
 use crate::config::Val;
 pub mod lde_execute;
 pub mod lde_plan;
 mod lde_readback;
 pub(crate) mod opening_reduce;
-use ocl::{Buffer, Event, ProQue, Queue};
+use compute::{Buffer, Event, ProQue, Queue};
 use p3_field::PrimeCharacteristicRing;
 use rayon::prelude::*;
 use std::{
@@ -20,6 +21,17 @@ const CONSTANT_BYTES: usize = (32 + 22 + 32 + 8) * 8;
 /// Managed allocations deliberately leave 4 GiB below the 12 GiB job target for
 /// driver/context overhead. Driver allocations are measured separately by the runner.
 pub const MAX_MANAGED_BYTES: usize = 8 * GIB;
+fn transport_bytes(limits: Limits) -> usize {
+    #[cfg(feature = "gpu-metal")]
+    {
+        compute::transfer_budget(limits.managed_bytes)
+    }
+    #[cfg(not(feature = "gpu-metal"))]
+    {
+        let _ = limits;
+        0
+    }
+}
 const DRIVER_RESERVE_BYTES: usize = 4 * GIB;
 const MAX_DEVICE_EVENTS: usize = 65_536;
 const QUERY_ELEMENTS: usize = 32 * 4;
@@ -195,7 +207,8 @@ fn plan_slots(
         .checked_mul(4)
         .ok_or("GPU parents overflow")?;
     let mut bytes = CONSTANT_BYTES
-        .checked_add(limits.staging_bytes)
+        .checked_add(transport_bytes(limits))
+        .and_then(|n| n.checked_add(limits.staging_bytes))
         .ok_or("GPU budget overflow")?;
     for (elements, copies) in [(input, slots), (leaves, 1), (parents, 1)] {
         let allocation = elements.checked_mul(8).ok_or("GPU allocation overflow")?;
@@ -295,7 +308,7 @@ struct Allocation {
     _lease: Lease,
 }
 struct Staging {
-    map: ocl::MemMap<u64>,
+    map: compute::MemMap<u64>,
     _allocation: Allocation,
 }
 fn fatal_cleanup(stage: &str, error: impl std::fmt::Display) -> ! {
@@ -449,8 +462,21 @@ struct DeviceTimeline {
 }
 impl DeviceTimeline {
     fn record(&mut self, kind: &'static str, event: &Event) -> Result<u128, String> {
-        let (start, end) = event_range(event)?;
-        self.record_interval(kind, start, end)
+        #[cfg(feature = "gpu")]
+        {
+            let (start, end) = event_range(event)?;
+            self.record_interval(kind, start, end)
+        }
+        #[cfg(feature = "gpu-metal")]
+        {
+            // A bounded transfer may issue several blits. Preserve their separate
+            // intervals so CPU copies and submission gaps are never GPU time.
+            let mut duration = 0;
+            for (start, end) in event.device_intervals()? {
+                duration += self.record_interval(kind, start, end)?;
+            }
+            Ok(duration)
+        }
     }
     fn record_interval(
         &mut self,
@@ -545,6 +571,8 @@ struct Engine {
     #[cfg(test)]
     injected_event: Option<Event>,
     _job_lease: Arc<File>,
+    #[cfg(feature = "gpu-metal")]
+    _backend_transfer_lease: Lease,
 }
 impl Drop for Engine {
     fn drop(&mut self) {
@@ -556,7 +584,7 @@ impl Drop for Engine {
 static ENGINE: OnceLock<Mutex<Option<Engine>>> = OnceLock::new();
 static INITIALIZE: Mutex<()> = Mutex::new(());
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", all(target_os = "macos", feature = "gpu-metal")))]
 fn job_lease() -> Result<File, String> {
     use std::os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt};
     let uid = unsafe { libc::geteuid() };
@@ -588,7 +616,7 @@ fn job_lease() -> Result<File, String> {
         .map_err(|e| format!("another candidate GPU hashing process holds the lease: {e}"))?;
     Ok(file)
 }
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", all(target_os = "macos", feature = "gpu-metal"))))]
 fn job_lease() -> Result<File, String> {
     Err("bounded GPU hashing currently requires Linux".into())
 }
@@ -599,7 +627,7 @@ fn allocation(
     limits: Limits,
     max_alloc: usize,
     elements: usize,
-    flags: ocl::flags::MemFlags,
+    flags: compute::flags::MemFlags,
 ) -> Result<Allocation, String> {
     let bytes = elements.checked_mul(8).ok_or("GPU buffer size overflow")?;
     if bytes == 0 || bytes > max_alloc {
@@ -634,6 +662,8 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
         .map_err(|_| "GPU initialization poisoned")?;
     if let Some(engine) = ENGINE.get() {
         if let Some(engine) = engine.lock().map_err(|_| "GPU engine poisoned")?.as_ref() {
+            #[cfg(feature = "gpu-metal")]
+            engine.pq.check_memory_mode()?;
             return if engine.limits == limits
                 && engine.mode == mode
                 && engine.retain_trees == retain_trees
@@ -646,14 +676,6 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
     }
     limits.validate()?;
     let lease = job_lease()?; // BEFORE creating a context or allocating anything on the device.
-    let mut devices = Vec::new();
-    for platform in ocl::Platform::list() {
-        for device in ocl::Device::list(platform, Some(ocl::flags::DEVICE_TYPE_GPU))
-            .map_err(|e| e.to_string())?
-        {
-            devices.push((platform, device));
-        }
-    }
     let index: usize = match std::env::var("LATTICA_V2_GPU_DEVICE") {
         Err(std::env::VarError::NotPresent) => 0,
         Ok(v) => v
@@ -661,53 +683,88 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
             .map_err(|_| "LATTICA_V2_GPU_DEVICE must be an index")?,
         Err(e) => return Err(e.to_string()),
     };
-    let (platform, device) = *devices
-        .get(index)
-        .ok_or("selected OpenCL GPU is unavailable")?;
-    use ocl::core::{DeviceInfo, DeviceInfoResult};
-    let max_alloc = match device
-        .info(DeviceInfo::MaxMemAllocSize)
-        .map_err(|e| e.to_string())?
-    {
-        DeviceInfoResult::MaxMemAllocSize(n) => {
-            usize::try_from(n).map_err(|_| "GPU max allocation overflow")?
+    #[cfg(feature = "gpu")]
+    let (pq, max_alloc, global, device_name) = {
+        let mut devices = Vec::new();
+        for platform in compute::Platform::list() {
+            for device in compute::Device::list(platform, Some(compute::flags::DEVICE_TYPE_GPU))
+                .map_err(|e| e.to_string())?
+            {
+                devices.push((platform, device));
+            }
         }
-        _ => return Err("GPU allocation limit unavailable".into()),
-    };
-    let global = match device
-        .info(DeviceInfo::GlobalMemSize)
-        .map_err(|e| e.to_string())?
-    {
-        DeviceInfoResult::GlobalMemSize(n) => {
-            usize::try_from(n).map_err(|_| "GPU memory size overflow")?
+        let (platform, device) = *devices
+            .get(index)
+            .ok_or("selected OpenCL GPU is unavailable")?;
+        use compute::core::{DeviceInfo, DeviceInfoResult};
+        let max_alloc = match device
+            .info(DeviceInfo::MaxMemAllocSize)
+            .map_err(|e| e.to_string())?
+        {
+            DeviceInfoResult::MaxMemAllocSize(n) => {
+                usize::try_from(n).map_err(|_| "GPU max allocation overflow")?
+            }
+            _ => return Err("GPU allocation limit unavailable".into()),
+        };
+        let global = match device
+            .info(DeviceInfo::GlobalMemSize)
+            .map_err(|e| e.to_string())?
+        {
+            DeviceInfoResult::GlobalMemSize(n) => {
+                usize::try_from(n).map_err(|_| "GPU memory size overflow")?
+            }
+            _ => return Err("GPU global memory unavailable".into()),
+        };
+        if limits
+            .managed_bytes
+            .checked_add(DRIVER_RESERVE_BYTES)
+            .ok_or("GPU limit overflow")?
+            > global
+        {
+            return Err("GPU lacks capacity for the managed budget plus driver reserve".into());
         }
-        _ => return Err("GPU global memory unavailable".into()),
+        plan_slots(1, 1, limits, max_alloc, mode.slots())?;
+        let pq = ProQue::builder()
+            .platform(platform)
+            .device(device)
+            .src(format!(
+                "{}\n{}\n{}\n{}",
+                crate::gpu::KERNEL_SRC,
+                RETAINED_PATH_KERNEL,
+                lde_execute::KERNEL_SRC,
+                opening_reduce::KERNEL_SRC
+            ))
+            .queue_properties(compute::flags::QUEUE_PROFILING_ENABLE)
+            .dims(1)
+            .build()
+            .map_err(|e| e.to_string())?;
+        let device_name = device.name().map_err(|e| e.to_string())?;
+        (pq, max_alloc, global, device_name)
     };
-    if limits
-        .managed_bytes
-        .checked_add(DRIVER_RESERVE_BYTES)
-        .ok_or("GPU limit overflow")?
-        > global
-    {
-        return Err("GPU lacks capacity for the managed budget plus driver reserve".into());
-    }
-    plan_slots(1, 1, limits, max_alloc, mode.slots())?;
-    let pq = ProQue::builder()
-        .platform(platform)
-        .device(device)
-        .src(format!(
-            "{}\n{}\n{}\n{}",
-            crate::gpu::KERNEL_SRC,
-            RETAINED_PATH_KERNEL,
-            lde_execute::KERNEL_SRC,
-            opening_reduce::KERNEL_SRC
-        ))
-        .queue_properties(ocl::flags::QUEUE_PROFILING_ENABLE)
-        .dims(1)
-        .build()
-        .map_err(|e| e.to_string())?;
+    #[cfg(feature = "gpu-metal")]
+    let (pq, max_alloc, global, device_name) = {
+        if mode != TransferMode::Serial {
+            return Err("Metal currently requires GPU_PIPELINE=0".into());
+        }
+        let pq = compute::ProQue::new(index, limits.managed_bytes)?;
+        let max_alloc = pq.max_buffer_length();
+        let global = pq.recommended_working_set();
+        if limits
+            .managed_bytes
+            .checked_add(DRIVER_RESERVE_BYTES)
+            .ok_or("Metal budget overflow")?
+            > global
+        {
+            return Err("Metal working-set allowance is too small".into());
+        }
+        plan_slots(1, 1, limits, max_alloc, mode.slots())?;
+        let name = pq.device_name();
+        (pq, max_alloc, global, name)
+    };
     let accounting = Arc::new(Mutex::new(Accounting::default()));
-    let (rci, rcp, rcf, diag) = crate::gpu::poseidon2_consts();
+    #[cfg(feature = "gpu-metal")]
+    let backend_transfer_lease = reserve(&accounting, pq.transfer_bytes(), limits.managed_bytes)?;
+    let (rci, rcp, rcf, diag) = crate::gpu_constants::poseidon2_consts();
     let mut constants = Vec::new();
     for values in [rci, rcp, rcf, diag] {
         let a = allocation(
@@ -716,21 +773,24 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
             limits,
             max_alloc,
             values.len(),
-            ocl::flags::MEM_READ_ONLY,
+            compute::flags::MEM_READ_ONLY,
         )?;
         a.buffer.write(&values).enq().map_err(|e| e.to_string())?;
         constants.push(a);
     }
+    #[cfg(feature = "gpu")]
     let copy_queue = if mode == TransferMode::Overlap {
         Queue::new(
             pq.context(),
-            device,
-            Some(ocl::flags::QUEUE_PROFILING_ENABLE),
+            pq.device(),
+            Some(compute::flags::QUEUE_PROFILING_ENABLE),
         )
         .map_err(|e| e.to_string())?
     } else {
         pq.queue().clone()
     };
+    #[cfg(feature = "gpu-metal")]
+    let copy_queue = pq.queue().clone();
     let timeline_enabled = switch("LATTICA_PROFILE_TIMELINE")?;
     let mut staging = Vec::new();
     for _ in 0..mode.slots() {
@@ -740,13 +800,13 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
             limits,
             max_alloc,
             limits.staging_bytes / mode.slots() / 8,
-            ocl::flags::MEM_READ_WRITE | ocl::flags::MEM_ALLOC_HOST_PTR,
+            compute::flags::MEM_READ_WRITE | compute::flags::MEM_ALLOC_HOST_PTR,
         )?;
         // SAFETY: persistent CPU mapping; QueueFence protects every DMA use.
         let map = unsafe {
             a.buffer
                 .map()
-                .flags(ocl::flags::MAP_READ | ocl::flags::MAP_WRITE)
+                .flags(compute::flags::MAP_READ | compute::flags::MAP_WRITE)
                 .len(limits.staging_bytes / mode.slots() / 8)
                 .enq()
                 .map_err(|e| e.to_string())?
@@ -759,7 +819,7 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
     pq.queue().finish().map_err(|e| e.to_string())?;
     println!(
         "bounded_gpu_initialized device_index={index} name={:?} global_bytes={global} max_allocation_bytes={max_alloc} managed_limit_bytes={} driver_reserve_bytes={DRIVER_RESERVE_BYTES} tile_bytes={} staging_bytes={} contexts=1 job_lease=exclusive",
-        device.name().map_err(|e| e.to_string())?,
+        device_name,
         limits.managed_bytes,
         limits.tile_bytes,
         limits.staging_bytes
@@ -774,6 +834,8 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
         timeline_enabled
     );
     let engine = Engine {
+        #[cfg(feature = "gpu-metal")]
+        _backend_transfer_lease: backend_transfer_lease,
         pq,
         copy_queue,
         mode,
@@ -912,8 +974,9 @@ fn retained_peak(
     Ok(peak)
 }
 
+#[cfg(feature = "gpu")]
 fn event_range(event: &Event) -> Result<(u64, u64), String> {
-    use ocl::enums::{ProfilingInfo, ProfilingInfoResult};
+    use compute::enums::{ProfilingInfo, ProfilingInfoResult};
     event.wait_for().map_err(|e| e.to_string())?;
     let start = match event
         .profiling_info(ProfilingInfo::Start)
@@ -994,7 +1057,7 @@ impl Engine {
             if fail || unwind {
                 self.injected_event = Some(event.clone());
                 if let Some(notify) = self.retained_copy_submitted.take() {
-                    use ocl::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
+                    use compute::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
                     // The test's gate is still unreleased. Establish pending
                     // work before asking its helper to permit completion.
                     assert!(!matches!(
@@ -1040,7 +1103,7 @@ impl Engine {
             self.limits,
             self.max_alloc,
             layout.elements,
-            ocl::flags::MEM_READ_WRITE,
+            compute::flags::MEM_READ_WRITE,
         )?;
         storage._lease.mark_retained()?;
         // Declared AFTER the owned device allocation: on error or unwind the
@@ -1135,7 +1198,7 @@ impl Engine {
                 self.limits,
                 self.max_alloc,
                 QUERY_ELEMENTS,
-                ocl::flags::MEM_READ_WRITE,
+                compute::flags::MEM_READ_WRITE,
             )?);
         }
         let fence = self.fence();
@@ -1163,7 +1226,7 @@ impl Engine {
         if std::mem::take(&mut self.fail_retained_query_after_enqueue) {
             self.injected_event = Some(event.clone());
             if let Some(notify) = self.retained_query_submitted.take() {
-                use ocl::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
+                use compute::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
                 assert!(!matches!(
                     event.info(EventInfo::CommandExecutionStatus).unwrap(),
                     EventInfoResult::CommandExecutionStatus(CommandExecutionStatus::Complete)
@@ -1193,7 +1256,7 @@ impl Engine {
         {
             old_workspace
         } else {
-            p.bytes - CONSTANT_BYTES - self.limits.staging_bytes
+            p.bytes - CONSTANT_BYTES - self.limits.staging_bytes - transport_bytes(self.limits)
         };
         let live = self.accounting.lock().unwrap().live;
         retained_peak(
@@ -1238,7 +1301,7 @@ impl Engine {
                 self.limits,
                 self.max_alloc,
                 n,
-                ocl::flags::MEM_READ_WRITE,
+                compute::flags::MEM_READ_WRITE,
             )
         };
         self.workspace = Some(Workspace {
@@ -1580,6 +1643,8 @@ pub(super) fn hash_rows_retained(
 pub fn report(label: &str) -> Option<Snapshot> {
     let mut guard = ENGINE.get()?.lock().expect("GPU engine poisoned");
     let e = guard.as_mut()?;
+    #[cfg(feature = "gpu-metal")]
+    e.pq.report();
     let s = e.snapshot();
     {
         let a = e.accounting.lock().unwrap();
@@ -1675,14 +1740,26 @@ pub fn report(label: &str) -> Option<Snapshot> {
     );
     if e.timeline.enabled {
         println!(
-            "gpu_timeline_checkpoint label={label:?} events={} dropped={} clock=opencl_device",
+            "gpu_timeline_checkpoint label={label:?} events={} dropped={} clock={}",
+            if cfg!(feature = "gpu-metal") {
+                "metal_device"
+            } else {
+                "opencl_device"
+            },
             e.timeline.events.len(),
             e.timeline.dropped
         );
         for event in e.timeline.events.drain(..) {
             println!(
-                "gpu_timeline_interval label={label:?} kind={} start_ns={} end_ns={} clock=opencl_device",
-                event.kind, event.start, event.end
+                "gpu_timeline_interval label={label:?} kind={} start_ns={} end_ns={} clock={}",
+                if cfg!(feature = "gpu-metal") {
+                    "metal_device"
+                } else {
+                    "opencl_device"
+                },
+                event.kind,
+                event.start,
+                event.end
             );
         }
         e.timeline.dropped = 0;
@@ -1718,6 +1795,27 @@ pub fn shutdown() -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(test)]
+pub(super) fn test_device_transfers() -> bool {
+    !cfg!(feature = "gpu-metal")
+        || std::env::var("LATTICA_V2_METAL_MEMORY").as_deref() == Ok("copy")
+}
+#[cfg(test)]
+pub(super) fn test_transfer_mode() -> TransferMode {
+    if cfg!(feature = "gpu-metal") {
+        TransferMode::Serial
+    } else {
+        TransferMode::Overlap
+    }
+}
+#[cfg(test)]
+pub(super) fn test_transfer_modes() -> Vec<TransferMode> {
+    if cfg!(feature = "gpu-metal") {
+        vec![TransferMode::Serial]
+    } else {
+        vec![TransferMode::Serial, TransferMode::Overlap]
+    }
+}
 #[cfg(test)]
 pub(super) struct TestShutdownGuard;
 #[cfg(test)]
@@ -1778,8 +1876,8 @@ mod tests {
     #[test]
     #[ignore = "requires OpenCL GPU and LATTICA_V2_GPU_RETAIN_TREES=1; run serially in <=3 GiB service"]
     fn gpu_lde_error_and_unwind_drain_before_transform_reservations_release() {
+        use compute::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
         use lde_execute::LdeInput;
-        use ocl::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
         use p3_field::Field;
         use p3_matrix::dense::RowMajorMatrix;
         let limits = Limits {
@@ -1787,7 +1885,7 @@ mod tests {
             tile_bytes: 64 * 1024,
             staging_bytes: 32 * 1024,
         };
-        initialize_mode(limits, TransferMode::Overlap).unwrap();
+        initialize_mode(limits, test_transfer_mode()).unwrap();
         let mut e = TestEngine::take();
         let evaluations = RowMajorMatrix::new(vec![Val::ONE; 128 * 7], 7);
         let salts = RowMajorMatrix::new(vec![Val::ONE; 512 * 4], 4);
@@ -1797,7 +1895,7 @@ mod tests {
             added_bits: 2,
             shift: Val::GENERATOR,
         }];
-        let p = plan_slots(512, 11, limits, e.max_alloc, 2).unwrap();
+        let p = plan_slots(512, 11, limits, e.max_alloc, e.mode.slots()).unwrap();
         e.workspace(p).unwrap();
         let before = e.snapshot().managed_live_bytes;
         // Invalid host admission must not allocate, consume GPU work or replace
@@ -1846,7 +1944,7 @@ mod tests {
     #[ignore = "requires an OpenCL GPU and a serial <=3 GiB service"]
     fn gpu_opening_error_and_unwind_drain_before_allocations_release() {
         use crate::block_v2::profile::Challenge;
-        use ocl::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
+        use compute::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
         use opening_reduce::{OpeningMatrix, OpeningTerm};
         let limits = Limits {
             managed_bytes: 16 * MIB,
@@ -1902,7 +2000,7 @@ mod tests {
     #[ignore = "requires an OpenCL GPU and a serial <=3 GiB service"]
     fn gpu_compact_opening_compression_and_ntt_failures_drain_before_release() {
         use crate::block_v2::profile::Challenge;
-        use ocl::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
+        use compute::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
         use opening_reduce::{OpeningMatrix, OpeningTerm};
         initialize_mode(
             Limits {
@@ -2112,16 +2210,16 @@ mod tests {
     #[test]
     #[ignore = "requires OpenCL GPU and LATTICA_V2_GPU_RETAIN_TREES=1; run serially"]
     fn gpu_retained_copy_error_and_unwind_release_reservations() {
-        use ocl::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
+        use compute::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
         let limits = Limits {
             managed_bytes: 32 * MIB,
             tile_bytes: 64 * 1024,
             staging_bytes: 32 * 1024,
         };
-        initialize_mode(limits, TransferMode::Overlap).unwrap();
+        initialize_mode(limits, test_transfer_mode()).unwrap();
         let mut e = TestEngine::take();
         assert!(e.retain_trees);
-        let p = plan_slots(512, 17, limits, e.max_alloc, 2).unwrap();
+        let p = plan_slots(512, 17, limits, e.max_alloc, e.mode.slots()).unwrap();
         e.workspace(p).unwrap();
         let before = e.snapshot().managed_live_bytes;
         let fill = |row: usize, out: &mut [u64]| {
@@ -2198,13 +2296,13 @@ mod tests {
     #[test]
     #[ignore = "requires OpenCL GPU and LATTICA_V2_GPU_RETAIN_TREES=1; run serially"]
     fn gpu_retained_query_error_drains_pending_kernel_and_preserves_tree() {
-        use ocl::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
+        use compute::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
         let limits = Limits {
             managed_bytes: 32 * MIB,
             tile_bytes: 64 * 1024,
             staging_bytes: 32 * 1024,
         };
-        initialize_mode(limits, TransferMode::Overlap).unwrap();
+        initialize_mode(limits, test_transfer_mode()).unwrap();
         let mut e = TestEngine::take();
         let tree = e
             .hash_rows_retained(512, 17, 6, |row, values| {
@@ -2249,7 +2347,7 @@ mod tests {
             tile_bytes: 64 * 1024,
             staging_bytes: 32 * 1024,
         };
-        initialize_mode(limits, TransferMode::Overlap).unwrap();
+        initialize_mode(limits, test_transfer_mode()).unwrap();
         let mut e = TestEngine::take();
         let fill = |row: usize, out: &mut [u64]| {
             for (col, value) in out.iter_mut().enumerate() {
@@ -2258,7 +2356,7 @@ mod tests {
         };
         // The ordinary workspace and one retained tree fit in one MiB. A
         // second live tree, not the standalone geometry, causes rejection.
-        let p = plan_slots(8192, 17, limits, e.max_alloc, 2).unwrap();
+        let p = plan_slots(8192, 17, limits, e.max_alloc, e.mode.slots()).unwrap();
         e.admit_retained(p, 8192).unwrap();
         let tree = e.hash_rows_retained(8192, 17, 6, fill).unwrap();
         let expected_cap = tree.cap().to_vec();
@@ -2279,8 +2377,8 @@ mod tests {
     }
 
     #[test]
-    #[cfg(target_os = "linux")]
-    #[ignore = "requires OpenCL GPU and retained trees; run serially with LimitCORE=0"]
+    #[cfg(any(target_os = "linux", all(target_os = "macos", feature = "gpu-metal")))]
+    #[ignore = "requires GPU and retained trees; run serially with LimitCORE=0"]
     fn gpu_failed_drain_aborts_worker_and_releases_job_lease() {
         use std::io::Read;
         use std::os::unix::process::ExitStatusExt;
@@ -2292,7 +2390,7 @@ mod tests {
             staging_bytes: 32 * 1024,
         };
         if std::env::var(CHILD).as_deref() == Ok("1") {
-            initialize_mode(limits, TransferMode::Overlap).unwrap();
+            initialize_mode(limits, test_transfer_mode()).unwrap();
             let mut e = TestEngine::take();
             let _tree = e
                 .hash_rows_retained(8192, 17, 6, |row, out| out.fill(row as u64))
@@ -2346,7 +2444,7 @@ mod tests {
         drop(worker);
         // A new process/context can reacquire the cooperative lease. This is
         // not a claim of instantaneous physical-driver memory reclamation.
-        initialize_mode(limits, TransferMode::Overlap).unwrap();
+        initialize_mode(limits, test_transfer_mode()).unwrap();
         let mut e = TestEngine::take();
         let tree = e
             .hash_rows_retained(8192, 17, 6, |row, out| out.fill(row as u64))
@@ -2419,8 +2517,9 @@ mod tests {
 
     #[test]
     #[ignore = "requires an OpenCL GPU; run serially under a <=3 GiB cap"]
+    #[cfg(feature = "gpu")]
     fn gpu_async_error_and_unwind_drain_before_buffer_reuse() {
-        use ocl::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
+        use compute::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
         let limits = Limits {
             managed_bytes: 256 * MIB,
             tile_bytes: 16 * 1024,
@@ -2437,7 +2536,7 @@ mod tests {
             e.hash_rows(128, 33, fill).unwrap()
         };
         shutdown().unwrap();
-        initialize_mode(limits, TransferMode::Overlap).unwrap();
+        initialize_mode(limits, test_transfer_mode()).unwrap();
         {
             let mut owned = TestEngine::take();
             let e: &mut Engine = &mut owned;
@@ -2470,7 +2569,7 @@ mod tests {
         }
         shutdown().unwrap();
         // Reinitialization acquires the lease only after the prior buffers are gone.
-        initialize_mode(limits, TransferMode::Overlap).unwrap();
+        initialize_mode(limits, test_transfer_mode()).unwrap();
         shutdown().unwrap();
     }
 

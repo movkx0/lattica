@@ -24,11 +24,7 @@ use ocl::ProQue;
 use p3_commit::{BatchOpening, BatchOpeningRef, Mmcs};
 use p3_dft::TwoAdicSubgroupDft;
 use p3_field::{Field, PrimeCharacteristicRing, PrimeField64, TwoAdicField};
-use p3_goldilocks::{
-    default_goldilocks_poseidon2_8, Goldilocks, GOLDILOCKS_POSEIDON2_RC_8_EXTERNAL_FINAL,
-    GOLDILOCKS_POSEIDON2_RC_8_EXTERNAL_INITIAL, GOLDILOCKS_POSEIDON2_RC_8_INTERNAL,
-    MATRIX_DIAG_8_GOLDILOCKS,
-};
+use p3_goldilocks::{default_goldilocks_poseidon2_8, Goldilocks};
 use p3_matrix::bitrev::{BitReversalPerm, BitReversedMatrixView};
 use p3_matrix::dense::RowMajorMatrix;
 use p3_matrix::{Dimensions, Matrix};
@@ -902,26 +898,7 @@ impl TwoAdicSubgroupDft<Goldilocks> for GpuDft {
 /// expect (`rci`: 4×8 external-initial, `rcp`: 22 internal, `rcf`: 4×8 external-final, `diag`: 8).
 /// Sourced from p3's exported constants — the same ones `default_goldilocks_poseidon2_8` uses, so the
 /// GPU permutation is bit-identical to the CPU hasher used in `verify_batch`.
-pub(crate) fn poseidon2_consts() -> (Vec<u64>, Vec<u64>, Vec<u64>, Vec<u64>) {
-    let flat = |rows: &[[Goldilocks; 8]]| {
-        rows.iter()
-            .flatten()
-            .map(|x| x.as_canonical_u64())
-            .collect()
-    };
-    (
-        flat(&GOLDILOCKS_POSEIDON2_RC_8_EXTERNAL_INITIAL),
-        GOLDILOCKS_POSEIDON2_RC_8_INTERNAL
-            .iter()
-            .map(|x| x.as_canonical_u64())
-            .collect(),
-        flat(&GOLDILOCKS_POSEIDON2_RC_8_EXTERNAL_FINAL),
-        MATRIX_DIAG_8_GOLDILOCKS
-            .iter()
-            .map(|x| x.as_canonical_u64())
-            .collect(),
-    )
-}
+pub(crate) use crate::gpu_constants::poseidon2_consts;
 
 /// Build the whole Merkle tree on the GPU: leaf-hash the `h` rows of the row-major (canonical) `h×w`
 /// leaf matrix (Poseidon2 sponge), then compress pairwise up to the root. The leaf matrix is produced

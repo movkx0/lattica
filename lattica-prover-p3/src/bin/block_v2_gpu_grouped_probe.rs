@@ -1,6 +1,5 @@
-//! Explicit compact-profile GPU grouped-eight research worker.
-//! This is separate from the CPU-only runner and requires a bounded worker
-//! cgroup. Preparation, checkpoint checks, pruning and audits use CPU tools.
+// Explicit compact-profile GPU grouped-eight research worker.
+// Preparation, checkpoint checks, pruning and audits use CPU tools.
 mod grouped_common;
 
 use grouped_common::{Command, Error, PinnedAction};
@@ -161,6 +160,7 @@ fn validate_worker_limits(
     Ok(())
 }
 
+#[cfg(feature = "gpu")]
 fn require_worker_limits() -> Result<(), Error> {
     let membership = fs::read_to_string("/proc/self/cgroup")?;
     let groups: Vec<_> = membership
@@ -188,6 +188,101 @@ fn require_worker_limits() -> Result<(), Error> {
         &text(parent.join("memory.max"))?,
         &text(parent.join("memory.swap.max"))?,
     )
+}
+
+#[cfg(feature = "gpu-metal")]
+struct MetalWatchdog {
+    stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    thread: Option<std::thread::JoinHandle<()>>,
+}
+
+#[cfg(feature = "gpu-metal")]
+fn process_memory() -> Result<(u64, u64), Error> {
+    let mut usage = std::mem::MaybeUninit::<libc::rusage_info_v2>::zeroed();
+    // proc_pid_rusage writes the selected fixed-layout version into this buffer.
+    let result = unsafe {
+        libc::proc_pid_rusage(
+            libc::getpid(),
+            libc::RUSAGE_INFO_V2,
+            usage.as_mut_ptr().cast(),
+        )
+    };
+    if result != 0 {
+        return Err(std::io::Error::last_os_error().into());
+    }
+    let usage = unsafe { usage.assume_init() };
+    Ok((usage.ri_resident_size, usage.ri_phys_footprint))
+}
+
+#[cfg(feature = "gpu-metal")]
+fn require_worker_limits() -> Result<MetalWatchdog, Error> {
+    use std::sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    };
+    fn limit(name: &str, default: u64, maximum: u64) -> Result<u64, Error> {
+        let value = match std::env::var(name) {
+            Ok(value) => value.parse()?,
+            Err(std::env::VarError::NotPresent) => default,
+            Err(error) => return Err(error.into()),
+        };
+        if value == 0 || value > maximum {
+            return Err(format!("invalid {name}: must be 1..={maximum}").into());
+        }
+        Ok(value)
+    }
+    let rss_limit = limit("LATTICA_V2_METAL_RSS_LIMIT_BYTES", 44 * GIB, 44 * GIB)?;
+    let timeout = limit("LATTICA_V2_METAL_TIMEOUT_SECONDS", 7200, 7200)?;
+    let scratch: u64 = std::env::var("LATTICA_SPILL_MAX_BYTES")?.parse()?;
+    if scratch == 0
+        || scratch > 34 * GIB
+        || std::env::var("LATTICA_SPILL_BACKING").as_deref() != Ok("memory")
+    {
+        return Err(
+            "Metal worker requires memory scratch with explicit 0 < SPILL_MAX_BYTES <= 34 GiB"
+                .into(),
+        );
+    }
+    let (rss, footprint) = process_memory()?;
+    if rss > rss_limit {
+        return Err("Metal worker already exceeds its RSS limit".into());
+    }
+    println!("metal_worker_limits rss_limit_bytes={rss_limit} scratch_limit_bytes={scratch} timeout_seconds={timeout} sample_ms=500 enforcement=watchdog swap_enforcement=false initial_rss_bytes={rss} initial_footprint_bytes={footprint}");
+    let stop = Arc::new(AtomicBool::new(false));
+    let signal = stop.clone();
+    let thread = std::thread::Builder::new().name("metal-memory-watchdog".into()).spawn(move || {
+        let started = Instant::now();
+        let (mut peak_rss, mut peak_footprint) = (rss, footprint);
+        loop {
+            match process_memory() {
+                Ok((rss, footprint)) => {
+                    peak_rss = peak_rss.max(rss); peak_footprint = peak_footprint.max(footprint);
+                    if rss > rss_limit || started.elapsed().as_secs() >= timeout {
+                        eprintln!("FAILED: Metal watchdog limit exceeded rss_bytes={rss} footprint_bytes={footprint} elapsed_seconds={}", started.elapsed().as_secs());
+                        std::process::exit(124);
+                    }
+                }
+                Err(error) => { eprintln!("FAILED: Metal watchdog sampling: {error}"); std::process::exit(70); }
+            }
+            if signal.load(Ordering::Acquire) { break; }
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        }
+        println!("metal_worker_memory peak_rss_bytes={peak_rss} peak_footprint_bytes={peak_footprint} sample_ms=500 gpu_bytes_overlap_process_memory=true");
+    })?;
+    Ok(MetalWatchdog {
+        stop,
+        thread: Some(thread),
+    })
+}
+
+#[cfg(feature = "gpu-metal")]
+impl Drop for MetalWatchdog {
+    fn drop(&mut self) {
+        self.stop.store(true, std::sync::atomic::Ordering::Release);
+        if let Some(thread) = self.thread.take() {
+            let _ = thread.join();
+        }
+    }
 }
 
 struct GpuGuard(bool);
@@ -234,7 +329,7 @@ fn run(args: &[String]) -> Result<(), Error> {
     } else {
         0
     };
-    require_worker_limits()?;
+    let _limits = require_worker_limits()?;
     let fusion = quotient_pcs::initialize_research_from_env()?;
     let gpu_quotient = quotient_pcs::initialize_gpu_quotient_from_env(resident, fusion)?;
     let expected_quotients = if gpu_quotient {

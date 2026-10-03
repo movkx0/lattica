@@ -3,6 +3,7 @@
 //! determine q; expand only its three base-field coefficient columns on-device.
 //! The caller owns the degree guarantee and Fiat-Shamir ordering. No RNG is used.
 use super::*;
+use crate::block_v2::compute;
 use p3_field::{Field, TwoAdicField};
 
 struct CompactPlan {
@@ -88,7 +89,7 @@ impl Engine {
         Ok(())
     }
 
-    fn compact_kernel(&mut self, kernel: &ocl::Kernel, compress: bool) -> Result<(), String> {
+    fn compact_kernel(&mut self, kernel: &compute::Kernel, compress: bool) -> Result<(), String> {
         let mut event = Event::empty();
         let enqueue = Instant::now();
         // SAFETY: plan bounds every range; a caller-owned queue fence drains
@@ -156,7 +157,7 @@ impl Engine {
                 self.limits,
                 self.max_alloc,
                 words,
-                ocl::flags::MEM_READ_WRITE,
+                compute::flags::MEM_READ_WRITE,
             )
         };
         let outputs = plan

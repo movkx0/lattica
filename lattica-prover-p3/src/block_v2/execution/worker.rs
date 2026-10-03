@@ -185,7 +185,9 @@ fn cpu_switch(value: Option<&std::ffi::OsStr>) -> Result<(), Error> {
     }
 }
 fn require_cpu_backend() -> Result<(), Error> {
-    if cfg!(feature = "gpu") || crate::block_v2::quotient_pcs::research_enabled() {
+    if cfg!(any(feature = "gpu", feature = "gpu-metal"))
+        || crate::block_v2::quotient_pcs::research_enabled()
+    {
         return Err("CPU reference worker requires a CPU-only, unfused build/runtime".into());
     }
     for name in [

@@ -121,7 +121,7 @@ fn run(args: &[String]) -> Result<(), Error> {
 }
 
 fn main() {
-    if cfg!(feature = "gpu") {
+    if cfg!(any(feature = "gpu", feature = "gpu-metal")) {
         eprintln!("FAILED: grouped public export requires a CPU-only build");
         std::process::exit(1);
     }

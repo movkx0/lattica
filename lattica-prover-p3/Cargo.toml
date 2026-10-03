@@ -58,6 +58,11 @@ path = "src/bin/block_v2_gpu_grouped_probe.rs"
 required-features = ["block-v2-wide-lanes", "stream", "gpu"]
 
 [[bin]]
+name = "block-v2-metal-grouped-probe"
+path = "src/bin/block_v2_metal_grouped_probe.rs"
+required-features = ["block-v2-wide-lanes", "stream", "gpu-metal"]
+
+[[bin]]
 name = "block-v2-grouped-publics"
 path = "src/bin/block_v2_grouped_publics.rs"
 required-features = ["block-v2", "stream"]
@@ -109,12 +114,18 @@ p3-maybe-rayon = { version = "0.6.1", optional = true, features = ["parallel"] }
 [dev-dependencies]
 rayon = "1" # streaming FRI test: pin a 1-thread pool so p3's `find_map_any` PoW grind is deterministic
 
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = { version = "0.6", optional = true }
+objc2-foundation = { version = "0.3.2", optional = true }
+objc2-metal = { version = "0.3.2", optional = true }
+
 [features]
 # Include the GPU backend in standard builds. Use --no-default-features for CPU-only builds.
 default = ["gpu"]
 # Enable GPU (OpenCL) acceleration of the LDE. Proving calls select the GPU backend explicitly.
 # Requires an OpenCL runtime + a GPU when used; the wire format and verifier are unchanged.
 gpu = ["dep:ocl", "dep:rayon", "dep:libc", "dep:p3-util"]
+gpu-metal = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-metal", "dep:rayon", "dep:libc", "dep:p3-util"]
 # Enable the RESEARCH in-circuit recursive STARK verifier (`src/recursion`: the monolith + aggregator). OFF by
 # default — it is NOT on any production path (zero default `lattica_*` externs reach it) and is NOT audited;
 # gating it out keeps the default staticlib to the frozen node seam. Its ~80 `#[ignore]` tests + the 2 monolith

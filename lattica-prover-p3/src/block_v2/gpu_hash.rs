@@ -508,7 +508,7 @@ mod tests {
     #[ignore = "requires an OpenCL GPU; run serially in a <=3 GiB service"]
     fn gpu_commitments_openings_salts_order_caps_and_tiles_match_cpu() {
         let _shutdown = engine::TestShutdownGuard;
-        for mode in [engine::TransferMode::Serial, engine::TransferMode::Overlap] {
+        for mode in engine::test_transfer_modes() {
             initialize_test_gpu_mode(mode);
             for h in [1, 2, 8, 64, 4096] {
                 for widths in [vec![1], vec![7, 3, 5], vec![98], vec![7; 16]] {
@@ -540,7 +540,7 @@ mod tests {
     #[ignore = "requires OpenCL GPU and LATTICA_V2_GPU_RETAIN_TREES=1; run serially in <=3 GiB"]
     fn gpu_retained_trees_keep_context_alive_and_survive_workspace_reuse() {
         let _shutdown = engine::TestShutdownGuard;
-        initialize_test_gpu_mode(engine::TransferMode::Overlap);
+        initialize_test_gpu_mode(engine::test_transfer_mode());
         assert!(engine::retention_enabled().unwrap());
         let gpu = mmcs(6, true);
         let cpu = mmcs(6, false);
@@ -577,7 +577,7 @@ mod tests {
         assert!(shutdown().is_err());
         drop(data);
         shutdown().unwrap();
-        initialize_test_gpu_mode(engine::TransferMode::Overlap);
+        initialize_test_gpu_mode(engine::test_transfer_mode());
         compare(|| vec![matrix(4096, 7, 25)], 6);
         shutdown().unwrap();
     }
@@ -590,7 +590,7 @@ mod tests {
         use std::process::{Child, Command, Stdio};
         const CHILD: &str = "LATTICA_GPU_LEASE_DEATH_TEST_CHILD";
         if std::env::var(CHILD).as_deref() == Ok("1") {
-            initialize_test_gpu_mode(engine::TransferMode::Overlap);
+            initialize_test_gpu_mode(engine::test_transfer_mode());
             // With retention enabled, keep a real device-tree handle alive
             // across process death. This does not simulate every in-flight
             // driver instruction or claim physical GPU-memory isolation.
@@ -638,7 +638,7 @@ mod tests {
         worker.0.kill().unwrap();
         assert!(!worker.0.wait().unwrap().success());
         reader.join().unwrap();
-        initialize_test_gpu_mode(engine::TransferMode::Overlap);
+        initialize_test_gpu_mode(engine::test_transfer_mode());
         compare(|| vec![matrix(4096, 33, 29)], 6);
         shutdown().unwrap();
     }
@@ -654,7 +654,7 @@ mod tests {
         let cpu = mmcs(6, false);
         let (expected, cpu_data) = cpu.commit(vec![resident.bit_reverse_rows()]);
         let before = spill_stats();
-        for mode in [engine::TransferMode::Serial, engine::TransferMode::Overlap] {
+        for mode in engine::test_transfer_modes() {
             initialize_test_gpu_mode(mode);
             let scope = SpillScope::arm();
             let input = matrix(131_072, 65, 23);
@@ -681,7 +681,12 @@ mod tests {
             drop(data);
             assert_eq!(spill_stats(), before);
             let stats = report("spill-backed compatibility test").unwrap();
-            assert!(stats.upload_device_ns > 0 && stats.download_device_ns > 0);
+            assert_eq!(stats.upload_device_ns > 0, engine::test_device_transfers());
+            assert_eq!(
+                stats.download_device_ns > 0,
+                engine::test_device_transfers()
+            );
+            assert!(stats.upload_wall_ns > 0 && stats.download_wall_ns > 0);
             shutdown().unwrap();
         }
     }
@@ -698,7 +703,7 @@ mod tests {
         type CpuChallengeMmcs = ExtensionMmcs<Val, profile::Challenge, ValMmcs>;
         type CpuPcs = HidingFriPcs<Val, Dft, ValMmcs, CpuChallengeMmcs, ChaCha20Rng>;
         type CpuConfig = StarkConfig<CpuPcs, profile::Challenge, Challenger>;
-        for mode in [engine::TransferMode::Serial, engine::TransferMode::Overlap] {
+        for mode in engine::test_transfer_modes() {
             initialize_test_gpu_mode(mode);
             ENABLED.store(true, Ordering::Release);
             let wallet = recursive::demo_wallet(0).unwrap();

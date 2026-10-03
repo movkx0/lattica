@@ -18,14 +18,14 @@ use rand::RngExt;
 use rand_chacha::ChaCha20Rng;
 use std::sync::{Arc, Mutex, OnceLock};
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 use super::gpu_hash::CandidateMmcs as ValMmcs;
 #[cfg(feature = "stream")]
 use super::normalization_workspace::HeapNormalizedDft as Dft;
 use super::profile::{self, Challenge, ChallengeMmcs};
 #[cfg(not(feature = "stream"))]
 use crate::config::Dft;
-#[cfg(not(feature = "gpu"))]
+#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
 use crate::config::ValMmcs;
 
 type Domain = TwoAdicMultiplicativeCoset<Val>;
@@ -38,10 +38,10 @@ const MAX_CHUNK_LDE_BYTES: usize = 2 << 30;
 const MAX_CHUNKS: usize = 1 << profile::LOG_BLOWUP;
 
 static RESEARCH_FUSION: OnceLock<bool> = OnceLock::new();
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 static RESEARCH_GPU_QUOTIENT: OnceLock<bool> = OnceLock::new();
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 fn parse_gpu_quotient(value: Option<&str>, resident: bool, fusion: bool) -> Result<bool, String> {
     match value {
         None | Some("0") => Ok(false),
@@ -52,7 +52,7 @@ fn parse_gpu_quotient(value: Option<&str>, resident: bool, fusion: bool) -> Resu
     }
 }
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 pub fn initialize_gpu_quotient_from_env(resident: bool, fusion: bool) -> Result<bool, String> {
     let value = match std::env::var("LATTICA_V2_GPU_QUOTIENT_LDE") {
         Ok(value) => Some(value),
@@ -64,7 +64,7 @@ pub fn initialize_gpu_quotient_from_env(resident: bool, fusion: bool) -> Result<
     Ok(enabled)
 }
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 pub(crate) fn gpu_quotient_enabled() -> bool {
     RESEARCH_GPU_QUOTIENT.get().copied().unwrap_or(false)
 }
@@ -374,7 +374,7 @@ where
 #[derive(Clone)]
 enum Backend {
     Reference(Inner),
-    #[cfg(feature = "gpu")]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     Resident(Arc<super::resident_pcs::ResidentState>),
 }
 
@@ -386,7 +386,7 @@ macro_rules! delegate_pcs {
         match &$pcs.inner {
             Backend::Reference(inner) =>
                 <Inner as Pcs<Challenge, Challenger>>::$method(inner $(, $arg)*),
-            #[cfg(feature = "gpu")]
+            #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Backend::Resident(state) => {
                 state.lock_opening_mode();
                 <super::resident_pcs::ResidentInner as Pcs<Challenge, Challenger>>::$method(
@@ -412,7 +412,7 @@ pub struct CandidatePcs {
 impl CandidatePcs {
     /// Single-table research hook; keeps small quotient evaluations until the
     /// masked GPU transform and commitment. No expanded LDE upload or fallback.
-    #[cfg(feature = "gpu")]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     pub(crate) fn commit_quotient_evaluations(
         &self,
         groups: Vec<(Vec<Domain>, Vec<RowMajorMatrix<Val>>)>,
@@ -471,7 +471,7 @@ impl CandidatePcs {
 
     /// Select before sharing/using a newly constructed resident proof attempt.
     /// There is no per-call switching or fallback after randomness is consumed.
-    #[cfg(feature = "gpu")]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     pub(crate) fn with_gpu_openings(mut self) -> Result<Self, String> {
         match &mut self.inner {
             Backend::Resident(state) => {
@@ -483,7 +483,7 @@ impl CandidatePcs {
         }
         Ok(self)
     }
-    #[cfg(all(test, feature = "gpu"))]
+    #[cfg(all(test, any(feature = "gpu", feature = "gpu-metal")))]
     pub(crate) fn uses_resident_commitments(&self) -> bool {
         matches!(self.inner, Backend::Resident(_))
     }
@@ -513,7 +513,7 @@ impl CandidatePcs {
 
     /// Explicit research construction, requiring the initialized retained GPU
     /// backend and unchanged candidate parameters. This is never a fallback.
-    #[cfg(feature = "gpu")]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     pub(crate) fn new_resident(
         dft: Dft,
         mmcs: ValMmcs,
@@ -563,7 +563,7 @@ impl BuildPeriodicLdeTableFast for CandidatePcs {
                 trace_domain,
                 quotient_domain,
             ),
-            #[cfg(feature = "gpu")]
+            #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Backend::Resident(state) => state.inner.maybe_build_periodic_lde_table_fast(
                 periodic_cols,
                 trace_domain,
@@ -599,7 +599,7 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
             Backend::Reference(inner) => {
                 <Inner as Pcs<Challenge, Challenger>>::commit(inner, evaluations)
             }
-            #[cfg(feature = "gpu")]
+            #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Backend::Resident(state) => state
                 .commit(evaluations, false)
                 .expect("resident commitment failed; no silent fallback"),
@@ -614,7 +614,7 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
             Backend::Reference(inner) => {
                 <Inner as Pcs<Challenge, Challenger>>::commit_preprocessing(inner, evaluations)
             }
-            #[cfg(feature = "gpu")]
+            #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Backend::Resident(state) => state
                 .commit(evaluations, true)
                 .expect("resident preprocessing commitment failed; no silent fallback"),
@@ -626,7 +626,7 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
         evaluations: impl IntoIterator<Item = (Domain, RowMajorMatrix<Val>)>,
         num_chunks: usize,
     ) -> Vec<RowMajorMatrix<Val>> {
-        #[cfg(feature = "gpu")]
+        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         if let Backend::Resident(state) = &self.inner {
             state.lock_opening_mode();
         }
@@ -678,7 +678,7 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
         rounds: Vec<(&Self::ProverData, Vec<Vec<Challenge>>)>,
         challenger: &mut Challenger,
     ) -> (OpenedValues<Challenge>, Self::Proof) {
-        #[cfg(feature = "gpu")]
+        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         if let Backend::Resident(state) = &self.inner {
             if state.gpu_openings {
                 return state.open(rounds, challenger, false);
@@ -693,7 +693,7 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
         challenger: &mut Challenger,
         is_preprocessing: bool,
     ) -> (OpenedValues<Challenge>, Self::Proof) {
-        #[cfg(feature = "gpu")]
+        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         if let Backend::Resident(state) = &self.inner {
             if state.gpu_openings {
                 return state.open(rounds, challenger, is_preprocessing);
@@ -731,7 +731,7 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
                     inner, domain,
                 )
             }
-            #[cfg(feature = "gpu")]
+            #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Backend::Resident(state) => Some(
                 state
                     .randomization(domain)
@@ -746,7 +746,7 @@ mod tests {
     use super::*;
 
     #[test]
-    #[cfg(feature = "gpu")]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     fn gpu_quotient_policy_requires_both_dependencies_and_explicit_opt_in() {
         for resident in [false, true] {
             for fusion in [false, true] {
