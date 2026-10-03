@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Synthetic pipeline-controller checks; no GPU, services, or proofs."""
 import importlib.util
+import sys
 from pathlib import Path
 import tempfile
 import types
 import unittest
+from unittest.mock import patch
 
 PATH = Path(__file__).with_name("prepare-block-v2-pipeline-bench.py")
 spec = importlib.util.spec_from_file_location("pipeline_bench", PATH)
@@ -14,6 +16,26 @@ B = P.load_module(P.SOURCE)
 
 
 class PipelineBenchTests(unittest.TestCase):
+    def test_recorded_threads_match_worker_command(self):
+        controller = self.controller(1, 1)
+        argv = ["controller", "register", "/tmp/pipeline-job", "/tmp/pipeline-evidence"]
+        for name in ("reference", "gpu-runner", "cpu-runner", "auditor", "accounting", "source-archive"):
+            argv.extend(["--" + name, "/tmp/pipeline-" + name])
+        for name in ("profile", "chain", "root"):
+            argv.extend(["--" + name, "00" * 32])
+        argv.extend(["--gpu-index", "0", "--gpu-uuid", "GPU-test", "--backend", "resident",
+                     "--quotient-fusion", "1", "--gpu-openings", "1", "--gpu-compact", "1"])
+        with patch.object(sys, "argv", argv), \
+                patch.object(controller.signal, "signal"), \
+                patch.object(controller.os, "umask"), \
+                patch.object(controller, "run") as run:
+            controller.main()
+        config = run.call_args.args[0]
+        command = controller.stage_command(config, "controller.service", "worker.service", "pairs", ["wrap-all"])
+        actual = [int(arg.rsplit("=", 1)[1]) for arg in command if arg.startswith("--setenv=RAYON_NUM_THREADS=")]
+        self.assertEqual(actual, [24])
+        self.assertEqual(config["rayon_threads"], actual[0])
+
     def controller(self, parallel, quotient=0):
         source = B.derive_controller(B.TEMPLATE.read_text(), 16, Path("/tmp/private-pipeline"))
         source = P.configure_controller(source, parallel, quotient)

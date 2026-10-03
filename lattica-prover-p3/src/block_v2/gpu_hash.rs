@@ -148,6 +148,9 @@ impl CandidateMmcs {
         // First check precedes salt draws/allocations; the executor then replans
         // and reserves atomically under the same engine lock.
         let plan = self.preflight_resident(&shapes, host_output_budget_bytes)?;
+        if masks.is_some() {
+            plan.validate_quotient_storage()?;
+        }
         let salts: Vec<_> = {
             let mut rng = self
                 .rng

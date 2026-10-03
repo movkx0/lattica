@@ -469,6 +469,14 @@ impl Engine {
             host_budget,
         )?;
         let height = plan.output_height();
+        if masks.is_some() {
+            plan.validate_quotient_storage()?;
+            eprintln!(
+                "bounded_quotient_storage_plan matrices={} height={height} heap_output_bytes={} reorder_workspace_bytes={} host_peak_allowance_bytes={} caller_host_budget_bytes={host_budget}",
+                shapes.len(), plan.host_output_bytes, plan.host_reorder_workspace_bytes,
+                plan.predicted_host_peak_bytes,
+            );
+        }
         let width = shapes
             .iter()
             .try_fold(0usize, |n, s| n.checked_add(s.width)?.checked_add(4))
@@ -527,8 +535,17 @@ impl Engine {
         })?;
         for (matrix_index, input) in inputs.iter().enumerate() {
             let shape = shapes[matrix_index];
-            let mut readback = HostReadback::new(height, shape.width, plan.columns_per_tile())?
-                .with_parallel_decode(parallel_readback);
+            let mut readback = HostReadback::with_storage(
+                height,
+                shape.width,
+                plan.columns_per_tile(),
+                if masks.is_some() {
+                    super::lde_readback::OutputStorage::QuotientHeap
+                } else {
+                    super::lde_readback::OutputStorage::Global
+                },
+            )?
+            .with_parallel_decode(parallel_readback);
             for tile in plan.tiles().filter(|t| t.matrix == matrix_index) {
                 buffers
                     .b

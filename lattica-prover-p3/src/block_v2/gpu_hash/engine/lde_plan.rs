@@ -61,6 +61,23 @@ fn bytes(elements: usize) -> Result<usize, String> {
 }
 
 impl LdeCommitPlan {
+    /// Match CPU fusion's explicit heap limits. The enclosing host plan still
+    /// includes all outputs and reorder workspace; cgroups also account for
+    /// matrices retained by earlier commitments and other worker allocations.
+    pub(crate) fn validate_quotient_storage(&self) -> Result<(), String> {
+        let max_matrices = 1usize << crate::block_v2::profile::LOG_BLOWUP;
+        let per_matrix = super::lde_readback::MAX_QUOTIENT_OUTPUT_BYTES;
+        if self.inputs.len() > max_matrices || self.host_output_bytes > max_matrices * per_matrix {
+            return Err("quotient heap aggregate allowance exceeded".into());
+        }
+        for input in &self.inputs {
+            if bytes(mul(self.output_height, input.width)?)? > per_matrix {
+                return Err("quotient heap matrix allowance exceeded".into());
+            }
+        }
+        Ok(())
+    }
+
     /// Live bytes include constants, staging, retained trees, any query buffer
     /// and the old workspace. Only that workspace may be released/replaced.
     /// Host allowance is a caller budget, not RSS; whole-job host admission and
@@ -274,6 +291,22 @@ mod tests {
                 added_bits: 4,
             },
         ]
+    }
+
+    #[test]
+    fn quotient_storage_admits_production_geometry_and_rejects_oversize() {
+        let shape = InputShape {
+            height: 1 << 18,
+            width: 7,
+            added_bits: 5,
+        };
+        let production = plan(&[shape; 16], 4 * GIB, 0, 32 * GIB).unwrap();
+        assert_eq!(production.host_output_bytes, 7 * GIB);
+        production.validate_quotient_storage().unwrap();
+        let too_many = plan(&[shape; 17], 4 * GIB, 0, 32 * GIB).unwrap();
+        assert!(too_many.validate_quotient_storage().is_err());
+        let too_wide = plan(&[InputShape { width: 33, ..shape }], 4 * GIB, 0, 32 * GIB).unwrap();
+        assert!(too_wide.validate_quotient_storage().is_err());
     }
     #[test]
     fn wide_geometry_requires_column_tiles_under_existing_budget() {

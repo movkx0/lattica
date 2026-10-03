@@ -3979,3 +3979,77 @@ root proofs below 2 MiB, zero swap, worker RAM below 44 GiB, aggregate RAM below
 per-stage timing, host/device bytes, peak RAM/VRAM and resource events. Choose
 winners by complete proving time; avoid adding nested spans or predicted gains.
 Do not run builds or competing proving jobs during timed comparisons.
+
+#### Completed CPU fusion and GPU quotient qualification (2026-10-03)
+
+The fresh five-pair CPU fusion comparison completed in
+`target/block-v2-cpu-fusion-pairs-20261003-c`. With the preserved executable and
+parallel readback in both arms, median recursive proving time decreased from
+**378.797 s to 340.069 s**, a **10.224% reduction**. All five pairs favored
+fusion. All ten roots passed independent CPU audits, peak worker RAM was
+38.189 GiB, swap stayed at zero, and every root was 1,683,948 bytes. This is a
+new matched baseline; its timings should not be substituted into the earlier
+readback comparison. See [the CPU fusion evidence](evidence/block-v2-cpu-fusion-comparison-2026-10-03.json).
+
+The recommended measured research settings are
+`LATTICA_V2_GPU_PARALLEL_READBACK=1`, `LATTICA_V2_QUOTIENT_FUSION=1`, and
+`LATTICA_V2_GPU_QUOTIENT_LDE=1`, following the separate GPU comparison below.
+Use the bounded controller and existing public fixture; production defaults
+and activation gates remain unchanged.
+
+The GPU quotient allocation change is implemented: each retained matrix receives an
+explicit heap reservation capped at 2 GiB, while banded staging remains in
+spill storage. Admission still counts all outputs and reorder workspace, and
+the worker and aggregate cgroups remain mandatory. No allocator suspension or
+allocation-failure fallback is introduced.
+
+After the CPU comparison, the release build passed 40 focused checks: eight
+readback, five allocator, eight planner, eleven CPU quotient, and eight GPU
+component checks. The actual 448 MiB quotient shape under a full 34 GiB spill
+reservation reproduced the old allocation rejection and passed with explicit
+heap output. GPU proofs/transcripts matched the CPU reference. This confirms
+the pressure mechanism and component behavior.
+
+The fresh full-size GPU qualification also passed: **288.024 s**, all seven
+quotient commitments on the GPU, a 1,683,948-byte root independently audited on
+the CPU, 38.074 GiB peak worker RAM, and zero swap. Its CPU fusion control took
+336.349 s. This single pair had detailed timing traces enabled and does not
+qualify a speedup. See [the full-size qualification](evidence/block-v2-gpu-quotient-memory-qualification-2026-10-03.json).
+
+All five fresh matched GPU pairs completed without detailed timing traces in
+`target/block-v2-memory-quotient-pairs-20261003-c`. Median recursive proving time
+decreased from **305.470 s to 260.314 s**, a **14.782% reduction** against CPU
+fusion with parallel readback. Every pair favored GPU quotient transforms;
+each candidate recorded all seven GPU quotient commitments. All ten roots
+passed independent CPU audits, peak worker RAM was 38.120 GiB, swap stayed at
+zero, and every root was 1,683,948 bytes. This qualifies the measured eight-wallet
+research configuration. The preserved candidate is in
+`target/block-v2-memory-20261003-c`; production defaults remain unchanged.
+See [the GPU quotient comparison](evidence/block-v2-gpu-quotient-memory-comparison-2026-10-03.json).
+These CPU and GPU comparisons have different matched baselines; their percentage
+reductions must not be added or combined into a measured cumulative gain.
+
+The controller generator also now records the same 24-thread count it passes
+to workers. Earlier manifests retain their original stale `rayon_threads=16`
+metadata; their pinned plans and worker commands used 24. The comparison report
+records both values. All seven controller tests pass, including CLI metadata
+consistency with the worker command.
+
+Hardware inspection also resolved the PCIe width question: the RTX 5080 is
+connected through an ASMedia 2461 bridge whose maximum downstream connection
+is Gen 4 x4. The observed x4 link matches that bridge. Reaching x16 would
+require a different physical connection. Transfer reduction therefore remains
+an appropriate software target; detailed timing traces will guide arithmetic
+and cache work. The four-wallet geometry gate remains closed.
+
+The pilot uploaded 94.053 GB and downloaded 156.035 GB, compared with 143.378 GB
+and 103.421 GB for CPU fusion. Total traffic increased slightly, so the GPU
+transform result does not establish a transfer-volume reduction. Wrapper
+timelines are complete, but the merge startup exceeded the 65,536-event trace
+cap (12,110 dropped control events and 11,739 dropped candidate events). Split
+the startup/proving checkpoints or increase the bounded trace allowance and
+reprofile before claiming a complete critical-path breakdown or changing the
+remaining arithmetic/cache design.
+
+See [the execution record](evidence/block-v2-prioritized-execution-2026-10-03.json)
+for service names, artifact locations, allocation bounds, and hardware evidence.

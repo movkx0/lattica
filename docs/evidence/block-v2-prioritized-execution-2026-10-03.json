@@ -1,0 +1,214 @@
+{
+  "schema": "block-v2-prioritized-execution-v1",
+  "status": "COMPARISONS_COMPLETE_RESEARCH_ONLY",
+  "production_ready": false,
+  "default_promoted": false,
+  "cpu_comparison": "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c",
+  "candidate_build": "lattica-prover-p3/target/block-v2-memory-20261003-c",
+  "validation_service": "lattica-plan-validation-20261003-c.service",
+  "execution_service": "lattica-plan-execution-20261003-c.service",
+  "queued_gpu_qualification": "lattica-prover-p3/target/block-v2-memory-qualification-20261003-c",
+  "allocation_change": {
+    "policy": "Explicit heap allocation for retained GPU quotient matrices; band-major staging continues to use the armed spill allocator. Ordinary main/preprocessing readback keeps its existing allocation policy.",
+    "per_matrix_heap_limit_bytes": 2147483648,
+    "max_quotient_matrices": 16,
+    "production_matrix_bytes": 469762048,
+    "production_commit_output_bytes": 7516192768,
+    "global_spill_allocator_disarmed": false,
+    "silent_fallback": false,
+    "pressure_test": "Actual 2^23 x 7 output with live spill reservations filling the 34 GiB limit; old global output must reject, explicit bounded heap output must succeed."
+  },
+  "pci_connection": {
+    "gpu": "NVIDIA GeForce RTX 5080",
+    "gpu_bdf": "0000:05:00.0",
+    "current_link_speed": "16.0 GT/s",
+    "current_link_width": 4,
+    "gpu_max_width": 16,
+    "upstream_bridge_bdf": "0000:04:00.0",
+    "upstream_bridge": "ASMedia 2461",
+    "upstream_bridge_max_speed": "16.0 GT/s",
+    "upstream_bridge_max_width": 4,
+    "root_port": "Intel Core Ultra 200 Series USB Type-C Subsystem PCIe Root Port #16",
+    "conclusion": "The active Gen 4 x4 GPU link matches the upstream bridge maximum; x16 requires a different physical connection. The tunneled upstream virtual-link rates are not an end-to-end bandwidth measurement."
+  },
+  "qualification_sequence": [
+    "Finish five CPU fusion pairs using the preserved binary.",
+    "Check unchanged source, build, run spill-pressure and host/GPU equivalence tests.",
+    "Run one fresh matched CPU/GPU pair with timing traces and independent CPU root audits.",
+    "After successful full-size qualification, run five fresh matched GPU quotient pairs with detailed timing traces disabled.",
+    "Review measured transfer volumes and per-thread entered wall-time traces before changing arithmetic or caches."
+  ],
+  "limits": {
+    "worker_ram_bytes": 47244640256,
+    "aggregate_ram_bytes": 51539607552,
+    "spill_reservation_bytes": 36507222016,
+    "swap_bytes": 0,
+    "managed_vram_bytes": 8589934592,
+    "driver_reserve_bytes": 4294967296,
+    "root_proof_bound_bytes": 2097152,
+    "security": "q128, blowup16, cubic challenges, fresh proof randomness"
+  },
+  "four_wallet_geometry": {
+    "active_rows": 320186,
+    "target_rows": 262144,
+    "rows_to_remove": 58042,
+    "retained_lde_bytes_at_doubled_geometry": 63350767616,
+    "gate": "Rejected under the existing 48 GiB aggregate allowance; do not launch four-wallet proofs before a new geometry passes admission."
+  },
+  "automatic_retry": false,
+  "completion_note": "CPU fusion qualification, the allocation fix, component tests, and one full-size audited GPU workload are complete. Five matched GPU pairs are running automatically. Further transfer/arithmetic changes and four-wallet redesign remain subject to their stated evidence/geometry gates.",
+  "round_3_inclusive_profile": {
+    "interpretation": "Spans include nested and overlapping work; do not sum these times or assume equivalent savings. Fresh exclusive entered-wall traces remain queued.",
+    "arms": {
+      "ram-reference": {
+        "log_sha256": {
+          "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c/evidence/round-3-ram-reference/03-pairs.log": "1d7e608daf7aa1ca8f42809d7ea879b1453e9c764c334483b7f5441d555b7f4b",
+          "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c/evidence/round-3-ram-reference/04-merges.log": "6b4f812cf5d43e0b8ab102210bd9b730721ea5c3ae5e939ade4fd3006ce2ece6"
+        },
+        "inclusive_seconds": {
+          "p3_batch_stark::prover::compute quotient": 140.345325048,
+          "p3_batch_stark::prover::compute quotient polynomial": 48.055703871,
+          "lattica_block_v2_perf::bounded GPU commitment": 84.064119878,
+          "lattica_block_v2_perf::paired wrapper compilation": 10.404546864,
+          "lattica_block_v2_perf::merge compilation": 2.993744297,
+          "lattica_block_v2_perf::preprocessing setup": 25.569726659
+        }
+      },
+      "ram-candidate": {
+        "log_sha256": {
+          "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c/evidence/round-3-ram-candidate/03-pairs.log": "25f06a10fbc6b93c231e55ff7ca7870fa0229a8fafb559b6411e326716ff3391",
+          "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c/evidence/round-3-ram-candidate/04-merges.log": "ffb35a8487ad4920b803e98f802de977b08877b2697a90119a1be71d1daecdeb"
+        },
+        "inclusive_seconds": {
+          "p3_batch_stark::prover::compute quotient": 96.171852011,
+          "p3_batch_stark::prover::compute quotient polynomial": 47.865240075,
+          "lattica_block_v2_perf::fused quotient ldes": 48.062188796,
+          "lattica_block_v2_perf::bounded GPU commitment": 83.712430266,
+          "lattica_block_v2_perf::paired wrapper compilation": 10.41835384,
+          "lattica_block_v2_perf::merge compilation": 3.024533883,
+          "lattica_block_v2_perf::preprocessing setup": 25.653582687
+        }
+      }
+    }
+  },
+  "cpu_result": {
+    "reference_median_seconds": 378.797,
+    "candidate_median_seconds": 340.069,
+    "time_reduction_percent": 10.22394580738496,
+    "pairs": 5,
+    "cpu_audits_passed": 10,
+    "all_pairs_favored_fusion": true,
+    "peak_worker_ram_bytes": 41004810240,
+    "root_bytes": 1683948,
+    "evidence": "docs/evidence/block-v2-cpu-fusion-comparison-2026-10-03.json"
+  },
+  "component_checks": {
+    "readback": 8,
+    "allocation": 5,
+    "planning": 8,
+    "quotient": 11,
+    "gpu-components": 8
+  },
+  "build_pins": {
+    "lib-tests": "53d156b9f1a3423ae6efb6e0d93b9849a89adac6fca153f3a560d9382273455f",
+    "block-v2-gpu-grouped-probe": "3e8fd2e70710852aec0eac96cf5ac9a3aef2631bd550bcecaf49fcdfdc3ce835",
+    "source.tar.gz": "298b413359208167267b115ef9ab6bb48c80a82e1be4315692daa530f0dbe26b"
+  },
+  "benchmark_metadata_fix": "The old controller recorded rayon_threads=16 while its pinned worker command used 24. Fresh helpers and the repository generator now record 24; a CLI-to-worker consistency check passes.",
+  "controller_tests_passed": 7,
+  "recommended_measured_research_modes": {
+    "parallel_readback": 1,
+    "cpu_quotient_fusion": 1,
+    "gpu_quotient_lde": 0
+  },
+  "gpu_full_size_qualification": {
+    "status": "COMPLETE_RESEARCH_ONLY",
+    "candidate_seconds": 288.024,
+    "control_seconds": 336.349,
+    "timelines_enabled": true,
+    "speedup_qualified": false,
+    "gpu_quotient_commits": 7,
+    "cpu_root_audit": "PASS",
+    "root_bytes": 1683948,
+    "peak_worker_ram_bytes": 40881770496,
+    "swap_bytes": 0,
+    "evidence": "docs/evidence/block-v2-gpu-quotient-memory-qualification-2026-10-03.json"
+  },
+  "transfer_observations": {
+    "cpu_fusion_control": {
+      "uploaded_bytes": 143378176368,
+      "downloaded_bytes": 103421411840,
+      "total_bytes": 246799588208
+    },
+    "gpu_quotient_candidate": {
+      "uploaded_bytes": 94053163904,
+      "downloaded_bytes": 156034761216,
+      "total_bytes": 250087925120
+    },
+    "interpretation": "GPU quotient transforms shift traffic from upload to readback; this run does not reduce total transferred bytes. Further gains require reducing materialized host data or keeping bounded data through its consumers."
+  },
+  "profiling_status": {
+    "wrapper_traces": "COMPLETE",
+    "merge_traces": "INCOMPLETE_EVENT_CAP_REACHED",
+    "event_cap": 65536,
+    "reference_dropped": 12110,
+    "candidate_dropped": 11739,
+    "artifact": "lattica-prover-p3/target/block-v2-memory-20261003-c/entered-wall-profile.json",
+    "next": "Split startup/proving checkpoints or increase the bounded event allowance, then collect fresh complete merge traces before arithmetic/cache changes. No incomplete trace is treated as a complete critical-path measurement."
+  },
+  "gpu_comparison": "lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c",
+  "gpu_result": {
+    "status": "COMPLETE_RESEARCH_ONLY",
+    "reference_median_seconds": 305.47,
+    "candidate_median_seconds": 260.314,
+    "time_reduction_percent": 14.782466363308998,
+    "pairs": 5,
+    "timelines_enabled": false,
+    "speedup_qualified": true,
+    "all_pairs_favored_gpu_quotient": true,
+    "cpu_audits_passed": 10,
+    "gpu_quotient_commits_per_candidate": 7,
+    "peak_worker_ram_bytes": 40931549184,
+    "root_bytes": 1683948,
+    "swap_bytes": 0,
+    "evidence": "docs/evidence/block-v2-gpu-quotient-memory-comparison-2026-10-03.json"
+  },
+  "component_validation": {
+    "artifact_directory": "lattica-prover-p3/target/block-v2-memory-20261003-c",
+    "features": "block-v2-wide-lanes,stream",
+    "checks_passed": {
+      "readback": 8,
+      "allocation": 5,
+      "planning": 8,
+      "quotient": 11,
+      "gpu-components": 8
+    },
+    "total_checks_passed": 40,
+    "artifact_sha256": {
+      "lib-tests": "53d156b9f1a3423ae6efb6e0d93b9849a89adac6fca153f3a560d9382273455f",
+      "block-v2-gpu-grouped-probe": "3e8fd2e70710852aec0eac96cf5ac9a3aef2631bd550bcecaf49fcdfdc3ce835",
+      "source.tar.gz": "298b413359208167267b115ef9ab6bb48c80a82e1be4315692daa530f0dbe26b"
+    },
+    "source_snapshot_note": "Current Rust/build inputs match the validated snapshot. The two controller scripts changed afterward to correct thread metadata; all seven controller tests pass."
+  },
+  "quotient_output_storage": {
+    "policy": "Explicit bounded heap for retained quotient outputs; banded staging follows the global spill policy.",
+    "per_matrix_limit_bytes": 2147483648,
+    "max_matrices": 16,
+    "production_matrix_bytes": 469762048,
+    "production_output_bytes": 7516192768,
+    "spill_allocator_remains_armed": true,
+    "host_plan_includes_outputs_and_reorder_workspace": true,
+    "allocation_failure_fallback": false
+  },
+  "pcie_observation": {
+    "gpu": "RTX 5080",
+    "gpu_pci_address": "0000:05:00.0",
+    "active_link": "Gen 4 x4",
+    "gpu_max_width": "x16",
+    "bridge": "ASMedia 2461",
+    "bridge_pci_address": "0000:04:00.0",
+    "bridge_max_link": "Gen 4 x4",
+    "interpretation": "The active width matches the bridge limit. An x16 link requires a different physical connection."
+  }
+}
