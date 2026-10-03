@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Freeze and run the CPU / Metal shared / Metal copy grouped-eight comparison.
 
-Two audited pilot trials precede 45 measured trials. Each proof is fresh; every
-trial ends in the CPU-only root auditor, including its corruption checks.
+Two audited pilots precede the selected measured matrix (54 trials by default).
+An extension can reuse completed pilots only with identical binaries, proof
+sources, fixtures and measurement policy. Every measured proof is fresh.
 """
 import argparse
 import fcntl
@@ -33,19 +34,36 @@ def arm(backend, threads, level="baseline", repeat=1, phase="measured"):
             "readback": int(level != "baseline"), "fusion": int(level in ("fusion", "quotient")),
             "quotient": int(level == "quotient"), "repeat": repeat, "phase": phase}
 
-def schedule():
-    pilots = [arm(mode, 24, phase="pilot") for mode in ("shared", "copy")]
-    base = [(mode, threads) for threads in (8, 16, 24) for mode in ("cpu", "shared", "copy")]
+def schedule(threads=(8, 16, 18, 24), *, baseline_only=False, pipeline_threads=(24,), pilots=True):
+    if not threads or len(set(threads)) != len(threads) or any(t not in (8, 16, 18, 24) for t in threads):
+        raise ValueError("thread settings must be distinct selections from 8, 16, 18, 24")
+    if len(set(pipeline_threads)) != len(pipeline_threads) or any(t not in (8, 16, 18, 24) for t in pipeline_threads):
+        raise ValueError("invalid pipeline thread settings")
+    pilot_trials = [arm(mode, max(threads), phase="pilot") for mode in ("shared", "copy")] if pilots else []
+    base = [(mode, count) for count in threads for mode in ("cpu", "shared", "copy")]
     measured = []
     for repeat in (1, 2, 3):
         order = base[::-1] if repeat == 2 else base
         measured += [arm(mode, threads, repeat=repeat) for mode, threads in order]
-    extra = [(mode, level) for level in ("readback", "fusion", "quotient") for mode in ("shared", "copy")]
+    extra = [] if baseline_only else [(mode, count, level) for count in pipeline_threads for level in ("readback", "fusion", "quotient") for mode in ("shared", "copy")]
     for repeat in (1, 2, 3):
         order = extra[::-1] if repeat == 2 else extra
-        measured += [arm(mode, 24, level, repeat) for mode, level in order]
-    assert len(measured) == 45
-    return pilots + measured
+        measured += [arm(mode, count, level, repeat) for mode, count, level in order]
+    assert len(measured) == 9 * len(threads) + 3 * len(extra)
+    return pilot_trials + measured
+
+def validate_extension(prior, current):
+    if prior["status"] != "COMPLETE_VERIFIED_COMPARISON" or not all(t["verified"] for t in prior["trials"]):
+        raise RuntimeError("extension requires a completed and verified reference series")
+    pilots = [t for t in prior["trials"] if t["phase"] == "pilot"]
+    if len(pilots) != 2 or {t["backend"] for t in pilots} != {"shared", "copy"}:
+        raise RuntimeError("reference must contain two verified Metal pilots")
+    for key in ("binary_sha256", "fixture_sha256", "external", "memory_policy", "timing_boundary", "hardware", "platform"):
+        if prior[key] != current[key]:
+            raise RuntimeError("extension differs from reference: " + key)
+    proof_sources = lambda data: {name: sha for name, sha in data["source_hashes"].items() if not name.startswith("scripts/")}
+    if proof_sources(prior) != proof_sources(current):
+        raise RuntimeError("extension proof sources differ from reference")
 
 def environment(config, scratch, gpu):
     env = os.environ.copy()
@@ -84,7 +102,14 @@ def main():
     parser.add_argument("--linux", type=Path, required=True)
     parser.add_argument("--qualification", type=Path, required=True)
     parser.add_argument("--pilots-only", action="store_true")
+    parser.add_argument("--threads", nargs="+", type=int, choices=(8, 16, 18, 24), default=(8, 16, 18, 24))
+    parser.add_argument("--baseline-only", action="store_true")
+    parser.add_argument("--pipeline-threads", nargs="+", type=int, choices=(8, 16, 18, 24), default=(24,))
+    parser.add_argument("--reuse-pilots-from", type=Path, help="completed reference result.json; reuse its frozen binaries and validated pilots")
     args = parser.parse_args()
+    if args.pilots_only and args.reuse_pilots_from:
+        parser.error("--pilots-only cannot reuse pilots")
+    selected_schedule = schedule(args.threads, baseline_only=args.baseline_only, pipeline_threads=args.pipeline_threads, pilots=not args.reuse_pilots_from)
     if platform.system() != "Darwin" or platform.machine() != "arm64":
         parser.error("requires Apple Silicon macOS")
     os.umask(0o077)
@@ -101,13 +126,16 @@ def main():
     qualification = json.loads(args.qualification.read_text())
     if qualification["status"] != "PASS" or len(qualification["tests"]) < 54 or not all(t["passed"] for t in qualification["tests"]):
         raise RuntimeError("hardware qualification must pass first")
-    build = json.loads((CRATE / "target/metal-build-metadata.json").read_text())
+    prior = json.loads(args.reuse_pilots_from.read_text()) if args.reuse_pilots_from else None
+    build = prior["build"] if prior is not None else json.loads((CRATE / "target/metal-build-metadata.json").read_text())
     linux = json.loads(args.linux.read_text())
     external = linux["benchmark_plan"]["config"]["external"]
     originals = {"cpu": CRATE / "target/cpu/release/block-v2-grouped-probe",
                  "audit": CRATE / "target/cpu/release/block-v2-grouped-artifact-audit",
                  "publics": CRATE / "target/cpu/release/block-v2-grouped-publics",
                  "metal": CRATE / "target/release/block-v2-metal-grouped-probe"}
+    if prior is not None:
+        originals = {role: args.reuse_pilots_from.parent / "bin" / source.name for role, source in originals.items()}
     (out / "bin").mkdir()
     binaries = {}
     for role, source in originals.items():
@@ -144,10 +172,20 @@ def main():
               "controller_sha256": digest(out / "controller.py"),
               "binary_sha256": {role: digest(path) for role, path in binaries.items()},
               "fixture_sha256": {name: digest(fixture / name) for name in FIXTURE_NAMES},
-              "external": external, "schedule": schedule()[:2] if args.pilots_only else schedule(),
+              "external": external, "schedule": selected_schedule[:2] if args.pilots_only else selected_schedule,
               "timing_boundary": "sum of wrapper and merge worker timers; shader initialization included; preparation/auditing excluded",
               "memory_policy": "34 GiB mapped scratch, 8 GiB Metal managed buffers, sampled 44 GiB worker RSS, 7200 seconds per stage; macOS swap is observed, not prohibited",
               "observations": [observations()], "stages": [], "trials": []}
+    if prior is not None:
+        validate_extension(prior, report)
+        for trial in prior["trials"]:
+            root = args.reuse_pilots_from.parent / (trial["label"] + "-root-only") / "node.3.0"
+            if digest(root) != trial["root_sha256"]:
+                raise RuntimeError("reference root digest mismatch: " + trial["label"])
+        shutil.copy2(args.reuse_pilots_from, out / "prior-series.json")
+        report["reused_pilots"] = {"reference": str(args.reuse_pilots_from.resolve()), "reference_sha256": digest(out / "prior-series.json"),
+            "trials": [t["label"] for t in prior["trials"] if t["phase"] == "pilot"],
+            "reason": "User-requested additional thread setting after the reference schedule was frozen"}
     active_child = [None]
     def interrupted(signum, frame):
         raise KeyboardInterrupt(f"controller signal {signum}")
@@ -253,7 +291,7 @@ def main():
                 "pairs_metal":pairs.get("metal"),"merges_metal":merges.get("metal")})
             report["observations"].append({"trial":label,"after":observations()}); save()
             print("TRIAL",json.dumps(report["trials"][-1]),flush=True)
-        report["status"] = "COMPLETE_VERIFIED_PILOTS" if args.pilots_only else "COMPLETE_VERIFIED_COMPARISON"
+        report["status"] = "COMPLETE_VERIFIED_PILOTS" if args.pilots_only else ("COMPLETE_VERIFIED_EXTENSION" if prior is not None else "COMPLETE_VERIFIED_COMPARISON")
     except BaseException as error:
         child = active_child[0]
         if child is not None:
