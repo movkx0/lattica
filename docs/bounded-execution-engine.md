@@ -3890,3 +3890,92 @@ limit, zero swap, 12 GiB VRAM budget, scratch limits, 2 MiB proof bound and
 independent CPU root audit. Interrupted attempts require fresh attempt records.
 Results and exact artifact paths are recorded in
 [eight-wallet pipeline implementation evidence](evidence/block-v2-pipeline-implementation-2026-10-03.json).
+
+#### Completed parallel-readback comparison (2026-10-03)
+
+After reboot and restoration of the 36 GiB `/tmp` limit, all five alternating
+readback pairs completed. Median recursive proving time for the eight-wallet
+workload decreased from **369.990 s to 341.878 s**, a **7.598% time reduction**
+(28.112 s). Every matched pair favored parallel readback. Both arms used the
+same preserved binary and 24 threads, with quotient fusion and GPU quotient
+transforms disabled. These timings exclude registration and controller overhead.
+
+All ten roots passed the independent CPU verification and artifact audit after
+pruning inner proofs. Peak worker RAM was 38.151 GiB, swap usage was zero, and
+the largest audited proof was 1,683,948 bytes, below the 2 MiB bound. The new
+readback setting remains opt-in. The separate GPU quotient comparison stopped
+after its first candidate failed to allocate the quotient readback matrix. This result qualifies the measured eight-wallet research workload;
+production security and larger-tree qualification remain separate.
+
+See [the matched readback results](evidence/block-v2-pipeline-readback-comparison-2026-10-03.json)
+for per-run timings, proof sizes and manifest hashes.
+
+#### Next latency plan after the first full-size quotient attempt (2026-10-03)
+
+Keep the eight-wallet workload, current processor/GPU and existing security and
+resource limits. The qualified starting point is **341.878 s** with parallel
+readback. Target **300 s** first (12.25% less time), then investigate **250 s**
+(26.87% less). The earlier approximately 190 s redesign target remains a research
+objective requiring more than the currently qualified changes.
+
+The first quotient-fusion CPU control completed and passed its CPU audit in
+**302.605 s**. It is a single observation, not an A/B speedup result. The first
+GPU quotient candidate failed while allocating its first wrapper's quotient
+readback matrix. Observed peak worker RAM was 35.177 GiB, with no sampled cgroup
+OOM event. The likely issue is the 34 GiB spill reservation limit: GPU readback
+uses ordinary `Vec` allocation while the CPU fusion path retains quotient LDEs
+in bounded heap storage. Allocation-specific telemetry must confirm this before
+changing allocation policy. The failed attempt is preserved and will not be
+retried in place. See [the full-size attempt evidence](evidence/block-v2-gpu-quotient-full-size-attempt-2026-10-03.json).
+
+Implement or qualify the next work in this order:
+
+1. **Qualify CPU quotient fusion independently.** Keep parallel readback on for
+   both arms and vary only CPU fusion. Use the existing preserved executable
+   and five fresh alternating pairs. This can establish a faster usable
+   configuration independently of the GPU allocation fix. Promote only the
+   measured research configuration; preserve the production gate.
+2. **Fix GPU quotient output admission and storage.** Record requested bytes,
+   live spill reservations, heap output allowances and available scratch at
+   the failure point. Give quotient readback an explicit bounded storage policy
+   consistent with CPU fusion; release or reuse temporary buffers as ownership
+   permits. Keep the global spill allocator armed and preserve the RAM/scratch
+   limits. Add an allocation-pressure check using actual quotient dimensions,
+   then require one complete eight-wallet proof/audit before five new matched
+   pairs. GPU work counters must prove that all seven quotient commitments ran.
+3. **Reduce remaining transfers.** A completed parallel-readback round moved
+   about 143.4 GB to the GPU and 103.4 GB back. The observed link is PCIe Gen 4 ×4;
+   verify whether that width is expected for the physical connection. Retain
+   bounded polynomial tiles through their consumers and download only values
+   that CPU consumers require. Preserve explicit prover-data ownership and
+   the 8 GiB managed-device allowance. Compact openings and retained Merkle
+   trees already exist; count additional bytes saved against that baseline.
+   Re-test transfer overlap only after reducing transfers. Earlier slower
+   pinned-upload settings should not be enabled without new matched evidence.
+4. **Optimize the remaining arithmetic and setup.** In the single fusion
+   control, quotient polynomial evaluation spans total about 45.9 s,
+   preprocessing setup 23.4 s, and program compilation 13.0 s. These are
+   inclusive spans; do not sum nested work or promise equivalent savings.
+   First collect an exclusive critical-path trace. Prototype a tiled GPU
+   constraint evaluator if quotient evaluation still dominates. Separately
+   reuse immutable compiled verifier programs while generating fresh witnesses
+   and randomness. Existing within-stage preprocessing reuse is already on;
+   any persistent cache must fit the same aggregate RAM allowance, authenticate
+   its registry/profile/geometry, and report cold and warm results separately.
+5. **Reopen proof redesign only after a geometry gate.** The four-wallet wrapper
+   needs 320,186 active rows. Removing at least 58,042 rows (18.13%), while keeping
+   widths and degree within bounds, would let it fit the current 262,144-row
+   domain and avoid the doubling that currently requires 59 GiB of retained
+   matrices. Merely reducing proof count while doubling every domain is not
+   enough to justify a faster design. Compile wrapper and merge fixed points
+   before generating keys. A multiple-table AIR remains conditional on the
+   joint lookup/PCS privacy construction and recursive verifier work described
+   above; do not relax the single-zero-terminal check to obtain a timing result.
+
+For each accepted change, keep five alternating matched pairs, unchanged
+q128/blowup16/cubic challenges and fresh randomness, independent CPU root audits,
+root proofs below 2 MiB, zero swap, worker RAM below 44 GiB, aggregate RAM below
+48 GiB and the existing VRAM/scratch limits. Report complete recursive latency,
+per-stage timing, host/device bytes, peak RAM/VRAM and resource events. Choose
+winners by complete proving time; avoid adding nested spans or predicted gains.
+Do not run builds or competing proving jobs during timed comparisons.
