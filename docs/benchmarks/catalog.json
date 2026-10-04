@@ -48314,15 +48314,15 @@
   ],
   "coverage": {
     "campaigns": 62,
-    "cpu_audited_runs": 177,
+    "cpu_audited_runs": 178,
     "documentary_only_campaigns": ["block-v2-cpu-process-2026-10-02","block-v2-fusion-prune-2026-10-01","block-v2-lookup-mask-model-2026-10-01","block-v2-retention-model-2026-10-01"],
     "mismatched_pins": [],
     "missing_pinned_sources": 0,
     "resource_samples": 173291,
     "retention": "All discovered structured performance records and resource samples are retained. Original documentary evidence is embedded. Proof payloads, wallet stores and arbitrary log text are excluded.",
-    "runs": 351,
-    "source_bytes": 712743159,
-    "source_files": 2608,
+    "runs": 352,
+    "source_bytes": 713065294,
+    "source_files": 2618,
     "timeline_events": 4597991,
     "unavailable_references": ["/tmp/lattica-final-recursion-gates.log","/tmp/lattica-gpu-hash-20260930-1-vram.csv","/tmp/lattica-gpu-hash-build.log","/tmp/lattica-gpu-hash-final-checks.log","/tmp/lattica-gpu-hash-final-checks.sh","/tmp/lattica-gpu-hash-isolation.log","/tmp/lattica-gpu-hash-run1.log","/tmp/lattica-gpu-hash-run2.log","/tmp/lattica-gpu-hash-run3.log","/tmp/lattica-gpu-hash-run4.log","/tmp/lattica-gpu-hash-run5.log","/tmp/lattica-gpu-hash-series.log","/tmp/lattica-gpu-hash-series.sh","/tmp/lattica-gpu-watch-failbin/nvidia-smi","/tmp/lattica-gpu-watch-negative-v2.log","/tmp/lattica-gpu-watch-negative.sh","/tmp/lattica-grouped-integration-draft-g-20261001.tar.gz","/tmp/lattica-grouped-wrapper-20261001","/tmp/lattica-perf-cache-hit-audit.log","/tmp/lattica-perf-cache-run.log","/tmp/lattica-perf-cache-run.sh","/tmp/lattica-perf-final-checks.log","/tmp/lattica-perf-final-checks.sh","/tmp/lattica-retained-merkle-20261001","/tmp/lattica-retained-merkle-20261001/block-v2-accounting.py","/tmp/lattica-retained-merkle-20261001/block-v2-scalability.py","/tmp/lattica-retained-merkle-20261001/block-v2-two-level.sh","/tmp/lattica-retained-merkle-20261001/engine.rs","/tmp/lattica-retained-merkle-20261001/gpu_hash.rs","/tmp/lattica-retained-merkle-20261001/manifest.json","/tmp/lattica-retained-merkle-20261001/test-block-v2-scalability.py","/tmp/lattica-scratch-bench-1000-c9071c4fcf6d","/tmp/lattica-scratch-bench-1000-c9071c4fcf6d/ram16","/tmp/lattica-scratch-bench-1000-c9071c4fcf6d/ram16-control","/tmp/lattica-scratch-bench-1000-c9071c4fcf6d/ram24","/tmp/lattica-scratch-bench-1000-c9071c4fcf6d/ram8","/tmp/lattica-two-level-normalized.log","lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-a (older readback-only binary/controller; no proving runs were started)"]
   },
@@ -48373,6 +48373,419 @@
     }
   ],
   "purpose": "Measure transaction throughput and engineering milestones.",
+  "qualification": {
+    "contract": {
+      "contract_id": "current-workstation-throughput-pilot-v1",
+      "limits": {
+        "cold_64_seconds": 600,
+        "cycle_seconds": 720,
+        "post_seal_seconds": 180,
+        "root_bytes": 2097152,
+        "total_transactions_per_root": 64,
+        "tree_depth": 6
+      },
+      "pilot": {
+        "arrival_segments": [
+          {
+            "end_minute": 48,
+            "start_minute": 0,
+            "user_requests_per_minute": 4
+          },
+          {
+            "end_minute": 60,
+            "start_minute": 48,
+            "user_requests_per_minute": 6
+          },
+          {
+            "end_minute": 120,
+            "start_minute": 60,
+            "user_requests_per_minute": 4
+          }
+        ],
+        "drain_period_included_in_primary_window": false,
+        "duration_seconds": 7200,
+        "expected_user_requests": 504,
+        "include_startup_failures_and_recovery": true,
+        "issuance_per_cycle": 4,
+        "issuance_policy": "separate typed proofs and independently supplied host-authorized amounts; no implied production reward schedule",
+        "sustained_service_qualification": false,
+        "user_transactions_per_minute_target": 4,
+        "wallet_participants": 4
+      },
+      "production_ready": false,
+      "required_counts": [1,2,3,4,8,16,32,63,64],
+      "required_gates": ["typed_leaf_verification","mixed_recursive_registry_and_cpu_replay","durable_candidate_host_application","per_geometry_device_qualification","full_count_cold_64","complete_post_seal_finalization","restart_reorg_and_resource_failure_recovery"],
+      "required_transaction_types": ["joinsplit","htlc_redeem","htlc_refund","issuance"],
+      "resource_policy": {
+        "budgets": "detected capacity, cgroup limits, calibrated context, OS/coordinator headroom",
+        "device_identity": "GPU UUID",
+        "fixed_historical_workstation_limits": false,
+        "implementation": "block_v2_resources.py",
+        "profile_id": "current-workstation-adaptive-v1",
+        "recalibrate_each_binary_and_geometry": true,
+        "tmpfs_spill_charged_to_host_ram": true,
+        "version": 1,
+        "workers": 2
+      },
+      "schema_version": 1,
+      "scope": "durable_test_chain"
+    },
+    "file": "qualifications/throughput-b2d04bd1c4fef00a.json",
+    "gates": [
+      {
+        "gate": "typed_leaf_verification",
+        "reasons": [],
+        "status": "passed"
+      },
+      {
+        "gate": "mixed_recursive_registry_and_cpu_replay",
+        "reasons": ["Five-key research APIs, typed wrapper interpretation and typed empty proofs pass tests. Actual mixed depth-six roots across all required counts and independent replay after pruning remain unmeasured.","Required recursive transaction types are not covered","Required block counts are not covered","Depth-six independent root replay is missing"],
+        "status": "blocked"
+      },
+      {
+        "gate": "durable_candidate_host_application",
+        "reasons": ["The node Chain is in-memory. No durable adapter applies this candidate root with independently authorized issuance, atomic state commits, restart replay and reorg state.","Actual candidate application and durable replay are not established"],
+        "status": "blocked"
+      },
+      {
+        "gate": "per_geometry_device_qualification",
+        "reasons": ["The retained calibration covers the historical grouped-eight binary only. The new mixed registry/binary has no per-GPU calibration or independent full-job qualification.","Existing grouped-eight device qualification does not cover new geometries","Qualification must cover the actual selected GPU UUIDs","GPU qualification binary or geometry differs from the resource plan"],
+        "status": "blocked"
+      },
+      {
+        "gate": "full_count_cold_64",
+        "reasons": ["No complete cold 64-transaction mixed root has been measured against the 600-second boundary.","Complete measured duration is absent or exceeds the gate","CPU audit or root-size gate is missing","Measured resource profile differs","Complete timing must match the admitted binary, geometry and GPU fleet","Timing does not cover the required complete 64-transaction boundary"],
+        "status": "blocked"
+      },
+      {
+        "gate": "complete_post_seal_finalization",
+        "reasons": ["No complete seal-to-host-ready 64-transaction root/body result meets 180 seconds. The historical count-three experiment measured 2004.169 seconds to its root and excluded complete host finalization.","Complete measured duration is absent or exceeds the gate","CPU audit or root-size gate is missing","Measured resource profile differs","Complete timing must match the admitted binary, geometry and GPU fleet","Timing does not cover the required complete 64-transaction boundary"],
+        "status": "blocked"
+      },
+      {
+        "gate": "restart_reorg_and_resource_failure_recovery",
+        "reasons": ["Existing worker recovery tests do not establish durable mixed-chain restart/reorg/resource-failure recovery. No real pilot backend is present.","Recovery case coverage is incomplete"],
+        "status": "blocked"
+      },
+      {
+        "gate": "current_resource_admission",
+        "reasons": ["Pilot requires 2 GPU workers; planner admitted 1"],
+        "status": "blocked"
+      }
+    ],
+    "pilot_started": false,
+    "production_ready": false,
+    "resource_profile": {
+      "detected": {
+        "admission_failures": [
+          {
+            "gpu_uuids": ["GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b","GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"],
+            "reason": "workload does not fit assigned resources on GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b: preprocessing_commit: spill requires 15485423616 bytes; budget 15300820992 bytes; permutation_commit: spill requires 15567233024 bytes; budget 15300820992 bytes",
+            "worker_slots": 2
+          }
+        ],
+        "admitted_workers": 1,
+        "binary_sha256": "6f46830dd127ce130a52158caa153384a2bb39568e85b9f5f01cddf565fa147d",
+        "budgets": {
+          "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b": {
+            "cpu": {
+              "allowed_cpus": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],
+              "coordinator_capacity": "1",
+              "effective_capacity": "24",
+              "quota_percent": "2300%",
+              "rayon_threads": 23,
+              "version": 1
+            },
+            "detected_gpu": {
+              "nvidia": {
+                "driver": "615.71.09",
+                "free_bytes": 16615735296,
+                "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+                "pci": "00000000:02:00.0",
+                "total_bytes": 17094934528,
+                "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+              },
+              "opencl": {
+                "driver": "615.71.09",
+                "global_bytes": 16697327616,
+                "max_allocation_bytes": 4174331904,
+                "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+                "opencl_index": 1,
+                "pci": "0000:02:00.0",
+                "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+              },
+              "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+            },
+            "detected_host": {
+              "affinity_cpus": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],
+              "ancestors": [
+                {
+                  "cpuset": "0-23",
+                  "path": "/sys/fs/cgroup"
+                },
+                {
+                  "cpu_max": "max 100000",
+                  "cpuset": "0-23",
+                  "memory_current": 31052500992,
+                  "memory_max": "max",
+                  "path": "/sys/fs/cgroup/user.slice"
+                },
+                {
+                  "cpu_max": "max 100000",
+                  "cpuset": "0-23",
+                  "memory_current": 30513188864,
+                  "memory_max": "max",
+                  "path": "/sys/fs/cgroup/user.slice/user-1000.slice"
+                },
+                {
+                  "cpu_max": "max 100000",
+                  "cpuset": "0-23",
+                  "memory_current": 25396527104,
+                  "memory_max": "max",
+                  "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+                },
+                {
+                  "cpu_max": "max 100000",
+                  "cpuset": "0-23",
+                  "memory_current": 23737630720,
+                  "memory_max": "max",
+                  "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice"
+                },
+                {
+                  "cpu_max": "max 100000",
+                  "cpuset": "0-23",
+                  "memory_current": 5979271168,
+                  "memory_max": "max",
+                  "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.kde.konsole-15756.scope"
+                },
+                {
+                  "cpu_max": "max 100000",
+                  "cpuset": "0-23",
+                  "memory_current": 5960941568,
+                  "memory_max": "max",
+                  "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.kde.konsole-15756.scope/tab(15768).scope"
+                },
+                {
+                  "cpu_max": "max 100000",
+                  "cpuset": "0-23",
+                  "memory_current": 427786240,
+                  "memory_max": "max",
+                  "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice"
+                },
+                {
+                  "memory_current": 427728896,
+                  "memory_max": "max",
+                  "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice"
+                },
+                {
+                  "memory_current": 427671552,
+                  "memory_limit_owned_by_controller": true,
+                  "memory_max": "46707769344",
+                  "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice"
+                }
+              ],
+              "available_bytes": 51513032704,
+              "cgroup_memory_headroom": null,
+              "cpu_capacity": "24",
+              "effective_cpus": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],
+              "online_cpus": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],
+              "physical_bytes": 66811260928,
+              "scratch": {
+                "available_bytes": 32677445632,
+                "capacity_bytes": 33405628416,
+                "device": 51,
+                "filesystem": {
+                  "fstype": "tmpfs",
+                  "options": "rw,noatime,inode64,huge=advise",
+                  "source": "tmpfs",
+                  "target": "/tmp"
+                },
+                "page_bytes": 4096,
+                "path": "/tmp",
+                "quota_bytes": null,
+                "tmpfs": true
+              },
+              "version": 1
+            },
+            "gpu": {
+              "available_bytes": 16615735296,
+              "bootstrap": false,
+              "context_bytes": 536870912,
+              "headroom_bytes": 1073741824,
+              "managed_bytes": 14763950080,
+              "max_allocation_bytes": 4174331904,
+              "total_bytes": 15300820992,
+              "usable_bytes": 16697327616,
+              "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+              "version": 1
+            },
+            "host": {
+              "coordinator_bytes": 1073741824,
+              "filesystem_headroom_bytes": 1670281421,
+              "fleet_bytes": 44828721152,
+              "os_headroom_bytes": 6681126093,
+              "scratch_device": 51,
+              "scratch_path": "/tmp",
+              "spill_bytes": 30870077440,
+              "swap_bytes": 0,
+              "tmpfs": true,
+              "version": 1,
+              "worker_bytes": 43754979328
+            }
+          }
+        },
+        "capture_scope": "Read-only current workstation admission for the historical grouped-eight binary; not new mixed-profile GPU qualification.",
+        "captured_ns": "1791121817635831640",
+        "config_sha256": "4ea660900f41b0a326957170cd30eabaf091d383bd036ab1c0396875cbaeade0",
+        "devices": [
+          {
+            "nvidia": {
+              "driver": "615.71.09",
+              "free_bytes": 16615735296,
+              "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+              "pci": "00000000:02:00.0",
+              "total_bytes": 17094934528,
+              "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+            },
+            "opencl": {
+              "driver": "615.71.09",
+              "global_bytes": 16697327616,
+              "max_allocation_bytes": 4174331904,
+              "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+              "opencl_index": 1,
+              "pci": "0000:02:00.0",
+              "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+            },
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+          },
+          {
+            "nvidia": {
+              "driver": "615.71.09",
+              "free_bytes": 15354298368,
+              "name": "NVIDIA GeForce RTX 5080",
+              "pci": "00000000:05:00.0",
+              "total_bytes": 17094934528,
+              "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+            },
+            "opencl": {
+              "driver": "615.71.09",
+              "global_bytes": 16707092480,
+              "max_allocation_bytes": 4176773120,
+              "name": "NVIDIA GeForce RTX 5080",
+              "opencl_index": 0,
+              "pci": "0000:05:00.0",
+              "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+            },
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          }
+        ],
+        "host": {
+          "affinity_cpus": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],
+          "ancestors": [
+            {
+              "cpuset": "0-23",
+              "path": "/sys/fs/cgroup"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 31052500992,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 30513188864,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 25396527104,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 23737630720,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 5979271168,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.kde.konsole-15756.scope"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 5960941568,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.kde.konsole-15756.scope/tab(15768).scope"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 427786240,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice"
+            },
+            {
+              "memory_current": 427728896,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice"
+            },
+            {
+              "memory_current": 427671552,
+              "memory_limit_owned_by_controller": true,
+              "memory_max": "46707769344",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice"
+            }
+          ],
+          "available_bytes": 51513032704,
+          "cgroup_memory_headroom": null,
+          "cpu_capacity": "24",
+          "effective_cpus": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],
+          "online_cpus": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],
+          "physical_bytes": 66811260928,
+          "scratch": {
+            "available_bytes": 32677445632,
+            "capacity_bytes": 33405628416,
+            "device": 51,
+            "filesystem": {
+              "fstype": "tmpfs",
+              "options": "rw,noatime,inode64,huge=advise",
+              "source": "tmpfs",
+              "target": "/tmp"
+            },
+            "page_bytes": 4096,
+            "path": "/tmp",
+            "quota_bytes": null,
+            "tmpfs": true
+          },
+          "version": 1
+        },
+        "plan_version": 1,
+        "profile_sha256": "0c4a5fb5adf7ec97ec6880dbd6cf009946bb904bf1f40f51c24d06b6e05509a8",
+        "requested_workers": 2,
+        "workload_id": "grouped-eight-wide23-compact-data-v1"
+      },
+      "new_geometry_requires_requalification": true,
+      "profile_id": "current-workstation-adaptive-v1",
+      "reasons": ["Pilot requires 2 GPU workers; planner admitted 1"],
+      "scope": "current inventory and existing grouped-eight geometry only",
+      "selected_gpu_uuids": ["GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"],
+      "status": "blocked"
+    },
+    "sha256": "547141f4baf4ad92c8e219803892b813c896afa7e458d5c6c9cdaf4b0f6eab82",
+    "snapshot_id": "throughput-b2d04bd1c4fef00a",
+    "status": "blocked"
+  },
   "runs": [
     {
       "adapter": "apple-metal",
@@ -128715,6 +129128,142 @@
         "issuance_transactions": null,
         "user_transactions": null
       }
+    },
+    {
+      "adapter": null,
+      "bytes": 5417,
+      "campaign_ids": [],
+      "configuration": {
+        "command": "cargo test --offline --release --no-default-features --features block-v2-wide-lanes --lib typed_ -- --nocapture --test-threads=1",
+        "compiled_geometry": {
+          "common_height": 262144,
+          "is_observed_peak": false,
+          "main_width": 94,
+          "preprocessed_width": 200,
+          "retained_lde_lower_bound_bytes": 31675383808
+        },
+        "compiled_wrapper_rows": {
+          "htlc": 88840,
+          "issuance": 81395
+        },
+        "leaf_security": [
+          {
+            "constraints": 145,
+            "hiding_degree_bits": 13,
+            "proven_bits": 127,
+            "type": "htlc"
+          },
+          {
+            "constraints": 81,
+            "hiding_degree_bits": 13,
+            "proven_bits": 127,
+            "type": "issuance"
+          }
+        ],
+        "public_test_log_sha256": "7558ef83d18ccb63a129cd6256f70bc3e641f83a91ebdb6e5be9de0066d099ff",
+        "rust_features": ["block-v2-wide-lanes"],
+        "rustc_version": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+        "test_binary_sha256": "766d6681049d65b33f162d1f562bab0ecff9352f35c10955c26e628110c36fca",
+        "test_names": ["block_v2::machine::typed_programs::tests::every_typed_key_is_bound_by_empty_program","block_v2::machine::typed_programs::tests::typed_compilers_enforce_real_leaf_proofs_and_kind","block_v2::typed_leaf::tests::typed_htlc_redeem_refund_and_height_binding","block_v2::typed_leaf::tests::typed_issuance_roundtrip_is_bound_to_policy_context_and_kind","block_v2::typed_leaf::tests::typed_leaf_security_is_computed_independently","block_v2::typed_leaf::tests::typed_policy_rejects_before_proving","block_v2::typed_recursive::tests::pinned_typed_empty_root_and_merge_interpreter","block_v2::typed_recursive::tests::typed_mixed_geometry_is_compiled_before_registration","block_v2::typed_recursive::tests::typed_policy_and_legacy_separation"],
+        "tests_failed": 0,
+        "tests_ignored": 0,
+        "tests_passed": 9
+      },
+      "file": "runs/typed-recursion-wide-validation-20261004.json",
+      "kind": "diagnostic",
+      "label": "Typed leaves and mixed registry compiler validation",
+      "limitations": ["No delivered user transaction count or throughput is measured by these tests.","Wrapper and merge interpretation is not a proved mixed root.","CPU replay covers typed empty proofs only; complete mixed depth-six replay remains open.","Leaf soundness computations do not establish complete-tree security approval.","Compiler LDE estimate is a lower bound, not phase-level resource admission or observed peak memory."],
+      "measurement_scope": "typed_leaf_and_recursive_compiler_validation",
+      "milestones": ["P1","P4"],
+      "path": "runs/typed-recursion-wide-validation-20261004.json",
+      "platform": {
+        "architecture": "x86_64",
+        "backend": "cpu",
+        "cpu_logical_cores": 24,
+        "memory_model": "host_ram",
+        "os": "Linux"
+      },
+      "proof_count": 0,
+      "resource_samples": 0,
+      "revision": {
+        "commit": "83e0119e8b7ff55646d572d8f9d3d93de0ee5d76",
+        "source_pins_control_this_record": true,
+        "working_tree_dirty": true
+      },
+      "run_id": "typed-recursion-wide-validation-20261004",
+      "sha256": "0a94fe4f64cd3112fec26975fdf09d2b0f5f10754afa9142aca1ce915da6be4e",
+      "sources": [
+        {
+          "bytes": 11078,
+          "path": "lattica-prover-p3/src/block_v2/typed_leaf.rs",
+          "sha256": "5fe9de0bf81b944e81c07e90e6d4155e94b670b4ff472db8450e6b60e3203719"
+        },
+        {
+          "bytes": 16049,
+          "path": "lattica-prover-p3/src/block_v2/typed_recursive.rs",
+          "sha256": "1ea913e22be4315d21e30af3c90147e1a37d9fd7fb0728479f6f489115eb5502"
+        },
+        {
+          "bytes": 7619,
+          "path": "lattica-prover-p3/src/block_v2/machine/typed_programs.rs",
+          "sha256": "d5d68025aa70a5fcc4914020261c44ef3c844d1bfd77ad9a5df89647d9a05f81"
+        },
+        {
+          "bytes": 38356,
+          "path": "lattica-prover-p3/src/block_v2/machine/programs.rs",
+          "sha256": "508880677f91d41fe8b1efe1a8539ec0381ba2a22b8a8461ac44a19f4957defc"
+        },
+        {
+          "bytes": 27142,
+          "path": "lattica-prover-p3/src/block_v2/machine/backend.rs",
+          "sha256": "5023b4d3ec423f0b77ba1d582b830f007ef7624ccc902772bce1618bf822bc71"
+        },
+        {
+          "bytes": 4792,
+          "path": "lattica-prover-p3/src/block_v2/machine/analysis.rs",
+          "sha256": "7fc396a552bf93f80f9a92a585c87cc493709aed3b767de44ca114acc3948ef0"
+        },
+        {
+          "bytes": 9860,
+          "path": "lattica-prover-p3/src/block_v2/profile.rs",
+          "sha256": "d84272097f77ced177e04f5d3b5d604f871cebec13de533c48f5c20f93af61f3"
+        },
+        {
+          "bytes": 127439,
+          "path": "lattica-prover-p3/src/htlc_air.rs",
+          "sha256": "304a3182bd0a5324fc5620e9d7119a0969a9774ad8c1cdec7fa775eae8892262"
+        },
+        {
+          "bytes": 53711,
+          "path": "lattica-prover-p3/src/joinsplit_air.rs",
+          "sha256": "72f80a629e93d4cd860925c4df775e8028d99af4dbdc7095fcc6729be9e00858"
+        },
+        {
+          "bytes": 26089,
+          "path": "lattica-prover-p3/Cargo.lock",
+          "sha256": "c7cba058f24c126668d861398b77b5333a8f9aa88c9b0730dee82eb860555c27"
+        }
+      ],
+      "status": "succeeded",
+      "timeline_events": 0,
+      "timing": {
+        "elapsed_seconds": 48.44,
+        "recursive_seconds": null
+      },
+      "track": "linux-cpu",
+      "transactions_per_minute": null,
+      "verification": {
+        "cpu_audited": true,
+        "root_bytes": null,
+        "root_sha256": null
+      },
+      "workload": {
+        "count_evidence": null,
+        "description": "Nine native tests: actual typed leaves, constrained wrapper interpretation, typed empty proof verification, geometry and policy checks. No complete mixed root or durable transaction application.",
+        "fixture_reuse": true,
+        "issuance_transactions": null,
+        "user_transactions": null
+      }
     }
   ],
   "schema_version": 1,
@@ -128739,6 +129288,11 @@
     {
       "id": "unknown",
       "label": "Unspecified / diagnostic",
+      "status": "measurements imported"
+    },
+    {
+      "id": "linux-cpu",
+      "label": "linux-cpu",
       "status": "measurements imported"
     }
   ]

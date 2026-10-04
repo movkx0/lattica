@@ -128,6 +128,20 @@ def blank_run(run_id, label, kind="solving"):
     }
 
 
+def reject_payloads(value):
+    """Records retain public measurements and digests, never wallet secrets."""
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key.lower() in ("private_key", "secret_key", "seed_phrase", "mnemonic",
+                               "proof_payload", "wallet_material", "private_inputs",
+                               "witness", "witnesses", "raw_proof"):
+                raise ValueError("benchmark records must not contain secret or proof payload fields")
+            reject_payloads(item)
+    elif isinstance(value, list):
+        for item in value:
+            reject_payloads(item)
+
+
 def validate_run(run):
     if run.get("schema_version") != VERSION:
         raise ValueError("unsupported run schema_version")
@@ -156,16 +170,6 @@ def validate_run(run):
             raise ValueError("invalid duration")
     if run["verification"].get("cpu_audited") is not None and type(run["verification"]["cpu_audited"]) is not bool:
         raise ValueError("cpu_audited must be boolean or null")
-    def reject_payloads(value):
-        if isinstance(value, dict):
-            for k, v in value.items():
-                if k.lower() in ("private_key", "secret_key", "seed_phrase", "mnemonic",
-                                 "proof_payload", "wallet_material"):
-                    raise ValueError("benchmark records must not contain secret or proof payload fields")
-                reject_payloads(v)
-        elif isinstance(value, list):
-            for v in value:
-                reject_payloads(v)
     reject_payloads(run)
     tables = run["measurements"].get("tables")
     if not isinstance(tables, list):

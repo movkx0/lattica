@@ -22,6 +22,23 @@ try {
   await page.waitForFunction(() => document.querySelector("#status").hidden, {timeout: 60000});
   assert.equal(await page.locator("#load-error").innerText(), "");
   assert.equal(await page.locator("#ledger .phase").count(), 6);
+  const qualification = await page.evaluate(() => catalog.qualification);
+  if (qualification) {
+    assert.equal(await page.locator("#qualification-view tbody").first().locator("tr").count(), 8);
+    const readyDownload = page.waitForEvent("download");
+    await page.locator("#download-qualification").click();
+    const exported = await readyDownload;
+    const destination = path.join(output, exported.suggestedFilename());
+    await exported.saveAs(destination);
+    const ready = JSON.parse(await fs.readFile(destination, "utf8"));
+    assert.equal(ready.status, qualification.status);
+    assert.equal(ready.pilot_started, false);
+    assert.equal(ready.planned_user_requests, 504);
+    assert.equal(ready.schedule_is_measured_data, false);
+  }
+  if (!(await page.evaluate(() => (catalog.transaction_campaigns || []).length))) {
+    assert.match(await page.locator("#tx-campaign-view").innerText(), /No delivered-transaction campaign/);
+  }
   await page.screenshot({path: path.join(output, "desktop.png")});
   await page.locator("#search").fill("round-1-concurrent");
   assert.equal(await page.locator("#run-rows tr").count(), 2);

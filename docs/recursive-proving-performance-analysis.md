@@ -1,6 +1,13 @@
 # Lattica cryptocurrency deployment review: CISO and CTO assessment
 
-**Decision brief and supporting technical appendix — 2026-10-02**
+**Decision brief and supporting technical appendix — revised 2026-10-04**
+
+The active work is the [two-hour development pilot](benchmarks/README.md#two-hour-throughput-pilot)
+on current hardware, with adaptive allocations and 504 planned user requests.
+The report retains qualification gates separately from measured transaction
+campaigns. Typed research leaves and recursive compilers are implemented;
+complete mixed roots, durable host application and full-block timing remain
+open. Historical performance observations below retain their original scope.
 
 **Initial deployment requirement:** at least **4 user transactions per minute**, excluding miner payouts. **Finality policy:** open; options and a recommendation for evaluation are set out below. Higher-volume expansion remains a separate investment decision.
 
@@ -111,11 +118,21 @@ Three different limits govern deployment:
 2. **Proof critical path:** whether the remaining dependent work finishes before the block deadline. More workers cannot remove sequential upper merges.
 3. **Useful service capacity:** whether wallet proving, admission, aggregation, verification, networking and state storage collectively keep up without growing queues.
 
-The existing candidate's reference gates are at most **600 s cold aggregation**, at most **180 s complete post-seal finalization**, and aggregate **48 GiB RAM / 12 GiB VRAM / 128 GiB scratch**, with all required transaction types covered. A fleet experiment with larger resources does not satisfy this reference gate; changing an approved release budget requires an explicit architecture decision.
+The active pilot keeps **600 s cold full-64 aggregation**, **180 s complete
+post-seal finalization**, a **2 MiB root** and **depth six**, with unchanged
+security parameters and all required transaction types. Its resource envelope
+now follows detected workstation capacity, cgroup limits, OS/coordinator
+headroom and per-GPU context calibration. The former **48 GiB RAM / 12 GiB VRAM /
+128 GiB scratch** envelope remains historical evidence, not the current pilot's
+fixed acceptance budget.
 
 ### Memory and GPU conclusions
 
-Current full-sized proof work uses roughly **38–40 GiB** of worker memory. This creates a capacity constraint and generally permits only one such stage under the 48 GiB aggregate envelope. It does not establish DRAM bandwidth saturation. File-backed spill mappings can generate page faults and storage I/O even when swap use is zero.
+Historical full-sized proof work used roughly **38–40 GiB** of worker memory.
+The newer compact grouped-eight two-GPU workload has a different phase plan.
+Concurrent admission must use the actual binary, geometry, live headroom and
+scratch filesystem. File-backed spill can generate page faults and storage I/O
+even when swap use is zero; tmpfs spill also consumes host RAM.
 
 GPU acceleration now includes hashing, transforms, commitments and optional opening reductions. It is inaccurate to describe the candidate as GPU hashing only. Nevertheless, CPU work, host matrix materialization, transfers and protocol barriers remain.
 
@@ -220,6 +237,14 @@ Before launch, product leadership, the host-chain architect and the CISO must ap
 | **G3 — Security and recovery** | Independent complete-tree review, exact release scope, monetary/state invariants, malicious/slow workers, cancellation/OOM, coordinator loss, durable recovery and reorganizations | CISO and independent reviewers |
 | **G4 — Economics and operational readiness** | Cost/energy per accepted user transaction, standby/retry costs, capacity headroom, monitoring, recovery runbooks, worker payment controls and approved customer finality language | CTO, operations, finance and CISO |
 | **G5 — Explicit activation** | Approved version/profile identities, compatibility and activation plan, operational rollback/recovery policy, and all prior evidence attached to the actual release artifact | Host-chain governance and release owners |
+
+The immediate campaign is the approved **two-hour development pilot**: four
+wallet participants, 4 requests/min during minutes 0–48, 6/min during 48–60 and
+4/min during 60–120, for **504 user requests**. Include startup, outages and
+recovery in the complete window. A later drain period has separate metrics.
+Four issuance transactions per nominal 12-minute cycle are a pilot assumption;
+the host must independently authorize amounts. This pilot does not establish
+sustained service or production readiness.
 
 For sustained qualification, use **at least 24 hours and 100 complete root cycles, whichever is longer**, after separately reported warm-up. Include cold starts, bursts, missed deadlines and declared failure scenarios. Report actual user transactions, issuance, deferrals, failures and reorganizations separately. Show queue age and p50/p95/p99 inclusion and complete post-seal latency; small-sample tail estimates do not establish a production guarantee.
 

@@ -131,6 +131,13 @@ impl Registry {
 }
 
 pub fn summary(public: &[Val; PUBLIC_VALUES]) -> Result<NodeSummary, Error> {
+    summary_with_modes(public, 3)
+}
+
+pub(crate) fn summary_with_modes(
+    public: &[Val; PUBLIC_VALUES],
+    modes: u64,
+) -> Result<NodeSummary, Error> {
     let mut context_bytes = [0; 64];
     for (chunk, value) in context_bytes.chunks_exact_mut(4).zip(&public[..16]) {
         let value =
@@ -140,7 +147,7 @@ pub fn summary(public: &[Val; PUBLIC_VALUES]) -> Result<NodeSummary, Error> {
     let mode = public[programs::MODE].as_canonical_u64();
     let level = public[programs::LEVEL].as_canonical_u64();
     let count = public[programs::COUNT].as_canonical_u64();
-    if !(1..=3).contains(&mode) || level > 6 || count > 1 << level {
+    if !(1..=modes).contains(&mode) || level > 6 || count > 1 << level {
         return Err("node metadata range".into());
     }
     let node = NodeSummary {

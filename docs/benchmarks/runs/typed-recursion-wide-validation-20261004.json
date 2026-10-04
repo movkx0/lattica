@@ -1,0 +1,134 @@
+{
+  "configuration": {
+    "command": "cargo test --offline --release --no-default-features --features block-v2-wide-lanes --lib typed_ -- --nocapture --test-threads=1",
+    "compiled_geometry": {
+      "common_height": 262144,
+      "is_observed_peak": false,
+      "main_width": 94,
+      "preprocessed_width": 200,
+      "retained_lde_lower_bound_bytes": 31675383808
+    },
+    "compiled_wrapper_rows": {
+      "htlc": 88840,
+      "issuance": 81395
+    },
+    "leaf_security": [
+      {
+        "constraints": 145,
+        "hiding_degree_bits": 13,
+        "proven_bits": 127,
+        "type": "htlc"
+      },
+      {
+        "constraints": 81,
+        "hiding_degree_bits": 13,
+        "proven_bits": 127,
+        "type": "issuance"
+      }
+    ],
+    "public_test_log_sha256": "7558ef83d18ccb63a129cd6256f70bc3e641f83a91ebdb6e5be9de0066d099ff",
+    "rust_features": ["block-v2-wide-lanes"],
+    "rustc_version": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "test_binary_sha256": "766d6681049d65b33f162d1f562bab0ecff9352f35c10955c26e628110c36fca",
+    "test_names": ["block_v2::machine::typed_programs::tests::every_typed_key_is_bound_by_empty_program","block_v2::machine::typed_programs::tests::typed_compilers_enforce_real_leaf_proofs_and_kind","block_v2::typed_leaf::tests::typed_htlc_redeem_refund_and_height_binding","block_v2::typed_leaf::tests::typed_issuance_roundtrip_is_bound_to_policy_context_and_kind","block_v2::typed_leaf::tests::typed_leaf_security_is_computed_independently","block_v2::typed_leaf::tests::typed_policy_rejects_before_proving","block_v2::typed_recursive::tests::pinned_typed_empty_root_and_merge_interpreter","block_v2::typed_recursive::tests::typed_mixed_geometry_is_compiled_before_registration","block_v2::typed_recursive::tests::typed_policy_and_legacy_separation"],
+    "tests_failed": 0,
+    "tests_ignored": 0,
+    "tests_passed": 9
+  },
+  "kind": "diagnostic",
+  "label": "Typed leaves and mixed registry compiler validation",
+  "limitations": ["No delivered user transaction count or throughput is measured by these tests.","Wrapper and merge interpretation is not a proved mixed root.","CPU replay covers typed empty proofs only; complete mixed depth-six replay remains open.","Leaf soundness computations do not establish complete-tree security approval.","Compiler LDE estimate is a lower bound, not phase-level resource admission or observed peak memory."],
+  "measurement_scope": "typed_leaf_and_recursive_compiler_validation",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1","P4"],
+  "platform": {
+    "architecture": "x86_64",
+    "backend": "cpu",
+    "cpu_logical_cores": 24,
+    "memory_model": "host_ram",
+    "os": "Linux"
+  },
+  "proofs": [],
+  "revision": {
+    "commit": "83e0119e8b7ff55646d572d8f9d3d93de0ee5d76",
+    "source_pins_control_this_record": true,
+    "working_tree_dirty": true
+  },
+  "run_id": "typed-recursion-wide-validation-20261004",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 11078,
+      "path": "lattica-prover-p3/src/block_v2/typed_leaf.rs",
+      "sha256": "5fe9de0bf81b944e81c07e90e6d4155e94b670b4ff472db8450e6b60e3203719"
+    },
+    {
+      "bytes": 16049,
+      "path": "lattica-prover-p3/src/block_v2/typed_recursive.rs",
+      "sha256": "1ea913e22be4315d21e30af3c90147e1a37d9fd7fb0728479f6f489115eb5502"
+    },
+    {
+      "bytes": 7619,
+      "path": "lattica-prover-p3/src/block_v2/machine/typed_programs.rs",
+      "sha256": "d5d68025aa70a5fcc4914020261c44ef3c844d1bfd77ad9a5df89647d9a05f81"
+    },
+    {
+      "bytes": 38356,
+      "path": "lattica-prover-p3/src/block_v2/machine/programs.rs",
+      "sha256": "508880677f91d41fe8b1efe1a8539ec0381ba2a22b8a8461ac44a19f4957defc"
+    },
+    {
+      "bytes": 27142,
+      "path": "lattica-prover-p3/src/block_v2/machine/backend.rs",
+      "sha256": "5023b4d3ec423f0b77ba1d582b830f007ef7624ccc902772bce1618bf822bc71"
+    },
+    {
+      "bytes": 4792,
+      "path": "lattica-prover-p3/src/block_v2/machine/analysis.rs",
+      "sha256": "7fc396a552bf93f80f9a92a585c87cc493709aed3b767de44ca114acc3948ef0"
+    },
+    {
+      "bytes": 9860,
+      "path": "lattica-prover-p3/src/block_v2/profile.rs",
+      "sha256": "d84272097f77ced177e04f5d3b5d604f871cebec13de533c48f5c20f93af61f3"
+    },
+    {
+      "bytes": 127439,
+      "path": "lattica-prover-p3/src/htlc_air.rs",
+      "sha256": "304a3182bd0a5324fc5620e9d7119a0969a9774ad8c1cdec7fa775eae8892262"
+    },
+    {
+      "bytes": 53711,
+      "path": "lattica-prover-p3/src/joinsplit_air.rs",
+      "sha256": "72f80a629e93d4cd860925c4df775e8028d99af4dbdc7095fcc6729be9e00858"
+    },
+    {
+      "bytes": 26089,
+      "path": "lattica-prover-p3/Cargo.lock",
+      "sha256": "c7cba058f24c126668d861398b77b5333a8f9aa88c9b0730dee82eb860555c27"
+    }
+  ],
+  "stages": [],
+  "status": "succeeded",
+  "timing": {
+    "elapsed_seconds": 48.44,
+    "recursive_seconds": null
+  },
+  "track": "linux-cpu",
+  "verification": {
+    "cpu_audited": true,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "description": "Nine native tests: actual typed leaves, constrained wrapper interpretation, typed empty proof verification, geometry and policy checks. No complete mixed root or durable transaction application.",
+    "fixture_reuse": true,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

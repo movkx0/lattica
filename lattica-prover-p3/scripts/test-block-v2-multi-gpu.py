@@ -156,6 +156,24 @@ class ResourceTests(unittest.TestCase):
         self.assertTrue(R.workload_fits(q, profile))
         self.assertEqual(q['host']['worker_bytes'], 19 * R.GIB)
 
+    def test_fallback_retains_specific_resource_failure(self):
+        h = host()
+        h['scratch']['quota_bytes'] = 2 * R.GIB
+        phase = dict(name='commit', heap_bytes=0, pinned_bytes=0, driver_host_bytes=0,
+                     resident_spill_bytes=0, spill_payloads=[R.GIB + 4096],
+                     managed_gpu_bytes=1, max_gpu_allocation_bytes=1)
+        config = {'max_concurrency': 2, 'jobs': [{}, {}],
+                  'workload': {'version': 1, 'page_bytes': 4096, 'phases': [phase]}}
+        devices = [device(), device('GPU-b')]
+        failures = []
+        budgets = S.choose_plan(config, h, devices, failures)
+        self.assertEqual(len(budgets), 1)
+        self.assertEqual(failures[0]['worker_slots'], 2)
+        self.assertIn('commit: spill requires', failures[0]['reason'])
+        config['worker_slots'] = 2
+        with self.assertRaisesRegex(ValueError, 'commit: spill requires'):
+            S.choose_plan(config, h, devices)
+
     def test_cpu_list_and_rounding(self):
         self.assertEqual(R.cpulist('0-3,8,10-11'), {0, 1, 2, 3, 8, 10, 11})
         with self.assertRaises(ValueError):

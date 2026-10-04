@@ -9,7 +9,65 @@ the [P0–P5 engineering roadmap](../high-throughput-proving-plan.md#8-engineeri
 Apple silicon and Linux/OpenCL are development tracks. There is no hardware
 leaderboard.
 
-## Retained evidence
+## Two-hour throughput pilot
+
+The active [contract](../../lattica-prover-p3/scripts/block-v2-throughput-contract.json)
+targets four useful user transactions/minute on this workstation. It retains
+600 s cold full-64, 180 s complete post-seal finalization, depth six, the 2 MiB
+root limit and the existing security parameters. Resource budgets follow the
+actual GPUs, CPU capacity, host headroom and scratch filesystem.
+
+The deterministic schedule contains 504 requests from four wallet participants:
+4/min for minutes 0–48, 6/min for 48–60 and 4/min for 60–120. Four issuance
+transactions per nominal cycle are an assumption; authoritative amounts and
+issuance policy come from the host. Startup, failures and recovery remain inside
+the two-hour window. Any subsequent drain has separate accounting.
+
+Prepare the schedule and inspect every prerequisite:
+
+```sh
+python3 lattica-prover-p3/scripts/block-v2-multi-gpu-run.py \
+  --config PATH_TO_QUALIFIED_CONFIG --plan > /tmp/lattica-resource-plan.json
+python3 lattica-prover-p3/scripts/block-v2-throughput-pilot.py prepare \
+  --resource-plan /tmp/lattica-resource-plan.json \
+  --evidence docs/evidence/block-v2-throughput-readiness-2026-10-04.json \
+  --output /tmp/lattica-pilot-readiness.json
+python3 lattica-prover-p3/scripts/block-v2-benchmark-report.py ingest \
+  --input /tmp/lattica-pilot-readiness.json
+```
+
+Exit **2** means a qualification gate is blocked; exit **1** means invalid input.
+Both `prepare` and `check` are read-only with respect to workers and chain state.
+They cannot start a pilot. The current implementation provides readiness,
+research proof APIs and campaign accounting. A durable candidate host adapter
+and an arrival-driven execution backend remain required before an actual run.
+Passing a fixture benchmark does not satisfy those prerequisites.
+
+The report retains readiness in `qualifications/*.json` and displays each gate.
+Immutable `campaigns/*.json` files hold actual lifecycle exports when available.
+No successful pilot data is generated from the planned schedule. Apple-silicon
+campaigns use the same import format with their own resource profile.
+
+### Implementation and remaining work
+
+1. Implemented: typed HTLC/issuance leaves, separate five-key research registry,
+   constrained wrappers, merge key selection, pinned CPU root verification,
+   and one-program preprocessing cache with an explicit worker memory budget.
+2. Implemented: portable event accounting, reorg-aware useful throughput,
+   readiness checks, deterministic arrivals and offline report views.
+3. Next: qualify actual mixed depth-six roots for counts 1, 2, 3, 4, 8, 16, 32,
+   63 and 64, then independently replay the root with inner artifacts removed.
+   Interpreter tests and typed empty proofs do not pass this gate.
+4. Implement durable candidate host application with height and issuance policy,
+   atomic state commits, restart replay, reorg handling and stale-result rejection.
+5. Qualify every new binary/geometry on both GPU UUIDs, resolve live admission,
+   and measure complete full-64 cold and post-seal boundaries.
+6. After all gates pass, connect the arrival schedule to the real backend and
+   run the two-hour pilot. Retain source-pinned JSON, root audit evidence,
+   application events, backlog and resource measurements. Sustained-service
+   qualification and production activation remain later decisions.
+
+## Historical evidence
 
 The initial export includes 62 historical evidence documents, recognized worker
 and controller runs, older paired runs, and diagnostics from the remaining

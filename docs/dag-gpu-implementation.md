@@ -341,12 +341,19 @@ Report:
 - Accepted user transactions, wall energy/cost, fleet resources and failed or
   deferred work. GPU model names and aggregate FLOPs do not establish capacity.
 
-The original aggregate workstation gate remains 48 GiB RAM, 12 GiB VRAM and
-128 GiB scratch, with ten-minute cold and three-minute complete finalization
-targets for the existing 64-transaction candidate. Fleet experiments must report
-their larger total resources separately. The proposed three-minute transaction
-cadence has a separate 60-second finalization research target in the throughput
-plan. Neither is established by a small local GPU speedup.
+The 2026-10-04 development pilot uses the current workstation's adaptive host,
+per-device VRAM, CPU and scratch budgets. The earlier 48 GiB RAM / 12 GiB VRAM /
+128 GiB scratch envelope is retained as historical evidence. Keep the existing
+64-transaction, 600-second cold and 180-second complete post-seal targets, depth
+six and 2 MiB root limit. New geometries require admission and qualification on
+each selected GPU UUID. See the machine-readable
+[qualification contract](../lattica-prover-p3/scripts/block-v2-throughput-contract.json).
+
+The immediate campaign is a two-hour development pilot with four participants,
+504 scheduled user requests and mixed transaction types. It starts only after
+full-count, mixed-recursion, durable-host and recovery gates pass. The proposed
+three-minute cadence and its separate 60-second finalization target remain a
+later research project.
 
 For G3/G4, retain the throughput plan's matched reliability policy, at least 80%
 intermediate-transfer reduction target, 70% two/four-host scale-out efficiency

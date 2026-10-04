@@ -30,7 +30,7 @@ const REGISTRY_DOMAIN: u64 = 0x4c42563211;
 const AIR_DOMAIN: u64 = 0x4c42563212;
 
 /// Public key material only. Not evidence that these keys belong to approved programs.
-pub type Caps = [Vec<[Val; 4]>; 3];
+pub type Caps<const N: usize = 3> = [Vec<[Val; 4]>; N];
 
 pub struct Compiled {
     pub program: Program,
@@ -118,16 +118,26 @@ fn registry_prefix(height: usize) -> Result<Vec<u64>, CompileError> {
     Ok(fields)
 }
 
-fn check_caps(caps: &Caps) -> Result<(), CompileError> {
-    if caps.iter().any(|cap| cap.len() != 1 << profile::CAP_HEIGHT) {
+fn check_caps<const N: usize>(caps: &Caps<N>) -> Result<(), CompileError> {
+    if !matches!(N, 3 | 5) || caps.iter().any(|cap| cap.len() != 1 << profile::CAP_HEIGHT) {
         return Err(CompileError::Shape("registry cap length"));
     }
     Ok(())
 }
 
-pub fn profile_id(height: usize, caps: &Caps) -> Result<[u8; 32], CompileError> {
-    check_caps(caps)?;
+fn registry_prefix_for<const N: usize>(height: usize) -> Result<Vec<u64>, CompileError> {
     let mut fields = registry_prefix(height)?;
+    if N == 5 {
+        // Separate research registry for JoinSplit, empty, merge, HTLC and issuance.
+        // Legacy three-key profile identities remain byte-for-byte unchanged.
+        fields.extend([0x5459_5045_445f_5631, 5]); // TYPED_V1
+    }
+    Ok(fields)
+}
+
+pub fn profile_id<const N: usize>(height: usize, caps: &Caps<N>) -> Result<[u8; 32], CompileError> {
+    check_caps(caps)?;
+    let mut fields = registry_prefix_for::<N>(height)?;
     fields.extend(
         caps.iter()
             .flatten()
@@ -161,19 +171,19 @@ fn assert_u32(b: &mut ProgramBuilder, value: Wire) {
     b.assert_equal(reconstructed, value);
 }
 
-fn registry(
+pub(super) fn registry<const N: usize>(
     b: &mut ProgramBuilder,
     inputs: &mut ProofInputs,
     public: &[Wire],
     height: usize,
-    caps: &Caps,
-) -> Result<[Vec<[Wire; 4]>; 3], CompileError> {
+    caps: &Caps<N>,
+) -> Result<[Vec<[Wire; 4]>; N], CompileError> {
     check_caps(caps)?;
-    let mut fields: Vec<_> = registry_prefix(height)?
+    let mut fields: Vec<_> = registry_prefix_for::<N>(height)?
         .into_iter()
         .map(|v| b.constant(Val::from_u64(v)))
         .collect();
-    let keys: [Vec<_>; 3] =
+    let keys: [Vec<_>; N] =
         core::array::from_fn(|i| caps[i].iter().map(|d| inputs.digest(b, d)).collect());
     fields.extend(keys.iter().flatten().flatten().copied());
     let digest = b.hash_fields(REGISTRY_DOMAIN, &fields);
@@ -191,7 +201,7 @@ fn registry(
     Ok(keys)
 }
 
-fn finish(b: ProgramBuilder, inputs: ProofInputs) -> Result<Compiled, CompileError> {
+pub(super) fn finish(b: ProgramBuilder, inputs: ProofInputs) -> Result<Compiled, CompileError> {
     Ok(Compiled {
         program: b
             .finish(None)
@@ -200,11 +210,11 @@ fn finish(b: ProgramBuilder, inputs: ProofInputs) -> Result<Compiled, CompileErr
     })
 }
 
-fn public(b: &ProgramBuilder) -> [Wire; PUBLIC_VALUES] {
+pub(super) fn public(b: &ProgramBuilder) -> [Wire; PUBLIC_VALUES] {
     core::array::from_fn(|i| b.public(i).unwrap())
 }
 
-fn assert_constant(b: &mut ProgramBuilder, wire: Wire, value: u64) {
+pub(super) fn assert_constant(b: &mut ProgramBuilder, wire: Wire, value: u64) {
     let constant = b.constant(Val::from_u64(value));
     b.assert_equal(wire, constant);
 }
@@ -253,9 +263,9 @@ fn parent_root(
     b.hash_fields(commitment::NODE, &fields)
 }
 
-pub fn wrapper(
+pub fn wrapper<const N: usize>(
     height: usize,
-    caps: &Caps,
+    caps: &Caps<N>,
     wallet_public: &[Val],
     proof: &Proof<Config>,
 ) -> Result<Compiled, CompileError> {
@@ -521,7 +531,7 @@ pub fn check_four_wallet_template(
     Ok(())
 }
 
-pub fn empty(height: usize, caps: &Caps) -> Result<Compiled, CompileError> {
+pub fn empty<const N: usize>(height: usize, caps: &Caps<N>) -> Result<Compiled, CompileError> {
     let mut b = ProgramBuilder::new(PUBLIC_VALUES).unwrap();
     let public = public(&b);
     let mut inputs = ProofInputs::default();
@@ -548,9 +558,9 @@ pub fn empty(height: usize, caps: &Caps) -> Result<Compiled, CompileError> {
     finish(b, inputs)
 }
 
-pub fn merge(
+pub fn merge<const N: usize>(
     height: usize,
-    caps: &Caps,
+    caps: &Caps<N>,
     children: [&[Val; PUBLIC_VALUES]; 2],
     proofs: [&BatchProof<Config>; 2],
 ) -> Result<Compiled, CompileError> {
@@ -566,11 +576,11 @@ pub fn merge(
         for i in 0..16 {
             b.assert_equal(fields[i], public[i]);
         }
-        let masks = selectors(&mut b, fields[MODE], WRAPPER, MERGE);
+        let masks = selectors(&mut b, fields[MODE], WRAPPER, N as u64);
         let mut key = vec![[b.constant(Val::ZERO); 4]; 1 << profile::CAP_HEIGHT];
         for (i, selected) in key.iter_mut().enumerate() {
             for j in 0..4 {
-                for k in 0..3 {
+                for k in 0..N {
                     let term = b.mul(masks[k], keys[k][i][j]);
                     selected[j] = b.add(selected[j], term);
                 }

@@ -1,5 +1,22 @@
 # Incremental recursive block proving v2
 
+## Current throughput qualification — 2026-10-04
+
+The [two-hour pilot contract](../lattica-prover-p3/scripts/block-v2-throughput-contract.json)
+uses current hardware and adaptive budgets. The [offline report](benchmarks/index.html)
+now includes explicit readiness gates and portable transaction lifecycle accounting.
+Its deterministic 504-request schedule is planned work, not a measured result.
+
+Research support now includes context-bound HTLC redeem/refund and issuance
+leaves, a separate five-key recursive registry, constrained typed wrappers and
+merges, and CPU verification against an independently pinned root statement.
+Typed leaf proofs and compiler/interpreter tests do not establish full mixed
+recursive closure. Complete depth-six mixed roots, durable host application,
+new geometry/device qualification, full-64 timing and recovery gates remain open.
+See [implementation and remaining work](benchmarks/README.md#implementation-and-remaining-work).
+
+The dated observations below retain their original scope and resource envelope.
+
 The [compact opening full-workload continuation](evidence/block-v2-gpu-opening-compact-recursive-2026-10-02.json)
 now passes all three independently registered CPU-cap comparisons and one
 eight-wallet/seven-proof root-only CPU audit after local inner-proof pruning.
@@ -330,17 +347,21 @@ The following are excluded, including as fallback paths:
 | Transaction capacity | At most **64 total transactions**, including issuance; this counts transactions, not notes or outputs |
 | Transaction-block cadence | **12 minutes**, implemented by the host chain, not by this library |
 | Final aggregate proof | At most **2 MiB**; public transaction data and ciphertexts are additional |
-| Workstation host RAM | At most **48 GiB** across all proving workers |
-| Workstation VRAM | At most **12 GiB** across GPU work |
-| Workstation disk scratch | At most **128 GiB** across proving jobs |
+| Workstation host RAM | Detected available memory and cgroup headroom, with OS/coordinator reserves |
+| Workstation VRAM | Per-GPU UUID capacity/free memory, calibrated context allowance and device headroom |
+| Workstation disk scratch | Detected filesystem capacity/free space with headroom; tmpfs spill also consumes host RAM |
 | Cold aggregation latency | At most **10 minutes** for 64 already-valid wallet proofs, including wrapping and all merge stages |
 | Incremental cycle policy | Reserve the final **3 minutes** for finalization; defer late or insufficiently prepared transactions |
 | Block verification | CPU-capable, no GPU, no inner-proof archive, no private witnesses |
 
-The resource limits are provisional acceptance/admission budgets, not a claim that existing recursive
-code fits them. A gate failure stops promotion and is reported; it does not authorize relaxing a limit
-or changing the architecture. The ten-minute cold workload and the three-minute incremental
-finalization window are separate tests. Neither is a current throughput guarantee.
+The 2026-10-04 development pilot uses the current workstation and the adaptive
+allocator in `block_v2_resources.py`. CPU quotas and Rayon threads follow usable
+CPU capacity. Each new binary and proof geometry needs per-device qualification.
+The earlier **48 GiB RAM / 12 GiB VRAM / 128 GiB scratch** envelope remains part
+of historical evidence; it is superseded for this pilot. Allocation must still
+pass phase-level admission. A gate failure stops promotion and is reported.
+The ten-minute cold workload and three-minute complete post-seal window remain
+separate tests. Neither is an established throughput capability.
 
 ## 2. Candidate profile and bounded recursion
 
@@ -511,7 +532,7 @@ security and host activation; they do not change this document's targets.
 | A3: measured recursive feasibility | Full-strength padded depth-six/64-transaction proofs, cold and incremental latency/resource gates | **OPEN**: compact-codec eight-transaction proving took 19.440 minutes; extending that subtree to a padded level-six root took 14.537 additional minutes. Full-count, repeated cold/incremental deadlines, mixed workloads, and full-block qualification remain open |
 | B1: commitment and interfaces | Ordered64 Rust/Zig vectors, versioned public-only interfaces, feature/ABI tests | Native commitment tests and internal public-only wrapper/merge/root functions exist; reviewed wallet/node ABI and block integration remain planned |
 | B2: incremental coordinator | Execution DAG, verified dependencies, arrivals, sealing, reuse, cancellation, backpressure, restart and pruning tests | **INLINE CACHE ADAPTER / SELECTED LIVE CPU CASES VALIDATED**: persistent workspace ownership and guarded per-job completion now retain real preprocessing across two full-strength paired proofs; fresh CPU replay passes. This is not an autonomous warm-worker service or matched speedup. Mixed-mode/arrival/deadline qualification, no-identity startup liveness, general external-verifier recovery, physical quotas/retention and full host eligibility coverage remain open; see [cached CPU checkpoint](evidence/block-v2-cached-cpu-2026-10-02.json). |
-| B3: full block coverage | Join-splits first, then HTLC redeem/refund and coinbase/issuance; atomic mixed-block application | Planned; **all types required before live activation** |
+| B3: full block coverage | Join-splits first, then HTLC redeem/refund and coinbase/issuance; atomic mixed-block application | **PARTIAL**: typed leaves, five-key research registry and compiler/interpreter checks implemented; complete mixed roots and durable host application remain open |
 | C: release qualification | Performance gates, cryptographic review, host integration and explicit activation | **INACTIVE / NOT PRODUCTION-READY** |
 
 Do not build or promote the production coordinator past the mandatory feasibility gate on the strength

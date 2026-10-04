@@ -98,10 +98,19 @@ fn verify_registered(
 
 impl RegisteredProgram {
     pub fn new(air: MachineAir) -> Result<Self, super::analysis::AdmissionError> {
+        Self::new_with_memory_budget(air, super::super::feasibility::RAM_BUDGET_BYTES)
+    }
+
+    /// Research callers pass the admitted worker allocation. This lower-bound
+    /// check does not replace phase-aware host/spill/GPU admission.
+    pub fn new_with_memory_budget(
+        air: MachineAir,
+        budget: u64,
+    ) -> Result<Self, super::analysis::AdmissionError> {
         let _phase =
             tracing::info_span!(target: "lattica_block_v2_perf", "preprocessing setup").entered();
         let analysis = super::analysis::analyze(&air)?;
-        analysis.check_ram_lower_bound()?;
+        analysis.check_ram_lower_bound_with_budget(budget)?;
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         if super::super::resident_pcs::compact_prover_data() {
             assert!(

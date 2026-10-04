@@ -1,5 +1,13 @@
 # Lattica throughput engineering analysis and project plan
 
+**Current priority — 2026-10-04:** qualify four useful user transactions/minute
+on the current workstation, using the gated [two-hour development pilot](benchmarks/README.md#two-hour-throughput-pilot).
+The retained [readiness JSON](evidence/block-v2-throughput-readiness-2026-10-04.json)
+records passed checks and blockers. The larger capacity/cadence and remote-fleet
+proposals below remain later research work; their earlier source snapshot is
+historical. Apple silicon uses the same portable result format to measure
+development milestones.
+
 > **PROPOSED / NOT IMPLEMENTED — 2026-10-01.** This extends the
 > [distributed proving roadmap](distributed-proving.md) with a bandwidth model,
 > hardware-aware pool design and a proposed capacity/cadence experiment.

@@ -4,12 +4,14 @@ import base64
 from contextlib import contextmanager
 import gzip
 import json
+import re
 from pathlib import Path
 
 from .history import (comparison_windows, discover, enrich_multi, load_campaigns,
                       measurement_files, safe_metadata)
 from .model import (DEFAULT_ROOT, VERSION, atomic_bytes, digest, exact, json_bytes,
-                    observed_throughput, read, reference, summary, validate_run)
+                    observed_throughput, read, reference, summary, validate_run, reject_payloads, ID_PATTERN)
+from .campaign import analyze
 
 
 MILESTONES = [
@@ -46,6 +48,7 @@ def initial_catalog():
             {"id": "unknown", "label": "Unspecified / diagnostic", "status": "metadata incomplete"},
         ],
         "campaigns": [], "runs": [], "comparisons": [], "archive_documents": [],
+        "transaction_campaigns": [], "qualification": None,
         "coverage": {}, "limitations": [
             "No hardware ranking. Compare progress only within compatible workload and measurement scopes.",
             "Aggregation of reused fixtures does not measure unique delivered-chain transactions.",
@@ -128,6 +131,8 @@ def update_coverage(catalog):
 def import_history(output, root=DEFAULT_ROOT, inputs=None):
     old = read(output / "catalog.json") if (output / "catalog.json").exists() else initial_catalog()
     catalog = initial_catalog()
+    catalog["transaction_campaigns"] = old.get("transaction_campaigns", [])
+    catalog["qualification"] = old.get("qualification")
     catalog["campaigns"] = load_campaigns(root) if inputs is None else old["campaigns"]
     campaigns = catalog["campaigns"]
     for c in campaigns:
@@ -178,6 +183,10 @@ def ingest(output, input_path, root=DEFAULT_ROOT):
     if input_path.is_dir():
         return import_history(output, root, [input_path])
     data = read(input_path)
+    if data.get("record_type") == "transaction_campaign":
+        return ingest_campaign(output, data)
+    if data.get("record_type") == "qualification_snapshot":
+        return ingest_qualification(output, data)
     if "run_id" not in data:
         raise ValueError("portable input must be a versioned run record; use a directory for controller archives")
     validate_run(data)
@@ -191,6 +200,78 @@ def ingest(output, input_path, root=DEFAULT_ROOT):
             match["status"] = "measurements imported"
         else:
             catalog["tracks"].append({"id": track, "label": track, "status": "measurements imported"})
+    update_coverage(catalog)
+    atomic_bytes(output / "catalog.json", json_bytes(catalog))
+    return catalog
+
+
+def ingest_campaign(output, data):
+    metrics = analyze(data)
+    catalog = read(output / "catalog.json") if (output / "catalog.json").exists() else initial_catalog()
+    items = {c["campaign_id"]: c for c in catalog.get("transaction_campaigns", [])}
+    relative = "campaigns/" + data["campaign_id"] + ".json"
+    path = output / relative
+    payload = json_bytes(data)
+    if path.exists() and path.read_bytes() != payload:
+        raise ValueError("campaign_id collision; use a new ID for a revised campaign export")
+    atomic_bytes(path, payload)
+    items[data["campaign_id"]] = {
+        "campaign_id": data["campaign_id"], "label": data["label"], "track": data["track"],
+        "resource_profile_id": data["resource_profile_id"], "file": relative, "sha256": digest(path),
+        "metrics": metrics,
+    }
+    catalog["transaction_campaigns"] = [items[k] for k in sorted(items)]
+    track = next((t for t in catalog["tracks"] if t["id"] == data["track"]), None)
+    if track is None:
+        catalog["tracks"].append({"id": data["track"], "label": data["track"], "status": "transaction campaign imported"})
+    else:
+        track["status"] = "transaction campaign imported"
+    update_coverage(catalog)
+    atomic_bytes(output / "catalog.json", json_bytes(catalog))
+    return catalog
+
+
+def qualification_summary(data):
+    """A retained readiness assessment; never proof or host-state verification."""
+    from block_v2_throughput import GATES, arrival_schedule
+    reject_payloads(data)
+    exact(data)
+    if (data.get("schema_version") != 1 or data.get("record_type") != "qualification_snapshot"
+            or not isinstance(data.get("snapshot_id"), str) or not ID_PATTERN.fullmatch(data["snapshot_id"])):
+        raise ValueError("invalid qualification snapshot")
+    if data.get("production_ready") is not False or data.get("pilot_started") is not False:
+        raise ValueError("readiness snapshots cannot establish pilot or production outcomes")
+    gates = data.get("gates", [])
+    if [g.get("gate") for g in gates] != GATES + ["current_resource_admission"]:
+        raise ValueError("qualification gates are incomplete")
+    for gate in gates:
+        if (gate.get("status") not in ("passed", "blocked") or not isinstance(gate.get("reasons"), list)
+                or bool(gate["reasons"]) != (gate["status"] == "blocked")):
+            raise ValueError("inconsistent qualification gate status")
+    ready = all(g["status"] == "passed" for g in gates)
+    if data.get("status") != ("ready_for_research_pilot" if ready else "blocked"):
+        raise ValueError("qualification summary differs from its gates")
+    for key in ("contract_source", "evidence_source", "resource_plan_source"):
+        source = data[key]
+        if not isinstance(source.get("path"), str) or not re.fullmatch(r"[a-f0-9]{64}", source.get("sha256", "")):
+            raise ValueError("qualification input provenance is missing")
+    if "arrival_schedule" in data:
+        if data["arrival_schedule"] != arrival_schedule(data["contract"]) or data.get("schedule_is_measured_data") is not False:
+            raise ValueError("invalid planned arrival schedule")
+    return {k: data[k] for k in ("snapshot_id", "status", "pilot_started", "production_ready",
+                                  "gates", "contract", "resource_profile")}
+
+
+def ingest_qualification(output, data):
+    record = qualification_summary(data)
+    catalog = read(output / "catalog.json") if (output / "catalog.json").exists() else initial_catalog()
+    relative = "qualifications/" + data["snapshot_id"] + ".json"
+    path = output / relative
+    payload = json_bytes(data)
+    if path.exists() and path.read_bytes() != payload:
+        raise ValueError("snapshot_id collision; capture a new qualification snapshot")
+    atomic_bytes(path, payload)
+    catalog["qualification"] = dict(record, file=relative, sha256=digest(path))
     update_coverage(catalog)
     atomic_bytes(output / "catalog.json", json_bytes(catalog))
     return catalog
@@ -210,6 +291,19 @@ def render(output):
         if digest(path) != run["sha256"]:
             raise ValueError("dataset hash mismatch: " + run["file"])
         payloads.append('<script id="data-' + run["run_id"] + '" type="application/octet-stream">' +
+                        packed(path.read_bytes()) + '</script>')
+    for campaign in catalog.get("transaction_campaigns", []):
+        path = output / campaign["file"]
+        if digest(path) != campaign["sha256"]:
+            raise ValueError("campaign hash mismatch")
+        payloads.append('<script id="campaign-data-' + campaign["campaign_id"] + '" type="application/octet-stream">' +
+                        packed(path.read_bytes()) + '</script>')
+    qualification = catalog.get("qualification")
+    if qualification:
+        path = output / qualification["file"]
+        if digest(path) != qualification["sha256"]:
+            raise ValueError("qualification hash mismatch")
+        payloads.append('<script id="qualification-data" type="application/octet-stream">' +
                         packed(path.read_bytes()) + '</script>')
     html = template.replace("<!-- DATA -->", "\n".join(payloads))
     atomic_bytes(output / "index.html", html.encode())
@@ -245,4 +339,25 @@ def check(output):
             result = observed_throughput(catalog["runs"], c["windows"])
             if result != c["aggregate"]:
                 raise ValueError("stale comparison")
-    return {"runs": len(seen), "campaigns": len(catalog["campaigns"]), "status": "valid"}
+    ids = set()
+    for c in catalog.get("transaction_campaigns", []):
+        if c["campaign_id"] in ids:
+            raise ValueError("duplicate transaction campaign")
+        ids.add(c["campaign_id"])
+        path = output / c["file"]
+        if path.resolve().parent != (output / "campaigns").resolve() or digest(path) != c["sha256"]:
+            raise ValueError("campaign path or hash mismatch")
+        data = read(path)
+        if data["campaign_id"] != c["campaign_id"] or analyze(data) != c["metrics"]:
+            raise ValueError("stale campaign metrics")
+        if any(data[k] != c[k] for k in ("label", "track", "resource_profile_id")):
+            raise ValueError("stale campaign metadata")
+    q = catalog.get("qualification")
+    if q:
+        path = output / q["file"]
+        if path.resolve().parent != (output / "qualifications").resolve() or digest(path) != q["sha256"]:
+            raise ValueError("qualification path or hash mismatch")
+        if qualification_summary(read(path)) != {k: v for k, v in q.items() if k not in ("file", "sha256")}:
+            raise ValueError("stale qualification summary")
+    return {"runs": len(seen), "campaigns": len(catalog["campaigns"]),
+            "transaction_campaigns": len(ids), "status": "valid"}
