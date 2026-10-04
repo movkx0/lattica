@@ -3,6 +3,7 @@
 import collections
 import copy
 import importlib.util
+import io
 import json
 from pathlib import Path
 import tempfile
@@ -13,6 +14,16 @@ B = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(B)
 
 class Experiment(unittest.TestCase):
+    def test_cli_defaults_to_screening_and_requires_full_matrix_opt_in(self):
+        from unittest.mock import patch
+        required = ["bench", "--out", "/tmp/unused", "--fixture", "/tmp/unused", "--linux", "/tmp/unused", "--qualification", "/tmp/unused"]
+        for options, screen_calls, matrix_calls in (([], 1, 0), (["--full-matrix"], 0, 1), (["--threads", "24"], 0, 0)):
+            with self.subTest(options=options), patch("sys.argv", required + options), patch("sys.stderr", new_callable=io.StringIO), patch.object(B.platform, "system", return_value="Linux"), patch.object(B, "screening_schedule", wraps=B.screening_schedule) as screen, patch.object(B, "schedule", wraps=B.schedule) as matrix:
+                # Stop at the platform gate before filesystem work or any proof.
+                with self.assertRaises(SystemExit): B.main()
+                self.assertEqual(screen.call_count, screen_calls)
+                self.assertEqual(matrix.call_count, matrix_calls)
+
     def test_screening_is_three_single_shared_18_thread_cases(self):
         trials = B.screening_schedule()
         self.assertEqual([t["level"] for t in trials], ["quotient", "quotient-deferred", "quotient-compact-deferred"])

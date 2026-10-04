@@ -1,0 +1,1700 @@
+{
+  "adapter": "apple-metal",
+  "campaign_ids": ["apple-8c3bf3cd117be23d0214"],
+  "configuration": {
+    "apple_metal": {
+      "backend": "copy",
+      "campaign_id": "apple-8c3bf3cd117be23d0214",
+      "compact": 0,
+      "defer_timing": 0,
+      "fusion": 1,
+      "level": "fusion",
+      "merges_metal": {
+        "allocation_count": "202",
+        "blit_calls": "29443",
+        "blit_ns": "1049299608",
+        "compile_ns": "1620708",
+        "driver_current_allocated_bytes": "412090368",
+        "host_copy_bytes": "107846834480",
+        "host_copy_ns": "1541460213",
+        "kernel_calls": "18155",
+        "kernel_ns": "47284471097",
+        "managed_live_bytes": "411043520",
+        "managed_peak_bytes": "7054821096",
+        "memory": "Copy",
+        "transfer_blit_bytes": "107846834480",
+        "transfer_staging_bytes": "8388608"
+      },
+      "pairs_metal": {
+        "allocation_count": "264",
+        "blit_calls": "38667",
+        "blit_ns": "1381539133",
+        "compile_ns": "2189250",
+        "driver_current_allocated_bytes": "412090368",
+        "host_copy_bytes": "138952755232",
+        "host_copy_ns": "2010229568",
+        "kernel_calls": "24181",
+        "kernel_ns": "61034729305",
+        "managed_live_bytes": "411043520",
+        "managed_peak_bytes": "7054821096",
+        "memory": "Copy",
+        "transfer_blit_bytes": "138952755232",
+        "transfer_staging_bytes": "8388608"
+      },
+      "peak_mapped_bytes": 31671332864,
+      "peak_rss_bytes": 41077784576,
+      "phase": "measured",
+      "quotient": 0,
+      "readback": 1,
+      "repeat": 1,
+      "threads": 18
+    },
+    "build": {
+      "binaries": {
+        "block-v2-grouped-artifact-audit": {
+          "path": "/Users/access/code/lattica/.tools/worktrees/mac-metal/lattica-prover-p3/target/cpu/release/block-v2-grouped-artifact-audit",
+          "sha256": "49f75e72427f7b31d56571c3e46991dca27d62a7a9b03ac35b5cc2d1afd9a034"
+        },
+        "block-v2-grouped-probe": {
+          "path": "/Users/access/code/lattica/.tools/worktrees/mac-metal/lattica-prover-p3/target/cpu/release/block-v2-grouped-probe",
+          "sha256": "9dee85f775bd365cd47d4a065b1d4210c3629928b3ddb98eba4b05287ac6420d"
+        },
+        "block-v2-grouped-publics": {
+          "path": "/Users/access/code/lattica/.tools/worktrees/mac-metal/lattica-prover-p3/target/cpu/release/block-v2-grouped-publics",
+          "sha256": "df7378cc59521c6c79d3140e48d77083d06e6087263209bcc75cf3aa2a620084"
+        },
+        "block-v2-metal-grouped-probe": {
+          "path": "/Users/access/code/lattica/.tools/worktrees/mac-metal/lattica-prover-p3/target/release/block-v2-metal-grouped-probe",
+          "sha256": "35a083f262827adf11cff5b294cb7227e45083649f5ae28c8dee61c2590d0722"
+        }
+      },
+      "builds": [
+        {
+          "command": ["cargo","build","--offline","--locked","--release","--no-default-features","--features","block-v2-wide-lanes,stream","--bin","block-v2-grouped-probe","--bin","block-v2-grouped-artifact-audit","--bin","block-v2-grouped-publics"],
+          "kind": "cpu",
+          "target": "/Users/access/code/lattica/.tools/worktrees/mac-metal/lattica-prover-p3/target/cpu"
+        },
+        {
+          "command": ["cargo","build","--offline","--locked","--release","--no-default-features","--features","block-v2-wide-lanes,stream,gpu-metal","--bin","block-v2-metal-grouped-probe"],
+          "kind": "metal",
+          "target": "/Users/access/code/lattica/.tools/worktrees/mac-metal/lattica-prover-p3/target"
+        }
+      ],
+      "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)\n",
+      "cargo_lock_sha256": "3eabbacf19247b2df7fadef10c78a545ccea60db2593411d6953a7a16b614f54",
+      "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)\nbinary: rustc\ncommit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96\ncommit-date: 2026-05-25\nhost: aarch64-apple-darwin\nrelease: 1.96.0\nLLVM version: 22.1.2\n",
+      "rustflags": "-C target-cpu=native"
+    },
+    "fixture_sha256": {
+      "height": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60",
+      "key.1": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5",
+      "key.2": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802",
+      "key.3": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99",
+      "wallet.0": "25ce31f7bc80ee9c84359e8a27495c38f78d8d83d4e5e02fb734a283ab92c9f4",
+      "wallet.1": "3a38f23b070f9e96f3d07069d938fbdb493d4a2bfec6c75a70674e176199ebca",
+      "wallet.2": "772955fd70432d18886f41299152d4fbcb0532d110782436684f7c75602b0edf",
+      "wallet.3": "2d1bb96139ee644cd1427babe8c7469ac84b41fc4e2837fb76d8ff1c3d1f78b7",
+      "wallet.4": "5cca52f9d92a7b1c1a35decf0a426834ef7ce3f21430e609742182e22f0c3d36",
+      "wallet.5": "2cc350a3de6069bc023b685743a9e905f44af4a775470cae3b64fbf70fc13e43",
+      "wallet.6": "a96a30064f1cb44968fd7f8f7ab68d0456c661a9a376e35e9ab58e26706ec9ed",
+      "wallet.7": "280adb491758581d8b207695de8019f164a25532d980beeacbdfeaa2edb65404"
+    },
+    "memory_limits": {
+      "managed_gpu_bytes": 8589934592,
+      "mmap_bytes": 36507222016,
+      "sampled_rss_bytes": 47244640256
+    },
+    "memory_policy": "34 GiB mapped scratch, 8 GiB Metal managed buffers, sampled 44 GiB worker RSS, 7200 seconds per stage; macOS swap is observed, not prohibited",
+    "stage_timeout_seconds": 7200
+  },
+  "kind": "solving",
+  "label": "Apple 18t copy fusion · measured 1",
+  "limitations": ["Research eight-wallet recursive aggregation, not a 64-transaction block or accepted-chain throughput.","Wallet proof creation, registry preparation and networking are excluded. Whole-job time includes checks and CPU audit; bars use recursive command time.","One physical unified-memory pool; mmap, GPU allocations and process RSS overlap and must not be added.","Shared/copy pairs isolate storage and explicit transfer behavior on this Mac. Cross-platform differences also include hardware, kernels and source revisions.","GPU and host timing clocks are not aligned. Profiling counters overlap and are not additive wall time."],
+  "measurement_scope": "recursive_aggregation",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["grouped process remainder",325,0,0,"inclusive_nonadditive",5]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["grouped process remainder"],
+          "target": ["p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_field::batch_inverse","p3_matrix","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"evaluate all constraints symbolically",8,176751,40209,0,6],
+          [0,"infer base and extension constraint degree",8,223043,46875,0,7],
+          [1,"compute constraint layout with lookups",18,3408874,245416,0,8],
+          [1,"evaluate constraints symbolically",27,2920463,185833,0,9],
+          [1,"infer constraint degree",18,3603331,279958,0,10],
+          [2,"batch_multiplicative_inverse",13576,19241453,195708,0,11],
+          [3,"columnwise_dot_product",264,28104238,406583,0,12],
+          [4,"get_log_num_quotient_chunks",8,236708,47958,0,13],
+          [4,"infer log of base and extension constraint degree",8,234791,47750,0,14],
+          [5,"verify",8,239181790,31758458,0,15],
+          [5,"verify_with_preprocessed",8,239176625,31757792,0,16]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [325,0,true,false,17]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["rss_limit_bytes","scratch_limit_bytes","timeout_seconds","sample_ms","enforcement","swap_enforcement","initial_rss_bytes","initial_footprint_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "metal_worker_limits",
+        "rows": [
+          [47244640256,36507222016,7200,500,"watchdog",false,6160384,1999280,1]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["backend","memory","unified_memory","compile_ns","transfer_staging_bytes","managed_limit_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "metal_initialized",
+        "rows": [
+          ["metal","Copy",true,1620708,8388608,8589934592,7]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [0,"Apple M5 Pro",55662788608,41747087360,8589934592,4294967296,134217728,67108864,1,"exclusive",8]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,134217728,67108864,false,9]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","setup_ms","preprocessing_cache_hit","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_start",
+        "rows": [
+          [3,13457,false,13],
+          [3,98,true,102],
+          [3,37,true,183]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["bytes","width","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_heap_fft_start",
+        "rows": [
+          [469762048,7,14],
+          [469762048,7,16],
+          [469762048,7,18],
+          [469762048,7,20],
+          [469762048,7,22],
+          [469762048,7,24],
+          [469762048,7,26],
+          [469762048,7,28],
+          [469762048,7,30],
+          [469762048,7,32],
+          [469762048,7,34],
+          [469762048,7,36],
+          [469762048,7,38],
+          [469762048,7,40],
+          [469762048,7,42],
+          [469762048,7,44],
+          [469762048,7,103],
+          [469762048,7,105],
+          [469762048,7,107],
+          [469762048,7,109],
+          [469762048,7,111],
+          [469762048,7,113],
+          [469762048,7,115],
+          [469762048,7,117],
+          [469762048,7,119],
+          [469762048,7,121],
+          [469762048,7,123],
+          [469762048,7,125],
+          [469762048,7,127],
+          [469762048,7,129],
+          [469762048,7,131],
+          [469762048,7,133],
+          [469762048,7,184],
+          [469762048,7,186],
+          [469762048,7,188],
+          [469762048,7,190],
+          [469762048,7,192],
+          [469762048,7,194],
+          [469762048,7,196],
+          [469762048,7,198],
+          [469762048,7,200],
+          [469762048,7,202],
+          [469762048,7,204],
+          [469762048,7,206],
+          [469762048,7,208],
+          [469762048,7,210],
+          [469762048,7,212],
+          [469762048,7,214]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_heap_fft_done",
+        "rows": [
+          [174,15],
+          [163,17],
+          [165,19],
+          [169,21],
+          [168,23],
+          [164,25],
+          [168,27],
+          [163,29],
+          [168,31],
+          [166,33],
+          [168,35],
+          [165,37],
+          [168,39],
+          [168,41],
+          [173,43],
+          [174,45],
+          [173,104],
+          [182,106],
+          [201,108],
+          [174,110],
+          [174,112],
+          [173,114],
+          [171,116],
+          [170,118],
+          [176,120],
+          [178,122],
+          [174,124],
+          [176,126],
+          [176,128],
+          [173,130],
+          [178,132],
+          [170,134],
+          [148,185],
+          [140,187],
+          [142,189],
+          [169,191],
+          [169,193],
+          [169,195],
+          [167,197],
+          [169,199],
+          [166,201],
+          [168,203],
+          [166,205],
+          [167,207],
+          [166,209],
+          [170,211],
+          [168,213],
+          [166,215]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","prove_and_verify_ms","node_payload_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_verified",
+        "rows": [
+          [3,32757,1683940,46],
+          [3,33314,1683940,135],
+          [3,32585,1683940,216]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["artifact","resumed","elapsed_ms","setups","cache_hits","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_node_complete",
+        "rows": [
+          ["node.2.0",false,46801,1,0,false,47],
+          ["node.2.1",false,34003,1,1,false,136],
+          ["node.3.0",false,33209,1,2,false,217]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {
+          "timings": ["inclusive_nonadditive"]
+        },
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["node.2.0",47318,0,0,0,48],
+          ["node.2.1",34004,0,0,0,137],
+          ["node.3.0",33210,0,0,0,218],
+          ["GPU grouped process remainder",166,0,0,0,264]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["node.2.0","node.2.1","node.3.0"],
+          "name": ["bounded GPU commitment","child verification","execution trace","fused quotient chunk","fused quotient ldes","merge compilation","native batch prove","native verification","node serialization","preprocessing setup","evaluate all constraints symbolically","infer base and extension constraint degree","Compute Selectors","compute quotient","compute quotient polynomial","infer log of constraint degree","prove_batch","compute constraint layout with lookups","evaluate constraints symbolically","infer constraint degree","verify constraints","verify_batch","grind for proof-of-work witness","first_half","second_half","divide_by_height","batch_multiplicative_inverse","FRI prover","commit phase","idft final poly","query phase","fold_matrix","generate lookup permutation","columnwise_dot_product","with_random_cols","with_zero_cols","reverse_matrix_index_bits","get_log_num_quotient_chunks","infer log of base and extension constraint degree","verify","verify_with_preprocessed"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::prover","p3_batch_stark::symbolic","p3_batch_stark::verifier","p3_challenger::grinding_challenger","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_fri::prover","p3_fri::two_adic_pcs","p3_lookup::logup","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,0,20,10448641293,9600590750,0,49],
+          [0,1,1,76623916,76623916,0,50],
+          [0,2,1,210545250,210545250,0,51],
+          [0,3,16,2817632581,182853042,0,52],
+          [0,4,1,3266659084,3266659084,0,53],
+          [0,5,1,386040458,386040458,0,54],
+          [0,6,1,32515838000,32515838000,0,55],
+          [0,7,1,31002416,31002416,0,56],
+          [0,8,1,547791,547791,0,57],
+          [0,9,1,13457391334,13457391334,0,58],
+          [1,10,8,122542,20667,0,59],
+          [1,11,8,167708,27417,0,60],
+          [2,12,1,25547917,25547917,0,61],
+          [2,13,1,7062215625,7062215625,0,62],
+          [2,14,1,3764231666,3764231666,0,63],
+          [2,15,1,225208,225208,0,64],
+          [2,16,1,32513866125,32513866125,0,65],
+          [3,17,45,8049338,273500,0,66],
+          [3,18,89,8907124,196667,0,67],
+          [3,19,66,12039704,301542,0,68],
+          [4,15,10,1736710,187833,0,69],
+          [4,20,10,1072833,121625,0,70],
+          [4,21,10,302200957,30847333,0,71],
+          [5,22,20,6058791,6054333,0,72],
+          [6,23,32,1072551668,68666083,0,73],
+          [6,24,32,386467538,24225208,0,74],
+          [7,25,16,3380542,365958,0,75],
+          [8,26,38158,691499273,30634750,0,76],
+          [9,27,1,2077454167,2077454167,0,77],
+          [9,28,1,875341416,875341416,0,78],
+          [9,29,1,2709,2709,0,79],
+          [9,30,1,1193409125,1193409125,0,80],
+          [10,31,19,26661706,14235250,0,81],
+          [11,32,1,107295417,107295417,0,82],
+          [12,33,285,77019168,16007875,0,83],
+          [13,34,18,542431706,241639666,0,84],
+          [13,35,1,76318167,76318167,0,85],
+          [14,36,81,466336373,19658291,0,86],
+          [15,37,8,173959,29292,0,87],
+          [15,38,8,171709,29041,0,88],
+          [16,39,8,233543625,30059750,0,89],
+          [16,40,8,233538167,30057750,0,90],
+          [0,0,20,10694208997,9843830583,1,138],
+          [0,1,1,77727041,77727041,1,139],
+          [0,2,1,218872709,218872709,1,140],
+          [0,3,16,2960842705,210157917,1,141],
+          [0,4,1,3415383833,3415383833,1,142],
+          [0,5,1,387068000,387068000,1,143],
+          [0,6,1,33063868125,33063868125,1,144],
+          [0,7,1,31183334,31183334,1,145],
+          [0,8,1,523458,523458,1,146],
+          [2,12,1,28514667,28514667,1,147],
+          [2,13,1,7226534542,7226534542,1,148],
+          [2,14,1,3779770125,3779770125,1,149],
+          [2,15,1,562833,562833,1,150],
+          [2,16,1,33062373250,33062373250,1,151],
+          [3,17,15,2811791,251334,1,152],
+          [3,18,35,3979957,474625,1,153],
+          [3,19,27,5367290,562417,1,154],
+          [4,15,6,1083583,196042,1,155],
+          [4,20,6,653749,117750,1,156],
+          [4,21,6,184290707,30822833,1,157],
+          [5,22,20,2979625,2975541,1,158],
+          [6,23,32,1141087501,83535292,1,159],
+          [6,24,32,407205164,26795083,1,160],
+          [7,25,16,3508459,292792,1,161],
+          [8,26,14854,692602804,66056792,1,162],
+          [9,27,1,2078168416,2078168416,1,163],
+          [9,28,1,880566167,880566167,1,164],
+          [9,29,1,2292,2292,1,165],
+          [9,30,1,1191477708,1191477708,1,166],
+          [10,31,19,29568624,13987458,1,167],
+          [11,32,1,111567791,111567791,1,168],
+          [12,33,21,52718126,17090209,1,169],
+          [13,34,18,542840499,243647375,1,170],
+          [14,36,81,480514880,20980417,1,171],
+          [0,0,20,10437493041,9581842000,2,219],
+          [0,1,1,77588375,77588375,2,220],
+          [0,2,1,211938292,211938292,2,221],
+          [0,3,16,2749554414,179534667,2,222],
+          [0,4,1,3233158416,3233158416,2,223],
+          [0,5,1,383494292,383494292,2,224],
+          [0,6,1,32341467500,32341467500,2,225],
+          [0,7,1,31095542,31095542,2,226],
+          [0,8,1,525875,525875,2,227],
+          [2,12,1,24484708,24484708,2,228],
+          [2,13,1,6894404125,6894404125,2,229],
+          [2,14,1,3630075500,3630075500,2,230],
+          [2,15,1,532458,532458,2,231],
+          [2,16,1,32340085125,32340085125,2,232],
+          [3,17,15,2733502,251000,2,233],
+          [3,18,35,3914625,445459,2,234],
+          [3,19,27,5294458,532083,2,235],
+          [4,15,6,1050875,184042,2,236],
+          [4,20,6,655458,120708,2,237],
+          [4,21,6,183552251,30735916,2,238],
+          [5,22,20,919788,915667,2,239],
+          [6,23,32,1076762293,68326334,2,240],
+          [6,24,32,385888747,24350792,2,241],
+          [7,25,16,2821291,298125,2,242],
+          [8,26,14854,612958128,16534125,2,243],
+          [9,27,1,2052572791,2052572791,2,244],
+          [9,28,1,885778417,885778417,2,245],
+          [9,29,1,2208,2208,2,246],
+          [9,30,1,1163097208,1163097208,2,247],
+          [10,31,19,29500583,13261458,2,248],
+          [11,32,1,113528500,113528500,2,249],
+          [12,33,21,48488000,15557333,2,250],
+          [13,34,18,541034375,243743000,2,251],
+          [14,36,81,432545295,18974208,2,252]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["memory","compile_ns","managed_live_bytes","managed_peak_bytes","allocation_count","driver_current_allocated_bytes","kernel_calls","kernel_ns","blit_calls","blit_ns","host_copy_bytes","host_copy_ns","transfer_blit_bytes","transfer_staging_bytes","_source_line"],
+        "dictionaries": {
+          "memory": ["Copy"]
+        },
+        "kind": "metal_checkpoint",
+        "rows": [
+          [0,1620708,947914400,7054820072,78,948961280,6103,20691126721,10995,468484001,45634992976,647057296,45634992976,8388608,91],
+          [0,1620708,947914400,7054821096,140,948961280,12129,34044914379,20219,761023908,76740913728,1098151529,76740913728,8388608,172],
+          [0,1620708,947914400,7054821096,202,948961280,18155,47284471097,29443,1049299608,107846834480,1541460213,107846834480,8388608,253],
+          [0,1620708,411043520,7054821096,202,412090368,18155,47284471097,29443,1049299608,107846834480,1541460213,107846834480,8388608,265]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["node.2.0",true,0,536870880,3221223680,1,25372590,10077980,1190446754,2688,92],
+          ["node.2.1",true,0,536870880,3221223680,1,46210420,19966341,2378769846,5376,173],
+          ["node.3.0",true,0,536870880,3221223680,1,68088957,30494326,3538946810,8064,254],
+          ["GPU grouped process remainder",true,0,0,3221223680,0,68088957,30494326,3538946810,8064,266]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["node.2.0",0,24,15065940160,24160142848,1282417911,4146300179,12743001420,547640170,5502882288,947914400,7054820072,78,67108864,267812950,1014037237,1710977070,2432213334,93],
+          ["node.2.1",0,47,29024583696,34898510848,2377187199,6346770228,21092101205,1008240961,11093595372,947914400,7054821096,140,67108864,511041026,1864951242,2746419478,3595272910,174],
+          ["node.3.0",0,70,42983227232,45636878848,3457620079,8493043949,29343000832,1468836953,16582446414,947914400,7054821096,202,67108864,745297946,2710610535,3772423802,4713632302,255],
+          ["GPU grouped process remainder",0,70,42983227232,45636878848,3457620079,8493043949,29343000832,1468836953,16582446414,411043520,7054821096,202,67108864,745297946,2710610535,3772423802,4713632302,267]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["node.2.0",0,0,74897971,205782489,1014037237,0,0,111,94],
+          ["node.2.1",0,0,145029321,302423069,1864951242,0,0,222,175],
+          ["node.3.0",0,0,213413944,398901743,2710610535,0,0,333,256],
+          ["GPU grouped process remainder",0,0,213413944,398901743,2710610535,0,0,333,268]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["node.2.0",0,4,15,7285220469,8333038877,18334979209,543690374,24159191040,13421772800,95],
+          ["node.2.1",0,7,23,11714527883,12210317502,26971638918,800812292,34896609280,13421772800,176],
+          ["node.3.0",0,10,31,16127642553,16058857547,35563816041,1037073876,45634027520,13421772800,257],
+          ["GPU grouped process remainder",0,10,31,16127642553,16058857547,35563816041,1037073876,45634027520,13421772800,269]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","mask_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_quotient_checkpoint",
+        "rows": [
+          ["node.2.0",0,0,0,96],
+          ["node.2.1",0,0,0,177],
+          ["node.3.0",0,0,0,258],
+          ["GPU grouped process remainder",0,0,0,270]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","parallel_decode_bytes","parallel_decode_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_readback_checkpoint",
+        "rows": [
+          ["node.2.0",0,24159190624,360,97],
+          ["node.2.1",0,34896608448,520,178],
+          ["node.3.0",0,45634026272,680,259],
+          ["GPU grouped process remainder",0,45634026272,680,271]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["node.2.0",0,1,2720,6207582624,201326592,105189682,3518264500,98],
+          ["node.2.1",0,2,5440,12415165248,402653184,210084005,7073853208,179],
+          ["node.3.0",0,3,8160,18622747872,603979776,314505444,10579861375,260],
+          ["GPU grouped process remainder",0,3,8160,18622747872,603979776,314505444,10579861375,272]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["node.2.0",0,351617333,570637250,23651822,716935,12428395,620907792,24474047,1220459,20821550,0,99],
+          ["node.2.1",0,713577802,1167679590,48066396,1435344,24740986,1240332460,49242421,2399041,41373169,0,180],
+          ["node.3.0",0,1060086550,1739548238,70302798,2158763,36908914,1859833789,73177009,3634963,62977002,0,261],
+          ["GPU grouped process remainder",0,1060086550,1739548238,70302798,2158763,36908914,1859833789,73177009,3634963,62977002,0,273]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["node.2.0",0,0,0,100],
+          ["node.2.1",0,0,0,181],
+          ["node.3.0",0,0,0,262],
+          ["GPU grouped process remainder",0,0,0,274]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","saved_input_bytes","compress_ns","ntt_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_compact_checkpoint",
+        "rows": [
+          ["node.2.0",0,1,29695672320,16628408,1894099920,0,101],
+          ["node.2.1",0,2,59391344640,32811709,3789944586,0,182],
+          ["node.3.0",0,3,89087016960,49276871,5679469006,0,263],
+          ["GPU grouped process remainder",0,3,89087016960,49276871,5679469006,0,275]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,276]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","resident_lde","gpu_openings","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [114702,31671332864,false,true,true,false,277]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["peak_rss_bytes","peak_footprint_bytes","sample_ms","gpu_bytes_overlap_process_memory","_source_line"],
+        "dictionaries": {},
+        "kind": "metal_worker_memory",
+        "rows": [
+          [41077784576,44145719032,500,true,278]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["rss_limit_bytes","scratch_limit_bytes","timeout_seconds","sample_ms","enforcement","swap_enforcement","initial_rss_bytes","initial_footprint_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "metal_worker_limits",
+        "rows": [
+          [47244640256,36507222016,7200,500,"watchdog",false,6160384,1999280,1]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["backend","memory","unified_memory","compile_ns","transfer_staging_bytes","managed_limit_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "metal_initialized",
+        "rows": [
+          ["metal","Copy",true,2189250,8388608,8589934592,7]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [0,"Apple M5 Pro",55662788608,41747087360,8589934592,4294967296,134217728,67108864,1,"exclusive",8]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,134217728,67108864,false,9]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","setup_ms","preprocessing_cache_hit","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_start",
+        "rows": [
+          [1,12489,false,13],
+          [1,81,true,102],
+          [1,24,true,189],
+          [1,26,true,276]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["bytes","width","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_heap_fft_start",
+        "rows": [
+          [469762048,7,14],
+          [469762048,7,16],
+          [469762048,7,18],
+          [469762048,7,20],
+          [469762048,7,22],
+          [469762048,7,24],
+          [469762048,7,26],
+          [469762048,7,28],
+          [469762048,7,30],
+          [469762048,7,32],
+          [469762048,7,34],
+          [469762048,7,36],
+          [469762048,7,38],
+          [469762048,7,40],
+          [469762048,7,42],
+          [469762048,7,44],
+          [469762048,7,103],
+          [469762048,7,105],
+          [469762048,7,107],
+          [469762048,7,109],
+          [469762048,7,111],
+          [469762048,7,113],
+          [469762048,7,115],
+          [469762048,7,117],
+          [469762048,7,119],
+          [469762048,7,121],
+          [469762048,7,123],
+          [469762048,7,125],
+          [469762048,7,127],
+          [469762048,7,129],
+          [469762048,7,131],
+          [469762048,7,133],
+          [469762048,7,190],
+          [469762048,7,192],
+          [469762048,7,194],
+          [469762048,7,196],
+          [469762048,7,198],
+          [469762048,7,200],
+          [469762048,7,202],
+          [469762048,7,204],
+          [469762048,7,206],
+          [469762048,7,208],
+          [469762048,7,210],
+          [469762048,7,212],
+          [469762048,7,214],
+          [469762048,7,216],
+          [469762048,7,218],
+          [469762048,7,220],
+          [469762048,7,277],
+          [469762048,7,279],
+          [469762048,7,281],
+          [469762048,7,283],
+          [469762048,7,285],
+          [469762048,7,287],
+          [469762048,7,289],
+          [469762048,7,291],
+          [469762048,7,293],
+          [469762048,7,295],
+          [469762048,7,297],
+          [469762048,7,299],
+          [469762048,7,301],
+          [469762048,7,303],
+          [469762048,7,305],
+          [469762048,7,307]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_heap_fft_done",
+        "rows": [
+          [154,15],
+          [146,17],
+          [151,19],
+          [148,21],
+          [144,23],
+          [148,25],
+          [147,27],
+          [147,29],
+          [144,31],
+          [141,33],
+          [141,35],
+          [140,37],
+          [144,39],
+          [141,41],
+          [145,43],
+          [138,45],
+          [184,104],
+          [173,106],
+          [179,108],
+          [174,110],
+          [181,112],
+          [183,114],
+          [186,116],
+          [182,118],
+          [179,120],
+          [180,122],
+          [171,124],
+          [178,126],
+          [178,128],
+          [173,130],
+          [178,132],
+          [174,134],
+          [144,191],
+          [136,193],
+          [137,195],
+          [140,197],
+          [141,199],
+          [138,201],
+          [139,203],
+          [137,205],
+          [139,207],
+          [197,209],
+          [175,211],
+          [174,213],
+          [165,215],
+          [166,217],
+          [163,219],
+          [169,221],
+          [163,278],
+          [151,280],
+          [150,282],
+          [176,284],
+          [181,286],
+          [178,288],
+          [188,290],
+          [183,292],
+          [186,294],
+          [188,296],
+          [177,298],
+          [179,300],
+          [190,302],
+          [183,304],
+          [177,306],
+          [183,308]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","prove_and_verify_ms","node_payload_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_verified",
+        "rows": [
+          [1,32980,1683940,46],
+          [1,33064,1683940,135],
+          [1,32621,1683940,222],
+          [1,33056,1683940,309]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["artifact","resumed","elapsed_ms","setups","cache_hits","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_node_complete",
+        "rows": [
+          ["node.1.0",false,47519,1,0,false,47],
+          ["node.1.1",false,35151,1,1,false,136],
+          ["node.1.2",false,34612,1,2,false,223],
+          ["node.1.3",false,35034,1,3,false,310]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {
+          "timings": ["inclusive_nonadditive"]
+        },
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["node.1.0",47905,0,0,0,48],
+          ["node.1.1",35152,0,0,0,137],
+          ["node.1.2",34613,0,0,0,224],
+          ["node.1.3",35034,0,0,0,311],
+          ["GPU grouped process remainder",158,0,0,0,363]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["node.1.0","node.1.1","node.1.2","node.1.3"],
+          "name": ["bounded GPU commitment","execution trace","fused quotient chunk","fused quotient ldes","native batch prove","native verification","node serialization","paired wrapper compilation","preprocessing setup","evaluate all constraints symbolically","evaluate base constraints symbolically","infer base and extension constraint degree","Compute Selectors","compute quotient","compute quotient polynomial","infer log of constraint degree","prove_batch","compute constraint layout with lookups","evaluate constraints symbolically","infer constraint degree","verify constraints","verify_batch","grind for proof-of-work witness","first_half","second_half","divide_by_height","batch_multiplicative_inverse","FRI prover","commit phase","idft final poly","query phase","fold_matrix","generate lookup permutation","columnwise_dot_product","with_random_cols","with_zero_cols","reverse_matrix_index_bits","get_log_num_quotient_chunks","infer log of base and extension constraint degree","verify","verify_with_preprocessed"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::prover","p3_batch_stark::symbolic","p3_batch_stark::verifier","p3_challenger::grinding_challenger","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_fri::prover","p3_fri::two_adic_pcs","p3_lookup::logup","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,0,20,10844590919,9994759000,0,49],
+          [0,1,1,110825708,110825708,0,50],
+          [0,2,16,2458064041,163198708,0,51],
+          [0,3,1,2927134791,2927134791,0,52],
+          [0,4,1,32838412000,32838412000,0,53],
+          [0,5,1,30841958,30841958,0,54],
+          [0,6,1,534541,534541,0,55],
+          [0,7,1,1929657000,1929657000,0,56],
+          [0,8,1,12489157959,12489157959,0,57],
+          [1,9,12,214293,29042,0,58],
+          [1,10,2,49834,28750,0,59],
+          [1,11,12,301249,37209,0,60],
+          [2,12,1,28109000,28109000,0,61],
+          [2,13,1,6808844542,6808844542,0,62],
+          [2,14,1,3850291875,3850291875,0,63],
+          [2,15,1,226792,226792,0,64],
+          [2,16,1,32837143000,32837143000,0,65],
+          [3,17,31,5992334,345750,0,66],
+          [3,18,51,5474795,254666,0,67],
+          [3,19,36,7068169,383083,0,68],
+          [4,15,2,362416,191791,0,69],
+          [4,20,2,259791,131125,0,70],
+          [4,21,2,60964709,30501417,0,71],
+          [5,22,20,2558334,2554459,0,72],
+          [6,23,32,656935375,43840291,0,73],
+          [6,24,32,395875955,26465791,0,74],
+          [7,25,16,3967833,453084,0,75],
+          [8,26,22096,749985567,40789542,0,76],
+          [9,27,1,2078070417,2078070417,0,77],
+          [9,28,1,877705708,877705708,0,78],
+          [9,29,1,2292,2292,0,79],
+          [9,30,1,1195023167,1195023167,0,80],
+          [10,31,19,27253752,14608916,0,81],
+          [11,32,1,105478667,105478667,0,82],
+          [12,33,351,97321964,18878041,0,83],
+          [13,34,18,532082040,238674709,0,84],
+          [13,35,1,78259625,78259625,0,85],
+          [14,36,81,489058544,21577292,0,86],
+          [15,37,12,310666,38125,0,87],
+          [15,38,12,306292,37625,0,88],
+          [16,39,10,308756748,33603291,0,89],
+          [16,40,10,308747041,33600458,0,90],
+          [0,0,20,10586423584,9736036375,1,138],
+          [0,1,1,113300958,113300958,1,139],
+          [0,2,16,2993593541,194698417,1,140],
+          [0,3,1,3444301125,3444301125,1,141],
+          [0,4,1,32920103209,32920103209,1,142],
+          [0,5,1,30809083,30809083,1,143],
+          [0,6,1,533292,533292,1,144],
+          [0,7,1,1888665292,1888665292,1,145],
+          [1,9,4,50167,15000,1,146],
+          [1,10,2,49624,28291,1,147],
+          [1,11,4,77459,22042,1,148],
+          [2,12,1,28258750,28258750,1,149],
+          [2,13,1,7203110375,7203110375,1,150],
+          [2,14,1,3725024875,3725024875,1,151],
+          [2,15,1,492666,492666,1,152],
+          [2,16,1,32918643208,32918643208,1,153],
+          [3,17,9,1661625,242833,1,154],
+          [3,18,17,1957001,397875,1,155],
+          [3,19,13,2715417,492375,1,156],
+          [4,15,2,362208,182875,1,157],
+          [4,20,2,257125,139500,1,158],
+          [4,21,2,60731917,30407625,1,159],
+          [5,22,20,3658124,3654125,1,160],
+          [6,23,32,1235975793,82144792,1,161],
+          [6,24,32,394316337,25191375,1,162],
+          [7,25,16,3429794,453792,1,163],
+          [8,26,8520,734973507,34650875,1,164],
+          [9,27,1,2079535292,2079535292,1,165],
+          [9,28,1,884566208,884566208,1,166],
+          [9,29,1,2375,2375,1,167],
+          [9,30,1,1188572834,1188572834,1,168],
+          [10,31,19,33517748,14867083,1,169],
+          [11,32,1,103576250,103576250,1,170],
+          [12,33,87,63035790,16666417,1,171],
+          [13,34,18,542369748,241993084,1,172],
+          [14,36,81,468581589,19633792,1,173],
+          [15,37,4,79626,22500,1,174],
+          [15,38,4,78458,22292,1,175],
+          [16,39,2,55993417,28697959,1,176],
+          [16,40,2,55992375,28697375,1,177],
+          [0,0,20,10638600250,9787679375,2,225],
+          [0,1,1,110568459,110568459,2,226],
+          [0,2,16,2601117914,205618958,2,227],
+          [0,3,1,3066453916,3066453916,2,228],
+          [0,4,1,32479104833,32479104833,2,229],
+          [0,5,1,30815500,30815500,2,230],
+          [0,6,1,532875,532875,2,231],
+          [0,7,1,1855191584,1855191584,2,232],
+          [1,9,4,48084,14584,2,233],
+          [1,10,2,44875,23875,2,234],
+          [1,11,4,75208,21750,2,235],
+          [2,12,1,25260541,25260541,2,236],
+          [2,13,1,6783388792,6783388792,2,237],
+          [2,14,1,3686366500,3686366500,2,238],
+          [2,15,1,461208,461208,2,239],
+          [2,16,1,32477562750,32477562750,2,240],
+          [3,17,9,1651418,241000,2,241],
+          [3,18,17,1914417,375959,2,242],
+          [3,19,13,2648292,460959,2,243],
+          [4,15,2,354417,183000,2,244],
+          [4,20,2,249749,132541,2,245],
+          [4,21,2,60604167,30429000,2,246],
+          [5,22,20,2712001,2708250,2,247],
+          [6,23,32,1047070210,89057750,2,248],
+          [6,24,32,393711376,26423250,2,249],
+          [7,25,16,3441373,271625,2,250],
+          [8,26,8520,572056146,14298709,2,251],
+          [9,27,1,2066995625,2066995625,2,252],
+          [9,28,1,879513042,879513042,2,253],
+          [9,29,1,2625,2625,2,254],
+          [9,30,1,1181762625,1181762625,2,255],
+          [10,31,19,27908793,13840584,2,256],
+          [11,32,1,103801583,103801583,2,257],
+          [12,33,87,62039546,17529542,2,258],
+          [13,34,18,537519541,240231125,2,259],
+          [14,36,81,419919247,22281250,2,260],
+          [15,37,4,77832,22458,2,261],
+          [15,38,4,76500,22166,2,262],
+          [16,39,2,50438666,25578375,2,263],
+          [16,40,2,50437500,25577708,2,264],
+          [0,0,20,10603965584,9742122667,3,312],
+          [0,1,1,111065542,111065542,3,313],
+          [0,2,16,2984365501,202347334,3,314],
+          [0,3,1,3468907708,3468907708,3,315],
+          [0,4,1,32913910125,32913910125,3,316],
+          [0,5,1,30602208,30602208,3,317],
+          [0,6,1,530208,530208,3,318],
+          [0,7,1,1836394084,1836394084,3,319],
+          [1,9,4,49542,15125,3,320],
+          [1,10,2,46042,23250,3,321],
+          [1,11,4,76708,22000,3,322],
+          [2,12,1,25169333,25169333,3,323],
+          [2,13,1,7237944791,7237944791,3,324],
+          [2,14,1,3738410500,3738410500,3,325],
+          [2,15,1,463459,463459,3,326],
+          [2,16,1,32912510417,32912510417,3,327],
+          [3,17,9,1654667,245292,3,328],
+          [3,18,17,1945000,378125,3,329],
+          [3,19,13,2672417,463000,3,330],
+          [4,15,2,358959,185667,3,331],
+          [4,20,2,234375,130042,3,332],
+          [4,21,2,60244708,30205125,3,333],
+          [5,22,20,815747,809667,3,334],
+          [6,23,32,1246811125,82022083,3,335],
+          [6,24,32,397687164,27237375,3,336],
+          [7,25,16,3824291,475000,3,337],
+          [8,26,8520,591912032,17275166,3,338],
+          [9,27,1,2071588250,2071588250,3,339],
+          [9,28,1,890649125,890649125,3,340],
+          [9,29,1,2292,2292,3,341],
+          [9,30,1,1177217042,1177217042,3,342],
+          [10,31,19,28063832,13523041,3,343],
+          [11,32,1,112089708,112089708,3,344],
+          [12,33,87,55591955,16567250,3,345],
+          [13,34,18,536931707,239988791,3,346],
+          [14,36,81,454669208,19185750,3,347],
+          [15,37,4,79000,22708,3,348],
+          [15,38,4,77666,22208,3,349],
+          [16,39,2,54589667,27662417,3,350],
+          [16,40,2,54588583,27661958,3,351]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["memory","compile_ns","managed_live_bytes","managed_peak_bytes","allocation_count","driver_current_allocated_bytes","kernel_calls","kernel_ns","blit_calls","blit_ns","host_copy_bytes","host_copy_ns","transfer_blit_bytes","transfer_staging_bytes","_source_line"],
+        "dictionaries": {
+          "memory": ["Copy"]
+        },
+        "kind": "metal_checkpoint",
+        "rows": [
+          [0,2189250,947914400,7054820072,78,948961280,6103,21139275010,10995,482909430,45634992976,666765201,45634992976,8388608,91],
+          [0,2189250,947914400,7054821096,140,948961280,12129,34452281555,20219,782148480,76740913728,1113000585,76740913728,8388608,178],
+          [0,2189250,947914400,7054821096,202,948961280,18155,47740064963,29443,1077813057,107846834480,1561261297,107846834480,8388608,265],
+          [0,2189250,947914400,7054821096,264,948961280,24181,61034729305,38667,1381539133,138952755232,2010229568,138952755232,8388608,352],
+          [0,2189250,411043520,7054821096,264,412090368,24181,61034729305,38667,1381539133,138952755232,2010229568,138952755232,8388608,364]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["node.1.0",true,0,536870880,3221223680,1,26045297,9865361,1191699191,2688,92],
+          ["node.1.1",true,0,536870880,3221223680,1,47709336,20228053,2376899777,5376,179],
+          ["node.1.2",true,0,536870880,3221223680,1,68728221,30231018,3555280869,8064,266],
+          ["node.1.3",true,0,536870880,3221223680,1,89903223,40754195,4729155822,10752,353],
+          ["GPU grouped process remainder",true,0,0,3221223680,0,89903223,40754195,4729155822,10752,365]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["node.1.0",0,24,15065940160,24160142848,1407205872,4167800769,13061479672,556573129,5796744416,947914400,7054820072,78,67108864,326048668,1080436666,1674843791,2489514663,93],
+          ["node.1.1",0,47,29024583696,34898510848,2560922872,6358439067,21375738002,1020214998,11379000455,947914400,7054821096,140,67108864,603066757,1956596876,2695398737,3657394433,180],
+          ["node.1.2",0,70,42983227232,45636878848,3721401198,8501158555,29658741379,1484824871,16974405911,947914400,7054821096,202,67108864,879822878,2839760913,3702136319,4791480346,267],
+          ["node.1.3",0,93,56941870768,56375246848,4875068284,10679931807,37936313924,1946734572,22570650413,947914400,7054821096,264,67108864,1155770749,3716945756,4731007642,5939432715,354],
+          ["GPU grouped process remainder",0,93,56941870768,56375246848,4875068284,10679931807,37936313924,1946734572,22570650413,411043520,7054821096,264,67108864,1155770749,3716945756,4731007642,5939432715,366]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["node.1.0",0,0,87059357,200435236,1080436666,0,0,111,94],
+          ["node.1.1",0,0,168137178,295531935,1956596876,0,0,222,181],
+          ["node.1.2",0,0,248501302,388428736,2839760913,0,0,333,268],
+          ["node.1.3",0,0,330085368,482245054,3716945756,0,0,444,355],
+          ["GPU grouped process remainder",0,0,330085368,482245054,3716945756,0,0,444,367]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["node.1.0",0,4,15,7397080959,8458711756,18581311918,550601625,24159191040,13421772800,95],
+          ["node.1.1",0,7,23,11817692582,12373558668,27247286419,795256334,34896609280,13421772800,182],
+          ["node.1.2",0,10,31,16241917209,16241996006,35825020210,1028388751,45634027520,13421772800,269],
+          ["node.1.3",0,13,39,20679618627,20093820340,44420236417,1277542543,56371445760,13421772800,356],
+          ["GPU grouped process remainder",0,13,39,20679618627,20093820340,44420236417,1277542543,56371445760,13421772800,368]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","mask_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_quotient_checkpoint",
+        "rows": [
+          ["node.1.0",0,0,0,96],
+          ["node.1.1",0,0,0,183],
+          ["node.1.2",0,0,0,270],
+          ["node.1.3",0,0,0,357],
+          ["GPU grouped process remainder",0,0,0,369]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","parallel_decode_bytes","parallel_decode_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_readback_checkpoint",
+        "rows": [
+          ["node.1.0",0,24159190624,360,97],
+          ["node.1.1",0,34896608448,520,184],
+          ["node.1.2",0,45634026272,680,271],
+          ["node.1.3",0,56371444096,840,358],
+          ["GPU grouped process remainder",0,56371444096,840,370]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["node.1.0",0,1,2720,6207582624,201326592,114278912,3604252792,98],
+          ["node.1.1",0,2,5440,12415165248,402653184,218413945,7118321708,185],
+          ["node.1.2",0,3,8160,18622747872,603979776,324359450,10649863166,272],
+          ["node.1.3",0,4,10880,24830330496,805306368,431319902,14219261874,359],
+          ["GPU grouped process remainder",0,4,10880,24830330496,805306368,431319902,14219261874,371]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["node.1.0",0,351906991,600899739,28794627,902478,14927706,616242711,24663785,1163959,20453705,0,99],
+          ["node.1.1",0,702961036,1176939659,52799039,1661897,27113525,1235017766,49283665,2370129,41015166,0,186],
+          ["node.1.2",0,1057882790,1760295287,77796498,2532271,41423785,1843327499,73764037,3593211,62564879,0,273],
+          ["node.1.3",0,1416639856,2357038689,104073238,3536991,56267308,2455271698,98605245,4774414,83457460,0,360],
+          ["GPU grouped process remainder",0,1416639856,2357038689,104073238,3536991,56267308,2455271698,98605245,4774414,83457460,0,372]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["node.1.0",0,0,0,100],
+          ["node.1.1",0,0,0,187],
+          ["node.1.2",0,0,0,274],
+          ["node.1.3",0,0,0,361],
+          ["GPU grouped process remainder",0,0,0,373]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","saved_input_bytes","compress_ns","ntt_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_compact_checkpoint",
+        "rows": [
+          ["node.1.0",0,1,29695672320,16133496,1950123500,0,101],
+          ["node.1.1",0,2,59391344640,31631533,3837978416,0,188],
+          ["node.1.2",0,3,89087016960,47192771,5738546082,0,275],
+          ["node.1.3",0,4,118782689280,63750224,7655646959,0,362],
+          ["GPU grouped process remainder",0,4,118782689280,63750224,7655646959,0,374]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,375]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","resident_lde","gpu_openings","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [152866,31386120192,false,true,true,false,376]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["peak_rss_bytes","peak_footprint_bytes","sample_ms","gpu_bytes_overlap_process_memory","_source_line"],
+        "dictionaries": {},
+        "kind": "metal_worker_memory",
+        "rows": [
+          [40433238016,43667747808,500,true,377]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["grouped process remainder",100,0,0,"inclusive_nonadditive",6]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-prune.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["grouped process remainder"],
+          "target": ["p3_batch_stark::symbolic","p3_batch_stark::verifier","p3_field::batch_inverse"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"compute constraint layout with lookups",8,1508000,227917,0,7],
+          [0,"evaluate constraints symbolically",16,1719082,181250,0,8],
+          [0,"infer constraint degree",12,2315165,271375,0,9],
+          [1,"infer log of constraint degree",2,344500,173250,0,10],
+          [1,"verify constraints",2,220583,122375,0,11],
+          [1,"verify_batch",2,63286708,31728833,0,12],
+          [2,"batch_multiplicative_inverse",4864,2040921,222500,0,13]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-prune.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [101,0,true,false,14]
+        ],
+        "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-prune.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P0"],
+  "platform": {
+    "architecture": "aarch64",
+    "backend": "metal",
+    "cpu": "Apple M5 Pro",
+    "gpu": "Apple M5 Pro",
+    "memory_model": "unified",
+    "os": "macos",
+    "recorded_platform": "macOS-27.2-arm64-arm-64bit-Mach-O",
+    "unified_memory_bytes": 68719476736
+  },
+  "proofs": [
+    {
+      "artifact": "node.2.0",
+      "cache_hits": 0,
+      "elapsed_seconds": 46.801,
+      "resumed": false,
+      "setups": 1,
+      "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log",
+      "source_line": 47
+    },
+    {
+      "artifact": "node.2.1",
+      "cache_hits": 1,
+      "elapsed_seconds": 34.003,
+      "resumed": false,
+      "setups": 1,
+      "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log",
+      "source_line": 136
+    },
+    {
+      "artifact": "node.3.0",
+      "cache_hits": 2,
+      "elapsed_seconds": 33.209,
+      "resumed": false,
+      "setups": 1,
+      "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log",
+      "source_line": 217
+    },
+    {
+      "artifact": "node.1.0",
+      "cache_hits": 0,
+      "elapsed_seconds": 47.519,
+      "resumed": false,
+      "setups": 1,
+      "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log",
+      "source_line": 47
+    },
+    {
+      "artifact": "node.1.1",
+      "cache_hits": 1,
+      "elapsed_seconds": 35.151,
+      "resumed": false,
+      "setups": 1,
+      "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log",
+      "source_line": 136
+    },
+    {
+      "artifact": "node.1.2",
+      "cache_hits": 2,
+      "elapsed_seconds": 34.612,
+      "resumed": false,
+      "setups": 1,
+      "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log",
+      "source_line": 223
+    },
+    {
+      "artifact": "node.1.3",
+      "cache_hits": 3,
+      "elapsed_seconds": 35.034,
+      "resumed": false,
+      "setups": 1,
+      "source": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log",
+      "source_line": 310
+    }
+  ],
+  "revision": {
+    "binary_sha256": "35a083f262827adf11cff5b294cb7227e45083649f5ae28c8dee61c2590d0722",
+    "dirty": false,
+    "git_commit": "8b4ee7af1345805bd5d7ca5c6db91d69af1134c9",
+    "profile_sha256": "ec4cff0486a3099bf279b0b4da91486c03ad242dbc6093cd470d33207c755c34",
+    "source_archive_sha256": "4e4591855b27bf03f779a541cd352d024fbb57747fb2cf874db699655fb23dd4",
+    "source_hashes": {
+      "Cargo.lock": "3eabbacf19247b2df7fadef10c78a545ccea60db2593411d6953a7a16b614f54",
+      "Cargo.toml": "a26211e2e3bdef35c20f5780b77d3c62bf992d2ccd727c966a4d52493d5410ef",
+      "scripts/bench-apple-metal.py": "d2b0b195f475268c1ff2222eed48139b6c51e437af123225643cd1de7a61e4ac",
+      "scripts/build-apple-metal.py": "c767c1ea445f799f1f4451484af2aebc020a3f631ac7b7182f6fe6538d565588",
+      "scripts/generate-metal-kernels.py": "54f982c459cdbdaa2d6523a59acfbd2f8d8bf851e269934883a6efa491e9d2e8",
+      "scripts/test-metal-backend.py": "a07818306109c3fe39fba289c471cc8c8c6f0f03117a88f2977c83b8cd033d2a",
+      "src/batch_common.rs": "3cd9b4fb345dd210dd0f48b6ab7c76adfc52f7c08de56cdf090cf463bd96cfa2",
+      "src/batch_htlc_air.rs": "06e6736ce76fc879a7e2cb5cd74837f81842d990bdc9702550e0d5d2f3a608b6",
+      "src/batch_joinsplit_air.rs": "c29391a10d7e9c6852ffebd891ac13031978b4d4183c2d368c449263e666d818",
+      "src/bin/block_v2_artifact_audit.rs": "9ee7cfeaec0c6b6967bb2682d0b3c4e75c6196310d07043e18df404d244ee0a5",
+      "src/bin/block_v2_cpu_worker.rs": "2db37bbbf197e507c79e670ccb9429f4c7bbab293bf86f47067f7ee2a390a3f9",
+      "src/bin/block_v2_execution_probe.rs": "545d1cfc09f541aeaf01e646e0f0bd6fc035c5a1393d31e96c81ef1d33c76f37",
+      "src/bin/block_v2_feasibility.rs": "15e8d5df03e5efe3d21c9f6d5c581ecd9dc3ec9399d8972dae264d787c1c6d03",
+      "src/bin/block_v2_four_wallet_geometry.rs": "b2bcd1ea23d223e272ea9916b5717ec585eaa792c7d8eac018ca82fb9c313f90",
+      "src/bin/block_v2_gpu_grouped_probe.rs": "44c21e63257a3a9a85b7f036493d74ac702bd11d71450ca970563a4d5efb6be2",
+      "src/bin/block_v2_grouped_artifact_audit.rs": "eb0cd9bdc7795d3847a957b67c407275690532889ce230fd82fa3c29ce82a2f1",
+      "src/bin/block_v2_grouped_probe.rs": "966d17b42719e6c446e2076f92667df97c3ff71c98c28035e9d0f7cde7fb0203",
+      "src/bin/block_v2_grouped_publics.rs": "9957c2af93af20ab9caa4f31d4510743eb1091f7ac87cdd3b6f4f6e2962e72e9",
+      "src/bin/block_v2_metal_grouped_probe.rs": "178c1ae26ad84681eadbdb14903132a57f2142fd5ba0597593b4ba53010c14a8",
+      "src/bin/block_v2_padding_probe.rs": "2a07fa3ab1222a5eb64686d2f5d728917064af22ada88fa72dd67101b3c54aee",
+      "src/bin/block_v2_recursion_probe.rs": "82e2a15af1f57ce96504524f94941dd4a60b8163341f134f6e77f11321468448",
+      "src/bin/block_v2_single_eight_probe.rs": "6d0ed0509373207bb85fd38176d2fe333b1e46138d9d2afb256598dd2beb8ed7",
+      "src/bin/dump_p2.rs": "25e17f5672ebaa13ef17025a36ba6bf64df21a77a84c3eaac203b7da492e6049",
+      "src/bin/field_compare.rs": "67ebaae50231039fb736c75754c2d590d91bf4cec3700188d9e383f67e95dce9",
+      "src/bin/grouped_common/mod.rs": "39bbcadd79109fe34d3e0f1789488ef3895fb8e93450f2df4ac7835cc7e4ba1f",
+      "src/block_v2/codec.rs": "422ebdeec967f62698aa40783f6f3b7fb997314468fe661fdd48612426776799",
+      "src/block_v2/codec/fixed_u64.rs": "a052e4f8a0e8753ba2e7c3ff76bb0367e7f90937c633f03fcf5d5871ada7bf83",
+      "src/block_v2/commitment.rs": "067aa4f19a9b77816d66913c279ccc4edce9163f2fbcdcfdd0c64d61ecae9558",
+      "src/block_v2/coset_workspace.rs": "c24635d9d8adb3317128d5ff312df33983cab0af623620b54250dfd25ce8cf2e",
+      "src/block_v2/execution/arrival_process_tests.rs": "7dee9285cafee8de7a857d7ebe43cfda9cc5e456aadd7bc0fd01a223a1c19a80",
+      "src/block_v2/execution/artifact_store.rs": "5e2efbd25078d9bff68b391da85a0285c35e15b015e76733eb5961718563ed4a",
+      "src/block_v2/execution/artifact_store_tests.rs": "d3b45ffeb7a96f736ea58288c30c93b018092f3d19f9e538d79a3e04af2a39e9",
+      "src/block_v2/execution/dag.rs": "c172cbad2da73b2a5b138e1d8cd7e3b0ede2de10288e54cfdbb25eed60b7a44e",
+      "src/block_v2/execution/dag_snapshot.rs": "68f9fe4018792566130e5f55c537b8560c73015ded4a4078fe62f3302e145888",
+      "src/block_v2/execution/dag_tests.rs": "6f88ecd41b22e8bc9a87d2b0837896e836fcc4bf8cdf2ba9e8fce2f4d016616b",
+      "src/block_v2/execution/job.rs": "cdf37cc73a8ffe7d8223cc36c03cec5dda75c5520694f0ab64e7b2014662ecc5",
+      "src/block_v2/execution/journal.rs": "61cfd1343ec98a8dc9ece062e0cd9a0aa553653af0e34ca5e8767385540a190c",
+      "src/block_v2/execution/journal_tests.rs": "b1ee2c85e9b3e50922f236064eac6f17a9236c509d36ed9cf7b9fbe37ff2c5a3",
+      "src/block_v2/execution/journal_workspace.rs": "dcab2f8f26ef575ade7d1aa5937bff2f9e9cbd240ed4f10f3a2cc1f575aadd24",
+      "src/block_v2/execution/launch.rs": "6a99b254fb656c9b0dfb1e7c013fcb7133e02caf225ab1a9156ba1c2086103dd",
+      "src/block_v2/execution/launch_tests.rs": "81898884c05bb0b7e92a7722a00a14e16e9f2d15a4d135100023e99b333a91a4",
+      "src/block_v2/execution/mod.rs": "f593c0aafa762c7477f219210d8d35c1dc5c211644f4cc67128e538eed5ef088",
+      "src/block_v2/execution/os_worker.rs": "389759d78c2caac38c4b03a41026760aeddcc39a972b0e536e1bd33d56e4de6b",
+      "src/block_v2/execution/os_worker_tests.rs": "3dc4215c5f1f6cb0b20bf26df2dbe246809d1e15c8309b224b44d6672daf2313",
+      "src/block_v2/execution/process.rs": "133923cedbcb51adc4b70a99250f1cc34a48c5458297ce93ecf0c3fff672b1ae",
+      "src/block_v2/execution/process_tests.rs": "ea2094fba9d2b8bd2271b4cb57cbcbad25b4f5bfa00ed8dc80ae830bbee4a99a",
+      "src/block_v2/execution/resources.rs": "289902d49558874df8119ffcfaa3963adfa2091df9ba4b4fb697758f223021a7",
+      "src/block_v2/execution/selection.rs": "c47744a01ca484f2ea856d48dd033e8b2f3b69881b858570582456eb32c0c71c",
+      "src/block_v2/execution/selection_tests.rs": "b9f98e43d00204e6cc0c7444112c2d1e1f45a041da1f349db79d7d8b0651ea6c",
+      "src/block_v2/execution/supervisor.rs": "755ab143fb05d91be0832ead2390df5a5e8f078785f0a4efceb06764179657c9",
+      "src/block_v2/execution/supervisor_process_tests.rs": "1810dd35ce52c992058e4a25792885c83c425e5938178e7825a070bfe3692303",
+      "src/block_v2/execution/supervisor_tests.rs": "a2142ccd259f2759c99a575e71d553d12f06b5ec4f29fb8ef1cd6decb5840d7a",
+      "src/block_v2/execution/test_fixture.rs": "f2d2d3920ca6928a6211958a0bb3d09e80d1331d8e990237bb435ae94e8f62cd",
+      "src/block_v2/execution/transport.rs": "794c2d66c28380dec04246bb42aa669e53d2f3dfc86253ed0ba644e95efa31fb",
+      "src/block_v2/execution/transport_tests.rs": "f383ac7ff0acc36984585e9696e8407cfaa26c57878e60cc69fd7858f103b75c",
+      "src/block_v2/execution/verification_process_tests.rs": "17a34207ec731e4b3c11a0145f02a166f804d039cbce583fc92206e3b402e751",
+      "src/block_v2/execution/verification_tests.rs": "72ba6bf04f0b7fd63f2bd2e53d5de920bccc52995cda9d4abde2f843ed98a72a",
+      "src/block_v2/execution/worker.rs": "78938d6eb75fe91dd7332d5731099dba7b609cb496719908eef440b19aadd020",
+      "src/block_v2/execution/worker_cached.rs": "65bcbbdea1f6fa27a06dc2dc446d09f029d8ab1299b18fdf4694388d333748c7",
+      "src/block_v2/execution/worker_cached_bench_tests.rs": "40ea77471252248d474ebec32bd5c9db8d1d18256820f051db172a2e5c561bae",
+      "src/block_v2/execution/worker_cached_tests.rs": "b3e828e45bced5388cdfc58cf289889144c855dceea463af71dafc2178474469",
+      "src/block_v2/execution/worker_packet.rs": "65122d78e4f30be41f8c0df01fd9d7318ac53f58d7a527293ce239aa510f1ae8",
+      "src/block_v2/execution/worker_packet_tests.rs": "b543a4ab07eee70e3d0be7b01fa478bd3b4386ed3c4dd160ba61913dbe15c048",
+      "src/block_v2/execution/worker_tests.rs": "2a783cbda48bd12befe472cdf47d06ac17c8f06a79f5818e381fcaab805d6c2d",
+      "src/block_v2/execution/workspace.rs": "c0488d18c1c823e93794c1749a5114ae4f85a4abc199683605d2a656e5c0fad6",
+      "src/block_v2/execution/workspace_tests.rs": "d707f8e3fc5b26b35f7769b82effab6a88b50edf602be173b585f14fb7cc385d",
+      "src/block_v2/feasibility.rs": "02809c8f1ac49b7eabdaaa70edd9a016600e214d88eae5062902b9daaf37c5b8",
+      "src/block_v2/gpu_hash.rs": "968f7881eddc6d88d5b71c16ad6369f61e87a88f6bdd042e1f04a7185ed3cc7c",
+      "src/block_v2/gpu_hash/engine.rs": "3409c2867a12bf3260e532ec9ae5644d7a2f082f0cffe9a8bd6b38551366600c",
+      "src/block_v2/gpu_hash/engine/lde_execute.rs": "ad69bc20d7e3520118492f682bf45bd99fff891c230d8f5718f5dc8777dc7301",
+      "src/block_v2/gpu_hash/engine/lde_plan.rs": "68bcf085557830cab63d75c55e0f14d2d0314c493f62021d9ac7d6e67454bba3",
+      "src/block_v2/gpu_hash/engine/lde_readback.rs": "271be7859d82af7d60f839349344601c4daae044fd90f64bbe35c7a989d4a15e",
+      "src/block_v2/gpu_hash/engine/opening_reduce.rs": "48006596c50a11edd3a8eb56165d725fae078fa550c0efb80fedb2e9c6a89d42",
+      "src/block_v2/gpu_hash/engine/opening_reduce/compact.rs": "640ac7b01a85a920473a0cf14a7ae7a34ac65451ddbd1b2cbc2744ab8bfbe0db",
+      "src/block_v2/gpu_hash/engine/opening_reduce/compact/tests.rs": "37d88c43cb1a030ea67fa6f02c7549b3410cdb19429522cf62901d555078925e",
+      "src/block_v2/gpu_quotient_prover/LICENSE-APACHE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+      "src/block_v2/gpu_quotient_prover/check_constraints.rs": "62a0e1fd55cfa37649662f4b93979d38c13faa098e39be7c800caa880776539f",
+      "src/block_v2/gpu_quotient_prover/mod.rs": "a4951acb66b4659408ea6de952ca11750b62da2e0e724d50d9ee1f2617cd4069",
+      "src/block_v2/heap_dft.rs": "f3819ce543ee0c4c1f7bad1adafbd9963f92b1772397abeeab578074c1664b21",
+      "src/block_v2/leaf.rs": "473e66253097d8173d5017c9d63e5b629944143221c0690cf4feed34d7b075db",
+      "src/block_v2/machine/air.rs": "0ef654511b35b6c7127efdaf46915650c00d9c4e2c54ae2f042ed9d32af8a52d",
+      "src/block_v2/machine/analysis.rs": "de21d7467882b47b055cb8b4e3500364ce20b8ef239106d481830e98b4964dc5",
+      "src/block_v2/machine/backend.rs": "1d0e814becbcaabe7117ac2122d4bf48d02c5cb5e2cb573090483bdab447ffc0",
+      "src/block_v2/machine/circuit.rs": "4635ba29e2910db91214035e2de1ba836b22dde0331f234abdaaa21b743dfeec",
+      "src/block_v2/machine/fingerprint.rs": "a351bbd5d8927dbc801d666463c85a9210e49daa0e5093030f9c1e42508c202a",
+      "src/block_v2/machine/merkle.rs": "29f734e5f544ae13275d36878691a6eeabbf4b6585dddd44e55aa60f32df5c78",
+      "src/block_v2/machine/mod.rs": "2407cccf9e07c78e142e0be556a5c7d2729958f5bcd941d6beef362acaed7db3",
+      "src/block_v2/machine/program.rs": "044175faf44c48903a567ae5599b347927efd94b32d4c5031ed195205eec9172",
+      "src/block_v2/machine/programs.rs": "8c2e80b4932e974ed7e01fd5fb1a9dd0b899d2db38044c6667513a8ced4efbd8",
+      "src/block_v2/machine/transcript.rs": "c70ad6100e5555df005d341a7d8ae6e3de2153e57f6e333c3ce0f0d4b62120ed",
+      "src/block_v2/machine/usage.rs": "5b8b0609788108ae14ee3445c93deb09ec616a37f2284dd2453167709db6746f",
+      "src/block_v2/machine/verifier/batch.rs": "28a09391b46099832543cb2ea17efb3f06b68dd421ca1fb02cd1f74c693785db",
+      "src/block_v2/machine/verifier/expressions.rs": "8744bb23a7cfd96436ea1c3bbe02d2e8b21b5cadf2916eaa0b196b38a3e28ff3",
+      "src/block_v2/machine/verifier/mod.rs": "b3f4716bbb89a2bb5601b88014d9421ffa0cf2e69012cbe3b2440ed52981854e",
+      "src/block_v2/machine/verifier/pcs.rs": "58fda55972da258ae7ad2bd27893b9d7b011ff843339794179e5e587dc72780a",
+      "src/block_v2/machine/verifier/template.rs": "2f055b2da7f539fdc293acdbd9c3d7c3521e5af4da57a25ca50a1b7d752407e5",
+      "src/block_v2/machine/verifier/uni.rs": "5645f1805e54fd959ac7bcf972ca922d02f556b0e47bf55751d83649cc8e2da5",
+      "src/block_v2/mod.rs": "b2bedc8c71cdcb6b8dcbd63384597979ffb6d581b43564c3c5692edf99627f94",
+      "src/block_v2/normalization_workspace.rs": "be32cb3d3a7b5500f06728786a95d71212808d3d59d6db1e4f5ee93a1a181341",
+      "src/block_v2/opening_pcs.rs": "fbf87587697fe7163b668435cf369122c02fb11000527c8ee6cb00eadcbc39ef",
+      "src/block_v2/perf.rs": "632796ba86623a01aa58fe4b3a4e5ee5086e5adca5592304c5e58413cf802ff2",
+      "src/block_v2/perf/timeline.rs": "0b14c986f5725b9d2a62b56d3b0f4c14d72d52fef2eae7e5e0421d5df89d07cd",
+      "src/block_v2/profile.rs": "34217dc23b72b4229dbc41bdf29db71887f92d8dda0f502bb2a12d846a785343",
+      "src/block_v2/quotient_pcs.rs": "06fe234c5ecb9443c277ce098e2f8886ddfd519200f896901ee3fcc1bda164a0",
+      "src/block_v2/quotient_pipeline_tests.rs": "5634d8e95abce5052482640a0183a7977ff7f541764c2d04c560cfb5b2e73332",
+      "src/block_v2/recursive.rs": "a3b867014e5417258764eb1eb9d3bbe780db0607721c7ea7a98480feffe6fd55",
+      "src/block_v2/resident_pcs.rs": "fe727c99b7223589ae1790348b53d9efe5601e23b901d7188b942766dc7dfb82",
+      "src/block_v2/resident_pcs_tests.rs": "17cf45d001af642f7c5a2d7fc4e00eec8f0dfb32e68a44fee992fa70e664cc70",
+      "src/config.rs": "4043fe28edf47a020455462df16803ad692913b19f509650b9536670a6e67702",
+      "src/constraint_fingerprint.rs": "41f695147adea83dfa24be61c0250f9960be53301b5ea7f79381e99b4f2b6f19",
+      "src/domains.rs": "4b47186d6a0c94c4b7c6f4fe838c7ace7d429415f96aa7b3190465fab0aa640d",
+      "src/gpu.rs": "8daf184a8c590ff3cf1829a560d3a7cdd2636c2bf21b504b36bc17e53e15293c",
+      "src/gpu_constants.rs": "b588ad5cffe13371379daf3e75962034b97714bd8563bf2d107e82bba9448a53",
+      "src/gpu_pcs.rs": "98304ed27c73d4ab6425c4a8306959e55d7dbb5d74f1e8f91d681a0aa7fe7ada",
+      "src/htlc_air.rs": "304a3182bd0a5324fc5620e9d7119a0969a9774ad8c1cdec7fa775eae8892262",
+      "src/joinsplit_air.rs": "72f80a629e93d4cd860925c4df775e8028d99af4dbdc7095fcc6729be9e00858",
+      "src/lib.rs": "1aaa17b0fa28ef930e977bdfdd036295701d7c85cb534b9bff4674b5c79f7c52",
+      "src/main.rs": "63364c6611fcde59f6f3eb21ba185f2372992b483cdf866b07659f59011da1db",
+      "src/metal_compute/kernels.metal": "efa996dc33238e632c0f3d1ca680fc24e8b291bd33b8d6abbf23e623c0df54a1",
+      "src/metal_compute/mod.rs": "66bca8e9f86203d77fa7b0d8c14bccb669f22d52c6de548c7f04625664621659",
+      "src/metal_compute/tests.rs": "2862d382ea281a14e394f7b1ce29477d2f0085bdd04634bd14ee2161e328091d",
+      "src/poseidon2_air.rs": "cc4a77046fa925106d8d6eb190249126be58c6631d3d30df1912ace515e56cd4",
+      "src/quotient_gpu.rs": "034ee252e4884254f1861913a920e7dacf379b2a7a818a8745c0d8e33125436e",
+      "src/recursion/aggregation.rs": "ffb07547f4b08e6097f09469d93840b6a1a6c6a8283f8e104a64fa72ba592c44",
+      "src/recursion/fri_fold.rs": "0b55d8b20e58c00dc1aa04c9adc42fa7fa5475f4238e65542ede41df67fcd88d",
+      "src/recursion/fri_merkle.rs": "48aaaedc8871bd62b299e965c322931e85c3e935da0cbd27958833f4a56b1e9e",
+      "src/recursion/mod.rs": "5febfe3bd2b9a513e3c60c0f66e62b32f43d286fa9be5db900fab05a11766e7a",
+      "src/recursion/monolith/air.rs": "a1f525193276c71089bb47ab79d01845701e87e2e71f4833cf5a43adfcb8e3e6",
+      "src/recursion/monolith/build.rs": "30e9c8b7cde3b23bc1db5873d5c9b7443318c22fad1fcf4a54febc0c08e08609",
+      "src/recursion/monolith/gadgets.rs": "d01d746040b31db34109089e27cc9a3351ba013bce9dde2063d684810910179f",
+      "src/recursion/monolith/lineage.rs": "5a9836d306f9a8635c7414440e79c7c63202b019c8183e02356061fa33a3f4b1",
+      "src/recursion/monolith/mod.rs": "70ca19e141fd77e61ef3a4b25dce2e20aaba89ccb1fdeb114875f54c19749980",
+      "src/recursion/monolith/tests.rs": "ca0d65d1a48e4c21d51cfbb8950f5bb97d3a9de8ece7aa24b0ea91a09e70f444",
+      "src/recursion/native_fri.rs": "8dd2915baa1a0392328864dcac219b10c0f0095c0739f8bd83c05e96b060e107",
+      "src/recursion/native_verify.rs": "3867e488f4eb24a3226e81858e9db7d7d15c346aa53bda24c9b8cb2ebf40651c",
+      "src/recursion/transcript.rs": "9d4847eb383c6f45715c05ecc934f33879d343f388ac24f29ab95e0efe459b7e",
+      "src/recursion/verifier_air.rs": "0a077470773ecb0f21783283371026675a9adb0f203e443c6a7e771ee69b61d1",
+      "src/spend_common.rs": "3979dca0b6266d5bd768d31313f02f115aea5e220ca174401188f85cf595e3b3",
+      "src/spill_alloc.rs": "189dea3e8d6eecad6a40fe48ee890e1700a0acf0461c2a2058d63b75abcfc0af",
+      "src/stream_prove.rs": "a7553d195879258313b5a3745cdb3dec2ab23c39c53dfd85978805a45999758c"
+    }
+  },
+  "run_id": "apple-8c3bf3cd117be23d0214-42-measured-copy-18t-fusion-r1",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 1220789,
+      "path": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/result.json",
+      "sha256": "8c3bf3cd117be23d02140b0498b8892e1df10c8c0f33c9d09316f0964362a05c"
+    },
+    {
+      "bytes": 3901,
+      "path": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/fixture-publics.log",
+      "sha256": "875b5d71ef3c2ee482fe5f64e10bdc39606e50bf6bb377e850438b5485cf2fba"
+    },
+    {
+      "bytes": 315,
+      "path": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-audit.log",
+      "sha256": "37f7f09c295220576ba732c78604657dab95919d1a90b2fd71761d7710793545"
+    },
+    {
+      "bytes": 2044,
+      "path": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-check.log",
+      "sha256": "16dabd3f303b9807f16fbdc9171c303f9d4576edbbb41458b9b7040ff7b819ea"
+    },
+    {
+      "bytes": 30541,
+      "path": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-merges.log",
+      "sha256": "73ff75e6110da212d0a52e0cf03d81d02b0877b380968175c1d02d6cb2d76660"
+    },
+    {
+      "bytes": 41228,
+      "path": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-pairs.log",
+      "sha256": "198f26bf1b2672f2e616dac7986a2113c5ace02d87fae067c0d136042405fc8b"
+    },
+    {
+      "bytes": 1601,
+      "path": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/42-measured-copy-18t-fusion-r1-prune.log",
+      "sha256": "06bbf85c5e48df148e71ecdfbd7b0146b7610355bc1f3f83b39288e0fe93af3d"
+    }
+  ],
+  "stages": [
+    {
+      "completed_utc": null,
+      "maximum_resident_bytes": 19841024,
+      "name": "42-measured-copy-18t-fusion-r1-check",
+      "reported_seconds": 0.325,
+      "spill_peak_bytes": 0,
+      "started_utc": null,
+      "status": "PASS",
+      "wall_seconds": 0.5082747919987014
+    },
+    {
+      "completed_utc": null,
+      "maximum_resident_bytes": 40433238016,
+      "name": "42-measured-copy-18t-fusion-r1-pairs",
+      "reported_seconds": 152.866,
+      "spill_peak_bytes": 31386120192,
+      "started_utc": null,
+      "status": "PASS",
+      "wall_seconds": 153.60186895899824
+    },
+    {
+      "completed_utc": null,
+      "maximum_resident_bytes": 41077784576,
+      "name": "42-measured-copy-18t-fusion-r1-merges",
+      "reported_seconds": 114.702,
+      "spill_peak_bytes": 31671332864,
+      "started_utc": null,
+      "status": "PASS",
+      "wall_seconds": 115.41329829199822
+    },
+    {
+      "completed_utc": null,
+      "maximum_resident_bytes": 12582912,
+      "name": "42-measured-copy-18t-fusion-r1-prune",
+      "reported_seconds": 0.101,
+      "spill_peak_bytes": 0,
+      "started_utc": null,
+      "status": "PASS",
+      "wall_seconds": 0.5112342499996885
+    },
+    {
+      "completed_utc": null,
+      "maximum_resident_bytes": 16744448,
+      "name": "42-measured-copy-18t-fusion-r1-audit",
+      "reported_seconds": null,
+      "spill_peak_bytes": 0,
+      "started_utc": null,
+      "status": "PASS",
+      "wall_seconds": 0.514420749997953
+    }
+  ],
+  "status": "succeeded",
+  "timing": {
+    "boundary": "sum of wrapper and merge worker timers; shader initialization included; preparation/auditing excluded",
+    "completed_utc": null,
+    "elapsed_seconds": 270.69238220899933,
+    "merges_seconds": 114.702,
+    "recursive_seconds": 267.568,
+    "started_utc": null,
+    "wrappers_seconds": 152.866
+  },
+  "track": "apple-silicon",
+  "verification": {
+    "audit_binary_sha256": "49f75e72427f7b31d56571c3e46991dca27d62a7a9b03ac35b5cc2d1afd9a034",
+    "cpu_audited": true,
+    "root_bytes": 1683948,
+    "root_sha256": "39b70e11134aea9baaf6c01e35b1f14c497038f85c90e3f36bfb37b9726fde83"
+  },
+  "workload": {
+    "count_evidence": {
+      "public_header": "grouped_public_export=VERIFIED_WALLET_STATEMENTS count=8 fields=26 kind=1 chain=5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a registry_approved=false aggregate_verified=false production_ready=false",
+      "source": {
+        "bytes": 3901,
+        "path": "/Users/access/code/lattica/benchmark-results/apple-metal-c23d616-20261003/series-04/fixture-publics.log",
+        "sha256": "875b5d71ef3c2ee482fe5f64e10bdc39606e50bf6bb377e850438b5485cf2fba"
+      }
+    },
+    "description": "Eight already-created non-issuance wallet proofs, reused as fixtures; four wrappers and three merges produce seven fresh recursive proofs. CPU root audit follows every trial.",
+    "fixture_reuse": true,
+    "issuance_transactions": 0,
+    "user_transactions": 8
+  }
+}
