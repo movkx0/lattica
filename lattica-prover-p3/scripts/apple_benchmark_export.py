@@ -13,10 +13,11 @@ def fingerprint(data):
     return hashlib.sha256(json.dumps(data, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
-def export_campaign(result_path, output):
+def export_campaign(result_path, output, *, allow_verified_partial=False):
     result_path, output = Path(result_path), Path(output)
     campaign = json.loads(result_path.read_text())
-    if campaign["status"] not in ("COMPLETE_VERIFIED_COMPARISON", "COMPLETE_VERIFIED_PILOTS", "COMPLETE_VERIFIED_EXTENSION", "COMPLETE_VERIFIED_SCREENING"):
+    partial = allow_verified_partial and campaign["status"] == "FAILED"
+    if not partial and campaign["status"] not in ("COMPLETE_VERIFIED_COMPARISON", "COMPLETE_VERIFIED_PILOTS", "COMPLETE_VERIFIED_EXTENSION", "COMPLETE_VERIFIED_SCREENING"):
         raise ValueError("Apple export requires a completed, verified controller result")
     if not campaign["trials"] or not all(t["verified"] for t in campaign["trials"]):
         raise ValueError("unverified Apple trial")
@@ -76,6 +77,8 @@ def export_campaign(result_path, output):
                       pairs_metal=trial.get("pairs_metal"), merges_metal=trial.get("merges_metal"))
         if campaign.get("suite") == "screening":
             config.update(screening=True, screening_reused=trial.get("screening_reused", False))
+        if partial:
+            config.update(partial_campaign=True, campaign_status=campaign["status"], campaign_stop_reason=campaign.get("failure"))
         run["configuration"] = {"apple_metal":config, "memory_limits":{"mmap_bytes":34 << 30, "managed_gpu_bytes":8 << 30,
                                  "sampled_rss_bytes":44 << 30}, "stage_timeout_seconds":7200, "fixture_sha256":campaign["fixture_sha256"],
                                  "memory_policy":campaign["memory_policy"], "build":campaign["build"]}
@@ -93,6 +96,8 @@ def export_campaign(result_path, output):
                                "GPU and host timing clocks are not aligned. Profiling counters overlap and are not additive wall time.", *warnings]
         if campaign.get("suite") == "screening":
             run["limitations"].append("Screening only: one observation per configuration, without repeats or statistical confidence. A reused pilot retains its original phase and time; order and thermal effects are not controlled.")
+        if partial:
+            run["limitations"].append("Verified subset of a stopped campaign. Only fully completed, CPU-audited trials are exported; the interrupted trial is excluded. The planned repeats were not completed.")
         validate_run(run)
         path = output / (run["run_id"] + ".json")
         atomic_bytes(path, json_bytes(run)); paths.append(path)

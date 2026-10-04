@@ -224,7 +224,7 @@ python3 -B scripts/test-metal-backend.py \
   --binary PATH_PRINTED_BY_CARGO --out target/metal-qualification
 
 # Run two pilots, then the complete @@TRIAL_COUNT@@-trial matrix:
-python3 -B scripts/bench-apple-metal.py \
+python3 -B scripts/bench-apple-metal.py --full-matrix \
   --out PATH_TO_NEW_RESULTS_DIRECTORY \
   --pilot-level @@PILOT_LEVEL@@ \
   --threads 8 16 18 24 \

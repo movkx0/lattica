@@ -13,9 +13,10 @@ def main():
     p.add_argument("--component-metadata", type=Path)
     p.add_argument("--portable", type=Path, required=True)
     p.add_argument("--report", type=Path)
+    p.add_argument("--allow-verified-partial", action="store_true", help="export only fully audited trials from a stopped campaign; keep its failure and incomplete repetition status visible")
     args = p.parse_args()
     paths = (export_component(args.result, args.component_metadata, args.portable) if args.component_metadata
-             else export_campaign(args.result, args.portable))
+             else export_campaign(args.result, args.portable, allow_verified_partial=args.allow_verified_partial))
     if args.report:
         with dataset_lock(args.report):
             for path in paths: ingest(args.report, path, DEFAULT_ROOT)

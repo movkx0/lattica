@@ -79,6 +79,24 @@ class AppleExport(unittest.TestCase):
         self.assertEqual(record["configuration"]["screening_reference"]["status"], "FAILED")
         self.assertTrue(any("one observation" in text for text in record["limitations"]))
 
+    def test_partial_export_requires_explicit_opt_in_and_all_trials_audited(self):
+        self.data.update(status="FAILED", failure="controller signal 15")
+        with self.assertRaises(ValueError): self.export()
+        path, = export_campaign(self.result, self.output, allow_verified_partial=True)
+        record = json.loads(path.read_text())
+        self.assertEqual(record["status"], "succeeded")
+        self.assertTrue(record["configuration"]["apple_metal"]["partial_campaign"])
+        self.assertEqual(record["configuration"]["apple_metal"]["campaign_stop_reason"], "controller signal 15")
+        self.assertTrue(any("stopped campaign" in text for text in record["limitations"]))
+        self.data["trials"][0]["verified"] = False
+        self.result.write_text(json.dumps(self.data))
+        with self.assertRaisesRegex(ValueError, "unverified"):
+            export_campaign(self.result, self.output, allow_verified_partial=True)
+        self.data.update(status="RUNNING")
+        self.result.write_text(json.dumps(self.data))
+        with self.assertRaises(ValueError):
+            export_campaign(self.result, self.output, allow_verified_partial=True)
+
     def test_modified_logs_and_resumed_proofs_are_rejected(self):
         log = Path(self.stages[2]["log"])
         log.write_text(log.read_text().replace("resumed=false","resumed=true"))

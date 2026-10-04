@@ -175,23 +175,23 @@ def main():
     parser.add_argument("--screening-threads", type=int, choices=(8, 16, 18, 24), default=18)
     parser.add_argument("--reuse-screening-from", type=Path, help="reuse one audited combined case from a compatible result.json, including a stopped queue")
     parser.add_argument("--pilots-only", action="store_true")
-    parser.add_argument("--pilot-level", choices=("baseline", "quotient", "quotient-compact-deferred"), default="baseline", help="qualify the largest enabled pipeline before measured trials")
-    parser.add_argument("--threads", nargs="+", type=int, choices=(8, 16, 18, 24), default=(8, 16, 18, 24))
+    parser.add_argument("--pilot-level", choices=("baseline", "quotient", "quotient-compact-deferred"), help="full matrix: qualify the largest enabled pipeline before measured trials")
+    parser.add_argument("--threads", nargs="+", type=int, choices=(8, 16, 18, 24), help="full matrix thread counts (default: 8 16 18 24)")
     parser.add_argument("--baseline-only", action="store_true")
-    parser.add_argument("--pipeline-threads", nargs="+", type=int, choices=(8, 16, 18, 24), default=(24,))
+    parser.add_argument("--pipeline-threads", nargs="+", type=int, choices=(8, 16, 18, 24), help="full matrix optimization thread counts (default: 24)")
     parser.add_argument("--reuse-pilots-from", type=Path, help="completed reference result.json; reuse its frozen binaries and validated pilots")
     parser.add_argument("--optimizations", action="store_true", help="include compact/deferred factorial arms and pilots at every thread count")
     parser.add_argument("--build-metadata", type=Path, default=CRATE / "target/metal-build-metadata.json")
     args = parser.parse_args()
     if args.full_matrix and args.reuse_screening_from:
         parser.error("--reuse-screening-from only applies to the small default screen")
-    if not args.full_matrix and (args.optimizations or args.pilots_only or args.reuse_pilots_from or args.baseline_only):
+    if not args.full_matrix and (args.optimizations or args.pilots_only or args.reuse_pilots_from or args.baseline_only or args.threads or args.pipeline_threads or args.pilot_level):
         parser.error("matrix and pilot options require --full-matrix; omit them for the small default screen")
     if args.optimizations and args.reuse_pilots_from:
         parser.error("optimization campaign requires fresh pilots at every selected thread count")
     if args.pilots_only and args.reuse_pilots_from:
         parser.error("--pilots-only cannot reuse pilots")
-    selected_schedule = schedule(args.threads, baseline_only=args.baseline_only, pipeline_threads=args.pipeline_threads, pilots=not args.reuse_pilots_from, pilot_level=args.pilot_level, optimizations=args.optimizations) if args.full_matrix else screening_schedule(args.screening_threads)
+    selected_schedule = schedule(args.threads or (8, 16, 18, 24), baseline_only=args.baseline_only, pipeline_threads=args.pipeline_threads or (24,), pilots=not args.reuse_pilots_from, pilot_level=args.pilot_level or "baseline", optimizations=args.optimizations) if args.full_matrix else screening_schedule(args.screening_threads)
     if platform.system() != "Darwin" or platform.machine() != "arm64":
         parser.error("requires Apple Silicon macOS")
     os.umask(0o077)
