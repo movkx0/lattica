@@ -1,0 +1,44 @@
+{
+  "campaign_ids": ["block-v2-gpu-opening-compact-recursive-2026-10-02"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "lifecycle-evidence",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-9e93f811746a2eb93a65578a",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 324,
+      "path": "lattica-prover-p3/target/block-v2-gpu-compact-runner-20261002-b/lifecycle-evidence/capture-exit.log",
+      "sha256": "ea178ddeb9604372938c5c9a188b5b66beab30068eca4c01db20124a12dd9cb4"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

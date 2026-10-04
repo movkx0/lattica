@@ -1,0 +1,4250 @@
+{
+  "adapter": "grouped",
+  "campaign_ids": ["block-v2-gpu-grouped-matched-pilot-2026-10-01","block-v2-gpu-grouped-resident-proof-2026-10-01","block-v2-gpu-grouped-workflow-2026-10-01"],
+  "configuration": {
+    "accounting": "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py",
+    "auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-artifact-audit",
+    "backend": "resident",
+    "cpu_runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-probe",
+    "evidence": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence",
+    "external": ["8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"],
+    "gpu_index": 0,
+    "gpu_runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-qualification-20261001-b/block-v2-gpu-grouped-probe",
+    "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-job",
+    "mode": "register",
+    "quotient_fusion": 0,
+    "reference": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/reproduction-job",
+    "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-qualification-20261001-b/source.tar.gz"
+  },
+  "kind": "registration",
+  "label": "block-v2-gpu-grouped-resident-registration-20261001-a-evidence",
+  "limitations": ["Research evidence; does not establish production or four-wallet readiness.","Wallet proof creation and canonical chain acceptance are outside this measurement.","Inclusive phase and GPU counters are non-additive; process checkpoints may reset.","Host and OpenCL clocks are separate unless an explicit anchor was recorded."],
+  "measurement_scope": "key_registration",
+  "measurements": {
+    "resource_samples": 469,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["grouped process remainder",273,0,0,"inclusive_nonadditive",6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/02-reference-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["grouped process remainder"],
+          "target": ["p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_field::batch_inverse","p3_matrix","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"evaluate all constraints symbolically",8,189397,35898,0,7],
+          [0,"infer base and extension constraint degree",8,353409,49538,0,8],
+          [1,"compute constraint layout with lookups",18,8943961,529070,0,9],
+          [1,"evaluate constraints symbolically",27,6883017,283765,0,10],
+          [1,"infer constraint degree",18,9179557,556360,0,11],
+          [2,"batch_multiplicative_inverse",13576,19051134,260951,0,12],
+          [3,"columnwise_dot_product",264,6605143,293300,0,13],
+          [4,"get_log_num_quotient_chunks",8,360102,50948,0,14],
+          [4,"infer log of base and extension constraint degree",8,357044,50480,0,15],
+          [5,"verify",8,155701941,22355843,0,16],
+          [5,"verify_with_preprocessed",8,155698266,22355344,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/02-reference-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,18],
+          ["memory_full_stall_us",0,19],
+          ["memory_high_events",0,20],
+          ["memory_some_stall_us",0,21],
+          ["minor_faults",6666,22],
+          ["read_bytes",0,23],
+          ["system_ticks",2,24],
+          ["user_ticks",36,25],
+          ["write_bytes",0,26]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/02-reference-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [273,0,true,false,27]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/02-reference-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-gpu-grouped-523973-2.service","exec_stop_post_snapshot",16273408,0,47244640256,0,407874,28]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/02-reference-check.log"
+      },
+      {
+        "clock": "utc_ns",
+        "columns": ["pids","total_mib","utc_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "resource_samples",
+        "rows": [
+          [
+            [],
+            0,
+            "1790901088856295205",
+            1
+          ],
+          [
+            [523998],
+            326,
+            "1790901089528781430",
+            2
+          ],
+          [
+            [523998],
+            326,
+            "1790901090046195546",
+            3
+          ],
+          [
+            [523998],
+            326,
+            "1790901090565464976",
+            4
+          ],
+          [
+            [523998],
+            326,
+            "1790901091082039590",
+            5
+          ],
+          [
+            [523998],
+            326,
+            "1790901091599569451",
+            6
+          ],
+          [
+            [523998],
+            326,
+            "1790901092276778129",
+            7
+          ],
+          [
+            [523998],
+            326,
+            "1790901092795656604",
+            8
+          ],
+          [
+            [523998],
+            326,
+            "1790901093314118441",
+            9
+          ],
+          [
+            [523998],
+            326,
+            "1790901093834614939",
+            10
+          ],
+          [
+            [523998],
+            326,
+            "1790901094355061630",
+            11
+          ],
+          [
+            [523998],
+            326,
+            "1790901094874179660",
+            12
+          ],
+          [
+            [523998],
+            326,
+            "1790901095393571414",
+            13
+          ],
+          [
+            [523998],
+            326,
+            "1790901095912191977",
+            14
+          ],
+          [
+            [523998],
+            326,
+            "1790901096429729841",
+            15
+          ],
+          [
+            [523998],
+            326,
+            "1790901096947419621",
+            16
+          ],
+          [
+            [523998],
+            326,
+            "1790901097466321987",
+            17
+          ],
+          [
+            [523998],
+            4934,
+            "1790901097984651489",
+            18
+          ],
+          [
+            [523998],
+            4934,
+            "1790901098502780649",
+            19
+          ],
+          [
+            [523998],
+            4934,
+            "1790901099021116159",
+            20
+          ],
+          [
+            [523998],
+            4934,
+            "1790901099539543828",
+            21
+          ],
+          [
+            [523998],
+            4934,
+            "1790901100057627406",
+            22
+          ],
+          [
+            [523998],
+            4934,
+            "1790901100575925039",
+            23
+          ],
+          [
+            [523998],
+            4934,
+            "1790901101094397250",
+            24
+          ],
+          [
+            [523998],
+            4934,
+            "1790901101612418555",
+            25
+          ],
+          [
+            [523998],
+            4934,
+            "1790901102131494783",
+            26
+          ],
+          [
+            [523998],
+            4934,
+            "1790901102649993546",
+            27
+          ],
+          [
+            [523998],
+            4934,
+            "1790901103170091234",
+            28
+          ],
+          [
+            [523998],
+            4934,
+            "1790901103688555808",
+            29
+          ],
+          [
+            [523998],
+            4934,
+            "1790901104206887330",
+            30
+          ],
+          [
+            [523998],
+            4934,
+            "1790901104724737477",
+            31
+          ],
+          [
+            [523998],
+            4934,
+            "1790901105243165520",
+            32
+          ],
+          [
+            [523998],
+            4934,
+            "1790901105761575937",
+            33
+          ],
+          [
+            [523998],
+            4934,
+            "1790901106280024068",
+            34
+          ],
+          [
+            [523998],
+            4934,
+            "1790901106798023431",
+            35
+          ],
+          [
+            [523998],
+            4934,
+            "1790901107316283102",
+            36
+          ],
+          [
+            [523998],
+            4934,
+            "1790901107835436903",
+            37
+          ],
+          [
+            [523998],
+            4934,
+            "1790901108353668652",
+            38
+          ],
+          [
+            [523998],
+            4934,
+            "1790901108872075908",
+            39
+          ],
+          [
+            [523998],
+            4934,
+            "1790901109390311452",
+            40
+          ],
+          [
+            [523998],
+            4934,
+            "1790901109908777875",
+            41
+          ],
+          [
+            [523998],
+            4934,
+            "1790901110427637532",
+            42
+          ],
+          [
+            [523998],
+            4934,
+            "1790901110946413995",
+            43
+          ],
+          [
+            [523998],
+            4934,
+            "1790901111465608495",
+            44
+          ],
+          [
+            [523998],
+            4934,
+            "1790901111996635682",
+            45
+          ],
+          [
+            [523998],
+            4934,
+            "1790901112515043386",
+            46
+          ],
+          [
+            [523998],
+            4934,
+            "1790901113035052263",
+            47
+          ],
+          [
+            [523998],
+            4934,
+            "1790901113553053497",
+            48
+          ],
+          [
+            [523998],
+            4934,
+            "1790901114071792057",
+            49
+          ],
+          [
+            [523998],
+            4934,
+            "1790901114590190176",
+            50
+          ],
+          [
+            [523998],
+            4934,
+            "1790901115110607218",
+            51
+          ],
+          [
+            [523998],
+            4934,
+            "1790901115628982248",
+            52
+          ],
+          [
+            [523998],
+            4934,
+            "1790901116147874250",
+            53
+          ],
+          [
+            [523998],
+            4934,
+            "1790901116666797795",
+            54
+          ],
+          [
+            [523998],
+            4934,
+            "1790901117186671493",
+            55
+          ],
+          [
+            [523998],
+            4934,
+            "1790901117708270007",
+            56
+          ],
+          [
+            [523998],
+            4934,
+            "1790901118226947082",
+            57
+          ],
+          [
+            [523998],
+            4934,
+            "1790901118743792519",
+            58
+          ],
+          [
+            [523998],
+            4934,
+            "1790901119263725267",
+            59
+          ],
+          [
+            [523998],
+            4934,
+            "1790901119782795953",
+            60
+          ],
+          [
+            [523998],
+            4934,
+            "1790901120302577353",
+            61
+          ],
+          [
+            [523998],
+            4934,
+            "1790901120821927287",
+            62
+          ],
+          [
+            [523998],
+            4934,
+            "1790901121341062073",
+            63
+          ],
+          [
+            [523998],
+            4934,
+            "1790901121859987869",
+            64
+          ],
+          [
+            [523998],
+            4934,
+            "1790901122381496613",
+            65
+          ],
+          [
+            [523998],
+            4934,
+            "1790901122900273424",
+            66
+          ],
+          [
+            [523998],
+            4934,
+            "1790901123418879665",
+            67
+          ],
+          [
+            [523998],
+            4934,
+            "1790901123937621754",
+            68
+          ],
+          [
+            [523998],
+            4934,
+            "1790901124457121097",
+            69
+          ],
+          [
+            [523998],
+            4934,
+            "1790901124976375704",
+            70
+          ],
+          [
+            [523998],
+            4934,
+            "1790901125500507264",
+            71
+          ],
+          [
+            [523998],
+            4934,
+            "1790901126021347453",
+            72
+          ],
+          [
+            [523998],
+            4934,
+            "1790901126542458854",
+            73
+          ],
+          [
+            [523998],
+            4934,
+            "1790901127061367675",
+            74
+          ],
+          [
+            [523998],
+            4934,
+            "1790901127580181318",
+            75
+          ],
+          [
+            [523998],
+            4934,
+            "1790901128099332000",
+            76
+          ],
+          [
+            [523998],
+            4934,
+            "1790901128619677495",
+            77
+          ],
+          [
+            [523998],
+            4934,
+            "1790901129142392047",
+            78
+          ],
+          [
+            [523998],
+            4934,
+            "1790901129659903136",
+            79
+          ],
+          [
+            [523998],
+            4934,
+            "1790901130178237954",
+            80
+          ],
+          [
+            [523998],
+            4934,
+            "1790901130696812728",
+            81
+          ],
+          [
+            [523998],
+            4934,
+            "1790901131214564787",
+            82
+          ],
+          [
+            [523998],
+            4934,
+            "1790901131732725530",
+            83
+          ],
+          [
+            [523998],
+            4934,
+            "1790901132250934032",
+            84
+          ],
+          [
+            [523998],
+            4934,
+            "1790901132769969290",
+            85
+          ],
+          [
+            [523998],
+            4934,
+            "1790901133289438195",
+            86
+          ],
+          [
+            [523998],
+            4934,
+            "1790901133807708921",
+            87
+          ],
+          [
+            [523998],
+            4934,
+            "1790901134325794059",
+            88
+          ],
+          [
+            [523998],
+            4934,
+            "1790901134845376523",
+            89
+          ],
+          [
+            [523998],
+            4934,
+            "1790901135363431070",
+            90
+          ],
+          [
+            [523998],
+            4934,
+            "1790901135883087464",
+            91
+          ],
+          [
+            [523998],
+            4934,
+            "1790901136401710501",
+            92
+          ],
+          [
+            [523998],
+            4934,
+            "1790901136920115233",
+            93
+          ],
+          [
+            [523998],
+            4934,
+            "1790901137444711278",
+            94
+          ],
+          [
+            [523998],
+            4934,
+            "1790901137963122601",
+            95
+          ],
+          [
+            [523998],
+            4934,
+            "1790901138482131220",
+            96
+          ],
+          [
+            [523998],
+            4934,
+            "1790901138999713240",
+            97
+          ],
+          [
+            [523998],
+            4934,
+            "1790901139518216023",
+            98
+          ],
+          [
+            [523998],
+            4934,
+            "1790901140037231367",
+            99
+          ],
+          [
+            [523998],
+            4934,
+            "1790901140554718099",
+            100
+          ],
+          [
+            [523998],
+            4934,
+            "1790901141072652699",
+            101
+          ],
+          [
+            [523998],
+            4934,
+            "1790901141591293072",
+            102
+          ],
+          [
+            [523998],
+            4934,
+            "1790901142108888723",
+            103
+          ],
+          [
+            [523998],
+            4934,
+            "1790901142627241781",
+            104
+          ],
+          [
+            [523998],
+            4934,
+            "1790901143145687416",
+            105
+          ],
+          [
+            [523998],
+            4934,
+            "1790901143666878853",
+            106
+          ],
+          [
+            [523998],
+            4934,
+            "1790901144185381830",
+            107
+          ],
+          [
+            [523998],
+            4934,
+            "1790901144704054042",
+            108
+          ],
+          [
+            [523998],
+            4934,
+            "1790901145222328625",
+            109
+          ],
+          [
+            [523998],
+            4934,
+            "1790901145740516109",
+            110
+          ],
+          [
+            [523998],
+            4934,
+            "1790901146258719244",
+            111
+          ],
+          [
+            [523998],
+            4934,
+            "1790901146776436662",
+            112
+          ],
+          [
+            [523998],
+            4934,
+            "1790901147294256317",
+            113
+          ],
+          [
+            [523998],
+            4934,
+            "1790901147811526799",
+            114
+          ],
+          [
+            [523998],
+            4934,
+            "1790901148330124941",
+            115
+          ],
+          [
+            [523998],
+            4934,
+            "1790901148848385109",
+            116
+          ],
+          [
+            [523998],
+            4934,
+            "1790901149367111727",
+            117
+          ],
+          [
+            [523998],
+            4934,
+            "1790901149886073607",
+            118
+          ],
+          [
+            [523998],
+            4934,
+            "1790901150404459741",
+            119
+          ],
+          [
+            [523998],
+            4934,
+            "1790901150923011762",
+            120
+          ],
+          [
+            [523998],
+            4934,
+            "1790901151441695086",
+            121
+          ],
+          [
+            [523998],
+            4934,
+            "1790901151960310644",
+            122
+          ],
+          [
+            [523998],
+            4934,
+            "1790901152478519696",
+            123
+          ],
+          [
+            [523998],
+            4934,
+            "1790901152998411486",
+            124
+          ],
+          [
+            [523998],
+            4934,
+            "1790901153523712431",
+            125
+          ],
+          [
+            [523998],
+            4934,
+            "1790901154044593345",
+            126
+          ],
+          [
+            [523998],
+            4934,
+            "1790901154561928728",
+            127
+          ],
+          [
+            [523998],
+            4934,
+            "1790901155086058040",
+            128
+          ],
+          [
+            [523998],
+            4934,
+            "1790901155603858488",
+            129
+          ],
+          [
+            [523998],
+            4934,
+            "1790901156122995560",
+            130
+          ],
+          [
+            [523998],
+            4934,
+            "1790901156640330237",
+            131
+          ],
+          [
+            [523998],
+            4934,
+            "1790901157159845534",
+            132
+          ],
+          [
+            [523998],
+            4934,
+            "1790901157677065336",
+            133
+          ],
+          [
+            [523998],
+            4934,
+            "1790901158195473410",
+            134
+          ],
+          [
+            [523998],
+            4934,
+            "1790901158713795208",
+            135
+          ],
+          [
+            [523998],
+            4934,
+            "1790901159232183369",
+            136
+          ],
+          [
+            [523998],
+            4934,
+            "1790901159750295641",
+            137
+          ],
+          [
+            [523998],
+            4934,
+            "1790901160268504061",
+            138
+          ],
+          [
+            [523998],
+            4934,
+            "1790901160786129398",
+            139
+          ],
+          [
+            [523998],
+            4934,
+            "1790901161304539845",
+            140
+          ],
+          [
+            [523998],
+            4934,
+            "1790901161822141949",
+            141
+          ],
+          [
+            [523998],
+            4934,
+            "1790901162340441497",
+            142
+          ],
+          [
+            [523998],
+            4934,
+            "1790901162858864324",
+            143
+          ],
+          [
+            [523998],
+            4934,
+            "1790901163376871045",
+            144
+          ],
+          [
+            [523998],
+            4934,
+            "1790901163895340655",
+            145
+          ],
+          [
+            [523998],
+            4934,
+            "1790901164413394141",
+            146
+          ],
+          [
+            [523998],
+            4934,
+            "1790901164931408802",
+            147
+          ],
+          [
+            [523998],
+            4934,
+            "1790901165450221458",
+            148
+          ],
+          [
+            [523998],
+            4934,
+            "1790901165969154504",
+            149
+          ],
+          [
+            [523998],
+            4934,
+            "1790901166487692845",
+            150
+          ],
+          [
+            [523998],
+            4934,
+            "1790901167007519937",
+            151
+          ],
+          [
+            [523998],
+            4934,
+            "1790901167525773765",
+            152
+          ],
+          [
+            [523998],
+            4934,
+            "1790901168044374932",
+            153
+          ],
+          [
+            [523998],
+            4934,
+            "1790901168571716225",
+            154
+          ],
+          [
+            [523998],
+            1222,
+            "1790901169093344422",
+            155
+          ],
+          [
+            [523998],
+            1222,
+            "1790901169611647323",
+            156
+          ],
+          [
+            [523998],
+            1222,
+            "1790901170128939324",
+            157
+          ],
+          [
+            [523998],
+            1222,
+            "1790901170646926538",
+            158
+          ],
+          [
+            [523998],
+            1222,
+            "1790901171165490104",
+            159
+          ],
+          [
+            [],
+            0,
+            "1790901171708311851",
+            160
+          ]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/03-key-1-vram.jsonl"
+      },
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [0,"NVIDIA GeForce RTX 5080",16707092480,4176773120,8589934592,4294967296,134217728,67108864,1,"exclusive",5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,134217728,67108864,false,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder",82719,0,0,"inclusive_nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["GPU grouped process remainder"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,79427597329,79427597329,0,11],
+          [1,"evaluate all constraints symbolically",10,270947,46593,0,12],
+          [1,"evaluate base constraints symbolically",2,67845,34762,0,13],
+          [1,"infer base and extension constraint degree",10,488124,68477,0,14],
+          [2,"compute constraint layout with lookups",4,2899263,1096576,0,15],
+          [2,"evaluate constraints symbolically",7,3044184,641633,0,16],
+          [2,"infer constraint degree",5,3916597,1023457,0,17],
+          [3,"batch_multiplicative_inverse",13576,23714123,477433,0,18],
+          [4,"columnwise_dot_product",264,7470308,284771,0,19],
+          [5,"with_zero_cols",1,887654292,887654292,0,20],
+          [6,"get_log_num_quotient_chunks",10,497625,69544,0,21],
+          [6,"infer log of base and extension constraint degree",10,492665,69223,0,22],
+          [7,"verify",8,166320130,22614598,0,23],
+          [7,"verify_with_preprocessed",8,166313829,22613987,0,24]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",13,25],
+          ["memory_full_stall_us",0,26],
+          ["memory_high_events",0,27],
+          ["memory_some_stall_us",0,28],
+          ["minor_faults",23388551,29],
+          ["read_bytes",176128,30],
+          ["system_ticks",44076,31],
+          ["user_ticks",1566,32],
+          ["write_bytes",114790412288,33]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder",true,"cumulative",0,536870880,0,1202400,0,0,0,34]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","cumulative",1,1107296624,13421774848,590735998,69466502904,512242720,11265216,0,603980112,5972689568,14,67108864,54107282,536491570,3546315759,65916280302,35]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","serial","cumulative",533962784,3523677216,536491570,0,0,0,36]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","cumulative",1,7,425197920,512242720,75175860412,37]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,38]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","resident_lde","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [82837,14814298112,false,true,false,39]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-gpu-grouped-523973-3.service","exec_stop_post_snapshot",15429636096,0,47244640256,0,456581404,40]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "utc_ns",
+        "columns": ["pids","total_mib","utc_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "resource_samples",
+        "rows": [
+          [
+            [],
+            0,
+            "1790901171918194232",
+            1
+          ],
+          [
+            [525535],
+            326,
+            "1790901172544005948",
+            2
+          ],
+          [
+            [525535],
+            326,
+            "1790901173110009009",
+            3
+          ],
+          [
+            [525535],
+            326,
+            "1790901173627542055",
+            4
+          ],
+          [
+            [525535],
+            326,
+            "1790901174145633991",
+            5
+          ],
+          [
+            [525535],
+            326,
+            "1790901174663814023",
+            6
+          ],
+          [
+            [525535],
+            326,
+            "1790901175182097268",
+            7
+          ],
+          [
+            [525535],
+            326,
+            "1790901175700761627",
+            8
+          ],
+          [
+            [525535],
+            326,
+            "1790901176218472861",
+            9
+          ],
+          [
+            [525535],
+            326,
+            "1790901176735522484",
+            10
+          ],
+          [
+            [525535],
+            326,
+            "1790901177254026340",
+            11
+          ],
+          [
+            [525535],
+            326,
+            "1790901177772476606",
+            12
+          ],
+          [
+            [525535],
+            4934,
+            "1790901178293442358",
+            13
+          ],
+          [
+            [525535],
+            4934,
+            "1790901178813237767",
+            14
+          ],
+          [
+            [525535],
+            4934,
+            "1790901179332456157",
+            15
+          ],
+          [
+            [525535],
+            4934,
+            "1790901179851681968",
+            16
+          ],
+          [
+            [525535],
+            4934,
+            "1790901180371314423",
+            17
+          ],
+          [
+            [525535],
+            4934,
+            "1790901180890969769",
+            18
+          ],
+          [
+            [525535],
+            4934,
+            "1790901181409011731",
+            19
+          ],
+          [
+            [525535],
+            4934,
+            "1790901181928358716",
+            20
+          ],
+          [
+            [525535],
+            4934,
+            "1790901182447597835",
+            21
+          ],
+          [
+            [525535],
+            4934,
+            "1790901182966738430",
+            22
+          ],
+          [
+            [525535],
+            4934,
+            "1790901183489867388",
+            23
+          ],
+          [
+            [525535],
+            4934,
+            "1790901184008715493",
+            24
+          ],
+          [
+            [525535],
+            4934,
+            "1790901184527105383",
+            25
+          ],
+          [
+            [525535],
+            4934,
+            "1790901185046177321",
+            26
+          ],
+          [
+            [525535],
+            4934,
+            "1790901185565725957",
+            27
+          ],
+          [
+            [525535],
+            4934,
+            "1790901186085038965",
+            28
+          ],
+          [
+            [525535],
+            4934,
+            "1790901186603351702",
+            29
+          ],
+          [
+            [525535],
+            4934,
+            "1790901187125701864",
+            30
+          ],
+          [
+            [525535],
+            4934,
+            "1790901187643996568",
+            31
+          ],
+          [
+            [525535],
+            4934,
+            "1790901188162339026",
+            32
+          ],
+          [
+            [525535],
+            4934,
+            "1790901188681128417",
+            33
+          ],
+          [
+            [525535],
+            4934,
+            "1790901189199981290",
+            34
+          ],
+          [
+            [525535],
+            4934,
+            "1790901189719276330",
+            35
+          ],
+          [
+            [525535],
+            4934,
+            "1790901190238628746",
+            36
+          ],
+          [
+            [525535],
+            4934,
+            "1790901190757612985",
+            37
+          ],
+          [
+            [525535],
+            4934,
+            "1790901191277212077",
+            38
+          ],
+          [
+            [525535],
+            4934,
+            "1790901191796013038",
+            39
+          ],
+          [
+            [525535],
+            4934,
+            "1790901192314350260",
+            40
+          ],
+          [
+            [525535],
+            4934,
+            "1790901192833227451",
+            41
+          ],
+          [
+            [525535],
+            4934,
+            "1790901193352078133",
+            42
+          ],
+          [
+            [525535],
+            4934,
+            "1790901193870416408",
+            43
+          ],
+          [
+            [525535],
+            4934,
+            "1790901194389897072",
+            44
+          ],
+          [
+            [525535],
+            4934,
+            "1790901194908491658",
+            45
+          ],
+          [
+            [525535],
+            4934,
+            "1790901195426617267",
+            46
+          ],
+          [
+            [525535],
+            4934,
+            "1790901195945621876",
+            47
+          ],
+          [
+            [525535],
+            4934,
+            "1790901196464250342",
+            48
+          ],
+          [
+            [525535],
+            4934,
+            "1790901196983090539",
+            49
+          ],
+          [
+            [525535],
+            4934,
+            "1790901197512408843",
+            50
+          ],
+          [
+            [525535],
+            4934,
+            "1790901198030977304",
+            51
+          ],
+          [
+            [525535],
+            4934,
+            "1790901198549499311",
+            52
+          ],
+          [
+            [525535],
+            4934,
+            "1790901199068537000",
+            53
+          ],
+          [
+            [525535],
+            4934,
+            "1790901199587621459",
+            54
+          ],
+          [
+            [525535],
+            4934,
+            "1790901200106636450",
+            55
+          ],
+          [
+            [525535],
+            4934,
+            "1790901200628193593",
+            56
+          ],
+          [
+            [525535],
+            4934,
+            "1790901201147679261",
+            57
+          ],
+          [
+            [525535],
+            4934,
+            "1790901201666443788",
+            58
+          ],
+          [
+            [525535],
+            4934,
+            "1790901202185053663",
+            59
+          ],
+          [
+            [525535],
+            4934,
+            "1790901202703968588",
+            60
+          ],
+          [
+            [525535],
+            4934,
+            "1790901203222382973",
+            61
+          ],
+          [
+            [525535],
+            4934,
+            "1790901203740995847",
+            62
+          ],
+          [
+            [525535],
+            4934,
+            "1790901204259614849",
+            63
+          ],
+          [
+            [525535],
+            4934,
+            "1790901204778504799",
+            64
+          ],
+          [
+            [525535],
+            4934,
+            "1790901205298213078",
+            65
+          ],
+          [
+            [525535],
+            4934,
+            "1790901205817679415",
+            66
+          ],
+          [
+            [525535],
+            4934,
+            "1790901206336703167",
+            67
+          ],
+          [
+            [525535],
+            4934,
+            "1790901206856317407",
+            68
+          ],
+          [
+            [525535],
+            4934,
+            "1790901207376475384",
+            69
+          ],
+          [
+            [525535],
+            4934,
+            "1790901207895852367",
+            70
+          ],
+          [
+            [525535],
+            4934,
+            "1790901208414404466",
+            71
+          ],
+          [
+            [525535],
+            4934,
+            "1790901208933879625",
+            72
+          ],
+          [
+            [525535],
+            4934,
+            "1790901209452128377",
+            73
+          ],
+          [
+            [525535],
+            4934,
+            "1790901209971405487",
+            74
+          ],
+          [
+            [525535],
+            4934,
+            "1790901210489611535",
+            75
+          ],
+          [
+            [525535],
+            4934,
+            "1790901211007383755",
+            76
+          ],
+          [
+            [525535],
+            4934,
+            "1790901211525961616",
+            77
+          ],
+          [
+            [525535],
+            4934,
+            "1790901212043873469",
+            78
+          ],
+          [
+            [525535],
+            4934,
+            "1790901212562278714",
+            79
+          ],
+          [
+            [525535],
+            4934,
+            "1790901213081757649",
+            80
+          ],
+          [
+            [525535],
+            4934,
+            "1790901213600882255",
+            81
+          ],
+          [
+            [525535],
+            4934,
+            "1790901214125550693",
+            82
+          ],
+          [
+            [525535],
+            4934,
+            "1790901214643894149",
+            83
+          ],
+          [
+            [525535],
+            4934,
+            "1790901215163260981",
+            84
+          ],
+          [
+            [525535],
+            4934,
+            "1790901215681688543",
+            85
+          ],
+          [
+            [525535],
+            4934,
+            "1790901216199962583",
+            86
+          ],
+          [
+            [525535],
+            4934,
+            "1790901216718804491",
+            87
+          ],
+          [
+            [525535],
+            4934,
+            "1790901217236683845",
+            88
+          ],
+          [
+            [525535],
+            4934,
+            "1790901217754506143",
+            89
+          ],
+          [
+            [525535],
+            4934,
+            "1790901218272014002",
+            90
+          ],
+          [
+            [525535],
+            4934,
+            "1790901218791290306",
+            91
+          ],
+          [
+            [525535],
+            4934,
+            "1790901219309161131",
+            92
+          ],
+          [
+            [525535],
+            4934,
+            "1790901219826982278",
+            93
+          ],
+          [
+            [525535],
+            4934,
+            "1790901220344874582",
+            94
+          ],
+          [
+            [525535],
+            4934,
+            "1790901220865729770",
+            95
+          ],
+          [
+            [525535],
+            4934,
+            "1790901221383270338",
+            96
+          ],
+          [
+            [525535],
+            4934,
+            "1790901221901637497",
+            97
+          ],
+          [
+            [525535],
+            4934,
+            "1790901222419963579",
+            98
+          ],
+          [
+            [525535],
+            4934,
+            "1790901222938076761",
+            99
+          ],
+          [
+            [525535],
+            4934,
+            "1790901223456320722",
+            100
+          ],
+          [
+            [525535],
+            4934,
+            "1790901223973642893",
+            101
+          ],
+          [
+            [525535],
+            4934,
+            "1790901224492456827",
+            102
+          ],
+          [
+            [525535],
+            4934,
+            "1790901225010608540",
+            103
+          ],
+          [
+            [525535],
+            4934,
+            "1790901225528902580",
+            104
+          ],
+          [
+            [525535],
+            4934,
+            "1790901226047564360",
+            105
+          ],
+          [
+            [525535],
+            4934,
+            "1790901226565726177",
+            106
+          ],
+          [
+            [525535],
+            4934,
+            "1790901227084977503",
+            107
+          ],
+          [
+            [525535],
+            4934,
+            "1790901227602672742",
+            108
+          ],
+          [
+            [525535],
+            4934,
+            "1790901228120548646",
+            109
+          ],
+          [
+            [525535],
+            4934,
+            "1790901228646515365",
+            110
+          ],
+          [
+            [525535],
+            4934,
+            "1790901229163985045",
+            111
+          ],
+          [
+            [525535],
+            4934,
+            "1790901229681074472",
+            112
+          ],
+          [
+            [525535],
+            4934,
+            "1790901230199572283",
+            113
+          ],
+          [
+            [525535],
+            4934,
+            "1790901230717933274",
+            114
+          ],
+          [
+            [525535],
+            4934,
+            "1790901231236020613",
+            115
+          ],
+          [
+            [525535],
+            4934,
+            "1790901231753145939",
+            116
+          ],
+          [
+            [525535],
+            4934,
+            "1790901232271843109",
+            117
+          ],
+          [
+            [525535],
+            4934,
+            "1790901232790142536",
+            118
+          ],
+          [
+            [525535],
+            4934,
+            "1790901233308138770",
+            119
+          ],
+          [
+            [525535],
+            4934,
+            "1790901233824685338",
+            120
+          ],
+          [
+            [525535],
+            4934,
+            "1790901234342524146",
+            121
+          ],
+          [
+            [525535],
+            4934,
+            "1790901234860905808",
+            122
+          ],
+          [
+            [525535],
+            4934,
+            "1790901235378288278",
+            123
+          ],
+          [
+            [525535],
+            4934,
+            "1790901235896998179",
+            124
+          ],
+          [
+            [525535],
+            4934,
+            "1790901236416089134",
+            125
+          ],
+          [
+            [525535],
+            4934,
+            "1790901236934732514",
+            126
+          ],
+          [
+            [525535],
+            4934,
+            "1790901237453929897",
+            127
+          ],
+          [
+            [525535],
+            4934,
+            "1790901237972252225",
+            128
+          ],
+          [
+            [525535],
+            4934,
+            "1790901238490726707",
+            129
+          ],
+          [
+            [525535],
+            4934,
+            "1790901239008875420",
+            130
+          ],
+          [
+            [525535],
+            4934,
+            "1790901239527886693",
+            131
+          ],
+          [
+            [525535],
+            4934,
+            "1790901240046254632",
+            132
+          ],
+          [
+            [525535],
+            4934,
+            "1790901240564097981",
+            133
+          ],
+          [
+            [525535],
+            4934,
+            "1790901241084039715",
+            134
+          ],
+          [
+            [525535],
+            4934,
+            "1790901241602989846",
+            135
+          ],
+          [
+            [525535],
+            4934,
+            "1790901242120673394",
+            136
+          ],
+          [
+            [525535],
+            4934,
+            "1790901242638550567",
+            137
+          ],
+          [
+            [525535],
+            4934,
+            "1790901243155324813",
+            138
+          ],
+          [
+            [525535],
+            4934,
+            "1790901243673372704",
+            139
+          ],
+          [
+            [525535],
+            4934,
+            "1790901244191381751",
+            140
+          ],
+          [
+            [525535],
+            4934,
+            "1790901244709307375",
+            141
+          ],
+          [
+            [525535],
+            4934,
+            "1790901245227293441",
+            142
+          ],
+          [
+            [525535],
+            4934,
+            "1790901245743378985",
+            143
+          ],
+          [
+            [525535],
+            4934,
+            "1790901246262111810",
+            144
+          ],
+          [
+            [525535],
+            4934,
+            "1790901246779455886",
+            145
+          ],
+          [
+            [],
+            0,
+            "1790901247278407162",
+            146
+          ]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/04-key-2-vram.jsonl"
+      },
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [0,"NVIDIA GeForce RTX 5080",16707092480,4176773120,8589934592,4294967296,134217728,67108864,1,"exclusive",5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,134217728,67108864,false,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder",75179,0,0,"inclusive_nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["GPU grouped process remainder"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,74155323260,74155323260,0,11],
+          [1,"evaluate all constraints symbolically",8,523776,204037,0,12],
+          [1,"infer base and extension constraint degree",8,750480,235143,0,13],
+          [2,"compute constraint layout with lookups",4,2543560,665916,0,14],
+          [2,"evaluate constraints symbolically",7,2268834,345510,0,15],
+          [2,"infer constraint degree",5,3310932,693783,0,16],
+          [3,"batch_multiplicative_inverse",13576,62451293,4072161,0,17],
+          [4,"columnwise_dot_product",264,123232795,20073886,0,18],
+          [5,"with_zero_cols",1,837397464,837397464,0,19],
+          [6,"get_log_num_quotient_chunks",8,761827,236397,0,20],
+          [6,"infer log of base and extension constraint degree",8,756699,235797,0,21],
+          [7,"verify",8,524929441,153382548,0,22],
+          [7,"verify_with_preprocessed",8,524919450,153381136,0,23]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",5,24],
+          ["memory_full_stall_us",0,25],
+          ["memory_high_events",0,26],
+          ["memory_some_stall_us",0,27],
+          ["minor_faults",23241303,28],
+          ["read_bytes",0,29],
+          ["system_ticks",41722,30],
+          ["user_ticks",1008,31],
+          ["write_bytes",112264949760,32]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder",true,"cumulative",0,536870880,0,1165952,0,0,0,33]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","cumulative",1,1107296624,13421774848,603779167,67673182592,488614464,9543520,0,603980112,5972689568,14,67108864,62187358,541462667,3549869016,64119453888,34]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","serial","cumulative",539349984,3528592096,541462667,0,0,0,35]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","cumulative",1,7,400000768,488614464,72931153602,36]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,37]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","resident_lde","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [75308,14529081344,false,true,false,38]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-gpu-grouped-523973-4.service","exec_stop_post_snapshot",14807220224,0,47244640256,0,427469047,39]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "utc_ns",
+        "columns": ["pids","total_mib","utc_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "resource_samples",
+        "rows": [
+          [
+            [],
+            0,
+            "1790901247392455857",
+            1
+          ],
+          [
+            [526675],
+            326,
+            "1790901248075683401",
+            2
+          ],
+          [
+            [526675],
+            326,
+            "1790901248592464727",
+            3
+          ],
+          [
+            [526675],
+            326,
+            "1790901249110080132",
+            4
+          ],
+          [
+            [526675],
+            326,
+            "1790901249626104925",
+            5
+          ],
+          [
+            [526675],
+            326,
+            "1790901250143274033",
+            6
+          ],
+          [
+            [526675],
+            326,
+            "1790901250659969549",
+            7
+          ],
+          [
+            [526675],
+            326,
+            "1790901251176684587",
+            8
+          ],
+          [
+            [526675],
+            326,
+            "1790901251696195052",
+            9
+          ],
+          [
+            [526675],
+            326,
+            "1790901252214301088",
+            10
+          ],
+          [
+            [526675],
+            326,
+            "1790901252743536107",
+            11
+          ],
+          [
+            [526675],
+            326,
+            "1790901253262726118",
+            12
+          ],
+          [
+            [526675],
+            326,
+            "1790901253779516243",
+            13
+          ],
+          [
+            [526675],
+            326,
+            "1790901254297038729",
+            14
+          ],
+          [
+            [526675],
+            326,
+            "1790901254815814158",
+            15
+          ],
+          [
+            [526675],
+            326,
+            "1790901255334365501",
+            16
+          ],
+          [
+            [526675],
+            326,
+            "1790901255852871566",
+            17
+          ],
+          [
+            [526675],
+            326,
+            "1790901256371626947",
+            18
+          ],
+          [
+            [526675],
+            326,
+            "1790901256889776419",
+            19
+          ],
+          [
+            [526675],
+            326,
+            "1790901257408046295",
+            20
+          ],
+          [
+            [526675],
+            4934,
+            "1790901257926030346",
+            21
+          ],
+          [
+            [526675],
+            4934,
+            "1790901258445678874",
+            22
+          ],
+          [
+            [526675],
+            4934,
+            "1790901258964131252",
+            23
+          ],
+          [
+            [526675],
+            4934,
+            "1790901259482510792",
+            24
+          ],
+          [
+            [526675],
+            4934,
+            "1790901260006653098",
+            25
+          ],
+          [
+            [526675],
+            4934,
+            "1790901260526004794",
+            26
+          ],
+          [
+            [526675],
+            4934,
+            "1790901261044217588",
+            27
+          ],
+          [
+            [526675],
+            4934,
+            "1790901261566064883",
+            28
+          ],
+          [
+            [526675],
+            4934,
+            "1790901262084379579",
+            29
+          ],
+          [
+            [526675],
+            4934,
+            "1790901262603345944",
+            30
+          ],
+          [
+            [526675],
+            4934,
+            "1790901263122284144",
+            31
+          ],
+          [
+            [526675],
+            4934,
+            "1790901263656905038",
+            32
+          ],
+          [
+            [526675],
+            4934,
+            "1790901264190133040",
+            33
+          ],
+          [
+            [526675],
+            4934,
+            "1790901264731560756",
+            34
+          ],
+          [
+            [526675],
+            4934,
+            "1790901265250881893",
+            35
+          ],
+          [
+            [526675],
+            4934,
+            "1790901265769744909",
+            36
+          ],
+          [
+            [526675],
+            4934,
+            "1790901266293467343",
+            37
+          ],
+          [
+            [526675],
+            4934,
+            "1790901266812367952",
+            38
+          ],
+          [
+            [526675],
+            4934,
+            "1790901267330728728",
+            39
+          ],
+          [
+            [526675],
+            4934,
+            "1790901267849017660",
+            40
+          ],
+          [
+            [526675],
+            4934,
+            "1790901268365927136",
+            41
+          ],
+          [
+            [526675],
+            4934,
+            "1790901268885216346",
+            42
+          ],
+          [
+            [526675],
+            4934,
+            "1790901269403537869",
+            43
+          ],
+          [
+            [526675],
+            4934,
+            "1790901269921985704",
+            44
+          ],
+          [
+            [526675],
+            4934,
+            "1790901270441984047",
+            45
+          ],
+          [
+            [526675],
+            4934,
+            "1790901270962277711",
+            46
+          ],
+          [
+            [526675],
+            4934,
+            "1790901271480570506",
+            47
+          ],
+          [
+            [526675],
+            4934,
+            "1790901272000585404",
+            48
+          ],
+          [
+            [526675],
+            4934,
+            "1790901272519671026",
+            49
+          ],
+          [
+            [526675],
+            4934,
+            "1790901273038245054",
+            50
+          ],
+          [
+            [526675],
+            4934,
+            "1790901273557142243",
+            51
+          ],
+          [
+            [526675],
+            4934,
+            "1790901274076439426",
+            52
+          ],
+          [
+            [526675],
+            4934,
+            "1790901274595839908",
+            53
+          ],
+          [
+            [526675],
+            4934,
+            "1790901275114679634",
+            54
+          ],
+          [
+            [526675],
+            4934,
+            "1790901275633282688",
+            55
+          ],
+          [
+            [526675],
+            4934,
+            "1790901276156233759",
+            56
+          ],
+          [
+            [526675],
+            4934,
+            "1790901276674779015",
+            57
+          ],
+          [
+            [526675],
+            4934,
+            "1790901277193300165",
+            58
+          ],
+          [
+            [526675],
+            4934,
+            "1790901277732884418",
+            59
+          ],
+          [
+            [526675],
+            4934,
+            "1790901278254061898",
+            60
+          ],
+          [
+            [526675],
+            4934,
+            "1790901278772737181",
+            61
+          ],
+          [
+            [526675],
+            4934,
+            "1790901279292198942",
+            62
+          ],
+          [
+            [526675],
+            4934,
+            "1790901279811209380",
+            63
+          ],
+          [
+            [526675],
+            4934,
+            "1790901280329973691",
+            64
+          ],
+          [
+            [526675],
+            4934,
+            "1790901280850433164",
+            65
+          ],
+          [
+            [526675],
+            4934,
+            "1790901281369774288",
+            66
+          ],
+          [
+            [526675],
+            4934,
+            "1790901281889822884",
+            67
+          ],
+          [
+            [526675],
+            4934,
+            "1790901282409903768",
+            68
+          ],
+          [
+            [526675],
+            4934,
+            "1790901282930112188",
+            69
+          ],
+          [
+            [526675],
+            4934,
+            "1790901283449115176",
+            70
+          ],
+          [
+            [526675],
+            4934,
+            "1790901283975801614",
+            71
+          ],
+          [
+            [526675],
+            4934,
+            "1790901284494853456",
+            72
+          ],
+          [
+            [526675],
+            4934,
+            "1790901285013905638",
+            73
+          ],
+          [
+            [526675],
+            4934,
+            "1790901285536594261",
+            74
+          ],
+          [
+            [526675],
+            4934,
+            "1790901286056476120",
+            75
+          ],
+          [
+            [526675],
+            4934,
+            "1790901286583070794",
+            76
+          ],
+          [
+            [526675],
+            4934,
+            "1790901287103583174",
+            77
+          ],
+          [
+            [526675],
+            4934,
+            "1790901287623855496",
+            78
+          ],
+          [
+            [526675],
+            4934,
+            "1790901288144008291",
+            79
+          ],
+          [
+            [526675],
+            4934,
+            "1790901288663507344",
+            80
+          ],
+          [
+            [526675],
+            4934,
+            "1790901289183916218",
+            81
+          ],
+          [
+            [526675],
+            4934,
+            "1790901289702323248",
+            82
+          ],
+          [
+            [526675],
+            4934,
+            "1790901290220618913",
+            83
+          ],
+          [
+            [526675],
+            4934,
+            "1790901290739046445",
+            84
+          ],
+          [
+            [526675],
+            4934,
+            "1790901291257028613",
+            85
+          ],
+          [
+            [526675],
+            4934,
+            "1790901291782685385",
+            86
+          ],
+          [
+            [526675],
+            4934,
+            "1790901292301614271",
+            87
+          ],
+          [
+            [526675],
+            4934,
+            "1790901292819767524",
+            88
+          ],
+          [
+            [526675],
+            4934,
+            "1790901293338171735",
+            89
+          ],
+          [
+            [526675],
+            4934,
+            "1790901293856896697",
+            90
+          ],
+          [
+            [526675],
+            4934,
+            "1790901294375405597",
+            91
+          ],
+          [
+            [526675],
+            4934,
+            "1790901294897881074",
+            92
+          ],
+          [
+            [526675],
+            4934,
+            "1790901295416124162",
+            93
+          ],
+          [
+            [526675],
+            4934,
+            "1790901295936017122",
+            94
+          ],
+          [
+            [526675],
+            4934,
+            "1790901296456672555",
+            95
+          ],
+          [
+            [526675],
+            4934,
+            "1790901296974094180",
+            96
+          ],
+          [
+            [526675],
+            4934,
+            "1790901297492333064",
+            97
+          ],
+          [
+            [526675],
+            4934,
+            "1790901298010657013",
+            98
+          ],
+          [
+            [526675],
+            4934,
+            "1790901298529108074",
+            99
+          ],
+          [
+            [526675],
+            4934,
+            "1790901299048985080",
+            100
+          ],
+          [
+            [526675],
+            4934,
+            "1790901299566449262",
+            101
+          ],
+          [
+            [526675],
+            4934,
+            "1790901300085123217",
+            102
+          ],
+          [
+            [526675],
+            4934,
+            "1790901300603988418",
+            103
+          ],
+          [
+            [526675],
+            4934,
+            "1790901301123041618",
+            104
+          ],
+          [
+            [526675],
+            4934,
+            "1790901301640730009",
+            105
+          ],
+          [
+            [526675],
+            4934,
+            "1790901302159173898",
+            106
+          ],
+          [
+            [526675],
+            4934,
+            "1790901302678410501",
+            107
+          ],
+          [
+            [526675],
+            4934,
+            "1790901303197363237",
+            108
+          ],
+          [
+            [526675],
+            4934,
+            "1790901303716128777",
+            109
+          ],
+          [
+            [526675],
+            4934,
+            "1790901304234071307",
+            110
+          ],
+          [
+            [526675],
+            4934,
+            "1790901304754810520",
+            111
+          ],
+          [
+            [526675],
+            4934,
+            "1790901305273024004",
+            112
+          ],
+          [
+            [526675],
+            4934,
+            "1790901305791193297",
+            113
+          ],
+          [
+            [526675],
+            4934,
+            "1790901306308474916",
+            114
+          ],
+          [
+            [526675],
+            4934,
+            "1790901306825996501",
+            115
+          ],
+          [
+            [526675],
+            4934,
+            "1790901307343684156",
+            116
+          ],
+          [
+            [526675],
+            4934,
+            "1790901307866040623",
+            117
+          ],
+          [
+            [526675],
+            4934,
+            "1790901308383771222",
+            118
+          ],
+          [
+            [526675],
+            4934,
+            "1790901308902084358",
+            119
+          ],
+          [
+            [526675],
+            4934,
+            "1790901309420381491",
+            120
+          ],
+          [
+            [526675],
+            4934,
+            "1790901309938520850",
+            121
+          ],
+          [
+            [526675],
+            4934,
+            "1790901310456056089",
+            122
+          ],
+          [
+            [526675],
+            4934,
+            "1790901310973576348",
+            123
+          ],
+          [
+            [526675],
+            4934,
+            "1790901311495054180",
+            124
+          ],
+          [
+            [526675],
+            4934,
+            "1790901312012659491",
+            125
+          ],
+          [
+            [526675],
+            4934,
+            "1790901312530564912",
+            126
+          ],
+          [
+            [526675],
+            4934,
+            "1790901313049363048",
+            127
+          ],
+          [
+            [526675],
+            4934,
+            "1790901313567550214",
+            128
+          ],
+          [
+            [526675],
+            4934,
+            "1790901314085240121",
+            129
+          ],
+          [
+            [526675],
+            4934,
+            "1790901314606948506",
+            130
+          ],
+          [
+            [526675],
+            4934,
+            "1790901315124988844",
+            131
+          ],
+          [
+            [526675],
+            4934,
+            "1790901315642985316",
+            132
+          ],
+          [
+            [526675],
+            4934,
+            "1790901316161423569",
+            133
+          ],
+          [
+            [526675],
+            4934,
+            "1790901316685147425",
+            134
+          ],
+          [
+            [526675],
+            4934,
+            "1790901317202243684",
+            135
+          ],
+          [
+            [526675],
+            4934,
+            "1790901317719097733",
+            136
+          ],
+          [
+            [526675],
+            4934,
+            "1790901318239988278",
+            137
+          ],
+          [
+            [526675],
+            4934,
+            "1790901318797675356",
+            138
+          ],
+          [
+            [526675],
+            4934,
+            "1790901319314710663",
+            139
+          ],
+          [
+            [526675],
+            4934,
+            "1790901319833390939",
+            140
+          ],
+          [
+            [526675],
+            4934,
+            "1790901320351598614",
+            141
+          ],
+          [
+            [526675],
+            4934,
+            "1790901320872519206",
+            142
+          ],
+          [
+            [526675],
+            4934,
+            "1790901321390649106",
+            143
+          ],
+          [
+            [526675],
+            4934,
+            "1790901321908865673",
+            144
+          ],
+          [
+            [526675],
+            4934,
+            "1790901322426537594",
+            145
+          ],
+          [
+            [526675],
+            4934,
+            "1790901322945569229",
+            146
+          ],
+          [
+            [526675],
+            4934,
+            "1790901323464367870",
+            147
+          ],
+          [
+            [526675],
+            4934,
+            "1790901323983441118",
+            148
+          ],
+          [
+            [526675],
+            4934,
+            "1790901324501893330",
+            149
+          ],
+          [
+            [526675],
+            4934,
+            "1790901325035996180",
+            150
+          ],
+          [
+            [526675],
+            4934,
+            "1790901325555299158",
+            151
+          ],
+          [
+            [526675],
+            4934,
+            "1790901326075355027",
+            152
+          ],
+          [
+            [526675],
+            4934,
+            "1790901326593509610",
+            153
+          ],
+          [
+            [526675],
+            4934,
+            "1790901327112974051",
+            154
+          ],
+          [
+            [526675],
+            4934,
+            "1790901327631552288",
+            155
+          ],
+          [
+            [526675],
+            1222,
+            "1790901328148698634",
+            156
+          ],
+          [
+            [526675],
+            1222,
+            "1790901328665177403",
+            157
+          ],
+          [
+            [526675],
+            1222,
+            "1790901329181359680",
+            158
+          ],
+          [
+            [526675],
+            1222,
+            "1790901329698344319",
+            159
+          ],
+          [
+            [526675],
+            1222,
+            "1790901330214694926",
+            160
+          ],
+          [
+            [526675],
+            1222,
+            "1790901330731186719",
+            161
+          ],
+          [
+            [526675],
+            1222,
+            "1790901331247862086",
+            162
+          ],
+          [
+            [526675],
+            1222,
+            "1790901331765728373",
+            163
+          ]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/05-key-3-vram.jsonl"
+      },
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [0,"NVIDIA GeForce RTX 5080",16707092480,4176773120,8589934592,4294967296,134217728,67108864,1,"exclusive",5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,134217728,67108864,false,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder",84551,0,0,"inclusive_nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["GPU grouped process remainder"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,79558411547,79558411547,0,11],
+          [1,"evaluate all constraints symbolically",8,238295,44755,0,12],
+          [1,"infer base and extension constraint degree",8,417670,66505,0,13],
+          [2,"compute constraint layout with lookups",7,4543418,750712,0,14],
+          [2,"evaluate constraints symbolically",13,4748381,752900,0,15],
+          [2,"infer constraint degree",9,5871833,1089856,0,16],
+          [3,"batch_multiplicative_inverse",13576,24542063,408321,0,17],
+          [4,"columnwise_dot_product",264,9579812,352036,0,18],
+          [5,"with_zero_cols",1,809481758,809481758,0,19],
+          [6,"get_log_num_quotient_chunks",8,425062,67539,0,20],
+          [6,"infer log of base and extension constraint degree",8,421240,67222,0,21],
+          [7,"verify",8,176543195,25923902,0,22],
+          [7,"verify_with_preprocessed",8,176536258,25923015,0,23]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",44,24],
+          ["memory_full_stall_us",0,25],
+          ["memory_high_events",0,26],
+          ["memory_some_stall_us",0,27],
+          ["minor_faults",23565104,28],
+          ["read_bytes",0,29],
+          ["system_ticks",41936,30],
+          ["user_ticks",1458,31],
+          ["write_bytes",120049135616,32]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder",true,"cumulative",0,536870880,0,1168256,0,0,0,33]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","cumulative",1,1107296624,13421774848,592890792,68679084560,487511744,9552160,0,603980112,5972689568,14,67108864,54304322,538442449,3553194621,65122270597,34]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","serial","cumulative",535744096,3532624608,538442449,0,0,0,35]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","cumulative",1,7,395139232,487511744,74088169319,36]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,37]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","resident_lde","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [84685,15099510784,false,true,false,38]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-gpu-grouped-523973-5.service","exec_stop_post_snapshot",15790399488,0,47244640256,0,434132798,39]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["grouped process remainder",297,0,0,"inclusive_nonadditive",6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/06-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["grouped process remainder"],
+          "target": ["p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_field::batch_inverse","p3_matrix","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"evaluate all constraints symbolically",8,213866,36420,0,7],
+          [0,"infer base and extension constraint degree",8,380049,53049,0,8],
+          [1,"compute constraint layout with lookups",18,9899444,867514,0,9],
+          [1,"evaluate constraints symbolically",27,7290386,303745,0,10],
+          [1,"infer constraint degree",18,9752899,610963,0,11],
+          [2,"batch_multiplicative_inverse",13576,19313665,285204,0,12],
+          [3,"columnwise_dot_product",264,7453829,337511,0,13],
+          [4,"get_log_num_quotient_chunks",8,387377,53936,0,14],
+          [4,"infer log of base and extension constraint degree",8,383615,53493,0,15],
+          [5,"verify",8,172340058,26878566,0,16],
+          [5,"verify_with_preprocessed",8,172335426,26877500,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/06-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,18],
+          ["memory_full_stall_us",0,19],
+          ["memory_high_events",0,20],
+          ["memory_some_stall_us",0,21],
+          ["minor_faults",6673,22],
+          ["read_bytes",0,23],
+          ["system_ticks",3,24],
+          ["user_ticks",37,25],
+          ["write_bytes",0,26]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/06-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [298,0,true,false,27]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/06-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-gpu-grouped-523973-6.service","exec_stop_post_snapshot",16248832,0,47244640256,0,431379,28]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/06-check.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {
+    "backend": "opencl",
+    "memory_model": "discrete",
+    "os": "linux"
+  },
+  "proofs": [],
+  "retained_metadata": {
+    "artifacts": {
+      "height": {
+        "bytes": 4,
+        "sha256": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60"
+      },
+      "key.1": {
+        "bytes": 2048,
+        "sha256": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5"
+      },
+      "key.2": {
+        "bytes": 2048,
+        "sha256": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802"
+      },
+      "key.3": {
+        "bytes": 2048,
+        "sha256": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99"
+      },
+      "wallet.0": {
+        "bytes": 853675,
+        "sha256": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973"
+      },
+      "wallet.1": {
+        "bytes": 853491,
+        "sha256": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79"
+      },
+      "wallet.2": {
+        "bytes": 854047,
+        "sha256": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5"
+      },
+      "wallet.3": {
+        "bytes": 853795,
+        "sha256": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b"
+      },
+      "wallet.4": {
+        "bytes": 853725,
+        "sha256": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b"
+      },
+      "wallet.5": {
+        "bytes": 853855,
+        "sha256": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa"
+      },
+      "wallet.6": {
+        "bytes": 853977,
+        "sha256": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117"
+      },
+      "wallet.7": {
+        "bytes": 853568,
+        "sha256": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5"
+      }
+    },
+    "attempts": [
+      {
+        "log": "01-seed.log",
+        "name": "seed",
+        "started_utc": "2026-10-02T00:31:28Z",
+        "status": "complete",
+        "unit": "lattica-v2-gpu-grouped-523973-1.service",
+        "wall_seconds": 0.06422164600371616
+      },
+      {
+        "log": "02-reference-check.log",
+        "log_sha256": "e82b8291a6868d4859386cb2218b4b8778de77c0276f3890d153f698194c0fc8",
+        "name": "reference-check",
+        "started_utc": "2026-10-02T00:31:28Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 407874,
+            "memory_max": 47244640256,
+            "memory_peak": 16273408,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 273,
+            "spill_peak_bytes": 0
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-gpu-grouped-523973-2.service",
+        "wall_seconds": 0.3505526529988856
+      },
+      {
+        "cpu_key_equivalence": {
+          "bytes": 2048,
+          "sha256": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5"
+        },
+        "log": "03-key-1.log",
+        "log_sha256": "198865d2f27a9e5cd66500c8333d7cfe2be3bff35d3c704627a7d651debbfaf5",
+        "name": "key-1",
+        "started_utc": "2026-10-02T00:31:28Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 456581404,
+            "memory_max": 47244640256,
+            "memory_peak": 15429636096,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "checkpoint": {
+            "allocations": "14",
+            "commits": "1",
+            "compress_kernel_ns": "11265216",
+            "counters": "cumulative",
+            "decode_ns": "65916280302",
+            "download_and_decode_ns": "69466502904",
+            "download_wall_ns": "3546315759",
+            "downloaded_bytes": "13421774848",
+            "hashing_wall_ns": "0",
+            "label": "GPU grouped process remainder",
+            "leaf_kernel_ns": "512242720",
+            "managed_live_bytes": "603980112",
+            "managed_peak_bytes": "5972689568",
+            "marshal_ns": "54107282",
+            "staging_bytes": "67108864",
+            "upload_and_marshal_ns": "590735998",
+            "upload_wall_ns": "536491570",
+            "uploaded_bytes": "1107296624"
+          },
+          "duration": {
+            "elapsed_ms": 82837,
+            "spill_peak_bytes": 14814298112
+          },
+          "gpu": {
+            "contexts": "1",
+            "device_index": "0",
+            "driver_reserve_bytes": "4294967296",
+            "global_bytes": "16707092480",
+            "job_lease": "exclusive",
+            "managed_limit_bytes": "8589934592",
+            "max_allocation_bytes": "4176773120",
+            "name": "NVIDIA GeForce RTX 5080",
+            "staging_bytes": "67108864",
+            "tile_bytes": "134217728"
+          },
+          "lde": {
+            "column_tiles": "7",
+            "commits": "1",
+            "counters": "cumulative",
+            "label": "GPU grouped process remainder",
+            "sponge_device_ns": "512242720",
+            "transform_device_ns": "425197920",
+            "wall_ns": "75175860412"
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-gpu-grouped-523973-3.service",
+        "vram": {
+          "limit_mib": 12288,
+          "peak_mib": 4934,
+          "positive_samples": 158,
+          "samples": 160,
+          "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+        },
+        "vram_log": "03-key-1-vram.jsonl",
+        "vram_log_sha256": "35277cbe80694618686d3c198a41409ac9f9c735bbfe8b750088544b808418e0",
+        "wall_seconds": 82.95570178100024
+      },
+      {
+        "cpu_key_equivalence": {
+          "bytes": 2048,
+          "sha256": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802"
+        },
+        "log": "04-key-2.log",
+        "log_sha256": "4266b283b6db75cfe239c0399506585a8734ff5be4cafe75c2116b511f964fe2",
+        "name": "key-2",
+        "started_utc": "2026-10-02T00:32:51Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 427469047,
+            "memory_max": 47244640256,
+            "memory_peak": 14807220224,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "checkpoint": {
+            "allocations": "14",
+            "commits": "1",
+            "compress_kernel_ns": "9543520",
+            "counters": "cumulative",
+            "decode_ns": "64119453888",
+            "download_and_decode_ns": "67673182592",
+            "download_wall_ns": "3549869016",
+            "downloaded_bytes": "13421774848",
+            "hashing_wall_ns": "0",
+            "label": "GPU grouped process remainder",
+            "leaf_kernel_ns": "488614464",
+            "managed_live_bytes": "603980112",
+            "managed_peak_bytes": "5972689568",
+            "marshal_ns": "62187358",
+            "staging_bytes": "67108864",
+            "upload_and_marshal_ns": "603779167",
+            "upload_wall_ns": "541462667",
+            "uploaded_bytes": "1107296624"
+          },
+          "duration": {
+            "elapsed_ms": 75308,
+            "spill_peak_bytes": 14529081344
+          },
+          "gpu": {
+            "contexts": "1",
+            "device_index": "0",
+            "driver_reserve_bytes": "4294967296",
+            "global_bytes": "16707092480",
+            "job_lease": "exclusive",
+            "managed_limit_bytes": "8589934592",
+            "max_allocation_bytes": "4176773120",
+            "name": "NVIDIA GeForce RTX 5080",
+            "staging_bytes": "67108864",
+            "tile_bytes": "134217728"
+          },
+          "lde": {
+            "column_tiles": "7",
+            "commits": "1",
+            "counters": "cumulative",
+            "label": "GPU grouped process remainder",
+            "sponge_device_ns": "488614464",
+            "transform_device_ns": "400000768",
+            "wall_ns": "72931153602"
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-gpu-grouped-523973-4.service",
+        "vram": {
+          "limit_mib": 12288,
+          "peak_mib": 4934,
+          "positive_samples": 144,
+          "samples": 146,
+          "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+        },
+        "vram_log": "04-key-2-vram.jsonl",
+        "vram_log_sha256": "89f95e9dea0be06db0929878ccdfdfa77e8ae8674e79833d52544ca444cc38cb",
+        "wall_seconds": 75.4558324019963
+      },
+      {
+        "cpu_key_equivalence": {
+          "bytes": 2048,
+          "sha256": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99"
+        },
+        "log": "05-key-3.log",
+        "log_sha256": "9dc0559aca9e80232c624c707efa32864ba2382b98c80e759d218a2d29bd479c",
+        "name": "key-3",
+        "started_utc": "2026-10-02T00:34:07Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 434132798,
+            "memory_max": 47244640256,
+            "memory_peak": 15790399488,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "checkpoint": {
+            "allocations": "14",
+            "commits": "1",
+            "compress_kernel_ns": "9552160",
+            "counters": "cumulative",
+            "decode_ns": "65122270597",
+            "download_and_decode_ns": "68679084560",
+            "download_wall_ns": "3553194621",
+            "downloaded_bytes": "13421774848",
+            "hashing_wall_ns": "0",
+            "label": "GPU grouped process remainder",
+            "leaf_kernel_ns": "487511744",
+            "managed_live_bytes": "603980112",
+            "managed_peak_bytes": "5972689568",
+            "marshal_ns": "54304322",
+            "staging_bytes": "67108864",
+            "upload_and_marshal_ns": "592890792",
+            "upload_wall_ns": "538442449",
+            "uploaded_bytes": "1107296624"
+          },
+          "duration": {
+            "elapsed_ms": 84685,
+            "spill_peak_bytes": 15099510784
+          },
+          "gpu": {
+            "contexts": "1",
+            "device_index": "0",
+            "driver_reserve_bytes": "4294967296",
+            "global_bytes": "16707092480",
+            "job_lease": "exclusive",
+            "managed_limit_bytes": "8589934592",
+            "max_allocation_bytes": "4176773120",
+            "name": "NVIDIA GeForce RTX 5080",
+            "staging_bytes": "67108864",
+            "tile_bytes": "134217728"
+          },
+          "lde": {
+            "column_tiles": "7",
+            "commits": "1",
+            "counters": "cumulative",
+            "label": "GPU grouped process remainder",
+            "sponge_device_ns": "487511744",
+            "transform_device_ns": "395139232",
+            "wall_ns": "74088169319"
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-gpu-grouped-523973-5.service",
+        "vram": {
+          "limit_mib": 12288,
+          "peak_mib": 4934,
+          "positive_samples": 162,
+          "samples": 163,
+          "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+        },
+        "vram_log": "05-key-3-vram.jsonl",
+        "vram_log_sha256": "e49e5d2c443d0c7fa622caa86c36c999b267bee1e969b135b9bbe798fc8b9f44",
+        "wall_seconds": 84.817545771999
+      },
+      {
+        "log": "06-check.log",
+        "log_sha256": "d2656b33cacb84a7427983771b46bf9e45e33fb50b663c0cc52a0436dbf98632",
+        "name": "check",
+        "started_utc": "2026-10-02T00:35:32Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 431379,
+            "memory_max": 47244640256,
+            "memory_peak": 16248832,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 298,
+            "spill_peak_bytes": 0
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-gpu-grouped-523973-6.service",
+        "wall_seconds": 0.36534335000033025
+      }
+    ],
+    "config": {
+      "accounting": "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py",
+      "auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-artifact-audit",
+      "backend": "resident",
+      "cpu_runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-probe",
+      "evidence": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence",
+      "external": ["8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"],
+      "gpu_index": 0,
+      "gpu_runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-qualification-20261001-b/block-v2-gpu-grouped-probe",
+      "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-job",
+      "mode": "register",
+      "quotient_fusion": 0,
+      "reference": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/reproduction-job",
+      "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-grouped-qualification-20261001-b/source.tar.gz"
+    },
+    "configured_limits_not_peak_observations": {
+      "aggregate_ram_bytes": 51539607552,
+      "aggregate_scratch_bytes": 137438953472,
+      "controller_ram_bytes_at_most": 3221225472,
+      "controller_runtime_seconds_at_most": 21600,
+      "log_bytes_per_stage": 67108864,
+      "spill_bytes": 128849018880,
+      "swap_bytes": 0,
+      "vram_log_bytes_per_stage": 8388608,
+      "worker_ram_bytes": 47244640256,
+      "worker_runtime_seconds": 7200,
+      "worker_vram_limit_mib": 12288
+    },
+    "full_tree_security": "UNREVIEWED",
+    "level6_qualified": false,
+    "pins": {
+      "accounting": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "auditor": "ae9ea1ddf846771c373b3dd5cf2e188087819de4294e25d27b85500e66f1af53",
+      "controller": "e4457748787437d55a0d399580a35323fe567d2afb86f2e1f82f4f7633733465",
+      "cpu_runner": "2383b260de5283ddcb6c1ce2408fb8139065fc109c8181ec602cc20ca095db3c",
+      "gpu_runner": "2239ea178e99db2646be5f5996a9afd00346db1051537dcef5c814931d125b31",
+      "helpers": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "source_archive": "fb526e8c007132032124165a25a4b83681f0ebb5ec1b0e17ab7b67a971c0d091"
+    },
+    "production_ready": false,
+    "schema": "gpu-grouped-eight-v1",
+    "source_artifacts": {
+      "height": {
+        "bytes": 4,
+        "sha256": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60"
+      },
+      "key.1": {
+        "bytes": 2048,
+        "sha256": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5"
+      },
+      "key.2": {
+        "bytes": 2048,
+        "sha256": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802"
+      },
+      "key.3": {
+        "bytes": 2048,
+        "sha256": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99"
+      },
+      "wallet.0": {
+        "bytes": 853675,
+        "sha256": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973"
+      },
+      "wallet.1": {
+        "bytes": 853491,
+        "sha256": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79"
+      },
+      "wallet.2": {
+        "bytes": 854047,
+        "sha256": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5"
+      },
+      "wallet.3": {
+        "bytes": 853795,
+        "sha256": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b"
+      },
+      "wallet.4": {
+        "bytes": 853725,
+        "sha256": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b"
+      },
+      "wallet.5": {
+        "bytes": 853855,
+        "sha256": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa"
+      },
+      "wallet.6": {
+        "bytes": 853977,
+        "sha256": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117"
+      },
+      "wallet.7": {
+        "bytes": 853568,
+        "sha256": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5"
+      }
+    },
+    "status": "GPU_KEYS_MATCH_CPU_RESEARCH_ONLY"
+  },
+  "revision": {
+    "pins": {
+      "accounting": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "auditor": "ae9ea1ddf846771c373b3dd5cf2e188087819de4294e25d27b85500e66f1af53",
+      "controller": "e4457748787437d55a0d399580a35323fe567d2afb86f2e1f82f4f7633733465",
+      "cpu_runner": "2383b260de5283ddcb6c1ce2408fb8139065fc109c8181ec602cc20ca095db3c",
+      "gpu_runner": "2239ea178e99db2646be5f5996a9afd00346db1051537dcef5c814931d125b31",
+      "helpers": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "source_archive": "fb526e8c007132032124165a25a4b83681f0ebb5ec1b0e17ab7b67a971c0d091"
+    }
+  },
+  "run_id": "run-819d4e6702f3e21e06b224b2",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 15679,
+      "path": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/manifest.json",
+      "sha256": "30f1d988c8faf9bd506fec282a5c0aa6fe330d72071a2b701fb6cdfa2c076dc7"
+    },
+    {
+      "bytes": 3013,
+      "path": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/02-reference-check.log",
+      "sha256": "e82b8291a6868d4859386cb2218b4b8778de77c0276f3890d153f698194c0fc8"
+    },
+    {
+      "bytes": 11006,
+      "path": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/03-key-1-vram.jsonl",
+      "sha256": "35277cbe80694618686d3c198a41409ac9f9c735bbfe8b750088544b808418e0"
+    },
+    {
+      "bytes": 5200,
+      "path": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/03-key-1.log",
+      "sha256": "198865d2f27a9e5cd66500c8333d7cfe2be3bff35d3c704627a7d651debbfaf5"
+    },
+    {
+      "bytes": 10045,
+      "path": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/04-key-2-vram.jsonl",
+      "sha256": "89f95e9dea0be06db0929878ccdfdfa77e8ae8674e79833d52544ca444cc38cb"
+    },
+    {
+      "bytes": 5011,
+      "path": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/04-key-2.log",
+      "sha256": "4266b283b6db75cfe239c0399506585a8734ff5be4cafe75c2116b511f964fe2"
+    },
+    {
+      "bytes": 11219,
+      "path": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/05-key-3-vram.jsonl",
+      "sha256": "e49e5d2c443d0c7fa622caa86c36c999b267bee1e969b135b9bbe798fc8b9f44"
+    },
+    {
+      "bytes": 5056,
+      "path": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/05-key-3.log",
+      "sha256": "9dc0559aca9e80232c624c707efa32864ba2382b98c80e759d218a2d29bd479c"
+    },
+    {
+      "bytes": 2964,
+      "path": "lattica-prover-p3/target/block-v2-gpu-grouped-resident-registration-20261001-a-evidence/06-check.log",
+      "sha256": "d2656b33cacb84a7427983771b46bf9e45e33fb50b663c0cc52a0436dbf98632"
+    }
+  ],
+  "stages": [
+    {
+      "log": "01-seed.log",
+      "name": "seed",
+      "started_utc": "2026-10-02T00:31:28Z",
+      "status": "complete",
+      "unit": "lattica-v2-gpu-grouped-523973-1.service",
+      "wall_seconds": 0.06422164600371616
+    },
+    {
+      "log": "02-reference-check.log",
+      "log_sha256": "e82b8291a6868d4859386cb2218b4b8778de77c0276f3890d153f698194c0fc8",
+      "name": "reference-check",
+      "started_utc": "2026-10-02T00:31:28Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 407874,
+          "memory_max": 47244640256,
+          "memory_peak": 16273408,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 273,
+          "spill_peak_bytes": 0
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-gpu-grouped-523973-2.service",
+      "wall_seconds": 0.3505526529988856
+    },
+    {
+      "cpu_key_equivalence": {
+        "bytes": 2048,
+        "sha256": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5"
+      },
+      "log": "03-key-1.log",
+      "log_sha256": "198865d2f27a9e5cd66500c8333d7cfe2be3bff35d3c704627a7d651debbfaf5",
+      "name": "key-1",
+      "started_utc": "2026-10-02T00:31:28Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 456581404,
+          "memory_max": 47244640256,
+          "memory_peak": 15429636096,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "checkpoint": {
+          "allocations": "14",
+          "commits": "1",
+          "compress_kernel_ns": "11265216",
+          "counters": "cumulative",
+          "decode_ns": "65916280302",
+          "download_and_decode_ns": "69466502904",
+          "download_wall_ns": "3546315759",
+          "downloaded_bytes": "13421774848",
+          "hashing_wall_ns": "0",
+          "label": "GPU grouped process remainder",
+          "leaf_kernel_ns": "512242720",
+          "managed_live_bytes": "603980112",
+          "managed_peak_bytes": "5972689568",
+          "marshal_ns": "54107282",
+          "staging_bytes": "67108864",
+          "upload_and_marshal_ns": "590735998",
+          "upload_wall_ns": "536491570",
+          "uploaded_bytes": "1107296624"
+        },
+        "duration": {
+          "elapsed_ms": 82837,
+          "spill_peak_bytes": 14814298112
+        },
+        "gpu": {
+          "contexts": "1",
+          "device_index": "0",
+          "driver_reserve_bytes": "4294967296",
+          "global_bytes": "16707092480",
+          "job_lease": "exclusive",
+          "managed_limit_bytes": "8589934592",
+          "max_allocation_bytes": "4176773120",
+          "name": "NVIDIA GeForce RTX 5080",
+          "staging_bytes": "67108864",
+          "tile_bytes": "134217728"
+        },
+        "lde": {
+          "column_tiles": "7",
+          "commits": "1",
+          "counters": "cumulative",
+          "label": "GPU grouped process remainder",
+          "sponge_device_ns": "512242720",
+          "transform_device_ns": "425197920",
+          "wall_ns": "75175860412"
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-gpu-grouped-523973-3.service",
+      "vram": {
+        "limit_mib": 12288,
+        "peak_mib": 4934,
+        "positive_samples": 158,
+        "samples": 160,
+        "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+      },
+      "vram_log": "03-key-1-vram.jsonl",
+      "vram_log_sha256": "35277cbe80694618686d3c198a41409ac9f9c735bbfe8b750088544b808418e0",
+      "wall_seconds": 82.95570178100024
+    },
+    {
+      "cpu_key_equivalence": {
+        "bytes": 2048,
+        "sha256": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802"
+      },
+      "log": "04-key-2.log",
+      "log_sha256": "4266b283b6db75cfe239c0399506585a8734ff5be4cafe75c2116b511f964fe2",
+      "name": "key-2",
+      "started_utc": "2026-10-02T00:32:51Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 427469047,
+          "memory_max": 47244640256,
+          "memory_peak": 14807220224,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "checkpoint": {
+          "allocations": "14",
+          "commits": "1",
+          "compress_kernel_ns": "9543520",
+          "counters": "cumulative",
+          "decode_ns": "64119453888",
+          "download_and_decode_ns": "67673182592",
+          "download_wall_ns": "3549869016",
+          "downloaded_bytes": "13421774848",
+          "hashing_wall_ns": "0",
+          "label": "GPU grouped process remainder",
+          "leaf_kernel_ns": "488614464",
+          "managed_live_bytes": "603980112",
+          "managed_peak_bytes": "5972689568",
+          "marshal_ns": "62187358",
+          "staging_bytes": "67108864",
+          "upload_and_marshal_ns": "603779167",
+          "upload_wall_ns": "541462667",
+          "uploaded_bytes": "1107296624"
+        },
+        "duration": {
+          "elapsed_ms": 75308,
+          "spill_peak_bytes": 14529081344
+        },
+        "gpu": {
+          "contexts": "1",
+          "device_index": "0",
+          "driver_reserve_bytes": "4294967296",
+          "global_bytes": "16707092480",
+          "job_lease": "exclusive",
+          "managed_limit_bytes": "8589934592",
+          "max_allocation_bytes": "4176773120",
+          "name": "NVIDIA GeForce RTX 5080",
+          "staging_bytes": "67108864",
+          "tile_bytes": "134217728"
+        },
+        "lde": {
+          "column_tiles": "7",
+          "commits": "1",
+          "counters": "cumulative",
+          "label": "GPU grouped process remainder",
+          "sponge_device_ns": "488614464",
+          "transform_device_ns": "400000768",
+          "wall_ns": "72931153602"
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-gpu-grouped-523973-4.service",
+      "vram": {
+        "limit_mib": 12288,
+        "peak_mib": 4934,
+        "positive_samples": 144,
+        "samples": 146,
+        "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+      },
+      "vram_log": "04-key-2-vram.jsonl",
+      "vram_log_sha256": "89f95e9dea0be06db0929878ccdfdfa77e8ae8674e79833d52544ca444cc38cb",
+      "wall_seconds": 75.4558324019963
+    },
+    {
+      "cpu_key_equivalence": {
+        "bytes": 2048,
+        "sha256": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99"
+      },
+      "log": "05-key-3.log",
+      "log_sha256": "9dc0559aca9e80232c624c707efa32864ba2382b98c80e759d218a2d29bd479c",
+      "name": "key-3",
+      "started_utc": "2026-10-02T00:34:07Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 434132798,
+          "memory_max": 47244640256,
+          "memory_peak": 15790399488,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "checkpoint": {
+          "allocations": "14",
+          "commits": "1",
+          "compress_kernel_ns": "9552160",
+          "counters": "cumulative",
+          "decode_ns": "65122270597",
+          "download_and_decode_ns": "68679084560",
+          "download_wall_ns": "3553194621",
+          "downloaded_bytes": "13421774848",
+          "hashing_wall_ns": "0",
+          "label": "GPU grouped process remainder",
+          "leaf_kernel_ns": "487511744",
+          "managed_live_bytes": "603980112",
+          "managed_peak_bytes": "5972689568",
+          "marshal_ns": "54304322",
+          "staging_bytes": "67108864",
+          "upload_and_marshal_ns": "592890792",
+          "upload_wall_ns": "538442449",
+          "uploaded_bytes": "1107296624"
+        },
+        "duration": {
+          "elapsed_ms": 84685,
+          "spill_peak_bytes": 15099510784
+        },
+        "gpu": {
+          "contexts": "1",
+          "device_index": "0",
+          "driver_reserve_bytes": "4294967296",
+          "global_bytes": "16707092480",
+          "job_lease": "exclusive",
+          "managed_limit_bytes": "8589934592",
+          "max_allocation_bytes": "4176773120",
+          "name": "NVIDIA GeForce RTX 5080",
+          "staging_bytes": "67108864",
+          "tile_bytes": "134217728"
+        },
+        "lde": {
+          "column_tiles": "7",
+          "commits": "1",
+          "counters": "cumulative",
+          "label": "GPU grouped process remainder",
+          "sponge_device_ns": "487511744",
+          "transform_device_ns": "395139232",
+          "wall_ns": "74088169319"
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-gpu-grouped-523973-5.service",
+      "vram": {
+        "limit_mib": 12288,
+        "peak_mib": 4934,
+        "positive_samples": 162,
+        "samples": 163,
+        "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+      },
+      "vram_log": "05-key-3-vram.jsonl",
+      "vram_log_sha256": "e49e5d2c443d0c7fa622caa86c36c999b267bee1e969b135b9bbe798fc8b9f44",
+      "wall_seconds": 84.817545771999
+    },
+    {
+      "log": "06-check.log",
+      "log_sha256": "d2656b33cacb84a7427983771b46bf9e45e33fb50b663c0cc52a0436dbf98632",
+      "name": "check",
+      "started_utc": "2026-10-02T00:35:32Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 431379,
+          "memory_max": 47244640256,
+          "memory_peak": 16248832,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 298,
+          "spill_peak_bytes": 0
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-gpu-grouped-523973-6.service",
+      "wall_seconds": 0.36534335000033025
+    }
+  ],
+  "status": "succeeded",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "linux-opencl",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

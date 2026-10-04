@@ -1,0 +1,175 @@
+{
+  "campaign_ids": ["block-v2-cpu-worker-start-2026-10-02","block-v2-verifier-guard-2026-10-02"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-birth-live-20261002-b",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-birth-cancel-20261002-b.service","exec_stop_post_snapshot",32018432,0,3221225472,0,2818814,11]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/cancel.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-birth-check-20261002-b.service","exec_stop_post_snapshot",32952320,0,3221225472,0,2600709,10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-birth-crash-20261002-b.service","exec_stop_post_snapshot",31830016,0,3221225472,0,2499284,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/crash.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-birth-missed-check-20261002-b.service","exec_stop_post_snapshot",37249024,0,3221225472,0,3769205,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/missed-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-birth-missed-crash-20261002-b.service","exec_stop_post_snapshot",33062912,0,3221225472,0,2492232,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/missed-crash.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-birth-missed-recover-20261002-b.service","exec_stop_post_snapshot",21905408,0,3221225472,0,1270175,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/missed-recover.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-birth-proof-20261002-b.service","exec_stop_post_snapshot",35954688,0,3221225472,0,3180027,10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/proof.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-birth-recover-20261002-b.service","exec_stop_post_snapshot",21610496,0,3221225472,0,1082255,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/recover.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-birth-replay-20261002-b.service","exec_stop_post_snapshot",23920640,0,3221225472,0,932715,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/replay.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P1","P2"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-9fbd35d2c1bd662fa87bfa6f",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 1544,
+      "path": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/cancel.log",
+      "sha256": "caaeedbb96a7584791a643bcf56151f09240c22853262a34875f181d52f8147e"
+    },
+    {
+      "bytes": 1381,
+      "path": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/check.log",
+      "sha256": "20e94bdaf7e6d542c4bb6b0cbc28a56cec615349493d4951e0320deebf1d8588"
+    },
+    {
+      "bytes": 1339,
+      "path": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/crash.log",
+      "sha256": "56d9ecbdc01737c062844f4ba7dfb01e49cc2a67be6d50ed4b0cb8a521634b7e"
+    },
+    {
+      "bytes": 936,
+      "path": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/missed-check.log",
+      "sha256": "d8af0328aef1e2b15e1bfed5a0dc3d6bf261992645afe09d3f134a1945f762e8"
+    },
+    {
+      "bytes": 793,
+      "path": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/missed-crash.log",
+      "sha256": "036a4d1b468524b7ec66409c16bf0a24dc4b36d376be5a43e4767cc15ebd1937"
+    },
+    {
+      "bytes": 934,
+      "path": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/missed-recover.log",
+      "sha256": "38f3bd6d231c8f0aa30d00a4f74fbbe696a4d553f0f7715e7d5585ccf99709ed"
+    },
+    {
+      "bytes": 1495,
+      "path": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/proof.log",
+      "sha256": "e9c4fc3100b43449c7a847944c5b63bf557d3b37a61d439a975cae596217b7b5"
+    },
+    {
+      "bytes": 895,
+      "path": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/recover.log",
+      "sha256": "cecbb20d0c20e41c0c25f29473c4a4a30b07ae41cb22eb4ba582c13e32962102"
+    },
+    {
+      "bytes": 813,
+      "path": "lattica-prover-p3/target/block-v2-birth-live-20261002-b/replay.log",
+      "sha256": "b8368d2e072faed9fb83243bb2044b97f797c7b32f869bc98d4036ac02ff6347"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

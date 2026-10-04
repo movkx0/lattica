@@ -1,0 +1,85 @@
+{
+  "campaign_ids": ["block-v2-cpu-supervisor-live-2026-10-02"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-supervisor-live-20261002-b",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-supervisor-cancel-20261002-b.service","exec_stop_post_snapshot",32829440,0,3221225472,0,2368915,10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-supervisor-live-20261002-b/cancel.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-supervisor-check-20261002-b.service","exec_stop_post_snapshot",31633408,0,3221225472,0,2486810,10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-supervisor-live-20261002-b/check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-supervisor-crash-20261002-b.service","exec_stop_post_snapshot",32661504,0,3221225472,0,2188994,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-supervisor-live-20261002-b/crash.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P2"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-3bb294c4ec5c4a0d5a77fe0e",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 1417,
+      "path": "lattica-prover-p3/target/block-v2-supervisor-live-20261002-b/cancel.log",
+      "sha256": "94aae87855d9e4f106662ee65661d3c01fedc679bf9f3db940359873258f5c99"
+    },
+    {
+      "bytes": 1395,
+      "path": "lattica-prover-p3/target/block-v2-supervisor-live-20261002-b/check.log",
+      "sha256": "da09e22fdb1abcda6331d2fff96ea8f2dfdced8297c8bc6ef239a97eeffd201b"
+    },
+    {
+      "bytes": 963,
+      "path": "lattica-prover-p3/target/block-v2-supervisor-live-20261002-b/crash.log",
+      "sha256": "2d19c011e27035cc4965d6a90117bf4ddf8ec44e21bda5275310bb386e083839"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

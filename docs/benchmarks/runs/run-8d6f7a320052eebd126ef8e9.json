@@ -1,0 +1,99 @@
+{
+  "campaign_ids": ["block-v2-pipeline-implementation-2026-10-03"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "logs",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-8d6f7a320052eebd126ef8e9",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 216,
+      "path": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b/logs/register-ram-candidate.log",
+      "sha256": "5c595fcfaa253a77ea87eef7ccd63563fe41fb4a6a843422f0a99a33d48f9d99"
+    },
+    {
+      "bytes": 216,
+      "path": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b/logs/register-ram-reference.log",
+      "sha256": "e862f3803e652ebbcb15e10099926e440854ae20b764e2266d096de6b4afaea1"
+    },
+    {
+      "bytes": 215,
+      "path": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b/logs/round-1-ram-candidate.log",
+      "sha256": "b48bb072f4c8de00172743395fdf4b345c16d5c7142d3bee932c2445df9002d7"
+    },
+    {
+      "bytes": 215,
+      "path": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b/logs/round-1-ram-reference.log",
+      "sha256": "81c3ec794d6ce4c3cad6e825c782d25227ce61d3308b566ef26cb0d221f61379"
+    },
+    {
+      "bytes": 215,
+      "path": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b/logs/round-2-ram-candidate.log",
+      "sha256": "c2bf1f2ee3eae37516c458405e78d2aefcd046f43102ae4e607d6160b425a1cc"
+    },
+    {
+      "bytes": 215,
+      "path": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b/logs/round-2-ram-reference.log",
+      "sha256": "7211a9a4f33319410e721c530d40c9ec27d6846c97cbf239348627dffd5b2454"
+    },
+    {
+      "bytes": 215,
+      "path": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b/logs/round-3-ram-candidate.log",
+      "sha256": "d0597de4305800f396ff0159bcc4645405f677f7932216949c86e42a4b9a68e2"
+    },
+    {
+      "bytes": 215,
+      "path": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b/logs/round-3-ram-reference.log",
+      "sha256": "bbd22cc273684d1a326f1e381339e92edd110337d326d7536af2c39f06b323bb"
+    },
+    {
+      "bytes": 215,
+      "path": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b/logs/round-4-ram-candidate.log",
+      "sha256": "6adaa8a566a24a8eee23350762024b5a09ecd661d18ef0573ab65611909e930a"
+    },
+    {
+      "bytes": 215,
+      "path": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b/logs/round-4-ram-reference.log",
+      "sha256": "f7adb90708e6772fb879b7d14e05f93f52488c4ea3919c1a8ae364e9a817ba73"
+    },
+    {
+      "bytes": 215,
+      "path": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b/logs/round-5-ram-candidate.log",
+      "sha256": "778d5205e48ac9e09c06fa43b9ef6c2eb59bf674674b779555fc706a6ddd4efe"
+    },
+    {
+      "bytes": 215,
+      "path": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b/logs/round-5-ram-reference.log",
+      "sha256": "4dec7eafca3b5a5f1ef80cc938fc6a5202d2408a1040d4928532e566d38136ff"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

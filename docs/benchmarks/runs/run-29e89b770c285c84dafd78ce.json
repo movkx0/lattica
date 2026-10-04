@@ -1,0 +1,105 @@
+{
+  "campaign_ids": [],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-process-proof-20261002-a",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-process-check-20261002-a.service","exec_stop_post_snapshot",33329152,0,3221225472,0,1443509,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-process-proof-20261002-a/check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","setup_ms","preprocessing_cache_hit","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_start",
+        "rows": [
+          [1,53009,false,8]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-process-proof-20261002-a/proof.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","prove_and_verify_ms","node_payload_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_verified",
+        "rows": [
+          [1,123658,1683940,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-process-proof-20261002-a/proof.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-process-owner-20261002-a.service","exec_stop_post_snapshot",41508864,0,3221225472,0,1990133,21]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-process-proof-20261002-a/proof.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-process-replay-20261002-a.service","exec_stop_post_snapshot",32092160,0,3221225472,0,1015039,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-process-proof-20261002-a/replay.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": [],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-29e89b770c285c84dafd78ce",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 1519,
+      "path": "lattica-prover-p3/target/block-v2-process-proof-20261002-a/check.log",
+      "sha256": "dd5051109f6afedbb3c3a68419c7384240fcffd2b236c0b91176da15721db100"
+    },
+    {
+      "bytes": 1858,
+      "path": "lattica-prover-p3/target/block-v2-process-proof-20261002-a/proof.log",
+      "sha256": "67ce9b415fbf40d35ddb5ab7703b02dd15af41c7865796d0b27ea3a6b2c966c6"
+    },
+    {
+      "bytes": 868,
+      "path": "lattica-prover-p3/target/block-v2-process-proof-20261002-a/replay.log",
+      "sha256": "126614827a31c0192c6a9a1459228e82bc9acedaad29f5f242a81cac79436f74"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

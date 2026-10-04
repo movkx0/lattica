@@ -1,0 +1,214 @@
+{
+  "campaign_ids": ["block-v2-cpu-worker-2026-10-02"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-worker-proof-20261002-a",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["input_bytes","output_bytes","width","added_bits","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_start",
+        "rows": [
+          [838860800,13421772800,200,4,5],
+          [411041792,6576668672,98,4,8],
+          [230686720,3690987520,55,4,10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a/pair.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_done",
+        "rows": [
+          [11661,6],
+          [5655,9],
+          [3109,11]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a/pair.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","setup_ms","preprocessing_cache_hit","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_start",
+        "rows": [
+          [1,52524,false,7]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a/pair.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "heap_lde_normalize_start",
+        "rows": [
+          [469762048,12],
+          [469762048,16],
+          [469762048,20],
+          [469762048,24],
+          [469762048,28],
+          [469762048,32],
+          [469762048,36],
+          [469762048,40],
+          [469762048,44],
+          [469762048,48],
+          [469762048,52],
+          [469762048,56],
+          [469762048,60],
+          [469762048,64],
+          [469762048,68],
+          [469762048,72]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a/pair.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "heap_lde_normalize_done",
+        "rows": [
+          [210,13],
+          [199,17],
+          [176,21],
+          [238,25],
+          [206,29],
+          [200,33],
+          [223,37],
+          [116,41],
+          [139,45],
+          [143,49],
+          [120,53],
+          [137,57],
+          [127,61],
+          [97,65],
+          [102,69],
+          [102,73]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a/pair.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["bytes","width","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_heap_fft_start",
+        "rows": [
+          [469762048,7,14],
+          [469762048,7,18],
+          [469762048,7,22],
+          [469762048,7,26],
+          [469762048,7,30],
+          [469762048,7,34],
+          [469762048,7,38],
+          [469762048,7,42],
+          [469762048,7,46],
+          [469762048,7,50],
+          [469762048,7,54],
+          [469762048,7,58],
+          [469762048,7,62],
+          [469762048,7,66],
+          [469762048,7,70],
+          [469762048,7,74]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a/pair.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_heap_fft_done",
+        "rows": [
+          [457,15],
+          [413,19],
+          [455,23],
+          [469,27],
+          [424,31],
+          [459,35],
+          [382,39],
+          [354,43],
+          [339,47],
+          [337,51],
+          [349,55],
+          [360,59],
+          [341,63],
+          [340,67],
+          [338,71],
+          [354,75]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a/pair.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","prove_and_verify_ms","node_payload_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_verified",
+        "rows": [
+          [1,169717,1683940,76]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a/pair.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-worker-pair-20261002-a.service","exec_stop_post_snapshot",39931117568,0,47244640256,0,1208946379,82]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a/pair.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-worker-replay-20261002-a.service","exec_stop_post_snapshot",31346688,0,3221225472,0,2280782,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a/replay.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P2"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-056034b1465bbf9f5e3014e6",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 4136,
+      "path": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a/pair.log",
+      "sha256": "7ca8c303eace147d0839079a2dcbc2512f9bec2f8b8ad62eca49b9e2d8fccd8a"
+    },
+    {
+      "bytes": 867,
+      "path": "lattica-prover-p3/target/block-v2-worker-proof-20261002-a/replay.log",
+      "sha256": "e760ace2c374ad40c6c85a99be803309d72d9a6c8e6235632a0aba6e58f8ed2b"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

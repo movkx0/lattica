@@ -57,6 +57,8 @@ This index is the canonical map of the repository documentation. Documents are g
 
 ## Architecture and roadmap
 
+- [Solving benchmark report](benchmarks/index.html) — offline throughput, latency, resource telemetry and P0–P5 milestone evidence; [export and portable Apple-silicon imports](benchmarks/README.md).
+
 - [CISO/CTO cryptocurrency deployment assessment](recursive-proving-performance-analysis.md) — four-user-transactions-per-minute launch requirement, security and performance gates, finality options, hardware and worker-pool economics, and supporting engineering evidence.
 - [Execution DAG and GPU implementation plan](dag-gpu-implementation.md) — selected implementation direction: local proof DAG and GPU transforms through commitments first, followed by quotient/opening/FRI work, multiple devices and remote subtrees. Includes module boundaries, job/device contracts, failure handling and measurable gates; not implemented or activated.
 - [Throughput engineering analysis and project plan](high-throughput-proving-plan.md) — proposed subtree locality, quantified transfer model, execution DAG, exact indexes/Bloom hints, capability-aware pool, worker hardware and 512/4,096-capacity three-minute research profiles. Includes feasibility, cost and acceptance gates; not implemented or activated.

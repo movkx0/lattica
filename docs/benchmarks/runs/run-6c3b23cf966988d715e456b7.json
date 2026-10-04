@@ -1,0 +1,89 @@
+{
+  "campaign_ids": ["block-v2-multi-gpu-2026-10-04"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-multi-pairs-20261003-e",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-6c3b23cf966988d715e456b7",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 149,
+      "path": "lattica-prover-p3/target/block-v2-multi-pairs-20261003-e/01-concurrent-controller.log",
+      "sha256": "0fef26ff315697a410468af86ed91a982a5d76f5072193144bca7d15e8b2ecea"
+    },
+    {
+      "bytes": 100,
+      "path": "lattica-prover-p3/target/block-v2-multi-pairs-20261003-e/01-sequential-controller.log",
+      "sha256": "e80c53a503d207351cb20c05ab30370ce359ac58bab824ba96b414866eb4f586"
+    },
+    {
+      "bytes": 100,
+      "path": "lattica-prover-p3/target/block-v2-multi-pairs-20261003-e/02-concurrent-controller.log",
+      "sha256": "9a194290dc7c5b8f5020d105c05fdef050f5519b1ab54235b65b6dfee5cddf07"
+    },
+    {
+      "bytes": 100,
+      "path": "lattica-prover-p3/target/block-v2-multi-pairs-20261003-e/02-sequential-controller.log",
+      "sha256": "bc3f5fd48746a6463a6665a73a56a4b851ea2737aa56324f64e7289190cef251"
+    },
+    {
+      "bytes": 149,
+      "path": "lattica-prover-p3/target/block-v2-multi-pairs-20261003-e/03-concurrent-controller.log",
+      "sha256": "a120b3a1e2dc8ac026508c5be6203906f1994739dbd20e093057c909f85b1193"
+    },
+    {
+      "bytes": 100,
+      "path": "lattica-prover-p3/target/block-v2-multi-pairs-20261003-e/03-sequential-controller.log",
+      "sha256": "2bf3ad7276a1d8a0eaeae16b8a91dd5d37e3163adb4fed930c47d639a1cccb52"
+    },
+    {
+      "bytes": 100,
+      "path": "lattica-prover-p3/target/block-v2-multi-pairs-20261003-e/04-concurrent-controller.log",
+      "sha256": "003e4b74f1c479c6063b89783015065b218e8e9a625b62ac990bde0b975919bf"
+    },
+    {
+      "bytes": 100,
+      "path": "lattica-prover-p3/target/block-v2-multi-pairs-20261003-e/04-sequential-controller.log",
+      "sha256": "b4dd8795f176645bf96139704f20b1bc72ddaea1c44fbfc2a40a494cc69a7267"
+    },
+    {
+      "bytes": 100,
+      "path": "lattica-prover-p3/target/block-v2-multi-pairs-20261003-e/05-concurrent-controller.log",
+      "sha256": "ddd51d0fe0904a3e80c59019d23e5e8f5d4f697f399689d05a1451cca525117d"
+    },
+    {
+      "bytes": 100,
+      "path": "lattica-prover-p3/target/block-v2-multi-pairs-20261003-e/05-sequential-controller.log",
+      "sha256": "c6faee608bbd63a9de018336512e6b635d3a79956c53fc1a80709868741cf30f"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

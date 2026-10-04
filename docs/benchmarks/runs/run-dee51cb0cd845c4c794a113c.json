@@ -1,0 +1,59 @@
+{
+  "campaign_ids": ["block-v2-prioritized-execution-2026-10-03"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "logs",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-dee51cb0cd845c4c794a113c",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 213,
+      "path": "lattica-prover-p3/target/block-v2-memory-qualification-20261003-c/logs/register-ram-candidate.log",
+      "sha256": "e8ddce02b12d61c05d7631340027929a0ee6938ac4902dbcff4aef36334ef71e"
+    },
+    {
+      "bytes": 213,
+      "path": "lattica-prover-p3/target/block-v2-memory-qualification-20261003-c/logs/register-ram-reference.log",
+      "sha256": "dd597ba9285eaef5d5ade6915322d74fe6117ad8d918c3abf21fd834aa73fd26"
+    },
+    {
+      "bytes": 212,
+      "path": "lattica-prover-p3/target/block-v2-memory-qualification-20261003-c/logs/round-1-ram-candidate.log",
+      "sha256": "a334f1753313de84f11b308b3dbae87d5f4272ad9235f2362e343ac34fe875c5"
+    },
+    {
+      "bytes": 212,
+      "path": "lattica-prover-p3/target/block-v2-memory-qualification-20261003-c/logs/round-1-ram-reference.log",
+      "sha256": "4f2e34978a3fa22ad1d63a27c352d814f3d4ad4a43651815bbb89bd1fa414c86"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "campaign_ids": ["block-v2-gpu-default-ram-bench-2026-10-02","block-v2-gpu-opening-compact-recursive-2026-10-02","block-v2-multi-gpu-2026-10-04"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-gpu-compact-runner-20261002-b",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-3d1d8cf018dbc70bb94ce56a",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 142,
+      "path": "lattica-prover-p3/target/block-v2-gpu-compact-runner-20261002-b/lifecycle-controller.log",
+      "sha256": "f1710f6e6a00d264deaff48e8ba6c8e0e5cdba004d5bd534ce8c9712a9c15181"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

@@ -18,7 +18,7 @@ import types
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "lattica-prover-p3/scripts/block-v2-scratch-bench.py"
-SOURCE_SHA = "4ad9d60de7a33d2fbce0d0ff4d2ac05eda860aa68481702378907687466f1117"
+SOURCE_SHA = '8f57c624b4193e00561a19928728295e07e6758ba66178a0b6e8f642bbccccf0'
 ARMS = ("ram-reference", "ram-candidate")
 
 

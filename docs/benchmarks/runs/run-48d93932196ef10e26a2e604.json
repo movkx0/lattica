@@ -1,0 +1,49 @@
+{
+  "campaign_ids": [],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "logs",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": [],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-48d93932196ef10e26a2e604",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 196,
+      "path": "lattica-prover-p3/target/block-v2-max-threads-20261002-a/logs/register-ram24.log",
+      "sha256": "5f675283fabeb363a3fc2276dd9e6ad6bd74fcc9afe051bbbeed232d6dd3fa1b"
+    },
+    {
+      "bytes": 195,
+      "path": "lattica-prover-p3/target/block-v2-max-threads-20261002-a/logs/round-1-ram24.log",
+      "sha256": "a92707c221dba92e9ba7d0a060f63b127ea55e59ab736ca8a48446603ac04ddd"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}
