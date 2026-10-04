@@ -2,10 +2,9 @@
 //! No kernels or reservations: execution must replan under the engine mutex.
 //! Column tiles preserve whole transforms; arbitrary row chunks do not.
 //! Host readback is counted until quotient/opening consumers move to the GPU.
-use super::{plan_slots, retained_layout, Limits, CONSTANT_BYTES, GIB, QUERY_ELEMENTS};
+use super::{plan_slots, retained_layout, Limits, CONSTANT_BYTES, QUERY_ELEMENTS};
 
 const MAX_MATRICES: usize = 256;
-const MAX_HOST_OUTPUT_BYTES: usize = 48 * GIB;
 const SALT_COLUMNS: usize = 4;
 const SPONGE_COLUMNS: usize = 8;
 const RATE: usize = 4;
@@ -32,6 +31,7 @@ pub struct LdeCommitPlan {
     inputs: Vec<InputShape>,
     prefixes: Vec<usize>,
     output_height: usize,
+    retained_height: usize,
     columns_per_tile: usize,
     pub transform_buffer_bytes: usize,
     pub sponge_state_bytes: usize,
@@ -71,7 +71,7 @@ impl LdeCommitPlan {
             return Err("quotient heap aggregate allowance exceeded".into());
         }
         for input in &self.inputs {
-            if bytes(mul(self.output_height, input.width)?)? > per_matrix {
+            if bytes(mul(self.retained_height, input.width)?)? > per_matrix {
                 return Err("quotient heap matrix allowance exceeded".into());
             }
         }
@@ -83,6 +83,7 @@ impl LdeCommitPlan {
     /// Host allowance is a caller budget, not RSS; whole-job host admission and
     /// the external cgroup remain mandatory.
     #[allow(clippy::too_many_arguments)]
+    #[cfg(test)]
     pub(super) fn new(
         inputs: &[InputShape],
         cap_height: usize,
@@ -93,11 +94,35 @@ impl LdeCommitPlan {
         old_workspace_bytes: usize,
         host_output_budget_bytes: usize,
     ) -> Result<Self, String> {
+        Self::new_retained(
+            inputs,
+            cap_height,
+            limits,
+            max_alloc,
+            slots,
+            live_bytes,
+            old_workspace_bytes,
+            host_output_budget_bytes,
+            0,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn new_retained(
+        inputs: &[InputShape],
+        cap_height: usize,
+        limits: Limits,
+        max_alloc: usize,
+        slots: usize,
+        live_bytes: usize,
+        old_workspace_bytes: usize,
+        host_output_budget_bytes: usize,
+        retention_bits: usize,
+    ) -> Result<Self, String> {
         limits.validate()?;
         if inputs.is_empty() || inputs.len() > MAX_MATRICES {
             return Err("LDE plan matrix count".into());
         }
-        if host_output_budget_bytes == 0 || host_output_budget_bytes > MAX_HOST_OUTPUT_BYTES {
+        if host_output_budget_bytes == 0 {
             return Err("LDE plan host-output allowance".into());
         }
         let persistent_minimum = add(CONSTANT_BYTES, limits.staging_bytes)?;
@@ -106,6 +131,9 @@ impl LdeCommitPlan {
             .ok_or("old workspace exceeds observed live allocation")?;
         if base_live < persistent_minimum || live_bytes > limits.managed_bytes {
             return Err("LDE plan inconsistent live-allocation snapshot".into());
+        }
+        if retention_bits > crate::block_v2::profile::LOG_BLOWUP {
+            return Err("invalid LDE retention bound".into());
         }
         let mut output_height = 0;
         let mut total_row_width = 0;
@@ -139,7 +167,10 @@ impl LdeCommitPlan {
             total_row_width = add(total_row_width, add(input.width, SALT_COLUMNS)?)?;
             max_width = max_width.max(input.width);
             input_upload = add(input_upload, bytes(mul(input.height, input.width)?)?)?;
-            host_output = add(host_output, bytes(mul(height, input.width)?)?)?;
+            host_output = add(
+                host_output,
+                bytes(mul(height >> retention_bits, input.width)?)?,
+            )?;
         }
         if host_output > host_output_budget_bytes {
             return Err("LDE host readback exceeds caller allowance".into());
@@ -187,8 +218,8 @@ impl LdeCommitPlan {
         let mut host_reorder_workspace_bytes = 0;
         for input in inputs {
             if input.width > columns_per_tile {
-                host_reorder_workspace_bytes =
-                    host_reorder_workspace_bytes.max(bytes(mul(output_height, input.width)?)?);
+                host_reorder_workspace_bytes = host_reorder_workspace_bytes
+                    .max(bytes(mul(output_height >> retention_bits, input.width)?)?);
             }
         }
         let predicted_host_peak_bytes = add(host_output, host_reorder_workspace_bytes)?;
@@ -206,6 +237,7 @@ impl LdeCommitPlan {
             inputs: inputs.to_vec(),
             prefixes,
             output_height,
+            retained_height: output_height >> retention_bits,
             columns_per_tile,
             transform_buffer_bytes,
             sponge_state_bytes,
@@ -224,6 +256,9 @@ impl LdeCommitPlan {
     }
     pub fn output_height(&self) -> usize {
         self.output_height
+    }
+    pub fn retained_height(&self) -> usize {
+        self.retained_height
     }
     pub fn columns_per_tile(&self) -> usize {
         self.columns_per_tile
@@ -257,7 +292,7 @@ impl LdeCommitPlan {
 }
 #[cfg(test)]
 mod tests {
-    use super::super::{MAX_MANAGED_BYTES, MIB};
+    use super::super::{GIB, MAX_MANAGED_BYTES, MIB};
     use super::*;
     fn plan(
         shapes: &[InputShape],
@@ -291,6 +326,38 @@ mod tests {
                 added_bits: 4,
             },
         ]
+    }
+
+    #[test]
+    fn retained_prefix_is_admitted_before_output_and_reorder_allocation() {
+        let limits = Limits::default();
+        let shapes = wide();
+        let full = plan(&shapes, 4 * GIB, 0, 48 * GIB).unwrap();
+        for bits in [1, crate::block_v2::profile::LOG_BLOWUP] {
+            let compact = LdeCommitPlan::new_retained(
+                &shapes,
+                6,
+                limits,
+                4 * GIB,
+                1,
+                CONSTANT_BYTES + limits.staging_bytes,
+                0,
+                48 * GIB,
+                bits,
+            )
+            .unwrap();
+            assert_eq!(compact.output_height(), full.output_height());
+            assert_eq!(compact.retained_height(), full.output_height() >> bits);
+            assert_eq!(compact.host_output_bytes, full.host_output_bytes >> bits);
+            assert_eq!(
+                compact.host_reorder_workspace_bytes,
+                full.host_reorder_workspace_bytes >> bits
+            );
+            assert_eq!(
+                compact.predicted_managed_peak_bytes,
+                full.predicted_managed_peak_bytes
+            );
+        }
     }
 
     #[test]
@@ -369,7 +436,7 @@ mod tests {
     fn allocation_and_host_bounds_are_independent() {
         assert!(plan(&wide(), 256 * MIB, 0, 32 * GIB).is_err());
         assert!(plan(&wide(), 4 * GIB, 0, GIB).is_err());
-        assert!(plan(&wide(), 4 * GIB, 0, 49 * GIB).is_err());
+        assert!(plan(&wide(), 4 * GIB, 0, 49 * GIB).is_ok());
         let p = plan(&wide(), 512 * MIB, 0, 32 * GIB).unwrap();
         assert!(p.transform_buffer_bytes <= 512 * MIB);
         assert!(p.sponge_state_bytes <= 512 * MIB);

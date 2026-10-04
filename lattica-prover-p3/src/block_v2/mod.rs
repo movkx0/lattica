@@ -29,3 +29,6 @@ pub mod quotient_pcs;
 pub mod recursive;
 #[cfg(feature = "gpu")]
 mod resident_pcs;
+
+#[cfg(feature = "gpu")]
+mod batched_fri;

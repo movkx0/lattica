@@ -137,7 +137,7 @@ fn config_with_rngs(
                 fri(challenge_mmcs),
                 NUM_RANDOM_CODEWORDS,
                 hiding_rng,
-                super::resident_pcs::HOST_OUTPUT_BUDGET,
+                super::resident_pcs::host_output_budget(),
             )
             .expect("resident PCS configuration failed; no silent fallback")
         }

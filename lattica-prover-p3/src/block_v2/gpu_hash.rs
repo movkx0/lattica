@@ -1,6 +1,7 @@
 //! Candidate-only GPU commitments; verification always uses the upstream CPU MMCS.
 //! No parameter, salt distribution, serialized proof, or production ABI change.
 //! Only equal-height, power-of-two batches are admitted by the selected GPU path.
+mod compact_data;
 mod engine;
 pub(crate) use engine::opening_reduce::{
     reduce_lde as reduce_openings, OpeningMatrix, OpeningTerm,
@@ -41,7 +42,10 @@ pub fn initialize_from_env() -> Result<(), String> {
         Err(std::env::VarError::NotPresent) => Ok(()),
         Ok(v) if v == "0" => Ok(()),
         Ok(v) if v == "1" => {
-            engine::initialize(Limits::default())?;
+            let mut limits = Limits::default();
+            limits.managed_bytes =
+                engine::env_bytes("LATTICA_V2_GPU_MANAGED_BYTES", limits.managed_bytes)?;
+            engine::initialize(limits)?;
             ENABLED.store(true, Ordering::Release);
             Ok(())
         }
@@ -111,7 +115,13 @@ impl CandidateMmcs {
         ),
         String,
     > {
-        self.commit_resident_with_masks(inputs, added_bits, host_output_budget_bytes, None)
+        self.commit_resident_retained(
+            inputs,
+            added_bits,
+            host_output_budget_bytes,
+            None,
+            usize::from(super::resident_pcs::compact_prover_data()),
+        )
     }
 
     pub(crate) fn commit_resident_with_masks(
@@ -123,6 +133,36 @@ impl CandidateMmcs {
         added_bits: usize,
         host_output_budget_bytes: usize,
         masks: Option<&[RowMajorMatrix<Val>]>,
+    ) -> Result<
+        (
+            <Self as Mmcs<Val>>::Commitment,
+            ProverData<RowMajorMatrix<Val>>,
+        ),
+        String,
+    > {
+        self.commit_resident_retained(
+            inputs,
+            added_bits,
+            host_output_budget_bytes,
+            masks,
+            if super::resident_pcs::compact_prover_data() {
+                super::profile::LOG_BLOWUP
+            } else {
+                0
+            },
+        )
+    }
+
+    pub(crate) fn commit_resident_retained(
+        &self,
+        inputs: Vec<(
+            p3_field::coset::TwoAdicMultiplicativeCoset<Val>,
+            RowMajorMatrix<Val>,
+        )>,
+        added_bits: usize,
+        host_output_budget_bytes: usize,
+        masks: Option<&[RowMajorMatrix<Val>]>,
+        retention_bits: usize,
     ) -> Result<
         (
             <Self as Mmcs<Val>>::Commitment,
@@ -147,7 +187,12 @@ impl CandidateMmcs {
         }
         // First check precedes salt draws/allocations; the executor then replans
         // and reserves atomically under the same engine lock.
-        let plan = self.preflight_resident(&shapes, host_output_budget_bytes)?;
+        let plan = engine::plan_retained_lde_commit(
+            &shapes,
+            self.cap_height,
+            host_output_budget_bytes,
+            retention_bits,
+        )?;
         if masks.is_some() {
             plan.validate_quotient_storage()?;
         }
@@ -171,24 +216,29 @@ impl CandidateMmcs {
                 shift: Val::GENERATOR / domain.shift(),
             })
             .collect();
-        let output = match masks {
-            None => coset_lde_commit(&requests, self.cap_height, host_output_budget_bytes)?,
-            Some(masks) => engine::lde_execute::quotient_lde_commit(
-                &requests,
-                masks,
-                self.cap_height,
-                host_output_budget_bytes,
-            )?,
-        };
+        let output = engine::lde_execute::retained_lde_commit(
+            &requests,
+            masks,
+            self.cap_height,
+            host_output_budget_bytes,
+            retention_bits,
+        )?;
         let cap = <Self as Mmcs<Val>>::Commitment::new(output.cap().to_vec());
-        Ok((
-            cap,
+        let data = if retention_bits == 0 {
             ProverData::GpuRetained {
                 matrices: output.matrices,
                 salts,
                 tree: output.tree,
-            },
-        ))
+            }
+        } else {
+            ProverData::Compact(compact_data::CompactData::new(
+                output.matrices,
+                plan.output_height(),
+                salts,
+                output.tree,
+            ))
+        };
+        Ok((cap, data))
     }
 }
 
@@ -210,6 +260,7 @@ pub enum ProverData<M> {
         salts: Vec<RowMajorMatrix<Val>>,
         layers: Vec<Vec<[Val; 4]>>,
     },
+    Compact(compact_data::CompactData),
     GpuRetained {
         matrices: Vec<M>,
         salts: Vec<RowMajorMatrix<Val>>,
@@ -296,6 +347,7 @@ impl Mmcs<Val> for CandidateMmcs {
         data: &Self::ProverData<M>,
     ) -> BatchOpening<Val, Self> {
         match data {
+            ProverData::Compact(data) => data.open(index, self.cap_height),
             ProverData::Cpu(data) => {
                 let (values, proof) = self.cpu.open_batch(index, data).unpack();
                 BatchOpening::new(values, proof)
@@ -357,9 +409,19 @@ impl Mmcs<Val> for CandidateMmcs {
     fn get_matrices<'a, M: Matrix<Val>>(&self, data: &'a Self::ProverData<M>) -> Vec<&'a M> {
         match data {
             ProverData::Cpu(d) => self.cpu.get_matrices(d),
+            ProverData::Compact(_) => {
+                panic!("compact data requires explicit prefix/logical geometry access")
+            }
             ProverData::Gpu { matrices, .. } | ProverData::GpuRetained { matrices, .. } => {
                 matrices.iter().collect()
             }
+        }
+    }
+
+    fn get_matrix_heights<M: Matrix<Val>>(&self, data: &Self::ProverData<M>) -> Vec<usize> {
+        match data {
+            ProverData::Compact(data) => vec![data.height; data.prefixes.len()],
+            _ => self.get_matrices(data).iter().map(|m| m.height()).collect(),
         }
     }
 

@@ -4053,3 +4053,41 @@ remaining arithmetic/cache design.
 
 See [the execution record](evidence/block-v2-prioritized-execution-2026-10-03.json)
 for service names, artifact locations, allocation bounds, and hardware evidence.
+
+#### Compact prover data and multi-GPU throughput (2026-10-04)
+
+The grouped-eight research path now supports independent jobs on both NVIDIA
+GPUs. Compact prover data retains the prefixes needed for quotient evaluation
+and opening reduction, then reconstructs queried rows on the GPU. Logical
+commitment heights, original salts, Merkle paths, challenge order, and proof
+strength are preserved. The compact path remains explicit opt-in.
+
+The controller selects GPUs by UUID and gives each worker its own GPU lease.
+It calculates VRAM and driver/context allowances from that device, and Rayon,
+RAM, and spill budgets from current system and cgroup limits. Tmpfs spill counts
+toward host RAM. Reservations precede worker creation, and failed proving
+attempts are not retried automatically. The final admission checks include
+both controller and worker-parent cgroups.
+
+All five alternating two-job comparisons finished. Median pair time decreased
+from **436.539 s sequentially to 325.456 s concurrently**, a **25.446%**
+reduction. Throughput at those medians increased from **16.493 to 22.123
+jobs/hour**. The first concurrent pair was slower, and individual median job
+latency increased from 218.425 s to 315.585 s; this result supports queued-job
+throughput, with measurable variation between runs.
+
+The 20 comparison jobs and six qualification jobs passed independent CPU
+audits: 182 full-size proofs, 26 distinct root proofs, and 1,683,948 bytes per
+root. Concurrent workers peaked at 15.73–15.86 GiB RAM, within adaptive
+20.75–21.25 GiB assignments. No memory-limit or OOM events occurred. The frozen
+release passed 36 focused Rust checks; the final controller passed 17 resource
+and lifecycle tests. Fixed-seed proof equivalence passed on both GPUs.
+
+See [multi-GPU operation and all five rounds](multi-gpu-solving.md) and
+[the complete evidence](evidence/block-v2-multi-gpu-2026-10-04.json). The GPU
+binary is pinned at
+`6f46830dd127ce130a52158caa153384a2bb39568e85b9f5f01cddf565fa147d`.
+The benchmark controller remains frozen; later cleanup and inherited-limit
+checks are described in the evidence. All benchmark workers have stopped.
+Production activation, four-wallet geometry, and concurrent NVMe spill remain
+gated.

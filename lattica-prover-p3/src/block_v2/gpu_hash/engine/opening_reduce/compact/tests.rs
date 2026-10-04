@@ -116,6 +116,7 @@ fn compact_plan_binds_blowup_transform_allocations_and_tile_bounds() {
     let inputs = [OpeningMatrix {
         values: &values,
         width: 7,
+        height: values.len() / (7),
         terms: vec![OpeningTerm {
             inverse_denominators: &denoms,
             alpha_offset: Challenge::ONE,
@@ -172,6 +173,7 @@ fn gpu_compact_openings_match_original_and_cpu_for_real_ldes_and_all_points() {
         .map(|(i, matrix)| OpeningMatrix {
             values: &matrix.values,
             width: matrix.width,
+            height: matrix.values.len() / (matrix.width),
             terms: (0..=i % 3)
                 .map(|point| OpeningTerm {
                     inverse_denominators: &denoms,
@@ -283,6 +285,7 @@ fn gpu_compact_large_low_degree_input_matches_closed_form_reference() {
     let input = OpeningMatrix {
         values: &values,
         width,
+        height: values.len() / (width),
         terms: vec![
             OpeningTerm {
                 inverse_denominators: &denominators,

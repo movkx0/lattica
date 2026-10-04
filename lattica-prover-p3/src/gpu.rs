@@ -276,9 +276,16 @@ fn with_ctx<R>(f: impl FnOnce(&mut GpuCtx) -> R) -> R {
     GPU_CTX.with(|cell| {
         let mut opt = cell.borrow_mut();
         let ctx = opt.get_or_insert_with(|| {
-            let pq = ProQue::builder().src(KERNEL_SRC).dims(1).build().expect(
-                "GpuDft: OpenCL program build failed (is an OpenCL runtime + GPU present?)",
-            );
+            let (platform, device, _) = crate::gpu_device::select().expect("GPU device selection");
+            let pq = ProQue::builder()
+                .platform(platform)
+                .device(device)
+                .src(KERNEL_SRC)
+                .dims(1)
+                .build()
+                .expect(
+                    "GpuDft: OpenCL program build failed (is an OpenCL runtime + GPU present?)",
+                );
             GpuCtx {
                 pq,
                 dev: [None, None, None],

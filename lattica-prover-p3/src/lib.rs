@@ -1838,3 +1838,6 @@ mod tests {
         );
     }
 }
+
+#[cfg(feature = "gpu")]
+pub mod gpu_device;

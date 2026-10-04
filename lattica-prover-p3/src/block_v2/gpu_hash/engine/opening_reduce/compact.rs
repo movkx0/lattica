@@ -204,7 +204,7 @@ impl Engine {
         );
         self.compact_write(&inverse, &words)?;
         for input in inputs {
-            let height = input.values.len() / input.width;
+            let height = input.height;
             let low_height = height >> log_blowup;
             let output_index = plan.base.heights.binary_search(&height).unwrap();
             let marshal = Instant::now();
