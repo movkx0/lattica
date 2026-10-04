@@ -1,0 +1,316 @@
+{
+  "status": "COMPLETE_RESEARCH_ONLY",
+  "production_ready": false,
+  "default_promoted": false,
+  "source_plan": "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c/plan.json",
+  "plan_sha256": "e97b6c8997b1e7127a95a0c28aa54037ae2cfab436195e1f34c31863d2d4031c",
+  "pairs": 5,
+  "runs": [
+    {
+      "label": "round-1-ram-reference",
+      "arm": "ram-reference",
+      "recursive_seconds": 378.797,
+      "manifest_sha256": "ea888daac71e7e7bd6a3e09bc339d8bd6cd5a1aa45e4b93e7558160e46203aae",
+      "manifest": "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c/evidence/round-1-ram-reference/manifest.json",
+      "root_bytes": 1683948,
+      "peak_worker_ram_bytes": 40703356928,
+      "swap_bytes": 0,
+      "cpu_root_audit": "PASS",
+      "gpu_quotient_commits": 0,
+      "config": {
+        "parallel_readback": 1,
+        "quotient_fusion": 0,
+        "gpu_quotient": 0,
+        "rayon_threads": 16
+      },
+      "actual_rayon_threads": 24,
+      "transfers": {
+        "compact_calls": 7,
+        "compact_saved_input_bytes": 207869706240,
+        "core_downloaded_bytes": 102012125696,
+        "core_uploaded_bytes": 99925098000,
+        "downloaded_bytes": 103421411840,
+        "opening_calls": 7,
+        "opening_downloaded_bytes": 1409286144,
+        "opening_uploaded_bytes": 43453078368,
+        "uploaded_bytes": 143378176368
+      }
+    },
+    {
+      "label": "round-1-ram-candidate",
+      "arm": "ram-candidate",
+      "recursive_seconds": 340.069,
+      "manifest_sha256": "7c5cdd7bf82640494bb60398fefa7ffca00991356ea7bf064c080c211cad64e2",
+      "manifest": "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c/evidence/round-1-ram-candidate/manifest.json",
+      "root_bytes": 1683948,
+      "peak_worker_ram_bytes": 40885407744,
+      "swap_bytes": 0,
+      "cpu_root_audit": "PASS",
+      "gpu_quotient_commits": 0,
+      "config": {
+        "parallel_readback": 1,
+        "quotient_fusion": 1,
+        "gpu_quotient": 0,
+        "rayon_threads": 16
+      },
+      "actual_rayon_threads": 24,
+      "transfers": {
+        "compact_calls": 7,
+        "compact_saved_input_bytes": 207869706240,
+        "core_downloaded_bytes": 102012125696,
+        "core_uploaded_bytes": 99925098000,
+        "downloaded_bytes": 103421411840,
+        "opening_calls": 7,
+        "opening_downloaded_bytes": 1409286144,
+        "opening_uploaded_bytes": 43453078368,
+        "uploaded_bytes": 143378176368
+      }
+    },
+    {
+      "label": "round-2-ram-candidate",
+      "arm": "ram-candidate",
+      "recursive_seconds": 335.718,
+      "manifest_sha256": "a6e5e74c95849369d9976368ead07feae68a8bdaefcfdb12ee3b1992adcc4f20",
+      "manifest": "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c/evidence/round-2-ram-candidate/manifest.json",
+      "root_bytes": 1683948,
+      "peak_worker_ram_bytes": 40856354816,
+      "swap_bytes": 0,
+      "cpu_root_audit": "PASS",
+      "gpu_quotient_commits": 0,
+      "config": {
+        "parallel_readback": 1,
+        "quotient_fusion": 1,
+        "gpu_quotient": 0,
+        "rayon_threads": 16
+      },
+      "actual_rayon_threads": 24,
+      "transfers": {
+        "compact_calls": 7,
+        "compact_saved_input_bytes": 207869706240,
+        "core_downloaded_bytes": 102012125696,
+        "core_uploaded_bytes": 99925098000,
+        "downloaded_bytes": 103421411840,
+        "opening_calls": 7,
+        "opening_downloaded_bytes": 1409286144,
+        "opening_uploaded_bytes": 43453078368,
+        "uploaded_bytes": 143378176368
+      }
+    },
+    {
+      "label": "round-2-ram-reference",
+      "arm": "ram-reference",
+      "recursive_seconds": 378.408,
+      "manifest_sha256": "a01c01b183efc89d1e00eacf9cd2cb1c62c6dde0750c55f1e8ead06503651297",
+      "manifest": "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c/evidence/round-2-ram-reference/manifest.json",
+      "root_bytes": 1683948,
+      "peak_worker_ram_bytes": 40725106688,
+      "swap_bytes": 0,
+      "cpu_root_audit": "PASS",
+      "gpu_quotient_commits": 0,
+      "config": {
+        "parallel_readback": 1,
+        "quotient_fusion": 0,
+        "gpu_quotient": 0,
+        "rayon_threads": 16
+      },
+      "actual_rayon_threads": 24,
+      "transfers": {
+        "compact_calls": 7,
+        "compact_saved_input_bytes": 207869706240,
+        "core_downloaded_bytes": 102012125696,
+        "core_uploaded_bytes": 99925098000,
+        "downloaded_bytes": 103421411840,
+        "opening_calls": 7,
+        "opening_downloaded_bytes": 1409286144,
+        "opening_uploaded_bytes": 43453078368,
+        "uploaded_bytes": 143378176368
+      }
+    },
+    {
+      "label": "round-3-ram-reference",
+      "arm": "ram-reference",
+      "recursive_seconds": 378.6,
+      "manifest_sha256": "5a545ed37375e4da378252b14d01cc6e2d00e892742730378afc7b03b951502f",
+      "manifest": "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c/evidence/round-3-ram-reference/manifest.json",
+      "root_bytes": 1683948,
+      "peak_worker_ram_bytes": 40782376960,
+      "swap_bytes": 0,
+      "cpu_root_audit": "PASS",
+      "gpu_quotient_commits": 0,
+      "config": {
+        "parallel_readback": 1,
+        "quotient_fusion": 0,
+        "gpu_quotient": 0,
+        "rayon_threads": 16
+      },
+      "actual_rayon_threads": 24,
+      "transfers": {
+        "compact_calls": 7,
+        "compact_saved_input_bytes": 207869706240,
+        "core_downloaded_bytes": 102012125696,
+        "core_uploaded_bytes": 99925098000,
+        "downloaded_bytes": 103421411840,
+        "opening_calls": 7,
+        "opening_downloaded_bytes": 1409286144,
+        "opening_uploaded_bytes": 43453078368,
+        "uploaded_bytes": 143378176368
+      }
+    },
+    {
+      "label": "round-3-ram-candidate",
+      "arm": "ram-candidate",
+      "recursive_seconds": 333.868,
+      "manifest_sha256": "548f7101f0d95518bb8ac03de0f6ad0ebd7cd75047fdfea77836193b908f0448",
+      "manifest": "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c/evidence/round-3-ram-candidate/manifest.json",
+      "root_bytes": 1683948,
+      "peak_worker_ram_bytes": 40892055552,
+      "swap_bytes": 0,
+      "cpu_root_audit": "PASS",
+      "gpu_quotient_commits": 0,
+      "config": {
+        "parallel_readback": 1,
+        "quotient_fusion": 1,
+        "gpu_quotient": 0,
+        "rayon_threads": 16
+      },
+      "actual_rayon_threads": 24,
+      "transfers": {
+        "compact_calls": 7,
+        "compact_saved_input_bytes": 207869706240,
+        "core_downloaded_bytes": 102012125696,
+        "core_uploaded_bytes": 99925098000,
+        "downloaded_bytes": 103421411840,
+        "opening_calls": 7,
+        "opening_downloaded_bytes": 1409286144,
+        "opening_uploaded_bytes": 43453078368,
+        "uploaded_bytes": 143378176368
+      }
+    },
+    {
+      "label": "round-4-ram-candidate",
+      "arm": "ram-candidate",
+      "recursive_seconds": 358.47,
+      "manifest_sha256": "d3302d0564f0c8d863f3a1d4b285e9d340b46fdf2bded39658a0b9ee917e1ad0",
+      "manifest": "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c/evidence/round-4-ram-candidate/manifest.json",
+      "root_bytes": 1683948,
+      "peak_worker_ram_bytes": 40830824448,
+      "swap_bytes": 0,
+      "cpu_root_audit": "PASS",
+      "gpu_quotient_commits": 0,
+      "config": {
+        "parallel_readback": 1,
+        "quotient_fusion": 1,
+        "gpu_quotient": 0,
+        "rayon_threads": 16
+      },
+      "actual_rayon_threads": 24,
+      "transfers": {
+        "compact_calls": 7,
+        "compact_saved_input_bytes": 207869706240,
+        "core_downloaded_bytes": 102012125696,
+        "core_uploaded_bytes": 99925098000,
+        "downloaded_bytes": 103421411840,
+        "opening_calls": 7,
+        "opening_downloaded_bytes": 1409286144,
+        "opening_uploaded_bytes": 43453078368,
+        "uploaded_bytes": 143378176368
+      }
+    },
+    {
+      "label": "round-4-ram-reference",
+      "arm": "ram-reference",
+      "recursive_seconds": 398.145,
+      "manifest_sha256": "1dc4628aeabd5e16bb4decc266d0d9d923995f581ff060a3083db47441d53f7d",
+      "manifest": "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c/evidence/round-4-ram-reference/manifest.json",
+      "root_bytes": 1683948,
+      "peak_worker_ram_bytes": 40811143168,
+      "swap_bytes": 0,
+      "cpu_root_audit": "PASS",
+      "gpu_quotient_commits": 0,
+      "config": {
+        "parallel_readback": 1,
+        "quotient_fusion": 0,
+        "gpu_quotient": 0,
+        "rayon_threads": 16
+      },
+      "actual_rayon_threads": 24,
+      "transfers": {
+        "compact_calls": 7,
+        "compact_saved_input_bytes": 207869706240,
+        "core_downloaded_bytes": 102012125696,
+        "core_uploaded_bytes": 99925098000,
+        "downloaded_bytes": 103421411840,
+        "opening_calls": 7,
+        "opening_downloaded_bytes": 1409286144,
+        "opening_uploaded_bytes": 43453078368,
+        "uploaded_bytes": 143378176368
+      }
+    },
+    {
+      "label": "round-5-ram-reference",
+      "arm": "ram-reference",
+      "recursive_seconds": 383.287,
+      "manifest_sha256": "fcee0240b2e36ec8d73b04a39433cb62ec21808b8f580918b40bc2443e8f4037",
+      "manifest": "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c/evidence/round-5-ram-reference/manifest.json",
+      "root_bytes": 1683948,
+      "peak_worker_ram_bytes": 41004810240,
+      "swap_bytes": 0,
+      "cpu_root_audit": "PASS",
+      "gpu_quotient_commits": 0,
+      "config": {
+        "parallel_readback": 1,
+        "quotient_fusion": 0,
+        "gpu_quotient": 0,
+        "rayon_threads": 16
+      },
+      "actual_rayon_threads": 24,
+      "transfers": {
+        "compact_calls": 7,
+        "compact_saved_input_bytes": 207869706240,
+        "core_downloaded_bytes": 102012125696,
+        "core_uploaded_bytes": 99925098000,
+        "downloaded_bytes": 103421411840,
+        "opening_calls": 7,
+        "opening_downloaded_bytes": 1409286144,
+        "opening_uploaded_bytes": 43453078368,
+        "uploaded_bytes": 143378176368
+      }
+    },
+    {
+      "label": "round-5-ram-candidate",
+      "arm": "ram-candidate",
+      "recursive_seconds": 343.213,
+      "manifest_sha256": "70de7e071aa6452e5a50c87770adb5f9f263b30aa1c537af793c064be7a961d6",
+      "manifest": "lattica-prover-p3/target/block-v2-cpu-fusion-pairs-20261003-c/evidence/round-5-ram-candidate/manifest.json",
+      "root_bytes": 1683948,
+      "peak_worker_ram_bytes": 40596066304,
+      "swap_bytes": 0,
+      "cpu_root_audit": "PASS",
+      "gpu_quotient_commits": 0,
+      "config": {
+        "parallel_readback": 1,
+        "quotient_fusion": 1,
+        "gpu_quotient": 0,
+        "rayon_threads": 16
+      },
+      "actual_rayon_threads": 24,
+      "transfers": {
+        "compact_calls": 7,
+        "compact_saved_input_bytes": 207869706240,
+        "core_downloaded_bytes": 102012125696,
+        "core_uploaded_bytes": 99925098000,
+        "downloaded_bytes": 103421411840,
+        "opening_calls": 7,
+        "opening_downloaded_bytes": 1409286144,
+        "opening_uploaded_bytes": 43453078368,
+        "uploaded_bytes": 143378176368
+      }
+    }
+  ],
+  "median_reference_seconds": 378.797,
+  "median_candidate_seconds": 340.069,
+  "median_time_reduction_percent": 10.22394580738496,
+  "metadata_note": "Original derived-controller config reports rayon_threads=16; the pinned plan and worker command both set RAYON_NUM_THREADS=24. Raw config is preserved alongside actual_rayon_threads.",
+  "measurement": "sum recursive command durations; excludes registration and controller overhead",
+  "schema": "block-v2-cpu-fusion-comparison-v1"
+}

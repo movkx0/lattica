@@ -655,6 +655,10 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
         idx: usize,
         domain: Domain,
     ) -> Self::EvaluationsOnDomain<'a> {
+        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+        if let super::gpu_hash::ProverData::Compact(_) = prover_data {
+            return self.compact_evaluations(prover_data, idx, domain, self.random_columns);
+        }
         delegate_pcs!(self, get_evaluations_on_domain, prover_data, idx, domain)
     }
 
@@ -664,6 +668,10 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
         idx: usize,
         domain: Domain,
     ) -> Self::EvaluationsOnDomain<'a> {
+        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+        if let super::gpu_hash::ProverData::Compact(_) = prover_data {
+            return self.compact_evaluations(prover_data, idx, domain, 0);
+        }
         delegate_pcs!(
             self,
             get_evaluations_on_domain_no_random,
@@ -1137,5 +1145,35 @@ mod tests {
             commitments[0], commitments[1],
             "proof randomness must advance"
         );
+    }
+}
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+impl CandidatePcs {
+    fn compact_evaluations<'a>(
+        &self,
+        data: &'a <Self as Pcs<Challenge, Challenger>>::ProverData,
+        idx: usize,
+        domain: Domain,
+        random_columns: usize,
+    ) -> <Self as Pcs<Challenge, Challenger>>::EvaluationsOnDomain<'a> {
+        use p3_matrix::{horizontally_truncated::HorizontallyTruncated, Matrix};
+        let Backend::Resident(state) = &self.inner else {
+            panic!("compact data requires resident PCS")
+        };
+        let matrices = state.mmcs.prefix_matrices(data);
+        let matrix = matrices[idx].0;
+        assert_eq!(domain.shift(), Val::GENERATOR, "compact quotient coset");
+        assert!(
+            domain.size() <= matrix.height(),
+            "quotient domain exceeds retained prefix"
+        );
+        let view = matrix
+            .split_rows(domain.size())
+            .0
+            .as_cow()
+            .bit_reverse_rows();
+        let width = view.width();
+        HorizontallyTruncated::new(view, width - random_columns).unwrap()
     }
 }

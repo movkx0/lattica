@@ -69,6 +69,14 @@ fn gpu_quotient_pipeline_matches_cpu_matrices_caps_and_openings() {
 #[test]
 #[ignore = "requires OpenCL GPU, retained trees, <=3 GiB cgroup and zero swap"]
 fn gpu_quotient_pipeline_proof_matches_upstream_and_cpu_verifies() {
+    quotient_proof_equivalence(false);
+}
+#[test]
+#[ignore = "requires OpenCL GPU, retained trees, <=3 GiB cgroup and zero swap"]
+fn gpu_compact_quotient_pipeline_preserves_full_proof_bytes() {
+    quotient_proof_equivalence(true);
+}
+fn quotient_proof_equivalence(compact: bool) {
     use crate::block_v2::machine::{MachineAir, ProgramBuilder};
     use p3_batch_stark::{prove_batch, verify_batch, ProverData as BatchData, StarkInstance};
     let _shutdown = engine::TestShutdownGuard;
@@ -93,7 +101,11 @@ fn gpu_quotient_pipeline_proof_matches_upstream_and_cpu_verifies() {
     }];
     let config = || {
         profile::Config::new(
-            candidate(true).0,
+            if compact {
+                candidate(true).0.with_gpu_openings().unwrap()
+            } else {
+                candidate(true).0
+            },
             Challenger::new(default_goldilocks_poseidon2_8()),
         )
     };
@@ -103,12 +115,17 @@ fn gpu_quotient_pipeline_proof_matches_upstream_and_cpu_verifies() {
         .build()
         .unwrap();
     let (reference, actual) = pool.install(|| {
+        let reference = prove_batch(&config(), &instances, &data);
+        if compact {
+            crate::block_v2::resident_pcs::enable_compact_for_test();
+        }
         (
-            prove_batch(&config(), &instances, &data),
+            reference,
             crate::block_v2::gpu_quotient_prover::prove_batch(
                 &config(),
                 &instances,
                 &data,
+                |data| CandidateMmcs::release_quotient_prefix(data),
                 |pcs, groups| pcs.commit_quotient_evaluations(groups).unwrap(),
             ),
         )

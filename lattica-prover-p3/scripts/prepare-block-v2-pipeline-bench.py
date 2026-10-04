@@ -46,6 +46,8 @@ def configure_controller(source, parallel, gpu_quotient=0):
                           'SCHEMA = "gpu-pipeline-eight-v1"')
     source = replace_once(source, '"--setenv=RAYON_NUM_THREADS=16"',
                           '"--setenv=RAYON_NUM_THREADS=24"')
+    source = replace_once(source, 'config["rayon_threads"] = 16',
+                          'config["rayon_threads"] = 24')
     source = replace_once(source, '"--setenv=LATTICA_V2_GPU_OPENING_PINNED=0",',
                           '"--setenv=LATTICA_V2_GPU_OPENING_PINNED=0",\n'
                           f'        f"--setenv=LATTICA_V2_GPU_PARALLEL_READBACK={{{parallel} if gpu else 0}}",\n'

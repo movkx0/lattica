@@ -54,6 +54,7 @@ pub(super) fn prove_batch<
     config: &SC,
     instances: &[StarkInstance<'_, SC, A>],
     prover_data: &ProverData<SC>,
+    release_quotient_prefix: impl Fn(&mut <SC::Pcs as Pcs<SC::Challenge, SC::Challenger>>::ProverData),
     commit_quotients: impl FnOnce(
         &SC::Pcs,
         Vec<InstanceQuotient<SC>>,
@@ -175,7 +176,7 @@ where
         .zip(ext_trace_domains.iter().cloned())
         .map(|(inst, dom)| (dom, inst.trace.clone()))
         .collect::<Vec<_>>();
-    let (main_commit, main_data) = pcs.commit(main_commit_inputs);
+    let (main_commit, mut main_data) = pcs.commit(main_commit_inputs);
 
     transcript.observe_main(&main_commit, &pub_vals);
     transcript.observe_preprocessed(&preprocessed_widths, common.preprocessed.as_ref());
@@ -255,7 +256,7 @@ where
     }
 
     // Commit all permutation traces (if any).
-    let permutation_commit_and_data = if !permutation_commit_inputs.is_empty() {
+    let mut permutation_commit_and_data = if !permutation_commit_inputs.is_empty() {
         Some(pcs.commit(permutation_commit_inputs))
     } else {
         None
@@ -386,6 +387,11 @@ where
             (chunk_domains, chunk_mats)
         })
         .collect();
+
+    release_quotient_prefix(&mut main_data);
+    if let Some((_, data)) = &mut permutation_commit_and_data {
+        release_quotient_prefix(data);
+    }
 
     // Concatenate in instance order so the commit layout stays deterministic.
     let mut quotient_chunk_domains = Vec::new();

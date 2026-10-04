@@ -102,6 +102,13 @@ impl RegisteredProgram {
             tracing::info_span!(target: "lattica_block_v2_perf", "preprocessing setup").entered();
         let analysis = super::analysis::analyze(&air)?;
         analysis.check_ram_lower_bound()?;
+        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+        if super::super::resident_pcs::compact_prover_data() {
+            assert!(
+                analysis.quotient_chunks <= (1 << profile::LOG_BLOWUP),
+                "compact prover data requires quotient domain within half LDE"
+            );
+        }
         let data = ProverData::from_airs_and_degrees(
             &profile::preprocessing_config(),
             core::slice::from_ref(&air),
@@ -230,6 +237,9 @@ impl RegisteredProgram {
                             &profile::make_proving_config(),
                             &[instance],
                             &self.data,
+                            |data| {
+                                super::super::gpu_hash::CandidateMmcs::release_quotient_prefix(data)
+                            },
                             |pcs, groups| {
                                 pcs.commit_quotient_evaluations(groups)
                                     .expect("GPU quotient commitment failed; no silent fallback")

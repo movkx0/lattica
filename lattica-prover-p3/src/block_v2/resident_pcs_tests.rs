@@ -397,6 +397,9 @@ fn gpu_openings_full_strength_cubic_proofs_replay_through_original_cpu_pcs() {
 #[test]
 #[ignore = "requires an OpenCL GPU, retained trees, and a serial <=3 GiB service"]
 fn gpu_openings_match_reference_transcript_and_preprocessing() {
+    opening_transcript_equivalence(false);
+}
+fn opening_transcript_equivalence(compact: bool) {
     use p3_challenger::{CanObserve, FieldChallenger};
     use p3_field::BasedVectorSpace;
     let _shutdown = engine::TestShutdownGuard;
@@ -442,6 +445,16 @@ fn gpu_openings_match_reference_transcript_and_preprocessing() {
                 let (gb_cap, gb) = accelerated.commit([(domains[1], b.clone())]);
                 assert_eq!(ra_cap, ga_cap);
                 assert_eq!(rb_cap, gb_cap);
+                let ga = if compact {
+                    compact_test_data(ga, 1)
+                } else {
+                    ga
+                };
+                let gb = if compact {
+                    compact_test_data(gb, profile::LOG_BLOWUP)
+                } else {
+                    gb
+                };
                 let mut rc = Challenger::new(default_goldilocks_poseidon2_8());
                 let mut gc = Challenger::new(default_goldilocks_poseidon2_8());
                 for challenger in [&mut rc, &mut gc] {
@@ -522,4 +535,80 @@ fn full_strength_cubic_proofs(gpu_openings: bool) {
         );
     }
     super::report("resident PCS full-strength cubic proofs").unwrap();
+}
+
+#[test]
+#[ignore = "requires OpenCL GPU; run serially in a bounded service"]
+fn gpu_compact_prefix_readback_reconstructs_original_rows_salts_and_paths() {
+    let _shutdown = engine::TestShutdownGuard;
+    initialize();
+    for (height, width) in [(2usize, 1usize), (32, 7), (256, 35), (4096, 3)] {
+        for bits in [1, profile::LOG_BLOWUP] {
+            let full = mmcs(true);
+            let compact = mmcs(true);
+            let domain = Domain::new(Val::from_u64(7), height.ilog2() as usize).unwrap();
+            let input = matrix(height, width, 19);
+            let (a, ad) = full
+                .commit_resident_retained(
+                    vec![(domain, input.clone())],
+                    profile::LOG_BLOWUP,
+                    1 << 30,
+                    None,
+                    0,
+                )
+                .unwrap();
+            let (b, bd) = compact
+                .commit_resident_retained(
+                    vec![(domain, input)],
+                    profile::LOG_BLOWUP,
+                    1 << 30,
+                    None,
+                    bits,
+                )
+                .unwrap();
+            assert_eq!(a, b);
+            assert_eq!(
+                compact.get_matrix_heights(&bd),
+                full.get_matrix_heights(&ad)
+            );
+            let logical = height << profile::LOG_BLOWUP;
+            assert_eq!(compact.prefix_matrices(&bd)[0].0.height(), logical >> bits);
+            let indices = [0, logical - 1, logical / 3, logical / 2, logical / 3];
+            compact.prepare_queries(&bd, &indices).unwrap();
+            for index in indices {
+                let x = full.open_batch(index, &ad);
+                let y = compact.open_batch(index, &bd);
+                assert_eq!(x.opened_values, y.opened_values);
+                assert_eq!(x.opening_proof, y.opening_proof);
+            }
+        }
+    }
+}
+
+fn compact_test_data(
+    data: ProverData<RowMajorMatrix<Val>>,
+    bits: usize,
+) -> ProverData<RowMajorMatrix<Val>> {
+    let ProverData::GpuRetained {
+        mut matrices,
+        salts,
+        tree,
+    } = data
+    else {
+        panic!("retained test data")
+    };
+    let height = matrices[0].height();
+    for matrix in &mut matrices {
+        matrix.values.truncate((height >> bits) * matrix.width);
+        matrix.values.shrink_to_fit();
+    }
+    ProverData::Compact(super::compact_data::CompactData::new(
+        matrices, height, salts, tree,
+    ))
+}
+
+#[test]
+#[ignore = "requires OpenCL GPU; run serially in a bounded service"]
+fn gpu_compact_prover_data_preserves_fixed_seed_proof_bytes_and_challenger() {
+    opening_transcript_equivalence(true);
 }

@@ -26,6 +26,9 @@ TESTS = [
     "gpu_openings_match_reference_transcript_and_preprocessing",
     "gpu_quotient_pipeline_matches_cpu_matrices_caps_and_openings",
     "gpu_quotient_pipeline_proof_matches_upstream_and_cpu_verifies",
+    "gpu_compact_prefix_readback_reconstructs_original_rows_salts_and_paths",
+    "gpu_compact_prover_data_preserves_fixed_seed_proof_bytes_and_challenger",
+    "gpu_compact_quotient_pipeline_preserves_full_proof_bytes",
     "gpu_lde_error_and_unwind_drain_before_transform_reservations_release",
     "gpu_opening_error_and_unwind_drain_before_allocations_release",
     "gpu_compact_opening_compression_and_ntt_failures_drain_before_release",
@@ -75,6 +78,10 @@ def main():
             env = {**os.environ, "RAYON_NUM_THREADS": "4", "LATTICA_V2_METAL_MEMORY": mode,
                    "LATTICA_V2_GPU_RETAIN_TREES": "1", "LATTICA_V2_GPU_PIPELINE": "0",
                    "LATTICA_SPILL_BACKING": "memory", "LATTICA_SPILL_MAX_BYTES": str(1 << 30),
+                   "LATTICA_V2_GPU_OPENING_COMPACT": "1" if suffix in {
+                       "gpu_compact_prover_data_preserves_fixed_seed_proof_bytes_and_challenger",
+                       "gpu_compact_quotient_pipeline_preserves_full_proof_bytes",
+                   } else "0",
                    "LATTICA_V2_GPU_PARALLEL_READBACK": "1" if "quotient_pipeline_matches" in suffix else "0"}
             command = [str(binary), selected, "--exact", "--ignored", "--nocapture", "--test-threads=1"]
             started = time.monotonic()

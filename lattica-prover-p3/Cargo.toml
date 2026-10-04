@@ -83,6 +83,8 @@ path = "src/bin/block_v2_padding_probe.rs"
 required-features = ["block-v2", "stream"]
 
 [dependencies]
+itertools = "0.14"
+serde_json = "1"
 p3-air = "0.6.1"
 p3-field = "0.6.1"
 p3-goldilocks = "0.6.1"

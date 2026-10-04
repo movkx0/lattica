@@ -2,6 +2,7 @@
 //! two_adic_pcs.rs (MIT OR Apache-2.0). Evaluation/challenger order and the
 //! upstream FRI prover are preserved; only matrix quotient reduction changes.
 //! Not production-qualified. The CPU verifier and serialized proof are unchanged.
+use super::batched_fri as prover;
 use super::gpu_hash::{reduce_openings, CandidateMmcs, OpeningMatrix, OpeningTerm};
 use super::profile::{Challenge, ChallengeMmcs};
 use super::resident_pcs::ResidentInner;
@@ -13,7 +14,7 @@ use p3_field::{
     batch_multiplicative_inverse, dot_product, ExtensionField, Field, PrimeCharacteristicRing,
     TwoAdicField,
 };
-use p3_fri::{prover, FriParameters, TwoAdicFriFolding, TwoAdicFriFoldingForMmcs};
+use p3_fri::{FriParameters, TwoAdicFriFolding, TwoAdicFriFoldingForMmcs};
 use p3_matrix::interpolation::{compute_adjusted_weights, Interpolate};
 use p3_matrix::{
     dense::{RowMajorMatrix, RowMajorMatrixView},
@@ -27,6 +28,25 @@ type ProverData = <CandidateMmcs as Mmcs<Val>>::ProverData<RowMajorMatrix<Val>>;
 type HidingProof = <ResidentInner as Pcs<Challenge, Challenger>>::Proof;
 type InnerPcs = p3_fri::TwoAdicFriPcs<Val, crate::config::Dft, CandidateMmcs, ChallengeMmcs>;
 type InnerProof = <InnerPcs as Pcs<Challenge, Challenger>>::Proof;
+
+/// A stored prefix and its independent committed height. This deliberately
+/// does not implement Matrix with a fictitious full row range.
+#[derive(Clone)]
+struct PrefixView<'a, F> {
+    matrix: RowMajorMatrixView<'a, F>,
+    height: usize,
+}
+impl<'a, F> std::ops::Deref for PrefixView<'a, F> {
+    type Target = RowMajorMatrixView<'a, F>;
+    fn deref(&self) -> &Self::Target {
+        &self.matrix
+    }
+}
+impl<F> PrefixView<'_, F> {
+    fn height(&self) -> usize {
+        self.height
+    }
+}
 
 /// This FRI-MMCS belongs to one shared proof attempt. Never clone it per call:
 /// the salt stream must advance across active PCS clones.
@@ -68,7 +88,7 @@ pub(super) fn open_hiding(
 }
 
 fn validate_shapes(
-    matrices: &[(Vec<RowMajorMatrixView<'_, Val>>, &Vec<Vec<Challenge>>)],
+    matrices: &[(Vec<PrefixView<'_, Val>>, &Vec<Vec<Challenge>>)],
 ) -> Result<(), &'static str> {
     let mut max_height = 0usize;
     let mut point_heights = Vec::<(Challenge, usize)>::new();
@@ -84,6 +104,7 @@ fn validate_shapes(
             if count > 256
                 || mat.width() == 0
                 || mat.width() > 4096
+                || mat.matrix.height() < (mat.height() >> super::profile::LOG_BLOWUP)
                 || mat.height() < (1 << super::profile::LOG_BLOWUP)
                 || !mat.height().is_power_of_two()
                 || mat.height() > (1 << 25)
@@ -191,9 +212,12 @@ fn open(
         .iter()
         .map(|(data, points)| {
             let mats = mmcs
-                .get_matrices(data)
+                .prefix_matrices(data)
                 .into_iter()
-                .map(|m| m.as_view())
+                .map(|(m, height)| PrefixView {
+                    matrix: m.as_view(),
+                    height,
+                })
                 .collect::<Vec<_>>();
             debug_assert_eq!(
                 mats.len(),
@@ -316,6 +340,7 @@ fn open(
             requests.push(OpeningMatrix {
                 values: mat.values,
                 width: mat.width(),
+                height: mat.height(),
                 terms,
             });
         }
@@ -336,13 +361,21 @@ fn open(
         log_global_max_height,
         &commitment_data_with_opening_points,
         mmcs,
+        |indices| {
+            for (data, _) in &commitment_data_with_opening_points {
+                let shift = log_global_max_height - log2_strict_usize(mmcs.get_max_height(data));
+                let local: Vec<_> = indices.iter().map(|i| i >> shift).collect();
+                mmcs.prepare_queries(data, &local)
+                    .expect("compact query reconstruction failed");
+            }
+        },
     );
 
     (all_opened_values, fri_proof)
 }
 
-fn compute_inverse_denominators<F: TwoAdicField, EF: ExtensionField<F>, M: Matrix<F>>(
-    mats_and_points: &[(Vec<M>, &Vec<Vec<EF>>)],
+fn compute_inverse_denominators<F: TwoAdicField, EF: ExtensionField<F>>(
+    mats_and_points: &[(Vec<PrefixView<'_, F>>, &Vec<Vec<EF>>)],
     coset: &[F],
 ) -> LinearMap<EF, Vec<EF>> {
     // For each `z`, find the maximal height of any matrix which we need to
@@ -395,17 +428,59 @@ mod tests {
     fn opening_adapter_rejects_mismatched_or_unbounded_inputs() {
         let matrix = RowMajorMatrix::new(vec![Val::ONE; 64 * 3], 3);
         let points = vec![vec![Challenge::from_u64(11)]];
-        assert!(validate_shapes(&[(vec![matrix.as_view()], &points)]).is_ok());
+        assert!(validate_shapes(&[(
+            vec![PrefixView {
+                matrix: matrix.as_view(),
+                height: matrix.height()
+            }],
+            &points
+        )])
+        .is_ok());
         assert!(validate_shapes(&[]).is_err());
         let missing = vec![];
-        assert!(validate_shapes(&[(vec![matrix.as_view()], &missing)]).is_err());
+        assert!(validate_shapes(&[(
+            vec![PrefixView {
+                matrix: matrix.as_view(),
+                height: matrix.height()
+            }],
+            &missing
+        )])
+        .is_err());
         let zero = vec![vec![Challenge::ZERO]];
-        assert!(validate_shapes(&[(vec![matrix.as_view()], &zero)]).is_err());
+        assert!(validate_shapes(&[(
+            vec![PrefixView {
+                matrix: matrix.as_view(),
+                height: matrix.height()
+            }],
+            &zero
+        )])
+        .is_err());
         let too_many = vec![vec![Challenge::ONE; 33]];
-        assert!(validate_shapes(&[(vec![matrix.as_view()], &too_many)]).is_err());
+        assert!(validate_shapes(&[(
+            vec![PrefixView {
+                matrix: matrix.as_view(),
+                height: matrix.height()
+            }],
+            &too_many
+        )])
+        .is_err());
         let small = RowMajorMatrix::new(vec![Val::ONE; 8 * 3], 3);
-        assert!(validate_shapes(&[(vec![small.as_view()], &points)]).is_err());
+        assert!(validate_shapes(&[(
+            vec![PrefixView {
+                matrix: small.as_view(),
+                height: small.height()
+            }],
+            &points
+        )])
+        .is_err());
         let odd = RowMajorMatrix::new(vec![Val::ONE; 63 * 3], 3);
-        assert!(validate_shapes(&[(vec![odd.as_view()], &points)]).is_err());
+        assert!(validate_shapes(&[(
+            vec![PrefixView {
+                matrix: odd.as_view(),
+                height: odd.height()
+            }],
+            &points
+        )])
+        .is_err());
     }
 }

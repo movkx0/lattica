@@ -63,6 +63,8 @@ static COUNTER: AtomicU64 = AtomicU64::new(0);
 static MMAP_COUNT: AtomicU64 = AtomicU64::new(0);
 static MMAP_BYTES: AtomicU64 = AtomicU64::new(0);
 static MMAP_PEAK: AtomicU64 = AtomicU64::new(0);
+static BUDGET_REJECTIONS: AtomicU64 = AtomicU64::new(0);
+static MAPPING_FAILURES: AtomicU64 = AtomicU64::new(0);
 
 /// Cached spill configuration — the scratch directory, resolved once. Init runs outside the big-alloc
 /// path (from `SpillScope::arm`, or the first spill candidate), so its small internal allocations route
@@ -198,48 +200,69 @@ unsafe fn read_hdr(base: *const u8) -> (u64, i64, u64) {
 /// The out-of-core global allocator. See the module docs.
 pub struct SpillAlloc;
 
-/// Explicit heap workspace for bounded, repeatedly modified temporary buffers.
-/// Unlike disarming the allocator, this does not affect any other allocation or
-/// thread. The normal allocator can free the returned Vec after its scope ends.
-/// This is not a mapping-failure fallback. Callers still need a process RAM cap.
+/// Reserve an explicitly bounded heap buffer without changing the global spill
+/// policy. The returned Vec has length zero and can be freed by SpillAlloc.
+/// This is an admission decision, never a retry after a spill allocation fails.
 #[cfg(any(feature = "block-v2", test))]
-pub(crate) fn copy_to_heap<T: Copy>(source: &[T], byte_limit: usize) -> Option<Vec<T>> {
-    let mut values = heap_with_capacity(source.len(), byte_limit)?;
-    values.extend_from_slice(source);
-    Some(values)
-}
-
-/// Explicit bounded heap storage, including while spilling is armed. The caller
-/// owns initialization and must account for retained buffers in its host/RSS
-/// budget. This never retries a failed mapped allocation on the heap.
-#[cfg(any(feature = "block-v2", test))]
-pub(crate) fn heap_with_capacity<T>(capacity: usize, byte_limit: usize) -> Option<Vec<T>> {
+pub(crate) fn reserve_heap<T>(elements: usize, byte_limit: usize) -> Option<Vec<T>> {
     const MAX_WORKSPACE: usize = 2 << 30;
-    let layout = Layout::array::<T>(capacity).ok()?;
+    let layout = Layout::array::<T>(elements).ok()?;
     if byte_limit > MAX_WORKSPACE || layout.size() > byte_limit {
         return None;
     }
     if layout.size() < THRESHOLD || layout.align() > PAGE {
-        // These allocations already take the direct System path, even armed.
         let mut values = Vec::new();
-        values.try_reserve_exact(capacity).ok()?;
+        values.try_reserve_exact(elements).ok()?;
         return Some(values);
     }
     let payload = layout.size().checked_add(PAGE - 1)? & !(PAGE - 1);
     let total = payload.checked_add(PAGE)?;
     let system_layout = Layout::from_size_align(total, PAGE).ok()?;
-    // SAFETY: the allocation has the exact header layout expected by SpillAlloc
-    // for this Vec's capacity/alignment. Length is zero, so no uninitialized
-    // element is exposed or dropped. Ownership moves to Vec exactly once.
+    // SAFETY: Header and capacity match SpillAlloc::dealloc. No uninitialized
+    // element is exposed: callers initialize spare capacity before setting len.
     unsafe {
         let base = System.alloc(system_layout);
         if base.is_null() {
             return None;
         }
         write_hdr(base, MAGIC_SYS, -1, total as u64);
-        let data = base.add(PAGE).cast::<T>();
-        Some(Vec::from_raw_parts(data, 0, capacity))
+        Some(Vec::from_raw_parts(base.add(PAGE).cast::<T>(), 0, elements))
     }
+}
+
+/// Allocation-specific diagnostics; call outside the allocator hot path.
+/// Counters are process-wide snapshots, so concurrent allocations may advance
+/// them. Scratch availability is an observation, not a reservation.
+#[cfg(any(feature = "block-v2", test))]
+pub(crate) fn allocation_diagnostics() -> String {
+    let c = cfg();
+    let mut fs = std::mem::MaybeUninit::<libc::statvfs>::uninit();
+    // SAFETY: cfg.dir is NUL-terminated; statvfs initializes fs on success.
+    let scratch_free = unsafe {
+        if libc::statvfs(c.dir.as_ptr().cast(), fs.as_mut_ptr()) == 0 {
+            let fs = fs.assume_init();
+            Some((fs.f_bavail as u64).saturating_mul(fs.f_frsize as u64))
+        } else {
+            None
+        }
+    };
+    format!(
+        "spill_armed={} spill_live_bytes={} spill_limit_bytes={:?} scratch_free_bytes={:?} spill_budget_rejections={} spill_mapping_failures={}",
+        is_armed(), MMAP_BYTES.load(Ordering::Relaxed), c.max_bytes,
+        scratch_free, BUDGET_REJECTIONS.load(Ordering::Relaxed),
+        MAPPING_FAILURES.load(Ordering::Relaxed),
+    )
+}
+
+/// Explicit heap workspace for bounded, repeatedly modified temporary buffers.
+/// Unlike disarming the allocator, this does not affect any other allocation or
+/// thread. The normal allocator can free the returned Vec after its scope ends.
+/// This is not a mapping-failure fallback. Callers still need a process RAM cap.
+#[cfg(any(feature = "block-v2", test))]
+pub(crate) fn copy_to_heap<T: Copy>(source: &[T], byte_limit: usize) -> Option<Vec<T>> {
+    let mut values = reserve_heap(source.len(), byte_limit)?;
+    values.extend_from_slice(source);
+    Some(values)
 }
 
 impl SpillAlloc {
@@ -258,6 +281,7 @@ impl SpillAlloc {
                 })
                 .is_err()
             {
+                BUDGET_REJECTIONS.fetch_add(1, Ordering::Relaxed);
                 return std::ptr::null_mut();
             }
             if let Some((base, fd)) = map_file(total) {
@@ -268,6 +292,7 @@ impl SpillAlloc {
                 return base.add(PAGE);
             }
             MMAP_BYTES.fetch_sub(total as u64, Ordering::Relaxed);
+            MAPPING_FAILURES.fetch_add(1, Ordering::Relaxed);
             if limit.is_some() {
                 return std::ptr::null_mut();
             }
@@ -393,6 +418,31 @@ pub fn reset_spill_peak() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn explicit_heap_reservation_is_bounded_and_compatible_with_global_free() {
+        let _armed = SpillScope::arm();
+        let before = spill_stats();
+        let mut values = reserve_heap::<u64>(THRESHOLD / 8, THRESHOLD).unwrap();
+        assert_eq!(values.len(), 0);
+        assert_eq!(values.capacity(), THRESHOLD / 8);
+        assert_eq!(spill_stats(), before);
+        unsafe {
+            assert_eq!(
+                read_hdr(values.as_ptr().cast::<u8>().sub(PAGE)).0,
+                MAGIC_SYS
+            );
+        }
+        values.extend([3, 5, 7]);
+        assert_eq!(values, [3, 5, 7]);
+        drop(values);
+        assert_eq!(spill_stats(), before);
+        assert!(reserve_heap::<u64>(THRESHOLD / 8, THRESHOLD - 1).is_none());
+        assert!(reserve_heap::<u64>(usize::MAX, THRESHOLD).is_none());
+        assert!(reserve_heap::<u8>(1, (2 << 30) + 1).is_none());
+        assert_eq!(reserve_heap::<()>(42, 0).unwrap().len(), 0);
+        assert_eq!(reserve_heap::<u8>(0, 0).unwrap().len(), 0);
+    }
 
     #[test]
     fn explicit_heap_copy_preserves_ownership_without_disarming_other_allocations() {

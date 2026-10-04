@@ -33,3 +33,6 @@ pub mod quotient_pcs;
 pub mod recursive;
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 mod resident_pcs;
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+mod batched_fri;

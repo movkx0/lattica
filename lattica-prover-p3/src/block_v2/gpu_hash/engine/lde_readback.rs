@@ -19,6 +19,52 @@ use std::{mem::size_of, time::Instant};
 const ROW_TASK_BYTES: usize = 4 * 1024 * 1024;
 const DECODE_TASK_ELEMENTS: usize = ROW_TASK_BYTES / size_of::<Val>();
 
+pub(super) const MAX_QUOTIENT_OUTPUT_BYTES: usize = 2 << 30;
+
+#[derive(Clone, Copy, Debug, Default)]
+pub(super) enum OutputStorage {
+    #[default]
+    Global,
+    /// Matches the CPU fused quotient's per-matrix bounded heap retention.
+    QuotientHeap,
+}
+
+fn allocation_context() -> String {
+    #[cfg(feature = "stream")]
+    {
+        crate::spill_alloc::allocation_diagnostics()
+    }
+    #[cfg(not(feature = "stream"))]
+    {
+        "spill_allocator=false".to_owned()
+    }
+}
+
+fn reserve(elements: usize, storage: OutputStorage, label: &str) -> Result<Vec<Val>, String> {
+    let bytes = elements
+        .checked_mul(size_of::<Val>())
+        .ok_or("LDE allocation overflow")?;
+    let fail = |reason: String| {
+        format!(
+        "{label}: {reason}; requested_bytes={bytes} storage={storage:?} heap_matrix_limit_bytes={MAX_QUOTIENT_OUTPUT_BYTES} {}",
+        allocation_context(),
+    )
+    };
+    if matches!(storage, OutputStorage::QuotientHeap) {
+        if bytes > MAX_QUOTIENT_OUTPUT_BYTES {
+            return Err(fail("quotient heap matrix allowance exceeded".into()));
+        }
+        #[cfg(feature = "stream")]
+        return crate::spill_alloc::reserve_heap(elements, MAX_QUOTIENT_OUTPUT_BYTES)
+            .ok_or_else(|| fail("explicit heap reservation failed".into()));
+    }
+    let mut values = Vec::new();
+    values
+        .try_reserve_exact(elements)
+        .map_err(|e| fail(e.to_string()))?;
+    Ok(values)
+}
+
 pub(super) struct HostReadback {
     height: usize,
     width: usize,
@@ -26,7 +72,7 @@ pub(super) struct HostReadback {
     elements: usize,
     values: Vec<Val>,
     parallel_decode: bool,
-    heap_output: bool,
+    output_storage: OutputStorage,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -37,45 +83,16 @@ pub(super) struct ReorderStats {
 }
 
 impl HostReadback {
+    #[cfg(test)]
     pub fn new(height: usize, width: usize, columns_per_band: usize) -> Result<Self, String> {
-        Self::new_with_storage(height, width, columns_per_band, false)
+        Self::with_storage(height, width, columns_per_band, OutputStorage::Global)
     }
 
-    /// Match the CPU quotient profile's explicitly retained heap storage. Each
-    /// matrix is bounded to 2 GiB; the commit plan charges every retained output
-    /// and its reorder workspace, and the worker still enforces its RSS limit.
-    pub fn new_quotient(
+    pub fn with_storage(
         height: usize,
         width: usize,
         columns_per_band: usize,
-    ) -> Result<Self, String> {
-        Self::new_with_storage(height, width, columns_per_band, true)
-    }
-
-    fn reserve(elements: usize, heap_output: bool) -> Result<Vec<Val>, String> {
-        if heap_output {
-            if elements
-                .checked_mul(size_of::<Val>())
-                .is_none_or(|n| n > (2 << 30))
-            {
-                return Err("quotient readback exceeds the 2 GiB per-matrix heap bound".into());
-            }
-            #[cfg(feature = "stream")]
-            return crate::spill_alloc::heap_with_capacity(elements, 2 << 30)
-                .ok_or_else(|| "bounded quotient heap reservation failed".into());
-        }
-        let mut values = Vec::new();
-        values
-            .try_reserve_exact(elements)
-            .map_err(|e| format!("LDE readback reservation: {e}"))?;
-        Ok(values)
-    }
-
-    fn new_with_storage(
-        height: usize,
-        width: usize,
-        columns_per_band: usize,
-        heap_output: bool,
+        output_storage: OutputStorage,
     ) -> Result<Self, String> {
         if height == 0 || width == 0 || columns_per_band == 0 {
             return Err("LDE readback dimensions must be nonzero".into());
@@ -89,7 +106,23 @@ impl HostReadback {
         if bytes > isize::MAX as usize {
             return Err("LDE readback exceeds allocation range".into());
         }
-        let values = Self::reserve(elements, heap_output)?;
+        if matches!(output_storage, OutputStorage::QuotientHeap) {
+            if bytes > MAX_QUOTIENT_OUTPUT_BYTES {
+                return Err("quotient heap matrix allowance exceeded".into());
+            }
+            eprintln!(
+                "bounded_quotient_readback_admission requested_bytes={bytes} heap_matrix_limit_bytes={MAX_QUOTIENT_OUTPUT_BYTES} columns_per_band={columns_per_band} {}",
+                allocation_context(),
+            );
+        }
+        // Banded staging stays in spill storage. Only the final, retained
+        // quotient output uses explicit heap storage; a single band is final.
+        let initial_storage = if columns_per_band >= width {
+            output_storage
+        } else {
+            OutputStorage::Global
+        };
+        let values = reserve(elements, initial_storage, "LDE readback reservation")?;
         Ok(Self {
             height,
             width,
@@ -97,7 +130,7 @@ impl HostReadback {
             elements,
             values,
             parallel_decode: false,
-            heap_output,
+            output_storage,
         })
     }
 
@@ -181,8 +214,11 @@ impl HostReadback {
         }
         let started = Instant::now();
         let bytes = self.elements * size_of::<Val>();
-        let mut output = Self::reserve(self.elements, self.heap_output)
-            .map_err(|e| format!("LDE row-major reservation: {e}"))?;
+        let mut output = reserve(
+            self.elements,
+            self.output_storage,
+            "LDE row-major reservation",
+        )?;
         let rows_per_task = (ROW_TASK_BYTES / size_of::<Val>() / self.width).max(1);
         let task_elements = rows_per_task * self.width;
         output.spare_capacity_mut()[..self.elements]
@@ -228,6 +264,91 @@ impl HostReadback {
 mod tests {
     use super::*;
     use p3_field::PrimeField64;
+
+    #[test]
+    fn explicit_heap_output_matches_global_for_partial_bands() {
+        for (height, width, band) in [(7, 5, 3), (8, 7, 4), (8, 7, 8)] {
+            let reference = filled(height, width, band, 3).finish().unwrap().0;
+            let mut heap =
+                HostReadback::with_storage(height, width, band, OutputStorage::QuotientHeap)
+                    .unwrap();
+            for first in (0..width).step_by(band) {
+                let columns = band.min(width - first);
+                let raw: Vec<_> = (0..height)
+                    .flat_map(|row| (first..first + columns).map(move |col| word(row, col)))
+                    .collect();
+                heap.append_rows(first, columns, 0, &raw).unwrap();
+            }
+            assert_eq!(heap.finish().unwrap().0.values, reference.values);
+        }
+        assert!(HostReadback::with_storage(1 << 26, 5, 4, OutputStorage::QuotientHeap).is_err());
+    }
+
+    /// Reproduce the production 2^23 x 7 output under the 34 GiB reservation
+    /// ceiling. The pressure buffer reserves virtual spill space without
+    /// touching its payload; actual test RSS stays below 2 GiB.
+    #[cfg(feature = "stream")]
+    #[test]
+    fn full_size_quotient_readback_under_spill_pressure() {
+        const FLAG: &str = "LATTICA_QUOTIENT_READBACK_PRESSURE_TEST";
+        const NAME: &str = "block_v2::gpu_hash::engine::lde_readback::tests::full_size_quotient_readback_under_spill_pressure";
+        const HEIGHT: usize = 1 << 23;
+        const WIDTH: usize = 7;
+        const BYTES: usize = HEIGHT * WIDTH * size_of::<Val>();
+        const LIMIT: usize = 34 << 30;
+        if std::env::var_os(FLAG).is_none() {
+            let status = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", NAME, "--test-threads=1", "--nocapture"])
+                .env(FLAG, "1")
+                .env("LATTICA_SPILL_MAX_BYTES", LIMIT.to_string())
+                .status()
+                .unwrap();
+            assert!(status.success());
+            return;
+        }
+        let _armed = crate::spill_alloc::SpillScope::arm();
+        let mut pressure = Vec::<u8>::new();
+        pressure
+            .try_reserve_exact(LIMIT - BYTES - 2 * 4096)
+            .unwrap();
+        let pressure_bytes = crate::spill_alloc::spill_stats().1;
+        for storage in [OutputStorage::Global, OutputStorage::QuotientHeap] {
+            let mut writer = HostReadback::with_storage(HEIGHT, WIDTH, 4, storage)
+                .unwrap()
+                .with_parallel_decode(true);
+            assert_eq!(crate::spill_alloc::spill_stats().1, LIMIT as u64);
+            for first in [0, 4] {
+                let columns = (WIDTH - first).min(4);
+                let rows = 1 << 17;
+                let raw: Vec<_> = (0..rows * columns)
+                    .map(|i| (first + i % columns) as u64)
+                    .collect();
+                for row in (0..HEIGHT).step_by(rows) {
+                    writer.append_rows(first, columns, row, &raw).unwrap();
+                }
+            }
+            let result = writer.finish();
+            if matches!(storage, OutputStorage::Global) {
+                let error = result.unwrap_err();
+                assert!(error.contains("LDE row-major reservation"));
+                assert!(error.contains("requested_bytes=469762048"));
+                assert!(error.contains("spill_budget_rejections=1"));
+            } else {
+                let (output, _) = result.unwrap();
+                assert_eq!(crate::spill_alloc::spill_stats().1, pressure_bytes);
+                assert_eq!(output.values.len(), HEIGHT * WIDTH);
+                assert!(output
+                    .values
+                    .iter()
+                    .enumerate()
+                    .all(|(i, v)| v.as_canonical_u64() == (i % WIDTH) as u64));
+                assert!(crate::spill_alloc::is_armed());
+            }
+            assert_eq!(crate::spill_alloc::spill_stats().1, pressure_bytes);
+        }
+        drop(pressure);
+        assert_eq!(crate::spill_alloc::spill_stats(), (0, 0));
+    }
 
     fn word(row: usize, col: usize) -> u64 {
         (row as u64)
@@ -300,7 +421,7 @@ mod tests {
                 ])
                 .env(FLAG, "1")
                 .env("LATTICA_SPILL_BACKING", "memory")
-                .env("LATTICA_SPILL_MAX_BYTES", "1")
+                .env("LATTICA_SPILL_MAX_BYTES", ((96 << 20) + 4096).to_string())
                 .status()
                 .unwrap();
             assert!(status.success());
@@ -312,14 +433,15 @@ mod tests {
             .unwrap();
         pool.install(|| {
             let _scope = crate::spill_alloc::SpillScope::arm();
-            // 96 MiB exceeds the spill threshold. Exercise both a partial final
-            // band and single-band ownership, under a one-byte mapping budget.
+            // 96 MiB exceeds the spill threshold. The mapping budget admits
+            // one staging matrix, but not an additional mapped output.
             let height = 1 << 22;
             let width = 3;
             for band in [2, 3] {
-                let mut writer = HostReadback::new_quotient(height, width, band)
-                    .unwrap()
-                    .with_parallel_decode(true);
+                let mut writer =
+                    HostReadback::with_storage(height, width, band, OutputStorage::QuotientHeap)
+                        .unwrap()
+                        .with_parallel_decode(true);
                 for first in (0..width).step_by(band) {
                     let columns = band.min(width - first);
                     for row0 in (0..height).step_by(4096) {
@@ -339,8 +461,14 @@ mod tests {
                 drop(matrix);
             }
             let mut ordinary = Vec::<Val>::new();
-            assert!(ordinary.try_reserve_exact(height * width).is_err());
-            assert!(HostReadback::new_quotient((2 << 30) / 8 + 1, 1, 1).is_err());
+            assert!(ordinary.try_reserve_exact(height * width + 1024).is_err());
+            assert!(HostReadback::with_storage(
+                (2 << 30) / 8 + 1,
+                1,
+                1,
+                OutputStorage::QuotientHeap
+            )
+            .is_err());
             assert_eq!(crate::spill_alloc::spill_stats(), (0, 0));
         });
     }

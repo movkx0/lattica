@@ -1,5 +1,8 @@
 // Explicit compact-profile GPU grouped-eight research worker.
 // Preparation, checkpoint checks, pruning and audits use CPU tools.
+#[cfg(feature = "gpu")]
+#[path = "grouped_common/adaptive.rs"]
+mod adaptive;
 mod grouped_common;
 
 use grouped_common::{Command, Error, PinnedAction};
@@ -172,6 +175,9 @@ fn require_worker_limits() -> Result<(), Error> {
     }
     let group = Path::new("/sys/fs/cgroup").join(groups[0].trim_start_matches('/'));
     let parent = group.parent().ok_or("missing worker resource slice")?;
+    if std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_some() {
+        return adaptive::validate(&group, parent);
+    }
     let text = |path| fs::read_to_string(path).map(|s| s.trim().to_owned());
     validate_worker_limits(
         group
@@ -383,6 +389,21 @@ fn run(args: &[String]) -> Result<(), Error> {
 }
 
 fn main() {
+    #[cfg(feature = "gpu")]
+    if std::env::args().nth(1).as_deref() == Some("--gpu-inventory") {
+        match lattica_prover_p3::gpu_device::devices() {
+            Ok(devices) => println!(
+                "{}",
+                serde_json::to_string(&devices.into_iter().map(|(_, _, d)| d).collect::<Vec<_>>())
+                    .unwrap()
+            ),
+            Err(e) => {
+                eprintln!("FAILED: {e}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
     let args: Vec<_> = std::env::args().skip(1).collect();
     if let Err(error) = run(&args) {
         eprintln!("FAILED: {error}");

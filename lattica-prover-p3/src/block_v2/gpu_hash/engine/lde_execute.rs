@@ -142,21 +142,6 @@ pub fn coset_lde_commit(
 
 /// Commit quotient chunks after CPU generation of the balanced hiding masks.
 /// Inputs and masks belong to this attempt; the device never draws randomness.
-pub fn quotient_lde_commit(
-    inputs: &[LdeInput<'_>],
-    masks: &[RowMajorMatrix<Val>],
-    cap_height: usize,
-    host_output_budget_bytes: usize,
-) -> Result<LdeCommitOutput, String> {
-    let mut slot = ENGINE
-        .get()
-        .ok_or("GPU hashing was not initialized")?
-        .lock()
-        .map_err(|_| "GPU engine poisoned")?;
-    slot.as_mut()
-        .ok_or("GPU hashing shut down")?
-        .coset_lde_commit_with_masks(inputs, Some(masks), cap_height, host_output_budget_bytes)
-}
 
 /// Kernel scheduling shared with the existing tiled-NTT arithmetic, without
 /// borrowing that module's separate context or allocator.
@@ -198,7 +183,7 @@ struct TransformBuffers {
 }
 
 impl Engine {
-    fn lde_upload_rows(
+    pub(super) fn lde_upload_rows(
         &mut self,
         buffer: &Buffer<u64>,
         rows: usize,
@@ -426,7 +411,7 @@ impl Engine {
         cap_height: usize,
         host_budget: usize,
     ) -> Result<LdeCommitOutput, String> {
-        self.coset_lde_commit_with_masks(inputs, None, cap_height, host_budget)
+        self.coset_lde_commit_with_masks(inputs, None, cap_height, host_budget, 0)
     }
 
     fn coset_lde_commit_with_masks(
@@ -435,6 +420,7 @@ impl Engine {
         masks: Option<&[RowMajorMatrix<Val>]>,
         cap_height: usize,
         host_budget: usize,
+        retention_bits: usize,
     ) -> Result<LdeCommitOutput, String> {
         let parallel_readback = super::switch("LATTICA_V2_GPU_PARALLEL_READBACK")?;
         let started = Instant::now();
@@ -459,7 +445,7 @@ impl Engine {
             .map_err(|_| "GPU accounting poisoned")?
             .live;
         let old_workspace = self.workspace.as_ref().map_or(0, super::Workspace::bytes);
-        let plan = LdeCommitPlan::new(
+        let plan = LdeCommitPlan::new_retained(
             &shapes,
             cap_height,
             self.limits,
@@ -468,8 +454,17 @@ impl Engine {
             live,
             old_workspace,
             host_budget,
+            retention_bits,
         )?;
         let height = plan.output_height();
+        if masks.is_some() {
+            plan.validate_quotient_storage()?;
+            eprintln!(
+                "bounded_quotient_storage_plan matrices={} height={height} heap_output_bytes={} reorder_workspace_bytes={} host_peak_allowance_bytes={} caller_host_budget_bytes={host_budget}",
+                shapes.len(), plan.host_output_bytes, plan.host_reorder_workspace_bytes,
+                plan.predicted_host_peak_bytes,
+            );
+        }
         let width = shapes
             .iter()
             .try_fold(0usize, |n, s| n.checked_add(s.width)?.checked_add(4))
@@ -528,11 +523,16 @@ impl Engine {
         })?;
         for (matrix_index, input) in inputs.iter().enumerate() {
             let shape = shapes[matrix_index];
-            let mut readback = if masks.is_some() {
-                HostReadback::new_quotient(height, shape.width, plan.columns_per_tile())?
-            } else {
-                HostReadback::new(height, shape.width, plan.columns_per_tile())?
-            }
+            let mut readback = HostReadback::with_storage(
+                plan.retained_height(),
+                shape.width,
+                plan.columns_per_tile(),
+                if masks.is_some() {
+                    super::lde_readback::OutputStorage::QuotientHeap
+                } else {
+                    super::lde_readback::OutputStorage::Global
+                },
+            )?
             .with_parallel_decode(parallel_readback);
             for tile in plan.tiles().filter(|t| t.matrix == matrix_index) {
                 buffers
@@ -698,6 +698,7 @@ impl Engine {
             self.stats.quotient_lde_commits += 1;
         }
         self.stats.lde_wall_ns += started.elapsed().as_nanos();
+        self.context_checkpoint("resident LDE complete")?;
         Ok(LdeCommitOutput {
             matrices,
             plan,
@@ -1028,4 +1029,22 @@ mod tests {
         assert!(output.open(32767).is_ok());
         drop(output);
     }
+}
+
+/// Hash full transforms while downloading only the admitted bit-reversed prefix.
+pub(crate) fn retained_lde_commit(
+    inputs: &[LdeInput<'_>],
+    masks: Option<&[RowMajorMatrix<Val>]>,
+    cap_height: usize,
+    host_budget: usize,
+    retention_bits: usize,
+) -> Result<LdeCommitOutput, String> {
+    let mut slot = ENGINE
+        .get()
+        .ok_or("GPU not initialized")?
+        .lock()
+        .map_err(|_| "GPU engine poisoned")?;
+    slot.as_mut()
+        .ok_or("GPU shut down")?
+        .coset_lde_commit_with_masks(inputs, masks, cap_height, host_budget, retention_bits)
 }

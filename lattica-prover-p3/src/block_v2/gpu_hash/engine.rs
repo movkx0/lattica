@@ -1,11 +1,12 @@
-//! One serialized OpenCL context, with aggregate allocation accounting and a
-//! process-lifetime exclusive lease shared by all candidate hashing jobs of a user.
+//! One serialized GPU context with aggregate allocation accounting and a
+//! process-lifetime lease compatible with legacy global-exclusive workers.
 use crate::block_v2::compute;
 use crate::config::Val;
 pub mod lde_execute;
 pub mod lde_plan;
 mod lde_readback;
 pub(crate) mod opening_reduce;
+pub(super) mod query_reconstruct;
 use compute::{Buffer, Event, ProQue, Queue};
 use p3_field::PrimeCharacteristicRing;
 use rayon::prelude::*;
@@ -140,8 +141,7 @@ impl Default for Limits {
 }
 impl Limits {
     fn validate(self) -> Result<(), String> {
-        if self.managed_bytes > MAX_MANAGED_BYTES
-            || self.managed_bytes == 0
+        if self.managed_bytes == 0
             || self.tile_bytes == 0
             || self.tile_bytes > 128 * MIB
             || self.staging_bytes < 8
@@ -363,7 +363,7 @@ pub struct RetainedTree {
     height: usize,
     layout: RetainedLayout,
     cap: Vec<[Val; 4]>,
-    _job_lease: Arc<File>,
+    _job_lease: Arc<JobLease>,
 }
 impl RetainedTree {
     pub(super) fn cap(&self) -> &[[Val; 4]] {
@@ -570,7 +570,7 @@ struct Engine {
     fail_next_upload: bool,
     #[cfg(test)]
     injected_event: Option<Event>,
-    _job_lease: Arc<File>,
+    _job_lease: Arc<JobLease>,
     #[cfg(feature = "gpu-metal")]
     _backend_transfer_lease: Lease,
 }
@@ -584,8 +584,50 @@ impl Drop for Engine {
 static ENGINE: OnceLock<Mutex<Option<Engine>>> = OnceLock::new();
 static INITIALIZE: Mutex<()> = Mutex::new(());
 
+struct JobLease {
+    _global: File,
+    _device: Option<File>,
+}
+#[cfg(target_os = "linux")]
+fn job_lease() -> Result<JobLease, String> {
+    if let Ok(uuid) = std::env::var("LATTICA_GPU_DEVICE_UUID") {
+        if !uuid.starts_with("GPU-")
+            || uuid.len() != 40
+            || !uuid[4..].chars().all(|c| c.is_ascii_hexdigit() || c == '-')
+        {
+            return Err("invalid GPU UUID lease name".into());
+        }
+        let global = lease_file("exclusive.lock", true)?;
+        let device = lease_file(&format!("{}.lock", uuid.to_ascii_lowercase()), false)?;
+        Ok(JobLease {
+            _global: global,
+            _device: Some(device),
+        })
+    } else {
+        Ok(JobLease {
+            _global: lease_file("exclusive.lock", false)?,
+            _device: None,
+        })
+    }
+}
+#[cfg(all(target_os = "macos", feature = "gpu-metal"))]
+fn job_lease() -> Result<JobLease, String> {
+    if std::env::var_os("LATTICA_GPU_DEVICE_UUID").is_some()
+        || std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_some()
+    {
+        return Err("adaptive multi-GPU budgets and UUID selection require Linux OpenCL".into());
+    }
+    Ok(JobLease {
+        _global: lease_file("exclusive.lock", false)?,
+        _device: None,
+    })
+}
+#[cfg(not(any(target_os = "linux", all(target_os = "macos", feature = "gpu-metal"))))]
+fn job_lease() -> Result<JobLease, String> {
+    Err("bounded GPU requires Linux OpenCL or macOS Metal".into())
+}
 #[cfg(any(target_os = "linux", all(target_os = "macos", feature = "gpu-metal")))]
-fn job_lease() -> Result<File, String> {
+fn lease_file(name: &str, shared: bool) -> Result<File, String> {
     use std::os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt};
     let uid = unsafe { libc::geteuid() };
     // A fixed location: differing TMPDIR values must not bypass job serialization.
@@ -606,19 +648,21 @@ fn job_lease() -> Result<File, String> {
         .truncate(false)
         .mode(0o600)
         .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
-        .open(dir.join("exclusive.lock"))
+        .open(dir.join(name))
         .map_err(|e| e.to_string())?;
     let meta = file.metadata().map_err(|e| e.to_string())?;
     if !meta.is_file() || meta.uid() != uid || meta.mode() & 0o777 != 0o600 {
         return Err("invalid GPU lease file".into());
     }
-    file.try_lock()
-        .map_err(|e| format!("another candidate GPU hashing process holds the lease: {e}"))?;
+    use std::os::fd::AsRawFd;
+    let operation = if shared { libc::LOCK_SH } else { libc::LOCK_EX };
+    if unsafe { libc::flock(file.as_raw_fd(), operation | libc::LOCK_NB) } != 0 {
+        return Err(format!(
+            "GPU lease busy: {}",
+            std::io::Error::last_os_error()
+        ));
+    }
     Ok(file)
-}
-#[cfg(not(any(target_os = "linux", all(target_os = "macos", feature = "gpu-metal"))))]
-fn job_lease() -> Result<File, String> {
-    Err("bounded GPU hashing currently requires Linux".into())
 }
 
 fn allocation(
@@ -676,26 +720,14 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
     }
     limits.validate()?;
     let lease = job_lease()?; // BEFORE creating a context or allocating anything on the device.
-    let index: usize = match std::env::var("LATTICA_V2_GPU_DEVICE") {
-        Err(std::env::VarError::NotPresent) => 0,
-        Ok(v) => v
-            .parse()
-            .map_err(|_| "LATTICA_V2_GPU_DEVICE must be an index")?,
-        Err(e) => return Err(e.to_string()),
-    };
+    let driver_reserve = env_bytes("LATTICA_V2_GPU_CONTEXT_BYTES", DRIVER_RESERVE_BYTES)?;
+    if driver_reserve < 512 * MIB {
+        return Err("GPU context allowance below minimum".into());
+    }
     #[cfg(feature = "gpu")]
-    let (pq, max_alloc, global, device_name) = {
-        let mut devices = Vec::new();
-        for platform in compute::Platform::list() {
-            for device in compute::Device::list(platform, Some(compute::flags::DEVICE_TYPE_GPU))
-                .map_err(|e| e.to_string())?
-            {
-                devices.push((platform, device));
-            }
-        }
-        let (platform, device) = *devices
-            .get(index)
-            .ok_or("selected OpenCL GPU is unavailable")?;
+    let (index, pq, max_alloc, global, device_name) = {
+        let (platform, device, identity) = crate::gpu_device::select()?;
+        let index = identity.opencl_index;
         use compute::core::{DeviceInfo, DeviceInfoResult};
         let max_alloc = match device
             .info(DeviceInfo::MaxMemAllocSize)
@@ -717,13 +749,17 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
         };
         if limits
             .managed_bytes
-            .checked_add(DRIVER_RESERVE_BYTES)
+            .checked_add(driver_reserve)
             .ok_or("GPU limit overflow")?
             > global
         {
             return Err("GPU lacks capacity for the managed budget plus driver reserve".into());
         }
         plan_slots(1, 1, limits, max_alloc, mode.slots())?;
+        println!(
+            "bounded_gpu_identity {}",
+            serde_json::to_string(&identity).map_err(|e| e.to_string())?
+        );
         let pq = ProQue::builder()
             .platform(platform)
             .device(device)
@@ -739,10 +775,17 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
             .build()
             .map_err(|e| e.to_string())?;
         let device_name = device.name().map_err(|e| e.to_string())?;
-        (pq, max_alloc, global, device_name)
+        (index, pq, max_alloc, global, device_name)
     };
     #[cfg(feature = "gpu-metal")]
-    let (pq, max_alloc, global, device_name) = {
+    let (index, pq, max_alloc, global, device_name) = {
+        let index = match std::env::var("LATTICA_V2_GPU_DEVICE") {
+            Err(std::env::VarError::NotPresent) => 0,
+            Ok(v) => v
+                .parse()
+                .map_err(|_| "LATTICA_V2_GPU_DEVICE must be an index")?,
+            Err(e) => return Err(e.to_string()),
+        };
         if mode != TransferMode::Serial {
             return Err("Metal currently requires GPU_PIPELINE=0".into());
         }
@@ -751,7 +794,7 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
         let global = pq.recommended_working_set();
         if limits
             .managed_bytes
-            .checked_add(DRIVER_RESERVE_BYTES)
+            .checked_add(driver_reserve)
             .ok_or("Metal budget overflow")?
             > global
         {
@@ -759,7 +802,7 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
         }
         plan_slots(1, 1, limits, max_alloc, mode.slots())?;
         let name = pq.device_name();
-        (pq, max_alloc, global, name)
+        (index, pq, max_alloc, global, name)
     };
     let accounting = Arc::new(Mutex::new(Accounting::default()));
     #[cfg(feature = "gpu-metal")]
@@ -818,7 +861,7 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
     }
     pq.queue().finish().map_err(|e| e.to_string())?;
     println!(
-        "bounded_gpu_initialized device_index={index} name={:?} global_bytes={global} max_allocation_bytes={max_alloc} managed_limit_bytes={} driver_reserve_bytes={DRIVER_RESERVE_BYTES} tile_bytes={} staging_bytes={} contexts=1 job_lease=exclusive",
+        "bounded_gpu_initialized device_index={index} name={:?} global_bytes={global} max_allocation_bytes={max_alloc} managed_limit_bytes={} driver_reserve_bytes={driver_reserve} tile_bytes={} staging_bytes={} contexts=1 job_lease=compatible",
         device_name,
         limits.managed_bytes,
         limits.tile_bytes,
@@ -915,6 +958,14 @@ pub fn plan_coset_lde_commit(
     cap_height: usize,
     host_output_budget_bytes: usize,
 ) -> Result<lde_plan::LdeCommitPlan, String> {
+    plan_retained_lde_commit(inputs, cap_height, host_output_budget_bytes, 0)
+}
+pub(crate) fn plan_retained_lde_commit(
+    inputs: &[lde_plan::InputShape],
+    cap_height: usize,
+    host_output_budget_bytes: usize,
+    retention_bits: usize,
+) -> Result<lde_plan::LdeCommitPlan, String> {
     let guard = ENGINE
         .get()
         .ok_or("GPU hashing was not initialized")?
@@ -930,7 +981,7 @@ pub fn plan_coset_lde_commit(
         .map_err(|_| "GPU accounting poisoned")?
         .live;
     let old_workspace = engine.workspace.as_ref().map_or(0, Workspace::bytes);
-    lde_plan::LdeCommitPlan::new(
+    lde_plan::LdeCommitPlan::new_retained(
         inputs,
         cap_height,
         engine.limits,
@@ -939,6 +990,7 @@ pub fn plan_coset_lde_commit(
         live,
         old_workspace,
         host_output_budget_bytes,
+        retention_bits,
     )
 }
 
@@ -1643,6 +1695,9 @@ pub(super) fn hash_rows_retained(
 pub fn report(label: &str) -> Option<Snapshot> {
     let mut guard = ENGINE.get()?.lock().expect("GPU engine poisoned");
     let e = guard.as_mut()?;
+    e.fence().finish().expect("GPU checkpoint fence failed");
+    e.context_checkpoint(label)
+        .expect("GPU context telemetry failed");
     #[cfg(feature = "gpu-metal")]
     e.pq.report();
     let s = e.snapshot();
@@ -1958,6 +2013,7 @@ mod tests {
         let inputs = [OpeningMatrix {
             values: &values,
             width: 7,
+            height: values.len() / (7),
             terms: vec![OpeningTerm {
                 inverse_denominators: &denominators,
                 alpha_offset: Challenge::ONE,
@@ -2017,6 +2073,7 @@ mod tests {
         let inputs = [OpeningMatrix {
             values: &values,
             width: 7,
+            height: values.len() / (7),
             terms: vec![OpeningTerm {
                 inverse_denominators: &denominators,
                 alpha_offset: Challenge::ONE,
@@ -2602,7 +2659,7 @@ mod tests {
             },
             4 * GIB
         )
-        .is_err());
+        .is_ok());
     }
 
     #[test]
@@ -2641,5 +2698,76 @@ mod tests {
         assert_eq!(counters(&accounting).live, 0);
         let _two = reserve(&accounting, 1000, 1000).unwrap();
         assert_eq!(counters(&accounting).peak, 1000);
+    }
+}
+
+pub(super) fn env_bytes(name: &str, default: usize) -> Result<usize, String> {
+    match std::env::var(name) {
+        Err(std::env::VarError::NotPresent) => Ok(default),
+        Ok(v) => v
+            .parse()
+            .map_err(|_| format!("{name} must be an unsigned byte count")),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+impl Engine {
+    /// Measure process VRAM and live managed allocations at the same drained
+    /// checkpoint. Device reserved memory and unrelated process peaks are not
+    /// used to estimate context overhead.
+    pub(super) fn context_checkpoint(&self, label: &str) -> Result<(), String> {
+        if std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_none() {
+            return Ok(());
+        }
+        self.fence().finish()?;
+        let uuid = std::env::var("LATTICA_GPU_DEVICE_UUID").map_err(|e| e.to_string())?;
+        let pid = std::process::id();
+        let output = std::process::Command::new("nvidia-smi")
+            .args([
+                "--query-compute-apps=pid,gpu_uuid,used_memory",
+                "--format=csv,noheader,nounits",
+            ])
+            .output()
+            .map_err(|e| e.to_string())?;
+        if !output.status.success() {
+            return Err("GPU process memory query failed".into());
+        }
+        let text = String::from_utf8(output.stdout).map_err(|e| e.to_string())?;
+        let mut process_bytes = 0usize;
+        let mut found = false;
+        for row in text.lines() {
+            let fields: Vec<_> = row.split(',').map(str::trim).collect();
+            if fields.len() != 3 {
+                return Err("GPU process memory response malformed".into());
+            }
+            if fields[0].parse::<u32>().map_err(|e| e.to_string())? == pid {
+                if !fields[1].eq_ignore_ascii_case(&uuid) {
+                    return Err("process used an unassigned GPU".into());
+                }
+                process_bytes += fields[2].parse::<usize>().map_err(|e| e.to_string())? * MIB;
+                found = true;
+            }
+        }
+        if !found {
+            return Err("GPU process missing at synchronized checkpoint".into());
+        }
+        let managed_live_bytes = self
+            .accounting
+            .lock()
+            .map_err(|_| "GPU accounting poisoned")?
+            .live;
+        let context_bytes = process_bytes.saturating_sub(managed_live_bytes);
+        let limit = self.limits.managed_bytes
+            + env_bytes("LATTICA_V2_GPU_CONTEXT_BYTES", DRIVER_RESERVE_BYTES)?;
+        println!(
+            "bounded_gpu_context {}",
+            serde_json::json!({"label": label, "uuid": uuid, "pid": pid,
+            "managed_live_bytes": managed_live_bytes, "process_bytes": process_bytes,
+            "context_bytes": context_bytes, "limit_bytes": limit})
+        );
+        if process_bytes > limit {
+            return Err("observed process VRAM exceeds assigned total budget".into());
+        }
+        Ok(())
     }
 }

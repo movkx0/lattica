@@ -30,6 +30,7 @@ pub(crate) struct OpeningMatrix<'a> {
     /// Physical bit-reversed rows, exactly as committed by the input MMCS.
     pub values: &'a [Val],
     pub width: usize,
+    pub height: usize,
     pub terms: Vec<OpeningTerm<'a>>,
 }
 
@@ -60,8 +61,12 @@ impl Plan {
             {
                 return Err("opening reduction matrix shape".into());
             }
-            let height = input.values.len() / input.width;
-            if height < 2 || !height.is_power_of_two() || height > (1 << 31) {
+            let height = input.height;
+            if input.values.len() / input.width < (height >> crate::block_v2::profile::LOG_BLOWUP)
+                || height < 2
+                || !height.is_power_of_two()
+                || height > (1 << 31)
+            {
                 return Err("opening reduction matrix height".into());
             }
             if input.terms.is_empty()
@@ -298,6 +303,12 @@ impl Engine {
         pinned_uploads: bool,
     ) -> Result<Vec<Vec<Challenge>>, String> {
         let started = Instant::now();
+        if inputs
+            .iter()
+            .any(|i| i.width.checked_mul(i.height) != Some(i.values.len()))
+        {
+            return Err("full opening reduction requires full matrices".into());
+        }
         let plan = Plan::new(inputs, self.limits.tile_bytes, self.max_alloc)?;
         let old_workspace = self.workspace.as_ref().map_or(0, |w| w.bytes());
         let live = self
@@ -357,7 +368,7 @@ impl Engine {
                 .map_err(|e| e.to_string())?;
         }
         for input in inputs {
-            let height = input.values.len() / input.width;
+            let height = input.height;
             let output_index = plan.heights.binary_search(&height).unwrap();
             let marshal = Instant::now();
             weight_words.clear();
@@ -593,6 +604,7 @@ mod tests {
             .map(|(i, (_, width))| OpeningMatrix {
                 values: &matrices[i],
                 width: *width,
+                height: matrices[i].len() / (*width),
                 terms: (0..=i)
                     .map(|j| OpeningTerm {
                         inverse_denominators: &denominators[j],
@@ -604,7 +616,7 @@ mod tests {
             .collect();
         let mut expected = BTreeMap::<usize, Vec<Challenge>>::new();
         for input in &inputs {
-            let height = input.values.len() / input.width;
+            let height = input.height;
             let output = expected
                 .entry(height)
                 .or_insert_with(|| vec![Challenge::ZERO; height]);
@@ -721,6 +733,7 @@ mod tests {
         let input = OpeningMatrix {
             values: &values,
             width,
+            height: values.len() / (width),
             terms: vec![
                 OpeningTerm {
                     inverse_denominators: &denominators,
@@ -857,6 +870,7 @@ mod tests {
         let input = OpeningMatrix {
             values: &values,
             width,
+            height: values.len() / (width),
             terms: (0..2)
                 .map(|point| OpeningTerm {
                     inverse_denominators: &denominators[point],
@@ -936,6 +950,7 @@ mod tests {
         let mut input = OpeningMatrix {
             values: &values,
             width: 7,
+            height: values.len() / (7),
             terms: vec![OpeningTerm {
                 inverse_denominators: &denominators,
                 alpha_offset: Challenge::ONE,

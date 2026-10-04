@@ -77,6 +77,23 @@ pub fn initialize_research_from_env() -> Result<bool, String> {
     if openings && !enabled {
         return Err("GPU openings require the explicit resident research backend".into());
     }
+    let compact = match std::env::var("LATTICA_V2_GPU_COMPACT_PROVER_DATA").as_deref() {
+        Err(std::env::VarError::NotPresent) | Ok("0") => false,
+        Ok("1") => true,
+        _ => return Err("LATTICA_V2_GPU_COMPACT_PROVER_DATA must be 0 or 1".into()),
+    };
+    if compact
+        && (!enabled
+            || !openings
+            || std::env::var("LATTICA_V2_GPU_OPENING_COMPACT").as_deref() != Ok("1")
+            || std::env::var("LATTICA_V2_GPU_QUOTIENT_LDE").as_deref() != Ok("1"))
+    {
+        return Err(
+            "compact prover data requires resident LDE, GPU quotient and compact GPU openings"
+                .into(),
+        );
+    }
+    record_research_mode(&RESEARCH_COMPACT_DATA, compact).map_err(str::to_owned)?;
     record_research_mode(&RESEARCH_OPENINGS, openings).map_err(str::to_owned)?;
     record_research_mode(&RESEARCH_RESIDENT, enabled).map_err(str::to_owned)?;
     Ok(enabled)
@@ -176,7 +193,6 @@ impl ResidentState {
             || fri.query_proof_of_work_bits != profile::QUERY_POW_BITS
             || random_columns != profile::NUM_RANDOM_CODEWORDS
             || host_budget == 0
-            || host_budget > HOST_OUTPUT_BUDGET
         {
             return Err(
                 "resident PCS requires unchanged candidate parameters and host allowance".into(),
@@ -250,7 +266,11 @@ impl ResidentState {
                 added_bits: self.log_blowup,
             });
         }
-        let _admission = self.mmcs.preflight_resident(&shapes, self.host_budget)?;
+        let _admission = self.mmcs.preflight_retained(
+            &shapes,
+            self.host_budget,
+            usize::from(compact_prover_data()),
+        )?;
         // Same row-major draw order and reshape as p3-fri 0.6.1 HidingFriPcs.
         // This lock is released before entering MMCS or upstream methods.
         let randomized: Vec<_> = if preprocessing {
@@ -296,7 +316,15 @@ impl ResidentState {
                 added_bits: self.log_blowup,
             })
             .collect();
-        let _admission = self.mmcs.preflight_resident(&shapes, self.host_budget)?;
+        let _admission = self.mmcs.preflight_retained(
+            &shapes,
+            self.host_budget,
+            if compact_prover_data() {
+                self.log_blowup
+            } else {
+                0
+            },
+        )?;
         // Already-random evaluations: upstream does NOT interleave another
         // random trace or append additional codewords on this path.
         let randomized = self.rng.with(|rng| {
@@ -308,8 +336,17 @@ impl ResidentState {
                 })
                 .collect()
         });
-        self.mmcs
-            .commit_resident(randomized, self.log_blowup, self.host_budget)
+        self.mmcs.commit_resident_retained(
+            randomized,
+            self.log_blowup,
+            self.host_budget,
+            None,
+            if compact_prover_data() {
+                self.log_blowup
+            } else {
+                0
+            },
+        )
     }
 }
 
@@ -364,4 +401,24 @@ mod tests {
         .is_err());
         assert_eq!(draws, MAX_MATRICES + 1);
     }
+}
+
+static RESEARCH_COMPACT_DATA: OnceLock<bool> = OnceLock::new();
+pub(super) fn compact_prover_data() -> bool {
+    *RESEARCH_COMPACT_DATA.get().unwrap_or(&false)
+}
+
+pub(super) fn host_output_budget() -> usize {
+    match std::env::var("LATTICA_V2_HOST_OUTPUT_BYTES") {
+        Ok(value) => value.parse().expect("invalid host output byte budget"),
+        Err(std::env::VarError::NotPresent) => HOST_OUTPUT_BUDGET,
+        Err(_) => panic!("invalid host output budget environment"),
+    }
+}
+
+#[cfg(test)]
+pub(super) fn enable_compact_for_test() {
+    RESEARCH_COMPACT_DATA
+        .set(true)
+        .expect("isolated compact test process");
 }
