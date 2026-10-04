@@ -25,6 +25,20 @@ GIB = 1 << 30
 FIXTURE_NAMES = ["height", "key.1", "key.2", "key.3", *[f"wallet.{i}" for i in range(8)]]
 GPU_KEYS = ["HASH", "RETAIN_TREES", "PIPELINE", "RESIDENT_LDE", "OPENINGS", "OPENING_COMPACT", "OPENING_PINNED", "PARALLEL_READBACK", "QUOTIENT_LDE", "COMPACT_PROVER_DATA"]
 
+def load_memory_policy(path):
+    policy = json.loads(path.read_text())
+    if policy.get("schema") != "lattica-apple-benchmark-memory-v1":
+        raise ValueError("invalid Apple benchmark memory policy schema")
+    for key in ("aggregate_rss_limit_bytes", "worker_rss_limit_bytes"):
+        value = policy[key]
+        if value is not None and (type(value) is not int or not 0 < value < 1 << 64):
+            raise ValueError(f"{key} must be null or a positive u64 byte count")
+    return policy
+
+MEMORY_POLICY = load_memory_policy(CRATE / "src/bin/apple_benchmark_memory.json")
+WORKER_RSS_LIMIT_BYTES = MEMORY_POLICY["worker_rss_limit_bytes"]
+AGGREGATE_RSS_LIMIT_BYTES = MEMORY_POLICY["aggregate_rss_limit_bytes"]
+
 def digest(path):
     with Path(path).open("rb") as f:
         return hashlib.file_digest(f, "sha256").hexdigest()
@@ -134,13 +148,13 @@ def validate_extension(prior, current):
 
 def environment(config, scratch, gpu):
     env = os.environ.copy()
+    env.pop("LATTICA_V2_METAL_RSS_LIMIT_BYTES", None)
     env.update({"RAYON_NUM_THREADS": str(config["threads"]), "LATTICA_FFT_TRACE": "1",
                 "LATTICA_PROFILE": "1", "LATTICA_PROFILE_TIMELINE": "0",
                 "LATTICA_BENCHMARK_REPORT_DEFER": "1", "LATTICA_V2_METAL_DEFER_TIMING": "0",
                 "LATTICA_SPILL_DIR": str(scratch), "LATTICA_SPILL_BACKING": "memory",
                 "LATTICA_SPILL_MAX_BYTES": str(34 * GIB), "LATTICA_V2_QUOTIENT_FUSION": "0",
                 "LATTICA_V2_GPU_DEVICE": "0" if gpu else "4294967295",
-                "LATTICA_V2_METAL_RSS_LIMIT_BYTES": str(44 * GIB),
                 "LATTICA_V2_METAL_TIMEOUT_SECONDS": "7200"})
     for key in GPU_KEYS:
         env["LATTICA_V2_GPU_" + key] = "0"
@@ -272,7 +286,10 @@ def main():
               "fixture_sha256": {name: digest(fixture / name) for name in FIXTURE_NAMES},
               "external": external, "schedule": [c for c in selected_schedule if c["phase"] == "pilot"] if args.pilots_only else selected_schedule,
               "timing_boundary": "sum of wrapper and merge worker timers; shader initialization included; preparation/auditing excluded",
-              "memory_policy": "34 GiB mapped scratch, 8 GiB Metal managed buffers, sampled 44 GiB worker RSS, 7200 seconds per stage; macOS swap is observed, not prohibited",
+              "memory_policy": "34 GiB mapped scratch, 8 GiB Metal managed buffers, "
+                  + ("RSS observed without a fixed cap" if WORKER_RSS_LIMIT_BYTES is None else f"{WORKER_RSS_LIMIT_BYTES / GIB:g} GiB worker RSS cap")
+                  + ", 7200 seconds per stage; macOS swap is observed, not prohibited",
+              "rss_policy": MEMORY_POLICY,
               "observations": [observations()], "stages": [], "trials": []}
     if prior is not None:
         validate_extension(prior, report)
@@ -325,7 +342,8 @@ def main():
                     rss = int(sample.stdout) * 1024
                     peak = max(peak, rss)
                     resources.write(json.dumps({"utc_ns":str(time.time_ns()), "rss_bytes":rss, "pid":child.pid}) + "\n")
-                    if peak > 44 * GIB: reason = "44 GiB RSS limit exceeded"
+                    if WORKER_RSS_LIMIT_BYTES is not None and peak > WORKER_RSS_LIMIT_BYTES:
+                        reason = "configured worker RSS limit exceeded"
                 elif sample.stderr.strip(): reason = "RSS monitoring unavailable: " + sample.stderr.strip()
                 if time.monotonic() - start > 7200: reason = "two-hour stage timeout"
                 if reason and stopped is None:

@@ -221,6 +221,28 @@ fn process_memory() -> Result<(u64, u64), Error> {
 }
 
 #[cfg(feature = "gpu-metal")]
+fn metal_rss_limit(policy: &str) -> Result<Option<u64>, Error> {
+    let policy: serde_json::Value = serde_json::from_str(policy)?;
+    if policy.get("schema").and_then(|v| v.as_str()) != Some("lattica-apple-benchmark-memory-v1") {
+        return Err("invalid Apple benchmark memory policy schema".into());
+    }
+    let value = policy
+        .get("worker_rss_limit_bytes")
+        .ok_or("missing worker_rss_limit_bytes")?;
+    if value.is_null() {
+        Ok(None)
+    } else {
+        value
+            .as_u64()
+            .filter(|&bytes| bytes > 0)
+            .map(Some)
+            .ok_or_else(|| {
+                "worker_rss_limit_bytes must be null or a positive u64 byte count".into()
+            })
+    }
+}
+
+#[cfg(feature = "gpu-metal")]
 fn require_worker_limits() -> Result<MetalWatchdog, Error> {
     use std::sync::{
         atomic::{AtomicBool, Ordering},
@@ -237,7 +259,7 @@ fn require_worker_limits() -> Result<MetalWatchdog, Error> {
         }
         Ok(value)
     }
-    let rss_limit = limit("LATTICA_V2_METAL_RSS_LIMIT_BYTES", 44 * GIB, 44 * GIB)?;
+    let rss_limit = metal_rss_limit(include_str!("apple_benchmark_memory.json"))?;
     let timeout = limit("LATTICA_V2_METAL_TIMEOUT_SECONDS", 7200, 7200)?;
     let scratch: u64 = std::env::var("LATTICA_SPILL_MAX_BYTES")?.parse()?;
     if scratch == 0
@@ -250,10 +272,11 @@ fn require_worker_limits() -> Result<MetalWatchdog, Error> {
         );
     }
     let (rss, footprint) = process_memory()?;
-    if rss > rss_limit {
-        return Err("Metal worker already exceeds its RSS limit".into());
+    if rss_limit.is_some_and(|limit| rss > limit) {
+        return Err("Metal worker already exceeds its configured RSS limit".into());
     }
-    println!("metal_worker_limits rss_limit_bytes={rss_limit} scratch_limit_bytes={scratch} timeout_seconds={timeout} sample_ms=500 enforcement=watchdog swap_enforcement=false initial_rss_bytes={rss} initial_footprint_bytes={footprint}");
+    let rss_limit_label = rss_limit.map_or_else(|| "none".to_owned(), |limit| limit.to_string());
+    println!("metal_worker_limits rss_limit_bytes={rss_limit_label} scratch_limit_bytes={scratch} timeout_seconds={timeout} sample_ms=500 enforcement=watchdog swap_enforcement=false initial_rss_bytes={rss} initial_footprint_bytes={footprint}");
     let stop = Arc::new(AtomicBool::new(false));
     let signal = stop.clone();
     let thread = std::thread::Builder::new().name("metal-memory-watchdog".into()).spawn(move || {
@@ -263,7 +286,7 @@ fn require_worker_limits() -> Result<MetalWatchdog, Error> {
             match process_memory() {
                 Ok((rss, footprint)) => {
                     peak_rss = peak_rss.max(rss); peak_footprint = peak_footprint.max(footprint);
-                    if rss > rss_limit || started.elapsed().as_secs() >= timeout {
+                    if rss_limit.is_some_and(|limit| rss > limit) || started.elapsed().as_secs() >= timeout {
                         eprintln!("FAILED: Metal watchdog limit exceeded rss_bytes={rss} footprint_bytes={footprint} elapsed_seconds={}", started.elapsed().as_secs());
                         std::process::exit(124);
                     }
@@ -414,6 +437,29 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(feature = "gpu-metal")]
+    #[test]
+    fn metal_rss_policy_is_uncapped_and_accepts_budgets_above_44_gib() {
+        assert_eq!(
+            metal_rss_limit(include_str!("apple_benchmark_memory.json")).unwrap(),
+            None
+        );
+        let policy = |value| {
+            format!(
+                r#"{{"schema":"lattica-apple-benchmark-memory-v1","worker_rss_limit_bytes":{value}}}"#
+            )
+        };
+        assert_eq!(
+            metal_rss_limit(&policy((55 * GIB).to_string())).unwrap(),
+            Some(55 * GIB)
+        );
+        for bad in ["0", "-1", "true", "\"44\"", "18446744073709551616"] {
+            assert!(metal_rss_limit(&policy(bad.to_owned())).is_err());
+        }
+        assert!(metal_rss_limit("{}").is_err());
+        assert!(metal_rss_limit(r#"{"schema":"lattica-apple-benchmark-memory-v1"}"#).is_err());
+    }
 
     #[test]
     fn parallel_readback_policy_requires_explicit_resident_selection() {

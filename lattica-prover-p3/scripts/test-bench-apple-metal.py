@@ -14,6 +14,18 @@ B = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(B)
 
 class Experiment(unittest.TestCase):
+    def test_rss_policy_has_no_fixed_cap_and_accepts_larger_explicit_budgets(self):
+        self.assertIsNone(B.WORKER_RSS_LIMIT_BYTES)
+        self.assertIsNone(B.AGGREGATE_RSS_LIMIT_BYTES)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "policy.json"
+            policy = dict(B.MEMORY_POLICY, worker_rss_limit_bytes=55 * B.GIB)
+            path.write_text(json.dumps(policy))
+            self.assertEqual(B.load_memory_policy(path)["worker_rss_limit_bytes"], 55 * B.GIB)
+            for bad in (0, -1, True, "44", 1 << 64):
+                path.write_text(json.dumps(dict(policy, worker_rss_limit_bytes=bad)))
+                with self.assertRaises(ValueError): B.load_memory_policy(path)
+
     def test_cli_defaults_to_screening_and_requires_full_matrix_opt_in(self):
         from unittest.mock import patch
         required = ["bench", "--out", "/tmp/unused", "--fixture", "/tmp/unused", "--linux", "/tmp/unused", "--qualification", "/tmp/unused"]
@@ -77,11 +89,12 @@ class Experiment(unittest.TestCase):
 
     def test_inherited_experiment_flags_never_leak_into_control_or_auditor(self):
         from unittest.mock import patch
-        with patch.dict("os.environ", {"LATTICA_V2_GPU_COMPACT_PROVER_DATA":"1", "LATTICA_V2_METAL_DEFER_TIMING":"1"}):
+        with patch.dict("os.environ", {"LATTICA_V2_GPU_COMPACT_PROVER_DATA":"1", "LATTICA_V2_METAL_DEFER_TIMING":"1", "LATTICA_V2_METAL_RSS_LIMIT_BYTES":str(44*B.GIB)}):
             config = B.arm("shared",18,"quotient-compact-deferred")
             cpu = B.environment(config, Path("/tmp/example"), False)
             control = B.environment(B.arm("shared",18,"quotient"), Path("/tmp/example"), True)
             for env in (cpu, control):
+                self.assertNotIn("LATTICA_V2_METAL_RSS_LIMIT_BYTES",env)
                 self.assertEqual(env["LATTICA_V2_GPU_COMPACT_PROVER_DATA"], "0")
                 self.assertEqual(env["LATTICA_V2_METAL_DEFER_TIMING"], "0")
 
