@@ -109,6 +109,7 @@ pub(crate) fn reconstruct(
                     1,
                     false,
                     false,
+                    false,
                 )?;
             }
             let in_a = engine.lde_ntt(
@@ -121,6 +122,7 @@ pub(crate) fn reconstruct(
                 1,
                 true,
                 true,
+                false,
             )?;
             let output = if in_a { &a.buffer } else { &b.buffer };
             let mut words = vec![0u64; width];

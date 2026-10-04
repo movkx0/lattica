@@ -250,7 +250,7 @@ def observed_throughput(runs, windows):
 
 def summary(run):
     fields = ("run_id", "label", "kind", "status", "track", "platform", "measurement_scope",
-              "workload", "timing", "verification", "revision", "limitations")
+              "workload", "timing", "verification", "revision", "limitations", "configuration")
     out = {k: run[k] for k in fields}
     out.update(proof_count=len(run["proofs"]), timeline_events=run["measurements"].get("timeline_events", 0),
                resource_samples=run["measurements"].get("resource_samples", 0),

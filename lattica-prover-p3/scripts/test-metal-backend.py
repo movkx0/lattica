@@ -11,6 +11,8 @@ import subprocess
 import time
 
 TESTS = [
+    "metal_deferred_timing_bounds_events_and_preserves_intervals",
+    "pending_command_retention_is_bounded_and_fully_accounted",
     "chunked_transfers_preserve_individual_gpu_intervals",
     "arithmetic_matches_full_width_integer_oracle_in_both_memory_modes",
     "gpu_resident_lde_columns_caps_and_paths_match_cpu",
@@ -48,6 +50,7 @@ def main():
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--filter", default="")
+    parser.add_argument("--timing", choices=("immediate", "deferred"), default="immediate")
     args = parser.parse_args()
     binary = args.binary.resolve()
     args.out.mkdir(parents=True, exist_ok=False)
@@ -62,11 +65,14 @@ def main():
         if len(selected) != 1:
             raise RuntimeError("missing/ambiguous test: " + suffix)
         selected_tests.append((suffix, selected[0]))
-    report = {"status": "RUNNING", "binary": str(binary),
+    crate = Path(__file__).resolve().parents[1]
+    proof_files = [crate/"Cargo.toml", crate/"Cargo.lock", crate/"build.rs", *sorted((crate/"src").rglob("*"))]
+    proof_hashes = {str(p.relative_to(crate)):hashlib.sha256(p.read_bytes()).hexdigest() for p in proof_files if p.is_file() and p.name != ".DS_Store"}
+    report = {"proof_source_sha256":proof_hashes, "status": "RUNNING", "binary": str(binary),
               "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
               "git_base": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
               "controller_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-              "tests": [], "rss_limit_bytes": 3 << 30, "test_timeout_seconds": 180}
+              "timing": args.timing, "tests": [], "rss_limit_bytes": 3 << 30, "test_timeout_seconds": 180}
     def save():
         temp = args.out / "result.json.new"
         temp.write_text(json.dumps(report, indent=2) + "\n")
@@ -76,6 +82,7 @@ def main():
         for suffix, selected in selected_tests:
             path = args.out / (mode + "-" + suffix + ".log")
             env = {**os.environ, "RAYON_NUM_THREADS": "4", "LATTICA_V2_METAL_MEMORY": mode,
+                   "LATTICA_V2_METAL_DEFER_TIMING": str(int(args.timing == "deferred")),
                    "LATTICA_V2_GPU_RETAIN_TREES": "1", "LATTICA_V2_GPU_PIPELINE": "0",
                    "LATTICA_SPILL_BACKING": "memory", "LATTICA_SPILL_MAX_BYTES": str(1 << 30),
                    "LATTICA_V2_GPU_OPENING_COMPACT": "1" if suffix in {

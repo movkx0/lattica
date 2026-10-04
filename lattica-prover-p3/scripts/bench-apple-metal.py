@@ -23,7 +23,7 @@ import time
 CRATE = Path(__file__).resolve().parents[1]
 GIB = 1 << 30
 FIXTURE_NAMES = ["height", "key.1", "key.2", "key.3", *[f"wallet.{i}" for i in range(8)]]
-GPU_KEYS = ["HASH", "RETAIN_TREES", "PIPELINE", "RESIDENT_LDE", "OPENINGS", "OPENING_COMPACT", "OPENING_PINNED", "PARALLEL_READBACK", "QUOTIENT_LDE"]
+GPU_KEYS = ["HASH", "RETAIN_TREES", "PIPELINE", "RESIDENT_LDE", "OPENINGS", "OPENING_COMPACT", "OPENING_PINNED", "PARALLEL_READBACK", "QUOTIENT_LDE", "COMPACT_PROVER_DATA"]
 
 def digest(path):
     with Path(path).open("rb") as f:
@@ -31,24 +31,34 @@ def digest(path):
 
 def arm(backend, threads, level="baseline", repeat=1, phase="measured"):
     return {"backend": backend, "threads": threads, "level": level,
-            "readback": int(level != "baseline"), "fusion": int(level in ("fusion", "quotient")),
-            "quotient": int(level == "quotient"), "repeat": repeat, "phase": phase}
+            "readback": int(level != "baseline"), "fusion": int(level == "fusion" or level.startswith("quotient")),
+            "quotient": int(level.startswith("quotient")),
+            "compact": int("compact" in level), "defer_timing": int("deferred" in level), "repeat": repeat, "phase": phase}
 
-def schedule(threads=(8, 16, 18, 24), *, baseline_only=False, pipeline_threads=(24,), pilots=True, pilot_level="baseline"):
+def schedule(threads=(8, 16, 18, 24), *, baseline_only=False, pipeline_threads=(24,), pilots=True, pilot_level="baseline", optimizations=False):
     if not threads or len(set(threads)) != len(threads) or any(t not in (8, 16, 18, 24) for t in threads):
         raise ValueError("thread settings must be distinct selections from 8, 16, 18, 24")
     if len(set(pipeline_threads)) != len(pipeline_threads) or any(t not in (8, 16, 18, 24) for t in pipeline_threads):
         raise ValueError("invalid pipeline thread settings")
-    if pilot_level not in ("baseline", "quotient"):
+    if pilot_level not in ("baseline", "quotient", "quotient-compact-deferred"):
         raise ValueError("pilot level must be baseline or quotient")
     largest_thread_count = max((*threads, *(() if baseline_only else pipeline_threads)))
     pilot_trials = [arm(mode, largest_thread_count, level=pilot_level, phase="pilot") for mode in ("shared", "copy")] if pilots else []
+    if optimizations:
+        if baseline_only:
+            raise ValueError("optimization matrix requires pipeline trials")
+        pilot_trials = [arm(mode, count, level="quotient-compact-deferred", phase="pilot")
+                        for count in sorted(set(threads) | set(pipeline_threads)) for mode in ("shared", "copy")] if pilots else []
     base = [(mode, count) for count in threads for mode in ("cpu", "shared", "copy")]
     measured = []
     for repeat in (1, 2, 3):
         order = base[::-1] if repeat == 2 else base
         measured += [arm(mode, threads, repeat=repeat) for mode, threads in order]
     extra = [] if baseline_only else [(mode, count, level) for count in pipeline_threads for level in ("readback", "fusion", "quotient") for mode in ("shared", "copy")]
+    if optimizations:
+        extra += [(mode, count, level) for count in pipeline_threads
+                  for level in ("quotient-deferred", "quotient-compact", "quotient-compact-deferred")
+                  for mode in ("shared", "copy")]
     for repeat in (1, 2, 3):
         order = extra[::-1] if repeat == 2 else extra
         measured += [arm(mode, count, level, repeat) for mode, count, level in order]
@@ -72,6 +82,7 @@ def environment(config, scratch, gpu):
     env = os.environ.copy()
     env.update({"RAYON_NUM_THREADS": str(config["threads"]), "LATTICA_FFT_TRACE": "1",
                 "LATTICA_PROFILE": "1", "LATTICA_PROFILE_TIMELINE": "0",
+                "LATTICA_BENCHMARK_REPORT_DEFER": "1", "LATTICA_V2_METAL_DEFER_TIMING": "0",
                 "LATTICA_SPILL_DIR": str(scratch), "LATTICA_SPILL_BACKING": "memory",
                 "LATTICA_SPILL_MAX_BYTES": str(34 * GIB), "LATTICA_V2_QUOTIENT_FUSION": "0",
                 "LATTICA_V2_GPU_DEVICE": "0" if gpu else "4294967295",
@@ -86,6 +97,8 @@ def environment(config, scratch, gpu):
         env["LATTICA_V2_GPU_PARALLEL_READBACK"] = str(config["readback"])
         env["LATTICA_V2_GPU_QUOTIENT_LDE"] = str(config["quotient"])
         env["LATTICA_V2_QUOTIENT_FUSION"] = str(config["fusion"])
+        env["LATTICA_V2_GPU_COMPACT_PROVER_DATA"] = str(config.get("compact", 0))
+        env["LATTICA_V2_METAL_DEFER_TIMING"] = str(config.get("defer_timing", 0))
     return env
 
 def observations():
@@ -105,15 +118,19 @@ def main():
     parser.add_argument("--linux", type=Path, required=True)
     parser.add_argument("--qualification", type=Path, required=True)
     parser.add_argument("--pilots-only", action="store_true")
-    parser.add_argument("--pilot-level", choices=("baseline", "quotient"), default="baseline", help="qualify the largest enabled pipeline before measured trials")
+    parser.add_argument("--pilot-level", choices=("baseline", "quotient", "quotient-compact-deferred"), default="baseline", help="qualify the largest enabled pipeline before measured trials")
     parser.add_argument("--threads", nargs="+", type=int, choices=(8, 16, 18, 24), default=(8, 16, 18, 24))
     parser.add_argument("--baseline-only", action="store_true")
     parser.add_argument("--pipeline-threads", nargs="+", type=int, choices=(8, 16, 18, 24), default=(24,))
     parser.add_argument("--reuse-pilots-from", type=Path, help="completed reference result.json; reuse its frozen binaries and validated pilots")
+    parser.add_argument("--optimizations", action="store_true", help="include compact/deferred factorial arms and pilots at every thread count")
+    parser.add_argument("--build-metadata", type=Path, default=CRATE / "target/metal-build-metadata.json")
     args = parser.parse_args()
+    if args.optimizations and args.reuse_pilots_from:
+        parser.error("optimization campaign requires fresh pilots at every selected thread count")
     if args.pilots_only and args.reuse_pilots_from:
         parser.error("--pilots-only cannot reuse pilots")
-    selected_schedule = schedule(args.threads, baseline_only=args.baseline_only, pipeline_threads=args.pipeline_threads, pilots=not args.reuse_pilots_from, pilot_level=args.pilot_level)
+    selected_schedule = schedule(args.threads, baseline_only=args.baseline_only, pipeline_threads=args.pipeline_threads, pilots=not args.reuse_pilots_from, pilot_level=args.pilot_level, optimizations=args.optimizations)
     if platform.system() != "Darwin" or platform.machine() != "arm64":
         parser.error("requires Apple Silicon macOS")
     os.umask(0o077)
@@ -130,14 +147,28 @@ def main():
     qualification = json.loads(args.qualification.read_text())
     if qualification["status"] != "PASS" or len(qualification["tests"]) < 54 or not all(t["passed"] for t in qualification["tests"]):
         raise RuntimeError("hardware qualification must pass first")
+    if args.optimizations:
+        from collections import Counter
+        coverage = Counter((t.get("timing"),t["memory"]) for t in qualification["tests"])
+        if any(coverage[t,m] < 32 for t in ("immediate","deferred") for m in ("shared","copy")):
+            raise RuntimeError("optimization matrix requires full Metal qualification in both memory and timing modes")
+        if not qualification.get("proof_source_sha256") or any(digest(CRATE/name) != sha for name,sha in qualification["proof_source_sha256"].items()):
+            raise RuntimeError("hardware qualification proof sources do not match the campaign")
     prior = json.loads(args.reuse_pilots_from.read_text()) if args.reuse_pilots_from else None
-    build = prior["build"] if prior is not None else json.loads((CRATE / "target/metal-build-metadata.json").read_text())
+    build = prior["build"] if prior is not None else json.loads(args.build_metadata.read_text())
+    if prior is None:
+        if not build.get("source_hashes"):
+            raise RuntimeError("rebuild with source provenance using build-apple-metal.py")
+        if any(digest(CRATE / name) != sha for name, sha in build["source_hashes"].items()):
+            raise RuntimeError("proof sources differ from the compiled binaries")
     linux = json.loads(args.linux.read_text())
     external = linux["benchmark_plan"]["config"]["external"]
     originals = {"cpu": CRATE / "target/cpu/release/block-v2-grouped-probe",
                  "audit": CRATE / "target/cpu/release/block-v2-grouped-artifact-audit",
                  "publics": CRATE / "target/cpu/release/block-v2-grouped-publics",
                  "metal": CRATE / "target/release/block-v2-metal-grouped-probe"}
+    if prior is None:
+        originals = {role: Path(build["binaries"][source.name]["path"]) for role, source in originals.items()}
     if prior is not None:
         originals = {role: args.reuse_pilots_from.parent / "bin" / source.name for role, source in originals.items()}
     (out / "bin").mkdir()
@@ -161,7 +192,7 @@ def main():
     for name in FIXTURE_NAMES[:4]:
         if digest(fixture / name) != linux["benchmark_plan"]["source_artifacts"][name]["sha256"]:
             raise RuntimeError("Linux registry pin mismatch: " + name)
-    sources = [CRATE / "Cargo.toml", CRATE / "Cargo.lock", *sorted((CRATE / "src").rglob("*")), Path(__file__), CRATE / "scripts/generate-metal-kernels.py", CRATE / "scripts/test-metal-backend.py", CRATE / "scripts/build-apple-metal.py"]
+    sources = [CRATE / "Cargo.toml", CRATE / "Cargo.lock", CRATE / "build.rs", *sorted((CRATE / "src").rglob("*")), Path(__file__), CRATE / "scripts/generate-metal-kernels.py", CRATE / "scripts/test-metal-backend.py", CRATE / "scripts/build-apple-metal.py", CRATE / "scripts/apple_benchmark_export.py", CRATE / "scripts/export-apple-benchmarks.py", *sorted((CRATE / "scripts/benchmark_report").glob("*.py"))]
     sources = [p for p in sources if p.is_file() and p.name != ".DS_Store"]
     source_hashes = {str(p.relative_to(CRATE)): digest(p) for p in sources}
     with tarfile.open(out / "source.tar.gz", "w:gz") as archive:
@@ -176,7 +207,7 @@ def main():
               "controller_sha256": digest(out / "controller.py"),
               "binary_sha256": {role: digest(path) for role, path in binaries.items()},
               "fixture_sha256": {name: digest(fixture / name) for name in FIXTURE_NAMES},
-              "external": external, "schedule": selected_schedule[:2] if args.pilots_only else selected_schedule,
+              "external": external, "schedule": [c for c in selected_schedule if c["phase"] == "pilot"] if args.pilots_only else selected_schedule,
               "timing_boundary": "sum of wrapper and merge worker timers; shader initialization included; preparation/auditing excluded",
               "memory_policy": "34 GiB mapped scratch, 8 GiB Metal managed buffers, sampled 44 GiB worker RSS, 7200 seconds per stage; macOS swap is observed, not prohibited",
               "observations": [observations()], "stages": [], "trials": []}
@@ -213,8 +244,11 @@ def main():
                  "configuration": config, "gpu": gpu}
         report["stages"].append(entry); save()
         print("START", label, flush=True)
+        entry["started_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         start = heartbeat = time.monotonic(); peak = 0; stopped = None; reason = None
-        with path.open("w") as log:
+        resource_path = out / (label + "-resources.jsonl")
+        entry["resource_log"] = str(resource_path)
+        with path.open("w") as log, resource_path.open("w") as resources:
             child = subprocess.Popen(command, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
             active_child[0] = child
             while True:
@@ -223,7 +257,9 @@ def main():
                     child.returncode = os.waitstatus_to_exitcode(status); active_child[0] = None; break
                 sample = subprocess.run(["/bin/ps", "-o", "rss=", "-p", str(child.pid)], capture_output=True, text=True)
                 if sample.returncode == 0 and sample.stdout.strip():
-                    peak = max(peak, int(sample.stdout) * 1024)
+                    rss = int(sample.stdout) * 1024
+                    peak = max(peak, rss)
+                    resources.write(json.dumps({"utc_ns":str(time.time_ns()), "rss_bytes":rss, "pid":child.pid}) + "\n")
                     if peak > 44 * GIB: reason = "44 GiB RSS limit exceeded"
                 elif sample.stderr.strip(): reason = "RSS monitoring unavailable: " + sample.stderr.strip()
                 if time.monotonic() - start > 7200: reason = "two-hour stage timeout"
@@ -242,7 +278,7 @@ def main():
                       "exit_code": child.returncode, "stop_reason": reason, "wall_seconds": time.monotonic()-start,
                       "reported_seconds": int(timers[0])/1000 if len(timers)==1 else None,
                       "cpu_seconds": usage.ru_utime+usage.ru_stime, "maximum_resident_bytes": usage.ru_maxrss,
-                      "sampled_peak_rss_bytes": peak, "pageins": usage.ru_majflt, "log_sha256": digest(path),
+                      "sampled_peak_rss_bytes": peak, "pageins": usage.ru_majflt, "log_sha256": digest(path), "resource_sha256": digest(resource_path),
                       "spill_peak_bytes": max(map(int,re.findall(r"spill_peak_bytes=(\d+)",text)),default=0),
                       "nodes": [{"name": n,"resumed": r,"seconds":int(ms)/1000} for n,r,ms in nodes]})
         if gpu:
@@ -256,6 +292,8 @@ def main():
                     entry["status"] = "FAIL"; entry["stop_reason"] = "Metal memory mode mismatch"
                 elif (int(records[-1]["transfer_blit_bytes"]) > 0) != (config["backend"] == "copy"):
                     entry["status"] = "FAIL"; entry["stop_reason"] = "explicit transfer work mismatch"
+        save()
+        entry["completed_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         save()
         print(entry["status"], label, round(entry["wall_seconds"],3), flush=True)
         if entry["status"] != "PASS": raise RuntimeError(label + ": " + str(entry["stop_reason"] or text[-1800:]))
@@ -312,6 +350,13 @@ def main():
     finally:
         report["observations"].append(observations()); save()
     print("COMPLETE",out/"result.json",flush=True)
+    # Export after measurement and cleanup; a report failure must not invalidate proofs.
+    try:
+        from apple_benchmark_export import export_campaign
+        exported = export_campaign(out / "result.json", out / "portable")
+        print("PORTABLE", len(exported), out / "portable", flush=True)
+    except Exception as error:
+        print("REPORT_EXPORT_FAILED", str(error), "retry with export-apple-benchmarks.py", flush=True)
 
 if __name__ == "__main__":
     main()

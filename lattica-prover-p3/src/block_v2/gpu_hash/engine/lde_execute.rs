@@ -277,6 +277,7 @@ impl Engine {
         post_b: u64,
         canonical: bool,
         bit_reversed: bool,
+        opening: bool,
     ) -> Result<bool, String> {
         let groups = ntt_groups(height, width)?;
         let log_h = height.trailing_zeros() as usize;
@@ -352,7 +353,9 @@ impl Engine {
                 }
                 return Err("injected error after resident NTT enqueue".into());
             }
-            self.stats.lde_transform_ns += self.timeline.record("lde_ntt", &event)?;
+            self.stats.lde_transform_ns += self
+                .timeline
+                .record(if opening { "opening_ntt" } else { "lde_ntt" }, &event)?;
         }
         Ok(in_dst)
     }
@@ -560,6 +563,7 @@ impl Engine {
                     input.shift.as_canonical_u64(),
                     false,
                     false,
+                    false,
                 )?;
                 if let Some(masks) = masks {
                     let mask = &masks[matrix_index];
@@ -608,6 +612,7 @@ impl Engine {
                     1,
                     true,
                     true,
+                    false,
                 )?;
                 let transformed = if in_a {
                     &buffers.a.buffer
@@ -821,7 +826,7 @@ mod tests {
             .unwrap()
             .lock()
             .unwrap()
-            .as_ref()
+            .as_mut()
             .unwrap()
             .snapshot();
         let output = coset_lde_commit(inputs, cap_height, 32 * 1024 * 1024).unwrap();
@@ -830,7 +835,7 @@ mod tests {
             .unwrap()
             .lock()
             .unwrap()
-            .as_ref()
+            .as_mut()
             .unwrap()
             .snapshot();
         assert_eq!(
@@ -1011,7 +1016,7 @@ mod tests {
             .unwrap()
             .lock()
             .unwrap()
-            .as_ref()
+            .as_mut()
             .unwrap()
             .snapshot();
         assert!(coset_lde_commit(&inputs, 6, 8).is_err());
@@ -1020,7 +1025,7 @@ mod tests {
             .unwrap()
             .lock()
             .unwrap()
-            .as_ref()
+            .as_mut()
             .unwrap()
             .snapshot();
         assert_eq!(after.managed_live_bytes, before.managed_live_bytes);

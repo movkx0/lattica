@@ -459,6 +459,24 @@ struct DeviceTimeline {
     enabled: bool,
     events: Vec<DeviceInterval>,
     dropped: u64,
+    #[cfg(feature = "gpu-metal")]
+    deferred: DeferredTiming,
+}
+
+// Timestamp collection is optional; synchronization required for host access
+// remains in the transport. Both the transport and this recorder bound their
+// retained command buffers independently.
+#[cfg(feature = "gpu-metal")]
+const MAX_PENDING_TIMINGS: usize = 256;
+#[cfg(feature = "gpu-metal")]
+#[derive(Default)]
+struct DeferredTiming {
+    enabled: bool,
+    pending: Vec<(&'static str, Event)>,
+    totals: Snapshot,
+    retained_copy_ns: u128,
+    retained_query_ns: u128,
+    peak: usize,
 }
 impl DeviceTimeline {
     fn record(&mut self, kind: &'static str, event: &Event) -> Result<u128, String> {
@@ -469,6 +487,14 @@ impl DeviceTimeline {
         }
         #[cfg(feature = "gpu-metal")]
         {
+            if self.deferred.enabled {
+                if self.deferred.pending.len() == MAX_PENDING_TIMINGS {
+                    self.resolve_pending()?;
+                }
+                self.deferred.pending.push((kind, event.clone()));
+                self.deferred.peak = self.deferred.peak.max(self.deferred.pending.len());
+                return Ok(0);
+            }
             // A bounded transfer may issue several blits. Preserve their separate
             // intervals so CPU copies and submission gaps are never GPU time.
             let mut duration = 0;
@@ -477,6 +503,44 @@ impl DeviceTimeline {
             }
             Ok(duration)
         }
+    }
+    #[cfg(feature = "gpu-metal")]
+    fn resolve_pending(&mut self) -> Result<(), String> {
+        for (kind, event) in std::mem::take(&mut self.deferred.pending) {
+            let mut ns = 0;
+            for (start, end) in event.device_intervals()? {
+                ns += self.record_interval(kind, start, end)?;
+            }
+            let s = &mut self.deferred.totals;
+            match kind {
+                "upload" | "lde_upload" => s.upload_device_ns += ns,
+                "download" | "lde_download" => s.download_device_ns += ns,
+                "leaf" => s.leaf_kernel_ns += ns,
+                "compress" => s.compress_kernel_ns += ns,
+                "lde_ntt" | "opening_ntt" => {
+                    s.lde_transform_ns += ns;
+                    if kind == "opening_ntt" {
+                        s.opening_compact_ntt_ns += ns;
+                    }
+                }
+                "lde_absorb" | "lde_leaf_finalize" => {
+                    s.lde_sponge_ns += ns;
+                    s.leaf_kernel_ns += ns;
+                }
+                "quotient_mask" => s.quotient_mask_ns += ns,
+                "opening_upload" => s.opening_upload_device_ns += ns,
+                "opening_download" => s.opening_download_device_ns += ns,
+                "opening_reduce" | "opening_compact" => s.opening_kernel_ns += ns,
+                "opening_compact_compress" => {
+                    s.opening_kernel_ns += ns;
+                    s.opening_compact_compress_ns += ns;
+                }
+                "retain_copy" => self.deferred.retained_copy_ns += ns,
+                "path_gather" => self.deferred.retained_query_ns += ns,
+                _ => return Err(format!("unaccounted deferred Metal timing kind: {kind}")),
+            }
+        }
+        Ok(())
     }
     fn record_interval(
         &mut self,
@@ -886,6 +950,11 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
             enabled: timeline_enabled,
             events: Vec::new(),
             dropped: 0,
+            #[cfg(feature = "gpu-metal")]
+            deferred: DeferredTiming {
+                enabled: switch("LATTICA_V2_METAL_DEFER_TIMING")?,
+                ..Default::default()
+            },
         },
         limits,
         max_alloc,
@@ -1650,7 +1719,31 @@ impl Engine {
         self.stats.hashing_wall_ns += started.elapsed().as_nanos();
         Ok(layers)
     }
-    fn snapshot(&self) -> Snapshot {
+    fn resolve_timing(&mut self) -> Result<(), String> {
+        #[cfg(feature = "gpu-metal")]
+        {
+            self.timeline.resolve_pending()?;
+            let d = &mut self.timeline.deferred;
+            let s = std::mem::take(&mut d.totals);
+            self.stats.upload_device_ns += s.upload_device_ns;
+            self.stats.download_device_ns += s.download_device_ns;
+            self.stats.leaf_kernel_ns += s.leaf_kernel_ns;
+            self.stats.compress_kernel_ns += s.compress_kernel_ns;
+            self.stats.lde_transform_ns += s.lde_transform_ns;
+            self.stats.lde_sponge_ns += s.lde_sponge_ns;
+            self.stats.quotient_mask_ns += s.quotient_mask_ns;
+            self.stats.opening_upload_device_ns += s.opening_upload_device_ns;
+            self.stats.opening_download_device_ns += s.opening_download_device_ns;
+            self.stats.opening_kernel_ns += s.opening_kernel_ns;
+            self.stats.opening_compact_compress_ns += s.opening_compact_compress_ns;
+            self.stats.opening_compact_ntt_ns += s.opening_compact_ntt_ns;
+            self.retained_copy_device_ns += std::mem::take(&mut d.retained_copy_ns);
+            self.retained_query_device_ns += std::mem::take(&mut d.retained_query_ns);
+        }
+        Ok(())
+    }
+    fn snapshot(&mut self) -> Snapshot {
+        self.resolve_timing().expect("GPU timing collection failed");
         let a = self.accounting.lock().unwrap();
         Snapshot {
             managed_live_bytes: a.live,
@@ -1701,6 +1794,11 @@ pub fn report(label: &str) -> Option<Snapshot> {
     #[cfg(feature = "gpu-metal")]
     e.pq.report();
     let s = e.snapshot();
+    #[cfg(feature = "gpu-metal")]
+    println!(
+        "metal_timing deferred={} pending_peak={} pending_limit={}",
+        e.timeline.deferred.enabled, e.timeline.deferred.peak, MAX_PENDING_TIMINGS
+    );
     {
         let a = e.accounting.lock().unwrap();
         println!(
@@ -1796,25 +1894,25 @@ pub fn report(label: &str) -> Option<Snapshot> {
     if e.timeline.enabled {
         println!(
             "gpu_timeline_checkpoint label={label:?} events={} dropped={} clock={}",
+            e.timeline.events.len(),
+            e.timeline.dropped,
             if cfg!(feature = "gpu-metal") {
                 "metal_device"
             } else {
                 "opencl_device"
-            },
-            e.timeline.events.len(),
-            e.timeline.dropped
+            }
         );
         for event in e.timeline.events.drain(..) {
             println!(
                 "gpu_timeline_interval label={label:?} kind={} start_ns={} end_ns={} clock={}",
+                event.kind,
+                event.start,
+                event.end,
                 if cfg!(feature = "gpu-metal") {
                     "metal_device"
                 } else {
                     "opencl_device"
-                },
-                event.kind,
-                event.start,
-                event.end
+                }
             );
         }
         e.timeline.dropped = 0;
@@ -1832,7 +1930,8 @@ pub fn shutdown() -> Result<(), String> {
         return Ok(());
     };
     let mut slot = slot.lock().map_err(|_| "GPU engine poisoned")?;
-    if let Some(engine) = slot.as_ref() {
+    if let Some(engine) = slot.as_mut() {
+        engine.resolve_timing()?;
         if Arc::strong_count(&engine._job_lease) != 1 {
             return Err("GPU shutdown refused: retained Merkle trees are still live".into());
         }
@@ -1890,6 +1989,64 @@ mod tests {
         // Release the mutex before asserting: a failed assertion must not
         // poison accounting and trigger a second panic while leases drop.
         *accounting.lock().unwrap()
+    }
+
+    #[test]
+    #[cfg(feature = "gpu-metal")]
+    #[ignore = "requires Apple GPU; run serially"]
+    fn metal_deferred_timing_bounds_events_and_preserves_intervals() {
+        let pq = ProQue::new(0, 16 * MIB).unwrap();
+        let mut timeline = DeviceTimeline {
+            enabled: true,
+            events: Vec::new(),
+            dropped: 0,
+            deferred: DeferredTiming {
+                enabled: true,
+                ..Default::default()
+            },
+        };
+        let gate = Event::user(pq.context()).unwrap();
+        // Immediate collection would fail on this unsignaled event.
+        assert_eq!(timeline.record("leaf", &gate).unwrap(), 0);
+        gate.set_complete().unwrap();
+        for _ in 0..MAX_PENDING_TIMINGS * 3 {
+            timeline.record("upload", &Event::Host).unwrap();
+            assert!(timeline.deferred.pending.len() <= MAX_PENDING_TIMINGS);
+        }
+        timeline.resolve_pending().unwrap();
+        assert_eq!(timeline.deferred.peak, MAX_PENDING_TIMINGS);
+        assert_eq!(timeline.deferred.totals.upload_device_ns, 0);
+        let source = Buffer::<u64>::builder()
+            .queue(pq.queue().clone())
+            .flags(compute::flags::MEM_READ_WRITE)
+            .len(1024)
+            .build()
+            .unwrap();
+        let mut event = Event::empty();
+        source.cmd().fill(0, None).enew(&mut event).enq().unwrap();
+        timeline.record("leaf", &event).unwrap();
+        // Host read is a required fence independently of the timing recorder.
+        let mut output = vec![1; 1024];
+        source.read(&mut output).enq().unwrap();
+        assert!(output.iter().all(|&v| v == 0));
+        let expected = event.device_intervals().unwrap();
+        timeline.resolve_pending().unwrap();
+        assert_eq!(
+            timeline.deferred.totals.leaf_kernel_ns,
+            expected
+                .iter()
+                .map(|(a, b)| u128::from(b - a))
+                .sum::<u128>()
+        );
+        assert_eq!(
+            timeline
+                .events
+                .iter()
+                .map(|e| (e.start, e.end))
+                .collect::<Vec<_>>(),
+            expected
+        );
+        assert!(timeline.deferred.pending.is_empty());
     }
 
     // Keep assertion failures from leaving an engine detached from the checked
@@ -2516,6 +2673,8 @@ mod tests {
             enabled: true,
             events: Vec::new(),
             dropped: 0,
+            #[cfg(feature = "gpu-metal")]
+            deferred: DeferredTiming::default(),
         };
         for i in 0..MAX_DEVICE_EVENTS + 2 {
             assert_eq!(
@@ -2715,7 +2874,8 @@ impl Engine {
     /// Measure process VRAM and live managed allocations at the same drained
     /// checkpoint. Device reserved memory and unrelated process peaks are not
     /// used to estimate context overhead.
-    pub(super) fn context_checkpoint(&self, label: &str) -> Result<(), String> {
+    pub(super) fn context_checkpoint(&mut self, label: &str) -> Result<(), String> {
+        self.resolve_timing()?;
         if std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_none() {
             return Ok(());
         }

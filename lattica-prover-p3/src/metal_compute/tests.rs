@@ -158,3 +158,19 @@ fn arithmetic_matches_full_width_integer_oracle_in_both_memory_modes() {
     }
     std::env::remove_var("LATTICA_V2_METAL_MEMORY");
 }
+
+#[test]
+#[ignore = "requires Apple GPU; run serially"]
+fn pending_command_retention_is_bounded_and_fully_accounted() {
+    let pq = ProQue::new(0, 16 << 20).unwrap();
+    for _ in 0..MAX_PENDING_COMMANDS * 3 + 1 {
+        pq.queue().enqueue_marker(None).unwrap();
+        assert!(pq.queue.0.pending.lock().unwrap().len() <= MAX_PENDING_COMMANDS);
+    }
+    pq.queue().finish().unwrap();
+    assert!(pq.queue.0.pending.lock().unwrap().is_empty());
+    assert_eq!(
+        pq.queue.0.budget.counters.lock().unwrap().blits,
+        (MAX_PENDING_COMMANDS * 3 + 1) as u64
+    );
+}

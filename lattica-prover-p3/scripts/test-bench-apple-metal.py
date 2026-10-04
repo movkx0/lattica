@@ -11,6 +11,31 @@ B = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(B)
 
 class Experiment(unittest.TestCase):
+    def test_optimization_campaign_has_90_trials_and_four_largest_pipeline_pilots(self):
+        trials = B.schedule((18,24), pipeline_threads=(18,24), optimizations=True)
+        pilots = [c for c in trials if c["phase"] == "pilot"]
+        measured = [c for c in trials if c["phase"] == "measured"]
+        self.assertEqual(len(pilots), 4)
+        self.assertEqual({(c["backend"], c["threads"]) for c in pilots}, {(b,t) for b in ("shared","copy") for t in (18,24)})
+        self.assertTrue(all(c["compact"] and c["defer_timing"] and c["quotient"] for c in pilots))
+        self.assertEqual(len(measured), 90)
+        counts = collections.Counter((c["backend"],c["threads"],c["level"]) for c in measured)
+        self.assertTrue(all(n == 3 for n in counts.values()))
+        for config in trials:
+            env = B.environment(config, Path("/tmp/example"), config["backend"] != "cpu")
+            self.assertEqual(env["LATTICA_V2_GPU_COMPACT_PROVER_DATA"], str(config["compact"]))
+            self.assertEqual(env["LATTICA_V2_METAL_DEFER_TIMING"], str(config["defer_timing"]))
+
+    def test_inherited_experiment_flags_never_leak_into_control_or_auditor(self):
+        from unittest.mock import patch
+        with patch.dict("os.environ", {"LATTICA_V2_GPU_COMPACT_PROVER_DATA":"1", "LATTICA_V2_METAL_DEFER_TIMING":"1"}):
+            config = B.arm("shared",18,"quotient-compact-deferred")
+            cpu = B.environment(config, Path("/tmp/example"), False)
+            control = B.environment(B.arm("shared",18,"quotient"), Path("/tmp/example"), True)
+            for env in (cpu, control):
+                self.assertEqual(env["LATTICA_V2_GPU_COMPACT_PROVER_DATA"], "0")
+                self.assertEqual(env["LATTICA_V2_METAL_DEFER_TIMING"], "0")
+
     def test_schedule_has_45_balanced_measured_trials_after_two_pilots(self):
         schedule = B.schedule((8, 16, 24))
         self.assertEqual([a["phase"] for a in schedule[:2]], ["pilot", "pilot"])

@@ -11,7 +11,7 @@ FIELD = re.compile(r'([A-Za-z_][A-Za-z0-9_.-]*)=(?:"((?:\\.|[^"\\])*)"|([^\s]+))
 PREFIXES = ("performance_", "host_timeline_", "gpu_timeline_", "bounded_gpu_",
             "bounded_heap_", "bounded_coset_", "heap_lde_", "grouped_node_",
             "grouped_stage_", "node_complete", "stage_cgroup_", "cache_bench_",
-            "proof_verified", "proof_start", "spill_")
+            "proof_verified", "proof_start", "spill_", "metal_")
 TIME_KEYS = {"start_ns", "end_ns", "utc_ns", "time_ns", "started_ns", "finished_ns"}
 
 
@@ -158,7 +158,7 @@ def collect(paths, root):
                     data["_checkpoint"] = checkpoint
                 data["_source_line"] = line_no
                 clock = ("host_monotonic_relative" if prefix.startswith("host_timeline") else
-                         "opencl_device_unaligned" if prefix.startswith("gpu_timeline") else "reported")
+                         (str(data.get("clock", "opencl_device")) + "_unaligned") if prefix.startswith("gpu_timeline") else "reported")
                 if prefix not in grouped:
                     grouped[prefix] = Table(prefix, source, clock)
                 grouped[prefix].add(data)

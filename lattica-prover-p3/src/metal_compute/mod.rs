@@ -25,6 +25,7 @@ unsafe extern "C" {}
 type Result<T> = std::result::Result<T, String>;
 type Object<T> = Retained<ProtocolObject<T>>;
 const TRANSFER_BYTES: usize = 8 << 20;
+const MAX_PENDING_COMMANDS: usize = 256;
 pub(crate) fn transfer_budget(managed_bytes: usize) -> usize {
     TRANSFER_BYTES.min(managed_bytes / 64).max(8)
 }
@@ -162,7 +163,10 @@ impl Queue {
         }
         Ok(command)
     }
-    fn submit(&self, command: Object<dyn MTLCommandBuffer>, kernel: bool) -> Event {
+    fn submit(&self, command: Object<dyn MTLCommandBuffer>, kernel: bool) -> Result<Event> {
+        if self.0.pending.lock().unwrap().len() >= MAX_PENDING_COMMANDS {
+            self.finish()?;
+        }
         command.commit();
         *self.0.last.lock().unwrap() = Some(command.clone());
         self.0
@@ -170,7 +174,7 @@ impl Queue {
             .lock()
             .unwrap()
             .push((command.clone(), kernel));
-        Event::Commands(vec![command])
+        Ok(Event::Commands(vec![command]))
     }
     pub fn finish(&self) -> Result<()> {
         let last = self
@@ -208,7 +212,7 @@ impl Queue {
     }
     #[cfg(test)]
     pub fn enqueue_marker(&self, event: Option<&Event>) -> Result<Event> {
-        Ok(self.submit(self.command(event)?, false))
+        self.submit(self.command(event)?, false)
     }
 }
 
@@ -599,7 +603,7 @@ impl Buffer<u64> {
                     }
                 }
                 encoder.endEncoding();
-                let event = q.submit(command.clone(), false);
+                let event = q.submit(command.clone(), false)?;
                 event.wait_for()?;
                 q.finish()?;
                 commands.push(command);
@@ -877,7 +881,7 @@ impl<'a> BufferCommand<'a> {
             }
         }
         encoder.endEncoding();
-        let event = q.submit(command, false);
+        let event = q.submit(command, false)?;
         // Enqueues gated by test user events must remain asynchronous, so the
         // engine can exercise its existing failure-after-submission fences.
         if let Some(out) = self.event {
@@ -1048,7 +1052,7 @@ impl<'a> KernelCommand<'a> {
             );
         }
         encoder.endEncoding();
-        let event = k.queue.submit(command, true);
+        let event = k.queue.submit(command, true)?;
         if let Some(out) = self.event {
             *out = event;
         }

@@ -117,7 +117,14 @@ impl Engine {
             return Err("injected compact opening error after enqueue".into());
         }
         let wait = Instant::now();
-        let ns = self.timeline.record("opening_compact", &event)?;
+        let ns = self.timeline.record(
+            if compress {
+                "opening_compact_compress"
+            } else {
+                "opening_compact"
+            },
+            &event,
+        )?;
         self.stats.opening_kernel_wait_ns += wait.elapsed().as_nanos();
         self.stats.opening_kernel_ns += ns;
         if compress {
@@ -272,6 +279,7 @@ impl Engine {
                     1,
                     false,
                     false,
+                    true,
                 )?;
             }
             // Low samples already lie on g*H. Interpolate q(g*X), so no extra
@@ -284,6 +292,7 @@ impl Engine {
                 3,
                 1,
                 1,
+                true,
                 true,
                 true,
             )?;

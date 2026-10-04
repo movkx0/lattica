@@ -82,6 +82,11 @@ name = "block-v2-padding-probe"
 path = "src/bin/block_v2_padding_probe.rs"
 required-features = ["block-v2", "stream"]
 
+[[bin]]
+name = "apple-field-bench"
+path = "src/bin/apple_field_bench.rs"
+required-features = ["cpu-sme2"]
+
 [dependencies]
 itertools = "0.14"
 serde_json = "1"
@@ -122,6 +127,9 @@ objc2-foundation = { version = "0.3.2", optional = true }
 objc2-metal = { version = "0.3.2", optional = true }
 
 [features]
+
+# Isolated exact-integer component experiment; does not select a prover backend.
+cpu-sme2 = ["dep:libc"]
 # Include the GPU backend in standard builds. Use --no-default-features for CPU-only builds.
 default = ["gpu"]
 # Enable GPU (OpenCL) acceleration of the LDE. Proving calls select the GPU backend explicitly.
