@@ -3,7 +3,9 @@
 import collections
 import copy
 import importlib.util
+import json
 from pathlib import Path
+import tempfile
 import unittest
 
 spec = importlib.util.spec_from_file_location("bench", Path(__file__).with_name("bench-apple-metal.py"))
@@ -11,6 +13,42 @@ B = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(B)
 
 class Experiment(unittest.TestCase):
+    def test_screening_is_three_single_shared_18_thread_cases(self):
+        trials = B.screening_schedule()
+        self.assertEqual([t["level"] for t in trials], ["quotient", "quotient-deferred", "quotient-compact-deferred"])
+        self.assertTrue(all(t["backend"] == "shared" and t["threads"] == 18 and t["repeat"] == 1 for t in trials))
+        self.assertEqual([(t["compact"], t["defer_timing"]) for t in trials], [(0, 0), (0, 1), (1, 1)])
+
+    def test_screening_reuses_only_audited_evidence_from_a_stopped_queue(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); source = root / "source"; source.mkdir()
+            trial = dict(B.arm("shared", 18, "quotient-compact-deferred", phase="pilot"), label="old-pilot", verified=True)
+            stages = []
+            for suffix, count in (("check", 0), ("pairs", 4), ("merges", 3), ("prune", 0), ("audit", 0)):
+                label = trial["label"] + "-" + suffix
+                log = source / (label + ".log"); log.write_text("grouped_artifact_audit=PASS\n")
+                resources = source / (label + ".jsonl"); resources.write_text("{}\n")
+                stages.append(dict(label=label, status="PASS", log=str(log), log_sha256=B.digest(log),
+                    resource_log=str(resources), resource_sha256=B.digest(resources), nodes=[{"resumed":"false"}] * count))
+            bundle = source / (trial["label"] + "-root-only"); bundle.mkdir()
+            (bundle / "node.3.0").write_bytes(b"verified root"); trial["root_sha256"] = B.digest(bundle / "node.3.0")
+            prior = {key:"same" for key in ("binary_sha256", "fixture_sha256", "external", "memory_policy", "timing_boundary", "hardware", "platform")}
+            prior.update(source_hashes={"src/lib.rs":"same"}, status="FAILED", failure="controller signal 15", trials=[trial], stages=stages)
+            reference = source / "result.json"; reference.write_text(json.dumps(prior))
+            def reuse(name):
+                out = root / name; out.mkdir()
+                current = dict(prior, trials=[], stages=[], schedule=B.screening_schedule())
+                B.reuse_screening_trial(reference, current, out, 18)
+                return current
+            current = reuse("valid")
+            self.assertEqual(len(current["schedule"]), 2)
+            self.assertEqual(current["trials"][0]["phase"], "pilot")
+            self.assertTrue(current["trials"][0]["screening_reused"])
+            self.assertEqual(current["screening_reference"]["status"], "FAILED")
+            Path(stages[1]["log"]).write_text("tampered")
+            with self.assertRaisesRegex(RuntimeError, "evidence changed"):
+                reuse("tampered")
+
     def test_optimization_campaign_has_90_trials_and_four_largest_pipeline_pilots(self):
         trials = B.schedule((18,24), pipeline_threads=(18,24), optimizations=True)
         pilots = [c for c in trials if c["phase"] == "pilot"]

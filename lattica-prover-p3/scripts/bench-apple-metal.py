@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Freeze and run the CPU / Metal shared / Metal copy grouped-eight comparison.
+"""Run a small, audited Apple Metal optimization screen by default.
 
-Two audited pilots precede the selected measured matrix (54 trials by default).
-An extension can reuse completed pilots only with identical binaries, proof
-sources, fixtures and measurement policy. Every measured proof is fresh.
+Three shared-memory cases at 18 threads compare quotient control, deferred
+timing, and compact data with deferred timing. Each runs once. The expensive
+repeated CPU/shared/copy matrix requires --full-matrix explicitly.
 """
 import argparse
 import fcntl
@@ -65,18 +65,72 @@ def schedule(threads=(8, 16, 18, 24), *, baseline_only=False, pipeline_threads=(
     assert len(measured) == 9 * len(threads) + 3 * len(extra)
     return pilot_trials + measured
 
-def validate_extension(prior, current):
-    if prior["status"] != "COMPLETE_VERIFIED_COMPARISON" or not all(t["verified"] for t in prior["trials"]):
-        raise RuntimeError("extension requires a completed and verified reference series")
-    pilots = [t for t in prior["trials"] if t["phase"] == "pilot"]
-    if len(pilots) != 2 or {t["backend"] for t in pilots} != {"shared", "copy"}:
-        raise RuntimeError("reference must contain two verified Metal pilots")
+def screening_schedule(threads=18):
+    if threads not in (8, 16, 18, 24):
+        raise ValueError("unsupported screening thread count")
+    return [arm("shared", threads, level) for level in
+            ("quotient", "quotient-deferred", "quotient-compact-deferred")]
+
+
+def validate_reference(prior, current):
     for key in ("binary_sha256", "fixture_sha256", "external", "memory_policy", "timing_boundary", "hardware", "platform"):
         if prior[key] != current[key]:
             raise RuntimeError("extension differs from reference: " + key)
     proof_sources = lambda data: {name: sha for name, sha in data["source_hashes"].items() if not name.startswith("scripts/")}
     if proof_sources(prior) != proof_sources(current):
         raise RuntimeError("extension proof sources differ from reference")
+
+
+def reuse_screening_trial(reference, current, out, threads):
+    """Reuse only a fully audited combined case, even if its queue was stopped."""
+    prior = json.loads(reference.read_text())
+    validate_reference(prior, current)
+    expected = screening_schedule(threads)[-1]
+    candidates = [t for t in prior["trials"] if t.get("verified") and
+                  all(t.get(k) == v for k, v in expected.items() if k not in ("repeat", "phase"))]
+    if not candidates:
+        raise RuntimeError("reference has no verified combined screening case")
+    trial = dict(candidates[0])
+    stages = [dict(s) for s in prior["stages"] if s["label"].startswith(trial["label"] + "-")]
+    if {s["label"].removeprefix(trial["label"] + "-") for s in stages} != {"check", "pairs", "merges", "prune", "audit"} or len(stages) != 5 or any(s["status"] != "PASS" for s in stages):
+        raise RuntimeError("reference trial needs five successful stages")
+    for s in stages:
+        for path_key, hash_key in (("log", "log_sha256"), ("resource_log", "resource_sha256")):
+            source = reference.parent / Path(s[path_key]).name
+            if digest(source) != s[hash_key]:
+                raise RuntimeError("reference evidence changed: " + str(source))
+    nodes = [n for s in stages for n in s.get("nodes", [])]
+    if len(nodes) != 7 or any(n["resumed"] != "false" for n in nodes):
+        raise RuntimeError("reference must contain seven fresh proofs")
+    audit = next(s for s in stages if s["label"].endswith("-audit"))
+    if "grouped_artifact_audit=PASS" not in (reference.parent / Path(audit["log"]).name).read_text():
+        raise RuntimeError("reference CPU root audit missing")
+    bundle = reference.parent / (trial["label"] + "-root-only")
+    if digest(bundle / "node.3.0") != trial["root_sha256"]:
+        raise RuntimeError("reference root digest mismatch")
+    for s in stages:
+        for key in ("log", "resource_log"):
+            destination = out / Path(s[key]).name
+            shutil.copy2(reference.parent / destination.name, destination)
+            s[key] = str(destination)
+    shutil.copytree(bundle, out / bundle.name)
+    shutil.copy2(reference, out / "screening-reference.json")
+    trial["screening_reused"] = True
+    current["trials"].append(trial)
+    current["stages"].extend(stages)
+    current["screening_reference"] = {"path": str(reference.resolve()), "sha256": digest(reference),
+        "status": prior["status"], "failure": prior.get("failure"), "trial": trial["label"],
+        "reason": "Reuse a fully audited pilot to avoid repeating completed work; retain its original phase and timestamps."}
+    current["schedule"] = [c for c in current["schedule"] if c["level"] != expected["level"]]
+
+
+def validate_extension(prior, current):
+    if prior["status"] != "COMPLETE_VERIFIED_COMPARISON" or not all(t["verified"] for t in prior["trials"]):
+        raise RuntimeError("extension requires a completed and verified reference series")
+    pilots = [t for t in prior["trials"] if t["phase"] == "pilot"]
+    if len(pilots) != 2 or {t["backend"] for t in pilots} != {"shared", "copy"}:
+        raise RuntimeError("reference must contain two verified Metal pilots")
+    validate_reference(prior, current)
 
 def environment(config, scratch, gpu):
     env = os.environ.copy()
@@ -117,6 +171,9 @@ def main():
     parser.add_argument("--fixture", type=Path, required=True)
     parser.add_argument("--linux", type=Path, required=True)
     parser.add_argument("--qualification", type=Path, required=True)
+    parser.add_argument("--full-matrix", action="store_true", help="explicitly opt into repeated CPU/shared/copy trials")
+    parser.add_argument("--screening-threads", type=int, choices=(8, 16, 18, 24), default=18)
+    parser.add_argument("--reuse-screening-from", type=Path, help="reuse one audited combined case from a compatible result.json, including a stopped queue")
     parser.add_argument("--pilots-only", action="store_true")
     parser.add_argument("--pilot-level", choices=("baseline", "quotient", "quotient-compact-deferred"), default="baseline", help="qualify the largest enabled pipeline before measured trials")
     parser.add_argument("--threads", nargs="+", type=int, choices=(8, 16, 18, 24), default=(8, 16, 18, 24))
@@ -126,11 +183,15 @@ def main():
     parser.add_argument("--optimizations", action="store_true", help="include compact/deferred factorial arms and pilots at every thread count")
     parser.add_argument("--build-metadata", type=Path, default=CRATE / "target/metal-build-metadata.json")
     args = parser.parse_args()
+    if args.full_matrix and args.reuse_screening_from:
+        parser.error("--reuse-screening-from only applies to the small default screen")
+    if not args.full_matrix and (args.optimizations or args.pilots_only or args.reuse_pilots_from or args.baseline_only):
+        parser.error("matrix and pilot options require --full-matrix; omit them for the small default screen")
     if args.optimizations and args.reuse_pilots_from:
         parser.error("optimization campaign requires fresh pilots at every selected thread count")
     if args.pilots_only and args.reuse_pilots_from:
         parser.error("--pilots-only cannot reuse pilots")
-    selected_schedule = schedule(args.threads, baseline_only=args.baseline_only, pipeline_threads=args.pipeline_threads, pilots=not args.reuse_pilots_from, pilot_level=args.pilot_level, optimizations=args.optimizations)
+    selected_schedule = schedule(args.threads, baseline_only=args.baseline_only, pipeline_threads=args.pipeline_threads, pilots=not args.reuse_pilots_from, pilot_level=args.pilot_level, optimizations=args.optimizations) if args.full_matrix else screening_schedule(args.screening_threads)
     if platform.system() != "Darwin" or platform.machine() != "arm64":
         parser.error("requires Apple Silicon macOS")
     os.umask(0o077)
@@ -147,7 +208,7 @@ def main():
     qualification = json.loads(args.qualification.read_text())
     if qualification["status"] != "PASS" or len(qualification["tests"]) < 54 or not all(t["passed"] for t in qualification["tests"]):
         raise RuntimeError("hardware qualification must pass first")
-    if args.optimizations:
+    if args.optimizations or not args.full_matrix:
         from collections import Counter
         coverage = Counter((t.get("timing"),t["memory"]) for t in qualification["tests"])
         if any(coverage[t,m] < 32 for t in ("immediate","deferred") for m in ("shared","copy")):
@@ -199,7 +260,9 @@ def main():
         for path in sources:
             archive.add(path, arcname=str(path.relative_to(CRATE)))
     report = {"schema": "apple-metal-grouped-eight-v1", "status": "RUNNING", "production_ready": False,
-              "git_base": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=CRATE, text=True).strip(),
+              "git_base": build.get("git_commit") or subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=CRATE, text=True).strip(),
+              "controller_git_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=CRATE, text=True).strip(),
+              "suite": "full-matrix" if args.full_matrix else "screening",
               "git_diff": subprocess.check_output(["git", "diff", "--stat"], cwd=CRATE, text=True),
               "hardware": subprocess.check_output(["sysctl", "machdep.cpu.brand_string", "hw.memsize", "hw.ncpu"], text=True),
               "platform": platform.platform(), "source_hashes": source_hashes, "build": build,
@@ -221,6 +284,8 @@ def main():
         report["reused_pilots"] = {"reference": str(args.reuse_pilots_from.resolve()), "reference_sha256": digest(out / "prior-series.json"),
             "trials": [t["label"] for t in prior["trials"] if t["phase"] == "pilot"],
             "reason": "User-requested additional thread setting after the reference schedule was frozen"}
+    if args.reuse_screening_from:
+        reuse_screening_trial(args.reuse_screening_from.resolve(), report, out, args.screening_threads)
     active_child = [None]
     def interrupted(signum, frame):
         raise KeyboardInterrupt(f"controller signal {signum}")
@@ -333,7 +398,7 @@ def main():
                 "pairs_metal":pairs.get("metal"),"merges_metal":merges.get("metal")})
             report["observations"].append({"trial":label,"after":observations()}); save()
             print("TRIAL",json.dumps(report["trials"][-1]),flush=True)
-        report["status"] = "COMPLETE_VERIFIED_PILOTS" if args.pilots_only else ("COMPLETE_VERIFIED_EXTENSION" if prior is not None else "COMPLETE_VERIFIED_COMPARISON")
+        report["status"] = "COMPLETE_VERIFIED_SCREENING" if not args.full_matrix else ("COMPLETE_VERIFIED_PILOTS" if args.pilots_only else ("COMPLETE_VERIFIED_EXTENSION" if prior is not None else "COMPLETE_VERIFIED_COMPARISON"))
     except BaseException as error:
         child = active_child[0]
         if child is not None:

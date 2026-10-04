@@ -16,7 +16,7 @@ def fingerprint(data):
 def export_campaign(result_path, output):
     result_path, output = Path(result_path), Path(output)
     campaign = json.loads(result_path.read_text())
-    if campaign["status"] not in ("COMPLETE_VERIFIED_COMPARISON", "COMPLETE_VERIFIED_PILOTS", "COMPLETE_VERIFIED_EXTENSION"):
+    if campaign["status"] not in ("COMPLETE_VERIFIED_COMPARISON", "COMPLETE_VERIFIED_PILOTS", "COMPLETE_VERIFIED_EXTENSION", "COMPLETE_VERIFIED_SCREENING"):
         raise ValueError("Apple export requires a completed, verified controller result")
     if not campaign["trials"] or not all(t["verified"] for t in campaign["trials"]):
         raise ValueError("unverified Apple trial")
@@ -74,9 +74,13 @@ def export_campaign(result_path, output):
         config = {k:trial.get(k, 0) for k in ("backend","threads","level","readback","fusion","quotient","compact","defer_timing","repeat","phase")}
         config.update(campaign_id=campaign_id, peak_rss_bytes=trial["peak_rss_bytes"], peak_mapped_bytes=trial["peak_mapped_bytes"],
                       pairs_metal=trial.get("pairs_metal"), merges_metal=trial.get("merges_metal"))
+        if campaign.get("suite") == "screening":
+            config.update(screening=True, screening_reused=trial.get("screening_reused", False))
         run["configuration"] = {"apple_metal":config, "memory_limits":{"mmap_bytes":34 << 30, "managed_gpu_bytes":8 << 30,
                                  "sampled_rss_bytes":44 << 30}, "stage_timeout_seconds":7200, "fixture_sha256":campaign["fixture_sha256"],
                                  "memory_policy":campaign["memory_policy"], "build":campaign["build"]}
+        if campaign.get("screening_reference"):
+            run["configuration"]["screening_reference"] = campaign["screening_reference"]
         run["stages"] = [{"name":s["label"], "status":s["status"], "wall_seconds":s["wall_seconds"],
                           "reported_seconds":s["reported_seconds"], "started_utc":s.get("started_utc"), "completed_utc":s.get("completed_utc"),
                           "maximum_resident_bytes":s["maximum_resident_bytes"], "spill_peak_bytes":s["spill_peak_bytes"]} for s in stages]
@@ -87,6 +91,8 @@ def export_campaign(result_path, output):
                                "One physical unified-memory pool; mmap, GPU allocations and process RSS overlap and must not be added.",
                                "Shared/copy pairs isolate storage and explicit transfer behavior on this Mac. Cross-platform differences also include hardware, kernels and source revisions.",
                                "GPU and host timing clocks are not aligned. Profiling counters overlap and are not additive wall time.", *warnings]
+        if campaign.get("suite") == "screening":
+            run["limitations"].append("Screening only: one observation per configuration, without repeats or statistical confidence. A reused pilot retains its original phase and time; order and thermal effects are not controlled.")
         validate_run(run)
         path = output / (run["run_id"] + ".json")
         atomic_bytes(path, json_bytes(run)); paths.append(path)

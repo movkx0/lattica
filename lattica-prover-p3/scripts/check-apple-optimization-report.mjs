@@ -82,12 +82,17 @@ try {
   const check=await evaluate(`({error:document.getElementById('load-error').textContent,visible:!document.getElementById('apple-results').hidden,bars:document.querySelectorAll('#apple-bars .apple-row').length,measured:catalog.runs.filter(r=>r.configuration?.apple_metal?.campaign_id===document.getElementById('apple-campaign').value&&r.kind==='solving').length,components:catalog.runs.filter(r=>r.adapter==='apple-field').length})`);
   if(check.error||!check.visible||!check.bars)throw new Error('Apple charts unavailable: '+JSON.stringify(check));
   if(process.argv[4]&&check.measured!==Number(process.argv[4]))throw new Error('Incorrect measured trial count');
-  if(Number(process.argv[4])===90&&check.components!==12)throw new Error('Missing SME2 component comparisons');
+  if(process.argv[4]&&check.components!==12)throw new Error('Missing SME2 component comparisons');
+  if(Number(process.argv[4])===2){
+    const screen=await evaluate(`({runs:catalog.runs.filter(r=>r.configuration?.apple_metal?.campaign_id===document.getElementById('apple-campaign').value&&r.configuration.apple_metal.screening).length,reused:catalog.runs.filter(r=>r.configuration?.apple_metal?.campaign_id===document.getElementById('apple-campaign').value&&r.configuration.apple_metal.screening_reused&&r.kind==='diagnostic').length,note:document.getElementById('apple-scope').textContent})`);
+    if(screen.runs!==3||screen.reused!==1||check.bars!==3||!screen.note.includes('One observation'))throw new Error('Incorrect screening display: '+JSON.stringify(screen));
+  }
   await capture('desktop-overview.png');
   await evaluate("document.getElementById('apple-results').scrollIntoView()");
   await capture('desktop-apple-18t.png');
   await evaluate("document.getElementById('apple-threads').value='24';document.getElementById('apple-threads').onchange()");
   await capture('desktop-apple-24t.png');
+  await evaluate("document.getElementById('apple-threads').value='18';document.getElementById('apple-threads').onchange()");
   await evaluate("document.querySelector('#apple-bars button').click()");
   for(let i=0;i<200;i++){if(await evaluate('document.getElementById("status").hidden'))break;await delay(100)}
   const selected=await evaluate('({id:current.run_id,root:current.verification.root_sha256,audit:current.verification.cpu_audited})');

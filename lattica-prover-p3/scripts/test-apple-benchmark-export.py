@@ -67,6 +67,18 @@ class AppleExport(unittest.TestCase):
         self.data["trials"][0]["verified"] = False
         with self.assertRaises(ValueError): self.export()
 
+    def test_screening_preserves_reused_pilot_and_single_observation_limit(self):
+        self.data.update(status="COMPLETE_VERIFIED_SCREENING", suite="screening",
+                         screening_reference={"status":"FAILED", "trial":self.label})
+        self.data["trials"][0].update(phase="pilot", screening_reused=True)
+        path, = self.export()
+        record = json.loads(path.read_text())
+        self.assertEqual(record["kind"], "diagnostic")
+        self.assertTrue(record["configuration"]["apple_metal"]["screening_reused"])
+        self.assertTrue(record["configuration"]["apple_metal"]["screening"])
+        self.assertEqual(record["configuration"]["screening_reference"]["status"], "FAILED")
+        self.assertTrue(any("one observation" in text for text in record["limitations"]))
+
     def test_modified_logs_and_resumed_proofs_are_rejected(self):
         log = Path(self.stages[2]["log"])
         log.write_text(log.read_text().replace("resumed=false","resumed=true"))
