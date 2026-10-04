@@ -1,0 +1,83 @@
+{
+  "campaign_ids": ["block-v2-cpu-arrivals-2026-10-02"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "job-14",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 7,
+    "tables": [
+      {
+        "clock": "utc_ns",
+        "columns": ["_AUDIT_SESSION","_BOOT_ID","_RUNTIME_SCOPE","_PID","CODE_LINE","CODE_FUNC","_MACHINE_ID","_SYSTEMD_SLICE","_SOURCE_REALTIME_TIMESTAMP","CODE_FILE","TID","SYSLOG_FACILITY","JOB_TYPE","MESSAGE_ID","__MONOTONIC_TIMESTAMP","_SYSTEMD_CGROUP","__SEQNUM_ID","_GID","_SYSTEMD_USER_UNIT","_UID","PRIORITY","_HOSTNAME","SYSLOG_IDENTIFIER","_CMDLINE","_SYSTEMD_UNIT","MESSAGE","USER_INVOCATION_ID","_SYSTEMD_OWNER_UID","__SEQNUM","_COMM","JOB_ID","_AUDIT_LOGINUID","_TRANSPORT","__REALTIME_TIMESTAMP","_SYSTEMD_USER_SLICE","USER_UNIT","__CURSOR","_CAP_EFFECTIVE","_EXE","_source_line","JOB_RESULT","_SYSTEMD_INVOCATION_ID","_STREAM_ID","CPU_USAGE_NSEC","MEMORY_SWAP_PEAK","MEMORY_PEAK"],
+        "dictionaries": {
+          "CODE_FILE": ["src/core/job.c","src/core/unit.c"],
+          "JOB_TYPE": ["start"],
+          "SYSLOG_IDENTIFIER": ["systemd","cpu-worker"],
+          "USER_INVOCATION_ID": ["8cc0ec15bac74913a80d3d5d9f512fe6"],
+          "USER_UNIT": ["lattica-v2-worker-b785cf76956d65408efef2fd97096988b6977cf69a389761ddc10b3f3ea6697c.service"],
+          "_BOOT_ID": ["46c7febb8815423b96e7e1713e6bd5fb"],
+          "_CMDLINE": ["/usr/lib/systemd/systemd --user","/home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/cpu-worker --task /home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/proof/job-14/task"],
+          "_COMM": ["systemd","cpu-worker"],
+          "_EXE": ["/usr/lib/systemd/systemd","/home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/cpu-worker"],
+          "_HOSTNAME": ["cachyos-x8664"],
+          "_MACHINE_ID": ["1a52b9cdf02343d2a7265c262c9ba3be"],
+          "_RUNTIME_SCOPE": ["system"],
+          "_STREAM_ID": ["a123849f5aa84d72b422d7524c9ef8bb"],
+          "_SYSTEMD_CGROUP": ["/user.slice/user-1000.slice/user@1000.service/init.scope","/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-grouped.slice/lattica-v2-worker-b785cf76956d65408efef2fd97096988b6977cf69a389761ddc10b3f3ea6697c.service"],
+          "_SYSTEMD_INVOCATION_ID": ["8cc0ec15bac74913a80d3d5d9f512fe6"],
+          "_SYSTEMD_SLICE": ["user-1000.slice"],
+          "_SYSTEMD_UNIT": ["user@1000.service"],
+          "_SYSTEMD_USER_SLICE": ["-.slice","lattica-v2-grouped.slice"],
+          "_SYSTEMD_USER_UNIT": ["init.scope","lattica-v2-worker-b785cf76956d65408efef2fd97096988b6977cf69a389761ddc10b3f3ea6697c.service"],
+          "_TRANSPORT": ["journal","stdout"],
+          "__SEQNUM_ID": ["702ace7465ed456a85714db87037deab"]
+        },
+        "kind": "resource_samples",
+        "rows": [
+          ["3",0,0,"1628","632","job_emit_start_message",0,0,"1790956569433877",0,"1628","3",0,"7d4958e842da4a758f6c1cdc7b36dcc5","48775955102",0,0,"1000",0,"1000","6",0,0,0,0,"Starting [systemd-run] /home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/cpu-worker --task /home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/proof/job-14/task...",0,"1000","28127129",0,"7455","1000",0,"1790956569434018",0,0,"s=702ace7465ed456a85714db87037deab;i=1ad2f99;b=46c7febb8815423b96e7e1713e6bd5fb;m=b5b46029e;t=65cdd922117a2;x=17d0098987093fbb","800000000",0,1,null,null,null,null,null,null],
+          ["3",0,0,"1628","825","job_emit_done_message",0,0,"1790956569437707",0,"1628","3",0,"39f53479d3a045ac8e11786248231fbf","48775958801",0,0,"1000",0,"1000","6",0,0,0,0,"Started [systemd-run] /home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/cpu-worker --task /home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/proof/job-14/task.",0,"1000","28127130",0,"7455","1000",0,"1790956569437717",0,0,"s=702ace7465ed456a85714db87037deab;i=1ad2f9a;b=46c7febb8815423b96e7e1713e6bd5fb;m=b5b461111;t=65cdd92212615;x=859b0fe2fb0dbe95","800000000",0,2,"done",null,null,null,null,null],
+          ["3",0,0,"642744",null,null,0,0,null,null,null,"3",null,null,"48778295621",1,0,"1000",1,"1000","6",0,1,1,0,"prover_setup_start mode=3 height=262144 active_rows=258973",null,"1000","28127131",1,null,"1000",1,"1790956571774537",1,null,"s=702ace7465ed456a85714db87037deab;i=1ad2f9b;b=46c7febb8815423b96e7e1713e6bd5fb;m=b5b69b945;t=65cdd9244ce49;x=14a947a2bc81715f","0",1,3,null,0,0,null,null,null],
+          ["3",0,0,"642744",null,null,0,0,null,null,null,"3",null,null,"48827770580",1,0,"1000",1,"1000","6",0,1,1,0,"proof_start mode=3 setup_ms=49474 preprocessing_cache_hit=false",null,"1000","28127135",1,null,"1000",1,"1790956621249497",1,null,"s=702ace7465ed456a85714db87037deab;i=1ad2f9f;b=46c7febb8815423b96e7e1713e6bd5fb;m=b5e5ca6d4;t=65cdd9537bbd9;x=2e4a9e4192949ad9","0",1,4,null,0,0,null,null,null],
+          ["3",0,0,"642744",null,null,0,0,null,null,null,"3",null,null,"48937120779",1,0,"1000",1,"1000","6",0,1,1,0,"proof_verified mode=3 prove_and_verify_ms=109350 node_payload_bytes=1683940",null,"1000","28127147",1,null,"1000",1,"1790956730599695",1,null,"s=702ace7465ed456a85714db87037deab;i=1ad2fab;b=46c7febb8815423b96e7e1713e6bd5fb;m=b64e1340b;t=65cdd9bbc490f;x=4170fd22fdf79d19","0",1,5,null,0,0,null,null,null],
+          ["3",0,0,"642744",null,null,0,0,null,null,null,"3",null,null,"48937444265",1,0,"1000",1,"1000","6",0,1,1,0,"cpu_task=RESULT_PUBLISHED_UNVERIFIED lease=b785cf76956d65408efef2fd97096988b6977cf69a389761ddc10b3f3ea6697c bytes=1684129 spill_peak_bytes=34288652288",null,"1000","28127148",1,null,"1000",1,"1790956730923181",1,null,"s=702ace7465ed456a85714db87037deab;i=1ad2fac;b=46c7febb8815423b96e7e1713e6bd5fb;m=b64e623a9;t=65cdd9bc138ad;x=21a9125c7d921df9","0",1,6,null,0,0,null,null,null],
+          ["3",0,0,"1628","2585","unit_log_resources",0,0,"1790956730964907",1,"1628","3",null,"ae8f7b866b0347b9af31fe1c80b127c0","48937486098",0,0,"1000",0,"1000","5",0,0,0,0,"lattica-v2-worker-b785cf76956d65408efef2fd97096988b6977cf69a389761ddc10b3f3ea6697c.service: Consumed 17min 27.155s CPU time over 2min 41.530s wall clock time, 40.4G memory peak.",0,"1000","28127149",0,null,"1000",0,"1790956730965014",0,0,"s=702ace7465ed456a85714db87037deab;i=1ad2fad;b=46c7febb8815423b96e7e1713e6bd5fb;m=b64e6c712;t=65cdd9bc1dc16;x=2c66c32f54cfd8a","800000000",0,7,null,null,null,"1047155002000","0","43389636608"]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/proof/job-14/worker-journal.jsonl"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P2"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-9e8d24bd403b19c00091b681",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 11581,
+      "path": "lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/proof/job-14/worker-journal.jsonl",
+      "sha256": "297f043e2db9e6eed30a97434a083c73f5d8b32e5bdc851fd1b05eb4ff626d87"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

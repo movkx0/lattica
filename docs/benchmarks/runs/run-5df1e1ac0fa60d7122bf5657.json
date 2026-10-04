@@ -1,0 +1,1850 @@
+{
+  "adapter": "grouped",
+  "campaign_ids": ["block-v2-quotient-fusion-2026-10-01","block-v2-quotient-fusion-matched-2026-10-01"],
+  "configuration": {
+    "accounting": "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py",
+    "action": "prove",
+    "auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-comparison-binaries-20261001-a/block-v2-grouped-artifact-audit",
+    "evidence": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence",
+    "external": ["af4bfe518efc2cde1a9c972e913e4307e3fd8b60ab6671961936c87b99a8ec31","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","2ef361a059b06a72cc05a3aac2c5ed9c4e75a0ad70081875459a6961414e9d52"],
+    "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/job",
+    "mode": "prove",
+    "quotient_fusion": 1,
+    "runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-quotient-fusion-binaries-20261001-a/block-v2-grouped-probe",
+    "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-quotient-fusion-sources-20261001-a.tar.gz"
+  },
+  "kind": "solving",
+  "label": "block-v2-fusion-proof-20261001-b",
+  "limitations": ["Research evidence; does not establish production or four-wallet readiness.","Wallet proof creation and canonical chain acceptance are outside this measurement.","Inclusive phase and GPU counters are non-additive; process checkpoints may reset.","Host and OpenCL clocks are separate unless an explicit anchor was recorded."],
+  "measurement_scope": "recursive_aggregation",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["grouped process remainder",254,0,0,"inclusive_nonadditive",4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/01-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["grouped process remainder"],
+          "target": ["p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_field::batch_inverse","p3_matrix","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"evaluate all constraints symbolically",8,260965,40546,0,5],
+          [0,"infer base and extension constraint degree",8,433486,58899,0,6],
+          [1,"compute constraint layout with lookups",18,5584002,348261,0,7],
+          [1,"evaluate constraints symbolically",27,4290620,221150,0,8],
+          [1,"infer constraint degree",18,5742798,385375,0,9],
+          [2,"batch_multiplicative_inverse",13576,18241147,256399,0,10],
+          [3,"columnwise_dot_product",264,6721964,292776,0,11],
+          [4,"get_log_num_quotient_chunks",8,442322,60092,0,12],
+          [4,"infer log of base and extension constraint degree",8,438191,59379,0,13],
+          [5,"verify",8,169884721,25313237,0,14],
+          [5,"verify_with_preprocessed",8,169875477,25312099,0,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/01-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,16],
+          ["memory_full_stall_us",0,17],
+          ["memory_high_events",0,18],
+          ["memory_some_stall_us",0,19],
+          ["minor_faults",7052,20],
+          ["read_bytes",0,21],
+          ["system_ticks",4,22],
+          ["user_ticks",33,23],
+          ["write_bytes",0,24]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/01-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [254,0,true,false,25]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/01-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-39597-1.service","exec_stop_post_snapshot",16199680,0,47244640256,0,402972,26]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/01-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["input_bytes","output_bytes","width","added_bits","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_start",
+        "rows": [
+          [587202560,9395240960,70,4,4],
+          [822083584,13153337344,98,4,7],
+          [209715200,3355443200,25,4,9],
+          [822083584,13153337344,98,4,112],
+          [209715200,3355443200,25,4,114],
+          [822083584,13153337344,98,4,215],
+          [209715200,3355443200,25,4,217],
+          [822083584,13153337344,98,4,318],
+          [209715200,3355443200,25,4,320]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_done",
+        "rows": [
+          [7962,5],
+          [11049,8],
+          [3195,10],
+          [11811,113],
+          [3116,115],
+          [10604,216],
+          [2520,218],
+          [9945,319],
+          [2722,321]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","setup_ms","preprocessing_cache_hit","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_start",
+        "rows": [
+          [1,40428,false,6],
+          [1,173,true,111],
+          [1,126,true,214],
+          [1,127,true,317]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["bytes","width","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_heap_fft_start",
+        "rows": [
+          [939524096,7,11],
+          [939524096,7,13],
+          [939524096,7,15],
+          [939524096,7,17],
+          [939524096,7,19],
+          [939524096,7,21],
+          [939524096,7,23],
+          [939524096,7,25],
+          [939524096,7,27],
+          [939524096,7,29],
+          [939524096,7,31],
+          [939524096,7,33],
+          [939524096,7,35],
+          [939524096,7,37],
+          [939524096,7,39],
+          [939524096,7,41],
+          [939524096,7,116],
+          [939524096,7,118],
+          [939524096,7,120],
+          [939524096,7,122],
+          [939524096,7,124],
+          [939524096,7,126],
+          [939524096,7,128],
+          [939524096,7,130],
+          [939524096,7,132],
+          [939524096,7,134],
+          [939524096,7,136],
+          [939524096,7,138],
+          [939524096,7,140],
+          [939524096,7,142],
+          [939524096,7,144],
+          [939524096,7,146],
+          [939524096,7,219],
+          [939524096,7,221],
+          [939524096,7,223],
+          [939524096,7,225],
+          [939524096,7,227],
+          [939524096,7,229],
+          [939524096,7,231],
+          [939524096,7,233],
+          [939524096,7,235],
+          [939524096,7,237],
+          [939524096,7,239],
+          [939524096,7,241],
+          [939524096,7,243],
+          [939524096,7,245],
+          [939524096,7,247],
+          [939524096,7,249],
+          [939524096,7,322],
+          [939524096,7,324],
+          [939524096,7,326],
+          [939524096,7,328],
+          [939524096,7,330],
+          [939524096,7,332],
+          [939524096,7,334],
+          [939524096,7,336],
+          [939524096,7,338],
+          [939524096,7,340],
+          [939524096,7,342],
+          [939524096,7,344],
+          [939524096,7,346],
+          [939524096,7,348],
+          [939524096,7,350],
+          [939524096,7,352]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_heap_fft_done",
+        "rows": [
+          [1032,12],
+          [859,14],
+          [869,16],
+          [865,18],
+          [785,20],
+          [764,22],
+          [731,24],
+          [772,26],
+          [738,28],
+          [775,30],
+          [746,32],
+          [820,34],
+          [790,36],
+          [729,38],
+          [796,40],
+          [746,42],
+          [958,117],
+          [722,119],
+          [765,121],
+          [816,123],
+          [800,125],
+          [715,127],
+          [800,129],
+          [851,131],
+          [887,133],
+          [831,135],
+          [802,137],
+          [801,139],
+          [867,141],
+          [855,143],
+          [760,145],
+          [709,147],
+          [822,220],
+          [651,222],
+          [653,224],
+          [673,226],
+          [642,228],
+          [651,230],
+          [650,232],
+          [654,234],
+          [653,236],
+          [653,238],
+          [719,240],
+          [1079,242],
+          [854,244],
+          [823,246],
+          [853,248],
+          [894,250],
+          [771,323],
+          [643,325],
+          [646,327],
+          [660,329],
+          [671,331],
+          [653,333],
+          [652,335],
+          [642,337],
+          [635,339],
+          [653,341],
+          [690,343],
+          [950,345],
+          [785,347],
+          [771,349],
+          [860,351],
+          [831,353]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","prove_and_verify_ms","node_payload_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_verified",
+        "rows": [
+          [1,210729,1913159,43],
+          [1,242662,1913149,148],
+          [1,232007,1913482,251],
+          [1,233355,1913233,354]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["artifact","resumed","elapsed_ms","setups","cache_hits","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_node_complete",
+        "rows": [
+          ["node.1.0",false,254271,1,0,false,44],
+          ["node.1.1",false,246107,1,1,false,149],
+          ["node.1.2",false,240172,1,2,false,252],
+          ["node.1.3",false,240153,1,3,false,355]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {
+          "timings": ["inclusive_nonadditive"]
+        },
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["node.1.0",254543,0,0,0,45],
+          ["node.1.1",246108,0,0,0,150],
+          ["node.1.2",240172,0,0,0,253],
+          ["node.1.3",240153,0,0,0,356],
+          ["grouped process remainder",603,0,0,0,420]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["node.1.0","node.1.1","node.1.2","node.1.3"],
+          "name": ["execution trace","fused quotient chunk","fused quotient ldes","native batch prove","native verification","node serialization","paired wrapper compilation","preprocessing setup","evaluate all constraints symbolically","evaluate base constraints symbolically","infer base and extension constraint degree","Compute Selectors","compute quotient","compute quotient polynomial","infer log of constraint degree","prove_batch","compute constraint layout with lookups","evaluate constraints symbolically","infer constraint degree","verify constraints","verify_batch","grind for proof-of-work witness","coset_dft","coset_dft_oop","coset_lde_batch_with_transform","first_half","first_half_general","first_half_general_oop","reserve_exact","second_half","second_half_general","divide_by_height","batch_multiplicative_inverse","randomize polys","FRI prover","commit phase","idft final poly","query phase","compress mat","compute opened values with Lagrange interpolation","compute_inverse_denominators","evaluate matrix","fold_matrix","reduce matrix quotient","generate lookup permutation","columnwise_dot_product","with_random_cols","with_zero_cols","reverse_matrix_index_bits","build merkle tree","first digest layer","get_log_num_quotient_chunks","infer log of base and extension constraint degree","verify","verify_with_preprocessed"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::prover","p3_batch_stark::symbolic","p3_batch_stark::verifier","p3_challenger::grinding_challenger","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_fri::hiding_pcs","p3_fri::prover","p3_fri::two_adic_pcs","p3_lookup::logup","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,0,1,255621565,255621565,0,46],
+          [0,1,16,13613040224,1073146312,0,47],
+          [0,2,1,14162291043,14162291043,0,48],
+          [0,3,1,210429445814,210429445814,0,49],
+          [0,4,1,42601110,42601110,0,50],
+          [0,5,1,2105222,2105222,0,51],
+          [0,6,1,2987588970,2987588970,0,52],
+          [0,7,1,40428663559,40428663559,0,53],
+          [1,8,12,377775,41478,0,54],
+          [1,9,2,65925,33131,0,55],
+          [1,10,12,636365,66189,0,56],
+          [2,11,1,300926756,300926756,0,57],
+          [2,12,1,23583497710,23583497710,0,58],
+          [2,13,1,9344673627,9344673627,0,59],
+          [2,14,1,1765602,1765602,0,60],
+          [2,15,1,210418529530,210418529530,0,61],
+          [3,16,31,11066753,1267084,0,62],
+          [3,17,51,9433336,839561,0,63],
+          [3,18,36,13793904,1762832,0,64],
+          [4,14,2,797754,400648,0,65],
+          [4,19,2,295870,157255,0,66],
+          [4,20,2,81197687,41812585,0,67],
+          [5,21,21,7168384,7158409,0,68],
+          [6,22,49,7704297120,496097992,0,69],
+          [6,23,15,2488332069,690566119,0,70],
+          [6,24,1,2640022165,2640022165,0,71],
+          [6,25,36,4049975858,262069368,0,72],
+          [6,26,49,3411631624,309392374,0,73],
+          [6,27,15,385851776,28461538,0,74],
+          [6,28,1,20892981,20892981,0,75],
+          [6,29,36,2350837616,154858408,0,76],
+          [6,30,64,3355610688,116129290,0,77],
+          [7,31,19,61120706,25721694,0,78],
+          [8,32,22608,2153081800,204167041,0,79],
+          [9,33,2,828423593,555407956,0,80],
+          [10,34,1,17699347397,17699347397,0,81],
+          [10,35,1,14522245288,14522245288,0,82],
+          [10,36,1,3101,3101,0,83],
+          [10,37,1,3134163322,3134163322,0,84],
+          [11,38,20,10898226517,3057583565,0,85],
+          [11,39,21,376888411,176062249,0,86],
+          [11,40,1,764556513,764556513,0,87],
+          [11,41,21,377263912,176117604,0,88],
+          [11,42,20,411287231,328391984,0,89],
+          [11,43,20,16733166326,3388097079,0,90],
+          [12,44,1,623355353,623355353,0,91],
+          [13,45,351,389050718,176057980,0,92],
+          [14,46,18,971072745,548368359,0,93],
+          [14,47,1,605717597,605717597,0,94],
+          [15,48,210,6195156821,639740245,0,95],
+          [16,49,25,162921131488,63766204051,0,96],
+          [16,50,25,150345527568,62066769508,0,97],
+          [17,51,12,649828,67298,0,98],
+          [17,52,12,643314,66769,0,99],
+          [18,53,10,233596299,27373426,0,100],
+          [18,54,10,233586703,27372597,0,101],
+          [0,0,1,263480618,263480618,1,151],
+          [0,1,16,13711237538,999507315,1,152],
+          [0,2,1,14228606786,14228606786,1,153],
+          [0,3,1,242362598007,242362598007,1,154],
+          [0,4,1,34283825,34283825,1,155],
+          [0,5,1,1750125,1750125,1,156],
+          [0,6,1,3148906417,3148906417,1,157],
+          [1,8,4,163708,53506,1,158],
+          [1,9,2,76757,39207,1,159],
+          [1,10,4,278600,86616,1,160],
+          [2,11,1,314561794,314561794,1,161],
+          [2,12,1,27287489528,27287489528,1,162],
+          [2,13,1,12996058047,12996058047,1,163],
+          [2,14,1,537638,537638,1,164],
+          [2,15,1,242352628228,242352628228,1,165],
+          [3,16,9,3531158,469441,1,166],
+          [3,17,17,3396003,315806,1,167],
+          [3,18,13,5076452,536893,1,168],
+          [4,14,2,664898,338516,1,169],
+          [4,19,2,243541,124116,1,170],
+          [4,20,2,65830178,33361252,1,171],
+          [5,21,21,11909626,11902938,1,172],
+          [6,22,33,5020957848,285920056,1,173],
+          [6,23,15,1279542805,301349047,1,174],
+          [6,24,1,1364340106,1364340106,1,175],
+          [6,25,35,4037226922,274725980,1,176],
+          [6,26,33,2230183819,131174819,1,177],
+          [6,27,15,399366080,31753364,1,178],
+          [6,28,1,14298135,14298135,1,179],
+          [6,29,35,2327276121,160725007,1,180],
+          [6,30,48,2390441945,119925937,1,181],
+          [7,31,18,44473082,26773295,1,182],
+          [8,32,9032,2606548842,237876019,1,183],
+          [9,33,2,1357471191,828827550,1,184],
+          [10,34,1,16628779636,16628779636,1,185],
+          [10,35,1,12421619709,12421619709,1,186],
+          [10,36,1,3320,3320,1,187],
+          [10,37,1,4164436306,4164436306,1,188],
+          [11,38,20,38649782443,29811638920,1,189],
+          [11,39,21,515683969,254387597,1,190],
+          [11,40,1,744394942,744394942,1,191],
+          [11,41,21,516017480,254433901,1,192],
+          [11,42,20,295393310,218294241,1,193],
+          [11,43,20,46538895006,30043401617,1,194],
+          [12,44,1,527819850,527819850,1,195],
+          [13,45,87,517483487,254383968,1,196],
+          [14,46,18,1461208655,823626192,1,197],
+          [15,48,173,4126866040,261998138,1,198],
+          [16,49,24,130618672992,61945725433,1,199],
+          [16,50,24,121985911153,60271055738,1,200],
+          [17,51,4,284068,87920,1,201],
+          [17,52,4,281099,87281,1,202],
+          [18,53,2,53368611,27290284,1,203],
+          [18,54,2,53366125,27288800,1,204],
+          [0,0,1,767451004,767451004,2,254],
+          [0,1,16,12655424023,1124787535,2,255],
+          [0,2,1,13145228574,13145228574,2,256],
+          [0,3,1,231205720713,231205720713,2,257],
+          [0,4,1,32672642,32672642,2,258],
+          [0,5,1,1685404,1685404,2,259],
+          [0,6,1,7930107938,7930107938,2,260],
+          [1,8,4,132315,40232,2,261],
+          [1,9,2,68795,34768,2,262],
+          [1,10,4,218194,63971,2,263],
+          [2,11,1,292484615,292484615,2,264],
+          [2,12,1,23454147690,23454147690,2,265],
+          [2,13,1,10245882172,10245882172,2,266],
+          [2,14,1,1819721,1819721,2,267],
+          [2,15,1,231194156374,231194156374,2,268],
+          [3,16,9,2983933,437604,2,269],
+          [3,17,17,3571615,984633,2,270],
+          [3,18,13,5675098,1817619,2,271],
+          [4,14,2,600019,302675,2,272],
+          [4,19,2,227537,117017,2,273],
+          [4,20,2,61933747,31486202,2,274],
+          [5,21,21,2536100,2529816,2,275],
+          [6,22,33,12257374569,8215741987,2,276],
+          [6,23,15,2581660405,682959727,2,277],
+          [6,24,1,10838784617,10838784617,2,278],
+          [6,25,35,3604193612,229720747,2,279],
+          [6,26,33,1761691199,93591186,2,280],
+          [6,27,15,409711922,35195193,2,281],
+          [6,28,1,18350754,18350754,2,282],
+          [6,29,35,2088043013,130832753,2,283],
+          [6,30,48,2129752008,93749798,2,284],
+          [7,31,18,47398828,29151676,2,285],
+          [8,32,9032,1925890006,211669400,2,286],
+          [9,33,2,600312647,482456275,2,287],
+          [10,34,1,13732826978,13732826978,2,288],
+          [10,35,1,9813002601,9813002601,2,289],
+          [10,36,1,8856,8856,2,290],
+          [10,37,1,3888444148,3888444148,2,291],
+          [11,38,20,33627740751,24825629700,2,292],
+          [11,39,21,424052678,175222209,2,293],
+          [11,40,1,741383937,741383937,2,294],
+          [11,41,21,424460499,175298344,2,295],
+          [11,42,20,212932660,140304645,2,296],
+          [11,43,20,39335314567,25057750402,2,297],
+          [12,44,1,500027722,500027722,2,298],
+          [13,45,87,425646676,175217114,2,299],
+          [14,46,18,702610392,475971759,2,300],
+          [15,48,173,13427532505,8120538112,2,301],
+          [16,49,24,125996023366,60748000440,2,302],
+          [16,50,24,115863240112,59089529065,2,303],
+          [17,51,4,222612,64877,2,304],
+          [17,52,4,220215,64517,2,305],
+          [18,53,2,45993064,23276651,2,306],
+          [18,54,2,45991437,23275980,2,307],
+          [0,0,1,1827282266,1827282266,3,357],
+          [0,1,16,12241284144,996115763,3,358],
+          [0,2,1,12706881001,12706881001,3,359],
+          [0,3,1,231492297235,231492297235,3,360],
+          [0,4,1,34529322,34529322,3,361],
+          [0,5,1,1750246,1750246,3,362],
+          [0,6,1,6562268418,6562268418,3,363],
+          [1,8,4,111353,33787,3,364],
+          [1,9,2,70861,36822,3,365],
+          [1,10,4,191395,52612,3,366],
+          [2,11,1,283852085,283852085,3,367],
+          [2,12,1,23024478737,23024478737,3,368],
+          [2,13,1,10273037571,10273037571,3,369],
+          [2,14,1,578225,578225,3,370],
+          [2,15,1,231485996660,231485996660,3,371],
+          [3,16,9,3853307,1422605,3,372],
+          [3,17,17,2941033,408798,3,373],
+          [3,18,13,4394784,577172,3,374],
+          [4,14,2,657991,335358,3,375],
+          [4,19,2,239421,123122,3,376],
+          [4,20,2,68284371,35054566,3,377],
+          [5,21,21,980572,973328,3,378],
+          [6,22,33,4391743654,225142334,3,379],
+          [6,23,15,4472983733,719818724,3,380],
+          [6,24,1,4574830836,4574830836,3,381],
+          [6,25,35,3511541021,226587660,3,382],
+          [6,26,33,1915909103,102298926,3,383],
+          [6,27,15,416280654,47887639,3,384],
+          [6,28,1,18753878,18753878,3,385],
+          [6,29,35,2085108466,128112827,3,386],
+          [6,30,48,2252112622,96679884,3,387],
+          [7,31,18,43256558,25240025,3,388],
+          [8,32,9032,1845339229,235340020,3,389],
+          [9,33,2,4448825685,4335488577,3,390],
+          [10,34,1,18656285918,18656285918,3,391],
+          [10,35,1,14844375217,14844375217,3,392],
+          [10,36,1,3303,3303,3,393],
+          [10,37,1,3781248074,3781248074,3,394],
+          [11,38,20,26492851890,20417066826,3,395],
+          [11,39,21,755539519,495666367,3,396],
+          [11,40,1,704316718,704316718,3,397],
+          [11,41,21,755885704,495731495,3,398],
+          [11,42,20,288666034,203213174,3,399],
+          [11,43,20,36453326270,20653332892,3,400],
+          [12,44,1,492456136,492456136,3,401],
+          [13,45,87,757576656,495661255,3,402],
+          [14,46,18,4544293324,4328394483,3,403],
+          [15,48,173,7036852618,658704692,3,404],
+          [16,49,24,132850407192,63355045563,3,405],
+          [16,50,24,123530311042,61352726899,3,406],
+          [17,51,4,194680,53428,3,407],
+          [17,52,4,193170,53158,3,408],
+          [18,53,2,42357057,23177828,3,409],
+          [18,54,2,42355940,23177301,3,410]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {
+          "name": ["major_faults","memory_full_stall_us","memory_high_events","memory_some_stall_us","minor_faults","read_bytes","system_ticks","user_ticks","write_bytes"]
+        },
+        "kind": "performance_counter",
+        "rows": [
+          [0,4147,102],
+          [1,233783,103],
+          [2,57713,104],
+          [3,238550,105],
+          [4,7513557,106],
+          [5,28092604416,107],
+          [6,6951,108],
+          [7,147297,109],
+          [8,123757649920,110],
+          [0,2431075,205],
+          [1,451237,206],
+          [2,97270,207],
+          [3,452487,208],
+          [4,6245026,209],
+          [5,38099828736,210],
+          [6,7394,211],
+          [7,123085,212],
+          [8,106786873344,213],
+          [0,2280761,308],
+          [1,640375,309],
+          [2,103963,310],
+          [3,641299,311],
+          [4,6857632,312],
+          [5,36973154304,313],
+          [6,8603,314],
+          [7,117980,315],
+          [8,149936648192,316],
+          [0,2318642,411],
+          [1,1128995,412],
+          [2,92686,413],
+          [3,1129947,414],
+          [4,6612914,415],
+          [5,36215894016,416],
+          [6,8792,417],
+          [7,118818,418],
+          [8,141841215488,419],
+          [0,8,421],
+          [1,0,422],
+          [2,0,423],
+          [3,0,424],
+          [4,1301,425],
+          [5,30420992,426],
+          [6,54,427],
+          [7,4,428],
+          [8,212992,429]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [981581,47156830208,true,false,430]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-39597-2.service","exec_stop_post_snapshot",42968530944,0,47244640256,0,5389837812,431]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["input_bytes","output_bytes","width","added_bits","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_start",
+        "rows": [
+          [587202560,9395240960,70,4,4],
+          [822083584,13153337344,98,4,7],
+          [209715200,3355443200,25,4,9],
+          [822083584,13153337344,98,4,112],
+          [209715200,3355443200,25,4,114],
+          [822083584,13153337344,98,4,209],
+          [209715200,3355443200,25,4,211]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_done",
+        "rows": [
+          [7540,5],
+          [10175,8],
+          [2844,10],
+          [12667,113],
+          [2539,115],
+          [10590,210],
+          [2632,212]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","setup_ms","preprocessing_cache_hit","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_start",
+        "rows": [
+          [3,42877,false,6],
+          [3,192,true,111],
+          [3,172,true,208]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["bytes","width","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_heap_fft_start",
+        "rows": [
+          [939524096,7,11],
+          [939524096,7,13],
+          [939524096,7,15],
+          [939524096,7,17],
+          [939524096,7,19],
+          [939524096,7,21],
+          [939524096,7,23],
+          [939524096,7,25],
+          [939524096,7,27],
+          [939524096,7,29],
+          [939524096,7,31],
+          [939524096,7,33],
+          [939524096,7,35],
+          [939524096,7,37],
+          [939524096,7,39],
+          [939524096,7,41],
+          [939524096,7,116],
+          [939524096,7,118],
+          [939524096,7,120],
+          [939524096,7,122],
+          [939524096,7,124],
+          [939524096,7,126],
+          [939524096,7,128],
+          [939524096,7,130],
+          [939524096,7,132],
+          [939524096,7,134],
+          [939524096,7,136],
+          [939524096,7,138],
+          [939524096,7,140],
+          [939524096,7,142],
+          [939524096,7,144],
+          [939524096,7,146],
+          [939524096,7,213],
+          [939524096,7,215],
+          [939524096,7,217],
+          [939524096,7,219],
+          [939524096,7,221],
+          [939524096,7,223],
+          [939524096,7,225],
+          [939524096,7,227],
+          [939524096,7,229],
+          [939524096,7,231],
+          [939524096,7,233],
+          [939524096,7,235],
+          [939524096,7,237],
+          [939524096,7,239],
+          [939524096,7,241],
+          [939524096,7,243]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_heap_fft_done",
+        "rows": [
+          [862,12],
+          [664,14],
+          [672,16],
+          [669,18],
+          [756,20],
+          [807,22],
+          [833,24],
+          [776,26],
+          [667,28],
+          [669,30],
+          [671,32],
+          [661,34],
+          [682,36],
+          [686,38],
+          [685,40],
+          [675,42],
+          [918,117],
+          [666,119],
+          [671,121],
+          [670,123],
+          [668,125],
+          [691,127],
+          [713,129],
+          [664,131],
+          [737,133],
+          [801,135],
+          [709,137],
+          [903,139],
+          [899,141],
+          [837,143],
+          [762,145],
+          [680,147],
+          [735,214],
+          [660,216],
+          [664,218],
+          [665,220],
+          [691,222],
+          [683,224],
+          [663,226],
+          [669,228],
+          [649,230],
+          [697,232],
+          [870,234],
+          [801,236],
+          [1015,238],
+          [881,240],
+          [887,242],
+          [879,244]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","prove_and_verify_ms","node_payload_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_verified",
+        "rows": [
+          [3,200929,1913645,43],
+          [3,244509,1913280,148],
+          [3,243337,1913693,245]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["artifact","resumed","elapsed_ms","setups","cache_hits","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_node_complete",
+        "rows": [
+          ["node.2.0",false,252861,1,0,false,44],
+          ["node.2.1",false,251480,1,1,false,149],
+          ["node.3.0",false,252026,1,2,false,246]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {
+          "timings": ["inclusive_nonadditive"]
+        },
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["node.2.0",253280,0,0,0,45],
+          ["node.2.1",251481,0,0,0,150],
+          ["node.3.0",252027,0,0,0,247],
+          ["grouped process remainder",628,0,0,0,305]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["node.2.0","node.2.1","node.3.0"],
+          "name": ["child verification","execution trace","fused quotient chunk","fused quotient ldes","merge compilation","native batch prove","native verification","node serialization","preprocessing setup","evaluate all constraints symbolically","infer base and extension constraint degree","Compute Selectors","compute quotient","compute quotient polynomial","infer log of constraint degree","prove_batch","compute constraint layout with lookups","evaluate constraints symbolically","infer constraint degree","verify constraints","verify_batch","grind for proof-of-work witness","coset_dft","coset_dft_oop","coset_lde_batch_with_transform","first_half","first_half_general","first_half_general_oop","reserve_exact","second_half","second_half_general","divide_by_height","batch_multiplicative_inverse","randomize polys","FRI prover","commit phase","idft final poly","query phase","compress mat","compute opened values with Lagrange interpolation","compute_inverse_denominators","evaluate matrix","fold_matrix","reduce matrix quotient","generate lookup permutation","columnwise_dot_product","with_random_cols","with_zero_cols","reverse_matrix_index_bits","build merkle tree","first digest layer","get_log_num_quotient_chunks","infer log of base and extension constraint degree","verify","verify_with_preprocessed"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::prover","p3_batch_stark::symbolic","p3_batch_stark::verifier","p3_challenger::grinding_challenger","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_fri::hiding_pcs","p3_fri::prover","p3_fri::two_adic_pcs","p3_lookup::logup","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,0,1,73585650,73585650,0,46],
+          [0,1,1,360575907,360575907,0,47],
+          [0,2,16,12170145622,903683532,0,48],
+          [0,3,1,12654529881,12654529881,0,49],
+          [0,4,1,8847866841,8847866841,0,50],
+          [0,5,1,200533437791,200533437791,0,51],
+          [0,6,1,33996339,33996339,0,52],
+          [0,7,1,1669000,1669000,0,53],
+          [0,8,1,42877243056,42877243056,0,54],
+          [1,9,8,212190,39233,0,55],
+          [1,10,8,369754,52790,0,56],
+          [2,11,1,269710346,269710346,0,57],
+          [2,12,1,21691008504,21691008504,0,58],
+          [2,13,1,8978109319,8978109319,0,59],
+          [2,14,1,1380318,1380318,0,60],
+          [2,15,1,200527230750,200527230750,0,61],
+          [3,16,45,13800123,579496,0,62],
+          [3,17,89,14339311,645860,0,63],
+          [3,18,66,21295881,1379207,0,64],
+          [4,14,10,3196159,450224,0,65],
+          [4,19,10,1093087,123220,0,66],
+          [4,20,10,308268667,33302110,0,67],
+          [5,21,21,3915373,3907508,0,68],
+          [6,22,49,6863577843,211509341,0,69],
+          [6,23,15,806216017,134906168,0,70],
+          [6,24,1,895989693,895989693,0,71],
+          [6,25,36,3724101890,228070828,0,72],
+          [6,26,49,2934541047,94233435,0,73],
+          [6,27,15,429912209,49072598,0,74],
+          [6,28,1,21067480,21067480,0,75],
+          [6,29,36,2133219268,138063206,0,76],
+          [6,30,64,3101072200,96483266,0,77],
+          [7,31,19,59461857,24694804,0,78],
+          [8,32,39694,2198967082,231456961,0,79],
+          [9,33,2,565484615,442442417,0,80],
+          [10,34,1,16094008433,16094008433,0,81],
+          [10,35,1,12549973752,12549973752,0,82],
+          [10,36,1,3027,3027,0,83],
+          [10,37,1,3505587110,3505587110,0,84],
+          [11,38,20,7519786734,2018910906,0,85],
+          [11,39,21,338278908,123091752,0,86],
+          [11,40,1,702127994,702127994,0,87],
+          [11,41,21,338607435,123155960,0,88],
+          [11,42,20,315195949,243341178,0,89],
+          [11,43,20,17713299253,2505962431,0,90],
+          [12,44,1,522980536,522980536,0,91],
+          [13,45,285,346792339,123084401,0,92],
+          [14,46,18,669297108,437250753,0,93],
+          [14,47,1,2277108158,2277108158,0,94],
+          [15,48,210,4229040636,98559604,0,95],
+          [16,49,25,158998871290,65581330297,0,96],
+          [16,50,25,146030792314,61898974577,0,97],
+          [17,51,8,376689,54239,0,98],
+          [17,52,8,373337,53805,0,99],
+          [18,53,8,167502763,24629562,0,100],
+          [18,54,8,167497703,24628653,0,101],
+          [0,0,1,74324651,74324651,1,151],
+          [0,1,1,351919224,351919224,1,152],
+          [0,2,16,12750033347,958889752,1,153],
+          [0,3,1,13250465785,13250465785,1,154],
+          [0,4,1,6569178630,6569178630,1,155],
+          [0,5,1,244120175739,244120175739,1,156],
+          [0,6,1,35446416,35446416,1,157],
+          [0,7,1,1767502,1767502,1,158],
+          [2,11,1,279341696,279341696,1,159],
+          [2,12,1,27865196293,27865196293,1,160],
+          [2,13,1,14576610881,14576610881,1,161],
+          [2,14,1,424220,424220,1,162],
+          [2,15,1,244109443136,244109443136,1,163],
+          [3,16,15,4693124,388796,1,164],
+          [3,17,35,5590312,240295,1,165],
+          [3,18,27,8401476,423577,1,166],
+          [4,14,6,1825927,324948,1,167],
+          [4,19,6,651489,123234,1,168],
+          [4,20,6,188555688,34175322,1,169],
+          [5,21,21,305898,299104,1,170],
+          [6,22,33,4127889982,217535938,1,171],
+          [6,23,15,11721144641,6855848862,1,172],
+          [6,24,1,11826950018,11826950018,1,173],
+          [6,25,35,3837396910,251781766,1,174],
+          [6,26,33,1764833352,96074463,1,175],
+          [6,27,15,475707100,46059725,1,176],
+          [6,28,1,41272424,41272424,1,177],
+          [6,29,35,2135028895,153628233,1,178],
+          [6,30,48,2129519386,96528415,1,179],
+          [7,31,18,43329065,26059101,1,180],
+          [8,32,15878,2067948291,211900438,1,181],
+          [9,33,2,553775830,438393480,1,182],
+          [10,34,1,10754435287,10754435287,1,183],
+          [10,35,1,6743361305,6743361305,1,184],
+          [10,36,1,3214,3214,1,185],
+          [10,37,1,3987189446,3987189446,1,186],
+          [11,38,20,44434666860,35651931049,1,187],
+          [11,39,21,1075823742,833821062,1,188],
+          [11,40,1,787856638,787856638,1,189],
+          [11,41,21,1076178164,833872572,1,190],
+          [11,42,20,289039381,213152400,1,191],
+          [11,43,20,50048412089,35892028628,1,192],
+          [12,44,1,536234059,536234059,1,193],
+          [13,45,21,1075737695,833817472,1,194],
+          [14,46,18,657620523,432674308,1,195],
+          [15,48,173,14228643540,6805026108,1,196],
+          [16,49,24,122337416416,60850634792,1,197],
+          [16,50,24,113812634590,58957624038,1,198],
+          [0,0,1,77446517,77446517,2,248],
+          [0,1,1,1582375023,1582375023,2,249],
+          [0,2,16,12844265508,1060173310,2,250],
+          [0,3,1,13325152585,13325152585,2,251],
+          [0,4,1,8297808701,8297808701,2,252],
+          [0,5,1,241719626705,241719626705,2,253],
+          [0,6,1,33500801,33500801,2,254],
+          [0,7,1,1734818,1734818,2,255],
+          [2,11,1,277754508,277754508,2,256],
+          [2,12,1,25437264155,25437264155,2,257],
+          [2,13,1,12070607806,12070607806,2,258],
+          [2,14,1,492081,492081,2,259],
+          [2,15,1,241709840439,241709840439,2,260],
+          [3,16,15,4798400,441127,2,261],
+          [3,17,35,5753547,268269,2,262],
+          [3,18,27,8776490,491195,2,263],
+          [4,14,6,1914657,359846,2,264],
+          [4,19,6,701393,124063,2,265],
+          [4,20,6,195683689,34290375,2,266],
+          [5,21,21,18544402,18537823,2,267],
+          [6,22,33,15264059038,11093192910,2,268],
+          [6,23,15,2438990215,646278177,2,269],
+          [6,24,1,13570052324,13570052324,2,270],
+          [6,25,35,3689011070,234335859,2,271],
+          [6,26,33,1815717393,99088810,2,272],
+          [6,27,15,420415443,38942608,2,273],
+          [6,28,1,16741215,16741215,2,274],
+          [6,29,35,2105194359,136361592,2,275],
+          [6,30,48,2097922406,92645330,2,276],
+          [7,31,18,43505744,25343037,2,277],
+          [8,32,15878,1838546212,195956940,2,278],
+          [9,33,2,663390906,441471210,2,279],
+          [10,34,1,10588374175,10588374175,2,280],
+          [10,35,1,6744118477,6744118477,2,281],
+          [10,36,1,3266,3266,2,282],
+          [10,37,1,3800141588,3800141588,2,283],
+          [11,38,20,39433639843,31445695411,2,284],
+          [11,39,21,1230949305,962821492,2,285],
+          [11,40,1,697920499,697920499,2,286],
+          [11,41,21,1231343153,962886815,2,287],
+          [11,42,20,299579174,222809432,2,288],
+          [11,43,20,45228762236,31681815766,2,289],
+          [12,44,1,518565736,518565736,2,290],
+          [13,45,21,1230846513,962816461,2,291],
+          [14,46,18,760558803,436487094,2,292],
+          [15,48,173,16277070468,11046278645,2,293],
+          [16,49,24,127968120026,60658368574,2,294],
+          [16,50,24,119302083313,58731280173,2,295]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {
+          "name": ["major_faults","memory_full_stall_us","memory_high_events","memory_some_stall_us","minor_faults","read_bytes","system_ticks","user_ticks","write_bytes"]
+        },
+        "kind": "performance_counter",
+        "rows": [
+          [0,4589,102],
+          [1,448282,103],
+          [2,72176,104],
+          [3,449328,105],
+          [4,6416089,106],
+          [5,37367042048,107],
+          [6,6722,108],
+          [7,141821,109],
+          [8,162388508672,110],
+          [0,2494069,199],
+          [1,723092,200],
+          [2,98735,201],
+          [3,723814,202],
+          [4,7432243,203],
+          [5,30977327104,204],
+          [6,8694,205],
+          [7,118352,206],
+          [8,97962618880,207],
+          [0,2390043,296],
+          [1,1285223,297],
+          [2,94863,298],
+          [3,1287690,299],
+          [4,6826477,300],
+          [5,37456326656,301],
+          [6,8445,302],
+          [7,118895,303],
+          [8,160593854464,304],
+          [0,6,306],
+          [1,0,307],
+          [2,0,308],
+          [3,0,309],
+          [4,1952,310],
+          [5,40443904,311],
+          [6,54,312],
+          [7,6,313],
+          [8,327680,314]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [757418,47442042880,true,false,315]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-39597-3.service","exec_stop_post_snapshot",42965766144,0,47244640256,0,4029948222,316]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["grouped process remainder",110,0,0,"inclusive_nonadditive",5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/04-prune.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["grouped process remainder"],
+          "target": ["p3_batch_stark::symbolic","p3_batch_stark::verifier","p3_field::batch_inverse"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"compute constraint layout with lookups",8,2082091,301128,0,6],
+          [0,"evaluate constraints symbolically",16,2133251,164027,0,7],
+          [0,"infer constraint degree",12,3106136,312394,0,8],
+          [1,"infer log of constraint degree",2,501703,307889,0,9],
+          [1,"verify constraints",2,217895,111514,0,10],
+          [1,"verify_batch",2,70290706,38190896,0,11],
+          [2,"batch_multiplicative_inverse",5120,3400844,600864,0,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/04-prune.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,13],
+          ["memory_full_stall_us",0,14],
+          ["memory_high_events",0,15],
+          ["memory_some_stall_us",0,16],
+          ["minor_faults",4138,17],
+          ["read_bytes",0,18],
+          ["system_ticks",0,19],
+          ["user_ticks",10,20],
+          ["write_bytes",49152,21]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/04-prune.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [110,0,true,false,22]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/04-prune.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-39597-4.service","exec_stop_post_snapshot",11452416,0,47244640256,0,131793,23]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/04-prune.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["grouped process remainder",56,0,0,"inclusive_nonadditive",4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/05-root.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["grouped process remainder"],
+          "target": ["p3_batch_stark::symbolic","p3_batch_stark::verifier","p3_field::batch_inverse"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"compute constraint layout with lookups",4,891726,259578,0,5],
+          [0,"evaluate constraints symbolically",8,909269,156114,0,6],
+          [0,"infer constraint degree",6,1267074,251321,0,7],
+          [1,"infer log of constraint degree",1,195982,195982,0,8],
+          [1,"verify constraints",1,117533,117533,0,9],
+          [1,"verify_batch",1,35433922,35433922,0,10],
+          [2,"batch_multiplicative_inverse",2560,1511227,138864,0,11]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/05-root.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,12],
+          ["memory_full_stall_us",0,13],
+          ["memory_high_events",0,14],
+          ["memory_some_stall_us",0,15],
+          ["minor_faults",2409,16],
+          ["read_bytes",0,17],
+          ["system_ticks",0,18],
+          ["user_ticks",5,19],
+          ["write_bytes",0,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/05-root.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [56,0,true,false,21]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/05-root.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-39597-5.service","exec_stop_post_snapshot",7958528,0,47244640256,0,77376,22]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/05-root.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-39597-7.service","exec_stop_post_snapshot",15822848,0,47244640256,0,238558,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/07-audit.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {
+    "backend": "opencl",
+    "memory_model": "discrete",
+    "os": "linux"
+  },
+  "proofs": [
+    {
+      "artifact": "node.1.0",
+      "cache_hits": 0,
+      "elapsed_seconds": 254.271,
+      "resumed": false,
+      "setups": 1,
+      "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log",
+      "source_line": 44
+    },
+    {
+      "artifact": "node.1.1",
+      "cache_hits": 1,
+      "elapsed_seconds": 246.107,
+      "resumed": false,
+      "setups": 1,
+      "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log",
+      "source_line": 149
+    },
+    {
+      "artifact": "node.1.2",
+      "cache_hits": 2,
+      "elapsed_seconds": 240.172,
+      "resumed": false,
+      "setups": 1,
+      "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log",
+      "source_line": 252
+    },
+    {
+      "artifact": "node.1.3",
+      "cache_hits": 3,
+      "elapsed_seconds": 240.153,
+      "resumed": false,
+      "setups": 1,
+      "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log",
+      "source_line": 355
+    },
+    {
+      "artifact": "node.2.0",
+      "cache_hits": 0,
+      "elapsed_seconds": 252.861,
+      "resumed": false,
+      "setups": 1,
+      "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log",
+      "source_line": 44
+    },
+    {
+      "artifact": "node.2.1",
+      "cache_hits": 1,
+      "elapsed_seconds": 251.48,
+      "resumed": false,
+      "setups": 1,
+      "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log",
+      "source_line": 149
+    },
+    {
+      "artifact": "node.3.0",
+      "cache_hits": 2,
+      "elapsed_seconds": 252.026,
+      "resumed": false,
+      "setups": 1,
+      "source": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log",
+      "source_line": 246
+    }
+  ],
+  "retained_metadata": {
+    "artifacts": {
+      "height": {
+        "bytes": 4,
+        "sha256": "c9c7e8c63836a93f6d8c04598b6503d2863a2df7b86366157178234175704dcc"
+      },
+      "key.1": {
+        "bytes": 2048,
+        "sha256": "dea6d8cd5ec78aece7514e1b79f03be9968589cb6f68892b5130c11b6b4e2fa0"
+      },
+      "key.2": {
+        "bytes": 2048,
+        "sha256": "23c014bd0cc4af3fdfedae55a0a060e3469edf001267d23f29f3d5b82bd286db"
+      },
+      "key.3": {
+        "bytes": 2048,
+        "sha256": "a42b9a30fe35034313d2ec0a92ee5aee3278c926ef53407e9e8b1cb14bbf384d"
+      },
+      "node.3.0": {
+        "bytes": 1913701,
+        "sha256": "9a16a96ee74d7045af2aac2d24da6291e936e088a9e0f3ed8f3f73bc4b4fd8e1"
+      }
+    },
+    "attempts": [
+      {
+        "log": "01-check.log",
+        "log_sha256": "82ce2d8c7c892f5f9e8120c7678c312d8c3bba6c51db828a8e657e317915f538",
+        "name": "check",
+        "started_utc": "2026-10-01T13:37:22Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 402972,
+            "memory_max": 47244640256,
+            "memory_peak": 16199680,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 254,
+            "spill_peak_bytes": 0
+          },
+          "nodes": [],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-39597-1.service",
+        "wall_seconds": 0.32863977200008776
+      },
+      {
+        "log": "02-pairs.log",
+        "log_sha256": "54a3fc1cebd462a1c703e80eeb7d6028c1f88fc8997fa520fcd4fa4b58dde772",
+        "name": "pairs",
+        "started_utc": "2026-10-01T13:37:22Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 5389837812,
+            "memory_max": 47244640256,
+            "memory_peak": 42968530944,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 981581,
+            "spill_peak_bytes": 47156830208
+          },
+          "nodes": [
+            {
+              "artifact": "node.1.0",
+              "cache_hits": 0,
+              "elapsed_ms": 254271,
+              "setups": 1
+            },
+            {
+              "artifact": "node.1.1",
+              "cache_hits": 1,
+              "elapsed_ms": 246107,
+              "setups": 1
+            },
+            {
+              "artifact": "node.1.2",
+              "cache_hits": 2,
+              "elapsed_ms": 240172,
+              "setups": 1
+            },
+            {
+              "artifact": "node.1.3",
+              "cache_hits": 3,
+              "elapsed_ms": 240153,
+              "setups": 1
+            }
+          ],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-39597-2.service",
+        "wall_seconds": 981.6857232289999
+      },
+      {
+        "log": "03-merges.log",
+        "log_sha256": "54ffd813c75d05adcc294ed6cf817f9e344514c5dcae0abbe1cdcc42583453b3",
+        "name": "merges",
+        "started_utc": "2026-10-01T13:53:44Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 4029948222,
+            "memory_max": 47244640256,
+            "memory_peak": 42965766144,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 757418,
+            "spill_peak_bytes": 47442042880
+          },
+          "nodes": [
+            {
+              "artifact": "node.2.0",
+              "cache_hits": 0,
+              "elapsed_ms": 252861,
+              "setups": 1
+            },
+            {
+              "artifact": "node.2.1",
+              "cache_hits": 1,
+              "elapsed_ms": 251480,
+              "setups": 1
+            },
+            {
+              "artifact": "node.3.0",
+              "cache_hits": 2,
+              "elapsed_ms": 252026,
+              "setups": 1
+            }
+          ],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-39597-3.service",
+        "wall_seconds": 757.5348087549996
+      },
+      {
+        "log": "04-prune.log",
+        "log_sha256": "88f0db32a942e19ccb6f9334826ac3f57ec0569ee89be916cb67bba3e3ce234a",
+        "name": "prune",
+        "started_utc": "2026-10-01T14:06:22Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 131793,
+            "memory_max": 47244640256,
+            "memory_peak": 11452416,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 110,
+            "spill_peak_bytes": 0
+          },
+          "nodes": [],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-39597-4.service",
+        "wall_seconds": 0.18039929399992616
+      },
+      {
+        "log": "05-root.log",
+        "log_sha256": "4495368e5d2689b1de0f40a1a00274628951e13a203fdd6a2f3735a029100725",
+        "name": "root",
+        "started_utc": "2026-10-01T14:06:22Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 77376,
+            "memory_max": 47244640256,
+            "memory_peak": 7958528,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 56,
+            "spill_peak_bytes": 0
+          },
+          "nodes": [],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-39597-5.service",
+        "wall_seconds": 0.13462816199989902
+      },
+      {
+        "bundle": {
+          "height": "c9c7e8c63836a93f6d8c04598b6503d2863a2df7b86366157178234175704dcc",
+          "key.1": "dea6d8cd5ec78aece7514e1b79f03be9968589cb6f68892b5130c11b6b4e2fa0",
+          "key.2": "23c014bd0cc4af3fdfedae55a0a060e3469edf001267d23f29f3d5b82bd286db",
+          "key.3": "a42b9a30fe35034313d2ec0a92ee5aee3278c926ef53407e9e8b1cb14bbf384d",
+          "node.3.0": "9a16a96ee74d7045af2aac2d24da6291e936e088a9e0f3ed8f3f73bc4b4fd8e1"
+        },
+        "log": "06-export.log",
+        "name": "export",
+        "started_utc": "2026-10-01T14:06:22Z",
+        "status": "complete",
+        "unit": "lattica-v2-grouped-39597-6.service",
+        "wall_seconds": 0.05848833400023068
+      },
+      {
+        "log": "07-audit.log",
+        "log_sha256": "82160a0e2099920fbca7298e9dd7227eb8677a16be77b2f6055f50db4dde3727",
+        "name": "audit",
+        "started_utc": "2026-10-01T14:06:22Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 238558,
+            "memory_max": 47244640256,
+            "memory_peak": 15822848,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": 1913701,
+          "duration": null,
+          "nodes": [],
+          "preserved_auditor": true,
+          "quotient_fusion_requested": false
+        },
+        "unit": "lattica-v2-grouped-39597-7.service",
+        "wall_seconds": 0.2916852899998048
+      }
+    ],
+    "config": {
+      "accounting": "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py",
+      "action": "prove",
+      "auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-comparison-binaries-20261001-a/block-v2-grouped-artifact-audit",
+      "evidence": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence",
+      "external": ["af4bfe518efc2cde1a9c972e913e4307e3fd8b60ab6671961936c87b99a8ec31","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","2ef361a059b06a72cc05a3aac2c5ed9c4e75a0ad70081875459a6961414e9d52"],
+      "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/job",
+      "mode": "prove",
+      "quotient_fusion": 1,
+      "runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-quotient-fusion-binaries-20261001-a/block-v2-grouped-probe",
+      "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-quotient-fusion-sources-20261001-a.tar.gz"
+    },
+    "configured_limits_not_peak_observations": {
+      "aggregate_ram_bytes": 51539607552,
+      "controller_ram_bytes_at_most": 3221225472,
+      "controller_runtime_seconds_at_most": 21600,
+      "managed_spill_bytes": 128849018880,
+      "swap_bytes": 0,
+      "worker_ram_high_bytes": 42949672960,
+      "worker_ram_max_bytes": 47244640256,
+      "worker_runtime_seconds": 7200
+    },
+    "finished_utc": "2026-10-01T14:06:22Z",
+    "full_tree_security": "UNREVIEWED",
+    "level6_qualified": false,
+    "pins": {
+      "accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "auditor": "ec2bdf2bb80e06352aabefca1fcfe4345ab77e677419f27b3dbf4a166a52cd16",
+      "fusion-controller.py": "cb36fd551f3442a4eaa534536691cca8a0bda01c1b7dbe7bf7cfccfb87ec8e2c",
+      "grouped-controller.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "handoff.json": "d9a936a822f5ab2555a782712299c0ec837a08c1e39ceb6f99376f393d7c799b",
+      "registration": "1008dd7eb12fb1b50f3a51e4ef4a3f12505efac784b7b93f3ad6289d3d5230bb",
+      "runner": "57d5354780c94714f0ba8c8dd5fa10239681d21373eb6760b4e3b0bfaf18a2c4",
+      "source-archive": "3e9a69a1c070d89d421991301bdc0aa3a324f1485bb93e3f98f72cb901650d5b"
+    },
+    "production_ready": false,
+    "recursive_command_ms": 1738999,
+    "repeat_qualified": false,
+    "root": {
+      "bytes": 1913701,
+      "sha256": "9a16a96ee74d7045af2aac2d24da6291e936e088a9e0f3ed8f3f73bc4b4fd8e1"
+    },
+    "schema": 1,
+    "shared_wallets_pruned": false,
+    "status": "FUSION_TRIAL_CPU_AUDITED_RESEARCH_ONLY"
+  },
+  "revision": {
+    "pins": {
+      "accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "auditor": "ec2bdf2bb80e06352aabefca1fcfe4345ab77e677419f27b3dbf4a166a52cd16",
+      "fusion-controller.py": "cb36fd551f3442a4eaa534536691cca8a0bda01c1b7dbe7bf7cfccfb87ec8e2c",
+      "grouped-controller.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "handoff.json": "d9a936a822f5ab2555a782712299c0ec837a08c1e39ceb6f99376f393d7c799b",
+      "registration": "1008dd7eb12fb1b50f3a51e4ef4a3f12505efac784b7b93f3ad6289d3d5230bb",
+      "runner": "57d5354780c94714f0ba8c8dd5fa10239681d21373eb6760b4e3b0bfaf18a2c4",
+      "source-archive": "3e9a69a1c070d89d421991301bdc0aa3a324f1485bb93e3f98f72cb901650d5b"
+    }
+  },
+  "run_id": "run-5df1e1ac0fa60d7122bf5657",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 9673,
+      "path": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/manifest.json",
+      "sha256": "29b887b9c4f0937d8121b07b83793d708f38b4c9741d0d9c2c1c66cae62ab061"
+    },
+    {
+      "bytes": 2747,
+      "path": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/01-check.log",
+      "sha256": "82ce2d8c7c892f5f9e8120c7678c312d8c3bba6c51db828a8e657e317915f538"
+    },
+    {
+      "bytes": 37971,
+      "path": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/02-pairs.log",
+      "sha256": "54a3fc1cebd462a1c703e80eeb7d6028c1f88fc8997fa520fcd4fa4b58dde772"
+    },
+    {
+      "bytes": 27338,
+      "path": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/03-merges.log",
+      "sha256": "54ffd813c75d05adcc294ed6cf817f9e344514c5dcae0abbe1cdcc42583453b3"
+    },
+    {
+      "bytes": 2309,
+      "path": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/04-prune.log",
+      "sha256": "88f0db32a942e19ccb6f9334826ac3f57ec0569ee89be916cb67bba3e3ce234a"
+    },
+    {
+      "bytes": 2171,
+      "path": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/05-root.log",
+      "sha256": "4495368e5d2689b1de0f40a1a00274628951e13a203fdd6a2f3735a029100725"
+    },
+    {
+      "bytes": 838,
+      "path": "lattica-prover-p3/target/block-v2-fusion-proof-20261001-b/evidence/07-audit.log",
+      "sha256": "82160a0e2099920fbca7298e9dd7227eb8677a16be77b2f6055f50db4dde3727"
+    }
+  ],
+  "stages": [
+    {
+      "log": "01-check.log",
+      "log_sha256": "82ce2d8c7c892f5f9e8120c7678c312d8c3bba6c51db828a8e657e317915f538",
+      "name": "check",
+      "started_utc": "2026-10-01T13:37:22Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 402972,
+          "memory_max": 47244640256,
+          "memory_peak": 16199680,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 254,
+          "spill_peak_bytes": 0
+        },
+        "nodes": [],
+        "preserved_auditor": false,
+        "quotient_fusion_requested": true
+      },
+      "unit": "lattica-v2-grouped-39597-1.service",
+      "wall_seconds": 0.32863977200008776
+    },
+    {
+      "log": "02-pairs.log",
+      "log_sha256": "54a3fc1cebd462a1c703e80eeb7d6028c1f88fc8997fa520fcd4fa4b58dde772",
+      "name": "pairs",
+      "started_utc": "2026-10-01T13:37:22Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 5389837812,
+          "memory_max": 47244640256,
+          "memory_peak": 42968530944,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 981581,
+          "spill_peak_bytes": 47156830208
+        },
+        "nodes": [
+          {
+            "artifact": "node.1.0",
+            "cache_hits": 0,
+            "elapsed_ms": 254271,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.1",
+            "cache_hits": 1,
+            "elapsed_ms": 246107,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.2",
+            "cache_hits": 2,
+            "elapsed_ms": 240172,
+            "setups": 1
+          },
+          {
+            "artifact": "node.1.3",
+            "cache_hits": 3,
+            "elapsed_ms": 240153,
+            "setups": 1
+          }
+        ],
+        "preserved_auditor": false,
+        "quotient_fusion_requested": true
+      },
+      "unit": "lattica-v2-grouped-39597-2.service",
+      "wall_seconds": 981.6857232289999
+    },
+    {
+      "log": "03-merges.log",
+      "log_sha256": "54ffd813c75d05adcc294ed6cf817f9e344514c5dcae0abbe1cdcc42583453b3",
+      "name": "merges",
+      "started_utc": "2026-10-01T13:53:44Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 4029948222,
+          "memory_max": 47244640256,
+          "memory_peak": 42965766144,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 757418,
+          "spill_peak_bytes": 47442042880
+        },
+        "nodes": [
+          {
+            "artifact": "node.2.0",
+            "cache_hits": 0,
+            "elapsed_ms": 252861,
+            "setups": 1
+          },
+          {
+            "artifact": "node.2.1",
+            "cache_hits": 1,
+            "elapsed_ms": 251480,
+            "setups": 1
+          },
+          {
+            "artifact": "node.3.0",
+            "cache_hits": 2,
+            "elapsed_ms": 252026,
+            "setups": 1
+          }
+        ],
+        "preserved_auditor": false,
+        "quotient_fusion_requested": true
+      },
+      "unit": "lattica-v2-grouped-39597-3.service",
+      "wall_seconds": 757.5348087549996
+    },
+    {
+      "log": "04-prune.log",
+      "log_sha256": "88f0db32a942e19ccb6f9334826ac3f57ec0569ee89be916cb67bba3e3ce234a",
+      "name": "prune",
+      "started_utc": "2026-10-01T14:06:22Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 131793,
+          "memory_max": 47244640256,
+          "memory_peak": 11452416,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 110,
+          "spill_peak_bytes": 0
+        },
+        "nodes": [],
+        "preserved_auditor": false,
+        "quotient_fusion_requested": true
+      },
+      "unit": "lattica-v2-grouped-39597-4.service",
+      "wall_seconds": 0.18039929399992616
+    },
+    {
+      "log": "05-root.log",
+      "log_sha256": "4495368e5d2689b1de0f40a1a00274628951e13a203fdd6a2f3735a029100725",
+      "name": "root",
+      "started_utc": "2026-10-01T14:06:22Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 77376,
+          "memory_max": 47244640256,
+          "memory_peak": 7958528,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 56,
+          "spill_peak_bytes": 0
+        },
+        "nodes": [],
+        "preserved_auditor": false,
+        "quotient_fusion_requested": true
+      },
+      "unit": "lattica-v2-grouped-39597-5.service",
+      "wall_seconds": 0.13462816199989902
+    },
+    {
+      "bundle": {
+        "height": "c9c7e8c63836a93f6d8c04598b6503d2863a2df7b86366157178234175704dcc",
+        "key.1": "dea6d8cd5ec78aece7514e1b79f03be9968589cb6f68892b5130c11b6b4e2fa0",
+        "key.2": "23c014bd0cc4af3fdfedae55a0a060e3469edf001267d23f29f3d5b82bd286db",
+        "key.3": "a42b9a30fe35034313d2ec0a92ee5aee3278c926ef53407e9e8b1cb14bbf384d",
+        "node.3.0": "9a16a96ee74d7045af2aac2d24da6291e936e088a9e0f3ed8f3f73bc4b4fd8e1"
+      },
+      "log": "06-export.log",
+      "name": "export",
+      "started_utc": "2026-10-01T14:06:22Z",
+      "status": "complete",
+      "unit": "lattica-v2-grouped-39597-6.service",
+      "wall_seconds": 0.05848833400023068
+    },
+    {
+      "log": "07-audit.log",
+      "log_sha256": "82160a0e2099920fbca7298e9dd7227eb8677a16be77b2f6055f50db4dde3727",
+      "name": "audit",
+      "started_utc": "2026-10-01T14:06:22Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 238558,
+          "memory_max": 47244640256,
+          "memory_peak": 15822848,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": 1913701,
+        "duration": null,
+        "nodes": [],
+        "preserved_auditor": true,
+        "quotient_fusion_requested": false
+      },
+      "unit": "lattica-v2-grouped-39597-7.service",
+      "wall_seconds": 0.2916852899998048
+    }
+  ],
+  "status": "incomplete",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": 1738.999
+  },
+  "track": "linux-opencl",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": 1913701,
+    "root_sha256": "9a16a96ee74d7045af2aac2d24da6291e936e088a9e0f3ed8f3f73bc4b4fd8e1"
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

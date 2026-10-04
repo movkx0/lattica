@@ -1,0 +1,54 @@
+{
+  "campaign_ids": [],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-multi-gpu-20261003-a",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": [],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-021fed46ae1d8e2544a10dec",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 1369,
+      "path": "lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/cpu-check.log",
+      "sha256": "63d98d754446f8ad1eb718c3f86a4ee11f243accc16de06dd4e4c4d41c2ffbab"
+    },
+    {
+      "bytes": 685,
+      "path": "lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/final-build.log",
+      "sha256": "89abd37cf66a3ddb6b980fd7c663f6943597b6bf4ab841c93ac952c73d90d865"
+    },
+    {
+      "bytes": 156,
+      "path": "lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/final-check.log",
+      "sha256": "7ae7589c91c0317eafe72a3bae08621a02a6e5b595dfe9049503562e07f57499"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

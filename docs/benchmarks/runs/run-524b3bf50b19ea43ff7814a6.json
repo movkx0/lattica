@@ -1,0 +1,1805 @@
+{
+  "adapter": "grouped",
+  "campaign_ids": ["block-v2-padding-2026-10-01"],
+  "configuration": {
+    "accounting": "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py",
+    "auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-native-20261001-b/block-v2-grouped-artifact-audit",
+    "calculator": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-native-20261001-b/block-v2-expected-root",
+    "evidence": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence",
+    "external": ["8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8","9a341a3eacf5330bca8124163e8721b0a54a820685cbebaa67dcc23c09d076c0"],
+    "handoff": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/expected-statement.json",
+    "helper": "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-grouped-trial.py",
+    "inputs": {
+      "height": {
+        "bytes": 4,
+        "sha256": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60"
+      },
+      "key.1": {
+        "bytes": 2048,
+        "sha256": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5"
+      },
+      "key.2": {
+        "bytes": 2048,
+        "sha256": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802"
+      },
+      "key.3": {
+        "bytes": 2048,
+        "sha256": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99"
+      },
+      "node.3.0": {
+        "bytes": 1683948,
+        "sha256": "61f67b618e987068d4b8f23431759aa06bed465127a3ff36e14a1cf4fb6be17e"
+      }
+    },
+    "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-proving-20261001-a/job",
+    "pins": {
+      "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-padding-trial.py": "7035b25465251f2e486ab21431671cf9e96f0b06fe9400a8bf80f607977fe9bf",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/expected-statement.json": "5cf5904f55f262848402e80b93ea528629b908000e96077c80bb5e7f1e98e1ac",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-control-20261001-b/source.tar.gz": "afa7fb465154ee7f5e5f819cfdca33875a6cff0f21a7e50f188e7739de8a2d5b",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-native-20261001-b/block-v2-expected-root": "474c46856f1b797b4a176f41306f6dce2d823b29e406be7d1e99c2d99aee7b3e",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-native-20261001-b/block-v2-grouped-artifact-audit": "b35d8891d5d63874f6b270f64fe6c9d3a6190085a915ac6d8471e7826b054396",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-native-20261001-b/block-v2-padding-probe": "c1989caf87eee2bb5c58bd46f5fa429be41ac626db8b0ca16d7fd327c00a4116",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-native-20261001-b/source.tar.gz": "4f5b6a2508c519fbab82a2cef209e3116e107ac604ebc15d05e40c6f8678ee24"
+    },
+    "publics": ["a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261bb74ee2743b9898568a11a57f7000766a5c702879ae61b4a3046c789b9e8d2ed7c548378e7ac07bad4be17e494352717927e6e8cc7153cbbd40aa757e9b077ef7f63bdab15aef196d6ce13e3f9e33678d42fbf7332f466abeedfc619dcec4b90aa9ed86e630fb8f5b0d091fa1f761508e7c2282de4109ccf81cccd7ae6cd27d9664000000000000000000000000000000cdab000000000000ceab000000000000cfab000000000000d0ab000000000000","a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261b614a9f64dd8bcd8e2d6a98c45596807c893c3d0010f2beefc21f2d2117bdefc625c50aecdf3d2395159ae7d269c0cc671efdeb9f1ecb7754514fd81b56246dbe132ea6b752116a9ca5119dc7f817131266918faeca5b86150066c1c9fe2db41834f4eab97c5c8cf49adf03781993db65067345d444cb7caa4ad88321173a059a64000000000000000000000000000000ceab000000000000ceab000000000000cfab000000000000d0ab000000000000","a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261ba3d79cd025cd2c8b09966a35b62d415b7ccaae8e438cb18dad18c95e387780f7ea20bb7b3083c9e93b7e5d78022bf80cc45cb5dbd33f77e3d7500e83ffa181e706c726aa69957b178cf25737d82c2ab082a96aa14f48829fe2ff5cbfb39b51fc47929a3911835f8130ab64278ffadf9450e2c83bd19a9cd86efa8d5e3db5eb4a64000000000000000000000000000000cfab000000000000ceab000000000000cfab000000000000d0ab000000000000","a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261b3cd5de64d155fff92f090de4d69058ef5f35ac1211b26966b008a8758f801e5420f9b44d19a44a3299c9b71b3fd01878e7e1cfd880cf22d1e99791d1d6520a59d6005b15e79861cd6607939af1d13d046d59cda22b2ab8327d50bdc4c194ec515fb7c1c3592a305c139f1dd5e0f1a24448f04588830f795ae60b3aee9da829ea64000000000000000000000000000000d0ab000000000000ceab000000000000cfab000000000000d0ab000000000000","a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261b75bae023d282ca54736be55d5d25bcc5bca5db752f76c959738841c3072617993157ae0ee183bf17d05fde9c9401ee0251e53398ed8b41eb7ca7c374012a1a0f434f872c4c91a1d5116703340871c56260f84d95c004cdc7b20d1daaeb1208be5bf3211f29b0fd76d266fc1ba4e1bd5df8b5010169a186b201e51913c3a59dfa64000000000000000000000000000000d1ab000000000000ceab000000000000cfab000000000000d0ab000000000000","a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261bf68d563b1461084e59c7c6bbc5a68d9a048b04aba18cc405a0af12fa9bb92e52d82145eeade19d95a845aa8ba8d8d0a3edcb8397e1c45c5d4dd32e3dfce28eb86f4169617533d6354e750c087a6e7b21a42fc4da5b51b2ea7a3cb7f3dff26d9253bf8fe7b2b132a559f0c22e5a8d554d0e9f5e01d1e7d5e20b1f31459ebdaaaa64000000000000000000000000000000d2ab000000000000ceab000000000000cfab000000000000d0ab000000000000","a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261bd8e0a2f39b37556bbe557a82818cd78f7c0a5d8918df78b818adcef918ac03a641fa1ca084696a149ab4fda45e66e3d4f226a51e1302880abeed6a2f3295de20562d850fee0c016c8a87b90937dca1169010a361406e252acbeea7be91e5b3cba16824d4b36363a44d47327363cd09ea1708e87fcdd2fcb9aebf2215d46edbed64000000000000000000000000000000d3ab000000000000ceab000000000000cfab000000000000d0ab000000000000","a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261be5e0202d051abf73e7040611cfc351bc82f4373d993ecf03f9133e35ef7731a02f2876a3709348989762769a6064198374bc944bc9a4d7e2cb82ead5369d7f3ce4ae49dba3bb8aa14feaca22943ef91318f63ac7a85d61e9e89077f957268c3a7ffa7fdba511e6f952a30cea18036a88274008aea3a75399f1a37457f32d7eba64000000000000000000000000000000d4ab000000000000ceab000000000000cfab000000000000d0ab000000000000"],
+    "runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-native-20261001-b/block-v2-padding-probe",
+    "schema": 1,
+    "source": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/proof-evidence/root-only",
+    "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-control-20261001-b/source.tar.gz"
+  },
+  "kind": "solving",
+  "label": "evidence",
+  "limitations": ["Research evidence; does not establish production or four-wallet readiness.","Wallet proof creation and canonical chain acceptance are outside this measurement.","Inclusive phase and GPU counters are non-additive; process checkpoints may reset.","Host and OpenCL clocks are separate unless an explicit anchor was recorded."],
+  "measurement_scope": "recursive_aggregation",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["padding process remainder",72,0,0,"inclusive_nonadditive",3]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/01-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["padding process remainder"],
+          "target": ["p3_batch_stark::symbolic","p3_batch_stark::verifier","p3_field::batch_inverse"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"compute constraint layout with lookups",4,1552089,448860,0,4],
+          [0,"evaluate constraints symbolically",8,1670414,287015,0,5],
+          [0,"infer constraint degree",6,2303141,448396,0,6],
+          [1,"infer log of constraint degree",1,390231,390231,0,7],
+          [1,"verify constraints",1,142626,142626,0,8],
+          [1,"verify_batch",1,41750567,41750567,0,9],
+          [2,"batch_multiplicative_inverse",2432,2269018,871432,0,10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/01-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,11],
+          ["memory_full_stall_us",0,12],
+          ["memory_high_events",0,13],
+          ["memory_some_stall_us",0,14],
+          ["minor_faults",2405,15],
+          ["read_bytes",0,16],
+          ["system_ticks",0,17],
+          ["user_ticks",7,18],
+          ["write_bytes",0,19]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/01-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-398255-1.service","exec_stop_post_snapshot",8585216,0,47244640256,0,95314,21]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/01-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["input_bytes","output_bytes","width","added_bits","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_start",
+        "rows": [
+          [838860800,13421772800,200,4,3],
+          [411041792,6576668672,98,4,6],
+          [230686720,3690987520,55,4,8],
+          [411041792,6576668672,98,4,133],
+          [230686720,3690987520,55,4,135],
+          [411041792,6576668672,98,4,258],
+          [230686720,3690987520,55,4,260]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/02-empties.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_done",
+        "rows": [
+          [10799,4],
+          [5872,7],
+          [3192,9],
+          [5888,134],
+          [3244,136],
+          [7314,259],
+          [2954,261]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/02-empties.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","setup_ms","preprocessing_cache_hit","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_start",
+        "rows": [
+          [2,52380,false,5],
+          [2,0,true,132],
+          [2,0,true,257]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/02-empties.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "heap_lde_normalize_start",
+        "rows": [
+          [469762048,10],
+          [469762048,14],
+          [469762048,18],
+          [469762048,22],
+          [469762048,26],
+          [469762048,30],
+          [469762048,34],
+          [469762048,38],
+          [469762048,42],
+          [469762048,46],
+          [469762048,50],
+          [469762048,54],
+          [469762048,58],
+          [469762048,62],
+          [469762048,66],
+          [469762048,70],
+          [469762048,137],
+          [469762048,141],
+          [469762048,145],
+          [469762048,149],
+          [469762048,153],
+          [469762048,157],
+          [469762048,161],
+          [469762048,165],
+          [469762048,169],
+          [469762048,173],
+          [469762048,177],
+          [469762048,181],
+          [469762048,185],
+          [469762048,189],
+          [469762048,193],
+          [469762048,197],
+          [469762048,262],
+          [469762048,266],
+          [469762048,270],
+          [469762048,274],
+          [469762048,278],
+          [469762048,282],
+          [469762048,286],
+          [469762048,290],
+          [469762048,294],
+          [469762048,298],
+          [469762048,302],
+          [469762048,306],
+          [469762048,310],
+          [469762048,314],
+          [469762048,318],
+          [469762048,322]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/02-empties.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "heap_lde_normalize_done",
+        "rows": [
+          [125,11],
+          [128,15],
+          [131,19],
+          [124,23],
+          [119,27],
+          [148,31],
+          [130,35],
+          [219,39],
+          [135,43],
+          [130,47],
+          [226,51],
+          [219,55],
+          [237,59],
+          [163,63],
+          [160,67],
+          [149,71],
+          [187,138],
+          [138,142],
+          [155,146],
+          [165,150],
+          [156,154],
+          [139,158],
+          [147,162],
+          [140,166],
+          [147,170],
+          [142,174],
+          [152,178],
+          [156,182],
+          [121,186],
+          [144,190],
+          [167,194],
+          [194,198],
+          [122,263],
+          [233,267],
+          [233,271],
+          [126,275],
+          [129,279],
+          [145,283],
+          [131,287],
+          [130,291],
+          [141,295],
+          [126,299],
+          [128,303],
+          [126,307],
+          [133,311],
+          [125,315],
+          [143,319],
+          [129,323]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/02-empties.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["bytes","width","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_heap_fft_start",
+        "rows": [
+          [469762048,7,12],
+          [469762048,7,16],
+          [469762048,7,20],
+          [469762048,7,24],
+          [469762048,7,28],
+          [469762048,7,32],
+          [469762048,7,36],
+          [469762048,7,40],
+          [469762048,7,44],
+          [469762048,7,48],
+          [469762048,7,52],
+          [469762048,7,56],
+          [469762048,7,60],
+          [469762048,7,64],
+          [469762048,7,68],
+          [469762048,7,72],
+          [469762048,7,139],
+          [469762048,7,143],
+          [469762048,7,147],
+          [469762048,7,151],
+          [469762048,7,155],
+          [469762048,7,159],
+          [469762048,7,163],
+          [469762048,7,167],
+          [469762048,7,171],
+          [469762048,7,175],
+          [469762048,7,179],
+          [469762048,7,183],
+          [469762048,7,187],
+          [469762048,7,191],
+          [469762048,7,195],
+          [469762048,7,199],
+          [469762048,7,264],
+          [469762048,7,268],
+          [469762048,7,272],
+          [469762048,7,276],
+          [469762048,7,280],
+          [469762048,7,284],
+          [469762048,7,288],
+          [469762048,7,292],
+          [469762048,7,296],
+          [469762048,7,300],
+          [469762048,7,304],
+          [469762048,7,308],
+          [469762048,7,312],
+          [469762048,7,316],
+          [469762048,7,320],
+          [469762048,7,324]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/02-empties.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_heap_fft_done",
+        "rows": [
+          [378,13],
+          [362,17],
+          [361,21],
+          [349,25],
+          [355,29],
+          [358,33],
+          [360,37],
+          [422,41],
+          [538,45],
+          [601,49],
+          [562,53],
+          [487,57],
+          [451,61],
+          [375,65],
+          [361,69],
+          [364,73],
+          [795,140],
+          [331,144],
+          [360,148],
+          [454,152],
+          [364,156],
+          [357,160],
+          [353,164],
+          [386,168],
+          [396,172],
+          [349,176],
+          [370,180],
+          [344,184],
+          [342,188],
+          [425,192],
+          [422,196],
+          [772,200],
+          [320,265],
+          [635,269],
+          [318,273],
+          [307,277],
+          [309,281],
+          [334,285],
+          [326,289],
+          [306,293],
+          [308,297],
+          [303,301],
+          [317,305],
+          [310,309],
+          [310,313],
+          [305,317],
+          [302,321],
+          [311,325]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/02-empties.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","prove_and_verify_ms","node_payload_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_verified",
+        "rows": [
+          [2,129566,1683940,74],
+          [2,131152,1683940,201],
+          [2,120864,1683940,326]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/02-empties.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {
+          "timings": ["inclusive_nonadditive"]
+        },
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["empty.3",182109,0,0,0,76],
+          ["empty.4",131223,0,0,0,203],
+          ["empty.5",120940,0,0,0,328],
+          ["padding process remainder",497,0,0,0,382]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/02-empties.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["empty.3","empty.4","empty.5"],
+          "name": ["execution trace","native batch prove","native verification","node serialization","preprocessing setup","Compute Selectors","compute quotient","compute quotient polynomial","infer log of constraint degree","prove_batch","compute constraint layout with lookups","evaluate constraints symbolically","infer constraint degree","verify constraints","verify_batch","grind for proof-of-work witness","coset_dft","coset_dft_oop","coset_lde_batch_with_transform","first_half","first_half_general","first_half_general_oop","reserve_exact","second_half","second_half_general","divide_by_height","batch_multiplicative_inverse","randomize polys","FRI prover","commit phase","idft final poly","query phase","compress mat","compute opened values with Lagrange interpolation","compute_inverse_denominators","evaluate matrix","fold_matrix","reduce matrix quotient","generate lookup permutation","columnwise_dot_product","with_random_cols","with_zero_cols","reverse_matrix_index_bits","build merkle tree","first digest layer"],
+          "target": ["lattica_block_v2_perf","p3_batch_stark::prover","p3_batch_stark::symbolic","p3_batch_stark::verifier","p3_challenger::grinding_challenger","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_fri::hiding_pcs","p3_fri::prover","p3_fri::two_adic_pcs","p3_lookup::logup","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,0,1,1492460,1492460,0,77],
+          [0,1,1,129526000543,129526000543,0,78],
+          [0,2,1,37649582,37649582,0,79],
+          [0,3,1,1300457,1300457,0,80],
+          [0,4,1,52380876646,52380876646,0,81],
+          [1,5,1,67669685,67669685,0,82],
+          [1,6,1,30634442171,30634442171,0,83],
+          [1,7,1,9848311805,9848311805,0,84],
+          [1,8,1,668234,668234,0,85],
+          [1,9,1,129524011221,129524011221,0,86],
+          [2,10,13,7122387,910523,0,87],
+          [2,11,26,7290459,595255,0,88],
+          [2,12,20,10740848,1013226,0,89],
+          [3,8,3,1522167,596943,0,90],
+          [3,13,3,474677,162123,0,91],
+          [3,14,3,113509357,38634134,0,92],
+          [4,15,20,10523866,10515890,0,93],
+          [5,16,65,7070388275,235677570,0,94],
+          [5,17,511,8265384275,74092066,0,95],
+          [5,18,17,8907150041,1177776074,0,96],
+          [5,19,36,2191612312,133995173,0,97],
+          [5,20,65,3286597644,112874255,0,98],
+          [5,21,511,5156214881,28546895,0,99],
+          [5,22,17,151162216,19654874,0,100],
+          [5,23,36,1149745530,83761741,0,101],
+          [5,24,576,4296773162,103086729,0,102],
+          [6,25,3,47548436,27092679,0,103],
+          [7,26,7558,2151459576,93439396,0,104],
+          [8,27,2,394615375,245049130,0,105],
+          [9,28,1,4490131545,4490131545,0,106],
+          [9,29,1,3700276317,3700276317,0,107],
+          [9,30,1,4363,4363,0,108],
+          [9,31,1,758336987,758336987,0,109],
+          [10,32,20,5469833716,1903228974,0,110],
+          [10,33,21,297809091,161956387,0,111],
+          [10,34,1,367290451,367290451,0,112],
+          [10,35,21,298444314,162067439,0,113],
+          [10,36,19,89686038,63844107,0,114],
+          [10,37,20,8678139506,2047479414,0,115],
+          [11,38,1,697038254,697038254,0,116],
+          [12,39,21,297726650,161951628,0,117],
+          [13,40,18,473791421,238272291,0,118],
+          [13,41,1,2033119788,2033119788,0,119],
+          [14,42,754,6117559770,115372143,0,120],
+          [15,43,24,112179505199,39153654512,0,121],
+          [15,44,24,106855348468,38296444235,0,122],
+          [0,0,1,1302332,1302332,1,204],
+          [0,1,1,131116209909,131116209909,1,205],
+          [0,2,1,34384387,34384387,1,206],
+          [0,3,1,1001606,1001606,1,207],
+          [1,5,1,55990293,55990293,1,208],
+          [1,6,1,31563182418,31563182418,1,209],
+          [1,7,1,9694208370,9694208370,1,210],
+          [1,8,1,655753,655753,1,211],
+          [1,9,1,131114443871,131114443871,1,212],
+          [2,10,5,2918472,736237,1,213],
+          [2,11,11,3126334,345791,1,214],
+          [2,12,9,5119100,655147,1,215],
+          [3,8,2,1077662,555233,1,216],
+          [3,13,2,264633,132527,1,217],
+          [3,14,2,65899455,33351519,1,218],
+          [4,15,20,4065185,4053033,1,219],
+          [5,16,49,3389050352,137636507,1,220],
+          [5,17,511,9040579850,175927502,1,221],
+          [5,18,17,9679963337,928486229,1,222],
+          [5,19,35,2248937687,258698760,1,223],
+          [5,20,49,1604267434,61289966,1,224],
+          [5,21,511,5561317541,25362061,1,225],
+          [5,22,17,193942030,21248892,1,226],
+          [5,23,35,1311799959,163189548,1,227],
+          [5,24,560,2924103133,60864176,1,228],
+          [6,25,2,20895398,13113725,1,229],
+          [7,26,5126,2347387420,314967178,1,230],
+          [8,27,2,426516064,283114676,1,231],
+          [9,28,1,3799420832,3799420832,1,232],
+          [9,29,1,3574457853,3574457853,1,233],
+          [9,30,1,6759,6759,1,234],
+          [9,31,1,179688535,179688535,1,235],
+          [10,32,20,4178552782,1157445463,1,236],
+          [10,33,21,205078515,79050574,1,237],
+          [10,34,1,654572704,654572704,1,238],
+          [10,35,21,205704658,79251572,1,239],
+          [10,36,19,96849771,61370947,1,240],
+          [10,37,20,7495577577,1301643297,1,241],
+          [11,38,1,632638828,632638828,1,242],
+          [12,39,21,204972997,79044768,1,243],
+          [13,40,18,498223860,279141776,1,244],
+          [14,42,717,6115715411,142189945,1,245],
+          [15,43,23,74040154527,35315334782,1,246],
+          [15,44,23,69490714034,34338957369,1,247],
+          [0,0,1,1456514,1456514,2,329],
+          [0,1,1,120823565109,120823565109,2,330],
+          [0,2,1,37838282,37838282,2,331],
+          [0,3,1,1295299,1295299,2,332],
+          [1,5,1,49402555,49402555,2,333],
+          [1,6,1,26546567135,26546567135,2,334],
+          [1,7,1,8903753051,8903753051,2,335],
+          [1,8,1,538492,538492,2,336],
+          [1,9,1,120821836291,120821836291,2,337],
+          [2,10,5,2949025,665868,2,338],
+          [2,11,11,3303541,350526,2,339],
+          [2,12,9,5376041,689539,2,340],
+          [3,8,2,1230226,652313,2,341],
+          [3,13,2,307198,161703,2,342],
+          [3,14,2,75130539,38360806,2,343],
+          [4,15,20,4726773,4720495,2,344],
+          [5,16,49,3003664727,131476452,2,345],
+          [5,17,511,7219965811,69035439,2,346],
+          [5,18,17,7712211997,874865170,2,347],
+          [5,19,35,1727404167,197091049,2,348],
+          [5,20,49,1389292914,63354458,2,349],
+          [5,21,511,4814877836,23188838,2,350],
+          [5,22,17,136099428,23717306,2,351],
+          [5,23,35,1017069563,121966151,2,352],
+          [5,24,560,2381955908,52263473,2,353],
+          [6,25,2,18933056,12165043,2,354],
+          [7,26,5126,1844923377,147938997,2,355],
+          [8,27,2,408270112,259899640,2,356],
+          [9,28,1,4568711529,4568711529,2,357],
+          [9,29,1,4345418020,4345418020,2,358],
+          [9,30,1,3595,3595,2,359],
+          [9,31,1,187184058,187184058,2,360],
+          [10,32,20,3806215220,1080814334,2,361],
+          [10,33,21,156610794,55890881,2,362],
+          [10,34,1,371510525,371510525,2,363],
+          [10,35,21,157258219,56067540,2,364],
+          [10,36,19,86100946,59372602,2,365],
+          [10,37,20,7092880727,1209666146,2,366],
+          [11,38,1,609628043,609628043,2,367],
+          [12,39,21,156538979,55885398,2,368],
+          [13,40,18,478186528,256106937,2,369],
+          [14,42,717,4660557859,108813831,2,370],
+          [15,43,23,69572078265,30325090717,2,371],
+          [15,44,23,65483051592,29517003583,2,372]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/02-empties.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {
+          "name": ["major_faults","memory_full_stall_us","memory_high_events","memory_some_stall_us","minor_faults","read_bytes","system_ticks","user_ticks","write_bytes"]
+        },
+        "kind": "performance_counter",
+        "rows": [
+          [0,4612,123],
+          [1,98664,124],
+          [2,0,125],
+          [3,98951,126],
+          [4,5802187,127],
+          [5,13529522176,128],
+          [6,6652,129],
+          [7,110025,130],
+          [8,64394649600,131],
+          [0,4314,248],
+          [1,46773,249],
+          [2,0,250],
+          [3,46780,251],
+          [4,4788391,252],
+          [5,2119401472,253],
+          [6,6266,254],
+          [7,77674,255],
+          [8,42432704512,256],
+          [0,4820,373],
+          [1,31676,374],
+          [2,0,375],
+          [3,31675,376],
+          [4,4552992,377],
+          [5,1178116096,378],
+          [6,5674,379],
+          [7,71116,380],
+          [8,55962980352,381],
+          [0,3,383],
+          [1,0,384],
+          [2,0,385],
+          [3,0,386],
+          [4,2,387],
+          [5,1372160,388],
+          [6,49,389],
+          [7,0,390],
+          [8,65536,391]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/02-empties.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-398255-2.service","exec_stop_post_snapshot",42371244032,0,47244640256,0,2774613728,393]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/02-empties.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["input_bytes","output_bytes","width","added_bits","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_start",
+        "rows": [
+          [838860800,13421772800,200,4,3],
+          [411041792,6576668672,98,4,6],
+          [230686720,3690987520,55,4,8],
+          [411041792,6576668672,98,4,135],
+          [230686720,3690987520,55,4,137],
+          [411041792,6576668672,98,4,262],
+          [230686720,3690987520,55,4,264]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_done",
+        "rows": [
+          [11344,4],
+          [5497,7],
+          [2822,9],
+          [5506,136],
+          [2715,138],
+          [4980,263],
+          [2701,265]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","setup_ms","preprocessing_cache_hit","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_start",
+        "rows": [
+          [3,59908,false,5],
+          [3,165,true,134],
+          [3,147,true,261]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "heap_lde_normalize_start",
+        "rows": [
+          [469762048,10],
+          [469762048,14],
+          [469762048,18],
+          [469762048,22],
+          [469762048,26],
+          [469762048,30],
+          [469762048,34],
+          [469762048,38],
+          [469762048,42],
+          [469762048,46],
+          [469762048,50],
+          [469762048,54],
+          [469762048,58],
+          [469762048,62],
+          [469762048,66],
+          [469762048,70],
+          [469762048,139],
+          [469762048,143],
+          [469762048,147],
+          [469762048,151],
+          [469762048,155],
+          [469762048,159],
+          [469762048,163],
+          [469762048,167],
+          [469762048,171],
+          [469762048,175],
+          [469762048,179],
+          [469762048,183],
+          [469762048,187],
+          [469762048,191],
+          [469762048,195],
+          [469762048,199],
+          [469762048,266],
+          [469762048,270],
+          [469762048,274],
+          [469762048,278],
+          [469762048,282],
+          [469762048,286],
+          [469762048,290],
+          [469762048,294],
+          [469762048,298],
+          [469762048,302],
+          [469762048,306],
+          [469762048,310],
+          [469762048,314],
+          [469762048,318],
+          [469762048,322],
+          [469762048,326]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "heap_lde_normalize_done",
+        "rows": [
+          [121,11],
+          [119,15],
+          [124,19],
+          [114,23],
+          [113,27],
+          [112,31],
+          [113,35],
+          [115,39],
+          [126,43],
+          [118,47],
+          [122,51],
+          [143,55],
+          [197,59],
+          [199,63],
+          [153,67],
+          [128,71],
+          [122,140],
+          [123,144],
+          [124,148],
+          [123,152],
+          [125,156],
+          [124,160],
+          [123,164],
+          [124,168],
+          [121,172],
+          [117,176],
+          [118,180],
+          [122,184],
+          [118,188],
+          [119,192],
+          [126,196],
+          [144,200],
+          [119,267],
+          [124,271],
+          [122,275],
+          [179,279],
+          [134,283],
+          [122,287],
+          [115,291],
+          [104,295],
+          [122,299],
+          [120,303],
+          [134,307],
+          [125,311],
+          [123,315],
+          [128,319],
+          [128,323],
+          [123,327]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["bytes","width","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_heap_fft_start",
+        "rows": [
+          [469762048,7,12],
+          [469762048,7,16],
+          [469762048,7,20],
+          [469762048,7,24],
+          [469762048,7,28],
+          [469762048,7,32],
+          [469762048,7,36],
+          [469762048,7,40],
+          [469762048,7,44],
+          [469762048,7,48],
+          [469762048,7,52],
+          [469762048,7,56],
+          [469762048,7,60],
+          [469762048,7,64],
+          [469762048,7,68],
+          [469762048,7,72],
+          [469762048,7,141],
+          [469762048,7,145],
+          [469762048,7,149],
+          [469762048,7,153],
+          [469762048,7,157],
+          [469762048,7,161],
+          [469762048,7,165],
+          [469762048,7,169],
+          [469762048,7,173],
+          [469762048,7,177],
+          [469762048,7,181],
+          [469762048,7,185],
+          [469762048,7,189],
+          [469762048,7,193],
+          [469762048,7,197],
+          [469762048,7,201],
+          [469762048,7,268],
+          [469762048,7,272],
+          [469762048,7,276],
+          [469762048,7,280],
+          [469762048,7,284],
+          [469762048,7,288],
+          [469762048,7,292],
+          [469762048,7,296],
+          [469762048,7,300],
+          [469762048,7,304],
+          [469762048,7,308],
+          [469762048,7,312],
+          [469762048,7,316],
+          [469762048,7,320],
+          [469762048,7,324],
+          [469762048,7,328]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_heap_fft_done",
+        "rows": [
+          [330,13],
+          [330,17],
+          [323,21],
+          [330,25],
+          [324,29],
+          [328,33],
+          [348,37],
+          [323,41],
+          [323,45],
+          [339,49],
+          [459,53],
+          [497,57],
+          [504,61],
+          [448,65],
+          [336,69],
+          [347,73],
+          [332,142],
+          [318,146],
+          [313,150],
+          [308,154],
+          [315,158],
+          [332,162],
+          [329,166],
+          [311,170],
+          [312,174],
+          [311,178],
+          [322,182],
+          [343,186],
+          [311,190],
+          [312,194],
+          [314,198],
+          [312,202],
+          [321,269],
+          [323,273],
+          [307,277],
+          [311,281],
+          [323,285],
+          [309,289],
+          [322,293],
+          [322,297],
+          [311,301],
+          [340,305],
+          [323,309],
+          [308,313],
+          [315,317],
+          [308,321],
+          [313,325],
+          [310,329]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","prove_and_verify_ms","node_payload_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_verified",
+        "rows": [
+          [3,117061,1683940,74],
+          [3,114770,1683940,203],
+          [3,120724,1683940,330]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {
+          "timings": ["inclusive_nonadditive"]
+        },
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["node.4.0",188984,0,0,0,76],
+          ["node.5.0",125750,0,0,0,205],
+          ["node.6.0",122210,0,0,0,332],
+          ["padding process remainder",483,0,0,0,388]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["node.4.0","node.5.0","node.6.0"],
+          "name": ["child verification","execution trace","merge compilation","native batch prove","native verification","node serialization","preprocessing setup","Compute Selectors","compute quotient","compute quotient polynomial","infer log of constraint degree","prove_batch","compute constraint layout with lookups","evaluate constraints symbolically","infer constraint degree","verify constraints","verify_batch","grind for proof-of-work witness","coset_dft","coset_dft_oop","coset_lde_batch_with_transform","first_half","first_half_general","first_half_general_oop","reserve_exact","second_half","second_half_general","divide_by_height","batch_multiplicative_inverse","randomize polys","FRI prover","commit phase","idft final poly","query phase","compress mat","compute opened values with Lagrange interpolation","compute_inverse_denominators","evaluate matrix","fold_matrix","reduce matrix quotient","generate lookup permutation","columnwise_dot_product","with_random_cols","with_zero_cols","reverse_matrix_index_bits","build merkle tree","first digest layer"],
+          "target": ["lattica_block_v2_perf","p3_batch_stark::prover","p3_batch_stark::symbolic","p3_batch_stark::verifier","p3_challenger::grinding_challenger","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_fri::hiding_pcs","p3_fri::prover","p3_fri::two_adic_pcs","p3_lookup::logup","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,0,1,111005322,111005322,0,77],
+          [0,1,1,290664283,290664283,0,78],
+          [0,2,1,11561361311,11561361311,0,79],
+          [0,3,1,116736230904,116736230904,0,80],
+          [0,4,1,33667007,33667007,0,81],
+          [0,5,1,968266,968266,0,82],
+          [0,6,1,59908910292,59908910292,0,83],
+          [1,7,1,52101635,52101635,0,84],
+          [1,8,1,25896969067,25896969067,0,85],
+          [1,9,1,8467933872,8467933872,0,86],
+          [1,10,1,601326,601326,0,87],
+          [1,11,1,116734936935,116734936935,0,88],
+          [2,12,27,17890226,2756603,0,89],
+          [2,13,60,19971273,2211055,0,90],
+          [2,14,46,28935122,2762520,0,91],
+          [3,10,9,4847308,652653,0,92],
+          [3,15,9,1288226,159050,0,93],
+          [3,16,9,327876023,41536927,0,94],
+          [4,17,20,358598,352664,0,95],
+          [5,18,65,6450857464,414423590,0,96],
+          [5,19,511,6761715878,62146361,0,97],
+          [5,20,17,7223469537,473857605,0,98],
+          [5,21,36,2097043683,185952050,0,99],
+          [5,22,65,3028244105,233881177,0,100],
+          [5,23,511,4512635108,19176584,0,101],
+          [5,24,17,116344850,12440038,0,102],
+          [5,25,36,1105920246,155443402,0,103],
+          [5,26,576,3737999145,143325241,0,104],
+          [6,27,3,54864412,35755059,0,105],
+          [7,28,22150,2258182516,472027888,0,106],
+          [8,29,2,367031936,239014088,0,107],
+          [9,30,1,3832875500,3832875500,0,108],
+          [9,31,1,3290905851,3290905851,0,109],
+          [9,32,1,3743,3743,0,110],
+          [9,33,1,526509313,526509313,0,111],
+          [10,34,20,4826510269,1512354906,0,112],
+          [10,35,21,223246340,92861516,0,113],
+          [10,36,1,364070722,364070722,0,114],
+          [10,37,21,223851754,93030028,0,115],
+          [10,38,19,84474912,56241556,0,116],
+          [10,39,20,7733553703,1644135377,0,117],
+          [11,40,1,653831122,653831122,0,118],
+          [12,41,21,223168933,92852894,0,119],
+          [13,42,18,434906671,237263820,0,120],
+          [13,43,1,2291955782,2291955782,0,121],
+          [14,44,754,5161155280,42810978,0,122],
+          [15,45,24,107041161191,40002434960,0,123],
+          [15,46,24,102084141901,39165493419,0,124],
+          [0,0,1,89752361,89752361,1,206],
+          [0,1,1,348385541,348385541,1,207],
+          [0,2,1,10608461971,10608461971,1,208],
+          [0,3,1,114387290546,114387290546,1,209],
+          [0,4,1,33789654,33789654,1,210],
+          [0,5,1,967148,967148,1,211],
+          [1,7,1,42971230,42971230,1,212],
+          [1,8,1,25306434654,25306434654,1,213],
+          [1,9,1,8641686412,8641686412,1,214],
+          [1,10,1,678329,678329,1,215],
+          [1,11,1,114385547760,114385547760,1,216],
+          [2,12,13,7479431,1079659,1,217],
+          [2,13,30,8505923,602477,1,218],
+          [2,14,23,12471279,677572,1,219],
+          [3,10,5,2607936,533106,1,220],
+          [3,15,5,625103,133687,1,221],
+          [3,16,5,163544122,33750569,1,222],
+          [4,17,20,5028701,5022861,1,223],
+          [5,18,49,2812076583,118410247,1,224],
+          [5,19,511,7028807158,72706041,1,225],
+          [5,20,17,7494891458,487733432,1,226],
+          [5,21,35,1694476398,110666359,1,227],
+          [5,22,49,1301899328,54973071,1,228],
+          [5,23,511,4581512649,23778835,1,229],
+          [5,24,17,127402125,17810719,1,230],
+          [5,25,35,941575746,59532870,1,231],
+          [5,26,560,2250545293,49950643,1,232],
+          [6,27,2,17922576,11781752,1,233],
+          [7,28,12422,2101673007,217559497,1,234],
+          [8,29,2,334682019,210787720,1,235],
+          [9,30,1,3723810278,3723810278,1,236],
+          [9,31,1,3381329944,3381329944,1,237],
+          [9,32,1,3434,3434,1,238],
+          [9,33,1,299341765,299341765,1,239],
+          [10,34,20,4474216408,1457779100,1,240],
+          [10,35,21,432908834,100360905,1,241],
+          [10,36,1,681332143,681332143,1,242],
+          [10,37,21,433433865,100453998,1,243],
+          [10,38,19,82647480,55879865,1,244],
+          [10,39,20,7208105029,1581988128,1,245],
+          [11,40,1,650742892,650742892,1,246],
+          [12,41,21,432827351,100355488,1,247],
+          [13,42,18,407824986,209200046,1,248],
+          [14,44,717,4518552053,50485289,1,249],
+          [15,45,23,65750262321,30415199127,1,250],
+          [15,46,23,61674189321,29556020032,1,251],
+          [0,0,1,86982709,86982709,2,333],
+          [0,1,1,345106808,345106808,2,334],
+          [0,2,1,1127150977,1127150977,2,335],
+          [0,3,1,120344902672,120344902672,2,336],
+          [0,4,1,33379777,33379777,2,337],
+          [0,5,1,975776,975776,2,338],
+          [1,7,1,53902423,53902423,2,339],
+          [1,8,1,25993552630,25993552630,2,340],
+          [1,9,1,9504404217,9504404217,2,341],
+          [1,10,1,641474,641474,2,342],
+          [1,11,1,120343173918,120343173918,2,343],
+          [2,12,13,7316260,812407,2,344],
+          [2,13,30,8318042,409565,2,345],
+          [2,14,23,12419530,686832,2,346],
+          [3,10,5,2587695,531318,2,347],
+          [3,15,5,618180,128016,2,348],
+          [3,16,5,160917005,32427672,2,349],
+          [4,17,20,5337089,5327242,2,350],
+          [5,18,49,2669541661,113900328,2,351],
+          [5,19,511,6973079059,98328160,2,352],
+          [5,20,17,7418405166,548265529,2,353],
+          [5,21,35,1702615413,103895838,2,354],
+          [5,22,49,1232336436,51991821,2,355],
+          [5,23,511,4485593894,18802991,2,356],
+          [5,24,17,115254290,8816436,2,357],
+          [5,25,35,929170209,56178738,2,358],
+          [5,26,560,2181681463,47270930,2,359],
+          [6,27,2,17851281,11518760,2,360],
+          [7,28,12422,2559829275,299677913,2,361],
+          [8,29,2,334043833,216397564,2,362],
+          [9,30,1,8105068699,8105068699,2,363],
+          [9,31,1,7685683216,7685683216,2,364],
+          [9,32,1,3542,3542,2,365],
+          [9,33,1,385572717,385572717,2,366],
+          [10,34,20,6504799911,3118213014,2,367],
+          [10,35,21,185381892,66162075,2,368],
+          [10,36,1,676294154,676294154,2,369],
+          [10,37,21,186642003,66682454,2,370],
+          [10,38,19,78997505,49665659,2,371],
+          [10,39,20,9375417365,3263230929,2,372],
+          [11,40,1,635676820,635676820,2,373],
+          [12,41,21,185216413,66149376,2,374],
+          [13,42,18,408310375,214727574,2,375],
+          [14,44,717,4561741807,76855471,2,376],
+          [15,45,23,68935428218,29901924961,2,377],
+          [15,46,23,64702681519,29070542383,2,378]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {
+          "name": ["major_faults","memory_full_stall_us","memory_high_events","memory_some_stall_us","minor_faults","read_bytes","system_ticks","user_ticks","write_bytes"]
+        },
+        "kind": "performance_counter",
+        "rows": [
+          [0,4645,125],
+          [1,95651,126],
+          [2,0,127],
+          [3,97157,128],
+          [4,5973894,129],
+          [5,15197396992,130],
+          [6,6268,131],
+          [7,104003,132],
+          [8,89979228160,133],
+          [0,4671,252],
+          [1,67690,253],
+          [2,804,254],
+          [3,68206,255],
+          [4,4908739,256],
+          [5,4454866944,257],
+          [6,5442,258],
+          [7,69943,259],
+          [8,55853813760,260],
+          [0,4813,379],
+          [1,80231,380],
+          [2,782,381],
+          [3,80231,382],
+          [4,4903961,383],
+          [5,1077092352,384],
+          [6,5422,385],
+          [7,70185,386],
+          [8,70381842432,387],
+          [0,6,389],
+          [1,0,390],
+          [2,0,391],
+          [3,1,392],
+          [4,1859,393],
+          [5,28835840,394],
+          [6,42,395],
+          [7,4,396],
+          [8,294912,397]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-398255-3.service","exec_stop_post_snapshot",42950414336,0,47244640256,0,2613164993,399]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/03-merges.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["padding process remainder",118,0,0,"inclusive_nonadditive",4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/04-prune.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["padding process remainder"],
+          "target": ["p3_batch_stark::symbolic","p3_batch_stark::verifier","p3_field::batch_inverse"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"compute constraint layout with lookups",6,2574061,515596,0,5],
+          [0,"evaluate constraints symbolically",13,2909723,285624,0,6],
+          [0,"infer constraint degree",10,4296557,544193,0,7],
+          [1,"infer log of constraint degree",2,841488,507418,0,8],
+          [1,"verify constraints",2,250264,130605,0,9],
+          [1,"verify_batch",2,65346317,33631768,0,10],
+          [2,"batch_multiplicative_inverse",4864,2723065,191082,0,11]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/04-prune.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,12],
+          ["memory_full_stall_us",0,13],
+          ["memory_high_events",0,14],
+          ["memory_some_stall_us",0,15],
+          ["minor_faults",3463,16],
+          ["read_bytes",0,17],
+          ["system_ticks",0,18],
+          ["user_ticks",10,19],
+          ["write_bytes",81920,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/04-prune.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-398255-4.service","exec_stop_post_snapshot",11198464,0,47244640256,0,132235,22]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/04-prune.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["padding process remainder",66,0,0,"inclusive_nonadditive",3]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/05-root.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["padding process remainder"],
+          "target": ["p3_batch_stark::symbolic","p3_batch_stark::verifier","p3_field::batch_inverse"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"compute constraint layout with lookups",4,1556490,463991,0,4],
+          [0,"evaluate constraints symbolically",8,1630171,301829,0,5],
+          [0,"infer constraint degree",6,2226785,461785,0,6],
+          [1,"infer log of constraint degree",1,333253,333253,0,7],
+          [1,"verify constraints",1,131784,131784,0,8],
+          [1,"verify_batch",1,36469693,36469693,0,9],
+          [2,"batch_multiplicative_inverse",2432,1574599,149925,0,10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/05-root.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,11],
+          ["memory_full_stall_us",0,12],
+          ["memory_high_events",0,13],
+          ["memory_some_stall_us",0,14],
+          ["minor_faults",2405,15],
+          ["read_bytes",0,16],
+          ["system_ticks",0,17],
+          ["user_ticks",6,18],
+          ["write_bytes",0,19]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/05-root.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-398255-5.service","exec_stop_post_snapshot",8581120,0,47244640256,0,88513,21]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/05-root.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-398255-7.service","exec_stop_post_snapshot",13856768,0,47244640256,0,278186,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/07-audit.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {
+    "backend": "opencl",
+    "memory_model": "discrete",
+    "os": "linux"
+  },
+  "proofs": [],
+  "retained_metadata": {
+    "artifacts": {
+      "height": {
+        "bytes": 4,
+        "sha256": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60"
+      },
+      "key.1": {
+        "bytes": 2048,
+        "sha256": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5"
+      },
+      "key.2": {
+        "bytes": 2048,
+        "sha256": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802"
+      },
+      "key.3": {
+        "bytes": 2048,
+        "sha256": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99"
+      },
+      "node.6.0": {
+        "bytes": 1683948,
+        "sha256": "a618e6defdba09a43f2fcf86a8ff08e8ad8c41ef14080fbc64ac3c2bb55efd58"
+      }
+    },
+    "attempts": [
+      {
+        "log": "01-check.log",
+        "log_sha256": "06823fcb7b5fffea46a2347be52a964dbb5fe23c129e4295fed4c27a557a2392",
+        "name": "check",
+        "started_utc": "2026-10-01T21:43:31Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 95314,
+            "memory_max": 47244640256,
+            "memory_peak": 8585216,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 72,
+            "spill_peak_bytes": 0
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-398255-1.service",
+        "wall_seconds": 0.13443871199706336
+      },
+      {
+        "log": "02-empties.log",
+        "log_sha256": "6ab7ecf4aa5037e47040ddf7eb56fdb2f6d8890385d560f2a82c883b9c93dd90",
+        "name": "empties",
+        "started_utc": "2026-10-01T21:43:31Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 2774613728,
+            "memory_max": 47244640256,
+            "memory_peak": 42371244032,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 434770,
+            "spill_peak_bytes": 33718222848
+          },
+          "nodes": [
+            {
+              "artifact": "empty.3",
+              "cache_hits": 0,
+              "elapsed_ms": 182030,
+              "setups": 1
+            },
+            {
+              "artifact": "empty.4",
+              "cache_hits": 1,
+              "elapsed_ms": 131222,
+              "setups": 1
+            },
+            {
+              "artifact": "empty.5",
+              "cache_hits": 2,
+              "elapsed_ms": 120940,
+              "setups": 1
+            }
+          ]
+        },
+        "unit": "lattica-v2-grouped-398255-2.service",
+        "wall_seconds": 434.8861527429981
+      },
+      {
+        "log": "03-merges.log",
+        "log_sha256": "290e69c8e18cbed94d11ec839f3268ac291a0d672d8cca920066f81f77f8fdf6",
+        "name": "merges",
+        "started_utc": "2026-10-01T21:50:46Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 2613164993,
+            "memory_max": 47244640256,
+            "memory_peak": 42950414336,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 437428,
+            "spill_peak_bytes": 34288652288
+          },
+          "nodes": [
+            {
+              "artifact": "node.4.0",
+              "cache_hits": 0,
+              "elapsed_ms": 188755,
+              "setups": 1
+            },
+            {
+              "artifact": "node.5.0",
+              "cache_hits": 1,
+              "elapsed_ms": 125749,
+              "setups": 1
+            },
+            {
+              "artifact": "node.6.0",
+              "cache_hits": 2,
+              "elapsed_ms": 122209,
+              "setups": 1
+            }
+          ]
+        },
+        "unit": "lattica-v2-grouped-398255-3.service",
+        "wall_seconds": 437.5823097169996
+      },
+      {
+        "log": "04-prune.log",
+        "log_sha256": "1a0dca6f512cc73c360a4ee00e4f4bfceb65ecc4992a22224a74b9c4e297aa95",
+        "name": "prune",
+        "started_utc": "2026-10-01T21:58:04Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 132235,
+            "memory_max": 47244640256,
+            "memory_peak": 11198464,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 118,
+            "spill_peak_bytes": 0
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-398255-4.service",
+        "wall_seconds": 0.17704063600103837
+      },
+      {
+        "log": "05-root.log",
+        "log_sha256": "82e7cd187e51fee4a50192b970425aa0fae7a4a44c2f34998d8951713e934fe9",
+        "name": "root",
+        "started_utc": "2026-10-01T21:58:04Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 88513,
+            "memory_max": 47244640256,
+            "memory_peak": 8581120,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 66,
+            "spill_peak_bytes": 0
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-398255-5.service",
+        "wall_seconds": 0.13896081699931528
+      },
+      {
+        "bundle": {
+          "height": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60",
+          "key.1": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5",
+          "key.2": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802",
+          "key.3": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99",
+          "node.6.0": "a618e6defdba09a43f2fcf86a8ff08e8ad8c41ef14080fbc64ac3c2bb55efd58"
+        },
+        "log": "06-export.log",
+        "name": "export",
+        "started_utc": "2026-10-01T21:58:04Z",
+        "status": "complete",
+        "unit": "lattica-v2-grouped-398255-6.service",
+        "wall_seconds": 0.06237462599892751
+      },
+      {
+        "log": "07-audit.log",
+        "log_sha256": "b7959427f5c4ea05af3d930844f23dcdcbd8e6699c22c0822c66833408a84207",
+        "name": "audit",
+        "started_utc": "2026-10-01T21:58:04Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 278186,
+            "memory_max": 47244640256,
+            "memory_peak": 13856768,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": 1683948,
+          "duration": null,
+          "nodes": []
+        },
+        "unit": "lattica-v2-grouped-398255-7.service",
+        "wall_seconds": 0.34507663100157515
+      }
+    ],
+    "config": {
+      "accounting": "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py",
+      "auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-native-20261001-b/block-v2-grouped-artifact-audit",
+      "calculator": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-native-20261001-b/block-v2-expected-root",
+      "evidence": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence",
+      "external": ["8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8","9a341a3eacf5330bca8124163e8721b0a54a820685cbebaa67dcc23c09d076c0"],
+      "handoff": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/expected-statement.json",
+      "helper": "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-grouped-trial.py",
+      "inputs": {
+        "height": {
+          "bytes": 4,
+          "sha256": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60"
+        },
+        "key.1": {
+          "bytes": 2048,
+          "sha256": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5"
+        },
+        "key.2": {
+          "bytes": 2048,
+          "sha256": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802"
+        },
+        "key.3": {
+          "bytes": 2048,
+          "sha256": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99"
+        },
+        "node.3.0": {
+          "bytes": 1683948,
+          "sha256": "61f67b618e987068d4b8f23431759aa06bed465127a3ff36e14a1cf4fb6be17e"
+        }
+      },
+      "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-proving-20261001-a/job",
+      "pins": {
+        "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+        "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+        "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-padding-trial.py": "7035b25465251f2e486ab21431671cf9e96f0b06fe9400a8bf80f607977fe9bf",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/expected-statement.json": "5cf5904f55f262848402e80b93ea528629b908000e96077c80bb5e7f1e98e1ac",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-control-20261001-b/source.tar.gz": "afa7fb465154ee7f5e5f819cfdca33875a6cff0f21a7e50f188e7739de8a2d5b",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-native-20261001-b/block-v2-expected-root": "474c46856f1b797b4a176f41306f6dce2d823b29e406be7d1e99c2d99aee7b3e",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-native-20261001-b/block-v2-grouped-artifact-audit": "b35d8891d5d63874f6b270f64fe6c9d3a6190085a915ac6d8471e7826b054396",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-native-20261001-b/block-v2-padding-probe": "c1989caf87eee2bb5c58bd46f5fa429be41ac626db8b0ca16d7fd327c00a4116",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-native-20261001-b/source.tar.gz": "4f5b6a2508c519fbab82a2cef209e3116e107ac604ebc15d05e40c6f8678ee24"
+      },
+      "publics": ["a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261bb74ee2743b9898568a11a57f7000766a5c702879ae61b4a3046c789b9e8d2ed7c548378e7ac07bad4be17e494352717927e6e8cc7153cbbd40aa757e9b077ef7f63bdab15aef196d6ce13e3f9e33678d42fbf7332f466abeedfc619dcec4b90aa9ed86e630fb8f5b0d091fa1f761508e7c2282de4109ccf81cccd7ae6cd27d9664000000000000000000000000000000cdab000000000000ceab000000000000cfab000000000000d0ab000000000000","a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261b614a9f64dd8bcd8e2d6a98c45596807c893c3d0010f2beefc21f2d2117bdefc625c50aecdf3d2395159ae7d269c0cc671efdeb9f1ecb7754514fd81b56246dbe132ea6b752116a9ca5119dc7f817131266918faeca5b86150066c1c9fe2db41834f4eab97c5c8cf49adf03781993db65067345d444cb7caa4ad88321173a059a64000000000000000000000000000000ceab000000000000ceab000000000000cfab000000000000d0ab000000000000","a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261ba3d79cd025cd2c8b09966a35b62d415b7ccaae8e438cb18dad18c95e387780f7ea20bb7b3083c9e93b7e5d78022bf80cc45cb5dbd33f77e3d7500e83ffa181e706c726aa69957b178cf25737d82c2ab082a96aa14f48829fe2ff5cbfb39b51fc47929a3911835f8130ab64278ffadf9450e2c83bd19a9cd86efa8d5e3db5eb4a64000000000000000000000000000000cfab000000000000ceab000000000000cfab000000000000d0ab000000000000","a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261b3cd5de64d155fff92f090de4d69058ef5f35ac1211b26966b008a8758f801e5420f9b44d19a44a3299c9b71b3fd01878e7e1cfd880cf22d1e99791d1d6520a59d6005b15e79861cd6607939af1d13d046d59cda22b2ab8327d50bdc4c194ec515fb7c1c3592a305c139f1dd5e0f1a24448f04588830f795ae60b3aee9da829ea64000000000000000000000000000000d0ab000000000000ceab000000000000cfab000000000000d0ab000000000000","a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261b75bae023d282ca54736be55d5d25bcc5bca5db752f76c959738841c3072617993157ae0ee183bf17d05fde9c9401ee0251e53398ed8b41eb7ca7c374012a1a0f434f872c4c91a1d5116703340871c56260f84d95c004cdc7b20d1daaeb1208be5bf3211f29b0fd76d266fc1ba4e1bd5df8b5010169a186b201e51913c3a59dfa64000000000000000000000000000000d1ab000000000000ceab000000000000cfab000000000000d0ab000000000000","a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261bf68d563b1461084e59c7c6bbc5a68d9a048b04aba18cc405a0af12fa9bb92e52d82145eeade19d95a845aa8ba8d8d0a3edcb8397e1c45c5d4dd32e3dfce28eb86f4169617533d6354e750c087a6e7b21a42fc4da5b51b2ea7a3cb7f3dff26d9253bf8fe7b2b132a559f0c22e5a8d554d0e9f5e01d1e7d5e20b1f31459ebdaaaa64000000000000000000000000000000d2ab000000000000ceab000000000000cfab000000000000d0ab000000000000","a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261bd8e0a2f39b37556bbe557a82818cd78f7c0a5d8918df78b818adcef918ac03a641fa1ca084696a149ab4fda45e66e3d4f226a51e1302880abeed6a2f3295de20562d850fee0c016c8a87b90937dca1169010a361406e252acbeea7be91e5b3cba16824d4b36363a44d47327363cd09ea1708e87fcdd2fcb9aebf2215d46edbed64000000000000000000000000000000d3ab000000000000ceab000000000000cfab000000000000d0ab000000000000","a5c5f30769e8c7fd0ea8ca3e1d4eb164e33dff28e65fc2436c0382b02553261be5e0202d051abf73e7040611cfc351bc82f4373d993ecf03f9133e35ef7731a02f2876a3709348989762769a6064198374bc944bc9a4d7e2cb82ead5369d7f3ce4ae49dba3bb8aa14feaca22943ef91318f63ac7a85d61e9e89077f957268c3a7ffa7fdba511e6f952a30cea18036a88274008aea3a75399f1a37457f32d7eba64000000000000000000000000000000d4ab000000000000ceab000000000000cfab000000000000d0ab000000000000"],
+      "runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-native-20261001-b/block-v2-padding-probe",
+      "schema": 1,
+      "source": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/proof-evidence/root-only",
+      "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-padding-control-20261001-b/source.tar.gz"
+    },
+    "configuration_sha256": "d8d4ddc23d978347008c02799e84dedfc48e4e981cf210364a4839ae0b64c511",
+    "controller": "lattica-v2-padding-proving-20261001-a.service",
+    "controller_sha256": "7035b25465251f2e486ab21431671cf9e96f0b06fe9400a8bf80f607977fe9bf",
+    "full_count_qualified": false,
+    "full_tree_security": "UNREVIEWED",
+    "limits": {
+      "aggregate_ram_bytes": 51539607552,
+      "controller_ram_bytes_at_most": 3221225472,
+      "spill_bytes": 128849018880,
+      "swap_bytes": 0,
+      "worker_ram_bytes": 47244640256
+    },
+    "production_ready": false,
+    "recursive_command_ms": 872198,
+    "root": {
+      "bytes": 1683948,
+      "sha256": "a618e6defdba09a43f2fcf86a8ff08e8ad8c41ef14080fbc64ac3c2bb55efd58"
+    },
+    "schema": 1,
+    "status": "PADDED_COUNT8_ROOT_VERIFIED_RESEARCH_ONLY"
+  },
+  "revision": {
+    "pins": {}
+  },
+  "run_id": "run-524b3bf50b19ea43ff7814a6",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 14526,
+      "path": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/manifest.json",
+      "sha256": "adaafd91a9f08efa33f70adc7a59d8fbeb3b3716f265932f8466d13bd6feee0d"
+    },
+    {
+      "bytes": 2091,
+      "path": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/01-check.log",
+      "sha256": "06823fcb7b5fffea46a2347be52a964dbb5fe23c129e4295fed4c27a557a2392"
+    },
+    {
+      "bytes": 28694,
+      "path": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/02-empties.log",
+      "sha256": "6ab7ecf4aa5037e47040ddf7eb56fdb2f6d8890385d560f2a82c883b9c93dd90"
+    },
+    {
+      "bytes": 29387,
+      "path": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/03-merges.log",
+      "sha256": "290e69c8e18cbed94d11ec839f3268ac291a0d672d8cca920066f81f77f8fdf6"
+    },
+    {
+      "bytes": 2239,
+      "path": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/04-prune.log",
+      "sha256": "1a0dca6f512cc73c360a4ee00e4f4bfceb65ecc4992a22224a74b9c4e297aa95"
+    },
+    {
+      "bytes": 2154,
+      "path": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/05-root.log",
+      "sha256": "82e7cd187e51fee4a50192b970425aa0fae7a4a44c2f34998d8951713e934fe9"
+    },
+    {
+      "bytes": 841,
+      "path": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/evidence/07-audit.log",
+      "sha256": "b7959427f5c4ea05af3d930844f23dcdcbd8e6699c22c0822c66833408a84207"
+    }
+  ],
+  "stages": [
+    {
+      "log": "01-check.log",
+      "log_sha256": "06823fcb7b5fffea46a2347be52a964dbb5fe23c129e4295fed4c27a557a2392",
+      "name": "check",
+      "started_utc": "2026-10-01T21:43:31Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 95314,
+          "memory_max": 47244640256,
+          "memory_peak": 8585216,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 72,
+          "spill_peak_bytes": 0
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-grouped-398255-1.service",
+      "wall_seconds": 0.13443871199706336
+    },
+    {
+      "log": "02-empties.log",
+      "log_sha256": "6ab7ecf4aa5037e47040ddf7eb56fdb2f6d8890385d560f2a82c883b9c93dd90",
+      "name": "empties",
+      "started_utc": "2026-10-01T21:43:31Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 2774613728,
+          "memory_max": 47244640256,
+          "memory_peak": 42371244032,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 434770,
+          "spill_peak_bytes": 33718222848
+        },
+        "nodes": [
+          {
+            "artifact": "empty.3",
+            "cache_hits": 0,
+            "elapsed_ms": 182030,
+            "setups": 1
+          },
+          {
+            "artifact": "empty.4",
+            "cache_hits": 1,
+            "elapsed_ms": 131222,
+            "setups": 1
+          },
+          {
+            "artifact": "empty.5",
+            "cache_hits": 2,
+            "elapsed_ms": 120940,
+            "setups": 1
+          }
+        ]
+      },
+      "unit": "lattica-v2-grouped-398255-2.service",
+      "wall_seconds": 434.8861527429981
+    },
+    {
+      "log": "03-merges.log",
+      "log_sha256": "290e69c8e18cbed94d11ec839f3268ac291a0d672d8cca920066f81f77f8fdf6",
+      "name": "merges",
+      "started_utc": "2026-10-01T21:50:46Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 2613164993,
+          "memory_max": 47244640256,
+          "memory_peak": 42950414336,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 437428,
+          "spill_peak_bytes": 34288652288
+        },
+        "nodes": [
+          {
+            "artifact": "node.4.0",
+            "cache_hits": 0,
+            "elapsed_ms": 188755,
+            "setups": 1
+          },
+          {
+            "artifact": "node.5.0",
+            "cache_hits": 1,
+            "elapsed_ms": 125749,
+            "setups": 1
+          },
+          {
+            "artifact": "node.6.0",
+            "cache_hits": 2,
+            "elapsed_ms": 122209,
+            "setups": 1
+          }
+        ]
+      },
+      "unit": "lattica-v2-grouped-398255-3.service",
+      "wall_seconds": 437.5823097169996
+    },
+    {
+      "log": "04-prune.log",
+      "log_sha256": "1a0dca6f512cc73c360a4ee00e4f4bfceb65ecc4992a22224a74b9c4e297aa95",
+      "name": "prune",
+      "started_utc": "2026-10-01T21:58:04Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 132235,
+          "memory_max": 47244640256,
+          "memory_peak": 11198464,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 118,
+          "spill_peak_bytes": 0
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-grouped-398255-4.service",
+      "wall_seconds": 0.17704063600103837
+    },
+    {
+      "log": "05-root.log",
+      "log_sha256": "82e7cd187e51fee4a50192b970425aa0fae7a4a44c2f34998d8951713e934fe9",
+      "name": "root",
+      "started_utc": "2026-10-01T21:58:04Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 88513,
+          "memory_max": 47244640256,
+          "memory_peak": 8581120,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 66,
+          "spill_peak_bytes": 0
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-grouped-398255-5.service",
+      "wall_seconds": 0.13896081699931528
+    },
+    {
+      "bundle": {
+        "height": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60",
+        "key.1": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5",
+        "key.2": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802",
+        "key.3": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99",
+        "node.6.0": "a618e6defdba09a43f2fcf86a8ff08e8ad8c41ef14080fbc64ac3c2bb55efd58"
+      },
+      "log": "06-export.log",
+      "name": "export",
+      "started_utc": "2026-10-01T21:58:04Z",
+      "status": "complete",
+      "unit": "lattica-v2-grouped-398255-6.service",
+      "wall_seconds": 0.06237462599892751
+    },
+    {
+      "log": "07-audit.log",
+      "log_sha256": "b7959427f5c4ea05af3d930844f23dcdcbd8e6699c22c0822c66833408a84207",
+      "name": "audit",
+      "started_utc": "2026-10-01T21:58:04Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 278186,
+          "memory_max": 47244640256,
+          "memory_peak": 13856768,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": 1683948,
+        "duration": null,
+        "nodes": []
+      },
+      "unit": "lattica-v2-grouped-398255-7.service",
+      "wall_seconds": 0.34507663100157515
+    }
+  ],
+  "status": "incomplete",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": 872.198
+  },
+  "track": "linux-opencl",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": 1683948,
+    "root_sha256": "a618e6defdba09a43f2fcf86a8ff08e8ad8c41ef14080fbc64ac3c2bb55efd58"
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

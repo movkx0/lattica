@@ -1,0 +1,3220 @@
+{
+  "campaign_ids": ["block-v2-gpu-opening-pinned-2026-10-02"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-gpu-opening-pinned-qualification-20261002-a",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,65536,32768,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["opening reduction before",true,0,0,0,0,0,0,0,0,5],
+          ["opening reduction after",true,0,0,0,0,0,0,0,0,12],
+          ["opening admission before",true,0,0,0,0,0,0,0,0,19],
+          ["opening admission after",true,0,0,0,0,0,0,0,0,26]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["opening reduction before",0,0,0,0,0,0,0,0,0,33520,33520,5,32768,0,0,0,0,6],
+          ["opening reduction after",0,0,0,0,0,0,0,0,0,33520,122104,11,32768,0,0,0,0,13],
+          ["opening admission before",0,0,0,0,0,0,0,0,0,67108864,67108864,12,32768,0,0,0,0,20],
+          ["opening admission after",0,0,0,0,0,0,0,0,0,67108864,67108864,12,32768,0,0,0,0,27]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["opening reduction before",0,0,0,0,0,0,0,0,7],
+          ["opening reduction after",0,0,0,0,0,0,0,0,14],
+          ["opening admission before",0,0,0,0,0,0,0,0,21],
+          ["opening admission after",0,0,0,0,0,0,0,0,28]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["opening reduction before",0,0,0,0,0,0,0,0,0,8],
+          ["opening reduction after",0,0,0,0,0,0,0,0,0,15],
+          ["opening admission before",0,0,0,0,0,0,0,0,0,22],
+          ["opening admission after",0,0,0,0,0,0,0,0,0,29]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["opening reduction before",0,0,0,0,0,0,0,9],
+          ["opening reduction after",0,1,45,1211256,18432,886240,5623054,16],
+          ["opening admission before",0,1,45,1211256,18432,886240,5623054,23],
+          ["opening admission after",0,1,45,1211256,18432,886240,5623054,30]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["opening reduction before",0,0,0,0,0,0,0,0,0,0,0,10],
+          ["opening reduction after",0,40086,2580269,335552,205166,900088,1081645,587026,9504,5718,0,17],
+          ["opening admission before",0,40086,2580269,335552,205166,900088,1081645,587026,9504,5718,0,24],
+          ["opening admission after",0,40086,2580269,335552,205166,900088,1081645,587026,9504,5718,0,31]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["opening reduction before",0,0,0,11],
+          ["opening reduction after",0,0,0,18],
+          ["opening admission before",0,0,0,25],
+          ["opening admission after",0,0,0,32]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,33]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs",true,"cumulative",0,1047200,0,849024,9767232,349113959,4096,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",44,8229376,2324480,21471154,225736026,6531360,7984160,50401418,624368,1935184,126,65536,12396839,8903000,88227858,133885145,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","serial","cumulative",3813568,1544512,8903000,0,0,40,7]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",8,16,471040,1016640,21313328,214320,1703936,229376,8]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",0,0,0,0,0,0,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",0,0,0,0,0,0,0,0,0,"nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",0,0,11]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,4],
+          ["overlap",2,2,1048576,65536,false,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["spill-backed compatibility test"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          [0,true,0,0,8388576,0,43392,5632,307729,3,5],
+          [0,true,0,0,8388576,0,50272,6976,344365,3,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["spill-backed compatibility test"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          [0,0,1,72351744,3104,127686679,196742,31085408,501824,164732181,7407016,15795592,10,65536,58847751,67786482,86815,106886,6],
+          [0,0,1,72351744,3104,191241796,218624,41376128,506336,198833218,7406464,15795040,12,65536,102376883,40533953,91738,122814,16]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["spill-backed compatibility test"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          [0,"serial",0,35826784,1984,67786482,0,0,70,7],
+          [0,"overlap",0,34476192,1440,40533953,44660788,517174,139,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["spill-backed compatibility test"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,0,0,0,8],
+          [0,0,0,0,0,0,0,0,0,0,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["spill-backed compatibility test"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,0,9],
+          [0,0,0,0,0,0,0,0,19]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["spill-backed compatibility test"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,0,0,0,0,0,10],
+          [0,0,0,0,0,0,0,0,0,0,0,0,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["spill-backed compatibility test"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          [0,0,0,0,11],
+          [0,0,0,0,21]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,12],
+          [0,true,22]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [0,"NVIDIA GeForce RTX 5080",16707092480,4176773120,268435456,4294967296,1048576,65536,1,"exclusive",13]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,65536,1016,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-12.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-12.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,33554432,16777216,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",true,0,0,0,0,0,0,0,0,5],
+          ["large opening diagnostic after",true,0,0,0,0,0,0,0,0,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,16777968,16777968,5,16777216,0,0,0,0,6],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,16777968,75020752,10,16777216,0,0,0,0,13]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,7],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,8],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,9],
+          ["large opening diagnostic after",0,1,53,1728058144,25165824,3290400,959527193,16]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,0,0,10],
+          ["large opening diagnostic after",0,101485433,837162555,829276192,554486,1209362,4918256,9407447,5953792,4224417,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,11],
+          ["large opening diagnostic after",0,0,0,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,65536,32768,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["GPU opening exact transcript",true,"cumulative",0,1047168,0,753152,7246368,179150270,3584,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["GPU opening exact transcript","cumulative",40,2195904,2136064,3332993,78702519,3086112,6904128,25676710,329456,1999728,128,65536,351288,2920726,75274259,1250865,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["GPU opening exact transcript","serial","cumulative",897920,1303200,2920726,0,0,32,7]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["GPU opening exact transcript","cumulative",8,16,669952,1021344,16347794,253772,1638400,294912,8]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["GPU opening exact transcript","cumulative",2,4,1311872,294912,24448,1872798,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["GPU opening exact transcript","cumulative",183959,992397,593280,35081,74393,40960,209606,39776,25395,"nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["GPU opening exact transcript","cumulative",0,0,11]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs",true,"cumulative",0,1047200,0,854624,9170016,364224687,4096,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",44,8229376,2324480,17757703,244422202,6489792,8039584,46099506,329456,1935184,158,65536,9203125,8400753,87542180,153530905,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","serial","cumulative",3729888,1539136,8400753,0,0,40,7]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",8,16,461312,1010048,21123195,180570,1703936,229376,8]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",4,24,8131744,393216,128768,8351998,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",504316,6174917,3777056,130349,434227,229564,321263,56096,88730,"nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",0,0,11]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,8192,4096,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["resident LDE equivalence",true,"cumulative",0,65504,0,71904,55904,1235433,12,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["resident LDE equivalence","cumulative",5,217488,545968,8837802,4510065,1558336,608672,0,63088,456432,51,4096,6330037,2388636,3438003,966253,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["resident LDE equivalence","serial","cumulative",27040,61440,2388636,0,0,0,7]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["resident LDE equivalence","cumulative",5,14,317920,1558336,21220328,89562,427648,286720,8]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["resident LDE equivalence","cumulative",0,0,0,0,0,0,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["resident LDE equivalence","cumulative",0,0,0,0,0,0,0,0,0,"nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["resident LDE equivalence","cumulative",0,0,11]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["overlap",2,2,65536,32768,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-6.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-6.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["resident PCS commitment equivalence",true,"cumulative",0,32736,0,153824,71808,2620611,24,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["resident PCS commitment equivalence","cumulative",8,437808,325504,3568158,2900081,1726176,1336160,2607244,182000,345952,68,65536,2064527,1457890,1174594,1669520,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["resident PCS commitment equivalence","serial","cumulative",140320,32160,1457890,0,0,2,7]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["resident PCS commitment equivalence","cumulative",6,20,617568,1181312,13688918,38690,245760,61440,8]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["resident PCS commitment equivalence","cumulative",0,0,0,0,0,0,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["resident PCS commitment equivalence","cumulative",0,0,0,0,0,0,0,0,0,"nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["resident PCS commitment equivalence","cumulative",0,0,11]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-8.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-8.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          [0,1,1,134217728,67108864,false,6],
+          [0,1,1,134217728,67108864,false,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-9.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,7],
+          [0,true,10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-9.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [0,"NVIDIA GeForce RTX 5080",16707092480,4176773120,8589934592,4294967296,134217728,67108864,1,"exclusive",8]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-9.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,33554432,16777216,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",true,0,0,0,0,0,0,0,0,5],
+          ["large opening diagnostic after",true,0,0,0,0,0,0,0,0,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,16777968,16777968,5,16777216,0,0,0,0,6],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,16777968,75020752,10,16777216,0,0,0,0,13]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,7],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,8],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,9],
+          ["large opening diagnostic after",0,1,53,1728058144,25165824,3236320,968994187,16]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,0,0,10],
+          ["large opening diagnostic after",0,111525190,837964863,829624736,595504,1229981,3482057,9384942,5957472,4217719,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,11],
+          ["large opening diagnostic after",0,0,0,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,33554432,16777216,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",true,0,0,0,0,0,0,0,0,5],
+          ["large opening diagnostic after",true,0,0,0,0,0,0,0,0,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,16777968,16777968,5,16777216,0,0,0,0,6],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,16777968,75020752,10,16777216,0,0,0,0,13]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,7],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,8],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,9],
+          ["large opening diagnostic after",0,1,53,1728058144,25165824,3032160,971088406,16]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,0,0,10],
+          ["large opening diagnostic after",0,116811543,830641304,826960416,404844,1069861,3280169,14062675,8237984,4306398,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,11],
+          ["large opening diagnostic after",0,1728053248,158,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,33554432,16777216,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",true,0,0,0,0,0,0,0,0,5],
+          ["large opening diagnostic after",true,0,0,0,0,0,0,0,0,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,16777968,16777968,5,16777216,0,0,0,0,6],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,16777968,75020752,10,16777216,0,0,0,0,13]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,7],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,8],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,9],
+          ["large opening diagnostic after",0,1,53,1728058144,25165824,3313536,959130699,16]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,0,0,10],
+          ["large opening diagnostic after",0,103717395,836621211,828845280,598137,1260984,3433544,9204365,5954656,3734392,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,11],
+          ["large opening diagnostic after",0,0,0,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,33554432,16777216,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",true,0,0,0,0,0,0,0,0,5],
+          ["large opening diagnostic after",true,0,0,0,0,0,0,0,0,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,16777968,16777968,5,16777216,0,0,0,0,6],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,16777968,75020752,10,16777216,0,0,0,0,13]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,7],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,8],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,9],
+          ["large opening diagnostic after",0,1,53,1728058144,25165824,3301152,1003021403,16]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,0,0,10],
+          ["large opening diagnostic after",0,129250390,847163279,840703360,583299,1263190,5406204,13759722,7842304,4956163,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,11],
+          ["large opening diagnostic after",0,1728053248,158,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,33554432,16777216,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",true,0,0,0,0,0,0,0,0,5],
+          ["large opening diagnostic after",true,0,0,0,0,0,0,0,0,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,16777968,16777968,5,16777216,0,0,0,0,6],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,16777968,75020752,10,16777216,0,0,0,0,13]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,7],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,8],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,9],
+          ["large opening diagnostic after",0,1,53,1728058144,25165824,3117824,940221482,16]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,0,0,10],
+          ["large opening diagnostic after",0,103981017,817386330,809728960,602326,1265552,3190046,9333311,5951936,3912006,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,11],
+          ["large opening diagnostic after",0,0,0,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,33554432,16777216,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",true,0,0,0,0,0,0,0,0,5],
+          ["large opening diagnostic after",true,0,0,0,0,0,0,0,0,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,16777968,16777968,5,16777216,0,0,0,0,6],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,16777968,75020752,10,16777216,0,0,0,0,13]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,7],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,8],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,9],
+          ["large opening diagnostic after",0,1,53,1728058144,25165824,3219296,984279766,16]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,0,0,10],
+          ["large opening diagnostic after",0,118311442,846407291,841931904,429301,1080709,4481049,9164657,5962080,3859892,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,11],
+          ["large opening diagnostic after",0,1728053248,158,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,33554432,16777216,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",true,0,0,0,0,0,0,0,0,5],
+          ["large opening diagnostic after",true,0,0,0,0,0,0,0,0,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,16777968,16777968,5,16777216,0,0,0,0,6],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,16777968,75020752,10,16777216,0,0,0,0,13]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,7],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,8],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,9],
+          ["large opening diagnostic after",0,1,53,1728058144,25165824,3256128,960270643,16]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,0,0,10],
+          ["large opening diagnostic after",0,107846148,832802137,824671840,645152,1245846,3568239,9397356,5953056,4153555,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,11],
+          ["large opening diagnostic after",0,0,0,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,33554432,16777216,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",true,0,0,0,0,0,0,0,0,5],
+          ["large opening diagnostic after",true,0,0,0,0,0,0,0,0,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,16777968,16777968,5,16777216,0,0,0,0,6],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,16777968,75020752,10,16777216,0,0,0,0,13]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,7],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,8],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,9],
+          ["large opening diagnostic after",0,1,53,1728058144,25165824,3106656,970652627,16]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,0,0,10],
+          ["large opening diagnostic after",0,119962313,832512778,828768704,440241,1094789,3242772,9158003,5951552,3690577,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,11],
+          ["large opening diagnostic after",0,1728053248,158,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,33554432,16777216,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",true,0,0,0,0,0,0,0,0,5],
+          ["large opening diagnostic after",true,0,0,0,0,0,0,0,0,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,16777968,16777968,5,16777216,0,0,0,0,6],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,16777968,75020752,10,16777216,0,0,0,0,13]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,7],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,8],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,9],
+          ["large opening diagnostic after",0,1,53,1728058144,25165824,3114176,952667093,16]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,0,0,10],
+          ["large opening diagnostic after",0,104862518,829166550,821311904,571351,1224028,3189405,9240959,5949632,3858715,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,11],
+          ["large opening diagnostic after",0,0,0,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pageable.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,33554432,16777216,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",true,0,0,0,0,0,0,0,0,5],
+          ["large opening diagnostic after",true,0,0,0,0,0,0,0,0,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,16777968,16777968,5,16777216,0,0,0,0,6],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,16777968,75020752,10,16777216,0,0,0,0,13]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,7],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,8],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,9],
+          ["large opening diagnostic after",0,1,53,1728058144,25165824,3067904,971483462,16]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,0,0,10],
+          ["large opening diagnostic after",0,122713478,830032590,825893376,429022,1090518,3217502,9306155,5954400,4144366,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,11],
+          ["large opening diagnostic after",0,1728053248,158,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pinned.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,65536,32768,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["opening reduction before",true,0,0,0,0,0,0,0,0,5],
+          ["opening reduction after",true,0,0,0,0,0,0,0,0,12],
+          ["opening admission before",true,0,0,0,0,0,0,0,0,19],
+          ["opening admission after",true,0,0,0,0,0,0,0,0,26]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["opening reduction before",0,0,0,0,0,0,0,0,0,33520,33520,5,32768,0,0,0,0,6],
+          ["opening reduction after",0,0,0,0,0,0,0,0,0,33520,122104,11,32768,0,0,0,0,13],
+          ["opening admission before",0,0,0,0,0,0,0,0,0,67108864,67108864,12,32768,0,0,0,0,20],
+          ["opening admission after",0,0,0,0,0,0,0,0,0,67108864,67108864,12,32768,0,0,0,0,27]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["opening reduction before",0,0,0,0,0,0,0,0,7],
+          ["opening reduction after",0,0,0,0,0,0,0,0,14],
+          ["opening admission before",0,0,0,0,0,0,0,0,21],
+          ["opening admission after",0,0,0,0,0,0,0,0,28]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["opening reduction before",0,0,0,0,0,0,0,0,0,8],
+          ["opening reduction after",0,0,0,0,0,0,0,0,0,15],
+          ["opening admission before",0,0,0,0,0,0,0,0,0,22],
+          ["opening admission after",0,0,0,0,0,0,0,0,0,29]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["opening reduction before",0,0,0,0,0,0,0,9],
+          ["opening reduction after",0,1,45,1211256,18432,889920,6035146,16],
+          ["opening admission before",0,1,45,1211256,18432,889920,6035146,23],
+          ["opening admission after",0,1,45,1211256,18432,889920,6035146,30]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["opening reduction before",0,0,0,0,0,0,0,0,0,0,0,10],
+          ["opening reduction after",0,105472,2913057,497792,210074,895596,1081527,585371,9152,5645,0,17],
+          ["opening admission before",0,105472,2913057,497792,210074,895596,1081527,585371,9152,5645,0,24],
+          ["opening admission after",0,105472,2913057,497792,210074,895596,1081527,585371,9152,5645,0,31]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["opening reduction before",0,0,0,11],
+          ["opening reduction after",0,1204224,107,18],
+          ["opening admission before",0,1204224,107,25],
+          ["opening admission after",0,1204224,107,32]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,33]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs",true,"cumulative",0,1047200,0,842112,11068736,467950579,4096,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",44,8229376,2324480,26490637,346526086,6582432,8013536,55993328,624368,1935184,126,65536,17383831,8914331,89139326,253165105,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","serial","cumulative",3817760,1530592,8914331,0,0,40,7]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",8,16,475712,1041888,26245073,158610,1703936,229376,8]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",0,0,0,0,0,0,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",0,0,0,0,0,0,0,0,0,"nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",0,0,11]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-10.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,4],
+          ["overlap",2,2,1048576,65536,false,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["spill-backed compatibility test"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          [0,true,0,0,8388576,0,44416,7616,277577,3,5],
+          [0,true,0,0,8388576,0,49984,7488,286795,3,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["spill-backed compatibility test"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          [0,0,1,72351744,3104,126251840,148259,31101344,500416,163290455,7407016,15795592,10,65536,57899079,67167508,92113,53079,6],
+          [0,0,1,72351744,3104,187417500,158738,41566848,505216,194533687,7406464,15795040,12,65536,100523382,38508921,91117,63550,16]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["spill-backed compatibility test"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          [0,"serial",0,35338720,1984,67167508,0,0,70,7],
+          [0,"overlap",0,34999008,1472,38508921,45221545,505173,139,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["spill-backed compatibility test"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,0,0,0,8],
+          [0,0,0,0,0,0,0,0,0,0,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["spill-backed compatibility test"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,0,9],
+          [0,0,0,0,0,0,0,0,19]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["spill-backed compatibility test"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,0,0,0,0,0,10],
+          [0,0,0,0,0,0,0,0,0,0,0,0,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["spill-backed compatibility test"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          [0,0,0,0,11],
+          [0,0,0,0,21]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,12],
+          [0,true,22]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [0,"NVIDIA GeForce RTX 5080",16707092480,4176773120,268435456,4294967296,1048576,65536,1,"exclusive",13]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-11.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,65536,1016,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-12.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-12.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,33554432,16777216,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",true,0,0,0,0,0,0,0,0,5],
+          ["large opening diagnostic after",true,0,0,0,0,0,0,0,0,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,16777968,16777968,5,16777216,0,0,0,0,6],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,16777968,75020752,10,16777216,0,0,0,0,13]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,7],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,8],
+          ["large opening diagnostic after",0,0,0,0,0,0,0,0,0,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,9],
+          ["large opening diagnostic after",0,1,53,1728058144,25165824,3441056,997973820,16]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,0,0,0,0,0,0,0,0,10],
+          ["large opening diagnostic after",0,120754101,852678632,847603744,505350,1149461,4662263,12905517,7749280,4726655,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["large opening diagnostic before",0,0,0,11],
+          ["large opening diagnostic after",0,1728053248,158,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,20]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-13.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,65536,32768,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["GPU opening exact transcript",true,"cumulative",0,1047168,0,764448,7368960,181228785,3584,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["GPU opening exact transcript","cumulative",40,2195904,2136064,3302669,79354222,3083232,6850688,25561736,329456,1999728,128,65536,332691,2916186,75897865,1249838,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["GPU opening exact transcript","serial","cumulative",884768,1316320,2916186,0,0,32,7]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["GPU opening exact transcript","cumulative",8,16,673696,1022400,16418907,269218,1638400,294912,8]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["GPU opening exact transcript","cumulative",2,4,1311872,294912,24064,2190066,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["GPU opening exact transcript","cumulative",291620,1243762,605824,34141,71914,42045,215459,39808,24000,"nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["GPU opening exact transcript","cumulative",1310720,22,11]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs",true,"cumulative",0,1047200,0,887648,9334496,363045622,4096,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",44,8229376,2324480,21356360,241913885,6544320,7999680,52512711,329456,1935184,158,65536,12482799,8691957,91097023,146986921,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","serial","cumulative",3756800,1549984,8691957,0,0,40,7]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",8,16,467392,1011040,22127807,240362,1703936,229376,8]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",4,24,8131744,393216,136832,11966895,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",1458300,8569884,3835136,170146,462813,230025,268458,55968,94493,"nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["resident PCS full-strength cubic proofs","cumulative",8126464,144,11]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,8192,4096,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["resident LDE equivalence",true,"cumulative",0,65504,0,71520,29216,1115815,12,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["resident LDE equivalence","cumulative",5,217488,545968,6228281,4316662,1492928,614048,0,63088,456432,51,4096,4142759,2023683,3386633,848446,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["resident LDE equivalence","serial","cumulative",27104,61312,2023683,0,0,0,7]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["resident LDE equivalence","cumulative",5,14,319328,1492928,18009973,84512,427648,286720,8]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["resident LDE equivalence","cumulative",0,0,0,0,0,0,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["resident LDE equivalence","cumulative",0,0,0,0,0,0,0,0,0,"nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["resident LDE equivalence","cumulative",0,0,11]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["overlap",2,2,65536,32768,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-6.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-6.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["resident PCS commitment equivalence",true,"cumulative",0,32736,0,153120,65664,2205110,24,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["resident PCS commitment equivalence","cumulative",8,437808,325504,3412341,2641318,1735008,1357952,2775624,182000,345952,68,65536,1996672,1377009,1204038,1386493,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["resident PCS commitment equivalence","serial","cumulative",145312,32416,1377009,0,0,2,7]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["resident PCS commitment equivalence","cumulative",6,20,613696,1186240,13469748,23723,245760,61440,8]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["resident PCS commitment equivalence","cumulative",0,0,0,0,0,0,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          ["resident PCS commitment equivalence","cumulative",0,0,0,0,0,0,0,0,0,"nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          ["resident PCS commitment equivalence","cumulative",0,0,11]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,12]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-7.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-8.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-8.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          [0,1,1,134217728,67108864,false,6],
+          [0,1,1,134217728,67108864,false,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-9.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,7],
+          [0,true,10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-9.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [0,"NVIDIA GeForce RTX 5080",16707092480,4176773120,8589934592,4294967296,134217728,67108864,1,"exclusive",8]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-9.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-d421949d7443cc67c7465b1b",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 7124,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-1.log",
+      "sha256": "41de3223a06d3e8a628d78e80222a1883811961ddf2421d42006675b51c9b7f9"
+    },
+    {
+      "bytes": 2509,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-10.log",
+      "sha256": "f2cc57b752638a1033d3d8587b2e5671d4dc4c1014b3a87af61dfd13b381e245"
+    },
+    {
+      "bytes": 4556,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-11.log",
+      "sha256": "09a17bf5345c87aaa67e03a035efbe7797c8f9eb5736146987be6ae6cdf2ad81"
+    },
+    {
+      "bytes": 694,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-12.log",
+      "sha256": "33b178ca5c11bd550396f5e53a59bf6b25869dd63a559e650558affecf76c3de"
+    },
+    {
+      "bytes": 4291,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-13.log",
+      "sha256": "c558dc9e6e7e3a5589facce82860b8b3ed6f1df2bd93a68d277b48f7d923e2a4"
+    },
+    {
+      "bytes": 958,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-2.log",
+      "sha256": "adc97ddecbfd84091f184ec9728b7cc5566864d4cba777162dea9cc489ef1c61"
+    },
+    {
+      "bytes": 2472,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-3.log",
+      "sha256": "879c3461ee2aaca3fbed749a3995a5e997d151c49d9c6d4ca16b19bd15df9dae"
+    },
+    {
+      "bytes": 2576,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-4.log",
+      "sha256": "79b43b1864b18bc6ae987a0ad2dc3fbad1b6fb09d3d2be0fc0e11a43f81b55ba"
+    },
+    {
+      "bytes": 2340,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-5.log",
+      "sha256": "e73e1cdb2fb716fb364fadf2e30d26f9f57a84b0fa610e99889252657d29d179"
+    },
+    {
+      "bytes": 679,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-6.log",
+      "sha256": "65d3b4bdb2faa1b246be552e6a508b758498c792ddf753731722392172e27348"
+    },
+    {
+      "bytes": 2450,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-7.log",
+      "sha256": "4fc09da7328606cd3477e4862326536fd3935eb71d6c36063c04568caa620591"
+    },
+    {
+      "bytes": 667,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-8.log",
+      "sha256": "1cc06c3715ab10a736ef6571503030bf7b374c9a71bd644714df81330a861f96"
+    },
+    {
+      "bytes": 1370,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pageable-gpu-9.log",
+      "sha256": "3d0fa729da1a2903ca89e30fbcc20f49be048497799d52dffd9ec6a4e11f0b7c"
+    },
+    {
+      "bytes": 4291,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pageable.log",
+      "sha256": "1b7b9c41f5f2ae09899787b054535c340a3f9548b0336bcbce735aeb8f5638e3"
+    },
+    {
+      "bytes": 4302,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-1-pinned.log",
+      "sha256": "b81445684444c957a5e56a18300144f40fd4dd3c011c27b6a4094669fa931f88"
+    },
+    {
+      "bytes": 4291,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pageable.log",
+      "sha256": "06d7cbeea68230bcbd158f4ca126c116d241ba4bb1b1a4dc99a96d7cc15ddd73"
+    },
+    {
+      "bytes": 4304,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-2-pinned.log",
+      "sha256": "f302f4f9b3cb95fc6f3e3f8018ea31ca06d9b83e5c24ae5e18deaf672505ce41"
+    },
+    {
+      "bytes": 4291,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pageable.log",
+      "sha256": "82681e8a825ea393b53e7b148f1addad539c86d622e38934a67923c7a126c54e"
+    },
+    {
+      "bytes": 4301,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-3-pinned.log",
+      "sha256": "0d5b5eb2ea50ce8a5d0bd9e95f4801a21bb6df14146f5119bd85b6a2ab30b8f6"
+    },
+    {
+      "bytes": 4291,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pageable.log",
+      "sha256": "38120eb514822940353c688640399b5d37269b4df07efa02807265aef62cecd5"
+    },
+    {
+      "bytes": 4301,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-4-pinned.log",
+      "sha256": "c5e5897b9ed39ac5131a927e1858b1b6942372b617d9f80538dceb00e01f062f"
+    },
+    {
+      "bytes": 4291,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pageable.log",
+      "sha256": "27df18ed152be20cc8cd11105128db8f138363e5c1f1eeb35083471f69c96459"
+    },
+    {
+      "bytes": 4301,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pair-5-pinned.log",
+      "sha256": "b8006de2f43a305c81f7d6fa8fdddddb7a1bdcf9488649a4610af45c689da9fa"
+    },
+    {
+      "bytes": 7151,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-1.log",
+      "sha256": "44a3f0e0b4ff8dc4d0a12c6c698a7e933e8655e3cd77958930861a4ad316ca06"
+    },
+    {
+      "bytes": 2510,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-10.log",
+      "sha256": "25fbb3f750d051e6a7f8c8979cfeb0240373c6dc57ae3fa01be5f9d4cafb5a2c"
+    },
+    {
+      "bytes": 4554,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-11.log",
+      "sha256": "d9f77870ca953164b4c02e9215631bb3f2126f073c52731d92efbddb0c49e7bd"
+    },
+    {
+      "bytes": 694,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-12.log",
+      "sha256": "519714811115f111ed458f90d821263801185f7fd004af21f07c9f45000201f0"
+    },
+    {
+      "bytes": 4302,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-13.log",
+      "sha256": "ab113adf30227cc754a34b620c523703fb8cd9b94f34c14e35658eb07f88484f"
+    },
+    {
+      "bytes": 958,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-2.log",
+      "sha256": "af2ba4dd083a8d836276d812864c05503b1df2799bcdd783d41779710ab90e64"
+    },
+    {
+      "bytes": 2480,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-3.log",
+      "sha256": "d2b3dce94e84f89a0b0b20f2a64c8c3239867546a117f5f6d3c2dbd7a3339225"
+    },
+    {
+      "bytes": 2587,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-4.log",
+      "sha256": "3893e020a3ee00f6a44ee58d06a8def6ebc5476a293866b1e4d726b235cf0a9d"
+    },
+    {
+      "bytes": 2340,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-5.log",
+      "sha256": "5cb88b0deab8059acea5e52899e494aa83d3854508954cea819edccafd3c5026"
+    },
+    {
+      "bytes": 679,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-6.log",
+      "sha256": "c6a2df3fcb5c239ba745934e2d722e51102b460d2f49d192916dc7e229b1f767"
+    },
+    {
+      "bytes": 2450,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-7.log",
+      "sha256": "a50452ad90d78dfb31c419219b2f79b113329a2a63609da9985a6d7a596edb09"
+    },
+    {
+      "bytes": 667,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-8.log",
+      "sha256": "c82294853ad2fc4d0e240a27753df42400b3da09f871d4f6a927996346015230"
+    },
+    {
+      "bytes": 1370,
+      "path": "lattica-prover-p3/target/block-v2-gpu-opening-pinned-qualification-20261002-a/pinned-gpu-9.log",
+      "sha256": "8688017075df02053807f3291c70b53a4026ea40a526686912577cf6ad6310b9"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

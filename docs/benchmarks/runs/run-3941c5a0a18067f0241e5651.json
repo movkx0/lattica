@@ -1,0 +1,111 @@
+{
+  "campaign_ids": [],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-process-proof-20261002-b",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {
+          "scope": ["exec_stop_post_snapshot"]
+        },
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-worker-bee44774293a80f864623b24441fa25e469cd8fab906658450ea4c615577acbf.service",0,15790080,0,3221225472,0,730305,7],
+          ["lattica-v2-process-check-20261002-b.service",0,32100352,0,3221225472,0,1558738,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-process-proof-20261002-b/check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","setup_ms","preprocessing_cache_hit","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_start",
+        "rows": [
+          [1,50607,false,7]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-process-proof-20261002-b/proof.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","prove_and_verify_ms","node_payload_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "proof_verified",
+        "rows": [
+          [1,122905,1683940,8]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-process-proof-20261002-b/proof.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {
+          "scope": ["exec_stop_post_snapshot"]
+        },
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-worker-4e75089500e67be27a04f182e66231102bd6abeaea0b07c20533218399b66f6b.service",0,42529280000,0,47244640256,0,1117029733,10],
+          ["lattica-v2-process-owner-20261002-b.service",0,41861120,0,3221225472,0,2013711,21]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-process-proof-20261002-b/proof.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-process-replay-20261002-b.service","exec_stop_post_snapshot",26910720,0,3221225472,0,992766,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-process-proof-20261002-b/replay.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": [],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-3941c5a0a18067f0241e5651",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 1784,
+      "path": "lattica-prover-p3/target/block-v2-process-proof-20261002-b/check.log",
+      "sha256": "56b4b73ff5f4fb3ae78fd22f6a1820e9f1b185ff881cbdf7b8d67452f9221985"
+    },
+    {
+      "bytes": 2038,
+      "path": "lattica-prover-p3/target/block-v2-process-proof-20261002-b/proof.log",
+      "sha256": "71bf01cc47926ca8c8a4fc8bb35dad32d0fd3c36ebbf020c304599627041cf7d"
+    },
+    {
+      "bytes": 817,
+      "path": "lattica-prover-p3/target/block-v2-process-proof-20261002-b/replay.log",
+      "sha256": "653b2fc986d837842cf2feb1976573914e15f259cf82c194e691bf43a63d4676"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "campaign_ids": ["block-v2-fixed-node-codec-2026-10-01","block-v2-gpu-grouped-matched-pilot-2026-10-01","block-v2-gpu-grouped-resident-proof-2026-10-01","block-v2-gpu-grouped-workflow-2026-10-01","block-v2-gpu-readback-matched-pilot-2026-10-01","block-v2-local-job-contract-2026-10-02","block-v2-padding-2026-10-01"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-codec2-registration-20261001-b",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [323,0,true,false,22],
+          [300,0,true,false,28],
+          [13,0,true,false,33],
+          [15,0,true,false,39],
+          [292,0,true,false,45],
+          [552,0,true,false,51]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/key-pinning.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-codec2-key-pinning-20261001-a.service","exec_stop_post_snapshot",38191104,0,3221225472,0,2151929,54]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/key-pinning.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-codec2-register-primary-20261001-b.service","exec_stop_post_snapshot",24104960,0,3221225472,0,156985,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/primary-controller.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-codec2-proving-20261001-a.service","exec_stop_post_snapshot",34820096,0,3221225472,0,335558,2]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/proof-controller.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-codec2-register-reproduction-20261001-b.service","exec_stop_post_snapshot",23416832,0,3221225472,0,161676,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/reproduction-controller.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-1d436f68ad3cd35e8e87db08",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 18669,
+      "path": "lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/key-pinning.log",
+      "sha256": "98d0c8c1dadc6df4604a232d8b9255e31d485836132e492531379f0412377f6a"
+    },
+    {
+      "bytes": 558,
+      "path": "lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/primary-controller.log",
+      "sha256": "8a44ed0370f9d9c725d682629803b449c61999556492d959c8f64690247ebe9b"
+    },
+    {
+      "bytes": 397,
+      "path": "lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/proof-controller.log",
+      "sha256": "da1430193e2e16fbac639db44210a55c2b444e7b5dedd36538c52b8ecb3c9fb3"
+    },
+    {
+      "bytes": 588,
+      "path": "lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/reproduction-controller.log",
+      "sha256": "008eee47f49caf60e2716a56a9537c4232e5a4594020974c1be2e1a175b78428"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

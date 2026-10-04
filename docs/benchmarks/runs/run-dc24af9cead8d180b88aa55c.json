@@ -1,0 +1,950 @@
+{
+  "adapter": "grouped",
+  "campaign_ids": ["block-v2-eight-comparison-2026-10-01"],
+  "configuration": {
+    "accounting": "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py",
+    "evidence": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a",
+    "external": [],
+    "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-single-eight-prepared-job-20261001-a",
+    "mode": "prepare",
+    "runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-comparison-binaries-20261001-a/block-v2-single-eight-probe",
+    "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-comparison-sources-20261001-a.tar.gz"
+  },
+  "kind": "solving",
+  "label": "block-v2-single-eight-prepare-20261001-a",
+  "limitations": ["Research evidence; does not establish production or four-wallet readiness.","Wallet proof creation and canonical chain acceptance are outside this measurement.","Inclusive phase and GPU counters are non-additive; process checkpoints may reset.","Host and OpenCL clocks are separate unless an explicit anchor was recorded."],
+  "measurement_scope": "recursive_aggregation",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["single-eight process remainder",9109,0,0,"inclusive_nonadditive",11]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/01-prepare.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["single-eight process remainder"],
+          "target": ["p3_air::symbolic::builder","p3_challenger::grinding_challenger","p3_dft::radix_2_dit_parallel","p3_field::batch_inverse","p3_fri::hiding_pcs","p3_fri::prover","p3_fri::two_adic_pcs","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree","p3_uni_stark::prover","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"compute constraint layout",8,694979,102784,0,12],
+          [0,"evaluate all constraints symbolically",32,1435887,73866,0,13],
+          [0,"infer base and extension constraint degree",32,2177195,101906,0,14],
+          [1,"grind for proof-of-work witness",112,68962296,29927058,0,15],
+          [2,"coset_dft",408,48606883,3303174,0,16],
+          [2,"coset_dft_oop",8168,892767730,16964269,0,17],
+          [2,"coset_lde_batch_with_transform",408,1030517803,104434803,0,18],
+          [2,"first_half",536,142615235,4118788,0,19],
+          [2,"first_half_general",408,15877673,3233798,0,20],
+          [2,"first_half_general_oop",8168,278110406,6650494,0,21],
+          [2,"reserve_exact",408,8398886,393739,0,22],
+          [2,"second_half",536,103212452,4627271,0,23],
+          [2,"second_half_general",8576,260747087,10888711,0,24],
+          [3,"batch_multiplicative_inverse",40776,124683322,4361186,0,25],
+          [4,"randomize polys",8,4852427,802603,0,26],
+          [5,"FRI prover",8,534044776,87294707,0,27],
+          [5,"commit phase",8,451245437,61457071,0,28],
+          [5,"idft final poly",8,26550,3666,0,29],
+          [5,"query phase",8,13703916,4613498,0,30],
+          [6,"compress mat",144,113736109,3641227,0,31],
+          [6,"compute opened values with Lagrange interpolation",152,18962281,566587,0,32],
+          [6,"compute_inverse_denominators",8,26654268,4645138,0,33],
+          [6,"evaluate matrix",152,20129661,572147,0,34],
+          [6,"fold_matrix",104,21415672,3230353,0,35],
+          [6,"reduce matrix quotient",144,190070739,4201718,0,36],
+          [7,"columnwise_dot_product",944,54300289,5056970,0,37],
+          [8,"with_random_cols",136,18938182,784394,0,38],
+          [9,"reverse_matrix_index_bits",10304,675475208,5146951,0,39],
+          [10,"build merkle tree",128,5334272459,486425447,0,40],
+          [10,"first digest layer",128,4873525057,471071996,0,41],
+          [11,"Compute Selectors",8,10565365,1577945,0,42],
+          [11,"commit to quotient poly chunks",8,5501522200,701237420,0,43],
+          [11,"commit to trace data",8,972594000,284426970,0,44],
+          [11,"open",8,779557688,117985884,0,45],
+          [11,"prove",8,8166704897,1205264140,0,46],
+          [11,"prove_with_preprocessed",8,8166692289,1205262669,0,47],
+          [11,"quotient_values",8,491344052,69500339,0,48],
+          [12,"get_log_num_quotient_chunks",32,2210426,103290,0,49],
+          [12,"infer log of base and extension constraint degree",32,2193084,102627,0,50],
+          [13,"verify",24,750466454,85428488,0,51],
+          [13,"verify_with_preprocessed",24,750445938,85427304,0,52]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/01-prepare.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,53],
+          ["memory_full_stall_us",619,54],
+          ["memory_high_events",0,55],
+          ["memory_some_stall_us",619,56],
+          ["minor_faults",66819,57],
+          ["read_bytes",0,58],
+          ["system_ticks",119,59],
+          ["user_ticks",5312,60],
+          ["write_bytes",7159808,61]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/01-prepare.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-single-eight-2644463-1.service","exec_stop_post_snapshot",298455040,0,47244640256,0,54348248,63]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/01-prepare.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["single-eight process remainder",4857,0,0,"inclusive_nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/02-height.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["single-eight process remainder"],
+          "target": ["p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_field::batch_inverse","p3_matrix","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"evaluate all constraints symbolically",10,274410,43062,0,11],
+          [0,"evaluate base constraints symbolically",2,66843,34071,0,12],
+          [0,"infer base and extension constraint degree",10,482111,59985,0,13],
+          [1,"compute constraint layout with lookups",19,6249169,443874,0,14],
+          [1,"evaluate constraints symbolically",32,5477843,252527,0,15],
+          [1,"infer constraint degree",22,7177058,413900,0,16],
+          [2,"batch_multiplicative_inverse",13576,18459623,306666,0,17],
+          [3,"columnwise_dot_product",264,6389140,235219,0,18],
+          [4,"get_log_num_quotient_chunks",10,489886,60703,0,19],
+          [4,"infer log of base and extension constraint degree",10,486030,60324,0,20],
+          [5,"verify",8,163564271,25207697,0,21],
+          [5,"verify_with_preprocessed",8,163558249,25205063,0,22]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/02-height.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",14,23],
+          ["memory_full_stall_us",913,24],
+          ["memory_high_events",0,25],
+          ["memory_some_stall_us",913,26],
+          ["minor_faults",137130,27],
+          ["read_bytes",0,28],
+          ["system_ticks",55,29],
+          ["user_ticks",422,30],
+          ["write_bytes",2129252352,31]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/02-height.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-single-eight-2644463-2.service","exec_stop_post_snapshot",1085558784,0,47244640256,0,4811994,33]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/02-height.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["input_bytes","output_bytes","width","added_bits","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_start",
+        "rows": [
+          [587202560,9395240960,70,4,3]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_done",
+        "rows": [
+          [7401,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["single-eight process remainder",38922,0,0,"inclusive_nonadditive",6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["single-eight process remainder"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,37108311026,37108311026,0,7],
+          [1,"evaluate all constraints symbolically",9,267917,41484,0,8],
+          [1,"evaluate base constraints symbolically",1,32671,32671,0,9],
+          [1,"infer base and extension constraint degree",9,459211,59502,0,10],
+          [2,"compute constraint layout with lookups",4,1444670,455885,0,11],
+          [2,"evaluate constraints symbolically",7,1387861,280047,0,12],
+          [2,"infer constraint degree",5,1798370,486723,0,13],
+          [3,"coset_dft",16,2540774795,168410520,0,14],
+          [3,"first_half",1,69219800,69219800,0,15],
+          [3,"first_half_general",16,1080082639,77872925,0,16],
+          [3,"second_half",1,58426350,58426350,0,17],
+          [3,"second_half_general",16,1087452432,72198070,0,18],
+          [4,"divide_by_height",1,22137411,22137411,0,19],
+          [5,"batch_multiplicative_inverse",13576,19263612,421717,0,20],
+          [6,"columnwise_dot_product",264,6214008,231994,0,21],
+          [7,"with_zero_cols",1,603992718,603992718,0,22],
+          [8,"reverse_matrix_index_bits",37,628436821,20924052,0,23],
+          [9,"build merkle tree",1,27319992478,27319992478,0,24],
+          [9,"first digest layer",1,25623942215,25623942215,0,25],
+          [10,"get_log_num_quotient_chunks",9,467472,60531,0,26],
+          [10,"infer log of base and extension constraint degree",9,463192,59957,0,27],
+          [11,"verify",8,169456736,25527161,0,28],
+          [11,"verify_with_preprocessed",8,169449535,25526423,0,29]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",21,30],
+          ["memory_full_stall_us",98,31],
+          ["memory_high_events",0,32],
+          ["memory_some_stall_us",98,33],
+          ["minor_faults",542623,34],
+          ["read_bytes",0,35],
+          ["system_ticks",375,36],
+          ["user_ticks",23714,37],
+          ["write_bytes",14266138624,38]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-single-eight-2644463-3.service","exec_stop_post_snapshot",11631378432,0,47244640256,0,240931137,40]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["input_bytes","output_bytes","width","added_bits","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_start",
+        "rows": [
+          [587202560,9395240960,70,4,3]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_done",
+        "rows": [
+          [7364,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["single-eight process remainder",39382,0,0,"inclusive_nonadditive",6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["single-eight process remainder"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,39074565306,39074565306,0,7],
+          [1,"evaluate all constraints symbolically",8,243078,43186,0,8],
+          [1,"infer base and extension constraint degree",8,410340,57792,0,9],
+          [2,"compute constraint layout with lookups",4,1365652,383976,0,10],
+          [2,"evaluate constraints symbolically",7,1326460,268938,0,11],
+          [2,"infer constraint degree",5,1823384,464918,0,12],
+          [3,"coset_dft",16,2509398843,164234322,0,13],
+          [3,"first_half",1,79217310,79217310,0,14],
+          [3,"first_half_general",16,1057149443,71607295,0,15],
+          [3,"second_half",1,52766459,52766459,0,16],
+          [3,"second_half_general",16,1070692725,71736532,0,17],
+          [4,"divide_by_height",1,18240157,18240157,0,18],
+          [5,"batch_multiplicative_inverse",13576,18538458,340290,0,19],
+          [6,"columnwise_dot_product",264,6598096,235857,0,20],
+          [7,"with_zero_cols",1,604372289,604372289,0,21],
+          [8,"reverse_matrix_index_bits",37,627463352,20512102,0,22],
+          [9,"build merkle tree",1,27625856162,27625856162,0,23],
+          [9,"first digest layer",1,25908819503,25908819503,0,24],
+          [10,"get_log_num_quotient_chunks",8,416947,58965,0,25],
+          [10,"infer log of base and extension constraint degree",8,413423,58607,0,26],
+          [11,"verify",8,177594498,25228478,0,27],
+          [11,"verify_with_preprocessed",8,177587953,25227914,0,28]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",16,29],
+          ["memory_full_stall_us",694,30],
+          ["memory_high_events",0,31],
+          ["memory_some_stall_us",694,32],
+          ["minor_faults",554502,33],
+          ["read_bytes",0,34],
+          ["system_ticks",393,35],
+          ["user_ticks",23638,36],
+          ["write_bytes",19309490176,37]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-single-eight-2644463-4.service","exec_stop_post_snapshot",11184689152,0,47244640256,0,240331214,39]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["input_bytes","output_bytes","width","added_bits","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_start",
+        "rows": [
+          [587202560,9395240960,70,4,3]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_done",
+        "rows": [
+          [7691,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["single-eight process remainder",42334,0,0,"inclusive_nonadditive",6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["single-eight process remainder"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,40969007503,40969007503,0,7],
+          [1,"evaluate all constraints symbolically",8,219664,44332,0,8],
+          [1,"infer base and extension constraint degree",8,382901,58752,0,9],
+          [2,"compute constraint layout with lookups",7,2687447,486878,0,10],
+          [2,"evaluate constraints symbolically",13,2635726,320283,0,11],
+          [2,"infer constraint degree",9,3346625,484249,0,12],
+          [3,"coset_dft",16,2518202177,168241964,0,13],
+          [3,"first_half",1,79746522,79746522,0,14],
+          [3,"first_half_general",16,1066685470,72955923,0,15],
+          [3,"second_half",1,56822844,56822844,0,16],
+          [3,"second_half_general",16,1078503465,70961755,0,17],
+          [4,"divide_by_height",1,17219850,17219850,0,18],
+          [5,"batch_multiplicative_inverse",13576,16855188,257725,0,19],
+          [6,"columnwise_dot_product",264,6201195,338567,0,20],
+          [7,"with_zero_cols",1,723222395,723222395,0,21],
+          [8,"reverse_matrix_index_bits",37,623746004,20736340,0,22],
+          [9,"build merkle tree",1,28275656579,28275656579,0,23],
+          [9,"first digest layer",1,26608317360,26608317360,0,24],
+          [10,"get_log_num_quotient_chunks",8,388877,60067,0,25],
+          [10,"infer log of base and extension constraint degree",8,386040,59716,0,26],
+          [11,"verify",8,154373523,21839749,0,27],
+          [11,"verify_with_preprocessed",8,154367800,21837328,0,28]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",26,29],
+          ["memory_full_stall_us",4910,30],
+          ["memory_high_events",0,31],
+          ["memory_some_stall_us",4910,32],
+          ["minor_faults",658969,33],
+          ["read_bytes",0,34],
+          ["system_ticks",422,35],
+          ["user_ticks",24300,36],
+          ["write_bytes",15940521984,37]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-single-eight-2644463-5.service","exec_stop_post_snapshot",12402585600,0,47244640256,0,247255776,39]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["single-eight process remainder",7,0,0,"inclusive_nonadditive",3]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/06-describe.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["single-eight process remainder"],
+          "target": ["p3_batch_stark::symbolic"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"compute constraint layout with lookups",2,474865,269534,0,4],
+          [0,"evaluate constraints symbolically",3,370470,164827,0,5],
+          [0,"infer constraint degree",2,457132,261326,0,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/06-describe.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,7],
+          ["memory_full_stall_us",0,8],
+          ["memory_high_events",0,9],
+          ["memory_some_stall_us",0,10],
+          ["minor_faults",386,11],
+          ["read_bytes",0,12],
+          ["system_ticks",0,13],
+          ["user_ticks",0,14],
+          ["write_bytes",0,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/06-describe.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-single-eight-2644463-6.service","exec_stop_post_snapshot",5939200,0,47244640256,0,27433,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/06-describe.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {
+    "backend": "opencl",
+    "memory_model": "discrete",
+    "os": "linux"
+  },
+  "proofs": [],
+  "retained_metadata": {
+    "artifacts": {
+      "height": {
+        "bytes": 4,
+        "sha256": "c9c7e8c63836a93f6d8c04598b6503d2863a2df7b86366157178234175704dcc"
+      },
+      "key.1": {
+        "bytes": 2048,
+        "sha256": "b16cc406fc43b2cd95929bed0a95e6b2eb1f9192a2a3ab66ddbf2163cee16383"
+      },
+      "key.2": {
+        "bytes": 2048,
+        "sha256": "23c014bd0cc4af3fdfedae55a0a060e3469edf001267d23f29f3d5b82bd286db"
+      },
+      "key.3": {
+        "bytes": 2048,
+        "sha256": "a42b9a30fe35034313d2ec0a92ee5aee3278c926ef53407e9e8b1cb14bbf384d"
+      },
+      "wallet.0": {
+        "bytes": 853675,
+        "sha256": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973"
+      },
+      "wallet.1": {
+        "bytes": 853491,
+        "sha256": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79"
+      },
+      "wallet.2": {
+        "bytes": 854047,
+        "sha256": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5"
+      },
+      "wallet.3": {
+        "bytes": 853795,
+        "sha256": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b"
+      },
+      "wallet.4": {
+        "bytes": 853725,
+        "sha256": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b"
+      },
+      "wallet.5": {
+        "bytes": 853855,
+        "sha256": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa"
+      },
+      "wallet.6": {
+        "bytes": 853977,
+        "sha256": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117"
+      },
+      "wallet.7": {
+        "bytes": 853568,
+        "sha256": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5"
+      }
+    },
+    "attempts": [
+      {
+        "log": "01-prepare.log",
+        "log_sha256": "7f9ea6e3b510f50302474ff3436b11ec75f7f8d5f25fb390163780dd8c2696fc",
+        "name": "prepare",
+        "started_utc": "2026-10-01T10:44:10Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 54348248,
+            "memory_max": 47244640256,
+            "memory_peak": 298455040,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 9109,
+            "spill_peak_bytes": 0
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-single-eight-2644463-1.service",
+        "wall_seconds": 9.186728956003208
+      },
+      {
+        "log": "02-height.log",
+        "log_sha256": "7de8d17758a6865f3fce70961ad6761df1b04d2ec2bff650d63d08a67301d2fd",
+        "name": "height",
+        "started_utc": "2026-10-01T10:44:19Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 4811994,
+            "memory_max": 47244640256,
+            "memory_peak": 1085558784,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 4857,
+            "spill_peak_bytes": 855646208
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-single-eight-2644463-2.service",
+        "wall_seconds": 4.920937436982058
+      },
+      {
+        "log": "03-key-1.log",
+        "log_sha256": "ad98a31bf174ab7afcd733bd2776f6683b9a9d48ae934eb7712aaa37368d9a1a",
+        "name": "key-1",
+        "started_utc": "2026-10-01T10:44:24Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 240931137,
+            "memory_max": 47244640256,
+            "memory_peak": 11631378432,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 38922,
+            "spill_peak_bytes": 11295875072
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-single-eight-2644463-3.service",
+        "wall_seconds": 38.98079777599196
+      },
+      {
+        "log": "04-key-2.log",
+        "log_sha256": "b6389bac2cd39e1f8d86185d708d5822731349361421aed146ce475ba66199c1",
+        "name": "key-2",
+        "started_utc": "2026-10-01T10:45:03Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 240331214,
+            "memory_max": 47244640256,
+            "memory_peak": 11184689152,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 39382,
+            "spill_peak_bytes": 10938769408
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-single-eight-2644463-4.service",
+        "wall_seconds": 39.443164099007845
+      },
+      {
+        "log": "05-key-3.log",
+        "log_sha256": "305149ba7d2aee79b2e444bff80262df28f78b54204d6e373905c82bc56f0792",
+        "name": "key-3",
+        "started_utc": "2026-10-01T10:45:43Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 247255776,
+            "memory_max": 47244640256,
+            "memory_peak": 12402585600,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 42334,
+            "spill_peak_bytes": 12191002624
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-single-eight-2644463-5.service",
+        "wall_seconds": 42.40711461901083
+      },
+      {
+        "log": "06-describe.log",
+        "log_sha256": "4fcc91d5c1fc69d6661403d0fd00520bc8d8953f1390a28c5b5a3efc0ab2cb6b",
+        "name": "describe",
+        "started_utc": "2026-10-01T10:46:25Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 27433,
+            "memory_max": 47244640256,
+            "memory_peak": 5939200,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 7,
+            "spill_peak_bytes": 0
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-single-eight-2644463-6.service",
+        "wall_seconds": 0.06365324498619884
+      }
+    ],
+    "config": {
+      "accounting": "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py",
+      "evidence": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a",
+      "external": [],
+      "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-single-eight-prepared-job-20261001-a",
+      "mode": "prepare",
+      "runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-comparison-binaries-20261001-a/block-v2-single-eight-probe",
+      "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-comparison-sources-20261001-a.tar.gz"
+    },
+    "configured_limits_not_peak_observations": {
+      "aggregate_ram_bytes": 51539607552,
+      "controller_ram_bytes_at_most": 3221225472,
+      "controller_runtime_seconds_at_most": 21600,
+      "log_bytes_per_stage": 67108864,
+      "slice": "lattica-v2-grouped.slice",
+      "spill_bytes": 128849018880,
+      "swap_bytes": 0,
+      "worker_ram_bytes": 47244640256
+    },
+    "full_tree_security": "UNREVIEWED",
+    "pins": {
+      "accounting": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "controller": "919c120d597cb9197b0531949fd5327a9e3a1ff67564b51e3223d022991db302",
+      "runner": "0b9bec408bf5a64796291cae9856ec21e6ff1359709d181df7c704c3bd73508d",
+      "source_archive": "5cba5c6a59b873a940c78d60ab075f4f9043009a943508a1d642d00028958c90"
+    },
+    "production_ready": false,
+    "schema": 1,
+    "status": "PREPARED_UNAPPROVED"
+  },
+  "revision": {
+    "pins": {
+      "accounting": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "controller": "919c120d597cb9197b0531949fd5327a9e3a1ff67564b51e3223d022991db302",
+      "runner": "0b9bec408bf5a64796291cae9856ec21e6ff1359709d181df7c704c3bd73508d",
+      "source_archive": "5cba5c6a59b873a940c78d60ab075f4f9043009a943508a1d642d00028958c90"
+    }
+  },
+  "run_id": "run-dc24af9cead8d180b88aa55c",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 7424,
+      "path": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/manifest.json",
+      "sha256": "8d55cb3d629c0005a9316972e9b692b96ddf9b2b0234577d1857f9a74c8f93a4"
+    },
+    {
+      "bytes": 6694,
+      "path": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/01-prepare.log",
+      "sha256": "7f9ea6e3b510f50302474ff3436b11ec75f7f8d5f25fb390163780dd8c2696fc"
+    },
+    {
+      "bytes": 3355,
+      "path": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/02-height.log",
+      "sha256": "7de8d17758a6865f3fce70961ad6761df1b04d2ec2bff650d63d08a67301d2fd"
+    },
+    {
+      "bytes": 4339,
+      "path": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/03-key-1.log",
+      "sha256": "ad98a31bf174ab7afcd733bd2776f6683b9a9d48ae934eb7712aaa37368d9a1a"
+    },
+    {
+      "bytes": 4204,
+      "path": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/04-key-2.log",
+      "sha256": "b6389bac2cd39e1f8d86185d708d5822731349361421aed146ce475ba66199c1"
+    },
+    {
+      "bytes": 4211,
+      "path": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/05-key-3.log",
+      "sha256": "305149ba7d2aee79b2e444bff80262df28f78b54204d6e373905c82bc56f0792"
+    },
+    {
+      "bytes": 1720,
+      "path": "lattica-prover-p3/target/block-v2-single-eight-prepare-20261001-a/06-describe.log",
+      "sha256": "4fcc91d5c1fc69d6661403d0fd00520bc8d8953f1390a28c5b5a3efc0ab2cb6b"
+    }
+  ],
+  "stages": [
+    {
+      "log": "01-prepare.log",
+      "log_sha256": "7f9ea6e3b510f50302474ff3436b11ec75f7f8d5f25fb390163780dd8c2696fc",
+      "name": "prepare",
+      "started_utc": "2026-10-01T10:44:10Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 54348248,
+          "memory_max": 47244640256,
+          "memory_peak": 298455040,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 9109,
+          "spill_peak_bytes": 0
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-single-eight-2644463-1.service",
+      "wall_seconds": 9.186728956003208
+    },
+    {
+      "log": "02-height.log",
+      "log_sha256": "7de8d17758a6865f3fce70961ad6761df1b04d2ec2bff650d63d08a67301d2fd",
+      "name": "height",
+      "started_utc": "2026-10-01T10:44:19Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 4811994,
+          "memory_max": 47244640256,
+          "memory_peak": 1085558784,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 4857,
+          "spill_peak_bytes": 855646208
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-single-eight-2644463-2.service",
+      "wall_seconds": 4.920937436982058
+    },
+    {
+      "log": "03-key-1.log",
+      "log_sha256": "ad98a31bf174ab7afcd733bd2776f6683b9a9d48ae934eb7712aaa37368d9a1a",
+      "name": "key-1",
+      "started_utc": "2026-10-01T10:44:24Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 240931137,
+          "memory_max": 47244640256,
+          "memory_peak": 11631378432,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 38922,
+          "spill_peak_bytes": 11295875072
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-single-eight-2644463-3.service",
+      "wall_seconds": 38.98079777599196
+    },
+    {
+      "log": "04-key-2.log",
+      "log_sha256": "b6389bac2cd39e1f8d86185d708d5822731349361421aed146ce475ba66199c1",
+      "name": "key-2",
+      "started_utc": "2026-10-01T10:45:03Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 240331214,
+          "memory_max": 47244640256,
+          "memory_peak": 11184689152,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 39382,
+          "spill_peak_bytes": 10938769408
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-single-eight-2644463-4.service",
+      "wall_seconds": 39.443164099007845
+    },
+    {
+      "log": "05-key-3.log",
+      "log_sha256": "305149ba7d2aee79b2e444bff80262df28f78b54204d6e373905c82bc56f0792",
+      "name": "key-3",
+      "started_utc": "2026-10-01T10:45:43Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 247255776,
+          "memory_max": 47244640256,
+          "memory_peak": 12402585600,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 42334,
+          "spill_peak_bytes": 12191002624
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-single-eight-2644463-5.service",
+      "wall_seconds": 42.40711461901083
+    },
+    {
+      "log": "06-describe.log",
+      "log_sha256": "4fcc91d5c1fc69d6661403d0fd00520bc8d8953f1390a28c5b5a3efc0ab2cb6b",
+      "name": "describe",
+      "started_utc": "2026-10-01T10:46:25Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 27433,
+          "memory_max": 47244640256,
+          "memory_peak": 5939200,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 7,
+          "spill_peak_bytes": 0
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-single-eight-2644463-6.service",
+      "wall_seconds": 0.06365324498619884
+    }
+  ],
+  "status": "incomplete",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "linux-opencl",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

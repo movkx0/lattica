@@ -571,7 +571,12 @@ def main():
         else:
             if not args.evidence:
                 parser.error('a fresh --evidence directory is required')
-            run(config, args.evidence.resolve())
+            try:
+                run(config, args.evidence.resolve())
+            finally:
+                # run() has completed its worker cleanup; no measured work remains.
+                from block_v2_report_export import export_after_run
+                export_after_run(args.evidence.resolve())
 
 
 if __name__ == '__main__':

@@ -1,0 +1,70 @@
+{
+  "campaign_ids": ["block-v2-cpu-supervisor-live-2026-10-02"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-supervisor-live-20261002-a",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-supervisor-cancel-20261002-a.service","exec_stop_post_snapshot",32886784,0,3221225472,0,2376030,18]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-supervisor-live-20261002-a/cancel.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-supervisor-check-20261002-a.service","exec_stop_post_snapshot",32247808,0,3221225472,0,2394852,10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-supervisor-live-20261002-a/check.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P2"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-9a6d4db428dcf5b28a487817",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 1877,
+      "path": "lattica-prover-p3/target/block-v2-supervisor-live-20261002-a/cancel.log",
+      "sha256": "e3731dc52d6e05b3924d730bcd8053deebf703cc41dacfb56a20e0ef30657341"
+    },
+    {
+      "bytes": 1443,
+      "path": "lattica-prover-p3/target/block-v2-supervisor-live-20261002-a/check.log",
+      "sha256": "ba9f9a3279bad19611527dc8561b914b900227fee60d89d83d7a67346cd868a7"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

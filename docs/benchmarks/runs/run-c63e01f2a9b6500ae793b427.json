@@ -1,0 +1,130 @@
+{
+  "campaign_ids": ["block-v2-cpu-preparation-2026-10-02"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-preparation-live-20261002-a",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-preparation-cancel-20261002-a.service","exec_stop_post_snapshot",31244288,0,3221225472,0,2583914,10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-preparation-live-20261002-a/cancel.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-preparation-check-20261002-a.service","exec_stop_post_snapshot",32768000,0,3221225472,0,2568966,10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-preparation-live-20261002-a/check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-preparation-crash-20261002-a.service","exec_stop_post_snapshot",32149504,0,3221225472,0,2518718,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-preparation-live-20261002-a/crash.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-preparation-proof-20261002-a.service","exec_stop_post_snapshot",34983936,0,3221225472,0,3204771,10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-preparation-live-20261002-a/proof.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-preparation-recover-20261002-a.service","exec_stop_post_snapshot",22212608,0,3221225472,0,1119043,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-preparation-live-20261002-a/recover.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-preparation-replay-20261002-a.service","exec_stop_post_snapshot",34742272,0,3221225472,0,938472,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-preparation-live-20261002-a/replay.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P2"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-c63e01f2a9b6500ae793b427",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 1415,
+      "path": "lattica-prover-p3/target/block-v2-preparation-live-20261002-a/cancel.log",
+      "sha256": "ea01ecee5a175269fd4adbb24a074471008a4e87bdf5f3d9a818bd5684a1aacf"
+    },
+    {
+      "bytes": 1446,
+      "path": "lattica-prover-p3/target/block-v2-preparation-live-20261002-a/check.log",
+      "sha256": "c53b4d4ba6d5fd83ac3390e12bb8f46a73af8149e7f4a72dc2c88029dbf5f6e3"
+    },
+    {
+      "bytes": 1347,
+      "path": "lattica-prover-p3/target/block-v2-preparation-live-20261002-a/crash.log",
+      "sha256": "3c5e2b0eaf062e906b704bc3ceec3ac79a1e139b5a6afd7e9e0fd74718203858"
+    },
+    {
+      "bytes": 1461,
+      "path": "lattica-prover-p3/target/block-v2-preparation-live-20261002-a/proof.log",
+      "sha256": "b868b7de87d51f18522c68fba709656d23a449aa6cfe7d672f885bcb89f39b20"
+    },
+    {
+      "bytes": 907,
+      "path": "lattica-prover-p3/target/block-v2-preparation-live-20261002-a/recover.log",
+      "sha256": "712e02ef73c1702f73d3288d5a978d5498b99db3d21008a6630ba8044c6f9d74"
+    },
+    {
+      "bytes": 825,
+      "path": "lattica-prover-p3/target/block-v2-preparation-live-20261002-a/replay.log",
+      "sha256": "31640a8faeeafe56ca939d316da94b55387dedbe08ee930be1ec9e5c27af50d3"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

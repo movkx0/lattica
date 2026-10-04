@@ -1,0 +1,119 @@
+{
+  "campaign_ids": ["block-v2-gpu-default-ram-bench-2026-10-02"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "logs",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-c59ffb79dd94abb295fd0089",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 210,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/register-ram16-control.log",
+      "sha256": "56d7b224d1045e2276ed85beef14606cc19bafd81511b7350004bc2067824bd3"
+    },
+    {
+      "bytes": 202,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/register-ram16.log",
+      "sha256": "e1241b97311ce1ca3c28efa6fbbc21c518678bbec97486f79148da78b64c0c2b"
+    },
+    {
+      "bytes": 202,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/register-ram24.log",
+      "sha256": "08e7574eff28cfda711a57fa34124deb0bf7d89eb2ffeecdeda8d1770527d957"
+    },
+    {
+      "bytes": 201,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/register-ram8.log",
+      "sha256": "0ef7378b82a8de79c7a3437145949eedab05be3832d52b3542eebf5007eabb22"
+    },
+    {
+      "bytes": 209,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/round-1-ram16-control.log",
+      "sha256": "34223218d1eacb719f47a7bb779e37b3db62c1921131be075d22e83e298b9175"
+    },
+    {
+      "bytes": 201,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/round-1-ram16.log",
+      "sha256": "3e7a58a7cad04beb81f5200f80991e4b50ad9b762b17b9a95f602738d315d55c"
+    },
+    {
+      "bytes": 201,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/round-1-ram24.log",
+      "sha256": "28a4f9f33cec915cb8d947b91a76e2b67c9ceda2817d24e21cbda4c662853a9f"
+    },
+    {
+      "bytes": 200,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/round-1-ram8.log",
+      "sha256": "5bd3a126182288f0f106b77d0bdf1414221007a3b3b85152434c0c2aa5115a1d"
+    },
+    {
+      "bytes": 209,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/round-2-ram16-control.log",
+      "sha256": "fc1643cf1cb7ebb4fc46c6053509aa392046454ab5e4f77e49ca3c569ffc178c"
+    },
+    {
+      "bytes": 201,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/round-2-ram16.log",
+      "sha256": "476890dbffb5acd49dece1935a6f746ae53baf65e4e0e956a6a4a7e0070f43d4"
+    },
+    {
+      "bytes": 201,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/round-2-ram24.log",
+      "sha256": "ec837191ccc2bc0f635d7224686bdc482bb163864def2f5acc27027ce1e84b51"
+    },
+    {
+      "bytes": 200,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/round-2-ram8.log",
+      "sha256": "e3b5a1deeae08715514438754cf5da71901339c2aeceebbdc8830f239b99b090"
+    },
+    {
+      "bytes": 209,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/round-3-ram16-control.log",
+      "sha256": "eec12b44a102c49931b34031e276151615ca3d11eb389802b9dd0137b0ddff04"
+    },
+    {
+      "bytes": 201,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/round-3-ram16.log",
+      "sha256": "5dd229b47036ba83c986bc8eeed6ecb2e5d5a92266d91d81afd4be5020da48d3"
+    },
+    {
+      "bytes": 201,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/round-3-ram24.log",
+      "sha256": "c1fdcc8d6b64e5739649ed388bb0075ae674c631a6776bc24280bae65312b2c1"
+    },
+    {
+      "bytes": 200,
+      "path": "lattica-prover-p3/target/block-v2-gpu-default-bench-20261002-a/logs/round-3-ram8.log",
+      "sha256": "dac8d592630114f4de852cd6bf57013282861e73782d7909c150e2177f5519af"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

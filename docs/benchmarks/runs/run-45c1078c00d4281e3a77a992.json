@@ -1,0 +1,55 @@
+{
+  "campaign_ids": ["block-v2-padding-2026-10-01"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-padding-proving-20261001-a",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-padding-proving-20261001-a.service","exec_stop_post_snapshot",37670912,0,3221225472,0,256937,2]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/controller.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-45c1078c00d4281e3a77a992",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 290,
+      "path": "lattica-prover-p3/target/block-v2-padding-proving-20261001-a/controller.log",
+      "sha256": "82bce93911c8d0178d79004d440404c69269812795acf6d67306e2f316c636ab"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

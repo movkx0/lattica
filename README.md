@@ -8,6 +8,7 @@ The repository contains an audited CPU proof/verifier baseline, a complete shiel
 
 - [Protocol specification](SPEC.md) defines the transaction model and cryptographic construction.
 - [Documentation map](docs/README.md) separates current guidance, normative references, research, and historical audit records.
+- [Solving benchmark report](docs/benchmarks/index.html) retains throughput measurements, process telemetry, and P0–P5 development milestones; [usage and portable imports](docs/benchmarks/README.md).
 - [Audit handoff](docs/AUDITORS.md) defines the reviewed surface, assumptions, reproduction commands, and exclusions.
 - [Current status](docs/audit-readiness-status.md) records the production baseline and active development boundary.
 - [Block-proving v2](docs/block-proving-v2.md) defines the approved incremental recursive architecture, inactive candidate profile, and feasibility/release gates.

@@ -1,0 +1,578 @@
+{
+  "adapter": "worker",
+  "campaign_ids": ["block-v2-multi-gpu-2026-10-04"],
+  "configuration": {
+    "budget": {
+      "cpu": {
+        "allowed_cpus": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],
+        "coordinator_capacity": "1",
+        "effective_capacity": "24",
+        "quota_percent": "1200.0000%",
+        "rayon_threads": 12,
+        "version": 1
+      },
+      "gpu": {
+        "available_bytes": 16615735296,
+        "bootstrap": true,
+        "context_bytes": 7784628224,
+        "headroom_bytes": 1073741824,
+        "managed_bytes": 7516192768,
+        "max_allocation_bytes": 4174331904,
+        "total_bytes": 15300820992,
+        "usable_bytes": 16697327616,
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "version": 1
+      },
+      "host": {
+        "coordinator_bytes": 1073741824,
+        "filesystem_headroom_bytes": 1670281421,
+        "fleet_bytes": 49123688448,
+        "os_headroom_bytes": 6681126093,
+        "scratch_device": 51,
+        "scratch_path": "/tmp",
+        "spill_bytes": 15569256448,
+        "swap_bytes": 0,
+        "tmpfs": true,
+        "version": 1,
+        "worker_bytes": 23890755584
+      },
+      "slice": "lattica-v2-multi.slice",
+      "unit": "lattica-v2-multi-29910-1.service"
+    },
+    "config": {
+      "auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-artifact-audit",
+      "cpu_binary": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-compact-runner-20261002-b/block-v2-grouped-probe-cpu-only",
+      "gpu_binary": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/block-v2-gpu-grouped-probe",
+      "gpu_uuids": ["GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b","GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"],
+      "jobs": [
+        {
+          "external": ["8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"],
+          "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+          "id": "bootstrap-1",
+          "source": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference"
+        },
+        {
+          "external": ["8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"],
+          "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "id": "bootstrap-2",
+          "source": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference"
+        }
+      ],
+      "max_concurrency": 1,
+      "pins": {
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-artifact-audit": "ae9ea1ddf846771c373b3dd5cf2e188087819de4294e25d27b85500e66f1af53",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-compact-runner-20261002-b/block-v2-grouped-probe-cpu-only": "9c0c6a1df6b146e0146b3b5c1563a1b5e3e0434f41dd5decb291d94bfed47385",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/height": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/key.1": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/key.2": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/key.3": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.0": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.1": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.2": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.3": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.4": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.5": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.6": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.7": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/block-v2-gpu-grouped-probe": "6f46830dd127ce130a52158caa153384a2bb39568e85b9f5f01cddf565fa147d",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/block-v2-multi-gpu-run.py": "79906764ba4ddf94eb2d096e32a84c0519afafcf829c628f2160044cdf27ab18",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/block-v2-multi-gpu-workload.json": "bb6f8cfa0a5064a3976ec92d46c8a9d0d81f5b53fbee3addf7fa9436f49163d1",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/block_v2_resources.py": "81229604b703f9b02b359e72ae67fbd399bb7520288952f69b7a784d1fe4f78e"
+      },
+      "scratch": "/tmp",
+      "version": 1,
+      "worker_slots": 2,
+      "workload": {
+        "geometry": {
+          "degree_prefix_rows": 524288,
+          "logical_lde_rows": 8388608,
+          "main_columns": 98,
+          "permutation_columns_upper_bound": 55,
+          "preprocessing_columns": 200,
+          "quotient_matrices": 16,
+          "retained_quotient_rows": 4194304
+        },
+        "height": 262144,
+        "name": "grouped-eight-wide23-compact-data-v1",
+        "page_bytes": 4096,
+        "phases": [
+          {
+            "driver_host_bytes": 1073741824,
+            "heap_bytes": 3221225472,
+            "managed_gpu_bytes": 4294967296,
+            "max_gpu_allocation_bytes": 536870912,
+            "name": "preprocessing_commit",
+            "pinned_bytes": 67108864,
+            "resident_spill_bytes": 0,
+            "spill_payloads": [6710886400,6710886400,838860800,419430400,268435456]
+          },
+          {
+            "driver_host_bytes": 1073741824,
+            "heap_bytes": 3221225472,
+            "managed_gpu_bytes": 4294967296,
+            "max_gpu_allocation_bytes": 536870912,
+            "name": "main_commit",
+            "pinned_bytes": 67108864,
+            "resident_spill_bytes": 0,
+            "spill_payloads": [6710886400,3288334336,3288334336,411041792,197132288,268435456,268435456]
+          },
+          {
+            "driver_host_bytes": 1073741824,
+            "heap_bytes": 3221225472,
+            "managed_gpu_bytes": 4294967296,
+            "max_gpu_allocation_bytes": 536870912,
+            "name": "permutation_commit",
+            "pinned_bytes": 67108864,
+            "resident_spill_bytes": 0,
+            "spill_payloads": [6710886400,3288334336,1845493760,1845493760,230686720,106954752,197132288,268435456,268435456,268435456]
+          },
+          {
+            "driver_host_bytes": 1073741824,
+            "heap_bytes": 3221225472,
+            "managed_gpu_bytes": 4294967296,
+            "max_gpu_allocation_bytes": 536870912,
+            "name": "quotient_commit",
+            "pinned_bytes": 67108864,
+            "resident_spill_bytes": 0,
+            "spill_payloads": [6710886400,411041792,230686720,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456]
+          },
+          {
+            "driver_host_bytes": 1073741824,
+            "heap_bytes": 3221225472,
+            "managed_gpu_bytes": 4294967296,
+            "max_gpu_allocation_bytes": 536870912,
+            "name": "openings",
+            "pinned_bytes": 67108864,
+            "resident_spill_bytes": 0,
+            "spill_payloads": [6710886400,411041792,230686720,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,67108864,201326592,201326592,201326592,201326592]
+          }
+        ],
+        "version": 1
+      }
+    },
+    "job": {
+      "external": ["8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"],
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "id": "bootstrap-1",
+      "source": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference"
+    }
+  },
+  "controller_metadata": {
+    "attempt.json": {
+      "budget": {
+        "cpu": {
+          "allowed_cpus": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],
+          "coordinator_capacity": "1",
+          "effective_capacity": "24",
+          "quota_percent": "1200.0000%",
+          "rayon_threads": 12,
+          "version": 1
+        },
+        "gpu": {
+          "available_bytes": 16615735296,
+          "bootstrap": true,
+          "context_bytes": 7784628224,
+          "headroom_bytes": 1073741824,
+          "managed_bytes": 7516192768,
+          "max_allocation_bytes": 4174331904,
+          "total_bytes": 15300820992,
+          "usable_bytes": 16697327616,
+          "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+          "version": 1
+        },
+        "host": {
+          "coordinator_bytes": 1073741824,
+          "filesystem_headroom_bytes": 1670281421,
+          "fleet_bytes": 49123688448,
+          "os_headroom_bytes": 6681126093,
+          "scratch_device": 51,
+          "scratch_path": "/tmp",
+          "spill_bytes": 15569256448,
+          "swap_bytes": 0,
+          "tmpfs": true,
+          "version": 1,
+          "worker_bytes": 23890755584
+        },
+        "slice": "lattica-v2-multi.slice",
+        "unit": "lattica-v2-multi-29910-1.service"
+      },
+      "config": {
+        "auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-artifact-audit",
+        "cpu_binary": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-compact-runner-20261002-b/block-v2-grouped-probe-cpu-only",
+        "gpu_binary": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/block-v2-gpu-grouped-probe",
+        "gpu_uuids": ["GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b","GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"],
+        "jobs": [
+          {
+            "external": ["8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"],
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "id": "bootstrap-1",
+            "source": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference"
+          },
+          {
+            "external": ["8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"],
+            "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+            "id": "bootstrap-2",
+            "source": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference"
+          }
+        ],
+        "max_concurrency": 1,
+        "pins": {
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-artifact-audit": "ae9ea1ddf846771c373b3dd5cf2e188087819de4294e25d27b85500e66f1af53",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-compact-runner-20261002-b/block-v2-grouped-probe-cpu-only": "9c0c6a1df6b146e0146b3b5c1563a1b5e3e0434f41dd5decb291d94bfed47385",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/height": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/key.1": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/key.2": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/key.3": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.0": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.1": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.2": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.3": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.4": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.5": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.6": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.7": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/block-v2-gpu-grouped-probe": "6f46830dd127ce130a52158caa153384a2bb39568e85b9f5f01cddf565fa147d",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/block-v2-multi-gpu-run.py": "79906764ba4ddf94eb2d096e32a84c0519afafcf829c628f2160044cdf27ab18",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/block-v2-multi-gpu-workload.json": "bb6f8cfa0a5064a3976ec92d46c8a9d0d81f5b53fbee3addf7fa9436f49163d1",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/block_v2_resources.py": "81229604b703f9b02b359e72ae67fbd399bb7520288952f69b7a784d1fe4f78e"
+        },
+        "scratch": "/tmp",
+        "version": 1,
+        "worker_slots": 2,
+        "workload": {
+          "geometry": {
+            "degree_prefix_rows": 524288,
+            "logical_lde_rows": 8388608,
+            "main_columns": 98,
+            "permutation_columns_upper_bound": 55,
+            "preprocessing_columns": 200,
+            "quotient_matrices": 16,
+            "retained_quotient_rows": 4194304
+          },
+          "height": 262144,
+          "name": "grouped-eight-wide23-compact-data-v1",
+          "page_bytes": 4096,
+          "phases": [
+            {
+              "driver_host_bytes": 1073741824,
+              "heap_bytes": 3221225472,
+              "managed_gpu_bytes": 4294967296,
+              "max_gpu_allocation_bytes": 536870912,
+              "name": "preprocessing_commit",
+              "pinned_bytes": 67108864,
+              "resident_spill_bytes": 0,
+              "spill_payloads": [6710886400,6710886400,838860800,419430400,268435456]
+            },
+            {
+              "driver_host_bytes": 1073741824,
+              "heap_bytes": 3221225472,
+              "managed_gpu_bytes": 4294967296,
+              "max_gpu_allocation_bytes": 536870912,
+              "name": "main_commit",
+              "pinned_bytes": 67108864,
+              "resident_spill_bytes": 0,
+              "spill_payloads": [6710886400,3288334336,3288334336,411041792,197132288,268435456,268435456]
+            },
+            {
+              "driver_host_bytes": 1073741824,
+              "heap_bytes": 3221225472,
+              "managed_gpu_bytes": 4294967296,
+              "max_gpu_allocation_bytes": 536870912,
+              "name": "permutation_commit",
+              "pinned_bytes": 67108864,
+              "resident_spill_bytes": 0,
+              "spill_payloads": [6710886400,3288334336,1845493760,1845493760,230686720,106954752,197132288,268435456,268435456,268435456]
+            },
+            {
+              "driver_host_bytes": 1073741824,
+              "heap_bytes": 3221225472,
+              "managed_gpu_bytes": 4294967296,
+              "max_gpu_allocation_bytes": 536870912,
+              "name": "quotient_commit",
+              "pinned_bytes": 67108864,
+              "resident_spill_bytes": 0,
+              "spill_payloads": [6710886400,411041792,230686720,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456]
+            },
+            {
+              "driver_host_bytes": 1073741824,
+              "heap_bytes": 3221225472,
+              "managed_gpu_bytes": 4294967296,
+              "max_gpu_allocation_bytes": 536870912,
+              "name": "openings",
+              "pinned_bytes": 67108864,
+              "resident_spill_bytes": 0,
+              "spill_payloads": [6710886400,411041792,230686720,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,67108864,201326592,201326592,201326592,201326592]
+            }
+          ],
+          "version": 1
+        }
+      },
+      "job": {
+        "external": ["8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"],
+        "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "id": "bootstrap-1",
+        "source": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference"
+      }
+    },
+    "budget.json": {
+      "cpu": {
+        "allowed_cpus": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],
+        "coordinator_capacity": "1",
+        "effective_capacity": "24",
+        "quota_percent": "1200.0000%",
+        "rayon_threads": 12,
+        "version": 1
+      },
+      "gpu": {
+        "available_bytes": 16615735296,
+        "bootstrap": true,
+        "context_bytes": 7784628224,
+        "headroom_bytes": 1073741824,
+        "managed_bytes": 7516192768,
+        "max_allocation_bytes": 4174331904,
+        "total_bytes": 15300820992,
+        "usable_bytes": 16697327616,
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "version": 1
+      },
+      "host": {
+        "coordinator_bytes": 1073741824,
+        "filesystem_headroom_bytes": 1670281421,
+        "fleet_bytes": 49123688448,
+        "os_headroom_bytes": 6681126093,
+        "scratch_device": 51,
+        "scratch_path": "/tmp",
+        "spill_bytes": 15569256448,
+        "swap_bytes": 0,
+        "tmpfs": true,
+        "version": 1,
+        "worker_bytes": 23890755584
+      },
+      "slice": "lattica-v2-multi.slice",
+      "unit": "lattica-v2-multi-29910-1.service"
+    }
+  },
+  "kind": "solving",
+  "label": "001-bootstrap-1",
+  "limitations": ["Research evidence; does not establish production or four-wallet readiness.","Wallet proof creation and canonical chain acceptance are outside this measurement.","Inclusive phase and GPU counters are non-additive; process checkpoints may reset.","Host and OpenCL clocks are separate unless an explicit anchor was recorded."],
+  "measurement_scope": "recursive_aggregation",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {
+    "backend": "opencl",
+    "gpu": {
+      "available_bytes": 16615735296,
+      "bootstrap": true,
+      "context_bytes": 7784628224,
+      "headroom_bytes": 1073741824,
+      "managed_bytes": 7516192768,
+      "max_allocation_bytes": 4174331904,
+      "total_bytes": 15300820992,
+      "usable_bytes": 16697327616,
+      "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "version": 1
+    },
+    "host": null,
+    "memory_model": "discrete",
+    "os": "linux"
+  },
+  "proofs": [],
+  "retained_metadata": {
+    "budget": {
+      "cpu": {
+        "allowed_cpus": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],
+        "coordinator_capacity": "1",
+        "effective_capacity": "24",
+        "quota_percent": "1200.0000%",
+        "rayon_threads": 12,
+        "version": 1
+      },
+      "gpu": {
+        "available_bytes": 16615735296,
+        "bootstrap": true,
+        "context_bytes": 7784628224,
+        "headroom_bytes": 1073741824,
+        "managed_bytes": 7516192768,
+        "max_allocation_bytes": 4174331904,
+        "total_bytes": 15300820992,
+        "usable_bytes": 16697327616,
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "version": 1
+      },
+      "host": {
+        "coordinator_bytes": 1073741824,
+        "filesystem_headroom_bytes": 1670281421,
+        "fleet_bytes": 49123688448,
+        "os_headroom_bytes": 6681126093,
+        "scratch_device": 51,
+        "scratch_path": "/tmp",
+        "spill_bytes": 15569256448,
+        "swap_bytes": 0,
+        "tmpfs": true,
+        "version": 1,
+        "worker_bytes": 23890755584
+      },
+      "slice": "lattica-v2-multi.slice",
+      "unit": "lattica-v2-multi-29910-1.service"
+    },
+    "config": {
+      "auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-artifact-audit",
+      "cpu_binary": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-compact-runner-20261002-b/block-v2-grouped-probe-cpu-only",
+      "gpu_binary": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/block-v2-gpu-grouped-probe",
+      "gpu_uuids": ["GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b","GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"],
+      "jobs": [
+        {
+          "external": ["8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"],
+          "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+          "id": "bootstrap-1",
+          "source": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference"
+        },
+        {
+          "external": ["8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"],
+          "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "id": "bootstrap-2",
+          "source": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference"
+        }
+      ],
+      "max_concurrency": 1,
+      "pins": {
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-artifact-audit": "ae9ea1ddf846771c373b3dd5cf2e188087819de4294e25d27b85500e66f1af53",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-compact-runner-20261002-b/block-v2-grouped-probe-cpu-only": "9c0c6a1df6b146e0146b3b5c1563a1b5e3e0434f41dd5decb291d94bfed47385",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/height": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/key.1": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/key.2": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/key.3": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.0": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.1": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.2": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.3": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.4": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.5": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.6": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference/wallet.7": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/block-v2-gpu-grouped-probe": "6f46830dd127ce130a52158caa153384a2bb39568e85b9f5f01cddf565fa147d",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/block-v2-multi-gpu-run.py": "79906764ba4ddf94eb2d096e32a84c0519afafcf829c628f2160044cdf27ab18",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/block-v2-multi-gpu-workload.json": "bb6f8cfa0a5064a3976ec92d46c8a9d0d81f5b53fbee3addf7fa9436f49163d1",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-multi-gpu-20261003-a/block_v2_resources.py": "81229604b703f9b02b359e72ae67fbd399bb7520288952f69b7a784d1fe4f78e"
+      },
+      "scratch": "/tmp",
+      "version": 1,
+      "worker_slots": 2,
+      "workload": {
+        "geometry": {
+          "degree_prefix_rows": 524288,
+          "logical_lde_rows": 8388608,
+          "main_columns": 98,
+          "permutation_columns_upper_bound": 55,
+          "preprocessing_columns": 200,
+          "quotient_matrices": 16,
+          "retained_quotient_rows": 4194304
+        },
+        "height": 262144,
+        "name": "grouped-eight-wide23-compact-data-v1",
+        "page_bytes": 4096,
+        "phases": [
+          {
+            "driver_host_bytes": 1073741824,
+            "heap_bytes": 3221225472,
+            "managed_gpu_bytes": 4294967296,
+            "max_gpu_allocation_bytes": 536870912,
+            "name": "preprocessing_commit",
+            "pinned_bytes": 67108864,
+            "resident_spill_bytes": 0,
+            "spill_payloads": [6710886400,6710886400,838860800,419430400,268435456]
+          },
+          {
+            "driver_host_bytes": 1073741824,
+            "heap_bytes": 3221225472,
+            "managed_gpu_bytes": 4294967296,
+            "max_gpu_allocation_bytes": 536870912,
+            "name": "main_commit",
+            "pinned_bytes": 67108864,
+            "resident_spill_bytes": 0,
+            "spill_payloads": [6710886400,3288334336,3288334336,411041792,197132288,268435456,268435456]
+          },
+          {
+            "driver_host_bytes": 1073741824,
+            "heap_bytes": 3221225472,
+            "managed_gpu_bytes": 4294967296,
+            "max_gpu_allocation_bytes": 536870912,
+            "name": "permutation_commit",
+            "pinned_bytes": 67108864,
+            "resident_spill_bytes": 0,
+            "spill_payloads": [6710886400,3288334336,1845493760,1845493760,230686720,106954752,197132288,268435456,268435456,268435456]
+          },
+          {
+            "driver_host_bytes": 1073741824,
+            "heap_bytes": 3221225472,
+            "managed_gpu_bytes": 4294967296,
+            "max_gpu_allocation_bytes": 536870912,
+            "name": "quotient_commit",
+            "pinned_bytes": 67108864,
+            "resident_spill_bytes": 0,
+            "spill_payloads": [6710886400,411041792,230686720,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456]
+          },
+          {
+            "driver_host_bytes": 1073741824,
+            "heap_bytes": 3221225472,
+            "managed_gpu_bytes": 4294967296,
+            "max_gpu_allocation_bytes": 536870912,
+            "name": "openings",
+            "pinned_bytes": 67108864,
+            "resident_spill_bytes": 0,
+            "spill_payloads": [6710886400,411041792,230686720,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,268435456,67108864,201326592,201326592,201326592,201326592]
+          }
+        ],
+        "version": 1
+      }
+    },
+    "job": {
+      "external": ["8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"],
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "id": "bootstrap-1",
+      "source": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/reference"
+    }
+  },
+  "revision": {},
+  "run_id": "run-3f64b128f3833deef4ca487e",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 10711,
+      "path": "lattica-prover-p3/target/block-v2-multi-bootstrap-20261003-a/001-bootstrap-1/attempt.json",
+      "sha256": "10985cbfb9cad210ef5b5ef54a4fcbbdc4fe984b0e8b226ada668e3f087cf7dc"
+    },
+    {
+      "bytes": 10711,
+      "path": "lattica-prover-p3/target/block-v2-multi-bootstrap-20261003-a/001-bootstrap-1/attempt.json",
+      "sha256": "10985cbfb9cad210ef5b5ef54a4fcbbdc4fe984b0e8b226ada668e3f087cf7dc"
+    },
+    {
+      "bytes": 1199,
+      "path": "lattica-prover-p3/target/block-v2-multi-bootstrap-20261003-a/001-bootstrap-1/budget.json",
+      "sha256": "e9d9e1edaa8e477c9b8738ce8e2fe5d82955770e41afa03faaba678d1f4df766"
+    }
+  ],
+  "stages": [],
+  "status": "incomplete",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "linux-opencl",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

@@ -1,0 +1,771 @@
+{
+  "adapter": "grouped",
+  "campaign_ids": ["block-v2-program-usage-2026-10-01","block-v2-quotient-fusion-2026-10-01","block-v2-quotient-fusion-matched-2026-10-01"],
+  "configuration": {
+    "accounting": "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py",
+    "action": "reproduce",
+    "auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-comparison-binaries-20261001-a/block-v2-grouped-artifact-audit",
+    "evidence": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence",
+    "external": ["af4bfe518efc2cde1a9c972e913e4307e3fd8b60ab6671961936c87b99a8ec31","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","2ef361a059b06a72cc05a3aac2c5ed9c4e75a0ad70081875459a6961414e9d52"],
+    "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/job",
+    "mode": "prepare",
+    "quotient_fusion": 1,
+    "runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-quotient-fusion-binaries-20261001-a/block-v2-grouped-probe",
+    "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-quotient-fusion-sources-20261001-a.tar.gz"
+  },
+  "kind": "solving",
+  "label": "block-v2-fusion-key-repro-20261001-b",
+  "limitations": ["Research evidence; does not establish production or four-wallet readiness.","Wallet proof creation and canonical chain acceptance are outside this measurement.","Inclusive phase and GPU counters are non-additive; process checkpoints may reset.","Host and OpenCL clocks are separate unless an explicit anchor was recorded."],
+  "measurement_scope": "recursive_aggregation",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["input_bytes","output_bytes","width","added_bits","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_start",
+        "rows": [
+          [587202560,9395240960,70,4,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/01-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_done",
+        "rows": [
+          [8658,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/01-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["grouped process remainder",44883,0,0,"inclusive_nonadditive",7]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/01-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["grouped process remainder"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,41610491130,41610491130,0,8],
+          [1,"evaluate all constraints symbolically",10,308537,41938,0,9],
+          [1,"evaluate base constraints symbolically",2,66637,33503,0,10],
+          [1,"infer base and extension constraint degree",10,519904,58539,0,11],
+          [2,"compute constraint layout with lookups",4,3578410,1641470,0,12],
+          [2,"evaluate constraints symbolically",7,3140063,972150,0,13],
+          [2,"infer constraint degree",5,3193467,1236918,0,14],
+          [3,"coset_dft",16,2692561121,185418029,0,15],
+          [3,"first_half",1,87058634,87058634,0,16],
+          [3,"first_half_general",16,1147596372,88541018,0,17],
+          [3,"second_half",1,67342096,67342096,0,18],
+          [3,"second_half_general",16,1166471686,78797551,0,19],
+          [4,"divide_by_height",1,18516527,18516527,0,20],
+          [5,"batch_multiplicative_inverse",13576,19231165,292652,0,21],
+          [6,"columnwise_dot_product",264,7092200,297133,0,22],
+          [7,"with_zero_cols",1,1282796484,1282796484,0,23],
+          [8,"reverse_matrix_index_bits",37,647505918,21017992,0,24],
+          [9,"build merkle tree",1,28313859919,28313859919,0,25],
+          [9,"first digest layer",1,26607412999,26607412999,0,26],
+          [10,"get_log_num_quotient_chunks",10,530153,59640,0,27],
+          [10,"infer log of base and extension constraint degree",10,525205,59104,0,28],
+          [11,"verify",8,171938230,25712273,0,29],
+          [11,"verify_with_preprocessed",8,171928951,25709250,0,30]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/01-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",24,31],
+          ["memory_full_stall_us",0,32],
+          ["memory_high_events",0,33],
+          ["memory_some_stall_us",0,34],
+          ["minor_faults",635961,35],
+          ["read_bytes",0,36],
+          ["system_ticks",435,37],
+          ["user_ticks",24739,38],
+          ["write_bytes",17070899200,39]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/01-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [44883,11719286784,true,false,40]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/01-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-36843-1.service","exec_stop_post_snapshot",12047937536,0,47244640256,0,251767734,41]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/01-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["input_bytes","output_bytes","width","added_bits","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_start",
+        "rows": [
+          [587202560,9395240960,70,4,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/02-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_done",
+        "rows": [
+          [7469,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/02-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["grouped process remainder",36847,0,0,"inclusive_nonadditive",7]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/02-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["grouped process remainder"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,36541779077,36541779077,0,8],
+          [1,"evaluate all constraints symbolically",8,261924,41797,0,9],
+          [1,"infer base and extension constraint degree",8,432793,64121,0,10],
+          [2,"compute constraint layout with lookups",4,1426128,423548,0,11],
+          [2,"evaluate constraints symbolically",7,1360328,281061,0,12],
+          [2,"infer constraint degree",5,1842971,488583,0,13],
+          [3,"coset_dft",16,2665362606,195344575,0,14],
+          [3,"first_half",1,79781275,79781275,0,15],
+          [3,"first_half_general",16,1134242843,85773140,0,16],
+          [3,"second_half",1,61336438,61336438,0,17],
+          [3,"second_half_general",16,1158034476,82716505,0,18],
+          [4,"divide_by_height",1,18093406,18093406,0,19],
+          [5,"batch_multiplicative_inverse",13576,19225087,433961,0,20],
+          [6,"columnwise_dot_product",264,7161914,241722,0,21],
+          [7,"with_zero_cols",1,547469331,547469331,0,22],
+          [8,"reverse_matrix_index_bits",37,630324775,19385050,0,23],
+          [9,"build merkle tree",1,28031032888,28031032888,0,24],
+          [9,"first digest layer",1,26330173922,26330173922,0,25],
+          [10,"get_log_num_quotient_chunks",8,440503,65335,0,26],
+          [10,"infer log of base and extension constraint degree",8,436721,64651,0,27],
+          [11,"verify",8,180107051,24923753,0,28],
+          [11,"verify_with_preprocessed",8,180098374,24922991,0,29]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/02-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",16,30],
+          ["memory_full_stall_us",0,31],
+          ["memory_high_events",0,32],
+          ["memory_some_stall_us",0,33],
+          ["minor_faults",489949,34],
+          ["read_bytes",0,35],
+          ["system_ticks",383,36],
+          ["user_ticks",24221,37],
+          ["write_bytes",13763301376,38]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/02-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [36847,10938769408,true,false,39]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/02-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-36843-2.service","exec_stop_post_snapshot",11185160192,0,47244640256,0,246071188,40]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/02-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["input_bytes","output_bytes","width","added_bits","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_start",
+        "rows": [
+          [587202560,9395240960,70,4,4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/03-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["elapsed_ms","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_coset_lde_done",
+        "rows": [
+          [7395,5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/03-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["grouped process remainder",42296,0,0,"inclusive_nonadditive",7]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/03-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["grouped process remainder"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,40911192630,40911192630,0,8],
+          [1,"evaluate all constraints symbolically",8,246886,42381,0,9],
+          [1,"infer base and extension constraint degree",8,419492,60596,0,10],
+          [2,"compute constraint layout with lookups",7,2690719,526159,0,11],
+          [2,"evaluate constraints symbolically",13,2629533,358919,0,12],
+          [2,"infer constraint degree",9,3281685,477847,0,13],
+          [3,"coset_dft",16,2598499617,186207929,0,14],
+          [3,"first_half",1,81599579,81599579,0,15],
+          [3,"first_half_general",16,1090185761,80452026,0,16],
+          [3,"second_half",1,60086704,60086704,0,17],
+          [3,"second_half_general",16,1131371905,80255550,0,18],
+          [4,"divide_by_height",1,19205220,19205220,0,19],
+          [5,"batch_multiplicative_inverse",13576,20289499,322710,0,20],
+          [6,"columnwise_dot_product",264,7659920,381563,0,21],
+          [7,"with_zero_cols",1,644206203,644206203,0,22],
+          [8,"reverse_matrix_index_bits",37,624084004,20510214,0,23],
+          [9,"build merkle tree",1,28473784028,28473784028,0,24],
+          [9,"first digest layer",1,26743281277,26743281277,0,25],
+          [10,"get_log_num_quotient_chunks",8,427043,61597,0,26],
+          [10,"infer log of base and extension constraint degree",8,423501,60969,0,27],
+          [11,"verify",8,176512939,27483885,0,28],
+          [11,"verify_with_preprocessed",8,176505187,27483387,0,29]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/03-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",26,30],
+          ["memory_full_stall_us",0,31],
+          ["memory_high_events",0,32],
+          ["memory_some_stall_us",0,33],
+          ["minor_faults",667312,34],
+          ["read_bytes",0,35],
+          ["system_ticks",444,36],
+          ["user_ticks",24579,37],
+          ["write_bytes",15975100416,38]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/03-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [42296,12191002624,true,false,39]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/03-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-36843-3.service","exec_stop_post_snapshot",12402225152,0,47244640256,0,250265887,40]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/03-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["grouped process remainder",246,0,0,"inclusive_nonadditive",4]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/04-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["grouped process remainder"],
+          "target": ["p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_field::batch_inverse","p3_matrix","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"evaluate all constraints symbolically",8,240137,36578,0,5],
+          [0,"infer base and extension constraint degree",8,420633,63190,0,6],
+          [1,"compute constraint layout with lookups",18,5325259,314948,0,7],
+          [1,"evaluate constraints symbolically",27,4061838,172534,0,8],
+          [1,"infer constraint degree",18,5495400,335542,0,9],
+          [2,"batch_multiplicative_inverse",13576,20257448,261761,0,10],
+          [3,"columnwise_dot_product",264,6223760,328362,0,11],
+          [4,"get_log_num_quotient_chunks",8,427634,64125,0,12],
+          [4,"infer log of base and extension constraint degree",8,423829,63507,0,13],
+          [5,"verify",8,164550076,22183930,0,14],
+          [5,"verify_with_preprocessed",8,164544709,22183149,0,15]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/04-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,16],
+          ["memory_full_stall_us",0,17],
+          ["memory_high_events",0,18],
+          ["memory_some_stall_us",0,19],
+          ["minor_faults",7040,20],
+          ["read_bytes",0,21],
+          ["system_ticks",4,22],
+          ["user_ticks",31,23],
+          ["write_bytes",0,24]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/04-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [246,0,true,false,25]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/04-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-grouped-36843-4.service","exec_stop_post_snapshot",14417920,0,47244640256,0,377444,26]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/04-check.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {
+    "backend": "opencl",
+    "memory_model": "discrete",
+    "os": "linux"
+  },
+  "proofs": [],
+  "retained_metadata": {
+    "artifacts": {
+      "height": {
+        "bytes": 4,
+        "sha256": "c9c7e8c63836a93f6d8c04598b6503d2863a2df7b86366157178234175704dcc"
+      },
+      "key.1": {
+        "bytes": 2048,
+        "sha256": "dea6d8cd5ec78aece7514e1b79f03be9968589cb6f68892b5130c11b6b4e2fa0"
+      },
+      "key.2": {
+        "bytes": 2048,
+        "sha256": "23c014bd0cc4af3fdfedae55a0a060e3469edf001267d23f29f3d5b82bd286db"
+      },
+      "key.3": {
+        "bytes": 2048,
+        "sha256": "a42b9a30fe35034313d2ec0a92ee5aee3278c926ef53407e9e8b1cb14bbf384d"
+      },
+      "wallet.0": {
+        "bytes": 853675,
+        "sha256": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973"
+      },
+      "wallet.1": {
+        "bytes": 853491,
+        "sha256": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79"
+      },
+      "wallet.2": {
+        "bytes": 854047,
+        "sha256": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5"
+      },
+      "wallet.3": {
+        "bytes": 853795,
+        "sha256": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b"
+      },
+      "wallet.4": {
+        "bytes": 853725,
+        "sha256": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b"
+      },
+      "wallet.5": {
+        "bytes": 853855,
+        "sha256": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa"
+      },
+      "wallet.6": {
+        "bytes": 853977,
+        "sha256": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117"
+      },
+      "wallet.7": {
+        "bytes": 853568,
+        "sha256": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5"
+      }
+    },
+    "attempts": [
+      {
+        "log": "01-key-1.log",
+        "log_sha256": "a87938714ae1b5d6d25470ec6b1a534955f0512f89b6cc0f0450f7e0604112b6",
+        "name": "key-1",
+        "started_utc": "2026-10-01T13:33:43Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 251767734,
+            "memory_max": 47244640256,
+            "memory_peak": 12047937536,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 44883,
+            "spill_peak_bytes": 11719286784
+          },
+          "nodes": [],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-36843-1.service",
+        "wall_seconds": 44.934434235000026
+      },
+      {
+        "log": "02-key-2.log",
+        "log_sha256": "f8a03606d6f1fcbf53b7b5967c80b57f0709ad558957a22606da11bac0864158",
+        "name": "key-2",
+        "started_utc": "2026-10-01T13:34:28Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 246071188,
+            "memory_max": 47244640256,
+            "memory_peak": 11185160192,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 36847,
+            "spill_peak_bytes": 10938769408
+          },
+          "nodes": [],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-36843-2.service",
+        "wall_seconds": 36.89782449099994
+      },
+      {
+        "log": "03-key-3.log",
+        "log_sha256": "1d14a22e8a7438c96b92a1cdea53d9a5bcbca5122d1efeabdcd1e2ec8e9d73a6",
+        "name": "key-3",
+        "started_utc": "2026-10-01T13:35:05Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 250265887,
+            "memory_max": 47244640256,
+            "memory_peak": 12402225152,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 42296,
+            "spill_peak_bytes": 12191002624
+          },
+          "nodes": [],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-36843-3.service",
+        "wall_seconds": 42.36513409600002
+      },
+      {
+        "log": "04-check.log",
+        "log_sha256": "664f9cd173c7c9f1d4d789090bc048a76ee9332e91894cc1e9c7b6c0da65ed61",
+        "name": "check",
+        "started_utc": "2026-10-01T13:35:47Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 377444,
+            "memory_max": 47244640256,
+            "memory_peak": 14417920,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 246,
+            "spill_peak_bytes": 0
+          },
+          "nodes": [],
+          "preserved_auditor": false,
+          "quotient_fusion_requested": true
+        },
+        "unit": "lattica-v2-grouped-36843-4.service",
+        "wall_seconds": 0.314476988000024
+      }
+    ],
+    "config": {
+      "accounting": "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py",
+      "action": "reproduce",
+      "auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-eight-comparison-binaries-20261001-a/block-v2-grouped-artifact-audit",
+      "evidence": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence",
+      "external": ["af4bfe518efc2cde1a9c972e913e4307e3fd8b60ab6671961936c87b99a8ec31","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","2ef361a059b06a72cc05a3aac2c5ed9c4e75a0ad70081875459a6961414e9d52"],
+      "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/job",
+      "mode": "prepare",
+      "quotient_fusion": 1,
+      "runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-quotient-fusion-binaries-20261001-a/block-v2-grouped-probe",
+      "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-quotient-fusion-sources-20261001-a.tar.gz"
+    },
+    "configured_limits_not_peak_observations": {
+      "aggregate_ram_bytes": 51539607552,
+      "controller_ram_bytes_at_most": 3221225472,
+      "controller_runtime_seconds_at_most": 21600,
+      "managed_spill_bytes": 128849018880,
+      "swap_bytes": 0,
+      "worker_ram_high_bytes": 42949672960,
+      "worker_ram_max_bytes": 47244640256,
+      "worker_runtime_seconds": 7200
+    },
+    "finished_utc": "2026-10-01T13:35:48Z",
+    "full_tree_security": "UNREVIEWED",
+    "level6_qualified": false,
+    "pins": {
+      "accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "auditor": "ec2bdf2bb80e06352aabefca1fcfe4345ab77e677419f27b3dbf4a166a52cd16",
+      "fusion-controller.py": "cb36fd551f3442a4eaa534536691cca8a0bda01c1b7dbe7bf7cfccfb87ec8e2c",
+      "grouped-controller.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "handoff.json": "d9a936a822f5ab2555a782712299c0ec837a08c1e39ceb6f99376f393d7c799b",
+      "runner": "57d5354780c94714f0ba8c8dd5fa10239681d21373eb6760b4e3b0bfaf18a2c4",
+      "source-archive": "3e9a69a1c070d89d421991301bdc0aa3a324f1485bb93e3f98f72cb901650d5b"
+    },
+    "production_ready": false,
+    "repeat_qualified": false,
+    "schema": 1,
+    "shared_wallets_pruned": false,
+    "status": "FULL_SIZE_PREPROCESSING_REPRODUCED_RESEARCH_ONLY"
+  },
+  "revision": {
+    "pins": {
+      "accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "auditor": "ec2bdf2bb80e06352aabefca1fcfe4345ab77e677419f27b3dbf4a166a52cd16",
+      "fusion-controller.py": "cb36fd551f3442a4eaa534536691cca8a0bda01c1b7dbe7bf7cfccfb87ec8e2c",
+      "grouped-controller.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "handoff.json": "d9a936a822f5ab2555a782712299c0ec837a08c1e39ceb6f99376f393d7c799b",
+      "runner": "57d5354780c94714f0ba8c8dd5fa10239681d21373eb6760b4e3b0bfaf18a2c4",
+      "source-archive": "3e9a69a1c070d89d421991301bdc0aa3a324f1485bb93e3f98f72cb901650d5b"
+    }
+  },
+  "run_id": "run-5a341246e8bb0f2de03baaf4",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 7139,
+      "path": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/manifest.json",
+      "sha256": "1008dd7eb12fb1b50f3a51e4ef4a3f12505efac784b7b93f3ad6289d3d5230bb"
+    },
+    {
+      "bytes": 4363,
+      "path": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/01-key-1.log",
+      "sha256": "a87938714ae1b5d6d25470ec6b1a534955f0512f89b6cc0f0450f7e0604112b6"
+    },
+    {
+      "bytes": 4217,
+      "path": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/02-key-2.log",
+      "sha256": "f8a03606d6f1fcbf53b7b5967c80b57f0709ad558957a22606da11bac0864158"
+    },
+    {
+      "bytes": 4271,
+      "path": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/03-key-3.log",
+      "sha256": "1d14a22e8a7438c96b92a1cdea53d9a5bcbca5122d1efeabdcd1e2ec8e9d73a6"
+    },
+    {
+      "bytes": 2698,
+      "path": "lattica-prover-p3/target/block-v2-fusion-key-repro-20261001-b/evidence/04-check.log",
+      "sha256": "664f9cd173c7c9f1d4d789090bc048a76ee9332e91894cc1e9c7b6c0da65ed61"
+    }
+  ],
+  "stages": [
+    {
+      "log": "01-key-1.log",
+      "log_sha256": "a87938714ae1b5d6d25470ec6b1a534955f0512f89b6cc0f0450f7e0604112b6",
+      "name": "key-1",
+      "started_utc": "2026-10-01T13:33:43Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 251767734,
+          "memory_max": 47244640256,
+          "memory_peak": 12047937536,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 44883,
+          "spill_peak_bytes": 11719286784
+        },
+        "nodes": [],
+        "preserved_auditor": false,
+        "quotient_fusion_requested": true
+      },
+      "unit": "lattica-v2-grouped-36843-1.service",
+      "wall_seconds": 44.934434235000026
+    },
+    {
+      "log": "02-key-2.log",
+      "log_sha256": "f8a03606d6f1fcbf53b7b5967c80b57f0709ad558957a22606da11bac0864158",
+      "name": "key-2",
+      "started_utc": "2026-10-01T13:34:28Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 246071188,
+          "memory_max": 47244640256,
+          "memory_peak": 11185160192,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 36847,
+          "spill_peak_bytes": 10938769408
+        },
+        "nodes": [],
+        "preserved_auditor": false,
+        "quotient_fusion_requested": true
+      },
+      "unit": "lattica-v2-grouped-36843-2.service",
+      "wall_seconds": 36.89782449099994
+    },
+    {
+      "log": "03-key-3.log",
+      "log_sha256": "1d14a22e8a7438c96b92a1cdea53d9a5bcbca5122d1efeabdcd1e2ec8e9d73a6",
+      "name": "key-3",
+      "started_utc": "2026-10-01T13:35:05Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 250265887,
+          "memory_max": 47244640256,
+          "memory_peak": 12402225152,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 42296,
+          "spill_peak_bytes": 12191002624
+        },
+        "nodes": [],
+        "preserved_auditor": false,
+        "quotient_fusion_requested": true
+      },
+      "unit": "lattica-v2-grouped-36843-3.service",
+      "wall_seconds": 42.36513409600002
+    },
+    {
+      "log": "04-check.log",
+      "log_sha256": "664f9cd173c7c9f1d4d789090bc048a76ee9332e91894cc1e9c7b6c0da65ed61",
+      "name": "check",
+      "started_utc": "2026-10-01T13:35:47Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 377444,
+          "memory_max": 47244640256,
+          "memory_peak": 14417920,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 246,
+          "spill_peak_bytes": 0
+        },
+        "nodes": [],
+        "preserved_auditor": false,
+        "quotient_fusion_requested": true
+      },
+      "unit": "lattica-v2-grouped-36843-4.service",
+      "wall_seconds": 0.314476988000024
+    }
+  ],
+  "status": "incomplete",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "linux-opencl",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

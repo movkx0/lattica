@@ -19,7 +19,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 TARGET = ROOT / 'lattica-prover-p3/target'
 SOURCE = ROOT / 'lattica-prover-p3/scripts/block-v2-scratch-bench.py'
-SOURCE_SHA = '4ad9d60de7a33d2fbce0d0ff4d2ac05eda860aa68481702378907687466f1117'
+SOURCE_SHA = '8f57c624b4193e00561a19928728295e07e6758ba66178a0b6e8f642bbccccf0'
 PREVIOUS = TARGET / 'block-v2-scratch-bench-20261002'
 CANDIDATE = TARGET / 'block-v2-gpu-default-20261002-a'
 OUT = TARGET / 'block-v2-gpu-default-bench-20261002-a'

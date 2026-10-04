@@ -470,7 +470,13 @@ def main():
     elif args.action == "start":
         start(out)
     elif args.action == "_run":
-        run(out)
+        try:
+            run(out)
+        finally:
+            # Generated launchers live outside scripts; use the repository helper.
+            sys.path.insert(0, str(SCRIPTS))
+            from block_v2_report_export import export_after_run
+            export_after_run(out)
     else:
         summarize(out)
 
