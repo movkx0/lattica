@@ -3,7 +3,7 @@
 //! `lattica-wallet demo` runs a complete post-quantum shielded transfer end to end against an
 //! in-memory chain and narrates every step. `exchange` demos the shared-KEM exchange deposit-address
 //! flow (per-user deposit addresses, O(1) detection). `keygen` prints a deterministic account, and
-//! `bench` times the (stub) authorization proof alongside the real PQ primitive sizes.
+//! `bench` times on-chain hashing and reports PQ primitive sizes; proof timings live in Rust.
 
 const std = @import("std");
 const p = @import("primitives.zig");
@@ -63,15 +63,16 @@ fn elapsedMs(t0: std.Io.Timestamp, t1: std.Io.Timestamp) f64 {
 fn bench(io: std.Io) !void {
     const iters: u32 = 5000;
     const fiters: f64 = @floatFromInt(iters);
-    var sink: u64 = 0;
 
     // The in-circuit / on-chain hash primitive.
     var st = [_]u64{ 1, 2, 3, 4, 5, 6, 7, 8 };
     const t0 = std.Io.Clock.now(.awake, io);
     var i: u32 = 0;
-    while (i < iters) : (i += 1) poseidon2.permute(&st);
+    while (i < iters) : (i += 1) {
+        poseidon2.permute(&st);
+        std.mem.doNotOptimizeAway(&st);
+    }
     const permute_us = elapsedMs(t0, std.Io.Clock.now(.awake, io)) * 1000.0 / fiters;
-    sink +%= st[0];
 
     // On-chain note commitment.
     const rcp = [_]u8{3} ** 32;
@@ -80,21 +81,32 @@ fn bench(io: std.Io) !void {
     const nk = [_]u8{5} ** 32;
     const t1 = std.Io.Clock.now(.awake, io);
     i = 0;
-    while (i < iters) : (i += 1) sink +%= p.noteCommitment(.{ .recipient = &rcp, .value = 1000, .rho = &rho, .rcm = &rcm })[0];
+    // Vary the input and consume the whole digest so optimized builds do all the work.
+    while (i < iters) : (i += 1) {
+        const digest = p.noteCommitment(.{ .recipient = &rcp, .value = 1000 + i, .rho = &rho, .rcm = &rcm });
+        std.mem.doNotOptimizeAway(&digest);
+    }
     const commit_us = elapsedMs(t1, std.Io.Clock.now(.awake, io)) * 1000.0 / fiters;
 
     // On-chain nullifier.
     const t2 = std.Io.Clock.now(.awake, io);
     i = 0;
-    while (i < iters) : (i += 1) sink +%= p.nullifier(&nk, &rho, i)[0];
+    while (i < iters) : (i += 1) {
+        const digest = p.nullifier(&nk, &rho, i);
+        std.mem.doNotOptimizeAway(&digest);
+    }
     const nf_us = elapsedMs(t2, std.Io.Clock.now(.awake, io)) * 1000.0 / fiters;
 
     // Merkle internal node.
-    const left = [_]u8{1} ** 32;
+    var left = [_]u8{1} ** 32;
     const right = [_]u8{2} ** 32;
     const t3 = std.Io.Clock.now(.awake, io);
     i = 0;
-    while (i < iters) : (i += 1) sink +%= tree.merkleHash(&left, &right)[0];
+    while (i < iters) : (i += 1) {
+        std.mem.writeInt(u32, left[0..4], i, .little);
+        const digest = tree.merkleHash(&left, &right);
+        std.mem.doNotOptimizeAway(&digest);
+    }
     const merge_us = elapsedMs(t3, std.Io.Clock.now(.awake, io)) * 1000.0 / fiters;
 
     std.debug.print("Lattica on-chain hashing — Poseidon2-Goldilocks ({d} iters)\n", .{iters});
@@ -107,7 +119,6 @@ fn bench(io: std.Io) !void {
     std.debug.print("  ML-DSA pk    : {d} bytes\n", .{p.PK_LEN});
     std.debug.print("  ML-KEM ct    : {d} bytes\n", .{p.CT_LEN});
     std.debug.print("  join-split proof: ~0.5 MB (transparent, hash-based; prove/verify timed in lattica-prover-p3)\n", .{});
-    if (sink == 0xdead_beef) std.debug.print("", .{}); // keep `sink` live
 }
 
 fn demo(a: std.mem.Allocator) !void {

@@ -1,6 +1,8 @@
 .zig-cache/
 zig-out/
 .serena/
+.tools/
+benchmark-results/
 AGENTS.md
 framework-spike/target/
 lattica-prover/target/

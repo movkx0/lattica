@@ -482,6 +482,42 @@ scheduler or proof-validity authority. The later [CPU process checkpoint](docs/e
 adds the executable and local transport. Durable OS supervision, physical quotas,
 complete operation coverage and arrival-driven qualification remain open.
 
+## Benchmarks (including Apple Silicon)
+
+With a C compiler installed (Xcode Command Line Tools on macOS), run from the repo root:
+
+```sh
+# Optional if Rust 1.96 and Zig 0.16.0 are already on PATH.
+# Downloads official, checksum-verified native compilers into the ignored .tools/ directory.
+scripts/setup-toolchains.sh
+
+# Builds optimized binaries and runs each benchmark once, sequentially.
+scripts/run-benchmarks.sh
+# Optional: explicitly request repeated measurements.
+scripts/run-benchmarks.sh 2
+```
+
+The setup supports ARM64 and x86-64 macOS/Linux and leaves shell profiles and system tools alone.
+On Apple Silicon, run from a native ARM64 terminal (`uname -m` should print `arm64`).
+The runner uses the local toolchains when present, otherwise those on `PATH`. Rust defaults to
+`-C target-cpu=native` for Plonky3's CPU-specific implementation; set `RUSTFLAGS` to override it.
+Zig uses `ReleaseFast`, Rust uses `release`, and compilation is outside the reported timings.
+Full output, toolchain versions, and compiler flags are saved under `benchmark-results/`.
+
+The current suite measures:
+
+- **On-chain hashing:** Poseidon2 permutation, note commitment, nullifier, and Merkle node (µs/op).
+- **Production join-split:** the real 2-in/2-out ZK proof, with proof bytes and prove/verify times.
+- **Field comparison:** Goldilocks versus BabyBear for matched Poseidon2/FRI workloads. This is a
+  hash-circuit comparison, not a second production join-split implementation.
+
+These are repeated wall-clock measurements, not a statistical benchmarking harness. Every measured
+Rust proof is verified. Historical `sweep` and `batch` commands in the design notes are not binaries
+in this checkout. To use the local compilers for other commands, prefix them with
+`scripts/with-toolchain.sh`, for example `scripts/with-toolchain.sh zig build test`.
+
+## Status
+
 The following remain outside this repository's production claim:
 
 - block consensus, networking, mempool policy, reorg handling, and emissions;

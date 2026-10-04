@@ -86,9 +86,13 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     ffi_it_mod.addObjectFile(b.path("lattica-prover-p3/target/release/liblattica_prover_p3.a"));
-    ffi_it_mod.linkSystemLibrary("unwind", .{});
     const ffi_it = b.addTest(.{ .root_module = ffi_it_mod });
-    ffi_it.use_lld = true; // self-hosted ELF linker can't handle crt1.o's .sframe (gcc 16); use LLD
+    if (target.result.os.tag == .linux) {
+        ffi_it_mod.linkSystemLibrary("unwind", .{});
+        // The self-hosted ELF linker can't handle crt1.o's .sframe (gcc 16).
+        // Zig's LLD mode does not support Mach-O; keep macOS on its default linker.
+        ffi_it.use_lld = true;
+    }
     const run_ffi_it = b.addRunArtifact(ffi_it);
     const ffi_step = b.step("test-ffi", "FFI integration test (run cargo build --release in lattica-prover-p3 first)");
     ffi_step.dependOn(&run_ffi_it.step);
