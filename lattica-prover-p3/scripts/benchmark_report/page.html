@@ -24,6 +24,8 @@ header{background:var(--ink);color:white;padding:24px max(24px,calc((100vw - 128
 <noscript><p class="error">JavaScript is required to decompress the embedded measurements. The companion catalog.json and runs/*.json files contain the full report data.</p></noscript>
 <div id="overview" class="grid" aria-label="Latest measured scope"></div>
 <p id="latest-note" class="small"></p>
+<section id="qualification"><div class="section-head"><h2>Two-hour pilot readiness</h2><button id="download-qualification" hidden>Download readiness JSON</button></div><div id="qualification-view" class="panel"></div></section>
+<section id="transactions"><div class="section-head"><h2>Delivered transaction campaigns</h2><span class="small">Unique user transactions retained on the measured chain</span></div><div class="panel"><p class="small">The primary rate uses the complete declared window, including startup, failures and recovery. Issuance, reversals and reapplications are reported separately. Imported events attest to host application; this report does not verify proofs or durable host state.</p><label id="tx-campaign-label" hidden>Campaign<select id="tx-campaign"></select></label><div id="tx-campaign-view"></div></div></section>
 <details class="panel"><summary>Paired campaign throughput and latency</summary><p class="small">Aggregate throughput counts each measured pair window once. Median pair duration and median individual latency describe different boundaries. Completed fixtures are reused inputs.</p><div id="comparison-summary"></div></details>
 <section id="milestones"><div class="section-head"><h2>Engineering milestones</h2><span class="small">P0–P5 · evidence does not imply phase completion</span></div><div id="ledger" class="ledger"></div></section>
 <section id="history"><div class="section-head"><h2>Retained run history</h2><span id="coverage-top" class="small"></span></div>
@@ -58,7 +60,46 @@ function options(id,values){for(const [value,label] of values){const o=el("optio
 function badge(text){return el("span",text,"tag "+(text==="succeeded"?"good":/failed|blocked|incomplete/.test(text)?"warn":""))}
 function dataTable(columns,rows){const wrap=el("div",undefined,"table-wrap"),t=el("table"),head=el("thead"),hr=el("tr");for(const c of columns)hr.append(el("th",c));head.append(hr);const body=el("tbody");for(const row of rows){const tr=el("tr");for(const value of row)tr.append(el("td",value===null||value===undefined?"—":typeof value==="object"?json(value):String(value)));body.append(tr)}t.append(head,body);wrap.append(t);return wrap}
 function details(title,value){const d=el("details");d.append(el("summary",title),el("pre",json(value)));return d}
+function qualificationView(){
+ const q=catalog.qualification,box=$("qualification-view");
+ if(!q){box.append(el("p","No qualification snapshot retained. The pilot has not been demonstrated.","muted"));return}
+ const p=q.contract.pilot;
+ box.append(badge(q.status),el("p",p.duration_seconds/60+" minutes · "+p.wallet_participants+" wallets · "+p.expected_user_requests+" planned user requests · target "+p.user_transactions_per_minute_target+" useful transactions/minute"));
+ box.append(el("p","Planned arrivals: 4/min for minutes 0–48, 6/min for 48–60, then 4/min for 60–120. The schedule is not a measured run. Four issuance transactions per cycle are a pilot assumption; the host supplies authorized amounts.","small"));
+ box.append(dataTable(["Gate","Status","Remaining evidence"],q.gates.map(g=>[g.gate.replaceAll("_"," "),g.status,g.reasons.join("; ")||"Recorded evidence passed this check"])));
+ const r=q.resource_profile,d=r.detected;
+ box.append(el("h3","Captured resource admission"),el("p",(d.requested_workers??q.contract.resource_policy.workers)+" requested GPU workers; "+r.selected_gpu_uuids.length+" admitted. New binaries and proof geometries require new qualification.","small"));
+ box.append(dataTable(["GPU UUID","Managed VRAM (GiB)","Context (GiB)","Worker RAM (GiB)","Spill (GiB)","Rayon threads"],Object.entries(d.budgets).map(([id,b])=>[id,fmt(b.gpu.managed_bytes/2**30),fmt(b.gpu.context_bytes/2**30),fmt(b.host.worker_bytes/2**30),fmt(b.host.spill_bytes/2**30),b.cpu.rayon_threads])));
+ box.append(details("Admission failures and captured limits",d.admission_failures||r.reasons));
+ const button=$("download-qualification");button.hidden=false;button.onclick=async()=>{try{download(q.snapshot_id+".json",await decode("qualification-data"))}catch(e){fail(e)}};
+}
+function transactionCampaigns(){
+ const all=catalog.transaction_campaigns||[],box=$("tx-campaign-view");
+ if(!all.length){box.append(el("p","No delivered-transaction campaign has been recorded. Fixture benchmark rates above do not establish the service goal.","empty"));return}
+ $("tx-campaign-label").hidden=false;options("tx-campaign",all.map(c=>[c.campaign_id,c.label]));
+ let version=0;
+ $("tx-campaign").onchange=async()=>{
+  const token=++version,c=all.find(c=>c.campaign_id===$("tx-campaign").value),m=c.metrics;box.replaceChildren();
+  box.append(el("p",c.track+" · "+m.measurement_scope+" · "+c.resource_profile_id,"small"),badge(m.status));
+  box.append(dataTable(["Measurement","Result"],[
+   ["Useful user transactions/minute",fmt(m.user_transactions_per_minute,3)],
+   ["Complete measured window",seconds(m.measured_seconds)],
+   ["Unique user transactions retained at window end",m.unique_user_transactions_retained_at_end],
+   ["Unique user transactions first applied",m.unique_user_transactions],
+   ["Issuance first applied / retained",m.issuance_transactions+" / "+m.issuance_transactions_retained_at_end],
+   ["Pending users at start / end",m.initial_pending_user_transactions+" / "+m.final_pending_user_transactions],
+   ["User reversals / reapplications",m.user_reversal_events+" / "+m.reapplications],
+   ["Invalid / duplicate submissions / deferrals",m.invalid_transactions+" / "+m.duplicate_submissions+" / "+m.deferral_events],
+   ["Recorded failures",m.failures],["Longest user application gap",seconds(m.longest_user_application_gap_seconds)],
+   ["4/min pilot rate target",m.target_met_in_pilot===null?"Incomplete window":m.target_met_in_pilot?"Met in this window":"Below target"],
+   ["Sustained-service qualification","Not established by this pilot"]]));
+  box.append(dataTable(["Latency boundary","Samples","Median","p95 (nearest rank)","Maximum"],Object.entries(m.latencies).map(([k,v])=>[k.replaceAll("_"," "),v.count,seconds(v.median_seconds),seconds(v.p95_seconds),seconds(v.max_seconds)])));
+  box.append(details("Backlog samples and complete accounting",m));
+  try{const data=await decode("campaign-data-"+c.campaign_id);if(token!==version)return;const button=el("button","Download transaction campaign JSON","primary");button.onclick=()=>download(c.campaign_id+".json",data);box.append(button,details("Public source provenance",data.sources))}catch(e){fail(e)}
+ };$("tx-campaign").onchange();
+}
 function overview(){
+ qualificationView();transactionCampaigns();
  const groups=catalog.comparisons.filter(c=>c.id.includes("block-v2-multi-pairs-20261003-e")&&c.aggregate);
  const seq=groups.find(c=>c.id.endsWith(":sequential")),con=groups.find(c=>c.id.endsWith(":concurrent"));
  const cards=[["Sequential fixture throughput",seq?fmt(seq.aggregate.transactions_per_minute,3):"—","tx/min","Completed inputs / total measured pair time"],["Concurrent fixture throughput",con?fmt(con.aggregate.transactions_per_minute,3):"—","tx/min","Two assigned GPUs · same aggregation scope"],["Audited runs retained",fmt(catalog.coverage.cpu_audited_runs,0),"runs","CPU audit explicitly recorded in the run metadata"]];

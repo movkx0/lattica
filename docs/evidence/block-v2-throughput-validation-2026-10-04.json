@@ -1,0 +1,137 @@
+{
+  "checks": [
+    {
+      "command": "python3 lattica-prover-p3/scripts/test-block-v2-multi-gpu.py",
+      "failed": 0,
+      "passed": 18,
+      "source": {
+        "bytes": 13962,
+        "path": "lattica-prover-p3/scripts/test-block-v2-multi-gpu.py",
+        "sha256": "cf15240d58c9ca91e16cf1ac50cae15323c0037b3ab3bbd19a57a182f719e51e"
+      }
+    },
+    {
+      "command": "python3 lattica-prover-p3/scripts/test-block-v2-throughput.py",
+      "failed": 0,
+      "passed": 21,
+      "source": {
+        "bytes": 18604,
+        "path": "lattica-prover-p3/scripts/test-block-v2-throughput.py",
+        "sha256": "e3831558e47e5b0f818c2a283b6447dddbca682c64cf25d99fa713071b84e4a2"
+      }
+    },
+    {
+      "command": "python3 lattica-prover-p3/scripts/test-block-v2-benchmark-report.py",
+      "failed": 0,
+      "passed": 26,
+      "source": {
+        "bytes": 14763,
+        "path": "lattica-prover-p3/scripts/test-block-v2-benchmark-report.py",
+        "sha256": "559b9a765d782fe41dae0f350178def7f62b629be771a4ec653bc5fe89a2d740"
+      }
+    },
+    {
+      "command": "cargo test --offline --release --no-default-features --features block-v2-wide-lanes --lib typed_ -- --nocapture --test-threads=1",
+      "failed": 0,
+      "ignored": 0,
+      "passed": 9,
+      "public_log_sha256": "7558ef83d18ccb63a129cd6256f70bc3e641f83a91ebdb6e5be9de0066d099ff",
+      "test_seconds": 48.44,
+      "working_directory": "lattica-prover-p3"
+    },
+    {
+      "command": "cargo test --offline --release --no-default-features --features block-v2 --lib typed_ -- --nocapture --test-threads=1",
+      "failed": 0,
+      "ignored": 0,
+      "passed": 9,
+      "public_log_sha256": "5de41e935facc81e873189930bdacdb673e12d9323cdfecae9659c94a293b7c7",
+      "test_seconds": 35.94,
+      "working_directory": "lattica-prover-p3"
+    },
+    {
+      "command": "cargo test --offline --release --no-default-features --features block-v2-wide-lanes --lib block_v2::machine::programs::tests -- --nocapture --test-threads=1",
+      "failed": 0,
+      "ignored": 1,
+      "passed": 4,
+      "public_log_sha256": "61d3134b8d3c8cd597bf6f586cfad92ea5ca362c793603f86860445bb3bff454",
+      "test_seconds": 12.22,
+      "working_directory": "lattica-prover-p3"
+    },
+    {
+      "command": "cargo test --offline --release --no-default-features --features block-v2-wide-lanes --lib block_v2::recursive:: -- --nocapture --test-threads=1",
+      "failed": 0,
+      "ignored": 4,
+      "passed": 8,
+      "public_log_sha256": "43d782e5663a44ef0d2ff6e4c6ec89e14ec93b7e1d4e9ae2b35ef885faec9503",
+      "test_seconds": 8.29,
+      "working_directory": "lattica-prover-p3"
+    },
+    {
+      "command": "cargo test --offline --release --no-default-features --features block-v2-wide-lanes --lib block_v2::leaf::tests -- --nocapture --test-threads=1",
+      "failed": 0,
+      "ignored": 0,
+      "passed": 3,
+      "public_log_sha256": "61e2d28d1786e649a107d83bc483a6ab872a0d58a690c28a1d704649ce1b8190",
+      "test_seconds": 4.8,
+      "working_directory": "lattica-prover-p3"
+    }
+  ],
+  "gpu_build_check": {
+    "command": "cargo check --offline --release --no-default-features --features block-v2-wide-lanes,stream,gpu --bins",
+    "public_log_sha256": "719feff4b8e4f0441223fc1f2d55bb8c8ea040d3d44e7c2ea08ef70aacf0ebe7",
+    "scope": "Compilation only; no new GPU proof qualification",
+    "status": "passed"
+  },
+  "ignored_total": 5,
+  "passed_total": 98,
+  "schema_version": 1,
+  "scope": "unit tests, actual research leaves, compiler interpretation and small typed empty proofs; not throughput qualification",
+  "source_pins": [
+    {
+      "bytes": 11078,
+      "path": "lattica-prover-p3/src/block_v2/typed_leaf.rs",
+      "sha256": "5fe9de0bf81b944e81c07e90e6d4155e94b670b4ff472db8450e6b60e3203719"
+    },
+    {
+      "bytes": 16049,
+      "path": "lattica-prover-p3/src/block_v2/typed_recursive.rs",
+      "sha256": "1ea913e22be4315d21e30af3c90147e1a37d9fd7fb0728479f6f489115eb5502"
+    },
+    {
+      "bytes": 7619,
+      "path": "lattica-prover-p3/src/block_v2/machine/typed_programs.rs",
+      "sha256": "d5d68025aa70a5fcc4914020261c44ef3c844d1bfd77ad9a5df89647d9a05f81"
+    },
+    {
+      "bytes": 16787,
+      "path": "lattica-prover-p3/scripts/benchmark_report/campaign.py",
+      "sha256": "a140924e76b0adc0d3bb0b0f627dc3647a6c84711d699d462e86326a0b205945"
+    },
+    {
+      "bytes": 19246,
+      "path": "lattica-prover-p3/scripts/benchmark_report/report.py",
+      "sha256": "74299ce674a801ef3d9f89984963e076685e2924714af65675ac817beb705cce"
+    },
+    {
+      "bytes": 11251,
+      "path": "lattica-prover-p3/scripts/benchmark_report/model.py",
+      "sha256": "2da62b69aaad50646c36afaf73fbc0578d8e4933bae7a859df2cd8ec1268f2b5"
+    },
+    {
+      "bytes": 11962,
+      "path": "lattica-prover-p3/scripts/block_v2_throughput.py",
+      "sha256": "227adb1f8de14c0e6231f33e6288f7178b9cf860287f744b84a94eff0fc1177b"
+    },
+    {
+      "bytes": 14576,
+      "path": "lattica-prover-p3/scripts/block_v2_resources.py",
+      "sha256": "5306a65319479d0ba28f239260b7f8d40588a41ac4aa3fadbd7cf442419cd7f5"
+    },
+    {
+      "bytes": 32705,
+      "path": "lattica-prover-p3/scripts/block-v2-multi-gpu-run.py",
+      "sha256": "487fa16255c5ca80148e2bf438426a952e71db515e912cbd5269f19e61331278"
+    }
+  ],
+  "status": "passed"
+}

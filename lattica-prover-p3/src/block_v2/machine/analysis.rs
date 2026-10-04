@@ -109,10 +109,15 @@ pub fn analyze(air: &MachineAir) -> Result<MachineAnalysis, AdmissionError> {
 
 impl MachineAnalysis {
     pub fn check_ram_lower_bound(&self) -> Result<(), AdmissionError> {
-        if self.retained_lde_bytes > feasibility::RAM_BUDGET_BYTES {
+        self.check_ram_lower_bound_with_budget(feasibility::RAM_BUDGET_BYTES)
+    }
+
+    /// A necessary lower bound, not complete lifetime resource admission.
+    pub fn check_ram_lower_bound_with_budget(&self, budget: u64) -> Result<(), AdmissionError> {
+        if self.retained_lde_bytes > budget {
             return Err(AdmissionError::RamLowerBound {
                 required: self.retained_lde_bytes,
-                budget: feasibility::RAM_BUDGET_BYTES,
+                budget,
             });
         }
         Ok(())

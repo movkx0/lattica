@@ -140,5 +140,60 @@ no completed runs and still contribute elapsed time.
 
 Comparison windows require a common measurement scope. The exporter does not
 invent windows from individual timestamps or compare unrelated workload scopes.
-Portable single-run import currently adds individual records; a future portable
-campaign format can add explicit arrival/recovery and chain-acceptance windows.
+Portable single-run imports and transaction campaigns use separate records.
+
+## Transaction campaigns (schema version 1)
+
+Set `record_type` to `transaction_campaign`. Required metadata:
+`campaign_id` (safe filename identifier), `label`, `track`,
+`resource_profile_id`, `measurement_scope` (`durable_test_chain` or
+`canonical_chain`), `initial_tip` (lowercase SHA-256-sized hex identifier),
+`sources` (nonempty public path/hash references), `window` and `events`.
+
+The window declares one coordinator clock and decimal integer nanoseconds
+`started_ns` and `finished_ns`. It is half-open: [start, finish). Use null finish
+for an incomplete observation. A completed export includes exactly one
+`window_closed` event at finish. No throughput is calculated without closure.
+Preserve exact timestamps as strings; never convert nanoseconds through float.
+
+Every event has a unique `event_id`, `at_ns` and `type`. Capture order must be
+nondecreasing. Identical event-ID replays are ignored; conflicting replays fail
+import. Include lifecycle history before the window to establish initial
+backlog, chain state and transactions applied earlier.
+
+| Event | Additional required fields |
+|---|---|
+| `submitted` | `transaction_id`, `transaction_kind`: joinsplit, htlc_redeem, htlc_refund or issuance |
+| `wallet_proof_ready`, `admitted` | `transaction_id`; readiness precedes admission |
+| `rejected` | `transaction_id`, `reason`: invalid, duplicate or deferred |
+| `sealed` | `block_id`, ordered unique `transaction_ids` (1–64), all proof-ready and admitted |
+| `root_verified` | `block_id`, `cpu_audited=true`, `expected_statement_verified=true`, `level=6`, `proof_bytes` (1–2 MiB), `proof_sha256`, `profile_sha256` |
+| `block_applied` | `block_id`, `parent_block_id`, `durable=true`, `host_validated=true`, `state_commit_sha256` |
+| `block_reverted` | Current tip `block_id`, `durable=true`, `state_commit_sha256` |
+| `failed`, `recovered` | Nonempty `reason` |
+| `window_closed` | Timestamp exactly matches declared finish |
+
+Transaction IDs must identify the same transaction across retries and reorgs,
+independently of randomized proof bytes. IDs and digests are lowercase hex64.
+The producer emits application only after verified-root/expected-body checks,
+host policy validation and a durable state commit. The importer validates
+event consistency; it does not cryptographically verify those assertions.
+Preserve independent root and host audit references in `sources`.
+
+Primary useful rate = unique user transactions first applied during the window
+and retained on its chain at window end, divided by the entire window in
+minutes. Issuance is separate. A reverted transaction contributes no useful rate
+unless reapplied before finish; reapplication never adds another unique count.
+An application predating the window never becomes a new transaction after
+reorg. Reversals, total unique applications, reapplications, duplicates, invalid
+transactions, deferrals, failures and final backlog remain separate counters.
+End-boundary and later drain applications do not enter the primary rate.
+
+Latency distributions report count, median, nearest-rank p95 and maximum.
+Small pilot samples are not production tail guarantees. The four/minute target
+flag is a rate check only; `sustained_service_qualified` remains false.
+
+Import with the same `block-v2-benchmark-report.py ingest --input FILE.json`
+command. Campaign IDs are immutable: a revised export requires a new ID.
+The report recomputes metrics and embeds the complete JSON for offline download.
+Private/witness material and proof payload fields are rejected recursively.

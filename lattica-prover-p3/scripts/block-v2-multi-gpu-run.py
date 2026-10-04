@@ -99,8 +99,8 @@ def selected_devices(config):
     return [devices[u] for u in sorted(config['gpu_uuids'])]
 
 
-def choose_plan(config, host, devices):
-    failures = []
+def choose_plan(config, host, devices, failures=None):
+    failures = [] if failures is None else failures
     # A qualification run can enforce the prospective concurrent-worker
     # budgets while only launching one job at a time.
     requested_slots = config.get('worker_slots', config['max_concurrency'])
@@ -119,10 +119,11 @@ def choose_plan(config, host, devices):
                     budgets = {uuid: R.qualification_budget(b, config['workload']) for uuid, b in budgets.items()}
                 return budgets
             except ValueError as e:
-                failures.append(str(e))
+                failures.append({'worker_slots': slots, 'gpu_uuids': [d['uuid'] for d in selection],
+                                 'reason': str(e)})
         if config.get('worker_slots'):
             break
-    raise ValueError('no resource plan fits: ' + '; '.join(failures))
+    raise ValueError('no resource plan fits: ' + '; '.join(f['reason'] for f in failures))
 
 
 def qualification_gate(config, budgets):
@@ -567,7 +568,17 @@ def main():
         verify_pins(config)
         if args.plan:
             host = detect_worker_host(config['scratch'])
-            print(json.dumps({'host': host, 'budgets': choose_plan(config, host, selected_devices(config))}, indent=2))
+            devices = selected_devices(config)
+            failures = []
+            budgets = choose_plan(config, host, devices, failures)
+            print(json.dumps({'plan_version': 1, 'captured_ns': str(time.time_ns()),
+                              'requested_workers': config.get('worker_slots', config['max_concurrency']),
+                              'admitted_workers': len(budgets), 'admission_failures': failures,
+                              'config_sha256': digest(args.config),
+                              'binary_sha256': config['pins'][config['gpu_binary']],
+                              'profile_sha256': profile_digest(config),
+                              'workload_id': config['workload'].get('name', config['workload'].get('id')),
+                              'host': host, 'devices': devices, 'budgets': budgets}, indent=2))
         else:
             if not args.evidence:
                 parser.error('a fresh --evidence directory is required')

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "contract_id": "current-workstation-throughput-pilot-v1",
+  "scope": "durable_test_chain",
+  "resource_policy": {
+    "profile_id": "current-workstation-adaptive-v1",
+    "implementation": "block_v2_resources.py",
+    "version": 1,
+    "workers": 2,
+    "device_identity": "GPU UUID",
+    "recalibrate_each_binary_and_geometry": true,
+    "budgets": "detected capacity, cgroup limits, calibrated context, OS/coordinator headroom",
+    "tmpfs_spill_charged_to_host_ram": true,
+    "fixed_historical_workstation_limits": false
+  },
+  "limits": {
+    "total_transactions_per_root": 64,
+    "tree_depth": 6,
+    "root_bytes": 2097152,
+    "cold_64_seconds": 600,
+    "post_seal_seconds": 180,
+    "cycle_seconds": 720
+  },
+  "pilot": {
+    "duration_seconds": 7200,
+    "wallet_participants": 4,
+    "expected_user_requests": 504,
+    "user_transactions_per_minute_target": 4,
+    "arrival_segments": [
+      {"start_minute": 0, "end_minute": 48, "user_requests_per_minute": 4},
+      {"start_minute": 48, "end_minute": 60, "user_requests_per_minute": 6},
+      {"start_minute": 60, "end_minute": 120, "user_requests_per_minute": 4}
+    ],
+    "issuance_per_cycle": 4,
+    "issuance_policy": "separate typed proofs and independently supplied host-authorized amounts; no implied production reward schedule",
+    "drain_period_included_in_primary_window": false,
+    "include_startup_failures_and_recovery": true,
+    "sustained_service_qualification": false
+  },
+  "required_transaction_types": ["joinsplit", "htlc_redeem", "htlc_refund", "issuance"],
+  "required_counts": [1, 2, 3, 4, 8, 16, 32, 63, 64],
+  "required_gates": [
+    "typed_leaf_verification",
+    "mixed_recursive_registry_and_cpu_replay",
+    "durable_candidate_host_application",
+    "per_geometry_device_qualification",
+    "full_count_cold_64",
+    "complete_post_seal_finalization",
+    "restart_reorg_and_resource_failure_recovery"
+  ],
+  "production_ready": false
+}

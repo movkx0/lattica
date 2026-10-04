@@ -1,0 +1,50 @@
+{
+  "browser": {
+    "browser_errors": 0,
+    "desktop_mobile_print": true,
+    "network_requests": 0,
+    "readiness_download_roundtrip": true,
+    "run_download_roundtrip": true
+  },
+  "portable_rebuild_from_json_identical": true,
+  "retained_dataset_check": {
+    "campaigns": 62,
+    "runs": 256,
+    "status": "valid",
+    "transaction_campaigns": 0
+  },
+  "schema_version": 1,
+  "scope": "Offline report QA; not proving or throughput qualification",
+  "source_pins": [
+    {
+      "bytes": 4446,
+      "path": "lattica-prover-p3/scripts/test-block-v2-benchmark-browser.mjs",
+      "sha256": "05797d926e95123bf53db3b002d20bcaac8c22524d48fdbff0b414474fca4945"
+    },
+    {
+      "bytes": 39806,
+      "path": "lattica-prover-p3/scripts/benchmark_report/page.html",
+      "sha256": "2460425d536a0501f12a909220eee7d11be9bf9ebbf31441d57a96159421d01d"
+    },
+    {
+      "bytes": 19246,
+      "path": "lattica-prover-p3/scripts/benchmark_report/report.py",
+      "sha256": "74299ce674a801ef3d9f89984963e076685e2924714af65675ac817beb705cce"
+    }
+  ],
+  "standalone_html": {
+    "bytes": 73715674,
+    "path": "docs/benchmarks/index.html",
+    "sha256": "85f0b2d9a05d8d78aefec52401c4c9d77fea25fca7056177409dbdbf9d870abf"
+  },
+  "status": "passed",
+  "synthetic_campaign_ui": {
+    "browser_errors": 0,
+    "json_download_roundtrip": true,
+    "mobile_layout": true,
+    "network_requests": 0,
+    "scope": "temporary synthetic test data only; not retained campaign results",
+    "status": "passed",
+    "useful_rate_display_checked": true
+  }
+}

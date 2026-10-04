@@ -18,6 +18,8 @@ mod gpu_quotient_prover;
 #[cfg(feature = "stream")]
 pub mod heap_dft;
 pub mod leaf;
+pub mod typed_leaf;
+pub mod typed_recursive;
 pub mod machine;
 #[cfg(feature = "stream")]
 pub mod normalization_workspace;

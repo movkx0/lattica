@@ -248,7 +248,7 @@ def shared_budgets(host, uuids):
     return result
 
 
-def workload_fits(budget, profile):
+def workload_failures(budget, profile):
     """Check simultaneous allocations by phase; tmpfs pages belong to RAM.
 
     `heap` includes caches, pinned buffers, retained salts, and driver host
@@ -262,6 +262,7 @@ def workload_fits(budget, profile):
     page = profile.get('page_bytes', 0)
     if page < 1 or page & (page - 1):
         raise ValueError('spill page size must be a positive power of two')
+    failures = []
     for phase in profile['phases']:
         values = [phase[k] for k in ('heap_bytes', 'pinned_bytes', 'driver_host_bytes', 'resident_spill_bytes', 'managed_gpu_bytes', 'max_gpu_allocation_bytes')]
         values += phase['spill_payloads']
@@ -270,11 +271,18 @@ def workload_fits(budget, profile):
         spill = sum(up(n, page) + page for n in phase['spill_payloads'])
         ram = phase['heap_bytes'] + phase['pinned_bytes'] + phase['driver_host_bytes']
         ram += spill if host['tmpfs'] else phase['resident_spill_bytes']
-        if ram > host['worker_bytes'] or spill > host['spill_bytes']:
-            return False
-        if phase['managed_gpu_bytes'] > gpu['managed_bytes'] or phase['max_gpu_allocation_bytes'] > gpu['max_allocation_bytes']:
-            return False
-    return True
+        for resource, needed, available in (
+                ('host RAM', ram, host['worker_bytes']),
+                ('spill', spill, host['spill_bytes']),
+                ('managed VRAM', phase['managed_gpu_bytes'], gpu['managed_bytes']),
+                ('GPU allocation', phase['max_gpu_allocation_bytes'], gpu['max_allocation_bytes'])):
+            if needed > available:
+                failures.append(f"{phase.get('name', 'unnamed phase')}: {resource} requires {needed} bytes; budget {available} bytes")
+    return failures
+
+
+def workload_fits(budget, profile):
+    return not workload_failures(budget, profile)
 
 
 def plan(host, devices, slots, profile, calibrations=None):
@@ -285,8 +293,9 @@ def plan(host, devices, slots, profile, calibrations=None):
         uuid = device['uuid']
         budget = {**shared[uuid], 'gpu': asdict(gpu_budget(device, calibrations.get(uuid))),
                   'detected_host': host, 'detected_gpu': device}
-        if not workload_fits(budget, profile):
-            raise ValueError(f'workload does not fit assigned resources on {uuid}')
+        failures = workload_failures(budget, profile)
+        if failures:
+            raise ValueError(f'workload does not fit assigned resources on {uuid}: ' + '; '.join(failures))
         budgets[uuid] = budget
     return budgets
 
