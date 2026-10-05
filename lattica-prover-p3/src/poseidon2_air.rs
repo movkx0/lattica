@@ -14,24 +14,16 @@
 //! that is M4b.
 
 use p3_air::{Air, AirBuilder, BaseAir, WindowAccess};
-use p3_challenger::DuplexChallenger;
-use p3_commit::ExtensionMmcs;
-use p3_dft::Radix2DitParallel;
-use p3_field::extension::BinomialExtensionField;
-use p3_field::{Field, PrimeCharacteristicRing};
-use p3_fri::{FriParameters, HidingFriPcs};
+use p3_field::PrimeCharacteristicRing;
 use p3_goldilocks::{
     default_goldilocks_poseidon2_8, GenericPoseidon2LinearLayersGoldilocks, Goldilocks,
-    Poseidon2Goldilocks, GOLDILOCKS_POSEIDON2_RC_8_EXTERNAL_FINAL,
-    GOLDILOCKS_POSEIDON2_RC_8_EXTERNAL_INITIAL, GOLDILOCKS_POSEIDON2_RC_8_INTERNAL,
+    GOLDILOCKS_POSEIDON2_RC_8_EXTERNAL_FINAL, GOLDILOCKS_POSEIDON2_RC_8_EXTERNAL_INITIAL,
+    GOLDILOCKS_POSEIDON2_RC_8_INTERNAL,
 };
 use p3_matrix::dense::RowMajorMatrix;
-use p3_merkle_tree::MerkleTreeHidingMmcs;
 use p3_poseidon2::GenericPoseidon2LinearLayers;
-use p3_symmetric::{PaddingFreeSponge, Permutation, TruncatedPermutation};
-use p3_uni_stark::{prove, verify, StarkConfig};
-use rand::rngs::SmallRng;
-use rand::SeedableRng;
+use p3_symmetric::Permutation;
+use p3_uni_stark::{prove, verify};
 
 pub(crate) const W: usize = 8; // state width
 pub(crate) const BLOCK: usize = 32; // rows per permutation (31 transitions + output row)
@@ -86,6 +78,17 @@ pub(crate) fn native_steps(input: [Val; W]) -> [[Val; W]; BLOCK] {
         rows[2 + FULL_HALF + PARTIAL + r] = s;
     }
     rows
+}
+
+/// Write the `BLOCK` permutation rows of `input` into columns 0..W starting at trace row `first_row`,
+/// in a `width`-column row-major trace. The single permutation-block trace writer — used by both
+/// spend circuits' `set_block` and by the batch fold-block writer (`batch_common::write_fold_blocks`).
+pub(crate) fn write_perm_block(t: &mut [Val], first_row: usize, width: usize, input: [Val; W]) {
+    let rows = native_steps(input);
+    for (r, row) in rows.iter().enumerate() {
+        let base = (first_row + r) * width;
+        t[base..base + W].copy_from_slice(row);
+    }
 }
 
 pub fn native_permute(input: [Val; W]) -> [Val; W] {
@@ -169,12 +172,18 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for Poseidon2RowsAir {
         ext_linear(&mut init_s);
 
         // full round: next = M_ext(sbox(cur + rc))
-        let mut full_s: [AB::Expr; W] = core::array::from_fn(|i| pow7(cur[i].clone() + rc[i].clone()));
+        let mut full_s: [AB::Expr; W] =
+            core::array::from_fn(|i| pow7(cur[i].clone() + rc[i].clone()));
         ext_linear(&mut full_s);
 
         // partial round: next = M_int( [sbox(cur0 + rc0), cur1, .., cur7] )
-        let mut part_s: [AB::Expr; W] =
-            core::array::from_fn(|i| if i == 0 { pow7(cur[0].clone() + rc[0].clone()) } else { cur[i].clone() });
+        let mut part_s: [AB::Expr; W] = core::array::from_fn(|i| {
+            if i == 0 {
+                pow7(cur[0].clone() + rc[0].clone())
+            } else {
+                cur[i].clone()
+            }
+        });
         int_linear(&mut part_s);
 
         for i in 0..W {
@@ -192,41 +201,9 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for Poseidon2RowsAir {
     }
 }
 
-// --- ZK config (hiding FRI PCS over Goldilocks) ------------------------------------------------
+// --- ZK config: the dev/demo family from crate::config (reference AIR — not a production path) --
 
-type Perm = Poseidon2Goldilocks<8>;
-const LOG_BLOWUP: usize = 3;
-type MyHash = PaddingFreeSponge<Perm, 8, 4, 4>;
-type MyCompress = TruncatedPermutation<Perm, 2, 4, 8>;
-type ValMmcs =
-    MerkleTreeHidingMmcs<<Val as Field>::Packing, <Val as Field>::Packing, MyHash, MyCompress, SmallRng, 2, 4, 4>;
-type Challenge = BinomialExtensionField<Val, 2>;
-type ChallengeMmcs = ExtensionMmcs<Val, Challenge, ValMmcs>;
-type Challenger = DuplexChallenger<Val, Perm, 8, 4>;
-type Dft = Radix2DitParallel<Val>;
-type Pcs = HidingFriPcs<Val, Dft, ValMmcs, ChallengeMmcs, SmallRng>;
-type MyConfig = StarkConfig<Pcs, Challenge, Challenger>;
-
-fn make_config(seed: u64) -> MyConfig {
-    let perm = default_goldilocks_poseidon2_8();
-    let hash = MyHash::new(perm.clone());
-    let compress = MyCompress::new(perm.clone());
-    let val_mmcs = ValMmcs::new(hash, compress, 0, SmallRng::seed_from_u64(seed));
-    let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
-    let dft = Dft::default();
-    let fri_params = FriParameters {
-        log_blowup: LOG_BLOWUP,
-        log_final_poly_len: 0,
-        max_log_arity: 1,
-        num_queries: 24,
-        commit_proof_of_work_bits: 1,
-        query_proof_of_work_bits: 1,
-        mmcs: challenge_mmcs,
-    };
-    let pcs = Pcs::new(dft, val_mmcs, fri_params, 4, SmallRng::seed_from_u64(seed));
-    let challenger = Challenger::new(perm);
-    MyConfig::new(pcs, challenger)
-}
+use crate::config::demo::make_config;
 
 fn trace(input: [Val; W]) -> RowMajorMatrix<Val> {
     let rows = native_steps(input);
@@ -255,7 +232,11 @@ mod tests {
     fn native_steps_match_poseidon2_goldilocks() {
         let input: [Val; W] = core::array::from_fn(|i| Val::from_u64(i as u64 + 1));
         let rows = native_steps(input);
-        assert_eq!(rows[BLOCK - 1], native_permute(input), "across-rows trace must match native");
+        assert_eq!(
+            rows[BLOCK - 1],
+            native_permute(input),
+            "across-rows trace must match native"
+        );
     }
 
     #[test]

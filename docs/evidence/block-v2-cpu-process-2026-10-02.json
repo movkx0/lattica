@@ -1,0 +1,190 @@
+{
+  "schema": "lattica-block-v2-cpu-process-checkpoint-v1",
+  "captured_utc": "2026-10-02 09:29:09 UTC",
+  "status": "IMMUTABLE_LOCAL_TASKS_AND_CPU_EXECUTABLE_VALIDATED_DURABLE_OS_SUPERVISOR_PENDING",
+  "scope": "Experimental local public-proof-only execution. No C ABI, network protocol, proof-format change, production activation or speedup claim.",
+  "production_ready": false,
+  "default_enabled": false,
+  "worker_executable_complete": true,
+  "local_task_transport_complete": true,
+  "worker_supervisor_complete": false,
+  "arrival_harness_complete": false,
+  "physical_resource_qualification_complete": false,
+  "implementation": {
+    "files": [
+      "src/block_v2/execution/launch.rs",
+      "src/block_v2/execution/transport.rs",
+      "src/block_v2/execution/process.rs",
+      "src/bin/block_v2_cpu_worker.rs"
+    ],
+    "tokens": {
+      "legacy": "LVCPU001",
+      "legacy_bytes": 148,
+      "bound": "LVCPU002",
+      "bound_bytes": 180,
+      "compatibility": "V1 inline APIs remain; autonomous entry requires V2 with exact specification digest."
+    },
+    "spec": {
+      "magic": "LVCPUT01",
+      "max_bytes": 16384,
+      "max_path_bytes": 4096,
+      "fields": "Executable fingerprint, exact pinned registry/profile/construction/chain, task directory dev/inode, launch-store path, mode and bounded timeout."
+    },
+    "image": {
+      "max_bytes": 268435456,
+      "chunk_bytes": 65536,
+      "algorithm": "Domain-separated local Poseidon2 chunk/root fingerprint over exact length and ordered chunks; worker hashes /proc/self/exe, coordinator hashes protected executable file. SHA256 below is separate evidence identity."
+    },
+    "transport": {
+      "owner_lock": true,
+      "anchored_directory": true,
+      "private_permissions": true,
+      "max_entries": 10,
+      "publication": "Stage write/chmod0400/fsync; non-overwriting hard link; directory fsync; unlink stage; directory fsync. Spec/request durable before bound launch issue; token last. Incomplete tasks never promoted/reused."
+    },
+    "runtime": "Single-use guard; CPU-only/unfused configuration; exact token service cgroup on genuine cgroup2; finite per-worker memory.max <= lease, zero swap, named aggregate slice <=48 GiB/no swap; finite CPU quota <= reserved threads, bounded pids.max, core dumps disabled; explicit Rayon pool. Descriptor-anchored spill with 16 MiB task overhead margin; process alarm. No physical filesystem quota or durable supervisor.",
+    "result": "Worker publishes bounded response under guard after spill cleanup. Owner reopens persisted response, binds original assignment/request, independently CPU-verifies and durably accepts only the current attempt."
+  },
+  "native_validation": {
+    "exit_code": 0,
+    "session": 81001,
+    "unit": "lattica-v2-process-native-20261002-e.service",
+    "runtime_seconds": 103.21,
+    "cpu_seconds": 102.811,
+    "memory_peak_formatted": "2G",
+    "swap_bytes": 0,
+    "native_checks": 87,
+    "explicit_cpu_checks": 7,
+    "warnings": 0,
+    "source_comparison_passed": true,
+    "checks": [
+      "87 execution native checks, including six abrupt task-publication subprocess exits",
+      "Seven explicit CPU public-fixture checks",
+      "CPU executable build, narrow/default/all-feature-all-target checks, formatting and diff checks"
+    ],
+    "proof_generation": false
+  },
+  "real_check": {
+    "status": "PASS",
+    "mode": "Check",
+    "worker_unit": "lattica-v2-worker-bee44774293a80f864623b24441fa25e469cd8fab906658450ea4c615577acbf.service",
+    "worker_invocation": "4ebd0e4216c9435bb2077d6a725ca056",
+    "elapsed_ms": 839,
+    "worker_runtime_seconds": 0.742,
+    "worker_peak_ram_bytes": 15790080,
+    "worker_swap_peak_bytes": 0,
+    "result_created": false
+  },
+  "real_proof": {
+    "exit_code": 0,
+    "session": 79865,
+    "unit": "lattica-v2-process-proof-controller-20261002-b.service",
+    "runtime_seconds": 183.835,
+    "cpu_seconds": 0.103,
+    "memory_peak_formatted": "16.9M",
+    "swap_bytes": 0,
+    "status": "PASS",
+    "operation": "WrapPair",
+    "transactions": 2,
+    "node_level": 1,
+    "full_block": false,
+    "complete_post_seal": false,
+    "worker_unit": "lattica-v2-worker-4e75089500e67be27a04f182e66231102bd6abeaea0b07c20533218399b66f6b.service",
+    "worker_invocation": "a147d24a1e8844049cc61d78ed4837a0",
+    "worker_runtime_seconds": 177.557,
+    "worker_peak_ram_bytes": 42529280000,
+    "worker_swap_peak_bytes": 0,
+    "worker_cpu_usage_usec": 1117029733,
+    "worker_ram_max_bytes": 47244640256,
+    "aggregate_slice_ram_max_bytes": 51539607552,
+    "worker_cpu_quota_percent": 800,
+    "worker_tasks_max": 16,
+    "scratch_reservation_bytes": 128849018880,
+    "spill_limit_bytes": 128832241664,
+    "spill_peak_bytes": 34003439616,
+    "proof_bytes": 1683948,
+    "spec_bytes": 6377,
+    "request_bytes": 1707443,
+    "token_bytes": 180,
+    "result_bytes": 1684129,
+    "input_verification_ms": 419,
+    "proving_setup_cleanup_ms": 176642,
+    "execution_acceptance_export_ms": 178290,
+    "timing_scope": "Starts after fixture loading/admission and task/launch publication. Includes actual worker dispatch, image/config/resource validation, packet verification, proving/cleanup/result publication, exact worker exit checks, owner response reopen/CPU verification/durable acceptance and raw-node export. Not complete post-seal.",
+    "os_receipt": "Live loaded/active/running InvocationID, MainPID and ControlGroup captured; exact pidfd and cgroup directory held; successful systemd-run wait, pidfd POLLIN and pinned cgroup removal/empty check precede worker_stopped. Later LoadState=not-found is a GC observation, not stop authority.",
+    "accounting_scope": "Worker memory/CPU counters from frozen ExecStopPost cgroup snapshot; native/controller/owner peaks are separate. Mapped spill is not additive RSS. Runtime is an experiment harness, not durable delayed-dispatch/restart reconciliation."
+  },
+  "independent_replay": {
+    "status": "PASS",
+    "unit": "lattica-v2-process-replay-20261002-b.service",
+    "runtime_seconds": 0.95,
+    "peak_ram_bytes": 26910720,
+    "swap_bytes": 0,
+    "wrong_order_rejected": true,
+    "mutated_bytes_rejected": true,
+    "scope": "Fresh-process raw-node replay. Expected pair job is reconstructed by the existing fixture loader, which reads retained public wallet fixtures. This is not inner-archive pruning, persisted-response recovery after journal restart, or host eligibility qualification."
+  },
+  "prior_attempts": [
+    {
+      "run": "process-native-20261002-a",
+      "status": "COMPILE_FAILURE",
+      "reason": "Mutable worker binding corrected."
+    },
+    {
+      "run": "process-native-20261002-b",
+      "status": "BINARY_BUILD_FAILURE",
+      "reason": "Rayon was available to tests/GPU but not CPU runtime; existing optional dependency enabled for block-v2."
+    },
+    {
+      "run": "process-native-20261002-c",
+      "status": "PASS_WITH_ONE_NARROW_BUILD_WARNING",
+      "reason": "Unused profile import corrected."
+    },
+    {
+      "run": "process-native-20261002-d",
+      "status": "PASS",
+      "reason": "87 native/seven CPU checks; initial process harness binary."
+    },
+    {
+      "run": "process-proof-20261002-a",
+      "status": "PROOF_AND_REPLAY_PASS_WEAKER_EXIT_EVIDENCE",
+      "reason": "Transient-unit GC erased post-exit identity/counters. Harness strengthened to capture live pidfd/cgroup identity before acknowledgement; primary evidence is run b.",
+      "proof_bytes": 1683948,
+      "execution_acceptance_export_ms": 181527
+    }
+  ],
+  "preservation": {
+    "all_failed_and_prior_runs_retained": true,
+    "worker_binary_identical_d_and_e": true,
+    "d_to_e_source_diff": "Only process_tests.rs changed; archived source comparison confirms test-only strengthening.",
+    "frozen_files_unchanged": true,
+    "shared_fixtures_unchanged": true,
+    "no_live_jobs": true
+  },
+  "pins": {
+    "target/block-v2-process-native-20261002-e/source.tar.gz": "faf0d8d4946c70a08755ebbab73614958b3832e44f345a1d4bd4ad7732ac9974",
+    "target/block-v2-process-native-20261002-e/cpu-lib-tests": "df6a5cd3fa9d8a7caec337d3f28bc3da5f7ac60fa4b2f9ddd5c5a3314db0ab2d",
+    "target/block-v2-process-native-20261002-e/cpu-worker": "cd92569b1c4ec5bc47d74fb4da4a7086ff0137a96f23ac9b2814a631e8fc0546",
+    "target/block-v2-process-proof-20261002-b/proof/pair.1.0": "c38bc6d4913ff601f38fc93c36f28176ee0d674ecb4244b7713693a96d311e6f",
+    "target/block-v2-process-proof-20261002-b/proof/task/result": "585e610928c990ca96de0c627b2e0bc8adcda793f989ddcb09d6d727fbf761dc",
+    "target/block-v2-process-proof-20261002-b/proof/worker-status.txt": "1ec5052a83598a704ad06b3cc3191aa6ce47720cac26890dda49f9872e0d7ba6",
+    "target/block-v2-process-proof-20261002-b/check.log": "56b4b73ff5f4fb3ae78fd22f6a1820e9f1b185ff881cbdf7b8d67452f9221985",
+    "target/block-v2-process-proof-20261002-b/proof.log": "71bf01cc47926ca8c8a4fc8bb35dad32d0fd3c36ebbf020c304599627041cf7d",
+    "target/block-v2-process-proof-20261002-b/replay.log": "653b2fc986d837842cf2feb1976573914e15f259cf82c194e691bf43a63d4676",
+    "target/block-v2-process-native-20261002-e.log": "e599000c42100a11aaf6b4f1434174bc5a514c9a9a23b204c644590563158aaa",
+    "target/block-v2-process-native-20261002-e-invocation.json": "48dab473b31a77ab17647f93869609ca2c9fb3210bd28ee7bd8bd18ce01cf31b",
+    "target/block-v2-process-proof-20261002-b-controller.log": "f8fbb89cef7ba44481b42526ab8f4644702668e136fda8fda51cb6f96e34a014",
+    "target/block-v2-process-proof-20261002-b-invocation.json": "243013ac4f7d85b2de589f4f02dfd7f2c1859d9dc8817c7f762d75b8a744c194",
+    "target/block-v2-process-proof-20261002-b/proof/worker-started.txt": "6e871450e7ef56b2dfe9162d669d692106d7decbf2f0ca4fa57c87e58c45968c",
+    "target/block-v2-process-proof-20261002-b/proof/task/spec": "ff70387343d6e76c765beb266ff3458b312c87457b1ee8b41f9071705d9c573d",
+    "target/block-v2-process-proof-20261002-b/proof/task/request": "fdd4b1bb6e56b49eeff257aead71297ef8c0a26baf28c008b669e4b4cc99635c",
+    "target/block-v2-process-proof-20261002-b/proof/task/token": "06ec36cd262da708449a91751dcb695b8029830a7c7231955a84e9ec80db9ad4"
+  },
+  "remaining": [
+    "Durable exact lease/service dispatch, uncertain or delayed launches, cancellation/expiry and restart reconciliation. Retain reservations until authoritative process/cgroup exit and verifier drain.",
+    "Physical scratch enforcement, aggregate task/launch-record admission, reference-aware retention/pruning and operational recovery runbook.",
+    "Actual executable-driven SingleWallet, Empty and Merge generation; current new proof generation is WrapPair only.",
+    "Arrival-driven complete candidates, host eligibility, all transaction types, cold64 and complete post-seal deadlines.",
+    "GPU data-movement optimization and repeated matched comparisons; full-tree soundness/zero-knowledge review, host integration and explicit activation."
+  ]
+}

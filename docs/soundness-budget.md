@@ -1,13 +1,18 @@
 # C-04 — soundness budget (Plonky3 spend circuit)
 
+> **Document role:** Authoritative quantitative soundness analysis for the production Plonky3 proof family.
+
 Resolves audit finding **C-04** ("~50-bit soundness on the 64-bit base field"). The production
 spend proof (`lattica-prover-p3/`) operates over the **Goldilocks** base field but draws all
 Fiat–Shamir / DEEP / FRI challenges from the **quadratic extension `F_p²`** (~127-bit), and uses FRI
-parameters chosen for a ≥100-bit *proven* and ≥128-bit *conjectured* security level. The numbers
-below are **machine-checked** by `full_spend_air::security_report()` and the
-`production_security_budget` test (which asserts proven ≥ 100 and conjectured ≥ 128), computed with
-Plonky3's own accounting (`StarkSecurityParams` / `ProvenSecurity` / `ConjecturedSecurity`,
-cross-checked against Ethereum's `soundcalc`).
+parameters chosen for a ≥100-bit *proven* and ≥128-bit *conjectured* security level. The proven level
+is **machine-checked** per production circuit by `proven_security_bits()` + the
+`proven_security_meets_production_floor` test (asserts proven ≥ 100) in both `joinsplit_air` and
+`htlc_air`, and is reported (with prove/verify timings + proof size) by each circuit's `measure()`,
+computed with Plonky3's own accounting (`StarkSecurityParams` / `ProvenSecurity`, cross-checked against
+Ethereum's `soundcalc`). Both production circuits share one `make_config` and resolve to the same
+budget. (The earlier `full_spend_air::security_report()` / `production_security_budget` names predate
+the Plonky3 join-split cutover and no longer exist.)
 
 ## Production parameters
 
@@ -22,7 +27,7 @@ cross-checked against Ethereum's `soundcalc`).
 | Commit grinding | 0 bits | |
 | `log_final_poly_len` / `max_log_arity` | 0 / **4** | fold to a constant, arity 16 (proof-size lever) |
 | Merkle cap height | **6** | 2⁶ cap ⇒ shorter query paths (proof-size lever) |
-| Trace | height **2048** (`DEPTH=32`), width 17 | 62 constraints, max degree 8 |
+| Trace | height **4096** (`NUM_BLOCKS = next_pow2(USED_BLOCKS) = 128`, `BLOCK=32`, `DEPTH=32`); width **19** (join-split) / **31** (htlc) | max constraint degree 8 (Poseidon2 round); same height/degree both circuits |
 
 The `max_log_arity` and `cap_height` values are FRI *encoding* choices — they shrink the proof with
 **no** effect on the security level (see the sweep below). They were chosen by `cargo run --bin
@@ -54,7 +59,11 @@ plateaus near 96 for this rate, so UDR is the binding (and reported) regime.
 
 ## Proof-size parameter sweep
 
-`cargo run --release --bin sweep` proves a real `DEPTH=32` spend at each FRI configuration and
+> **Frozen measurement** — the one-shot `sweep` harness that produced this table has been removed
+> (the chosen production parameters live in `lattica-prover-p3/src/config.rs`); the numbers remain
+> the decision record.
+
+`cargo run --release --bin sweep` (removed) proved a real `DEPTH=32` spend at each FRI configuration and
 measures proof size + timings next to the proven/conjectured bits. Headline rows (proven/conjectured
 are bits; proof in KB):
 
@@ -84,6 +93,12 @@ What the data shows:
 ## Two further levers, measured (and rejected)
 
 ### Trace height / padding (`DEPTH` recompiles)
+> **Historical (pre-v3) figures.** This sweep predates the current layout and counts only one input
+> span (36 blocks → 64). The current circuits use the **total** `USED_BLOCKS` (80 join-split / 88 htlc)
+> padded to **128** ⇒ **height 4096**; the production proof is ~0.42–0.47 MB. The lever's *conclusion*
+> (proof size ~logarithmic in height; padding is cheap) still holds. Re-measure before quoting absolute
+> numbers.
+
 `DEPTH=32` uses 36 blocks, padded to 64 (height 2048, ~44% "dead"). Measured at the production FRI
 params:
 
@@ -114,10 +129,34 @@ Poseidon2 is **width 16** (298 cols vs 180); (2) the **extension field is ~16 by
 Net ~4% for a full circuit rewrite plus multi-limb `u64` value/range/balance arithmetic. **Not
 worth it** — Goldilocks stays.
 
-## Batch aggregation — one proof per block (measured)
+## Batch aggregation — legacy circuit and frozen measurements
 
-`cargo run --release --bin batch` proves a batch of `n` spends as a **single** proof (the spend AIR
-tiled `n` times in one trace) at the production FRI params:
+> **Superseded block-path guidance:** the measurements and v1 circuit limits below remain historical
+> evidence. [Block-proving v2](block-proving-v2.md) excludes direct witness batches and individual
+> proofs retained in blocks, even as interim paths. Its separate cubic/q128 profile is candidate/inactive,
+> unfrozen pending complete-tree soundness and bounded recursion. This document's per-proof v1
+> figures are not v2 security or performance results. Four-transaction/two-level v2
+> measurements now exist; the depth-six/64-transaction and incremental deadline
+> gates remain unqualified. See the [current evidence](bounded-execution-engine.md).
+
+The production batch circuit `lattica-prover-p3::batch_joinsplit_air` proves `n` **distinct** join-split
+transactions as a **single** proof (the spend AIR tiled `n` times, per-tile self-contained, with an
+in-circuit fold of each tile's statement into one **block tx-root** public input). The table below is
+the original size/verify measurement (identical tiles, size-representative); the production circuit adds
+the staging columns + the fold (a few extra columns + the trailing free padding blocks — the tile stays
+2^12 rows, so the sizes are unchanged).
+
+**Proven-soundness floor ⇒ `MAX_BATCH_TILES = 64`.** Recomputed at batch height (`batch_proven_security_bits`):
+103 bits through n=8, 102 @ n=16, 101 @ n=32, **100 @ n=64 (height 2^18)**, 99 @ n=128. So one proof
+covers up to **64** transactions at the ≥100-bit floor. The previous suggestion to use multiple
+batch proofs for larger blocks is superseded and is not an approved v2 fallback. The legacy limit
+is enforced by `prove_batch_to_bytes` + the `batch_proven_security_floor` test.
+
+> **Frozen measurement** — the one-shot `batch` harness has been removed (the batch circuit lives in
+> `batch_joinsplit_air.rs` with its `--ignored` proving tests); the numbers remain the decision record.
+
+`cargo run --release --bin batch` (removed) proved a batch of `n` spends as a **single** proof (the
+spend AIR tiled `n` times in one trace) at the production FRI params:
 
 | n | proven | proof KB | per-spend KB | vs n separate | prove ms | verify ms |
 |---|---|---|---|---|---|---|
@@ -133,17 +172,25 @@ tiled `n` times in one trace) at the production FRI params:
   ~431 MB as separate proofs (**~600×**).
 - **Verify is ~constant** (7–9 ms) regardless of n — a validator checks **one** proof per block.
 - Security holds (proven ≥ 102 through n=32).
-- **Cost: proving is monolithic and ~linear in n** (n=32 ≈ 70 s) — the block producer proves the
-  whole block. This is the batch AIR's limit vs *true recursion* (each user proves their own spend;
-  the producer aggregates fixed-size proofs in parallel). The batch AIR needs **no recursive
-  verifier**, so it's the pragmatic first step; recursion is the scale-out when monolithic / per-user
-  independent proving becomes the constraint. (The `n` spans here are identical — size-representative;
-  a production batch carries distinct spends bound by an aggregate public-input hash, same size.)
+- **Cost: proving is monolithic and ~linear in n** (n=32 ≈ 70 s), and the prover needs every private
+  transaction witness. That custody requirement excludes this circuit as the permissionless v2
+  block path. The `n` spans here are identical and size-representative; the implemented batch
+  circuit carries distinct spends bound by an aggregate public-input hash.
 
-**Conclusion:** the realized per-proof win is the FRI encoding (arity + cap, −49%, adopted). The
-field and trace levers don't help proof size (≤5% / ~4%). The structural lever — **batching toward
-one proof per block** — is the real headroom: measured ~log(n) growth ⇒ ~600× smaller and constant
-verify at block scale, at the cost of monolithic proving (which true recursion later removes).
+**Historical conclusion:** FRI encoding (arity + cap, −49%) and the batch circuit demonstrated ways
+to amortize proof size. The extrapolation to 1024 spends above is not a supported legacy batch size
+or a v2 benchmark. The implemented batch circuits and their audit facts are retained unchanged.
+
+**Current block-path decision:** [block-proving-v2.md](block-proving-v2.md) requires wallet-local
+proofs and incremental hash/FRI recursion, with one final proof ≤2 MiB and a new ordered64 root for
+at most 64 total transactions including issuance. The 12-minute cadence is a host design target.
+The bounded engine now demonstrates a real four-transaction/two-level proof with
+root-only verification after deleting inner artifacts; see the
+[current evidence](bounded-execution-engine.md). That acceptance result is not a
+complete-tree soundness or zero-knowledge proof. Per-proof estimates, old batch
+measurements, and resource preflights also do not establish the full v2 security
+or depth-six/64-transaction performance gates.
+
 
 ## Parameter hardening (was demo-sized in M4c)
 

@@ -1,0 +1,42 @@
+{
+  "schema": "block-v2-gpu-quotient-full-size-attempt-v1",
+  "status": "FAILED_OR_INTERRUPTED",
+  "production_ready": false,
+  "speedup_qualified": false,
+  "control": {
+    "status": "GPU_PROOF_VERIFIED_RESEARCH_ONLY",
+    "recursive_seconds": 302.605,
+    "readback": 1,
+    "cpu_quotient_fusion": 1,
+    "gpu_quotient_lde": 0,
+    "completed_runs": 1,
+    "manifest": "lattica-prover-p3/target/block-v2-pipeline-quotient-pairs-20261003-b/evidence/round-1-ram-reference/manifest.json",
+    "manifest_sha256": "f2f5a19a4823cee6755d03adcf433c4316dc526572aaaea40f688b6770519674"
+  },
+  "candidate": {
+    "status": "FAILED_OR_INTERRUPTED",
+    "completed_runs": 0,
+    "failure_stage": "first paired wrapper, GPU quotient output allocation",
+    "error": "GPU quotient commitment failed; no silent fallback: \"LDE row-major reservation: memory allocation failed because the memory allocator returned an error\"",
+    "manifest": "lattica-prover-p3/target/block-v2-pipeline-quotient-pairs-20261003-b/evidence/round-1-ram-candidate/manifest.json",
+    "manifest_sha256": "8c99af9b8ade37c93c823ec4118816eadeb5cf81d73bb5bf1ab090e75c8d84e3",
+    "log": "lattica-prover-p3/target/block-v2-pipeline-quotient-pairs-20261003-b/evidence/round-1-ram-candidate/03-pairs.log",
+    "log_sha256": "4428026b19c9d79a8dc23fd6547bbdc527f03d726fdd3e8be6e6209ac347056b",
+    "peak_worker_ram_bytes": 37771378688,
+    "observed_oom_events": 0,
+    "observed_oom_kill_events": 0,
+    "minimum_observed_scratch_free_bytes": 2801475584,
+    "configured_spill_reservation_limit_bytes": 36507222016,
+    "configured_worker_ram_limit_bytes": 47244640256
+  },
+  "diagnosis": {
+    "confirmed": "A fallible HostReadback reservation failed; no sampled cgroup OOM event or kernel OOM kill was observed.",
+    "working_hypothesis": "GPU quotient readback is allocated through the armed spill allocator, whereas CPU fused quotient outputs retain bounded heap storage. The 34 GiB spill reservation budget may be exhausted before the 44 GiB worker RAM limit. This needs allocation-specific counters to confirm.",
+    "automatic_retry": false
+  },
+  "next_steps": [
+    "Independently qualify CPU quotient fusion with five matched pairs against parallel-readback baseline.",
+    "Add allocation-specific accounting and explicitly bounded quotient output storage, preserving all resource caps.",
+    "Use a fresh candidate snapshot and attempt directory for full-size qualification before a new five-pair GPU comparison."
+  ]
+}

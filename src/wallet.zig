@@ -1,8 +1,9 @@
 //! Lattica wallet CLI.
 //!
 //! `lattica-wallet demo` runs a complete post-quantum shielded transfer end to end against an
-//! in-memory chain and narrates every step. `keygen` prints a deterministic account, and
-//! `bench` times the (stub) authorization proof alongside the real PQ primitive sizes.
+//! in-memory chain and narrates every step. `exchange` demos the shared-KEM exchange deposit-address
+//! flow (per-user deposit addresses, O(1) detection). `keygen` prints a deterministic account, and
+//! `bench` times on-chain hashing and reports PQ primitive sizes; proof timings live in Rust.
 
 const std = @import("std");
 const p = @import("primitives.zig");
@@ -31,12 +32,14 @@ pub fn main(init: std.process.Init) !void {
 
     if (std.mem.eql(u8, cmd, "demo")) {
         try demo(a);
+    } else if (std.mem.eql(u8, cmd, "exchange")) {
+        try exchangeDemo(a);
     } else if (std.mem.eql(u8, cmd, "keygen")) {
         try keygen();
     } else if (std.mem.eql(u8, cmd, "bench")) {
         try bench(init.io);
     } else {
-        std.debug.print("unknown command: {s}\nusage: lattica-wallet [demo|keygen|bench]\n", .{cmd});
+        std.debug.print("unknown command: {s}\nusage: lattica-wallet [demo|exchange|keygen|bench]\n", .{cmd});
         std.process.exit(2);
     }
 }
@@ -60,15 +63,16 @@ fn elapsedMs(t0: std.Io.Timestamp, t1: std.Io.Timestamp) f64 {
 fn bench(io: std.Io) !void {
     const iters: u32 = 5000;
     const fiters: f64 = @floatFromInt(iters);
-    var sink: u64 = 0;
 
     // The in-circuit / on-chain hash primitive.
     var st = [_]u64{ 1, 2, 3, 4, 5, 6, 7, 8 };
     const t0 = std.Io.Clock.now(.awake, io);
     var i: u32 = 0;
-    while (i < iters) : (i += 1) poseidon2.permute(&st);
+    while (i < iters) : (i += 1) {
+        poseidon2.permute(&st);
+        std.mem.doNotOptimizeAway(&st);
+    }
     const permute_us = elapsedMs(t0, std.Io.Clock.now(.awake, io)) * 1000.0 / fiters;
-    sink +%= st[0];
 
     // On-chain note commitment.
     const rcp = [_]u8{3} ** 32;
@@ -77,21 +81,32 @@ fn bench(io: std.Io) !void {
     const nk = [_]u8{5} ** 32;
     const t1 = std.Io.Clock.now(.awake, io);
     i = 0;
-    while (i < iters) : (i += 1) sink +%= p.noteCommitment(.{ .recipient = &rcp, .value = 1000, .rho = &rho, .rcm = &rcm })[0];
+    // Vary the input and consume the whole digest so optimized builds do all the work.
+    while (i < iters) : (i += 1) {
+        const digest = p.noteCommitment(.{ .recipient = &rcp, .value = 1000 + i, .rho = &rho, .rcm = &rcm });
+        std.mem.doNotOptimizeAway(&digest);
+    }
     const commit_us = elapsedMs(t1, std.Io.Clock.now(.awake, io)) * 1000.0 / fiters;
 
     // On-chain nullifier.
     const t2 = std.Io.Clock.now(.awake, io);
     i = 0;
-    while (i < iters) : (i += 1) sink +%= p.nullifier(&nk, &rho, i)[0];
+    while (i < iters) : (i += 1) {
+        const digest = p.nullifier(&nk, &rho, i);
+        std.mem.doNotOptimizeAway(&digest);
+    }
     const nf_us = elapsedMs(t2, std.Io.Clock.now(.awake, io)) * 1000.0 / fiters;
 
     // Merkle internal node.
-    const left = [_]u8{1} ** 32;
+    var left = [_]u8{1} ** 32;
     const right = [_]u8{2} ** 32;
     const t3 = std.Io.Clock.now(.awake, io);
     i = 0;
-    while (i < iters) : (i += 1) sink +%= tree.merkleHash(&left, &right)[0];
+    while (i < iters) : (i += 1) {
+        std.mem.writeInt(u32, left[0..4], i, .little);
+        const digest = tree.merkleHash(&left, &right);
+        std.mem.doNotOptimizeAway(&digest);
+    }
     const merge_us = elapsedMs(t3, std.Io.Clock.now(.awake, io)) * 1000.0 / fiters;
 
     std.debug.print("Lattica on-chain hashing — Poseidon2-Goldilocks ({d} iters)\n", .{iters});
@@ -104,7 +119,6 @@ fn bench(io: std.Io) !void {
     std.debug.print("  ML-DSA pk    : {d} bytes\n", .{p.PK_LEN});
     std.debug.print("  ML-KEM ct    : {d} bytes\n", .{p.CT_LEN});
     std.debug.print("  join-split proof: ~0.5 MB (transparent, hash-based; prove/verify timed in lattica-prover-p3)\n", .{});
-    if (sink == 0xdead_beef) std.debug.print("", .{}); // keep `sink` live
 }
 
 fn demo(a: std.mem.Allocator) !void {
@@ -172,4 +186,48 @@ fn demo(a: std.mem.Allocator) !void {
 
     std.debug.print("\nEvery cryptographic step above relies only on hash and lattice hardness —\n", .{});
     std.debug.print("no elliptic-curve discrete log anywhere. Quantum-safe by construction.\n", .{});
+}
+
+fn exchangeDemo(a: std.mem.Allocator) !void {
+    std.debug.print("=== Lattica: exchange deposit-address demo (shared-KEM, O(1) detection) ===\n\n", .{});
+
+    node.mock.install();
+    defer node.mock.uninstall();
+
+    var chain = try node.Chain.init(a);
+    const exch = try tx.FullKey.fromSeed([_]u8{42} ** 32);
+    const epoch: u32 = 0;
+    const n_users: u32 = 4;
+    std.debug.print("One exchange wallet hands each user a distinct diversified DEPOSIT address (indices\n", .{});
+    std.debug.print("0..{d}) that all share ONE ML-KEM key — so the hot scanner needs one decap per note,\n", .{n_users});
+    std.debug.print("not one per user. The spend key stays offline.\n\n", .{});
+
+    // Three users deposit (simulated here as mints straight to their deposit addresses).
+    const deposits = [_]struct { user: u32, value: u64 }{
+        .{ .user = 0, .value = 500 },
+        .{ .user = 2, .value = 1200 },
+        .{ .user = 3, .value = 75 },
+    };
+    for (deposits) |d| {
+        const addr = try exch.exchangeAddressAt(d.user, epoch);
+        var seed: [32]u8 = [_]u8{0} ** 32;
+        std.mem.writeInt(u32, seed[0..4], d.user, .little);
+        _ = try chain.bootstrapMint(addr, d.value, seed);
+        std.debug.print("[deposit] user #{d} ← {d}; deposit address {s}… (shared KEM key)\n", .{ d.user, d.value, hex6(&addr.recipient_id) });
+    }
+    std.debug.print("\n", .{});
+
+    // The hot deposit scanner: shared KEM secret + a recipient→user map, NO spend key.
+    var evk = try exch.exchangeViewingKey(a, n_users, epoch);
+    defer evk.deinit();
+    std.debug.print("[scan]    scanning {d} on-chain notes with the exchange viewing key (one decap each)…\n", .{chain.transmitted.items.len});
+    var credited: u64 = 0;
+    for (chain.transmitted.items) |tn| {
+        if (evk.detect(a, tn)) |hit| {
+            credited += hit.note.value;
+            std.debug.print("          credit user #{d}: {d} (asset {d})\n", .{ hit.index, hit.note.value, hit.note.asset });
+        }
+    }
+    std.debug.print("\nTotal credited: {d}. Each deposit is attributed to its user by the committed\n", .{credited});
+    std.debug.print("recipient — not the malleable wire diversifier — and the spend key never came online.\n", .{});
 }

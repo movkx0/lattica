@@ -1,0 +1,122 @@
+{
+  "schema": "block-v2-local-dag-checkpoint-v1",
+  "captured_utc": "2026-10-02T05:47:51Z",
+  "status": "IN_MEMORY_DAG_NATIVE_VALIDATED_DURABLE_SERVICE_PENDING",
+  "production_ready": false,
+  "default_enabled": false,
+  "local_dag_service_complete": false,
+  "scope": "Bounded single-owner in-memory candidate, dependency and attempt scheduling; no durable journal, OS/device enforcement, real proving worker or host lifecycle integration.",
+  "implementation": {
+    "files": [
+      "lattica-prover-p3/src/block_v2/execution/mod.rs",
+      "lattica-prover-p3/src/block_v2/execution/dag.rs",
+      "lattica-prover-p3/src/block_v2/execution/resources.rs",
+      "lattica-prover-p3/src/block_v2/execution/dag_tests.rs",
+      "lattica-prover-p3/src/block_v2/execution/job.rs"
+    ],
+    "feature_gate": "block-v2; no default verifier, proof format, ABI or production activation change",
+    "admission": "Append-only existing dependencies, recomputed ordered merge semantics, bounded metadata/artifacts, full-depth nonempty candidate attachment.",
+    "identity": "Immutable semantic jobs; first-admitted randomized wallet artifacts retained; leases freeze exact ordered input digests and bytes.",
+    "lifecycle": "Explicit host eligibility stamp, seal/cancel, earliest-deadline then higher-ready-level ordering, session/epoch fencing, idempotent completion and monotonic time.",
+    "verification": "Only CPU-verified private job tickets can publish results. Structural tests use explicitly cfg(test)-only synthetic tickets; production constructors are unchanged.",
+    "reservations": "Aggregate RAM/VRAM/scratch/threads and maximum output space reserved before dispatch; cancellation/expiry retain reservation until authoritative worker stop and verification completion.",
+    "pruning": "No graph pruning while any reservation remains unreleased; recovery window begins at actual attempt release; retained parents preserve full dependency closure.",
+    "limits": {
+      "jobs_at_most": 4096,
+      "candidates_at_most": 256,
+      "attempts_at_most": 16384,
+      "artifact_bytes_at_most": 536870912,
+      "worker_ram_bytes_at_most": 48318382080,
+      "coordinator_ram_reserved_bytes": 3221225472,
+      "vram_bytes_at_most": 12884901888,
+      "scratch_bytes_at_most": 137438953472,
+      "worker_threads_at_most": 256
+    },
+    "boundaries": "Caller must drive monotonic time and stop/verification acknowledgements. Ledger is not OS/device enforcement. Host spend eligibility is external. New sessions fence handles, not surviving OS workers."
+  },
+  "validation": {
+    "initial": {
+      "unit": "lattica-v2-dag-scheduler-native-20261002-a.service",
+      "status": "COMPILE_PASS_TEST_PRIORITY_ASSUMPTION_FAILED",
+      "passed": 18,
+      "failed": 1,
+      "ignored": 1,
+      "runtime_seconds": 72.002,
+      "reason": "A test incorrectly required a ready level-one parent to outrank already-ready higher-level padding. Corrected to assert readiness and the documented ordering; no implementation relaxation."
+    },
+    "corrected": {
+      "unit": "lattica-v2-dag-scheduler-native-20261002-b.service",
+      "status": "PASS",
+      "runtime_seconds": 80.266,
+      "cpu_seconds": 79.911,
+      "structural_passed": 21,
+      "dag_structural_passed": 15,
+      "job_structural_passed": 5,
+      "resource_structural_passed": 1,
+      "explicit_pinned_cpu_replays_passed": 1,
+      "checks": [
+        "release CPU test build with block-v2-wide-lanes,stream",
+        "release block-v2 library without stream",
+        "release all-features/all-targets",
+        "release default library",
+        "rustfmt edition 2021 --check on execution modules",
+        "git diff --check",
+        "tar --compare of every archived source file"
+      ],
+      "service_ram_limit_bytes": 3221225472,
+      "service_swap_limit_bytes": 0,
+      "service_runtime_limit_seconds": 1200,
+      "observed_memory_peak_formatted": "1.4G",
+      "observed_swap_bytes": 0,
+      "exclusive_lease": true,
+      "gpu_disabled": true
+    }
+  },
+  "coverage": [
+    "Unknown dependencies/wrong bytes and partial/empty candidate rejection.",
+    "Dependency-driven readiness without unrelated sibling barrier; documented priority.",
+    "Randomized artifact substitution rejection, ordered merge inputs and idempotent completion.",
+    "Cancellation/expiry during workers and verification, reservation lifetime, retries and backwards-time rejection.",
+    "Shared candidate cancellation, exact eligibility/sealing, time-aware result lookup and incremental prefix reuse.",
+    "Wrong-job/changed-byte/failed CPU tickets and worker failure never publish dependencies.",
+    "Aggregate RAM/VRAM/scratch/thread/output-space/deadline checks and bounded metadata history.",
+    "Fresh-session handle fencing and transitive pruning closure.",
+    "127-node/64-leaf synthetic graph with shuffled workers; NOT a full64 cryptographic proof.",
+    "Separate existing eight-wallet/root CPU replay; NOT real-worker/DAG proof generation."
+  ],
+  "pins": {
+    "source_archive": {
+      "path": "lattica-prover-p3/target/block-v2-dag-scheduler-native-20261002-b/source.tar.gz",
+      "sha256": "38603002e327b74a198a0d9451ac6c3177701ca16d9f58babf4897baac0db5de"
+    },
+    "cpu_test_binary": {
+      "path": "lattica-prover-p3/target/block-v2-dag-scheduler-native-20261002-b/cpu-lib-tests",
+      "sha256": "d7edd93d58c6c95a8672c2bfb76cb620c683e71a123369e122b1a123ce90c858"
+    },
+    "corrected_log": {
+      "path": "lattica-prover-p3/target/block-v2-dag-scheduler-native-20261002-b.log",
+      "sha256": "d7f618b421b8e8567fb74854cb7bd630d3cbda0bd051f65f27880dfb4603874a"
+    },
+    "failed_log": {
+      "path": "lattica-prover-p3/target/block-v2-dag-scheduler-native-20261002-a.log",
+      "sha256": "2030201c21ce076b2aa612134bc61c3af2a9baf303966c5782d4f9a1a2840c0c"
+    },
+    "invocation": {
+      "path": "lattica-prover-p3/target/block-v2-dag-scheduler-native-20261002-b-invocation.json",
+      "sha256": "5fbcbfe42e12d71abf66a830652573bed123f457800bc1b607eb3d6b22ffa627"
+    }
+  },
+  "preservation": {
+    "docs/dag-gpu-implementation.md": "c23df407b56a47b1ec66f6821349d38be258ea4f7c43db432086124580a27ae7",
+    "lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+    "lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+    "lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614"
+  },
+  "remaining": [
+    "Durable journal and artifact store, crash recovery, CPU revalidation and surviving-worker reconciliation.",
+    "Real bounded CPU/GPU worker adapters and OS/device resource enforcement.",
+    "Arrival-driven correctness and latency harness; host-callable submit/status/seal/cancel integration.",
+    "GPU data movement and per-proof performance work with matched qualification.",
+    "Full64 cold and complete post-seal gates, full transaction types, complete-tree soundness/ZK review, host integration and explicit activation."
+  ]
+}

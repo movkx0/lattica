@@ -1,5 +1,7 @@
 # Remediation status
 
+> **Document role:** Current index of closed findings and residual host-chain obligations.
+
 Current state of audit-finding remediation. **Entry point for reviewers: `docs/AUDITORS.md`.**
 
 ## Current live path (M6 cutover — COMPLETE)
@@ -10,9 +12,12 @@ The live node runs the **Plonky3 join-split** path end to end:
   `lattica_joinsplit_prove`.
 - On-chain hashing is Poseidon2-Goldilocks (`src/poseidon2.zig`), KAT-equal to the circuit, so the
   node-reconstructed public inputs equal the proof's.
-- The pre-Plonky3 cluster (`stark.zig`, `rescue.zig`, `circuit.zig`, the Winterfell `lattica-prover`,
-  `lattica_spend_verify`) has been **removed**. References to those in older revisions of this file
-  are obsolete.
+- The pre-Plonky3 Zig cluster (`src/stark.zig`, `src/rescue.zig`, `src/circuit.zig`) has been
+  **removed**, and the pre-Plonky3 one-input verify boundary (`SpendPublicInputs` / `verifySpend` /
+  `lattica_spend_verify`) is **off the live path** — `src/ffi.zig` exposes only the join-split + HTLC
+  seams (audit r3 / M-11). The Winterfell `lattica-prover/` crate is **retained as a reference-only
+  differential oracle** for the hashes (marked "not audited as production" in `docs/audit-scope-p3.md`),
+  not a production artifact; its internal `lattica_spend_verify` is that reference crate's own ABI.
 
 So the earlier "✅ in new stack (not live)" caveats are resolved: the new stack **is** the live path.
 
@@ -56,15 +61,36 @@ M-01..M-04 (ABI/codec/alloc hardening), L-01/L-02 (docs + format). All addressed
 - **L-03** README rewritten to the Plonky3 join-split path (removed-file refs deleted; `tx_binding`
   replaces the ML-DSA binding-signature flow); points to `AUDITORS.md`.
 
-See the **Developer Remediation Response** tables (Round 1, Round 2, Round 3) in
-`docs/lattica-implementation-audit.md` for the finding-by-finding mapping. Re-validated each round
-(31 Rust tests as of round 3, full Zig suite incl. the production-mode probe, `zig build
-check-production`, and the real cross-language integration — ghost-coin rejected through the real Rust
-verifier).
+**v3-audit re-audit** (Codex, 2026-06-28, against tag `v3-audit`) — new findings addressed:
+- **M-11** legacy one-input spend FFI surface removed — `SpendPublicInputs`/`verifySpend`/`setBackend`/
+  `clearBackend` deleted from `src/ffi.zig` (the live node uses the join-split + HTLC seams, both
+  size-guarded); `ffi.zig` header + `docs/audit-scope-p3.md` (trust model, proof-serialization layout,
+  frozen-params note) rewritten to the `lattica_joinsplit_verify`/`lattica_htlc_verify` shapes.
+- **P-01** full-node consensus integration — out of lattica's scope (host chain); the HTLC-specific
+  production requirements are specified in `docs/full-node-security-integration.md`. No in-package change.
+
+See the **Developer Remediation Response** tables (Round 1–3 + the v3-audit re-audit) in
+`docs/lattica-implementation-audit.md` for the finding-by-finding mapping. Re-validated each round (the
+Rust circuit/ABI suite + the exhaustive `--ignored` audit suite, the full Zig suite incl. the
+production-mode probe, `zig build check-production`, and the real cross-language integration — incl. the
+v3 HTLC lock→redeem lifecycle).
 
 ## Out of lattica's scope (host chain `rubble-node-zig`)
 
-Block consensus / PoW / mempool / networking / emission schedule, and block-level commitments
-(state-root, nullifier-set-root, event-root, header) + reorg undo logs. lattica provides the
-shielded-tx + issuance *mechanisms* and the node-visible supply accumulator; the host chain owns
-block-level supply recomputation and commitments.
+Block consensus / PoW / mempool / networking / emission schedule, block/tx canonical encoding, reorg
+undo records, mempool duplicate-nullifier/anchor-window policy, and real-verifier startup attestation.
+
+**P-01 lattica-side enablers (built; the host chain wires them).** The node owns the shielded state, so
+the consensus-critical *state* surface is now exposed for the host chain to bind in block headers and
+recompute on genesis replay (`docs/lattica-implementation-audit.md` P-01 response):
+- `Chain.stateRoot()` = H(note-tree root ‖ nullifier-set accumulator ‖ `SupplyState.commitment()`) — a
+  binding, genesis-replayable shielded-state commitment (note set + nullifier set + public supply).
+- `Chain.eventRoot()` + `Chain.redeemEvents()` — the canonical HTLC redeem-preimage event stream (for
+  cross-chain watchers) and its committed root.
+- `Chain.positionOf(cm)` / `Chain.merklePathForCommitment(cm)` — the commitment index that locates the
+  placeholder-ciphertext HTLC note for watchers/wallets.
+- `applyHtlc` consensus-height pinning (`current_height == at_height`) + the deterministic supply +
+  nullifier accumulators.
+
+The host chain still owns block-structure commitments (tx root + per-block event root over block bytes),
+reorg undo, and the surrounding consensus pipeline.

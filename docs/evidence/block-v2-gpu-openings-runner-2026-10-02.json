@@ -1,0 +1,145 @@
+{
+  "schema": "block-v2-gpu-openings-runner-v1",
+  "captured_utc": "2026-10-02 04:43:32 UTC",
+  "status": "OPENING_RUNNER_INTEGRATED_KEYS_MATCH_CPU_RESEARCH_ONLY",
+  "production_ready": false,
+  "default_enabled": false,
+  "repeat_qualified": false,
+  "full64_qualified": false,
+  "scope": "Bounded grouped-eight controller/runner integration, actual executable rejection gates, small GPU proof regressions and independent full-size preprocessing-key reproduction. Not a recursive performance result.",
+  "implementation": {
+    "files": [
+      "lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py",
+      "lattica-prover-p3/scripts/test-block-v2-gpu-grouped-trial.py",
+      "lattica-prover-p3/scripts/test-block-v2-gpu-grouped-entrypoints.py",
+      "lattica-prover-p3/src/bin/block_v2_gpu_grouped_probe.rs"
+    ],
+    "controller_schema": "gpu-grouped-eight-v2",
+    "flag": "--gpu-openings {0,1}; default 0; mode 1 requires resident backend",
+    "child_environment": "Explicit LATTICA_V2_GPU_OPENINGS; CPU-only stages force 0. The GPU executable rejects missing/invalid selection before device initialization.",
+    "registration_binding": "Opening mode, backend, profile/statement, device, source archive, controller and executables must match. v1 manifests are not accepted as v2 evidence.",
+    "opening_call_counts": {
+      "registration": 0,
+      "wrap_all": 4,
+      "merge_all": 3,
+      "individual_wrap_or_merge": 1,
+      "disabled": 0
+    },
+    "transfer_accounting": "One final cumulative opening checkpoint per GPU stage; opening transfers remain separate from core transfers and are summed once in recorded_host_device_transfers / recorded_proof_gpu_transfers.",
+    "timing_accounting": "Opening wall time is a nonadditive subset of recursive stage time. It is not added to elapsed proving time.",
+    "unchanged": "CPU reference/auditor, proof format, AIR/security parameters, default ABI and production activation."
+  },
+  "validation": {
+    "initial_build": {
+      "unit": "lattica-v2-gpu-openings-runner-20261002-a.service",
+      "status": "NATIVE_TESTS_AND_BUILDS_PASS_ENTRYPOINT_DEPENDENCY_REJECTED",
+      "controller_tests_passed": 35,
+      "selected_native_library_tests_passed": 27,
+      "runner_and_common_tests_passed": 14,
+      "preserved_failure": "The first entrypoint invocation supplied the older independent CPU reference binary, which predates the current resident-flag rejection. Its expected rejection text differed; no GPU proof failed in this check."
+    },
+    "corrected_validation": {
+      "unit": "lattica-v2-gpu-openings-runner-validation-20261002-b.service",
+      "status": "PASS",
+      "actual_entrypoint_rejection_cases": 24,
+      "entrypoint_scope": "actual executable rejection paths only; no GPU initialization or proof",
+      "checks": [
+        "release all-features/all-targets",
+        "release default library"
+      ],
+      "lifecycle_tests": [
+        "capture_exit",
+        "observer_failure",
+        "controller_death"
+      ],
+      "independent_cpu_reference_replaced": false,
+      "current_cpu_only_test_binary_sha256": "80d839127b4dc10a40c1fc170d2359487822ee667680757febd289cdeff38ae6"
+    },
+    "explicit_gpu_regressions": {
+      "status": "PASS",
+      "tests_passed": 11,
+      "scope": "Exact cubic reduction, transcript/preprocessing equivalence, queue cleanup and small full-strength CPU-verified proofs; not recursive performance qualification",
+      "all_individual_checks_passed": true,
+      "resource_cumulative": {
+        "memory.current": "19066880",
+        "memory.peak": "343072768",
+        "memory.max": "3221225472",
+        "memory.swap.current": "0",
+        "memory.swap.peak": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "cpu.stat": "usage_usec 8818423\nuser_usec 5252933\nsystem_usec 3565490\nnice_usec 0\ncore_sched.force_idle_usec 0",
+        "io.stat": null
+      }
+    }
+  },
+  "registration": {
+    "manifest": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/manifest.json",
+    "status": "GPU_KEYS_MATCH_CPU_RESEARCH_ONLY",
+    "backend": "resident",
+    "gpu_openings": 1,
+    "quotient_fusion": 0,
+    "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "external": [
+      "8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb",
+      "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+      "23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"
+    ],
+    "keys": [
+      {
+        "stage": "key-1",
+        "bytes": 2048,
+        "sha256": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5",
+        "opening_calls": 0
+      },
+      {
+        "stage": "key-2",
+        "bytes": 2048,
+        "sha256": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802",
+        "opening_calls": 0
+      },
+      {
+        "stage": "key-3",
+        "bytes": 2048,
+        "sha256": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99",
+        "opening_calls": 0
+      }
+    ],
+    "configured_limits": {
+      "aggregate_ram_bytes": 51539607552,
+      "aggregate_scratch_bytes": 137438953472,
+      "controller_ram_bytes_at_most": 3221225472,
+      "controller_runtime_seconds_at_most": 21600,
+      "log_bytes_per_stage": 67108864,
+      "spill_bytes": 128849018880,
+      "swap_bytes": 0,
+      "vram_log_bytes_per_stage": 8388608,
+      "worker_ram_bytes": 47244640256,
+      "worker_runtime_seconds": 7200,
+      "worker_vram_limit_mib": 12288
+    },
+    "scope": "Registration checks full-size preprocessing commitments, not recursive opening execution or complete post-seal latency."
+  },
+  "implementation_pins": {
+    "accounting": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+    "auditor": "ae9ea1ddf846771c373b3dd5cf2e188087819de4294e25d27b85500e66f1af53",
+    "controller": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614",
+    "cpu_runner": "2383b260de5283ddcb6c1ce2408fb8139065fc109c8181ec602cc20ca095db3c",
+    "gpu_runner": "fc608cdadade7ed13d9d3e7ddb5cd6f96dd26e90a7d167ccc5a9fb00e35729dd",
+    "helpers": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+    "source_archive": "6f0d258df141d301dbbff1a860deb274c9bed401625fbb49d76d44ea3eff55ef"
+  },
+  "evidence_pins": {
+    "lattica-prover-p3/target/block-v2-gpu-openings-runner-20261002-a.log": "df590c714be4b2e567f728a995ee69af6aa00dd3393944f5ab80c1118df07496",
+    "lattica-prover-p3/target/block-v2-gpu-openings-runner-validation-20261002-b.log": "55fda442153b210d952bd3e074940f463e05c35f1cdef0bea0e4f32ef234f1e5",
+    "lattica-prover-p3/target/block-v2-gpu-openings-runner-qualification-20261002-a/manifest.json": "e1b20877e67d352edcfc7f5a0ba5990654f6abb9bac4811717179a64f6b25cca",
+    "lattica-prover-p3/target/block-v2-gpu-openings-runner-validation-20261002-b/lifecycle-evidence/manifest.json": "c3decbf0f680495fa8f4ffc322e28b67b6b48c1d6d6f19ad98df24bdc1138eb8",
+    "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/manifest.json": "eb06ae502cece850e24105a426cd6a26ad9d6339a237ca49e64b6613dd7e28b1"
+  },
+  "remaining": [
+    "Full eight-wallet/seven-proof recursive qualification through the opening-enabled consumer, including local pruning and independent CPU root audit.",
+    "Fresh same-build retained-hash control and at least five alternating matched pairs before speedup claims; old readback timings are separate historical evidence.",
+    "Minimal local incremental DAG and recovery; irregular/odd/mixed/issuance/full64 correctness and complete deadline measurements.",
+    "Cold64 <=10 minutes, complete post-seal <=3 minutes, one root <=2 MiB, aggregate RAM48/VRAM12/scratch128 GiB.",
+    "Complete-tree soundness and zero-knowledge review, versioned Zig/host integration and explicit activation."
+  ]
+}

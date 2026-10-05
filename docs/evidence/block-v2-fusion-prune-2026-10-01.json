@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "captured_utc": "2026-10-01 15:18:15 UTC",
+  "status": "SYNTHETIC_CLEANUP_TESTS_PASSED_REAL_CLEANUP_NOT_ATTEMPTED",
+  "scope": "Separate cleanup controller for the sixteen copied wallet proofs in the two completed fusion-registration jobs. No real experiment artifacts were deleted.",
+  "source_sha256": {
+    "lattica-prover-p3/scripts/block-v2-fusion-prune.py": "81e7b9b4d700b7dacfc3cd858cf54bf6a436b9b81a4712395ef7d2c14db5a06c",
+    "lattica-prover-p3/scripts/test-block-v2-fusion-prune.py": "3a65d15216eabe4439ba3f768e14bb33204261894f2cd308256e26dbd5f52b09",
+    "lattica-prover-p3/scripts/report-block-v2-fusion.py": "07a8a626880ddf41e64e1936070ca8d5cd4be059c566a20200ac041bf65ade7e",
+    "lattica-prover-p3/scripts/block-v2-fusion-trial.py": "cb36fd551f3442a4eaa534536691cca8a0bda01c1b7dbe7bf7cfccfb87ec8e2c",
+    "lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e"
+  },
+  "validation": [
+    {
+      "label": "cleanup",
+      "command": "python3 -B lattica-prover-p3/scripts/test-block-v2-fusion-prune.py",
+      "exit_code": 0,
+      "tests_passed": 26,
+      "stdout_and_stderr": "..........................\n----------------------------------------------------------------------\nRan 26 tests in 0.105s\n\nOK\n"
+    },
+    {
+      "label": "reporter",
+      "command": "python3 -B lattica-prover-p3/scripts/test-report-block-v2-fusion.py",
+      "exit_code": 0,
+      "tests_passed": 20,
+      "stdout_and_stderr": "....................\n----------------------------------------------------------------------\nRan 20 tests in 0.055s\n\nOK\n"
+    },
+    {
+      "label": "controller",
+      "command": "python3 -B lattica-prover-p3/scripts/test-block-v2-fusion-trial.py",
+      "exit_code": 0,
+      "tests_passed": 18,
+      "stdout_and_stderr": "..................\n----------------------------------------------------------------------\nRan 18 tests in 0.070s\n\nOK\n{\"status\": \"FULL_SIZE_PREPROCESSING_REPRODUCED_RESEARCH_ONLY\", \"production_ready\": false, \"manifest\": \"/tmp/lattica-fusion-test-yhz9ebm_/output/manifest.json\"}\n{\"status\": \"FULL_SIZE_PREPROCESSING_REPRODUCED_RESEARCH_ONLY\", \"production_ready\": false, \"manifest\": \"/tmp/lattica-fusion-test-iv7hlu9u/output/manifest.json\"}\n"
+    }
+  ],
+  "implementation_boundaries": [
+    "plan is read-only and calls the pinned complete-trial reporter for both off/on consumers.",
+    "apply requires the existing bounded-controller admission checks, no other live experiment service, and the shared exclusive experiment lease.",
+    "apply rebuilds its plan; it does not accept a saved plan from disk.",
+    "Both registration jobs, both completed proof jobs, and the shared fixture are bound to original manifest pins and artifact identities.",
+    "Only wallet.0 through wallet.7 in each registration job may be unlinked; keys, height, proof roots, original manifests, and shared wallet proofs remain.",
+    "Reject noncanonical/symlink paths, extra or changed files, hard-linked or non-private wallet files, replaced directories, and reused output directories.",
+    "A durable attempted receipt precedes deletion; directory-descriptor-relative deletion is followed by fsync and per-file journaling.",
+    "Any interrupted or partial deletion requires manual inspection; no automatic resume.",
+    "Post-pruning preservation checks do not constitute a fresh cryptographic replay."
+  ],
+  "limitations": [
+    "The 26 cleanup tests use tiny synthetic artifacts and stub the full cryptographic report inspection.",
+    "No real cleanup-controller/systemd lifecycle or complete apply invocation on measured fixtures has been performed.",
+    "The original single/grouped repeated benchmark is running; no extra experiment service, prover, or heavy build/test was launched.",
+    "After registration cleanup, the original pre-pruning reporter will reject absent wallet copies; preserve the receipt and previously checked comparison.",
+    "All intended consumers must finish before real cleanup. Final shared-fixture pruning and fresh CPU replay of both fusion roots remain required."
+  ],
+  "real_registration_cleanup_performed": false,
+  "shared_fixture_pruned": false,
+  "fresh_cpu_replay_performed": false,
+  "repeat_qualified": false,
+  "depth_six_qualified": false,
+  "production_ready": false
+}

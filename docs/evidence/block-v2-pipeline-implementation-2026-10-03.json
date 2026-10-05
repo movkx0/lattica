@@ -1,0 +1,182 @@
+{
+  "schema": "block-v2-pipeline-implementation-v1",
+  "recorded_utc": "2026-10-03T06:39:25.789333+00:00",
+  "status": "COMPONENTS_VALIDATED_FULL_SIZE_BENCHMARK_BLOCKED",
+  "production_ready": false,
+  "default_enabled": false,
+  "performance_promoted": false,
+  "hardware": {
+    "cpu": "Intel(R) Core(TM) Ultra 9 275HX",
+    "gpu": "NVIDIA GeForce RTX 5080"
+  },
+  "baseline": {
+    "evidence": "docs/evidence/block-v2-gpu-default-ram-bench-2026-10-02.json",
+    "workload": "eight wallets, four paired wrappers and three merges",
+    "threads": 24,
+    "median_seconds": 377.197,
+    "new_speedup_claim": null
+  },
+  "build": {
+    "directory": "lattica-prover-p3/target/block-v2-pipeline-20261003-b",
+    "manifest_sha256": "bb48acde1ff0792323d169c76b770a154b9f3c737e89a38c5a3fa1f3736ca837",
+    "git_base": "108221abb588c392a2691441e7a5c9a58ecf6155",
+    "binary_sha256": "b098d98e7cfa423abba15696097deb1ef500f08fc49964b58f472a96f69d1742",
+    "source_archive_sha256": "9b0a1322761e94df18fbeec917ad694e1a5d926e70cee56b01f04db6ddb1964c",
+    "release_lib_tests_sha256": "23aeee6011d38e84d4eac9bfb0ff1502e4f710eb29bd6ae6276180cdfb74a919"
+  },
+  "implementation": {
+    "parallel_readback_switch": "LATTICA_V2_GPU_PARALLEL_READBACK",
+    "gpu_quotient_switch": "LATTICA_V2_GPU_QUOTIENT_LDE",
+    "gpu_quotient_dependencies": [
+      "LATTICA_V2_GPU_RESIDENT_LDE=1",
+      "LATTICA_V2_QUOTIENT_FUSION=1",
+      "retained GPU backend"
+    ],
+    "quotient_scope": "Transforms, hiding-mask application, commitment and retained Merkle tree. Constraint evaluation and host matrix consumers remain on CPU.",
+    "single_air_only": true,
+    "upstream_batch_stark": "0.6.1",
+    "security_parameters_changed": false,
+    "proof_format_changed": false,
+    "cpu_verifier_changed": false
+  },
+  "validation": {
+    "host_readback": {
+      "passed": 6,
+      "large_spill_pressure_test_ignored": 1
+    },
+    "cpu_quotient": {
+      "passed": 11,
+      "large_workspace_test_ignored": 1
+    },
+    "gpu_worker_and_shared_commands": {
+      "passed": 17
+    },
+    "pipeline_controller": {
+      "passed": 6
+    },
+    "lookup_mask_algebra_existing": {
+      "passed": 5,
+      "protocol_proof": false
+    },
+    "cpu_only_feature_build": "PASS",
+    "rustfmt_and_diff_check": "PASS",
+    "optimized_gpu": {
+      "passed": 8,
+      "log": "lattica-prover-p3/target/block-v2-pipeline-20261003-b/gpu-components.log",
+      "log_sha256": "cbf913f5920e06ffd910f1237004db8903c86e158ca1327b820ff4bcd93678ae",
+      "limit_ram_bytes": 3221225472,
+      "limit_swap_bytes": 0,
+      "service_peak_memory_display": "335.9M",
+      "service_peak_swap_display": "0B",
+      "parallel_decoded_bytes": 29360128,
+      "parallel_decode_chunks": 4,
+      "cpu_oracle_matrices_caps_openings_equal": true,
+      "small_full_strength_proof_matches_upstream_bytes": true,
+      "small_proof_cpu_verification": true,
+      "full_size_root_audit": false
+    }
+  },
+  "four_wallet": {
+    "status": "REJECTED_RAM_LOWER_BOUND",
+    "selected_for_proving": false,
+    "log": "lattica-prover-p3/target/block-v2-pipeline-20261003-b/geometry.log",
+    "log_sha256": "925844e395af9a5321dc680807257f587630874da9d8abe5f713e01f0a2adbaf",
+    "binary_sha256": "8e5773ca90184de9231b1d19ae41bd33927e5e77c4c51d8a018aa1484a8ef077",
+    "interpreter_counts": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "statement_mutations_rejected": 24,
+    "padded_slot_mutations_rejected": 1,
+    "wrapper_rows": 320186,
+    "original_height": 262144,
+    "fixed_point_height": 524288,
+    "merge_rows_at_original_height": 258973,
+    "merge_rows_at_fixed_point": 271896,
+    "retained_lde_bytes": 63350767616,
+    "aggregate_ram_limit_bytes": 51539607552,
+    "keys_generated": 0,
+    "proofs_generated": 0,
+    "service_peak_memory_display": "2.8G",
+    "service_peak_swap_display": "0B"
+  },
+  "multi_table": {
+    "status": "DEFERRED_PRIVACY_CONSTRUCTION_GATE",
+    "verifier_relaxed": false,
+    "required_work": [
+      "joint PCS/lookup Fiat-Shamir simulation and quantum assumptions",
+      "exceptional challenges and real zero denominators",
+      "tagged tuple soundness and multiplicity bounds",
+      "padding and empty-table rules",
+      "full recursive composition bound",
+      "separate profile/codec and heterogeneous-height commitment plus native/constrained verifiers"
+    ],
+    "existing_algebra_evidence": "docs/evidence/block-v2-lookup-mask-model-2026-10-01.json"
+  },
+  "benchmark_preflight": {
+    "required_mem_available_bytes": 49392123904,
+    "observed_after_checks": {
+      "MemAvailable": 40705503232,
+      "SwapTotal": 0,
+      "SwapFree": 0
+    },
+    "limits_unchanged": true,
+    "unrelated_processes_stopped": false
+  },
+  "prepared_comparisons": {
+    "readback": {
+      "plan": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b",
+      "launcher": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b-launcher.py",
+      "plan_sha256": "3fa85cd6e986cec0d86a7f6b3d2f49871195c8b858088269ff9320a90d1f2b8c",
+      "launcher_sha256": "76b7d75029f6d15ef8d39399d39ca4e00db9387f997ed59fc2a690c199973b7b",
+      "experiment": {
+        "schema": "gpu-pipeline-experiment-v1",
+        "pairs": 5,
+        "reference_readback": 0,
+        "candidate_readback": 1,
+        "candidate_fusion": 0,
+        "reference_fusion": 0,
+        "candidate_quotient": 0,
+        "same_binary": true,
+        "production_ready": false,
+        "started_provers": 0
+      },
+      "static_pins_and_fixtures": "PASS",
+      "live_preflight": "BLOCKED_INSUFFICIENT_MEMAVAILABLE",
+      "preflight_log": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b/preflight.log",
+      "preflight_message": "STOP: need at least 46 GiB MemAvailable",
+      "proofs_started": 0,
+      "check_command": "python3 -B /home/access/code/lattica/lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b-launcher.py check --live",
+      "start_command": "python3 -B /home/access/code/lattica/lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-b-launcher.py start"
+    },
+    "quotient": {
+      "plan": "lattica-prover-p3/target/block-v2-pipeline-quotient-pairs-20261003-b",
+      "launcher": "lattica-prover-p3/target/block-v2-pipeline-quotient-pairs-20261003-b-launcher.py",
+      "plan_sha256": "2001cbb841ebbcfdd92c2b6c85a15371d2e5eae467e4ebd099aad6d4341dd626",
+      "launcher_sha256": "0cfbf8e3ef6c5234f1e5c25e626fb5ed93cd26dd0ea5f794a65ebd44d65ae1bc",
+      "experiment": {
+        "schema": "gpu-pipeline-experiment-v1",
+        "pairs": 5,
+        "reference_readback": 1,
+        "candidate_readback": 1,
+        "candidate_fusion": 1,
+        "reference_fusion": 1,
+        "candidate_quotient": 1,
+        "same_binary": true,
+        "production_ready": false,
+        "started_provers": 0
+      },
+      "static_pins_and_fixtures": "PASS",
+      "live_preflight": "BLOCKED_INSUFFICIENT_MEMAVAILABLE",
+      "preflight_log": "lattica-prover-p3/target/block-v2-pipeline-quotient-pairs-20261003-b/preflight.log",
+      "preflight_message": "STOP: need at least 46 GiB MemAvailable",
+      "proofs_started": 0,
+      "check_command": "python3 -B /home/access/code/lattica/lattica-prover-p3/target/block-v2-pipeline-quotient-pairs-20261003-b-launcher.py check --live",
+      "start_command": "python3 -B /home/access/code/lattica/lattica-prover-p3/target/block-v2-pipeline-quotient-pairs-20261003-b-launcher.py start"
+    }
+  },
+  "superseded_unrun_plan": "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-a (older readback-only binary/controller; no proving runs were started)",
+  "next_action": "After the 46 GiB MemAvailable preflight passes, run the saved comparisons one at a time with no concurrent build or other proving workload. Evaluate five alternating pairs and CPU-audited roots before enabling defaults or reporting speedup."
+}

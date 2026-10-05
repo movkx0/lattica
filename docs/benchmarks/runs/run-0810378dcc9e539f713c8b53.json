@@ -1,0 +1,53 @@
+{
+  "campaign_ids": [],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "observer-failure",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": [],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-0810378dcc9e539f713c8b53",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 57,
+      "path": "lattica-prover-p3/target/block-v2-gpu-grouped-lifecycle-20261001-a/observer-failure/01-key-1.log",
+      "sha256": "7c8f1d2c36e02145c427f40564b78a92bb5bcf52594bab5d119ee3995fd08e03"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-multi-bootstrap-20261003-b/001-bootstrap-1/worker.log",
+        "run_id": "run-1e41c164de4dd1f7ae67094a"
+      },
+      "path": "lattica-prover-p3/target/block-v2-gpu-grouped-lifecycle-20261001-a/observer-failure/01-key-1-vram.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

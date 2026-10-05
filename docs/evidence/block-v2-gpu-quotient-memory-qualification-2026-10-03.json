@@ -1,0 +1,82 @@
+{
+  "status": "COMPLETE_RESEARCH_ONLY",
+  "production_ready": false,
+  "default_promoted": false,
+  "source_plan": "lattica-prover-p3/target/block-v2-memory-qualification-20261003-c/plan.json",
+  "plan_sha256": "b67f4a67a25c8438e813b1a484675523d229570ad6968a1e479dd2e0250e7dbf",
+  "pairs": 1,
+  "runs": [
+    {
+      "label": "round-1-ram-reference",
+      "arm": "ram-reference",
+      "recursive_seconds": 336.349,
+      "manifest_sha256": "84ef00479bc9b72c7700c62cdfa8f011b56bf4d8eff419f451c39b307d8970c7",
+      "manifest": "lattica-prover-p3/target/block-v2-memory-qualification-20261003-c/evidence/round-1-ram-reference/manifest.json",
+      "root_bytes": 1683948,
+      "peak_worker_ram_bytes": 40896933888,
+      "swap_bytes": 0,
+      "cpu_root_audit": "PASS",
+      "gpu_quotient_commits": 0,
+      "config": {
+        "parallel_readback": 1,
+        "quotient_fusion": 1,
+        "gpu_quotient": 0,
+        "rayon_threads": 24
+      },
+      "actual_rayon_threads": 24,
+      "transfers": {
+        "compact_calls": 7,
+        "compact_saved_input_bytes": 207869706240,
+        "core_downloaded_bytes": 102012125696,
+        "core_uploaded_bytes": 99925098000,
+        "downloaded_bytes": 103421411840,
+        "opening_calls": 7,
+        "opening_downloaded_bytes": 1409286144,
+        "opening_uploaded_bytes": 43453078368,
+        "uploaded_bytes": 143378176368
+      }
+    },
+    {
+      "label": "round-1-ram-candidate",
+      "arm": "ram-candidate",
+      "recursive_seconds": 288.024,
+      "manifest_sha256": "3ba33217386b835a7b2c1c89e590b67b4ac63692697d9be6ad1d74ff0e010065",
+      "manifest": "lattica-prover-p3/target/block-v2-memory-qualification-20261003-c/evidence/round-1-ram-candidate/manifest.json",
+      "root_bytes": 1683948,
+      "peak_worker_ram_bytes": 40881770496,
+      "swap_bytes": 0,
+      "cpu_root_audit": "PASS",
+      "gpu_quotient_commits": 7,
+      "config": {
+        "parallel_readback": 1,
+        "quotient_fusion": 1,
+        "gpu_quotient": 1,
+        "rayon_threads": 24
+      },
+      "actual_rayon_threads": 24,
+      "transfers": {
+        "compact_calls": 7,
+        "compact_saved_input_bytes": 207869706240,
+        "core_downloaded_bytes": 154625475072,
+        "core_uploaded_bytes": 50600085536,
+        "downloaded_bytes": 156034761216,
+        "opening_calls": 7,
+        "opening_downloaded_bytes": 1409286144,
+        "opening_uploaded_bytes": 43453078368,
+        "uploaded_bytes": 94053163904
+      }
+    }
+  ],
+  "median_reference_seconds": 336.349,
+  "median_candidate_seconds": 288.024,
+  "median_time_reduction_percent": 14.367517073040204,
+  "metadata_note": "Plan, worker command, and manifest agree on 24 threads.",
+  "measurement": "sum recursive command durations; excludes registration and controller overhead",
+  "timelines_enabled": true,
+  "comparison_complete": true,
+  "pair_time_reduction_percent": [
+    14.367517073040204
+  ],
+  "speedup_qualified": false,
+  "schema": "block-v2-gpu-quotient-memory-qualification-v1"
+}

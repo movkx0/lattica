@@ -1,0 +1,164 @@
+{
+  "schema": "lattica-block-v2-resident-lde-v1",
+  "captured_utc": "2026-10-01 22:51:50 UTC",
+  "status": "COMPONENT_GPU_EXECUTION_VERIFIED_PCS_INTEGRATION_PENDING",
+  "production_ready": false,
+  "default_enabled": false,
+  "scope": "Low-level candidate research API, exact coset-LDE column tiles -> continuous matrix/salt sponge -> retained Merkle tree, with explicit host LDE readback. Not a full recursive proof or speedup measurement.",
+  "implementation": {
+    "entrypoint": "block_v2::gpu_hash::coset_lde_commit",
+    "files": [
+      "lattica-prover-p3/src/block_v2/gpu_hash/engine.rs",
+      "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_plan.rs",
+      "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_execute.rs",
+      "lattica-prover-p3/src/block_v2/gpu_hash.rs"
+    ],
+    "reuses": "Existing candidate Engine context, job lease, aggregate allocation accounting, staging, QueueFence, NTT arithmetic kernel, retained tree construction/openings.",
+    "guarantees": [
+      "Replan and allocate under one engine mutex; all new allocations use existing admission/accounting.",
+      "Whole-height independent column transforms; physical bit-reversed host and committed row order.",
+      "No sponge permutation/padding at a tile or matrix boundary; exactly matrix then four salt words, including partial rate positions.",
+      "Bounded input/twiddle/salt uploads and explicit host LDE readback; transfer counters tested against plan plus cap/twiddle bytes.",
+      "Queue drain before temporary transforms, sponge and retained storage release on error/unwind.",
+      "No PCS RNG access, seed cloning, C ABI, profile, AIR, codec or production-default change."
+    ],
+    "randomness_boundary": "Caller supplies randomized evaluations and explicit salts for one proof attempt; only deterministic component fixtures currently call this API. Hiding PCS adapter is not implemented."
+  },
+  "planner_validation": {
+    "unit": "lattica-v2-gpu-lde-plan-native-20261001-b.service",
+    "status": "PASS",
+    "planner_tests": 6,
+    "existing_accounting_tests": 8,
+    "hardware_tests_ignored": 5,
+    "service_seconds": 100.48,
+    "peak_cgroup_bytes": 1987031040,
+    "swap_bytes": 0,
+    "source_archive_sha256": "1b9328056d302cf9b82529c53b9394c7be3759b42fb927ff89070d183fc8dfb8",
+    "kernels_executed": false
+  },
+  "validation": {
+    "native_initial": {
+      "unit": "lattica-v2-gpu-lde-exec-native-20261001-a.service",
+      "status": "COMPILE_FAILED_CORRECTED",
+      "exit_code": 1,
+      "errors": 2,
+      "reason": "Malformed matrix test fixtures attempted construction with private DenseMatrix fields; corrected by mutating public width in a valid fixture.",
+      "service_seconds": 2.146,
+      "peak_cgroup_bytes": 381579264,
+      "swap_bytes": 0
+    },
+    "native": {
+      "unit": "lattica-v2-gpu-lde-exec-native-20261001-b.service",
+      "status": "PASS",
+      "exit_code": 0,
+      "tests_passed": 17,
+      "tests_ignored": 13,
+      "warnings": 0,
+      "service_seconds": 97.807,
+      "peak_cgroup_bytes": 2020622336,
+      "swap_bytes": 0
+    },
+    "device": {
+      "unit": "lattica-v2-gpu-lde-exec-device-20261001-a.service",
+      "status": "PASS",
+      "exit_code": 0,
+      "tests_passed": 13,
+      "new_executor_tests": 3,
+      "existing_gpu_regression_tests": 10,
+      "device": "NVIDIA GeForce RTX 5080",
+      "global_bytes": 16707092480,
+      "max_allocation_bytes": 4176773120,
+      "service_seconds": 10.796,
+      "test_seconds": 10.65,
+      "peak_cgroup_bytes": 863617024,
+      "swap_bytes": 0,
+      "coverage": [
+        "All LDE values, exact CPU Poseidon2 leaf hashes/caps and Merkle paths.",
+        "Partial column/salt tiles, rate positions, full/partial final sponge blocks, no-blowup cases, unequal input heights with equal output heights.",
+        "Multiple NTT stage groups and final bit-reversed buffer placement, varying nonzero shifts.",
+        "Exact upload/readback accounting including roots, salts, returned matrices and caps.",
+        "Invalid host admission leaves existing allocation/retained-tree state intact.",
+        "Pending NTT enqueue failure and unwind drain queues before reservation release; later proof-component work recovers.",
+        "Existing retained-copy/query lifetime, uncertain drain abort, process lease, spill-backed matrix and cubic wallet GPU-hash regressions. The existing wallet regression does not use the new LDE API."
+      ]
+    },
+    "full_native_regression": {
+      "status": "PASS_AFTER_EXPLICIT_PLATFORM_SELECTION",
+      "initial": {
+        "unit": "lattica-v2-gpu-lde-exec-regression-20261001-a.service",
+        "status": "FAILED_LEGACY_GPU_PLATFORM_SELECTION",
+        "exit_code": 1,
+        "passed": 243,
+        "failed": 1,
+        "ignored": 60,
+        "service_seconds": 122.826,
+        "peak_cgroup_bytes": 2214551552,
+        "swap_bytes": 0,
+        "test": "stream_prove::tests::stream_commit_quotient_matches_pcs",
+        "cause": "The GPU-feature streaming quotient path uses legacy GpuCtx/ProQue default platform selection. OpenCL platform 0 is AMD with zero devices; clGetDeviceIDs returned CL_DEVICE_NOT_FOUND. New executor GPU tests passed on the explicitly selected NVIDIA engine."
+      },
+      "retry": {
+        "unit": "lattica-v2-gpu-lde-exec-regression-20261001-b.service",
+        "status": "PASS",
+        "session": 46095,
+        "env": {
+          "OCL_DEFAULT_PLATFORM_IDX": "2",
+          "OCL_DEFAULT_DEVICE_TYPE": "GPU"
+        },
+        "scope": "Same preserved test binary; unignored broad library tests include a legacy streaming GPU test. This is not a CPU-only run.",
+        "exit_code": 0,
+        "passed": 244,
+        "failed": 0,
+        "ignored": 60,
+        "service_seconds": 120.282,
+        "test_seconds": 120.13,
+        "peak_cgroup_bytes": 2196099072,
+        "swap_bytes": 0,
+        "authoritative_service_state": "inactive/dead; ExecMainPID=0",
+        "includes_targeted_native_tests": 17
+      }
+    },
+    "all_required_validation_services_terminal": true
+  },
+  "limits": {
+    "managed_gpu_max_bytes": 8589934592,
+    "driver_reserve_bytes": 4294967296,
+    "component_service_ram_bytes": 3221225472,
+    "component_service_swap_bytes": 0,
+    "component_service_timeout_seconds": 600
+  },
+  "pins": {
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine.rs": "87cf4726ba40981cbac5b1e643554389a659462489102248e6110069eb60a48f",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_plan.rs": "821ec1f7b26678b2394a8b025963fe03547df29b83ff7e294e1ded025a8db7da",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_execute.rs": "381b457bd7f1877a314692a8618a8e2a8a2df1d892061de63b92c8d064ce80f6",
+    "lattica-prover-p3/src/block_v2/gpu_hash.rs": "cec7346603773fad9262fdc34d26fc0bf3fdac9841d4bc5d80c8f421584bb048",
+    "lattica-prover-p3/target/block-v2-gpu-lde-plan-native-20261001-b.log": "6c29e0ef0f5959ddf553662b6ac113488198c68014551ca9a035af9ac712b49a",
+    "lattica-prover-p3/target/block-v2-gpu-lde-exec-native-20261001-a.log": "f2b582777010f9ea5bdb77dea1e9d7adc0a2f9fac181cc104ec6bab2f6ff37cb",
+    "lattica-prover-p3/target/block-v2-gpu-lde-exec-native-20261001-a/source.tar.gz": "6ae238027716fe7660a00ad4b5703625be2efed100a2cf2c2d35f3cf9f9c0aa4",
+    "lattica-prover-p3/target/block-v2-gpu-lde-exec-native-20261001-b.log": "fbab477aec8b7785b5fe52c484518245d77394d1b849f86afa4224cb82ef7753",
+    "lattica-prover-p3/target/block-v2-gpu-lde-exec-device-20261001-a.log": "ed0e2edf405ae9a21fe9288b3fa6138b18174bbdbd2301d52eb58981c645fd4d",
+    "lattica-prover-p3/target/block-v2-gpu-lde-exec-device-20261001-a/gpu-tests": "ce97624670df854b3b0ad12382856ad65656df5b80a4b004d93f745fd6403f72",
+    "lattica-prover-p3/target/block-v2-gpu-lde-exec-device-20261001-a/source.tar.gz": "d352dfd78cdd0c612ba1f45060706b486116f6b783dbfdc749eadfb616f8f943",
+    "docs/dag-gpu-implementation.md": "c23df407b56a47b1ec66f6821349d38be258ea4f7c43db432086124580a27ae7",
+    "lattica-prover-p3/target/block-v2-gpu-lde-exec-regression-20261001-a.log": "97f898272e5d72e3967df2087e494db0621af474eff0952ffed3beeb210e95e4",
+    "lattica-prover-p3/target/block-v2-gpu-lde-exec-regression-20261001-b.log": "1e092e5bde256523362d723dd03e62ad9746e40e0af1b4dbdc4b7aa7bc648ec7",
+    "lattica-prover-p3/target/block-v2-gpu-lde-exec-regression-20261001-b/native-tests": "ce97624670df854b3b0ad12382856ad65656df5b80a4b004d93f745fd6403f72",
+    "lattica-prover-p3/target/block-v2-gpu-lde-exec-regression-20261001-b/source.tar.gz": "d352dfd78cdd0c612ba1f45060706b486116f6b783dbfdc749eadfb616f8f943",
+    "lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+    "lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0"
+  },
+  "remaining": [
+    "Integrate through an explicit candidate hiding-PCS adapter/upstream hook; never clone/replay its private RNG to manufacture the interface.",
+    "Preserve independently registered full-size preprocessing caps, produce full-strength recursive proofs, prune inner artifacts and pass standalone CPU audits.",
+    "Matched end-to-end proof/aggregation comparison against the same compact profile and retained-hash control, including CPU downstream work, all transfers and resources; no performance claim from component tests.",
+    "Minimal local incremental DAG, odd/irregular/mixed/issuance/full64 correctness, cold and complete post-seal deadlines, full-tree security/ZK review, host integration and activation remain open.",
+    "Complete original repeated series and checked cleanup/replay obligations; do not rerun completed historical experiments."
+  ],
+  "post_validation_checks": {
+    "pinned_files_matched": 18,
+    "compiled_archive_source_files_matched": 4,
+    "dag_plan_unchanged": true,
+    "git_diff_check": "PASS",
+    "no_live_validation_workers": true
+  }
+}

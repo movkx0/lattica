@@ -1,0 +1,89 @@
+{
+  "baseline": {
+    "binary_fri_commits": 20,
+    "cache_hit_d2h_full_tree_bytes": 5368707328,
+    "cache_hit_h2d_bytes": 44023413504,
+    "cache_hit_h2d_bytes_by_family": {
+      "fri": 1342176000,
+      "main": 13690208256,
+      "permutation": 3892314112,
+      "quotient": 23622320128,
+      "random_round": 1476395008
+    },
+    "cache_miss_d2h_full_tree_bytes": 6442449120,
+    "cache_miss_h2d_bytes": 53955525376,
+    "height": 524288,
+    "host_retained_full_tree_bytes_including_preprocessing": 6442449120,
+    "host_retained_salt_bytes_including_preprocessing": 11274288640,
+    "lde_height": 16777216,
+    "logical_retained_lde_salts_trees_bytes": 59592668896,
+    "measured_peak_ram": false,
+    "omitted": [
+      "allocator and program metadata",
+      "temporary arithmetic/DFT workspaces",
+      "retained FRI input/fold vectors",
+      "coefficient/randomness buffers",
+      "page-cache and mapping residency effects"
+    ],
+    "retained_lde_bytes": 41875931136,
+    "retained_lde_bytes_by_family": {
+      "main": 13153337344,
+      "permutation": 3355443200,
+      "preprocessing": 9395240960,
+      "quotient": 15032385536,
+      "random_round": 939524096
+    }
+  },
+  "baseline_evidence": "docs/evidence/block-v2-gpu-hash-2026-09-30.json",
+  "baseline_evidence_sha256": "6b3d0064c31053f291a71fdaffe09a7801586aec5eed7b3372222a8c67f4053a",
+  "baseline_nodes_with_exact_h2d_and_d2h_match": 35,
+  "illustrative_change_in_cache_hit_h2d_GiB": -0.25,
+  "illustrative_change_in_retained_lde_GiB": 3.75,
+  "illustrative_lower_degree_sbox_with_unchanged_other_widths": {
+    "binary_fri_commits": 20,
+    "cache_hit_d2h_full_tree_bytes": 5368707328,
+    "cache_hit_h2d_bytes": 43754978048,
+    "cache_hit_h2d_bytes_by_family": {
+      "fri": 1342176000,
+      "main": 25232932864,
+      "permutation": 3892314112,
+      "quotient": 11811160064,
+      "random_round": 1476395008
+    },
+    "cache_miss_d2h_full_tree_bytes": 6442449120,
+    "cache_miss_h2d_bytes": 53687089920,
+    "height": 524288,
+    "host_retained_full_tree_bytes_including_preprocessing": 6442449120,
+    "host_retained_salt_bytes_including_preprocessing": 6979321344,
+    "lde_height": 16777216,
+    "logical_retained_lde_salts_trees_bytes": 59324233440,
+    "measured_peak_ram": false,
+    "omitted": [
+      "allocator and program metadata",
+      "temporary arithmetic/DFT workspaces",
+      "retained FRI input/fold vectors",
+      "coefficient/randomness buffers",
+      "page-cache and mapping residency effects"
+    ],
+    "retained_lde_bytes": 45902462976,
+    "retained_lde_bytes_by_family": {
+      "main": 24696061952,
+      "permutation": 3355443200,
+      "preprocessing": 9395240960,
+      "quotient": 7516192768,
+      "random_round": 939524096
+    }
+  },
+  "interpretation": [
+    "The 39 GiB admission figure counts LDEs only, not salts, full host Merkle trees, or temporary workspaces.",
+    "The listed LDE/salt/tree storage is not a complete process-memory estimate or measured resident memory and must not be added to cgroup RAM or mapped spill peaks.",
+    "At fixed geometry, quotient input and salt uploads dominate H2D volume.",
+    "Retaining full trees on the GPU is only a candidate design: it requires aggregate managed-memory admission and lifetime/cancellation tests.",
+    "Lower AIR degree alone can increase total polynomial storage; layout, lookup packing and recursive closure must be evaluated together.",
+    "No cryptographic parameter, production default, or verifier identity was changed by this model."
+  ],
+  "production_ready": false,
+  "profile_id": "e90be22347a149b82c2a961cb14a33414b6db2d8221d0eda9fdfc174bf0143be",
+  "schema_version": 1,
+  "status": "SOURCE_AND_TRANSFER_ACCOUNTING_MODEL_NOT_A_PROTOTYPE_OR_BENCHMARK"
+}

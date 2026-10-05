@@ -1,5 +1,7 @@
 # Lattica — A Quantum-Safe Shielded Payment Protocol
 
+> **Document role:** Normative protocol specification. Implementation status, audit scope, and research features are tracked separately in [`docs/README.md`](docs/README.md) and [`docs/AUDITORS.md`](docs/AUDITORS.md).
+
 **Status:** design specification + proof of concept · **Version:** 0.1 (2026-06)
 
 Lattica is a clean-slate, Zcash-style shielded payment protocol whose security rests
@@ -8,7 +10,36 @@ shielded value transfer validated by zero-knowledge proofs — while removing ev
 elliptic-curve / discrete-log dependency that Shor's algorithm would break.
 
 This document specifies the protocol. A working proof of concept of every component lives
-alongside it in the `lattica/` Cargo workspace; see [§10](#10-implementation-map).
+alongside it in this repository; see [§10](#10-implementation-map).
+
+> **⚠ Historical note (implementation sections).** §8 and §10 describe the original from-scratch
+> Zig STARK proof-of-concept (`src/stark.zig`, `src/rescue.zig`, `src/membership.zig`,
+> `src/spend.zig`, `src/circuit.zig`), which has since been **replaced by the production Plonky3
+> prover crate** `lattica-prover-p3/` (Poseidon2-Goldilocks, hiding FRI; consumed by the node via
+> the C ABI in `lattica-prover-p3/include/lattica_prover_p3.h`). For current parameters and wire
+> formats see `docs/soundness-budget.md` and `docs/wire-format.md`. The protocol sections (§1–§7)
+> remain normative.
+
+### Candidate / inactive block-proving v2 boundary
+
+The approved [incremental recursive block-proving v2 architecture](docs/block-proving-v2.md) is a
+separate, **CANDIDATE / INACTIVE** block-proof family, not a live consensus change. Historical v1
+proof bytes, parameters, transaction-root rules, and verification remain unchanged. The new family
+targets an ordered 64-leaf Merkle commitment, at most 64 total transactions including issuance,
+one final aggregate proof ≤2 MiB, and a host-controlled 12-minute transaction-block cadence.
+
+Wallet witnesses stay local; aggregators receive only proofs and public data. In-block individual
+proof containers, direct witness batches, and curve/SNARK wraps are excluded. Root-only verification
+without inner proofs has been demonstrated by the candidate's four-transaction,
+two-level research proof after deleting all inner artifacts. This is not a
+production acceptance ABI or an activated block format. The full depth-six,
+64-transaction feasibility/performance and security gates remain unmet; see the
+[current evidence](docs/bounded-execution-engine.md).
+
+The candidate cubic-extension, binary-FRI profile and resource budgets are recorded in the linked
+architecture, not frozen here. Activation requires fixed-geometry recursion, complete-tree soundness,
+full join-split/HTLC/issuance coverage, reviewed encodings, and explicit host-chain activation. No v2
+proof-byte schema or consensus version/tag assignment is defined by this documentation change.
 
 ---
 
@@ -135,7 +166,7 @@ composition polynomial; **FRI** folds it to a constant; and queries open the tra
 and the FRI layers, with the verifier checking Merkle paths, the algebraic composition⇔trace link,
 and fold consistency. This **closes gap R1** — the relation is a genuine one-way hash, replacing
 the earlier algebraic `x³ + C`. Parameters are PoC-grade (32 queries, rate 1/4, 64-bit field →
-effective conjectured ~50-bit, bounded by the field; see [`parameters.md`](./parameters.md)).
+effective conjectured ~50-bit, bounded by the field; see [`parameters.md`](docs/parameters.md)).
 
 **Zero-knowledge.** The proof is zero-knowledge (honest-verifier, via Fiat-Shamir). Two
 blindings make the openings reveal nothing about the witness: (1) the trace polynomial is masked
@@ -162,7 +193,7 @@ formally proven.
   General (non-leftmost) Merkle positions are supported (degree-2 one-of carry; position hidden).
   Remaining is hardening/integration, not new mechanism: the full commitment opening
   (`recipient`/`rcm`) + owner binding, switching the protocol's commitment/nullifier/Merkle
-  hashing to the field hash, and node integration. See [`soundness.md §6`](./soundness.md).
+  hashing to the field hash, and node integration. See [`soundness.md §6`](docs/soundness.md).
 - **Zero-knowledge (R2).** Implemented (trace blinding + masked FRI; see above). Honest-verifier
   and PoC-grade — a formal ZK proof and production parameters are future work.
 - **One-way in-circuit hash (R1).** Closed: the authorization relation is a Poseidon-style SPN

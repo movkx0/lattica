@@ -1,0 +1,4641 @@
+//! Phase 3 of the streaming-prover plan: an in-crate, prove-only fork that streams the commit so the
+//! wide LDE leaves never all reside in RAM at once — the structural RAM win that the Phase 2 mmap
+//! allocator could not deliver (the OS cannot stream p3's whole-buffer re-touch pattern from below the
+//! `Vec` types; see `spill_alloc`). `verify` and every wire type stay upstream: this fork PRODUCES p3's
+//! `Proof<MyConfig>` bytes, it never redefines them.
+//!
+//! Generalizes the proven `quotient_gpu::prove_gpu` fork (already byte-identical to `p3_uni_stark::prove`)
+//! by pushing control BELOW the `Pcs` seam — into the Merkle commit and (later) the FRI open — which is
+//! where the residency actually lives.
+//!
+//! ## This increment — the streaming (frontier) Merkle commit
+//! The first, risk-retiring piece (the plan sequences it first, validated standalone before wiring): a
+//! Merkle commitment that hashes leaf rows ONE AT A TIME from a streaming source, keeping only the
+//! digest layers (`h × DIGEST` fields — tens of MiB) instead of the whole `h × w` leaf matrix (the
+//! multi-GB buffer). It is BYTE-IDENTICAL to p3's `MerkleTreeMmcs` commitment for a single power-of-two
+//! -height matrix: p3's SIMD `vertically_packed_row` hashing is just lanes of the same per-row digest,
+//! and `padded_len(h, 2) == h` for a power-of-two height, so scalar per-row hashing + pairwise compress
+//! reproduces p3's exact layers. Pinned by `stream_merkle_matches_p3`.
+//!
+//! Feature-gated (`stream`, off by default) — RESEARCH, not on any production path.
+
+use crate::config::{
+    Challenge, ChallengeMmcs, Challenger, Dft, MyCompress, MyConfig, MyHash, MyPcs, Val, ValMmcs,
+    CAP_HEIGHT,
+};
+use core::marker::PhantomData;
+use p3_air::symbolic::{AirLayout, SymbolicAirBuilder};
+use p3_air::{Air, DebugConstraintBuilder, RowWindow};
+use p3_challenger::{CanObserve, CanSampleBits, FieldChallenger, GrindingChallenger};
+use p3_commit::{BatchOpening, Mmcs, OpenedValues, Pcs, PolynomialSpace};
+use p3_dft::{Radix2DFTSmallBatch, TwoAdicSubgroupDft};
+use p3_field::coset::TwoAdicMultiplicativeCoset;
+#[cfg(feature = "gpu")]
+// GPU-per-tile quotient: `as_canonical_u64` to marshal chunk evals / vanishing prefix to the device
+use p3_field::PrimeField64;
+use p3_field::{
+    batch_multiplicative_inverse, BasedVectorSpace, ExtensionField, Field, PackedFieldExtension,
+    PackedValue, PrimeCharacteristicRing, TwoAdicField,
+};
+use p3_fri::{
+    compute_log_arity_for_round, CommitPhaseProofStep, FriFoldingStrategy, FriParameters, FriProof,
+    ProverDataWithOpeningPoints, QueryProof, TwoAdicFriFolding, TwoAdicFriFoldingForMmcs,
+};
+use p3_goldilocks::default_goldilocks_poseidon2_8;
+use p3_matrix::bitrev::BitReversibleMatrix;
+use p3_matrix::dense::{RowMajorMatrix, RowMajorMatrixView};
+use p3_matrix::Matrix;
+use p3_maybe_rayon::prelude::*;
+use p3_merkle_tree::MerkleCap;
+use p3_symmetric::{CryptographicHasher, PseudoCompressionFunction};
+use p3_uni_stark::{
+    get_constraint_layout, get_log_num_quotient_chunks, Commitments,
+    OpenedValues as StarkOpenedValues, PackedChallenge, PackedVal, Proof, ProverConstraintFolder,
+    StarkGenericConfig,
+};
+use p3_util::{log2_strict_usize, reverse_bits_len, reverse_slice_index_bits};
+use rand::RngExt as _;
+use std::ffi::CString;
+use std::mem::size_of;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+/// Poseidon2 digest width (Goldilocks-8 sponge squeezes 4).
+pub const DIGEST: usize = 4;
+
+/// Salt columns appended to each leaf row in the production HIDING commit (`MerkleTreeHidingMmcs<…,4>`).
+pub const SALT_ELEMS: usize = 4;
+
+/// A source of `h` leaf rows of width `w`, addressable one row at a time — the seam the streaming store
+/// plugs into. `fill_row(i, buf)` writes row `i` (a `w`-wide slice) so the Merkle commit never holds the
+/// whole `h × w` leaf matrix; a later increment backs this by an mmap'd, column-tiled LDE store.
+pub trait LeafSource: Sync {
+    fn height(&self) -> usize;
+    fn width(&self) -> usize;
+    fn fill_row(&self, row: usize, out: &mut [Val]);
+    /// Fill `nr` consecutive rows starting at `r0` into `out` (row-major `nr × width`). The frontier
+    /// Merkle reads through THIS (in row-blocks), so a COLUMN-MAJOR store can override it to read `width`
+    /// contiguous column-segments — `width` interleaved sequential streams, ~one pass — instead of the
+    /// strided per-row gather. The default is the row-major per-row fill.
+    fn fill_row_block(&self, r0: usize, nr: usize, out: &mut [Val]) {
+        let w = self.width();
+        for i in 0..nr {
+            self.fill_row(r0 + i, &mut out[i * w..(i + 1) * w]);
+        }
+    }
+}
+
+/// A `LeafSource` over an already-materialized row-major matrix — the Vec-backed store used to pin the
+/// streaming Merkle byte-identical before the mmap store exists.
+pub struct SliceLeaves<'a> {
+    pub vals: &'a [Val],
+    pub h: usize,
+    pub w: usize,
+}
+
+impl LeafSource for SliceLeaves<'_> {
+    fn height(&self) -> usize {
+        self.h
+    }
+    fn width(&self) -> usize {
+        self.w
+    }
+    fn fill_row(&self, row: usize, out: &mut [Val]) {
+        out.copy_from_slice(&self.vals[row * self.w..(row + 1) * self.w]);
+    }
+}
+
+/// Streaming Merkle commitment of `src` (single matrix, power-of-two height): hash each leaf row on the
+/// fly (only one row + the digest layers ever reside), then compress pairwise up to the `cap_height` cap.
+/// Returns the cap digests — byte-identical to `MerkleTreeMmcs::commit(vec![matrix]).0` under the same
+/// `MyHash`/`MyCompress`/`CAP_HEIGHT`. This is the frontier build that keeps the wide leaves off the heap.
+pub fn stream_merkle_cap<S: LeafSource>(src: &S, cap_height: usize) -> Vec<[Val; DIGEST]> {
+    stream_merkle_cap_inner(src, cap_height, None)
+}
+
+/// Streaming HIDING Merkle commitment — byte-identical to the PRODUCTION `MerkleTreeHidingMmcs::commit`.
+/// Draws the whole `h × SALT_ELEMS` salt matrix up-front from `rng` (exactly p3's `RowMajorMatrix::rand`,
+/// same row-major order — the byte-compat rule: draw all salts whole-matrix, up-front, in p3's order),
+/// then hashes each leaf as `[row | salt]` (p3's `HorizontalPair`) while streaming the wide rows from
+/// `src`. The salt matrix (`h × 4`) is small and resident; the leaves are not.
+pub fn stream_merkle_cap_hiding<S, R>(src: &S, cap_height: usize, rng: &mut R) -> Vec<[Val; DIGEST]>
+where
+    S: LeafSource,
+    R: rand::Rng,
+{
+    let salts = RowMajorMatrix::rand(rng, src.height(), SALT_ELEMS);
+    stream_merkle_cap_inner(src, cap_height, Some(&salts.values))
+}
+
+fn stream_merkle_cap_inner<S: LeafSource>(
+    src: &S,
+    cap_height: usize,
+    salts: Option<&[Val]>,
+) -> Vec<[Val; DIGEST]> {
+    let mut layers = stream_merkle_layers_inner(src, cap_height, salts);
+    layers.pop().expect("at least the leaf layer")
+}
+
+/// Shared frontier build returning EVERY digest layer (layer 0 = leaves, last = the `cap_height` cap) —
+/// what `stream_open` needs for sibling paths. `salts`, when present, is the `h × SALT_ELEMS` matrix
+/// (row-major) whose row `r` is appended to leaf row `r` before hashing (the hiding variant); `None` is
+/// the plain commit. The layers are small (≈ `h × DIGEST` total); the wide leaves are streamed, never
+/// fully resident.
+fn stream_merkle_layers_inner<S: LeafSource>(
+    src: &S,
+    cap_height: usize,
+    salts: Option<&[Val]>,
+) -> Vec<Vec<[Val; DIGEST]>> {
+    let h = src.height();
+    let w = src.width();
+    assert!(
+        h.is_power_of_two(),
+        "stream_merkle: leaf height must be a power of two (got {h})"
+    );
+    if let Some(s) = salts {
+        assert_eq!(s.len(), h * SALT_ELEMS, "salt matrix must be h*SALT_ELEMS");
+    }
+    let perm = default_goldilocks_poseidon2_8();
+    let hash = MyHash::new(perm.clone());
+    let compress = MyCompress::new(perm);
+
+    // Leaf digest layer: hash rows in blocks (so a column-major store reads `w` contiguous
+    // column-segments per block — one streaming pass — rather than a strided per-row gather). Only the
+    // block buffer (ROW_BLOCK × w) and the digests ever reside; the wide leaves are never fully held.
+    const ROW_BLOCK: usize = 4096;
+    let bh = ROW_BLOCK.min(h);
+    let mut block = vec![Val::default(); bh * w];
+    let mut leaf: Vec<[Val; DIGEST]> = Vec::with_capacity(h);
+    let mut r0 = 0usize;
+    while r0 < h {
+        let nr = bh.min(h - r0);
+        src.fill_row_block(r0, nr, &mut block[..nr * w]);
+        // Hash the block's rows in PARALLEL — each row's digest is independent, so this is byte-identical
+        // to the scalar loop (and to p3's per-row `hash_iter`). This is the commit's hot loop.
+        leaf.par_extend((0..nr).into_par_iter().map(|i| {
+            let data = block[i * w..(i + 1) * w].iter().copied();
+            match salts {
+                // leaf = [row | salt], matching p3's `HorizontalPair::new(mat, salts)`
+                Some(s) => {
+                    let r = r0 + i;
+                    hash.hash_iter(
+                        data.chain(s[r * SALT_ELEMS..(r + 1) * SALT_ELEMS].iter().copied()),
+                    )
+                }
+                None => hash.hash_iter(data),
+            }
+        }));
+        r0 += nr;
+    }
+
+    // Compress pairwise (arity 2) up to the cap, keeping every layer. `h` is a power of two, so every
+    // layer length is even until it reaches the cap; a tree shorter than the cap is just the leaf layer.
+    let cap_len = (1usize << cap_height).min(leaf.len());
+    let mut layers = vec![leaf];
+    while layers.last().unwrap().len() > cap_len {
+        let next: Vec<[Val; DIGEST]> = layers
+            .last()
+            .unwrap()
+            .par_chunks_exact(2)
+            .map(|c| compress.compress([c[0], c[1]]))
+            .collect();
+        layers.push(next);
+    }
+    layers
+}
+
+/// Prover data for the streaming commit: the LDE on disk, the hiding salts, and the digest layers
+/// (leaves..cap — small). Everything `stream_open` needs to open a query index. `cap()` is the commitment.
+pub struct StreamCommitData {
+    pub store: MmapLdeStore,
+    pub salts: Vec<Val>,
+    pub layers: Vec<Vec<[Val; DIGEST]>>,
+}
+
+impl StreamCommitData {
+    /// The commitment cap (the top digest layer) — byte-identical to the production commitment.
+    pub fn cap(&self) -> &[[Val; DIGEST]] {
+        self.layers.last().expect("at least the leaf layer")
+    }
+}
+
+/// The out-of-core equivalent of p3's hiding `Pcs::commit` for one matrix: stream the coset-LDE of
+/// `trace` to disk, draw the hiding salts (p3's order), and build the salted Merkle layers. `cap()` is
+/// byte-identical to the production commitment; the data opens byte-identically via `stream_open`.
+pub fn stream_commit<R: rand::Rng>(
+    trace: RowMajorMatrix<Val>,
+    added_bits: usize,
+    shift: Val,
+    c_block: usize,
+    cap_height: usize,
+    rng: &mut R,
+) -> std::io::Result<StreamCommitData> {
+    let (h, w) = (trace.height(), trace.width());
+    let big = h << added_bits;
+    let store = MmapLdeStore::new(big, w)?;
+    stream_coset_lde_to_store(&trace, added_bits, shift, c_block, &store);
+    Ok(stream_commit_store_hiding(store, cap_height, rng))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn stream_commit_random_matrix<R1, R2>(
+    height: usize,
+    width: usize,
+    added_bits: usize,
+    shift: Val,
+    c_block: usize,
+    cap_height: usize,
+    matrix_rng: &mut R1,
+    mmcs_rng: &mut R2,
+) -> std::io::Result<StreamCommitData>
+where
+    R1: rand::Rng + Send + Sync,
+    R2: rand::Rng,
+{
+    let input = MmapLdeStore::new(height, width)?;
+    let mut row = vec![Val::default(); width];
+    for r in 0..height {
+        for v in &mut row {
+            *v = matrix_rng.random();
+        }
+        input.write_row(r, &row);
+    }
+
+    let store = MmapLdeStore::new(height << added_bits, width)?;
+    stream_coset_lde_store_to_store(&input, added_bits, shift, c_block, &store);
+    Ok(stream_commit_store_hiding(store, cap_height, mmcs_rng))
+}
+
+/// Hiding-commit an already materialized, bit-reversed LDE store. This is the reusable lower seam
+/// for callers that can produce the committed LDE without a resident `RowMajorMatrix`.
+pub fn stream_commit_store_hiding<R: rand::Rng>(
+    store: MmapLdeStore,
+    cap_height: usize,
+    rng: &mut R,
+) -> StreamCommitData {
+    let salts = RowMajorMatrix::rand(rng, store.height(), SALT_ELEMS).values;
+    let layers = stream_merkle_layers_inner(&store, cap_height, Some(&salts));
+    StreamCommitData {
+        store,
+        salts,
+        layers,
+    }
+}
+
+/// Streaming equivalent of the PRODUCTION `HidingFriPcs::commit` for one matrix: replicate p3's ZK
+/// randomization VERBATIM (`with_random_cols` — append `2*num_random_codewords` columns of `pcs_rng`
+/// draws, then reshape the width to `+num_random_codewords`, which interleaves random rows and DOUBLES the
+/// height — p3's `is_zk` masking), then stream the coset-LDE + committed-order hiding Merkle commit (salts
+/// from `mmcs_rng`). Reusing p3's own `with_random_cols` keeps the (small, trace-scale) randomization
+/// byte-identical by construction; only the RAM-heavy LDE + commit is streamed.
+///
+/// `cap()` is byte-identical to `HidingFriPcs::commit([(domain, trace)]).0` when `pcs_rng` matches the
+/// PCS's random-codeword rng, `mmcs_rng` matches its inner MMCS salt rng, `added_bits = log_blowup`, and
+/// `shift = Val::GENERATOR / domain.shift()` (the trace's `ext_trace_domain` is natural ⇒ `shift =
+/// GENERATOR`). The returned data opens byte-identically via `stream_open`.
+#[allow(clippy::too_many_arguments)]
+pub fn stream_hiding_commit<R1: rand::Rng + Send + Sync, R2: rand::Rng>(
+    trace: RowMajorMatrix<Val>,
+    num_random_codewords: usize,
+    added_bits: usize,
+    shift: Val,
+    c_block: usize,
+    cap_height: usize,
+    pcs_rng: &mut R1,
+    mmcs_rng: &mut R2,
+) -> std::io::Result<StreamCommitData> {
+    let w = trace.width();
+    // p3's exact randomization: append `w + 2*nrc` columns (→ width `2w + 2*nrc`), then reshape to width
+    // `w + nrc` so the height doubles. `with_random_cols` draws `rng.random()` per appended element in
+    // row-major order — byte-identical to `HidingFriPcs::commit`'s draw.
+    let mut randomized = trace.with_random_cols(w + 2 * num_random_codewords, &mut *pcs_rng);
+    randomized.width = w + num_random_codewords;
+    stream_commit(randomized, added_bits, shift, c_block, cap_height, mmcs_rng)
+}
+
+/// Prover data for a BATCH hiding commit of K SAME-height matrices in ONE Merkle tree — the quotient's
+/// multi-chunk commit (`num_chunks` LDEs committed together, one root). Each matrix has its own on-disk
+/// store + salt column-block; the digest layers are shared. `cap()` is the (single) commitment.
+/// Store-backed equivalent of `stream_hiding_commit` for callers that can emit
+/// the trace into a natural-order mmap store. Random-codeword draw order and
+/// reshape match `RowMajorMatrix::with_random_cols(...); randomized.width = w + nrc`.
+#[allow(clippy::too_many_arguments)]
+pub fn stream_hiding_commit_store<R1: rand::Rng + Send + Sync, R2: rand::Rng>(
+    trace: &MmapLdeStore,
+    num_random_codewords: usize,
+    added_bits: usize,
+    shift: Val,
+    c_block: usize,
+    cap_height: usize,
+    pcs_rng: &mut R1,
+    mmcs_rng: &mut R2,
+) -> std::io::Result<StreamCommitData> {
+    let randomized = randomized_trace_store_from_trace_store(trace, num_random_codewords, pcs_rng)?;
+    let store = MmapLdeStore::new(randomized.height() << added_bits, randomized.width())?;
+    stream_coset_lde_store_to_store(&randomized, added_bits, shift, c_block, &store);
+    drop(randomized);
+    Ok(stream_commit_store_hiding(store, cap_height, mmcs_rng))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn stream_hiding_commit_store_owned<R1: rand::Rng + Send + Sync, R2: rand::Rng>(
+    trace: MmapLdeStore,
+    num_random_codewords: usize,
+    added_bits: usize,
+    shift: Val,
+    c_block: usize,
+    cap_height: usize,
+    pcs_rng: &mut R1,
+    mmcs_rng: &mut R2,
+) -> std::io::Result<StreamCommitData> {
+    let randomized =
+        randomized_trace_store_from_trace_store(&trace, num_random_codewords, pcs_rng)?;
+    drop(trace);
+    let store = MmapLdeStore::new(randomized.height() << added_bits, randomized.width())?;
+    stream_coset_lde_store_to_store(&randomized, added_bits, shift, c_block, &store);
+    drop(randomized);
+    Ok(stream_commit_store_hiding(store, cap_height, mmcs_rng))
+}
+
+fn randomized_trace_store_from_trace_store<R: rand::Rng + Send + Sync>(
+    trace: &MmapLdeStore,
+    num_random_codewords: usize,
+    pcs_rng: &mut R,
+) -> std::io::Result<MmapLdeStore> {
+    let h = trace.height();
+    let w = trace.width();
+    let randomized_w = w + num_random_codewords;
+    let randomized = MmapLdeStore::new(h * 2, randomized_w)?;
+    let mut trace_row = vec![Val::default(); w];
+    let mut random_tail = vec![Val::default(); w + 2 * num_random_codewords];
+    let mut row0 = vec![Val::default(); randomized_w];
+    let mut row1 = vec![Val::default(); randomized_w];
+    for r in 0..h {
+        trace.fill_row(r, &mut trace_row);
+        for v in &mut random_tail {
+            *v = pcs_rng.random();
+        }
+        row0[..w].copy_from_slice(&trace_row);
+        row0[w..].copy_from_slice(&random_tail[..num_random_codewords]);
+        row1.copy_from_slice(&random_tail[num_random_codewords..]);
+        randomized.write_row(2 * r, &row0);
+        randomized.write_row(2 * r + 1, &row1);
+    }
+    Ok(randomized)
+}
+
+pub struct StreamBatchCommitData {
+    pub stores: Vec<MmapLdeStore>,
+    pub salts: Vec<Vec<Val>>,
+    pub layers: Vec<Vec<[Val; DIGEST]>>,
+}
+
+impl StreamBatchCommitData {
+    /// The commitment cap — byte-identical to `MerkleTreeHidingMmcs::commit(mats).0`.
+    pub fn cap(&self) -> &[[Val; DIGEST]] {
+        self.layers.last().expect("at least the leaf layer")
+    }
+    /// View this commit as a `RoundView` (K matrices) for the streamed open / FRI input opens.
+    pub fn round_view(&self) -> RoundView<'_> {
+        RoundView {
+            stores: self.stores.iter().collect(),
+            salts: self.salts.iter().map(|v| v.as_slice()).collect(),
+            layers: &self.layers,
+        }
+    }
+}
+
+/// A borrowed, K-matrix view of a committed round — unifies the single-matrix `StreamCommitData` (trace,
+/// opt-random) and the multi-matrix `StreamBatchCommitData` (quotient) for the streamed open, which loops
+/// over each round's matrices exactly as p3's `open` / `open_input` do. All matrices in a round share one
+/// height and one Merkle tree (its `layers`).
+pub struct RoundView<'a> {
+    pub stores: Vec<&'a MmapLdeStore>,
+    pub salts: Vec<&'a [Val]>,
+    pub layers: &'a [Vec<[Val; DIGEST]>],
+}
+
+impl RoundView<'_> {
+    /// Open leaf `index`: every matrix's row + salt, and the shared sibling path — the exact `BatchOpening`
+    /// p3's hiding `Mmcs::open_batch` returns for this round (single- or multi-matrix).
+    fn open(&self, index: usize) -> BatchOpening<Val, ValMmcs> {
+        let rows: Vec<Vec<Val>> = self
+            .stores
+            .iter()
+            .map(|s| {
+                let mut row = vec![Val::default(); s.width()];
+                s.fill_row(index, &mut row);
+                row
+            })
+            .collect();
+        let salts: Vec<Vec<Val>> = self
+            .salts
+            .iter()
+            .map(|s| s[index * SALT_ELEMS..(index + 1) * SALT_ELEMS].to_vec())
+            .collect();
+        let mut proof = Vec::with_capacity(self.layers.len().saturating_sub(1));
+        let mut idx = index;
+        for layer in &self.layers[..self.layers.len() - 1] {
+            proof.push(layer[idx ^ 1]);
+            idx >>= 1;
+        }
+        BatchOpening::new(rows, (salts, proof))
+    }
+}
+
+impl StreamCommitData {
+    /// View this single-matrix commit as a 1-matrix `RoundView`.
+    pub fn round_view(&self) -> RoundView<'_> {
+        RoundView {
+            stores: vec![&self.store],
+            salts: vec![self.salts.as_slice()],
+            layers: &self.layers,
+        }
+    }
+}
+
+/// Frontier hiding Merkle over K SAME-height RESIDENT row-major matrices, hashed DIRECTLY (no store
+/// round-trip): leaf row `i` is `hash([m0[i] | salt0[i] | … | mK[i] | saltK[i]])` — exactly p3's
+/// `hash_iter(matrices.flat_map(|HP(m_j, salt_j)| row_i))` (`merkle_tree.rs:330`), then pairwise-compress
+/// to the cap. The quotient chunks are already in RAM (`get_quotient_ldes`), so hashing them directly
+/// skips a full READ pass over the quotient LDE (byte-identical to reading the stores back — same leaves,
+/// same order). Fully parallel.
+fn stream_merkle_layers_batch(
+    mats: &[RowMajorMatrix<Val>],
+    salts: &[Vec<Val>],
+    cap_height: usize,
+) -> Vec<Vec<[Val; DIGEST]>> {
+    let h = mats[0].height();
+    assert!(
+        h.is_power_of_two(),
+        "batch Merkle: height must be a power of two (got {h})"
+    );
+    let perm = default_goldilocks_poseidon2_8();
+    let hash = MyHash::new(perm.clone());
+    let compress = MyCompress::new(perm);
+
+    let leaf: Vec<[Val; DIGEST]> = (0..h)
+        .into_par_iter()
+        .map(|i| {
+            let data = mats.iter().enumerate().flat_map(|(j, mat)| {
+                let w = mat.width();
+                mat.values[i * w..(i + 1) * w].iter().copied().chain(
+                    salts[j][i * SALT_ELEMS..(i + 1) * SALT_ELEMS]
+                        .iter()
+                        .copied(),
+                )
+            });
+            hash.hash_iter(data)
+        })
+        .collect();
+
+    let cap_len = (1usize << cap_height).min(leaf.len());
+    let mut layers = vec![leaf];
+    while layers.last().unwrap().len() > cap_len {
+        let next: Vec<[Val; DIGEST]> = layers
+            .last()
+            .unwrap()
+            .par_chunks_exact(2)
+            .map(|c| compress.compress([c[0], c[1]]))
+            .collect();
+        layers.push(next);
+    }
+    layers
+}
+
+/// Same as `stream_merkle_layers_batch` but reads the K matrices from their on-disk STORES in row-blocks
+/// (`fill_row_block` = sequential column-segment streams) — for the STREAMED quotient, whose chunk LDEs
+/// are tiled straight to disk (never all-K-resident), so there is no resident matrix to hash. Byte-identical.
+fn stream_merkle_layers_stores(
+    stores: &[MmapLdeStore],
+    salts: &[Vec<Val>],
+    cap_height: usize,
+) -> Vec<Vec<[Val; DIGEST]>> {
+    let h = stores[0].height();
+    assert!(
+        h.is_power_of_two(),
+        "batch Merkle: height must be a power of two (got {h})"
+    );
+    let perm = default_goldilocks_poseidon2_8();
+    let hash = MyHash::new(perm.clone());
+    let compress = MyCompress::new(perm);
+
+    const ROW_BLOCK: usize = 4096;
+    let bh = ROW_BLOCK.min(h);
+    let mut blocks: Vec<Vec<Val>> = stores
+        .iter()
+        .map(|s| vec![Val::default(); bh * s.width()])
+        .collect();
+    let mut leaf: Vec<[Val; DIGEST]> = Vec::with_capacity(h);
+    let mut r0 = 0usize;
+    while r0 < h {
+        let nr = bh.min(h - r0);
+        for (j, s) in stores.iter().enumerate() {
+            s.fill_row_block(r0, nr, &mut blocks[j][..nr * s.width()]);
+        }
+        leaf.par_extend((0..nr).into_par_iter().map(|i| {
+            let r = r0 + i;
+            let data = stores.iter().enumerate().flat_map(|(j, s)| {
+                let w = s.width();
+                blocks[j][i * w..(i + 1) * w].iter().copied().chain(
+                    salts[j][r * SALT_ELEMS..(r + 1) * SALT_ELEMS]
+                        .iter()
+                        .copied(),
+                )
+            });
+            hash.hash_iter(data)
+        }));
+        r0 += nr;
+    }
+
+    let cap_len = (1usize << cap_height).min(leaf.len());
+    let mut layers = vec![leaf];
+    while layers.last().unwrap().len() > cap_len {
+        let next: Vec<[Val; DIGEST]> = layers
+            .last()
+            .unwrap()
+            .par_chunks_exact(2)
+            .map(|c| compress.compress([c[0], c[1]]))
+            .collect();
+        layers.push(next);
+    }
+    layers
+}
+
+/// Streaming BATCH hiding commit of K already-LDE'd SAME-height matrices (the quotient chunks, which
+/// `get_quotient_ldes` returns already in committed bit-reversed order) — byte-identical to
+/// `MerkleTreeHidingMmcs::commit(mats)` (= the production `commit_ldes` → `mmcs.commit`). Writes each
+/// matrix to its own column-major store, draws the `h × SALT_ELEMS` salts PER MATRIX in order (p3's map
+/// order over the batch), then frontier-Merkles the concatenated salted rows. Opens byte-identically via
+/// `stream_open_batch`.
+pub fn stream_commit_batch<R: rand::Rng>(
+    mats: Vec<RowMajorMatrix<Val>>,
+    c_block: usize,
+    cap_height: usize,
+    rng: &mut R,
+) -> std::io::Result<StreamBatchCommitData> {
+    assert!(!mats.is_empty(), "batch commit needs at least one matrix");
+    let h = mats[0].height();
+    assert!(
+        mats.iter().all(|m| m.height() == h),
+        "batch matrices must share one height"
+    );
+
+    // Write each matrix to its own column-major store (no LDE — the inputs are already LDEs).
+    let mut stores = Vec::with_capacity(mats.len());
+    for mat in &mats {
+        let w = mat.width();
+        let store = MmapLdeStore::new(h, w)?;
+        let mut c0 = 0usize;
+        while c0 < w {
+            let cw = c_block.min(w - c0);
+            let mut tile = Vec::with_capacity(h * cw);
+            for r in 0..h {
+                tile.extend_from_slice(&mat.values[r * w + c0..r * w + c0 + cw]);
+            }
+            store.write_col_tile(c0, cw, &tile);
+            c0 += cw;
+        }
+        stores.push(store);
+    }
+    // Draw the salts PER MATRIX in order — p3's `inputs.map(|mat| rand(rng, h, SALT_ELEMS))`.
+    let salts: Vec<Vec<Val>> = (0..mats.len())
+        .map(|_| RowMajorMatrix::rand(rng, h, SALT_ELEMS).values)
+        .collect();
+
+    // Hash the RESIDENT matrices (skips a read pass over the just-written quotient LDE); `mats` is dropped
+    // right after (the stores serve the query opens).
+    let layers = stream_merkle_layers_batch(&mats, &salts, cap_height);
+    Ok(StreamBatchCommitData {
+        stores,
+        salts,
+        layers,
+    })
+}
+
+/// Open leaf `index` of a BATCH commit: each matrix's (unsalted) row, each matrix's salt, and the SHARED
+/// Merkle sibling path — byte-identical to production hiding `Mmcs::open_batch` on a multi-matrix commit
+/// (`opened_values = [m0_row, …, mK_row]`, `opening_proof = ([salt0, …, saltK], siblings)`).
+pub fn stream_open_batch(
+    data: &StreamBatchCommitData,
+    index: usize,
+) -> (Vec<Vec<Val>>, Vec<Vec<Val>>, Vec<[Val; DIGEST]>) {
+    let rows: Vec<Vec<Val>> = data
+        .stores
+        .iter()
+        .map(|s| {
+            let mut row = vec![Val::default(); s.width()];
+            s.fill_row(index, &mut row);
+            row
+        })
+        .collect();
+    let salts: Vec<Vec<Val>> = data
+        .salts
+        .iter()
+        .map(|s| s[index * SALT_ELEMS..(index + 1) * SALT_ELEMS].to_vec())
+        .collect();
+    let mut proof = Vec::with_capacity(data.layers.len().saturating_sub(1));
+    let mut idx = index;
+    for layer in &data.layers[..data.layers.len() - 1] {
+        proof.push(layer[idx ^ 1]);
+        idx >>= 1;
+    }
+    (rows, salts, proof)
+}
+
+/// Reimplementation of p3's PRIVATE `get_zp_cis` (`hiding_pcs.rs:486`): the Lagrange normalization
+/// constant per quotient subdomain — `1 / Π_{j≠i} v_{H_j}(first_point(H_i))` (batch-inverted). Byte-identical.
+fn stream_get_zp_cis(domains: &[TwoAdicMultiplicativeCoset<Val>]) -> Vec<Val> {
+    let prods: Vec<Val> = domains
+        .iter()
+        .enumerate()
+        .map(|(i, domain)| {
+            domains
+                .iter()
+                .enumerate()
+                .filter(|(j, _)| *j != i)
+                .map(|(_, other)| other.vanishing_poly_at_point(domain.first_point()))
+                .product::<Val>()
+        })
+        .collect();
+    batch_multiplicative_inverse(&prods)
+}
+
+fn fill_store_col_tile(store: &MmapLdeStore, c0: usize, cw: usize, out: &mut [Val]) {
+    debug_assert_eq!(out.len(), store.height() * cw, "column tile size mismatch");
+    debug_assert!(c0 + cw <= store.width(), "column tile out of bounds");
+    let s = store.slice();
+    let h = store.height();
+    for c in 0..cw {
+        let seg = &s[(c0 + c) * h..(c0 + c + 1) * h];
+        for r in 0..h {
+            out[r * cw + c] = seg[r];
+        }
+    }
+}
+
+fn stream_split_quotient_eval_store<R: rand::Rng + Send + Sync>(
+    quotient_store: &MmapLdeStore,
+    num_chunks: usize,
+    num_random_codewords: usize,
+    pcs_rng: &mut R,
+) -> std::io::Result<Vec<MmapLdeStore>> {
+    assert!(num_chunks > 0, "num_chunks must be nonzero");
+    let qsize = quotient_store.height();
+    assert_eq!(
+        qsize % num_chunks,
+        0,
+        "quotient store height must divide into chunks"
+    );
+    let rows_per_chunk = qsize / num_chunks;
+    let base_w = quotient_store.width();
+    let randomized_w = base_w + num_random_codewords;
+    let q = quotient_store.slice();
+
+    let mut stores = Vec::with_capacity(num_chunks);
+    let mut col = vec![Val::default(); rows_per_chunk];
+    for chunk in 0..num_chunks {
+        let store = MmapLdeStore::new(rows_per_chunk, randomized_w)?;
+        for c in 0..base_w {
+            for r in 0..rows_per_chunk {
+                col[r] = q[c * qsize + r * num_chunks + chunk];
+            }
+            store.write_col_tile(c, 1, &col);
+        }
+        if num_random_codewords > 0 {
+            let mut random_tail = Vec::with_capacity(rows_per_chunk * num_random_codewords);
+            for _ in 0..rows_per_chunk {
+                for _ in 0..num_random_codewords {
+                    random_tail.push(pcs_rng.random());
+                }
+            }
+            store.write_col_tile(base_w, num_random_codewords, &random_tail);
+        }
+        stores.push(store);
+    }
+    Ok(stores)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn stream_get_quotient_eval_store_ldes_to_stores<R: rand::Rng + Send + Sync>(
+    domains: Vec<TwoAdicMultiplicativeCoset<Val>>,
+    eval_stores: Vec<MmapLdeStore>,
+    num_chunks: usize,
+    log_blowup: usize,
+    c_block: usize,
+    pcs_rng: &mut R,
+) -> std::io::Result<Vec<MmapLdeStore>> {
+    assert!(
+        num_chunks > 1,
+        "num_chunks must be > 1 to preserve hiding (got {num_chunks})"
+    );
+    assert_eq!(domains.len(), num_chunks, "domain/chunk count mismatch");
+    assert_eq!(eval_stores.len(), num_chunks, "eval/chunk count mismatch");
+
+    let cis = stream_get_zp_cis(&domains);
+    let last_chunk = num_chunks - 1;
+    let last_chunk_ci_inv = cis[last_chunk].inverse();
+    let mul_coeffs: Vec<Val> = (0..last_chunk)
+        .map(|i| cis[i] * last_chunk_ci_inv)
+        .collect();
+
+    let h = eval_stores[0].height();
+    let w = eval_stores[0].width();
+    for eval_store in &eval_stores {
+        assert_eq!(eval_store.height(), h, "quotient chunks must share height");
+        assert_eq!(eval_store.width(), w, "quotient chunks must share width");
+    }
+
+    let mut random_stores = Vec::with_capacity(num_chunks);
+    let mut final_random_values = Val::zero_vec(h * w);
+    for &mul_coeff in &mul_coeffs {
+        let random_store = MmapLdeStore::new(h, w)?;
+        let random_values: Vec<Val> = (0..h * w).map(|_| pcs_rng.random()).collect();
+        for k in 0..h * w {
+            final_random_values[k] -= random_values[k] * mul_coeff;
+        }
+        random_store.write_col_tile(0, w, &random_values);
+        random_stores.push(random_store);
+    }
+    let final_random_store = MmapLdeStore::new(h, w)?;
+    final_random_store.write_col_tile(0, w, &final_random_values);
+    random_stores.push(final_random_store);
+
+    let dft = Dft::default();
+    let g = <Val as Field>::GENERATOR;
+    let mut stores = Vec::with_capacity(num_chunks);
+    for (domain, (eval_store, random_store)) in domains
+        .into_iter()
+        .zip(eval_stores.into_iter().zip(random_stores.into_iter()))
+    {
+        assert_eq!(domain.size(), h, "quotient subdomain/eval height mismatch");
+        let shift = g / domain.shift();
+        let p = shift.exp_u64(h as u64);
+        let big = h << (log_blowup + 1);
+        let store = MmapLdeStore::new(big, w)?;
+
+        let mut c0 = 0usize;
+        while c0 < w {
+            let cw = c_block.min(w - c0);
+            let mut evals_tile = vec![Val::default(); h * cw];
+            fill_store_col_tile(&eval_store, c0, cw, &mut evals_tile);
+            let mut lde_tile = dft
+                .coset_lde_batch(RowMajorMatrix::new(evals_tile, cw), log_blowup + 1, shift)
+                .to_row_major_matrix();
+
+            let mut random_tile = vec![Val::default(); h * cw];
+            fill_store_col_tile(&random_store, c0, cw, &mut random_tile);
+            let mut vanishing_tile =
+                <Val as PrimeCharacteristicRing>::zero_vec((h * cw) << (log_blowup + 1));
+            g.powers().take(h).enumerate().for_each(|(ii, p_i)| {
+                for jj in 0..cw {
+                    let mul_coeff = p_i * random_tile[ii * cw + jj];
+                    vanishing_tile[ii * cw + jj] -= mul_coeff;
+                    vanishing_tile[(h + ii) * cw + jj] = p * mul_coeff;
+                }
+            });
+            let random_eval_tile = dft
+                .dft_batch(RowMajorMatrix::new(vanishing_tile, cw))
+                .to_row_major_matrix();
+            for k in 0..h * cw * (1 << (log_blowup + 1)) {
+                lde_tile.values[k] += random_eval_tile.values[k];
+            }
+            let tile_values = lde_tile.bit_reverse_rows().to_row_major_matrix().values;
+            store.write_col_tile(c0, cw, &tile_values);
+            c0 += cw;
+        }
+        stores.push(store);
+    }
+
+    Ok(stores)
+}
+
+/// Reimplementation of the PRODUCTION `HidingFriPcs::get_quotient_ldes` (`hiding_pcs.rs:168`) drawing from
+/// an EXTERNAL `pcs_rng` (so the full prove can thread ONE random-codeword rng through trace → quotient →
+/// opt-random exactly as p3's internal `self.rng` does — p3 bundles that rng inside the PCS, which is why
+/// this is reimplemented rather than reused). Produces the num_chunks randomized quotient chunk LDEs
+/// (already in committed bit-reversed order): per chunk `q'_i = q_i + v_{H_i}·t_i` with random `t_i`,
+/// the last chunk's `t` set so the sum vanishes (the 2024/1037 masking). Byte-identical to p3 given the
+/// same rng + inputs; the domain/vanishing/DFT helpers are p3's own. Resident (quotient-scale) — the
+/// randomization is interleaved with the LDE, so this is the one buffer the streamed prove holds before
+/// batch-committing it out-of-core via `stream_commit_batch`.
+#[allow(clippy::too_many_arguments)]
+fn stream_get_quotient_ldes_to_stores<R: rand::Rng + Send + Sync>(
+    domains: Vec<TwoAdicMultiplicativeCoset<Val>>,
+    evaluations: Vec<RowMajorMatrix<Val>>,
+    num_chunks: usize,
+    log_blowup: usize,
+    num_random_codewords: usize,
+    c_block: usize,
+    pcs_rng: &mut R,
+) -> std::io::Result<Vec<MmapLdeStore>> {
+    assert!(
+        num_chunks > 1,
+        "num_chunks must be > 1 to preserve hiding (got {num_chunks})"
+    );
+    let cis = stream_get_zp_cis(&domains);
+    let last_chunk = num_chunks - 1;
+    let last_chunk_ci_inv = cis[last_chunk].inverse();
+    let mul_coeffs: Vec<Val> = (0..last_chunk)
+        .map(|i| cis[i] * last_chunk_ci_inv)
+        .collect();
+
+    // Draw ALL the randomization UP FRONT (subdomain-scale — small), preserving p3's rng order: per chunk
+    // append `nrc` random columns (pcs_rng), then the `(K-1)·h·w` random values (pcs_rng), last chunk
+    // zeroed then set so Σ vanishes.
+    let randomized_evaluations: Vec<RowMajorMatrix<Val>> = evaluations
+        .into_iter()
+        .map(|mat| mat.with_random_cols(num_random_codewords, &mut *pcs_rng))
+        .collect();
+    let h = randomized_evaluations[0].height();
+    let w = randomized_evaluations[0].width();
+    let mut all_random_values: Vec<Val> = (0..(randomized_evaluations.len() - 1) * h * w)
+        .map(|_| pcs_rng.random())
+        .chain(core::iter::repeat_n(Val::ZERO, h * w))
+        .collect();
+    for j in 0..last_chunk {
+        let mul_coeff = mul_coeffs[j];
+        for k in 0..h * w {
+            let t = all_random_values[j * h * w + k] * mul_coeff;
+            all_random_values[last_chunk * h * w + k] -= t;
+        }
+    }
+
+    // Compute each chunk's LDE ONE AT A TIME (identical to `get_quotient_ldes` per chunk), stream it to its
+    // own store, and DROP it — so only ONE chunk LDE is resident, not all K. This is what keeps the quotient
+    // commit from doubling the memory pressure (the whole-K-resident buffer was the capped floor).
+    #[cfg(not(feature = "gpu"))]
+    let dft = Dft::default();
+    let g = <Val as Field>::GENERATOR;
+    let mut stores = Vec::with_capacity(num_chunks);
+    for (i, (domain, evals)) in domains.into_iter().zip(randomized_evaluations).enumerate() {
+        let shift = g / domain.shift();
+        let random_values = &all_random_values[i * h * w..(i + 1) * h * w];
+        let p = shift.exp_u64(h as u64);
+        let big = h << (log_blowup + 1); // chunk LDE height
+        let store = MmapLdeStore::new(big, w)?;
+
+        // GPU-per-tile: when the `gpu` feature is on, build the two subdomain-scale chunk inputs ONCE — the
+        // randomized evals as canonical u64, and the 2h-row vanishing-randomizer prefix `v_H·r` (byte-identical
+        // to the CPU `vanishing_tile` construction below, just built for the full width) — then compute each
+        // `big × cw` tile on the device (`gpu_quotient_chunk_lde_tile`). Still only ONE tile is host-resident,
+        // so the aggregator scaling floor is preserved while the coset-LDE + DFT run off the CPU; under a
+        // cgroup cap that frees the cores that were contending with the kernel's mmap writeback.
+        #[cfg(feature = "gpu")]
+        let evals_u64: Vec<u64> = evals.values.iter().map(|f| f.as_canonical_u64()).collect();
+        #[cfg(feature = "gpu")]
+        let van_prefix: Vec<u64> = {
+            let mut vp = vec![0u64; 2 * h * w];
+            g.powers().take(h).enumerate().for_each(|(r, p_r)| {
+                for j in 0..w {
+                    let mul_coeff = p_r * random_values[r * w + j];
+                    vp[r * w + j] = (-mul_coeff).as_canonical_u64();
+                    vp[(h + r) * w + j] = (p * mul_coeff).as_canonical_u64();
+                }
+            });
+            vp
+        };
+        #[cfg(feature = "gpu")]
+        let shift_u64 = shift.as_canonical_u64();
+
+        // Compute the chunk's LDE a COLUMN-TILE at a time and write each tile to the store — coset-LDE (each
+        // column an independent poly), the vanishing-poly masking (each column depends only on its own
+        // random_values column), the DFT, and the row bit-reversal are ALL column-separable, so a `big ×
+        // c_block` tile is byte-identical to the corresponding columns of the whole-chunk computation. Only
+        // that tile ever resides (never the whole chunk), so the quotient commit's RAM floor is `big·c_block`
+        // instead of `big·w`.
+        let mut c0 = 0usize;
+        while c0 < w {
+            let cw = c_block.min(w - c0);
+            #[cfg(feature = "gpu")]
+            let tile_values: Vec<Val> = crate::gpu::gpu_quotient_chunk_lde_tile(
+                &evals_u64,
+                &van_prefix,
+                h,
+                w,
+                c0,
+                cw,
+                log_blowup + 1,
+                shift_u64,
+            )
+            .into_iter()
+            .map(Val::new)
+            .collect();
+            #[cfg(not(feature = "gpu"))]
+            let tile_values: Vec<Val> = {
+                // Gather the tile's input columns [c0, c0+cw) from the (resident, subdomain-scale) chunk evals.
+                let mut evals_tile = Vec::with_capacity(h * cw);
+                for r in 0..h {
+                    evals_tile.extend_from_slice(&evals.values[r * w + c0..r * w + c0 + cw]);
+                }
+                let mut lde_tile = dft
+                    .coset_lde_batch(RowMajorMatrix::new(evals_tile, cw), log_blowup + 1, shift)
+                    .to_row_major_matrix();
+
+                // v_H(X)·r(X) for exactly these columns.
+                let mut vanishing_tile =
+                    <Val as PrimeCharacteristicRing>::zero_vec((h * cw) << (log_blowup + 1));
+                g.powers().take(h).enumerate().for_each(|(ii, p_i)| {
+                    for jj in 0..cw {
+                        let mul_coeff = p_i * random_values[ii * w + c0 + jj];
+                        vanishing_tile[ii * cw + jj] -= mul_coeff;
+                        vanishing_tile[(h + ii) * cw + jj] = p * mul_coeff;
+                    }
+                });
+                let random_eval_tile = dft
+                    .dft_batch(RowMajorMatrix::new(vanishing_tile, cw))
+                    .to_row_major_matrix();
+                for k in 0..h * cw * (1 << (log_blowup + 1)) {
+                    lde_tile.values[k] += random_eval_tile.values[k];
+                }
+                lde_tile.bit_reverse_rows().to_row_major_matrix().values
+            };
+            store.write_col_tile(c0, cw, &tile_values);
+            c0 += cw;
+        }
+        stores.push(store);
+    }
+    Ok(stores)
+}
+
+/// The streamed equivalent of `commit_quotient`: split the quotient evaluations into `num_chunks`
+/// subdomains (p3's `split_evals`/`split_domains`), randomize + LDE each chunk STRAIGHT TO ITS STORE one at
+/// a time (`stream_get_quotient_ldes_to_stores` — only one chunk LDE resident, drawing from `pcs_rng`), then
+/// draw the salts (`mmcs_rng`, per chunk in p3's order) and frontier-Merkle from the stores. `cap()` is
+/// byte-identical to `pcs.commit_quotient(...).0`; opens via `stream_open_batch`.
+#[allow(clippy::too_many_arguments)]
+pub fn stream_commit_quotient_store<R1: rand::Rng + Send + Sync, R2: rand::Rng>(
+    quotient_domain: TwoAdicMultiplicativeCoset<Val>,
+    quotient_store: &MmapLdeStore,
+    num_chunks: usize,
+    log_blowup: usize,
+    num_random_codewords: usize,
+    c_block: usize,
+    cap_height: usize,
+    pcs_rng: &mut R1,
+    mmcs_rng: &mut R2,
+) -> std::io::Result<StreamBatchCommitData> {
+    assert_eq!(
+        quotient_store.height(),
+        quotient_domain.size(),
+        "quotient store/domain height mismatch"
+    );
+    let sub_evals = stream_split_quotient_eval_store(
+        quotient_store,
+        num_chunks,
+        num_random_codewords,
+        pcs_rng,
+    )?;
+    let sub_domains = quotient_domain.split_domains(num_chunks);
+    let stores = stream_get_quotient_eval_store_ldes_to_stores(
+        sub_domains,
+        sub_evals,
+        num_chunks,
+        log_blowup,
+        c_block,
+        pcs_rng,
+    )?;
+    let h = stores[0].height();
+    let salts: Vec<Vec<Val>> = (0..stores.len())
+        .map(|_| RowMajorMatrix::rand(mmcs_rng, h, SALT_ELEMS).values)
+        .collect();
+    let layers = stream_merkle_layers_stores(&stores, &salts, cap_height);
+    Ok(StreamBatchCommitData {
+        stores,
+        salts,
+        layers,
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn stream_commit_quotient_store_owned<R1: rand::Rng + Send + Sync, R2: rand::Rng>(
+    quotient_domain: TwoAdicMultiplicativeCoset<Val>,
+    quotient_store: MmapLdeStore,
+    num_chunks: usize,
+    log_blowup: usize,
+    num_random_codewords: usize,
+    c_block: usize,
+    cap_height: usize,
+    pcs_rng: &mut R1,
+    mmcs_rng: &mut R2,
+) -> std::io::Result<StreamBatchCommitData> {
+    assert_eq!(
+        quotient_store.height(),
+        quotient_domain.size(),
+        "quotient store/domain height mismatch"
+    );
+    let sub_evals = stream_split_quotient_eval_store(
+        &quotient_store,
+        num_chunks,
+        num_random_codewords,
+        pcs_rng,
+    )?;
+    drop(quotient_store);
+    let sub_domains = quotient_domain.split_domains(num_chunks);
+    let stores = stream_get_quotient_eval_store_ldes_to_stores(
+        sub_domains,
+        sub_evals,
+        num_chunks,
+        log_blowup,
+        c_block,
+        pcs_rng,
+    )?;
+    let h = stores[0].height();
+    let salts: Vec<Vec<Val>> = (0..stores.len())
+        .map(|_| RowMajorMatrix::rand(mmcs_rng, h, SALT_ELEMS).values)
+        .collect();
+    let layers = stream_merkle_layers_stores(&stores, &salts, cap_height);
+    Ok(StreamBatchCommitData {
+        stores,
+        salts,
+        layers,
+    })
+}
+
+/// Resident reference wrapper retained for tests and differential checks.
+#[allow(clippy::too_many_arguments)]
+pub fn stream_commit_quotient<R1: rand::Rng + Send + Sync, R2: rand::Rng>(
+    quotient_domain: TwoAdicMultiplicativeCoset<Val>,
+    quotient_evaluations: RowMajorMatrix<Val>,
+    num_chunks: usize,
+    log_blowup: usize,
+    num_random_codewords: usize,
+    c_block: usize,
+    cap_height: usize,
+    pcs_rng: &mut R1,
+    mmcs_rng: &mut R2,
+) -> std::io::Result<StreamBatchCommitData> {
+    let sub_evals = quotient_domain.split_evals(num_chunks, quotient_evaluations);
+    let sub_domains = quotient_domain.split_domains(num_chunks);
+    let stores = stream_get_quotient_ldes_to_stores(
+        sub_domains,
+        sub_evals,
+        num_chunks,
+        log_blowup,
+        num_random_codewords,
+        c_block,
+        pcs_rng,
+    )?;
+    let h = stores[0].height();
+    // Salts PER CHUNK in order — p3's `commit_ldes` → `mmcs.commit`'s `inputs.map(rand(rng, h, SALT_ELEMS))`.
+    let salts: Vec<Vec<Val>> = (0..stores.len())
+        .map(|_| RowMajorMatrix::rand(mmcs_rng, h, SALT_ELEMS).values)
+        .collect();
+    let layers = stream_merkle_layers_stores(&stores, &salts, cap_height);
+    Ok(StreamBatchCommitData {
+        stores,
+        salts,
+        layers,
+    })
+}
+
+/// Open the leaf at `index`: the (unsalted) row, its salt, and the binary Merkle sibling path up to the
+/// cap — byte-identical to production's hiding `Mmcs::open_batch` (which returns `opened_values = [row]`,
+/// `opening_proof = ([salt], siblings)`). The row is a single strided seek into the store; the salt and
+/// the log-length path come from the small resident salts/layers — negligible I/O at 96 queries.
+pub fn stream_open(
+    data: &StreamCommitData,
+    index: usize,
+) -> (Vec<Val>, Vec<Val>, Vec<[Val; DIGEST]>) {
+    let w = data.store.width();
+    let mut row = vec![Val::default(); w];
+    data.store.fill_row(index, &mut row);
+    let salt = data.salts[index * SALT_ELEMS..(index + 1) * SALT_ELEMS].to_vec();
+    // one sibling per binary level, leaf up to (not including) the cap layer
+    let mut proof = Vec::with_capacity(data.layers.len().saturating_sub(1));
+    let mut idx = index;
+    for layer in &data.layers[..data.layers.len() - 1] {
+        proof.push(layer[idx ^ 1]);
+        idx >>= 1;
+    }
+    (row, salt, proof)
+}
+
+// ── Streaming FRI (P3.6) ────────────────────────────────────────────────────────────────────────
+// The commit/open MMCS substrate above is over the BASE field. The FRI commit phase instead commits
+// each round's codeword over the EXTENSION field through p3's `ChallengeMmcs = ExtensionMmcs<Val,
+// Challenge, ValMmcs>`, which base-flattens each `Challenge` element into its `EXT_D` coordinates
+// (element-major, exactly `FlatMatrixView`) and then hides via the SAME production `ValMmcs`. So a FRI
+// round commit is just the streaming hiding commit applied to the base-flattened codeword — and a FRI
+// query open is `stream_open` + `reconstitute_from_base`. These two functions are the extension-field
+// bridge; `stream_prove_fri` (below) drives them round-by-round.
+
+/// Base coordinates per `Challenge` element (`Challenge`'s degree over `Val`). `ExtensionMmcs` flattens
+/// each committed extension element into this many consecutive base columns, element-major.
+const EXT_D: usize = <Challenge as BasedVectorSpace<Val>>::DIMENSION;
+
+/// Mmap-backed extension-field codeword, stored as one `Challenge` per row and `EXT_D` base-field
+/// columns. Reduction writes these in row blocks; FRI commit regroups rows into `arity * EXT_D`
+/// leaves without resident full-height codeword vectors.
+pub struct ChallengeCodewordStore {
+    store: MmapLdeStore,
+}
+
+impl ChallengeCodewordStore {
+    pub fn new(len: usize) -> std::io::Result<Self> {
+        assert!(
+            len > 0 && len.is_power_of_two(),
+            "FRI codeword length must be a non-zero power of two"
+        );
+        Ok(Self {
+            store: MmapLdeStore::new(len, EXT_D)?,
+        })
+    }
+
+    pub fn from_values(values: &[Challenge]) -> std::io::Result<Self> {
+        let this = Self::new(values.len())?;
+        this.write_block(0, values);
+        Ok(this)
+    }
+
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.store.height()
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        false
+    }
+
+    fn fill_block(&self, r0: usize, nr: usize, out: &mut [Challenge], base: &mut [Val]) {
+        debug_assert!(r0 + nr <= self.len());
+        debug_assert!(out.len() >= nr);
+        debug_assert!(base.len() >= nr * EXT_D);
+        self.store.fill_row_block(r0, nr, &mut base[..nr * EXT_D]);
+        for (r, dst) in out[..nr].iter_mut().enumerate() {
+            *dst = challenge_from_base_row(&base[..nr * EXT_D], r);
+        }
+    }
+
+    fn write_block(&self, r0: usize, values: &[Challenge]) {
+        debug_assert!(r0 + values.len() <= self.len());
+        for (i, value) in values.iter().enumerate() {
+            self.store
+                .write_row(r0 + i, value.as_basis_coefficients_slice());
+        }
+    }
+
+    fn to_vec(&self) -> Vec<Challenge> {
+        let mut values = vec![Challenge::ZERO; self.len()];
+        let mut base = vec![Val::default(); values.len() * EXT_D];
+        self.fill_block(0, values.len(), &mut values, &mut base);
+        values
+    }
+
+    fn add_scaled_from(&self, rhs: &Self, scale: Challenge) {
+        assert_eq!(self.len(), rhs.len(), "FRI input heights must match");
+        const BLOCK: usize = 8192;
+        let block = BLOCK.min(self.len());
+        let mut lhs_vals = vec![Challenge::ZERO; block];
+        let mut rhs_vals = vec![Challenge::ZERO; block];
+        let mut lhs_base = vec![Val::default(); block * EXT_D];
+        let mut rhs_base = vec![Val::default(); block * EXT_D];
+        let mut r0 = 0usize;
+        while r0 < self.len() {
+            let nr = block.min(self.len() - r0);
+            self.fill_block(r0, nr, &mut lhs_vals[..nr], &mut lhs_base[..nr * EXT_D]);
+            rhs.fill_block(r0, nr, &mut rhs_vals[..nr], &mut rhs_base[..nr * EXT_D]);
+            lhs_vals[..nr]
+                .par_iter_mut()
+                .zip(rhs_vals[..nr].par_iter())
+                .for_each(|(lhs, rhs)| *lhs += scale * *rhs);
+            self.write_block(r0, &lhs_vals[..nr]);
+            r0 += nr;
+        }
+    }
+}
+
+#[inline]
+fn challenge_from_base_row(base: &[Val], row: usize) -> Challenge {
+    <Challenge as BasedVectorSpace<Val>>::from_basis_coefficients_fn(|j| base[row * EXT_D + j])
+}
+
+/// Streaming HIDING commit of one FRI-round codeword, byte-identical to p3's per-round
+/// `params.mmcs.commit_matrix(RowMajorMatrix::new(folded, arity))` where `params.mmcs` is the production
+/// `ExtensionMmcs<Val, Challenge, ValMmcs>`. `folded` is the round's evaluation vector over `Challenge`
+/// in the bit-reversed order p3 keeps; reshaped to width `arity` it is the round's leaf matrix.
+///
+/// The out-of-core reproduction: base-flatten the codeword element-major (matching `FlatMatrixView`) and
+/// store it COLUMN-MAJOR on disk (each base column written from `folded` with only `h/arity` `Val`s
+/// transient — never the whole base matrix), so the query phase can seek any group by index; draw the
+/// `h/arity × SALT_ELEMS` salts in p3's exact `RowMajorMatrix::rand` order; frontier-Merkle the salted
+/// leaves keeping only the digest layers + salts resident. Unlike p3 — which keeps EVERY round's whole
+/// codeword-as-leaves AND its Merkle tree alive until the query phase — only the current round's store
+/// (on disk) and its small digest layers persist.
+///
+/// `cap()` of the result equals `ExtensionMmcs::commit_matrix(leaves).0` byte-for-byte; `stream_answer_query`
+/// opens it byte-identically to p3's `answer_query`.
+pub fn stream_commit_codeword<R: rand::Rng>(
+    folded: &[Challenge],
+    arity: usize,
+    cap_height: usize,
+    rng: &mut R,
+) -> std::io::Result<StreamCommitData> {
+    let n = folded.len();
+    assert!(
+        arity >= 1 && n % arity == 0,
+        "codeword length {n} must be a multiple of arity {arity}"
+    );
+    let h_leaf = n / arity;
+    let bw = arity * EXT_D; // base-flattened leaf width
+    let store = MmapLdeStore::new(h_leaf, bw)?;
+    // Write the base-flattened codeword COLUMN-MAJOR, one base column at a time (only `h_leaf` `Val`s
+    // transient). Base column `bc` is coordinate `bc % EXT_D` of extension column `bc / EXT_D`, read
+    // down the groups — the element-major flatten `FlatMatrixView` (and `flatten_to_base`) produce.
+    let mut col = vec![Val::default(); h_leaf];
+    for bc in 0..bw {
+        let (ec, co) = (bc / EXT_D, bc % EXT_D);
+        for (g, c) in col.iter_mut().enumerate() {
+            *c = folded[g * arity + ec].as_basis_coefficients_slice()[co];
+        }
+        store.write_col_tile(bc, 1, &col);
+    }
+    let salts = RowMajorMatrix::rand(rng, h_leaf, SALT_ELEMS).values;
+    let layers = stream_merkle_layers_inner(&store, cap_height, Some(&salts));
+    Ok(StreamCommitData {
+        store,
+        salts,
+        layers,
+    })
+}
+
+pub fn stream_commit_codeword_store<R: rand::Rng>(
+    folded: &ChallengeCodewordStore,
+    arity: usize,
+    cap_height: usize,
+    rng: &mut R,
+) -> std::io::Result<StreamCommitData> {
+    let n = folded.len();
+    assert!(
+        arity >= 1 && n % arity == 0,
+        "codeword length {n} must be a multiple of arity {arity}"
+    );
+    let h_leaf = n / arity;
+    let bw = arity * EXT_D;
+    let store = MmapLdeStore::new(h_leaf, bw)?;
+
+    let input = folded.store.slice();
+    let mut col = vec![Val::default(); h_leaf];
+    for bc in 0..bw {
+        let (ec, co) = (bc / EXT_D, bc % EXT_D);
+        let src_col = &input[co * n..(co + 1) * n];
+        for (g, c) in col.iter_mut().enumerate() {
+            *c = src_col[g * arity + ec];
+        }
+        store.write_col_tile(bc, 1, &col);
+    }
+
+    let salts = RowMajorMatrix::rand(rng, h_leaf, SALT_ELEMS).values;
+    let layers = stream_merkle_layers_inner(&store, cap_height, Some(&salts));
+    Ok(StreamCommitData {
+        store,
+        salts,
+        layers,
+    })
+}
+
+fn fold_codeword_store_to_store(
+    input: &ChallengeCodewordStore,
+    beta: Challenge,
+    log_arity: usize,
+) -> std::io::Result<ChallengeCodewordStore> {
+    assert!(log_arity > 0, "FRI folding arity must make progress");
+    let arity = 1usize << log_arity;
+    assert_eq!(
+        input.len() % arity,
+        0,
+        "codeword length must be divisible by FRI arity"
+    );
+
+    let initial_height = input.len() / 2;
+    let g_inv = Val::two_adic_generator(log2_strict_usize(initial_height) + 1).inverse();
+    let mut halve_inv_powers: Vec<Val> = g_inv
+        .shifted_powers(Val::ONE.halve())
+        .take(initial_height)
+        .collect();
+    reverse_slice_index_bits(&mut halve_inv_powers);
+
+    let two = Val::ONE + Val::ONE;
+    let mut current_beta = beta;
+    let mut current: Option<ChallengeCodewordStore> = None;
+    for step in 0..log_arity {
+        let current_ref = current.as_ref().unwrap_or(input);
+        let height = current_ref.len() / 2;
+        if step > 0 {
+            for j in 0..height {
+                halve_inv_powers[j] = two * halve_inv_powers[j << 1].square();
+            }
+        }
+        let out = ChallengeCodewordStore::new(height)?;
+        fold_codeword_store_binary(current_ref, &out, current_beta, &halve_inv_powers[..height]);
+        current_beta = current_beta.square();
+        current = Some(out);
+    }
+
+    Ok(current.expect("log_arity > 0"))
+}
+
+fn fold_codeword_store_binary(
+    input: &ChallengeCodewordStore,
+    output: &ChallengeCodewordStore,
+    beta: Challenge,
+    halve_inv_powers: &[Val],
+) {
+    let height = output.len();
+    assert_eq!(input.len(), 2 * height);
+    assert_eq!(halve_inv_powers.len(), height);
+
+    const BLOCK: usize = 8192;
+    let block = BLOCK.min(height);
+    let mut in_base = vec![Val::default(); 2 * block * EXT_D];
+    let mut out_vals = vec![Challenge::ZERO; block];
+    let mut r0 = 0usize;
+    while r0 < height {
+        let nr = block.min(height - r0);
+        input
+            .store
+            .fill_row_block(2 * r0, 2 * nr, &mut in_base[..2 * nr * EXT_D]);
+        out_vals[..nr]
+            .par_iter_mut()
+            .enumerate()
+            .for_each(|(i, out)| {
+                let lo = challenge_from_base_row(&in_base[..2 * nr * EXT_D], 2 * i);
+                let hi = challenge_from_base_row(&in_base[..2 * nr * EXT_D], 2 * i + 1);
+                *out = (lo + hi).halve() + (lo - hi) * beta * halve_inv_powers[r0 + i];
+            });
+        output.write_block(r0, &out_vals[..nr]);
+        r0 += nr;
+    }
+}
+
+/// One FRI query's opening of one commit-phase round — byte-identical to a single step of p3's
+/// `answer_query`. Given the round's streamed commit and the query's `current_index` into the round's
+/// codeword, seek the containing group (a strided row read from the on-disk store), reconstitute it to
+/// the extension field (p3's `reconstitute_from_base`, the inverse of the commit's base-flatten), drop
+/// the queried element to leave the `arity-1` sibling values, and package the salt + Merkle path as the
+/// `ExtensionMmcs` opening proof (which is the inner hiding proof unchanged). Returns the step and the
+/// parent `group_index` — the next round's `current_index`, exactly as p3 threads it.
+pub fn stream_answer_query(
+    data: &StreamCommitData,
+    log_arity: usize,
+    current_index: usize,
+) -> (CommitPhaseProofStep<Challenge, ChallengeMmcs>, usize) {
+    let arity = 1usize << log_arity;
+    let index_in_group = current_index % arity;
+    let group_index = current_index >> log_arity;
+    // Seek the base-flattened group row (`arity * EXT_D` `Val`s), its salt, and the sibling path.
+    let (base_row, salt, siblings) = stream_open(data, group_index);
+    debug_assert_eq!(base_row.len(), arity * EXT_D);
+    let opened_row = <Challenge as BasedVectorSpace<Val>>::reconstitute_from_base(base_row);
+    debug_assert_eq!(opened_row.len(), arity);
+    // Siblings = every group element except the queried one (p3's `filter(|(j, _)| *j != index_in_group)`).
+    let sibling_values: Vec<Challenge> = opened_row
+        .into_iter()
+        .enumerate()
+        .filter(|(j, _)| *j != index_in_group)
+        .map(|(_, v)| v)
+        .collect();
+    let step = CommitPhaseProofStep {
+        log_arity: log_arity as u8,
+        sibling_values,
+        // ExtensionMmcs::Proof == inner hiding Proof == (salts: Vec<Vec<Val>>, siblings: Vec<[Val; DIGEST]>).
+        opening_proof: (vec![salt], siblings),
+    };
+    (step, group_index)
+}
+
+/// The FRI commit-phase commitment type — the `ChallengeMmcs` (= its inner hiding `ValMmcs`) commitment,
+/// a `MerkleCap` of `DIGEST`-wide digests. `stream_commit_codeword(...).cap()` is exactly its `AsRef`.
+type FriCommit = MerkleCap<Val, [Val; DIGEST]>;
+
+/// The production input-commitment prover data (the trace / quotient LDE Merkle trees) that FRI's
+/// `open_input` reads at each query. Held resident here (this fork streams the FRI COMMIT phase; the
+/// input opens are the separate "batch open at ζ" increment) — `stream_prove_fri` opens them verbatim.
+type InputProverData = <ValMmcs as Mmcs<Val>>::ProverData<RowMajorMatrix<Val>>;
+
+/// Streaming, prove-only fork of `p3_fri::prover::prove_fri`, specialized to the production `MyConfig`
+/// types, that keeps the commit-phase residency bounded: instead of p3's `Vec<M::ProverData>` — which
+/// holds EVERY fold round's whole codeword-as-leaves AND its Merkle tree alive until the query phase —
+/// it keeps only the CURRENT round's codeword resident (needed to fold to the next), spills each round's
+/// leaves to disk via `stream_commit_codeword`, and retains just the digest layers + salts. The query
+/// phase then seeks each round's opened group from disk (`stream_answer_query`).
+///
+/// BYTE-IDENTICAL to `prove_fri`: every `challenger` observe/sample/grind and every salt draw happens in
+/// p3's exact order, the folding reuses p3's own `TwoAdicFriFolding::fold_matrix` verbatim, and the
+/// `final_poly` iDFT + arity/PoW transcript steps are unchanged. `params.mmcs` is unused (its per-round
+/// salts come from `salt_rng`, which the caller seeds to match `params.mmcs`'s inner RNG); everything else
+/// in `params` is read exactly as p3 reads it. `open_input_fn` supplies each query's input-batch openings
+/// (`index → Vec<BatchOpening>`, p3's `open_input`) — the caller injects either resident opens
+/// (`stream_open_input`) or, in the full streamed prove, disk-seeked opens (`stream_open_input_streamed`),
+/// both byte-identical to p3's `open_input`.
+///
+/// Pinned by `stream_prove_fri_matches_p3`.
+#[allow(clippy::too_many_arguments)]
+pub fn stream_prove_fri<R, OpenInput>(
+    params: &FriParameters<ChallengeMmcs>,
+    inputs: Vec<Vec<Challenge>>,
+    challenger: &mut Challenger,
+    log_global_max_height: usize,
+    open_input_fn: OpenInput,
+    salt_rng: &mut R,
+    cap_height: usize,
+) -> std::io::Result<FriProof<Challenge, ChallengeMmcs, Val, Vec<BatchOpening<Val, ValMmcs>>>>
+where
+    R: rand::Rng,
+    OpenInput: Fn(usize) -> Vec<BatchOpening<Val, ValMmcs>>,
+{
+    assert!(!inputs.is_empty());
+    assert!(
+        params.num_queries > 0,
+        "num_queries must be at least 1 for FRI soundness"
+    );
+    assert!(
+        params.max_log_arity > 0,
+        "max_log_arity must be at least 1 to guarantee folding progress"
+    );
+    debug_assert_eq!(log_global_max_height, log2_strict_usize(inputs[0].len()));
+
+    // The folding strategy is stateless (PhantomData) — construct the SAME one p3's PCS `open` uses.
+    let folding: TwoAdicFriFoldingForMmcs<Val, ValMmcs> = TwoAdicFriFolding(PhantomData);
+
+    // ── commit phase (streamed) — mirrors p3's `commit_phase` exactly, per round: ─────────────────
+    //   stream-commit the codeword (draws salts) → observe cap → grind commit-PoW → sample beta →
+    //   fold → (if the next input matches the new height) mix it in with beta^arity.
+    let mut inputs_iter = inputs.into_iter().peekable();
+    let mut folded = inputs_iter.next().unwrap();
+    let mut commits: Vec<FriCommit> = vec![];
+    let mut datas: Vec<StreamCommitData> = vec![];
+    let mut log_arities: Vec<usize> = vec![];
+    let mut pow_witnesses: Vec<Val> = vec![];
+    let log_final_height = params.log_blowup + params.log_final_poly_len;
+
+    while folded.len() > params.blowup() * params.final_poly_len() {
+        let log_current_height = log2_strict_usize(folded.len());
+        let next_input_log_height = inputs_iter.peek().map(|v| log2_strict_usize(v.len()));
+        let log_arity = compute_log_arity_for_round(
+            log_current_height,
+            next_input_log_height,
+            log_final_height,
+            params.max_log_arity,
+        );
+        let arity = 1usize << log_arity;
+        log_arities.push(log_arity);
+
+        // Stream-commit this round's codeword (spills the leaves to disk, keeps only digest layers).
+        let data = stream_commit_codeword(&folded, arity, cap_height, salt_rng)?;
+        let commit = FriCommit::from(data.cap().to_vec());
+        challenger.observe(commit.clone());
+        commits.push(commit);
+
+        let pow_witness = challenger.grind(params.commit_proof_of_work_bits);
+        pow_witnesses.push(pow_witness);
+
+        let beta: Challenge = challenger.sample_algebra_element();
+
+        // Reuse p3's folding math verbatim on the (still resident) current codeword. Fully-qualified so
+        // the base field `F = Val` is pinned (p3's `commit_phase` pins it via its `FriFoldingStrategy<Val,
+        // Challenge>` bound; here `TwoAdicFriFolding`'s blanket impl otherwise leaves `F` ambiguous).
+        let leaves = RowMajorMatrix::new(folded, arity);
+        folded = FriFoldingStrategy::<Val, Challenge>::fold_matrix(
+            &folding,
+            beta,
+            log_arity,
+            leaves.as_view(),
+        );
+
+        datas.push(data);
+
+        // Mix in the next input polynomial once we have folded down to its height (p3's beta^arity factor).
+        if let Some(v) = inputs_iter.next_if(|v| v.len() == folded.len()) {
+            let beta_pow = beta.exp_power_of_2(log_arity);
+            folded
+                .iter_mut()
+                .zip(v)
+                .for_each(|(c, x)| *c += beta_pow * x);
+        }
+    }
+
+    // Final polynomial: truncate, un-bit-reverse, iDFT — then observe all its coefficients. The iDFT is
+    // over the BASE-field FRI subgroup (`Challenge` coordinates DFT'd independently), so pin `F = Val`
+    // (`Challenge` is a `BasedVectorSpace` over both `Val` and itself, leaving `default()` ambiguous).
+    folded.truncate(params.final_poly_len());
+    reverse_slice_index_bits(&mut folded);
+    let final_poly = Radix2DFTSmallBatch::<Val>::default().idft_algebra(folded);
+    challenger.observe_algebra_slice(&final_poly);
+
+    // Bind the chosen folding arities into the transcript, then grind the query PoW.
+    for &log_arity in &log_arities {
+        challenger.observe(Val::from_usize(log_arity));
+    }
+    let query_pow_witness = challenger.grind(params.query_proof_of_work_bits);
+
+    // ── query phase (seek-backed) — sample each index, open the inputs (resident) + each round (disk). ─
+    // The commit phase wrote + Merkle-read each codeword store SEQUENTIALLY; the query phase now seeks them
+    // at sparse rows, so flip them to RANDOM (no readahead/drop-behind on the seeked rows).
+    for data in &datas {
+        data.store.advise(libc::MADV_RANDOM);
+    }
+    let extra_query_index_bits =
+        FriFoldingStrategy::<Val, Challenge>::extra_query_index_bits(&folding);
+    let query_proofs = core::iter::repeat_with(|| {
+        let index = challenger.sample_bits(log_global_max_height + extra_query_index_bits);
+        let input_proof = open_input_fn(index);
+        let mut current_index = index >> extra_query_index_bits;
+        let mut commit_phase_openings = Vec::with_capacity(datas.len());
+        for (data, &log_arity) in datas.iter().zip(log_arities.iter()) {
+            let (step, group_index) = stream_answer_query(data, log_arity, current_index);
+            commit_phase_openings.push(step);
+            current_index = group_index;
+        }
+        QueryProof {
+            input_proof,
+            commit_phase_openings,
+        }
+    })
+    .take(params.num_queries)
+    .collect();
+
+    Ok(FriProof {
+        commit_phase_commits: commits,
+        commit_pow_witnesses: pow_witnesses,
+        query_proofs,
+        final_poly,
+        query_pow_witness,
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn stream_prove_fri_from_input_stores<R, OpenInput>(
+    params: &FriParameters<ChallengeMmcs>,
+    inputs: &[ChallengeCodewordStore],
+    challenger: &mut Challenger,
+    log_global_max_height: usize,
+    open_input_fn: OpenInput,
+    salt_rng: &mut R,
+    cap_height: usize,
+) -> std::io::Result<FriProof<Challenge, ChallengeMmcs, Val, Vec<BatchOpening<Val, ValMmcs>>>>
+where
+    R: rand::Rng,
+    OpenInput: Fn(usize) -> Vec<BatchOpening<Val, ValMmcs>>,
+{
+    assert!(!inputs.is_empty());
+    assert!(
+        params.num_queries > 0,
+        "num_queries must be at least 1 for FRI soundness"
+    );
+    assert!(
+        params.max_log_arity > 0,
+        "max_log_arity must be at least 1 to guarantee folding progress"
+    );
+    debug_assert_eq!(log_global_max_height, log2_strict_usize(inputs[0].len()));
+
+    let folding: TwoAdicFriFoldingForMmcs<Val, ValMmcs> = TwoAdicFriFolding(PhantomData);
+    let mut inputs_iter = inputs.iter().peekable();
+    let first = inputs_iter.next().unwrap();
+    let mut folded_store: Option<ChallengeCodewordStore> = None;
+    let mut commits: Vec<FriCommit> = vec![];
+    let mut datas: Vec<StreamCommitData> = vec![];
+    let mut log_arities: Vec<usize> = vec![];
+    let mut pow_witnesses: Vec<Val> = vec![];
+    let log_final_height = params.log_blowup + params.log_final_poly_len;
+
+    while folded_store.as_ref().unwrap_or(first).len() > params.blowup() * params.final_poly_len() {
+        let current = folded_store.as_ref().unwrap_or(first);
+        let log_current_height = log2_strict_usize(current.len());
+        let next_input_log_height = inputs_iter.peek().map(|v| log2_strict_usize(v.len()));
+        let log_arity = compute_log_arity_for_round(
+            log_current_height,
+            next_input_log_height,
+            log_final_height,
+            params.max_log_arity,
+        );
+        let arity = 1usize << log_arity;
+        log_arities.push(log_arity);
+
+        let data = stream_commit_codeword_store(current, arity, cap_height, salt_rng)?;
+        let commit = FriCommit::from(data.cap().to_vec());
+        challenger.observe(commit.clone());
+        commits.push(commit);
+
+        let pow_witness = challenger.grind(params.commit_proof_of_work_bits);
+        pow_witnesses.push(pow_witness);
+
+        let beta: Challenge = challenger.sample_algebra_element();
+        let next_store = fold_codeword_store_to_store(current, beta, log_arity)?;
+        datas.push(data);
+
+        if let Some(input) = inputs_iter.next_if(|v| v.len() == next_store.len()) {
+            let beta_pow = beta.exp_power_of_2(log_arity);
+            next_store.add_scaled_from(input, beta_pow);
+        }
+        folded_store = Some(next_store);
+    }
+
+    let mut folded = folded_store.as_ref().unwrap_or(first).to_vec();
+    folded.truncate(params.final_poly_len());
+    reverse_slice_index_bits(&mut folded);
+    let final_poly = Radix2DFTSmallBatch::<Val>::default().idft_algebra(folded);
+    challenger.observe_algebra_slice(&final_poly);
+
+    for &log_arity in &log_arities {
+        challenger.observe(Val::from_usize(log_arity));
+    }
+    let query_pow_witness = challenger.grind(params.query_proof_of_work_bits);
+
+    for data in &datas {
+        data.store.advise(libc::MADV_RANDOM);
+    }
+    let extra_query_index_bits =
+        FriFoldingStrategy::<Val, Challenge>::extra_query_index_bits(&folding);
+    let query_proofs = core::iter::repeat_with(|| {
+        let index = challenger.sample_bits(log_global_max_height + extra_query_index_bits);
+        let input_proof = open_input_fn(index);
+        let mut current_index = index >> extra_query_index_bits;
+        let mut commit_phase_openings = Vec::with_capacity(datas.len());
+        for (data, &log_arity) in datas.iter().zip(log_arities.iter()) {
+            let (step, group_index) = stream_answer_query(data, log_arity, current_index);
+            commit_phase_openings.push(step);
+            current_index = group_index;
+        }
+        QueryProof {
+            input_proof,
+            commit_phase_openings,
+        }
+    })
+    .take(params.num_queries)
+    .collect();
+
+    Ok(FriProof {
+        commit_phase_commits: commits,
+        commit_pow_witnesses: pow_witnesses,
+        query_proofs,
+        final_poly,
+        query_pow_witness,
+    })
+}
+
+/// FRI `open_input` against RESIDENT input trees, verbatim from p3: open each input batch commitment at
+/// the query index, shifting the index down for matrices shorter than the global max height. Byte-identical
+/// to p3's private `open_input`. Used to build the `open_input_fn` closure when the inputs are resident
+/// (e.g. the standalone `stream_prove_fri` gate); the full streamed prove uses `stream_open_input_streamed`.
+pub fn stream_open_input(
+    log_global_max_height: usize,
+    index: usize,
+    input_data: &[ProverDataWithOpeningPoints<'_, Challenge, InputProverData>],
+    mmcs: &ValMmcs,
+) -> Vec<BatchOpening<Val, ValMmcs>> {
+    input_data
+        .iter()
+        .map(|(data, _)| {
+            let log_max_height = log2_strict_usize(mmcs.get_max_height(data));
+            let bits_reduced = log_global_max_height - log_max_height;
+            let reduced_index = index >> bits_reduced;
+            mmcs.open_batch(reduced_index, data)
+        })
+        .collect()
+}
+
+/// FRI `open_input` served from the STREAMED commits — the last resident piece of the FRI removed. Each
+/// round's opened row/salt/sibling-path comes from its on-disk `StreamCommitData` via `stream_open`
+/// (a single strided seek + the small resident salts/layers), shaped into the exact `BatchOpening` p3's
+/// hiding `Mmcs::open_batch` returns (`opened_values = [row]`, `opening_proof = ([salt], siblings)`).
+/// Byte-identical to `stream_open_input` (hence to p3's `open_input`) since `RoundView::open` is
+/// byte-identical to the hiding `Mmcs::open_batch` (`stream_open_matches_p3` / `stream_commit_batch_matches_p3`).
+/// Serves both single-matrix rounds (trace / opt-random) and the multi-matrix quotient round uniformly.
+pub fn stream_open_input_streamed(
+    log_global_max_height: usize,
+    index: usize,
+    rounds: &[&RoundView<'_>],
+) -> Vec<BatchOpening<Val, ValMmcs>> {
+    rounds
+        .iter()
+        .map(|round| {
+            // All matrices in a round share one height.
+            let log_max_height = log2_strict_usize(round.stores[0].height());
+            let bits_reduced = log_global_max_height - log_max_height;
+            let reduced_index = index >> bits_reduced;
+            round.open(reduced_index)
+        })
+        .collect()
+}
+
+/// Materialize the low coset — the first `h = committed_height >> log_blowup` rows of the committed
+/// (bit-reversed) LDE — into a dense `RowMajorMatrix`. This is `mat.split_rows(h).0` in p3's `open`; it is
+/// trace-scale (the polynomial degree, not the blown-up LDE), so it is the ONE resident buffer of the
+/// streamed open (needed because barycentric `interpolate_coset_with_precomputation` wants a dense matrix;
+/// the RAM-heavy whole-LDE reduction stays on disk via `StoreMatrix`).
+/// Reimplementation of p3's PRIVATE `compute_inverse_denominators` (`two_adic_pcs.rs`): for each unique
+/// opening point `z`, find the largest committed height opened at `z` and return `1/(z - x)` for `x` over
+/// the size-`2^log_height` prefix of the bit-reversed coset. A small assoc list (few points) replaces
+/// p3's `LinearMap`; byte-identical values (`batch_multiplicative_inverse` over the same differences).
+/// Stream p3's `interpolate_coset_with_precomputation` over the low-coset
+/// prefix of a committed store without materializing `h * width` rows.
+fn interpolate_low_coset_store(
+    store: &MmapLdeStore,
+    h: usize,
+    shift: Val,
+    point: Challenge,
+    inv_denoms: &ChallengeCodewordStore,
+) -> Vec<Challenge> {
+    debug_assert!(inv_denoms.len() >= h);
+    let log_height = log2_strict_usize(h);
+    let z_pow_n = point.exp_power_of_2(log_height);
+    let g_pow_n = shift.exp_power_of_2(log_height);
+    let denom_inv = g_pow_n.mul_2exp_u64(log_height as u64).inverse();
+    let scaling_factor = point * (z_pow_n - g_pow_n) * denom_inv;
+    let point_inv = point.inverse();
+    let s = store.slice();
+    let store_h = store.height();
+    let mut evals = vec![Challenge::ZERO; store.width()];
+
+    const BARY_BLOCK: usize = 8192;
+    let block = BARY_BLOCK.min(h);
+    let mut inv_block = vec![Challenge::ZERO; block];
+    let mut inv_base = vec![Val::default(); block * EXT_D];
+    let mut r0 = 0usize;
+    while r0 < h {
+        let nr = block.min(h - r0);
+        inv_denoms.fill_block(r0, nr, &mut inv_block[..nr], &mut inv_base[..nr * EXT_D]);
+        for (c, eval) in evals.iter_mut().enumerate() {
+            let col = &s[c * store_h + r0..c * store_h + r0 + nr];
+            let mut acc = Challenge::ZERO;
+            for r in 0..nr {
+                acc += (inv_block[r] - point_inv) * col[r];
+            }
+            *eval += acc;
+        }
+        r0 += nr;
+    }
+    for eval in &mut evals {
+        *eval *= scaling_factor;
+    }
+    evals
+}
+
+struct InverseDenominatorStore {
+    point: Challenge,
+    invs: ChallengeCodewordStore,
+}
+
+fn compute_inverse_denominator_stores(
+    rounds: &[(RoundView<'_>, Vec<Vec<Challenge>>)],
+    coset: &[Val],
+) -> std::io::Result<Vec<InverseDenominatorStore>> {
+    let mut max_log_height: Vec<(Challenge, usize)> = Vec::new();
+    for (round, points_per_mat) in rounds {
+        let log_height = log2_strict_usize(round.stores[0].height());
+        for &z in points_per_mat.iter().flatten() {
+            match max_log_height.iter_mut().find(|(p, _)| *p == z) {
+                Some(e) => e.1 = e.1.max(log_height),
+                None => max_log_height.push((z, log_height)),
+            }
+        }
+    }
+    max_log_height
+        .into_iter()
+        .map(|(point, log_height)| {
+            Ok(InverseDenominatorStore {
+                point,
+                invs: compute_inverse_denominator_store(point, log_height, coset)?,
+            })
+        })
+        .collect()
+}
+
+fn compute_inverse_denominator_store(
+    point: Challenge,
+    log_height: usize,
+    coset: &[Val],
+) -> std::io::Result<ChallengeCodewordStore> {
+    let n = 1usize << log_height;
+    debug_assert!(coset.len() >= n);
+    let store = ChallengeCodewordStore::new(n)?;
+
+    const INV_BLOCK: usize = 8192;
+    let block = INV_BLOCK.min(n);
+    let mut values = vec![Challenge::ZERO; block];
+    let mut running = Challenge::ONE;
+    let mut r0 = 0usize;
+    while r0 < n {
+        let nr = block.min(n - r0);
+        for i in 0..nr {
+            running *= point - coset[r0 + i];
+            values[i] = running;
+        }
+        store.write_block(r0, &values[..nr]);
+        r0 += nr;
+    }
+
+    let mut suffix_inv = running.inverse();
+    let mut prefix_vals = vec![Challenge::ZERO; block];
+    let mut prefix_base = vec![Val::default(); block * EXT_D];
+    let mut inv_vals = vec![Challenge::ZERO; block];
+    let mut end = n;
+    while end > 0 {
+        let nr = block.min(end);
+        let start = end - nr;
+        let prefix_start = start.saturating_sub(1);
+        store.fill_block(
+            prefix_start,
+            nr,
+            &mut prefix_vals[..nr],
+            &mut prefix_base[..nr * EXT_D],
+        );
+
+        for k in (0..nr).rev() {
+            let i = start + k;
+            let prefix_before = if i == 0 {
+                Challenge::ONE
+            } else if start == 0 {
+                prefix_vals[k - 1]
+            } else {
+                prefix_vals[k]
+            };
+            inv_vals[k] = prefix_before * suffix_inv;
+            suffix_inv *= point - coset[i];
+        }
+
+        store.write_block(start, &inv_vals[..nr]);
+        end = start;
+    }
+
+    Ok(store)
+}
+
+fn find_inverse_denominator_store<'a>(
+    list: &'a [InverseDenominatorStore],
+    z: Challenge,
+) -> &'a ChallengeCodewordStore {
+    let entry = list
+        .iter()
+        .find(|entry| entry.point == z)
+        .expect("point present");
+    &entry.invs
+}
+
+/// Streaming, prove-only fork of the PRODUCTION `HidingFriPcs::open` → `TwoAdicFriPcs::open` (`two_adic_pcs.rs:414`,
+/// `hiding_pcs.rs:297`), specialized to `MyConfig`. Rounds are `RoundView`s (K≥1 matrices each — one for the
+/// trace / opt-random rounds, `num_chunks` for the quotient round), with per-MATRIX opening points. Every
+/// committed LDE stays on disk: the whole-LDE reduction (`(f(ζ)-f(x))/(ζ-x)` accumulated into per-log-height
+/// `reduced_openings`) reads it via `StoreMatrix` row by row; only the trace-sized low coset is materialized
+/// for the barycentric ζ-eval.
+///
+/// BYTE-IDENTICAL to `pcs.open`: the challenger observes the opened `ys` in p3's exact (round, matrix, point)
+/// order, `alpha`/`zeta` sampling is unchanged, the reduction is p3's `(f(ζ)-f(x))/(ζ-x)` (computed per-row —
+/// rows are independent and Goldilocks arithmetic is exact/order-free, so no `rowwise_packed_dot_product`
+/// SIMD dependency; multiple matrices at one height accumulate with `alpha^{num_reduced}` offsets exactly as
+/// p3), `interpolate_coset_with_precomputation` / `compute_adjusted_weights` are p3's own, and the FRI is
+/// `stream_prove_fri` (its input opens seeked from these same stores). Returns the PUBLIC opened values, the
+/// split-off random-codeword opened values (the hiding proof's first half), and the `FriProof`.
+#[allow(clippy::too_many_arguments)]
+pub fn stream_pcs_open(
+    rounds: &[(RoundView<'_>, Vec<Vec<Challenge>>)],
+    challenger: &mut Challenger,
+    fri_params: &FriParameters<ChallengeMmcs>,
+    num_random_codewords: usize,
+    log_blowup: usize,
+    cap_height: usize,
+    fri_salt_rng: &mut impl rand::Rng,
+) -> std::io::Result<(
+    OpenedValues<Challenge>,
+    OpenedValues<Challenge>,
+    FriProof<Challenge, ChallengeMmcs, Val, Vec<BatchOpening<Val, ValMmcs>>>,
+)> {
+    let generator = <Val as Field>::GENERATOR;
+
+    // Global max height over every committed LDE.
+    let global_max_height = rounds
+        .iter()
+        .flat_map(|(r, _)| r.stores.iter().map(|s| s.height()))
+        .max()
+        .expect("no rounds supplied");
+    let log_global_max_height = log2_strict_usize(global_max_height);
+
+    // The coset `gK` of the largest subgroup, bit-reversed (so `coset[..2^i]` is `gK_i`). Exactly p3's.
+    let coset: Vec<Val> = {
+        let c = TwoAdicMultiplicativeCoset::new(generator, log_global_max_height).unwrap();
+        let mut pts: Vec<Val> = c.iter().collect();
+        reverse_slice_index_bits(&mut pts);
+        pts
+    };
+
+    // Per-point `1/(z - x)` and the adjusted barycentric weights `1/(z-x_i) - 1/z`.
+    let inv_denoms = compute_inverse_denominator_stores(rounds, &coset)?;
+    // Barycentric-evaluate each matrix's low coset at each of its points; observe the ys in p3's
+    // (round, matrix, point) order.
+    let mut _pt = std::time::Instant::now();
+    let all_opened_values: OpenedValues<Challenge> = rounds
+        .iter()
+        .map(|(round, points_per_mat)| {
+            round
+                .stores
+                .iter()
+                .zip(points_per_mat.iter())
+                .map(|(store, points)| {
+                    let h = store.height() >> log_blowup;
+                    points
+                        .iter()
+                        .map(|&point| {
+                            let ys = interpolate_low_coset_store(
+                                store,
+                                h,
+                                generator,
+                                point,
+                                find_inverse_denominator_store(&inv_denoms, point),
+                            );
+                            challenger.observe_algebra_slice(&ys);
+                            ys
+                        })
+                        .collect()
+                })
+                .collect()
+        })
+        .collect();
+
+    prof("open.barycentric", _pt);
+    _pt = std::time::Instant::now();
+
+    // Batch-combination challenge.
+    let alpha: Challenge = challenger.sample_algebra_element();
+
+    // Reduce `(f(ζ)-f(x))/(ζ-x)` into per-log-height accumulators. Reads the whole LDE off disk in
+    // ROW-BLOCKS (`fill_row_block` = `w` interleaved SEQUENTIAL column-segment streams — no strided per-row
+    // seeks, so it doesn't page-fault under a cap) and reduces each block with p3's SIMD-packed
+    // `rowwise_packed_dot_product`; the accumulate is parallel over rows. Byte-identical to the scalar
+    // reduction (P3.7a pinned `rowwise_packed_dot_product` disk-vs-resident; rows independent + Goldilocks
+    // exact) but ~an order of magnitude faster (sequential I/O + SIMD + rayon).
+    let global_max_width = rounds
+        .iter()
+        .flat_map(|(r, _)| r.stores.iter().map(|s| s.width()))
+        .max()
+        .unwrap_or(0);
+    let packed_alpha_powers: Vec<_> =
+        <Challenge as ExtensionField<Val>>::ExtensionPacking::packed_ext_powers_capped(
+            alpha,
+            global_max_width,
+        )
+        .collect();
+    const RED_BLOCK: usize = 8192;
+    let mut num_reduced = [0usize; 32];
+    let mut reduced_openings: [Option<ChallengeCodewordStore>; 32] = core::array::from_fn(|_| None);
+    for ((round, points_per_mat), openings_for_round) in rounds.iter().zip(all_opened_values.iter())
+    {
+        for ((store, points), openings_for_mat) in round
+            .stores
+            .iter()
+            .zip(points_per_mat.iter())
+            .zip(openings_for_round.iter())
+        {
+            let (mh, mw) = (store.height(), store.width());
+            let log_height = log2_strict_usize(mh);
+
+            if reduced_openings[log_height].is_none() {
+                reduced_openings[log_height] = Some(ChallengeCodewordStore::new(mh)?);
+            }
+            let point_reductions: Vec<(Challenge, Challenge, &ChallengeCodewordStore)> = points
+                .iter()
+                .zip(openings_for_mat.iter())
+                .map(|(&point, openings)| {
+                    let alpha_pow_offset = alpha.exp_u64(num_reduced[log_height] as u64);
+                    let (mut reduced_opening, mut ap) = (Challenge::ZERO, Challenge::ONE);
+                    for &y in openings {
+                        reduced_opening += ap * y;
+                        ap *= alpha;
+                    }
+                    let inv = find_inverse_denominator_store(&inv_denoms, point);
+                    num_reduced[log_height] += mw;
+                    (alpha_pow_offset, reduced_opening, inv)
+                })
+                .collect();
+
+            let red_block = RED_BLOCK.min(mh);
+            let mut block = vec![Val::default(); red_block * mw];
+            let mut ro_block = vec![Challenge::ZERO; red_block];
+            let mut ro_base = vec![Val::default(); red_block * EXT_D];
+            let mut inv_block = vec![Challenge::ZERO; red_block];
+            let mut inv_base = vec![Val::default(); red_block * EXT_D];
+            let mut r0 = 0usize;
+            while r0 < mh {
+                let nr = RED_BLOCK.min(mh - r0);
+                store.fill_row_block(r0, nr, &mut block[..nr * mw]);
+                let blk = RowMajorMatrixView::new(&block[..nr * mw], mw);
+                let mc: Vec<Challenge> = blk
+                    .rowwise_packed_dot_product::<Challenge>(&packed_alpha_powers)
+                    .collect();
+                let ro = reduced_openings[log_height].as_ref().unwrap();
+                ro.fill_block(r0, nr, &mut ro_block[..nr], &mut ro_base[..nr * EXT_D]);
+                for (alpha_pow_offset, reduced_opening, inv) in &point_reductions {
+                    inv.fill_block(r0, nr, &mut inv_block[..nr], &mut inv_base[..nr * EXT_D]);
+                    // ro[x] += alpha_pow_offset * (reduced_opening - mat_compressed[x]) * inv[x].
+                    ro_block[..nr]
+                        .par_iter_mut()
+                        .zip(mc.par_iter())
+                        .zip(inv_block[..nr].par_iter())
+                        .for_each(|((ro_x, &mc_x), &inv_x)| {
+                            *ro_x += *alpha_pow_offset * (*reduced_opening - mc_x) * inv_x;
+                        });
+                }
+                ro.write_block(r0, &ro_block[..nr]);
+                r0 += nr;
+            }
+        }
+    }
+
+    prof("open.reduction", _pt);
+    _pt = std::time::Instant::now();
+
+    // FRI inputs: highest log-height first (`rev`), flattened into mmap-backed codeword stores.
+    let fri_input_stores: Vec<ChallengeCodewordStore> =
+        reduced_openings.into_iter().rev().flatten().collect();
+
+    let round_refs: Vec<&RoundView> = rounds.iter().map(|(r, _)| r).collect();
+    // The FRI query phase now seeks these input stores at ~96 sparse rows — flip them to RANDOM so the
+    // SEQUENTIAL prefetch/drop-behind (which sped the reduction just above) doesn't evict the queried rows.
+    for round in &round_refs {
+        for s in &round.stores {
+            s.advise(libc::MADV_RANDOM);
+        }
+    }
+    let fri_proof = stream_prove_fri_from_input_stores(
+        fri_params,
+        &fri_input_stores,
+        challenger,
+        log_global_max_height,
+        |index| stream_open_input_streamed(log_global_max_height, index, &round_refs),
+        fri_salt_rng,
+        cap_height,
+    )?;
+    prof("open.fri", _pt);
+
+    // Hiding split: drain the last `num_random_codewords` opened values per point into the random half.
+    let mut public_opened = all_opened_values;
+    let random_opened: OpenedValues<Challenge> = public_opened
+        .iter_mut()
+        .map(|round| {
+            round
+                .iter_mut()
+                .map(|mat| {
+                    mat.iter_mut()
+                        .map(|point| {
+                            let split = point.len() - num_random_codewords;
+                            point.drain(split..).collect()
+                        })
+                        .collect()
+                })
+                .collect()
+        })
+        .collect();
+
+    Ok((public_opened, random_opened, fri_proof))
+}
+
+/// Print `label` + elapsed since `t` to stderr when `LATTICA_STREAM_PROFILE` is set — a zero-cost
+/// phase profiler for the streamed prove (off unless the env var is present).
+#[inline]
+fn prof(label: &str, t: std::time::Instant) {
+    if std::env::var_os("LATTICA_STREAM_PROFILE").is_some() {
+        eprintln!(
+            "[stream_prove] {label:<22} {:.2}s",
+            t.elapsed().as_secs_f64()
+        );
+    }
+}
+
+/// Streamed `get_evaluations_on_domain` for the trace on the quotient domain — the FAST path of
+/// `TwoAdicFriPcs::get_evaluations_on_domain` (when the quotient domain is a `GENERATOR`-coset the committed
+/// LDE covers): the first `qsize` rows of the committed (bit-reversed) trace LDE, un-bit-reversed, then the
+/// `nrc` hiding-random columns truncated off (p3's `HidingFriPcs` `HorizontallyTruncated`). Reads only the
+/// row-prefix off the store (quotient-scale resident); feeds p3's `quotient_values`.
+#[cfg(test)]
+fn stream_trace_on_quotient_domain(
+    store: &MmapLdeStore,
+    qsize: usize,
+    keep_width: usize,
+) -> RowMajorMatrix<Val> {
+    let full_w = store.width();
+    let mut vals = vec![Val::default(); qsize * full_w];
+    store.fill_row_block(0, qsize, &mut vals);
+    let bitrev = RowMajorMatrix::new(vals, full_w)
+        .bit_reverse_rows()
+        .to_row_major_matrix();
+    let mut out = Vec::with_capacity(qsize * keep_width);
+    for r in 0..qsize {
+        out.extend_from_slice(&bitrev.values[r * full_w..r * full_w + keep_width]);
+    }
+    RowMajorMatrix::new(out, keep_width)
+}
+
+#[inline]
+fn fill_store_prefix_row_block(
+    store: &MmapLdeStore,
+    r0: usize,
+    nr: usize,
+    width: usize,
+    out: &mut [Val],
+) {
+    debug_assert_eq!(out.len(), nr * width);
+    let s = store.slice();
+    let h = store.height();
+    for c in 0..width {
+        let seg = &s[c * h + r0..c * h + r0 + nr];
+        for i in 0..nr {
+            out[i * width + c] = seg[i];
+        }
+    }
+}
+
+/// Store-backed quotient evaluator for the streaming prover.
+///
+/// This mirrors p3's `quotient_values` setup and `ProverConstraintFolder` evaluation, but evaluates
+/// packed lanes in contiguous committed-store blocks. For `next_step = 2^k`, rows whose store index
+/// share the top `k` bits are closed under the AIR next-row transition, so one sequential block read
+/// supplies both local and next trace windows. The existing quotient commit still needs the full
+/// quotient vector, but this removes the resident `qsize × trace_width` trace-on-quotient-domain
+/// matrix and avoids the generic Matrix view's random mmap gathers.
+fn stream_quotient_values_from_store_into<A, F>(
+    pcs: &MyPcs,
+    air: &A,
+    public_values: &[Val],
+    layout: AirLayout,
+    trace_domain: TwoAdicMultiplicativeCoset<Val>,
+    quotient_domain: TwoAdicMultiplicativeCoset<Val>,
+    store: &MmapLdeStore,
+    keep_width: usize,
+    alpha: Challenge,
+    mut write_quotient: F,
+) where
+    A: Air<SymbolicAirBuilder<Val>> + for<'a> Air<ProverConstraintFolder<'a, MyConfig>>,
+    F: FnMut(usize, Challenge),
+{
+    let quotient_size = quotient_domain.size();
+    assert!(
+        quotient_size.is_power_of_two(),
+        "quotient domain size must be a power of two"
+    );
+    assert!(
+        quotient_size <= store.height(),
+        "quotient-domain prefix exceeds committed trace store"
+    );
+    assert!(
+        keep_width <= store.width(),
+        "quotient trace width exceeds committed trace store width"
+    );
+
+    let mut sels = trace_domain.selectors_on_coset(quotient_domain);
+    let qdb = log2_strict_usize(quotient_size) - log2_strict_usize(trace_domain.size());
+    let next_step = 1 << qdb;
+    let pack_width = PackedVal::<MyConfig>::WIDTH;
+
+    for _ in quotient_size..pack_width {
+        sels.is_first_row.push(Val::default());
+        sels.is_last_row.push(Val::default());
+        sels.is_transition.push(Val::default());
+        sels.inv_vanishing.push(Val::default());
+    }
+
+    let constraint_layout = get_constraint_layout(air, layout);
+    let (base_alpha_powers, ext_alpha_powers) = constraint_layout.decompose_alpha(alpha);
+
+    let periodic_cols = air.periodic_columns();
+    let periodic_table = <MyPcs as Pcs<Challenge, Challenger>>::build_periodic_lde_table(
+        pcs,
+        &periodic_cols,
+        trace_domain,
+        quotient_domain,
+    );
+    struct GroupBuffers {
+        main: Vec<PackedVal<MyConfig>>,
+        periodic: Vec<PackedVal<MyConfig>>,
+        natural_rows: Vec<usize>,
+        next_offsets: Vec<usize>,
+        base_constraints: Vec<PackedVal<MyConfig>>,
+        ext_constraints: Vec<PackedChallenge<MyConfig>>,
+    }
+
+    let log_qsize = log2_strict_usize(quotient_size);
+    let log_next_step = log2_strict_usize(next_step);
+    let store_block_len = quotient_size >> log_next_step;
+    debug_assert_eq!(store_block_len * next_step, quotient_size);
+
+    let mut bufs = GroupBuffers {
+        main: Vec::with_capacity(2 * keep_width),
+        periodic: Vec::with_capacity(periodic_table.width()),
+        natural_rows: vec![0; pack_width],
+        next_offsets: vec![0; pack_width],
+        base_constraints: Vec::with_capacity(constraint_layout.base_indices.len()),
+        ext_constraints: Vec::with_capacity(constraint_layout.ext_indices.len()),
+    };
+    let mut block_rows = vec![Val::default(); store_block_len * keep_width];
+    for block in 0..next_step {
+        let block_start = block * store_block_len;
+        fill_store_prefix_row_block(
+            store,
+            block_start,
+            store_block_len,
+            keep_width,
+            &mut block_rows,
+        );
+
+        for offset in (0..store_block_len).step_by(pack_width) {
+            let lanes = pack_width.min(store_block_len - offset);
+            for lane in 0..pack_width {
+                if lane < lanes {
+                    let store_row = block_start + offset + lane;
+                    let natural_row = reverse_bits_len(store_row, log_qsize);
+                    let next_natural_row = (natural_row + next_step) & (quotient_size - 1);
+                    let next_store_row = reverse_bits_len(next_natural_row, log_qsize);
+                    debug_assert!(
+                        (block_start..block_start + store_block_len).contains(&next_store_row)
+                    );
+                    bufs.natural_rows[lane] = natural_row;
+                    bufs.next_offsets[lane] = next_store_row - block_start;
+                } else {
+                    bufs.natural_rows[lane] = 0;
+                    bufs.next_offsets[lane] = 0;
+                }
+            }
+
+            let natural_rows = &bufs.natural_rows;
+            let next_offsets = &bufs.next_offsets;
+            let is_first_row = PackedVal::<MyConfig>::from_fn(|lane| {
+                if lane < lanes {
+                    sels.is_first_row[natural_rows[lane]]
+                } else {
+                    Val::default()
+                }
+            });
+            let is_last_row = PackedVal::<MyConfig>::from_fn(|lane| {
+                if lane < lanes {
+                    sels.is_last_row[natural_rows[lane]]
+                } else {
+                    Val::default()
+                }
+            });
+            let is_transition = PackedVal::<MyConfig>::from_fn(|lane| {
+                if lane < lanes {
+                    sels.is_transition[natural_rows[lane]]
+                } else {
+                    Val::default()
+                }
+            });
+            let inv_vanishing = PackedVal::<MyConfig>::from_fn(|lane| {
+                if lane < lanes {
+                    sels.inv_vanishing[natural_rows[lane]]
+                } else {
+                    Val::default()
+                }
+            });
+
+            bufs.periodic.clear();
+            for col_idx in 0..periodic_table.width() {
+                bufs.periodic.push(PackedVal::<MyConfig>::from_fn(|lane| {
+                    if lane < lanes {
+                        *periodic_table.get(natural_rows[lane], col_idx)
+                    } else {
+                        Val::default()
+                    }
+                }));
+            }
+
+            bufs.main.clear();
+            for c in 0..keep_width {
+                bufs.main.push(PackedVal::<MyConfig>::from_fn(|lane| {
+                    if lane < lanes {
+                        block_rows[(offset + lane) * keep_width + c]
+                    } else {
+                        Val::default()
+                    }
+                }));
+            }
+            for c in 0..keep_width {
+                bufs.main.push(PackedVal::<MyConfig>::from_fn(|lane| {
+                    if lane < lanes {
+                        block_rows[next_offsets[lane] * keep_width + c]
+                    } else {
+                        Val::default()
+                    }
+                }));
+            }
+
+            let main = RowMajorMatrixView::new(&bufs.main, keep_width);
+            let preprocessed_view = RowMajorMatrixView::new(&[], 0);
+            let mut folder = ProverConstraintFolder {
+                main,
+                preprocessed: preprocessed_view,
+                preprocessed_window: RowWindow::from_view(&preprocessed_view),
+                periodic_values: &bufs.periodic,
+                public_values,
+                is_first_row,
+                is_last_row,
+                is_transition,
+                base_alpha_powers: &base_alpha_powers,
+                ext_alpha_powers: &ext_alpha_powers,
+                base_constraints: core::mem::take(&mut bufs.base_constraints),
+                ext_constraints: core::mem::take(&mut bufs.ext_constraints),
+                constraint_index: 0,
+                constraint_count: constraint_layout.total_constraints(),
+            };
+
+            air.eval(&mut folder);
+            let quotient = folder.finalize_constraints() * inv_vanishing;
+
+            bufs.base_constraints = folder.base_constraints;
+            bufs.base_constraints.clear();
+            bufs.ext_constraints = folder.ext_constraints;
+            bufs.ext_constraints.clear();
+
+            for lane in 0..lanes {
+                write_quotient(natural_rows[lane], quotient.extract(lane));
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+fn stream_quotient_values_from_store<A>(
+    pcs: &MyPcs,
+    air: &A,
+    public_values: &[Val],
+    layout: AirLayout,
+    trace_domain: TwoAdicMultiplicativeCoset<Val>,
+    quotient_domain: TwoAdicMultiplicativeCoset<Val>,
+    store: &MmapLdeStore,
+    keep_width: usize,
+    alpha: Challenge,
+) -> Vec<Challenge>
+where
+    A: Air<SymbolicAirBuilder<Val>> + for<'a> Air<ProverConstraintFolder<'a, MyConfig>>,
+{
+    let mut quotient_values = Challenge::zero_vec(quotient_domain.size());
+    stream_quotient_values_from_store_into(
+        pcs,
+        air,
+        public_values,
+        layout,
+        trace_domain,
+        quotient_domain,
+        store,
+        keep_width,
+        alpha,
+        |row, value| quotient_values[row] = value,
+    );
+    quotient_values
+}
+
+fn stream_quotient_value_store_from_trace_store<A>(
+    pcs: &MyPcs,
+    air: &A,
+    public_values: &[Val],
+    layout: AirLayout,
+    trace_domain: TwoAdicMultiplicativeCoset<Val>,
+    quotient_domain: TwoAdicMultiplicativeCoset<Val>,
+    store: &MmapLdeStore,
+    keep_width: usize,
+    alpha: Challenge,
+) -> std::io::Result<MmapLdeStore>
+where
+    A: Air<SymbolicAirBuilder<Val>> + for<'a> Air<ProverConstraintFolder<'a, MyConfig>>,
+{
+    let quotient_store = MmapLdeStore::new(quotient_domain.size(), EXT_D)?;
+    stream_quotient_values_from_store_into(
+        pcs,
+        air,
+        public_values,
+        layout,
+        trace_domain,
+        quotient_domain,
+        store,
+        keep_width,
+        alpha,
+        |row, value| quotient_store.write_row(row, value.as_basis_coefficients_slice()),
+    );
+    Ok(quotient_store)
+}
+
+/// The full streaming prover — an in-crate, prove-only fork of `p3_uni_stark::prove` (production `MyConfig`,
+/// `is_zk = 1`, no preprocessed) that keeps trace and quotient LDEs off the heap: trace commit,
+/// quotient evaluation/commit, opt-random commit, and FRI opening all use mmap-backed streaming
+/// substrates (`stream_hiding_commit`, `stream_commit_quotient_store`,
+/// `stream_commit_random_matrix`, `stream_pcs_open`).
+///
+/// BYTE-IDENTICAL to `p3_uni_stark::prove` on a config seeded with `(pcs_seed, mmcs_seed)`: the three
+/// ChaCha20 streams are threaded in p3's exact order — `pcs_rng` (trace random cols → quotient masking →
+/// opt-random matrix), `mmcs_rng` (trace → quotient → opt-random commit salts), `fri_salt_rng` (FRI round
+/// salts) — and every challenger observe/sample/grind matches. `config` supplies only the (rng-free)
+/// domains, periodic table, and challenger init; its internal rngs are unused (this fork draws from the
+/// explicit seeds). NB: p3's FRI grind is nondeterministic (`find_map_any`) — the differential gate runs
+/// both provers in a 1-thread rayon pool.
+#[allow(clippy::too_many_arguments)]
+pub fn stream_prove<A>(
+    config: &MyConfig,
+    air: &A,
+    trace: RowMajorMatrix<Val>,
+    public_values: &[Val],
+    pcs_seed: u64,
+    mmcs_seed: u64,
+    c_block: usize,
+) -> std::io::Result<Proof<MyConfig>>
+where
+    A: Air<SymbolicAirBuilder<Val>>
+        + for<'a> Air<ProverConstraintFolder<'a, MyConfig>>
+        + for<'a> Air<DebugConstraintBuilder<'a, Val>>,
+{
+    let h = trace.height();
+    let w = trace.width();
+    let trace_store = MmapLdeStore::new(h, w)?;
+    for r in 0..h {
+        trace_store.write_row(r, &trace.values[r * w..(r + 1) * w]);
+    }
+    stream_prove_from_trace_store(
+        config,
+        air,
+        &trace_store,
+        public_values,
+        pcs_seed,
+        mmcs_seed,
+        c_block,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn stream_prove_from_trace_store<A>(
+    config: &MyConfig,
+    air: &A,
+    trace: &MmapLdeStore,
+    public_values: &[Val],
+    pcs_seed: u64,
+    mmcs_seed: u64,
+    c_block: usize,
+) -> std::io::Result<Proof<MyConfig>>
+where
+    A: Air<SymbolicAirBuilder<Val>>
+        + for<'a> Air<ProverConstraintFolder<'a, MyConfig>>
+        + for<'a> Air<DebugConstraintBuilder<'a, Val>>,
+{
+    stream_prove_from_trace_store_inner(
+        config,
+        air,
+        TraceStoreInput::Borrowed(trace),
+        public_values,
+        pcs_seed,
+        mmcs_seed,
+        c_block,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn stream_prove_from_trace_store_owned<A>(
+    config: &MyConfig,
+    air: &A,
+    trace: MmapLdeStore,
+    public_values: &[Val],
+    pcs_seed: u64,
+    mmcs_seed: u64,
+    c_block: usize,
+) -> std::io::Result<Proof<MyConfig>>
+where
+    A: Air<SymbolicAirBuilder<Val>>
+        + for<'a> Air<ProverConstraintFolder<'a, MyConfig>>
+        + for<'a> Air<DebugConstraintBuilder<'a, Val>>,
+{
+    stream_prove_from_trace_store_inner(
+        config,
+        air,
+        TraceStoreInput::Owned(trace),
+        public_values,
+        pcs_seed,
+        mmcs_seed,
+        c_block,
+    )
+}
+
+enum TraceStoreInput<'a> {
+    Borrowed(&'a MmapLdeStore),
+    Owned(MmapLdeStore),
+}
+
+impl<'a> TraceStoreInput<'a> {
+    fn store(&self) -> &MmapLdeStore {
+        match self {
+            Self::Borrowed(store) => store,
+            Self::Owned(store) => store,
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn stream_prove_from_trace_store_inner<A>(
+    config: &MyConfig,
+    air: &A,
+    trace: TraceStoreInput<'_>,
+    public_values: &[Val],
+    pcs_seed: u64,
+    mmcs_seed: u64,
+    c_block: usize,
+) -> std::io::Result<Proof<MyConfig>>
+where
+    A: Air<SymbolicAirBuilder<Val>>
+        + for<'a> Air<ProverConstraintFolder<'a, MyConfig>>
+        + for<'a> Air<DebugConstraintBuilder<'a, Val>>,
+{
+    use crate::config::{production_fri, MyPcs, LOG_BLOWUP, NUM_RANDOM_CODEWORDS};
+    use p3_commit::Pcs;
+    use rand::SeedableRng;
+    use rand_chacha::ChaCha20Rng;
+
+    let (nrc, log_blowup, is_zk) = (NUM_RANDOM_CODEWORDS, LOG_BLOWUP, 1usize);
+    let generator = <Val as Field>::GENERATOR;
+    let mut pcs_rng = ChaCha20Rng::seed_from_u64(pcs_seed);
+    let mut mmcs_rng = ChaCha20Rng::seed_from_u64(mmcs_seed);
+    let mut fri_salt_rng = ChaCha20Rng::seed_from_u64(mmcs_seed);
+
+    let degree = trace.store().height();
+    let log_degree = degree.trailing_zeros() as usize;
+    let log_ext_degree = log_degree + is_zk;
+    let preprocessed_width = 0usize;
+    assert_eq!(
+        air.preprocessed_width(),
+        0,
+        "stream_prove: preprocessed columns unsupported"
+    );
+    let layout = AirLayout {
+        preprocessed_width,
+        main_width: air.width(),
+        num_public_values: air.num_public_values(),
+        num_periodic_columns: air.num_periodic_columns(),
+        ..Default::default()
+    };
+    let log_num_quotient_chunks = get_log_num_quotient_chunks::<Val, A>(air, layout, is_zk);
+    let num_quotient_chunks = 1 << (log_num_quotient_chunks + is_zk);
+
+    let pcs = config.pcs();
+    let mut challenger = config.initialise_challenger();
+    let trace_domain =
+        <MyPcs as Pcs<Challenge, Challenger>>::natural_domain_for_degree(pcs, degree);
+    let ext_trace_domain =
+        <MyPcs as Pcs<Challenge, Challenger>>::natural_domain_for_degree(pcs, degree * (is_zk + 1));
+
+    // ── trace commit (streamed) ──
+    let mut _t = std::time::Instant::now();
+    let trace_data = match trace {
+        TraceStoreInput::Borrowed(trace) => stream_hiding_commit_store(
+            trace,
+            nrc,
+            log_blowup,
+            generator,
+            c_block,
+            CAP_HEIGHT,
+            &mut pcs_rng,
+            &mut mmcs_rng,
+        )?,
+        TraceStoreInput::Owned(trace) => stream_hiding_commit_store_owned(
+            trace,
+            nrc,
+            log_blowup,
+            generator,
+            c_block,
+            CAP_HEIGHT,
+            &mut pcs_rng,
+            &mut mmcs_rng,
+        )?,
+    };
+    let trace_commit = FriCommit::from(trace_data.cap().to_vec());
+    prof("trace_commit", _t);
+    _t = std::time::Instant::now();
+
+    challenger.observe(Val::from_u8(log_ext_degree as u8));
+    challenger.observe(Val::from_u8(log_degree as u8));
+    challenger.observe(Val::from_usize(preprocessed_width));
+    challenger.observe(trace_commit.clone());
+    challenger.observe_slice(public_values);
+
+    let alpha: Challenge = challenger.sample_algebra_element();
+
+    // ── quotient (p3-equivalent folder evaluation over the trace LDE store) ──
+    let quotient_domain =
+        ext_trace_domain.create_disjoint_domain(1 << (log_ext_degree + log_num_quotient_chunks));
+    let qsize = quotient_domain.size();
+    assert!(
+        quotient_domain.shift() == generator && trace_data.store.height() >= qsize,
+        "streamed get_evaluations_on_domain fast path not applicable (shift/height)"
+    );
+    let quotient_store = stream_quotient_value_store_from_trace_store(
+        pcs,
+        air,
+        public_values,
+        layout,
+        trace_domain,
+        quotient_domain,
+        &trace_data.store,
+        air.width(),
+        alpha,
+    )?;
+    prof("quotient_values", _t);
+    _t = std::time::Instant::now();
+
+    // ── quotient commit (streamed) ──
+    let quotient_data = stream_commit_quotient_store_owned(
+        quotient_domain,
+        quotient_store,
+        num_quotient_chunks,
+        log_blowup,
+        nrc,
+        c_block,
+        CAP_HEIGHT,
+        &mut pcs_rng,
+        &mut mmcs_rng,
+    )?;
+    let quotient_commit = FriCommit::from(quotient_data.cap().to_vec());
+    challenger.observe(quotient_commit.clone());
+    prof("quotient_commit", _t);
+    _t = std::time::Instant::now();
+
+    // ── opt-randomization commit (ZK) ──
+    let r_data = stream_commit_random_matrix(
+        ext_trace_domain.size(),
+        nrc + 2,
+        log_blowup,
+        generator,
+        c_block,
+        CAP_HEIGHT,
+        &mut pcs_rng,
+        &mut mmcs_rng,
+    )?;
+    let r_commit = FriCommit::from(r_data.cap().to_vec());
+    challenger.observe(r_commit.clone());
+    prof("opt_r_commit", _t);
+    _t = std::time::Instant::now();
+
+    let zeta: Challenge = challenger.sample_algebra_element();
+    let zeta_next = trace_domain
+        .next_point(zeta)
+        .expect("domain should support next_point");
+    let main_next = !air.main_next_row_columns().is_empty();
+    let round1_points = if main_next {
+        vec![zeta, zeta_next]
+    } else {
+        vec![zeta]
+    };
+
+    // ── open at ζ (streamed): rounds are [opt-random, trace, quotient] (ZK ⇒ TRACE_IDX=1, QUOTIENT_IDX=2). ──
+    let fri_params = production_fri(ChallengeMmcs::new(ValMmcs::new(
+        MyHash::new(default_goldilocks_poseidon2_8()),
+        MyCompress::new(default_goldilocks_poseidon2_8()),
+        CAP_HEIGHT,
+        ChaCha20Rng::seed_from_u64(0),
+    )));
+    let rounds = vec![
+        (r_data.round_view(), vec![vec![zeta]]),
+        (trace_data.round_view(), vec![round1_points]),
+        (
+            quotient_data.round_view(),
+            vec![vec![zeta]; num_quotient_chunks],
+        ),
+    ];
+    let (opened_values, random_opened, fri_proof) = stream_pcs_open(
+        &rounds,
+        &mut challenger,
+        &fri_params,
+        nrc,
+        log_blowup,
+        CAP_HEIGHT,
+        &mut fri_salt_rng,
+    )?;
+    prof("open", _t);
+
+    // ── assemble Proof (mirror prove_gpu:428-443) ──
+    let (trace_idx, quotient_idx) = (1usize, 2usize);
+    let trace_local = opened_values[trace_idx][0][0].clone();
+    let trace_next = if main_next {
+        Some(opened_values[trace_idx][0][1].clone())
+    } else {
+        None
+    };
+    let quotient_chunks = opened_values[quotient_idx]
+        .iter()
+        .map(|v| v[0].clone())
+        .collect();
+    let random = Some(opened_values[0][0][0].clone());
+
+    let opened_values = StarkOpenedValues {
+        trace_local,
+        trace_next,
+        preprocessed_local: None,
+        preprocessed_next: None,
+        quotient_chunks,
+        random,
+    };
+    let commitments = Commitments {
+        trace: trace_commit,
+        quotient_chunks: quotient_commit,
+        random: Some(r_commit),
+    };
+    Ok(Proof {
+        commitments,
+        opened_values,
+        opening_proof: (random_opened, fri_proof),
+        degree_bits: log_ext_degree,
+    })
+}
+
+/// `stream_prove` with a self-built deterministic config (fixed seeds). For benches / standalone runs
+/// where byte-identity to a *specific* p3 run isn't the point — the proof still VERIFIES under the
+/// production verifier (the hiding salts travel in the proof). NOT for production: fixed seeds ⇒
+/// predictable blinding (see `config::make_config`, which reseeds from OS entropy per proof).
+pub fn stream_prove_seeded<A>(
+    air: &A,
+    trace: RowMajorMatrix<Val>,
+    public_values: &[Val],
+    c_block: usize,
+) -> std::io::Result<Proof<MyConfig>>
+where
+    A: Air<SymbolicAirBuilder<Val>>
+        + for<'a> Air<ProverConstraintFolder<'a, MyConfig>>
+        + for<'a> Air<DebugConstraintBuilder<'a, Val>>,
+{
+    use crate::config::{production_fri, MyPcs, NUM_RANDOM_CODEWORDS};
+    use rand::SeedableRng;
+    use rand_chacha::ChaCha20Rng;
+    let (pcs_seed, mmcs_seed) = (0x5EED_0001u64, 0x5EED_0002u64);
+    let perm = default_goldilocks_poseidon2_8();
+    let val_mmcs = ValMmcs::new(
+        MyHash::new(perm.clone()),
+        MyCompress::new(perm.clone()),
+        CAP_HEIGHT,
+        ChaCha20Rng::seed_from_u64(mmcs_seed),
+    );
+    let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
+    let fri = production_fri(challenge_mmcs);
+    let pcs = MyPcs::new(
+        Dft::default(),
+        val_mmcs,
+        fri,
+        NUM_RANDOM_CODEWORDS,
+        ChaCha20Rng::seed_from_u64(pcs_seed),
+    );
+    let config = MyConfig::new(pcs, Challenger::new(perm));
+    stream_prove(
+        &config,
+        air,
+        trace,
+        public_values,
+        pcs_seed,
+        mmcs_seed,
+        c_block,
+    )
+}
+
+/// A file-backed (mmap'd) store for one `h × w` LDE matrix, held **COLUMN-MAJOR** (element `(row, col)`
+/// at `map[col*h + row]`) — the out-of-core substrate that keeps the multi-GB LDE off the anonymous heap.
+/// Column-major is what makes both directions ONE sequential pass and dodges the transpose barrier:
+/// - **write** a column-tile → each column is a contiguous segment `[(c0+c)*h, (c0+c+1)*h)`, so the whole
+///   LDE is written in one forward pass as `c0` advances (independent of the tile width);
+/// - **read** for the frontier Merkle → `fill_row_block` reads `w` contiguous column-segments per row-block
+///   (w interleaved sequential streams), one pass over the store.
+///
+/// Access is EXPLICIT and sequential, so the OS streams it (evicts behind the read head) instead of
+/// thrashing on p3's blind whole-buffer re-touch (the Phase 2 allocator's failure). Later, FRI opening
+/// reads individual rows by `fill_row` (sparse strided seeks — cheap at 96 queries).
+pub struct MmapLdeStore {
+    map: *mut Val,
+    n: usize,
+    h: usize,
+    w: usize,
+    fd: libc::c_int,
+}
+
+// SAFETY: `map` is a stable, process-private mmap for the store's lifetime; the streaming commit writes
+// each tile BEFORE any read of it, so there is never a concurrent write+read of the same region.
+unsafe impl Send for MmapLdeStore {}
+unsafe impl Sync for MmapLdeStore {}
+
+static LDE_STORE_SEQ: AtomicU64 = AtomicU64::new(0);
+
+impl MmapLdeStore {
+    /// Create a fresh zero-filled `h × w` store in `$LATTICA_SPILL_DIR` (else the temp dir). The file is
+    /// unlinked immediately, so it is reclaimed on drop or crash.
+    pub fn new(h: usize, w: usize) -> std::io::Result<Self> {
+        let n = h.checked_mul(w).expect("store dimensions overflow");
+        let bytes = n
+            .checked_mul(size_of::<Val>())
+            .expect("store byte size overflow");
+        let dir = std::env::var("LATTICA_SPILL_DIR")
+            .ok()
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| std::env::temp_dir().to_string_lossy().into_owned());
+        let seq = LDE_STORE_SEQ.fetch_add(1, Ordering::Relaxed);
+        let path = format!("{dir}/lat-lde-{}-{seq}.tmp", std::process::id());
+        let cpath = CString::new(path)
+            .map_err(|_| std::io::Error::from(std::io::ErrorKind::InvalidInput))?;
+        // SAFETY: raw file + mmap syscalls with a valid NUL-terminated path and a checked byte length.
+        unsafe {
+            let fd = libc::open(
+                cpath.as_ptr(),
+                libc::O_RDWR | libc::O_CREAT | libc::O_EXCL,
+                0o600,
+            );
+            if fd < 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            libc::unlink(cpath.as_ptr());
+            if libc::ftruncate(fd, bytes as libc::off_t) != 0 {
+                let e = std::io::Error::last_os_error();
+                libc::close(fd);
+                return Err(e);
+            }
+            let m = libc::mmap(
+                std::ptr::null_mut(),
+                bytes,
+                libc::PROT_READ | libc::PROT_WRITE,
+                libc::MAP_SHARED,
+                fd,
+                0,
+            );
+            if m == libc::MAP_FAILED {
+                let e = std::io::Error::last_os_error();
+                libc::close(fd);
+                return Err(e);
+            }
+            // Default hint: SEQUENTIAL. A store is written front-to-back and then read in streaming passes
+            // (Merkle / reduction / get_evals) for MOST of its life — aggressive readahead + drop-behind cut
+            // fault/reclaim churn under a cap. It flips to `MADV_RANDOM` (via `advise`) right before the FRI
+            // query phase's sparse row-seeks, where SEQUENTIAL's prefetch/drop-behind would hurt.
+            libc::madvise(m, bytes, libc::MADV_SEQUENTIAL);
+            Ok(Self {
+                map: m as *mut Val,
+                n,
+                h,
+                w,
+                fd,
+            })
+        }
+    }
+
+    /// The whole store as a slice (ftruncate-zeroed, then overwritten by the LDE writes).
+    #[inline]
+    fn slice(&self) -> &[Val] {
+        // SAFETY: `map` covers `n` initialized `Val` elements (zeroed at creation) for the store's lifetime.
+        unsafe { std::slice::from_raw_parts(self.map, self.n) }
+    }
+
+    /// Re-hint the kernel about the coming access pattern — `MADV_SEQUENTIAL` for a streaming read pass,
+    /// `MADV_RANDOM` before the sparse FRI query seeks (no readahead / no drop-behind, so the queried rows
+    /// aren't evicted before they're read). Advice only — byte-transparent.
+    fn advise(&self, advice: libc::c_int) {
+        // SAFETY: `map`/`n` are the live mmap for this store's lifetime; madvise merely hints the kernel.
+        unsafe {
+            libc::madvise(
+                self.map as *mut libc::c_void,
+                self.n * size_of::<Val>(),
+                advice,
+            );
+        }
+    }
+
+    /// Write a `h × cw` ROW-MAJOR LDE tile (columns `[c0, c0+cw)`, `tile[r*cw + c]`) into the COLUMN-MAJOR
+    /// store: column `c0+c` fills the contiguous segment `[(c0+c)*h, (c0+c+1)*h)`. As `c0` advances across
+    /// tiles this writes the whole store front-to-back in one sequential pass. The per-column transpose of
+    /// the (small, resident) tile is in-RAM; the disk write is sequential.
+    pub fn write_col_tile(&self, c0: usize, cw: usize, tile: &[Val]) {
+        debug_assert_eq!(tile.len(), self.h * cw, "tile must be h*cw");
+        debug_assert!((c0 + cw) * self.h <= self.n, "column tile out of bounds");
+        for c in 0..cw {
+            // SAFETY: `[(c0+c)*h, +h)` is in-bounds; distinct columns are disjoint; written before any read.
+            let dst =
+                unsafe { std::slice::from_raw_parts_mut(self.map.add((c0 + c) * self.h), self.h) };
+            for (r, d) in dst.iter_mut().enumerate() {
+                *d = tile[r * cw + c];
+            }
+        }
+    }
+
+    pub fn write_row(&self, row: usize, values: &[Val]) {
+        debug_assert_eq!(values.len(), self.w, "row width mismatch");
+        debug_assert!(row < self.h, "row out of bounds");
+        for (c, value) in values.iter().copied().enumerate() {
+            // SAFETY: `c < self.w` and `row < self.h`; column-major element lies in mapped range.
+            unsafe {
+                *self.map.add(c * self.h + row) = value;
+            }
+        }
+    }
+}
+
+impl Drop for MmapLdeStore {
+    fn drop(&mut self) {
+        // SAFETY: `map`/`fd` were produced by `mmap`/`open` in `new` and are freed exactly once here.
+        unsafe {
+            libc::munmap(self.map as *mut libc::c_void, self.n * size_of::<Val>());
+            libc::close(self.fd);
+        }
+    }
+}
+
+impl LeafSource for MmapLdeStore {
+    fn height(&self) -> usize {
+        self.h
+    }
+    fn width(&self) -> usize {
+        self.w
+    }
+    /// One row by strided gather across the `w` column-segments — for sparse FRI-query reads.
+    fn fill_row(&self, row: usize, out: &mut [Val]) {
+        let s = self.slice();
+        for (c, o) in out.iter_mut().enumerate() {
+            *o = s[c * self.h + row];
+        }
+    }
+    /// A block of `nr` rows, read as `w` contiguous column-segments `[c*h + r0, +nr)` (w interleaved
+    /// sequential streams over the store) transposed into `out` (row-major `nr × w`) — one streaming pass.
+    fn fill_row_block(&self, r0: usize, nr: usize, out: &mut [Val]) {
+        let s = self.slice();
+        for c in 0..self.w {
+            let seg = &s[c * self.h + r0..c * self.h + r0 + nr];
+            for i in 0..nr {
+                out[i * self.w + c] = seg[i];
+            }
+        }
+    }
+}
+
+/// Compute the coset-LDE of `trace` a COLUMN-TILE at a time and write each tile into the COLUMN-MAJOR
+/// `store` (via `write_col_tile`), so only one `big × c_block` tile ever resides, never the whole
+/// `big × w` LDE, and the store is written FRONT-TO-BACK in ONE sequential pass (each column is a
+/// contiguous segment). Byte-identical to what p3's `TwoAdicFriPcs::commit` COMMITS —
+/// `coset_lde_batch(trace, added_bits, shift).bit_reverse_rows().to_row_major_matrix()` (the extra
+/// `bit_reverse_rows` is the one p3 applies before the MMCS commit, so the stored order matches the
+/// committed matrix the open reads via `get_matrices`) — because columns are independent polynomials (a
+/// column subset yields identical per-column output) and the row bit-reversal is column-independent, so
+/// tiling and the reversal commute. `store` must be `big × w` (`big = h << added_bits`).
+///
+/// Paired with the frontier Merkle's transposed-block read, the whole out-of-core commit is ~2
+/// sequential passes over the store, INDEPENDENT of `w` — so it is RAM-bounded AND fast, unlike the
+/// row-major-store predecessor (`w/c_block` passes) and the Phase 2 allocator (thrashed under pressure).
+pub fn stream_coset_lde_to_store(
+    trace: &RowMajorMatrix<Val>,
+    added_bits: usize,
+    shift: Val,
+    c_block: usize,
+    store: &MmapLdeStore,
+) {
+    let (h, w) = (trace.height(), trace.width());
+    let big = h << added_bits;
+    assert_eq!(
+        store.height(),
+        big,
+        "store height must be the blown-up height"
+    );
+    assert_eq!(store.width(), w, "store width must match the trace");
+    assert!(c_block >= 1, "column block must be >= 1");
+    let dft = Dft::default();
+    let mut c0 = 0usize;
+    while c0 < w {
+        let cw = c_block.min(w - c0);
+        // gather columns [c0, c0+cw) into a narrow h×cw matrix
+        let mut sub = Vec::with_capacity(h * cw);
+        for r in 0..h {
+            sub.extend_from_slice(&trace.values[r * w + c0..r * w + c0 + cw]);
+        }
+        // coset-LDE the narrow tile -> big×cw, then bit-reverse rows into p3's COMMITTED order (the extra
+        // `.bit_reverse_rows()` p3's `TwoAdicFriPcs::commit` applies), then discard the tile.
+        let lde = dft
+            .coset_lde_batch(RowMajorMatrix::new(sub, cw), added_bits, shift)
+            .bit_reverse_rows()
+            .to_row_major_matrix();
+        store.write_col_tile(c0, cw, &lde.values);
+        c0 += cw;
+    }
+}
+
+pub fn stream_coset_lde_store_to_store(
+    input: &MmapLdeStore,
+    added_bits: usize,
+    shift: Val,
+    c_block: usize,
+    store: &MmapLdeStore,
+) {
+    let (h, w) = (input.height(), input.width());
+    let big = h << added_bits;
+    assert_eq!(store.height(), big, "store height must be blown-up height");
+    assert_eq!(store.width(), w, "store width must match input width");
+    let dft = Dft::default();
+
+    let mut c0 = 0usize;
+    while c0 < w {
+        let cw = c_block.min(w - c0);
+        let mut sub = vec![Val::default(); h * cw];
+        fill_store_col_tile(input, c0, cw, &mut sub);
+        let lde = dft
+            .coset_lde_batch(RowMajorMatrix::new(sub, cw), added_bits, shift)
+            .bit_reverse_rows()
+            .to_row_major_matrix();
+        store.write_col_tile(c0, cw, &lde.values);
+        c0 += cw;
+    }
+}
+
+/// A read-only `Matrix<Val>` VIEW over a committed-LDE `MmapLdeStore` — the disk-backed matrix that p3's
+/// `open`-at-ζ reduction reads verbatim. The heavy step of the open, `rowwise_packed_dot_product` over the
+/// WHOLE blown-up LDE (`two_adic_pcs.rs`), is `Matrix`-generic, so running it on this view keeps the LDE on
+/// disk and streams it row by row while producing the byte-identical `reduced_openings` the FRI consumes.
+/// (The barycentric low-coset eval needs a dense `RowMajorMatrix`, but it reads only the first
+/// `height >> log_blowup` rows — trace-sized — so that slice is materialized resident separately.)
+///
+/// A row is a stride-`h` gather across the column-major store (`map[c*h + r]`); the reduction's sequential
+/// row walk therefore reads each column-segment in order — the same streaming access pattern as the commit.
+pub struct StoreMatrix<'a> {
+    store: &'a MmapLdeStore,
+}
+
+impl<'a> StoreMatrix<'a> {
+    pub fn new(store: &'a MmapLdeStore) -> Self {
+        Self { store }
+    }
+}
+
+/// Matrix view for quotient-domain experiments: take the first `height` rows of the committed
+/// bit-reversed LDE store, un-bit-reverse them virtually, and expose only the original trace width.
+///
+/// This is byte-correct against `stream_trace_on_quotient_domain`, but generic P3
+/// `quotient_values` drives `Matrix` through parallel row-slice gathers. Use a row-block quotient
+/// evaluator for the hot full-prover path instead of wiring this view directly there.
+pub struct StoreBitrevPrefixMatrix<'a> {
+    store: &'a MmapLdeStore,
+    height: usize,
+    width: usize,
+    log_height: usize,
+}
+
+impl<'a> StoreBitrevPrefixMatrix<'a> {
+    pub fn new(store: &'a MmapLdeStore, height: usize, width: usize) -> Self {
+        assert!(
+            height.is_power_of_two(),
+            "quotient prefix height must be power of two"
+        );
+        assert!(
+            height <= store.height(),
+            "quotient prefix exceeds store height"
+        );
+        assert!(
+            width <= store.width(),
+            "quotient prefix width exceeds store width"
+        );
+        Self {
+            store,
+            height,
+            width,
+            log_height: log2_strict_usize(height),
+        }
+    }
+
+    #[inline]
+    fn store_row(&self, row: usize) -> usize {
+        reverse_bits_len(row, self.log_height)
+    }
+}
+
+impl Matrix<Val> for StoreBitrevPrefixMatrix<'_> {
+    #[inline]
+    fn width(&self) -> usize {
+        self.width
+    }
+
+    #[inline]
+    fn height(&self) -> usize {
+        self.height
+    }
+
+    #[inline]
+    unsafe fn row_subseq_unchecked(
+        &self,
+        r: usize,
+        start: usize,
+        end: usize,
+    ) -> impl IntoIterator<Item = Val, IntoIter = impl Iterator<Item = Val> + Send + Sync> {
+        let s = self.store.slice();
+        let h = self.store.h;
+        let store_row = self.store_row(r);
+        (start..end).map(move |c| s[c * h + store_row])
+    }
+
+    #[inline]
+    unsafe fn row_slice_unchecked(&self, r: usize) -> impl core::ops::Deref<Target = [Val]> {
+        let s = self.store.slice();
+        let h = self.store.h;
+        let store_row = self.store_row(r);
+        (0..self.width)
+            .map(move |c| s[c * h + store_row])
+            .collect::<Vec<_>>()
+    }
+}
+
+impl Matrix<Val> for StoreMatrix<'_> {
+    #[inline]
+    fn width(&self) -> usize {
+        self.store.w
+    }
+    #[inline]
+    fn height(&self) -> usize {
+        self.store.h
+    }
+    #[inline]
+    unsafe fn row_subseq_unchecked(
+        &self,
+        r: usize,
+        start: usize,
+        end: usize,
+    ) -> impl IntoIterator<Item = Val, IntoIter = impl Iterator<Item = Val> + Send + Sync> {
+        // Column-major store: element (r, c) is at `map[c*h + r]`, so a row is a stride-`h` gather. This is
+        // the one required accessor (the trait derives `row`/`row_slice`/`get` from it); bounds are the
+        // caller's `unsafe` contract (`r < height`, `start <= end <= width`) → every index is `< n`.
+        let s = self.store.slice();
+        let h = self.store.h;
+        (start..end).map(move |c| s[c * h + r])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use p3_commit::Mmcs;
+    use p3_field::Field;
+    use p3_matrix::dense::RowMajorMatrix;
+    use p3_merkle_tree::MerkleTreeMmcs;
+
+    type RefMmcs = MerkleTreeMmcs<
+        <Val as Field>::Packing,
+        <Val as Field>::Packing,
+        MyHash,
+        MyCompress,
+        2,
+        DIGEST,
+    >;
+
+    /// The streaming (frontier) Merkle cap is byte-identical to p3's `MerkleTreeMmcs` commitment across
+    /// heights/widths — proving the wide leaves can be hashed one row at a time (never fully resident)
+    /// without changing the commitment. This is the standalone gate the plan requires before wiring the
+    /// streaming store into the commit.
+    #[test]
+    fn stream_merkle_matches_p3() {
+        let perm = default_goldilocks_poseidon2_8();
+        let mmcs = RefMmcs::new(MyHash::new(perm.clone()), MyCompress::new(perm), CAP_HEIGHT);
+        for &(log_h, w) in &[
+            (3usize, 1usize),
+            (6, 5),
+            (7, 2),
+            (10, 49),
+            (12, 53),
+            (13, 1291),
+        ] {
+            let h = 1usize << log_h;
+            // deterministic pseudo-random leaf values (canonical Goldilocks)
+            let vals: Vec<Val> = (0..h * w)
+                .map(|i| {
+                    Val::new((i as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15) % 0xFFFF_FFFF_0000_0001)
+                })
+                .collect();
+            let mat = RowMajorMatrix::new(vals.clone(), w);
+            let (p3_commit, _) = mmcs.commit(vec![mat]);
+            let mine = stream_merkle_cap(&SliceLeaves { vals: &vals, h, w }, CAP_HEIGHT);
+            // p3's commitment is the `MerkleCap` (AsRef<[digest]>) at CAP_HEIGHT
+            let p3_cap: &[[Val; DIGEST]] = p3_commit.as_ref();
+            assert_eq!(
+                p3_cap,
+                mine.as_slice(),
+                "streaming Merkle cap != p3 at h=2^{log_h} w={w}"
+            );
+        }
+    }
+
+    /// The streaming HIDING Merkle cap is byte-identical to the PRODUCTION salted `MerkleTreeHidingMmcs`
+    /// commitment — same salts (a fresh rng of the same seed, drawn via p3's `RowMajorMatrix::rand` order)
+    /// and `[row | salt]` leaves. This matches the actual production commit (the non-hiding test above
+    /// validated the tree structure; production is hiding).
+    #[test]
+    fn stream_merkle_hiding_matches_p3() {
+        use p3_merkle_tree::MerkleTreeHidingMmcs;
+        use rand::SeedableRng;
+        use rand_chacha::ChaCha20Rng;
+        type HidingMmcs = MerkleTreeHidingMmcs<
+            <Val as Field>::Packing,
+            <Val as Field>::Packing,
+            MyHash,
+            MyCompress,
+            ChaCha20Rng,
+            2,
+            DIGEST,
+            SALT_ELEMS,
+        >;
+        let perm = default_goldilocks_poseidon2_8();
+        for &(log_h, w, seed) in &[
+            (3usize, 1usize, 1u64),
+            (6, 5, 2),
+            (10, 49, 3),
+            (12, 53, 4),
+            (13, 1291, 5),
+        ] {
+            let h = 1usize << log_h;
+            let vals: Vec<Val> = (0..h * w)
+                .map(|i| {
+                    Val::new((i as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15) % 0xFFFF_FFFF_0000_0001)
+                })
+                .collect();
+            let mat = RowMajorMatrix::new(vals.clone(), w);
+            let mmcs = HidingMmcs::new(
+                MyHash::new(perm.clone()),
+                MyCompress::new(perm.clone()),
+                CAP_HEIGHT,
+                ChaCha20Rng::seed_from_u64(seed),
+            );
+            let (p3_commit, _) = mmcs.commit(vec![mat]);
+            let mut rng = ChaCha20Rng::seed_from_u64(seed);
+            let mine =
+                stream_merkle_cap_hiding(&SliceLeaves { vals: &vals, h, w }, CAP_HEIGHT, &mut rng);
+            let p3_cap: &[[Val; DIGEST]] = p3_commit.as_ref();
+            assert_eq!(
+                p3_cap,
+                mine.as_slice(),
+                "streaming HIDING Merkle cap != p3 at h=2^{log_h} w={w} seed={seed}"
+            );
+        }
+    }
+
+    /// Column-tiled LDE written into the mmap store is byte-identical to p3's COMMITTED LDE —
+    /// `coset_lde_batch(...).bit_reverse_rows().to_row_major_matrix()`, the exact matrix
+    /// `TwoAdicFriPcs::commit` commits — the whole LDE never residing (only one `big × c_block` tile).
+    #[test]
+    fn stream_lde_matches_p3() {
+        let dft = Dft::default();
+        let shift = <Val as Field>::GENERATOR;
+        for &(log_h, w, added, cblk) in &[
+            (4usize, 3usize, 2usize, 1usize),
+            (8, 5, 3, 2),
+            (10, 49, 4, 8),
+            (12, 53, 4, 16),
+        ] {
+            let h = 1usize << log_h;
+            let vals: Vec<Val> = (0..h * w)
+                .map(|i| {
+                    Val::new((i as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15) % 0xFFFF_FFFF_0000_0001)
+                })
+                .collect();
+            let mat = RowMajorMatrix::new(vals, w);
+            let p3_lde = dft
+                .coset_lde_batch(mat.clone(), added, shift)
+                .bit_reverse_rows()
+                .to_row_major_matrix();
+            let big = h << added;
+            let store = MmapLdeStore::new(big, w).unwrap();
+            stream_coset_lde_to_store(&mat, added, shift, cblk, &store);
+            // reconstruct the row-major matrix from the COLUMN-MAJOR store and compare to p3's whole LDE
+            let mut got = vec![Val::default(); big * w];
+            store.fill_row_block(0, big, &mut got);
+            assert_eq!(
+                got, p3_lde.values,
+                "streamed LDE store (row-major view) != p3 at h=2^{log_h} w={w} cblk={cblk}"
+            );
+        }
+    }
+
+    #[test]
+    fn store_bitreversed_prefix_matrix_matches_resident_materialization() {
+        let shift = <Val as Field>::GENERATOR;
+        let (log_h, w, added, keep_w, qsize, cblk) =
+            (6usize, 7usize, 3usize, 5usize, 1usize << 7, 3usize);
+        let h = 1usize << log_h;
+        let vals: Vec<Val> = (0..h * w)
+            .map(|i| {
+                Val::new((i as u64).wrapping_mul(0xD1B5_4A32_D192_ED03) % 0xFFFF_FFFF_0000_0001)
+            })
+            .collect();
+        let mat = RowMajorMatrix::new(vals, w);
+        let store = MmapLdeStore::new(h << added, w).unwrap();
+        stream_coset_lde_to_store(&mat, added, shift, cblk, &store);
+
+        let resident = stream_trace_on_quotient_domain(&store, qsize, keep_w);
+        let view = StoreBitrevPrefixMatrix::new(&store, qsize, keep_w);
+        assert_eq!(view.dimensions(), resident.dimensions());
+        for row in [0, 1, 3, qsize / 2, qsize - 1] {
+            assert_eq!(
+                view.row(row).unwrap().into_iter().collect::<Vec<_>>(),
+                resident.row(row).unwrap().into_iter().collect::<Vec<_>>(),
+                "quotient-domain store view row {row} differs"
+            );
+        }
+        for row in [0, 5, qsize - 4] {
+            let from_view: Vec<<Val as Field>::Packing> = view.vertically_packed_row(row).collect();
+            let from_resident: Vec<<Val as Field>::Packing> =
+                resident.vertically_packed_row(row).collect();
+            assert_eq!(
+                from_view, from_resident,
+                "quotient-domain packed row {row} differs"
+            );
+        }
+    }
+
+    #[test]
+    fn stream_quotient_values_from_store_matches_p3() {
+        use crate::config::{production_fri, LOG_BLOWUP, NUM_RANDOM_CODEWORDS};
+        use crate::joinsplit_air::{self, JoinSplitAir};
+        use p3_air::BaseAir;
+        use rand::SeedableRng;
+        use rand_chacha::ChaCha20Rng;
+
+        let perm = default_goldilocks_poseidon2_8();
+        let val_mmcs = ValMmcs::new(
+            MyHash::new(perm.clone()),
+            MyCompress::new(perm.clone()),
+            CAP_HEIGHT,
+            ChaCha20Rng::seed_from_u64(11),
+        );
+        let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
+        let fri = production_fri(challenge_mmcs);
+        let pcs = MyPcs::new(
+            Dft::default(),
+            val_mmcs,
+            fri,
+            NUM_RANDOM_CODEWORDS,
+            ChaCha20Rng::seed_from_u64(12),
+        );
+        let cfg = MyConfig::new(pcs, Challenger::new(perm));
+        let pcs = cfg.pcs();
+
+        let air = JoinSplitAir;
+        let w = joinsplit_air::demo_witness();
+        let pis = joinsplit_air::public_values(&w);
+        let trace = joinsplit_air::build_trace(&w);
+        let degree = trace.height();
+        let log_degree = degree.trailing_zeros() as usize;
+        let is_zk = 1usize;
+        let layout = AirLayout {
+            preprocessed_width: 0,
+            main_width: air.width(),
+            num_public_values: air.num_public_values(),
+            num_periodic_columns: air.num_periodic_columns(),
+            ..Default::default()
+        };
+        let trace_domain =
+            <MyPcs as Pcs<Challenge, Challenger>>::natural_domain_for_degree(pcs, degree);
+        let ext_trace_domain = <MyPcs as Pcs<Challenge, Challenger>>::natural_domain_for_degree(
+            pcs,
+            degree * (is_zk + 1),
+        );
+        let log_num_quotient_chunks =
+            get_log_num_quotient_chunks::<Val, JoinSplitAir>(&JoinSplitAir, layout, is_zk);
+        let quotient_domain = ext_trace_domain
+            .create_disjoint_domain(1 << (log_degree + is_zk + log_num_quotient_chunks));
+        let qsize = quotient_domain.size();
+
+        let mut pcs_rng = ChaCha20Rng::seed_from_u64(13);
+        let mut mmcs_rng = ChaCha20Rng::seed_from_u64(14);
+        let trace_data = stream_hiding_commit(
+            trace,
+            NUM_RANDOM_CODEWORDS,
+            LOG_BLOWUP,
+            <Val as Field>::GENERATOR,
+            4,
+            CAP_HEIGHT,
+            &mut pcs_rng,
+            &mut mmcs_rng,
+        )
+        .unwrap();
+
+        let resident_trace = stream_trace_on_quotient_domain(&trace_data.store, qsize, air.width());
+        let mut challenger = cfg.initialise_challenger();
+        let alpha: Challenge = challenger.sample_algebra_element();
+        let p3_quotient = p3_uni_stark::quotient_values::<MyConfig, JoinSplitAir, _>(
+            pcs,
+            &air,
+            &pis,
+            layout,
+            trace_domain,
+            quotient_domain,
+            &resident_trace,
+            None,
+            alpha,
+        );
+        let streamed_quotient = stream_quotient_values_from_store(
+            pcs,
+            &air,
+            &pis,
+            layout,
+            trace_domain,
+            quotient_domain,
+            &trace_data.store,
+            air.width(),
+            alpha,
+        );
+
+        assert_eq!(
+            streamed_quotient, p3_quotient,
+            "store-backed quotient evaluator must match p3 quotient_values"
+        );
+    }
+
+    /// End-to-end out-of-core commit: column-tiled LDE into the mmap store + frontier Merkle equals p3's
+    /// committed-order (`coset_lde_batch(...).bit_reverse_rows()`) + `MerkleTreeMmcs` commitment — i.e. the
+    /// commitment `TwoAdicFriPcs::commit` produces. Neither the whole LDE nor the whole leaf matrix ever
+    /// resides — this is the substrate that actually cuts the prover's RAM.
+    #[test]
+    fn stream_lde_merkle_matches_p3() {
+        let dft = Dft::default();
+        let shift = <Val as Field>::GENERATOR;
+        let perm = default_goldilocks_poseidon2_8();
+        let mmcs = RefMmcs::new(MyHash::new(perm.clone()), MyCompress::new(perm), CAP_HEIGHT);
+        for &(log_h, w, added, cblk) in &[
+            (7usize, 2usize, 4usize, 1usize),
+            (10, 49, 4, 8),
+            (12, 53, 4, 16),
+        ] {
+            let h = 1usize << log_h;
+            let big = h << added;
+            let vals: Vec<Val> = (0..h * w)
+                .map(|i| {
+                    Val::new((i as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15) % 0xFFFF_FFFF_0000_0001)
+                })
+                .collect();
+            let mat = RowMajorMatrix::new(vals, w);
+            let p3_lde = dft
+                .coset_lde_batch(mat.clone(), added, shift)
+                .bit_reverse_rows()
+                .to_row_major_matrix();
+            let (p3_commit, _) = mmcs.commit(vec![p3_lde]);
+            let store = MmapLdeStore::new(big, w).unwrap();
+            stream_coset_lde_to_store(&mat, added, shift, cblk, &store);
+            let mine = stream_merkle_cap(&store, CAP_HEIGHT);
+            let p3_cap: &[[Val; DIGEST]] = p3_commit.as_ref();
+            assert_eq!(
+                p3_cap,
+                mine.as_slice(),
+                "streamed LDE+Merkle != p3 at h=2^{log_h} w={w} cblk={cblk}"
+            );
+        }
+    }
+
+    /// `stream_commit` + `stream_open` open a query index byte-identical to production's HIDING
+    /// `Mmcs::commit` + `open_batch`: same opened row, same salt, same Merkle sibling path — the full
+    /// out-of-core commit/open MMCS primitive that the streamed FRI open will drive.
+    #[test]
+    fn stream_hiding_commit_store_matches_resident_commit() {
+        use crate::config::NUM_RANDOM_CODEWORDS;
+        use rand::SeedableRng;
+        use rand_chacha::ChaCha20Rng;
+
+        let shift = <Val as Field>::GENERATOR;
+        for &(log_h, w, added, cblk, pcs_seed, mmcs_seed) in &[
+            (4usize, 3usize, 3usize, 1usize, 31u64, 41u64),
+            (6, 7, 4, 3, 32, 42),
+        ] {
+            let h = 1usize << log_h;
+            let vals: Vec<Val> = (0..h * w)
+                .map(|i| Val::from_u64((i as u64).wrapping_mul(17).wrapping_add(5)))
+                .collect();
+            let mat = RowMajorMatrix::new(vals, w);
+            let input = MmapLdeStore::new(h, w).unwrap();
+            for r in 0..h {
+                input.write_row(r, &mat.values[r * w..(r + 1) * w]);
+            }
+
+            let resident = stream_hiding_commit(
+                mat,
+                NUM_RANDOM_CODEWORDS,
+                added,
+                shift,
+                cblk,
+                CAP_HEIGHT,
+                &mut ChaCha20Rng::seed_from_u64(pcs_seed),
+                &mut ChaCha20Rng::seed_from_u64(mmcs_seed),
+            )
+            .unwrap();
+            let streamed = stream_hiding_commit_store(
+                &input,
+                NUM_RANDOM_CODEWORDS,
+                added,
+                shift,
+                cblk,
+                CAP_HEIGHT,
+                &mut ChaCha20Rng::seed_from_u64(pcs_seed),
+                &mut ChaCha20Rng::seed_from_u64(mmcs_seed),
+            )
+            .unwrap();
+
+            assert_eq!(
+                resident.cap(),
+                streamed.cap(),
+                "store-backed hiding commit cap differs at h=2^{log_h} w={w}"
+            );
+            let out_h = (2 * h) << added;
+            for idx in [0usize, 1, out_h / 3, out_h - 1] {
+                assert_eq!(
+                    stream_open(&resident, idx),
+                    stream_open(&streamed, idx),
+                    "store-backed hiding opening differs at h=2^{log_h} w={w} idx={idx}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn stream_commit_random_matrix_matches_resident_commit() {
+        use rand::SeedableRng;
+        use rand_chacha::ChaCha20Rng;
+
+        let shift = <Val as Field>::GENERATOR;
+        for &(log_h, w, added, cblk, matrix_seed, salt_seed) in &[
+            (5usize, 3usize, 3usize, 1usize, 10u64, 20u64),
+            (8, 6, 4, 2, 11, 21),
+            (10, 9, 4, 4, 12, 22),
+        ] {
+            let h = 1usize << log_h;
+            let resident_mat =
+                RowMajorMatrix::<Val>::rand(&mut ChaCha20Rng::seed_from_u64(matrix_seed), h, w);
+            let resident = stream_commit(
+                resident_mat,
+                added,
+                shift,
+                cblk,
+                CAP_HEIGHT,
+                &mut ChaCha20Rng::seed_from_u64(salt_seed),
+            )
+            .unwrap();
+            let streamed = stream_commit_random_matrix(
+                h,
+                w,
+                added,
+                shift,
+                cblk,
+                CAP_HEIGHT,
+                &mut ChaCha20Rng::seed_from_u64(matrix_seed),
+                &mut ChaCha20Rng::seed_from_u64(salt_seed),
+            )
+            .unwrap();
+
+            assert_eq!(
+                resident.cap(),
+                streamed.cap(),
+                "random-matrix commit cap differs at h=2^{log_h} w={w}"
+            );
+            for idx in [0usize, 1, (h << added) / 3, (h << added) - 1] {
+                assert_eq!(
+                    stream_open(&resident, idx),
+                    stream_open(&streamed, idx),
+                    "random-matrix opening differs at h=2^{log_h} w={w} idx={idx}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn stream_open_matches_p3() {
+        use p3_commit::Mmcs;
+        use p3_merkle_tree::MerkleTreeHidingMmcs;
+        use rand::SeedableRng;
+        use rand_chacha::ChaCha20Rng;
+        type HidingMmcs = MerkleTreeHidingMmcs<
+            <Val as Field>::Packing,
+            <Val as Field>::Packing,
+            MyHash,
+            MyCompress,
+            ChaCha20Rng,
+            2,
+            DIGEST,
+            SALT_ELEMS,
+        >;
+        let dft = Dft::default();
+        let shift = <Val as Field>::GENERATOR;
+        let perm = default_goldilocks_poseidon2_8();
+        for &(log_h, w, added, cblk, seed) in &[
+            (6usize, 5usize, 3usize, 2usize, 1u64),
+            (10, 49, 4, 8, 2),
+            (12, 53, 4, 16, 3),
+        ] {
+            let h = 1usize << log_h;
+            let big = h << added;
+            let vals: Vec<Val> = (0..h * w)
+                .map(|i| {
+                    Val::new((i as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15) % 0xFFFF_FFFF_0000_0001)
+                })
+                .collect();
+            let mat = RowMajorMatrix::new(vals, w);
+            let p3_lde = dft
+                .coset_lde_batch(mat.clone(), added, shift)
+                .bit_reverse_rows()
+                .to_row_major_matrix();
+            let mmcs = HidingMmcs::new(
+                MyHash::new(perm.clone()),
+                MyCompress::new(perm.clone()),
+                CAP_HEIGHT,
+                ChaCha20Rng::seed_from_u64(seed),
+            );
+            let (p3_commit, p3_data) = mmcs.commit(vec![p3_lde]);
+            let mut rng = ChaCha20Rng::seed_from_u64(seed);
+            let data = stream_commit(mat, added, shift, cblk, CAP_HEIGHT, &mut rng).unwrap();
+            assert_eq!(
+                p3_commit.as_ref(),
+                data.cap(),
+                "commit cap != p3 at h=2^{log_h} w={w}"
+            );
+            for &idx in &[0usize, 1, big / 3, big / 2, big - 1] {
+                let (p3_openings, (p3_salts, p3_sibs)) = mmcs.open_batch(idx, &p3_data).unpack();
+                let (row, salt, sibs) = stream_open(&data, idx);
+                assert_eq!(
+                    p3_openings[0], row,
+                    "opened row != p3 at idx {idx} (h=2^{log_h} w={w})"
+                );
+                assert_eq!(p3_salts[0], salt, "salt != p3 at idx {idx}");
+                assert_eq!(p3_sibs, sibs, "sibling path != p3 at idx {idx}");
+            }
+        }
+    }
+
+    /// The streaming FRI-round commit + open (over the EXTENSION field) is byte-identical to p3's
+    /// production `ExtensionMmcs<Val, Challenge, ValMmcs>::commit_matrix` + a single `answer_query` step.
+    /// This retires the extension-flatten (`FlatMatrixView`) / reconstitution + hiding-over-extension
+    /// risk standalone — the two primitives `stream_prove_fri` drives round-by-round. Covers binary and
+    /// higher-arity folds (`log_arity` 1..3), which change only the leaf width (`arity * EXT_D`).
+    #[test]
+    fn stream_fri_commit_open_matches_p3() {
+        use crate::config::ValMmcs;
+        use p3_fri::CommitPhaseProofStep;
+        use rand::SeedableRng;
+        use rand_chacha::ChaCha20Rng;
+        let perm = default_goldilocks_poseidon2_8();
+        // (log_h, log_arity, seed): a height-2^log_h extension codeword folded into groups of 2^log_arity.
+        for &(log_h, log_arity, seed) in &[
+            (4usize, 1usize, 10u64),
+            (8, 1, 11),
+            (8, 2, 12),
+            (10, 3, 13),
+            (6, 2, 14),
+        ] {
+            let h = 1usize << log_h;
+            let arity = 1usize << log_arity;
+            // Deterministic pseudo-random extension codeword (p3's StandardUniform draw order).
+            let folded: Vec<Challenge> = RowMajorMatrix::<Challenge>::rand(
+                &mut ChaCha20Rng::seed_from_u64(seed ^ 0xC0DE),
+                h,
+                1,
+            )
+            .values;
+            let leaves = RowMajorMatrix::new(folded.clone(), arity); // (h/arity) × arity, extension
+
+            // Reference: the production ExtensionMmcs over the hiding ValMmcs, salts seeded.
+            let val_mmcs = ValMmcs::new(
+                MyHash::new(perm.clone()),
+                MyCompress::new(perm.clone()),
+                CAP_HEIGHT,
+                ChaCha20Rng::seed_from_u64(seed),
+            );
+            let challenge_mmcs = ChallengeMmcs::new(val_mmcs);
+            let (ref_commit, ref_data) = challenge_mmcs.commit_matrix(leaves);
+
+            // Mine: the same salt stream (a freshly seeded ChaCha20Rng), streamed out-of-core.
+            let data = stream_commit_codeword(
+                &folded,
+                arity,
+                CAP_HEIGHT,
+                &mut ChaCha20Rng::seed_from_u64(seed),
+            )
+            .unwrap();
+
+            let ref_cap: &[[Val; DIGEST]] = ref_commit.as_ref();
+            assert_eq!(
+                ref_cap,
+                data.cap(),
+                "FRI round commit cap != p3 at log_h={log_h} arity={arity}"
+            );
+
+            // Open several indices; compare the full CommitPhaseProofStep bytes (postcard = wire).
+            for &current_index in &[0usize, 1, arity, h / 3, h / 2, h - 1] {
+                let index_in_group = current_index % arity;
+                let group_index = current_index >> log_arity;
+                // Reference: p3's answer_query for one round (open the group, drop the queried element).
+                let (mut ref_rows, ref_proof) =
+                    challenge_mmcs.open_batch(group_index, &ref_data).unpack();
+                let ref_row = ref_rows.pop().unwrap();
+                let ref_sibs: Vec<Challenge> = ref_row
+                    .into_iter()
+                    .enumerate()
+                    .filter(|(j, _)| *j != index_in_group)
+                    .map(|(_, v)| v)
+                    .collect();
+                let ref_step = CommitPhaseProofStep::<Challenge, ChallengeMmcs> {
+                    log_arity: log_arity as u8,
+                    sibling_values: ref_sibs,
+                    opening_proof: ref_proof,
+                };
+                let (my_step, my_group) = stream_answer_query(&data, log_arity, current_index);
+                assert_eq!(
+                    my_group, group_index,
+                    "parent group_index != p3 at idx={current_index}"
+                );
+                let a = postcard::to_allocvec(&ref_step).unwrap();
+                let b = postcard::to_allocvec(&my_step).unwrap();
+                assert_eq!(
+                    a, b,
+                    "answer_query step != p3 at log_h={log_h} arity={arity} idx={current_index}"
+                );
+            }
+        }
+    }
+
+    /// The full streaming FRI prover is byte-identical to p3's production `prove_fri`. Seed both salt
+    /// sources identically and drive both from a fresh (identical) challenger over the same inputs +
+    /// input commitments; the entire `FriProof` (commit-phase caps, per-round PoW witnesses, `final_poly`,
+    /// every query's input-open + commit-phase openings, query PoW) must serialize byte-for-byte. This is
+    /// the primary P3.6 gate — it exercises the streamed commit phase, the folding (reused verbatim), the
+    /// arity/final-poly/PoW transcript, and the seek-backed query phase all at once.
+    ///
+    /// Cases: a multi-input fold (three descending heights, arity-4 rounds, `open_input` at two commitment
+    /// heights so `bits_reduced ∈ {0, 2}`), and a single-input fold (one height → arity 16 then 2, the
+    /// no-next-input path). Production FRI parameters (`log_blowup=4`, cap 6, arity 4, 16-bit query PoW).
+    #[test]
+    fn stream_prove_fri_matches_p3() {
+        use crate::config::{production_fri, ValMmcs};
+        use p3_fri::prover::prove_fri;
+        use p3_fri::{TwoAdicFriFolding, TwoAdicFriFoldingForMmcs};
+        use rand::SeedableRng;
+        use rand_chacha::ChaCha20Rng;
+        let perm = default_goldilocks_poseidon2_8();
+
+        // (FRI input log-heights [descending, distinct], input-commitment log-heights [for open_input]).
+        let cases: &[(&[usize], &[usize])] = &[(&[10, 8, 6], &[10, 8]), (&[9], &[9])];
+
+        for (ci, (in_heights, mmcs_heights)) in cases.iter().enumerate() {
+            let seed = 100 + ci as u64;
+            let log_gmh = in_heights[0];
+
+            // FRI inputs: one pseudo-random extension codeword per height (descending), p3's rand order.
+            let mut cw_rng = ChaCha20Rng::seed_from_u64(seed ^ 0xF71);
+            let inputs: Vec<Vec<Challenge>> = in_heights
+                .iter()
+                .map(|&lh| RowMajorMatrix::<Challenge>::rand(&mut cw_rng, 1usize << lh, 1).values)
+                .collect();
+
+            // Input commitments (for open_input): one hiding commit per height, sharing one ValMmcs.
+            // Built ONCE and shared, so both provers read identical stored rows/salts (open draws no rng).
+            let input_mmcs = ValMmcs::new(
+                MyHash::new(perm.clone()),
+                MyCompress::new(perm.clone()),
+                CAP_HEIGHT,
+                ChaCha20Rng::seed_from_u64(seed ^ 0x1157),
+            );
+            let mut mat_rng = ChaCha20Rng::seed_from_u64(seed ^ 0x9A7);
+            let in_datas: Vec<_> = mmcs_heights
+                .iter()
+                .map(|&lh| {
+                    input_mmcs
+                        .commit_matrix(RowMajorMatrix::<Val>::rand(&mut mat_rng, 1usize << lh, 3))
+                        .1
+                })
+                .collect();
+            let input_data: Vec<_> = in_datas
+                .iter()
+                .map(|d| (d, Vec::<Vec<Challenge>>::new()))
+                .collect();
+
+            // Reference p3 `prove_fri` and my streaming fork, both driven from identical fresh challengers
+            // over the same inputs + input commitments + salt seed. The two prove calls run inside a
+            // SINGLE-THREAD rayon pool so p3's query-PoW grind (`find_map_any`, non-deterministic across
+            // threads — verified: p3-vs-p3 disagrees at higher arity) returns the same witness for both
+            // from their identical challenger state. Byte-identity is a property of the deterministic
+            // transcript→proof transform; the grind's thread-race is p3's and orthogonal to this fork.
+            let fri = production_fri(ChallengeMmcs::new(ValMmcs::new(
+                MyHash::new(perm.clone()),
+                MyCompress::new(perm.clone()),
+                CAP_HEIGHT,
+                ChaCha20Rng::seed_from_u64(seed),
+            )));
+            let folding: TwoAdicFriFoldingForMmcs<Val, ValMmcs> = TwoAdicFriFolding(PhantomData);
+            let pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(1)
+                .build()
+                .unwrap();
+            let (p3_proof, my_proof) = pool.install(|| {
+                let mut ch1 = Challenger::new(perm.clone());
+                let p3 = prove_fri(
+                    &folding,
+                    &fri,
+                    inputs.clone(),
+                    &mut ch1,
+                    log_gmh,
+                    &input_data,
+                    &input_mmcs,
+                );
+                let mut ch2 = Challenger::new(perm.clone());
+                let mut salt_rng = ChaCha20Rng::seed_from_u64(seed);
+                let my = stream_prove_fri(
+                    &fri,
+                    inputs.clone(),
+                    &mut ch2,
+                    log_gmh,
+                    |index| stream_open_input(log_gmh, index, &input_data, &input_mmcs),
+                    &mut salt_rng,
+                    CAP_HEIGHT,
+                )
+                .expect("stream_prove_fri");
+                let input_stores: Vec<_> = inputs
+                    .iter()
+                    .map(|v| ChallengeCodewordStore::from_values(v).unwrap())
+                    .collect();
+                let mut ch3 = Challenger::new(perm.clone());
+                let mut store_salt_rng = ChaCha20Rng::seed_from_u64(seed);
+                let my_store = stream_prove_fri_from_input_stores(
+                    &fri,
+                    &input_stores,
+                    &mut ch3,
+                    log_gmh,
+                    |index| stream_open_input(log_gmh, index, &input_data, &input_mmcs),
+                    &mut store_salt_rng,
+                    CAP_HEIGHT,
+                )
+                .expect("stream_prove_fri_from_input_stores");
+                assert_eq!(
+                    postcard::to_allocvec(&my).unwrap(),
+                    postcard::to_allocvec(&my_store).unwrap(),
+                    "case {ci}: store-backed FRI proof differs from resident streamed proof"
+                );
+                (p3, my)
+            });
+
+            // Localize any divergence to a specific FriProof field before the full-bytes assert.
+            assert_eq!(
+                p3_proof
+                    .commit_phase_commits
+                    .iter()
+                    .map(|c| c.as_ref().to_vec())
+                    .collect::<Vec<_>>(),
+                my_proof
+                    .commit_phase_commits
+                    .iter()
+                    .map(|c| c.as_ref().to_vec())
+                    .collect::<Vec<_>>(),
+                "case {ci}: commit_phase_commits differ"
+            );
+            assert_eq!(
+                p3_proof.commit_pow_witnesses, my_proof.commit_pow_witnesses,
+                "case {ci}: commit_pow_witnesses differ"
+            );
+            assert_eq!(
+                p3_proof.final_poly, my_proof.final_poly,
+                "case {ci}: final_poly differ"
+            );
+            assert_eq!(
+                p3_proof.query_pow_witness, my_proof.query_pow_witness,
+                "case {ci}: query_pow_witness differ"
+            );
+            for (qi, (pq, mq)) in p3_proof
+                .query_proofs
+                .iter()
+                .zip(my_proof.query_proofs.iter())
+                .enumerate()
+            {
+                assert_eq!(
+                    postcard::to_allocvec(&pq.input_proof).unwrap(),
+                    postcard::to_allocvec(&mq.input_proof).unwrap(),
+                    "case {ci} query {qi}: input_proof differs"
+                );
+                for (ri, (ps, ms)) in pq
+                    .commit_phase_openings
+                    .iter()
+                    .zip(mq.commit_phase_openings.iter())
+                    .enumerate()
+                {
+                    assert_eq!(
+                        postcard::to_allocvec(ps).unwrap(),
+                        postcard::to_allocvec(ms).unwrap(),
+                        "case {ci} query {qi} round {ri}: commit_phase_opening differs (log_arity p3={} mine={})",
+                        ps.log_arity, ms.log_arity
+                    );
+                }
+                assert_eq!(
+                    pq.commit_phase_openings.len(),
+                    mq.commit_phase_openings.len(),
+                    "case {ci} query {qi}: round count differs"
+                );
+            }
+            let a = postcard::to_allocvec(&p3_proof).unwrap();
+            let b = postcard::to_allocvec(&my_proof).unwrap();
+            assert_eq!(
+                a, b,
+                "stream_prove_fri != p3 prove_fri at case {ci} in_heights={in_heights:?}"
+            );
+        }
+    }
+
+    /// `StoreMatrix` (the disk-backed `Matrix<Val>` view) reproduces its store byte-for-byte AND drives
+    /// p3's whole-LDE open reduction identically to a resident `RowMajorMatrix`. This is the keystone for
+    /// the streamed open-at-ζ: (a) exhaustive per-row equality proves the strided column-major reads are
+    /// faithful; (b) `rowwise_packed_dot_product` — the exact `Matrix`-generic op p3's `open` runs over the
+    /// whole blown-up LDE to build `reduced_openings` — yields identical `Challenge` outputs whether the
+    /// matrix is on disk or in RAM (so the reduction can stream the LDE off the heap, byte-identically).
+    #[test]
+    fn store_matrix_reads_like_p3_reduction() {
+        use p3_field::{ExtensionField, PackedFieldExtension};
+        use rand::SeedableRng;
+        use rand_chacha::ChaCha20Rng;
+        use rayon::prelude::*;
+        for &(log_h, w, seed) in &[
+            (6usize, 5usize, 1u64),
+            (10, 49, 2),
+            (8, 53, 3),
+            (7, 1291, 4),
+        ] {
+            let h = 1usize << log_h;
+            let mut rng = ChaCha20Rng::seed_from_u64(seed);
+            let src = RowMajorMatrix::<Val>::rand(&mut rng, h, w);
+            // Write the resident matrix into a column-major store (each column a contiguous segment).
+            let store = MmapLdeStore::new(h, w).unwrap();
+            for c in 0..w {
+                let col: Vec<Val> = (0..h).map(|r| src.values[r * w + c]).collect();
+                store.write_col_tile(c, 1, &col);
+            }
+            let sm = StoreMatrix::new(&store);
+            assert_eq!((sm.width(), sm.height()), (w, h));
+
+            // (a) exhaustive row equality — the disk-backed view reproduces every source row.
+            for r in 0..h {
+                let got: Vec<Val> = sm.row(r).unwrap().into_iter().collect();
+                assert_eq!(
+                    got.as_slice(),
+                    &src.values[r * w..(r + 1) * w],
+                    "row {r} differs (h=2^{log_h} w={w})"
+                );
+            }
+
+            // (b) the exact op p3's `open` runs over the whole LDE — byte-identical disk-view vs resident.
+            let alpha: Challenge = RowMajorMatrix::<Challenge>::rand(&mut rng, 1, 1).values[0];
+            let packed: Vec<_> =
+                <Challenge as ExtensionField<Val>>::ExtensionPacking::packed_ext_powers_capped(
+                    alpha, w,
+                )
+                .collect();
+            let from_store: Vec<Challenge> = sm
+                .rowwise_packed_dot_product::<Challenge>(&packed)
+                .collect();
+            let from_mem: Vec<Challenge> = src
+                .rowwise_packed_dot_product::<Challenge>(&packed)
+                .collect();
+            assert_eq!(
+                from_store, from_mem,
+                "rowwise_packed_dot_product differs (h=2^{log_h} w={w})"
+            );
+        }
+    }
+
+    /// `stream_hiding_commit` is byte-identical to the PRODUCTION `HidingFriPcs::commit` — the full trace
+    /// commit path (ZK random-codeword columns + `is_zk` height-doubling + coset-LDE + committed-order
+    /// hiding Merkle), streamed. Builds a deterministic `MyPcs` (both the random-codeword rng and the inner
+    /// MMCS salt rng seeded) and asserts my `cap()` equals `pcs.commit([(ext_trace_domain, trace)]).0`.
+    /// This is I1 — the first end-to-end-faithful commit piece of the streamed `stream_prove`.
+    #[test]
+    fn stream_hiding_commit_matches_pcs() {
+        use crate::config::{production_fri, MyPcs, ValMmcs, LOG_BLOWUP, NUM_RANDOM_CODEWORDS};
+        use p3_commit::Pcs;
+        use rand::SeedableRng;
+        use rand_chacha::ChaCha20Rng;
+        let perm = default_goldilocks_poseidon2_8();
+        // (log_h, w, c_block, mmcs seed, pcs seed)
+        for &(log_h, w, cblk, s_mmcs, s_pcs) in &[
+            (4usize, 5usize, 2usize, 11u64, 22u64),
+            (8, 49, 8, 33, 44),
+            (6, 53, 4, 55, 66),
+        ] {
+            let h = 1usize << log_h;
+            let trace =
+                RowMajorMatrix::<Val>::rand(&mut ChaCha20Rng::seed_from_u64(s_mmcs ^ 0xABC), h, w);
+
+            // Deterministic production PCS: seed BOTH the random-codeword rng and the inner MMCS salt rng.
+            let val_mmcs = ValMmcs::new(
+                MyHash::new(perm.clone()),
+                MyCompress::new(perm.clone()),
+                CAP_HEIGHT,
+                ChaCha20Rng::seed_from_u64(s_mmcs),
+            );
+            let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
+            let fri = production_fri(challenge_mmcs);
+            let pcs: MyPcs = MyPcs::new(
+                Dft::default(),
+                val_mmcs,
+                fri,
+                NUM_RANDOM_CODEWORDS,
+                ChaCha20Rng::seed_from_u64(s_pcs),
+            );
+            // The trace commits against `natural_domain_for_degree(2h)` (is_zk doubling); commit doubles it.
+            let domain =
+                <MyPcs as Pcs<Challenge, Challenger>>::natural_domain_for_degree(&pcs, 2 * h);
+            let (p3_commit, _) =
+                <MyPcs as Pcs<Challenge, Challenger>>::commit(&pcs, [(domain, trace.clone())]);
+
+            // Mine: the same two seeds, natural-domain shift (= GENERATOR).
+            let mut pcs_rng = ChaCha20Rng::seed_from_u64(s_pcs);
+            let mut mmcs_rng = ChaCha20Rng::seed_from_u64(s_mmcs);
+            let shift = <Val as Field>::GENERATOR;
+            let data = stream_hiding_commit(
+                trace,
+                NUM_RANDOM_CODEWORDS,
+                LOG_BLOWUP,
+                shift,
+                cblk,
+                CAP_HEIGHT,
+                &mut pcs_rng,
+                &mut mmcs_rng,
+            )
+            .unwrap();
+
+            let p3_cap: &[[Val; DIGEST]] = p3_commit.as_ref();
+            assert_eq!(
+                p3_cap,
+                data.cap(),
+                "streamed hiding trace commit != HidingFriPcs::commit at log_h={log_h} w={w}"
+            );
+        }
+    }
+
+    /// `stream_pcs_open` is byte-identical to the PRODUCTION `HidingFriPcs::open` for a trace round (one
+    /// hiding-committed matrix opened at [ζ, ζ_next]). Commits the SAME trace both ways (streamed via
+    /// `stream_hiding_commit`, resident via `pcs.commit`, matched rngs), opens both from identical fresh
+    /// challengers, and asserts the PUBLIC opened values, the random-codeword opened values, and the
+    /// `FriProof` all serialize byte-for-byte. Runs in a 1-thread pool (the FRI grind is nondeterministic).
+    /// This is I2 — the streamed open-at-ζ machinery (barycentric + whole-LDE reduction off disk + FRI +
+    /// hiding split), validated end-to-end against p3.
+    #[test]
+    fn stream_pcs_open_matches_pcs() {
+        use crate::config::{production_fri, MyPcs, ValMmcs, LOG_BLOWUP, NUM_RANDOM_CODEWORDS};
+        use p3_commit::{Pcs, PolynomialSpace};
+        use rand::SeedableRng;
+        use rand_chacha::ChaCha20Rng;
+        let perm = default_goldilocks_poseidon2_8();
+        for &(log_h, w, cblk, s_mmcs, s_pcs) in
+            &[(4usize, 5usize, 2usize, 7u64, 8u64), (6, 13, 4, 9, 10)]
+        {
+            let h = 1usize << log_h;
+            let trace =
+                RowMajorMatrix::<Val>::rand(&mut ChaCha20Rng::seed_from_u64(s_mmcs ^ 0xBEEF), h, w);
+
+            // Deterministic production PCS (both rngs seeded); commit the trace resident.
+            let val_mmcs = ValMmcs::new(
+                MyHash::new(perm.clone()),
+                MyCompress::new(perm.clone()),
+                CAP_HEIGHT,
+                ChaCha20Rng::seed_from_u64(s_mmcs),
+            );
+            let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
+            let fri = production_fri(challenge_mmcs);
+            let pcs: MyPcs = MyPcs::new(
+                Dft::default(),
+                val_mmcs,
+                fri,
+                NUM_RANDOM_CODEWORDS,
+                ChaCha20Rng::seed_from_u64(s_pcs),
+            );
+            let ext_domain =
+                <MyPcs as Pcs<Challenge, Challenger>>::natural_domain_for_degree(&pcs, 2 * h);
+            let trace_domain =
+                <MyPcs as Pcs<Challenge, Challenger>>::natural_domain_for_degree(&pcs, h);
+            let (_commit, prover_data) =
+                <MyPcs as Pcs<Challenge, Challenger>>::commit(&pcs, [(ext_domain, trace.clone())]);
+
+            // Streamed commit of the same trace (matched rngs); a throwaway FRI params (mmcs rng unused by open).
+            let mut pcs_rng = ChaCha20Rng::seed_from_u64(s_pcs);
+            let mut mmcs_rng = ChaCha20Rng::seed_from_u64(s_mmcs);
+            let data = stream_hiding_commit(
+                trace,
+                NUM_RANDOM_CODEWORDS,
+                LOG_BLOWUP,
+                <Val as Field>::GENERATOR,
+                cblk,
+                CAP_HEIGHT,
+                &mut pcs_rng,
+                &mut mmcs_rng,
+            )
+            .unwrap();
+            let fri_for_stream = production_fri(ChallengeMmcs::new(ValMmcs::new(
+                MyHash::new(perm.clone()),
+                MyCompress::new(perm.clone()),
+                CAP_HEIGHT,
+                ChaCha20Rng::seed_from_u64(999),
+            )));
+
+            let pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(1)
+                .build()
+                .unwrap();
+            let (p3_opened, p3_random, p3_fri, my_public, my_random, my_fri) = pool.install(|| {
+                // p3: fresh challenger → sample ζ → open at [ζ, ζ_next].
+                let mut ch1 = Challenger::new(perm.clone());
+                let zeta: Challenge = ch1.sample_algebra_element();
+                let zeta_next = trace_domain.next_point(zeta).unwrap();
+                let (p3_opened, (p3_random, p3_fri)) = <MyPcs as Pcs<Challenge, Challenger>>::open(
+                    &pcs,
+                    vec![(&prover_data, vec![vec![zeta, zeta_next]])],
+                    &mut ch1,
+                );
+                // mine: identical fresh challenger → same ζ (FRI salts from a fresh S_mmcs rng, p3's clone semantics).
+                let mut ch2 = Challenger::new(perm.clone());
+                let zeta2: Challenge = ch2.sample_algebra_element();
+                let zeta2_next = trace_domain.next_point(zeta2).unwrap();
+                let mut fri_salt_rng = ChaCha20Rng::seed_from_u64(s_mmcs);
+                let (my_public, my_random, my_fri) = stream_pcs_open(
+                    &[(data.round_view(), vec![vec![zeta2, zeta2_next]])],
+                    &mut ch2,
+                    &fri_for_stream,
+                    NUM_RANDOM_CODEWORDS,
+                    LOG_BLOWUP,
+                    CAP_HEIGHT,
+                    &mut fri_salt_rng,
+                )
+                .unwrap();
+                (p3_opened, p3_random, p3_fri, my_public, my_random, my_fri)
+            });
+
+            assert_eq!(
+                postcard::to_allocvec(&p3_opened).unwrap(),
+                postcard::to_allocvec(&my_public).unwrap(),
+                "public opened values differ (log_h={log_h} w={w})"
+            );
+            assert_eq!(
+                postcard::to_allocvec(&p3_random).unwrap(),
+                postcard::to_allocvec(&my_random).unwrap(),
+                "random-codeword opened values differ (log_h={log_h} w={w})"
+            );
+            assert_eq!(
+                postcard::to_allocvec(&p3_fri).unwrap(),
+                postcard::to_allocvec(&my_fri).unwrap(),
+                "FriProof differs (log_h={log_h} w={w})"
+            );
+        }
+    }
+
+    /// `stream_commit_batch` + `stream_open_batch` are byte-identical to the production hiding MMCS on a
+    /// MULTI-matrix commit — the quotient's `num_chunks` same-height chunks committed in ONE tree. Asserts
+    /// the cap == `MerkleTreeHidingMmcs::commit(mats).0` and each opened index's (rows, salts, sibling-path)
+    /// == `open_batch(idx)` (`.unpack()`), across chunk counts 2..4 and widths, seeded. This is I3a — the
+    /// batch commit/open substrate the streamed quotient round needs.
+    #[test]
+    fn stream_commit_batch_matches_p3() {
+        use p3_commit::Mmcs;
+        use p3_merkle_tree::MerkleTreeHidingMmcs;
+        use rand::SeedableRng;
+        use rand_chacha::ChaCha20Rng;
+        type HidingMmcs = MerkleTreeHidingMmcs<
+            <Val as Field>::Packing,
+            <Val as Field>::Packing,
+            MyHash,
+            MyCompress,
+            ChaCha20Rng,
+            2,
+            DIGEST,
+            SALT_ELEMS,
+        >;
+        let perm = default_goldilocks_poseidon2_8();
+        let cases: &[(usize, &[usize], usize, u64)] = &[
+            (6, &[3, 3, 3], 2, 1),
+            (8, &[5, 7], 4, 2),
+            (10, &[2, 2, 2, 2], 8, 3),
+            (7, &[49, 49], 16, 4),
+        ];
+        for &(log_h, widths, cblk, seed) in cases {
+            let h = 1usize << log_h;
+            let mats: Vec<RowMajorMatrix<Val>> = widths
+                .iter()
+                .enumerate()
+                .map(|(k, &w)| {
+                    let vals: Vec<Val> = (0..h * w)
+                        .map(|i| {
+                            Val::new(
+                                ((i as u64 + (k as u64) * 7919)
+                                    .wrapping_mul(0x9E37_79B9_7F4A_7C15))
+                                    % 0xFFFF_FFFF_0000_0001,
+                            )
+                        })
+                        .collect();
+                    RowMajorMatrix::new(vals, w)
+                })
+                .collect();
+
+            let mmcs = HidingMmcs::new(
+                MyHash::new(perm.clone()),
+                MyCompress::new(perm.clone()),
+                CAP_HEIGHT,
+                ChaCha20Rng::seed_from_u64(seed),
+            );
+            let (p3_commit, p3_data) = mmcs.commit(mats.clone());
+
+            let mut rng = ChaCha20Rng::seed_from_u64(seed);
+            let data = stream_commit_batch(mats, cblk, CAP_HEIGHT, &mut rng).unwrap();
+            let p3_cap: &[[Val; DIGEST]] = p3_commit.as_ref();
+            assert_eq!(
+                p3_cap,
+                data.cap(),
+                "batch commit cap != p3 at log_h={log_h} widths={widths:?}"
+            );
+
+            for &idx in &[0usize, 1, h / 2, h - 1] {
+                let (p3_rows, (p3_salts, p3_sibs)) = mmcs.open_batch(idx, &p3_data).unpack();
+                let (rows, salts, sibs) = stream_open_batch(&data, idx);
+                assert_eq!(p3_rows, rows, "batch opened rows != p3 at idx {idx}");
+                assert_eq!(p3_salts, salts, "batch salts != p3 at idx {idx}");
+                assert_eq!(p3_sibs, sibs, "batch sibling path != p3 at idx {idx}");
+            }
+        }
+    }
+
+    /// `stream_commit_quotient` is byte-identical to the PRODUCTION `pcs.commit_quotient` — the full
+    /// quotient path (split into chunks + `get_quotient_ldes` vanishing-poly randomization drawn from
+    /// pcs_rng + batch hiding commit). Builds a deterministic `MyPcs`, a random quotient evaluation vector
+    /// over a disjoint quotient domain (non-unit shift, exercising `g/domain.shift()`), and asserts my
+    /// `cap()` == `pcs.commit_quotient(...).0` across chunk counts 2 and 4. This is I3c.
+    #[test]
+    fn stream_commit_quotient_matches_pcs() {
+        use crate::config::{production_fri, MyPcs, ValMmcs, LOG_BLOWUP, NUM_RANDOM_CODEWORDS};
+        use p3_commit::Pcs;
+        use rand::SeedableRng;
+        use rand_chacha::ChaCha20Rng;
+        let perm = default_goldilocks_poseidon2_8();
+        for &(log_ext, log_nc, cblk, s_mmcs, s_pcs) in
+            &[(4usize, 1usize, 2usize, 1u64, 2u64), (6, 2, 4, 3, 4)]
+        {
+            let num_chunks = 1usize << log_nc;
+            let val_mmcs = ValMmcs::new(
+                MyHash::new(perm.clone()),
+                MyCompress::new(perm.clone()),
+                CAP_HEIGHT,
+                ChaCha20Rng::seed_from_u64(s_mmcs),
+            );
+            let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
+            let fri = production_fri(challenge_mmcs);
+            let pcs: MyPcs = MyPcs::new(
+                Dft::default(),
+                val_mmcs,
+                fri,
+                NUM_RANDOM_CODEWORDS,
+                ChaCha20Rng::seed_from_u64(s_pcs),
+            );
+            let ext_domain = <MyPcs as Pcs<Challenge, Challenger>>::natural_domain_for_degree(
+                &pcs,
+                1 << log_ext,
+            );
+            let quotient_domain = ext_domain.create_disjoint_domain(1 << (log_ext + log_nc));
+            let qsize = quotient_domain.size();
+            let quotient_flat = RowMajorMatrix::<Val>::rand(
+                &mut ChaCha20Rng::seed_from_u64(s_pcs ^ 0xEE),
+                qsize,
+                2,
+            );
+
+            let (p3_commit, _) = <MyPcs as Pcs<Challenge, Challenger>>::commit_quotient(
+                &pcs,
+                quotient_domain,
+                quotient_flat.clone(),
+                num_chunks,
+            );
+
+            let quotient_flat_for_store = quotient_flat.clone();
+            let mut pcs_rng = ChaCha20Rng::seed_from_u64(s_pcs);
+            let mut mmcs_rng = ChaCha20Rng::seed_from_u64(s_mmcs);
+            let data = stream_commit_quotient(
+                quotient_domain,
+                quotient_flat,
+                num_chunks,
+                LOG_BLOWUP,
+                NUM_RANDOM_CODEWORDS,
+                cblk,
+                CAP_HEIGHT,
+                &mut pcs_rng,
+                &mut mmcs_rng,
+            )
+            .unwrap();
+
+            let p3_cap: &[[Val; DIGEST]] = p3_commit.as_ref();
+            assert_eq!(p3_cap, data.cap(), "streamed quotient commit != pcs.commit_quotient at log_ext={log_ext} chunks={num_chunks}");
+
+            let write_quotient_store = |quotient_flat: &RowMajorMatrix<Val>| {
+                let quotient_store = MmapLdeStore::new(qsize, quotient_flat.width()).unwrap();
+                for r in 0..qsize {
+                    let row = &quotient_flat.values
+                        [r * quotient_flat.width()..(r + 1) * quotient_flat.width()];
+                    quotient_store.write_row(r, row);
+                }
+                quotient_store
+            };
+            let quotient_store = write_quotient_store(&quotient_flat_for_store);
+            let mut pcs_rng = ChaCha20Rng::seed_from_u64(s_pcs);
+            let mut mmcs_rng = ChaCha20Rng::seed_from_u64(s_mmcs);
+            let store_data = stream_commit_quotient_store(
+                quotient_domain,
+                &quotient_store,
+                num_chunks,
+                LOG_BLOWUP,
+                NUM_RANDOM_CODEWORDS,
+                cblk,
+                CAP_HEIGHT,
+                &mut pcs_rng,
+                &mut mmcs_rng,
+            )
+            .unwrap();
+            assert_eq!(
+                p3_cap,
+                store_data.cap(),
+                "store-backed quotient commit != pcs.commit_quotient at log_ext={log_ext} chunks={num_chunks}"
+            );
+
+            let quotient_store = write_quotient_store(&quotient_flat_for_store);
+            let mut pcs_rng = ChaCha20Rng::seed_from_u64(s_pcs);
+            let mut mmcs_rng = ChaCha20Rng::seed_from_u64(s_mmcs);
+            let owned_store_data = stream_commit_quotient_store_owned(
+                quotient_domain,
+                quotient_store,
+                num_chunks,
+                LOG_BLOWUP,
+                NUM_RANDOM_CODEWORDS,
+                cblk,
+                CAP_HEIGHT,
+                &mut pcs_rng,
+                &mut mmcs_rng,
+            )
+            .unwrap();
+            assert_eq!(
+                p3_cap, owned_store_data.cap(),
+                "owned store-backed quotient commit != pcs.commit_quotient at log_ext={log_ext} chunks={num_chunks}"
+            );
+        }
+    }
+
+    /// THE END-TO-END GATE: the full `stream_prove` is byte-identical to `p3_uni_stark::prove` and its
+    /// proof verifies. Builds a deterministic `MyConfig` (all three rngs seeded), runs both provers on the
+    /// real `JoinSplitAir` inside a 1-thread pool (FRI grind determinism), and asserts the whole `Proof`
+    /// serializes byte-for-byte (with commitments/opened-values localizers) — then verifies the streamed
+    /// proof under the production verifier. This is I3: trace + quotient + opt-random commits streamed
+    /// out-of-core, quotient reused, open streamed, all byte-exact.
+    #[test]
+    fn stream_prove_owned_trace_store_matches_borrowed_small_air() {
+        use crate::poseidon2_air::{native_permute, write_perm_block, Poseidon2RowsAir, BLOCK, W};
+        use p3_uni_stark::verify;
+
+        let input = core::array::from_fn(|i| Val::from_u64((i as u64) + 1));
+        let mut values = vec![Val::ZERO; BLOCK * W];
+        write_perm_block(&mut values, 0, W, input);
+        let trace = RowMajorMatrix::new(values, W);
+        let public_values = native_permute(input).to_vec();
+        let config = crate::config::make_config();
+        let (pcs_seed, mmcs_seed, c_block) = (11u64, 12u64, 2usize);
+
+        let write_store = |trace: &RowMajorMatrix<Val>| {
+            let store = MmapLdeStore::new(trace.height(), trace.width()).unwrap();
+            for r in 0..trace.height() {
+                store.write_row(r, &trace.values[r * trace.width()..(r + 1) * trace.width()]);
+            }
+            store
+        };
+
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(1)
+            .build()
+            .unwrap();
+        let (borrowed, owned) = pool.install(|| {
+            let borrowed_store = write_store(&trace);
+            let owned_store = write_store(&trace);
+            let borrowed = stream_prove_from_trace_store(
+                &config,
+                &Poseidon2RowsAir,
+                &borrowed_store,
+                &public_values,
+                pcs_seed,
+                mmcs_seed,
+                c_block,
+            )
+            .unwrap();
+            let owned = stream_prove_from_trace_store_owned(
+                &config,
+                &Poseidon2RowsAir,
+                owned_store,
+                &public_values,
+                pcs_seed,
+                mmcs_seed,
+                c_block,
+            )
+            .unwrap();
+            (borrowed, owned)
+        });
+
+        assert_eq!(
+            postcard::to_allocvec(&borrowed).unwrap(),
+            postcard::to_allocvec(&owned).unwrap()
+        );
+        assert!(verify(&config, &Poseidon2RowsAir, &owned, &public_values).is_ok());
+    }
+
+    #[test]
+    fn stream_prove_matches_p3() {
+        use crate::config::{production_fri, MyConfig, MyPcs, ValMmcs, NUM_RANDOM_CODEWORDS};
+        use crate::joinsplit_air::{self, JoinSplitAir};
+        use p3_uni_stark::{prove, verify};
+        use rand::SeedableRng;
+        use rand_chacha::ChaCha20Rng;
+        let perm = default_goldilocks_poseidon2_8();
+        let (pcs_seed, mmcs_seed, cblk) = (1u64, 2u64, 4usize);
+        let build_config = || {
+            let val_mmcs = ValMmcs::new(
+                MyHash::new(perm.clone()),
+                MyCompress::new(perm.clone()),
+                CAP_HEIGHT,
+                ChaCha20Rng::seed_from_u64(mmcs_seed),
+            );
+            let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
+            let fri = production_fri(challenge_mmcs);
+            let pcs = MyPcs::new(
+                Dft::default(),
+                val_mmcs,
+                fri,
+                NUM_RANDOM_CODEWORDS,
+                ChaCha20Rng::seed_from_u64(pcs_seed),
+            );
+            MyConfig::new(pcs, Challenger::new(perm.clone()))
+        };
+        let w = joinsplit_air::demo_witness();
+        let pis = joinsplit_air::public_values(&w);
+
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(1)
+            .build()
+            .unwrap();
+        let (p3_proof, my_proof) = pool.install(|| {
+            let cfg1 = build_config();
+            let p3 = prove(&cfg1, &JoinSplitAir, joinsplit_air::build_trace(&w), &pis);
+            let cfg2 = build_config();
+            let my = stream_prove(
+                &cfg2,
+                &JoinSplitAir,
+                joinsplit_air::build_trace(&w),
+                &pis,
+                pcs_seed,
+                mmcs_seed,
+                cblk,
+            )
+            .unwrap();
+            (p3, my)
+        });
+
+        assert_eq!(
+            postcard::to_allocvec(&p3_proof.commitments).unwrap(),
+            postcard::to_allocvec(&my_proof.commitments).unwrap(),
+            "commitments differ"
+        );
+        assert_eq!(
+            postcard::to_allocvec(&p3_proof.opened_values).unwrap(),
+            postcard::to_allocvec(&my_proof.opened_values).unwrap(),
+            "opened_values differ"
+        );
+        assert_eq!(
+            postcard::to_allocvec(&p3_proof).unwrap(),
+            postcard::to_allocvec(&my_proof).unwrap(),
+            "stream_prove != p3_uni_stark::prove"
+        );
+
+        let cfg = build_config();
+        assert!(
+            verify(&cfg, &JoinSplitAir, &my_proof, &pis).is_ok(),
+            "streamed proof must verify under the production verifier"
+        );
+    }
+
+    /// RAM benchmark: the FULL `stream_prove` vs p3's `prove`, on the 2^k-row batch circuit, same
+    /// witnesses/trace for both (mode-selected). Prints peak RSS (VmHWM) + wall time; the proof verifies
+    /// under the production verifier. Run each mode in its OWN process (VmHWM is a process high-water mark),
+    /// stream mode under a cgroup cap on a nodatacow disk to force the mmap'd LDEs to writeback:
+    ///   p3:     `LATTICA_BATCH_N=64 cargo test --release --features stream stream_prove_ram_bench -- --ignored --exact --nocapture`
+    ///   stream: `systemd-run --scope -p MemoryMax=6G --user env LATTICA_BENCH_MODE=stream LATTICA_BATCH_N=64 \
+    ///            LATTICA_SPILL_DIR=/home/access/scratch cargo test --release --features stream stream_prove_ram_bench -- --ignored --exact --nocapture`
+    /// (`/dev/shm` or unset `LATTICA_SPILL_DIR` = tmpfs = RAM → NO win; needs a real nodatacow disk.)
+    ///
+    /// TUNING — the streamed commit/open are parallelized (SIMD Merkle + reduction). Under a TIGHT cap,
+    /// saturating all cores STARVES the kernel's mmap writeback/reclaim → thrash; set
+    /// `RAYON_NUM_THREADS ≈ cores/2` (measured sweet spot: 24-core box, N=16/2 GB cap → 98 s at 12 threads
+    /// vs 166 s sequential vs 274 s at 24). `LATTICA_STREAM_PROFILE=1` prints the per-phase breakdown.
+    #[test]
+    #[ignore = "bench: full stream_prove RAM vs p3 (LATTICA_BENCH_MODE=stream|p3, LATTICA_BATCH_N, LATTICA_SPILL_DIR, RAYON_NUM_THREADS≈cores/2)"]
+    fn stream_prove_ram_bench() {
+        use crate::batch_joinsplit_air::{
+            batch_root, build_batch_trace, verify_batch_bytes, JoinSplitBatchAir,
+        };
+        use crate::config::make_config;
+        use crate::joinsplit_air::demo_witness;
+        use p3_uni_stark::prove;
+        let env = |k: &str, d: usize| {
+            std::env::var(k)
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(d)
+        };
+        let n = env("LATTICA_BATCH_N", 8).max(1);
+        let cblk = env("LATTICA_BENCH_CBLK", 4).max(1);
+        let mode = std::env::var("LATTICA_BENCH_MODE").unwrap_or_else(|_| "p3".to_string());
+
+        let ws: Vec<_> = (0..n).map(|_| demo_witness()).collect();
+        let root = batch_root(&ws);
+        let trace = build_batch_trace(&ws);
+        let (rows, w) = (trace.height(), trace.width());
+
+        let t0 = std::time::Instant::now();
+        let bytes = if mode == "stream" {
+            postcard::to_allocvec(
+                &stream_prove_seeded(&JoinSplitBatchAir, trace, &root, cblk).unwrap(),
+            )
+            .unwrap()
+        } else if mode == "gpu" {
+            // GPU hiding prove (GpuHidingPcs: GPU LDE + GPU Merkle, CPU quotient) — like `p3` it holds the
+            // whole LDE in host RAM (GPU offloads to VRAM, not host), so it shares p3's RAM floor; here to
+            // measure its speed/RAM curve against the out-of-core `stream`.
+            #[cfg(feature = "gpu")]
+            {
+                crate::config::gpu::proof_to_bytes_hiding(&JoinSplitBatchAir, trace, &root)
+            }
+            #[cfg(not(feature = "gpu"))]
+            {
+                unreachable!("mode=gpu requires --features gpu")
+            }
+        } else {
+            postcard::to_allocvec(&prove(&make_config(), &JoinSplitBatchAir, trace, &root)).unwrap()
+        };
+        let secs = t0.elapsed().as_secs_f64();
+        assert!(
+            verify_batch_bytes(&bytes, &root),
+            "bench proof (mode={mode}) must verify"
+        );
+        println!(
+            "STREAM-PROVE-BENCH mode={mode} n={n} rows={rows} w={w} cblk={cblk} peak_rss={}MiB prove={secs:.1}s proof={}KiB",
+            peak_rss_mib(),
+            bytes.len() / 1024,
+        );
+    }
+
+    /// Peak resident set (VmHWM) in MiB, from /proc/self/status.
+    fn peak_rss_mib() -> u64 {
+        std::fs::read_to_string("/proc/self/status")
+            .ok()
+            .and_then(|s| {
+                s.lines()
+                    .find(|l| l.starts_with("VmHWM"))
+                    .map(str::to_string)
+            })
+            .and_then(|l| {
+                l.split_whitespace()
+                    .nth(1)
+                    .and_then(|v| v.parse::<u64>().ok())
+            })
+            .map(|kb| kb / 1024)
+            .unwrap_or(0)
+    }
+
+    /// RAM bench: stream a large trace's LDE (blowup 16) into the column-major mmap store and
+    /// frontier-Merkle it, entirely out-of-core. The commit's LDE (the multi-GB buffer) lives on disk;
+    /// access is EXPLICIT and sequential (one column-major write pass + one transposed-block Merkle read),
+    /// so under a cgroup cap it completes with BOUNDED RSS — where the Phase 2 allocator thrashed on p3's
+    /// blind whole-buffer re-touch. Run under `systemd-run --user --scope -p MemoryMax=<cap>` on a
+    /// nodatacow scratch. Tunables: LATTICA_STREAM_LOGH (18), LATTICA_STREAM_W (53), LATTICA_STREAM_CBLK (4).
+    ///
+    /// MEASURED: 1.66 GiB LDE (h=2^18, w=53) under a 1 GB HARD cap → RSS 1013 MiB, 41 s — vs 233 s for the
+    /// row-major-store predecessor at the same RAM bound (5.6x; ~2 sequential passes, w-independent).
+    #[test]
+    #[ignore = "bench: out-of-core LDE+Merkle RAM (LATTICA_STREAM_LOGH=<n>, LATTICA_SPILL_DIR=<disk>)"]
+    fn stream_commit_ram_bench() {
+        let env = |k: &str, d: usize| {
+            std::env::var(k)
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(d)
+        };
+        let (log_h, w, cblk, added) = (
+            env("LATTICA_STREAM_LOGH", 18),
+            env("LATTICA_STREAM_W", 53),
+            env("LATTICA_STREAM_CBLK", 4),
+            4usize,
+        );
+        let (h, big) = (1usize << log_h, 1usize << (log_h + added));
+        let shift = <Val as Field>::GENERATOR;
+        // the input trace (h×w) is resident — it is LDE/blowup smaller than the LDE this streams to disk.
+        let vals: Vec<Val> = (0..h * w)
+            .map(|i| {
+                Val::new((i as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15) % 0xFFFF_FFFF_0000_0001)
+            })
+            .collect();
+        let mat = RowMajorMatrix::new(vals, w);
+        let store = MmapLdeStore::new(big, w).unwrap();
+        let t0 = std::time::Instant::now();
+        stream_coset_lde_to_store(&mat, added, shift, cblk, &store);
+        let cap = stream_merkle_cap(&store, CAP_HEIGHT);
+        let secs = t0.elapsed().as_secs_f64();
+        assert_eq!(
+            cap.len(),
+            1usize << CAP_HEIGHT.min(log_h + added),
+            "cap has the expected width"
+        );
+        println!(
+            "STREAM-COMMIT-BENCH log_h={log_h} big=2^{} w={w} cblk={cblk} store={}MiB peak_rss={}MiB commit={secs:.1}s",
+            log_h + added,
+            (big * w * size_of::<Val>()) / (1 << 20),
+            peak_rss_mib(),
+        );
+    }
+}

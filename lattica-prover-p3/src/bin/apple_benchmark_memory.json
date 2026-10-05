@@ -1,0 +1,5 @@
+{
+  "schema": "lattica-apple-benchmark-memory-v1",
+  "aggregate_rss_limit_bytes": null,
+  "worker_rss_limit_bytes": null
+}

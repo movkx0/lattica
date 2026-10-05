@@ -1,0 +1,130 @@
+{
+  "captured_utc": "2026-10-04T14:20:17.081304+00:00",
+  "complete_post_seal_finalization": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {},
+    "reason": "No complete seal-to-host-ready 64-transaction root/body result meets 180 seconds. The historical count-three experiment measured 2004.169 seconds to its root and excluded complete host finalization.",
+    "sources": [
+      {
+        "bytes": 35971,
+        "path": "docs/evidence/block-v2-cpu-arrivals-2026-10-02.json",
+        "sha256": "a9af5db59ad4a72e071f414f408605927c80fe85c949a9767df57e599cb8a53d"
+      }
+    ],
+    "status": "blocked"
+  },
+  "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+  "durable_candidate_host_application": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {},
+    "reason": "The node Chain is in-memory. No durable adapter applies this candidate root with independently authorized issuance, atomic state commits, restart replay and reorg state.",
+    "sources": [
+      {
+        "bytes": 109960,
+        "path": "src/node.zig",
+        "sha256": "6e1c481822d2ffa9eb7526551944fbaa3730ea2e5ec423a86d9a4220728aa752"
+      },
+      {
+        "bytes": 19858,
+        "path": "src/block_v2.zig",
+        "sha256": "222db2a95be66f70779b54e245aef6092f24db5f6a078434162e4431217c86aa"
+      }
+    ],
+    "status": "blocked"
+  },
+  "full_count_cold_64": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {},
+    "reason": "No complete cold 64-transaction mixed root has been measured against the 600-second boundary.",
+    "sources": [
+      {
+        "bytes": 5306,
+        "path": "docs/evidence/block-v2-throughput-validation-2026-10-04.json",
+        "sha256": "07d935b35a8a9453f39447c2f00c04c5495c7a6d7a4589a6c3e02c36e5338a90"
+      }
+    ],
+    "status": "blocked"
+  },
+  "mixed_recursive_registry_and_cpu_replay": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {},
+    "reason": "Five-key research APIs, typed wrapper interpretation and typed empty proofs pass tests. Actual mixed depth-six roots across all required counts and independent replay after pruning remain unmeasured.",
+    "sources": [
+      {
+        "bytes": 16049,
+        "path": "lattica-prover-p3/src/block_v2/typed_recursive.rs",
+        "sha256": "1ea913e22be4315d21e30af3c90147e1a37d9fd7fb0728479f6f489115eb5502"
+      },
+      {
+        "bytes": 7619,
+        "path": "lattica-prover-p3/src/block_v2/machine/typed_programs.rs",
+        "sha256": "d5d68025aa70a5fcc4914020261c44ef3c844d1bfd77ad9a5df89647d9a05f81"
+      },
+      {
+        "bytes": 5417,
+        "path": "docs/evidence/block-v2-typed-validation-2026-10-04.json",
+        "sha256": "0a94fe4f64cd3112fec26975fdf09d2b0f5f10754afa9142aca1ce915da6be4e"
+      }
+    ],
+    "status": "blocked"
+  },
+  "per_geometry_device_qualification": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {},
+    "reason": "The retained calibration covers the historical grouped-eight binary only. The new mixed registry/binary has no per-GPU calibration or independent full-job qualification.",
+    "sources": [
+      {
+        "bytes": 10539,
+        "path": "docs/evidence/block-v2-throughput-resources-2026-10-04.json",
+        "sha256": "401d0ed98871c2bf76f7ca750d3584d2891d3073a9c6144112d70ddb169e98eb"
+      }
+    ],
+    "status": "blocked"
+  },
+  "pilot_started": false,
+  "resource_admission_note": "Captured two-worker grouped-eight plan fell back to one GPU: tmpfs spill headroom was insufficient. No limits were raised and no files/services were removed.",
+  "restart_reorg_and_resource_failure_recovery": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {},
+    "reason": "Existing worker recovery tests do not establish durable mixed-chain restart/reorg/resource-failure recovery. No real pilot backend is present.",
+    "sources": [
+      {
+        "bytes": 109960,
+        "path": "src/node.zig",
+        "sha256": "6e1c481822d2ffa9eb7526551944fbaa3730ea2e5ec423a86d9a4220728aa752"
+      },
+      {
+        "bytes": 1961,
+        "path": "lattica-prover-p3/scripts/block-v2-throughput-contract.json",
+        "sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f"
+      }
+    ],
+    "status": "blocked"
+  },
+  "schema_version": 1,
+  "scope": "Current implementation readiness, not a throughput run",
+  "status": "blocked",
+  "typed_leaf_verification": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {
+      "context_and_policy_mutation_tests": true,
+      "cpu_audited": true,
+      "leaf_proven_bits": 127,
+      "scope": "Context-bound leaf verification only; complete mixed recursive security is unqualified.",
+      "transaction_types": ["joinsplit","htlc_redeem","htlc_refund","issuance"]
+    },
+    "sources": [
+      {
+        "bytes": 5306,
+        "path": "docs/evidence/block-v2-throughput-validation-2026-10-04.json",
+        "sha256": "07d935b35a8a9453f39447c2f00c04c5495c7a6d7a4589a6c3e02c36e5338a90"
+      },
+      {
+        "bytes": 5417,
+        "path": "docs/evidence/block-v2-typed-validation-2026-10-04.json",
+        "sha256": "0a94fe4f64cd3112fec26975fdf09d2b0f5f10754afa9142aca1ce915da6be4e"
+      }
+    ],
+    "status": "passed"
+  }
+}

@@ -1,0 +1,2290 @@
+{
+  "adapter": "grouped",
+  "campaign_ids": ["block-v2-gpu-openings-runner-2026-10-02"],
+  "configuration": {
+    "accounting": "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py",
+    "auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-artifact-audit",
+    "backend": "resident",
+    "cpu_runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-probe",
+    "evidence": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence",
+    "external": ["8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"],
+    "gpu_index": 0,
+    "gpu_openings": 1,
+    "gpu_runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-openings-runner-20261002-a/block-v2-gpu-grouped-probe",
+    "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-job",
+    "mode": "register",
+    "quotient_fusion": 0,
+    "reference": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/reproduction-job",
+    "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-openings-runner-20261002-a/source.tar.gz"
+  },
+  "kind": "registration",
+  "label": "block-v2-gpu-openings-registration-20261002-a-evidence",
+  "limitations": ["Research evidence; does not establish production or four-wallet readiness.","Wallet proof creation and canonical chain acceptance are outside this measurement.","Inclusive phase and GPU counters are non-additive; process checkpoints may reset.","Host and OpenCL clocks are separate unless an explicit anchor was recorded."],
+  "measurement_scope": "key_registration",
+  "measurements": {
+    "resource_samples": 117,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["grouped process remainder",294,0,0,"inclusive_nonadditive",6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/02-reference-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["grouped process remainder"],
+          "target": ["p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_field::batch_inverse","p3_matrix","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"evaluate all constraints symbolically",8,232865,39126,0,7],
+          [0,"infer base and extension constraint degree",8,396668,56946,0,8],
+          [1,"compute constraint layout with lookups",18,9437164,573388,0,9],
+          [1,"evaluate constraints symbolically",27,7210239,319735,0,10],
+          [1,"infer constraint degree",18,9709817,632427,0,11],
+          [2,"batch_multiplicative_inverse",13576,21296544,299895,0,12],
+          [3,"columnwise_dot_product",264,7461486,278449,0,13],
+          [4,"get_log_num_quotient_chunks",8,403566,57798,0,14],
+          [4,"infer log of base and extension constraint degree",8,400216,57385,0,15],
+          [5,"verify",8,170637413,24716671,0,16],
+          [5,"verify_with_preprocessed",8,170632446,24715450,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/02-reference-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,18],
+          ["memory_full_stall_us",0,19],
+          ["memory_high_events",0,20],
+          ["memory_some_stall_us",0,21],
+          ["minor_faults",6676,22],
+          ["read_bytes",0,23],
+          ["system_ticks",3,24],
+          ["user_ticks",37,25],
+          ["write_bytes",0,26]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/02-reference-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [294,0,true,false,27]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/02-reference-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-gpu-grouped-134683-2.service","exec_stop_post_snapshot",15953920,0,47244640256,0,421995,28]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/02-reference-check.log"
+      },
+      {
+        "clock": "utc_ns",
+        "columns": ["pids","total_mib","utc_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "resource_samples",
+        "rows": [
+          [
+            [],
+            0,
+            "1790915240129645512",
+            1
+          ],
+          [
+            [134708],
+            326,
+            "1790915240870174270",
+            2
+          ],
+          [
+            [134708],
+            326,
+            "1790915241412633399",
+            3
+          ],
+          [
+            [134708],
+            326,
+            "1790915241943540381",
+            4
+          ],
+          [
+            [134708],
+            326,
+            "1790915242467701604",
+            5
+          ],
+          [
+            [134708],
+            326,
+            "1790915243023624246",
+            6
+          ],
+          [
+            [134708],
+            326,
+            "1790915243578271493",
+            7
+          ],
+          [
+            [134708],
+            326,
+            "1790915244113250481",
+            8
+          ],
+          [
+            [134708],
+            326,
+            "1790915244636948259",
+            9
+          ],
+          [
+            [134708],
+            326,
+            "1790915245153501094",
+            10
+          ],
+          [
+            [134708],
+            326,
+            "1790915245669272378",
+            11
+          ],
+          [
+            [134708],
+            326,
+            "1790915246212665877",
+            12
+          ],
+          [
+            [134708],
+            326,
+            "1790915246730049602",
+            13
+          ],
+          [
+            [134708],
+            4934,
+            "1790915247253046878",
+            14
+          ],
+          [
+            [134708],
+            4934,
+            "1790915247776846217",
+            15
+          ],
+          [
+            [134708],
+            4934,
+            "1790915248295990073",
+            16
+          ],
+          [
+            [134708],
+            4934,
+            "1790915248816539723",
+            17
+          ],
+          [
+            [134708],
+            4934,
+            "1790915249335907993",
+            18
+          ],
+          [
+            [134708],
+            4934,
+            "1790915249868851613",
+            19
+          ],
+          [
+            [134708],
+            4934,
+            "1790915250391595123",
+            20
+          ],
+          [
+            [134708],
+            4934,
+            "1790915250914929684",
+            21
+          ],
+          [
+            [134708],
+            4934,
+            "1790915251440356592",
+            22
+          ],
+          [
+            [134708],
+            4934,
+            "1790915251962920117",
+            23
+          ],
+          [
+            [134708],
+            4934,
+            "1790915252484383064",
+            24
+          ],
+          [
+            [134708],
+            4934,
+            "1790915253010969725",
+            25
+          ],
+          [
+            [134708],
+            4934,
+            "1790915253532021654",
+            26
+          ],
+          [
+            [134708],
+            4934,
+            "1790915254058903977",
+            27
+          ],
+          [
+            [134708],
+            4934,
+            "1790915254580208496",
+            28
+          ],
+          [
+            [134708],
+            4934,
+            "1790915255103810393",
+            29
+          ],
+          [
+            [134708],
+            4934,
+            "1790915255627044874",
+            30
+          ],
+          [
+            [134708],
+            4934,
+            "1790915256144624684",
+            31
+          ],
+          [
+            [134708],
+            4934,
+            "1790915256662378597",
+            32
+          ],
+          [
+            [134708],
+            4934,
+            "1790915257182136607",
+            33
+          ],
+          [
+            [134708],
+            4934,
+            "1790915257700837325",
+            34
+          ],
+          [
+            [134708],
+            4934,
+            "1790915258218798436",
+            35
+          ],
+          [
+            [134708],
+            4934,
+            "1790915258737243535",
+            36
+          ],
+          [
+            [134708],
+            4934,
+            "1790915259255192630",
+            37
+          ],
+          [
+            [134708],
+            4934,
+            "1790915259776539638",
+            38
+          ],
+          [
+            [134708],
+            4934,
+            "1790915260293910426",
+            39
+          ],
+          [
+            [134708],
+            5830,
+            "1790915260811519832",
+            40
+          ],
+          [
+            [134708],
+            1222,
+            "1790915261328030218",
+            41
+          ],
+          [
+            [134708],
+            1222,
+            "1790915261843959271",
+            42
+          ],
+          [
+            [134708],
+            1222,
+            "1790915262359883690",
+            43
+          ],
+          [
+            [134708],
+            1222,
+            "1790915262875569004",
+            44
+          ],
+          [
+            [134708],
+            1222,
+            "1790915263391313055",
+            45
+          ]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1-vram.jsonl"
+      },
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [0,"NVIDIA GeForce RTX 5080",16707092480,4176773120,8589934592,4294967296,134217728,67108864,1,"exclusive",5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,134217728,67108864,false,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder",23522,0,0,"inclusive_nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["GPU grouped process remainder"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,17634893957,17634893957,0,11],
+          [1,"evaluate all constraints symbolically",10,279428,42447,0,12],
+          [1,"evaluate base constraints symbolically",2,84075,52604,0,13],
+          [1,"infer base and extension constraint degree",10,510881,73955,0,14],
+          [2,"compute constraint layout with lookups",4,5998127,4269033,0,15],
+          [2,"evaluate constraints symbolically",7,4389657,2421877,0,16],
+          [2,"infer constraint degree",5,3206129,705734,0,17],
+          [3,"batch_multiplicative_inverse",13576,20893419,422782,0,18],
+          [4,"columnwise_dot_product",264,9744191,278227,0,19],
+          [5,"with_zero_cols",1,733147117,733147117,0,20],
+          [6,"get_log_num_quotient_chunks",10,520362,76175,0,21],
+          [6,"infer log of base and extension constraint degree",10,515652,75073,0,22],
+          [7,"verify",8,173405434,28862128,0,23],
+          [7,"verify_with_preprocessed",8,173399080,28861559,0,24]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",64,25],
+          ["memory_full_stall_us",45219,26],
+          ["memory_high_events",0,27],
+          ["memory_some_stall_us",45219,28],
+          ["minor_faults",1077730,29],
+          ["read_bytes",1245184,30],
+          ["system_ticks",780,31],
+          ["user_ticks",1592,32],
+          ["write_bytes",33121402880,33]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder",true,"cumulative",0,536870880,0,1216224,0,0,0,34]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","cumulative",1,1107296624,13421774848,602006418,12099804496,565674240,11081856,0,603980112,5972689568,14,67108864,70076114,531842663,3563296350,8534227544,35]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","serial","cumulative",529490272,3548501920,531842663,0,0,0,36]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","cumulative",1,7,452016512,565674240,13852997868,4703815164,13421772800,13421772800,37]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","cumulative",0,0,0,0,0,0,38]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,39]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","resident_lde","gpu_openings","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [23651,28236075008,false,true,true,false,40]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-gpu-grouped-134683-3.service","exec_stop_post_snapshot",28892319744,0,47244640256,0,23892636,41]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1.log"
+      },
+      {
+        "clock": "utc_ns",
+        "columns": ["pids","total_mib","utc_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "resource_samples",
+        "rows": [
+          [
+            [],
+            0,
+            "1790915263990937929",
+            1
+          ],
+          [
+            [135075],
+            326,
+            "1790915264691802031",
+            2
+          ],
+          [
+            [135075],
+            326,
+            "1790915265207870406",
+            3
+          ],
+          [
+            [135075],
+            4934,
+            "1790915265725921712",
+            4
+          ],
+          [
+            [135075],
+            4934,
+            "1790915266242952377",
+            5
+          ],
+          [
+            [135075],
+            4934,
+            "1790915266766313105",
+            6
+          ],
+          [
+            [135075],
+            4934,
+            "1790915267283349198",
+            7
+          ],
+          [
+            [135075],
+            4934,
+            "1790915267802261385",
+            8
+          ],
+          [
+            [135075],
+            4934,
+            "1790915268319314104",
+            9
+          ],
+          [
+            [135075],
+            4934,
+            "1790915268842330183",
+            10
+          ],
+          [
+            [135075],
+            4934,
+            "1790915269359736840",
+            11
+          ],
+          [
+            [135075],
+            4934,
+            "1790915269879061860",
+            12
+          ],
+          [
+            [135075],
+            4934,
+            "1790915270397535308",
+            13
+          ],
+          [
+            [135075],
+            4934,
+            "1790915270915820008",
+            14
+          ],
+          [
+            [135075],
+            4934,
+            "1790915271438375909",
+            15
+          ],
+          [
+            [135075],
+            4934,
+            "1790915271954877981",
+            16
+          ],
+          [
+            [135075],
+            4934,
+            "1790915272475079789",
+            17
+          ],
+          [
+            [135075],
+            4934,
+            "1790915272991870085",
+            18
+          ],
+          [
+            [135075],
+            4934,
+            "1790915273514955565",
+            19
+          ],
+          [
+            [135075],
+            4934,
+            "1790915274033828364",
+            20
+          ],
+          [
+            [135075],
+            4934,
+            "1790915274552505048",
+            21
+          ],
+          [
+            [135075],
+            4934,
+            "1790915275070679989",
+            22
+          ],
+          [
+            [135075],
+            4934,
+            "1790915275588555373",
+            23
+          ],
+          [
+            [135075],
+            4934,
+            "1790915276106138122",
+            24
+          ],
+          [
+            [135075],
+            4934,
+            "1790915276622963505",
+            25
+          ],
+          [
+            [135075],
+            4934,
+            "1790915277140563214",
+            26
+          ],
+          [
+            [135075],
+            4934,
+            "1790915277658007624",
+            27
+          ],
+          [
+            [135075],
+            4934,
+            "1790915278175439517",
+            28
+          ],
+          [
+            [135075],
+            4934,
+            "1790915278692345044",
+            29
+          ],
+          [
+            [135075],
+            4934,
+            "1790915279209869663",
+            30
+          ],
+          [
+            [135075],
+            708,
+            "1790915279719788435",
+            31
+          ]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2-vram.jsonl"
+      },
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [0,"NVIDIA GeForce RTX 5080",16707092480,4176773120,8589934592,4294967296,134217728,67108864,1,"exclusive",5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,134217728,67108864,false,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder",15701,0,0,"inclusive_nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["GPU grouped process remainder"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,15149366013,15149366013,0,11],
+          [1,"evaluate all constraints symbolically",8,250230,48820,0,12],
+          [1,"infer base and extension constraint degree",8,446693,76009,0,13],
+          [2,"compute constraint layout with lookups",4,2337038,720307,0,14],
+          [2,"evaluate constraints symbolically",7,2093150,369192,0,15],
+          [2,"infer constraint degree",5,2965650,698859,0,16],
+          [3,"batch_multiplicative_inverse",13576,21633295,390124,0,17],
+          [4,"columnwise_dot_product",264,8196664,292083,0,18],
+          [5,"with_zero_cols",1,823680310,823680310,0,19],
+          [6,"get_log_num_quotient_chunks",8,454471,77618,0,20],
+          [6,"infer log of base and extension constraint degree",8,451026,77169,0,21],
+          [7,"verify",8,172100157,22939494,0,22],
+          [7,"verify_with_preprocessed",8,172092057,22938890,0,23]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",60,24],
+          ["memory_full_stall_us",0,25],
+          ["memory_high_events",0,26],
+          ["memory_some_stall_us",0,27],
+          ["minor_faults",762085,28],
+          ["read_bytes",0,29],
+          ["system_ticks",693,30],
+          ["user_ticks",906,31],
+          ["write_bytes",31101743104,32]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder",true,"cumulative",0,536870880,0,1261280,0,0,0,33]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","cumulative",1,1107296624,13421774848,598933659,12147571987,573968704,11089184,0,603980112,5972689568,14,67108864,66143465,532702304,3561650438,8583532260,34]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","serial","cumulative",530545024,3547237248,532702304,0,0,0,35]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","cumulative",1,7,458103136,573968704,13916581400,4479764176,13421772800,13421772800,36]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","cumulative",0,0,0,0,0,0,37]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,38]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","resident_lde","gpu_openings","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [15838,27950858240,false,true,true,false,39]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-gpu-grouped-134683-4.service","exec_stop_post_snapshot",28273041408,0,47244640256,0,16163338,40]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2.log"
+      },
+      {
+        "clock": "utc_ns",
+        "columns": ["pids","total_mib","utc_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "resource_samples",
+        "rows": [
+          [
+            [],
+            0,
+            "1790915280043096611",
+            1
+          ],
+          [
+            [135491],
+            326,
+            "1790915280794009267",
+            2
+          ],
+          [
+            [135491],
+            326,
+            "1790915281311241906",
+            3
+          ],
+          [
+            [135491],
+            326,
+            "1790915281827705294",
+            4
+          ],
+          [
+            [135491],
+            326,
+            "1790915282359975467",
+            5
+          ],
+          [
+            [135491],
+            326,
+            "1790915282877569345",
+            6
+          ],
+          [
+            [135491],
+            326,
+            "1790915283394277927",
+            7
+          ],
+          [
+            [135491],
+            4934,
+            "1790915283911591576",
+            8
+          ],
+          [
+            [135491],
+            4934,
+            "1790915284434932565",
+            9
+          ],
+          [
+            [135491],
+            4934,
+            "1790915284952345794",
+            10
+          ],
+          [
+            [135491],
+            4934,
+            "1790915285469956791",
+            11
+          ],
+          [
+            [135491],
+            4934,
+            "1790915285991983702",
+            12
+          ],
+          [
+            [135491],
+            4934,
+            "1790915286519953702",
+            13
+          ],
+          [
+            [135491],
+            4934,
+            "1790915287038030574",
+            14
+          ],
+          [
+            [135491],
+            4934,
+            "1790915287558562195",
+            15
+          ],
+          [
+            [135491],
+            4934,
+            "1790915288075457369",
+            16
+          ],
+          [
+            [135491],
+            4934,
+            "1790915288592906781",
+            17
+          ],
+          [
+            [135491],
+            4934,
+            "1790915289115642920",
+            18
+          ],
+          [
+            [135491],
+            4934,
+            "1790915289634319608",
+            19
+          ],
+          [
+            [135491],
+            4934,
+            "1790915290154922808",
+            20
+          ],
+          [
+            [135491],
+            4934,
+            "1790915290678785227",
+            21
+          ],
+          [
+            [135491],
+            4934,
+            "1790915291197269480",
+            22
+          ],
+          [
+            [135491],
+            4934,
+            "1790915291714077955",
+            23
+          ],
+          [
+            [135491],
+            4934,
+            "1790915292235868387",
+            24
+          ],
+          [
+            [135491],
+            4934,
+            "1790915292752960093",
+            25
+          ],
+          [
+            [135491],
+            4934,
+            "1790915293270496320",
+            26
+          ],
+          [
+            [135491],
+            4934,
+            "1790915293789458253",
+            27
+          ],
+          [
+            [135491],
+            4934,
+            "1790915294309805234",
+            28
+          ],
+          [
+            [135491],
+            4934,
+            "1790915294827171616",
+            29
+          ],
+          [
+            [135491],
+            4934,
+            "1790915295348795158",
+            30
+          ],
+          [
+            [135491],
+            4934,
+            "1790915295867380107",
+            31
+          ],
+          [
+            [135491],
+            4934,
+            "1790915296385854289",
+            32
+          ],
+          [
+            [135491],
+            4934,
+            "1790915296903081646",
+            33
+          ],
+          [
+            [135491],
+            1222,
+            "1790915297421811631",
+            34
+          ],
+          [
+            [135491],
+            1222,
+            "1790915297937587384",
+            35
+          ],
+          [
+            [135491],
+            1222,
+            "1790915298453881859",
+            36
+          ],
+          [
+            [135491],
+            1222,
+            "1790915298969595874",
+            37
+          ],
+          [
+            [135491],
+            1222,
+            "1790915299485457788",
+            38
+          ],
+          [
+            [135491],
+            1222,
+            "1790915300002436866",
+            39
+          ],
+          [
+            [135491],
+            1222,
+            "1790915300518033992",
+            40
+          ],
+          [
+            [135491],
+            1222,
+            "1790915301034126335",
+            41
+          ]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3-vram.jsonl"
+      },
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [0,"NVIDIA GeForce RTX 5080",16707092480,4176773120,8589934592,4294967296,134217728,67108864,1,"exclusive",5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,134217728,67108864,false,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder",21121,0,0,"inclusive_nonadditive",10]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["GPU grouped process remainder"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,18882961684,18882961684,0,11],
+          [1,"evaluate all constraints symbolically",8,236431,44802,0,12],
+          [1,"infer base and extension constraint degree",8,420989,66284,0,13],
+          [2,"compute constraint layout with lookups",7,4572475,895073,0,14],
+          [2,"evaluate constraints symbolically",13,4395131,616334,0,15],
+          [2,"infer constraint degree",9,5370843,684705,0,16],
+          [3,"batch_multiplicative_inverse",13576,23314695,393197,0,17],
+          [4,"columnwise_dot_product",264,11171585,353208,0,18],
+          [5,"with_zero_cols",1,844760114,844760114,0,19],
+          [6,"get_log_num_quotient_chunks",8,427805,67524,0,20],
+          [6,"infer log of base and extension constraint degree",8,424489,67193,0,21],
+          [7,"verify",8,183945048,31388473,0,22],
+          [7,"verify_with_preprocessed",8,183937778,31387686,0,23]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",102,24],
+          ["memory_full_stall_us",5388,25],
+          ["memory_high_events",0,26],
+          ["memory_some_stall_us",5388,27],
+          ["minor_faults",1144425,28],
+          ["read_bytes",61440,29],
+          ["system_ticks",785,30],
+          ["user_ticks",1357,31],
+          ["write_bytes",33862144000,32]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder",true,"cumulative",0,536870880,0,1224960,0,0,0,33]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","cumulative",1,1107296624,13421774848,588593854,11866897941,565916224,11088096,0,603980112,5972689568,14,67108864,59464741,529040515,3566228492,8298548514,34]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","serial","cumulative",526907936,3551468832,529040515,0,0,0,35]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","cumulative",1,7,458728832,565916224,13605535095,4523366970,13421772800,13421772800,36]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          ["GPU grouped process remainder","cumulative",0,0,0,0,0,0,37]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,38]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","resident_lde","gpu_openings","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [21270,28521287680,false,true,true,false,39]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-gpu-grouped-134683-5.service","exec_stop_post_snapshot",29257641984,0,47244640256,0,21640382,40]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["grouped process remainder",295,0,0,"inclusive_nonadditive",6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/06-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["grouped process remainder"],
+          "target": ["p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_field::batch_inverse","p3_matrix","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"evaluate all constraints symbolically",8,218527,39973,0,7],
+          [0,"infer base and extension constraint degree",8,379325,53605,0,8],
+          [1,"compute constraint layout with lookups",18,9617328,583121,0,9],
+          [1,"evaluate constraints symbolically",27,7203048,295279,0,10],
+          [1,"infer constraint degree",18,9557470,578455,0,11],
+          [2,"batch_multiplicative_inverse",13576,18200208,341615,0,12],
+          [3,"columnwise_dot_product",264,7931211,281296,0,13],
+          [4,"get_log_num_quotient_chunks",8,386495,54639,0,14],
+          [4,"infer log of base and extension constraint degree",8,382980,54239,0,15],
+          [5,"verify",8,171878474,24715663,0,16],
+          [5,"verify_with_preprocessed",8,171873103,24714663,0,17]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/06-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,18],
+          ["memory_full_stall_us",0,19],
+          ["memory_high_events",0,20],
+          ["memory_some_stall_us",0,21],
+          ["minor_faults",6681,22],
+          ["read_bytes",0,23],
+          ["system_ticks",3,24],
+          ["user_ticks",37,25],
+          ["write_bytes",0,26]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/06-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["grouped_stage_elapsed_ms","spill_peak_bytes","cpu_only","production_ready","_source_line"],
+        "dictionaries": {},
+        "kind": "grouped_stage_elapsed_ms",
+        "rows": [
+          [295,0,true,false,27]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/06-check.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-gpu-grouped-134683-6.service","exec_stop_post_snapshot",15400960,0,47244640256,0,432014,28]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/06-check.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {
+    "backend": "opencl",
+    "memory_model": "discrete",
+    "os": "linux"
+  },
+  "proofs": [],
+  "retained_metadata": {
+    "artifacts": {
+      "height": {
+        "bytes": 4,
+        "sha256": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60"
+      },
+      "key.1": {
+        "bytes": 2048,
+        "sha256": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5"
+      },
+      "key.2": {
+        "bytes": 2048,
+        "sha256": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802"
+      },
+      "key.3": {
+        "bytes": 2048,
+        "sha256": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99"
+      },
+      "wallet.0": {
+        "bytes": 853675,
+        "sha256": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973"
+      },
+      "wallet.1": {
+        "bytes": 853491,
+        "sha256": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79"
+      },
+      "wallet.2": {
+        "bytes": 854047,
+        "sha256": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5"
+      },
+      "wallet.3": {
+        "bytes": 853795,
+        "sha256": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b"
+      },
+      "wallet.4": {
+        "bytes": 853725,
+        "sha256": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b"
+      },
+      "wallet.5": {
+        "bytes": 853855,
+        "sha256": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa"
+      },
+      "wallet.6": {
+        "bytes": 853977,
+        "sha256": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117"
+      },
+      "wallet.7": {
+        "bytes": 853568,
+        "sha256": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5"
+      }
+    },
+    "attempts": [
+      {
+        "log": "01-seed.log",
+        "name": "seed",
+        "started_utc": "2026-10-02T04:27:19Z",
+        "status": "complete",
+        "unit": "lattica-v2-gpu-grouped-134683-1.service",
+        "wall_seconds": 0.0639551020003637
+      },
+      {
+        "log": "02-reference-check.log",
+        "log_sha256": "2b84965383a4dcce05f518ae6003c1355a0c9f61117425faaae935cc9017c12d",
+        "name": "reference-check",
+        "started_utc": "2026-10-02T04:27:19Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 421995,
+            "memory_max": 47244640256,
+            "memory_peak": 15953920,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 294,
+            "spill_peak_bytes": 0
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-gpu-grouped-134683-2.service",
+        "wall_seconds": 0.36172648899992055
+      },
+      {
+        "cpu_key_equivalence": {
+          "bytes": 2048,
+          "sha256": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5"
+        },
+        "log": "03-key-1.log",
+        "log_sha256": "1813ad0c0b7c21dae17c2b80d6710ba6c4b372d5edb7f8fc0b1d7f0dfc42a042",
+        "name": "key-1",
+        "started_utc": "2026-10-02T04:27:20Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 23892636,
+            "memory_max": 47244640256,
+            "memory_peak": 28892319744,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "checkpoint": {
+            "allocations": "14",
+            "commits": "1",
+            "compress_kernel_ns": "11081856",
+            "counters": "cumulative",
+            "decode_ns": "8534227544",
+            "download_and_decode_ns": "12099804496",
+            "download_wall_ns": "3563296350",
+            "downloaded_bytes": "13421774848",
+            "hashing_wall_ns": "0",
+            "label": "GPU grouped process remainder",
+            "leaf_kernel_ns": "565674240",
+            "managed_live_bytes": "603980112",
+            "managed_peak_bytes": "5972689568",
+            "marshal_ns": "70076114",
+            "staging_bytes": "67108864",
+            "upload_and_marshal_ns": "602006418",
+            "upload_wall_ns": "531842663",
+            "uploaded_bytes": "1107296624"
+          },
+          "duration": {
+            "elapsed_ms": 23651,
+            "spill_peak_bytes": 28236075008
+          },
+          "gpu": {
+            "contexts": "1",
+            "device_index": "0",
+            "driver_reserve_bytes": "4294967296",
+            "global_bytes": "16707092480",
+            "job_lease": "exclusive",
+            "managed_limit_bytes": "8589934592",
+            "max_allocation_bytes": "4176773120",
+            "name": "NVIDIA GeForce RTX 5080",
+            "staging_bytes": "67108864",
+            "tile_bytes": "134217728"
+          },
+          "lde": {
+            "column_tiles": "7",
+            "commits": "1",
+            "counters": "cumulative",
+            "host_reorder_ns": "4703815164",
+            "host_reordered_bytes": "13421772800",
+            "host_workspace_peak_bytes": "13421772800",
+            "label": "GPU grouped process remainder",
+            "sponge_device_ns": "565674240",
+            "transform_device_ns": "452016512",
+            "wall_ns": "13852997868"
+          },
+          "nodes": [],
+          "opening": {
+            "calls": 0,
+            "downloaded_bytes": 0,
+            "kernel_ns": 0,
+            "tiles": 0,
+            "uploaded_bytes": 0,
+            "wall_ns": 0
+          },
+          "opening_timing_scope": "nonadditive subset of complete recursive stage wall time",
+          "recorded_host_device_transfers": {
+            "core_downloaded_bytes": 13421774848,
+            "core_uploaded_bytes": 1107296624,
+            "downloaded_bytes": 13421774848,
+            "opening_downloaded_bytes": 0,
+            "opening_uploaded_bytes": 0,
+            "uploaded_bytes": 1107296624
+          }
+        },
+        "unit": "lattica-v2-gpu-grouped-134683-3.service",
+        "vram": {
+          "limit_mib": 12288,
+          "peak_mib": 5830,
+          "positive_samples": 44,
+          "samples": 45,
+          "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+        },
+        "vram_log": "03-key-1-vram.jsonl",
+        "vram_log_sha256": "dc973d7119ca1eb33b0d2cc698843d15854de50b57cfee14eaace08b2a0cc8b5",
+        "wall_seconds": 23.797029762999955
+      },
+      {
+        "cpu_key_equivalence": {
+          "bytes": 2048,
+          "sha256": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802"
+        },
+        "log": "04-key-2.log",
+        "log_sha256": "3801e71c3edd3488ab121a01b270faf8a0c6d8e145947f4f5f4812a63e369817",
+        "name": "key-2",
+        "started_utc": "2026-10-02T04:27:43Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 16163338,
+            "memory_max": 47244640256,
+            "memory_peak": 28273041408,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "checkpoint": {
+            "allocations": "14",
+            "commits": "1",
+            "compress_kernel_ns": "11089184",
+            "counters": "cumulative",
+            "decode_ns": "8583532260",
+            "download_and_decode_ns": "12147571987",
+            "download_wall_ns": "3561650438",
+            "downloaded_bytes": "13421774848",
+            "hashing_wall_ns": "0",
+            "label": "GPU grouped process remainder",
+            "leaf_kernel_ns": "573968704",
+            "managed_live_bytes": "603980112",
+            "managed_peak_bytes": "5972689568",
+            "marshal_ns": "66143465",
+            "staging_bytes": "67108864",
+            "upload_and_marshal_ns": "598933659",
+            "upload_wall_ns": "532702304",
+            "uploaded_bytes": "1107296624"
+          },
+          "duration": {
+            "elapsed_ms": 15838,
+            "spill_peak_bytes": 27950858240
+          },
+          "gpu": {
+            "contexts": "1",
+            "device_index": "0",
+            "driver_reserve_bytes": "4294967296",
+            "global_bytes": "16707092480",
+            "job_lease": "exclusive",
+            "managed_limit_bytes": "8589934592",
+            "max_allocation_bytes": "4176773120",
+            "name": "NVIDIA GeForce RTX 5080",
+            "staging_bytes": "67108864",
+            "tile_bytes": "134217728"
+          },
+          "lde": {
+            "column_tiles": "7",
+            "commits": "1",
+            "counters": "cumulative",
+            "host_reorder_ns": "4479764176",
+            "host_reordered_bytes": "13421772800",
+            "host_workspace_peak_bytes": "13421772800",
+            "label": "GPU grouped process remainder",
+            "sponge_device_ns": "573968704",
+            "transform_device_ns": "458103136",
+            "wall_ns": "13916581400"
+          },
+          "nodes": [],
+          "opening": {
+            "calls": 0,
+            "downloaded_bytes": 0,
+            "kernel_ns": 0,
+            "tiles": 0,
+            "uploaded_bytes": 0,
+            "wall_ns": 0
+          },
+          "opening_timing_scope": "nonadditive subset of complete recursive stage wall time",
+          "recorded_host_device_transfers": {
+            "core_downloaded_bytes": 13421774848,
+            "core_uploaded_bytes": 1107296624,
+            "downloaded_bytes": 13421774848,
+            "opening_downloaded_bytes": 0,
+            "opening_uploaded_bytes": 0,
+            "uploaded_bytes": 1107296624
+          }
+        },
+        "unit": "lattica-v2-gpu-grouped-134683-4.service",
+        "vram": {
+          "limit_mib": 12288,
+          "peak_mib": 4934,
+          "positive_samples": 30,
+          "samples": 31,
+          "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+        },
+        "vram_log": "04-key-2-vram.jsonl",
+        "vram_log_sha256": "d1bae0449165050a57cf7def3024bd9e2499d32c28fec2d5d0d414c6c85b8318",
+        "wall_seconds": 15.998318072000075
+      },
+      {
+        "cpu_key_equivalence": {
+          "bytes": 2048,
+          "sha256": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99"
+        },
+        "log": "05-key-3.log",
+        "log_sha256": "052b3c13ee52d435bda25ad698b12ba5ba537bfe19f6b32189bca01aa3076ce0",
+        "name": "key-3",
+        "started_utc": "2026-10-02T04:27:59Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 21640382,
+            "memory_max": 47244640256,
+            "memory_peak": 29257641984,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "checkpoint": {
+            "allocations": "14",
+            "commits": "1",
+            "compress_kernel_ns": "11088096",
+            "counters": "cumulative",
+            "decode_ns": "8298548514",
+            "download_and_decode_ns": "11866897941",
+            "download_wall_ns": "3566228492",
+            "downloaded_bytes": "13421774848",
+            "hashing_wall_ns": "0",
+            "label": "GPU grouped process remainder",
+            "leaf_kernel_ns": "565916224",
+            "managed_live_bytes": "603980112",
+            "managed_peak_bytes": "5972689568",
+            "marshal_ns": "59464741",
+            "staging_bytes": "67108864",
+            "upload_and_marshal_ns": "588593854",
+            "upload_wall_ns": "529040515",
+            "uploaded_bytes": "1107296624"
+          },
+          "duration": {
+            "elapsed_ms": 21270,
+            "spill_peak_bytes": 28521287680
+          },
+          "gpu": {
+            "contexts": "1",
+            "device_index": "0",
+            "driver_reserve_bytes": "4294967296",
+            "global_bytes": "16707092480",
+            "job_lease": "exclusive",
+            "managed_limit_bytes": "8589934592",
+            "max_allocation_bytes": "4176773120",
+            "name": "NVIDIA GeForce RTX 5080",
+            "staging_bytes": "67108864",
+            "tile_bytes": "134217728"
+          },
+          "lde": {
+            "column_tiles": "7",
+            "commits": "1",
+            "counters": "cumulative",
+            "host_reorder_ns": "4523366970",
+            "host_reordered_bytes": "13421772800",
+            "host_workspace_peak_bytes": "13421772800",
+            "label": "GPU grouped process remainder",
+            "sponge_device_ns": "565916224",
+            "transform_device_ns": "458728832",
+            "wall_ns": "13605535095"
+          },
+          "nodes": [],
+          "opening": {
+            "calls": 0,
+            "downloaded_bytes": 0,
+            "kernel_ns": 0,
+            "tiles": 0,
+            "uploaded_bytes": 0,
+            "wall_ns": 0
+          },
+          "opening_timing_scope": "nonadditive subset of complete recursive stage wall time",
+          "recorded_host_device_transfers": {
+            "core_downloaded_bytes": 13421774848,
+            "core_uploaded_bytes": 1107296624,
+            "downloaded_bytes": 13421774848,
+            "opening_downloaded_bytes": 0,
+            "opening_uploaded_bytes": 0,
+            "uploaded_bytes": 1107296624
+          }
+        },
+        "unit": "lattica-v2-gpu-grouped-134683-5.service",
+        "vram": {
+          "limit_mib": 12288,
+          "peak_mib": 4934,
+          "positive_samples": 40,
+          "samples": 41,
+          "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+        },
+        "vram_log": "05-key-3-vram.jsonl",
+        "vram_log_sha256": "94c6c2baeeefce2167afb248035ae55cc16e19d472b1b871209f3c490aaa94e0",
+        "wall_seconds": 21.44890410900007
+      },
+      {
+        "log": "06-check.log",
+        "log_sha256": "699a246e9098046dff45be1593bbbca692e985d27ee4904c3ebce2090c6524fd",
+        "name": "check",
+        "started_utc": "2026-10-02T04:28:21Z",
+        "status": "complete",
+        "telemetry": {
+          "accounting": {
+            "cpu_usage_usec": 432014,
+            "memory_max": 47244640256,
+            "memory_peak": 15400960,
+            "memory_swap_max": 0,
+            "memory_swap_peak": 0
+          },
+          "audit_proof_bytes": null,
+          "duration": {
+            "elapsed_ms": 295,
+            "spill_peak_bytes": 0
+          },
+          "nodes": []
+        },
+        "unit": "lattica-v2-gpu-grouped-134683-6.service",
+        "wall_seconds": 0.35834092699951725
+      }
+    ],
+    "config": {
+      "accounting": "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py",
+      "auditor": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-artifact-audit",
+      "backend": "resident",
+      "cpu_runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-wide-20261001-a/block-v2-grouped-probe",
+      "evidence": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence",
+      "external": ["8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb","5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a","23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8"],
+      "gpu_index": 0,
+      "gpu_openings": 1,
+      "gpu_runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-openings-runner-20261002-a/block-v2-gpu-grouped-probe",
+      "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-job",
+      "mode": "register",
+      "quotient_fusion": 0,
+      "reference": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/reproduction-job",
+      "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-openings-runner-20261002-a/source.tar.gz"
+    },
+    "configured_limits_not_peak_observations": {
+      "aggregate_ram_bytes": 51539607552,
+      "aggregate_scratch_bytes": 137438953472,
+      "controller_ram_bytes_at_most": 3221225472,
+      "controller_runtime_seconds_at_most": 21600,
+      "log_bytes_per_stage": 67108864,
+      "spill_bytes": 128849018880,
+      "swap_bytes": 0,
+      "vram_log_bytes_per_stage": 8388608,
+      "worker_ram_bytes": 47244640256,
+      "worker_runtime_seconds": 7200,
+      "worker_vram_limit_mib": 12288
+    },
+    "full_tree_security": "UNREVIEWED",
+    "level6_qualified": false,
+    "pins": {
+      "accounting": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "auditor": "ae9ea1ddf846771c373b3dd5cf2e188087819de4294e25d27b85500e66f1af53",
+      "controller": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614",
+      "cpu_runner": "2383b260de5283ddcb6c1ce2408fb8139065fc109c8181ec602cc20ca095db3c",
+      "gpu_runner": "fc608cdadade7ed13d9d3e7ddb5cd6f96dd26e90a7d167ccc5a9fb00e35729dd",
+      "helpers": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "source_archive": "6f0d258df141d301dbbff1a860deb274c9bed401625fbb49d76d44ea3eff55ef"
+    },
+    "production_ready": false,
+    "schema": "gpu-grouped-eight-v2",
+    "source_artifacts": {
+      "height": {
+        "bytes": 4,
+        "sha256": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60"
+      },
+      "key.1": {
+        "bytes": 2048,
+        "sha256": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5"
+      },
+      "key.2": {
+        "bytes": 2048,
+        "sha256": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802"
+      },
+      "key.3": {
+        "bytes": 2048,
+        "sha256": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99"
+      },
+      "wallet.0": {
+        "bytes": 853675,
+        "sha256": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973"
+      },
+      "wallet.1": {
+        "bytes": 853491,
+        "sha256": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79"
+      },
+      "wallet.2": {
+        "bytes": 854047,
+        "sha256": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5"
+      },
+      "wallet.3": {
+        "bytes": 853795,
+        "sha256": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b"
+      },
+      "wallet.4": {
+        "bytes": 853725,
+        "sha256": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b"
+      },
+      "wallet.5": {
+        "bytes": 853855,
+        "sha256": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa"
+      },
+      "wallet.6": {
+        "bytes": 853977,
+        "sha256": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117"
+      },
+      "wallet.7": {
+        "bytes": 853568,
+        "sha256": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5"
+      }
+    },
+    "status": "GPU_KEYS_MATCH_CPU_RESEARCH_ONLY"
+  },
+  "revision": {
+    "pins": {
+      "accounting": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "auditor": "ae9ea1ddf846771c373b3dd5cf2e188087819de4294e25d27b85500e66f1af53",
+      "controller": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614",
+      "cpu_runner": "2383b260de5283ddcb6c1ce2408fb8139065fc109c8181ec602cc20ca095db3c",
+      "gpu_runner": "fc608cdadade7ed13d9d3e7ddb5cd6f96dd26e90a7d167ccc5a9fb00e35729dd",
+      "helpers": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "source_archive": "6f0d258df141d301dbbff1a860deb274c9bed401625fbb49d76d44ea3eff55ef"
+    }
+  },
+  "run_id": "run-1a42b81258c536e74be59b8d",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 17880,
+      "path": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/manifest.json",
+      "sha256": "eb06ae502cece850e24105a426cd6a26ad9d6339a237ca49e64b6613dd7e28b1"
+    },
+    {
+      "bytes": 3013,
+      "path": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/02-reference-check.log",
+      "sha256": "2b84965383a4dcce05f518ae6003c1355a0c9f61117425faaae935cc9017c12d"
+    },
+    {
+      "bytes": 3084,
+      "path": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1-vram.jsonl",
+      "sha256": "dc973d7119ca1eb33b0d2cc698843d15854de50b57cfee14eaace08b2a0cc8b5"
+    },
+    {
+      "bytes": 5490,
+      "path": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/03-key-1.log",
+      "sha256": "1813ad0c0b7c21dae17c2b80d6710ba6c4b372d5edb7f8fc0b1d7f0dfc42a042"
+    },
+    {
+      "bytes": 2127,
+      "path": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2-vram.jsonl",
+      "sha256": "d1bae0449165050a57cf7def3024bd9e2499d32c28fec2d5d0d414c6c85b8318"
+    },
+    {
+      "bytes": 5282,
+      "path": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/04-key-2.log",
+      "sha256": "3801e71c3edd3488ab121a01b270faf8a0c6d8e145947f4f5f4812a63e369817"
+    },
+    {
+      "bytes": 2814,
+      "path": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3-vram.jsonl",
+      "sha256": "94c6c2baeeefce2167afb248035ae55cc16e19d472b1b871209f3c490aaa94e0"
+    },
+    {
+      "bytes": 5300,
+      "path": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/05-key-3.log",
+      "sha256": "052b3c13ee52d435bda25ad698b12ba5ba537bfe19f6b32189bca01aa3076ce0"
+    },
+    {
+      "bytes": 3013,
+      "path": "lattica-prover-p3/target/block-v2-gpu-openings-registration-20261002-a-evidence/06-check.log",
+      "sha256": "699a246e9098046dff45be1593bbbca692e985d27ee4904c3ebce2090c6524fd"
+    }
+  ],
+  "stages": [
+    {
+      "log": "01-seed.log",
+      "name": "seed",
+      "started_utc": "2026-10-02T04:27:19Z",
+      "status": "complete",
+      "unit": "lattica-v2-gpu-grouped-134683-1.service",
+      "wall_seconds": 0.0639551020003637
+    },
+    {
+      "log": "02-reference-check.log",
+      "log_sha256": "2b84965383a4dcce05f518ae6003c1355a0c9f61117425faaae935cc9017c12d",
+      "name": "reference-check",
+      "started_utc": "2026-10-02T04:27:19Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 421995,
+          "memory_max": 47244640256,
+          "memory_peak": 15953920,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 294,
+          "spill_peak_bytes": 0
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-gpu-grouped-134683-2.service",
+      "wall_seconds": 0.36172648899992055
+    },
+    {
+      "cpu_key_equivalence": {
+        "bytes": 2048,
+        "sha256": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5"
+      },
+      "log": "03-key-1.log",
+      "log_sha256": "1813ad0c0b7c21dae17c2b80d6710ba6c4b372d5edb7f8fc0b1d7f0dfc42a042",
+      "name": "key-1",
+      "started_utc": "2026-10-02T04:27:20Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 23892636,
+          "memory_max": 47244640256,
+          "memory_peak": 28892319744,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "checkpoint": {
+          "allocations": "14",
+          "commits": "1",
+          "compress_kernel_ns": "11081856",
+          "counters": "cumulative",
+          "decode_ns": "8534227544",
+          "download_and_decode_ns": "12099804496",
+          "download_wall_ns": "3563296350",
+          "downloaded_bytes": "13421774848",
+          "hashing_wall_ns": "0",
+          "label": "GPU grouped process remainder",
+          "leaf_kernel_ns": "565674240",
+          "managed_live_bytes": "603980112",
+          "managed_peak_bytes": "5972689568",
+          "marshal_ns": "70076114",
+          "staging_bytes": "67108864",
+          "upload_and_marshal_ns": "602006418",
+          "upload_wall_ns": "531842663",
+          "uploaded_bytes": "1107296624"
+        },
+        "duration": {
+          "elapsed_ms": 23651,
+          "spill_peak_bytes": 28236075008
+        },
+        "gpu": {
+          "contexts": "1",
+          "device_index": "0",
+          "driver_reserve_bytes": "4294967296",
+          "global_bytes": "16707092480",
+          "job_lease": "exclusive",
+          "managed_limit_bytes": "8589934592",
+          "max_allocation_bytes": "4176773120",
+          "name": "NVIDIA GeForce RTX 5080",
+          "staging_bytes": "67108864",
+          "tile_bytes": "134217728"
+        },
+        "lde": {
+          "column_tiles": "7",
+          "commits": "1",
+          "counters": "cumulative",
+          "host_reorder_ns": "4703815164",
+          "host_reordered_bytes": "13421772800",
+          "host_workspace_peak_bytes": "13421772800",
+          "label": "GPU grouped process remainder",
+          "sponge_device_ns": "565674240",
+          "transform_device_ns": "452016512",
+          "wall_ns": "13852997868"
+        },
+        "nodes": [],
+        "opening": {
+          "calls": 0,
+          "downloaded_bytes": 0,
+          "kernel_ns": 0,
+          "tiles": 0,
+          "uploaded_bytes": 0,
+          "wall_ns": 0
+        },
+        "opening_timing_scope": "nonadditive subset of complete recursive stage wall time",
+        "recorded_host_device_transfers": {
+          "core_downloaded_bytes": 13421774848,
+          "core_uploaded_bytes": 1107296624,
+          "downloaded_bytes": 13421774848,
+          "opening_downloaded_bytes": 0,
+          "opening_uploaded_bytes": 0,
+          "uploaded_bytes": 1107296624
+        }
+      },
+      "unit": "lattica-v2-gpu-grouped-134683-3.service",
+      "vram": {
+        "limit_mib": 12288,
+        "peak_mib": 5830,
+        "positive_samples": 44,
+        "samples": 45,
+        "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+      },
+      "vram_log": "03-key-1-vram.jsonl",
+      "vram_log_sha256": "dc973d7119ca1eb33b0d2cc698843d15854de50b57cfee14eaace08b2a0cc8b5",
+      "wall_seconds": 23.797029762999955
+    },
+    {
+      "cpu_key_equivalence": {
+        "bytes": 2048,
+        "sha256": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802"
+      },
+      "log": "04-key-2.log",
+      "log_sha256": "3801e71c3edd3488ab121a01b270faf8a0c6d8e145947f4f5f4812a63e369817",
+      "name": "key-2",
+      "started_utc": "2026-10-02T04:27:43Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 16163338,
+          "memory_max": 47244640256,
+          "memory_peak": 28273041408,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "checkpoint": {
+          "allocations": "14",
+          "commits": "1",
+          "compress_kernel_ns": "11089184",
+          "counters": "cumulative",
+          "decode_ns": "8583532260",
+          "download_and_decode_ns": "12147571987",
+          "download_wall_ns": "3561650438",
+          "downloaded_bytes": "13421774848",
+          "hashing_wall_ns": "0",
+          "label": "GPU grouped process remainder",
+          "leaf_kernel_ns": "573968704",
+          "managed_live_bytes": "603980112",
+          "managed_peak_bytes": "5972689568",
+          "marshal_ns": "66143465",
+          "staging_bytes": "67108864",
+          "upload_and_marshal_ns": "598933659",
+          "upload_wall_ns": "532702304",
+          "uploaded_bytes": "1107296624"
+        },
+        "duration": {
+          "elapsed_ms": 15838,
+          "spill_peak_bytes": 27950858240
+        },
+        "gpu": {
+          "contexts": "1",
+          "device_index": "0",
+          "driver_reserve_bytes": "4294967296",
+          "global_bytes": "16707092480",
+          "job_lease": "exclusive",
+          "managed_limit_bytes": "8589934592",
+          "max_allocation_bytes": "4176773120",
+          "name": "NVIDIA GeForce RTX 5080",
+          "staging_bytes": "67108864",
+          "tile_bytes": "134217728"
+        },
+        "lde": {
+          "column_tiles": "7",
+          "commits": "1",
+          "counters": "cumulative",
+          "host_reorder_ns": "4479764176",
+          "host_reordered_bytes": "13421772800",
+          "host_workspace_peak_bytes": "13421772800",
+          "label": "GPU grouped process remainder",
+          "sponge_device_ns": "573968704",
+          "transform_device_ns": "458103136",
+          "wall_ns": "13916581400"
+        },
+        "nodes": [],
+        "opening": {
+          "calls": 0,
+          "downloaded_bytes": 0,
+          "kernel_ns": 0,
+          "tiles": 0,
+          "uploaded_bytes": 0,
+          "wall_ns": 0
+        },
+        "opening_timing_scope": "nonadditive subset of complete recursive stage wall time",
+        "recorded_host_device_transfers": {
+          "core_downloaded_bytes": 13421774848,
+          "core_uploaded_bytes": 1107296624,
+          "downloaded_bytes": 13421774848,
+          "opening_downloaded_bytes": 0,
+          "opening_uploaded_bytes": 0,
+          "uploaded_bytes": 1107296624
+        }
+      },
+      "unit": "lattica-v2-gpu-grouped-134683-4.service",
+      "vram": {
+        "limit_mib": 12288,
+        "peak_mib": 4934,
+        "positive_samples": 30,
+        "samples": 31,
+        "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+      },
+      "vram_log": "04-key-2-vram.jsonl",
+      "vram_log_sha256": "d1bae0449165050a57cf7def3024bd9e2499d32c28fec2d5d0d414c6c85b8318",
+      "wall_seconds": 15.998318072000075
+    },
+    {
+      "cpu_key_equivalence": {
+        "bytes": 2048,
+        "sha256": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99"
+      },
+      "log": "05-key-3.log",
+      "log_sha256": "052b3c13ee52d435bda25ad698b12ba5ba537bfe19f6b32189bca01aa3076ce0",
+      "name": "key-3",
+      "started_utc": "2026-10-02T04:27:59Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 21640382,
+          "memory_max": 47244640256,
+          "memory_peak": 29257641984,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "checkpoint": {
+          "allocations": "14",
+          "commits": "1",
+          "compress_kernel_ns": "11088096",
+          "counters": "cumulative",
+          "decode_ns": "8298548514",
+          "download_and_decode_ns": "11866897941",
+          "download_wall_ns": "3566228492",
+          "downloaded_bytes": "13421774848",
+          "hashing_wall_ns": "0",
+          "label": "GPU grouped process remainder",
+          "leaf_kernel_ns": "565916224",
+          "managed_live_bytes": "603980112",
+          "managed_peak_bytes": "5972689568",
+          "marshal_ns": "59464741",
+          "staging_bytes": "67108864",
+          "upload_and_marshal_ns": "588593854",
+          "upload_wall_ns": "529040515",
+          "uploaded_bytes": "1107296624"
+        },
+        "duration": {
+          "elapsed_ms": 21270,
+          "spill_peak_bytes": 28521287680
+        },
+        "gpu": {
+          "contexts": "1",
+          "device_index": "0",
+          "driver_reserve_bytes": "4294967296",
+          "global_bytes": "16707092480",
+          "job_lease": "exclusive",
+          "managed_limit_bytes": "8589934592",
+          "max_allocation_bytes": "4176773120",
+          "name": "NVIDIA GeForce RTX 5080",
+          "staging_bytes": "67108864",
+          "tile_bytes": "134217728"
+        },
+        "lde": {
+          "column_tiles": "7",
+          "commits": "1",
+          "counters": "cumulative",
+          "host_reorder_ns": "4523366970",
+          "host_reordered_bytes": "13421772800",
+          "host_workspace_peak_bytes": "13421772800",
+          "label": "GPU grouped process remainder",
+          "sponge_device_ns": "565916224",
+          "transform_device_ns": "458728832",
+          "wall_ns": "13605535095"
+        },
+        "nodes": [],
+        "opening": {
+          "calls": 0,
+          "downloaded_bytes": 0,
+          "kernel_ns": 0,
+          "tiles": 0,
+          "uploaded_bytes": 0,
+          "wall_ns": 0
+        },
+        "opening_timing_scope": "nonadditive subset of complete recursive stage wall time",
+        "recorded_host_device_transfers": {
+          "core_downloaded_bytes": 13421774848,
+          "core_uploaded_bytes": 1107296624,
+          "downloaded_bytes": 13421774848,
+          "opening_downloaded_bytes": 0,
+          "opening_uploaded_bytes": 0,
+          "uploaded_bytes": 1107296624
+        }
+      },
+      "unit": "lattica-v2-gpu-grouped-134683-5.service",
+      "vram": {
+        "limit_mib": 12288,
+        "peak_mib": 4934,
+        "positive_samples": 40,
+        "samples": 41,
+        "scope": "worker cgroup across compute processes; sampled, not an instantaneous driver quota"
+      },
+      "vram_log": "05-key-3-vram.jsonl",
+      "vram_log_sha256": "94c6c2baeeefce2167afb248035ae55cc16e19d472b1b871209f3c490aaa94e0",
+      "wall_seconds": 21.44890410900007
+    },
+    {
+      "log": "06-check.log",
+      "log_sha256": "699a246e9098046dff45be1593bbbca692e985d27ee4904c3ebce2090c6524fd",
+      "name": "check",
+      "started_utc": "2026-10-02T04:28:21Z",
+      "status": "complete",
+      "telemetry": {
+        "accounting": {
+          "cpu_usage_usec": 432014,
+          "memory_max": 47244640256,
+          "memory_peak": 15400960,
+          "memory_swap_max": 0,
+          "memory_swap_peak": 0
+        },
+        "audit_proof_bytes": null,
+        "duration": {
+          "elapsed_ms": 295,
+          "spill_peak_bytes": 0
+        },
+        "nodes": []
+      },
+      "unit": "lattica-v2-gpu-grouped-134683-6.service",
+      "wall_seconds": 0.35834092699951725
+    }
+  ],
+  "status": "succeeded",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "linux-opencl",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "schema": "block-v2-artifact-store-checkpoint-v1",
+  "captured_utc": "2026-10-02T06:13:12Z",
+  "status": "LINUX_ARTIFACT_PUBLICATION_AND_CPU_RECOVERY_VALIDATED_JOURNAL_PENDING",
+  "production_ready": false,
+  "default_enabled": false,
+  "durable_scheduler_complete": false,
+  "scope": "Private bounded immutable public-proof artifact storage and explicit interrupted-write cleanup. Not a transition journal, live worker service, candidate recovery or performance qualification.",
+  "implementation": {
+    "files": [
+      "lattica-prover-p3/src/block_v2/execution/artifact_store.rs",
+      "lattica-prover-p3/src/block_v2/execution/artifact_store_tests.rs",
+      "lattica-prover-p3/src/block_v2/execution/job.rs",
+      "lattica-prover-p3/src/block_v2/execution/mod.rs",
+      "lattica-prover-p3/Cargo.toml"
+    ],
+    "feature_gate": "block-v2; Linux-only storage module. Existing optional libc dependency is enabled for research filesystem safeguards. No new dependency version, default proof/verification change, ABI symbol or production activation.",
+    "filesystem_contract": "Dedicated private operator-owned directory, Linux/procfs, exclusive kernel lock, atomic hard-link publication and directory fsync. Persistent-storage durability depends on the underlying filesystem/device contract.",
+    "path_binding": "Operations are anchored to an open directory descriptor. Final-component symlinks, unsafe ownership/modes, unexpected file kinds/names/links and replaced owner locks fail closed.",
+    "publication": "Accept only existing VerifiedWallet/VerifiedNode tickets plus exact matching bytes. Write a create-new private temporary file; fsync file; atomically hard-link without replacement; fsync directory; unlink temporary name; fsync directory. Mid-publication errors poison the object.",
+    "inventory": "Bounded canonical descriptors are untrusted metadata, never validity tickets or completed jobs.",
+    "recovery": "Reopen under the exclusive lock, explicitly delete recognized pending-write names, preserve published orphans, and reverify loaded wallet/node bytes on CPU against external registry/chain/job expectations.",
+    "limits": {
+      "logical_file_bytes_at_most": 536870912,
+      "artifact_and_pending_entries_at_most": 16384,
+      "bytes_per_artifact_at_most": 2097152,
+      "publication_reservation": "existing logical artifact bytes plus twice the new artifact length; two directory entry slots",
+      "excluded_from_logical_byte_count": "filesystem block rounding, metadata, zero-length owner-lock entry and future journal; aggregate physical scratch admission remains a service responsibility"
+    },
+    "trust_boundary": "No isolation from a malicious same-uid process, kernel or filesystem. A returned stored identity is not a durable job completion."
+  },
+  "validation": {
+    "initial": {
+      "unit": "lattica-v2-artifact-store-native-20261002-a.service",
+      "status": "PASS",
+      "runtime_seconds": 84.823,
+      "native_checks_passed": 30,
+      "explicit_cpu_replays_passed": 2
+    },
+    "expanded": {
+      "unit": "lattica-v2-artifact-store-native-20261002-b.service",
+      "status": "PASS",
+      "runtime_seconds": 83.194,
+      "cpu_seconds": 82.994,
+      "native_checks_passed": 32,
+      "artifact_store_native_checks": 11,
+      "prior_scheduler_job_resource_checks": 21,
+      "explicit_cpu_replays_passed": 2,
+      "abrupt_exit_cases": 5,
+      "abrupt_exit_cases_are_nested_in_one_native_check": true,
+      "ignored_in_default_filter": 3,
+      "ignored_explanation": "Two pinned CPU fixture checks run explicitly afterward; the third is the subprocess helper invoked five times by its parent crash test.",
+      "checks": [
+        "release CPU test build with block-v2-wide-lanes,stream",
+        "release block-v2 library without stream",
+        "release all-features/all-targets",
+        "release default library",
+        "rustfmt edition 2021 --check",
+        "git diff --check",
+        "source archive byte comparison"
+      ],
+      "service_ram_limit_bytes": 3221225472,
+      "service_swap_limit_bytes": 0,
+      "service_runtime_limit_seconds": 1200,
+      "observed_memory_peak_formatted": "1.4G",
+      "observed_swap_bytes": 0,
+      "exclusive_lease": true,
+      "gpu_disabled": true
+    }
+  },
+  "coverage": {
+    "native": [
+      "Exclusive ownership and reopening; creation never repurposes an existing path.",
+      "Exact kind/length/byte binding, non-overwriting idempotency and pre-write byte/entry admission.",
+      "Five injected error boundaries and five abrupt subprocess exits: after write, file fsync, hard-link publication, directory fsync and temporary cleanup.",
+      "Corrupt, missing and length-changed artifacts fail closed and are not overwritten.",
+      "Symlink/hard-link/mode/owner-lock/unknown-name rejection; descriptor Unicode, field canonicality and length bounds.",
+      "Open directory remains authoritative after original path replacement.",
+      "Recovery rejects oversized files and excessive entries/bytes; zero-length recognized pending writes are safely cleaned."
+    ],
+    "real_cpu": [
+      "Existing independently pinned eight-wallet/root job-contract replay.",
+      "Store eight verified wallet artifacts and one CPU-verified root; close/reopen; CPU-reverify all wallets and derive the same expected semantic root job.",
+      "CPU-reverify the preserved recursive root against that job; reject wrong chain, swapped transaction order and mutated stored bytes.",
+      "Delete only the temporary store's wallet copies, then CPU-reverify its root without loading those copies. Independent source fixtures remain unchanged."
+    ]
+  },
+  "pins": {
+    "source_archive": {
+      "path": "lattica-prover-p3/target/block-v2-artifact-store-native-20261002-b/source.tar.gz",
+      "sha256": "99a5544f857911496982c1a1b4ed4a56429b8bbc10e45f1f7b547a7c3d54fca9"
+    },
+    "cpu_test_binary": {
+      "path": "lattica-prover-p3/target/block-v2-artifact-store-native-20261002-b/cpu-lib-tests",
+      "sha256": "d3858d177c64e3f0fd927c6d92b37c067f93783f780b306167723c84d07eb27f"
+    },
+    "expanded_log": {
+      "path": "lattica-prover-p3/target/block-v2-artifact-store-native-20261002-b.log",
+      "sha256": "9dfd25c63987c226dd66880959f7d569d0dabd0464d5a143691ee68ee7e705d0"
+    },
+    "invocation": {
+      "path": "lattica-prover-p3/target/block-v2-artifact-store-native-20261002-b-invocation.json",
+      "sha256": "b4c2dab7394ac555ce346e6271ecbe739169efad1783fd92bb13c56d884f4bcf"
+    },
+    "initial_log": {
+      "path": "lattica-prover-p3/target/block-v2-artifact-store-native-20261002-a.log",
+      "sha256": "e8e89d7f77e303ad73062bcc0a7d0aea150ec8cb7fa7b98247cb498775d9cfec"
+    }
+  },
+  "preservation": {
+    "docs/dag-gpu-implementation.md": "c23df407b56a47b1ec66f6821349d38be258ea4f7c43db432086124580a27ae7",
+    "lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+    "lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+    "lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614"
+  },
+  "remaining": [
+    "Durable transition journal and atomic current-attempt completion.",
+    "Graph reconstruction, fresh-session fencing, surviving-worker reconciliation and host eligibility rechecks before resuming dispatch.",
+    "Journal-owned reference/retention-aware artifact garbage collection; the store does not automatically delete published artifacts.",
+    "Real CPU/GPU worker adapters, physical aggregate resource enforcement and arrival-driven harness.",
+    "Storage-device/filesystem power-loss qualification; current fault tests cover process interruption, not physical power loss.",
+    "GPU performance work, full64 cold/complete post-seal targets, full transaction types, complete-tree security, host integration and explicit activation."
+  ]
+}

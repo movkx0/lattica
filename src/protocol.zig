@@ -16,11 +16,11 @@
 //! while the protocol layer only ever touches the **public** counters (mint, burn, fee). Note
 //! values stay private.
 //!
-//! Commitments (`cm`) and nullifiers (`nf`) are opaque 32-byte values here — they are produced by
-//! the production prover (`lattica-prover`, Rescue-Prime `Rp64_256` over the field) so the
-//! in-circuit hash and the on-chain value agree by construction. The tx-binding digest below is a
-//! SHA3 hash of the canonical bytes; it is fed to the spend proof as a public input (the proof
-//! binds to it — no in-circuit SHA3 is required).
+//! Commitments (`cm`) and nullifiers (`nf`) are opaque 32-byte values here — they are produced by the
+//! production circuit (`lattica-prover-p3`, Poseidon2-Goldilocks; on-chain hashing in `poseidon2.zig`
+//! is KAT-equal to it) so the in-circuit hash and the on-chain value agree by construction. The
+//! tx-binding digest below is a SHA3 hash of the canonical bytes; it is fed to the spend proof as a
+//! public input (the proof binds to it — no in-circuit SHA3 is required).
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -250,6 +250,18 @@ pub const SupplyState = struct {
         const lhs = std.math.sub(u128, self.issued, self.burned) catch return false;
         const rhs = std.math.add(u128, self.shielded_pool, self.fees_paid) catch return false;
         return lhs == rhs;
+    }
+
+    /// A canonical commitment to the public supply accounting, for the host chain to bind in a block
+    /// header (a component of `Chain.stateRoot`). Deterministic: a genesis replay that produces the same
+    /// `(issued, burned, shielded_pool, fees_paid)` produces the same commitment (P-01).
+    pub fn commitment(self: SupplyState) p.Hash32 {
+        var buf: [64]u8 = undefined;
+        std.mem.writeInt(u128, buf[0..16], self.issued, .little);
+        std.mem.writeInt(u128, buf[16..32], self.burned, .little);
+        std.mem.writeInt(u128, buf[32..48], self.shielded_pool, .little);
+        std.mem.writeInt(u128, buf[48..64], self.fees_paid, .little);
+        return p.hashDomain("lattica:v1:supply-commit", &.{&buf});
     }
 };
 

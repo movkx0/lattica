@@ -10,5 +10,6 @@ test {
     _ = @import("tree.zig");
     _ = @import("tx.zig");
     _ = @import("node.zig");
+    _ = @import("block_v2.zig");
     _ = @import("kat.zig");
 }

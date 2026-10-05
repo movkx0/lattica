@@ -1,0 +1,151 @@
+{
+  "adapter": "apple-field",
+  "configuration": {
+    "apple_field": {
+      "backend": "scalar",
+      "elements": 1048576,
+      "samples": [
+        {
+          "backend": "scalar",
+          "elapsed_ns": "127835834",
+          "elements": 1048576,
+          "iterations": 16,
+          "ns_per_element": 7.619609475135804,
+          "repeat": 1,
+          "verified": true
+        },
+        {
+          "backend": "scalar",
+          "elapsed_ns": "127318000",
+          "elements": 1048576,
+          "iterations": 16,
+          "ns_per_element": 7.588744163513183,
+          "repeat": 2,
+          "verified": true
+        },
+        {
+          "backend": "scalar",
+          "elapsed_ns": "127059958",
+          "elements": 1048576,
+          "iterations": 16,
+          "ns_per_element": 7.573363661766052,
+          "repeat": 3,
+          "verified": true
+        },
+        {
+          "backend": "scalar",
+          "elapsed_ns": "127152791",
+          "elements": 1048576,
+          "iterations": 16,
+          "ns_per_element": 7.578896939754485,
+          "repeat": 4,
+          "verified": true
+        },
+        {
+          "backend": "scalar",
+          "elapsed_ns": "126971500",
+          "elements": 1048576,
+          "iterations": 16,
+          "ns_per_element": 7.56809115409851,
+          "repeat": 5,
+          "verified": true
+        },
+        {
+          "backend": "scalar",
+          "elapsed_ns": "127115375",
+          "elements": 1048576,
+          "iterations": 16,
+          "ns_per_element": 7.57666677236557,
+          "repeat": 6,
+          "verified": true
+        },
+        {
+          "backend": "scalar",
+          "elapsed_ns": "127095584",
+          "elements": 1048576,
+          "iterations": 16,
+          "ns_per_element": 7.575487136840821,
+          "repeat": 7,
+          "verified": true
+        }
+      ]
+    },
+    "cpu_threads": 1,
+    "p3_packing_width": 2,
+    "streaming_u64_lanes": 8
+  },
+  "kind": "component",
+  "label": "Apple field multiply · scalar · 1048576 elements",
+  "limitations": ["Component experiment; no prover backend change or proof-throughput claim.","Allocations, input conversion and output verification are outside timed loops; SME streaming transitions and C ABI calls are inside.","Scalar u128 modular reduction is the correctness oracle, not the optimized CPU baseline; use Plonky3 packing for that comparison."],
+  "measurement_scope": "goldilocks_multiply",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "host_elapsed",
+        "columns": ["backend","elapsed_ns","elements","iterations","ns_per_element","repeat","verified"],
+        "dictionaries": {
+          "backend": ["scalar"]
+        },
+        "kind": "component_samples",
+        "rows": [
+          [0,"127835834",1048576,16,7.619609475135804,1,true],
+          [0,"127318000",1048576,16,7.588744163513183,2,true],
+          [0,"127059958",1048576,16,7.573363661766052,3,true],
+          [0,"127152791",1048576,16,7.578896939754485,4,true],
+          [0,"126971500",1048576,16,7.56809115409851,5,true],
+          [0,"127115375",1048576,16,7.57666677236557,6,true],
+          [0,"127095584",1048576,16,7.575487136840821,7,true]
+        ],
+        "source": "result.json"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "platform": {
+    "architecture": "aarch64",
+    "cpu": "Apple M5 Pro",
+    "memory_model": "unified",
+    "os": "macos",
+    "unified_memory_bytes": 68719476736
+  },
+  "proofs": [],
+  "revision": {
+    "binary_sha256": "22986e1e43a515a5bce510f7961c58dc93c607d84ac8574499431ab547ba035a",
+    "dirty": false,
+    "git_commit": "74052e4324ad86e8ad0fd20a9cb8b9b36ceb6df4"
+  },
+  "run_id": "apple-field-1ce6ed56f77eed65-scalar-1048576",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 17950,
+      "path": "/Users/access/code/lattica/benchmark-results/apple-optimizations-74052e4-20261004/component/result.json",
+      "sha256": "1ce6ed56f77eed65536e7c6e342ea4af0bdb947a6a9be74df52413ea45698b54"
+    },
+    {
+      "bytes": 1257,
+      "path": "/Users/access/code/lattica/benchmark-results/apple-optimizations-74052e4-20261004/component/metadata.json",
+      "sha256": "a7d5199f3f631ec2e160f2e1745b5ad10910e79d992b573ee20daf7d892ac31b"
+    }
+  ],
+  "stages": [],
+  "status": "succeeded",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "apple-silicon",
+  "verification": {
+    "cpu_audited": null,
+    "integer_oracle_verified": true,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

@@ -1,0 +1,420 @@
+{
+  "schema": 1,
+  "captured_utc": "2026-10-01 19:35:33 UTC",
+  "status": "STRUCTURAL_GEOMETRY_PASSED_ENVELOPE_FAILED_NO_FULL_SIZE_PROVING_ADMITTED",
+  "feature": "block-v2-wide-lanes",
+  "layout_revision": 3,
+  "layout_name": "wide23",
+  "default_enabled": false,
+  "production_ready": false,
+  "native_compile_passed": true,
+  "native_tests_passed": false,
+  "default_compatibility_revalidated_for_revision3": false,
+  "recursive_closure_proved": false,
+  "full_size_geometry_measured": true,
+  "measured_speedup": false,
+  "full_tree_security_reviewed": false,
+  "source_sha256": {
+    "lattica-prover-p3/Cargo.toml": "61d037ffd35caeb9d610e4ef27be7c848d10937f8cb2bfbd9c1240c720252fd1",
+    "lattica-prover-p3/.cargo/config.toml": "3e53c2589d496b9e70431c6a097f5221051128f646009694eb35e487e0518ab4",
+    "lattica-prover-p3/src/block_v2/machine/air.rs": "0c0ec5bbaac00147047b1ef3bb83b518fd9b583a9b0e6f1b2723c0dc3cc7bd81",
+    "lattica-prover-p3/src/block_v2/machine/program.rs": "bea56f89d90cb0f80bb1646b3b5425cda2ca5031db4029c430ee5e711a63ecb0",
+    "lattica-prover-p3/src/block_v2/machine/backend.rs": "38e04a9f8d2ad3019a47eb60581c53a3fbffcc8b5678e4ac00818526f5d996b7",
+    "lattica-prover-p3/src/block_v2/machine/usage.rs": "5b8b0609788108ae14ee3445c93deb09ec616a37f2284dd2453167709db6746f",
+    "lattica-prover-p3/src/block_v2/codec.rs": "d659016f65e75d7a812e01465c78b1ec08e5a505d7b8efbcb46a9f60782054c0",
+    "lattica-prover-p3/src/block_v2/recursive.rs": "50e278425ab60838ef837d9605be91c4b248092450c31aeba32562437ba06c51",
+    "lattica-prover-p3/src/bin/block_v2_grouped_probe.rs": "d9e6a29dc890fb56e5e41c4131d40465ada2fd47f9807422c14c5374db12bb62"
+  },
+  "predecessor": {
+    "evidence": "docs/evidence/block-v2-wide-lanes-2026-10-01.json",
+    "layout": "wide21 revision2",
+    "status": "REJECTED",
+    "half_height_merge_rows": 266034,
+    "target_height": 262144,
+    "overrun_rows": 3890,
+    "full_height_retained_lde_bytes": 60800630784,
+    "full_height_worst_case_envelope_bytes": 2199832,
+    "ram_budget_bytes": 51539607552,
+    "proof_limit_bytes": 2097152,
+    "full_size_keys_or_proofs_generated": false
+  },
+  "implementation": {
+    "scalar_lanes": 23,
+    "cubic_lanes": 7,
+    "main_width": 94,
+    "arithmetic_columns": 92,
+    "non_hash_zero_tail": [
+      92,
+      93
+    ],
+    "public_bank_width": 32,
+    "max_public_values": 64,
+    "preprocessing_width_from_source_formula": 200,
+    "preprocessing_width_measured": true,
+    "port_ranges": {
+      "legacy_first_eight": "unchanged: A 0..7, B 8..15, C 16..23, D 24..31",
+      "extra_A": [
+        32,
+        46
+      ],
+      "extra_B": [
+        47,
+        61
+      ],
+      "extra_C": [
+        62,
+        76
+      ],
+      "extra_D": [
+        77,
+        91
+      ]
+    },
+    "lookup_domain": "lattica-v2-ssa-wire-wide23-v3",
+    "program_manifest_version": 5,
+    "default_manifest_version": 3,
+    "default_bus_unchanged": true,
+    "expected_constraint_degree": 8,
+    "measured_constraint_degree": 8
+  },
+  "security_parameters_unchanged": {
+    "field": "Goldilocks cubic",
+    "fri_queries": 128,
+    "blowup": 16,
+    "cap_height": 6,
+    "random_codewords": 4,
+    "query_pow_bits": 16,
+    "fresh_csprng": true,
+    "single_air": true,
+    "strict_single_zero_lookup_terminal": true,
+    "public_proof_only_aggregation": true
+  },
+  "codec_test_scope": {
+    "changed_runtime_decoder": false,
+    "changed_envelope_limit": false,
+    "limit_bytes": 2097152,
+    "geometry_rule": "Derive the largest height passing the existing retained-LDE RAM lower-bound gate, rather than hardcode the legacy 524288-row height for every experimental layout.",
+    "default_assertion": "The default branch must still select height 524288.",
+    "wide_full_height_regression": "A separate test requires the 524288-row maximum-value template to exceed the unchanged limit and be rejected by decode_node.",
+    "not_a_claim": [
+      "Actual recursive compilation closes at the tested height",
+      "Peak RAM fits",
+      "The maximum-value template is a valid cryptographic proof"
+    ]
+  },
+  "validation": {
+    "rustfmt_check": "PASS",
+    "git_diff_check": "PASS",
+    "full_library": {
+      "status": "FAIL",
+      "unit": "lattica-v2-wide3-wide-cpu-20261001-a.service",
+      "session": 56418,
+      "exit_code": 1,
+      "cargo_exit_code": 101,
+      "compile_seconds": 71,
+      "passed": 209,
+      "failed": 9,
+      "ignored": 30,
+      "elapsed_seconds": 125.67,
+      "service_seconds": 197.194,
+      "peak_cgroup_bytes": 2231697408,
+      "peak_swap_bytes": 0,
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide3-wide-cpu-20261001-a.log",
+      "log_sha256": "b31add861cad5e3f3fe1928f894366e9ffdedd5936e7cbeaa6ce16cb0431ce1e",
+      "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide3-native-20261001-a/source.tar.gz",
+      "source_archive_sha256": "8a16f533052989260f05a189891b6e41bff1c04071c4932bc3262dc23a7d4875",
+      "worst_case_envelope_bytes": 2100001,
+      "envelope_height": 262144,
+      "proof_limit_bytes": 2097152,
+      "envelope_overrun_bytes": 2849,
+      "rejected_full_height_envelope_bytes": 2224812,
+      "usage_failures": 8,
+      "usage_failure_reason": "Explicit reviewed-layout guard still named 21 lanes; attribution formulas unchanged and need focused validation after setting 23.",
+      "wide_real_mutation_test_passed": true,
+      "wide_mutation_cases": 17,
+      "measured_constraint_degree": 8,
+      "exactly_one_zero_lookup_terminal": true,
+      "template_merge": {
+        "child_height": 262144,
+        "active_rows": 258973,
+        "outer_height": 262144,
+        "wires": 3652870,
+        "retained_lde_bytes": 31675383808
+      },
+      "recursive_closure_proved": false
+    },
+    "default_tests_for_revision3": "PENDING",
+    "cli_and_auditor_tests": {
+      "cli": {
+        "status": "PASS",
+        "tests": 9,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide3-diagnostics-20261001-a.log",
+        "log_sha256": "b8a5b8288f9c84f7587776c534009f9719b81b6c0012c4de019230e3eaa12bb4"
+      },
+      "auditor": "NOT REBUILT OR TESTED FOR REVISION3"
+    },
+    "usage_guard_followup": {
+      "status": "PASS",
+      "tests": 8,
+      "source_sha256": "5b8b0609788108ae14ee3445c93deb09ec616a37f2284dd2453167709db6746f",
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide3-diagnostics-20261001-a.log",
+      "log_sha256": "b8a5b8288f9c84f7587776c534009f9719b81b6c0012c4de019230e3eaa12bb4",
+      "review": "Per-operation assigned-cell/read costs and row packing remain unchanged; only the explicitly reviewed expected lane count changed from 21 to 23. All accounting equality/rejection tests passed."
+    },
+    "wide_mutation_test": {
+      "status": "PASS",
+      "cases": 17,
+      "degree": 8,
+      "single_zero_terminal": true,
+      "scope": "Small real proof, not recursive closure"
+    },
+    "default_codec_regression": {
+      "status": "PASS",
+      "tests": 7,
+      "height": 524288,
+      "maximum_value_template_bytes": 2014183,
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide3-diagnostics-20261001-a.log",
+      "log_sha256": "b8a5b8288f9c84f7587776c534009f9719b81b6c0012c4de019230e3eaa12bb4",
+      "scope": "Only codec/default-height regression; not a fresh full default library or rebuilt-root replay for revision3."
+    },
+    "diagnostic_build": {
+      "status": "PASS_DIAGNOSTICS_ONLY",
+      "unit": "lattica-v2-wide3-diagnostics-20261001-a.service",
+      "session": 50389,
+      "exit_code": 0,
+      "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide3-diagnostics-20261001-a.log",
+      "elapsed_seconds": 216.719,
+      "peak_cgroup_bytes": 1488302080,
+      "peak_swap_bytes": 0,
+      "wide_usage_tests": 8,
+      "default_codec_tests": 7,
+      "wide_cli_tests": 9,
+      "default_envelope_bytes": 2014183,
+      "default_envelope_height": 524288,
+      "source_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide3-diagnostics-20261001-a/source.tar.gz",
+      "source_archive_sha256": "d53408fcffbad83e1fb7e26c1b85ae8ae2a54d68c961e587b79fb1a3c4732395",
+      "runner": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide3-diagnostics-20261001-a/block-v2-grouped-probe",
+      "runner_sha256": "84a16bd170c6b7c525820b6ca33cbe155ef8eed295f4a641a63491e6a99e5871",
+      "includes_cargo_config": true,
+      "wide_envelope_gate_cleared": false,
+      "log_sha256": "b8a5b8288f9c84f7587776c534009f9719b81b6c0012c4de019230e3eaa12bb4"
+    }
+  },
+  "next_gates": [
+    "Resolve the 2849-byte worst-case envelope excess without changing the 2 MiB limit, security parameters or public-proof-only architecture. A separately versioned canonical fixed-width node encoding is a possible next implementation; it is not implemented or approved by this evidence.",
+    "Any encoding change must preserve legacy bytes/decoding, bounded allocation/canonical rejection and separate profile identity; update all candidate artifact writers/readers and rerun complete native, compatibility and mutation tests.",
+    "Only after native/geometry/envelope/resource admission: independently reproduce new keys, pin the new profile/root externally, prove real wrapper/merge/second-merge closure and CPU root-only replay after pruning.",
+    "Then matched performance, remaining original series pairs, depth-six/64-transaction padded/mixed and incremental deadline tests, complete-tree security review and host integration. No production activation."
+  ],
+  "geometry_template": {
+    "child_height": 262144,
+    "merge_rows": 258973,
+    "outer_height": 262144,
+    "headroom_rows": 3171,
+    "wires": 3652870,
+    "retained_lde_bytes": 31675383808,
+    "valid_recursive_proof": false,
+    "common_height_search_completed": true
+  },
+  "envelope_gate": {
+    "status": "FAIL",
+    "height": 262144,
+    "bytes": 2100001,
+    "limit_bytes": 2097152,
+    "overrun_bytes": 2849,
+    "full_height_bytes": 2224812,
+    "oversized_full_height_rejected": true,
+    "valid_cryptographic_proof": false,
+    "limit_relaxed": false
+  },
+  "geometry_preflight": {
+    "status": "STRUCTURAL_GEOMETRY_PASSED_ENVELOPE_GATE_STILL_FAILED",
+    "unit": "lattica-v2-wide3-geometry-20261001-a.service",
+    "session": 3649,
+    "exit_code": 0,
+    "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide3-geometry-20261001-a.log",
+    "log_sha256": "43c84aac93fb18336088f3719c85c4ad99f6a7d78523987d1af5b9da6af90674",
+    "job": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide3-geometry-20261001-a",
+    "service_seconds": 9.192,
+    "common_height_ms": 4540,
+    "geometry_report_ms": 4486,
+    "peak_cgroup_bytes": 1124765696,
+    "peak_swap_bytes": 0,
+    "peak_mapped_spill_bytes": 855646208,
+    "common_height": 262144,
+    "main_width": 94,
+    "preprocessing_width": 200,
+    "permutation_width_base": 51,
+    "quotient_chunks": 16,
+    "constraint_degree": 8,
+    "retained_lde_bytes": 31675383808,
+    "retained_lde_GiB": 29.5,
+    "previous_default_retained_lde_GiB": 39,
+    "retained_payload_reduction_percent": 24.35897435897436,
+    "not_measured_proving_memory": true,
+    "not_measured_speedup": true,
+    "modes": [
+      {
+        "program_usage": {
+          "construction": "GroupedPair",
+          "mode": 1,
+          "child_height": 262144,
+          "height": 262144,
+          "active_rows": 160893,
+          "padding_rows": 101251,
+          "public_rows": 1,
+          "alu_rows": 58434,
+          "cubic_rows": 27993,
+          "poseidon_rows": 74465,
+          "total_operations": 1614387,
+          "authenticated_reads": 4224804,
+          "wires": 2484678,
+          "structural_fit": true,
+          "proof_produced": false,
+          "production_ready": false
+        },
+        "program_usage_lanes": {
+          "mode": 1,
+          "public_unused": 9,
+          "alu_used": 1343974,
+          "alu_unused": 8,
+          "cubic_used": 195948,
+          "cubic_unused": 3
+        },
+        "program_usage_main_cells": {
+          "mode": 1,
+          "allocated": 24641536,
+          "assigned": 12517729,
+          "unassigned": 12123807,
+          "scope": "natural_main_trace_only",
+          "removable_without_redesign": false,
+          "measured_peak_memory": false
+        },
+        "program_usage_geometry": {
+          "mode": 1,
+          "main_width": 94,
+          "preprocessing_width": 200,
+          "permutation_width_base": 51,
+          "quotient_chunks": 16,
+          "constraint_degree": 8,
+          "retained_lde_bytes": 31675383808,
+          "half_height_target": 131072,
+          "rows_to_remove_for_half_height": 29821,
+          "half_height_is_recompiled_or_qualified": false
+        }
+      },
+      {
+        "program_usage": {
+          "construction": "GroupedPair",
+          "mode": 2,
+          "child_height": 262144,
+          "height": 262144,
+          "active_rows": 384,
+          "padding_rows": 261760,
+          "public_rows": 1,
+          "alu_rows": 159,
+          "cubic_rows": 0,
+          "poseidon_rows": 224,
+          "total_operations": 3862,
+          "authenticated_reads": 5796,
+          "wires": 4786,
+          "structural_fit": true,
+          "proof_produced": false,
+          "production_ready": false
+        },
+        "program_usage_lanes": {
+          "mode": 2,
+          "public_unused": 9,
+          "alu_used": 3638,
+          "alu_unused": 19,
+          "cubic_used": 0,
+          "cubic_unused": 0
+        },
+        "program_usage_main_cells": {
+          "mode": 2,
+          "allocated": 24641536,
+          "assigned": 28031,
+          "unassigned": 24613505,
+          "scope": "natural_main_trace_only",
+          "removable_without_redesign": false,
+          "measured_peak_memory": false
+        },
+        "program_usage_geometry": {
+          "mode": 2,
+          "main_width": 94,
+          "preprocessing_width": 200,
+          "permutation_width_base": 51,
+          "quotient_chunks": 16,
+          "constraint_degree": 8,
+          "retained_lde_bytes": 31675383808,
+          "half_height_target": 131072,
+          "rows_to_remove_for_half_height": 0,
+          "half_height_is_recompiled_or_qualified": false
+        }
+      },
+      {
+        "program_usage": {
+          "construction": "GroupedPair",
+          "mode": 3,
+          "child_height": 262144,
+          "height": 262144,
+          "active_rows": 258973,
+          "padding_rows": 3171,
+          "public_rows": 1,
+          "alu_rows": 105965,
+          "cubic_rows": 3287,
+          "poseidon_rows": 149720,
+          "total_operations": 2609909,
+          "authenticated_reads": 5863874,
+          "wires": 3652870,
+          "structural_fit": true,
+          "proof_produced": false,
+          "production_ready": false
+        },
+        "program_usage_lanes": {
+          "mode": 3,
+          "public_unused": 9,
+          "alu_used": 2437181,
+          "alu_unused": 14,
+          "cubic_used": 23008,
+          "cubic_unused": 1
+        },
+        "program_usage_main_cells": {
+          "mode": 3,
+          "allocated": 24641536,
+          "assigned": 21194881,
+          "unassigned": 3446655,
+          "scope": "natural_main_trace_only",
+          "removable_without_redesign": false,
+          "measured_peak_memory": false
+        },
+        "program_usage_geometry": {
+          "mode": 3,
+          "main_width": 94,
+          "preprocessing_width": 200,
+          "permutation_width_base": 51,
+          "quotient_chunks": 16,
+          "constraint_degree": 8,
+          "retained_lde_bytes": 31675383808,
+          "half_height_target": 131072,
+          "rows_to_remove_for_half_height": 127901,
+          "half_height_is_recompiled_or_qualified": false
+        }
+      }
+    ],
+    "keys_generated": false,
+    "recursive_proofs_generated": false,
+    "shared_wallet_hashes_unchanged": true,
+    "artifacts": "Eight copied public wallet proofs plus the computed height; no keys/recursive proofs",
+    "full_size_proving_admitted": false
+  },
+  "input_retention": {
+    "directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-wide3-geometry-20261001-a",
+    "public_wallet_proofs": 8,
+    "height_file": true,
+    "keys": 0,
+    "recursive_proofs": 0,
+    "cleanup_pending": true,
+    "original_shared_wallets_retained": true
+  }
+}

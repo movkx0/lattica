@@ -1,0 +1,530 @@
+{
+  "schema": "block-v2-cache-bench-pilot-evidence-v1",
+  "captured_utc": "2026-10-02 19:32:13 UTC",
+  "status": "ONE_MATCHED_PAIR_PASSED_NO_PERFORMANCE_PROMOTION",
+  "production_ready": false,
+  "default_enabled": false,
+  "repeat_qualified": false,
+  "implementation": {
+    "source_files": [
+      "lattica-prover-p3/src/block_v2/execution/worker_cached_tests.rs",
+      "lattica-prover-p3/src/block_v2/execution/worker_cached_bench_tests.rs"
+    ],
+    "test_only": true,
+    "production_code_changed": false,
+    "workloads": [
+      {
+        "name": "paired-four",
+        "proofs": 3,
+        "retained_setups": 2,
+        "retained_hits": 1
+      },
+      {
+        "name": "paired-eight-grouped",
+        "proofs": 7,
+        "retained_setups": 2,
+        "retained_hits": 5
+      },
+      {
+        "name": "paired-eight-interleaved",
+        "proofs": 7,
+        "retained_setups": 4,
+        "retained_hits": 3
+      },
+      {
+        "name": "padded-four",
+        "proofs": 5,
+        "retained_setups": 4,
+        "retained_hits": 1
+      },
+      {
+        "name": "single-three",
+        "proofs": 7,
+        "retained_setups": 5,
+        "retained_hits": 2
+      }
+    ],
+    "all_workloads_preflighted": true,
+    "live_workloads": [
+      "paired-four"
+    ],
+    "cold_policy": "Idle-only preprocessing clear inside the same reserved process; not process-cold or OS-cache-cold.",
+    "uncompleted_depth_six_candidate_cancelled": true,
+    "actual_replay_scope": "Every saved intermediate output is CPU reverified with pinned public fixtures/registry; wrong job and mutation rejected. Not root-only block replay."
+  },
+  "native_validation": {
+    "schema": "cache-bench-native-summary-v1",
+    "unit": "lattica-v2-cache-bench-native-20261002-a.service",
+    "session": 29611,
+    "terminal_chunk": "8e7578",
+    "exit_code": 0,
+    "runtime_seconds": 134.534,
+    "cpu_seconds": 135.454,
+    "memory_peak_rounded": "2.1G",
+    "swap_peak_bytes": 0,
+    "native_passed": 148,
+    "native_ignored": 46,
+    "explicit_cpu_passed": 19,
+    "zig_tests": 10,
+    "compiler_warnings": 0,
+    "new_prover_run": false,
+    "pins": {
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-cache-bench-native-20261002-a/source.tar.gz": "b4d6764c6fe7c9404c9379978ce0e2d0f9046efe6422e4d80976dfeeb9144af7",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-cache-bench-native-20261002-a/cpu-lib-tests": "26a367989f471662b6cf14e5b29cbb9f7f4d5bce4602597fc4f45da2016be607",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-cache-bench-native-20261002-a/cpu-worker": "73f16d3803f3e22a0942bda0df4b2c8c512d4665e5eb9f7c299348b5eb9d7299",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-cache-bench-native-20261002-a/single-probe": "091eef0198ca03565d7739ea0fca7861c5564bd6f92d77a77e34a23a7194850b",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-cache-bench-native-20261002-a/public-export": "5e1cefe7c6e3943d2ef4040d8498903261cac406d1cbfc0d3b576fa8f4a3a7d2",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-cache-bench-native-20261002-a/zig-out/bin/block-v2-expected-root": "29751d1c43f350ad0fbd3e91fe216894ea6060d93cca7e331881e0e650fca920"
+    },
+    "invocation": "759f2b29713041f2a93dd48a92898684"
+  },
+  "live": {
+    "controller": {
+      "unit": "lattica-v2-cache-bench-pilot-20261002-a.service",
+      "invocation": "1776c8cd6b144c99982272fbbded8a5d",
+      "session": 62691,
+      "exit_code": 0,
+      "runtime_seconds": 1167.701,
+      "cpu_seconds": 0.259,
+      "memory_peak_rounded": "47.1M",
+      "swap_peak_bytes": 0
+    },
+    "stages": {
+      "cold": {
+        "invocation": "7fc85fb140b841778031ee0621b08d89",
+        "exit_code": 0,
+        "runtime_seconds": 562.761,
+        "invocation_source": "preserved stage log",
+        "unit": "lattica-v2-cache-bench-cold-proof-20261002-a.service",
+        "scope": "exec_stop_post_snapshot",
+        "memory_peak": 42950377472,
+        "memory_swap_peak": 0,
+        "memory_max": 47244640256,
+        "memory_swap_max": 0,
+        "cpu_usage_usec": 3304207251
+      },
+      "cold_replay": {
+        "invocation": "8cb40a16a1e745c79162110fcb3eeca0",
+        "exit_code": 0,
+        "runtime_seconds": 1.387,
+        "invocation_source": "preserved stage log",
+        "unit": "lattica-v2-cache-bench-cold-replay-20261002-a.service",
+        "scope": "exec_stop_post_snapshot",
+        "memory_peak": 23080960,
+        "memory_swap_peak": 0,
+        "memory_max": 3221225472,
+        "memory_swap_max": 0,
+        "cpu_usage_usec": 1418404
+      },
+      "retained": {
+        "invocation": "388289182b224c47a8008a7888431bc5",
+        "exit_code": 0,
+        "runtime_seconds": 601.513,
+        "invocation_source": "preserved stage log",
+        "unit": "lattica-v2-cache-bench-retained-proof-20261002-a.service",
+        "scope": "exec_stop_post_snapshot",
+        "memory_peak": 42954936320,
+        "memory_swap_peak": 0,
+        "memory_max": 47244640256,
+        "memory_swap_max": 0,
+        "cpu_usage_usec": 3511859789
+      },
+      "retained_replay": {
+        "invocation": "2fcdcdd9c04b4f3e99012d956a0288f2",
+        "exit_code": 0,
+        "runtime_seconds": 1.327,
+        "invocation_source": "invocation-bound user journal",
+        "unit": "lattica-v2-cache-bench-retained-replay-20261002-a.service",
+        "scope": "exec_stop_post_snapshot",
+        "memory_peak": 22589440,
+        "memory_swap_peak": 0,
+        "memory_max": 3221225472,
+        "memory_swap_max": 0,
+        "cpu_usage_usec": 1423772
+      }
+    },
+    "summary": "lattica-prover-p3/target/block-v2-cache-bench-pilot-20261002-a/summary.json",
+    "order": [
+      "cold-preprocessing",
+      "retained"
+    ],
+    "comparison": {
+      "at_least_five_alternating_pairs_required_before_promotion": true,
+      "cold_complete_elapsed_ms": 562650,
+      "cold_preprocessing_only": true,
+      "fresh_randomized_intermediate_bytes_differ": true,
+      "phase_times_are_not_additive": true,
+      "retained_complete_elapsed_ms": 601444,
+      "same_leaf_bytes_and_semantic_jobs": true
+    },
+    "observed_retained_increase_ms": 38794,
+    "observed_retained_increase_percent": 6.894872478450198,
+    "arms": {
+      "cold-preprocessing": {
+        "complete": {
+          "cache_bench_complete": "PASS",
+          "cache_closed": "true",
+          "cache_hits": "0",
+          "cache_setups": "3",
+          "complete_elapsed_ms": "562650",
+          "full_block": "false",
+          "matched_speedup": "false",
+          "policy": "cold-preprocessing",
+          "prepared_ms": "1426",
+          "production_ready": "false",
+          "proofs": "3",
+          "spill_live_bytes": "0",
+          "subtree_count": "4",
+          "subtree_level": "2",
+          "subtree_root": "629d7fbe1f88ce0a61ac534999e816fe0637019a2bd527d3e2a5479e10b48f29",
+          "workload": "paired-four"
+        },
+        "jobs": [
+          {
+            "job": {
+              "bytes": "1683948",
+              "cache_bench_job": "PASS",
+              "cache_hits": "0",
+              "cache_setups": "1",
+              "count": "2",
+              "elapsed_ms": "173004",
+              "index": "0",
+              "input_verification_ms": "187",
+              "job": "5275d7eec92d28b79f5e0e63de1cad62dbfec6c13ebcd93bd0d3aec7d367407a",
+              "job_elapsed_ms": "171577",
+              "level": "1",
+              "mode": "1",
+              "owner_acceptance_ms": "275",
+              "proving_ms": "170282",
+              "publication_revoke_ms": "42",
+              "retained_mapped_bytes": "14445207552",
+              "serialization_ms": "0",
+              "spill_peak_bytes": "34003439616",
+              "start": "0"
+            },
+            "registered": {
+              "mode": "1",
+              "node_payload_bytes": "1683940",
+              "proof_verified": "EVENT",
+              "prove_and_verify_ms": "119180"
+            },
+            "setup": {
+              "mode": "1",
+              "preprocessing_cache_hit": "false",
+              "proof_start": "EVENT",
+              "setup_ms": "48422"
+            },
+            "sha256": "a8d83ad89bdae81e3540370af9a3c99a26c563b8c5f6218c57a5ae1edb5bb69d"
+          },
+          {
+            "job": {
+              "bytes": "1683948",
+              "cache_bench_job": "PASS",
+              "cache_hits": "0",
+              "cache_setups": "2",
+              "count": "2",
+              "elapsed_ms": "366943",
+              "index": "1",
+              "input_verification_ms": "198",
+              "job": "6a308bb07eaa629a8cd405f97f5d2e9e7961fb523f672702814e42f963d7c3dd",
+              "job_elapsed_ms": "193938",
+              "level": "1",
+              "mode": "1",
+              "owner_acceptance_ms": "286",
+              "proving_ms": "191793",
+              "publication_revoke_ms": "42",
+              "retained_mapped_bytes": "14445207552",
+              "serialization_ms": "0",
+              "spill_peak_bytes": "34003439616",
+              "start": "2"
+            },
+            "registered": {
+              "mode": "1",
+              "node_payload_bytes": "1683940",
+              "proof_verified": "EVENT",
+              "prove_and_verify_ms": "136468"
+            },
+            "setup": {
+              "mode": "1",
+              "preprocessing_cache_hit": "false",
+              "proof_start": "EVENT",
+              "setup_ms": "52683"
+            },
+            "sha256": "2b128fb0a9be9826bfe870d29823ca95451e850192912ae766779153fb49ae54"
+          },
+          {
+            "job": {
+              "bytes": "1683948",
+              "cache_bench_job": "PASS",
+              "cache_hits": "0",
+              "cache_setups": "3",
+              "count": "4",
+              "elapsed_ms": "562371",
+              "index": "2",
+              "input_verification_ms": "347",
+              "job": "591ad09245a9630387f0596ee2f14b47d820ab72f718e5a8edb292f0510c0c3f",
+              "job_elapsed_ms": "195427",
+              "level": "2",
+              "mode": "3",
+              "owner_acceptance_ms": "298",
+              "proving_ms": "193027",
+              "publication_revoke_ms": "46",
+              "retained_mapped_bytes": "14730420224",
+              "serialization_ms": "1",
+              "spill_peak_bytes": "34288652288",
+              "start": "0"
+            },
+            "registered": {
+              "mode": "3",
+              "node_payload_bytes": "1683940",
+              "proof_verified": "EVENT",
+              "prove_and_verify_ms": "128807"
+            },
+            "setup": {
+              "mode": "3",
+              "preprocessing_cache_hit": "false",
+              "proof_start": "EVENT",
+              "setup_ms": "63006"
+            },
+            "sha256": "14854f75049773a229194e2a94821c3177d93539bf1741feeb93ed0cbca8b8fe"
+          }
+        ],
+        "resource_accounting": {
+          "cpu_usage_usec": "3304207251",
+          "memory_max": "47244640256",
+          "memory_peak": "42950377472",
+          "memory_swap_max": "0",
+          "memory_swap_peak": "0",
+          "scope": "exec_stop_post_snapshot",
+          "stage_cgroup_accounting": "EVENT",
+          "unit": "lattica-v2-cache-bench-cold-proof-20261002-a.service"
+        },
+        "start": {
+          "cache_bench_start": "PASS",
+          "full_block": "false",
+          "jobs": "3",
+          "policy": "cold-preprocessing",
+          "prepared_ms": "1426",
+          "process_cold": "false",
+          "profile": "8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb",
+          "workload": "paired-four"
+        }
+      },
+      "retained": {
+        "complete": {
+          "cache_bench_complete": "PASS",
+          "cache_closed": "true",
+          "cache_hits": "1",
+          "cache_setups": "2",
+          "complete_elapsed_ms": "601444",
+          "full_block": "false",
+          "matched_speedup": "false",
+          "policy": "retained",
+          "prepared_ms": "1621",
+          "production_ready": "false",
+          "proofs": "3",
+          "spill_live_bytes": "0",
+          "subtree_count": "4",
+          "subtree_level": "2",
+          "subtree_root": "629d7fbe1f88ce0a61ac534999e816fe0637019a2bd527d3e2a5479e10b48f29",
+          "workload": "paired-four"
+        },
+        "jobs": [
+          {
+            "job": {
+              "bytes": "1683948",
+              "cache_bench_job": "PASS",
+              "cache_hits": "0",
+              "cache_setups": "1",
+              "count": "2",
+              "elapsed_ms": "250457",
+              "index": "0",
+              "input_verification_ms": "217",
+              "job": "5275d7eec92d28b79f5e0e63de1cad62dbfec6c13ebcd93bd0d3aec7d367407a",
+              "job_elapsed_ms": "248835",
+              "level": "1",
+              "mode": "1",
+              "owner_acceptance_ms": "332",
+              "proving_ms": "247401",
+              "publication_revoke_ms": "25",
+              "retained_mapped_bytes": "14445207552",
+              "serialization_ms": "1",
+              "spill_peak_bytes": "34003439616",
+              "start": "0"
+            },
+            "registered": {
+              "mode": "1",
+              "node_payload_bytes": "1683940",
+              "proof_verified": "EVENT",
+              "prove_and_verify_ms": "174964"
+            },
+            "setup": {
+              "mode": "1",
+              "preprocessing_cache_hit": "false",
+              "proof_start": "EVENT",
+              "setup_ms": "69477"
+            },
+            "sha256": "d392da03f5ec2e9f96b721b721d7158c1f439e3ed83f6c663a3aadc91d9acb78"
+          },
+          {
+            "job": {
+              "bytes": "1683948",
+              "cache_bench_job": "PASS",
+              "cache_hits": "1",
+              "cache_setups": "1",
+              "count": "2",
+              "elapsed_ms": "405797",
+              "index": "1",
+              "input_verification_ms": "263",
+              "job": "6a308bb07eaa629a8cd405f97f5d2e9e7961fb523f672702814e42f963d7c3dd",
+              "job_elapsed_ms": "155340",
+              "level": "1",
+              "mode": "1",
+              "owner_acceptance_ms": "326",
+              "proving_ms": "153310",
+              "publication_revoke_ms": "26",
+              "retained_mapped_bytes": "14445207552",
+              "serialization_ms": "1",
+              "spill_peak_bytes": "34003439616",
+              "start": "2"
+            },
+            "registered": {
+              "mode": "1",
+              "node_payload_bytes": "1683940",
+              "proof_verified": "EVENT",
+              "prove_and_verify_ms": "149961"
+            },
+            "setup": {
+              "mode": "1",
+              "preprocessing_cache_hit": "true",
+              "proof_start": "EVENT",
+              "setup_ms": "128"
+            },
+            "sha256": "8fdc187ecbeece196cf74af3e64ee6eb5846401281386cf4d3cff96792b5db71"
+          },
+          {
+            "job": {
+              "bytes": "1683948",
+              "cache_bench_job": "PASS",
+              "cache_hits": "1",
+              "cache_setups": "2",
+              "count": "4",
+              "elapsed_ms": "601216",
+              "index": "2",
+              "input_verification_ms": "441",
+              "job": "591ad09245a9630387f0596ee2f14b47d820ab72f718e5a8edb292f0510c0c3f",
+              "job_elapsed_ms": "195410",
+              "level": "2",
+              "mode": "3",
+              "owner_acceptance_ms": "286",
+              "proving_ms": "192574",
+              "publication_revoke_ms": "42",
+              "retained_mapped_bytes": "14730420224",
+              "serialization_ms": "1",
+              "spill_peak_bytes": "34288652288",
+              "start": "0"
+            },
+            "registered": {
+              "mode": "3",
+              "node_payload_bytes": "1683940",
+              "proof_verified": "EVENT",
+              "prove_and_verify_ms": "130969"
+            },
+            "setup": {
+              "mode": "3",
+              "preprocessing_cache_hit": "false",
+              "proof_start": "EVENT",
+              "setup_ms": "59973"
+            },
+            "sha256": "6284aab409ab6c63b17a33f6b1c0b606c77da9d5b9569e3d6d0de3fe8edf6351"
+          }
+        ],
+        "resource_accounting": {
+          "cpu_usage_usec": "3511859789",
+          "memory_max": "47244640256",
+          "memory_peak": "42954936320",
+          "memory_swap_max": "0",
+          "memory_swap_peak": "0",
+          "scope": "exec_stop_post_snapshot",
+          "stage_cgroup_accounting": "EVENT",
+          "unit": "lattica-v2-cache-bench-retained-proof-20261002-a.service"
+        },
+        "start": {
+          "cache_bench_start": "PASS",
+          "full_block": "false",
+          "jobs": "3",
+          "policy": "retained",
+          "prepared_ms": "1621",
+          "process_cold": "false",
+          "profile": "8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb",
+          "workload": "paired-four"
+        }
+      }
+    },
+    "replays": {
+      "cold-preprocessing": {
+        "cache_bench_replay": "PASS",
+        "mutation_rejected": "true",
+        "proofs": "3",
+        "root_only_block_replay": "false",
+        "workload": "paired-four",
+        "wrong_job_rejected": "true"
+      },
+      "retained": {
+        "cache_bench_replay": "PASS",
+        "mutation_rejected": "true",
+        "proofs": "3",
+        "root_only_block_replay": "false",
+        "workload": "paired-four",
+        "wrong_job_rejected": "true"
+      }
+    }
+  },
+  "interpretation": {
+    "matched_speedup_claim": false,
+    "causal_cache_regression_claim": false,
+    "reason": "First retained-arm job was also a cache miss but took247.401s worker proving versus170.282s in control. Across-arm variation is not isolated by one ordered pair. One cache hit reduces setup, but no end-to-end benefit or tail bound is demonstrated.",
+    "host_pressure_observation": "Attempted after proof service was already collected; unavailable. Preserved process-name/load snapshot is post-trial and cannot establish contention during proving.",
+    "timing": "complete_elapsed_ms includes fixture/admission, selected proof jobs, independent owner verification, durable output/revocation, cache close and cancellation of the unfinished depth-six candidate. Whole service/controller times are separate. No block finalization or cold64 result."
+  },
+  "constraints": {
+    "aggregate_ram_gib": 48,
+    "worker_memory_max_gib": 44,
+    "worker_memory_high_gib": 40,
+    "swap_bytes": 0,
+    "vram_gib": 0,
+    "scratch_reservation_gib": 128,
+    "worker_internal_spill_max_gib": 120,
+    "free_nvme_gate_gib": 132,
+    "cpu_quota_percent": 800,
+    "tasks_max": 16,
+    "physical_scratch_quota": false
+  },
+  "decision": {
+    "cache_speedup_promoted": false,
+    "five_alternating_pairs_still_required": true,
+    "next": "Preserve CPU reference and cached correctness. Mixed workloads and repeats remain open; prioritize measured GPU/proving cost reductions. Add granular opening-consumer host/API/device timing before choosing a new GPU optimization; do not rerun unchanged slower GPU backend for promotion."
+  },
+  "remaining": [
+    "Mixed-mode and alternating matched performance qualification.",
+    "Deadline-aware local cached-worker integration and autonomous lifecycle.",
+    "Physical scratch/retention and general recovery/security/host gaps.",
+    "Full64 cold<=600s and complete post-seal<=180s at unchanged resource/security gates.",
+    "Full-tree soundness/ZK and explicit activation."
+  ],
+  "preservation": {
+    "manifest": "lattica-prover-p3/target/block-v2-cache-bench-native-20261002-a/pins.sha256",
+    "manifest_entries": 488,
+    "documentation_archive": "lattica-prover-p3/target/block-v2-cache-bench-native-20261002-a/documentation.tar.gz",
+    "source_archive_matches_before_next_revision": true,
+    "frozen_files": {
+      "docs/dag-gpu-implementation.md": "c23df407b56a47b1ec66f6821349d38be258ea4f7c43db432086124580a27ae7",
+      "lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+      "lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+      "lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614"
+    },
+    "previous_manifests_remain_historical": true,
+    "committed": false,
+    "activated": false
+  }
+}

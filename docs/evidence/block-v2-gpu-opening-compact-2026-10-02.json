@@ -1,0 +1,540 @@
+{
+  "schema": "block-v2-gpu-opening-compact-v1",
+  "captured_utc": "2026-10-02 20:26:22 UTC",
+  "status": "COMPACT_COMPONENT_EQUIVALENCE_AND_TRANSFER_REDUCTION_PASSED_FULL_PROOF_PERFORMANCE_PENDING",
+  "production_ready": false,
+  "default_enabled": false,
+  "end_to_end_performance_promoted": false,
+  "implementation": {
+    "source_files": [
+      "lattica-prover-p3/src/block_v2/gpu_hash.rs",
+      "lattica-prover-p3/src/block_v2/opening_pcs.rs",
+      "lattica-prover-p3/src/block_v2/gpu_hash/engine.rs",
+      "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_execute.rs",
+      "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce.rs",
+      "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce/compact.rs",
+      "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce/compact/tests.rs"
+    ],
+    "research_opt_in": "LATTICA_V2_GPU_OPENING_COMPACT=1",
+    "default": "Unset or 0 preserves the original full-matrix path; invalid values reject.",
+    "contract": "PCS-owned LDE columns have degree below H/2^log_blowup. The first bit-reversed low-coset rows determine their alpha-weighted compression. This entry does not independently validate low degree and is not valid for arbitrary row vectors.",
+    "algorithm": [
+      "Observe all original opened values and sample the original batching challenge alpha, without reordering transcript operations.",
+      "Upload only H/16 low-coset rows and compress them on the GPU into three base-field coefficient columns of the unchanged cubic extension.",
+      "Inverse-transform at low height, zero-pad, then forward-transform to full height. Low samples already encode the original coset shift; do not apply another shift.",
+      "Apply the original ordered per-point alpha offsets, opened values and denominators; return FRI inputs in descending height order."
+    ],
+    "new_randomness": false,
+    "arithmetic_field_or_parameters_changed": false,
+    "proof_format_changed": false,
+    "default_verifier_changed": false,
+    "all_ldes_retained_on_device": false,
+    "resource_accounting": "Two compact transform buffers and stage roots are admitted alongside output, input, denominator, weights and term buffers, including retained allocations. One host row-staging vector is reused between phases; small twiddle/weight/term metadata remains bounded. Caller fences cover compression and NTT failure/unwind."
+  },
+  "native_validation": {
+    "status": "PASS",
+    "exit_code": 0,
+    "unit": "lattica-v2-gpu-opening-compact-native-20261002-a.service",
+    "invocation": "97ece75f5c8845af90cecaecd4b4b17e",
+    "session": 37434,
+    "runtime_seconds": 126.202,
+    "cpu_seconds": 125.986,
+    "memory_peak_rounded": "2.4G",
+    "swap_bytes": 0,
+    "unique_selected_tests_passed": 42,
+    "unique_ignored_tests": 28,
+    "compiler_warnings": 0,
+    "pins": {
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-native-20261002-a/source.tar.gz": "a2848a37ed1b7cfeb91df7f66fddf1590fdd2a0da3604e7dbe63a81287268d40",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-native-20261002-a/gpu-lib-tests": "381065676192689a4863f2abbb2c957cbd056b83545b262481495f6d29c96d80"
+    },
+    "source_archive_matches": true,
+    "formatting_check_passed": true,
+    "diff_check_passed": true
+  },
+  "qualification": {
+    "unit": "lattica-v2-gpu-opening-compact-qualification-20261002-a.service",
+    "invocation": "e0c6a416bc964531ab06be63eccabf24",
+    "session": 56231,
+    "exit_code": 0,
+    "runtime_seconds": 34.676,
+    "cpu_seconds": 36.19,
+    "unique_gpu_regression_cases": 16,
+    "regression_invocations": 32,
+    "comparison_invocations": 10,
+    "total_test_processes": 42,
+    "memory_peak_bytes": 2046021632,
+    "memory_max_bytes": 3221225472,
+    "swap_peak_bytes": 0,
+    "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+    "resource_scope": "Cumulative qualification-service cgroup accounting, not whole recursive proving RAM or instantaneous physical VRAM.",
+    "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "source_and_binary_pins_checked": true,
+    "scratch_empty_after_each_test": true,
+    "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/manifest.json",
+    "coverage": [
+      "Independent CPU reconstruction across low heights1/2/8/128, widths1/7/23, three coset shifts and hiding layouts.",
+      "A high-row mutation outside the low-coset prefix demonstrates that arbitrary vectors violate the degree contract.",
+      "GPU equality against full-matrix reduction and CPU reference, including heterogeneous heights, repeated heights, constant polynomials and multiple points.",
+      "Allocation admission, partial chunks and compression/NTT error/unwind drain tests.",
+      "Exact opened-value, serialized proof and next-challenge equality for preprocessing/nonpreprocessing.",
+      "Small full-strength cubic proofs replayed through original CPU PCS."
+    ],
+    "tests": [
+      {
+        "name": "original-gpu-1",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::tests::gpu_opening_reduction_matches_cpu_all_points_and_unequal_heights",
+        "exit_code": 0,
+        "elapsed_ns": 1422037858,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-1.log",
+        "log_sha256": "8fd49a0c42b209a0685ffe77d7bf8ac8d5b60ade497681e5d9748c2aef8650ca",
+        "scratch_empty": true
+      },
+      {
+        "name": "original-gpu-2",
+        "test": "block_v2::gpu_hash::engine::tests::gpu_opening_error_and_unwind_drain_before_allocations_release",
+        "exit_code": 0,
+        "elapsed_ns": 320550201,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-2.log",
+        "log_sha256": "ee1c0715348541cf2a2739e091163b5bd2ded0b0c3eeeeb1845c9befdfce4b98",
+        "scratch_empty": true
+      },
+      {
+        "name": "original-gpu-3",
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_openings_match_reference_transcript_and_preprocessing",
+        "exit_code": 0,
+        "elapsed_ns": 620064828,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-3.log",
+        "log_sha256": "8fd0b3dd87c367ab643e23864921d0d29222776fdd92cbfd9e074c765bf1b45e",
+        "scratch_empty": true
+      },
+      {
+        "name": "original-gpu-4",
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_openings_full_strength_cubic_proofs_replay_through_original_cpu_pcs",
+        "exit_code": 0,
+        "elapsed_ns": 1122575288,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-4.log",
+        "log_sha256": "b45be5490e7e5dd59db59a691ba7449f52dca72ea7b495be720a1d453b0b559b",
+        "scratch_empty": true
+      },
+      {
+        "name": "original-gpu-5",
+        "test": "block_v2::gpu_hash::engine::lde_execute::tests::gpu_resident_lde_columns_caps_and_paths_match_cpu",
+        "exit_code": 0,
+        "elapsed_ns": 270097580,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-5.log",
+        "log_sha256": "f78a36210865457858772a2d3b5cff36c3ef338ae02efe683c758e82101c587b",
+        "scratch_empty": true
+      },
+      {
+        "name": "original-gpu-6",
+        "test": "block_v2::gpu_hash::engine::lde_execute::tests::gpu_resident_lde_multigroup_ntt_and_unequal_input_heights_match_cpu",
+        "exit_code": 0,
+        "elapsed_ns": 369306469,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-6.log",
+        "log_sha256": "b8bfa893a921017dc0080105fb3addfe2dbf38525105918dc5001bbbe22c5802",
+        "scratch_empty": true
+      },
+      {
+        "name": "original-gpu-7",
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_matches_all_cpu_commitment_streams_across_active_clones",
+        "exit_code": 0,
+        "elapsed_ns": 319468207,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-7.log",
+        "log_sha256": "acd1883c3f72360030481acbe7af5af03e2c0e7c7af4623221d1c86e24c03dbe",
+        "scratch_empty": true
+      },
+      {
+        "name": "original-gpu-8",
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_admission_errors_do_not_consume_masks_or_salts",
+        "exit_code": 0,
+        "elapsed_ns": 220059286,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-8.log",
+        "log_sha256": "ab74ae3df681a539fcf085b6f67e192f1211f2985e6b3d4c9ccd5782ed2d3395",
+        "scratch_empty": true
+      },
+      {
+        "name": "original-gpu-9",
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_research_switch_only_selects_explicit_proving_configs",
+        "exit_code": 0,
+        "elapsed_ns": 533153949,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-9.log",
+        "log_sha256": "04e1ec419dd93fb8b73698d33301f36903800312643b477d3fd467f630dd244f",
+        "scratch_empty": true
+      },
+      {
+        "name": "original-gpu-10",
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_full_strength_cubic_proofs_replay_through_original_cpu_pcs",
+        "exit_code": 0,
+        "elapsed_ns": 1185508474,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-10.log",
+        "log_sha256": "2c8a677247270c4f0d8c103785123f52aafa856ffc22847041f55d684d75a93a",
+        "scratch_empty": true
+      },
+      {
+        "name": "original-gpu-11",
+        "test": "block_v2::gpu_hash::tests::gpu_spill_backed_bit_reversed_inputs_match_resident_cpu_openings",
+        "exit_code": 0,
+        "elapsed_ns": 1223091923,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-11.log",
+        "log_sha256": "c0c340633853dbf514f96dac3dd822fa102a158736216d5fb92cc146f9fd964b",
+        "scratch_empty": true
+      },
+      {
+        "name": "original-gpu-12",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::tests::gpu_opening_pinned_partial_chunks_match_pageable_and_cpu_without_extra_allocations",
+        "exit_code": 0,
+        "elapsed_ns": 282808524,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-12.log",
+        "log_sha256": "62ce3d4a0d0620b283d8765cf0ee34573e7ff0908e53c3081feb9d38227be72e",
+        "scratch_empty": true
+      },
+      {
+        "name": "original-gpu-13",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::tests::gpu_opening_large_input_reports_host_device_costs_with_closed_form_reference",
+        "exit_code": 0,
+        "elapsed_ns": 1674552019,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-13.log",
+        "log_sha256": "6be663599b7ae6cd2a6c87ae789aa3100487677571e421434a5d86d88faa9d56",
+        "scratch_empty": true
+      },
+      {
+        "name": "original-gpu-14",
+        "test": "block_v2::gpu_hash::engine::tests::gpu_compact_opening_compression_and_ntt_failures_drain_before_release",
+        "exit_code": 0,
+        "elapsed_ns": 383059697,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-14.log",
+        "log_sha256": "c10da12e34155d71fd65490b45f326cf30e324ae13b960facd172901d1267832",
+        "scratch_empty": true
+      },
+      {
+        "name": "original-gpu-15",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::compact::tests::gpu_compact_openings_match_original_and_cpu_for_real_ldes_and_all_points",
+        "exit_code": 0,
+        "elapsed_ns": 333222027,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-15.log",
+        "log_sha256": "0b07b7e4f2199a7835cd4f4bdd50dc4c3fede23d7a359b41daca40426802aef2",
+        "scratch_empty": true
+      },
+      {
+        "name": "original-gpu-16",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::compact::tests::gpu_compact_large_low_degree_input_matches_closed_form_reference",
+        "exit_code": 0,
+        "elapsed_ns": 1738308643,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/original-gpu-16.log",
+        "log_sha256": "736c340f79ad1cfa7c2b5e49023bf4def30178d672a85ab01f9cce4b7c94b90a",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-1",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::tests::gpu_opening_reduction_matches_cpu_all_points_and_unequal_heights",
+        "exit_code": 0,
+        "elapsed_ns": 275435902,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-1.log",
+        "log_sha256": "9a79c02bbc8c277bf7b0a4beebe1918b4744ca4f33d4cc5ed6cf04a4c801c4b9",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-2",
+        "test": "block_v2::gpu_hash::engine::tests::gpu_opening_error_and_unwind_drain_before_allocations_release",
+        "exit_code": 0,
+        "elapsed_ns": 319698373,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-2.log",
+        "log_sha256": "a7fce5f2c92dfc7251490dbe3ae656398e1790e0c66338cd9a04ac3953f4c384",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-3",
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_openings_match_reference_transcript_and_preprocessing",
+        "exit_code": 0,
+        "elapsed_ns": 672491088,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-3.log",
+        "log_sha256": "b2f78386fbb39126f92b2f920cb1b7935e532f0a8cc0e938288c7eb512710df0",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-4",
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_openings_full_strength_cubic_proofs_replay_through_original_cpu_pcs",
+        "exit_code": 0,
+        "elapsed_ns": 983992907,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-4.log",
+        "log_sha256": "1b7359f48d590bdc3ec2dce542d84175312d03329ea8e80fa29d8ef079f90dc4",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-5",
+        "test": "block_v2::gpu_hash::engine::lde_execute::tests::gpu_resident_lde_columns_caps_and_paths_match_cpu",
+        "exit_code": 0,
+        "elapsed_ns": 321002656,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-5.log",
+        "log_sha256": "8ab9b9c24b63a645c8d6522c68a1d903e16bec459a86bfd56b977c050154cbf5",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-6",
+        "test": "block_v2::gpu_hash::engine::lde_execute::tests::gpu_resident_lde_multigroup_ntt_and_unequal_input_heights_match_cpu",
+        "exit_code": 0,
+        "elapsed_ns": 371235686,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-6.log",
+        "log_sha256": "5695cabd5611859c277992493abb9ced009c6deb7813a66ae44af2ba93da49c8",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-7",
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_matches_all_cpu_commitment_streams_across_active_clones",
+        "exit_code": 0,
+        "elapsed_ns": 319615635,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-7.log",
+        "log_sha256": "12d1132379b89d5284ec3e0c573d91b44fbbb1295ba791174b182308e693444d",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-8",
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_admission_errors_do_not_consume_masks_or_salts",
+        "exit_code": 0,
+        "elapsed_ns": 268967039,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-8.log",
+        "log_sha256": "b17f8832cf4c7ec42cb9e7d46a7fa5d562e2222172351ecf578c1a60fb4e3e51",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-9",
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_research_switch_only_selects_explicit_proving_configs",
+        "exit_code": 0,
+        "elapsed_ns": 569914426,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-9.log",
+        "log_sha256": "a6750e7f94035eecee085507146db4d83aea30e445c423ef17849341064d9b13",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-10",
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_full_strength_cubic_proofs_replay_through_original_cpu_pcs",
+        "exit_code": 0,
+        "elapsed_ns": 1080666712,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-10.log",
+        "log_sha256": "618257708bd38cdf25ee6a4d5f441b0b60d7328b89d1df98bc376336b7211fbb",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-11",
+        "test": "block_v2::gpu_hash::tests::gpu_spill_backed_bit_reversed_inputs_match_resident_cpu_openings",
+        "exit_code": 0,
+        "elapsed_ns": 1222722376,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-11.log",
+        "log_sha256": "738517023f3094b20a4d2a7925bae271180fb3a4305e1ab80370bdab58bbfae8",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-12",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::tests::gpu_opening_pinned_partial_chunks_match_pageable_and_cpu_without_extra_allocations",
+        "exit_code": 0,
+        "elapsed_ns": 282319815,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-12.log",
+        "log_sha256": "62ce3d4a0d0620b283d8765cf0ee34573e7ff0908e53c3081feb9d38227be72e",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-13",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::tests::gpu_opening_large_input_reports_host_device_costs_with_closed_form_reference",
+        "exit_code": 0,
+        "elapsed_ns": 1671570222,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-13.log",
+        "log_sha256": "45f83348fc4ad8695c3c8358cf3e29e974af2896b5df89610e9dad885aaa6142",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-14",
+        "test": "block_v2::gpu_hash::engine::tests::gpu_compact_opening_compression_and_ntt_failures_drain_before_release",
+        "exit_code": 0,
+        "elapsed_ns": 369749800,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-14.log",
+        "log_sha256": "f67a42cf96237b7b92d2549eef257f25e2f364ba004539710c6297f114f59004",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-15",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::compact::tests::gpu_compact_openings_match_original_and_cpu_for_real_ldes_and_all_points",
+        "exit_code": 0,
+        "elapsed_ns": 284010270,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-15.log",
+        "log_sha256": "c4df4c02f1e32b5463805524fcce4d6cf7358caca66600c122456037d28a524a",
+        "scratch_empty": true
+      },
+      {
+        "name": "compact-gpu-16",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::compact::tests::gpu_compact_large_low_degree_input_matches_closed_form_reference",
+        "exit_code": 0,
+        "elapsed_ns": 687520431,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/compact-gpu-16.log",
+        "log_sha256": "aee83ae4ce8aa4e6bd444b36d0e2cc3a27a97e86723a5a85a82e8c2073186a20",
+        "scratch_empty": true
+      },
+      {
+        "name": "pair-1-original",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::compact::tests::gpu_compact_large_low_degree_input_matches_closed_form_reference",
+        "exit_code": 0,
+        "elapsed_ns": 1674616070,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/pair-1-original.log",
+        "log_sha256": "1b92198bc1b71ee4e0f4e9c5f13aebcb590fd2d1d527b153c94f59e8fb808fa2",
+        "scratch_empty": true
+      },
+      {
+        "name": "pair-1-compact",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::compact::tests::gpu_compact_large_low_degree_input_matches_closed_form_reference",
+        "exit_code": 0,
+        "elapsed_ns": 672005472,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/pair-1-compact.log",
+        "log_sha256": "8615f0cd4c213344108db32489b71c8f732d97592e207be1ef3a59a14ed5bac3",
+        "scratch_empty": true
+      },
+      {
+        "name": "pair-2-compact",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::compact::tests::gpu_compact_large_low_degree_input_matches_closed_form_reference",
+        "exit_code": 0,
+        "elapsed_ns": 621818981,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/pair-2-compact.log",
+        "log_sha256": "10ce122059fd8bfff87791214a06bda595c6c55b0e32fe427e17269d5342a55d",
+        "scratch_empty": true
+      },
+      {
+        "name": "pair-2-original",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::compact::tests::gpu_compact_large_low_degree_input_matches_closed_form_reference",
+        "exit_code": 0,
+        "elapsed_ns": 1725786621,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/pair-2-original.log",
+        "log_sha256": "5e257231a2c0e949911dd966dfa07329e2232c00cf5ff69d7504e05edb951aa9",
+        "scratch_empty": true
+      },
+      {
+        "name": "pair-3-original",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::compact::tests::gpu_compact_large_low_degree_input_matches_closed_form_reference",
+        "exit_code": 0,
+        "elapsed_ns": 1723089829,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/pair-3-original.log",
+        "log_sha256": "6d9c035b348545c4bd8d099036b114bdb8b38b25d7b4672fa61d8045124d2f59",
+        "scratch_empty": true
+      },
+      {
+        "name": "pair-3-compact",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::compact::tests::gpu_compact_large_low_degree_input_matches_closed_form_reference",
+        "exit_code": 0,
+        "elapsed_ns": 671906326,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/pair-3-compact.log",
+        "log_sha256": "f3d47d65e3141c3b9539a5588ad01f72e3f03930fe538ecf99cd462bfbd8be00",
+        "scratch_empty": true
+      },
+      {
+        "name": "pair-4-compact",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::compact::tests::gpu_compact_large_low_degree_input_matches_closed_form_reference",
+        "exit_code": 0,
+        "elapsed_ns": 685755237,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/pair-4-compact.log",
+        "log_sha256": "7cbcb34edcd8daf30464ebc8d33144f24dee0ac0911c0e85f1cbe872d3932d5d",
+        "scratch_empty": true
+      },
+      {
+        "name": "pair-4-original",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::compact::tests::gpu_compact_large_low_degree_input_matches_closed_form_reference",
+        "exit_code": 0,
+        "elapsed_ns": 1673872139,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/pair-4-original.log",
+        "log_sha256": "4f95e78d99dfabc17d98f7784a87cd003b7f831456a1554249933aadfb816737",
+        "scratch_empty": true
+      },
+      {
+        "name": "pair-5-original",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::compact::tests::gpu_compact_large_low_degree_input_matches_closed_form_reference",
+        "exit_code": 0,
+        "elapsed_ns": 1729580648,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/pair-5-original.log",
+        "log_sha256": "9997e9203263458caaa78d98991e0bbf5d33d03214413bdeab5ab290ffd23c15",
+        "scratch_empty": true
+      },
+      {
+        "name": "pair-5-compact",
+        "test": "block_v2::gpu_hash::engine::opening_reduce::compact::tests::gpu_compact_large_low_degree_input_matches_closed_form_reference",
+        "exit_code": 0,
+        "elapsed_ns": 670667184,
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/pair-5-compact.log",
+        "log_sha256": "fc01d493e0cf62edcbfb0e95af53ed0992ad602c6457b125d66ecad6fc69ed9f",
+        "scratch_empty": true
+      }
+    ]
+  },
+  "comparison": {
+    "groups": {
+      "original": {
+        "samples": 5,
+        "reduce_ns_median": 1171275750,
+        "reduce_ns_min": 1162368429,
+        "reduce_ns_max": 1192490770,
+        "upload_api_ns_median": 1019132076,
+        "upload_device_ns_median": 1005096704,
+        "marshal_ns_median": 113651427,
+        "ntt_ns_median": 0,
+        "uploaded_bytes_each": 1728058144
+      },
+      "compact": {
+        "samples": 5,
+        "reduce_ns_median": 123346837,
+        "reduce_ns_min": 119834040,
+        "reduce_ns_max": 130661010,
+        "upload_api_ns_median": 88555152,
+        "upload_device_ns_median": 86916064,
+        "marshal_ns_median": 13253188,
+        "ntt_ns_median": 1032640,
+        "uploaded_bytes_each": 155194464
+      }
+    },
+    "median_reduce_decrease_percent": 89.46901811977239,
+    "uploaded_byte_decrease_percent": 91.01914107816039,
+    "full_proof": false,
+    "production_ready": false,
+    "pairs": 5,
+    "order": [
+      "original,compact",
+      "compact,original",
+      "original,compact",
+      "compact,original",
+      "original,compact"
+    ],
+    "same_binary": true,
+    "same_input": true,
+    "fresh_process_per_arm": true,
+    "input_bytes_per_arm": 1677721600,
+    "rows_checked_per_arm": 1048576,
+    "width": 200,
+    "downloaded_bytes_per_arm": 25165824,
+    "input_payload_saved_bytes": 1572864000,
+    "compact_managed_gpu_limit_bytes": 134217728,
+    "tile_bytes": 33554432,
+    "staging_bytes": 16777216,
+    "comparison_artifact": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-qualification-20261002-a/comparison.json",
+    "timings_are_nonadditive": true,
+    "scope": "Synthetic degree-one polynomials evaluated on a real bit-reversed coset, with supplied reduction coefficients. Not an actual FRI proof, full-degree performance workload or end-to-end block benchmark."
+  },
+  "decision": {
+    "component_transfer_reduction_demonstrated": true,
+    "full_backend_speedup_claim": false,
+    "production_activation": false,
+    "next": "Build/pin the real runner, propagate compact selection explicitly into each bounded proof worker, reproduce registered caps, then run a full recursive workload with local pruning and independent CPU root-only replay. Compare same-build original/compact and retained-hashing controls; require at least five alternating end-to-end pairs before performance promotion.",
+    "frozen_controller_note": "The existing frozen GPU grouped controller does not propagate the new compact switch to workers. A reviewed separate adapter/controller is required; setting it on the parent process alone is insufficient."
+  },
+  "remaining": [
+    "Autonomous supervised cached-worker lifecycle and cancellation/OOM/timeouts.",
+    "No-identity startup liveness and general external-verifier reconciliation.",
+    "Physical scratch quotas and reference-aware retention.",
+    "Real arrivals/deadlines, reorgs, issuance/HTLC and reviewed host integration.",
+    "Full64 cold<=600s and complete post-seal<=180s at 12-minute cadence under one-root<=2MiB and aggregate RAM48/VRAM12/scratch128GiB.",
+    "Full-tree soundness/ZK review and explicit activation."
+  ],
+  "preservation": {
+    "native_root": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-native-20261002-a",
+    "source_archive_matches_after_tests": true,
+    "source_immutable_during_validation": true,
+    "manifest": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-native-20261002-a/pins.sha256",
+    "documentation_archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-opening-compact-native-20261002-a/documentation.tar.gz",
+    "committed": false,
+    "activated": false
+  }
+}

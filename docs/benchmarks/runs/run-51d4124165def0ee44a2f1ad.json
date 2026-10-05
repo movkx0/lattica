@@ -1,0 +1,99 @@
+{
+  "campaign_ids": ["block-v2-prioritized-execution-2026-10-03"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "logs",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-51d4124165def0ee44a2f1ad",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 214,
+      "path": "lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/logs/register-ram-candidate.log",
+      "sha256": "649472d6a26d8d5b3b54dd913c6a920e5238b3419a714d05e315e191513fdbb8"
+    },
+    {
+      "bytes": 214,
+      "path": "lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/logs/register-ram-reference.log",
+      "sha256": "b61aaf363a136465105e4328703adb8567be119c71e36c396e9cd0055ba5efc3"
+    },
+    {
+      "bytes": 213,
+      "path": "lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/logs/round-1-ram-candidate.log",
+      "sha256": "9e946d2d5c839e7e7651d370bee6d44f5dd34923503c2d46bf3a887007186689"
+    },
+    {
+      "bytes": 213,
+      "path": "lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/logs/round-1-ram-reference.log",
+      "sha256": "e3e05739f0491a729c1715ff1c09f6e8f2e705ecbb2b8c8a3c5cc30e21987223"
+    },
+    {
+      "bytes": 213,
+      "path": "lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/logs/round-2-ram-candidate.log",
+      "sha256": "0148548cd447e68c6bd522fcd73932b1ca38bca44402a09efdb7979c417ce111"
+    },
+    {
+      "bytes": 213,
+      "path": "lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/logs/round-2-ram-reference.log",
+      "sha256": "2e2e1a720a24d905e5809671eb78b469874837de6807b1ca0d0b631f7cb89383"
+    },
+    {
+      "bytes": 213,
+      "path": "lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/logs/round-3-ram-candidate.log",
+      "sha256": "798b1fe215e7f75bbdfcf9937f0456bd526b77def6989c9e8e5ba15c5bfa7b86"
+    },
+    {
+      "bytes": 213,
+      "path": "lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/logs/round-3-ram-reference.log",
+      "sha256": "a9fce1ba4a095187f82774b80def88c83a020a7eef56137c4b0a2da3a7e68596"
+    },
+    {
+      "bytes": 213,
+      "path": "lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/logs/round-4-ram-candidate.log",
+      "sha256": "7a5bc49d72626229a936a95b5c09d4364c76206e14ac74c1a4d89328c2618e47"
+    },
+    {
+      "bytes": 213,
+      "path": "lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/logs/round-4-ram-reference.log",
+      "sha256": "81b20cff9a760722e26c0d40aa0aad30a592ab0b40d89c856bbbaba688e9a4ca"
+    },
+    {
+      "bytes": 213,
+      "path": "lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/logs/round-5-ram-candidate.log",
+      "sha256": "fd6f42e4772ad301e94680c8518ad75370ede9054aed169c08daa90e0d743bcd"
+    },
+    {
+      "bytes": 213,
+      "path": "lattica-prover-p3/target/block-v2-memory-quotient-pairs-20261003-c/logs/round-5-ram-reference.log",
+      "sha256": "a1e6e651ef41d0dd2c179cf27696317c878f3c7eb40177168a6fe838a3960b7f"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

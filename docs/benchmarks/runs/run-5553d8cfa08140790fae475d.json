@@ -1,0 +1,122 @@
+{
+  "campaign_ids": ["block-v2-cpu-arrivals-2026-10-02"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-arrivals-live-20261002-a",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 4,
+    "tables": [
+      {
+        "clock": "utc_ns",
+        "columns": ["__REALTIME_TIMESTAMP","__MONOTONIC_TIMESTAMP","_PID","__CURSOR","JOB_RESULT","__SEQNUM","USER_UNIT","_BOOT_ID","_SYSTEMD_USER_UNIT","MESSAGE","USER_INVOCATION_ID","__SEQNUM_ID","JOB_TYPE","_source_line"],
+        "dictionaries": {},
+        "kind": "resource_samples",
+        "rows": [
+          ["1790954223775001","46430296085","1628","s=702ace7465ed456a85714db87037deab;i=1ad2e49;b=46c7febb8815423b96e7e1713e6bd5fb;m=acf761815;t=65cdd06512d19;x=a79a485e09d92141","done","28126793","lattica-v2-arrivals-live-controller-20261002-a.service","46c7febb8815423b96e7e1713e6bd5fb","init.scope","Started [systemd-run] /usr/bin/python3 -B -c \"import json,subprocess,runpy,types,shutil\\nfrom pathlib import Path\\nH=types.SimpleNamespace(**runpy.run_path(\\\"/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-grouped-trial.py\\\"))\\ncontroller=H.require_controller()\\nlease=H.shared_lease_path()\\nH.private_directory(lease)\\nwith H.exclusive(lease / 'exclusive.lock'):\\n    H.require_no_other_work(controller)\\n    pins=\\\"2622e36de71ab94face72e37d83c7fc11e44483d1eca5676570098343a1117ee  /home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/source.tar.gz\\\\n1b83d96cac1f2ff2367837e2b4b0a3767a45d5efbf70e874cbbfc46b3b18c40e  /home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/cpu-lib-tests\\\\na8f3d78cd56a01335cfebe98859100ebf5f48f3fd90f98d39b1bf88f2ca342ba  /home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/cpu-worker\\\\n9da6acce715fdbcdb65dbb8e89609bdb8a5b255af1889fed0e7c025decbf33ec  /home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/single-probe\\\\n5e1cefe7c6e3943d2ef4040d8498903261cac406d1cbfc0d3b576fa8f4a3a7d2  /home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/public-export\\\\n29751d1c43f350ad0fbd3e91fe216894ea6060d93cca7e331881e0e650fca920  /home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/zig-out/bin/block-v2-expected-root\\\\n8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e  /home/access/code/lattica/lattica-prover-p3/scripts/block-v2-grouped-trial.py\\\\nf45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973  /home/access/code/lattica/lattica-prover-p3/target/block-v2-single-selection-registration-20261002-a/primary/wallet.0\\\\n2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79  /home/access/code/lattica/lattica-prover-p3/target/block-v2-single-selection-registration-20261002-a/primary/wallet.1\\\\nfb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5  /home/access/code/lattica/lattica-prover-p3/target/block-v2-single-selection-registration-20261002-a/primary/wallet.2\\\\n5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b  /home/access/code/lattica/lattica-prover-p3/target/block-v2-single-selection-registration-20261002-a/primary/wallet.3\\\\n28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b  /home/access/code/lattica/lattica-prover-p3/target/block-v2-single-selection-registration-20261002-a/primary/wallet.4\\\\n5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa  /home/access/code/lattica/lattica-prover-p3/target/block-v2-single-selection-registration-20261002-a/primary/wallet.5\\\\n5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117  /home/access/code/lattica/lattica-prover-p3/target/block-v2-single-selection-registration-20261002-a/primary/wallet.6\\\\nb071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5  /home/access/code/lattica/lattica-prover-p3/target/block-v2-single-selection-registration-20261002-a/primary/wallet.7\\\\n72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60  /home/access/code/lattica/lattica-prover-p3/target/block-v2-single-selection-registration-20261002-a/primary/height\\\\nf24495438e548a8fdae73b10bcba9cfa2eeaf24fcb55c4b91bb5c07819eb9479  /home/access/code/lattica/lattica-prover-p3/target/block-v2-single-selection-registration-20261002-a/primary/key.1\\\\nc97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802  /home/access/code/lattica/lattica-prover-p3/target/block-v2-single-selection-registration-20261002-a/primary/key.2\\\\n8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99  /home/access/code/lattica/lattica-prover-p3/target/block-v2-single-selection-registration-20261002-a/primary/key.3\\\\n0f234c9460a059c578f3844d4e80462238415221669ac148e12f838cd6dc4ca0  /home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-handoff-20261002-a/summary.json\\\\nc23df407b56a47b1ec66f6821349d38be258ea4f7c43db432086124580a27ae7  /home/access/code/lattica/docs/dag-gpu-implementation.md\\\\nf9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0  /home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py\\\\n5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614  /home/access/code/lattica/lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py\\\\n\\\"\\n    subprocess.run(['/usr/bin/sha256sum','--check','--status'],input=pins,text=True,check=True)\\n    subprocess.run(['/usr/bin/tar','--compare','-zf',\\\"/home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/source.tar.gz\\\",'-C',\\\"/home/access/code/lattica\\\"],check=True)\\n    Path(\\\"/home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-live-20261002-a\\\").mkdir(mode=0o700)\\n    for stage in json.loads(\\\"[{\\\\\\\"case\\\\\\\":\\\\\\\"proof\\\\\\\",\\\\\\\"unit\\\\\\\":\\\\\\\"lattica-v2-arrivals-live-proof-20261002-a.service\\\\\\\",\\\\\\\"command\\\\\\\":[\\\\\\\"systemd-run\\\\\\\",\\\\\\\"--user\\\\\\\",\\\\\\\"--wait\\\\\\\",\\\\\\\"--pipe\\\\\\\",\\\\\\\"--collect\\\\\\\",\\\\\\\"--expand-environment=no\\\\\\\",\\\\\\\"--unit=lattica-v2-arrivals-live-proof-20261002-a.service\\\\\\\",\\\\\\\"--slice=lattica-v2-grouped.slice\\\\\\\",\\\\\\\"--property=MemoryAccounting=yes\\\\\\\",\\\\\\\"--property=MemoryMax=3G\\\\\\\",\\\\\\\"--property=MemorySwapMax=0\\\\\\\",\\\\\\\"--property=RuntimeMaxSec=7200\\\\\\\",\\\\\\\"--property=LimitCORE=0\\\\\\\",\\\\\\\"--property=UMask=0077\\\\\\\",\\\\\\\"--property=KillMode=control-group\\\\\\\",\\\\\\\"--property=TimeoutStopSec=20\\\\\\\",\\\\\\\"--property=BindsTo=lattica-v2-arrivals-live-controller-20261002-a.service\\\\\\\",\\\\\\\"--property=After=lattica-v2-arrivals-live-controller-20261002-a.service\\\\\\\",\\\\\\\"--property=ExecStopPost=/usr/bin/python3 -B /home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_ACCOUNTING_UNIT=lattica-v2-arrivals-live-proof-20261002-a.service\\\\\\\",\\\\\\\"--setenv=RAYON_NUM_THREADS=8\\\\\\\",\\\\\\\"--setenv=LATTICA_FFT_TRACE=1\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_GPU_HASH=0\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_GPU_PIPELINE=0\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_GPU_RETAIN_TREES=0\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_GPU_RESIDENT_LDE=0\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_GPU_OPENINGS=0\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_QUOTIENT_FUSION=0\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_RUN_CPU_WORKER_PROOF=1\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_CPU_WORKER_IMAGE=/home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/cpu-worker\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_RUN_CPU_SUPERVISOR_TEST=1\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_EXECUTION_TEST_SINGLE=/home/access/code/lattica/lattica-prover-p3/target/block-v2-single-selection-registration-20261002-a/primary\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_ARRIVAL_EXPECTED_ROOT=e4b8ee8007dd9c1b6611f00f534e3f0bdba2ab5b0ffbbc189a494035a6b2c8b3\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_PROCESS_TEST_DIR=/home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/proof\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_RUN_CPU_ARRIVAL_PROOF=1\\\\\\\",\\\\\\\"--\\\\\\\",\\\\\\\"/home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/cpu-lib-tests\\\\\\\",\\\\\\\"block_v2::execution::transport::tests::supervisor_process_tests::arrivals::cpu_arrivals_reuse_subtree_and_finalize_three_wallet_root\\\\\\\",\\\\\\\"--exact\\\\\\\",\\\\\\\"--ignored\\\\\\\",\\\\\\\"--nocapture\\\\\\\",\\\\\\\"--test-threads=1\\\\\\\"],\\\\\\\"log\\\\\\\":\\\\\\\"/home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/proof.log\\\\\\\",\\\\\\\"timeout\\\\\\\":7260,\\\\\\\"expected_exit_code\\\\\\\":0},{\\\\\\\"case\\\\\\\":\\\\\\\"replay\\\\\\\",\\\\\\\"unit\\\\\\\":\\\\\\\"lattica-v2-arrivals-live-replay-20261002-a.service\\\\\\\",\\\\\\\"command\\\\\\\":[\\\\\\\"systemd-run\\\\\\\",\\\\\\\"--user\\\\\\\",\\\\\\\"--wait\\\\\\\",\\\\\\\"--pipe\\\\\\\",\\\\\\\"--collect\\\\\\\",\\\\\\\"--expand-environment=no\\\\\\\",\\\\\\\"--unit=lattica-v2-arrivals-live-replay-20261002-a.service\\\\\\\",\\\\\\\"--slice=lattica-v2-grouped.slice\\\\\\\",\\\\\\\"--property=MemoryAccounting=yes\\\\\\\",\\\\\\\"--property=MemoryMax=3G\\\\\\\",\\\\\\\"--property=MemorySwapMax=0\\\\\\\",\\\\\\\"--property=RuntimeMaxSec=120\\\\\\\",\\\\\\\"--property=LimitCORE=0\\\\\\\",\\\\\\\"--property=UMask=0077\\\\\\\",\\\\\\\"--property=KillMode=control-group\\\\\\\",\\\\\\\"--property=TimeoutStopSec=20\\\\\\\",\\\\\\\"--property=BindsTo=lattica-v2-arrivals-live-controller-20261002-a.service\\\\\\\",\\\\\\\"--property=After=lattica-v2-arrivals-live-controller-20261002-a.service\\\\\\\",\\\\\\\"--property=ExecStopPost=/usr/bin/python3 -B /home/access/code/lattica/lattica-prover-p3/scripts/block-v2-accounting.py\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_ACCOUNTING_UNIT=lattica-v2-arrivals-live-replay-20261002-a.service\\\\\\\",\\\\\\\"--setenv=RAYON_NUM_THREADS=8\\\\\\\",\\\\\\\"--setenv=LATTICA_FFT_TRACE=1\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_GPU_HASH=0\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_GPU_PIPELINE=0\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_GPU_RETAIN_TREES=0\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_GPU_RESIDENT_LDE=0\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_GPU_OPENINGS=0\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_QUOTIENT_FUSION=0\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_RUN_CPU_WORKER_PROOF=1\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_RUN_CPU_SUPERVISOR_TEST=1\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_EXECUTION_TEST_SINGLE=/home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/proof/root-only\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_ARRIVAL_EXPECTED_ROOT=e4b8ee8007dd9c1b6611f00f534e3f0bdba2ab5b0ffbbc189a494035a6b2c8b3\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_PROCESS_TEST_DIR=/home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/proof\\\\\\\",\\\\\\\"--setenv=LATTICA_V2_RUN_CPU_ARRIVAL_PROOF=1\\\\\\\",\\\\\\\"--\\\\\\\",\\\\\\\"/home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/cpu-lib-tests\\\\\\\",\\\\\\\"block_v2::execution::transport::tests::supervisor_process_tests::arrivals::cpu_arrival_root_replays_without_wallet_or_inner_proofs\\\\\\\",\\\\\\\"--exact\\\\\\\",\\\\\\\"--ignored\\\\\\\",\\\\\\\"--nocapture\\\\\\\",\\\\\\\"--test-threads=1\\\\\\\"],\\\\\\\"log\\\\\\\":\\\\\\\"/home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/replay.log\\\\\\\",\\\\\\\"timeout\\\\\\\":180,\\\\\\\"expected_exit_code\\\\\\\":0}]\\\"):\\n        if shutil.disk_usage(\\\"/home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-live-20261002-a\\\").free < 132 * (1 << 30):\\n            raise RuntimeError('insufficient free NVMe scratch margin')\\n        print('arrival_stage_start='+json.dumps(stage),flush=True)\\n        try:\\n            status=H.capture_stage(stage['command'],Path(stage['log']),timeout=stage['timeout'])\\n            if status!=stage['expected_exit_code']:\\n                raise RuntimeError('arrival stage failed '+stage['unit']+' code='+str(status))\\n            H.require_no_other_work(controller)\\n        except BaseException:\\n            subprocess.run(['systemctl','--user','stop',stage['unit']],check=False,timeout=45)\\n            H.require_no_other_work(controller)\\n            raise\\n        print('arrival_stage_pass='+stage['unit'],flush=True)\\n    subprocess.run(['/usr/bin/sha256sum','--check','--status'],input=pins,text=True,check=True)\\n    subprocess.run(['/usr/bin/tar','--compare','-zf',\\\"/home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/source.tar.gz\\\",'-C',\\\"/home/access/code/lattica\\\"],check=True)\\n    subprocess.run(['/usr/bin/sha256sum',\\\"/home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/proof/root-only/root.bin\\\"],check=True)\\n    print('arrival_live=PASS research_only=true production_ready=false',flush=True)\\n\".","0db18b8c92664047b74b8720f4380992","702ace7465ed456a85714db87037deab","start",1]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/controller-accounting-journal.jsonl"
+      },
+      {
+        "clock": "utc_ns",
+        "columns": ["__SEQNUM","_SYSTEMD_USER_UNIT","USER_UNIT","__SEQNUM_ID","_BOOT_ID","MESSAGE","USER_INVOCATION_ID","__CURSOR","__MONOTONIC_TIMESTAMP","_PID","JOB_TYPE","JOB_RESULT","__REALTIME_TIMESTAMP","_source_line","CPU_USAGE_NSEC","MEMORY_PEAK","MEMORY_SWAP_PEAK"],
+        "dictionaries": {
+          "USER_INVOCATION_ID": ["985c722ae4d84bbbaf6ad0838ca41d7d"],
+          "USER_UNIT": ["lattica-v2-arrivals-live-proof-20261002-a.service"],
+          "_BOOT_ID": ["46c7febb8815423b96e7e1713e6bd5fb"],
+          "_SYSTEMD_USER_UNIT": ["init.scope"],
+          "__SEQNUM_ID": ["702ace7465ed456a85714db87037deab"]
+        },
+        "kind": "resource_samples",
+        "rows": [
+          ["28126795",0,0,0,0,"Started [systemd-run] /home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/cpu-lib-tests block_v2::execution::transport::tests::supervisor_process_tests::arrivals::cpu_arrivals_reuse_subtree_and_finalize_three_wallet_root --exact --ignored --nocapture --test-threads=1.",0,"s=702ace7465ed456a85714db87037deab;i=1ad2e4b;b=46c7febb8815423b96e7e1713e6bd5fb;m=acf77255d;t=65cdd06523a61;x=c23237c673a8bf45","46430365021","1628","start","done","1790954223843937",1,null,null,null],
+          ["28127150",0,0,0,0,"lattica-v2-arrivals-live-proof-20261002-a.service: Consumed 31.980s CPU time over 41min 48.344s wall clock time, 101.9M memory peak.",0,"s=702ace7465ed456a85714db87037deab;i=1ad2fae;b=46c7febb8815423b96e7e1713e6bd5fb;m=b64f9734f;t=65cdd9bd48854;x=1cf19af45e1068f5","48938709839","1628",null,null,"1790956732188756",2,"31980156000","106909696","0"]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/proof-accounting-journal.jsonl"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-arrivals-live-proof-20261002-a.service","exec_stop_post_snapshot",106909696,0,3221225472,0,31977638,40]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/proof.log"
+      },
+      {
+        "clock": "utc_ns",
+        "columns": ["__CURSOR","JOB_RESULT","JOB_TYPE","_BOOT_ID","USER_UNIT","USER_INVOCATION_ID","__SEQNUM_ID","MESSAGE","__MONOTONIC_TIMESTAMP","_PID","__REALTIME_TIMESTAMP","_SYSTEMD_USER_UNIT","__SEQNUM","_source_line"],
+        "dictionaries": {},
+        "kind": "resource_samples",
+        "rows": [
+          ["s=702ace7465ed456a85714db87037deab;i=1ad2faf;b=46c7febb8815423b96e7e1713e6bd5fb;m=b64f9aa5a;t=65cdd9bd4bf5e;x=ad806457cff7638b","done","start","46c7febb8815423b96e7e1713e6bd5fb","lattica-v2-arrivals-live-replay-20261002-a.service","e50dcd24012f481ebf1bfcc375a7acfe","702ace7465ed456a85714db87037deab","Started [systemd-run] /home/access/code/lattica/lattica-prover-p3/target/block-v2-arrivals-native-20261002-b/cpu-lib-tests block_v2::execution::transport::tests::supervisor_process_tests::arrivals::cpu_arrival_root_replays_without_wallet_or_inner_proofs --exact --ignored --nocapture --test-threads=1.","48938723930","1628","1790956732202846","init.scope","28127151",1]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/replay-accounting-journal.jsonl"
+      },
+      {
+        "clock": "reported",
+        "columns": ["unit","scope","memory_peak","memory_swap_peak","memory_max","memory_swap_max","cpu_usage_usec","_source_line"],
+        "dictionaries": {},
+        "kind": "stage_cgroup_accounting",
+        "rows": [
+          ["lattica-v2-arrivals-live-replay-20261002-a.service","exec_stop_post_snapshot",18907136,0,3221225472,0,100384,9]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/replay.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P2"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-5553d8cfa08140790fae475d",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 12753,
+      "path": "lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/controller-accounting-journal.jsonl",
+      "sha256": "a16d68b2efd7c64190acda7cde58ded42fd0c069db2707e23ff65580706da5d6"
+    },
+    {
+      "bytes": 1594,
+      "path": "lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/proof-accounting-journal.jsonl",
+      "sha256": "8682ebde97d287b9af7cb58e293b7fb07a98d9c3cbc0fcc12595f78ecbb7f6e4"
+    },
+    {
+      "bytes": 13253,
+      "path": "lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/proof.log",
+      "sha256": "17e165ca013b98abf3ad98a5cbcb2fbba6a7f1820da37fa222d619dc22f9603e"
+    },
+    {
+      "bytes": 861,
+      "path": "lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/replay-accounting-journal.jsonl",
+      "sha256": "fda9a96aeb2bc3278ce1cfa5b6dd1bce7fa3c399354c2b6f878cd63af6732094"
+    },
+    {
+      "bytes": 939,
+      "path": "lattica-prover-p3/target/block-v2-arrivals-live-20261002-a/replay.log",
+      "sha256": "e6bd5fc66ff23345db9310599c613e65cce93d837e77df1ea0fa6abc32211fb8"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

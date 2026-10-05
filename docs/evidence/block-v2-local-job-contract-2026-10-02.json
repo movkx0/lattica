@@ -1,0 +1,95 @@
+{
+  "schema": "block-v2-local-job-contract-v1",
+  "captured_utc": "2026-10-02 05:12:23 UTC",
+  "status": "PUBLIC_JOB_CONTRACT_CPU_REPLAY_VALIDATED_SCHEDULER_PENDING",
+  "production_ready": false,
+  "default_enabled": false,
+  "local_dag_complete": false,
+  "scope": "Research-only bounded public-artifact admission, semantic job derivation and strict CPU result verification. Not a runnable scheduler/coordinator, durable journal, host integration or performance result.",
+  "implementation": {
+    "files": [
+      "lattica-prover-p3/src/block_v2/execution/mod.rs",
+      "lattica-prover-p3/src/block_v2/execution/job.rs",
+      "lattica-prover-p3/src/block_v2/mod.rs"
+    ],
+    "feature_gate": "block-v2; no new C ABI, runtime switch or network protocol",
+    "semantic_identity": "Domain-separated existing Poseidon2 field-hash construction over schema, construction, operation, ordered start, full expected public statement and ordered dependency IDs. Randomized artifact digests stay separate; backend/worker/candidate/attempt fields do not alter semantic reuse identity.",
+    "artifact_identity": "Separate domain; kind, exact length and all bytes (little-endian u32 limbs, explicit byte length) are bound. Hash identity alone never authorizes a proof.",
+    "admission": "Existing LBV2WL02 wallet header and bounded canonical legacy payload; existing node codec; at most 2 MiB including header. Registry geometry and cap lengths checked before identity work. Only public WalletProof bytes; no witness input.",
+    "statements": "Wrap/registered WrapPair/Empty/Merge derive expected statements through existing ordered commitment functions; checked context, construction, range/alignment, depth, count and dense-prefix rules.",
+    "verification": "VerifiedWallet requires original CPU wallet verification. VerifiedNode requires pinned registry and exact job-derived expected public statement through Registry::verify. No public constructor can fabricate either verified ticket.",
+    "remaining_boundaries": "Proof validity does not establish host eligibility. Attempt fencing, exact frozen input manifests, candidate attachment, availability, durable publication, scheduling and resource/deadline admission are not yet implemented."
+  },
+  "validation": {
+    "initial": {
+      "unit": "lattica-v2-dag-contract-native-20261002-a.service",
+      "status": "STRUCTURAL_PASS_REAL_FIXTURE_DECODE_FAILED_CORRECTED",
+      "structural_passed": 5,
+      "fixture_replay_passed": false,
+      "reason": "Initial admission decoded the entire existing local wallet artifact as payload without removing its required LBV2WL02 header. Corrected to require the existing header and decode only its payload; also removed one unused import. No proof format was changed.",
+      "runtime_seconds": 71.357
+    },
+    "corrected": {
+      "unit": "lattica-v2-dag-contract-native-20261002-b.service",
+      "status": "PASS",
+      "runtime_seconds": 82.118,
+      "structural_passed": 5,
+      "explicit_cpu_fixture_replays_passed": 1,
+      "features": "block-v2-wide-lanes,stream; no GPU feature",
+      "checks": [
+        "release block-v2 library without stream",
+        "release all-features/all-targets",
+        "release default library",
+        "rustfmt --check on new modules",
+        "git diff --check",
+        "source archive matches all archived current files"
+      ],
+      "warnings": 0,
+      "service_ram_limit_bytes": 3221225472,
+      "service_swap_limit_bytes": 0,
+      "service_runtime_limit_seconds": 1200,
+      "exclusive_lease": true
+    }
+  },
+  "coverage": {
+    "structural": [
+      "Artifact kind/byte/length/zero-padding separation and size bounds.",
+      "Registry geometry/cap-shape rejection before expensive identity work.",
+      "Semantic reuse across different randomized input artifact identities; order and position remain bound.",
+      "Wrong construction, context, child range/level and non-dense prefix rejection.",
+      "Native padded depth-six/count-one statement equals independent commitment root; not a recursive depth-six proof."
+    ],
+    "real_fixture": [
+      "Verify all eight independent public wallet artifacts on CPU.",
+      "Reject stripped/wrong wallet headers, trailing data, changed wallet bytes and wrong chain.",
+      "Derive four paired jobs and three merge jobs; compare root to independently pinned expected root.",
+      "Verify the preserved opening-enabled root against the derived root job on CPU.",
+      "Reject wrong level/job, swapped transaction order, mutated root proof and trailing encoding."
+    ]
+  },
+  "fixture": {
+    "inputs": "lattica-prover-p3/target/block-v2-codec2-registration-20261001-b/reproduction-job",
+    "root_bundle": "lattica-prover-p3/target/block-v2-gpu-openings-proof-20261002-a-evidence/root-only",
+    "expected_profile": "8ec1bbde8ade9c60a90398a6a30f3bb095d5adc1f1fed881e7b72ea051bab3cb",
+    "expected_chain": "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+    "expected_root": "23ccda6b5581d09e8d0107be85d09c2795f3f767bfc844a9b5168e7f4a9c20e8",
+    "proof_root_sha256": "05b5ac4593b40d63b5866269a631b5675b73c3da15afbb899ffe7c9437912d08",
+    "mutated_or_reproved": false
+  },
+  "pins": {
+    "lattica-prover-p3/src/block_v2/execution/mod.rs": "76d9006057d43bfc7a8c90c3a6c60c99b0642a20c31e3eb8235649ffffffbee2",
+    "lattica-prover-p3/src/block_v2/execution/job.rs": "fa44349e2756a42a992886e3fbee3cf91ea220f7ac8e4c50eaa37e3a27f1ed4e",
+    "lattica-prover-p3/src/block_v2/mod.rs": "b5962bcc2ea6dc475a43f99c13d4f2a94171469da5d111f88301e0a128f509bb",
+    "lattica-prover-p3/target/block-v2-dag-contract-native-20261002-a.log": "94ad4ae202e5fccf05d948328da31a0d3c5e9abeb46a645dfb8045466541013e",
+    "lattica-prover-p3/target/block-v2-dag-contract-native-20261002-b.log": "a13a10b881f15d2487bc02e3005e9c3c34abb948b1c1bc5896ed61dfff2c3d89",
+    "lattica-prover-p3/target/block-v2-dag-contract-native-20261002-b/source.tar.gz": "42f330ec1d19bc5cfdfbe526390bc5b8b4f74dd8eb76a5b15a192cb5c8a7c950",
+    "lattica-prover-p3/target/block-v2-dag-contract-native-20261002-b/cpu-lib-tests": "d87ce8fa373bd4f7434768011a47e2a2bfdcb04e707d900f87ce4680ac6ed460"
+  },
+  "remaining": [
+    "Bounded local DAG readiness and candidate attachment/sealing/invalidation.",
+    "Per-attempt frozen input identities, cancellation/expiry fences and idempotent completion.",
+    "Durable journal/artifact store with crash recovery and CPU revalidation before reuse.",
+    "CPU worker adapter, aggregate resource/deadline admission and arrival-driven correctness harness.",
+    "GPU residency/recomputation performance work; full64, full-type, deadline, security and host integration gates remain open."
+  ]
+}

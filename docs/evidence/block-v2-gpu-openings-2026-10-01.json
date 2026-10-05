@@ -1,0 +1,235 @@
+{
+  "schema": "block-v2-gpu-openings-v1",
+  "captured_utc": "2026-10-02 03:58:47 UTC",
+  "status": "GPU_OPENING_COMPONENT_VALIDATED_RECURSIVE_QUALIFICATION_PENDING",
+  "production_ready": false,
+  "default_enabled": false,
+  "repeat_qualified": false,
+  "full64_qualified": false,
+  "scope": "Candidate-only cubic polynomial-opening compression and quotient reduction. The unchanged upstream FRI prover consumes the resulting vectors; serialized proofs and CPU verifier remain unchanged.",
+  "implementation": {
+    "files": [
+      "lattica-prover-p3/src/block_v2/opening_pcs.rs",
+      "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce.rs",
+      "lattica-prover-p3/src/block_v2/gpu_hash/engine.rs",
+      "lattica-prover-p3/src/block_v2/quotient_pcs.rs",
+      "lattica-prover-p3/src/block_v2/resident_pcs.rs",
+      "lattica-prover-p3/src/block_v2/profile.rs",
+      "lattica-prover-p3/src/block_v2/gpu_hash.rs",
+      "lattica-prover-p3/src/block_v2/mod.rs",
+      "lattica-prover-p3/Cargo.toml"
+    ],
+    "reuse": "Each host matrix tile is uploaded once for all of its opening points. One reduced cubic vector per height remains on device across matrices; only completed FRI input vectors are downloaded.",
+    "unchanged_cpu_work": "Barycentric openings and inverse denominators remain on CPU. Upstream FRI folding/proving remains in place. Full host LDE readback is still required.",
+    "selection": "Explicit research-runner LATTICA_V2_GPU_OPENINGS=1 requires resident mode. PCS mode cannot be selected after sharing/use. No silent fallback and no production ABI.",
+    "randomness": "The FRI stream is selected before proof work and shared across active PCS clones. Unselected initial stream is never used; no per-call RNG cloning. Fixed seeds appear only in equivalence tests.",
+    "admission": "Finite matrix/point counts, <=1 GiB combined device reduction outputs, bounded tiles, all live managed allocations admitted under engine mutex. The <=4 GiB core host-vector payload model includes coset, inverse/adjusted weights, conservative inversion scratch, FRI inputs and all opened values, including repeated points. GPU tile staging is bounded separately; neither model is whole-process RSS. Aggregate worker limits remain mandatory.",
+    "cleanup": "Queue fence drains compute/copy queues before buffers/reservations are released on success, error or unwind.",
+    "counters": "Separate cumulative bounded_gpu_opening_checkpoint fields: calls, tiles, uploaded_bytes, downloaded_bytes, kernel_ns, wall_ns. These are not yet included in the preserved recursive controller's complete accounting."
+  },
+  "native_validation": {
+    "status": "PASS",
+    "unit": "lattica-v2-gpu-openings-native-20261001-d.service",
+    "log": "lattica-prover-p3/target/block-v2-gpu-openings-native-20261001-d.log",
+    "selected_tests_passed": 27,
+    "selected_tests_failed": 0,
+    "release_gpu_without_stream_check": "PASS",
+    "release_gpu_without_stream_check_log": "lattica-prover-p3/target/block-v2-gpu-openings-check-20261001-d.log",
+    "ignored_test_executions": 3,
+    "release_all_features_all_targets_check": "PASS",
+    "release_default_library_check": "PASS",
+    "service_runtime_seconds": 115.959,
+    "swap_bytes": 0,
+    "source_archive": "lattica-prover-p3/target/block-v2-gpu-openings-native-20261001-d/source.tar.gz",
+    "source_sha256": "68dd3cc2fe80cfc43965b109fa59673252b9fd3b3c9ca1b78a4473b45869126f",
+    "test_executable": "lattica-prover-p3/target/block-v2-gpu-openings-native-20261001-d/gpu-lib-tests",
+    "test_executable_sha256": "8237366f13526f56b20a16912bec00c775ea66473d9a650f3fbfdd0433304a02"
+  },
+  "gpu_validation": {
+    "status": "PASS",
+    "unit": "lattica-v2-gpu-openings-qualification-20261001-c.service",
+    "manifest": "lattica-prover-p3/target/block-v2-gpu-openings-qualification-20261001-c/manifest.json",
+    "manifest_sha256": "94f22de763228e020829799f9a527b48b608d464737f62c5b636782a50d0b447",
+    "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "tests_passed": 11,
+    "tests": [
+      {
+        "name": "block_v2::gpu_hash::engine::opening_reduce::tests::gpu_opening_reduction_matches_cpu_all_points_and_unequal_heights",
+        "status": "PASS",
+        "log_sha256": "63eedd67c555b77469e25b2ea87707402f1491a68d3945f5fd56215a7ed852ef",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::engine::tests::gpu_opening_error_and_unwind_drain_before_allocations_release",
+        "status": "PASS",
+        "log_sha256": "b53eeba9cd73d2ae3c5f96391319fb09ef78182c2a7005ab05edb24779f4f634",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::resident_pcs_tests::gpu_openings_match_reference_transcript_and_preprocessing",
+        "status": "PASS",
+        "log_sha256": "0acc0aca8f07598ad25b5ba81af6daf27012ec57d48fbd3fabed91430343cfc0",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::resident_pcs_tests::gpu_openings_full_strength_cubic_proofs_replay_through_original_cpu_pcs",
+        "status": "PASS",
+        "log_sha256": "c27d93a652df40bdfddbd97aceb3086953ac5b78ff3bcda4c4deec6df38d7bac",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::engine::lde_execute::tests::gpu_resident_lde_columns_caps_and_paths_match_cpu",
+        "status": "PASS",
+        "log_sha256": "7b7ac1245b961315ec34b4398f4292d53a4b0d88b10c23c342224c6010b0c9ff",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::engine::lde_execute::tests::gpu_resident_lde_multigroup_ntt_and_unequal_input_heights_match_cpu",
+        "status": "PASS",
+        "log_sha256": "42b62ff8fed4b0288f9f05f0b3902894ba59529f91daf4e319b45bb10ecb4212",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_matches_all_cpu_commitment_streams_across_active_clones",
+        "status": "PASS",
+        "log_sha256": "cda88c98ae3a5006e198d73426ed9f8c1f742ab2e1d5c6fda1503acae8314e62",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_admission_errors_do_not_consume_masks_or_salts",
+        "status": "PASS",
+        "log_sha256": "fac62fcfbb235c28943cf54c7e3df5aceb9b7a104ff41c749990251f5b78f5a7",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_research_switch_only_selects_explicit_proving_configs",
+        "status": "PASS",
+        "log_sha256": "bc58021ac5acd84dfc9e7bc5717671ec6be751b2cca079b0b948805f16e94069",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::resident_pcs_tests::gpu_resident_full_strength_cubic_proofs_replay_through_original_cpu_pcs",
+        "status": "PASS",
+        "log_sha256": "e58f06afb5abc7c0a2ae57cc329b930dd7678feb3a02d915191a52abd66db67a",
+        "scratch_empty": true
+      },
+      {
+        "name": "block_v2::gpu_hash::tests::gpu_spill_backed_bit_reversed_inputs_match_resident_cpu_openings",
+        "status": "PASS",
+        "log_sha256": "7466ffd8bb8f239585afc01436baa0f84954de4cc5810ee47b9a7d08a24c30e5",
+        "scratch_empty": true
+      }
+    ],
+    "resource_snapshot": {
+      "memory.current": "18235392",
+      "memory.peak": "323506176",
+      "memory.max": "3221225472",
+      "memory.swap.current": "0",
+      "memory.swap.peak": "0",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+      "cpu.stat": "usage_usec 8724529\nuser_usec 5765229\nsystem_usec 2959300\nnice_usec 0\ncore_sched.force_idle_usec 0",
+      "io.stat": null
+    },
+    "service_runtime_seconds": 6.872,
+    "proof_scope": "Small full-strength cubic proofs with fusion off/on and two active PCS clones passed the original CPU PCS; wrong public statements were rejected. Same-seed opening proofs and subsequent challenger samples match the reference with preprocessing both off and on. Not recursive performance or full-tree soundness/ZK qualification.",
+    "new_reduction_calls_in_full_strength_case": 4
+  },
+  "preserved_failures": [
+    {
+      "scope": "initial compile check",
+      "unit": "lattica-v2-gpu-openings-check-20261001-a.service",
+      "log": "lattica-prover-p3/target/block-v2-gpu-openings-check-20261001-a.log",
+      "sha256": "cb4ac4e0729da59f913022de9bdb2a8163792fa8433bbdbc094658ab98fd98b3",
+      "cause": "Initial specialized type/basis annotations did not compile; fixed before subsequent successful checks. No test or proof started."
+    },
+    {
+      "scope": "native test compilation",
+      "unit": "lattica-v2-gpu-openings-native-20261001-a.service",
+      "log": "lattica-prover-p3/target/block-v2-gpu-openings-native-20261001-a.log",
+      "sha256": "ff6da1378407b30882f48623e54543d55624932a264135f2528280667ab7ccff",
+      "cause": "New pending-event assertion used equality on an enum lacking PartialEq; fixed to pattern matching. No native test started."
+    },
+    {
+      "scope": "GPU qualification",
+      "unit": "lattica-v2-gpu-openings-qualification-20261001-a.service",
+      "manifest": "lattica-prover-p3/target/block-v2-gpu-openings-qualification-20261001-a/manifest.json",
+      "sha256": "642d221d7698bca99ee1d5071f0a9be60deb487619636e3b721d7aaa3dfdf42e",
+      "cause": "Numerical and pending-event cleanup cases passed. Transcript fixture used undoubled hiding domains and was rejected by the existing commitment guard before opening/proving. Only the fixture was corrected for build C."
+    }
+  ],
+  "test_only_build_c_delta": {
+    "status": "PASS_TEST_ONLY_DELTA",
+    "all_other_file_bytes_identical": true,
+    "changed": [
+      {
+        "path": "lattica-prover-p3/src/block_v2/resident_pcs_tests.rs",
+        "old_sha256": "9f2e48cbc76e2bb2ea5cd119b02aca7df19cdfca7339b2a0cf988b983cb6cf5a",
+        "new_sha256": "b53712949ce9ed9a70239c6510b7c448112b7c3fdb7388583ca964b7e677e1a3"
+      }
+    ]
+  },
+  "unchanged_profile": {
+    "extension": "cubic Goldilocks X^3-X-1",
+    "queries": 128,
+    "blowup": 16,
+    "cap_height": 6,
+    "random_codewords": 4,
+    "query_pow_bits": 16,
+    "one_air": true,
+    "strict_single_zero_terminal": true,
+    "proof_input": "public proofs and public statements only"
+  },
+  "not_claimed": [
+    "recursive speedup",
+    "fully resident proving",
+    "full-size recursive opening qualification",
+    "complete post-seal or cold64 deadlines",
+    "local incremental DAG",
+    "full-tree soundness/ZK approval",
+    "production activation"
+  ],
+  "next": [
+    "Bind the opening flag and separate counters into the non-frozen GPU trial controller, with default-off behavior and source/executable/config pins.",
+    "Build/preserve the actual recursive runner; fresh independent CPU-key reproduction, full-size bounded proof and root-only CPU replay precede any matched performance claim.",
+    "Use at least five alternating matched pairs against the retained-hash control; also isolate opening reduction on/off on the same resident build.",
+    "Continue quotient/opening/FRI data reuse, minimal local DAG, full64/deadline/security and host-integration work without weakening existing targets."
+  ],
+  "admission_followup": {
+    "reason": "Final review found that opened-value arrays were absent from the core host-vector model. Build D adds their payload and checked arithmetic, with a boundary/overflow regression.",
+    "previous_native_validation": {
+      "status": "PASS",
+      "unit": "lattica-v2-gpu-openings-native-20261001-c.service",
+      "log": "lattica-prover-p3/target/block-v2-gpu-openings-native-20261001-c.log",
+      "selected_tests_passed": 26,
+      "selected_tests_failed": 0,
+      "ignored_test_executions": 3,
+      "release_all_features_all_targets_check": "PASS",
+      "release_default_library_check": "PASS",
+      "service_runtime_seconds": 114.616,
+      "swap_bytes": 0,
+      "source_archive": "lattica-prover-p3/target/block-v2-gpu-openings-native-20261001-c/source.tar.gz",
+      "source_sha256": "189a4ced826315967b683e42feaf24a04d56f21b0ebcd66372313bfe8f42ba06",
+      "test_executable": "lattica-prover-p3/target/block-v2-gpu-openings-native-20261001-c/gpu-lib-tests",
+      "test_executable_sha256": "82587b184f5c1222eaaf2ad0f9d996a5b591c5c6325f09f637de417a6c5356a8"
+    },
+    "previous_gpu_manifest": "lattica-prover-p3/target/block-v2-gpu-openings-qualification-20261001-b/manifest.json",
+    "previous_gpu_manifest_sha256": "ac3632e34a6e4fd8baca093c9e699ff55382ca5635964c62a0c55115044b28aa",
+    "previous_gpu_status": "PASS"
+  },
+  "worktree_source_binding": {
+    "status": "PASS_FORMATTING_ONLY_TEST_DELTA",
+    "archive": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-gpu-openings-native-20261001-d/source.tar.gz",
+    "all_other_archived_files_byte_identical": true,
+    "changed": [
+      {
+        "path": "lattica-prover-p3/src/block_v2/resident_pcs_tests.rs",
+        "lines": [
+          419,
+          420
+        ],
+        "archive_sha256": "b53712949ce9ed9a70239c6510b7c448112b7c3fdb7388583ca964b7e677e1a3",
+        "worktree_sha256": "6a4237ed4cc85ff584ad05dcf586c231b17c3e22dba633f009d2f1ac289ead4b"
+      }
+    ]
+  }
+}
