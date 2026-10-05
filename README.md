@@ -16,6 +16,7 @@ The repository contains an audited CPU proof/verifier baseline, a complete shiel
 
 - [Distributed proving roadmap](docs/distributed-proving.md) specifies proposed public-only CPU/GPU workers, verified job scheduling, and capacity experiments; no distributed service or higher-throughput consensus profile is implemented.
 - [Execution DAG and GPU implementation plan](docs/dag-gpu-implementation.md) selects dependency-driven proof execution and a GPU pipeline with retained intermediate data as the immediate acceleration work. Local scheduling and full-block qualification remain pending; resident GPU component and key-reproduction evidence is recorded below.
+- [Apple hardware-acceleration roadmap](docs/apple-acceleration-next-priorities-2026-10-04.html) ranks the next six optimization steps and their minimal validation gates; [supporting benchmark results](docs/apple-priorities-implementation-2026-10-04.html) record the measured research baseline and source provenance.
 
 ## What it provides
 

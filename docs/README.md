@@ -55,6 +55,13 @@ This index is the canonical map of the repository documentation. Documents are g
 - [Implementation audit](lattica-implementation-audit.md)
 - [Full-node integration requirements](full-node-security-integration.md)
 
+## Apple hardware acceleration
+
+- [Next acceleration priorities](apple-acceleration-next-priorities-2026-10-04.html) — start here for exact Metal squaring, shared-buffer reuse, quotient temporary reuse, fair SME comparisons, targeted scheduling, and native Zig hashing. Each priority includes source locations, evidence, and correctness gates.
+- [Completed optimization comparison](apple-priorities-implementation-2026-10-04.html) — the supporting 18-thread research comparison: 254.03s to 204.57s, or 19.5% lower latency in one matched pair, with independent CPU audits.
+
+Both reports are standalone HTML with embedded evidence. Their recorded source hashes identify the measured implementation, which includes uncommitted research changes; publication of the reports does not imply that every measured optimization is committed or production-activated. Future validation starts with focused component checks; only a clear winner earns one fresh matched 18-thread comparison.
+
 ## Architecture and roadmap
 
 - [Solving benchmark report](benchmarks/index.html) — offline throughput, latency, resource telemetry and P0–P5 milestone evidence; [export and portable Apple-silicon imports](benchmarks/README.md).
