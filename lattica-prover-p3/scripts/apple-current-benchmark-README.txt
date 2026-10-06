@@ -48,11 +48,12 @@ cache switches remain disabled in this recipe; they need explicit Metal
 qualification before adding them to a declared comparison. NVIDIA observations
 do not qualify their performance or resources on Apple Silicon.
 
-The 2026-10-06 workstation capacity checkpoint is retained in
-docs/evidence/block-v2-vram16-capacity-paused-2026-10-06-r1.json. Its optimized
-16-input root passed; 32 was stopped at the user's request and 64 was not
-started. It does not establish a maximum job size or a Metal result. Preserve
-the original 094cade and baf339e packages when making this new package.
+The completed 2026-10-06 workstation capacity qualification is retained in
+docs/evidence/block-v2-vram16-capacity-qualification-2026-10-06-r1.json. Its
+optimized 16, 32 and 64-input roots passed independent CPU audits. The earlier
+interrupted 32-input attempt remains retained. This establishes capacity through
+the requested/protocol limit of 64 on the NVIDIA laptop GPU, not a Metal result.
+Preserve the original 094cade, baf339e and 6f9faa0 packages when making a new one.
 
 Keep the complete result directory, including failed attempts. Return its
 portable-results.tar.gz. After extraction, import the JSON on the development
@@ -64,4 +65,4 @@ host with:
 These measurements track proving latency and development milestones. Wallet
 proof creation, delivered transaction throughput and the two-hour pilot require
 their own measurements. No new workstation experiment was started for this
-handoff; the workstation performance work is paused at the user's request.
+handoff; the workstation capacity campaign is complete and its workers are stopped.

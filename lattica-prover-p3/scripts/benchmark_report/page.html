@@ -110,14 +110,15 @@ function transactionCampaigns(){
 }
 function capacityCheckpoint(){
  const gib=bytes=>fmt(Number(bytes)/2**30,2)+" GiB";
- const box=$("capacity-checkpoint"),candidates=(catalog.campaigns||[]).filter(c=>c.document?.record_type==="single_gpu_capacity_pause");
+ const box=$("capacity-checkpoint"),candidates=(catalog.campaigns||[]).filter(c=>["single_gpu_capacity_pause","single_gpu_capacity_qualification"].includes(c.document?.record_type));
  candidates.sort((a,b)=>String(b.document.captured_utc).localeCompare(String(a.document.captured_utc)));
  const campaign=candidates[0];box.replaceChildren();box.hidden=!campaign;if(!campaign)return;
- const d=campaign.document;
- box.append(el("h3","Optimized 16 GB GPU capacity checkpoint"),el("p","Paused at the user's request. The 16-input job passed; 32 was interrupted and 64 was not started. Maximum capacity remains undetermined.","small"));
+ const d=campaign.document,qualified=d.status==="passed";
+ box.append(el("h3",qualified?"Optimized 16 GB GPU capacity qualification":"Optimized 16 GB GPU capacity checkpoint"),el("p",qualified?"The requested "+d.requested_counts.join(" → ")+" sequence passed. The largest validated job contains "+d.largest_validated_count+" ordered inputs, the requested/protocol limit.":"Paused at the user's request. The 16-input job passed; 32 was interrupted and 64 was not started. Maximum capacity remains undetermined.","small"));
  box.append(dataTable(["Ordered inputs","Outcome","User / issuance inputs","Fresh recursive proofs","Recursive proving","Sampled GPU process peak"],d.counts.map(c=>{const r=c.result;return [c.count,c.status.replaceAll("_"," "),r?r.user_transactions+" / "+r.issuance_transactions:"—",r?r.fresh_recursive_proofs:"—",r?seconds(r.proving_seconds):"—",r?gib(r.context_measurements.sampled_peak_process_bytes):"—"]})));
- const successful=d.counts.find(c=>c.status==="passed").result,b=successful.budget;
- box.append(el("p","One RTX 5080 Laptop GPU · direct host readback · opening-denominator cache enabled · independent CPU root audit. Managed VRAM "+gib(b.gpu.managed_bytes)+" + driver/context reservation "+gib(b.gpu.context_bytes)+". Worker RAM "+gib(b.host.worker_bytes)+", tmpfs spill "+gib(b.host.spill_bytes)+" charged to RAM, "+b.cpu.rayon_threads+" Rayon threads.","small"));
+ const successful=d.counts.filter(c=>c.status==="passed").at(-1).result,b=successful.budget;
+ box.append(el("p","One RTX 5080 Laptop GPU · direct host readback · opening-denominator cache enabled · independent CPU root audit. For the "+successful.count+"-input job: managed VRAM "+gib(b.gpu.managed_bytes)+" + driver/context reservation "+gib(b.gpu.context_bytes)+". Worker RAM "+gib(b.host.worker_bytes)+", tmpfs spill "+gib(b.host.spill_bytes)+" charged to RAM, "+b.cpu.rayon_threads+" Rayon threads.","small"));
+ if(qualified)box.append(el("p","Each size completed one audited root. The "+successful.count+"-input fixture contains "+successful.user_transactions+" user transactions and "+successful.issuance_transactions+" issuance inputs, and requires "+successful.fresh_recursive_proofs+" fresh recursive proofs. Capacity above "+d.largest_validated_count+" was not tested. The earlier interrupted attempt and launch failure remain retained.","small"));
  box.append(el("p","This measures complete recursive jobs using existing wallet proofs. Fresh wallet proving, native chain application and delivered transaction throughput remain unmeasured. The sampled memory peak is not a continuous maximum. All campaign services are stopped; cleanup recorded zero memory-limit or OOM events.","small"));
  const button=el("button","Download capacity checkpoint JSON");button.onclick=()=>download(campaign.id+".json",d);
  box.append(button,details("Per-count resource budgets and retained evidence",d.counts),details("Scope and resumption",{limits:d.limits,resume_requirements:d.resume_requirements,apple_handoff:d.apple_handoff}));

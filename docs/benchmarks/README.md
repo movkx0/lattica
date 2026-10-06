@@ -9,59 +9,64 @@ the [P0–P5 engineering roadmap](../high-throughput-proving-plan.md#8-engineeri
 Apple silicon and Linux/OpenCL are development tracks. There is no hardware
 leaderboard.
 
-## Paused capacity checkpoint and Apple Silicon handoff — 2026-10-06
+## Optimized 16 GB GPU capacity — 2026-10-06
 
-Workstation experiments are paused at the user's request. The
-[capacity checkpoint JSON](../evidence/block-v2-vram16-capacity-paused-2026-10-06-r1.json)
-retains the declared 16 → 32 → 64 campaign on the RTX 5080 Laptop GPU:
+**64 ordered inputs is the largest validated optimized job size within the
+requested/protocol limit of 64.** The sequential 16 → 32 → 64 campaign completed
+three depth-six roots with independent CPU audits: 111 fresh recursive proofs
+and zero reused proofs. The 64-input fixture contains 48 user transactions and
+16 issuance inputs. It requires 63 recursive proofs; input count and proof
+count are distinct.
 
-| Ordered inputs | Outcome | Complete recursive proving | Sampled GPU process peak |
-| --- | --- | --- | --- |
-| 16: 12 user + 4 issuance | Passed independent CPU root audit; 16 fresh proofs, zero reused | 527.590 s | 6.63 GiB |
-| 32 | Interrupted at the user's request before a complete root or audit | Unqualified | Unqualified |
-| 64 | Not started | Unqualified | Unqualified |
+| Ordered inputs | Fresh recursive proofs | Recursive proving | Sampled GPU process peak | Worker RAM limit |
+| --- | --- | --- | --- | --- |
+| 16 | 16 | 527.590 s | 6.63 GiB | 37.75 GiB |
+| 32 | 32 | 1,076.567 s | 6.63 GiB | 38.25 GiB |
+| 64 | 63 | 2,112.215 s | 6.63 GiB | 37.25 GiB |
 
-Direct host readback and opening-denominator caching were enabled for this
-campaign. For count 16, actual reservations were 7 GiB managed VRAM plus
-7.25 GiB driver/context allowance, 37.75 GiB worker RAM, 28.5 GiB tmpfs spill
-charged to RAM, and 23 Rayon threads. Count 32 redetected 38.25 GiB worker RAM;
-its separate budget is retained. These conservative reservations differ from
-sampled usage. The observed peak is sampled at process checkpoints, not a
-continuous maximum.
+The [complete capacity JSON](../evidence/block-v2-vram16-capacity-qualification-2026-10-06-r1.json)
+retains per-size budgets, phase profiles, proof hashes, CPU audits, source pins
+and cleanup. All three runs used the RTX 5080 Laptop GPU with direct host
+readback, opening-denominator caching, 7 GiB managed VRAM and 7.25 GiB
+conservative driver/context allowance. The combined GPU reservation was
+14.25 GiB. Each run redetected host resources, used 23 Rayon threads and reserved
+28.5 GiB of tmpfs spill, charged within host RAM. No count-eight context
+calibration was imported for these larger sizes. The independent audits each
+accepted a 1,683,948-byte root, within the 2 MiB limit.
 
-Cleanup verified 10 process identities and seven services were terminal. Six
-accounting records contained zero memory-limit or OOM events. Original logs,
-proofs, partial state, service journals, budgets and hashes remain retained.
-The original count-32 summary still says `running`; the later pause and cleanup
-records establish that it was stopped. The interruption is not a resource or
-correctness failure. Maximum optimized capacity remains undetermined; 16 is
-the largest completed size in this campaign. It used existing wallet proofs
-and did not measure fresh wallet proving, native chain application or delivered
-transaction throughput. Any later 32/64 attempts need a new declared revision
-and fresh output directories.
+All campaign services and workers are stopped. Cleanup recorded zero
+memory-limit or OOM events. The binary hashes matched across sizes, and all
+185 compiled-input hashes were rechecked. The
+[earlier interrupted 32-input attempt](../evidence/block-v2-vram16-capacity-paused-2026-10-06-r1.json)
+remains retained. The resumed observer's first launch failed before proving
+because its command omitted the Python interpreter; that launch is also
+retained separately. The successful 32/64 attempts used fresh directories.
 
+This establishes capacity for complete recursive jobs using existing wallet
+proofs. Larger jobs were outside the requested/protocol range. The GPU peak is
+sampled at process checkpoints, not continuously. These single observations do
+not measure fresh wallet proving, native chain application, complete cold-start
+timing, repeated performance improvement or sustained delivered throughput.
+
+The [r41 readiness snapshot](../evidence/block-v2-throughput-readiness-2026-10-06-r41.json)
+records the completed capacity milestone. Full cold-start and post-seal timing
+remain unqualified, and the two-hour delivered-throughput pilot has not started.
 The earlier
 [partial native cache comparison](../evidence/block-v2-opening-cache-native-comparison-2026-10-06-partial-r1.json)
-remains incomplete: four of five pairs completed, followed by an unpaired
-baseline and a cache arm that failed host RAM/spill admission before proving.
-Median paired pipeline reduction was **2.978%** (range **0.365–4.495%**).
-Its nine completed arms, failed attempt and original evidence are unchanged;
-the cache remains opt-in. The report retains these arms and the new capacity
-checkpoint alongside 819 indexed records. The two-hour pilot has not started.
+remains incomplete at four of five pairs: median paired pipeline reduction
+**2.978%** (range **0.365–4.495%**), followed by an unpaired baseline and a cache
+arm that failed host RAM/spill admission before proving. Its evidence is
+unchanged, and the cache remains opt-in. The report retains the three capacity
+results and nine completed comparison arms as documentary results alongside
+819 indexed records.
 
 Use the [current-source Mac instructions](../../lattica-prover-p3/scripts/apple-current-benchmark-README.txt)
-to fetch `v3`, create an isolated checkout and build a new package with
-`--revision HEAD`. It freezes that exact commit and uses the public fixture in
-Git. The Metal recipe runs correctness checks followed by nine measurements of
-quotient control, deferred timing, and compact data with deferred timing.
-Direct readback and denominator caching need a separate declared Metal
-qualification before they enter that recipe. NVIDIA results do not establish
-Apple Silicon performance or memory requirements. Keep failed attempts and
-return the portable result archive for import. Apple execution remains pending.
-
-The [r40 readiness snapshot](../evidence/block-v2-throughput-readiness-2026-10-06-r40.json)
-records this pause. Full cold-start, post-seal timing and sustained delivered
-throughput qualification remain open.
+to fetch `v3`, create an isolated checkout and freeze a new package with
+`--revision HEAD`. Its Metal recipe runs correctness checks and nine
+measurements of quotient control, deferred timing, and compact data with
+deferred timing. Direct readback and denominator caching need separate Metal
+qualification before entering that recipe. Apple Silicon execution remains
+pending; NVIDIA results do not establish its performance or memory limits.
 
 ## Two-hour throughput pilot
 
@@ -84,7 +89,7 @@ python3 lattica-prover-p3/scripts/block-v2-multi-gpu-run.py \
   --config PATH_TO_QUALIFIED_CONFIG --plan > /tmp/lattica-resource-plan.json
 python3 lattica-prover-p3/scripts/block-v2-throughput-pilot.py prepare \
   --resource-plan /tmp/lattica-resource-plan.json \
-  --evidence docs/evidence/block-v2-throughput-readiness-2026-10-06-r40.json \
+  --evidence docs/evidence/block-v2-throughput-readiness-2026-10-06-r41.json \
   --output /tmp/lattica-pilot-readiness.json
 python3 lattica-prover-p3/scripts/block-v2-benchmark-report.py ingest \
   --input /tmp/lattica-pilot-readiness.json

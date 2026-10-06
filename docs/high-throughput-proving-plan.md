@@ -1,22 +1,33 @@
 # Lattica throughput engineering analysis and project plan
 
-**Current checkpoint — 2026-10-06:** workstation experiments are paused at the
-user's request while the committed sources are handed off for Apple Silicon
-measurements. The optimized single-GPU capacity campaign completed 16 inputs
-(12 user + 4 issuance), with 16 fresh recursive proofs, an independent CPU root
-audit, **527.590 s** recursive proving and a **6.63 GiB** sampled GPU process
-peak. The 32-input attempt was interrupted by the requested pause; 64 was not
-started. Maximum capacity remains undetermined. All campaign services are
-stopped, with no recorded memory-limit or OOM events.
+**Current checkpoint — 2026-10-06:** the optimized single-GPU capacity campaign
+passed at **16, 32 and 64 ordered inputs**, one complete root at a time. All
+three roots passed independent CPU audits, with **111 fresh recursive proofs**
+and zero reused proofs. **64 is the largest validated size within the
+requested/protocol limit**; larger sizes were not tested.
 
-The [capacity checkpoint](evidence/block-v2-vram16-capacity-paused-2026-10-06-r1.json)
-retains exact budgets, pins and the interruption. The
-[r40 readiness snapshot](evidence/block-v2-throughput-readiness-2026-10-06-r40.json)
-preserves the remaining qualification gates. Next, execute the
+On the 16 GB RTX 5080 Laptop GPU, the 64-input job completed 63 recursive proofs
+in **2,112.215 s**, with a **6.63 GiB sampled GPU process peak**.
+Its fixture contains 48 user transactions and 16 issuance inputs. Direct host
+readback and opening-denominator caching were enabled. Per-size budgets were
+redetected, all workers are stopped, and resource accounting recorded zero
+memory-limit or OOM events. The original interrupted 32-input attempt and the
+observer launch failure remain retained.
+
+The [capacity qualification](evidence/block-v2-vram16-capacity-qualification-2026-10-06-r1.json)
+contains the complete results and provenance. The
+[r41 readiness snapshot](evidence/block-v2-throughput-readiness-2026-10-06-r41.json)
+preserves the remaining gates. Capacity is established for this fixture;
+complete cold-start, post-seal timing and sustained delivered throughput are
+still unqualified. The four-of-five native cache comparison remains incomplete,
+and the cache remains opt-in.
+
+Next, use the retained full-size quotient/opening profiles to choose a declared
+latency comparison and execute the
 [current-source Metal recipe](../lattica-prover-p3/scripts/apple-current-benchmark-README.txt)
-on the Mac. A later workstation resumption needs newly declared 32/64 attempts;
-the four-of-five native cache comparison and complete cold/post-seal timing
-also remain open. Workstation experiments remain paused.
+on the Mac. GPU resource calibration, concurrent execution and complete timing
+boundaries need their own evidence. No further workstation experiment was
+started for this publication.
 
 The deployment target remains four useful user transactions/minute, measured
 by the gated [two-hour development pilot](benchmarks/README.md#two-hour-throughput-pilot).
@@ -1248,7 +1259,7 @@ show zero memory-limit/OOM events. The observer peaked at 314,224,640 bytes.
 The offline report exposes the partial comparison and downloadable JSON alongside
 its 819 indexed runs and 393 indexed CPU-audited records. The additional nine
 arms are retained together in the partial comparison document. The
-[r39 readiness snapshot](evidence/block-v2-throughput-readiness-2026-10-06-r40.json)
+[r39 readiness snapshot](evidence/block-v2-throughput-readiness-2026-10-06-r41.json)
 records the pause and preserves all open gates. Mac execution is externally
 pending. The [current-source Mac handoff](../lattica-prover-p3/scripts/apple-current-benchmark-README.txt)
 uses a new package pinned to the selected Git commit and the repository's public

@@ -1,0 +1,94 @@
+{
+  "compiled_input_check": {
+    "bytes": 175,
+    "path": "lattica-prover-p3/target/block-v2-vram16-capacity-20261006-b/compiled-input-check-r1.json",
+    "sha256": "554f9f64aa9bbc51abcdb7b45b33bf149043e3f3f7a0369ef3c10b22cce111d3"
+  },
+  "compiled_input_manifest": {
+    "bytes": 31185,
+    "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-denominator-cache-20261006-a/gpu-build-request-r1.json",
+    "sha256": "2a6bfd900258b9c7f21cb9089dcf533f2e9ed4e11bda19f3b5c483e194a559ce"
+  },
+  "compiled_inputs_verified": 185,
+  "completed_counts": [],
+  "continuation_reason": "Goal resumed after the committed Apple Silicon handoff. Continue with fresh 32 and 64 attempts sequentially; the original interrupted 32-input attempt remains immutable.",
+  "counts": [
+    32,
+    64
+  ],
+  "created_utc": "2026-10-06T21:51:44.637290+00:00",
+  "device": {
+    "nvidia": {
+      "driver": "615.71.09",
+      "free_bytes": 16595812352,
+      "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+      "pci": "00000000:02:00.0",
+      "total_bytes": 17094934528,
+      "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+    },
+    "opencl": {
+      "driver": "615.71.09",
+      "global_bytes": 16697327616,
+      "max_allocation_bytes": 4174331904,
+      "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+      "opencl_index": 1,
+      "pci": "0000:02:00.0",
+      "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+    },
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+  },
+  "execution_policy": "One complete root on one GPU at a time; start the next declared size only after CPU audit, resource checks and worker cleanup pass.",
+  "failure_policy": "Stop at the first failed size and retain its logs, partial output, accounting and host snapshot. A host admission failure is not proof of a VRAM capacity limit.",
+  "fixture_source_config": {
+    "bytes": 22702,
+    "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-64-gpu-01/config.json",
+    "sha256": "3cd935a1895213604ba60a336d2f0dc38d7d78c90d42343fb444ba1de6152cb9"
+  },
+  "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+  "harness_changes": [
+    "Declared remaining counts [32,64] after verifying the immutable successful 16-input result and all its sources.",
+    "New public result names use r2; every other validation and stopping rule is unchanged."
+  ],
+  "host_readback_layout": "direct",
+  "interrupted_attempt": {
+    "bytes": 309442,
+    "path": "docs/evidence/block-v2-vram16-capacity-paused-2026-10-06-r1.json",
+    "sha256": "da5907dac65cd9f4c484ac6267957e78c7426c58d71eca0fde66cacc7df6c56f"
+  },
+  "maximum_claim": "If 64 passes, it is the largest validated optimized size within the requested/protocol limit of 64, not proof of an intrinsic GPU limit beyond 64.",
+  "opening_denominator_cache": true,
+  "overall_counts": [
+    16,
+    32,
+    64
+  ],
+  "pilot_started": false,
+  "previous_qualification": {
+    "bytes": 1477916,
+    "path": "docs/evidence/block-v2-opening-cache-native-qualification-2026-10-06-r1.json",
+    "sha256": "3a4f2c9d9e70ee31105140d21f2ad184961e7e94216b26def1ffd08e32e77b2f"
+  },
+  "prior_qualification": {
+    "bytes": 85394,
+    "path": "docs/evidence/block-v2-vram16-capacity-count-16-2026-10-06-r1.json",
+    "sha256": "b5c9cab0925b93e6001afc20b64bcf87f6c00aac8b2e7053268e1dea332e99e0"
+  },
+  "production_ready": false,
+  "query_gather": false,
+  "record_type": "single_gpu_16gb_capacity_campaign",
+  "resource_policy": "Redetect the GPU, host RAM, tmpfs spill and CPU capacity independently before each size. No larger-count context calibration is imported. Preserve conservative bootstrap VRAM reservations.",
+  "runtime_manifest": {
+    "bytes": 121297,
+    "path": "lattica-prover-p3/target/block-v2-vram16-capacity-20261006-b/frozen-r1/manifest.json",
+    "sha256": "527fad1d259bf2d90285ec05b0b8c3f07adb27a0ef9ea1238e945dc05b60e5d9"
+  },
+  "schema_version": 1,
+  "scope": "Fresh depth-six typed paired recursive roots over prefixes of the retained 64-input public fixture. Count includes issuance inputs. Existing wallet proofs and registered keys exclude wallet proving, native delivery, cold-start throughput and sustained-service qualification.",
+  "single_gpu": true,
+  "source_commit": "6f9faa0ffc79879094b1b2e36faf0d61a650d01b",
+  "status": "prepared",
+  "validated_prior_counts": [
+    16
+  ],
+  "vram_ceiling_bytes": 17179869184
+}
