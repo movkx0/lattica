@@ -9,29 +9,59 @@ the [P0–P5 engineering roadmap](../high-throughput-proving-plan.md#8-engineeri
 Apple silicon and Linux/OpenCL are development tracks. There is no hardware
 leaderboard.
 
-## Paused checkpoint and Apple Silicon handoff — 2026-10-06
+## Paused capacity checkpoint and Apple Silicon handoff — 2026-10-06
 
 Workstation experiments are paused at the user's request. The
-[partial native cache comparison](../evidence/block-v2-opening-cache-native-comparison-2026-10-06-partial-r1.json)
-retains nine completed arms and the failed tenth attempt. Four of five declared
-pairs completed; the last cache arm failed fixed host RAM/spill admission before
-GPU proving. No replacement trial was run. Across the four complete pairs, the
-median pipeline reduction was **2.978%**, ranging from **0.365% to 4.495%**.
-The planned repeated comparison remains incomplete, and the cache remains opt-in.
+[capacity checkpoint JSON](../evidence/block-v2-vram16-capacity-paused-2026-10-06-r1.json)
+retains the declared 16 → 32 → 64 campaign on the RTX 5080 Laptop GPU:
 
-All nine roots passed CPU audit and replay: 72 fresh recursive proofs, nine
-isolated native applications and 18 exact retries without duplicate application.
-All 73 process records and 38 services are terminal; 36 accounting records have
-zero memory-limit/OOM events. The report's comparison panel downloads all nine
-arms, the unpaired baseline, failure, profiles and exact timing boundaries.
-These are retained together alongside the 819 indexed run records. Larger-count
-qualification and the two-hour pilot have not started.
+| Ordered inputs | Outcome | Complete recursive proving | Sampled GPU process peak |
+| --- | --- | --- | --- |
+| 16: 12 user + 4 issuance | Passed independent CPU root audit; 16 fresh proofs, zero reused | 527.590 s | 6.63 GiB |
+| 32 | Interrupted at the user's request before a complete root or audit | Unqualified | Unqualified |
+| 64 | Not started | Unqualified | Unqualified |
+
+Direct host readback and opening-denominator caching were enabled for this
+campaign. For count 16, actual reservations were 7 GiB managed VRAM plus
+7.25 GiB driver/context allowance, 37.75 GiB worker RAM, 28.5 GiB tmpfs spill
+charged to RAM, and 23 Rayon threads. Count 32 redetected 38.25 GiB worker RAM;
+its separate budget is retained. These conservative reservations differ from
+sampled usage. The observed peak is sampled at process checkpoints, not a
+continuous maximum.
+
+Cleanup verified 10 process identities and seven services were terminal. Six
+accounting records contained zero memory-limit or OOM events. Original logs,
+proofs, partial state, service journals, budgets and hashes remain retained.
+The original count-32 summary still says `running`; the later pause and cleanup
+records establish that it was stopped. The interruption is not a resource or
+correctness failure. Maximum optimized capacity remains undetermined; 16 is
+the largest completed size in this campaign. It used existing wallet proofs
+and did not measure fresh wallet proving, native chain application or delivered
+transaction throughput. Any later 32/64 attempts need a new declared revision
+and fresh output directories.
+
+The earlier
+[partial native cache comparison](../evidence/block-v2-opening-cache-native-comparison-2026-10-06-partial-r1.json)
+remains incomplete: four of five pairs completed, followed by an unpaired
+baseline and a cache arm that failed host RAM/spill admission before proving.
+Median paired pipeline reduction was **2.978%** (range **0.365–4.495%**).
+Its nine completed arms, failed attempt and original evidence are unchanged;
+the cache remains opt-in. The report retains these arms and the new capacity
+checkpoint alongside 819 indexed records. The two-hour pilot has not started.
 
 Use the [current-source Mac instructions](../../lattica-prover-p3/scripts/apple-current-benchmark-README.txt)
-to fetch `v3`, create an isolated checkout and build a package with `--revision HEAD`.
-The package freezes an exact commit and uses the public fixture included in Git.
-Metal correctness tests run on the Mac before the nine measurements. The original
-094cade package remains available for reproducing the earlier baseline.
+to fetch `v3`, create an isolated checkout and build a new package with
+`--revision HEAD`. It freezes that exact commit and uses the public fixture in
+Git. The Metal recipe runs correctness checks followed by nine measurements of
+quotient control, deferred timing, and compact data with deferred timing.
+Direct readback and denominator caching need a separate declared Metal
+qualification before they enter that recipe. NVIDIA results do not establish
+Apple Silicon performance or memory requirements. Keep failed attempts and
+return the portable result archive for import. Apple execution remains pending.
+
+The [r40 readiness snapshot](../evidence/block-v2-throughput-readiness-2026-10-06-r40.json)
+records this pause. Full cold-start, post-seal timing and sustained delivered
+throughput qualification remain open.
 
 ## Two-hour throughput pilot
 
@@ -54,7 +84,7 @@ python3 lattica-prover-p3/scripts/block-v2-multi-gpu-run.py \
   --config PATH_TO_QUALIFIED_CONFIG --plan > /tmp/lattica-resource-plan.json
 python3 lattica-prover-p3/scripts/block-v2-throughput-pilot.py prepare \
   --resource-plan /tmp/lattica-resource-plan.json \
-  --evidence docs/evidence/block-v2-throughput-readiness-2026-10-06-r39.json \
+  --evidence docs/evidence/block-v2-throughput-readiness-2026-10-06-r40.json \
   --output /tmp/lattica-pilot-readiness.json
 python3 lattica-prover-p3/scripts/block-v2-benchmark-report.py ingest \
   --input /tmp/lattica-pilot-readiness.json

@@ -1,0 +1,454 @@
+{
+  "compiled_input_manifest": {
+    "bytes": 31185,
+    "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-denominator-cache-20261006-a/gpu-build-request-r1.json",
+    "sha256": "2a6bfd900258b9c7f21cb9089dcf533f2e9ed4e11bda19f3b5c483e194a559ce"
+  },
+  "compiled_inputs_verified": 185,
+  "completed_counts": [],
+  "counts": [
+    16,
+    32,
+    64
+  ],
+  "created_utc": "2026-10-06T19:11:06.499124+00:00",
+  "device": {
+    "nvidia": {
+      "driver": "615.71.09",
+      "free_bytes": 16595812352,
+      "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+      "pci": "00000000:02:00.0",
+      "total_bytes": 17094934528,
+      "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+    },
+    "opencl": {
+      "driver": "615.71.09",
+      "global_bytes": 16697327616,
+      "max_allocation_bytes": 4174331904,
+      "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+      "opencl_index": 1,
+      "pci": "0000:02:00.0",
+      "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+    },
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+  },
+  "execution_policy": "One complete root on one GPU at a time; start the next declared size only after CPU audit, resource checks and worker cleanup pass.",
+  "failure_policy": "Stop at the first failed size and retain its logs, partial output, accounting and host snapshot. A host admission failure is not proof of a VRAM capacity limit.",
+  "fixture_source_config": {
+    "bytes": 22702,
+    "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-64-gpu-01/config.json",
+    "sha256": "3cd935a1895213604ba60a336d2f0dc38d7d78c90d42343fb444ba1de6152cb9"
+  },
+  "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+  "host_readback_layout": "direct",
+  "initial_budget": {
+    "cpu": {
+      "allowed_cpus": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "coordinator_capacity": "1",
+      "effective_capacity": "24",
+      "quota_percent": "2300%",
+      "rayon_threads": 23,
+      "version": 1
+    },
+    "detected_gpu": {
+      "nvidia": {
+        "driver": "615.71.09",
+        "free_bytes": 16595812352,
+        "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+        "pci": "00000000:02:00.0",
+        "total_bytes": 17094934528,
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      "opencl": {
+        "driver": "615.71.09",
+        "global_bytes": 16697327616,
+        "max_allocation_bytes": 4174331904,
+        "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+        "opencl_index": 1,
+        "pci": "0000:02:00.0",
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+    },
+    "detected_host": {
+      "affinity_cpus": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "ancestors": [
+        {
+          "cpuset": "0-23",
+          "path": "/sys/fs/cgroup"
+        },
+        {
+          "cpu_max": "max 100000",
+          "cpuset": "0-23",
+          "memory_current": 23678414848,
+          "memory_max": "max",
+          "path": "/sys/fs/cgroup/user.slice"
+        },
+        {
+          "cpu_max": "max 100000",
+          "cpuset": "0-23",
+          "memory_current": 23671255040,
+          "memory_max": "max",
+          "path": "/sys/fs/cgroup/user.slice/user-1000.slice"
+        },
+        {
+          "cpu_max": "max 100000",
+          "cpuset": "0-23",
+          "memory_current": 20983517184,
+          "memory_max": "max",
+          "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+        },
+        {
+          "cpu_max": "max 100000",
+          "cpuset": "0-23",
+          "memory_current": 158932992,
+          "memory_max": "max",
+          "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice"
+        },
+        {
+          "cpu_max": "max 100000",
+          "cpuset": "0-23",
+          "memory_current": 158875648,
+          "memory_max": "max",
+          "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice"
+        },
+        {
+          "cpu_max": "max 100000",
+          "cpuset": "0-23",
+          "memory_current": 158818304,
+          "memory_limit_owned_by_controller": true,
+          "memory_max": "45902462976",
+          "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice"
+        }
+      ],
+      "available_bytes": 48860528640,
+      "cgroup_memory_headroom": null,
+      "cpu_capacity": "24",
+      "effective_cpus": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "online_cpus": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "physical_bytes": 66811260928,
+      "resource_cgroup_scope": "assigned_workers",
+      "scratch": {
+        "available_bytes": 32328445952,
+        "capacity_bytes": 33405628416,
+        "device": 51,
+        "filesystem": {
+          "fstype": "tmpfs",
+          "options": "rw,noatime,inode64,huge=advise",
+          "source": "tmpfs",
+          "target": "/tmp"
+        },
+        "page_bytes": 4096,
+        "path": "/tmp",
+        "quota_bytes": null,
+        "tmpfs": true
+      },
+      "version": 1
+    },
+    "gpu": {
+      "available_bytes": 16595812352,
+      "bootstrap": true,
+      "context_bytes": 7784628224,
+      "headroom_bytes": 1073741824,
+      "managed_bytes": 7516192768,
+      "max_allocation_bytes": 4174331904,
+      "total_bytes": 15300820992,
+      "usable_bytes": 16697327616,
+      "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "version": 1
+    },
+    "host": {
+      "coordinator_bytes": 1342177280,
+      "filesystem_headroom_bytes": 1670281421,
+      "fleet_bytes": 42144366592,
+      "os_headroom_bytes": 6681126093,
+      "scratch_device": 51,
+      "scratch_path": "/tmp",
+      "spill_bytes": 30601641984,
+      "swap_bytes": 0,
+      "tmpfs": true,
+      "version": 1,
+      "worker_bytes": 40802189312
+    },
+    "opening_denominator_cache": true,
+    "qualification_capacity_test": true,
+    "query_readback_layout": "rows",
+    "readback_layout": "direct",
+    "slice": "lattica-v2-multi.slice",
+    "typed_ram_admission": "compact",
+    "workload_kind": "typed-paired-compact-depth-six-bootstrap-v1"
+  },
+  "initial_host": {
+    "affinity_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "ancestors": [
+      {
+        "cpuset": "0-23",
+        "path": "/sys/fs/cgroup"
+      },
+      {
+        "cpu_max": "max 100000",
+        "cpuset": "0-23",
+        "memory_current": 23678414848,
+        "memory_max": "max",
+        "path": "/sys/fs/cgroup/user.slice"
+      },
+      {
+        "cpu_max": "max 100000",
+        "cpuset": "0-23",
+        "memory_current": 23671255040,
+        "memory_max": "max",
+        "path": "/sys/fs/cgroup/user.slice/user-1000.slice"
+      },
+      {
+        "cpu_max": "max 100000",
+        "cpuset": "0-23",
+        "memory_current": 20983517184,
+        "memory_max": "max",
+        "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+      },
+      {
+        "cpu_max": "max 100000",
+        "cpuset": "0-23",
+        "memory_current": 158932992,
+        "memory_max": "max",
+        "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice"
+      },
+      {
+        "cpu_max": "max 100000",
+        "cpuset": "0-23",
+        "memory_current": 158875648,
+        "memory_max": "max",
+        "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice"
+      },
+      {
+        "cpu_max": "max 100000",
+        "cpuset": "0-23",
+        "memory_current": 158818304,
+        "memory_limit_owned_by_controller": true,
+        "memory_max": "45902462976",
+        "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice"
+      }
+    ],
+    "available_bytes": 48860528640,
+    "cgroup_memory_headroom": null,
+    "cpu_capacity": "24",
+    "effective_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "online_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "physical_bytes": 66811260928,
+    "resource_cgroup_scope": "assigned_workers",
+    "scratch": {
+      "available_bytes": 32328445952,
+      "capacity_bytes": 33405628416,
+      "device": 51,
+      "filesystem": {
+        "fstype": "tmpfs",
+        "options": "rw,noatime,inode64,huge=advise",
+        "source": "tmpfs",
+        "target": "/tmp"
+      },
+      "page_bytes": 4096,
+      "path": "/tmp",
+      "quota_bytes": null,
+      "tmpfs": true
+    },
+    "version": 1
+  },
+  "maximum_claim": "If count 64 passes, it is the largest validated size within the requested 64-input, depth-six protocol limit; this does not establish a GPU limit beyond 64.",
+  "opening_denominator_cache": true,
+  "pilot_started": false,
+  "previous_qualification": {
+    "bytes": 1477916,
+    "path": "docs/evidence/block-v2-opening-cache-native-qualification-2026-10-06-r1.json",
+    "sha256": "3a4f2c9d9e70ee31105140d21f2ad184961e7e94216b26def1ffd08e32e77b2f"
+  },
+  "production_ready": false,
+  "query_gather": false,
+  "record_type": "single_gpu_16gb_capacity_campaign",
+  "resource_policy": "Detect actual GPU, host RAM, scratch and CPU resources before each size. Use conservative uncalibrated driver/context allowance; do not import count-eight calibration for larger counts.",
+  "runtime_manifest": {
+    "bytes": 53272,
+    "path": "lattica-prover-p3/target/block-v2-vram16-capacity-20261006-a/frozen-r1/manifest.json",
+    "sha256": "4ee8aebaeaf9f5d7931b709421fa4bf03cc6d13854b2240e90ad6f591ba1de79"
+  },
+  "schema_version": 1,
+  "scope": "Fresh depth-six typed paired recursive roots over prefixes of the retained 64-input public fixture. Count includes issuance inputs. Existing wallet proofs and registered keys exclude wallet proving, native delivery, cold-start throughput and sustained-service qualification.",
+  "single_gpu": true,
+  "source_commit": "baf339e6a481cffa3dbe9a587dcdb603872e6d4c",
+  "status": "prepared",
+  "vram_ceiling_bytes": 17179869184
+}

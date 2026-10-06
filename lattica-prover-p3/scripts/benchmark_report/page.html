@@ -27,6 +27,7 @@ header{background:var(--ink);color:white;padding:24px max(24px,calc((100vw - 128
 <div id="overview" class="grid" aria-label="Latest measured scope"></div>
 <p id="latest-note" class="small"></p>
 <div id="native-cache-comparison" hidden></div>
+<div id="capacity-checkpoint" hidden></div>
 <section id="qualification"><div class="section-head"><h2>Two-hour pilot readiness</h2><button id="download-qualification" hidden>Download readiness JSON</button></div><div id="qualification-view" class="panel"></div></section>
 <section id="transactions"><div class="section-head"><h2>Delivered transaction campaigns</h2><span class="small">Unique user transactions retained on the measured chain</span></div><div class="panel"><p class="small">The primary rate uses the complete declared window, including startup, failures and recovery. Issuance, reversals and reapplications are reported separately. Imported events attest to host application; this report does not verify proofs or durable host state.</p><label id="tx-campaign-label" hidden>Campaign<select id="tx-campaign"></select></label><div id="tx-campaign-view"></div></div></section>
 <details class="panel"><summary>Matched campaign throughput and latency</summary><p class="small">Aggregate throughput counts each measured worker or fleet window once. Median window duration and median individual latency describe different boundaries. Completed fixtures are reused inputs.</p><div id="comparison-summary"></div></details>
@@ -107,6 +108,20 @@ function transactionCampaigns(){
   try{const data=await decode("campaign-data-"+c.campaign_id);if(token!==version)return;const button=el("button","Download transaction campaign JSON","primary");button.onclick=()=>download(c.campaign_id+".json",data);box.append(button,details("Public source provenance",data.sources))}catch(e){fail(e)}
  };$("tx-campaign").onchange();
 }
+function capacityCheckpoint(){
+ const gib=bytes=>fmt(Number(bytes)/2**30,2)+" GiB";
+ const box=$("capacity-checkpoint"),candidates=(catalog.campaigns||[]).filter(c=>c.document?.record_type==="single_gpu_capacity_pause");
+ candidates.sort((a,b)=>String(b.document.captured_utc).localeCompare(String(a.document.captured_utc)));
+ const campaign=candidates[0];box.replaceChildren();box.hidden=!campaign;if(!campaign)return;
+ const d=campaign.document;
+ box.append(el("h3","Optimized 16 GB GPU capacity checkpoint"),el("p","Paused at the user's request. The 16-input job passed; 32 was interrupted and 64 was not started. Maximum capacity remains undetermined.","small"));
+ box.append(dataTable(["Ordered inputs","Outcome","User / issuance inputs","Fresh recursive proofs","Recursive proving","Sampled GPU process peak"],d.counts.map(c=>{const r=c.result;return [c.count,c.status.replaceAll("_"," "),r?r.user_transactions+" / "+r.issuance_transactions:"—",r?r.fresh_recursive_proofs:"—",r?seconds(r.proving_seconds):"—",r?gib(r.context_measurements.sampled_peak_process_bytes):"—"]})));
+ const successful=d.counts.find(c=>c.status==="passed").result,b=successful.budget;
+ box.append(el("p","One RTX 5080 Laptop GPU · direct host readback · opening-denominator cache enabled · independent CPU root audit. Managed VRAM "+gib(b.gpu.managed_bytes)+" + driver/context reservation "+gib(b.gpu.context_bytes)+". Worker RAM "+gib(b.host.worker_bytes)+", tmpfs spill "+gib(b.host.spill_bytes)+" charged to RAM, "+b.cpu.rayon_threads+" Rayon threads.","small"));
+ box.append(el("p","This measures complete recursive jobs using existing wallet proofs. Fresh wallet proving, native chain application and delivered transaction throughput remain unmeasured. The sampled memory peak is not a continuous maximum. All campaign services are stopped; cleanup recorded zero memory-limit or OOM events.","small"));
+ const button=el("button","Download capacity checkpoint JSON");button.onclick=()=>download(campaign.id+".json",d);
+ box.append(button,details("Per-count resource budgets and retained evidence",d.counts),details("Scope and resumption",{limits:d.limits,resume_requirements:d.resume_requirements,apple_handoff:d.apple_handoff}));
+}
 function nativeCacheComparison(){
  const box=$("native-cache-comparison");box.replaceChildren();
  const candidates=(catalog.campaigns||[]).filter(c=>c.document?.record_type==="opening_cache_native_matched_comparison_qualification"&&["passed","incomplete"].includes(c.document.status)&&Number.isInteger(c.document.completed_pairs)&&c.document.completed_pairs>0);
@@ -120,7 +135,7 @@ function nativeCacheComparison(){
  const button=el("button","Download native comparison JSON");button.onclick=()=>download(campaign.id+".json",d);box.append(button,details("All paired measurements",d.within_pair_comparisons));
 }
 function overview(){
- qualificationView();transactionCampaigns();nativeCacheComparison();
+ qualificationView();transactionCampaigns();nativeCacheComparison();capacityCheckpoint();
  const completeMixed=c=>c.scope==="typed_recursive_aggregation"&&c.aggregate&&c.windows.length>=5&&c.windows.every(w=>w.recorded?.repeat_qualified===true);
  const latestMixed=catalog.comparisons.filter(c=>completeMixed(c)&&c.id.endsWith(":concurrent")&&catalog.comparisons.some(s=>s.id===c.id.replace(/:concurrent$/,":sequential")&&completeMixed(s)&&s.windows.length===c.windows.length)).sort((a,b)=>Math.max(...b.windows.map(w=>Number(w.recorded.last_worker_sample_ns)||0))-Math.max(...a.windows.map(w=>Number(w.recorded.last_worker_sample_ns)||0)))[0];
  const groups=latestMixed?catalog.comparisons.filter(c=>c.id===latestMixed.id||c.id===latestMixed.id.replace(/:concurrent$/,":sequential")):catalog.comparisons.filter(c=>c.id.includes("block-v2-multi-pairs-20261003-e")&&c.aggregate);

@@ -1,3 +1,36 @@
+# Capacity pause checkpoint validation — 2026-10-06 (r40)
+
+The capacity campaign was stopped at the user's request. No new proving trial
+was started while preparing this publication.
+
+- Count 16 passed its independent CPU root audit: 16 fresh recursive proofs,
+  527.589715 s proving, and a 7,121,928,192-byte sampled GPU process peak.
+- Count 32 was interrupted before a complete root or audit; count 64 was not
+  started. Maximum capacity remains undetermined.
+- Cleanup verified 10 process identities, seven terminal services and six
+  accounting records, with zero memory-limit/OOM events.
+- All 214 frozen runtime files and 245 completed-run source references matched
+  their retained sizes and SHA-256 hashes.
+- 37 Python checks passed: four capacity-harness checks, seven Apple-package
+  checks, and 26 report checks.
+- The standalone report check passed with 819 indexed records and 291 evidence
+  documents. The capacity result is retained as a separate documentary
+  checkpoint; it is not added to the indexed delivered-throughput totals.
+- Offline Chromium checks passed at 1440 px and 390 px widths, with no external
+  requests, page errors or page overflow. The capacity table scrolls on narrow
+  screens. The downloaded checkpoint JSON preserves nanosecond integers as
+  strings, following the report's existing precision policy.
+- Desktop and mobile screenshots were visually inspected. The existing
+  four-of-five cache comparison and blocked pilot qualification remain visible.
+
+The [r40 QA record](../evidence/block-v2-throughput-report-qa-2026-10-06-r40.json)
+retains report, catalog, evidence and validation hashes. Older snapshots remain
+unchanged. The current-source Apple Silicon instructions create unique package
+and result directories, pin the fetched commit and retain failed attempts.
+Actual Apple Silicon measurements remain pending external execution.
+
+---
+
 # Initial report validation — 2026-10-04
 
 No new proving campaign was started to build this report.

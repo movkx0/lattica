@@ -13,21 +13,25 @@ Use AC power and keep other heavy workloads idle. Every output path must be new.
 In your existing Mac repository:
 
   git fetch origin v3
-  git worktree add --detach ../lattica-mac-benchmark origin/v3
-  cd ../lattica-mac-benchmark
+  benchmark_tag="$(date -u +%Y%m%dT%H%M%SZ)"
+  benchmark_package="$HOME/lattica-apple-current-package-$benchmark_tag"
+  benchmark_results="$HOME/lattica-apple-current-results-$benchmark_tag"
+  git worktree add --detach "../lattica-mac-benchmark-$benchmark_tag" origin/v3
+  cd "../lattica-mac-benchmark-$benchmark_tag"
+  git rev-parse HEAD
 
   python3 lattica-prover-p3/scripts/prepare-apple-benchmark-package.py \
     --revision HEAD \
     --fixture lattica-prover-p3/fixtures/apple-benchmark-eight \
-    --out "$HOME/lattica-apple-current-package-20261006"
+    --out "$benchmark_package"
 
 Inspect the pinned recipe, then run it:
 
-  python3 "$HOME/lattica-apple-current-package-20261006/run-apple-benchmark-package.py" \
-    --repo "$PWD" --out "$HOME/lattica-apple-current-results-20261006" --plan
+  python3 "$benchmark_package/run-apple-benchmark-package.py" \
+    --repo "$PWD" --out "$benchmark_results" --plan
 
-  caffeinate -is python3 "$HOME/lattica-apple-current-package-20261006/run-apple-benchmark-package.py" \
-    --repo "$PWD" --out "$HOME/lattica-apple-current-results-20261006"
+  caffeinate -is python3 "$benchmark_package/run-apple-benchmark-package.py" \
+    --repo "$PWD" --out "$benchmark_results"
 
 The runner creates its own pinned checkout, builds CPU and Metal binaries with
 locked dependencies, runs Metal correctness checks, then measures three Metal
@@ -43,6 +47,12 @@ needs a separate macOS integration. The new direct-readback and opening-denomina
 cache switches remain disabled in this recipe; they need explicit Metal
 qualification before adding them to a declared comparison. NVIDIA observations
 do not qualify their performance or resources on Apple Silicon.
+
+The 2026-10-06 workstation capacity checkpoint is retained in
+docs/evidence/block-v2-vram16-capacity-paused-2026-10-06-r1.json. Its optimized
+16-input root passed; 32 was stopped at the user's request and 64 was not
+started. It does not establish a maximum job size or a Metal result. Preserve
+the original 094cade and baf339e packages when making this new package.
 
 Keep the complete result directory, including failed attempts. Return its
 portable-results.tar.gz. After extraction, import the JSON on the development

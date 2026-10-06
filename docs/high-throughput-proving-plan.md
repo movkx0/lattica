@@ -1,12 +1,28 @@
 # Lattica throughput engineering analysis and project plan
 
-**Current priority — 2026-10-06:** qualify four useful user transactions/minute
-on the current workstation, using the gated [two-hour development pilot](benchmarks/README.md#two-hour-throughput-pilot).
-The retained [readiness JSON](evidence/block-v2-throughput-readiness-2026-10-06-r39.json)
-records passed checks and blockers. The larger capacity/cadence and remote-fleet
-proposals below remain later research work; their earlier source snapshot is
-historical. Apple silicon uses the same portable result format to measure
-development milestones.
+**Current checkpoint — 2026-10-06:** workstation experiments are paused at the
+user's request while the committed sources are handed off for Apple Silicon
+measurements. The optimized single-GPU capacity campaign completed 16 inputs
+(12 user + 4 issuance), with 16 fresh recursive proofs, an independent CPU root
+audit, **527.590 s** recursive proving and a **6.63 GiB** sampled GPU process
+peak. The 32-input attempt was interrupted by the requested pause; 64 was not
+started. Maximum capacity remains undetermined. All campaign services are
+stopped, with no recorded memory-limit or OOM events.
+
+The [capacity checkpoint](evidence/block-v2-vram16-capacity-paused-2026-10-06-r1.json)
+retains exact budgets, pins and the interruption. The
+[r40 readiness snapshot](evidence/block-v2-throughput-readiness-2026-10-06-r40.json)
+preserves the remaining qualification gates. Next, execute the
+[current-source Metal recipe](../lattica-prover-p3/scripts/apple-current-benchmark-README.txt)
+on the Mac. A later workstation resumption needs newly declared 32/64 attempts;
+the four-of-five native cache comparison and complete cold/post-seal timing
+also remain open. Workstation experiments remain paused.
+
+The deployment target remains four useful user transactions/minute, measured
+by the gated [two-hour development pilot](benchmarks/README.md#two-hour-throughput-pilot).
+It has not started. The larger capacity/cadence and remote-fleet proposals below
+remain later research work. Apple Silicon and Linux/OpenCL measurements track
+transaction throughput and development milestones within their declared scopes.
 
 ### Work completed after the Apple merge
 
@@ -1232,7 +1248,7 @@ show zero memory-limit/OOM events. The observer peaked at 314,224,640 bytes.
 The offline report exposes the partial comparison and downloadable JSON alongside
 its 819 indexed runs and 393 indexed CPU-audited records. The additional nine
 arms are retained together in the partial comparison document. The
-[r39 readiness snapshot](evidence/block-v2-throughput-readiness-2026-10-06-r39.json)
+[r39 readiness snapshot](evidence/block-v2-throughput-readiness-2026-10-06-r40.json)
 records the pause and preserves all open gates. Mac execution is externally
 pending. The [current-source Mac handoff](../lattica-prover-p3/scripts/apple-current-benchmark-README.txt)
 uses a new package pinned to the selected Git commit and the repository's public
