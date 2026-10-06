@@ -1,0 +1,89 @@
+{
+  "campaign_ids": ["block-v2-query-gather-comparison-2026-10-05","block-v2-query-report-validation-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "row-gather-comparison",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-17be3a85a84fc461a378b1c6",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 7501,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/pair-01-gather.controller.log",
+      "sha256": "04bad76702f209a900ed8af6d1a68004fedd52a02425327abb81e4e938b8d54e"
+    },
+    {
+      "bytes": 7498,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/pair-01-rows.controller.log",
+      "sha256": "cccfd9dc0e174ec0c107a31c7c66ee3659593e0d81d2fd6f98cf849a1f458c12"
+    },
+    {
+      "bytes": 7502,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/pair-02-gather.controller.log",
+      "sha256": "095e36133a52fc9b465262f25553ca396475ab5ba244c35307fa7c658953775f"
+    },
+    {
+      "bytes": 7497,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/pair-02-rows.controller.log",
+      "sha256": "e52b8bd2dd5e5b6e65d0e3f264a8ab91ece68739aec73cfb70af37ef9696a0cf"
+    },
+    {
+      "bytes": 7502,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/pair-03-gather.controller.log",
+      "sha256": "7ff0cea0174bc9a281698ce02172e8a1a973738695f49bc11b490c47c587b602"
+    },
+    {
+      "bytes": 7499,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/pair-03-rows.controller.log",
+      "sha256": "3450fa3508463b8e95c49056d23b62bef8b3dd2394c3c230eaedadb1ff1f366e"
+    },
+    {
+      "bytes": 7502,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/pair-04-gather.controller.log",
+      "sha256": "bb467f7b655c62d4eaeedbdf465db9b2f2ab1a0847294a373999b92c680fa066"
+    },
+    {
+      "bytes": 7497,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/pair-04-rows.controller.log",
+      "sha256": "fe2cf077a12c256678ede1b0789d40661ba7bc1abd02b61d33d561178a940ceb"
+    },
+    {
+      "bytes": 7502,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/pair-05-gather.controller.log",
+      "sha256": "66ce98c51c0d707a6fc23bb5531974c7e84818df5d4de4af065e9459ad620451"
+    },
+    {
+      "bytes": 7498,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/pair-05-rows.controller.log",
+      "sha256": "f4f4d08c63895455bfbde87550cbce52ef4052e85888c6c94f3c8a7515391e2e"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

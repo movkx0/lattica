@@ -1,0 +1,2866 @@
+{
+  "active_worker_recovery_qualified": false,
+  "arrival_backend_integrated": false,
+  "binary": {
+    "bytes": 5333912,
+    "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/gpu-block-v2-paired-probe",
+    "sha256": "1a5f5b7c5ce9bee9d83d68ea00482ecddd4cee70400a3701b6012ee34cb064f3"
+  },
+  "captured_utc": "2026-10-05T18:01:43.151526+00:00",
+  "checked_trials": [
+    {
+      "all_recorded_gpu_context_samples_belong_to_child": true,
+      "budget": {
+        "cpu": {
+          "allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "coordinator_capacity": "1",
+          "effective_capacity": "24",
+          "quota_percent": "2300%",
+          "rayon_threads": 23,
+          "version": 1
+        },
+        "detected_gpu": {
+          "nvidia": {
+            "driver": "615.71.09",
+            "free_bytes": 15775825920,
+            "name": "NVIDIA GeForce RTX 5080",
+            "pci": "00000000:05:00.0",
+            "total_bytes": 17094934528,
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          "opencl": {
+            "driver": "615.71.09",
+            "global_bytes": 16707092480,
+            "max_allocation_bytes": 4176773120,
+            "name": "NVIDIA GeForce RTX 5080",
+            "opencl_index": 0,
+            "pci": "0000:05:00.0",
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+        },
+        "detected_host": {
+          "affinity_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "ancestors": [
+            {
+              "cpuset": "0-23",
+              "path": "/sys/fs/cgroup"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 15009210368,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 14999838720,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 12476387328,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 11151577088,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 26787840,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/lattica-benchmark-monitor-process-desktop-r1.service"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 227446784,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 227389440,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 227332096,
+              "memory_limit_owned_by_controller": true,
+              "memory_max": "49123688448",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice"
+            }
+          ],
+          "available_bytes": 56059330560,
+          "cgroup_memory_headroom": null,
+          "cpu_capacity": "24",
+          "effective_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "online_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "physical_bytes": 66811260928,
+          "scratch": {
+            "available_bytes": 32753704960,
+            "capacity_bytes": 33405628416,
+            "device": 51,
+            "filesystem": {
+              "fstype": "tmpfs",
+              "options": "rw,noatime,inode64,huge=advise",
+              "source": "tmpfs",
+              "target": "/tmp"
+            },
+            "page_bytes": 4096,
+            "path": "/tmp",
+            "quota_bytes": null,
+            "tmpfs": true
+          },
+          "version": 1
+        },
+        "gpu": {
+          "available_bytes": 15775825920,
+          "bootstrap": true,
+          "context_bytes": 7516192768,
+          "headroom_bytes": 1073741824,
+          "managed_bytes": 6979321856,
+          "max_allocation_bytes": 4176773120,
+          "total_bytes": 14495514624,
+          "usable_bytes": 16707092480,
+          "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "version": 1
+        },
+        "host": {
+          "coordinator_bytes": 1073741824,
+          "filesystem_headroom_bytes": 1670281421,
+          "fleet_bytes": 49123688448,
+          "os_headroom_bytes": 6681126093,
+          "scratch_device": 51,
+          "scratch_path": "/tmp",
+          "spill_bytes": 30870077440,
+          "swap_bytes": 0,
+          "tmpfs": true,
+          "version": 1,
+          "worker_bytes": 48049946624
+        },
+        "qualification_capacity_test": true,
+        "query_readback_layout": "rows",
+        "readback_layout": "direct",
+        "slice": "lattica-v2-multi.slice",
+        "typed_ram_admission": "compact",
+        "unit": "lattica-v2-multi-635385-typed.service",
+        "workload_kind": "typed-paired-compact-depth-six-bootstrap-v1"
+      },
+      "captured_utc": "2026-10-05T17:54:21.618730+00:00",
+      "checker": {
+        "bytes": 5764,
+        "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/check-qualification-r1.py",
+        "sha256": "5763958b0b2334821a6a35669e4aec0164d19479776ab6aaaaa3616d3ef8ec88"
+      },
+      "construction": "paired",
+      "context_measurement": {
+        "binary_sha256": "1a5f5b7c5ce9bee9d83d68ea00482ecddd4cee70400a3701b6012ee34cb064f3",
+        "driver": "615.71.09",
+        "peak_context_bytes": 278919440,
+        "profile_sha256": "a7c44db10099c1100f575a31a5196e22620ca11369bf322a44f2923ee8672857",
+        "runtime": "615.71.09",
+        "samples": 37,
+        "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      },
+      "count": 8,
+      "cpu_audit_seconds": 0.058468068978982046,
+      "cpu_audited": true,
+      "execution_result": {
+        "arrival_backend_integrated": false,
+        "backend": "gpu",
+        "cache_hits": 4,
+        "cache_setups": 4,
+        "construction": "typed-paired-v1",
+        "coordinator_pid": 635480,
+        "count": 8,
+        "durable_host_applied": false,
+        "execution_backend": "typed_process_dag_v1",
+        "fresh_proofs": 8,
+        "node_records": [
+          {
+            "bytes": 1683948,
+            "cache_hits": 0,
+            "cache_setups": 1,
+            "count": 2,
+            "event": "fresh_typed_node",
+            "index": 0,
+            "input_verification_ms": 387,
+            "level": 1,
+            "mode": 4,
+            "proving_ms": 38358,
+            "seconds": 39.787415028,
+            "serialization_ms": 51
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 1,
+            "cache_setups": 0,
+            "count": 2,
+            "event": "fresh_typed_node",
+            "index": 2,
+            "input_verification_ms": 399,
+            "level": 1,
+            "mode": 4,
+            "proving_ms": 31309,
+            "seconds": 32.727967661,
+            "serialization_ms": 52
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 0,
+            "cache_setups": 1,
+            "count": 2,
+            "event": "fresh_typed_node",
+            "index": 1,
+            "input_verification_ms": 399,
+            "level": 1,
+            "mode": 8,
+            "proving_ms": 38995,
+            "seconds": 40.448420181,
+            "serialization_ms": 53
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 1,
+            "cache_setups": 0,
+            "count": 2,
+            "event": "fresh_typed_node",
+            "index": 3,
+            "input_verification_ms": 388,
+            "level": 1,
+            "mode": 8,
+            "proving_ms": 30696,
+            "seconds": 32.134005761,
+            "serialization_ms": 52
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 0,
+            "cache_setups": 1,
+            "count": 4,
+            "event": "fresh_typed_node",
+            "index": 0,
+            "input_verification_ms": 592,
+            "level": 2,
+            "mode": 3,
+            "proving_ms": 37713,
+            "seconds": 39.846838098,
+            "serialization_ms": 101
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 1,
+            "cache_setups": 0,
+            "count": 4,
+            "event": "fresh_typed_node",
+            "index": 1,
+            "input_verification_ms": 591,
+            "level": 2,
+            "mode": 3,
+            "proving_ms": 29444,
+            "seconds": 31.553499582,
+            "serialization_ms": 101
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 1,
+            "cache_setups": 0,
+            "count": 8,
+            "event": "fresh_typed_node",
+            "index": 0,
+            "input_verification_ms": 586,
+            "level": 3,
+            "mode": 3,
+            "proving_ms": 28873,
+            "seconds": 30.994825449,
+            "serialization_ms": 104
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 0,
+            "cache_setups": 1,
+            "count": 8,
+            "event": "fresh_typed_node",
+            "index": 0,
+            "input_verification_ms": 296,
+            "level": 6,
+            "mode": 12,
+            "proving_ms": 35359,
+            "seconds": 36.69392391,
+            "serialization_ms": 51
+          }
+        ],
+        "production_ready": false,
+        "registry_keys": 12,
+        "root_file": "node.6.0",
+        "schema_version": 1,
+        "seconds": 290.37062672,
+        "status": "proved_cpu_audit_pending",
+        "worker_memory_bytes": 48049946624,
+        "worker_pid": 635516,
+        "worker_process_exited": true,
+        "workspace_released_after_gpu_teardown": true
+      },
+      "fresh_proofs": 8,
+      "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "memory_events": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "peak_charged_ram_bytes": 17143447552,
+      "proving_seconds": 291.1586494969961,
+      "result_source": {
+        "bytes": 11354,
+        "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/result.json",
+        "sha256": "499d319cd0800f17a364304588e5d324991a5ecf7587a645e63e9c4db9c8e4ca"
+      },
+      "root": {
+        "bytes": 1683948,
+        "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/root-only/node.6.0",
+        "sha256": "c63cec8e813152ba1fa58d8d91e60c23f365dc366ab147fd30903ead345ac3ae"
+      },
+      "sources": [
+        {
+          "bytes": 18504,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/attempt.json",
+          "sha256": "9848a3ad31e10d57df0545b9522df57104094e32671be44ed4fc27847ca8392f"
+        },
+        {
+          "bytes": 436,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/accounting.json",
+          "sha256": "6263ca055cf68c16eb178fc206c1457dc69a3de14cfa7414c8e48888c82b6be8"
+        },
+        {
+          "bytes": 119,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/audit.log",
+          "sha256": "5e74c14ed864c286bd7402b5d7da05c65f0f3d5272eb0c9fc61b7c217b1721d4"
+        },
+        {
+          "bytes": 67943,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/prove.log",
+          "sha256": "add99f56d987a755f26a722bc6fc2a8d4e881e86fcccbf347ddda412c911c964"
+        },
+        {
+          "bytes": 471548,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/telemetry.jsonl",
+          "sha256": "7232b91044535cf39e815d1fd71d0f53bae1ed312b5ed5cf57d73dc97df3d12b"
+        },
+        {
+          "bytes": 259,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/execution/worker-start.json",
+          "sha256": "e46cdead247fd04384986a8ab612594bea7ab91b95c5b14d0424cf9c919173a7"
+        },
+        {
+          "bytes": 271,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/execution/worker-exit.json",
+          "sha256": "8cd48811cada086ba526655512f73c1f6b8035664c38a859067e10d46f2d18c8"
+        },
+        {
+          "bytes": 296,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/execution/worker-session",
+          "sha256": "ed1ceebc2c205160950db8bbef259b7eeab1463c507ba0c9c80b19cc8bc22e57"
+        }
+      ],
+      "status": "passed",
+      "summary_source": {
+        "bytes": 13726,
+        "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/summary.json",
+        "sha256": "ae2804790d5f36737fc86800dd2c01171092eaca3d1e59896d9964c92f5a3fd5"
+      },
+      "telemetry": {
+        "first_time_ns": 1791222517658887426,
+        "last_time_ns": 1791222809362495213,
+        "max_sample_interval_seconds": 0.667765006,
+        "samples": 528
+      },
+      "worker_seconds": 291.2471798059996
+    },
+    {
+      "all_recorded_gpu_context_samples_belong_to_child": true,
+      "budget": {
+        "cpu": {
+          "allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "coordinator_capacity": "1",
+          "effective_capacity": "24",
+          "quota_percent": "1200%",
+          "rayon_threads": 12,
+          "version": 1
+        },
+        "detected_gpu": {
+          "nvidia": {
+            "driver": "615.71.09",
+            "free_bytes": 16631463936,
+            "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+            "pci": "00000000:02:00.0",
+            "total_bytes": 17094934528,
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+          },
+          "opencl": {
+            "driver": "615.71.09",
+            "global_bytes": 16697327616,
+            "max_allocation_bytes": 4174331904,
+            "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+            "opencl_index": 1,
+            "pci": "0000:02:00.0",
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+          },
+          "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+        },
+        "detected_host": {
+          "affinity_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "ancestors": [
+            {
+              "cpuset": "0-23",
+              "path": "/sys/fs/cgroup"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 15081242624,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 15071870976,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 12559147008,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 11172257792,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 26513408,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/lattica-benchmark-monitor-process-concurrent-r1.service"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 289546240,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 289488896,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 289431552,
+              "memory_limit_owned_by_controller": true,
+              "memory_max": "49123688448",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice"
+            }
+          ],
+          "available_bytes": 56069001216,
+          "cgroup_memory_headroom": null,
+          "cpu_capacity": "24",
+          "effective_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "online_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "physical_bytes": 66811260928,
+          "scratch": {
+            "available_bytes": 32753704960,
+            "capacity_bytes": 33405628416,
+            "device": 51,
+            "filesystem": {
+              "fstype": "tmpfs",
+              "options": "rw,noatime,inode64,huge=advise",
+              "source": "tmpfs",
+              "target": "/tmp"
+            },
+            "page_bytes": 4096,
+            "path": "/tmp",
+            "quota_bytes": null,
+            "tmpfs": true
+          },
+          "version": 1
+        },
+        "gpu": {
+          "available_bytes": 16631463936,
+          "bootstrap": true,
+          "context_bytes": 7784628224,
+          "headroom_bytes": 1073741824,
+          "managed_bytes": 7516192768,
+          "max_allocation_bytes": 4174331904,
+          "total_bytes": 15300820992,
+          "usable_bytes": 16697327616,
+          "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+          "version": 1
+        },
+        "host": {
+          "coordinator_bytes": 1342177280,
+          "filesystem_headroom_bytes": 1670281421,
+          "fleet_bytes": 49123688448,
+          "os_headroom_bytes": 6681126093,
+          "scratch_device": 51,
+          "scratch_path": "/tmp",
+          "spill_bytes": 15300820992,
+          "swap_bytes": 0,
+          "tmpfs": true,
+          "version": 1,
+          "worker_bytes": 23890755584
+        },
+        "qualification_capacity_test": true,
+        "query_readback_layout": "rows",
+        "readback_layout": "direct",
+        "slice": "lattica-v2-multi.slice",
+        "typed_ram_admission": "compact",
+        "unit": "lattica-v2-multi-637481-typed-1.service",
+        "workload_kind": "typed-paired-compact-depth-six-bootstrap-v1"
+      },
+      "captured_utc": "2026-10-05T18:01:20.054126+00:00",
+      "checker": {
+        "bytes": 5764,
+        "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/check-qualification-r1.py",
+        "sha256": "5763958b0b2334821a6a35669e4aec0164d19479776ab6aaaaa3616d3ef8ec88"
+      },
+      "construction": "paired",
+      "context_measurement": {
+        "binary_sha256": "1a5f5b7c5ce9bee9d83d68ea00482ecddd4cee70400a3701b6012ee34cb064f3",
+        "driver": "615.71.09",
+        "peak_context_bytes": 209713424,
+        "profile_sha256": "a7c44db10099c1100f575a31a5196e22620ca11369bf322a44f2923ee8672857",
+        "runtime": "615.71.09",
+        "samples": 37,
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      "count": 8,
+      "cpu_audit_seconds": 0.05626486099208705,
+      "cpu_audited": true,
+      "execution_result": {
+        "arrival_backend_integrated": false,
+        "backend": "gpu",
+        "cache_hits": 4,
+        "cache_setups": 4,
+        "construction": "typed-paired-v1",
+        "coordinator_pid": 637579,
+        "count": 8,
+        "durable_host_applied": false,
+        "execution_backend": "typed_process_dag_v1",
+        "fresh_proofs": 8,
+        "node_records": [
+          {
+            "bytes": 1683948,
+            "cache_hits": 0,
+            "cache_setups": 1,
+            "count": 2,
+            "event": "fresh_typed_node",
+            "index": 0,
+            "input_verification_ms": 409,
+            "level": 1,
+            "mode": 4,
+            "proving_ms": 40150,
+            "seconds": 41.668062218,
+            "serialization_ms": 58
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 1,
+            "cache_setups": 0,
+            "count": 2,
+            "event": "fresh_typed_node",
+            "index": 2,
+            "input_verification_ms": 418,
+            "level": 1,
+            "mode": 4,
+            "proving_ms": 33110,
+            "seconds": 34.603203763,
+            "serialization_ms": 56
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 0,
+            "cache_setups": 1,
+            "count": 2,
+            "event": "fresh_typed_node",
+            "index": 1,
+            "input_verification_ms": 430,
+            "level": 1,
+            "mode": 8,
+            "proving_ms": 37626,
+            "seconds": 40.028360901,
+            "serialization_ms": 160
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 1,
+            "cache_setups": 0,
+            "count": 2,
+            "event": "fresh_typed_node",
+            "index": 3,
+            "input_verification_ms": 442,
+            "level": 1,
+            "mode": 8,
+            "proving_ms": 29934,
+            "seconds": 32.475808846,
+            "serialization_ms": 158
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 0,
+            "cache_setups": 1,
+            "count": 4,
+            "event": "fresh_typed_node",
+            "index": 0,
+            "input_verification_ms": 638,
+            "level": 2,
+            "mode": 3,
+            "proving_ms": 35130,
+            "seconds": 38.465844335,
+            "serialization_ms": 110
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 1,
+            "cache_setups": 0,
+            "count": 4,
+            "event": "fresh_typed_node",
+            "index": 1,
+            "input_verification_ms": 833,
+            "level": 2,
+            "mode": 3,
+            "proving_ms": 30731,
+            "seconds": 33.270861111,
+            "serialization_ms": 108
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 1,
+            "cache_setups": 0,
+            "count": 8,
+            "event": "fresh_typed_node",
+            "index": 0,
+            "input_verification_ms": 629,
+            "level": 3,
+            "mode": 3,
+            "proving_ms": 32838,
+            "seconds": 35.095442895,
+            "serialization_ms": 110
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 0,
+            "cache_setups": 1,
+            "count": 8,
+            "event": "fresh_typed_node",
+            "index": 0,
+            "input_verification_ms": 314,
+            "level": 6,
+            "mode": 12,
+            "proving_ms": 37990,
+            "seconds": 39.400306633,
+            "serialization_ms": 55
+          }
+        ],
+        "production_ready": false,
+        "registry_keys": 12,
+        "root_file": "node.6.0",
+        "schema_version": 1,
+        "seconds": 302.606337857,
+        "status": "proved_cpu_audit_pending",
+        "worker_memory_bytes": 23890755584,
+        "worker_pid": 637625,
+        "worker_process_exited": true,
+        "workspace_released_after_gpu_teardown": true
+      },
+      "fresh_proofs": 8,
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "memory_events": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "peak_charged_ram_bytes": 16899702784,
+      "proving_seconds": 303.395994031016,
+      "result_source": {
+        "bytes": 11446,
+        "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/result.json",
+        "sha256": "c2a41e9528ba2587ad20d7094cd64894e54a0a4b701cc84435fb3d98c0daa512"
+      },
+      "root": {
+        "bytes": 1683948,
+        "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/root-only/node.6.0",
+        "sha256": "6efc9cf703ceaaae01122b5e18c30a780015c0346be10a44fe422ec6277c2d80"
+      },
+      "sources": [
+        {
+          "bytes": 20149,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/attempt.json",
+          "sha256": "08918d0c8c40e27aee923383b32ab8c5c167f99fffaff85859b93c1c5a229267"
+        },
+        {
+          "bytes": 436,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/accounting.json",
+          "sha256": "a541eb2beac4754a1eed3f3eff40fe8c97e2629704b0edbbcc9a8c13c754a796"
+        },
+        {
+          "bytes": 119,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/audit.log",
+          "sha256": "5e74c14ed864c286bd7402b5d7da05c65f0f3d5272eb0c9fc61b7c217b1721d4"
+        },
+        {
+          "bytes": 67901,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/prove.log",
+          "sha256": "f236400fc42dec9688c8a9dff606766fe6b0329036ada79aed18855e9c142c61"
+        },
+        {
+          "bytes": 466883,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/telemetry.jsonl",
+          "sha256": "1c6d3d408ea94c97689355d013d96290df598d38f42e19723ec1e129e492a10c"
+        },
+        {
+          "bytes": 259,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/execution/worker-start.json",
+          "sha256": "51ff00d061391a3bbb033b43c60cc493eb6618a13ed70219e58f8d95b01b1817"
+        },
+        {
+          "bytes": 271,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/execution/worker-exit.json",
+          "sha256": "bbe9eb810d445f24aa82167193b3e355af366e5524a607acf22677208efcd45f"
+        },
+        {
+          "bytes": 296,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/execution/worker-session",
+          "sha256": "5b6f3f99de2867cc0126a7b0b367ee37ae0f82dffd428834e596272248c543f1"
+        }
+      ],
+      "status": "passed",
+      "summary_source": {
+        "bytes": 13859,
+        "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/summary.json",
+        "sha256": "2bdcc900f1b66b9e5527bde612da5a2f686063bdbe0c380dc45758fd0ce1f7b7"
+      },
+      "telemetry": {
+        "first_time_ns": 1791222884727483328,
+        "last_time_ns": 1791223188297045072,
+        "max_sample_interval_seconds": 0.908487943,
+        "samples": 522
+      },
+      "worker_seconds": 303.48575665199314
+    },
+    {
+      "all_recorded_gpu_context_samples_belong_to_child": true,
+      "budget": {
+        "cpu": {
+          "allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "coordinator_capacity": "1",
+          "effective_capacity": "24",
+          "quota_percent": "1100%",
+          "rayon_threads": 11,
+          "version": 1
+        },
+        "detected_gpu": {
+          "nvidia": {
+            "driver": "615.71.09",
+            "free_bytes": 15775825920,
+            "name": "NVIDIA GeForce RTX 5080",
+            "pci": "00000000:05:00.0",
+            "total_bytes": 17094934528,
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          "opencl": {
+            "driver": "615.71.09",
+            "global_bytes": 16707092480,
+            "max_allocation_bytes": 4176773120,
+            "name": "NVIDIA GeForce RTX 5080",
+            "opencl_index": 0,
+            "pci": "0000:05:00.0",
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+        },
+        "detected_host": {
+          "affinity_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "ancestors": [
+            {
+              "cpuset": "0-23",
+              "path": "/sys/fs/cgroup"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 15081242624,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 15071870976,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 12559147008,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 11172257792,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 26513408,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/lattica-benchmark-monitor-process-concurrent-r1.service"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 289546240,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 289488896,
+              "memory_max": "max",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice"
+            },
+            {
+              "cpu_max": "max 100000",
+              "cpuset": "0-23",
+              "memory_current": 289431552,
+              "memory_limit_owned_by_controller": true,
+              "memory_max": "49123688448",
+              "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice"
+            }
+          ],
+          "available_bytes": 56069001216,
+          "cgroup_memory_headroom": null,
+          "cpu_capacity": "24",
+          "effective_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "online_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "physical_bytes": 66811260928,
+          "scratch": {
+            "available_bytes": 32753704960,
+            "capacity_bytes": 33405628416,
+            "device": 51,
+            "filesystem": {
+              "fstype": "tmpfs",
+              "options": "rw,noatime,inode64,huge=advise",
+              "source": "tmpfs",
+              "target": "/tmp"
+            },
+            "page_bytes": 4096,
+            "path": "/tmp",
+            "quota_bytes": null,
+            "tmpfs": true
+          },
+          "version": 1
+        },
+        "gpu": {
+          "available_bytes": 15775825920,
+          "bootstrap": true,
+          "context_bytes": 7516192768,
+          "headroom_bytes": 1073741824,
+          "managed_bytes": 6979321856,
+          "max_allocation_bytes": 4176773120,
+          "total_bytes": 14495514624,
+          "usable_bytes": 16707092480,
+          "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "version": 1
+        },
+        "host": {
+          "coordinator_bytes": 1342177280,
+          "filesystem_headroom_bytes": 1670281421,
+          "fleet_bytes": 49123688448,
+          "os_headroom_bytes": 6681126093,
+          "scratch_device": 51,
+          "scratch_path": "/tmp",
+          "spill_bytes": 15300820992,
+          "swap_bytes": 0,
+          "tmpfs": true,
+          "version": 1,
+          "worker_bytes": 23890755584
+        },
+        "qualification_capacity_test": true,
+        "query_readback_layout": "rows",
+        "readback_layout": "direct",
+        "slice": "lattica-v2-multi.slice",
+        "typed_ram_admission": "compact",
+        "unit": "lattica-v2-multi-637481-typed-2.service",
+        "workload_kind": "typed-paired-compact-depth-six-bootstrap-v1"
+      },
+      "captured_utc": "2026-10-05T18:01:20.170016+00:00",
+      "checker": {
+        "bytes": 5764,
+        "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/check-qualification-r1.py",
+        "sha256": "5763958b0b2334821a6a35669e4aec0164d19479776ab6aaaaa3616d3ef8ec88"
+      },
+      "construction": "paired",
+      "context_measurement": {
+        "binary_sha256": "1a5f5b7c5ce9bee9d83d68ea00482ecddd4cee70400a3701b6012ee34cb064f3",
+        "driver": "615.71.09",
+        "peak_context_bytes": 278919440,
+        "profile_sha256": "a7c44db10099c1100f575a31a5196e22620ca11369bf322a44f2923ee8672857",
+        "runtime": "615.71.09",
+        "samples": 37,
+        "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      },
+      "count": 8,
+      "cpu_audit_seconds": 0.07972062000771984,
+      "cpu_audited": true,
+      "execution_result": {
+        "arrival_backend_integrated": false,
+        "backend": "gpu",
+        "cache_hits": 4,
+        "cache_setups": 4,
+        "construction": "typed-paired-v1",
+        "coordinator_pid": 637595,
+        "count": 8,
+        "durable_host_applied": false,
+        "execution_backend": "typed_process_dag_v1",
+        "fresh_proofs": 8,
+        "node_records": [
+          {
+            "bytes": 1683948,
+            "cache_hits": 0,
+            "cache_setups": 1,
+            "count": 2,
+            "event": "fresh_typed_node",
+            "index": 0,
+            "input_verification_ms": 409,
+            "level": 1,
+            "mode": 4,
+            "proving_ms": 46297,
+            "seconds": 47.923382612,
+            "serialization_ms": 55
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 1,
+            "cache_setups": 0,
+            "count": 2,
+            "event": "fresh_typed_node",
+            "index": 2,
+            "input_verification_ms": 667,
+            "level": 1,
+            "mode": 4,
+            "proving_ms": 38107,
+            "seconds": 39.889363865,
+            "serialization_ms": 55
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 0,
+            "cache_setups": 1,
+            "count": 2,
+            "event": "fresh_typed_node",
+            "index": 1,
+            "input_verification_ms": 416,
+            "level": 1,
+            "mode": 8,
+            "proving_ms": 45104,
+            "seconds": 46.600691845,
+            "serialization_ms": 56
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 1,
+            "cache_setups": 0,
+            "count": 2,
+            "event": "fresh_typed_node",
+            "index": 3,
+            "input_verification_ms": 423,
+            "level": 1,
+            "mode": 8,
+            "proving_ms": 33551,
+            "seconds": 36.124675131,
+            "serialization_ms": 161
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 0,
+            "cache_setups": 1,
+            "count": 4,
+            "event": "fresh_typed_node",
+            "index": 0,
+            "input_verification_ms": 827,
+            "level": 2,
+            "mode": 3,
+            "proving_ms": 44304,
+            "seconds": 48.248259919,
+            "serialization_ms": 111
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 1,
+            "cache_setups": 0,
+            "count": 4,
+            "event": "fresh_typed_node",
+            "index": 1,
+            "input_verification_ms": 636,
+            "level": 2,
+            "mode": 3,
+            "proving_ms": 36605,
+            "seconds": 38.892106292,
+            "serialization_ms": 106
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 1,
+            "cache_setups": 0,
+            "count": 8,
+            "event": "fresh_typed_node",
+            "index": 0,
+            "input_verification_ms": 745,
+            "level": 3,
+            "mode": 3,
+            "proving_ms": 36245,
+            "seconds": 38.549879334,
+            "serialization_ms": 107
+          },
+          {
+            "bytes": 1683948,
+            "cache_hits": 0,
+            "cache_setups": 1,
+            "count": 8,
+            "event": "fresh_typed_node",
+            "index": 0,
+            "input_verification_ms": 299,
+            "level": 6,
+            "mode": 12,
+            "proving_ms": 36641,
+            "seconds": 37.969596587,
+            "serialization_ms": 51
+          }
+        ],
+        "production_ready": false,
+        "registry_keys": 12,
+        "root_file": "node.6.0",
+        "schema_version": 1,
+        "seconds": 341.755153696,
+        "status": "proved_cpu_audit_pending",
+        "worker_memory_bytes": 23890755584,
+        "worker_pid": 637639,
+        "worker_process_exited": true,
+        "workspace_released_after_gpu_teardown": true
+      },
+      "fresh_proofs": 8,
+      "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "memory_events": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "peak_charged_ram_bytes": 16862670848,
+      "proving_seconds": 342.59511645900784,
+      "result_source": {
+        "bytes": 11425,
+        "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/result.json",
+        "sha256": "73405ca3660411456eef8f9772ff39928b3cc6258c215942b1e597c845158a09"
+      },
+      "root": {
+        "bytes": 1683948,
+        "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/root-only/node.6.0",
+        "sha256": "10bce64adf553df67050cd68261893c37d591df04a9cc0ac32b78b8a9176adba"
+      },
+      "sources": [
+        {
+          "bytes": 20127,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/attempt.json",
+          "sha256": "c479bf9e6fcd8c487910c2002de7532a7b010b2118518eea86b2f385709d77b3"
+        },
+        {
+          "bytes": 436,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/accounting.json",
+          "sha256": "72ea18ec3ed3666336c983f61393bf120277ae37b360e586e4f7b5c642dde984"
+        },
+        {
+          "bytes": 119,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/audit.log",
+          "sha256": "5e74c14ed864c286bd7402b5d7da05c65f0f3d5272eb0c9fc61b7c217b1721d4"
+        },
+        {
+          "bytes": 67904,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/prove.log",
+          "sha256": "281e82260e2c522a1ad3f656eb1d9143e7c364db09c4037c352b19ed6aca201c"
+        },
+        {
+          "bytes": 531508,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/telemetry.jsonl",
+          "sha256": "62b3e406495c3b00308072491ee6fad5b4d2168e39cb3390a1f1deaa2f348f47"
+        },
+        {
+          "bytes": 259,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/execution/worker-start.json",
+          "sha256": "72a74c5b23e8b614f1ff44af180a85efe133a03600aab4af5a235f56fa1ba50b"
+        },
+        {
+          "bytes": 271,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/execution/worker-exit.json",
+          "sha256": "b63955c3202ee0a01194ac127c82e28093381afff39919341591be3b4aac4ca0"
+        },
+        {
+          "bytes": 296,
+          "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/execution/worker-session",
+          "sha256": "eca29bef18102ffb7e2d154f667f4ac0a6e8d665984dc4ea454969878ee7307a"
+        }
+      ],
+      "status": "passed",
+      "summary_source": {
+        "bytes": 13838,
+        "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/summary.json",
+        "sha256": "aaf27fd0df25828951df814e285b400555977f2f0af960afab7a24eda5de31ea"
+      },
+      "telemetry": {
+        "first_time_ns": 1791222884757196028,
+        "last_time_ns": 1791223227767889735,
+        "max_sample_interval_seconds": 0.864826584,
+        "samples": 594
+      },
+      "worker_seconds": 342.70337966800435
+    }
+  ],
+  "concurrent_summary": {
+    "attempts": [
+      {
+        "directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed",
+        "status": "succeeded",
+        "unit": "lattica-v2-multi-637481-typed-1.service",
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      {
+        "directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed",
+        "status": "succeeded",
+        "unit": "lattica-v2-multi-637481-typed-2.service",
+        "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      }
+    ],
+    "construction": "paired",
+    "controller_elapsed_seconds": 344.2033984849986,
+    "count_per_root": 8,
+    "cpu_audited_roots": 2,
+    "delivered_transactions_measured": false,
+    "execution_backend": "typed-process-dag",
+    "execution_elapsed_seconds": 343.26779988899943,
+    "fresh_recursive_proofs": 16,
+    "input_pins": {
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-block-v2-paired-probe": "7085223e7c775ff6ffeafe9e7f1be2f7e8741bc4760a4ddee78d0ae256fd7a24",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/body.json": "439bfdd59b1711eeb06970235c2dd987c33af81ca78c4020810cb7f3c01cc87b",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/height.json": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/key.1": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/key.10": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/key.11": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/key.12": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/key.2": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/key.3": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/key.4": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/key.5": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/key.6": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/key.7": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/key.8": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/key.9": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/wallet.0": "a13779aa339ded5c4b317904bd84e164e9a2e8cedb00114ac6f392227fb1fcc0",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/wallet.1": "47aad055455d5723788b6b68e489fa3f7ab55316a67aa99956c1d70997b5762c",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/wallet.2": "729803287b03d059736559b1d906d2814f098c5a9f526e156bf5d8b47980f7d2",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/wallet.3": "710d66931d1eb49fc91f69e3d59b5afd5ae535b88aaac7d76e73b525d4a0d15d",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/wallet.4": "32f2c75034838a4af9d533ec06631e4043ed9f627261eace1e73f47ce0f6feb8",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/wallet.5": "27b4bf7d2e373b508a8e5e7ff2efcded807a7019765de0a09e25a61981c5f58c",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/wallet.6": "f3ef3b42974e0032d1e6ac2357afa14ce9e1f66c243d12592237e766288d2c7c",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture/wallet.7": "f00a95f137131f16c6a06eedca2c415df59f4951fddac60a0dea6e7184a9a722",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/controllers/block-v2-multi-gpu-direct-readback-workload.json": "48174de0b9de99549e86b39966c416fd3021bf8f69014dd6bffe8fe8c90b3d64",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/controllers/block-v2-multi-gpu-run.py": "ef22b8365a466de50c5ec1b79b6f55fd6ab0a39cbb883dcc1638f2f2ff335b4f",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/controllers/block-v2-typed-compare.py": "d303f3c816a43b66472150072e694e63d60a4989b044d9d61f9264d517490238",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/controllers/block-v2-typed-gpu-run.py": "fd3cc9a9491950dac84a9f7d18c7af75930d5d7b97c0d34f7ab6e28521dd6b42",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/controllers/block-v2-typed-multi-gpu-run.py": "68bd8f0b311769e5a8db235fe050eb036d71e30baeaf6722d27fa80ec00da6ac",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/controllers/block_v2_resources.py": "ad10f7a33518527a423678575bad6ecb11b8ebc4d12fb6afffda7511074d4300",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/gpu-block-v2-paired-probe": "1a5f5b7c5ce9bee9d83d68ea00482ecddd4cee70400a3701b6012ee34cb064f3",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/resource-assignment.json": "01eaa58cd5d0befaa95f6b21d2cd90f3ff0b7adfb44d23854c2d7bfcda0d92b8",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/template-expected.json": "c558ef838479e5819ae41cbb48170d603d98663de9e6ddc2b987017d545f4b90",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/template-plan.json": "b67c137b148c6c57ea2db5900c0027839041974618727a7bea237821bb73f973"
+    },
+    "mode": "concurrent",
+    "parent_memory_event_deltas": {
+      "high": 0,
+      "low": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_group_kill": 0,
+      "oom_kill": 0,
+      "sock_throttled": 0
+    },
+    "parent_memory_events_after": {
+      "high": 0,
+      "low": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_group_kill": 0,
+      "oom_kill": 0,
+      "sock_throttled": 0
+    },
+    "parent_memory_events_before": {
+      "high": 0,
+      "low": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_group_kill": 0,
+      "oom_kill": 0,
+      "sock_throttled": 0
+    },
+    "production_ready": false,
+    "ram_admission": "compact",
+    "resource_assignment": {
+      "bytes": 2967,
+      "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/resource-assignment.json",
+      "sha256": "01eaa58cd5d0befaa95f6b21d2cd90f3ff0b7adfb44d23854c2d7bfcda0d92b8"
+    },
+    "schema": "lattica-typed-fleet-v1",
+    "scope": "One fresh independently CPU-audited mixed root per GPU, using existing public wallet proofs. Registry preparation and durable host application are excluded.",
+    "status": "succeeded",
+    "trials": [
+      {
+        "construction": "paired",
+        "context_measurement": {
+          "binary_sha256": "1a5f5b7c5ce9bee9d83d68ea00482ecddd4cee70400a3701b6012ee34cb064f3",
+          "driver": "615.71.09",
+          "peak_context_bytes": 209713424,
+          "profile_sha256": "a7c44db10099c1100f575a31a5196e22620ca11369bf322a44f2923ee8672857",
+          "runtime": "615.71.09",
+          "samples": 37,
+          "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+        },
+        "cpu_audit_seconds": 0.05626486099208705,
+        "cpu_audited": true,
+        "execution_backend": "typed-process-dag",
+        "execution_result": {
+          "arrival_backend_integrated": false,
+          "backend": "gpu",
+          "cache_hits": 4,
+          "cache_setups": 4,
+          "construction": "typed-paired-v1",
+          "coordinator_pid": 637579,
+          "count": 8,
+          "durable_host_applied": false,
+          "execution_backend": "typed_process_dag_v1",
+          "fresh_proofs": 8,
+          "node_records": [
+            {
+              "bytes": 1683948,
+              "cache_hits": 0,
+              "cache_setups": 1,
+              "count": 2,
+              "event": "fresh_typed_node",
+              "index": 0,
+              "input_verification_ms": 409,
+              "level": 1,
+              "mode": 4,
+              "proving_ms": 40150,
+              "seconds": 41.668062218,
+              "serialization_ms": 58
+            },
+            {
+              "bytes": 1683948,
+              "cache_hits": 1,
+              "cache_setups": 0,
+              "count": 2,
+              "event": "fresh_typed_node",
+              "index": 2,
+              "input_verification_ms": 418,
+              "level": 1,
+              "mode": 4,
+              "proving_ms": 33110,
+              "seconds": 34.603203763,
+              "serialization_ms": 56
+            },
+            {
+              "bytes": 1683948,
+              "cache_hits": 0,
+              "cache_setups": 1,
+              "count": 2,
+              "event": "fresh_typed_node",
+              "index": 1,
+              "input_verification_ms": 430,
+              "level": 1,
+              "mode": 8,
+              "proving_ms": 37626,
+              "seconds": 40.028360901,
+              "serialization_ms": 160
+            },
+            {
+              "bytes": 1683948,
+              "cache_hits": 1,
+              "cache_setups": 0,
+              "count": 2,
+              "event": "fresh_typed_node",
+              "index": 3,
+              "input_verification_ms": 442,
+              "level": 1,
+              "mode": 8,
+              "proving_ms": 29934,
+              "seconds": 32.475808846,
+              "serialization_ms": 158
+            },
+            {
+              "bytes": 1683948,
+              "cache_hits": 0,
+              "cache_setups": 1,
+              "count": 4,
+              "event": "fresh_typed_node",
+              "index": 0,
+              "input_verification_ms": 638,
+              "level": 2,
+              "mode": 3,
+              "proving_ms": 35130,
+              "seconds": 38.465844335,
+              "serialization_ms": 110
+            },
+            {
+              "bytes": 1683948,
+              "cache_hits": 1,
+              "cache_setups": 0,
+              "count": 4,
+              "event": "fresh_typed_node",
+              "index": 1,
+              "input_verification_ms": 833,
+              "level": 2,
+              "mode": 3,
+              "proving_ms": 30731,
+              "seconds": 33.270861111,
+              "serialization_ms": 108
+            },
+            {
+              "bytes": 1683948,
+              "cache_hits": 1,
+              "cache_setups": 0,
+              "count": 8,
+              "event": "fresh_typed_node",
+              "index": 0,
+              "input_verification_ms": 629,
+              "level": 3,
+              "mode": 3,
+              "proving_ms": 32838,
+              "seconds": 35.095442895,
+              "serialization_ms": 110
+            },
+            {
+              "bytes": 1683948,
+              "cache_hits": 0,
+              "cache_setups": 1,
+              "count": 8,
+              "event": "fresh_typed_node",
+              "index": 0,
+              "input_verification_ms": 314,
+              "level": 6,
+              "mode": 12,
+              "proving_ms": 37990,
+              "seconds": 39.400306633,
+              "serialization_ms": 55
+            }
+          ],
+          "production_ready": false,
+          "registry_keys": 12,
+          "root_file": "node.6.0",
+          "schema_version": 1,
+          "seconds": 302.606337857,
+          "status": "proved_cpu_audit_pending",
+          "worker_memory_bytes": 23890755584,
+          "worker_pid": 637625,
+          "worker_process_exited": true,
+          "workspace_released_after_gpu_teardown": true
+        },
+        "fresh_proofs": 8,
+        "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "peak_charged_ram_bytes": 16899702784,
+        "proving_seconds": 303.395994031016,
+        "result_source": {
+          "bytes": 11446,
+          "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/result.json",
+          "sha256": "c2a41e9528ba2587ad20d7094cd64894e54a0a4b701cc84435fb3d98c0daa512"
+        },
+        "root_bytes": 1683948,
+        "root_sha256": "6efc9cf703ceaaae01122b5e18c30a780015c0346be10a44fe422ec6277c2d80",
+        "summary_source": {
+          "bytes": 13859,
+          "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/summary.json",
+          "sha256": "2bdcc900f1b66b9e5527bde612da5a2f686063bdbe0c380dc45758fd0ce1f7b7"
+        },
+        "worker_seconds": 303.48575665199314
+      },
+      {
+        "construction": "paired",
+        "context_measurement": {
+          "binary_sha256": "1a5f5b7c5ce9bee9d83d68ea00482ecddd4cee70400a3701b6012ee34cb064f3",
+          "driver": "615.71.09",
+          "peak_context_bytes": 278919440,
+          "profile_sha256": "a7c44db10099c1100f575a31a5196e22620ca11369bf322a44f2923ee8672857",
+          "runtime": "615.71.09",
+          "samples": 37,
+          "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+        },
+        "cpu_audit_seconds": 0.07972062000771984,
+        "cpu_audited": true,
+        "execution_backend": "typed-process-dag",
+        "execution_result": {
+          "arrival_backend_integrated": false,
+          "backend": "gpu",
+          "cache_hits": 4,
+          "cache_setups": 4,
+          "construction": "typed-paired-v1",
+          "coordinator_pid": 637595,
+          "count": 8,
+          "durable_host_applied": false,
+          "execution_backend": "typed_process_dag_v1",
+          "fresh_proofs": 8,
+          "node_records": [
+            {
+              "bytes": 1683948,
+              "cache_hits": 0,
+              "cache_setups": 1,
+              "count": 2,
+              "event": "fresh_typed_node",
+              "index": 0,
+              "input_verification_ms": 409,
+              "level": 1,
+              "mode": 4,
+              "proving_ms": 46297,
+              "seconds": 47.923382612,
+              "serialization_ms": 55
+            },
+            {
+              "bytes": 1683948,
+              "cache_hits": 1,
+              "cache_setups": 0,
+              "count": 2,
+              "event": "fresh_typed_node",
+              "index": 2,
+              "input_verification_ms": 667,
+              "level": 1,
+              "mode": 4,
+              "proving_ms": 38107,
+              "seconds": 39.889363865,
+              "serialization_ms": 55
+            },
+            {
+              "bytes": 1683948,
+              "cache_hits": 0,
+              "cache_setups": 1,
+              "count": 2,
+              "event": "fresh_typed_node",
+              "index": 1,
+              "input_verification_ms": 416,
+              "level": 1,
+              "mode": 8,
+              "proving_ms": 45104,
+              "seconds": 46.600691845,
+              "serialization_ms": 56
+            },
+            {
+              "bytes": 1683948,
+              "cache_hits": 1,
+              "cache_setups": 0,
+              "count": 2,
+              "event": "fresh_typed_node",
+              "index": 3,
+              "input_verification_ms": 423,
+              "level": 1,
+              "mode": 8,
+              "proving_ms": 33551,
+              "seconds": 36.124675131,
+              "serialization_ms": 161
+            },
+            {
+              "bytes": 1683948,
+              "cache_hits": 0,
+              "cache_setups": 1,
+              "count": 4,
+              "event": "fresh_typed_node",
+              "index": 0,
+              "input_verification_ms": 827,
+              "level": 2,
+              "mode": 3,
+              "proving_ms": 44304,
+              "seconds": 48.248259919,
+              "serialization_ms": 111
+            },
+            {
+              "bytes": 1683948,
+              "cache_hits": 1,
+              "cache_setups": 0,
+              "count": 4,
+              "event": "fresh_typed_node",
+              "index": 1,
+              "input_verification_ms": 636,
+              "level": 2,
+              "mode": 3,
+              "proving_ms": 36605,
+              "seconds": 38.892106292,
+              "serialization_ms": 106
+            },
+            {
+              "bytes": 1683948,
+              "cache_hits": 1,
+              "cache_setups": 0,
+              "count": 8,
+              "event": "fresh_typed_node",
+              "index": 0,
+              "input_verification_ms": 745,
+              "level": 3,
+              "mode": 3,
+              "proving_ms": 36245,
+              "seconds": 38.549879334,
+              "serialization_ms": 107
+            },
+            {
+              "bytes": 1683948,
+              "cache_hits": 0,
+              "cache_setups": 1,
+              "count": 8,
+              "event": "fresh_typed_node",
+              "index": 0,
+              "input_verification_ms": 299,
+              "level": 6,
+              "mode": 12,
+              "proving_ms": 36641,
+              "seconds": 37.969596587,
+              "serialization_ms": 51
+            }
+          ],
+          "production_ready": false,
+          "registry_keys": 12,
+          "root_file": "node.6.0",
+          "schema_version": 1,
+          "seconds": 341.755153696,
+          "status": "proved_cpu_audit_pending",
+          "worker_memory_bytes": 23890755584,
+          "worker_pid": 637639,
+          "worker_process_exited": true,
+          "workspace_released_after_gpu_teardown": true
+        },
+        "fresh_proofs": 8,
+        "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "peak_charged_ram_bytes": 16862670848,
+        "proving_seconds": 342.59511645900784,
+        "result_source": {
+          "bytes": 11425,
+          "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/result.json",
+          "sha256": "73405ca3660411456eef8f9772ff39928b3cc6258c215942b1e597c845158a09"
+        },
+        "root_bytes": 1683948,
+        "root_sha256": "10bce64adf553df67050cd68261893c37d591df04a9cc0ac32b78b8a9176adba",
+        "summary_source": {
+          "bytes": 13838,
+          "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/summary.json",
+          "sha256": "aaf27fd0df25828951df814e285b400555977f2f0af960afab7a24eda5de31ea"
+        },
+        "worker_seconds": 342.70337966800435
+      }
+    ],
+    "worker_slots": 2
+  },
+  "cumulative_persistent_backend": {
+    "complete_gpu_roots": 4,
+    "concurrent_repetitions": 1,
+    "concurrent_roots": 2,
+    "recursive_proofs": 32,
+    "standalone_roots": 2
+  },
+  "delivered_transactions_measured": false,
+  "fresh_work": {
+    "complete_gpu_roots": 3,
+    "native_blocks_applied": 0,
+    "recursive_proofs": 24,
+    "wallet_proofs": 0
+  },
+  "known_limits": [
+    "Only count eight is qualified for this persistent-child binary/backend; the concurrent assignment has one repetition.",
+    "Each GPU has its own candidate DAG owner. Shared-owner dispatch and native arrival integration remain open.",
+    "The new monitor services finished with exit zero. Recorded sample counts and maximum sample intervals are retained. The earlier laptop run still has its separately documented host-telemetry gap.",
+    "Standalone and concurrent trials have different CPU, host RAM and spill assignments; they do not establish a matched speedup.",
+    "Conservative device-specific context allowances remain in use. No calibrated reduction is claimed for this backend.",
+    "GPU-worker termination, DAG-owner restart, exhaustion, reorg and stale-result recovery through the integrated arrival backend remain unqualified.",
+    "Existing public wallet proofs and keys were reused. No delivered transaction throughput, complete cold full-64, complete post-seal timing or pilot readiness is established."
+  ],
+  "live_concurrent_observation": {
+    "both_assigned_gpu_children_observed_in_same_inventory": true,
+    "captured_utc": "2026-10-05T17:58:08.996306+00:00",
+    "coordinator_and_child_share_each_assigned_service": true,
+    "gpu_command": [
+      "nvidia-smi",
+      "--query-compute-apps=gpu_uuid,pid,process_name,used_memory",
+      "--format=csv,noheader,nounits"
+    ],
+    "gpu_inventory": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b, 4108, /usr/bin/kwin_wayland, 12\nGPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b, 637625, /home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/gpu-block-v2-paired-probe, 5896\nGPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 4108, /usr/bin/kwin_wayland, 270\nGPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 637639, /home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/gpu-block-v2-paired-probe, 2250\n",
+    "schema_version": 1,
+    "scope": "One live observation of two independent candidate DAG owners and their persistent GPU children; this is not a shared DAG-owner qualification.",
+    "status": "passed",
+    "workers": [
+      {
+        "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "physical_limits_and_usage": {
+          "cpu.max": "1200000 100000",
+          "cpuset.cpus.effective": "0-23",
+          "memory.current": "13225213952",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+          "memory.max": "23890755584",
+          "memory.peak": "16895246336",
+          "memory.swap.max": "0",
+          "pids.current": "59"
+        },
+        "pid_cgroups": {
+          "637579": "0::/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-637481-typed-1.service",
+          "637625": "0::/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-637481-typed-1.service"
+        },
+        "service_state": {
+          "ActiveState": "active",
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-637481-typed-1.service",
+          "MainPID": "637573",
+          "SubState": "running"
+        },
+        "start": {
+          "coordinator_pid": 637579,
+          "execution_digest": "f00cdcfb7d5255958ba045bf710455a92bfa2fd7ca8051f8270fe72ba18ba358",
+          "rayon_threads": 12,
+          "schema_version": 1,
+          "worker_memory_bytes": 23890755584,
+          "worker_pid": 637625,
+          "workspace_reserved": true
+        }
+      },
+      {
+        "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "physical_limits_and_usage": {
+          "cpu.max": "1100000 100000",
+          "cpuset.cpus.effective": "0-23",
+          "memory.current": "14892044288",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+          "memory.max": "23890755584",
+          "memory.peak": "16509390848",
+          "memory.swap.max": "0",
+          "pids.current": "57"
+        },
+        "pid_cgroups": {
+          "637595": "0::/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-637481-typed-2.service",
+          "637639": "0::/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-637481-typed-2.service"
+        },
+        "service_state": {
+          "ActiveState": "active",
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-637481-typed-2.service",
+          "MainPID": "637575",
+          "SubState": "running"
+        },
+        "start": {
+          "coordinator_pid": 637595,
+          "execution_digest": "875f54264531852e50bdeda67ede11472933d8ca1de7bc3e4317a9531f752f78",
+          "rayon_threads": 11,
+          "schema_version": 1,
+          "worker_memory_bytes": 23890755584,
+          "worker_pid": 637639,
+          "workspace_reserved": true
+        }
+      }
+    ]
+  },
+  "monitor_processes": [
+    {
+      "command": [
+        "/usr/bin/python3",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/controllers/block-v2-typed-gpu-run.py",
+        "--construction",
+        "paired",
+        "--execution-backend",
+        "typed-process-dag",
+        "--ram-admission",
+        "compact",
+        "--gpu-binary",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/gpu-block-v2-paired-probe",
+        "--cpu-binary",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-block-v2-paired-probe",
+        "--fixture",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture",
+        "--gpu-uuid",
+        "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "--count",
+        "8",
+        "--scratch",
+        "/tmp",
+        "--evidence",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1"
+      ],
+      "elapsed_seconds": 292.6313219300064,
+      "finished_utc": "2026-10-05T17:53:29.430857+00:00",
+      "pid": 635384,
+      "request_sha256": "7122cfe9f622fb75ade649e07cb530f6a2405eb09ad598f2d1dba1f98fd9cbde",
+      "returncode": 0,
+      "role": "benchmark_monitor",
+      "schema_version": 1,
+      "service": "lattica-benchmark-monitor-process-desktop-r1.service",
+      "started_utc": "2026-10-05T17:48:36.799467+00:00",
+      "status": "succeeded"
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/controllers/block-v2-typed-multi-gpu-run.py",
+        "--construction",
+        "paired",
+        "--execution-backend",
+        "typed-process-dag",
+        "--ram-admission",
+        "compact",
+        "--gpu-binary",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/gpu-block-v2-paired-probe",
+        "--cpu-binary",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-block-v2-paired-probe",
+        "--fixture",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-preparation/fixture",
+        "--gpu-uuid",
+        "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "--gpu-uuid",
+        "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "--count",
+        "8",
+        "--scratch",
+        "/tmp",
+        "--evidence",
+        "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1",
+        "--mode",
+        "concurrent"
+      ],
+      "elapsed_seconds": 344.26638152298983,
+      "finished_utc": "2026-10-05T18:00:27.931153+00:00",
+      "pid": 637480,
+      "request_sha256": "a66c740f57a15a8b4f752d1c4bc0bb0f505c1394e7258148ca3a7d4057801ef6",
+      "returncode": 0,
+      "role": "benchmark_monitor",
+      "schema_version": 1,
+      "service": "lattica-benchmark-monitor-process-concurrent-r1.service",
+      "started_utc": "2026-10-05T17:54:43.664707+00:00",
+      "status": "succeeded"
+    }
+  ],
+  "pilot_started": false,
+  "previous_qualification": {
+    "bytes": 37637,
+    "path": "docs/evidence/block-v2-typed-process-2026-10-05.json",
+    "sha256": "f8a295c898566f9763006cdd5085db98b47d7ec6a473d40ab5520269778c3c90"
+  },
+  "production_ready": false,
+  "record_type": "typed_persistent_gpu_process_concurrent_qualification",
+  "schema_version": 1,
+  "scope": "One standalone desktop root and two simultaneous independent count-eight roots through separate DAG owners and persistent GPU children, using the frozen qualified binary and actual host/device budgets.",
+  "shared_dag_owner_across_gpus": false,
+  "sources": [
+    {
+      "bytes": 37637,
+      "path": "docs/evidence/block-v2-typed-process-2026-10-05.json",
+      "sha256": "f8a295c898566f9763006cdd5085db98b47d7ec6a473d40ab5520269778c3c90"
+    },
+    {
+      "bytes": 3042,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/capture-concurrent-resources-r1.py",
+      "sha256": "3008f81f63c1bfbdfa50f87af172ab137bf2d504d906925ef0313aa87c75ca81"
+    },
+    {
+      "bytes": 5764,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/check-qualification-r1.py",
+      "sha256": "5763958b0b2334821a6a35669e4aec0164d19479776ab6aaaaa3616d3ef8ec88"
+    },
+    {
+      "bytes": 13550,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/checked-concurrent-gpu-01-r1.json",
+      "sha256": "9c01424e1c268e87681843b7f5c84d9ff17337bb59b49df95cd91ead9011810e"
+    },
+    {
+      "bytes": 13529,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/checked-concurrent-gpu-02-r1.json",
+      "sha256": "08d5f9ba82dc0d5532fd60a5a2346de8539ffe893ccf3b48f601b003708e2606"
+    },
+    {
+      "bytes": 13410,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/checked-desktop-r1.json",
+      "sha256": "8bd9a9370e779f74d84271b45d87672ad0d69e06749afd26d4d8e7d6e59afc15"
+    },
+    {
+      "bytes": 3987,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/concurrent-observation-r1.json",
+      "sha256": "47ccca313213aaa9b112f3be5ba812901ac2ad22bff22a953e3cfeadf04c3953"
+    },
+    {
+      "bytes": 37947,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/manifest.json",
+      "sha256": "fa7efa40c2cfd454b6f86cbcbae51e851c7adfa38ff7fdf2392e1b388258a543"
+    },
+    {
+      "bytes": 934056,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/frozen-r2/source.tar.gz",
+      "sha256": "05ae45af7eb2a928ebe142cda737abb10061ae98b7034d758994bc89c3688d4f"
+    },
+    {
+      "bytes": 17494,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/admission.json",
+      "sha256": "e37076e68e20ba28e3f66238d13087dd3fd71d8b2b0cebfa6d00358fe34fb526"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/expected.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 436,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/accounting.json",
+      "sha256": "a541eb2beac4754a1eed3f3eff40fe8c97e2629704b0edbbcc9a8c13c754a796"
+    },
+    {
+      "bytes": 20149,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/attempt.json",
+      "sha256": "08918d0c8c40e27aee923383b32ab8c5c167f99fffaff85859b93c1c5a229267"
+    },
+    {
+      "bytes": 119,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/audit.log",
+      "sha256": "5e74c14ed864c286bd7402b5d7da05c65f0f3d5272eb0c9fc61b7c217b1721d4"
+    },
+    {
+      "bytes": 5419,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/budget.json",
+      "sha256": "61bfb5304099fade8affade60a8634805dc7bb93e2a56086a2ccc115435bd89b"
+    },
+    {
+      "bytes": 49717,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/fixture/body.json",
+      "sha256": "439bfdd59b1711eeb06970235c2dd987c33af81ca78c4020810cb7f3c01cc87b"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/fixture/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 1729328,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/execution/node.1.0.request",
+      "sha256": "f8ea28cb4e309aa89a185d00bb6664acc8a3308189596e49fed3a2ca5666bbb5"
+    },
+    {
+      "bytes": 1729393,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/execution/node.1.1.request",
+      "sha256": "4e6c032c58cb7da71adb092acabeb59627220bf46f6e5af085cde32b4f8d9e5a"
+    },
+    {
+      "bytes": 1729115,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/execution/node.1.2.request",
+      "sha256": "d32617bafb67e3a3834eea79815c72cfa8dda31f7dd455e3780275a0819acc96"
+    },
+    {
+      "bytes": 1729811,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/execution/node.1.3.request",
+      "sha256": "01d29301781daf829371d65835b759a7faa1f41007f151203af240ca93121657"
+    },
+    {
+      "bytes": 3368309,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/execution/node.2.0.request",
+      "sha256": "b9b0876384887641227b2c65096f5d5266e260d3764b77ef8e1f3fe249f6ff19"
+    },
+    {
+      "bytes": 3368309,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/execution/node.2.1.request",
+      "sha256": "7598a8a3363ab55b71b25929a42b7570420d9935e3b347eafaf86ebf15463a22"
+    },
+    {
+      "bytes": 3368309,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/execution/node.3.0.request",
+      "sha256": "954b3f83845f6e585b39bf39022335884d58105c4290ee6f7a2fd69c226fbfb3"
+    },
+    {
+      "bytes": 1684256,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/execution/node.6.0.request",
+      "sha256": "f38a91d5a5baad7892023259cd679f5e59e311b5946bc78d430ded0e4dae8f9d"
+    },
+    {
+      "bytes": 271,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/execution/worker-exit.json",
+      "sha256": "bbe9eb810d445f24aa82167193b3e355af366e5524a607acf22677208efcd45f"
+    },
+    {
+      "bytes": 296,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/execution/worker-session",
+      "sha256": "5b6f3f99de2867cc0126a7b0b367ee37ae0f82dffd428834e596272248c543f1"
+    },
+    {
+      "bytes": 259,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/execution/worker-start.json",
+      "sha256": "51ff00d061391a3bbb033b43c60cc493eb6618a13ed70219e58f8d95b01b1817"
+    },
+    {
+      "bytes": 4148,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/execution-plan.json",
+      "sha256": "3c92dd48398e9267ce9ff43a9e6d99fae217c4fc0d0693c14cba503bb74e7c31"
+    },
+    {
+      "bytes": 834,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/expected.json",
+      "sha256": "c558ef838479e5819ae41cbb48170d603d98663de9e6ddc2b987017d545f4b90"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/node.1.0",
+      "sha256": "d8db6a7c3aff6f0da386eeababfe9ef77f658c1f17cc62054e0fc57c1e1876fa"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/node.1.1",
+      "sha256": "84b0fe036fb957b176fe350ff5fbbf98730a6949bb14e8305e0e7c1e0f31462f"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/node.1.2",
+      "sha256": "f298624c606c022213a9736d88a0fdf29d2083fc1d0841f45d293b2a655d9a1d"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/node.1.3",
+      "sha256": "ab9b2351b76b50f5b65e1ab3ef1d28238365e7067d53801002b11b3452445e56"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/node.2.0",
+      "sha256": "185947428effe4125ef653798650bcc006d49983e93bd22f4c5ea21597afb2a4"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/node.2.1",
+      "sha256": "fc390e500427905c5a095a7061ca5fa1c30960416f1cea4f2cb2605c71e9c8a4"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/node.3.0",
+      "sha256": "f8f514dfddf968cf06f9e19b0c844cfcf8bb405970c368e360d8dbafb6f5559c"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/node.6.0",
+      "sha256": "6efc9cf703ceaaae01122b5e18c30a780015c0346be10a44fe422ec6277c2d80"
+    },
+    {
+      "bytes": 3138,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/proofs/result.json",
+      "sha256": "6e299cf4de0dbcfc6e59669a27987666369bfc133bf85e751668ba23b1caea06"
+    },
+    {
+      "bytes": 67901,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/prove.log",
+      "sha256": "f236400fc42dec9688c8a9dff606766fe6b0329036ada79aed18855e9c142c61"
+    },
+    {
+      "bytes": 11446,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/result.json",
+      "sha256": "c2a41e9528ba2587ad20d7094cd64894e54a0a4b701cc84435fb3d98c0daa512"
+    },
+    {
+      "bytes": 49717,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/root-only/body.json",
+      "sha256": "439bfdd59b1711eeb06970235c2dd987c33af81ca78c4020810cb7f3c01cc87b"
+    },
+    {
+      "bytes": 834,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/root-only/expected.json",
+      "sha256": "c558ef838479e5819ae41cbb48170d603d98663de9e6ddc2b987017d545f4b90"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/root-only/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/root-only/node.6.0",
+      "sha256": "6efc9cf703ceaaae01122b5e18c30a780015c0346be10a44fe422ec6277c2d80"
+    },
+    {
+      "bytes": 466883,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/telemetry.jsonl",
+      "sha256": "1c6d3d408ea94c97689355d013d96290df598d38f42e19723ec1e129e492a10c"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/001-typed/worker.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 9929,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/admission.json",
+      "sha256": "ad1b18f1db20c1523a634712bf0b8a4f608997c8544bbafdee2fe8fe7da3be59"
+    },
+    {
+      "bytes": 13636,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/config.json",
+      "sha256": "a9a2f084dbdea55447c95de5ec4f6a039436a06d10f6040dad09db5bb544256f"
+    },
+    {
+      "bytes": 834,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/expected.json",
+      "sha256": "c558ef838479e5819ae41cbb48170d603d98663de9e6ddc2b987017d545f4b90"
+    },
+    {
+      "bytes": 459,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/plan.json",
+      "sha256": "b67c137b148c6c57ea2db5900c0027839041974618727a7bea237821bb73f973"
+    },
+    {
+      "bytes": 1340,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/resource-assignment.json",
+      "sha256": "4b6f3e22d15836ed06ac81dd38aa9b24c1b3fc09e699ec688f78a07af4393d47"
+    },
+    {
+      "bytes": 13859,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-01/summary.json",
+      "sha256": "2bdcc900f1b66b9e5527bde612da5a2f686063bdbe0c380dc45758fd0ce1f7b7"
+    },
+    {
+      "bytes": 436,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/accounting.json",
+      "sha256": "72ea18ec3ed3666336c983f61393bf120277ae37b360e586e4f7b5c642dde984"
+    },
+    {
+      "bytes": 20127,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/attempt.json",
+      "sha256": "c479bf9e6fcd8c487910c2002de7532a7b010b2118518eea86b2f385709d77b3"
+    },
+    {
+      "bytes": 119,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/audit.log",
+      "sha256": "5e74c14ed864c286bd7402b5d7da05c65f0f3d5272eb0c9fc61b7c217b1721d4"
+    },
+    {
+      "bytes": 5397,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/budget.json",
+      "sha256": "b4c08589e73bb89730506d731a62d1ea761d08974442e0108c4890e14a153329"
+    },
+    {
+      "bytes": 49717,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/fixture/body.json",
+      "sha256": "439bfdd59b1711eeb06970235c2dd987c33af81ca78c4020810cb7f3c01cc87b"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/fixture/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 1729328,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/execution/node.1.0.request",
+      "sha256": "49b2825c2b10bc51311955da5b6a0d5664ccb6719ea23c1fdb914f5e50ea5759"
+    },
+    {
+      "bytes": 1729393,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/execution/node.1.1.request",
+      "sha256": "a07edf2c673214f54ac645e4a7bbc30e18645ffb65aa3d619dc30bc703ba322c"
+    },
+    {
+      "bytes": 1729115,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/execution/node.1.2.request",
+      "sha256": "5f33d179463313517fc990cfcb8fb6b31a84dc96352b93ae13df74f72e58cba5"
+    },
+    {
+      "bytes": 1729811,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/execution/node.1.3.request",
+      "sha256": "4fb483568abfbbd5cdb5814dfacab4cc9024b466703a3a6457052d84376d3224"
+    },
+    {
+      "bytes": 3368309,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/execution/node.2.0.request",
+      "sha256": "82300d595c2b6d92ea06777a2f573274713e637ddd7bcf71b883ea307bb0ba36"
+    },
+    {
+      "bytes": 3368309,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/execution/node.2.1.request",
+      "sha256": "ca91c237c9abb64a8e1bd459f9a5195f7b62ef1818f2d4c779edfd717e8958d2"
+    },
+    {
+      "bytes": 3368309,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/execution/node.3.0.request",
+      "sha256": "7e19d68f3d552fcafc91812bfcc5dbe9f643d38596d5240d3b22b25c8fc76e40"
+    },
+    {
+      "bytes": 1684256,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/execution/node.6.0.request",
+      "sha256": "18479609fa03ff65241e377dfbd73b015dab9de7ba85ad043fb8e82e621d84d8"
+    },
+    {
+      "bytes": 271,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/execution/worker-exit.json",
+      "sha256": "b63955c3202ee0a01194ac127c82e28093381afff39919341591be3b4aac4ca0"
+    },
+    {
+      "bytes": 296,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/execution/worker-session",
+      "sha256": "eca29bef18102ffb7e2d154f667f4ac0a6e8d665984dc4ea454969878ee7307a"
+    },
+    {
+      "bytes": 259,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/execution/worker-start.json",
+      "sha256": "72a74c5b23e8b614f1ff44af180a85efe133a03600aab4af5a235f56fa1ba50b"
+    },
+    {
+      "bytes": 4148,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/execution-plan.json",
+      "sha256": "3c92dd48398e9267ce9ff43a9e6d99fae217c4fc0d0693c14cba503bb74e7c31"
+    },
+    {
+      "bytes": 834,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/expected.json",
+      "sha256": "c558ef838479e5819ae41cbb48170d603d98663de9e6ddc2b987017d545f4b90"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/node.1.0",
+      "sha256": "ff77ddd398b648887f5828be48480fcd3b2ff335c796ad1350ee9b3e6d2cdf4c"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/node.1.1",
+      "sha256": "b22a1c92c53589af230b81e9cf14c2849396e9795b3f4b3016822df60e3bcc9d"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/node.1.2",
+      "sha256": "a84b61ec385ee195d66cd0371c80fe794431eb3bf2cdf20fdb151787adf8f207"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/node.1.3",
+      "sha256": "75e92c72cc29287c13a6dad1842cc8b444519dbc770d149fa5845927eef9fde1"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/node.2.0",
+      "sha256": "1c22240811bc0a40255378826b05ee794a41d2c97947d03de29bf05dccb37487"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/node.2.1",
+      "sha256": "bff43a2a7f4eb4b7c3e204ef47904626dc21737f9730b163d47af5bd4bdb7dd8"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/node.3.0",
+      "sha256": "059ffff169ac9e4e73ccc26dfad86f56f747b6d2e55fb48f523fbdd2ae54ac69"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/node.6.0",
+      "sha256": "10bce64adf553df67050cd68261893c37d591df04a9cc0ac32b78b8a9176adba"
+    },
+    {
+      "bytes": 3137,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/proofs/result.json",
+      "sha256": "173d9cefe84c0d03565ec79b7ea97af32a899d85df118adc62609809d889bd62"
+    },
+    {
+      "bytes": 67904,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/prove.log",
+      "sha256": "281e82260e2c522a1ad3f656eb1d9143e7c364db09c4037c352b19ed6aca201c"
+    },
+    {
+      "bytes": 11425,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/result.json",
+      "sha256": "73405ca3660411456eef8f9772ff39928b3cc6258c215942b1e597c845158a09"
+    },
+    {
+      "bytes": 49717,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/root-only/body.json",
+      "sha256": "439bfdd59b1711eeb06970235c2dd987c33af81ca78c4020810cb7f3c01cc87b"
+    },
+    {
+      "bytes": 834,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/root-only/expected.json",
+      "sha256": "c558ef838479e5819ae41cbb48170d603d98663de9e6ddc2b987017d545f4b90"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/root-only/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/root-only/node.6.0",
+      "sha256": "10bce64adf553df67050cd68261893c37d591df04a9cc0ac32b78b8a9176adba"
+    },
+    {
+      "bytes": 531508,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/telemetry.jsonl",
+      "sha256": "62b3e406495c3b00308072491ee6fad5b4d2168e39cb3390a1f1deaa2f348f47"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/001-typed/worker.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 9885,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/admission.json",
+      "sha256": "8e96be96d96ef1fad17e435b6e8abfe269e8ebc9fe30101c0897dc3124f15f7b"
+    },
+    {
+      "bytes": 13636,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/config.json",
+      "sha256": "5f86b2fda73a023b4a105b7f995b30d432afd6c0b8d441d41964cc7827a94ba1"
+    },
+    {
+      "bytes": 834,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/expected.json",
+      "sha256": "c558ef838479e5819ae41cbb48170d603d98663de9e6ddc2b987017d545f4b90"
+    },
+    {
+      "bytes": 459,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/plan.json",
+      "sha256": "b67c137b148c6c57ea2db5900c0027839041974618727a7bea237821bb73f973"
+    },
+    {
+      "bytes": 1340,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/resource-assignment.json",
+      "sha256": "05a97b11a9e7c44a49a48bc2165e3887f635258c7884a8f916057ce81d7f0ffc"
+    },
+    {
+      "bytes": 13838,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/gpu-02/summary.json",
+      "sha256": "aaf27fd0df25828951df814e285b400555977f2f0af960afab7a24eda5de31ea"
+    },
+    {
+      "bytes": 2967,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/resource-assignment.json",
+      "sha256": "01eaa58cd5d0befaa95f6b21d2cd90f3ff0b7adfb44d23854c2d7bfcda0d92b8"
+    },
+    {
+      "bytes": 19485,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/summary.json",
+      "sha256": "20b61df430f16166182e41b636497e19342073d2607dd8ec0ca70a6c1c9e4a42"
+    },
+    {
+      "bytes": 834,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/template-expected.json",
+      "sha256": "c558ef838479e5819ae41cbb48170d603d98663de9e6ddc2b987017d545f4b90"
+    },
+    {
+      "bytes": 459,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-concurrent-r1/template-plan.json",
+      "sha256": "b67c137b148c6c57ea2db5900c0027839041974618727a7bea237821bb73f973"
+    },
+    {
+      "bytes": 436,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/accounting.json",
+      "sha256": "6263ca055cf68c16eb178fc206c1457dc69a3de14cfa7414c8e48888c82b6be8"
+    },
+    {
+      "bytes": 18504,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/attempt.json",
+      "sha256": "9848a3ad31e10d57df0545b9522df57104094e32671be44ed4fc27847ca8392f"
+    },
+    {
+      "bytes": 119,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/audit.log",
+      "sha256": "5e74c14ed864c286bd7402b5d7da05c65f0f3d5272eb0c9fc61b7c217b1721d4"
+    },
+    {
+      "bytes": 5392,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/budget.json",
+      "sha256": "697bb94d0eea446250068914d3eb937b4f0b13ab771871b78988d9725111e00b"
+    },
+    {
+      "bytes": 49717,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/fixture/body.json",
+      "sha256": "439bfdd59b1711eeb06970235c2dd987c33af81ca78c4020810cb7f3c01cc87b"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/fixture/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 1729328,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/execution/node.1.0.request",
+      "sha256": "93a42bfd9876cb2dbda9bb4a112209e202a05ae07fc8b36d4d17b1d2debbb1c3"
+    },
+    {
+      "bytes": 1729393,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/execution/node.1.1.request",
+      "sha256": "b5a2d1562990895112374d6f26a21e00409a829a96c92d593df2437821ccdfda"
+    },
+    {
+      "bytes": 1729115,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/execution/node.1.2.request",
+      "sha256": "ebb7bac98ffc2598c616c3fc255cbdcbdec0987aef1578d266cee81244f641df"
+    },
+    {
+      "bytes": 1729811,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/execution/node.1.3.request",
+      "sha256": "60ef7e52191ebb64c83584b05f25ec094a51b7b7c290e312039f93e94662b6d4"
+    },
+    {
+      "bytes": 3368309,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/execution/node.2.0.request",
+      "sha256": "392f65b0484e027b02b0012bcf188da96ad901ea0d5999d825e12a8a336c0b94"
+    },
+    {
+      "bytes": 3368309,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/execution/node.2.1.request",
+      "sha256": "e58c6924e7d026a728a8b40a2cad5a746f0de2a5c53252ccddc9dd925d1b6715"
+    },
+    {
+      "bytes": 3368309,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/execution/node.3.0.request",
+      "sha256": "25421d85bcbb337ba0dec746a72c32c92d7e48d811f096e9cb499a5223380d10"
+    },
+    {
+      "bytes": 1684256,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/execution/node.6.0.request",
+      "sha256": "6e73b2ddfff4cd6f67efc3701b2cc51dcc5aa15d9efe05e666a51c995f060a22"
+    },
+    {
+      "bytes": 271,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/execution/worker-exit.json",
+      "sha256": "8cd48811cada086ba526655512f73c1f6b8035664c38a859067e10d46f2d18c8"
+    },
+    {
+      "bytes": 296,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/execution/worker-session",
+      "sha256": "ed1ceebc2c205160950db8bbef259b7eeab1463c507ba0c9c80b19cc8bc22e57"
+    },
+    {
+      "bytes": 259,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/execution/worker-start.json",
+      "sha256": "e46cdead247fd04384986a8ab612594bea7ab91b95c5b14d0424cf9c919173a7"
+    },
+    {
+      "bytes": 4148,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/execution-plan.json",
+      "sha256": "3c92dd48398e9267ce9ff43a9e6d99fae217c4fc0d0693c14cba503bb74e7c31"
+    },
+    {
+      "bytes": 834,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/expected.json",
+      "sha256": "c558ef838479e5819ae41cbb48170d603d98663de9e6ddc2b987017d545f4b90"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/node.1.0",
+      "sha256": "22c6f50c7bd17d82b5c0703506adcfffb9fa3a09951188cb2f22808ef56fa140"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/node.1.1",
+      "sha256": "580a010c9ec444617d95b9d803312f7d0bc2f9765d6e469cb88d85e496569e1e"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/node.1.2",
+      "sha256": "6f07b9dfce6be102955b91c37e7590fdf549e01a7f3116422dc00d2142190ae8"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/node.1.3",
+      "sha256": "09bd10cffc18dfe5fc5d0704562723e2f82a6019275a8704cf3352bab9cffda4"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/node.2.0",
+      "sha256": "aef3b26c0a1705f65a87b3fca8086c109575f96057fedac7227892435c5b5006"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/node.2.1",
+      "sha256": "2e0b12f39026737724be2c07ae0a1f19d93ef4aca01c9833ee66169104fcfcc3"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/node.3.0",
+      "sha256": "f29ff18e7ee10c369ebcf36bd403b1f72e7249b09a761cde078a1c411c776763"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/node.6.0",
+      "sha256": "c63cec8e813152ba1fa58d8d91e60c23f365dc366ab147fd30903ead345ac3ae"
+    },
+    {
+      "bytes": 3134,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/proofs/result.json",
+      "sha256": "0d6aeefdd128ee7df1b1cf0a0b94261a5613933adb00691ac38ee0e1a4a31c46"
+    },
+    {
+      "bytes": 67943,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/prove.log",
+      "sha256": "add99f56d987a755f26a722bc6fc2a8d4e881e86fcccbf347ddda412c911c964"
+    },
+    {
+      "bytes": 11354,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/result.json",
+      "sha256": "499d319cd0800f17a364304588e5d324991a5ecf7587a645e63e9c4db9c8e4ca"
+    },
+    {
+      "bytes": 49717,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/root-only/body.json",
+      "sha256": "439bfdd59b1711eeb06970235c2dd987c33af81ca78c4020810cb7f3c01cc87b"
+    },
+    {
+      "bytes": 834,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/root-only/expected.json",
+      "sha256": "c558ef838479e5819ae41cbb48170d603d98663de9e6ddc2b987017d545f4b90"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/root-only/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/root-only/node.6.0",
+      "sha256": "c63cec8e813152ba1fa58d8d91e60c23f365dc366ab147fd30903ead345ac3ae"
+    },
+    {
+      "bytes": 471548,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/telemetry.jsonl",
+      "sha256": "7232b91044535cf39e815d1fd71d0f53bae1ed312b5ed5cf57d73dc97df3d12b"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/001-typed/worker.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 15737,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/admission.json",
+      "sha256": "085d96a7ec5f22eda1000c9f427ad16fc04581345ef3149a46825459336996f0"
+    },
+    {
+      "bytes": 12065,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/config.json",
+      "sha256": "2419813a660ae8807635d594ad43c4088a529c9af5161ae20b76b2930b0a8a1e"
+    },
+    {
+      "bytes": 834,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/expected.json",
+      "sha256": "c558ef838479e5819ae41cbb48170d603d98663de9e6ddc2b987017d545f4b90"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/expected.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 459,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/plan.json",
+      "sha256": "b67c137b148c6c57ea2db5900c0027839041974618727a7bea237821bb73f973"
+    },
+    {
+      "bytes": 13726,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/gpu-count8-desktop-r1/summary.json",
+      "sha256": "ae2804790d5f36737fc86800dd2c01171092eaca3d1e59896d9964c92f5a3fd5"
+    },
+    {
+      "bytes": 1506,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/monitor-concurrent-r1/controller-process.json",
+      "sha256": "8dae353fd4f4415c080f2957cce2552a292b7d1e9ad8cf8e86c25c11e88a2156"
+    },
+    {
+      "bytes": 826,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/monitor-concurrent-r1/controller.log",
+      "sha256": "d548805577269da706014c87d8cfe034db550da9cf6bce22d96047465e61a284"
+    },
+    {
+      "bytes": 972,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/monitor-concurrent-r1/launch.json",
+      "sha256": "4c104b34223f167af66d667d6ac925acd1dc089b3d60997ba81f1842607b4680"
+    },
+    {
+      "bytes": 3593,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/monitor-concurrent-r1/request.json",
+      "sha256": "a66c740f57a15a8b4f752d1c4bc0bb0f505c1394e7258148ca3a7d4057801ef6"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/monitor-concurrent-r1/service.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1786,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/monitor-controller-r1.py",
+      "sha256": "615248a8f60fada13f6f9322e14aa900a374f19d10d08d3b7d0c9c600a3aa666"
+    },
+    {
+      "bytes": 1395,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/monitor-desktop-r1/controller-process.json",
+      "sha256": "3066ce97cf8a960095f3c258b7ada249df7e387eeb6a10bfc4dc6c22acc24970"
+    },
+    {
+      "bytes": 9777,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/monitor-desktop-r1/controller.log",
+      "sha256": "1252d326951fdca1defff16f35abe9e692ad3ce1c1ad1cf5d8235edcb84c9157"
+    },
+    {
+      "bytes": 957,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/monitor-desktop-r1/launch.json",
+      "sha256": "35d127673729d9bab28584f0e89ffa6a1d973eb9aadc4e1e7d988f596915b992"
+    },
+    {
+      "bytes": 3443,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/monitor-desktop-r1/request.json",
+      "sha256": "7122cfe9f622fb75ade649e07cb530f6a2405eb09ad598f2d1dba1f98fd9cbde"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/monitor-desktop-r1/service.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 9141,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/publish-concurrent-evidence-r1.py",
+      "sha256": "8bd5446f67d9c9ad45ba391e5a717bdb4faa12b7dea4ba60c835212fd54dcb6d"
+    }
+  ],
+  "status": "passed_for_desktop_and_one_concurrent_count_eight_trial"
+}

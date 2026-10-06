@@ -1,0 +1,89 @@
+{
+  "campaign_ids": ["block-v2-throughput-qualification-2026-10-05-r10","block-v2-throughput-qualification-2026-10-05-r12","block-v2-throughput-qualification-2026-10-05-r13","block-v2-throughput-qualification-2026-10-05-r14","block-v2-throughput-qualification-2026-10-05-r15","block-v2-throughput-qualification-2026-10-05-r16","block-v2-throughput-qualification-2026-10-05-r9","block-v2-throughput-resources-2026-10-05-r11","block-v2-throughput-resources-2026-10-05-r12","block-v2-throughput-resources-2026-10-05-r13","block-v2-throughput-resources-2026-10-05-r14","block-v2-throughput-resources-2026-10-05-r15","block-v2-throughput-resources-2026-10-05-r16","block-v2-throughput-resources-2026-10-05-r9","block-v2-typed-local-dag-2026-10-05","block-v2-typed-paired-calibration-2026-10-05","block-v2-typed-paired-repetitions-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-paired-calibrated-20261005-a",
+  "limitations": ["lattica-prover-p3/target/block-v2-paired-calibrated-20261005-a/prepare-attempt03.log:1: Expecting property name enclosed in double quotes: line 2 column 1 (char 2)","lattica-prover-p3/target/block-v2-paired-calibrated-20261005-a/repetitions-validation.log:1: Expecting property name enclosed in double quotes: line 2 column 1 (char 2)","No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1","P2"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-cd42b46b3a24d80755aa516e",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 1421,
+      "path": "lattica-prover-p3/target/block-v2-paired-calibrated-20261005-a/prepare-attempt01.log",
+      "sha256": "2cf853511c5222b84af048e52d4677627d43670b701f1592fb21b16dcae2f21c"
+    },
+    {
+      "bytes": 1258,
+      "path": "lattica-prover-p3/target/block-v2-paired-calibrated-20261005-a/prepare-attempt02.log",
+      "sha256": "201c8120014d694a1da00f783da7df42b6fb113abdf2a1656e063dff6b0dd1ff"
+    },
+    {
+      "bytes": 1935,
+      "path": "lattica-prover-p3/target/block-v2-paired-calibrated-20261005-a/prepare-attempt03.log",
+      "sha256": "8f4b8a3be40bacf89c896c8ccb6c663427cdcd076bb030a7208fae0a943395e2"
+    },
+    {
+      "bytes": 1302,
+      "path": "lattica-prover-p3/target/block-v2-paired-calibrated-20261005-a/repetitions-validation.log",
+      "sha256": "73078869489965050ad715ce9676c52feb2be74e056cfffee297d5daf46f9e91"
+    },
+    {
+      "bytes": 103,
+      "path": "lattica-prover-p3/target/block-v2-paired-calibrated-20261005-a/test-block-v2-typed-fleet-compare.py.log",
+      "sha256": "dae97527feaa5f4404b7cf8a367c36b5834935509ab9babacf648b1bb8476a3b"
+    },
+    {
+      "bytes": 103,
+      "path": "lattica-prover-p3/target/block-v2-paired-calibrated-20261005-a/test-block-v2-typed-fleet-compare.py.r2.log",
+      "sha256": "a2e97b7515932007aa3d038fcfa41fdd107cb2467ff84d182512ff3c7e24f045"
+    },
+    {
+      "bytes": 114,
+      "path": "lattica-prover-p3/target/block-v2-paired-calibrated-20261005-a/test-block-v2-typed-gpu-run.py.log",
+      "sha256": "dc93e1ad8c71598c3eb66567fa8d82decd8763a2bb977499ab18ee5efdb2ed29"
+    },
+    {
+      "bytes": 114,
+      "path": "lattica-prover-p3/target/block-v2-paired-calibrated-20261005-a/test-block-v2-typed-gpu-run.py.r2.log",
+      "sha256": "4cf7f1d1a01e0a87de085e4e4242cda3c66c0ff89e95a7b50cce948ed3d375cf"
+    },
+    {
+      "bytes": 111,
+      "path": "lattica-prover-p3/target/block-v2-paired-calibrated-20261005-a/test-block-v2-typed-multi-gpu-run.py.log",
+      "sha256": "c0cb98a70693b463069afba413d352f8fdc8540f469b9f3860e3385ec8c426dd"
+    },
+    {
+      "bytes": 113,
+      "path": "lattica-prover-p3/target/block-v2-paired-calibrated-20261005-a/test-block-v2-typed-multi-gpu-run.py.r2.log",
+      "sha256": "a8fd90262eadf078eb98761df470a540029be90687b30b97d7d569c84a2b7dbe"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

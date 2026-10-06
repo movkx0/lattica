@@ -25,8 +25,8 @@
     {
       "bytes": 0,
       "identical_to": {
-        "path": "lattica-prover-p3/target/block-v2-multi-bootstrap-20261003-b/001-bootstrap-1/worker.log",
-        "run_id": "run-1e41c164de4dd1f7ae67094a"
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
       },
       "path": "lattica-prover-p3/target/block-v2-gpu-grouped-lifecycle-20261001-a/observer-failure/01-key-1-vram.jsonl",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"

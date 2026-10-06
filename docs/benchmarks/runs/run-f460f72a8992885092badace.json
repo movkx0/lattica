@@ -1,0 +1,730 @@
+{
+  "adapter": "typed-preparation",
+  "campaign_ids": ["block-v2-typed-calibrated-multi-gpu-2026-10-04","block-v2-typed-calibrated-repetitions-2026-10-04","block-v2-typed-compact-multi-gpu-2026-10-04-r2","block-v2-typed-compact-multi-gpu-2026-10-04","block-v2-typed-compact-progress-2026-10-04","block-v2-typed-comparison-2026-10-04","block-v2-typed-comparison-progress-2026-10-04","block-v2-typed-finalizer-gpu-2026-10-04","block-v2-typed-paired-comparison-2026-10-05"],
+  "configuration": {
+    "budget": null,
+    "construction": "finalizer",
+    "execution_backend": "bootstrap",
+    "execution_result": null,
+    "ram_admission": "full",
+    "recorded_fresh_proofs": null,
+    "registry_keys": 6
+  },
+  "controller_metadata": {
+    "accounting.json": {
+      "cpu.max": "2300000 100000",
+      "cpu.stat": "usage_usec 4107507487\nuser_usec 4056238043\nsystem_usec 51269444\nnice_usec 0\ncore_sched.force_idle_usec 0\nnr_periods 3144\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+      "cpuset.cpus.effective": "0-23",
+      "memory.current": "70471680",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+      "memory.peak": "16171581440"
+    }
+  },
+  "kind": "diagnostic",
+  "label": "Typed public fixture and 6 CPU verifier keys",
+  "limitations": ["Leaf generation and CPU registration only; no recursive root or delivered transaction is measured.","No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "typed_registry_preparation",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["typed CPU process",6040,0,0,"inclusive_nonadditive",2]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/geometry.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["typed CPU process"],
+          "target": ["p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_field::batch_inverse","p3_matrix","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"evaluate all constraints symbolically",6,271578,66439,0,3],
+          [0,"evaluate base constraints symbolically",3,111518,46965,0,4],
+          [0,"infer base and extension constraint degree",6,414127,93768,0,5],
+          [1,"compute constraint layout with lookups",18,12086362,2206303,0,6],
+          [1,"evaluate constraints symbolically",30,8295697,357859,0,7],
+          [1,"infer constraint degree",21,11879102,1062697,0,8],
+          [2,"batch_multiplicative_inverse",5101,7839270,476514,0,9],
+          [3,"columnwise_dot_product",109,4564888,286430,0,10],
+          [4,"get_log_num_quotient_chunks",6,420992,94612,0,11],
+          [4,"infer log of base and extension constraint degree",6,417395,94124,0,12],
+          [5,"verify",3,85170630,31351884,0,13],
+          [5,"verify_with_preprocessed",3,85165891,31350926,0,14]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/geometry.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,15],
+          ["memory_full_stall_us",0,16],
+          ["memory_high_events",0,17],
+          ["memory_some_stall_us",0,18],
+          ["minor_faults",235273,19],
+          ["read_bytes",0,20],
+          ["system_ticks",42,21],
+          ["user_ticks",562,22],
+          ["write_bytes",122880,23]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/geometry.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["typed CPU process",38288,0,0,"inclusive_nonadditive",1]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["typed CPU process"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,36606148371,36606148371,0,2],
+          [1,"evaluate all constraints symbolically",4,199738,73640,0,3],
+          [1,"evaluate base constraints symbolically",1,32983,32983,0,4],
+          [1,"infer base and extension constraint degree",4,295378,96084,0,5],
+          [2,"compute constraint layout with lookups",4,2519546,721915,0,6],
+          [2,"evaluate constraints symbolically",7,2766337,688798,0,7],
+          [2,"infer constraint degree",5,3690833,1217334,0,8],
+          [3,"coset_dft",16,2807321847,182915942,0,9],
+          [3,"first_half",1,60672749,60672749,0,10],
+          [3,"first_half_general",16,1230630788,87213413,0,11],
+          [3,"second_half",1,67129139,67129139,0,12],
+          [3,"second_half_general",16,1174260717,78827005,0,13],
+          [4,"divide_by_height",1,20978592,20978592,0,14],
+          [5,"batch_multiplicative_inverse",5101,6576496,359111,0,15],
+          [6,"columnwise_dot_product",109,3704409,307140,0,16],
+          [7,"with_zero_cols",1,171740561,171740561,0,17],
+          [8,"reverse_matrix_index_bits",37,853904811,27030912,0,18],
+          [9,"build merkle tree",1,25868590112,25868590112,0,19],
+          [9,"first digest layer",1,25343488293,25343488293,0,20],
+          [10,"get_log_num_quotient_chunks",4,299857,97541,0,21],
+          [10,"infer log of base and extension constraint degree",4,297690,97217,0,22],
+          [11,"verify",3,79211409,29310673,0,23],
+          [11,"verify_with_preprocessed",3,79206795,29309760,0,24]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,25],
+          ["memory_full_stall_us",0,26],
+          ["memory_high_events",0,27],
+          ["memory_some_stall_us",0,28],
+          ["minor_faults",2014038,29],
+          ["read_bytes",0,30],
+          ["system_ticks",496,31],
+          ["user_ticks",64572,32],
+          ["write_bytes",86016,33]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-1.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["typed CPU process",35601,0,0,"inclusive_nonadditive",1]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["typed CPU process"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,35194080057,35194080057,0,2],
+          [1,"evaluate all constraints symbolically",3,148078,60407,0,3],
+          [1,"infer base and extension constraint degree",3,230955,97363,0,4],
+          [2,"compute constraint layout with lookups",4,2691908,883859,0,5],
+          [2,"evaluate constraints symbolically",7,2699218,659228,0,6],
+          [2,"infer constraint degree",5,3488165,1125667,0,7],
+          [3,"coset_dft",16,2747991721,186154063,0,8],
+          [3,"first_half",1,62262263,62262263,0,9],
+          [3,"first_half_general",16,1198014525,80635092,0,10],
+          [3,"second_half",1,65275540,65275540,0,11],
+          [3,"second_half_general",16,1151436910,79899885,0,12],
+          [4,"divide_by_height",1,20271487,20271487,0,13],
+          [5,"batch_multiplicative_inverse",5101,8773070,377202,0,14],
+          [6,"columnwise_dot_product",109,4811356,292800,0,15],
+          [7,"with_zero_cols",1,168278105,168278105,0,16],
+          [8,"reverse_matrix_index_bits",37,837997903,24853148,0,17],
+          [9,"build merkle tree",1,25628735709,25628735709,0,18],
+          [9,"first digest layer",1,25097414767,25097414767,0,19],
+          [10,"get_log_num_quotient_chunks",3,234737,98503,0,20],
+          [10,"infer log of base and extension constraint degree",3,233194,97943,0,21],
+          [11,"verify",3,83890285,30251897,0,22],
+          [11,"verify_with_preprocessed",3,83886593,30250937,0,23]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,24],
+          ["memory_full_stall_us",0,25],
+          ["memory_high_events",0,26],
+          ["memory_some_stall_us",0,27],
+          ["minor_faults",1999465,28],
+          ["read_bytes",2494464,29],
+          ["system_ticks",476,30],
+          ["user_ticks",64660,31],
+          ["write_bytes",118784,32]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-2.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["typed CPU process",40118,0,0,"inclusive_nonadditive",1]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["typed CPU process"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,38830841821,38830841821,0,2],
+          [1,"evaluate all constraints symbolically",3,145057,58425,0,3],
+          [1,"infer base and extension constraint degree",3,224148,93722,0,4],
+          [2,"compute constraint layout with lookups",7,4184505,791065,0,5],
+          [2,"evaluate constraints symbolically",13,4554284,689716,0,6],
+          [2,"infer constraint degree",9,6030005,1155039,0,7],
+          [3,"coset_dft",16,2811809882,191527900,0,8],
+          [3,"first_half",1,62459319,62459319,0,9],
+          [3,"first_half_general",16,1232312702,96181725,0,10],
+          [3,"second_half",1,71847570,71847570,0,11],
+          [3,"second_half_general",16,1177313932,81297359,0,12],
+          [4,"divide_by_height",1,22415203,22415203,0,13],
+          [5,"batch_multiplicative_inverse",5101,8155500,290414,0,14],
+          [6,"columnwise_dot_product",109,4846432,304625,0,15],
+          [7,"with_zero_cols",1,167537550,167537550,0,16],
+          [8,"reverse_matrix_index_bits",37,843211040,25414967,0,17],
+          [9,"build merkle tree",1,25719267185,25719267185,0,18],
+          [9,"first digest layer",1,25200315261,25200315261,0,19],
+          [10,"get_log_num_quotient_chunks",3,227269,94679,0,20],
+          [10,"infer log of base and extension constraint degree",3,225937,94165,0,21],
+          [11,"verify",3,83895190,32248679,0,22],
+          [11,"verify_with_preprocessed",3,83891528,32247757,0,23]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,24],
+          ["memory_full_stall_us",0,25],
+          ["memory_high_events",0,26],
+          ["memory_some_stall_us",0,27],
+          ["minor_faults",2216741,28],
+          ["read_bytes",0,29],
+          ["system_ticks",515,30],
+          ["user_ticks",65309,31],
+          ["write_bytes",69632,32]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-3.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["typed CPU process",40602,0,0,"inclusive_nonadditive",1]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["typed CPU process"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,38121122839,38121122839,0,2],
+          [1,"evaluate all constraints symbolically",4,257221,113377,0,3],
+          [1,"evaluate base constraints symbolically",1,45253,45253,0,4],
+          [1,"infer base and extension constraint degree",4,407860,166422,0,5],
+          [2,"compute constraint layout with lookups",4,2589287,719820,0,6],
+          [2,"evaluate constraints symbolically",7,2834046,711098,0,7],
+          [2,"infer constraint degree",5,3789686,1267479,0,8],
+          [3,"coset_dft",16,2816219749,186539472,0,9],
+          [3,"first_half",1,69004184,69004184,0,10],
+          [3,"first_half_general",16,1232426340,84975581,0,11],
+          [3,"second_half",1,68675640,68675640,0,12],
+          [3,"second_half_general",16,1186592301,80649019,0,13],
+          [4,"divide_by_height",1,21194865,21194865,0,14],
+          [5,"batch_multiplicative_inverse",5101,7717223,240073,0,15],
+          [6,"columnwise_dot_product",109,6302038,1212617,0,16],
+          [7,"with_zero_cols",1,165996834,165996834,0,17],
+          [8,"reverse_matrix_index_bits",37,834940486,24935707,0,18],
+          [9,"build merkle tree",1,26705728581,26705728581,0,19],
+          [9,"first digest layer",1,25934599107,25934599107,0,20],
+          [10,"get_log_num_quotient_chunks",4,413431,168938,0,21],
+          [10,"infer log of base and extension constraint degree",4,411166,168226,0,22],
+          [11,"verify",3,84667500,30016945,0,23],
+          [11,"verify_with_preprocessed",3,84661944,30015626,0,24]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,25],
+          ["memory_full_stall_us",0,26],
+          ["memory_high_events",0,27],
+          ["memory_some_stall_us",0,28],
+          ["minor_faults",2155011,29],
+          ["read_bytes",0,30],
+          ["system_ticks",553,31],
+          ["user_ticks",66322,32],
+          ["write_bytes",151552,33]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-4.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["typed CPU process",77899,0,0,"inclusive_nonadditive",1]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["typed CPU process"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,74862852503,74862852503,0,2],
+          [1,"evaluate all constraints symbolically",4,699700,556069,0,3],
+          [1,"evaluate base constraints symbolically",1,40674,40674,0,4],
+          [1,"infer base and extension constraint degree",4,852391,630015,0,5],
+          [2,"compute constraint layout with lookups",4,5133214,3166107,0,6],
+          [2,"evaluate constraints symbolically",7,4538507,2007983,0,7],
+          [2,"infer constraint degree",5,4122200,1458617,0,8],
+          [3,"coset_dft",16,5962508701,651100784,0,9],
+          [3,"first_half",1,129915909,129915909,0,10],
+          [3,"first_half_general",16,2680876862,371592927,0,11],
+          [3,"second_half",1,122861510,122861510,0,12],
+          [3,"second_half_general",16,2307478558,237899862,0,13],
+          [4,"divide_by_height",1,20258069,20258069,0,14],
+          [5,"batch_multiplicative_inverse",5101,10856630,916378,0,15],
+          [6,"columnwise_dot_product",109,21901842,7764114,0,16],
+          [7,"with_zero_cols",1,290652137,290652137,0,17],
+          [8,"reverse_matrix_index_bits",37,1575726401,171478854,0,18],
+          [9,"build merkle tree",1,51803765503,51803765503,0,19],
+          [9,"first digest layer",1,50765524791,50765524791,0,20],
+          [10,"get_log_num_quotient_chunks",4,865200,638806,0,21],
+          [10,"infer log of base and extension constraint degree",4,856281,631717,0,22],
+          [11,"verify",3,157618260,87869033,0,23],
+          [11,"verify_with_preprocessed",3,157608745,87863659,0,24]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,25],
+          ["memory_full_stall_us",0,26],
+          ["memory_high_events",0,27],
+          ["memory_some_stall_us",0,28],
+          ["minor_faults",2121985,29],
+          ["read_bytes",0,30],
+          ["system_ticks",1240,31],
+          ["user_ticks",72659,32],
+          ["write_bytes",69632,33]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-5.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","elapsed_ms","spans_dropped","spans_open","timings","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_checkpoint",
+        "rows": [
+          ["typed CPU process",74736,0,0,"inclusive_nonadditive",1]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-6.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["target","name","calls","total_ns","max_ns","_checkpoint","_source_line"],
+        "dictionaries": {
+          "_checkpoint": ["typed CPU process"],
+          "target": ["lattica_block_v2_perf","p3_air::symbolic::builder","p3_batch_stark::symbolic","p3_dft::radix_2_dit_parallel","p3_dft::util","p3_field::batch_inverse","p3_matrix","p3_matrix::dense","p3_matrix::util","p3_merkle_tree::merkle_tree","p3_uni_stark::symbolic","p3_uni_stark::verifier"]
+        },
+        "kind": "performance_span",
+        "rows": [
+          [0,"preprocessing setup",1,71985908525,71985908525,0,2],
+          [1,"evaluate all constraints symbolically",3,1743127,1559840,0,3],
+          [1,"infer base and extension constraint degree",3,1917709,1602085,0,4],
+          [2,"compute constraint layout with lookups",6,8238342,2425952,0,5],
+          [2,"evaluate constraints symbolically",11,7891809,975353,0,6],
+          [2,"infer constraint degree",8,11653551,1812817,0,7],
+          [3,"coset_dft",16,6898269852,703636868,0,8],
+          [3,"first_half",1,178465937,178465937,0,9],
+          [3,"first_half_general",16,3329205851,387201833,0,10],
+          [3,"second_half",1,179109186,179109186,0,11],
+          [3,"second_half_general",16,2454415365,243419510,0,12],
+          [4,"divide_by_height",1,91189135,91189135,0,13],
+          [5,"batch_multiplicative_inverse",5101,19336922,1047993,0,14],
+          [6,"columnwise_dot_product",109,61818410,12588008,0,15],
+          [7,"with_zero_cols",1,357163881,357163881,0,16],
+          [8,"reverse_matrix_index_bits",37,1751765738,105218252,0,17],
+          [9,"build merkle tree",1,37447172129,37447172129,0,18],
+          [9,"first digest layer",1,36661763529,36661763529,0,19],
+          [10,"get_log_num_quotient_chunks",3,1925106,1604759,0,20],
+          [10,"infer log of base and extension constraint degree",3,1921532,1603921,0,21],
+          [11,"verify",3,384521421,173744140,0,22],
+          [11,"verify_with_preprocessed",3,384484923,173740634,0,23]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-6.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["name","delta","_source_line"],
+        "dictionaries": {},
+        "kind": "performance_counter",
+        "rows": [
+          ["major_faults",0,24],
+          ["memory_full_stall_us",0,25],
+          ["memory_high_events",0,26],
+          ["memory_some_stall_us",0,27],
+          ["minor_faults",3171903,28],
+          ["read_bytes",0,29],
+          ["system_ticks",1728,30],
+          ["user_ticks",71531,31],
+          ["write_bytes",86016,32]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-6.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {
+    "backend": "cpu",
+    "memory_model": "host_ram",
+    "os": "linux"
+  },
+  "proofs": [],
+  "retained_metadata": {
+    "artifacts": {
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/body.json": "439bfdd59b1711eeb06970235c2dd987c33af81ca78c4020810cb7f3c01cc87b",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/height.json": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/key.1": "092949960e979cfbf91de71c7ac18eb252abbc01fd49e08f8ed1ef111abbab1e",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/key.2": "fea7e0764f800d63e89018623faa5de74156c0c735c05103c5343da4586735f4",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/key.3": "d1a4ac6117596bfff620980c54de6e091ecf236d5d2e2f9cca3b95a1aa9b0f56",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/key.4": "485c1213b42d99b9927c632af1cbc53c8503ebdac0cfc1a603dad35c65c5beb3",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/key.5": "08b7c1e0f5eb513bae9b7c4316454e47cbd037a2d3e8c5e6c3bd8634cd3d8c73",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/key.6": "fb0f0797384a65020444b0481cfcfc7229264d25b0986f918b885d2eb41d7f10",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.0": "a13779aa339ded5c4b317904bd84e164e9a2e8cedb00114ac6f392227fb1fcc0",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.1": "47aad055455d5723788b6b68e489fa3f7ab55316a67aa99956c1d70997b5762c",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.10": "7850e13029bd98e9cf9002f9602da46e6684f78803555d25f44f9f641575f34e",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.11": "bbb9d1350548d443692ee9e7a9bc32447eadbf95ecf1d85047f227430052ff2f",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.12": "525179ab948089f2c031558e1abe0462522967a51d01b6b79435e65a9058d01e",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.13": "3ddbc3fc355482290b84e8fee200a1dc8e5b498574f53567880d37934491cc13",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.14": "2f22ddbab6f36ff0658241620bebab77419d98cfd33cffe3ebd0f24bdcbff3ea",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.15": "0be221351029e9d09e261f9a3f8a20dbe00d5c09c595f138025db39dcb195499",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.16": "03f5c197b21870dfda58446008806546e0fbd555ba5976d542ca85c6170f81e7",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.17": "ea7230291c9b86a2fffd37a4836d2f28aa8645eccabad5b21df0bd7b44f771b3",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.18": "6f6f684177668fdb190930a0446cab14bc8f9702b5ec20877cc96100707dea7b",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.19": "0b4efa66414e3016c4603b155e467cfddcf8783aa8463a7d77f9d4e4a5a5cab8",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.2": "729803287b03d059736559b1d906d2814f098c5a9f526e156bf5d8b47980f7d2",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.20": "e5d12e1336880d392853f25210752fc25b76763766f2c813e9377ec452d0dcf0",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.21": "5b79e608b4bf2f1f73a23ef111b6b441f3a877c1a802ac2bd0f8ed4b64471122",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.22": "d1916b9dd5cd9143aeca47ea765d20631445dccea5060ed6c808b3b8f614aebd",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.23": "184b07068c702fa15d7b88f6e05d407c7fb6eb9c132ac66c72b5766b68a6e9c5",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.24": "2d523014c3395db70b86212b7dedd09c10433dffe4cb92d482b1a518d6fe9a10",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.25": "3674f3d114776ef1df6a8a94a9fadd42eb190e596cddc4ceb518bcd125d8a295",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.26": "a246a4f58359b5f99b6dd9666be78f235358ffcc2d941e33f18f11daed9d0fc1",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.27": "2a66320eec4c0f1bcdc5259fd6c9b4528c0512e5a3504eed869a4a3804c30454",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.28": "3dc37209ba6216b10c72a4cedc618aadbf9addac9ca87ce5a9acc8cb2a639206",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.29": "4d6635f146df13b81ac20263f92e8db15ffb240885b36be1904f37511f7db4b2",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.3": "710d66931d1eb49fc91f69e3d59b5afd5ae535b88aaac7d76e73b525d4a0d15d",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.30": "b63a02368e6600c2bd7acd7761bfe7ff38d40696f0851c5603ff528666f84036",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.31": "f9aacc0b8bae06a52c1f5cf8cd02f5a1bf76e71f1e20dd5ae569064d0a075ad4",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.32": "aeebbbd2695c718c2266c08670612df13815b7c5c5ca7df48b458dbd96502363",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.33": "c8a7c1014ba5681eaeaf133ad3dc685a127663c3618bd8e1f4309aa8e3e713cd",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.34": "b63b934b0b0602bdb1d573c57c717376eafc01d855f34f9c7467b3ddf563765f",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.35": "42840791711285a6a5a070d351da2ac6ac7097e28afe28be1c967a07308ceb9c",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.36": "f505b2aa26c0207bee2bf2a2b4322b0517c07a1a73a596bd3096d70f6c95a6b1",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.37": "902277824ce7ca4ae2e6d024baaf018e3e564b32143af54fa2c3e0bd30453929",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.38": "01fe3343ee3a724488bade5b19973909339e3a6157f6a71386408da2bb224de6",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.39": "5f5ab6b9d196b9bac79434451e8277d155adc31a6237f50506403459dd85f6d5",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.4": "32f2c75034838a4af9d533ec06631e4043ed9f627261eace1e73f47ce0f6feb8",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.40": "83957f6c30a4af5711438593b8c830a11dccb5f379b7278f5c1c22e2028d104e",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.41": "5d3ed901ea2ee5d395d02cc5e281c97ad2de49d041214147661ab822b9707b55",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.42": "7d2358ab8828556c53152224b70d461b283db4da96c80e5bb36a10918699dac9",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.43": "d876a198449b1d0d2290c5a19f652d4853c5b770efa4242682e618a29c37d61b",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.44": "2ae16add49dff84093c26eeddf7e2302a06db77f192fedba82553e5ca589b714",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.45": "446a5f3946e7283902cae0a8dc0dd13a64897b86774e79f8c0f341340996c9ab",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.46": "fc638e655da012f0caa3a4938528ba7350dd47c149d3545dc22ae4cdcaf226bb",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.47": "3bbe0e03b9d12db19a81636483ed3e33fc98207c0ddb6726eef1d0123eaf6dc8",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.48": "007c5924f1edc035bd486af11a18e421f685ad31d17e6c1129cced19127ca7e3",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.49": "d56429292edd2d22aa0f39a960d10daaefb52051ef5ff1d993e2189c32b19ce5",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.5": "27b4bf7d2e373b508a8e5e7ff2efcded807a7019765de0a09e25a61981c5f58c",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.50": "0093a90e09c118e973967a62143c76a822cf75d4123a0ddf87a75836800fc239",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.51": "587bcd0ab25659c4645706b985611f3f4425903f72d1596c90a5c136331412ba",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.52": "689532e6e4547f28f836426a2cacb28ddf9cb33ba1fa7b8a0cbeec73c25c87c5",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.53": "c43614563a5f59026fee2dbd010413c3186925e474eb377168d8ad9e00a6d3ea",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.54": "7aa321f033bffb29cd26f4f2de32018a99354b1eaaf051545ec200e5739aefb7",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.55": "af421b83def815e8cf479223a09de9da8a782c315c072da657d57bb80878c6bb",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.56": "4afb80c37e80ec06ac921a567b8c57e8629412a0c9d09260b85ffeda10a68403",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.57": "774be5ac338c7531ae9fdf4317b0fd27069c86082714c0c9c4d8028483e753ec",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.58": "7424a6792904762ec700a2396425b5d2904fc2a77ea4ad2ffdd382d2075cc3f1",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.59": "552e7ddc77743fd535f163ab6de093778598c25da247077018190f93670f85b2",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.6": "f3ef3b42974e0032d1e6ac2357afa14ce9e1f66c243d12592237e766288d2c7c",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.60": "dea1e007f7fcdfb019d7bae024e0dce0bba108a9a3613b1f173be848c98a35a5",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.61": "11deb0f44020d5c5f967561f5c1f1cf522b82603e3ef76f851d038379df6d08c",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.62": "53c686fb20c2b762586890bf428fb60f23186929c491fae1d4f714c1e4a58b2a",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.63": "2d9123745ea5c208f32565b006bff1f54c863ecafb735789d2dc83571e92c3b3",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.7": "f00a95f137131f16c6a06eedca2c415df59f4951fddac60a0dea6e7184a9a722",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.8": "d153cc442a09399ae19f4630dc5737668cac728b25213720e56dc7c9821baef2",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture/wallet.9": "ebbb486b3f752ea5054f99acca85d382ad4575f3159e552e6320f0229d0514ae"
+    },
+    "construction": "finalizer",
+    "cpu_registered": true,
+    "elapsed_seconds": 314.1264318839967,
+    "fixture_reuse": true,
+    "production_ready": false,
+    "recursive_root_produced": false,
+    "registry_keys": 6,
+    "schema": "lattica-typed-cpu-preparation-v1",
+    "stages": [
+      {
+        "elapsed_seconds": 0.07890130399027839,
+        "name": "copy-public-fixture",
+        "status": "succeeded"
+      },
+      {
+        "command": ["/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe","geometry","/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture"],
+        "elapsed_seconds": 6.049168818994076,
+        "name": "geometry",
+        "status": "succeeded"
+      },
+      {
+        "command": ["/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe","register","/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture","1","43486543872"],
+        "elapsed_seconds": 38.30053111199231,
+        "name": "register-1",
+        "status": "succeeded"
+      },
+      {
+        "command": ["/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe","register","/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture","2","43486543872"],
+        "elapsed_seconds": 35.60698043099546,
+        "name": "register-2",
+        "status": "succeeded"
+      },
+      {
+        "command": ["/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe","register","/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture","3","43486543872"],
+        "elapsed_seconds": 40.14935397100635,
+        "name": "register-3",
+        "status": "succeeded"
+      },
+      {
+        "command": ["/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe","register","/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture","4","43486543872"],
+        "elapsed_seconds": 40.65035864899983,
+        "name": "register-4",
+        "status": "succeeded"
+      },
+      {
+        "command": ["/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe","register","/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture","5","43486543872"],
+        "elapsed_seconds": 77.94564844600973,
+        "name": "register-5",
+        "status": "succeeded"
+      },
+      {
+        "command": ["/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe","register","/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture","6","43486543872"],
+        "elapsed_seconds": 74.76162445401133,
+        "name": "register-6",
+        "status": "succeeded"
+      }
+    ],
+    "status": "succeeded"
+  },
+  "revision": {},
+  "run_id": "run-f460f72a8992885092badace",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 17433,
+      "path": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/worker-result.json",
+      "sha256": "f85085148ca5fd4082a60c64800ff3dae8dbd37e396f89e91fee57204abbcf91"
+    },
+    {
+      "bytes": 435,
+      "path": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/accounting.json",
+      "sha256": "1dcdf2fd29adb7f49189191ff0a490c6948e87b36f91fd9987c7ace068bd646c"
+    },
+    {
+      "bytes": 586,
+      "path": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/controller.log",
+      "sha256": "297d927f48a50ddfe5329c5447c5be2da0762b3c7ef5c2de655259f9fe2ae61f"
+    },
+    {
+      "bytes": 2326,
+      "path": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/geometry.log",
+      "sha256": "2b1d92ea83ae5d819ed0d33185ad00a014e8dfb9fdaebe833ed26c8520fed15c"
+    },
+    {
+      "bytes": 3408,
+      "path": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-1.log",
+      "sha256": "f10fc7f9dcc694ca4a5facbb92624fb20800c88535d93fae1309f3ea62504704"
+    },
+    {
+      "bytes": 3281,
+      "path": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-2.log",
+      "sha256": "04c7748d04b53fb66b3ba95628b9362460b72b5f3e712351be7fdb7566c39bea"
+    },
+    {
+      "bytes": 3275,
+      "path": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-3.log",
+      "sha256": "54d578e6180f881762a3bd27052f056947128654acbdb0ddf3acd1723e5ffde0"
+    },
+    {
+      "bytes": 3414,
+      "path": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-4.log",
+      "sha256": "36e894da65ac5da4bfdbbf82d8502601958d426f66cfa17db80d01238af51e9b"
+    },
+    {
+      "bytes": 3428,
+      "path": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-5.log",
+      "sha256": "7b4ce1139ac1a2766b434916d3c220febd1918453731be2d7f30fbdae1075b1a"
+    },
+    {
+      "bytes": 3307,
+      "path": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/register-6.log",
+      "sha256": "f928c71ef03595aaae64c9eb80833e7729817f29fe4778169af3cbb2c5ccf3f8"
+    }
+  ],
+  "stages": [
+    {
+      "elapsed_seconds": 0.07890130399027839,
+      "name": "copy-public-fixture",
+      "status": "succeeded",
+      "wall_seconds": 0.07890130399027839
+    },
+    {
+      "command": ["/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe","geometry","/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture"],
+      "elapsed_seconds": 6.049168818994076,
+      "name": "geometry",
+      "status": "succeeded",
+      "wall_seconds": 6.049168818994076
+    },
+    {
+      "command": ["/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe","register","/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture","1","43486543872"],
+      "elapsed_seconds": 38.30053111199231,
+      "name": "register-1",
+      "status": "succeeded",
+      "wall_seconds": 38.30053111199231
+    },
+    {
+      "command": ["/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe","register","/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture","2","43486543872"],
+      "elapsed_seconds": 35.60698043099546,
+      "name": "register-2",
+      "status": "succeeded",
+      "wall_seconds": 35.60698043099546
+    },
+    {
+      "command": ["/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe","register","/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture","3","43486543872"],
+      "elapsed_seconds": 40.14935397100635,
+      "name": "register-3",
+      "status": "succeeded",
+      "wall_seconds": 40.14935397100635
+    },
+    {
+      "command": ["/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe","register","/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture","4","43486543872"],
+      "elapsed_seconds": 40.65035864899983,
+      "name": "register-4",
+      "status": "succeeded",
+      "wall_seconds": 40.65035864899983
+    },
+    {
+      "command": ["/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe","register","/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture","5","43486543872"],
+      "elapsed_seconds": 77.94564844600973,
+      "name": "register-5",
+      "status": "succeeded",
+      "wall_seconds": 77.94564844600973
+    },
+    {
+      "command": ["/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe","register","/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture","6","43486543872"],
+      "elapsed_seconds": 74.76162445401133,
+      "name": "register-6",
+      "status": "succeeded",
+      "wall_seconds": 74.76162445401133
+    }
+  ],
+  "status": "succeeded",
+  "timing": {
+    "elapsed_seconds": 314.1264318839967,
+    "recursive_seconds": null
+  },
+  "track": "linux-cpu",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

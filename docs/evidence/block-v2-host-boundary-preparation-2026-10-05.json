@@ -1,0 +1,53 @@
+{
+  "captured_utc": "2026-10-05T08:26:41.600389+00:00",
+  "delivered_transactions_measured": false,
+  "durable_host_applied": false,
+  "fixture_limitation": "Existing typed benchmark body.json files contain statement vectors with synthetic bindings. They do not establish application of complete native transaction bodies.",
+  "implemented_in_source": [
+    "Opt-in versioned CPU verification of twelve-key paired roots with an independently supplied profile, chain, root and count",
+    "Separate native verifier backend without legacy fallback",
+    "Ordered commitment derived from complete native transaction bodies, including ciphertext/KEM bindings and HTLC height/preimage",
+    "Atomic mixed application with host-supplied per-index issuance grants, anchor/nullifier/range checks, owned ciphertexts and supply/event updates",
+    "Cleanup if chain initialization fails during anchor-map allocation",
+    "Native allocation-failure/retry, context/registry/policy/body-tampering tests and Rust version/bounds tests"
+  ],
+  "production_ready": false,
+  "record_type": "research_host_boundary_preparation",
+  "remaining": [
+    "Compile and execute the queued tests",
+    "Native/Rust interoperability using independently derived statements and real recursive proofs",
+    "Generate complete native bodies with matching fresh wallet and recursive proofs",
+    "Durable atomic storage, restart replay and reorg/resource-failure recovery",
+    "Complete cold and post-seal timings and two-hour pilot"
+  ],
+  "schema_version": 1,
+  "status": "source_implemented_validation_queued",
+  "validation": {
+    "condition": "Starts only after matrix is terminal, matching benchmark services are inactive, and pinned source files are unchanged. Stops after the first failed check.",
+    "deferred_admission_guard_checks_passed": 6,
+    "manifest": {
+      "bytes": 34210,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r1/manifest.json",
+      "sha256": "4dac40bfd93d74feb2cdcc235357a2858e0e34000174cfeb2aadb8cba89ffa7b"
+    },
+    "native_host_tests_run": false,
+    "runner": {
+      "bytes": 5309,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r1/validate-after-matrix.py",
+      "sha256": "cd797bfba300ea42c43097cc86fba175d489ac72c4d324b1b9161d1b21f4e483"
+    },
+    "rust_host_tests_run": false,
+    "snapshot": {
+      "bytes": 312,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r1/queued-validation.json",
+      "sha256": "a20a7bb3f906a4912a6c4673e4e6111ed839e653b0a0edf8c4fcac74c1352691"
+    },
+    "source_archive": {
+      "bytes": 934043,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r1/source.tar.gz",
+      "sha256": "8624b6d5662cb61c8edcf9a3c0d2c0409ffe7efdd9db38dc9b61e184fa8c847b"
+    },
+    "source_format_checks_passed": true,
+    "source_pins_checked": 177
+  }
+}

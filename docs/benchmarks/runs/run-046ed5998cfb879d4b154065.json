@@ -1,0 +1,49 @@
+{
+  "campaign_ids": ["block-v2-typed-worker-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "validation-r5",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P2"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-046ed5998cfb879d4b154065",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 28377,
+      "path": "lattica-prover-p3/target/block-v2-typed-worker-20261005-a/validation-r5/execution-tests-native.log",
+      "sha256": "5e84ab0738b6956f65b2ee220ae0f1c243890288a96923dd4e03445ee830ac0a"
+    },
+    {
+      "bytes": 577,
+      "path": "lattica-prover-p3/target/block-v2-typed-worker-20261005-a/validation-r5/gpu-build-r2.log",
+      "sha256": "32547db7081bc7b6ba44c384bdbd4fc1ef56ebab5b4f62eeb295de4204213a62"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

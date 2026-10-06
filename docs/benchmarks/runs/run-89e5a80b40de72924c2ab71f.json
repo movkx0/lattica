@@ -1,0 +1,179 @@
+{
+  "campaign_ids": ["block-v2-direct-readback-2026-10-04"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "readback-five-pairs-r2",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-89e5a80b40de72924c2ab71f",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 51,
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/01-banded-controller.log",
+      "sha256": "e620253dc565e25e4839d0971b464a71c11a9ab6a8213ba9d18f6fa0110cd4c1"
+    },
+    {
+      "bytes": 51,
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/01-direct-controller.log",
+      "sha256": "53e1744f7d0b8ec96ad5f537294b4465f8e21a730a5e5db30c0edcbd967872cd"
+    },
+    {
+      "bytes": 51,
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/02-banded-controller.log",
+      "sha256": "d9eceb8f1d23760acec7e9f3e67f4fae75fcaf63815e879335c15c0ad1233933"
+    },
+    {
+      "bytes": 51,
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/02-direct-controller.log",
+      "sha256": "24026e4184312c3515d064bc8eed4be46d7ce9a91e25b2290ebada83c38bf51b"
+    },
+    {
+      "bytes": 51,
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/03-banded-controller.log",
+      "sha256": "95d2892e35da941562b78b19c2b2ff627e97a1ed8691a187376aee41ca93270f"
+    },
+    {
+      "bytes": 51,
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/03-direct-controller.log",
+      "sha256": "cd7a4e25be85a93013d0d54b746fbac4ce345c0238683c92ce86c3da01b5d3bc"
+    },
+    {
+      "bytes": 51,
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/04-banded-controller.log",
+      "sha256": "d9a45889088ea705e2dd9d3cff86835e4d4ca5bc45d1e34532158f96b206ea37"
+    },
+    {
+      "bytes": 51,
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/04-direct-controller.log",
+      "sha256": "bc883876ac1b040c538f9e54adef0043008bdc0da3d468030884703d3fac5e6a"
+    },
+    {
+      "bytes": 51,
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/05-banded-controller.log",
+      "sha256": "e8eb2903bcb15a5de2eb327e670ab5be5381d4c70f11f32728d96f128b20a000"
+    },
+    {
+      "bytes": 51,
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/05-direct-controller.log",
+      "sha256": "8d47b49d0d570b7c09cc689934abdcafc0b31e270d9d67176e58f26cf612b578"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/01-banded-plan-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/01-direct-plan-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/02-banded-plan-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/02-direct-plan-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/03-banded-plan-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/03-direct-plan-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/04-banded-plan-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/04-direct-plan-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/05-banded-plan-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/05-direct-plan-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

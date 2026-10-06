@@ -1,6 +1,6 @@
 //! Exact CPU-oracle checks for the research hiding-PCS integration. All seeds
 //! below are deterministic test fixtures, never production proving interfaces.
-use super::{engine, CandidateMmcs, Limits, ProverData};
+use super::{CandidateMmcs, Limits, ProverData, engine};
 use crate::block_v2::{profile, quotient_pcs::CandidatePcs};
 use crate::config::{Challenger, MyCompress, MyHash, Val, ValMmcs};
 use p3_commit::{BatchOpeningRef, ExtensionMmcs, Mmcs, Pcs, PolynomialSpace};
@@ -8,7 +8,7 @@ use p3_field::coset::TwoAdicMultiplicativeCoset;
 use p3_field::{Field, PrimeCharacteristicRing};
 use p3_fri::HidingFriPcs;
 use p3_goldilocks::default_goldilocks_poseidon2_8;
-use p3_matrix::{dense::RowMajorMatrix, Matrix};
+use p3_matrix::{Matrix, dense::RowMajorMatrix};
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 
@@ -125,15 +125,17 @@ fn compare(
 #[test]
 fn resident_constructor_rejects_unavailable_backend_and_changed_parameters() {
     let cpu_mmcs = mmcs(false);
-    assert!(CandidatePcs::new_resident(
-        Default::default(),
-        cpu_mmcs.clone(),
-        profile::fri(profile::ChallengeMmcs::new(cpu_mmcs.clone())),
-        profile::NUM_RANDOM_CODEWORDS,
-        ChaCha20Rng::from_seed([43; 32]),
-        64 << 20,
-    )
-    .is_err());
+    assert!(
+        CandidatePcs::new_resident(
+            Default::default(),
+            cpu_mmcs.clone(),
+            profile::fri(profile::ChallengeMmcs::new(cpu_mmcs.clone())),
+            profile::NUM_RANDOM_CODEWORDS,
+            ChaCha20Rng::from_seed([43; 32]),
+            64 << 20,
+        )
+        .is_err()
+    );
     for which in 0..9 {
         let mut fri = profile::fri(profile::ChallengeMmcs::new(cpu_mmcs.clone()));
         let mut columns = profile::NUM_RANDOM_CODEWORDS;
@@ -279,12 +281,14 @@ fn gpu_resident_admission_errors_do_not_consume_masks_or_salts() {
     assert!(state.commit([(domain, malformed)], false).is_err());
     // These shapes individually match the hiding convention but cannot share
     // the equal-output-height GPU MMCS. Admission must precede all RNG draws.
-    assert!(state
-        .commit(
-            [(domain, matrix(8, 3, 2)), (taller, matrix(16, 3, 2)),],
-            false
-        )
-        .is_err());
+    assert!(
+        state
+            .commit(
+                [(domain, matrix(8, 3, 2)), (taller, matrix(16, 3, 2)),],
+                false
+            )
+            .is_err()
+    );
     assert!(state.randomization([domain, taller]).is_err());
     let input = [(domain, matrix(8, 3, 2))];
     compare(
@@ -336,12 +340,16 @@ fn gpu_resident_research_switch_only_selects_explicit_proving_configs() {
     super::initialize_from_env().unwrap();
     assert!(super::initialize_resident_from_env().unwrap());
     assert!(super::initialize_resident_from_env().unwrap());
-    assert!(profile::make_proving_config()
-        .pcs()
-        .uses_resident_commitments());
-    assert!(profile::preprocessing_config()
-        .pcs()
-        .uses_resident_commitments());
+    assert!(
+        profile::make_proving_config()
+            .pcs()
+            .uses_resident_commitments()
+    );
+    assert!(
+        profile::preprocessing_config()
+            .pcs()
+            .uses_resident_commitments()
+    );
     assert!(
         !profile::make_config().pcs().uses_resident_commitments(),
         "wallet/default/verification configuration must not select resident commitments"
@@ -542,7 +550,7 @@ fn full_strength_cubic_proofs(gpu_openings: bool) {
 fn gpu_compact_prefix_readback_reconstructs_original_rows_salts_and_paths() {
     let _shutdown = engine::TestShutdownGuard;
     initialize();
-    for (height, width) in [(2usize, 1usize), (32, 7), (256, 35), (4096, 3)] {
+    for (height, width) in [(2usize, 1usize), (32, 7), (256, 35), (4096, 257)] {
         for bits in [1, profile::LOG_BLOWUP] {
             let full = mmcs(true);
             let compact = mmcs(true);
@@ -574,7 +582,20 @@ fn gpu_compact_prefix_readback_reconstructs_original_rows_salts_and_paths() {
             let logical = height << profile::LOG_BLOWUP;
             assert_eq!(compact.prefix_matrices(&bd)[0].0.height(), logical >> bits);
             let indices = [0, logical - 1, logical / 3, logical / 2, logical / 3];
+            let before = engine::report("compact query oracle before").unwrap();
             compact.prepare_queries(&bd, &indices).unwrap();
+            let after = engine::report("compact query oracle after").unwrap();
+            let tiles = after.query_reconstruction_tiles - before.query_reconstruction_tiles;
+            let readbacks = after.query_readbacks - before.query_readbacks;
+            assert!(tiles > 0);
+            if std::env::var("LATTICA_V2_GPU_QUERY_GATHER").as_deref() == Ok("1") {
+                assert_eq!(readbacks, tiles, "one download per reconstructed tile");
+            } else {
+                assert!(
+                    readbacks > tiles,
+                    "control downloads query rows individually"
+                );
+            }
             for index in indices {
                 let x = full.open_batch(index, &ad);
                 let y = compact.open_batch(index, &bd);

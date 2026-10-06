@@ -61,7 +61,7 @@ def command_json(argv):
 
 
 def cgroup_limits(paths, cpu_set, ignored_memory_paths=(), root=Path('/sys/fs/cgroup')):
-    """Intersect caller and worker ancestry; count shared ancestors only once."""
+    """Intersect the supplied cgroup ancestries; count shared ancestors once."""
     cpu_set = set(cpu_set)
     ignored_memory_paths = {Path(p).resolve() for p in ignored_memory_paths}
     quotas, groups, memory_heads = [], [], []
@@ -102,9 +102,10 @@ def detect_host(scratch, worker_cgroup=None):
            (line.split(':', 1) for line in Path('/proc/meminfo').read_text().splitlines())}
     online = cpulist(Path('/sys/devices/system/cpu/online').read_text())
     affinity = set(os.sched_getaffinity(0))
-    paths = [cgroup_path()]
-    if worker_cgroup is not None:
-        paths.append(worker_cgroup)
+    # A systemd worker is launched into its assigned slice, not the observer's
+    # service. Observer-only limits must not cap sibling workers. The assigned
+    # slice's complete ancestry still enforces shared manager/system limits.
+    paths = [Path(worker_cgroup)] if worker_cgroup is not None else [cgroup_path()]
     # The fleet's previous MemoryMax is ours to recalculate, unlike parent
     # limits. Including it would shrink each successive plan toward zero.
     limits = cgroup_limits(paths, online & affinity,
@@ -121,6 +122,7 @@ def detect_host(scratch, worker_cgroup=None):
         raise ValueError('compact concurrent research currently requires an explicitly selected tmpfs scratch filesystem; disk quotas are not yet qualified')
     return {
         'version': VERSION, 'physical_bytes': mem['MemTotal'], 'available_bytes': mem['MemAvailable'],
+        'resource_cgroup_scope': 'assigned_workers' if worker_cgroup is not None else 'current_process',
         'online_cpus': sorted(online), 'affinity_cpus': sorted(affinity), **limits,
         'scratch': {'path': str(scratch), 'filesystem': fs, 'device': scratch.stat().st_dev,
                     'capacity_bytes': stat.f_blocks * stat.f_frsize,
@@ -248,6 +250,27 @@ def shared_budgets(host, uuids):
     return result
 
 
+def readback_layout(profile):
+    layout = profile.get('geometry', {}).get('host_readback_layout', 'banded')
+    if layout not in ('banded', 'direct'):
+        raise ValueError('unsupported workload host readback layout')
+    return layout
+
+
+def query_readback_layout(profile):
+    layout = profile.get('geometry', {}).get('query_readback_layout', 'rows')
+    if layout not in ('rows', 'gather'):
+        raise ValueError('unsupported workload query readback layout')
+    return layout
+
+
+def opening_denominator_cache(profile):
+    enabled = profile.get('geometry', {}).get('opening_denominator_cache', False)
+    if type(enabled) is not bool:
+        raise ValueError('opening denominator cache selection must be boolean')
+    return enabled
+
+
 def workload_failures(budget, profile):
     """Check simultaneous allocations by phase; tmpfs pages belong to RAM.
 
@@ -258,6 +281,9 @@ def workload_failures(budget, profile):
     """
     if profile.get('version') != VERSION or not profile.get('phases'):
         raise ValueError('a versioned workload lifetime plan is required')
+    readback_layout(profile)
+    query_readback_layout(profile)
+    cache_metadata_bytes = 64 * 1024 if opening_denominator_cache(profile) else 0
     host, gpu = budget['host'], budget['gpu']
     page = profile.get('page_bytes', 0)
     if page < 1 or page & (page - 1):
@@ -269,7 +295,7 @@ def workload_failures(budget, profile):
         if any(type(n) is not int or n < 0 for n in values):
             raise ValueError('workload allocations must be nonnegative byte counts')
         spill = sum(up(n, page) + page for n in phase['spill_payloads'])
-        ram = phase['heap_bytes'] + phase['pinned_bytes'] + phase['driver_host_bytes']
+        ram = phase['heap_bytes'] + phase['pinned_bytes'] + phase['driver_host_bytes'] + cache_metadata_bytes
         ram += spill if host['tmpfs'] else phase['resident_spill_bytes']
         for resource, needed, available in (
                 ('host RAM', ram, host['worker_bytes']),
@@ -292,6 +318,9 @@ def plan(host, devices, slots, profile, calibrations=None):
     for device in devices[:slots]:
         uuid = device['uuid']
         budget = {**shared[uuid], 'gpu': asdict(gpu_budget(device, calibrations.get(uuid))),
+                  'readback_layout': readback_layout(profile),
+                  'query_readback_layout': query_readback_layout(profile),
+                  'opening_denominator_cache': opening_denominator_cache(profile),
                   'detected_host': host, 'detected_gpu': device}
         failures = workload_failures(budget, profile)
         if failures:

@@ -1,0 +1,1847 @@
+{
+  "candidate": {
+    "changes_default_mode": false,
+    "changes_proof_parameters": false,
+    "mode": "opt-in",
+    "name": "batched compact-query readback",
+    "status": "source_implemented_validation_pending"
+  },
+  "delivered_transactions_measured": false,
+  "interpretation": [
+    "Span totals are inclusive and may overlap; they must not be added as a decomposition of wall time.",
+    "The batch-inversion span sums tens of thousands of calls, including parallel work. Its total is not a critical-path duration.",
+    "The query phase inside FRI includes reconstruction, transfer and proof assembly; its roughly 12-second median is not an estimate of recoverable time.",
+    "The query reconstruction currently reads one row at a time after each tile transform. The opt-in gather candidate has not yet passed GPU correctness or performance qualification."
+  ],
+  "production_ready": false,
+  "runs": [
+    {
+      "pair": 1,
+      "spans": [
+        {
+          "calls": 4,
+          "max_ns": 6143115883,
+          "name": "GPU opening proof",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 24424207694
+        },
+        {
+          "calls": 76,
+          "max_ns": 657941853,
+          "name": "bounded GPU commitment",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 4379194850
+        },
+        {
+          "calls": 4,
+          "max_ns": 286020233,
+          "name": "execution trace",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 765375196
+        },
+        {
+          "calls": 4,
+          "max_ns": 23809605834,
+          "name": "native batch prove",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 94699070406
+        },
+        {
+          "calls": 4,
+          "max_ns": 7634869689,
+          "name": "preprocessing setup",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 26544898284
+        },
+        {
+          "calls": 4,
+          "max_ns": 4191001044,
+          "name": "FRI prover",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 16662868659
+        },
+        {
+          "calls": 4,
+          "max_ns": 1130698315,
+          "name": "commit phase",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 4514266512
+        },
+        {
+          "calls": 4,
+          "max_ns": 3318,
+          "name": "idft final poly",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 12149
+        },
+        {
+          "calls": 4,
+          "max_ns": 3029575626,
+          "name": "query phase",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 12020515130
+        },
+        {
+          "calls": 4,
+          "max_ns": 7262402699,
+          "name": "compute quotient",
+          "target": "lattica_prover_p3::block_v2::gpu_quotient_prover",
+          "total_ns": 28800016520
+        },
+        {
+          "calls": 4,
+          "max_ns": 826679,
+          "name": "infer log of constraint degree",
+          "target": "lattica_prover_p3::block_v2::gpu_quotient_prover",
+          "total_ns": 3187691
+        },
+        {
+          "calls": 4,
+          "max_ns": 23809591125,
+          "name": "prove_batch",
+          "target": "lattica_prover_p3::block_v2::gpu_quotient_prover",
+          "total_ns": 94699014173
+        },
+        {
+          "calls": 84,
+          "max_ns": 34200326,
+          "name": "compute opened values with Lagrange interpolation",
+          "target": "lattica_prover_p3::block_v2::opening_pcs",
+          "total_ns": 428004051
+        },
+        {
+          "calls": 84,
+          "max_ns": 34551978,
+          "name": "evaluate matrix",
+          "target": "lattica_prover_p3::block_v2::opening_pcs",
+          "total_ns": 430679288
+        },
+        {
+          "calls": 12,
+          "max_ns": 151550,
+          "name": "evaluate all constraints symbolically",
+          "target": "p3_air::symbolic::builder",
+          "total_ns": 605711
+        },
+        {
+          "calls": 4,
+          "max_ns": 46736,
+          "name": "evaluate base constraints symbolically",
+          "target": "p3_air::symbolic::builder",
+          "total_ns": 159900
+        },
+        {
+          "calls": 12,
+          "max_ns": 226249,
+          "name": "infer base and extension constraint degree",
+          "target": "p3_air::symbolic::builder",
+          "total_ns": 995803
+        },
+        {
+          "calls": 4,
+          "max_ns": 47882684,
+          "name": "Compute Selectors",
+          "target": "p3_batch_stark::prover",
+          "total_ns": 151618774
+        },
+        {
+          "calls": 4,
+          "max_ns": 7228314169,
+          "name": "compute quotient polynomial",
+          "target": "p3_batch_stark::prover",
+          "total_ns": 28660484112
+        },
+        {
+          "calls": 53,
+          "max_ns": 969710,
+          "name": "compute constraint layout with lookups",
+          "target": "p3_batch_stark::symbolic",
+          "total_ns": 33606413
+        },
+        {
+          "calls": 111,
+          "max_ns": 558294,
+          "name": "evaluate constraints symbolically",
+          "target": "p3_batch_stark::symbolic",
+          "total_ns": 37105449
+        },
+        {
+          "calls": 85,
+          "max_ns": 1019912,
+          "name": "infer constraint degree",
+          "target": "p3_batch_stark::symbolic",
+          "total_ns": 52973471
+        },
+        {
+          "calls": 14,
+          "max_ns": 615711,
+          "name": "infer log of constraint degree",
+          "target": "p3_batch_stark::verifier",
+          "total_ns": 7944338
+        },
+        {
+          "calls": 14,
+          "max_ns": 142994,
+          "name": "verify constraints",
+          "target": "p3_batch_stark::verifier",
+          "total_ns": 1862914
+        },
+        {
+          "calls": 14,
+          "max_ns": 35367032,
+          "name": "verify_batch",
+          "target": "p3_batch_stark::verifier",
+          "total_ns": 468275149
+        },
+        {
+          "calls": 80,
+          "max_ns": 3312534,
+          "name": "grind for proof-of-work witness",
+          "target": "p3_challenger::grinding_challenger",
+          "total_ns": 7971287
+        },
+        {
+          "calls": 48712,
+          "max_ns": 329757506,
+          "name": "batch_multiplicative_inverse",
+          "target": "p3_field::batch_inverse",
+          "total_ns": 14185579565
+        },
+        {
+          "calls": 76,
+          "max_ns": 15774537,
+          "name": "fold_matrix",
+          "target": "p3_fri::two_adic_pcs",
+          "total_ns": 131357673
+        },
+        {
+          "calls": 4,
+          "max_ns": 403230696,
+          "name": "generate lookup permutation",
+          "target": "p3_lookup::logup",
+          "total_ns": 1565032661
+        },
+        {
+          "calls": 388,
+          "max_ns": 34190146,
+          "name": "columnwise_dot_product",
+          "target": "p3_matrix",
+          "total_ns": 444152491
+        },
+        {
+          "calls": 72,
+          "max_ns": 201363880,
+          "name": "with_random_cols",
+          "target": "p3_matrix::dense",
+          "total_ns": 1489825023
+        },
+        {
+          "calls": 4,
+          "max_ns": 505840483,
+          "name": "with_zero_cols",
+          "target": "p3_matrix::dense",
+          "total_ns": 2014664355
+        },
+        {
+          "calls": 4,
+          "max_ns": 358,
+          "name": "reverse_matrix_index_bits",
+          "target": "p3_matrix::util",
+          "total_ns": 1197
+        },
+        {
+          "calls": 12,
+          "max_ns": 228716,
+          "name": "get_log_num_quotient_chunks",
+          "target": "p3_uni_stark::symbolic",
+          "total_ns": 1010047
+        },
+        {
+          "calls": 12,
+          "max_ns": 227452,
+          "name": "infer log of base and extension constraint degree",
+          "target": "p3_uni_stark::symbolic",
+          "total_ns": 1003250
+        },
+        {
+          "calls": 8,
+          "max_ns": 39768778,
+          "name": "verify",
+          "target": "p3_uni_stark::verifier",
+          "total_ns": 228277856
+        },
+        {
+          "calls": 8,
+          "max_ns": 39768237,
+          "name": "verify_with_preprocessed",
+          "target": "p3_uni_stark::verifier",
+          "total_ns": 228270557
+        }
+      ],
+      "worker_seconds": 133.03098626300925
+    },
+    {
+      "pair": 2,
+      "spans": [
+        {
+          "calls": 4,
+          "max_ns": 6253674468,
+          "name": "GPU opening proof",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 24392178361
+        },
+        {
+          "calls": 76,
+          "max_ns": 657087807,
+          "name": "bounded GPU commitment",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 4361730096
+        },
+        {
+          "calls": 4,
+          "max_ns": 293405917,
+          "name": "execution trace",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 798963898
+        },
+        {
+          "calls": 4,
+          "max_ns": 25416827383,
+          "name": "native batch prove",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 96817296946
+        },
+        {
+          "calls": 4,
+          "max_ns": 7720102391,
+          "name": "preprocessing setup",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 27020986099
+        },
+        {
+          "calls": 4,
+          "max_ns": 4268713979,
+          "name": "FRI prover",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 16644920149
+        },
+        {
+          "calls": 4,
+          "max_ns": 1131021945,
+          "name": "commit phase",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 4497799764
+        },
+        {
+          "calls": 4,
+          "max_ns": 21405,
+          "name": "idft final poly",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 39437
+        },
+        {
+          "calls": 4,
+          "max_ns": 3105513586,
+          "name": "query phase",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 12017877770
+        },
+        {
+          "calls": 4,
+          "max_ns": 7986985475,
+          "name": "compute quotient",
+          "target": "lattica_prover_p3::block_v2::gpu_quotient_prover",
+          "total_ns": 29849634673
+        },
+        {
+          "calls": 4,
+          "max_ns": 884350,
+          "name": "infer log of constraint degree",
+          "target": "lattica_prover_p3::block_v2::gpu_quotient_prover",
+          "total_ns": 3213899
+        },
+        {
+          "calls": 4,
+          "max_ns": 25416814860,
+          "name": "prove_batch",
+          "target": "lattica_prover_p3::block_v2::gpu_quotient_prover",
+          "total_ns": 96817242129
+        },
+        {
+          "calls": 84,
+          "max_ns": 36030116,
+          "name": "compute opened values with Lagrange interpolation",
+          "target": "lattica_prover_p3::block_v2::opening_pcs",
+          "total_ns": 434247118
+        },
+        {
+          "calls": 84,
+          "max_ns": 36218602,
+          "name": "evaluate matrix",
+          "target": "lattica_prover_p3::block_v2::opening_pcs",
+          "total_ns": 436634816
+        },
+        {
+          "calls": 12,
+          "max_ns": 137172,
+          "name": "evaluate all constraints symbolically",
+          "target": "p3_air::symbolic::builder",
+          "total_ns": 589641
+        },
+        {
+          "calls": 4,
+          "max_ns": 47451,
+          "name": "evaluate base constraints symbolically",
+          "target": "p3_air::symbolic::builder",
+          "total_ns": 159931
+        },
+        {
+          "calls": 12,
+          "max_ns": 185943,
+          "name": "infer base and extension constraint degree",
+          "target": "p3_air::symbolic::builder",
+          "total_ns": 940094
+        },
+        {
+          "calls": 4,
+          "max_ns": 53695798,
+          "name": "Compute Selectors",
+          "target": "p3_batch_stark::prover",
+          "total_ns": 167488064
+        },
+        {
+          "calls": 4,
+          "max_ns": 7951806765,
+          "name": "compute quotient polynomial",
+          "target": "p3_batch_stark::prover",
+          "total_ns": 29720735852
+        },
+        {
+          "calls": 53,
+          "max_ns": 958106,
+          "name": "compute constraint layout with lookups",
+          "target": "p3_batch_stark::symbolic",
+          "total_ns": 32974439
+        },
+        {
+          "calls": 111,
+          "max_ns": 506819,
+          "name": "evaluate constraints symbolically",
+          "target": "p3_batch_stark::symbolic",
+          "total_ns": 36442810
+        },
+        {
+          "calls": 85,
+          "max_ns": 883431,
+          "name": "infer constraint degree",
+          "target": "p3_batch_stark::symbolic",
+          "total_ns": 52689260
+        },
+        {
+          "calls": 14,
+          "max_ns": 635974,
+          "name": "infer log of constraint degree",
+          "target": "p3_batch_stark::verifier",
+          "total_ns": 7933765
+        },
+        {
+          "calls": 14,
+          "max_ns": 142374,
+          "name": "verify constraints",
+          "target": "p3_batch_stark::verifier",
+          "total_ns": 1858669
+        },
+        {
+          "calls": 14,
+          "max_ns": 33804165,
+          "name": "verify_batch",
+          "target": "p3_batch_stark::verifier",
+          "total_ns": 462819414
+        },
+        {
+          "calls": 80,
+          "max_ns": 5449562,
+          "name": "grind for proof-of-work witness",
+          "target": "p3_challenger::grinding_challenger",
+          "total_ns": 14107591
+        },
+        {
+          "calls": 48712,
+          "max_ns": 335270050,
+          "name": "batch_multiplicative_inverse",
+          "target": "p3_field::batch_inverse",
+          "total_ns": 14333179117
+        },
+        {
+          "calls": 76,
+          "max_ns": 20638725,
+          "name": "fold_matrix",
+          "target": "p3_fri::two_adic_pcs",
+          "total_ns": 132296922
+        },
+        {
+          "calls": 4,
+          "max_ns": 406540543,
+          "name": "generate lookup permutation",
+          "target": "p3_lookup::logup",
+          "total_ns": 1589000641
+        },
+        {
+          "calls": 388,
+          "max_ns": 36022170,
+          "name": "columnwise_dot_product",
+          "target": "p3_matrix",
+          "total_ns": 448343136
+        },
+        {
+          "calls": 72,
+          "max_ns": 230415693,
+          "name": "with_random_cols",
+          "target": "p3_matrix::dense",
+          "total_ns": 1613823978
+        },
+        {
+          "calls": 4,
+          "max_ns": 515061304,
+          "name": "with_zero_cols",
+          "target": "p3_matrix::dense",
+          "total_ns": 2040954624
+        },
+        {
+          "calls": 4,
+          "max_ns": 17219,
+          "name": "reverse_matrix_index_bits",
+          "target": "p3_matrix::util",
+          "total_ns": 20324
+        },
+        {
+          "calls": 12,
+          "max_ns": 187854,
+          "name": "get_log_num_quotient_chunks",
+          "target": "p3_uni_stark::symbolic",
+          "total_ns": 954202
+        },
+        {
+          "calls": 12,
+          "max_ns": 187029,
+          "name": "infer log of base and extension constraint degree",
+          "target": "p3_uni_stark::symbolic",
+          "total_ns": 947170
+        },
+        {
+          "calls": 8,
+          "max_ns": 37723454,
+          "name": "verify",
+          "target": "p3_uni_stark::verifier",
+          "total_ns": 226633135
+        },
+        {
+          "calls": 8,
+          "max_ns": 37722781,
+          "name": "verify_with_preprocessed",
+          "target": "p3_uni_stark::verifier",
+          "total_ns": 226625173
+        }
+      ],
+      "worker_seconds": 135.67479688899766
+    },
+    {
+      "pair": 3,
+      "spans": [
+        {
+          "calls": 4,
+          "max_ns": 6369994020,
+          "name": "GPU opening proof",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 24874326769
+        },
+        {
+          "calls": 76,
+          "max_ns": 662427133,
+          "name": "bounded GPU commitment",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 4383503047
+        },
+        {
+          "calls": 4,
+          "max_ns": 299510902,
+          "name": "execution trace",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 795166681
+        },
+        {
+          "calls": 4,
+          "max_ns": 25277966368,
+          "name": "native batch prove",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 98437715015
+        },
+        {
+          "calls": 4,
+          "max_ns": 7769180028,
+          "name": "preprocessing setup",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 26973437934
+        },
+        {
+          "calls": 4,
+          "max_ns": 4397198727,
+          "name": "FRI prover",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 16914584876
+        },
+        {
+          "calls": 4,
+          "max_ns": 1143714242,
+          "name": "commit phase",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 4523886234
+        },
+        {
+          "calls": 4,
+          "max_ns": 4624,
+          "name": "idft final poly",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 14634
+        },
+        {
+          "calls": 4,
+          "max_ns": 3234941098,
+          "name": "query phase",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 12261641800
+        },
+        {
+          "calls": 4,
+          "max_ns": 7564148362,
+          "name": "compute quotient",
+          "target": "lattica_prover_p3::block_v2::gpu_quotient_prover",
+          "total_ns": 30011360044
+        },
+        {
+          "calls": 4,
+          "max_ns": 871722,
+          "name": "infer log of constraint degree",
+          "target": "lattica_prover_p3::block_v2::gpu_quotient_prover",
+          "total_ns": 3298238
+        },
+        {
+          "calls": 4,
+          "max_ns": 25277950906,
+          "name": "prove_batch",
+          "target": "lattica_prover_p3::block_v2::gpu_quotient_prover",
+          "total_ns": 98437657296
+        },
+        {
+          "calls": 84,
+          "max_ns": 36979732,
+          "name": "compute opened values with Lagrange interpolation",
+          "target": "lattica_prover_p3::block_v2::opening_pcs",
+          "total_ns": 445350210
+        },
+        {
+          "calls": 84,
+          "max_ns": 37332304,
+          "name": "evaluate matrix",
+          "target": "lattica_prover_p3::block_v2::opening_pcs",
+          "total_ns": 448428409
+        },
+        {
+          "calls": 12,
+          "max_ns": 78182,
+          "name": "evaluate all constraints symbolically",
+          "target": "p3_air::symbolic::builder",
+          "total_ns": 546197
+        },
+        {
+          "calls": 4,
+          "max_ns": 48383,
+          "name": "evaluate base constraints symbolically",
+          "target": "p3_air::symbolic::builder",
+          "total_ns": 160924
+        },
+        {
+          "calls": 12,
+          "max_ns": 108078,
+          "name": "infer base and extension constraint degree",
+          "target": "p3_air::symbolic::builder",
+          "total_ns": 900084
+        },
+        {
+          "calls": 4,
+          "max_ns": 48650974,
+          "name": "Compute Selectors",
+          "target": "p3_batch_stark::prover",
+          "total_ns": 157909383
+        },
+        {
+          "calls": 4,
+          "max_ns": 7531398463,
+          "name": "compute quotient polynomial",
+          "target": "p3_batch_stark::prover",
+          "total_ns": 29871856802
+        },
+        {
+          "calls": 53,
+          "max_ns": 3014736,
+          "name": "compute constraint layout with lookups",
+          "target": "p3_batch_stark::symbolic",
+          "total_ns": 41450586
+        },
+        {
+          "calls": 111,
+          "max_ns": 7153073,
+          "name": "evaluate constraints symbolically",
+          "target": "p3_batch_stark::symbolic",
+          "total_ns": 57312186
+        },
+        {
+          "calls": 85,
+          "max_ns": 7924175,
+          "name": "infer constraint degree",
+          "target": "p3_batch_stark::symbolic",
+          "total_ns": 78034325
+        },
+        {
+          "calls": 14,
+          "max_ns": 7925270,
+          "name": "infer log of constraint degree",
+          "target": "p3_batch_stark::verifier",
+          "total_ns": 23606266
+        },
+        {
+          "calls": 14,
+          "max_ns": 381678,
+          "name": "verify constraints",
+          "target": "p3_batch_stark::verifier",
+          "total_ns": 2494693
+        },
+        {
+          "calls": 14,
+          "max_ns": 99626045,
+          "name": "verify_batch",
+          "target": "p3_batch_stark::verifier",
+          "total_ns": 654142444
+        },
+        {
+          "calls": 80,
+          "max_ns": 3730686,
+          "name": "grind for proof-of-work witness",
+          "target": "p3_challenger::grinding_challenger",
+          "total_ns": 6290441
+        },
+        {
+          "calls": 48712,
+          "max_ns": 380138194,
+          "name": "batch_multiplicative_inverse",
+          "target": "p3_field::batch_inverse",
+          "total_ns": 16691168294
+        },
+        {
+          "calls": 76,
+          "max_ns": 18962354,
+          "name": "fold_matrix",
+          "target": "p3_fri::two_adic_pcs",
+          "total_ns": 136322471
+        },
+        {
+          "calls": 4,
+          "max_ns": 430809152,
+          "name": "generate lookup permutation",
+          "target": "p3_lookup::logup",
+          "total_ns": 1663690716
+        },
+        {
+          "calls": 388,
+          "max_ns": 36972318,
+          "name": "columnwise_dot_product",
+          "target": "p3_matrix",
+          "total_ns": 461377767
+        },
+        {
+          "calls": 72,
+          "max_ns": 216066542,
+          "name": "with_random_cols",
+          "target": "p3_matrix::dense",
+          "total_ns": 1560467138
+        },
+        {
+          "calls": 4,
+          "max_ns": 536321614,
+          "name": "with_zero_cols",
+          "target": "p3_matrix::dense",
+          "total_ns": 2093929765
+        },
+        {
+          "calls": 4,
+          "max_ns": 321,
+          "name": "reverse_matrix_index_bits",
+          "target": "p3_matrix::util",
+          "total_ns": 1125
+        },
+        {
+          "calls": 12,
+          "max_ns": 109543,
+          "name": "get_log_num_quotient_chunks",
+          "target": "p3_uni_stark::symbolic",
+          "total_ns": 914060
+        },
+        {
+          "calls": 12,
+          "max_ns": 108756,
+          "name": "infer log of base and extension constraint degree",
+          "target": "p3_uni_stark::symbolic",
+          "total_ns": 906822
+        },
+        {
+          "calls": 8,
+          "max_ns": 33886288,
+          "name": "verify",
+          "target": "p3_uni_stark::verifier",
+          "total_ns": 232440067
+        },
+        {
+          "calls": 8,
+          "max_ns": 33885433,
+          "name": "verify_with_preprocessed",
+          "target": "p3_uni_stark::verifier",
+          "total_ns": 232431769
+        }
+      ],
+      "worker_seconds": 137.70417589400313
+    },
+    {
+      "pair": 4,
+      "spans": [
+        {
+          "calls": 4,
+          "max_ns": 6370231927,
+          "name": "GPU opening proof",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 24878498226
+        },
+        {
+          "calls": 76,
+          "max_ns": 654197120,
+          "name": "bounded GPU commitment",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 4368375933
+        },
+        {
+          "calls": 4,
+          "max_ns": 296637675,
+          "name": "execution trace",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 810798887
+        },
+        {
+          "calls": 4,
+          "max_ns": 25219693250,
+          "name": "native batch prove",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 98860347506
+        },
+        {
+          "calls": 4,
+          "max_ns": 7792189881,
+          "name": "preprocessing setup",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 27892445645
+        },
+        {
+          "calls": 4,
+          "max_ns": 4181568149,
+          "name": "FRI prover",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 16525934368
+        },
+        {
+          "calls": 4,
+          "max_ns": 1130208689,
+          "name": "commit phase",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 4506520278
+        },
+        {
+          "calls": 4,
+          "max_ns": 3804,
+          "name": "idft final poly",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 12578
+        },
+        {
+          "calls": 4,
+          "max_ns": 3022742160,
+          "name": "query phase",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 11874415421
+        },
+        {
+          "calls": 4,
+          "max_ns": 8405037431,
+          "name": "compute quotient",
+          "target": "lattica_prover_p3::block_v2::gpu_quotient_prover",
+          "total_ns": 31802746205
+        },
+        {
+          "calls": 4,
+          "max_ns": 852456,
+          "name": "infer log of constraint degree",
+          "target": "lattica_prover_p3::block_v2::gpu_quotient_prover",
+          "total_ns": 3315179
+        },
+        {
+          "calls": 4,
+          "max_ns": 25219679077,
+          "name": "prove_batch",
+          "target": "lattica_prover_p3::block_v2::gpu_quotient_prover",
+          "total_ns": 98860290103
+        },
+        {
+          "calls": 84,
+          "max_ns": 38868246,
+          "name": "compute opened values with Lagrange interpolation",
+          "target": "lattica_prover_p3::block_v2::opening_pcs",
+          "total_ns": 446589092
+        },
+        {
+          "calls": 84,
+          "max_ns": 39081262,
+          "name": "evaluate matrix",
+          "target": "lattica_prover_p3::block_v2::opening_pcs",
+          "total_ns": 449664727
+        },
+        {
+          "calls": 12,
+          "max_ns": 66763,
+          "name": "evaluate all constraints symbolically",
+          "target": "p3_air::symbolic::builder",
+          "total_ns": 555359
+        },
+        {
+          "calls": 4,
+          "max_ns": 51699,
+          "name": "evaluate base constraints symbolically",
+          "target": "p3_air::symbolic::builder",
+          "total_ns": 163655
+        },
+        {
+          "calls": 12,
+          "max_ns": 113502,
+          "name": "infer base and extension constraint degree",
+          "target": "p3_air::symbolic::builder",
+          "total_ns": 921063
+        },
+        {
+          "calls": 4,
+          "max_ns": 144023701,
+          "name": "Compute Selectors",
+          "target": "p3_batch_stark::prover",
+          "total_ns": 336984391
+        },
+        {
+          "calls": 4,
+          "max_ns": 8378645168,
+          "name": "compute quotient polynomial",
+          "target": "p3_batch_stark::prover",
+          "total_ns": 31677123449
+        },
+        {
+          "calls": 53,
+          "max_ns": 1606970,
+          "name": "compute constraint layout with lookups",
+          "target": "p3_batch_stark::symbolic",
+          "total_ns": 35439165
+        },
+        {
+          "calls": 111,
+          "max_ns": 485723,
+          "name": "evaluate constraints symbolically",
+          "target": "p3_batch_stark::symbolic",
+          "total_ns": 37261508
+        },
+        {
+          "calls": 85,
+          "max_ns": 851545,
+          "name": "infer constraint degree",
+          "target": "p3_batch_stark::symbolic",
+          "total_ns": 53742880
+        },
+        {
+          "calls": 14,
+          "max_ns": 707612,
+          "name": "infer log of constraint degree",
+          "target": "p3_batch_stark::verifier",
+          "total_ns": 8114035
+        },
+        {
+          "calls": 14,
+          "max_ns": 156804,
+          "name": "verify constraints",
+          "target": "p3_batch_stark::verifier",
+          "total_ns": 1898919
+        },
+        {
+          "calls": 14,
+          "max_ns": 35592026,
+          "name": "verify_batch",
+          "target": "p3_batch_stark::verifier",
+          "total_ns": 469343985
+        },
+        {
+          "calls": 80,
+          "max_ns": 9606369,
+          "name": "grind for proof-of-work witness",
+          "target": "p3_challenger::grinding_challenger",
+          "total_ns": 21941391
+        },
+        {
+          "calls": 48712,
+          "max_ns": 329178898,
+          "name": "batch_multiplicative_inverse",
+          "target": "p3_field::batch_inverse",
+          "total_ns": 15782831861
+        },
+        {
+          "calls": 76,
+          "max_ns": 17683351,
+          "name": "fold_matrix",
+          "target": "p3_fri::two_adic_pcs",
+          "total_ns": 133775097
+        },
+        {
+          "calls": 4,
+          "max_ns": 420665818,
+          "name": "generate lookup permutation",
+          "target": "p3_lookup::logup",
+          "total_ns": 1628232032
+        },
+        {
+          "calls": 388,
+          "max_ns": 38859721,
+          "name": "columnwise_dot_product",
+          "target": "p3_matrix",
+          "total_ns": 458749518
+        },
+        {
+          "calls": 72,
+          "max_ns": 210703617,
+          "name": "with_random_cols",
+          "target": "p3_matrix::dense",
+          "total_ns": 1548810674
+        },
+        {
+          "calls": 4,
+          "max_ns": 530891714,
+          "name": "with_zero_cols",
+          "target": "p3_matrix::dense",
+          "total_ns": 2088207325
+        },
+        {
+          "calls": 4,
+          "max_ns": 460,
+          "name": "reverse_matrix_index_bits",
+          "target": "p3_matrix::util",
+          "total_ns": 1332
+        },
+        {
+          "calls": 12,
+          "max_ns": 115344,
+          "name": "get_log_num_quotient_chunks",
+          "target": "p3_uni_stark::symbolic",
+          "total_ns": 935557
+        },
+        {
+          "calls": 12,
+          "max_ns": 114308,
+          "name": "infer log of base and extension constraint degree",
+          "target": "p3_uni_stark::symbolic",
+          "total_ns": 928426
+        },
+        {
+          "calls": 8,
+          "max_ns": 33241493,
+          "name": "verify",
+          "target": "p3_uni_stark::verifier",
+          "total_ns": 222681427
+        },
+        {
+          "calls": 8,
+          "max_ns": 33239982,
+          "name": "verify_with_preprocessed",
+          "target": "p3_uni_stark::verifier",
+          "total_ns": 222673263
+        }
+      ],
+      "worker_seconds": 138.64004856000247
+    },
+    {
+      "pair": 5,
+      "spans": [
+        {
+          "calls": 4,
+          "max_ns": 6091568953,
+          "name": "GPU opening proof",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 24283250338
+        },
+        {
+          "calls": 76,
+          "max_ns": 653165684,
+          "name": "bounded GPU commitment",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 4362893050
+        },
+        {
+          "calls": 4,
+          "max_ns": 289047129,
+          "name": "execution trace",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 776617227
+        },
+        {
+          "calls": 4,
+          "max_ns": 24074650883,
+          "name": "native batch prove",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 95065875078
+        },
+        {
+          "calls": 4,
+          "max_ns": 7693809147,
+          "name": "preprocessing setup",
+          "target": "lattica_block_v2_perf",
+          "total_ns": 26650818792
+        },
+        {
+          "calls": 4,
+          "max_ns": 4202189894,
+          "name": "FRI prover",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 16674477153
+        },
+        {
+          "calls": 4,
+          "max_ns": 1130147823,
+          "name": "commit phase",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 4499181981
+        },
+        {
+          "calls": 4,
+          "max_ns": 3456,
+          "name": "idft final poly",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 12533
+        },
+        {
+          "calls": 4,
+          "max_ns": 3047433014,
+          "name": "query phase",
+          "target": "lattica_prover_p3::block_v2::batched_fri",
+          "total_ns": 12048327305
+        },
+        {
+          "calls": 4,
+          "max_ns": 7316549663,
+          "name": "compute quotient",
+          "target": "lattica_prover_p3::block_v2::gpu_quotient_prover",
+          "total_ns": 29094884661
+        },
+        {
+          "calls": 4,
+          "max_ns": 838880,
+          "name": "infer log of constraint degree",
+          "target": "lattica_prover_p3::block_v2::gpu_quotient_prover",
+          "total_ns": 3232377
+        },
+        {
+          "calls": 4,
+          "max_ns": 24074635661,
+          "name": "prove_batch",
+          "target": "lattica_prover_p3::block_v2::gpu_quotient_prover",
+          "total_ns": 95065816026
+        },
+        {
+          "calls": 84,
+          "max_ns": 33919640,
+          "name": "compute opened values with Lagrange interpolation",
+          "target": "lattica_prover_p3::block_v2::opening_pcs",
+          "total_ns": 417087543
+        },
+        {
+          "calls": 84,
+          "max_ns": 34278528,
+          "name": "evaluate matrix",
+          "target": "lattica_prover_p3::block_v2::opening_pcs",
+          "total_ns": 420087075
+        },
+        {
+          "calls": 12,
+          "max_ns": 79559,
+          "name": "evaluate all constraints symbolically",
+          "target": "p3_air::symbolic::builder",
+          "total_ns": 521565
+        },
+        {
+          "calls": 4,
+          "max_ns": 46379,
+          "name": "evaluate base constraints symbolically",
+          "target": "p3_air::symbolic::builder",
+          "total_ns": 156493
+        },
+        {
+          "calls": 12,
+          "max_ns": 109272,
+          "name": "infer base and extension constraint degree",
+          "target": "p3_air::symbolic::builder",
+          "total_ns": 871595
+        },
+        {
+          "calls": 4,
+          "max_ns": 49087335,
+          "name": "Compute Selectors",
+          "target": "p3_batch_stark::prover",
+          "total_ns": 155646957
+        },
+        {
+          "calls": 4,
+          "max_ns": 7284192468,
+          "name": "compute quotient polynomial",
+          "target": "p3_batch_stark::prover",
+          "total_ns": 28969790350
+        },
+        {
+          "calls": 53,
+          "max_ns": 892702,
+          "name": "compute constraint layout with lookups",
+          "target": "p3_batch_stark::symbolic",
+          "total_ns": 33019399
+        },
+        {
+          "calls": 111,
+          "max_ns": 3106395,
+          "name": "evaluate constraints symbolically",
+          "target": "p3_batch_stark::symbolic",
+          "total_ns": 38862554
+        },
+        {
+          "calls": 85,
+          "max_ns": 3422256,
+          "name": "infer constraint degree",
+          "target": "p3_batch_stark::symbolic",
+          "total_ns": 54664002
+        },
+        {
+          "calls": 14,
+          "max_ns": 3422729,
+          "name": "infer log of constraint degree",
+          "target": "p3_batch_stark::verifier",
+          "total_ns": 10806333
+        },
+        {
+          "calls": 14,
+          "max_ns": 148360,
+          "name": "verify constraints",
+          "target": "p3_batch_stark::verifier",
+          "total_ns": 1887006
+        },
+        {
+          "calls": 14,
+          "max_ns": 36229936,
+          "name": "verify_batch",
+          "target": "p3_batch_stark::verifier",
+          "total_ns": 467687634
+        },
+        {
+          "calls": 80,
+          "max_ns": 1641285,
+          "name": "grind for proof-of-work witness",
+          "target": "p3_challenger::grinding_challenger",
+          "total_ns": 2755008
+        },
+        {
+          "calls": 48712,
+          "max_ns": 364489257,
+          "name": "batch_multiplicative_inverse",
+          "target": "p3_field::batch_inverse",
+          "total_ns": 16793533501
+        },
+        {
+          "calls": 76,
+          "max_ns": 16620060,
+          "name": "fold_matrix",
+          "target": "p3_fri::two_adic_pcs",
+          "total_ns": 132804510
+        },
+        {
+          "calls": 4,
+          "max_ns": 394858509,
+          "name": "generate lookup permutation",
+          "target": "p3_lookup::logup",
+          "total_ns": 1565864076
+        },
+        {
+          "calls": 388,
+          "max_ns": 33898820,
+          "name": "columnwise_dot_product",
+          "target": "p3_matrix",
+          "total_ns": 431009728
+        },
+        {
+          "calls": 72,
+          "max_ns": 203908032,
+          "name": "with_random_cols",
+          "target": "p3_matrix::dense",
+          "total_ns": 1483129587
+        },
+        {
+          "calls": 4,
+          "max_ns": 515957706,
+          "name": "with_zero_cols",
+          "target": "p3_matrix::dense",
+          "total_ns": 2014417603
+        },
+        {
+          "calls": 4,
+          "max_ns": 399,
+          "name": "reverse_matrix_index_bits",
+          "target": "p3_matrix::util",
+          "total_ns": 1355
+        },
+        {
+          "calls": 12,
+          "max_ns": 110585,
+          "name": "get_log_num_quotient_chunks",
+          "target": "p3_uni_stark::symbolic",
+          "total_ns": 884729
+        },
+        {
+          "calls": 12,
+          "max_ns": 110112,
+          "name": "infer log of base and extension constraint degree",
+          "target": "p3_uni_stark::symbolic",
+          "total_ns": 878340
+        },
+        {
+          "calls": 8,
+          "max_ns": 33132192,
+          "name": "verify",
+          "target": "p3_uni_stark::verifier",
+          "total_ns": 228449523
+        },
+        {
+          "calls": 8,
+          "max_ns": 33131595,
+          "name": "verify_with_preprocessed",
+          "target": "p3_uni_stark::verifier",
+          "total_ns": 228442255
+        }
+      ],
+      "worker_seconds": 133.48918495699763
+    }
+  ],
+  "schema_version": 1,
+  "scope": "Five completed paired count-four laptop GPU runs under the matched comparison assignment. CPU-audited fixture aggregation only.",
+  "source_pins": {
+    "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/finalizer-comparison/pair-01-paired/001-typed/prove.log": "604bcb7eff066077423eb607cd2d34d88dbb8b09a13fb8e5126f9a09703b56a0",
+    "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/finalizer-comparison/pair-01-paired/001-typed/result.json": "6af955ac6ff445e33aa65b8f543bfca1de7d7b0d39b9d1c655380445f7ac9e54",
+    "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/finalizer-comparison/pair-01-paired/summary.json": "2c228170775966eaab99c283be6bc6175c065991c1942afbe92e5fd190b05a95",
+    "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/finalizer-comparison/pair-02-paired/001-typed/prove.log": "2b33fa3ab9b1052aae97a179b3cd1b0bdcdbdca02b94aac10461776b8248d6fa",
+    "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/finalizer-comparison/pair-02-paired/001-typed/result.json": "ac5282fa9c50fb4a6a2a4b57a89f2187ff2fd41796374cfb01c0c0fff7a3ce2f",
+    "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/finalizer-comparison/pair-02-paired/summary.json": "f9d3cfc81ff297d463583019f204e219628575f78405363b9063aeb139198a6b",
+    "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/finalizer-comparison/pair-03-paired/001-typed/prove.log": "727968e3e51de059fda727552ae39329519c71cdcacc529eb5864042baca1895",
+    "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/finalizer-comparison/pair-03-paired/001-typed/result.json": "2bf269346ef2f645a17edf1aadd9e0eac78917086ba00c66ef51ccb65ddf3a86",
+    "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/finalizer-comparison/pair-03-paired/summary.json": "5976f22197a056a9ec210fdaee8e63fd636f1be5ebc9a6cfe08a7176fdab4ef2",
+    "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/finalizer-comparison/pair-04-paired/001-typed/prove.log": "c3e7822007a4b0d6c01a47e3b1e2e229642dfca1047eaf8652cb98e74ed7d630",
+    "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/finalizer-comparison/pair-04-paired/001-typed/result.json": "f18244f5d0462b18bb1f474720c5e74725c9d61d221ff5082f48fa02b4c7e0b0",
+    "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/finalizer-comparison/pair-04-paired/summary.json": "67cbbb9c5e384b73d91b3a436ba9633eebb61ed7d70ac70d18161ba0b67ad0e1",
+    "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/finalizer-comparison/pair-05-paired/001-typed/prove.log": "437cc729f4985026a9f7e969933293b16889d34006cb54e26895016dfff0a0d0",
+    "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/finalizer-comparison/pair-05-paired/001-typed/result.json": "786fb1c63791578625a3c17768a2acc275c31d22f11fcc3b76c1bc1515b36567",
+    "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/finalizer-comparison/pair-05-paired/summary.json": "86173b3f2f4357b1b861166630ffbcbe42266916f5e933383b0e4763de876aa0"
+  },
+  "span_summary": [
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 96.817296946,
+      "name": "native batch prove",
+      "runs": 5,
+      "target": "lattica_block_v2_perf"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 96.817242129,
+      "name": "prove_batch",
+      "runs": 5,
+      "target": "lattica_prover_p3::block_v2::gpu_quotient_prover"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 29.849634673,
+      "name": "compute quotient",
+      "runs": 5,
+      "target": "lattica_prover_p3::block_v2::gpu_quotient_prover"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 29.720735852,
+      "name": "compute quotient polynomial",
+      "runs": 5,
+      "target": "p3_batch_stark::prover"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 26.973437934,
+      "name": "preprocessing setup",
+      "runs": 5,
+      "target": "lattica_block_v2_perf"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 24.424207694,
+      "name": "GPU opening proof",
+      "runs": 5,
+      "target": "lattica_block_v2_perf"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 16.662868659,
+      "name": "FRI prover",
+      "runs": 5,
+      "target": "lattica_prover_p3::block_v2::batched_fri"
+    },
+    {
+      "calls_per_run": [
+        48712,
+        48712,
+        48712,
+        48712,
+        48712
+      ],
+      "median_inclusive_seconds": 15.782831861,
+      "name": "batch_multiplicative_inverse",
+      "runs": 5,
+      "target": "p3_field::batch_inverse"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 12.02051513,
+      "name": "query phase",
+      "runs": 5,
+      "target": "lattica_prover_p3::block_v2::batched_fri"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 4.506520278,
+      "name": "commit phase",
+      "runs": 5,
+      "target": "lattica_prover_p3::block_v2::batched_fri"
+    },
+    {
+      "calls_per_run": [
+        76,
+        76,
+        76,
+        76,
+        76
+      ],
+      "median_inclusive_seconds": 4.368375933,
+      "name": "bounded GPU commitment",
+      "runs": 5,
+      "target": "lattica_block_v2_perf"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 2.040954624,
+      "name": "with_zero_cols",
+      "runs": 5,
+      "target": "p3_matrix::dense"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 1.589000641,
+      "name": "generate lookup permutation",
+      "runs": 5,
+      "target": "p3_lookup::logup"
+    },
+    {
+      "calls_per_run": [
+        72,
+        72,
+        72,
+        72,
+        72
+      ],
+      "median_inclusive_seconds": 1.548810674,
+      "name": "with_random_cols",
+      "runs": 5,
+      "target": "p3_matrix::dense"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 0.795166681,
+      "name": "execution trace",
+      "runs": 5,
+      "target": "lattica_block_v2_perf"
+    },
+    {
+      "calls_per_run": [
+        14,
+        14,
+        14,
+        14,
+        14
+      ],
+      "median_inclusive_seconds": 0.468275149,
+      "name": "verify_batch",
+      "runs": 5,
+      "target": "p3_batch_stark::verifier"
+    },
+    {
+      "calls_per_run": [
+        388,
+        388,
+        388,
+        388,
+        388
+      ],
+      "median_inclusive_seconds": 0.448343136,
+      "name": "columnwise_dot_product",
+      "runs": 5,
+      "target": "p3_matrix"
+    },
+    {
+      "calls_per_run": [
+        84,
+        84,
+        84,
+        84,
+        84
+      ],
+      "median_inclusive_seconds": 0.436634816,
+      "name": "evaluate matrix",
+      "runs": 5,
+      "target": "lattica_prover_p3::block_v2::opening_pcs"
+    },
+    {
+      "calls_per_run": [
+        84,
+        84,
+        84,
+        84,
+        84
+      ],
+      "median_inclusive_seconds": 0.434247118,
+      "name": "compute opened values with Lagrange interpolation",
+      "runs": 5,
+      "target": "lattica_prover_p3::block_v2::opening_pcs"
+    },
+    {
+      "calls_per_run": [
+        8,
+        8,
+        8,
+        8,
+        8
+      ],
+      "median_inclusive_seconds": 0.228277856,
+      "name": "verify",
+      "runs": 5,
+      "target": "p3_uni_stark::verifier"
+    },
+    {
+      "calls_per_run": [
+        8,
+        8,
+        8,
+        8,
+        8
+      ],
+      "median_inclusive_seconds": 0.228270557,
+      "name": "verify_with_preprocessed",
+      "runs": 5,
+      "target": "p3_uni_stark::verifier"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 0.157909383,
+      "name": "Compute Selectors",
+      "runs": 5,
+      "target": "p3_batch_stark::prover"
+    },
+    {
+      "calls_per_run": [
+        76,
+        76,
+        76,
+        76,
+        76
+      ],
+      "median_inclusive_seconds": 0.13280451,
+      "name": "fold_matrix",
+      "runs": 5,
+      "target": "p3_fri::two_adic_pcs"
+    },
+    {
+      "calls_per_run": [
+        85,
+        85,
+        85,
+        85,
+        85
+      ],
+      "median_inclusive_seconds": 0.05374288,
+      "name": "infer constraint degree",
+      "runs": 5,
+      "target": "p3_batch_stark::symbolic"
+    },
+    {
+      "calls_per_run": [
+        111,
+        111,
+        111,
+        111,
+        111
+      ],
+      "median_inclusive_seconds": 0.037261508,
+      "name": "evaluate constraints symbolically",
+      "runs": 5,
+      "target": "p3_batch_stark::symbolic"
+    },
+    {
+      "calls_per_run": [
+        53,
+        53,
+        53,
+        53,
+        53
+      ],
+      "median_inclusive_seconds": 0.033606413,
+      "name": "compute constraint layout with lookups",
+      "runs": 5,
+      "target": "p3_batch_stark::symbolic"
+    },
+    {
+      "calls_per_run": [
+        14,
+        14,
+        14,
+        14,
+        14
+      ],
+      "median_inclusive_seconds": 0.008114035,
+      "name": "infer log of constraint degree",
+      "runs": 5,
+      "target": "p3_batch_stark::verifier"
+    },
+    {
+      "calls_per_run": [
+        80,
+        80,
+        80,
+        80,
+        80
+      ],
+      "median_inclusive_seconds": 0.007971287,
+      "name": "grind for proof-of-work witness",
+      "runs": 5,
+      "target": "p3_challenger::grinding_challenger"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 0.003232377,
+      "name": "infer log of constraint degree",
+      "runs": 5,
+      "target": "lattica_prover_p3::block_v2::gpu_quotient_prover"
+    },
+    {
+      "calls_per_run": [
+        14,
+        14,
+        14,
+        14,
+        14
+      ],
+      "median_inclusive_seconds": 0.001887006,
+      "name": "verify constraints",
+      "runs": 5,
+      "target": "p3_batch_stark::verifier"
+    },
+    {
+      "calls_per_run": [
+        12,
+        12,
+        12,
+        12,
+        12
+      ],
+      "median_inclusive_seconds": 0.000935557,
+      "name": "get_log_num_quotient_chunks",
+      "runs": 5,
+      "target": "p3_uni_stark::symbolic"
+    },
+    {
+      "calls_per_run": [
+        12,
+        12,
+        12,
+        12,
+        12
+      ],
+      "median_inclusive_seconds": 0.000928426,
+      "name": "infer log of base and extension constraint degree",
+      "runs": 5,
+      "target": "p3_uni_stark::symbolic"
+    },
+    {
+      "calls_per_run": [
+        12,
+        12,
+        12,
+        12,
+        12
+      ],
+      "median_inclusive_seconds": 0.000921063,
+      "name": "infer base and extension constraint degree",
+      "runs": 5,
+      "target": "p3_air::symbolic::builder"
+    },
+    {
+      "calls_per_run": [
+        12,
+        12,
+        12,
+        12,
+        12
+      ],
+      "median_inclusive_seconds": 0.000555359,
+      "name": "evaluate all constraints symbolically",
+      "runs": 5,
+      "target": "p3_air::symbolic::builder"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 0.000159931,
+      "name": "evaluate base constraints symbolically",
+      "runs": 5,
+      "target": "p3_air::symbolic::builder"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 1.2578e-05,
+      "name": "idft final poly",
+      "runs": 5,
+      "target": "lattica_prover_p3::block_v2::batched_fri"
+    },
+    {
+      "calls_per_run": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "median_inclusive_seconds": 1.332e-06,
+      "name": "reverse_matrix_index_bits",
+      "runs": 5,
+      "target": "p3_matrix::util"
+    }
+  ],
+  "status": "observed"
+}

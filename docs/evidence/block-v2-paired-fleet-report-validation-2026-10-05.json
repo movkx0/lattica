@@ -1,0 +1,133 @@
+{
+  "browser": {
+    "browser_errors": 0,
+    "network_requests": 0,
+    "status": "passed"
+  },
+  "captured_utc": "2026-10-05T06:42:30.721399+00:00",
+  "coverage": {
+    "campaigns": 111,
+    "cpu_audited_runs": 290,
+    "documentary_only_campaigns": [
+      "block-v2-apple-benchmark-package-2026-10-04",
+      "block-v2-cpu-process-2026-10-02",
+      "block-v2-fusion-prune-2026-10-01",
+      "block-v2-lookup-mask-model-2026-10-01",
+      "block-v2-retention-model-2026-10-01",
+      "block-v2-throughput-browser-2026-10-04",
+      "block-v2-throughput-qualification-2026-10-04-r3",
+      "block-v2-throughput-qualification-2026-10-04-r4",
+      "block-v2-throughput-readiness-2026-10-04-r2",
+      "block-v2-throughput-readiness-2026-10-04-r3",
+      "block-v2-throughput-readiness-2026-10-04-r4",
+      "block-v2-throughput-readiness-2026-10-04-r5",
+      "block-v2-throughput-readiness-2026-10-04-r6",
+      "block-v2-throughput-readiness-2026-10-04-r7",
+      "block-v2-throughput-readiness-2026-10-04-r8",
+      "block-v2-throughput-readiness-2026-10-04",
+      "block-v2-throughput-readiness-2026-10-05-r9",
+      "block-v2-throughput-resources-2026-10-04-r3",
+      "block-v2-throughput-resources-2026-10-04",
+      "block-v2-throughput-validation-2026-10-04",
+      "block-v2-typed-validation-2026-10-04"
+    ],
+    "mismatched_pins": [],
+    "missing_pinned_sources": 0,
+    "resource_samples": 221717,
+    "retention": "All discovered structured performance records and resource samples are retained. Original documentary evidence is embedded. Proof payloads, wallet stores and arbitrary log text are excluded.",
+    "runs": 573,
+    "source_bytes": 774915948,
+    "source_files": 3992,
+    "timeline_events": 4597991,
+    "unavailable_references": [
+      "/tmp/lattica-final-recursion-gates.log",
+      "/tmp/lattica-gpu-hash-20260930-1-vram.csv",
+      "/tmp/lattica-gpu-hash-build.log",
+      "/tmp/lattica-gpu-hash-final-checks.log",
+      "/tmp/lattica-gpu-hash-final-checks.sh",
+      "/tmp/lattica-gpu-hash-isolation.log",
+      "/tmp/lattica-gpu-hash-run1.log",
+      "/tmp/lattica-gpu-hash-run2.log",
+      "/tmp/lattica-gpu-hash-run3.log",
+      "/tmp/lattica-gpu-hash-run4.log",
+      "/tmp/lattica-gpu-hash-run5.log",
+      "/tmp/lattica-gpu-hash-series.log",
+      "/tmp/lattica-gpu-hash-series.sh",
+      "/tmp/lattica-gpu-watch-failbin/nvidia-smi",
+      "/tmp/lattica-gpu-watch-negative-v2.log",
+      "/tmp/lattica-gpu-watch-negative.sh",
+      "/tmp/lattica-grouped-integration-draft-g-20261001.tar.gz",
+      "/tmp/lattica-grouped-wrapper-20261001",
+      "/tmp/lattica-perf-cache-hit-audit.log",
+      "/tmp/lattica-perf-cache-run.log",
+      "/tmp/lattica-perf-cache-run.sh",
+      "/tmp/lattica-perf-final-checks.log",
+      "/tmp/lattica-perf-final-checks.sh",
+      "/tmp/lattica-retained-merkle-20261001",
+      "/tmp/lattica-retained-merkle-20261001/block-v2-accounting.py",
+      "/tmp/lattica-retained-merkle-20261001/block-v2-scalability.py",
+      "/tmp/lattica-retained-merkle-20261001/block-v2-two-level.sh",
+      "/tmp/lattica-retained-merkle-20261001/engine.rs",
+      "/tmp/lattica-retained-merkle-20261001/gpu_hash.rs",
+      "/tmp/lattica-retained-merkle-20261001/manifest.json",
+      "/tmp/lattica-retained-merkle-20261001/test-block-v2-scalability.py",
+      "/tmp/lattica-scratch-bench-1000-c9071c4fcf6d",
+      "/tmp/lattica-scratch-bench-1000-c9071c4fcf6d/ram16",
+      "/tmp/lattica-scratch-bench-1000-c9071c4fcf6d/ram16-control",
+      "/tmp/lattica-scratch-bench-1000-c9071c4fcf6d/ram24",
+      "/tmp/lattica-scratch-bench-1000-c9071c4fcf6d/ram8",
+      "/tmp/lattica-two-level-normalized.log",
+      "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-a (older readback-only binary/controller; no proving runs were started)"
+    ]
+  },
+  "schema_version": 1,
+  "scope": "Offline desktop/mobile report QA after paired fleet repetitions; performed before timed query-gather proving.",
+  "sources": [
+    {
+      "bytes": 221988,
+      "path": "lattica-prover-p3/target/block-v2-paired-fleet-report-validation-20261005-a/browser/apple-738f4dea8eb2559015eb-01-pilot-shared-18t-quotient-compact-deferred-r1.json",
+      "sha256": "0df48f95d34872441edf41dd34e61c600c017de837f528eb3ead4bdb27d41fc2"
+    },
+    {
+      "bytes": 176351,
+      "path": "lattica-prover-p3/target/block-v2-paired-fleet-report-validation-20261005-a/browser/desktop.png",
+      "sha256": "1a2db7c877285a10d3fac9a137ef1cddb29ed8e9d57ddd47fdf9548e3db80392"
+    },
+    {
+      "bytes": 69114,
+      "path": "lattica-prover-p3/target/block-v2-paired-fleet-report-validation-20261005-a/browser/mobile.png",
+      "sha256": "aaf5b8b488e88f99dbafaca9d65e5ab25d511a1c06539b3a3daa364530fad6ee"
+    },
+    {
+      "bytes": 279289,
+      "path": "lattica-prover-p3/target/block-v2-paired-fleet-report-validation-20261005-a/browser/run-0f1f01c49d163c9dc5cb31b6.json",
+      "sha256": "586c152da07d64956adbe7d91d13739490a2d1be8b8662a51fed054f1adcfa3b"
+    },
+    {
+      "bytes": 114522,
+      "path": "lattica-prover-p3/target/block-v2-paired-fleet-report-validation-20261005-a/browser/throughput-b735e9bd9ba9b549.json",
+      "sha256": "fca8cd3725a5e67e5edbb4b7e0f1399e52dc2d73255f07aec558f922022eb547"
+    },
+    {
+      "bytes": 99405,
+      "path": "lattica-prover-p3/target/block-v2-paired-fleet-report-validation-20261005-a/browser/timeline.png",
+      "sha256": "dd9dc29d05e84f16549de6c851801d7e27377f1641c0a4c9502aac576ccc52af"
+    },
+    {
+      "bytes": 18761777,
+      "path": "lattica-prover-p3/target/block-v2-paired-fleet-report-validation-20261005-a/catalog.json",
+      "sha256": "f947d26165b3fa3eda10b6c45bde16ca0dbe562f4037a028890a11f86e972e08"
+    },
+    {
+      "bytes": 89,
+      "path": "lattica-prover-p3/target/block-v2-paired-fleet-report-validation-20261005-a/check.log",
+      "sha256": "e3054aa3c01a150a1a1162d65577e0ee9fde1ec46c9bbceec96611116414f28f"
+    },
+    {
+      "bytes": 84234686,
+      "path": "lattica-prover-p3/target/block-v2-paired-fleet-report-validation-20261005-a/index.html",
+      "sha256": "8f3e7a67149759ce4f01123894d0bc4d745a8add0479482f094cb345ccc2899d"
+    }
+  ],
+  "status": "passed"
+}

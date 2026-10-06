@@ -325,11 +325,12 @@ pub const ExchangeViewingKey = struct {
 // ---------------------------------------------------------------------------------------
 
 /// A note as transmitted on-chain: the public commitment, the ML-KEM ciphertext carrying the
-/// shared secret, and the AEAD-encrypted note plaintext (`ciphertext` is allocator-owned).
+/// shared secret, and the AEAD-encrypted note plaintext. Encryption and chain APIs
+/// own the ciphertext allocation; body decoders may borrow a read-only slice.
 pub const TransmittedNote = struct {
     cm: Hash32,
     kem_ct: [p.CT_LEN]u8,
-    ciphertext: []u8,
+    ciphertext: []const u8,
 };
 
 /// Encrypt `note` to `address`, producing the on-chain transmitted note. `ovk` is the **sender's**

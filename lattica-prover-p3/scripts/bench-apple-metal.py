@@ -2,7 +2,8 @@
 """Run a small, audited Apple Metal optimization screen by default.
 
 Three shared-memory cases at 18 threads compare quotient control, deferred
-timing, and compact data with deferred timing. Each runs once. The expensive
+timing, and compact data with deferred timing. Each runs once by default;
+--screening-repeats adds fresh repetitions. The expensive
 repeated CPU/shared/copy matrix requires --full-matrix explicitly.
 """
 import argparse
@@ -23,7 +24,7 @@ import time
 CRATE = Path(__file__).resolve().parents[1]
 GIB = 1 << 30
 FIXTURE_NAMES = ["height", "key.1", "key.2", "key.3", *[f"wallet.{i}" for i in range(8)]]
-GPU_KEYS = ["HASH", "RETAIN_TREES", "PIPELINE", "RESIDENT_LDE", "OPENINGS", "OPENING_COMPACT", "OPENING_PINNED", "PARALLEL_READBACK", "QUOTIENT_LDE", "COMPACT_PROVER_DATA"]
+GPU_KEYS = ["HASH", "RETAIN_TREES", "PIPELINE", "RESIDENT_LDE", "OPENINGS", "OPENING_COMPACT", "OPENING_PINNED", "PARALLEL_READBACK", "QUOTIENT_LDE", "COMPACT_PROVER_DATA", "QUERY_GATHER"]
 
 def digest(path):
     with Path(path).open("rb") as f:
@@ -65,11 +66,19 @@ def schedule(threads=(8, 16, 18, 24), *, baseline_only=False, pipeline_threads=(
     assert len(measured) == 9 * len(threads) + 3 * len(extra)
     return pilot_trials + measured
 
-def screening_schedule(threads=18):
+def screening_schedule(threads=18, repeats=1):
     if threads not in (8, 16, 18, 24):
         raise ValueError("unsupported screening thread count")
-    return [arm("shared", threads, level) for level in
-            ("quotient", "quotient-deferred", "quotient-compact-deferred")]
+    if type(repeats) is not int or not 1 <= repeats <= 5:
+        raise ValueError("screening repeats must be between 1 and 5")
+    levels = ("quotient", "quotient-deferred", "quotient-compact-deferred")
+    return [arm("shared", threads, level, repeat=repeat)
+            for repeat in range(1, repeats + 1)
+            for level in (levels if repeat % 2 else levels[::-1])]
+
+
+def fixture_check_threads(configurations):
+    return min(os.cpu_count() or 1, max(case["threads"] for case in configurations))
 
 
 def validate_reference(prior, current):
@@ -173,6 +182,8 @@ def main():
     parser.add_argument("--qualification", type=Path, required=True)
     parser.add_argument("--full-matrix", action="store_true", help="explicitly opt into repeated CPU/shared/copy trials")
     parser.add_argument("--screening-threads", type=int, choices=(8, 16, 18, 24), default=18)
+    parser.add_argument("--screening-repeats", type=int, choices=range(1, 6), default=1,
+                        help="fresh repetitions of the three-case screen, reversing order each repetition")
     parser.add_argument("--reuse-screening-from", type=Path, help="reuse one audited combined case from a compatible result.json, including a stopped queue")
     parser.add_argument("--pilots-only", action="store_true")
     parser.add_argument("--pilot-level", choices=("baseline", "quotient", "quotient-compact-deferred"), help="full matrix: qualify the largest enabled pipeline before measured trials")
@@ -183,6 +194,8 @@ def main():
     parser.add_argument("--optimizations", action="store_true", help="include compact/deferred factorial arms and pilots at every thread count")
     parser.add_argument("--build-metadata", type=Path, default=CRATE / "target/metal-build-metadata.json")
     args = parser.parse_args()
+    if args.screening_repeats != 1 and (args.full_matrix or args.reuse_screening_from):
+        parser.error("repeated screening requires fresh trials and cannot reuse a pilot or select --full-matrix")
     if args.full_matrix and args.reuse_screening_from:
         parser.error("--reuse-screening-from only applies to the small default screen")
     if not args.full_matrix and (args.optimizations or args.pilots_only or args.reuse_pilots_from or args.baseline_only or args.threads or args.pipeline_threads or args.pilot_level):
@@ -191,7 +204,7 @@ def main():
         parser.error("optimization campaign requires fresh pilots at every selected thread count")
     if args.pilots_only and args.reuse_pilots_from:
         parser.error("--pilots-only cannot reuse pilots")
-    selected_schedule = schedule(args.threads or (8, 16, 18, 24), baseline_only=args.baseline_only, pipeline_threads=args.pipeline_threads or (24,), pilots=not args.reuse_pilots_from, pilot_level=args.pilot_level or "baseline", optimizations=args.optimizations) if args.full_matrix else screening_schedule(args.screening_threads)
+    selected_schedule = schedule(args.threads or (8, 16, 18, 24), baseline_only=args.baseline_only, pipeline_threads=args.pipeline_threads or (24,), pilots=not args.reuse_pilots_from, pilot_level=args.pilot_level or "baseline", optimizations=args.optimizations) if args.full_matrix else screening_schedule(args.screening_threads, args.screening_repeats)
     if platform.system() != "Darwin" or platform.machine() != "arm64":
         parser.error("requires Apple Silicon macOS")
     os.umask(0o077)
@@ -263,6 +276,7 @@ def main():
               "git_base": build.get("git_commit") or subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=CRATE, text=True).strip(),
               "controller_git_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=CRATE, text=True).strip(),
               "suite": "full-matrix" if args.full_matrix else "screening",
+              "screening_repeats": None if args.full_matrix else args.screening_repeats,
               "git_diff": subprocess.check_output(["git", "diff", "--stat"], cwd=CRATE, text=True),
               "hardware": subprocess.check_output(["sysctl", "machdep.cpu.brand_string", "hw.memsize", "hw.ncpu"], text=True),
               "platform": platform.platform(), "source_hashes": source_hashes, "build": build,
@@ -365,7 +379,7 @@ def main():
         return entry
     (out / "scratch").mkdir(); save()
     try:
-        config = arm("cpu",24)
+        config = arm("cpu", fixture_check_threads(selected_schedule))
         stage("fixture-check","cpu",["check-registered",fixture,*external],config)
         stage("fixture-publics","publics",["dump-eight",fixture,external[1]],config)
         for index, config in enumerate(report["schedule"],1):

@@ -21,6 +21,7 @@ const ARTIFACT_DOMAIN: u64 = 0x4c42563272;
 // Existing local research wallet-artifact header used by the registered runners.
 // This does not allocate or accept a new network format.
 pub(super) const WALLET_MAGIC: &[u8; 8] = b"LBV2WL02";
+pub(super) const TYPED_WALLET_MAGIC: &[u8; 8] = b"LBV2TW01";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct JobId(Digest);
@@ -158,6 +159,7 @@ impl ArtifactKind {
 pub struct RegistryPin {
     profile: [u8; 32],
     construction: WrapperConstruction,
+    typed: bool,
 }
 
 impl RegistryPin {
@@ -173,7 +175,43 @@ impl RegistryPin {
         Ok(Self {
             profile: expected_profile,
             construction,
+            typed: false,
         })
+    }
+
+    pub fn new_typed(
+        registry: &crate::block_v2::typed_recursive::Registry<12>,
+        profile: [u8; 32],
+    ) -> Result<Self, Error> {
+        if !registry.height.is_power_of_two()
+            || !(8..=1 << 21).contains(&registry.height)
+            || registry
+                .caps
+                .iter()
+                .any(|cap| cap.len() != 1 << profile::CAP_HEIGHT)
+            || registry.id()? != profile
+        {
+            return Err("typed execution registry shape/profile".into());
+        }
+        Ok(Self {
+            profile,
+            construction: WrapperConstruction::GroupedPair,
+            typed: true,
+        })
+    }
+
+    pub fn is_typed(self) -> bool {
+        self.typed
+    }
+
+    pub fn check_typed(
+        self,
+        registry: &crate::block_v2::typed_recursive::Registry<12>,
+    ) -> Result<(), Error> {
+        if !self.typed || Self::new_typed(registry, self.profile)? != self {
+            return Err("typed execution registry substitution".into());
+        }
+        Ok(())
     }
 
     pub fn profile(self) -> [u8; 32] {
@@ -184,7 +222,10 @@ impl RegistryPin {
         self.construction
     }
 
-    fn check(self, registry: &Registry) -> Result<(), Error> {
+    pub(super) fn check(self, registry: &Registry) -> Result<(), Error> {
+        if self.typed {
+            return Err("typed execution requires its twelve-key registry".into());
+        }
         Self::validate_shape(registry)?;
         if registry.id()? != self.profile {
             return Err("execution registry substitution".into());
@@ -205,7 +246,10 @@ impl RegistryPin {
         Ok(())
     }
 
-    fn code(self) -> u64 {
+    pub(super) fn code(self) -> u64 {
+        if self.typed {
+            return 3;
+        }
         match self.construction {
             WrapperConstruction::SingleWallet => 1,
             WrapperConstruction::GroupedPair => 2,
@@ -218,6 +262,7 @@ impl RegistryPin {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct VerifiedWallet {
     pin: RegistryPin,
+    mode: u8,
     summary: NodeSummary,
     artifact: ArtifactRef,
 }
@@ -244,7 +289,57 @@ impl VerifiedWallet {
         recursive::verify_wallet(&wallet)?;
         Ok(Self {
             pin,
+            mode: programs::WRAPPER as u8,
             summary: recursive::wallet_summary(registry, &wallet)?,
+            artifact: ArtifactRef::from_bytes(ArtifactKind::Wallet, bytes)?,
+        })
+    }
+
+    /// The host supplies type/height/issuance policy independently of the proof.
+    pub fn verify_typed(
+        pin: RegistryPin,
+        registry: &crate::block_v2::typed_recursive::Registry<12>,
+        expected_chain: [u8; 32],
+        policy: crate::block_v2::typed_recursive::Policy,
+        bytes: &[u8],
+    ) -> Result<Self, Error> {
+        use crate::block_v2::typed_recursive::{self, Policy};
+        if bytes.len() <= TYPED_WALLET_MAGIC.len()
+            || bytes.len() > profile::MAX_PROOF_BYTES
+            || !bytes.starts_with(TYPED_WALLET_MAGIC)
+        {
+            return Err("typed execution wallet length/version".into());
+        }
+        pin.check_typed(registry)?;
+        let wallet: WalletProof = codec::decode(&bytes[TYPED_WALLET_MAGIC.len()..])?;
+        if wallet.chain != expected_chain {
+            return Err("typed execution wallet chain".into());
+        }
+        typed_recursive::verify_wallet(&wallet, policy)?;
+        let kind = match policy {
+            Policy::JoinSplit => commitment::Kind::JoinSplit,
+            Policy::Htlc { .. } => commitment::Kind::Htlc,
+            Policy::Issuance { .. } => commitment::Kind::Coinbase,
+        };
+        let values: Vec<_> = wallet
+            .public
+            .iter()
+            .map(PrimeField64::as_canonical_u64)
+            .collect();
+        let summary = commitment::leaf(
+            commitment::Context {
+                profile_id: pin.profile,
+                chain_id: expected_chain,
+            },
+            commitment::Entry {
+                kind,
+                statement_digest: commitment::statement_digest(kind as u8, &values)?,
+            },
+        )?;
+        Ok(Self {
+            pin,
+            mode: policy.mode() as u8,
+            summary,
             artifact: ArtifactRef::from_bytes(ArtifactKind::Wallet, bytes)?,
         })
     }
@@ -262,6 +357,13 @@ impl VerifiedWallet {
 pub enum Operation {
     Wrap,
     WrapPair,
+    /// A twelve-key paired wrapper. A padded pair repeats its left proof while
+    /// committing one transaction and a canonical empty right leaf.
+    TypedPair {
+        mode: u8,
+        padded: bool,
+    },
+    Finalize,
     Empty,
     Merge,
 }
@@ -273,6 +375,39 @@ impl Operation {
             Self::WrapPair => 2,
             Self::Empty => 3,
             Self::Merge => 4,
+            Self::TypedPair { mode, padded } => {
+                if padded {
+                    32 + u64::from(mode)
+                } else {
+                    16 + u64::from(mode)
+                }
+            }
+            Self::Finalize => 64,
+        }
+    }
+
+    pub(super) fn from_code(code: u8) -> Result<Self, Error> {
+        let (mode, padded) = match code {
+            1 => return Ok(Self::Wrap),
+            2 => return Ok(Self::WrapPair),
+            3 => return Ok(Self::Empty),
+            4 => return Ok(Self::Merge),
+            64 => return Ok(Self::Finalize),
+            17..=27 => (code - 16, false),
+            33..=43 => (code - 32, true),
+            _ => return Err("execution operation code".into()),
+        };
+        crate::block_v2::machine::typed_pairs::leaf_modes(u64::from(mode))?;
+        Ok(Self::TypedPair { mode, padded })
+    }
+
+    pub(super) fn arity(self) -> (usize, usize) {
+        match self {
+            Self::Wrap => (1, 0),
+            Self::WrapPair | Self::TypedPair { .. } => (2, 0),
+            Self::Empty => (0, 0),
+            Self::Merge => (0, 2),
+            Self::Finalize => (0, 1),
         }
     }
 
@@ -281,6 +416,8 @@ impl Operation {
             Self::Wrap | Self::WrapPair => programs::WRAPPER,
             Self::Empty => programs::EMPTY,
             Self::Merge => programs::MERGE,
+            Self::TypedPair { mode, .. } => u64::from(mode),
+            Self::Finalize => crate::block_v2::machine::typed_pairs::FINALIZE,
         }
     }
 }
@@ -308,6 +445,11 @@ impl Job {
         wallet_inputs: Vec<ArtifactRef>,
     ) -> Result<Self, Error> {
         commitment::validate_summary(expected)?;
+        if (matches!(operation, Operation::TypedPair { .. } | Operation::Finalize) && !pin.typed)
+            || (pin.typed && matches!(operation, Operation::Wrap | Operation::WrapPair))
+        {
+            return Err("execution operation belongs to a different registry family".into());
+        }
         if expected.context.profile_id != pin.profile || expected.level > DEPTH {
             return Err("execution job profile or level".into());
         }
@@ -331,7 +473,7 @@ impl Job {
     }
 
     pub fn wrap(start: u8, wallet: VerifiedWallet) -> Result<Self, Error> {
-        if wallet.pin.construction != WrapperConstruction::SingleWallet {
+        if wallet.pin.typed || wallet.pin.construction != WrapperConstruction::SingleWallet {
             return Err("single wrapper not registered for this construction".into());
         }
         Self::derive(
@@ -360,6 +502,60 @@ impl Job {
             expected,
             vec![],
             vec![left.artifact, right.artifact],
+        )
+    }
+
+    pub fn typed_pair(
+        start: u8,
+        left: VerifiedWallet,
+        right: Option<VerifiedWallet>,
+    ) -> Result<Self, Error> {
+        if !left.pin.typed || right.is_some_and(|r| r.pin != left.pin) {
+            return Err("typed pair execution registry/construction mismatch".into());
+        }
+        let padded = right.is_none();
+        let right = right.unwrap_or(left);
+        let mode = crate::block_v2::machine::typed_pairs::mode_for([
+            u64::from(left.mode),
+            u64::from(right.mode),
+        ])? as u8;
+        let right_summary = if padded {
+            commitment::empty_subtree(left.summary.context, 0)?
+        } else {
+            right.summary
+        };
+        let expected = commitment::merge_nodes(left.summary, right_summary)?;
+        Self::derive(
+            left.pin,
+            Operation::TypedPair { mode, padded },
+            start,
+            expected,
+            vec![],
+            vec![left.artifact, right.artifact],
+        )
+    }
+
+    pub fn finalize(child: &Self) -> Result<Self, Error> {
+        if !child.pin.typed
+            || child.start != 0
+            || child.expected.level >= DEPTH
+            || child.expected.count == 0
+            || child.operation == Operation::Finalize
+        {
+            return Err("typed execution terminal child geometry".into());
+        }
+        let mut expected = child.expected;
+        while expected.level < DEPTH {
+            let empty = commitment::empty_subtree(expected.context, expected.level)?;
+            expected = commitment::merge_nodes(expected, empty)?;
+        }
+        Self::derive(
+            child.pin,
+            Operation::Finalize,
+            0,
+            expected,
+            vec![child.id],
+            vec![],
         )
     }
 
@@ -451,6 +647,23 @@ impl VerifiedNode {
         })
     }
 
+    pub fn verify_typed(
+        job: &Job,
+        registry: &crate::block_v2::typed_recursive::Registry<12>,
+        bytes: &[u8],
+    ) -> Result<Self, Error> {
+        if bytes.is_empty() || bytes.len() > profile::MAX_PROOF_BYTES {
+            return Err("typed execution node length".into());
+        }
+        job.pin.check_typed(registry)?;
+        let node = codec::decode_node(bytes)?;
+        registry.verify(job.pin.profile, &node, &job.expected_public())?;
+        Ok(Self {
+            job: job.id,
+            artifact: ArtifactRef::from_bytes(ArtifactKind::Node, bytes)?,
+        })
+    }
+
     pub fn job(self) -> JobId {
         self.job
     }
@@ -473,6 +686,49 @@ pub(super) mod test_support {
         RegistryPin {
             profile: [7; 32],
             construction,
+            typed: false,
+        }
+    }
+
+    pub fn typed_pin() -> RegistryPin {
+        RegistryPin {
+            profile: [8; 32],
+            construction: WrapperConstruction::GroupedPair,
+            typed: true,
+        }
+    }
+
+    pub fn typed_wallet(value: u64, mode: u8, bytes: &[u8]) -> VerifiedWallet {
+        typed_wallet_for(typed_pin(), value, mode, bytes)
+    }
+    pub fn typed_wallet_for(
+        pin: RegistryPin,
+        value: u64,
+        mode: u8,
+        bytes: &[u8],
+    ) -> VerifiedWallet {
+        assert!(pin.is_typed());
+        let kind = match mode {
+            1 => commitment::Kind::JoinSplit,
+            4 => commitment::Kind::Htlc,
+            5 => commitment::Kind::Coinbase,
+            _ => panic!("invalid test-only wallet mode"),
+        };
+        VerifiedWallet {
+            pin,
+            mode,
+            summary: commitment::leaf(
+                Context {
+                    profile_id: pin.profile,
+                    chain_id: [9; 32],
+                },
+                commitment::Entry {
+                    kind,
+                    statement_digest: [value, 0, 0, 0],
+                },
+            )
+            .unwrap(),
+            artifact: ArtifactRef::from_bytes(ArtifactKind::Wallet, bytes).unwrap(),
         }
     }
 
@@ -488,6 +744,7 @@ pub(super) mod test_support {
         let pin = pin_for(construction);
         VerifiedWallet {
             pin,
+            mode: programs::WRAPPER as u8,
             summary: commitment::leaf(
                 Context {
                     profile_id: pin.profile,
@@ -521,6 +778,7 @@ mod tests {
         let pin = RegistryPin {
             profile: [7; 32],
             construction,
+            typed: false,
         };
         let context = Context {
             profile_id: pin.profile,
@@ -528,6 +786,7 @@ mod tests {
         };
         VerifiedWallet {
             pin,
+            mode: programs::WRAPPER as u8,
             summary: commitment::leaf(
                 context,
                 Entry {

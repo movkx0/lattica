@@ -87,7 +87,7 @@ def resource_snapshot(plan, contract):
     return {"profile_id": contract["resource_policy"]["profile_id"],
             "status": "admitted" if not reasons else "blocked", "reasons": reasons,
             "selected_gpu_uuids": sorted(budgets),
-            "scope": "current inventory and existing grouped-eight geometry only",
+            "scope": "current inventory and the supplied workload geometry only",
             "new_geometry_requires_requalification": True, "detected": copy.deepcopy(plan)}
 
 
@@ -151,7 +151,7 @@ def evaluate(contract, evidence, root, *, contract_path=DEFAULT_CONTRACT, resour
                     reasons.append("Actual candidate application and durable replay are not established")
             if name == "per_geometry_device_qualification":
                 if measured.get("all_required_geometries") is not True or measured.get("individually_cpu_audited") is not True:
-                    reasons.append("Existing grouped-eight device qualification does not cover new geometries")
+                    reasons.append("Device qualification does not cover every required geometry with independent CPU audits")
                 if (resources is None or set(measured.get("gpu_uuids", [])) != set(resources["selected_gpu_uuids"])
                         or len(set(measured.get("gpu_uuids", []))) != contract["resource_policy"]["workers"]):
                     reasons.append("Qualification must cover the actual selected GPU UUIDs")

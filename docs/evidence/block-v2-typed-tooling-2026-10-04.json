@@ -1,0 +1,122 @@
+{
+  "frozen_manifest": {
+    "path": "lattica-prover-p3/target/block-v2-typed-tooling-20261004-a/manifest.json",
+    "sha256": "d65e7643fb35b42254bc28a50f11917b39036d814f981bf828dd468155aab540"
+  },
+  "native_interop": {
+    "body_sha256": "439bfdd59b1711eeb06970235c2dd987c33af81ca78c4020810cb7f3c01cc87b",
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "counts": [
+      {
+        "count": 1,
+        "fresh_recursive_proofs_planned": 13,
+        "root_hex": "2fd325cc46cd1e9a52961624b5b5bdab2608bdea945190d2b4e3124534a6dfa5",
+        "rust_zig_match": true
+      },
+      {
+        "count": 2,
+        "fresh_recursive_proofs_planned": 13,
+        "root_hex": "86d1677c1b82e8d42d16bc8cd220c1e90ad615379d0b3e4fa2f26706a55eb2a9",
+        "rust_zig_match": true
+      },
+      {
+        "count": 3,
+        "fresh_recursive_proofs_planned": 15,
+        "root_hex": "cd4cb2acdfbf27965d58cb240b0efea3164baf5dc5f31a6aafa14dfa899e61d2",
+        "rust_zig_match": true
+      },
+      {
+        "count": 4,
+        "fresh_recursive_proofs_planned": 15,
+        "root_hex": "868777a6e2d2c76f8f7b4d0ed342c58b706a5fc56df050c37b87c2c0f6fa8d85",
+        "rust_zig_match": true
+      },
+      {
+        "count": 8,
+        "fresh_recursive_proofs_planned": 21,
+        "root_hex": "124afbce2695581f2f420c175a4be738197afffeecfe4db5d5b7cb524328b814",
+        "rust_zig_match": true
+      },
+      {
+        "count": 16,
+        "fresh_recursive_proofs_planned": 35,
+        "root_hex": "f0a46ed213473e888967cd3bd9c3936d629fadf1eeb16745b33ba4ead3365d13",
+        "rust_zig_match": true
+      },
+      {
+        "count": 32,
+        "fresh_recursive_proofs_planned": 65,
+        "root_hex": "4c9c6ce9f014e0f6e2e6fe8e0fea4153dfb2092464c54e3bd50c0fd9a2a61239",
+        "rust_zig_match": true
+      },
+      {
+        "count": 63,
+        "fresh_recursive_proofs_planned": 127,
+        "root_hex": "0fa8f79f6881dc367760473c450919b7b4b2fa3bbdd6e258a43e328724978d89",
+        "rust_zig_match": true
+      },
+      {
+        "count": 64,
+        "fresh_recursive_proofs_planned": 127,
+        "root_hex": "3f2e309e7c32f074032f326919c29ad94546fb788e5d5f2d8960c2b777b21abc",
+        "rust_zig_match": true
+      }
+    ],
+    "durable_host_applied": false,
+    "expected_rejections": [
+      "root",
+      "height",
+      "issuance"
+    ],
+    "mixed_root_qualified": false,
+    "pins": {
+      "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-throughput-contract.json": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+      "/home/access/code/lattica/lattica-prover-p3/scripts/block-v2-typed-interop.py": "791724074085bb733b8359c68ce304bb09eb33984bd07ebb0561d5e667f9ee2f",
+      "/home/access/code/lattica/lattica-prover-p3/target/release/block-v2-typed-probe": "72f250b9022a19319469d40e988574b8e40685e943f704e0fa0133a52847a1f6",
+      "/home/access/code/lattica/zig-out/bin/block-v2-expected-root": "89794748bf92ab24bbf753845048b113991461bee100ce171bbd88f8f3bbc784"
+    },
+    "production_ready": false,
+    "proof_verified": false,
+    "schema_version": 1,
+    "status": "NATIVE_INTEROP_PASSED"
+  },
+  "native_interop_source": {
+    "path": "lattica-prover-p3/target/block-v2-typed-tooling-20261004-a/native-interop/summary.json",
+    "sha256": "c8a1f7d6b800518124b452d518e646160f825a79a0acb3c17e0fbae6d837ac5b"
+  },
+  "notes": [
+    "The native interop profile is synthetic and is not an approved proof registry.",
+    "The archived executable hashes equal those used for native interop; the manifest retains immutable local copies.",
+    "Full typed registration/proving requires an explicit worker budget equal to cgroup MemoryMax and disabled swap. This bounds a CPU bootstrap; it is not measured phase admission.",
+    "The current CPU reference makes 127 recursive proofs for 64 transactions. Typed grouping and GPU qualification remain performance work.",
+    "The driver caps Rayon to the actual process CPU capacity and optionally accepts a lower RAYON_NUM_THREADS value.",
+    "The root/body auditor uses independent expected policy and public statements, with no wallet or intermediate proof dependency. It does not apply host state."
+  ],
+  "production_ready": false,
+  "rust_driver_tests": {
+    "command": "RAYON_NUM_THREADS=4 cargo test --locked --offline --release --no-default-features --features block-v2-wide-lanes,stream --bin block-v2-typed-probe",
+    "passed": 5
+  },
+  "rust_fixture_tests": {
+    "actual_context_bound_leaf_proofs_verified": 4,
+    "command": "RAYON_NUM_THREADS=4 cargo test --locked --offline --release --no-default-features --features block-v2-wide-lanes,stream --lib block_v2::typed_fixture::tests -- --nocapture",
+    "passed": 2,
+    "seconds": 6.65,
+    "types": [
+      "joinsplit",
+      "htlc_redeem",
+      "htlc_refund",
+      "issuance"
+    ],
+    "unique_native_nullifiers": 128,
+    "unique_native_outputs": 128
+  },
+  "schema_version": 1,
+  "scope": "CPU mixed-root research driver, shared-anchor public fixtures, and independent Rust/Zig native root calculations. No complete mixed recursive root has been proved in this validation.",
+  "source_commit": "094cade18a59d38d7d65bd805511a7809b348a9e",
+  "status": "NATIVE_TOOLING_AND_LEAF_FIXTURES_VALIDATED_MIXED_ROOT_PENDING",
+  "zig_tests": {
+    "command": "ZIG_GLOBAL_CACHE_DIR=/tmp/lattica-typed-zig-cache zig build test-block-v2-expected-root block-v2-expected-root -Doptimize=ReleaseFast",
+    "status": "passed"
+  }
+}

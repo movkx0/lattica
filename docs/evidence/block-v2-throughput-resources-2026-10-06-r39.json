@@ -1,0 +1,1710 @@
+{
+  "admission_failures": [],
+  "admitted_workers": 2,
+  "binary_sha256": "d1bbbf6e2c3c8366dac403bbf29e764555215c1440d3729f30bcb8b7cc4c55b0",
+  "budgets": {
+    "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b": {
+      "cpu": {
+        "allowed_cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "coordinator_capacity": "1",
+        "effective_capacity": "24",
+        "quota_percent": "1200%",
+        "rayon_threads": 12,
+        "version": 1
+      },
+      "detected_gpu": {
+        "nvidia": {
+          "driver": "615.71.09",
+          "free_bytes": 16595812352,
+          "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+          "pci": "00000000:02:00.0",
+          "total_bytes": 17094934528,
+          "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+        },
+        "opencl": {
+          "driver": "615.71.09",
+          "global_bytes": 16697327616,
+          "max_allocation_bytes": 4174331904,
+          "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+          "opencl_index": 1,
+          "pci": "0000:02:00.0",
+          "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+        },
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      "detected_host": {
+        "affinity_cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "ancestors": [
+          {
+            "cpuset": "0-23",
+            "path": "/sys/fs/cgroup"
+          },
+          {
+            "cpu_max": "max 100000",
+            "cpuset": "0-23",
+            "memory_current": 14027780096,
+            "memory_max": "max",
+            "path": "/sys/fs/cgroup/user.slice"
+          },
+          {
+            "cpu_max": "max 100000",
+            "cpuset": "0-23",
+            "memory_current": 14020882432,
+            "memory_max": "max",
+            "path": "/sys/fs/cgroup/user.slice/user-1000.slice"
+          },
+          {
+            "cpu_max": "max 100000",
+            "cpuset": "0-23",
+            "memory_current": 11385065472,
+            "memory_max": "max",
+            "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+          },
+          {
+            "cpu_max": "max 100000",
+            "cpuset": "0-23",
+            "memory_current": 330797056,
+            "memory_max": "max",
+            "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice"
+          },
+          {
+            "cpu_max": "max 100000",
+            "cpuset": "0-23",
+            "memory_current": 330739712,
+            "memory_max": "max",
+            "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice"
+          },
+          {
+            "cpu_max": "max 100000",
+            "cpuset": "0-23",
+            "memory_current": 330682368,
+            "memory_limit_owned_by_controller": true,
+            "memory_max": "45902462976",
+            "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice"
+          }
+        ],
+        "available_bytes": 53118922752,
+        "cgroup_memory_headroom": null,
+        "cpu_capacity": "24",
+        "effective_cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "online_cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "physical_bytes": 66811260928,
+        "resource_cgroup_scope": "assigned_workers",
+        "scratch": {
+          "available_bytes": 32525635584,
+          "capacity_bytes": 33405628416,
+          "device": 51,
+          "filesystem": {
+            "fstype": "tmpfs",
+            "options": "rw,noatime,inode64,huge=advise",
+            "source": "tmpfs",
+            "target": "/tmp"
+          },
+          "page_bytes": 4096,
+          "path": "/tmp",
+          "quota_bytes": null,
+          "tmpfs": true
+        },
+        "version": 1
+      },
+      "gpu": {
+        "available_bytes": 16595812352,
+        "bootstrap": false,
+        "context_bytes": 536870912,
+        "headroom_bytes": 1073741824,
+        "managed_bytes": 7516192768,
+        "max_allocation_bytes": 4174331904,
+        "total_bytes": 8053063680,
+        "usable_bytes": 16697327616,
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "version": 1
+      },
+      "host": {
+        "coordinator_bytes": 1342177280,
+        "coordinator_job_bytes": 671088640,
+        "filesystem_headroom_bytes": 1670281421,
+        "fleet_bytes": 45902462976,
+        "os_headroom_bytes": 6681126093,
+        "scratch_device": 51,
+        "scratch_path": "/tmp",
+        "spill_bytes": 15300820992,
+        "swap_bytes": 0,
+        "tmpfs": true,
+        "version": 1,
+        "worker_bytes": 22280142848
+      },
+      "native_host": {
+        "complete_body_sha256": [
+          203,
+          83,
+          174,
+          232,
+          53,
+          246,
+          167,
+          193,
+          170,
+          26,
+          52,
+          238,
+          239,
+          127,
+          95,
+          235,
+          37,
+          56,
+          203,
+          128,
+          77,
+          23,
+          69,
+          118,
+          246,
+          241,
+          178,
+          195,
+          251,
+          48,
+          54,
+          90
+        ],
+        "configuration_sha256": [
+          32,
+          74,
+          134,
+          74,
+          231,
+          59,
+          123,
+          68,
+          19,
+          193,
+          115,
+          39,
+          227,
+          84,
+          223,
+          8,
+          25,
+          156,
+          78,
+          64,
+          126,
+          73,
+          122,
+          24,
+          48,
+          239,
+          99,
+          55,
+          209,
+          98,
+          108,
+          230
+        ],
+        "expected": {
+          "authorized_issuance": {
+            "3": 7,
+            "7": 7
+          },
+          "block_height": 10,
+          "chain": [
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109
+          ],
+          "count": 8,
+          "profile": [
+            174,
+            110,
+            207,
+            178,
+            14,
+            101,
+            186,
+            38,
+            205,
+            1,
+            176,
+            121,
+            196,
+            170,
+            166,
+            57,
+            241,
+            215,
+            161,
+            142,
+            57,
+            90,
+            215,
+            149,
+            246,
+            95,
+            77,
+            174,
+            158,
+            73,
+            1,
+            209
+          ],
+          "root": [
+            10180310525370927004,
+            8633334137370415762,
+            13286027557327797114,
+            1604604304337217861
+          ],
+          "schema_version": 1
+        },
+        "generation": 0,
+        "head_token": [
+          217,
+          121,
+          137,
+          219,
+          145,
+          54,
+          161,
+          70,
+          123,
+          155,
+          252,
+          187,
+          59,
+          189,
+          95,
+          43,
+          82,
+          87,
+          214,
+          134,
+          158,
+          34,
+          187,
+          67,
+          234,
+          35,
+          145,
+          115,
+          38,
+          62,
+          25,
+          243
+        ],
+        "preparation_sha256": [
+          227,
+          201,
+          107,
+          75,
+          81,
+          83,
+          188,
+          163,
+          129,
+          219,
+          62,
+          23,
+          244,
+          56,
+          125,
+          190,
+          79,
+          141,
+          127,
+          95,
+          80,
+          74,
+          92,
+          71,
+          8,
+          28,
+          177,
+          117,
+          154,
+          227,
+          170,
+          232
+        ],
+        "schema_version": 1
+      },
+      "opening_denominator_cache": false,
+      "qualification_capacity_test": true,
+      "query_readback_layout": "rows",
+      "readback_layout": "direct",
+      "slice": "lattica-v2-multi.slice",
+      "startup_guard": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-denominator-compare-20261006-a/shared-r9/sealed/owner/proofs/execution/worker-0-startup",
+      "typed_ram_admission": "compact",
+      "unit": "lattica-v2-multi-persistent-5f9970fd66bed63a8d7d8acede47f7c00a90dc04a8d6395f8a772f7fd91a9602.service",
+      "workload_kind": "typed-paired-compact-depth-six-bootstrap-v1"
+    },
+    "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c": {
+      "cpu": {
+        "allowed_cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "coordinator_capacity": "1",
+        "effective_capacity": "24",
+        "quota_percent": "1100%",
+        "rayon_threads": 11,
+        "version": 1
+      },
+      "detected_gpu": {
+        "nvidia": {
+          "driver": "615.71.09",
+          "free_bytes": 14582546432,
+          "name": "NVIDIA GeForce RTX 5080",
+          "pci": "00000000:05:00.0",
+          "total_bytes": 17094934528,
+          "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+        },
+        "opencl": {
+          "driver": "615.71.09",
+          "global_bytes": 16707092480,
+          "max_allocation_bytes": 4176773120,
+          "name": "NVIDIA GeForce RTX 5080",
+          "opencl_index": 0,
+          "pci": "0000:05:00.0",
+          "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+        },
+        "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      },
+      "detected_host": {
+        "affinity_cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "ancestors": [
+          {
+            "cpuset": "0-23",
+            "path": "/sys/fs/cgroup"
+          },
+          {
+            "cpu_max": "max 100000",
+            "cpuset": "0-23",
+            "memory_current": 14027780096,
+            "memory_max": "max",
+            "path": "/sys/fs/cgroup/user.slice"
+          },
+          {
+            "cpu_max": "max 100000",
+            "cpuset": "0-23",
+            "memory_current": 14020882432,
+            "memory_max": "max",
+            "path": "/sys/fs/cgroup/user.slice/user-1000.slice"
+          },
+          {
+            "cpu_max": "max 100000",
+            "cpuset": "0-23",
+            "memory_current": 11385065472,
+            "memory_max": "max",
+            "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+          },
+          {
+            "cpu_max": "max 100000",
+            "cpuset": "0-23",
+            "memory_current": 330797056,
+            "memory_max": "max",
+            "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice"
+          },
+          {
+            "cpu_max": "max 100000",
+            "cpuset": "0-23",
+            "memory_current": 330739712,
+            "memory_max": "max",
+            "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice"
+          },
+          {
+            "cpu_max": "max 100000",
+            "cpuset": "0-23",
+            "memory_current": 330682368,
+            "memory_limit_owned_by_controller": true,
+            "memory_max": "45902462976",
+            "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice"
+          }
+        ],
+        "available_bytes": 53118922752,
+        "cgroup_memory_headroom": null,
+        "cpu_capacity": "24",
+        "effective_cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "online_cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "physical_bytes": 66811260928,
+        "resource_cgroup_scope": "assigned_workers",
+        "scratch": {
+          "available_bytes": 32525635584,
+          "capacity_bytes": 33405628416,
+          "device": 51,
+          "filesystem": {
+            "fstype": "tmpfs",
+            "options": "rw,noatime,inode64,huge=advise",
+            "source": "tmpfs",
+            "target": "/tmp"
+          },
+          "page_bytes": 4096,
+          "path": "/tmp",
+          "quota_bytes": null,
+          "tmpfs": true
+        },
+        "version": 1
+      },
+      "gpu": {
+        "available_bytes": 14582546432,
+        "bootstrap": false,
+        "context_bytes": 536870912,
+        "headroom_bytes": 1073741824,
+        "managed_bytes": 6442450944,
+        "max_allocation_bytes": 4176773120,
+        "total_bytes": 6979321856,
+        "usable_bytes": 16707092480,
+        "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "version": 1
+      },
+      "host": {
+        "coordinator_bytes": 1342177280,
+        "coordinator_job_bytes": 671088640,
+        "filesystem_headroom_bytes": 1670281421,
+        "fleet_bytes": 45902462976,
+        "os_headroom_bytes": 6681126093,
+        "scratch_device": 51,
+        "scratch_path": "/tmp",
+        "spill_bytes": 15300820992,
+        "swap_bytes": 0,
+        "tmpfs": true,
+        "version": 1,
+        "worker_bytes": 22280142848
+      },
+      "native_host": {
+        "complete_body_sha256": [
+          203,
+          83,
+          174,
+          232,
+          53,
+          246,
+          167,
+          193,
+          170,
+          26,
+          52,
+          238,
+          239,
+          127,
+          95,
+          235,
+          37,
+          56,
+          203,
+          128,
+          77,
+          23,
+          69,
+          118,
+          246,
+          241,
+          178,
+          195,
+          251,
+          48,
+          54,
+          90
+        ],
+        "configuration_sha256": [
+          32,
+          74,
+          134,
+          74,
+          231,
+          59,
+          123,
+          68,
+          19,
+          193,
+          115,
+          39,
+          227,
+          84,
+          223,
+          8,
+          25,
+          156,
+          78,
+          64,
+          126,
+          73,
+          122,
+          24,
+          48,
+          239,
+          99,
+          55,
+          209,
+          98,
+          108,
+          230
+        ],
+        "expected": {
+          "authorized_issuance": {
+            "3": 7,
+            "7": 7
+          },
+          "block_height": 10,
+          "chain": [
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109,
+            109
+          ],
+          "count": 8,
+          "profile": [
+            174,
+            110,
+            207,
+            178,
+            14,
+            101,
+            186,
+            38,
+            205,
+            1,
+            176,
+            121,
+            196,
+            170,
+            166,
+            57,
+            241,
+            215,
+            161,
+            142,
+            57,
+            90,
+            215,
+            149,
+            246,
+            95,
+            77,
+            174,
+            158,
+            73,
+            1,
+            209
+          ],
+          "root": [
+            10180310525370927004,
+            8633334137370415762,
+            13286027557327797114,
+            1604604304337217861
+          ],
+          "schema_version": 1
+        },
+        "generation": 0,
+        "head_token": [
+          217,
+          121,
+          137,
+          219,
+          145,
+          54,
+          161,
+          70,
+          123,
+          155,
+          252,
+          187,
+          59,
+          189,
+          95,
+          43,
+          82,
+          87,
+          214,
+          134,
+          158,
+          34,
+          187,
+          67,
+          234,
+          35,
+          145,
+          115,
+          38,
+          62,
+          25,
+          243
+        ],
+        "preparation_sha256": [
+          227,
+          201,
+          107,
+          75,
+          81,
+          83,
+          188,
+          163,
+          129,
+          219,
+          62,
+          23,
+          244,
+          56,
+          125,
+          190,
+          79,
+          141,
+          127,
+          95,
+          80,
+          74,
+          92,
+          71,
+          8,
+          28,
+          177,
+          117,
+          154,
+          227,
+          170,
+          232
+        ],
+        "schema_version": 1
+      },
+      "opening_denominator_cache": false,
+      "qualification_capacity_test": true,
+      "query_readback_layout": "rows",
+      "readback_layout": "direct",
+      "slice": "lattica-v2-multi.slice",
+      "startup_guard": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-denominator-compare-20261006-a/shared-r9/sealed/owner/proofs/execution/worker-1-startup",
+      "typed_ram_admission": "compact",
+      "unit": "lattica-v2-multi-persistent-a8af5aa15889604b199451fe28db68f7e318ce1afea0a21331ee7189798f912e.service",
+      "workload_kind": "typed-paired-compact-depth-six-bootstrap-v1"
+    }
+  },
+  "capture_scope": {
+    "bytes": 24072,
+    "path": "lattica-prover-p3/target/block-v2-denominator-compare-20261006-a/shared-r9/sealed/admission.json",
+    "sha256": "081431e0babd4818c3af136689910eeed1a2d7b79fad99516085e1fea9bcc27e"
+  },
+  "captured_ns": "1791310931524207396",
+  "context_calibrations": {
+    "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b": {
+      "binary_sha256": "d1bbbf6e2c3c8366dac403bbf29e764555215c1440d3729f30bcb8b7cc4c55b0",
+      "count": 8,
+      "covered_tasks": [
+        {
+          "count": 4,
+          "mode": 3
+        },
+        {
+          "count": 8,
+          "mode": 3
+        },
+        {
+          "count": 2,
+          "mode": 4
+        },
+        {
+          "count": 2,
+          "mode": 8
+        },
+        {
+          "count": 8,
+          "mode": 12
+        }
+      ],
+      "driver": "615.71.09",
+      "execution_backend": "typed-shared-process-dag",
+      "peak_context_bytes": 209713424,
+      "preseal_only": false,
+      "profile_sha256": "f365a38eeca83e0499dc6a0fc8536f8fce8511264e91678e11239a14ed480c2d",
+      "runtime": "615.71.09",
+      "samples": 39,
+      "trials": [
+        {
+          "bytes": 87914,
+          "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-denominator-native-20261006-a/single-laptop-r3/sealed/summary.json",
+          "sha256": "092be38599692e79925be354cd4458219cd72514cea1068df117ed07df1ed694"
+        }
+      ],
+      "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+    },
+    "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c": {
+      "binary_sha256": "d1bbbf6e2c3c8366dac403bbf29e764555215c1440d3729f30bcb8b7cc4c55b0",
+      "count": 8,
+      "covered_tasks": [
+        {
+          "count": 4,
+          "mode": 3
+        },
+        {
+          "count": 8,
+          "mode": 3
+        },
+        {
+          "count": 2,
+          "mode": 4
+        },
+        {
+          "count": 2,
+          "mode": 8
+        },
+        {
+          "count": 8,
+          "mode": 12
+        }
+      ],
+      "driver": "615.71.09",
+      "execution_backend": "typed-shared-process-dag",
+      "peak_context_bytes": 278919440,
+      "preseal_only": false,
+      "profile_sha256": "f365a38eeca83e0499dc6a0fc8536f8fce8511264e91678e11239a14ed480c2d",
+      "runtime": "615.71.09",
+      "samples": 39,
+      "trials": [
+        {
+          "bytes": 88066,
+          "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-denominator-native-20261006-a/single-desktop-r3/sealed/summary.json",
+          "sha256": "6dd587795965403a72f9513cdcaf5d16e9b7680a27b011cb3bbc622edd14c2fa"
+        }
+      ],
+      "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+    }
+  },
+  "counts": [
+    8
+  ],
+  "devices": [
+    {
+      "nvidia": {
+        "driver": "615.71.09",
+        "free_bytes": 16595812352,
+        "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+        "pci": "00000000:02:00.0",
+        "total_bytes": 17094934528,
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      "opencl": {
+        "driver": "615.71.09",
+        "global_bytes": 16697327616,
+        "max_allocation_bytes": 4174331904,
+        "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+        "opencl_index": 1,
+        "pci": "0000:02:00.0",
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+    },
+    {
+      "nvidia": {
+        "driver": "615.71.09",
+        "free_bytes": 14582546432,
+        "name": "NVIDIA GeForce RTX 5080",
+        "pci": "00000000:05:00.0",
+        "total_bytes": 17094934528,
+        "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      },
+      "opencl": {
+        "driver": "615.71.09",
+        "global_bytes": 16707092480,
+        "max_allocation_bytes": 4176773120,
+        "name": "NVIDIA GeForce RTX 5080",
+        "opencl_index": 0,
+        "pci": "0000:05:00.0",
+        "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      },
+      "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+    }
+  ],
+  "execution_backend": "typed-native-opening-cache-qualified-shared-process-dag",
+  "host": {
+    "affinity_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "ancestors": [
+      {
+        "cpuset": "0-23",
+        "path": "/sys/fs/cgroup"
+      },
+      {
+        "cpu_max": "max 100000",
+        "cpuset": "0-23",
+        "memory_current": 14027780096,
+        "memory_max": "max",
+        "path": "/sys/fs/cgroup/user.slice"
+      },
+      {
+        "cpu_max": "max 100000",
+        "cpuset": "0-23",
+        "memory_current": 14020882432,
+        "memory_max": "max",
+        "path": "/sys/fs/cgroup/user.slice/user-1000.slice"
+      },
+      {
+        "cpu_max": "max 100000",
+        "cpuset": "0-23",
+        "memory_current": 11385065472,
+        "memory_max": "max",
+        "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+      },
+      {
+        "cpu_max": "max 100000",
+        "cpuset": "0-23",
+        "memory_current": 330797056,
+        "memory_max": "max",
+        "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice"
+      },
+      {
+        "cpu_max": "max 100000",
+        "cpuset": "0-23",
+        "memory_current": 330739712,
+        "memory_max": "max",
+        "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice"
+      },
+      {
+        "cpu_max": "max 100000",
+        "cpuset": "0-23",
+        "memory_current": 330682368,
+        "memory_limit_owned_by_controller": true,
+        "memory_max": "45902462976",
+        "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice"
+      }
+    ],
+    "available_bytes": 53118922752,
+    "cgroup_memory_headroom": null,
+    "cpu_capacity": "24",
+    "effective_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "online_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "physical_bytes": 66811260928,
+    "resource_cgroup_scope": "assigned_workers",
+    "scratch": {
+      "available_bytes": 32525635584,
+      "capacity_bytes": 33405628416,
+      "device": 51,
+      "filesystem": {
+        "fstype": "tmpfs",
+        "options": "rw,noatime,inode64,huge=advise",
+        "source": "tmpfs",
+        "target": "/tmp"
+      },
+      "page_bytes": 4096,
+      "path": "/tmp",
+      "quota_bytes": null,
+      "tmpfs": true
+    },
+    "version": 1
+  },
+  "note": "Last successful baseline admission in the partial cache comparison. Arm ten subsequently failed fixed host RAM/spill admission. This snapshot does not establish current admission. All services are now stopped; further experiments are paused.",
+  "partial_comparison_source": {
+    "bytes": 1612898,
+    "path": "docs/evidence/block-v2-opening-cache-native-comparison-2026-10-06-partial-r1.json",
+    "sha256": "055f192a22944f42a7d53b3a245fae2852e8eaed180f39038a1d2e740952f407"
+  },
+  "plan_version": 1,
+  "profile_sha256": "85979b1220519285b7e4e93c0fe7159819c98b61b0909a7c623ac711fb42e5bd",
+  "qualified_context_measurements": {
+    "baseline": {
+      "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b": {
+        "binary_sha256": "d1bbbf6e2c3c8366dac403bbf29e764555215c1440d3729f30bcb8b7cc4c55b0",
+        "construction": "paired",
+        "count": 8,
+        "driver": "615.71.09",
+        "mode": "baseline",
+        "peak_context_bytes": 209713424,
+        "profile_sha256": "f365a38eeca83e0499dc6a0fc8536f8fce8511264e91678e11239a14ed480c2d",
+        "qualified_context_allowance_bytes": 536870912,
+        "runtime": "615.71.09",
+        "samples": 103,
+        "trials": [
+          {
+            "allowance_bytes": 7784628224,
+            "case": "single-laptop",
+            "peak_context_bytes": 209713424,
+            "phase": "bootstrap",
+            "repetition": 1,
+            "samples": 39,
+            "source": {
+              "bytes": 64520,
+              "path": "lattica-prover-p3/target/block-v2-denominator-native-20261006-a/single-laptop-r1/sealed/workers/gpu-01/prove.log",
+              "sha256": "db28d7b8753e6b584ed0e1aa4e8957c02678811f0a5872fcebd70bc366949409"
+            },
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+          },
+          {
+            "allowance_bytes": 536870912,
+            "case": "single-laptop",
+            "peak_context_bytes": 209713424,
+            "phase": "reduced-single",
+            "repetition": 3,
+            "samples": 39,
+            "source": {
+              "bytes": 64479,
+              "path": "lattica-prover-p3/target/block-v2-denominator-native-20261006-a/single-laptop-r3/sealed/workers/gpu-01/prove.log",
+              "sha256": "1d0676b4740d488349d98a49a513771d7647989e87736a099e09d702bc77ddba"
+            },
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+          },
+          {
+            "allowance_bytes": 536870912,
+            "case": "shared",
+            "peak_context_bytes": 209713424,
+            "phase": "shared",
+            "repetition": 3,
+            "samples": 25,
+            "source": {
+              "bytes": 45604,
+              "path": "lattica-prover-p3/target/block-v2-denominator-native-20261006-a/shared-r3/sealed/workers/gpu-01/prove.log",
+              "sha256": "4d4de870a1c0e3f5740186a718458c6720f5b542a6aa7812e6037ee32eef572d"
+            },
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+          }
+        ],
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c": {
+        "binary_sha256": "d1bbbf6e2c3c8366dac403bbf29e764555215c1440d3729f30bcb8b7cc4c55b0",
+        "construction": "paired",
+        "count": 8,
+        "driver": "615.71.09",
+        "mode": "baseline",
+        "peak_context_bytes": 278919440,
+        "profile_sha256": "f365a38eeca83e0499dc6a0fc8536f8fce8511264e91678e11239a14ed480c2d",
+        "qualified_context_allowance_bytes": 536870912,
+        "runtime": "615.71.09",
+        "samples": 94,
+        "trials": [
+          {
+            "allowance_bytes": 6979321856,
+            "case": "single-desktop",
+            "peak_context_bytes": 278919440,
+            "phase": "bootstrap",
+            "repetition": 1,
+            "samples": 39,
+            "source": {
+              "bytes": 64533,
+              "path": "lattica-prover-p3/target/block-v2-denominator-native-20261006-a/single-desktop-r1/sealed/workers/gpu-01/prove.log",
+              "sha256": "9413006133dc202cdbafd79ca9297bf1de5b6799bca0afa4c5f5c87967509216"
+            },
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          {
+            "allowance_bytes": 536870912,
+            "case": "single-desktop",
+            "peak_context_bytes": 278919440,
+            "phase": "reduced-single",
+            "repetition": 3,
+            "samples": 39,
+            "source": {
+              "bytes": 64498,
+              "path": "lattica-prover-p3/target/block-v2-denominator-native-20261006-a/single-desktop-r3/sealed/workers/gpu-01/prove.log",
+              "sha256": "4287d069b28df317fb196822cc82ee6d09779bf07abecb0cc4e2768fe1531975"
+            },
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          {
+            "allowance_bytes": 536870912,
+            "case": "shared",
+            "peak_context_bytes": 278919440,
+            "phase": "shared",
+            "repetition": 3,
+            "samples": 16,
+            "source": {
+              "bytes": 33141,
+              "path": "lattica-prover-p3/target/block-v2-denominator-native-20261006-a/shared-r3/sealed/workers/gpu-02/prove.log",
+              "sha256": "8cf22471482b29df62ba53d9eb20fc38505892447e733e1c251e4711bd5fe56b"
+            },
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          }
+        ],
+        "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      }
+    },
+    "cache": {
+      "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b": {
+        "binary_sha256": "d1bbbf6e2c3c8366dac403bbf29e764555215c1440d3729f30bcb8b7cc4c55b0",
+        "construction": "paired",
+        "count": 8,
+        "driver": "615.71.09",
+        "mode": "cache",
+        "peak_context_bytes": 209713424,
+        "profile_sha256": "85979b1220519285b7e4e93c0fe7159819c98b61b0909a7c623ac711fb42e5bd",
+        "qualified_context_allowance_bytes": 536870912,
+        "runtime": "615.71.09",
+        "samples": 103,
+        "trials": [
+          {
+            "allowance_bytes": 7784628224,
+            "case": "single-laptop",
+            "peak_context_bytes": 209713424,
+            "phase": "bootstrap",
+            "repetition": 2,
+            "samples": 39,
+            "source": {
+              "bytes": 64542,
+              "path": "lattica-prover-p3/target/block-v2-denominator-native-20261006-a/single-laptop-r2/sealed/workers/gpu-01/prove.log",
+              "sha256": "d46a60ced060f925fcaf555dd3cd9453e558b505757596fa17a410905c41087c"
+            },
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+          },
+          {
+            "allowance_bytes": 536870912,
+            "case": "single-laptop",
+            "peak_context_bytes": 209713424,
+            "phase": "reduced-single",
+            "repetition": 4,
+            "samples": 39,
+            "source": {
+              "bytes": 64507,
+              "path": "lattica-prover-p3/target/block-v2-denominator-native-20261006-a/single-laptop-r4/sealed/workers/gpu-01/prove.log",
+              "sha256": "5f6a873e9199efaa636e5134b09bd182b5e79a76f8a284cf76c0374166eaef50"
+            },
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+          },
+          {
+            "allowance_bytes": 536870912,
+            "case": "shared",
+            "peak_context_bytes": 209713424,
+            "phase": "shared",
+            "repetition": 4,
+            "samples": 25,
+            "source": {
+              "bytes": 45623,
+              "path": "lattica-prover-p3/target/block-v2-denominator-native-20261006-a/shared-r4/sealed/workers/gpu-01/prove.log",
+              "sha256": "f8c2c07ceca84ee60111af5f16c18e25d2faf01e3093026be35ac72d5bb0ef54"
+            },
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+          }
+        ],
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c": {
+        "binary_sha256": "d1bbbf6e2c3c8366dac403bbf29e764555215c1440d3729f30bcb8b7cc4c55b0",
+        "construction": "paired",
+        "count": 8,
+        "driver": "615.71.09",
+        "mode": "cache",
+        "peak_context_bytes": 278919440,
+        "profile_sha256": "85979b1220519285b7e4e93c0fe7159819c98b61b0909a7c623ac711fb42e5bd",
+        "qualified_context_allowance_bytes": 536870912,
+        "runtime": "615.71.09",
+        "samples": 94,
+        "trials": [
+          {
+            "allowance_bytes": 6979321856,
+            "case": "single-desktop",
+            "peak_context_bytes": 278919440,
+            "phase": "bootstrap",
+            "repetition": 2,
+            "samples": 39,
+            "source": {
+              "bytes": 64544,
+              "path": "lattica-prover-p3/target/block-v2-denominator-native-20261006-a/single-desktop-r2/sealed/workers/gpu-01/prove.log",
+              "sha256": "5372887f1a022ae318ef196fbaa09063844251fbf69c45de419ceb1f7f086eed"
+            },
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          {
+            "allowance_bytes": 536870912,
+            "case": "single-desktop",
+            "peak_context_bytes": 278919440,
+            "phase": "reduced-single",
+            "repetition": 4,
+            "samples": 39,
+            "source": {
+              "bytes": 64502,
+              "path": "lattica-prover-p3/target/block-v2-denominator-native-20261006-a/single-desktop-r4/sealed/workers/gpu-01/prove.log",
+              "sha256": "b10c67b1b8f1ab0e3be9e94eff6763a93dd50fbdf66c1bbbf46a7924bc2f9938"
+            },
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          {
+            "allowance_bytes": 536870912,
+            "case": "shared",
+            "peak_context_bytes": 278919440,
+            "phase": "shared",
+            "repetition": 4,
+            "samples": 16,
+            "source": {
+              "bytes": 33144,
+              "path": "lattica-prover-p3/target/block-v2-denominator-native-20261006-a/shared-r4/sealed/workers/gpu-02/prove.log",
+              "sha256": "498f6dc819d051f829a7c04b4bbc567a740b42cbe3d1f1c7606ea87468de745f"
+            },
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          }
+        ],
+        "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      }
+    }
+  },
+  "requested_workers": 2,
+  "sources": [
+    {
+      "bytes": 23624,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/admission.json",
+      "sha256": "9404830d9420f835e17770017735bdcf4fba20da866c6bffe130168926d4d4b2"
+    },
+    {
+      "bytes": 23679,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/admission.json",
+      "sha256": "edfe14f5e57d07344dac991b7ee6db18b813c5b25265d02ca652e8e2f5f75744"
+    },
+    {
+      "bytes": 185877,
+      "path": "docs/evidence/block-v2-native-application-recovery-2026-10-05.json",
+      "sha256": "118cad46bb828ac88e655d9920789bcc1bc642e4a242b4a8949cb08423908e94"
+    },
+    {
+      "bytes": 23964,
+      "path": "lattica-prover-p3/target/block-v2-controller-admission-20261006-a/accepted-interrupted-r8/admission.json",
+      "sha256": "5b3cc999f8e52cd36687919d44216846a32637b6ef9670cc6ce75859cc479a69"
+    },
+    {
+      "bytes": 23960,
+      "path": "lattica-prover-p3/target/block-v2-worker-failure-20261006-a/oom-failover-r3/admission.json",
+      "sha256": "2a1d1233bec6c3983a205a6a0432f7c053f063595f622d24f8eb47b454e16129"
+    },
+    {
+      "bytes": 15728,
+      "path": "lattica-prover-p3/target/block-v2-worker-failure-20261006-a/oom-failover-r3/injection.json",
+      "sha256": "07380bf93236605f033189319a6cf22d6dc499bcd57ab25b13bb17f9a6866a4c"
+    },
+    {
+      "bytes": 23980,
+      "path": "lattica-prover-p3/target/block-v2-worker-failure-20261006-a/all-workers-failed-r3/admission.json",
+      "sha256": "69d80cc96b49472bf00fc941d90673ddd6738a6c9f13e72713f95d5804b67658"
+    },
+    {
+      "bytes": 23986,
+      "path": "lattica-prover-p3/target/block-v2-worker-failure-20261006-a/all-workers-recovered-r4/admission.json",
+      "sha256": "abf27367d594b25644a8cecea1bd5c7a4107085587a4b28a487b3aef75530021"
+    },
+    {
+      "bytes": 23958,
+      "path": "lattica-prover-p3/target/block-v2-native-reorg-20261006-a/active-head-change-r2/admission.json",
+      "sha256": "6c25c6918220d9fa7cf7b4aa63fdb4c746cc54511202b0940e424b4f84de1c37"
+    },
+    {
+      "bytes": 23939,
+      "path": "lattica-prover-p3/target/block-v2-native-reorg-20261006-a/late-head-change-r1/admission.json",
+      "sha256": "441e23473ae9f204aec18ca9f5f890852afc597295f0d9c7526065cde16c219b"
+    },
+    {
+      "bytes": 23967,
+      "path": "lattica-prover-p3/target/block-v2-native-reorg-20261006-a/replacement-native-r1/admission.json",
+      "sha256": "89d6c00771af712800038b18c94340d1bffdff9a25e5c1753b33104beaceb2b1"
+    },
+    {
+      "bytes": 25655,
+      "path": "lattica-prover-p3/target/block-v2-resource-failure-20261006-a/spill-failover-r2/admission.json",
+      "sha256": "6fd57341d5faba593aff042525f615a4fa998cb3dbcbbf8a5e9dd7633815661a"
+    },
+    {
+      "bytes": 23964,
+      "path": "lattica-prover-p3/target/block-v2-resource-failure-20261006-a/vram-failover-r2/admission.json",
+      "sha256": "740588b70a317f56a3393fe6041be55222c1e53a130ad759cc934eff7bf8e0fa"
+    },
+    {
+      "bytes": 6089,
+      "path": "lattica-prover-p3/target/block-v2-resource-failure-20261006-a/spill-failover-r2/namespace-admission.json",
+      "sha256": "242e008de8cdd2628e3a1cd8bc02d1af4554aee84652ff147686b046f95c9d67"
+    },
+    {
+      "bytes": 23978,
+      "path": "lattica-prover-p3/target/block-v2-supervisor-20261006-a/all-workers-r1/attempt-001/admission.json",
+      "sha256": "4a24fa947491fb7207318a8754d57e47eb1a1b559d6c60bf1d4ab042d2795ca8"
+    },
+    {
+      "bytes": 23978,
+      "path": "lattica-prover-p3/target/block-v2-supervisor-20261006-a/all-workers-r1/attempt-002/admission.json",
+      "sha256": "48f29ef17323387bae19fef617cd38ec9ecbbcc1e62b065f02d4b7f7c05342b4"
+    },
+    {
+      "bytes": 23994,
+      "path": "lattica-prover-p3/target/block-v2-supervisor-20261006-a/supervisor-crash-r1/attempt-001/admission.json",
+      "sha256": "aa2a874ef7bdede1132f9d738f41c2d1a7add49043dba8752db5bd2c1f1fa2a4"
+    },
+    {
+      "bytes": 23966,
+      "path": "lattica-prover-p3/target/block-v2-matched-native-20261006-a/shared-r1/sealed/admission.json",
+      "sha256": "15ced8317bcfc7f6e15d42e7f6b7095af69555fa72feef6b2a1e1cd5e978374c"
+    },
+    {
+      "bytes": 13489,
+      "path": "lattica-prover-p3/target/block-v2-matched-native-20261006-a/single-desktop-r1/sealed/admission.json",
+      "sha256": "7672607d6d0f113c3e2ec4bf93ba5817fc9add87bcf90449c25aa3b0191ab221"
+    },
+    {
+      "bytes": 13533,
+      "path": "lattica-prover-p3/target/block-v2-matched-native-20261006-a/single-laptop-r1/sealed/admission.json",
+      "sha256": "d673a88d666c7067ee0276ae0c3cdf93b4579d35ba611bc21d02561a24265864"
+    },
+    {
+      "bytes": 23986,
+      "path": "lattica-prover-p3/target/block-v2-matched-native-20261006-a/staged-r1/prefix/admission.json",
+      "sha256": "6b960ab4c4486f541e27123284b18ce97dc1ab1fb602ee7c6df7501f0814b440"
+    },
+    {
+      "bytes": 23970,
+      "path": "lattica-prover-p3/target/block-v2-matched-native-20261006-a/staged-r1/sealed/admission.json",
+      "sha256": "c1717f993e02e7942316e9d767520d38d47b9adfa4f03ecee6aca07cf533cd13"
+    },
+    {
+      "bytes": 24002,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/shared-r1/sealed/admission.json",
+      "sha256": "a8809bbc3d88cb5b4d27273c93e355880714676c175b41c41cc2dc49efb8d40c"
+    },
+    {
+      "bytes": 23997,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/shared-r2/sealed/admission.json",
+      "sha256": "cb81c214bf8473319536bba4b5e65b8ae22a52479b81fad020a26f8382fa5c9f"
+    },
+    {
+      "bytes": 24013,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/shared-r3/sealed/admission.json",
+      "sha256": "23f24c01f065bd6afaa81c69fa1ca54647c1934cc25a78e6f2d6b92b507615cb"
+    },
+    {
+      "bytes": 23987,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/shared-r4/sealed/admission.json",
+      "sha256": "8fec83ff99045e3964598b496fc76379be704b93ca6f0e56f12a00e8defae735"
+    },
+    {
+      "bytes": 24005,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/shared-r5/sealed/admission.json",
+      "sha256": "f55af488e36ef8bdb06ae0297802cff8b91d3c26a8e96ec4bebf70088e7541c7"
+    },
+    {
+      "bytes": 13505,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/single-desktop-r1/sealed/admission.json",
+      "sha256": "f01a3edc1d399650805eddde8e8d30a47e65cda80df9a596b365a592cc0a3a1a"
+    },
+    {
+      "bytes": 13503,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/single-desktop-r2/sealed/admission.json",
+      "sha256": "9039f05a9615a363c7fd6b899899a090c8a7b247a378b644ea19fbb96fafcb16"
+    },
+    {
+      "bytes": 13504,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/single-desktop-r3/sealed/admission.json",
+      "sha256": "b911aeab7930d1f7ec4b0471eb38d8333cfa4044064a82890f9b62d807b199e3"
+    },
+    {
+      "bytes": 13502,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/single-desktop-r4/sealed/admission.json",
+      "sha256": "820e5ab7cb59e17e3e44cac06208736982177e4c3232239adf0e46edec6913d2"
+    },
+    {
+      "bytes": 13505,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/single-desktop-r5/sealed/admission.json",
+      "sha256": "883f9970f258aa75011bda8d38ef159049e74cea335047c0d31886641dffe123"
+    },
+    {
+      "bytes": 13549,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/single-laptop-r1/sealed/admission.json",
+      "sha256": "203387c7f04d56510be1100657ab30bf2ea391521182e5dabb5a93f6fbe2f523"
+    },
+    {
+      "bytes": 13549,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/single-laptop-r2/sealed/admission.json",
+      "sha256": "7a1d0ecd3f1ac765f83397b878fcebb95ce9fa88783379b9120322780223f907"
+    },
+    {
+      "bytes": 13540,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/single-laptop-r3/sealed/admission.json",
+      "sha256": "be43b0c57202153bb16af03d89f3456594ef46c4d3800c924f1d19af2cff8753"
+    },
+    {
+      "bytes": 13549,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/single-laptop-r4/sealed/admission.json",
+      "sha256": "71197f090751b0433e238130b6ac2ff303a1ea62baf08c573de7f49abbdaec1e"
+    },
+    {
+      "bytes": 13543,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/single-laptop-r5/sealed/admission.json",
+      "sha256": "02d28cc058d1974bbac13856279d88523b135005b544b78db39aec977489fa97"
+    },
+    {
+      "bytes": 24023,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/staged-r1/prefix/admission.json",
+      "sha256": "34322c0c43e3cdd2038bd81e2aed9665a01bdf672bf46d1cfffb646599562dea"
+    },
+    {
+      "bytes": 23997,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/staged-r1/sealed/admission.json",
+      "sha256": "0dbca87e6c30582b4206c74ad05dca9d7380bc40ad47907898dad4192d688a59"
+    },
+    {
+      "bytes": 24031,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/staged-r2/prefix/admission.json",
+      "sha256": "fa0ddb695e82752dbdfb3f4119b0568cfbe36aab6281a8dce79a4c21b8876fcb"
+    },
+    {
+      "bytes": 24005,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/staged-r2/sealed/admission.json",
+      "sha256": "7b4619a8f1088fb98181bf17fcc2335180c9876b48b444fbb77f15f7c10896f8"
+    },
+    {
+      "bytes": 24025,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/staged-r3/prefix/admission.json",
+      "sha256": "89d21d2b688ead8d323a33746c387dd40f03f0ac48cda00e2e9871547c0b65c9"
+    },
+    {
+      "bytes": 24009,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/staged-r3/sealed/admission.json",
+      "sha256": "e0fc2af6fd6e5fb1f86fc02574f33c4ebafd9ef7dbec5066edb02158ebbf7d68"
+    },
+    {
+      "bytes": 24023,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/staged-r4/prefix/admission.json",
+      "sha256": "723a68e97d7475151c74661232c823b1f5730e0e64f2e679adfe383784817cc2"
+    },
+    {
+      "bytes": 24011,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/staged-r4/sealed/admission.json",
+      "sha256": "d543b0b32dbf25eb0fb75c5bb88d9e9f94c22cef47736adfc3ad6d827fb47f39"
+    },
+    {
+      "bytes": 24019,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/staged-r5/prefix/admission.json",
+      "sha256": "91bded857d7b5f75e1ab770179f7e7b8347175c56be701a21c0dc84a6a5d198a"
+    },
+    {
+      "bytes": 24007,
+      "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/staged-r5/sealed/admission.json",
+      "sha256": "a42d328d3d8f74bd5d266c82036b8a33c3d8fbb502ad6344ebc6d45e01483653"
+    },
+    {
+      "bytes": 1477916,
+      "path": "docs/evidence/block-v2-opening-cache-native-qualification-2026-10-06-r1.json",
+      "sha256": "3a4f2c9d9e70ee31105140d21f2ad184961e7e94216b26def1ffd08e32e77b2f"
+    },
+    {
+      "bytes": 1612898,
+      "path": "docs/evidence/block-v2-opening-cache-native-comparison-2026-10-06-partial-r1.json",
+      "sha256": "055f192a22944f42a7d53b3a245fae2852e8eaed180f39038a1d2e740952f407"
+    }
+  ],
+  "workload_id": "typed-paired-compact-depth-six-bootstrap-v1"
+}

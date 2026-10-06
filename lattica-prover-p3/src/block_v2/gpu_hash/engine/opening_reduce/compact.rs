@@ -6,6 +6,8 @@ use super::*;
 use crate::block_v2::compute;
 use p3_field::{Field, TwoAdicField};
 
+mod denominator_cache;
+
 struct CompactPlan {
     base: Plan,
     reduce_rows: usize,
@@ -75,11 +77,21 @@ impl CompactPlan {
 
 impl Engine {
     fn compact_write(&mut self, target: &Allocation, words: &[u64]) -> Result<(), String> {
+        self.compact_write_at(target, words, 0)
+    }
+
+    fn compact_write_at(
+        &mut self,
+        target: &Allocation,
+        words: &[u64],
+        offset: usize,
+    ) -> Result<(), String> {
         let mut event = Event::empty();
         let start = Instant::now();
         target
             .buffer
             .write(words)
+            .offset(offset)
             .enew(&mut event)
             .enq()
             .map_err(|e| e.to_string())?;
@@ -97,16 +109,27 @@ impl Engine {
         unsafe {
             let command = kernel.cmd().enew(&mut event);
             #[cfg(test)]
-            let command = if let Some(gate) = &self.opening_gate {
-                command.ewait(gate)
-            } else {
-                command
+            let command = match &self.opening_gate {
+                Some(gate)
+                    if !(compress && self.fail_compact_reduction_after_enqueue.is_some()) =>
+                {
+                    command.ewait(gate)
+                }
+                _ => command,
             };
             command.enq().map_err(|e| e.to_string())?;
         }
         self.stats.opening_kernel_enqueue_ns += enqueue.elapsed().as_nanos();
         #[cfg(test)]
-        if let Some(unwind) = self.fail_opening_after_enqueue.take() {
+        let injected_failure = if compress {
+            self.fail_opening_after_enqueue.take()
+        } else {
+            self.fail_compact_reduction_after_enqueue
+                .take()
+                .or_else(|| self.fail_opening_after_enqueue.take())
+        };
+        #[cfg(test)]
+        if let Some(unwind) = injected_failure {
             self.injected_event = Some(event.clone());
             if let Some(notify) = self.opening_submitted.take() {
                 let _ = notify.send(());
@@ -148,13 +171,22 @@ impl Engine {
             .map_err(|_| "GPU accounting poisoned")?
             .live;
         let old_workspace = self.workspace.as_ref().map_or(0, |w| w.bytes());
-        if live
+        let required = live
             .checked_sub(old_workspace)
             .and_then(|n| n.checked_add(plan.total_bytes))
-            .is_none_or(|n| n > self.limits.managed_bytes)
-        {
+            .ok_or("compact opening aggregate GPU allowance overflow")?;
+        if required > self.limits.managed_bytes {
             return Err("compact opening aggregate GPU allowance".into());
         }
+        let cache_plan = if self.opening_denominator_cache {
+            Some(denominator_cache::Plan::new(
+                inputs,
+                self.limits.managed_bytes - required,
+                self.max_alloc,
+            )?)
+        } else {
+            None
+        };
         self.fence().finish()?;
         self.workspace = None;
         let alloc = |words| {
@@ -181,6 +213,17 @@ impl Engine {
         let b = alloc(plan.transform_words)?;
         let forward = alloc(plan.root_words)?;
         let inverse = alloc(plan.root_words)?;
+        // Allocate before the fence so it drains queued work before these
+        // buffers are dropped on every return and unwind path.
+        let cached_denominators = if let Some(cache) = &cache_plan {
+            cache
+                .groups
+                .iter()
+                .map(|group| alloc(group.words))
+                .collect::<Result<Vec<_>, _>>()?
+        } else {
+            Vec::new()
+        };
         // One reused vector, not simultaneous wide-input/denominator/download
         // staging. Its maximum payload stays within the existing tile allowance.
         let mut words = Vec::with_capacity(
@@ -211,7 +254,24 @@ impl Engine {
                 .map(|log| Val::two_adic_generator(log).inverse().as_canonical_u64()),
         );
         self.compact_write(&inverse, &words)?;
-        for input in inputs {
+        if let Some(cache) = &cache_plan {
+            for (group, buffer) in cache.groups.iter().zip(&cached_denominators) {
+                let terms = &inputs[group.source].terms;
+                for row0 in (0..group.rows).step_by(plan.reduce_rows) {
+                    let rows = plan.reduce_rows.min(group.rows - row0);
+                    let marshal = Instant::now();
+                    words.clear();
+                    for row in row0..row0 + rows {
+                        for term in terms {
+                            append_challenge(&mut words, term.inverse_denominators[row]);
+                        }
+                    }
+                    self.stats.opening_marshal_ns += marshal.elapsed().as_nanos();
+                    self.compact_write_at(buffer, &words, row0 * terms.len() * 3)?;
+                }
+            }
+        }
+        for (input_index, input) in inputs.iter().enumerate() {
             let height = input.height;
             let low_height = height >> log_blowup;
             let output_index = plan.base.heights.binary_search(&height).unwrap();
@@ -298,23 +358,39 @@ impl Engine {
             )?;
             self.stats.opening_compact_ntt_ns += self.stats.lde_transform_ns - before_ntt;
             let expanded = if in_a { &a.buffer } else { &b.buffer };
-            for row0 in (0..height).step_by(plan.reduce_rows) {
-                let rows = plan.reduce_rows.min(height - row0);
-                let marshal = Instant::now();
-                words.clear();
-                for row in row0..row0 + rows {
-                    for term in &input.terms {
-                        append_challenge(&mut words, term.inverse_denominators[row]);
+            let cached = cache_plan
+                .as_ref()
+                .and_then(|cache| cache.input_groups[input_index])
+                .map(|index| &cached_denominators[index]);
+            let reduction_rows = if cached.is_some() {
+                height
+            } else {
+                plan.reduce_rows
+            };
+            for row0 in (0..height).step_by(reduction_rows) {
+                let rows = reduction_rows.min(height - row0);
+                let denominators = if let Some(buffer) = cached {
+                    // The cached layout is the same row/point/coefficient
+                    // layout as a tile. Consume the whole prefix at row zero.
+                    buffer
+                } else {
+                    let marshal = Instant::now();
+                    words.clear();
+                    for row in row0..row0 + rows {
+                        for term in &input.terms {
+                            append_challenge(&mut words, term.inverse_denominators[row]);
+                        }
                     }
-                }
-                self.stats.opening_marshal_ns += marshal.elapsed().as_nanos();
-                self.compact_write(&denominator_buffer, &words)?;
+                    self.stats.opening_marshal_ns += marshal.elapsed().as_nanos();
+                    self.compact_write(&denominator_buffer, &words)?;
+                    &denominator_buffer
+                };
                 let build = Instant::now();
                 let kernel = self
                     .pq
                     .kernel_builder("opening_reduce_compact")
                     .arg(expanded)
-                    .arg(&denominator_buffer.buffer)
+                    .arg(&denominators.buffer)
                     .arg(&term_buffer.buffer)
                     .arg(&outputs[output_index].buffer)
                     .arg(row0 as u32)
@@ -366,6 +442,15 @@ impl Engine {
         fence.finish()?;
         self.stats.opening_calls += 1;
         self.stats.opening_compact_calls += 1;
+        if let Some(cache) = cache_plan {
+            self.stats.opening_denominator_cache_calls += u64::from(!cache.groups.is_empty());
+            self.stats.opening_denominator_cache_saved_bytes += cache.saved_bytes as u64;
+            self.stats.opening_denominator_cache_peak_bytes = self
+                .stats
+                .opening_denominator_cache_peak_bytes
+                .max(cache.bytes);
+            self.stats.opening_denominator_cache_skipped_groups += cache.skipped_groups as u64;
+        }
         self.stats.opening_wall_ns += started.elapsed().as_nanos();
         Ok(result)
     }

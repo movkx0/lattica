@@ -1,0 +1,86 @@
+{
+  "campaign_ids": ["block-v2-native-delivery-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "validation-r2",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-309410e6a6c7a8ddfdae9781",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 113,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/validation-r2/check-01.log",
+      "sha256": "89e68a2898913cadd5c05186d6cbcee1cd40ccd54825c3b40dd312abeb61cd5f"
+    },
+    {
+      "bytes": 233,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/validation-r2/check-04.log",
+      "sha256": "ef240119a47ddfa2025b9ab9165d8366e5673ce28ef5366af22c0fe286acfacb"
+    },
+    {
+      "bytes": 416,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/validation-r2/check-06.log",
+      "sha256": "08088a79a3398d0f97801bd56ee9cc750b104ea451bafbace8ae1b62a0069da5"
+    },
+    {
+      "bytes": 251,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/validation-r2/check-07.log",
+      "sha256": "5cf98ac0edbcd26a522ad12c42801ea9a39ae10f3ff1978be32de70235ce93bd"
+    },
+    {
+      "bytes": 786,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/check-02.log",
+        "run_id": "run-93785a5de1cb0a0698e30449"
+      },
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/validation-r2/check-02.log",
+      "sha256": "cf6b6ec88e8389b98cb976fb436eb41ffbb444cd029e739c9eaa3135e245ebdd"
+    },
+    {
+      "bytes": 424,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/check-03.log",
+        "run_id": "run-93785a5de1cb0a0698e30449"
+      },
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/validation-r2/check-03.log",
+      "sha256": "d0421060662b9f1afe67b6a324adaf10fedf92eddd51f450d037284255dc439f"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/validation-r2/check-05.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

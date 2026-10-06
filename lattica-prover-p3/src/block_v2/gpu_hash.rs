@@ -22,6 +22,7 @@ use std::sync::{
 
 pub use super::resident_pcs::initialize_research_from_env as initialize_resident_from_env;
 pub use engine::{
+    drain,
     lde_execute::{coset_lde_commit, LdeCommitOutput, LdeInput},
     lde_plan::{ColumnTile as LdeColumnTile, InputShape as LdeInputShape, LdeCommitPlan},
     plan_coset_lde_commit, report, shutdown, Limits, Snapshot,

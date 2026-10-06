@@ -1,0 +1,55 @@
+{
+  "files": {
+    "height": {
+      "bytes": 4,
+      "sha256": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60"
+    },
+    "key.1": {
+      "bytes": 2048,
+      "sha256": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5"
+    },
+    "key.2": {
+      "bytes": 2048,
+      "sha256": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802"
+    },
+    "key.3": {
+      "bytes": 2048,
+      "sha256": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99"
+    },
+    "wallet.0": {
+      "bytes": 853675,
+      "sha256": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973"
+    },
+    "wallet.1": {
+      "bytes": 853491,
+      "sha256": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79"
+    },
+    "wallet.2": {
+      "bytes": 854047,
+      "sha256": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5"
+    },
+    "wallet.3": {
+      "bytes": 853795,
+      "sha256": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b"
+    },
+    "wallet.4": {
+      "bytes": 853725,
+      "sha256": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b"
+    },
+    "wallet.5": {
+      "bytes": 853855,
+      "sha256": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa"
+    },
+    "wallet.6": {
+      "bytes": 853977,
+      "sha256": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117"
+    },
+    "wallet.7": {
+      "bytes": 853568,
+      "sha256": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5"
+    }
+  },
+  "purpose": "Public eight-input fixture for Apple Silicon development measurements. Contains public proofs and verification keys; no private wallet data.",
+  "schema_version": 1,
+  "source": "docs/evidence/block-v2-gpu-default-ram-bench-2026-10-02.json"
+}

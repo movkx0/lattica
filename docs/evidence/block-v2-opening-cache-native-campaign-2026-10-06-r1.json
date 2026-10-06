@@ -1,0 +1,121 @@
+{
+  "admitted_resource_preview": {
+    "bytes": 47795,
+    "path": "lattica-prover-p3/target/block-v2-denominator-native-20261006-a/admission-preview-r1.json",
+    "sha256": "f8a6b79a31c5501c260ee10dc511287ff508644398c21fdf2c641aea2c11842f"
+  },
+  "archived_sources": 125,
+  "build_inputs_verified": 185,
+  "campaign": {
+    "context_policy": "Bootstrap uses retained conservative 7.25/6.5 GiB reserves. Reduced contexts are derived from each mode, binary and device using complete bootstrap roots. Shared execution imports the complete reduced-context single-GPU roots.",
+    "count": 8,
+    "created_utc": "2026-10-06T15:58:55.681715+00:00",
+    "expected_audited_roots": 10,
+    "expected_fresh_recursive_proofs": 80,
+    "expected_reused_proofs": 0,
+    "failure_policy": "Stop on first failed arm, retain all work and failures; no selective replacement.",
+    "fixed_resources": "20.75 GiB RAM, 14.25 GiB spill per GPU worker; Rayon 12/11; managed VRAM 7/6 GiB; owner 1.25 GiB and one thread.",
+    "gates": [
+      "CPU-audited full native root",
+      "exact fixed limits",
+      "zero memory-limit/OOM events",
+      "one native application per journal",
+      "fresh-process replay and two exact retries",
+      "identical complete fixtures",
+      "cache mode matches the pinned workload and worker budget"
+    ],
+    "gpu_uuids": [
+      "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+    ],
+    "performance_comparison": false,
+    "schedule": [
+      {
+        "case": "single-laptop",
+        "context_phase": "bootstrap",
+        "mode": "baseline",
+        "repetition": 1
+      },
+      {
+        "case": "single-desktop",
+        "context_phase": "bootstrap",
+        "mode": "cache",
+        "repetition": 2
+      },
+      {
+        "case": "single-laptop",
+        "context_phase": "bootstrap",
+        "mode": "cache",
+        "repetition": 2
+      },
+      {
+        "case": "single-desktop",
+        "context_phase": "bootstrap",
+        "mode": "baseline",
+        "repetition": 1
+      },
+      {
+        "case": "single-laptop",
+        "context_phase": "reduced-single",
+        "mode": "cache",
+        "repetition": 4
+      },
+      {
+        "case": "single-desktop",
+        "context_phase": "reduced-single",
+        "mode": "baseline",
+        "repetition": 3
+      },
+      {
+        "case": "single-laptop",
+        "context_phase": "reduced-single",
+        "mode": "baseline",
+        "repetition": 3
+      },
+      {
+        "case": "single-desktop",
+        "context_phase": "reduced-single",
+        "mode": "cache",
+        "repetition": 4
+      },
+      {
+        "case": "shared",
+        "context_phase": "shared",
+        "mode": "baseline",
+        "repetition": 3
+      },
+      {
+        "case": "shared",
+        "context_phase": "shared",
+        "mode": "cache",
+        "repetition": 4
+      }
+    ],
+    "schema": "lattica-opening-cache-native-qualification-v1",
+    "scope": "Full-root and resource qualification. Six user and two issuance inputs in each isolated journal; no new wallet proving or sustained transaction campaign.",
+    "timing": "Exact monotonic and UTC seal stamps; pipeline ends at final controller exit, an upper bound on host-ready time."
+  },
+  "captured_utc": "2026-10-06T16:01:03.058317+00:00",
+  "frozen_files": 285,
+  "kernel_qualification": {
+    "bytes": 33171,
+    "path": "docs/evidence/block-v2-opening-denominator-cache-2026-10-06-r1.json",
+    "sha256": "7cc99b4d80cfb7a270e61a5157ac115ba89bd5bf806c64df2bea4b39ad8e147e"
+  },
+  "note": "Immutable pre-run declaration. Completion and measurements will be published separately; this record is not evidence of a native root or throughput result.",
+  "performance_comparison": false,
+  "pilot_started": false,
+  "runs_completed": 0,
+  "runtime_manifest": {
+    "bytes": 111988,
+    "path": "lattica-prover-p3/target/block-v2-denominator-native-20261006-a/frozen-r1/manifest.json",
+    "sha256": "a3a59de21f09bb467118cd71da1431d800fcb75f25f67906153c120fa8c07052"
+  },
+  "runtime_source_archive": {
+    "bytes": 425689,
+    "path": "lattica-prover-p3/target/block-v2-denominator-native-20261006-a/runtime-source-r1.tar.gz",
+    "sha256": "4593e2d0dc558edb0871a56f98a1080b9ecc03190aaa2d4253e18af22ba96865"
+  },
+  "schema_version": 1,
+  "status": "prepared"
+}

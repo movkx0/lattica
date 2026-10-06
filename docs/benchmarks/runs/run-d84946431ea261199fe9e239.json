@@ -1,0 +1,119 @@
+{
+  "campaign_ids": ["block-v2-count-phase-analysis-2026-10-05","block-v2-count-phase-progress-2026-10-05-r1","block-v2-typed-count-matrix-2026-10-05","block-v2-typed-count-matrix-progress-2026-10-05-r3","block-v2-typed-count-matrix-progress-2026-10-05-r4","block-v2-typed-count-matrix-progress-2026-10-05-r5","block-v2-typed-count-matrix-progress-2026-10-05","block-v2-typed-local-dag-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "matrix",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1","P2"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-d84946431ea261199fe9e239",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 7427,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-01-gpu-01.controller.log",
+      "sha256": "5fef672e8049c7afb700c5c62fc42540752af40ac591d4fd7c2b1f8063d80ef6"
+    },
+    {
+      "bytes": 7406,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-01-gpu-02.controller.log",
+      "sha256": "7255016030c4d79db6216b5a3db31f5006cb24af979be22f8028a7435d6eecfc"
+    },
+    {
+      "bytes": 7477,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-02-gpu-01.controller.log",
+      "sha256": "da4f17b9a418b7e5ae1eddbda9090dcc620a2c198312f823bb91ad00efafddb1"
+    },
+    {
+      "bytes": 7404,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-02-gpu-02.controller.log",
+      "sha256": "c74b5c7382760b47b891c746a95206d099eb0950f434394bbf0e9fc2302288fb"
+    },
+    {
+      "bytes": 7432,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-03-gpu-01.controller.log",
+      "sha256": "a62fc86595d9bc3eb28bbe020441ba9decfaa5da3f44e3fadf83bb0e20b7e42c"
+    },
+    {
+      "bytes": 7410,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-03-gpu-02.controller.log",
+      "sha256": "bce105cbe1c9c26be9c708ac7894bbd3a61b3044dfb7ce19c221f9d9490d397f"
+    },
+    {
+      "bytes": 7434,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-08-gpu-01.controller.log",
+      "sha256": "6ed0f8262c3c345ccfdb8be49be129127702ce3d600f9a6bb808e1e187961b7e"
+    },
+    {
+      "bytes": 7410,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-08-gpu-02.controller.log",
+      "sha256": "f7037f5ab80c6b6e2502ad509ee50ce6b468259bd15b68ae19975eea3784709f"
+    },
+    {
+      "bytes": 7437,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-16-gpu-01.controller.log",
+      "sha256": "a99760d6b7a4a4298d68d808834997ff9f96a09dd9c511ca187100389f15182c"
+    },
+    {
+      "bytes": 7413,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-16-gpu-02.controller.log",
+      "sha256": "07fa69029b4a4a5ab15ffee917d81692782593b5861ff0ed5533d079924a0f82"
+    },
+    {
+      "bytes": 7436,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-32-gpu-01.controller.log",
+      "sha256": "a31f3b4b2571454d49eca37a2f7f8e10bec304eddd8e486cd7b565062f04a398"
+    },
+    {
+      "bytes": 7419,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-32-gpu-02.controller.log",
+      "sha256": "16a4d482291078bbb60eb6777f4989d1a02931fbcf8fa82bb9f0c2202b9c0b70"
+    },
+    {
+      "bytes": 7446,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-63-gpu-01.controller.log",
+      "sha256": "dd8161bc34c29dd06036742abfa2b6ca42b3de66fd556197d49f7208a562c439"
+    },
+    {
+      "bytes": 7422,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-63-gpu-02.controller.log",
+      "sha256": "eea5756e11a61e717840671acf67dcaf94f4a9b41466e9590bb70be7b8c8684b"
+    },
+    {
+      "bytes": 7446,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-64-gpu-01.controller.log",
+      "sha256": "a1a6eece074f7952d1c3c462e4f4da5b0fb4b87c44758c93bd8903a2504c2ae5"
+    },
+    {
+      "bytes": 7417,
+      "path": "lattica-prover-p3/target/block-v2-paired-count-matrix-20261005-a/matrix/count-64-gpu-02.controller.log",
+      "sha256": "4c8195ce5924b3b5c46705ac2d6773ba5b6f7f1960712ccc7497c2a2d0a76411"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

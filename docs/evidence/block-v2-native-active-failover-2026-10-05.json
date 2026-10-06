@@ -1,0 +1,2016 @@
+{
+  "accepted_proofs": [
+    {
+      "accepted_ms": 48043,
+      "bytes": 1683948,
+      "cache_hits": 0,
+      "cache_setups": 1,
+      "count": 2,
+      "event": "fresh_typed_node",
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "index": 0,
+      "input_verification_ms": 438,
+      "job": "7d429e74453be60d78f96f4e1573aba0bd5c14505f8a31856f245e01a984dd93",
+      "level": 1,
+      "mode": 4,
+      "proving_ms": 42263,
+      "seconds": 43.440398172,
+      "serialization_ms": 57,
+      "worker_pid": 694992
+    },
+    {
+      "accepted_ms": 86116,
+      "bytes": 1683948,
+      "cache_hits": 0,
+      "cache_setups": 1,
+      "count": 2,
+      "event": "fresh_typed_node",
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "index": 1,
+      "input_verification_ms": 416,
+      "job": "c75cbbfba09ffd2c0ad1043e2dfb0da0cdb5a35922e6180fd5d2eb8e6625ef3e",
+      "level": 1,
+      "mode": 8,
+      "proving_ms": 35319,
+      "seconds": 36.469347487,
+      "serialization_ms": 53,
+      "worker_pid": 694992
+    },
+    {
+      "accepted_ms": 123100,
+      "bytes": 1683948,
+      "cache_hits": 0,
+      "cache_setups": 1,
+      "count": 4,
+      "event": "fresh_typed_node",
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "index": 0,
+      "input_verification_ms": 744,
+      "job": "74f5669fecba05f14edd25a2f63fdde5f11bc36896a8b560f6020af7b7a582c6",
+      "level": 2,
+      "mode": 3,
+      "proving_ms": 34193,
+      "seconds": 35.918572747,
+      "serialization_ms": 108,
+      "worker_pid": 694992
+    },
+    {
+      "accepted_ms": 156986,
+      "bytes": 1683948,
+      "cache_hits": 0,
+      "cache_setups": 1,
+      "count": 4,
+      "event": "fresh_typed_node",
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "index": 0,
+      "input_verification_ms": 315,
+      "job": "e7820842643a2baab9f16a7069eb4d0220318999c48f6fc383ebcd8b941c6894",
+      "level": 6,
+      "mode": 12,
+      "proving_ms": 32228,
+      "seconds": 33.299576833,
+      "serialization_ms": 53,
+      "worker_pid": 694992
+    }
+  ],
+  "accepted_subtree_preserved": true,
+  "all_memory_events_zero": true,
+  "arrival_backend_integrated": false,
+  "captured_utc": "2026-10-06T00:21:30.361435+00:00",
+  "cleanup": {
+    "bytes": 2222,
+    "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cleanup-r1.json",
+    "sha256": "fe2895743f201d5da18993ce226125d71d26944024879944b2fb9b92adb4a549"
+  },
+  "controller_seconds": 179.5295614300121,
+  "coordinator_recovery_qualified": false,
+  "count": 4,
+  "cpu_audit_seconds": 0.06984420801745728,
+  "cpu_audited_roots": 1,
+  "delivered_transactions_measured": false,
+  "dispatches": [
+    {
+      "coordinator_pid": 694982,
+      "dispatched_ms": 4602,
+      "event": "shared_typed_job_dispatched",
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "index": 0,
+      "job": "7d429e74453be60d78f96f4e1573aba0bd5c14505f8a31856f245e01a984dd93",
+      "level": 1,
+      "worker_pid": 694992
+    },
+    {
+      "coordinator_pid": 694982,
+      "dispatched_ms": 5244,
+      "event": "shared_typed_job_dispatched",
+      "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "index": 1,
+      "job": "c75cbbfba09ffd2c0ad1043e2dfb0da0cdb5a35922e6180fd5d2eb8e6625ef3e",
+      "level": 1,
+      "worker_pid": 695056
+    },
+    {
+      "coordinator_pid": 694982,
+      "dispatched_ms": 49647,
+      "event": "shared_typed_job_dispatched",
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "index": 1,
+      "job": "c75cbbfba09ffd2c0ad1043e2dfb0da0cdb5a35922e6180fd5d2eb8e6625ef3e",
+      "level": 1,
+      "worker_pid": 694992
+    },
+    {
+      "coordinator_pid": 694982,
+      "dispatched_ms": 87182,
+      "event": "shared_typed_job_dispatched",
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "index": 0,
+      "job": "74f5669fecba05f14edd25a2f63fdde5f11bc36896a8b560f6020af7b7a582c6",
+      "level": 2,
+      "worker_pid": 694992
+    },
+    {
+      "coordinator_pid": 694982,
+      "dispatched_ms": 123686,
+      "event": "shared_typed_job_dispatched",
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "index": 0,
+      "job": "e7820842643a2baab9f16a7069eb4d0220318999c48f6fc383ebcd8b941c6894",
+      "level": 6,
+      "worker_pid": 694992
+    }
+  ],
+  "failed_job_retried_on_other_gpu": true,
+  "failed_workers": 1,
+  "failed_workers_records": [
+    {
+      "cache_hits": 0,
+      "cache_setups": 0,
+      "coordinator_pid": 694982,
+      "exit_code": null,
+      "failed_job": "c75cbbfba09ffd2c0ad1043e2dfb0da0cdb5a35922e6180fd5d2eb8e6625ef3e",
+      "failure": "failed to fill whole buffer",
+      "forced_stop_confirmed": true,
+      "gpu_teardown_confirmed": true,
+      "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "launch_revoked": true,
+      "lease_key": "14b3801fe63635e443513a6abc0cd079c104f21c754814866624710824f0c1aa",
+      "process_and_cgroup_quiescent": true,
+      "reconciled_ms": 49034,
+      "schema_version": 1,
+      "teardown_method": "process_and_cgroup_exit",
+      "unit": "lattica-v2-multi-persistent-7418682ec36cca4f5ed00630cc185e8aa96432e4d8e3062bc2443c76ecec23cf.service",
+      "worker_failed": true,
+      "worker_pid": 695056,
+      "workspace_released": true
+    }
+  ],
+  "fresh_process_native_and_intake_replay": true,
+  "fresh_recursive_proofs": 4,
+  "fresh_wallet_proofs": 0,
+  "frozen_manifest": {
+    "bytes": 19659,
+    "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/manifest.json",
+    "sha256": "00d8e9624cda6e19382b44c90d99c98f2501f574f91b57a9728e736d9efc75ce"
+  },
+  "gpu_jobs_dispatched": 5,
+  "harness_seconds": 188.24079154297942,
+  "injection": {
+    "bytes": 6425,
+    "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-active-failover-20261005-a/injection-r1.json",
+    "sha256": "4bf1b3febb00f5465b0f11046b7aca7c090989819a7c18d5dde09b9987fbcf8f"
+  },
+  "intake_publication_seconds": 3.8816739000030793,
+  "integrity": {
+    "compiled_and_controller_source_archives_checked": true,
+    "frozen_files_checked": 57,
+    "status": "passed"
+  },
+  "isolated_issuance_transactions_applied": 1,
+  "isolated_user_transactions_applied": 3,
+  "matched_speedup_claimed": false,
+  "native_application_seconds": 3.7390983299992513,
+  "native_blocks_applied": 1,
+  "observer_peak_ram_bytes": 122159104,
+  "oom_recovery_qualified": false,
+  "original_exact_retries_preserved": true,
+  "owner_peak_ram_bytes": 104022016,
+  "owner_seconds": 172.76112461197772,
+  "pilot_started": false,
+  "preparation": {
+    "bytes": 646,
+    "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/qualification.json",
+    "sha256": "0e8b6e0f512b1eb746eca63540e4f09057afa5b83cf7a2deae3dfe44c0cc4c13"
+  },
+  "production_ready": false,
+  "proving_seconds": 157.67602706799516,
+  "record_type": "native_active_worker_failover_qualification",
+  "remaining_limitations": [
+    "One collection-time worker failure and one surviving original worker; no worker replacement or coordinator restart was exercised.",
+    "Startup, dispatch and normal-close failures still abort. Loss of all workers fails closed.",
+    "OOM/resource-exhaustion and reorg/stale-result recovery during active proving remain unqualified.",
+    "This uses existing wallet proofs in an isolated native journal; it does not establish sustained delivered transaction throughput.",
+    "No matched speedup, full-64 cold or complete post-seal timing gate, larger shared-count qualification, or new Apple Silicon runtime result is claimed."
+  ],
+  "retained_failed_attempts": [
+    {
+      "reason": "New test used incorrect helper APIs; compile failure retained.",
+      "scope": "CPU build r1"
+    },
+    {
+      "reason": "Sandbox blocked Unix sockets; the same source subsequently passed host validation in r3.",
+      "scope": "CPU build r2"
+    }
+  ],
+  "root_bytes": 1683948,
+  "schema_version": 1,
+  "scope": "One native four-transaction candidate survived SIGKILL of an active desktop GPU worker after another subtree had been accepted. The same coordinator retained that proof, confirmed exact process/cgroup exit, revoked the lease, released the workspace and retried on the surviving laptop GPU under its original assignment.",
+  "sources": [
+    {
+      "bytes": 2222,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cleanup-r1.json",
+      "sha256": "fe2895743f201d5da18993ce226125d71d26944024879944b2fb9b92adb4a549"
+    },
+    {
+      "bytes": 54,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/controller-exit-r1.json",
+      "sha256": "034948d2a920827420a584c1b39b8c09f599cfddc0c0534292527ad2b73669b0"
+    },
+    {
+      "bytes": 1413,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/controller-process-r1.json",
+      "sha256": "d7c55dbb41c84e376a70e31d0332ad3608d50fe165beb72f3a36d2a7543adf4b"
+    },
+    {
+      "bytes": 131,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/controller-r1.log",
+      "sha256": "6e9c0290e0797931b02955e7b28345e66e012a0be70878135592fa0af2bb2b29"
+    },
+    {
+      "bytes": 114,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/controller-tests-r1.log",
+      "sha256": "f70c5e12f81e6ca2a27c5a58d268b60f9b9764c638cc0c6fbef9bce3d25bd541"
+    },
+    {
+      "bytes": 3996008,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-block-v2-paired-probe-r3",
+      "sha256": "2dac5230fea2ad32269498e04030a332a6d1dda0ce623906db35ce2afdb5cee6"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-build-r1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-build-r2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-build-r3.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 27545,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-build-request-r1.json",
+      "sha256": "ea30ba35403421d6413c5c805c64a128a9a14cbf7b541bf5c4240d5c9164f77b"
+    },
+    {
+      "bytes": 27545,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-build-request-r2.json",
+      "sha256": "f8d309f1af831a27333ddfca303e0e0d266bf14a8707c909f65a1d0e3ea26ee4"
+    },
+    {
+      "bytes": 28014,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-build-request-r3.json",
+      "sha256": "db82396624e3d9ae2956fb16c95a6a5551fa27acb524a0c1e1ae401944020350"
+    },
+    {
+      "bytes": 3508,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-validation-r1/command-1.log",
+      "sha256": "4bd781737504adc749e3b17decd2f3703ec394e83aee518f1e73ada90590938f"
+    },
+    {
+      "bytes": 645,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-validation-r1/result.json",
+      "sha256": "05a11e662582836d7ba31a0235a77401f4226585c396d227c2a3417ab616859f"
+    },
+    {
+      "bytes": 4503,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-validation-r2/command-1.log",
+      "sha256": "580f1e392b0c709db948767de4dc0e4dad39f23c0d962844450b114641a5cbd2"
+    },
+    {
+      "bytes": 645,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-validation-r2/result.json",
+      "sha256": "49d0305cabb69db1cda401474f97af87e0c0403d66e01a911fbd2958fa1bf2b1"
+    },
+    {
+      "bytes": 2802,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-validation-r3/command-1.log",
+      "sha256": "28247064b9d0cbee60dd45c0b33bb4948b8c0876318cd08570429ac9de6b1bea"
+    },
+    {
+      "bytes": 736,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-validation-r3/command-2.log",
+      "sha256": "44f437d80aa47c405c01ddae31d6e611eb413766244dc6562a6300d169174240"
+    },
+    {
+      "bytes": 6546,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-validation-r3/command-3.log",
+      "sha256": "465060acf33d7590b908fe24405a930a8a6ba5394bd4abdcad0ae248264c3a1a"
+    },
+    {
+      "bytes": 5789,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-validation-r3/command-4.log",
+      "sha256": "39d4b4f8d39afe5bae166f5a4e10f21f463d9bbc103dfd4c30d923bba99cc5ad"
+    },
+    {
+      "bytes": 2396,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/cpu-validation-r3/result.json",
+      "sha256": "b6531fe663adf539041288923a7e75345e7c9d58e9e1f3fc0c6d2bf259bba674"
+    },
+    {
+      "bytes": 9365,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/finalize-evidence-r1.py",
+      "sha256": "79de2010261c56f537cf8368e9595c905c93956d73367aab7a9bec44fd34615d"
+    },
+    {
+      "bytes": 3810,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/freeze-r1.py",
+      "sha256": "d67c9c75832624d7f6b1a0818123c837f4c5e1fde923669a4ef2d0bd77ac3fd0"
+    },
+    {
+      "bytes": 13777,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/fresh-process-intake-r1.json",
+      "sha256": "f9d6f53db397151e3fbfc88e9ca1277cbe679c0401063d041c809c12b11c21e3"
+    },
+    {
+      "bytes": 76207,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/controller-source.tar.gz",
+      "sha256": "b6175c572a81af5dfe66436f152750666378427faccf7b374be126dae44f41c8"
+    },
+    {
+      "bytes": 5017,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/controllers/block-v2-multi-gpu-direct-readback-workload.json",
+      "sha256": "48174de0b9de99549e86b39966c416fd3021bf8f69014dd6bffe8fe8c90b3d64"
+    },
+    {
+      "bytes": 33480,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/controllers/block-v2-multi-gpu-run.py",
+      "sha256": "ef22b8365a466de50c5ec1b79b6f55fd6ab0a39cbb883dcc1638f2f2ff335b4f"
+    },
+    {
+      "bytes": 4258,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/controllers/block-v2-native-arrivals.py",
+      "sha256": "962e53d3527f362a9b16ea85f17adc4987b503e9235df93e4395de6fa1e14ad9"
+    },
+    {
+      "bytes": 9715,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/controllers/block-v2-native-fixture.py",
+      "sha256": "b357fa7430d8eb8a2a0eceb7f928bc00c55c926839705c1c0c8f353b7033a4a2"
+    },
+    {
+      "bytes": 16013,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/controllers/block-v2-typed-compare.py",
+      "sha256": "d303f3c816a43b66472150072e694e63d60a4989b044d9d61f9264d517490238"
+    },
+    {
+      "bytes": 28715,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/controllers/block-v2-typed-gpu-run.py",
+      "sha256": "fd3cc9a9491950dac84a9f7d18c7af75930d5d7b97c0d34f7ab6e28521dd6b42"
+    },
+    {
+      "bytes": 23922,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/controllers/block-v2-typed-multi-gpu-run.py",
+      "sha256": "68bd8f0b311769e5a8db235fe050eb036d71e30baeaf6722d27fa80ec00da6ac"
+    },
+    {
+      "bytes": 38251,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/controllers/block-v2-typed-shared-gpu-run.py",
+      "sha256": "52df8b3653cdf7e65930edac3dec59e41b52c4fc9cb328b7e8a70a6d5d1eff32"
+    },
+    {
+      "bytes": 27642,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/controllers/block_v2_host_store.py",
+      "sha256": "c52857d7a627c942acf749ec82cc019970cd7964f1fdcfc583e0dd6417aad00c"
+    },
+    {
+      "bytes": 26674,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/controllers/block_v2_native_arrivals.py",
+      "sha256": "996f809aa59a8082749790678c310920a552471628d786c660a7696d23601597"
+    },
+    {
+      "bytes": 10032,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/controllers/block_v2_native_delivery.py",
+      "sha256": "394eafdf743d7ebb27c1822215fc7de0275aa6cd4d42b7f3556e6c78c6b0dc08"
+    },
+    {
+      "bytes": 10765,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/controllers/block_v2_native_shared.py",
+      "sha256": "8563a5e9324c88033a56319576a89fe1b624f2f2e4c4c55c450168ea4dd6b564"
+    },
+    {
+      "bytes": 12432,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/controllers/block_v2_pending_candidate.py",
+      "sha256": "e38e153d1db12fa60caf452e485888361f15e78bb32f425e95707234030cd9f3"
+    },
+    {
+      "bytes": 15591,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/controllers/block_v2_resources.py",
+      "sha256": "0eb3c6f674851a6e61ab4ba0a884f5a78c12c518069b3564b8a6bbef2e77d6eb"
+    },
+    {
+      "bytes": 3996008,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/cpu-block-v2-paired-probe",
+      "sha256": "2dac5230fea2ad32269498e04030a332a6d1dda0ce623906db35ce2afdb5cee6"
+    },
+    {
+      "bytes": 1731908,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/genesis.bin",
+      "sha256": "05d3a0c9a9eab3a7b7886c97828964d0ae87d2c58210c6a87d7664b41655de37"
+    },
+    {
+      "bytes": 5614680,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/gpu-block-v2-paired-probe",
+      "sha256": "0f5a75691cd7b9121a6b798b07ef71b1f57fc7e7b7c1297c64e3bb4cdf0ede32"
+    },
+    {
+      "bytes": 1559,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/host-inputs.json",
+      "sha256": "e8807e76dd1352679b2c08842f8e4864d8efc1269e4a700bb7cee6c7a52cec03"
+    },
+    {
+      "bytes": 29163,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/host-registry.bin",
+      "sha256": "3b9b74f3b632f369c905b132d61b97d7cdc73bcbd664bf13344ae3d372367947"
+    },
+    {
+      "bytes": 16853720,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/liblattica_host_bridge.so",
+      "sha256": "f0635e0f62b271715bf6ef16703de2657aae7f6dbf7374e9e2eab619c95eef3c"
+    },
+    {
+      "bytes": 19659,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/manifest.json",
+      "sha256": "00d8e9624cda6e19382b44c90d99c98f2501f574f91b57a9728e736d9efc75ce"
+    },
+    {
+      "bytes": 10869,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/qualify-failover-r1.py",
+      "sha256": "bd413cdc0cc4774a52ba44d13ed7b706bdd560e8b2073ece771e3fc8c03d2e1d"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/registry-fixture/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/registry-fixture/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/registry-fixture/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/registry-fixture/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/registry-fixture/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/registry-fixture/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/registry-fixture/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/registry-fixture/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/registry-fixture/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/registry-fixture/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/registry-fixture/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/registry-fixture/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/registry-fixture/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 5614680,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/gpu-block-v2-paired-probe-r2",
+      "sha256": "0f5a75691cd7b9121a6b798b07ef71b1f57fc7e7b7c1297c64e3bb4cdf0ede32"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/gpu-build-r2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 27256,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/gpu-build-request-r1.json",
+      "sha256": "4fe19558a5c80c80493433add72ad8a49ed4fe74005e67f37b82f21baaf1071c"
+    },
+    {
+      "bytes": 27256,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/gpu-build-request-r2.json",
+      "sha256": "f475e74b1462b37c335f52a2fcb18a89e14ebf7e0aff5d4cb5a53a51856813fc"
+    },
+    {
+      "bytes": 3124,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/gpu-validation-r2/command-1.log",
+      "sha256": "af22269e61f3fcc050cffa7f2aeb30f6f4b7365824217c1daab6c62a4362e8c7"
+    },
+    {
+      "bytes": 577,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/gpu-validation-r2/command-2.log",
+      "sha256": "c6f0bb3a956f0bbb9ce5997f1217b2e70fff850696710df85e715d8ac1107393"
+    },
+    {
+      "bytes": 1216,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/gpu-validation-r2/result.json",
+      "sha256": "0f838ab5fff1df09e512e4b05658b1335a1341eb5831522ce2fe1e3536deab7d"
+    },
+    {
+      "bytes": 6425,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/injection-r1.json",
+      "sha256": "4bf1b3febb00f5465b0f11046b7aca7c090989819a7c18d5dde09b9987fbcf8f"
+    },
+    {
+      "bytes": 9189,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/intake-after-r1.json",
+      "sha256": "4d9095583b04a499bfb9832ebe750115c3b96645acdd3a9b0fcc541af320ec86"
+    },
+    {
+      "bytes": 435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/monitor-r1/accounting.json",
+      "sha256": "790fe3af0281053b5f5030a62b72bc5defbcafc099e3e55451c939a1ade5544a"
+    },
+    {
+      "bytes": 1335,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/monitor-r1/launch-command.json",
+      "sha256": "98513fd12cd566837b65e0e700de8b2751acf7aae2d58627b16f8c42bd4c6ad2"
+    },
+    {
+      "bytes": 1574,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/monitor-r1/launch-result.json",
+      "sha256": "9ec09792b3b32b4893af8169610295b029e8a439bdd64bba0162a9ce6ea5ad2b"
+    },
+    {
+      "bytes": 1666,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/monitor-r1/output.log",
+      "sha256": "96247682dca9781c0e301be6b12936d95a8ad78d46111e4fcc5ccdcbf6eccd40"
+    },
+    {
+      "bytes": 23536,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/admission.json",
+      "sha256": "142b68acad59c06e6876626d2aa9a513c0a994d2bf353ace15b0fa5818129f73"
+    },
+    {
+      "bytes": 71701,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/config.json",
+      "sha256": "72340a99ba204b4cf0bddc0e0e776f1cc32d4ac77af8638a90598ff500b094eb"
+    },
+    {
+      "bytes": 438,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/expected.json",
+      "sha256": "098301a2dbeacdfdd08bb3e1243f28213670784a2ad9bce0038ad04ca4956c41"
+    },
+    {
+      "bytes": 26223,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/fleet-plan.json",
+      "sha256": "5a5b3cd45a77623ab314ef48fe5ae453aa0ca3d8a7779dba5efb897a0dd39608"
+    },
+    {
+      "bytes": 2265,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/native-host.json",
+      "sha256": "efd1adc7710b5f7040cb299ee56ff680695e89029e8b882e723d824f676d0019"
+    },
+    {
+      "bytes": 426,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/accounting.json",
+      "sha256": "45c6c2b39927eb10c2e6f52cb04da906900f7d1cbaf4dd24d987b10a7edbec46"
+    },
+    {
+      "bytes": 4838,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/arrival-application.json",
+      "sha256": "01e6da661035bfe958d532a9720dd51b4d31dcc65d307d958911445567ce1819"
+    },
+    {
+      "bytes": 119,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/audit.log",
+      "sha256": "22a361a34a3c11981e0eb769d103f014bc633d4a127d9f23dff1a8e009dba57d"
+    },
+    {
+      "bytes": 2388,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/body.json",
+      "sha256": "310dab2c2ec736b196b5d07b14a1917a5488af65e0d05f4aac0e20d3c9b2fd7f"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 853831,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/wallet.0",
+      "sha256": "85ef7743f640eb98c860a75ba8b0fde7bb2ac6960181d96b96594af5740bcc26"
+    },
+    {
+      "bytes": 875611,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/wallet.1",
+      "sha256": "75b0dbf2f3b28386400460c36723cf0f5fed349292fe3098e205c1b66442eef8"
+    },
+    {
+      "bytes": 875314,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/wallet.2",
+      "sha256": "21cdad35434d1a77d65d2d9b30eb966915b8e55813b581e2b2f301f67c5489c7"
+    },
+    {
+      "bytes": 853889,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/input/wallet.3",
+      "sha256": "d475c6b04c7a8c889b8df31846670f3ed6e103440368a95ea08185b9eedf38f0"
+    },
+    {
+      "bytes": 1468,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/native-application.json",
+      "sha256": "33bd14f0759ff88ce414ffbf5be2883098d0958fbf0beff9848fda4473c671fe"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/artifacts/.owner.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/artifacts/n-0aec540543122f09d23a15053963cec92555ffdecf7b6b0d6d84bb5d498e39bb.proof",
+      "sha256": "2302ac59dc1b4f91cd59ca579a1e8ebddb1efc640cede9a37e8a1feb57e2dec8"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/artifacts/n-947c28cf2187f8a1380cde654a039b304206f1e7b196e5c40523d15a6c6b8f1a.proof",
+      "sha256": "9d057928c56482a4ea0dce3217d32d199e8683dfe4597fc7165c46805b7a8615"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/artifacts/n-e4380baf5d72d070038750bdb7fd4e32a31f0daacef61a3d39fa00d35a2cbcc9.proof",
+      "sha256": "c7759d897092f9968fff006cf88d83bf4b69def7f219fbe07361b42d8e59290d"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/artifacts/n-e771f8d55f50fb2829c9dce9a1c8ceb50f1cf13c736f408faf2b4b9c3de49c9f.proof",
+      "sha256": "9a10851ca36c3f3d954a08498801e44f555a92bdccf0e49db724096cc6d3fce1"
+    },
+    {
+      "bytes": 853831,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/artifacts/w-41fb5ecf089fd85432a1432da12f24163f99799409f70a04dfe8263375c7e987.proof",
+      "sha256": "85ef7743f640eb98c860a75ba8b0fde7bb2ac6960181d96b96594af5740bcc26"
+    },
+    {
+      "bytes": 853889,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/artifacts/w-6c2babb53ed3664436a149422b1970fc4d969e2d763f42ff07fc7951d9d37cbb.proof",
+      "sha256": "d475c6b04c7a8c889b8df31846670f3ed6e103440368a95ea08185b9eedf38f0"
+    },
+    {
+      "bytes": 875314,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/artifacts/w-bbd14a26cb8e24b15e69dc9465477d4bff0e993f24a052c21c9bf4d749bf6627.proof",
+      "sha256": "21cdad35434d1a77d65d2d9b30eb966915b8e55813b581e2b2f301f67c5489c7"
+    },
+    {
+      "bytes": 875611,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/artifacts/w-cb08182eabb2c59c8e29dd7133a36b79140f09fa5dd8850d9d1420e6ac48ce5a.proof",
+      "sha256": "75b0dbf2f3b28386400460c36723cf0f5fed349292fe3098e205c1b66442eef8"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/journal/.owner.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 919,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/journal/state",
+      "sha256": "4a8c19ea683e914f1c3cff3d9389aaa8368757d46e7517042f18f1004a90bbbd"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/.owner.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 180,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/1480b5cf6375b7d455fdd9b65a2bf5ccf7684e9b8226a12183495fe4f79b6363.intent",
+      "sha256": "8f9682b6097f1fba841a0c1640c55ed33bb05c9bc3900fbc3c8515f8a53d77b6"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/1480b5cf6375b7d455fdd9b65a2bf5ccf7684e9b8226a12183495fe4f79b6363.reserved",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/1480b5cf6375b7d455fdd9b65a2bf5ccf7684e9b8226a12183495fe4f79b6363.revoked",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/1480b5cf6375b7d455fdd9b65a2bf5ccf7684e9b8226a12183495fe4f79b6363.started",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/1480b5cf6375b7d455fdd9b65a2bf5ccf7684e9b8226a12183495fe4f79b6363.worker",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 180,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/14b3801fe63635e443513a6abc0cd079c104f21c754814866624710824f0c1aa.intent",
+      "sha256": "45daaab46d6b7964d15df5622430d558dc46f0b266d28ec68985ee4677845baf"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/14b3801fe63635e443513a6abc0cd079c104f21c754814866624710824f0c1aa.reserved",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/14b3801fe63635e443513a6abc0cd079c104f21c754814866624710824f0c1aa.revoked",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/14b3801fe63635e443513a6abc0cd079c104f21c754814866624710824f0c1aa.started",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/14b3801fe63635e443513a6abc0cd079c104f21c754814866624710824f0c1aa.worker",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 180,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/ac2a4198061b5f10c92db0d775c2a527071734fe358df08132e1be334f36a59a.intent",
+      "sha256": "b523caa620a577dc2682ccee78f2bc9f378979f6569da43bf64540560da11bd8"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/ac2a4198061b5f10c92db0d775c2a527071734fe358df08132e1be334f36a59a.reserved",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/ac2a4198061b5f10c92db0d775c2a527071734fe358df08132e1be334f36a59a.revoked",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/ac2a4198061b5f10c92db0d775c2a527071734fe358df08132e1be334f36a59a.started",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/ac2a4198061b5f10c92db0d775c2a527071734fe358df08132e1be334f36a59a.worker",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 180,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/adf41f071dd0c8c4edd1b79e2b8f9c137b9d4d9436cd46df3cd9723d53769ce4.intent",
+      "sha256": "622936ab58da29f4e23e6d41aa56094c9a3a27343ecfa29d40a035d1f9c5baea"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/adf41f071dd0c8c4edd1b79e2b8f9c137b9d4d9436cd46df3cd9723d53769ce4.reserved",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/adf41f071dd0c8c4edd1b79e2b8f9c137b9d4d9436cd46df3cd9723d53769ce4.revoked",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/adf41f071dd0c8c4edd1b79e2b8f9c137b9d4d9436cd46df3cd9723d53769ce4.started",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/adf41f071dd0c8c4edd1b79e2b8f9c137b9d4d9436cd46df3cd9723d53769ce4.worker",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 180,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/d5b67d3f64d8903de51eb06c4c60b02594aed35c94f09fc95e74e8f8c93368f4.intent",
+      "sha256": "0e42f081cbe3439afc5caafb8593f7119472b73b97b8548360753750c5bcc439"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/d5b67d3f64d8903de51eb06c4c60b02594aed35c94f09fc95e74e8f8c93368f4.reserved",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/d5b67d3f64d8903de51eb06c4c60b02594aed35c94f09fc95e74e8f8c93368f4.revoked",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/d5b67d3f64d8903de51eb06c4c60b02594aed35c94f09fc95e74e8f8c93368f4.started",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/launches/d5b67d3f64d8903de51eb06c4c60b02594aed35c94f09fc95e74e8f8c93368f4.worker",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1729719,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/node.1.0.ac2a4198061b5f10c92db0d775c2a527071734fe358df08132e1be334f36a59a.request",
+      "sha256": "f4b05c564cf9a9151169f47d856717d16f49f3f3deba26a2e901bd499486b905"
+    },
+    {
+      "bytes": 1729480,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/node.1.1.14b3801fe63635e443513a6abc0cd079c104f21c754814866624710824f0c1aa.request",
+      "sha256": "541e451ae25115a2f976e551f76444f0d2f65cb739c0d130f29dfbe66807dbba"
+    },
+    {
+      "bytes": 1729480,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/node.1.1.d5b67d3f64d8903de51eb06c4c60b02594aed35c94f09fc95e74e8f8c93368f4.request",
+      "sha256": "d7dfd57556a97706c80af32db89d32b8226ff6ce146a934ff0586d39ab5d1d51"
+    },
+    {
+      "bytes": 3368309,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/node.2.0.adf41f071dd0c8c4edd1b79e2b8f9c137b9d4d9436cd46df3cd9723d53769ce4.request",
+      "sha256": "2bfc0fd6a248b08d42b6ccd702b6a081720431fe835b3e56ca89f61da5fdd56c"
+    },
+    {
+      "bytes": 1684256,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/node.6.0.1480b5cf6375b7d455fdd9b65a2bf5ccf7684e9b8226a12183495fe4f79b6363.request",
+      "sha256": "58c831933ebb99bfb29e019134594415a411cc58f0d6a623906973382a9bfd3e"
+    },
+    {
+      "bytes": 412,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/worker-0-exit.json",
+      "sha256": "93caab34aee1bd49a7dd6efb00b9740868d7b5e3e22dafb8f242e917c05ab399"
+    },
+    {
+      "bytes": 9416,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/worker-0-start.json",
+      "sha256": "04e40f8c47b0cb5862df745af265c75568f302f2d79ec3b3dafa4e4ed45459bd"
+    },
+    {
+      "bytes": 296,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/worker-0.session",
+      "sha256": "7b078b5d1bdee00bea43706ccdfb18ddaebc7597c46da67caaba9915e5cfff88"
+    },
+    {
+      "bytes": 784,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/worker-1-exit.json",
+      "sha256": "41b88504b70a7891fb9655377feb4dd244a7435a9fa2b08990ede28edf11aac8"
+    },
+    {
+      "bytes": 9394,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/worker-1-start.json",
+      "sha256": "e3b509a0a074137f5db440b373709deef0681de7efb32abf5eaa22c93834816a"
+    },
+    {
+      "bytes": 296,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution/worker-1.session",
+      "sha256": "f8c7332b479e68ef5ab80cc060d6492470594eee894cd29fca0e69df7ea4809c"
+    },
+    {
+      "bytes": 1914,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution-jobs.json",
+      "sha256": "9899855fbc5334c1d5ad3b62ca99812e2c6699e25dd8697bb226e8bf3001b1ac"
+    },
+    {
+      "bytes": 2230,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution-plan.json",
+      "sha256": "ebe77c8d2509d4770459c087cd9c5b54e28a17e7e5ad122ea827a0ba088edc88"
+    },
+    {
+      "bytes": 2,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/execution-reused.json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "bytes": 824,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/expected.json",
+      "sha256": "42d86464d51b2ba2dc647a9f7abd84eb5892d8afb6b5cf93073ea42b0e256f5c"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/node.1.0",
+      "sha256": "2302ac59dc1b4f91cd59ca579a1e8ebddb1efc640cede9a37e8a1feb57e2dec8"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/node.1.1",
+      "sha256": "9d057928c56482a4ea0dce3217d32d199e8683dfe4597fc7165c46805b7a8615"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/node.2.0",
+      "sha256": "9a10851ca36c3f3d954a08498801e44f555a92bdccf0e49db724096cc6d3fce1"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/node.6.0",
+      "sha256": "c7759d897092f9968fff006cf88d83bf4b69def7f219fbe07361b42d8e59290d"
+    },
+    {
+      "bytes": 4842,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/proofs/result.json",
+      "sha256": "2e828b1344cb0ab1485fcb8ebc679c3790b1bda361048d4baefca232503e3166"
+    },
+    {
+      "bytes": 3529,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/prove.log",
+      "sha256": "c76a552827a13f3d29fd3539d0cf56d4b2a1a1c51736a741f4cee221a9ed731a"
+    },
+    {
+      "bytes": 17523,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/result.json",
+      "sha256": "6e8d77a6331adc067877e9d3b7f88f0d5af12720b6b4e5f587aed3e3910e459d"
+    },
+    {
+      "bytes": 2388,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/body.json",
+      "sha256": "310dab2c2ec736b196b5d07b14a1917a5488af65e0d05f4aac0e20d3c9b2fd7f"
+    },
+    {
+      "bytes": 438,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/expected.json",
+      "sha256": "098301a2dbeacdfdd08bb3e1243f28213670784a2ad9bce0038ad04ca4956c41"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/root-only/node.6.0",
+      "sha256": "c7759d897092f9968fff006cf88d83bf4b69def7f219fbe07361b42d8e59290d"
+    },
+    {
+      "bytes": 109004,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/telemetry.jsonl",
+      "sha256": "1ed55fd9834ed258e8990d9105e1c52e818c0184cf6b939b3b8147f22f0f20c6"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/owner/worker.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 303,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/proof-plan.json",
+      "sha256": "ba5254ce3e541fcf64a8bf52a478920f94c5e44ac1c214266fa78136b34746a3"
+    },
+    {
+      "bytes": 89758,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/summary.json",
+      "sha256": "5b59a8d9377f09dc7b0be4147434f08ef61ff216514b7d7c628ab880662d1d12"
+    },
+    {
+      "bytes": 433,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/workers/gpu-01/accounting.json",
+      "sha256": "4b3646bdbe51cb5bd6af12bb32bf79d987097d1899083320df72171e28f38f06"
+    },
+    {
+      "bytes": 7777,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/workers/gpu-01/budget.json",
+      "sha256": "e7acfe05a9d6e93f4eab0e15306c27684bc11a61d0afbcb321495c4a5769a7b4"
+    },
+    {
+      "bytes": 24938,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/workers/gpu-01/launch.json",
+      "sha256": "457ef4a52c70b527e8ff710e90d7ae3f564f0b5297c8af6698670b9ee55bc42d"
+    },
+    {
+      "bytes": 39195,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/workers/gpu-01/prove.log",
+      "sha256": "29e03ed74d878ece3b80e96127c13f76fc2bef33f700b9f5ce9f3ae61ee88177"
+    },
+    {
+      "bytes": 268130,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/workers/gpu-01/telemetry.jsonl",
+      "sha256": "c49c545a0cca922e60b9c258d95bdf21dc4169c06814235d7ff79be3a637c8ba"
+    },
+    {
+      "bytes": 432,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/workers/gpu-02/accounting.json",
+      "sha256": "f382e042082bb202e4409dfa0ada6f21e031f0c0eab99ec7c8107b73d82d7e94"
+    },
+    {
+      "bytes": 7755,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/workers/gpu-02/budget.json",
+      "sha256": "427227a6334b269582699c0134dc16ca0e869ca077e9aacce07a7801c90952bd"
+    },
+    {
+      "bytes": 25332,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/workers/gpu-02/launch.json",
+      "sha256": "ee496cdfde6b9242d57e18ade031f5c3c07d153c51aad6be2a53e3c0da787a1a"
+    },
+    {
+      "bytes": 11568,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/workers/gpu-02/prove.log",
+      "sha256": "07c80141bef0d31ee51c0dfffa406f7103b80a2583c46257b44697c15092892a"
+    },
+    {
+      "bytes": 112976,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/workers/gpu-02/telemetry.jsonl",
+      "sha256": "6fbff5ba5babf84a6a14d06620a7f66898a55328af623b8029b7707e885fcfeb"
+    },
+    {
+      "bytes": 2388,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/body.json",
+      "sha256": "310dab2c2ec736b196b5d07b14a1917a5488af65e0d05f4aac0e20d3c9b2fd7f"
+    },
+    {
+      "bytes": 2657,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/complete-body.0",
+      "sha256": "6804d48ce8c518c2ea8d591e6308e16faf1952dffd74dac7fb3f131b633c2585"
+    },
+    {
+      "bytes": 2698,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/complete-body.1",
+      "sha256": "3f702aebd8e6dc8f898f1b77e43ca9fa72526b6dc68c35cd840920a816861436"
+    },
+    {
+      "bytes": 2666,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/complete-body.2",
+      "sha256": "926da2aff0f2ef45501d62319f1239f20a2817e40ebc609c40789800844152a3"
+    },
+    {
+      "bytes": 2657,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/complete-body.3",
+      "sha256": "64534a0ba0cc6032fdd6d71d8a43f28c7694b140c8fb4eb720f3d2fbf2160301"
+    },
+    {
+      "bytes": 10642,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/complete-body.bin",
+      "sha256": "9aa20b209b9f72f9e24add6f716817b12f1fa880226d2b810b71bb2544c2e411"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/cpu-verification-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/cpu-verification-2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/cpu-verification-3.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 438,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/expected.json",
+      "sha256": "098301a2dbeacdfdd08bb3e1243f28213670784a2ad9bce0038ad04ca4956c41"
+    },
+    {
+      "bytes": 1731908,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/genesis.bin",
+      "sha256": "05d3a0c9a9eab3a7b7886c97828964d0ae87d2c58210c6a87d7664b41655de37"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 29163,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/host-registry.bin",
+      "sha256": "3b9b74f3b632f369c905b132d61b97d7cdc73bcbd664bf13344ae3d372367947"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 18458,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/manifest.json",
+      "sha256": "3c1e88319c78771429adf33c1a67e877afe1a8e1aff8c1ab168e84b91c1358d3"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/native-expected.bin",
+      "sha256": "e89cbc7a7fc90b8386f8bc0e6b6fe00d32740cc99da960aacc26241503548da8"
+    },
+    {
+      "bytes": 1917,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/pending-arrivals.json",
+      "sha256": "d4406a31e94d43d062c5d89925e7efac4f07a42d32dbd806e376e300d5654b12"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/rust-expected.bin",
+      "sha256": "e89cbc7a7fc90b8386f8bc0e6b6fe00d32740cc99da960aacc26241503548da8"
+    },
+    {
+      "bytes": 706,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/body.json",
+      "sha256": "bfb4b2010fed721c68bf9bcb80438a0d4a06810116482db95e72d00e3446ca2c"
+    },
+    {
+      "bytes": 2657,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/complete-body.0",
+      "sha256": "6804d48ce8c518c2ea8d591e6308e16faf1952dffd74dac7fb3f131b633c2585"
+    },
+    {
+      "bytes": 2657,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/complete-body.bin",
+      "sha256": "6804d48ce8c518c2ea8d591e6308e16faf1952dffd74dac7fb3f131b633c2585"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/cpu-verification-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/cpu-verification-2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/cpu-verification-3.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 431,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/expected.json",
+      "sha256": "ff6c9631a56029ec244746144492801dabf8d22f5f8254004cecf328bd6a4221"
+    },
+    {
+      "bytes": 1731908,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/genesis.bin",
+      "sha256": "05d3a0c9a9eab3a7b7886c97828964d0ae87d2c58210c6a87d7664b41655de37"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 29163,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/host-registry.bin",
+      "sha256": "3b9b74f3b632f369c905b132d61b97d7cdc73bcbd664bf13344ae3d372367947"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 13058,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/manifest.json",
+      "sha256": "e0976350bbdff9229f453505976b4561f71f7a19a99ad82a034fb87cf555f37c"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/native-expected.bin",
+      "sha256": "663c29073e5ae8273dc0270009fdb18cf2852f950cd7b2e95e8cd74a7fd03035"
+    },
+    {
+      "bytes": 660,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/pending-arrivals.json",
+      "sha256": "accd1db2f0dcf7d65f27eccadc23352f76a61c869e6323eb337ecd4921ff09f9"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/rust-expected.bin",
+      "sha256": "663c29073e5ae8273dc0270009fdb18cf2852f950cd7b2e95e8cd74a7fd03035"
+    },
+    {
+      "bytes": 210,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/wallet-verification.json",
+      "sha256": "f63eee74e2ee6c5a41abb297c5404d7ffa2561c57deb36504810ce68b2de2216"
+    },
+    {
+      "bytes": 853831,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0001/wallet.0",
+      "sha256": "85ef7743f640eb98c860a75ba8b0fde7bb2ac6960181d96b96594af5740bcc26"
+    },
+    {
+      "bytes": 793,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/body.json",
+      "sha256": "a520c5b79f542d531ed898bd58ded458ede75eb07bd371e32a7e341b3b013747"
+    },
+    {
+      "bytes": 2698,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/complete-body.0",
+      "sha256": "3f702aebd8e6dc8f898f1b77e43ca9fa72526b6dc68c35cd840920a816861436"
+    },
+    {
+      "bytes": 2698,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/complete-body.bin",
+      "sha256": "3f702aebd8e6dc8f898f1b77e43ca9fa72526b6dc68c35cd840920a816861436"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/cpu-verification-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/cpu-verification-2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/cpu-verification-3.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 433,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/expected.json",
+      "sha256": "fa072bd5cb3c1d01f09ac01698d16b3562c28ed50c26ed4bb3cb3f13e63ca6bd"
+    },
+    {
+      "bytes": 1731908,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/genesis.bin",
+      "sha256": "05d3a0c9a9eab3a7b7886c97828964d0ae87d2c58210c6a87d7664b41655de37"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 29163,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/host-registry.bin",
+      "sha256": "3b9b74f3b632f369c905b132d61b97d7cdc73bcbd664bf13344ae3d372367947"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 13058,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/manifest.json",
+      "sha256": "ae93c6b3c5d8aa834c2624c7fcee11b64ceb7dbb307a7e8d28dda40b90f16bbc"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/native-expected.bin",
+      "sha256": "df82e305b5e5831da2abc8dbc293dccaa93ed4e580ae5590f4d1a6a9c4b67e1d"
+    },
+    {
+      "bytes": 660,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/pending-arrivals.json",
+      "sha256": "fa5c912b039d34fd0c47805ca832e24ae984530c11cf35701deb517fc16a0bd8"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/rust-expected.bin",
+      "sha256": "df82e305b5e5831da2abc8dbc293dccaa93ed4e580ae5590f4d1a6a9c4b67e1d"
+    },
+    {
+      "bytes": 210,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/wallet-verification.json",
+      "sha256": "f63eee74e2ee6c5a41abb297c5404d7ffa2561c57deb36504810ce68b2de2216"
+    },
+    {
+      "bytes": 875611,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0002/wallet.0",
+      "sha256": "75b0dbf2f3b28386400460c36723cf0f5fed349292fe3098e205c1b66442eef8"
+    },
+    {
+      "bytes": 717,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/body.json",
+      "sha256": "5d66a9d6da48dd3f9bc4baa3a10bc459ddd1fb59cd07061a4a819cbed0f4d980"
+    },
+    {
+      "bytes": 2666,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/complete-body.0",
+      "sha256": "926da2aff0f2ef45501d62319f1239f20a2817e40ebc609c40789800844152a3"
+    },
+    {
+      "bytes": 2666,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/complete-body.bin",
+      "sha256": "926da2aff0f2ef45501d62319f1239f20a2817e40ebc609c40789800844152a3"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/cpu-verification-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/cpu-verification-2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/cpu-verification-3.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 431,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/expected.json",
+      "sha256": "26b83d17a1fc412f424dd0de2a35f1d0e71aa626b9e4c50ecca8c473759a54d4"
+    },
+    {
+      "bytes": 1731908,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/genesis.bin",
+      "sha256": "05d3a0c9a9eab3a7b7886c97828964d0ae87d2c58210c6a87d7664b41655de37"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 29163,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/host-registry.bin",
+      "sha256": "3b9b74f3b632f369c905b132d61b97d7cdc73bcbd664bf13344ae3d372367947"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 13058,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/manifest.json",
+      "sha256": "0130792f034b5c1d297ac2b10b535294cc75cc0aaa90672947dc4264b209c840"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/native-expected.bin",
+      "sha256": "c11946408fe298eeef0c8f70b470b9190e63e7735adb259286835e1f06ab7bf8"
+    },
+    {
+      "bytes": 660,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/pending-arrivals.json",
+      "sha256": "1bafc6f7a8fa5dc155c62188415968259a47ada3a939ebb6b26acf18feb9e1cb"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/rust-expected.bin",
+      "sha256": "c11946408fe298eeef0c8f70b470b9190e63e7735adb259286835e1f06ab7bf8"
+    },
+    {
+      "bytes": 210,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/wallet-verification.json",
+      "sha256": "f63eee74e2ee6c5a41abb297c5404d7ffa2561c57deb36504810ce68b2de2216"
+    },
+    {
+      "bytes": 875314,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0003/wallet.0",
+      "sha256": "21cdad35434d1a77d65d2d9b30eb966915b8e55813b581e2b2f301f67c5489c7"
+    },
+    {
+      "bytes": 700,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/body.json",
+      "sha256": "6d05172b1342fe8e98d26dd38a87ae61d4c7717a01105c0384d31ce7f7fa9481"
+    },
+    {
+      "bytes": 2657,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/complete-body.0",
+      "sha256": "64534a0ba0cc6032fdd6d71d8a43f28c7694b140c8fb4eb720f3d2fbf2160301"
+    },
+    {
+      "bytes": 2657,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/complete-body.bin",
+      "sha256": "64534a0ba0cc6032fdd6d71d8a43f28c7694b140c8fb4eb720f3d2fbf2160301"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/cpu-verification-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/cpu-verification-2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/cpu-verification-3.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 437,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/expected.json",
+      "sha256": "410ce72c7f1c61065de6ccd35503e5f0d7b098097c355a22a295d8715dcadd94"
+    },
+    {
+      "bytes": 1731908,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/genesis.bin",
+      "sha256": "05d3a0c9a9eab3a7b7886c97828964d0ae87d2c58210c6a87d7664b41655de37"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 29163,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/host-registry.bin",
+      "sha256": "3b9b74f3b632f369c905b132d61b97d7cdc73bcbd664bf13344ae3d372367947"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 13058,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/manifest.json",
+      "sha256": "62fdf504ff46b06914fa7992bb3f95488064cb629d021324e1c68a4b064f012b"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/native-expected.bin",
+      "sha256": "654e369f013f934dcc45d3cc2bfba362ac23ceaf3ff1eb23198c81d04865ba3f"
+    },
+    {
+      "bytes": 660,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/pending-arrivals.json",
+      "sha256": "9d43fa8ce95a1d7af8587e1f9b6251907bc7d3e9461b8bfd41a7a9d9594974c0"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/rust-expected.bin",
+      "sha256": "654e369f013f934dcc45d3cc2bfba362ac23ceaf3ff1eb23198c81d04865ba3f"
+    },
+    {
+      "bytes": 210,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/wallet-verification.json",
+      "sha256": "f63eee74e2ee6c5a41abb297c5404d7ffa2561c57deb36504810ce68b2de2216"
+    },
+    {
+      "bytes": 853889,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/screen-0004/wallet.0",
+      "sha256": "d475c6b04c7a8c889b8df31846670f3ed6e103440368a95ea08185b9eedf38f0"
+    },
+    {
+      "bytes": 210,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/wallet-verification.json",
+      "sha256": "45e92266e59e943a906d46fbf674d474ef77d68b6767925c5e15ca09b29a6cd0"
+    },
+    {
+      "bytes": 853831,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/wallet.0",
+      "sha256": "85ef7743f640eb98c860a75ba8b0fde7bb2ac6960181d96b96594af5740bcc26"
+    },
+    {
+      "bytes": 875611,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/wallet.1",
+      "sha256": "75b0dbf2f3b28386400460c36723cf0f5fed349292fe3098e205c1b66442eef8"
+    },
+    {
+      "bytes": 875314,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/wallet.2",
+      "sha256": "21cdad35434d1a77d65d2d9b30eb966915b8e55813b581e2b2f301f67c5489c7"
+    },
+    {
+      "bytes": 853889,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/candidate/wallet.3",
+      "sha256": "d475c6b04c7a8c889b8df31846670f3ed6e103440368a95ea08185b9eedf38f0"
+    },
+    {
+      "bytes": 3522560,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/intake/arrivals.sqlite3",
+      "sha256": "77aa2adbfa8bfcb5b4f417feadcc27cca2ff1f50ebc264a893474ec085cddbb5"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/native-journal/.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 888,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/native-journal/HEAD.json",
+      "sha256": "2617d50a9c20f5c84b00b11d971847e2578def7f66834ba23d4f573560431013"
+    },
+    {
+      "bytes": 507,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/native-journal/configuration.json",
+      "sha256": "35f3ecf835dc433897ec0a4ace26f1ffaf967fa2a969589641c1a4dcb05725fe"
+    },
+    {
+      "bytes": 2260466,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/native-journal/records/7c23555af7bd8d3526b6cd3b3a0c678fecd75ae767a2427db8615b8d4f4f009d.json",
+      "sha256": "7c23555af7bd8d3526b6cd3b3a0c678fecd75ae767a2427db8615b8d4f4f009d"
+    },
+    {
+      "bytes": 646,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/qualification.json",
+      "sha256": "0e8b6e0f512b1eb746eca63540e4f09057afa5b83cf7a2deae3dfe44c0cc4c13"
+    },
+    {
+      "bytes": 409,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/receipt-0.json",
+      "sha256": "77ccbc52485cca014cdc4bb2b369e6f728413b612b30eeb7fa73a06f8e45ee5f"
+    },
+    {
+      "bytes": 409,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/receipt-1.json",
+      "sha256": "6ebad0874980a95b0861fbc954f6d0353e0ef78aa04367f9f63f8cb66b416dfa"
+    },
+    {
+      "bytes": 409,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/receipt-2.json",
+      "sha256": "00f38b5815aca5a84344337203c5c7e760c2c81796e0f987744a1a88c7678000"
+    },
+    {
+      "bytes": 409,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/receipt-3.json",
+      "sha256": "400701dbaea8f8b643e14f358c6f29d186cc0287223c49e5ff25875ee0e3e969"
+    },
+    {
+      "bytes": 1576,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1/selection.json",
+      "sha256": "9a8cab9535fd7c05e27e94eee7f78d50dc41502fde17e8a248d518267c81d2d1"
+    },
+    {
+      "bytes": 65,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/preparation-r1.log",
+      "sha256": "d9ba28e8a46d180758539c9e5e4a26a7be03d6da7ae4ab46e736fdd9bc64bef8"
+    },
+    {
+      "bytes": 1593,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/qualification-r1.json",
+      "sha256": "8190118ee7be058bd4237fb00a9c8f72468f34264eaabd41e2b31aef22663552"
+    },
+    {
+      "bytes": 10869,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/qualify-failover-r1.py",
+      "sha256": "bd413cdc0cc4774a52ba44d13ed7b706bdd560e8b2073ece771e3fc8c03d2e1d"
+    },
+    {
+      "bytes": 123,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/report-tests-r1.log",
+      "sha256": "0b9075e7201110dee60c619f7f9f59833477e74057d3891a6aa862e6c411152c"
+    },
+    {
+      "bytes": 16045,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/resource-check-r1.json",
+      "sha256": "76e70b44955f4a1763bc81dc15881597efc0149188fa2fdf9054b0c0181bc384"
+    },
+    {
+      "bytes": 889516,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/source-r1.tar.gz",
+      "sha256": "ce38f2dcc20cf67781c031b2f3c073918a077d323ba2fd77fe3b71adc5b4eb85"
+    },
+    {
+      "bytes": 889512,
+      "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/source-r2.tar.gz",
+      "sha256": "6fe94d37cee32f2887fd14d967c03db814859726eec326277e08ffa1e03c0870"
+    }
+  ],
+  "status": "succeeded",
+  "summary": {
+    "bytes": 89758,
+    "path": "lattica-prover-p3/target/block-v2-active-failover-20261005-a/native-failover-r1/summary.json",
+    "sha256": "5b59a8d9377f09dc7b0be4147434f08ef61ff216514b7d7c628ab880662d1d12"
+  },
+  "surviving_worker_failover_qualified": true,
+  "tests": {
+    "cpu_probe": 20,
+    "explicit_native_supervised_active_stop": 1,
+    "gpu_probe": 23,
+    "ordinary_cpu_process_lifecycle": 6,
+    "shared_controller": 15
+  },
+  "worker_peak_ram_bytes": [
+    16738959360,
+    15400861696
+  ],
+  "worker_processes_exited": true,
+  "worker_replacement_qualified": false,
+  "worker_termination_during_proving_tested": true
+}

@@ -11,8 +11,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 FILES = ["src/gpu.rs", "src/block_v2/gpu_hash/engine.rs",
          "src/block_v2/gpu_hash/engine/lde_execute.rs",
-         "src/block_v2/gpu_hash/engine/opening_reduce.rs"]
-NAMES = ["KERNEL_SRC", "RETAINED_PATH_KERNEL", "KERNEL_SRC", "KERNEL_SRC"]
+         "src/block_v2/gpu_hash/engine/opening_reduce.rs",
+         "src/block_v2/gpu_hash/engine/query_reconstruct.rs"]
+NAMES = ["KERNEL_SRC", "RETAINED_PATH_KERNEL", "KERNEL_SRC", "KERNEL_SRC", "KERNEL_SRC"]
 parts = []
 for file, name in zip(FILES, NAMES):
     source = (ROOT / file).read_text()

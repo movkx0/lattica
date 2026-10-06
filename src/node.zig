@@ -21,6 +21,7 @@ const ffi = @import("ffi.zig");
 const poseidon2 = @import("poseidon2.zig");
 const field = @import("field.zig");
 const protocol = @import("protocol.zig");
+const block_v2 = @import("block_v2.zig");
 const Hash32 = p.Hash32;
 
 /// The circuit's range-check width (`htlc_air`/`joinsplit_air` `BITS`): every range-checked quantity
@@ -778,6 +779,71 @@ pub fn htlcBatchRoot(txs: []const ShieldedHtlcTx) Hash32 {
     return poseidon2.digestBytes(root);
 }
 
+/// Complete public envelopes for the candidate mixed block. Individual wallet
+/// proofs may be removed after aggregation; the one root proof authenticates
+/// every statement, including ciphertext bindings and HTLC preimages.
+pub const BlockV2ResearchTransaction = union(enum) {
+    joinsplit: ShieldedTx,
+    htlc: ShieldedHtlcTx,
+    issuance: ShieldedTx,
+
+    pub fn kind(self: BlockV2ResearchTransaction) block_v2.Kind {
+        return switch (self) {
+            .joinsplit => .join_split,
+            .htlc => .htlc,
+            .issuance => .coinbase,
+        };
+    }
+
+    pub fn common(self: BlockV2ResearchTransaction) ShieldedTx {
+        return switch (self) {
+            .joinsplit, .issuance => |t| t,
+            .htlc => |t| .{ .anchor = t.anchor, .nullifiers = t.nullifiers, .fee = t.fee, .mint = t.mint, .proof = t.proof, .outputs = t.outputs },
+        };
+    }
+
+    /// Matches Rust's AIR field order, which differs from the legacy C-ABI
+    /// public-input byte order. Recompute the binding from the actual envelope.
+    pub fn statement(self: BlockV2ResearchTransaction, fields: *[31]u64) block_v2.Error!usize {
+        const t = self.common();
+        fields[0..4].* = try block_v2.digestFromBytes(&t.anchor);
+        for (t.nullifiers, 0..) |nf, i| fields[4 + i * 4 ..][0..4].* = try block_v2.digestFromBytes(&nf);
+        for (t.outputs, 0..) |o, i| fields[12 + i * 4 ..][0..4].* = try block_v2.digestFromBytes(&o.cm);
+        fields[20] = t.fee;
+        fields[21] = t.mint;
+        const binding = switch (self) {
+            .htlc => |h| h.txBinding(),
+            else => t.txBinding(),
+        };
+        fields[22..26].* = try block_v2.digestFromBytes(&binding);
+        var count: usize = 26;
+        if (self == .htlc) {
+            fields[26] = self.htlc.current_height;
+            const hashlock = self.htlc.redeemHashlock();
+            fields[27..31].* = try block_v2.digestFromBytes(&hashlock);
+            count = 31;
+        }
+        return count;
+    }
+
+    pub fn entry(self: BlockV2ResearchTransaction) block_v2.Error!block_v2.Entry {
+        var fields: [31]u64 = undefined;
+        const count = try self.statement(&fields);
+        const k = self.kind();
+        return .{ .kind = k, .statement_digest = try block_v2.statementDigest(@intFromEnum(k), fields[0..count]) };
+    }
+};
+
+/// Derive the expectation from complete public bodies, never caller-supplied
+/// statement vectors. Context is chosen independently by the host.
+pub fn blockV2ResearchExpected(context: block_v2.Context, transactions: []const BlockV2ResearchTransaction) block_v2.Error!ffi.BlockV2ResearchExpected {
+    if (transactions.len == 0) return error.EmptyBlock;
+    if (transactions.len > block_v2.CAPACITY) return error.TooManyEntries;
+    var entries: [block_v2.CAPACITY]block_v2.Entry = undefined;
+    for (transactions, 0..) |t, i| entries[i] = try t.entry();
+    return .{ .profile_id = context.profile_id, .chain_id = context.chain_id, .root = try block_v2.digestBytes(try block_v2.root(context, entries[0..transactions.len])), .count = @intCast(transactions.len) };
+}
+
 pub const Chain = struct {
     allocator: Allocator,
     tree: tree.MerkleTree,
@@ -812,7 +878,9 @@ pub const Chain = struct {
 
     pub fn init(allocator: Allocator) !Chain {
         var t = try tree.MerkleTree.init(allocator, TREE_DEPTH);
+        errdefer t.deinit();
         var anchors = HashSet.init(allocator);
+        errdefer anchors.deinit();
         try anchors.put(t.root(), {});
         return .{
             .allocator = allocator,
@@ -957,6 +1025,90 @@ pub const Chain = struct {
     /// authorized — so issuance is impossible except through this gated, value-accounted path.
     pub fn applyCoinbase(self: *Chain, t: ShieldedTx, reward: u64) TxError!void {
         return self.applyChecked(t, reward);
+    }
+
+    /// Research-only atomic mixed-block application. The host supplies the
+    /// selected registry/context, current height and per-index authorized mint
+    /// amounts independently of the submitted body. Zero is required for every
+    /// non-issuance transaction. This does not activate a production profile.
+    pub const ResearchCandidate = struct {
+        expected: ffi.BlockV2ResearchExpected,
+        supply: protocol.SupplyState,
+        events: usize,
+    };
+
+    /// Validate the complete candidate against current host state and independent
+    /// issuance policy. This does not verify a proof or change consensus state.
+    pub fn validateBlockV2Research(
+        self: *Chain,
+        context: block_v2.Context,
+        transactions: []const BlockV2ResearchTransaction,
+        at_height: u64,
+        authorized_mint: []const u64,
+    ) TxError!ResearchCandidate {
+        if (production) @compileError("candidate block-v2 validation is research-only");
+        if (transactions.len == 0) return TxError.EmptyBatch;
+        if (transactions.len > block_v2.CAPACITY) return TxError.BatchTooLarge;
+        if (authorized_mint.len != transactions.len) return TxError.IllegalIssuance;
+        if (at_height >= MAX_RANGE_VALUE) return TxError.OversizeHeight;
+        var seen = HashSet.init(self.allocator);
+        defer seen.deinit();
+        var supply = self.supply;
+        var events: usize = 0;
+        for (transactions, authorized_mint) |item, allowed_mint| {
+            const t = item.common();
+            if (item == .issuance) {
+                if (allowed_mint == 0 or t.mint != allowed_mint) return TxError.IllegalIssuance;
+            } else if (t.mint != 0 or allowed_mint != 0) return TxError.IllegalIssuance;
+            try statelessTxChecks(t);
+            if (!self.isKnownAnchor(&t.anchor)) return TxError.UnknownAnchor;
+            if (item == .htlc) {
+                if (item.htlc.current_height >= MAX_RANGE_VALUE) return TxError.OversizeHeight;
+                if (item.htlc.current_height != at_height) return TxError.HeightMismatch;
+                if (item.htlc.redeem_preimage != null) events += 1;
+            }
+            try self.nullifierSeenScan(&seen, &t.nullifiers);
+            supply.apply(.{ .issued = t.mint, .burned = 0, .fee = t.fee }) catch return TxError.ValueOverflow;
+        }
+        const expected = blockV2ResearchExpected(context, transactions) catch return TxError.NonCanonicalField;
+        return .{ .expected = expected, .supply = supply, .events = events };
+    }
+
+    pub fn applyBlockV2Research(
+        self: *Chain,
+        context: block_v2.Context,
+        trusted_registry: []const u8,
+        transactions: []const BlockV2ResearchTransaction,
+        root_proof: []const u8,
+        at_height: u64,
+        authorized_mint: []const u64,
+    ) TxError!void {
+        if (production) @compileError("candidate block-v2 application is research-only; production activation is not qualified");
+        if (transactions.len == 0) return TxError.EmptyBatch;
+        if (transactions.len > block_v2.CAPACITY) return TxError.BatchTooLarge;
+        if (authorized_mint.len != transactions.len) return TxError.IllegalIssuance;
+        if (root_proof.len > ffi.MAX_PROOF_LEN) return TxError.OversizeProof;
+        if (at_height >= MAX_RANGE_VALUE) return TxError.OversizeHeight;
+        const checked = try self.validateBlockV2Research(context, transactions, at_height, authorized_mint);
+        if (!ffi.verifyBlockV2Research(root_proof, checked.expected, trusted_registry)) return TxError.BadAuthProof;
+
+        // Every fallible operation precedes the first consensus-state change.
+        try self.reserveApplyCapacity(transactions.len, checked.events);
+        var owned: std.ArrayList(tx.TransmittedNote) = .empty;
+        defer owned.deinit(self.allocator);
+        errdefer for (owned.items) |o| self.allocator.free(o.ciphertext);
+        owned.ensureUnusedCapacity(self.allocator, transactions.len * M_OUT) catch return TxError.Internal;
+        for (transactions) |item| {
+            const notes = try self.ownOutputCiphertexts(item.common().outputs);
+            owned.appendSliceAssumeCapacity(&notes);
+        }
+        self.supply = checked.supply;
+        for (transactions, 0..) |item, i| {
+            const t = item.common();
+            self.commitNullifiers(&t.nullifiers);
+            self.commitOutputs(owned.items[i * M_OUT ..][0..M_OUT]);
+            if (item == .htlc) self.commitRedeemEvent(item.htlc);
+        }
     }
 
     // ---- shared apply-pipeline helpers ----------------------------------------------------------

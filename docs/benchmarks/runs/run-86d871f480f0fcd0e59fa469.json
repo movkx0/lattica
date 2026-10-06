@@ -1,0 +1,107 @@
+{
+  "campaign_ids": ["block-v2-native-host-qualification-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "native-journal",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-86d871f480f0fcd0e59fa469",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 511,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/native-journal/restart.log",
+      "sha256": "0457edf5e5d0f688175c00adb4879f4bd5180745e3e8d2e3b3419e90418e1b64"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/native-journal/crash-head_directory_synced.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/native-journal/crash-head_file_synced.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/native-journal/crash-head_replaced.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/native-journal/crash-record_directory_synced.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/native-journal/crash-record_file_synced.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/native-journal/writer-0.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/native-journal/writer-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

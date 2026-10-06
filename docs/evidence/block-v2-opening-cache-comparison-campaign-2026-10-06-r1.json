@@ -1,0 +1,134 @@
+{
+  "campaign": {
+    "analysis_policy": "Report every predeclared arm and within-pair changes, including regressions. Keep full pipeline, proving and seal timing separate. Inclusive CPU quotient/opening spans are nonadditive.",
+    "arms": [
+      "baseline",
+      "cache"
+    ],
+    "context_policy": "Both modes import their own complete reduced-context single-GPU roots. The derived context allowances must agree between modes before freezing; all other worker resources remain fixed.",
+    "context_source": {
+      "bytes": 1477916,
+      "path": "/home/access/code/lattica/docs/evidence/block-v2-opening-cache-native-qualification-2026-10-06-r1.json",
+      "sha256": "3a4f2c9d9e70ee31105140d21f2ad184961e7e94216b26def1ffd08e32e77b2f"
+    },
+    "context_source_area": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-denominator-native-20261006-a",
+    "count": 8,
+    "created_utc": "2026-10-06T17:30:50.073275+00:00",
+    "expected_audited_roots": 10,
+    "expected_fresh_recursive_proofs": 80,
+    "expected_reused_proofs": 0,
+    "failure_policy": "Stop on first failed arm, retain all work and failures; no selective replacement.",
+    "fixed_resources": "20.75 GiB RAM, 14.25 GiB spill per GPU worker; Rayon 12/11; managed VRAM 7/6 GiB; owner 1.25 GiB and one thread.",
+    "gates": [
+      "CPU-audited full native root",
+      "exact fixed limits",
+      "zero memory-limit/OOM events",
+      "one native application per journal",
+      "fresh-process replay and two exact retries",
+      "identical complete fixtures",
+      "cache mode matches the pinned workload and worker budget"
+    ],
+    "gpu_uuids": [
+      "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+    ],
+    "performance_comparison": true,
+    "primary_metric": "candidate preparation through native application and controller exit",
+    "repetitions": 5,
+    "schedule": [
+      {
+        "case": "shared",
+        "context_phase": "matched",
+        "cycle": 1,
+        "mode": "baseline",
+        "repetition": 1
+      },
+      {
+        "case": "shared",
+        "context_phase": "matched",
+        "cycle": 1,
+        "mode": "cache",
+        "repetition": 2
+      },
+      {
+        "case": "shared",
+        "context_phase": "matched",
+        "cycle": 2,
+        "mode": "cache",
+        "repetition": 3
+      },
+      {
+        "case": "shared",
+        "context_phase": "matched",
+        "cycle": 2,
+        "mode": "baseline",
+        "repetition": 4
+      },
+      {
+        "case": "shared",
+        "context_phase": "matched",
+        "cycle": 3,
+        "mode": "baseline",
+        "repetition": 5
+      },
+      {
+        "case": "shared",
+        "context_phase": "matched",
+        "cycle": 3,
+        "mode": "cache",
+        "repetition": 6
+      },
+      {
+        "case": "shared",
+        "context_phase": "matched",
+        "cycle": 4,
+        "mode": "cache",
+        "repetition": 7
+      },
+      {
+        "case": "shared",
+        "context_phase": "matched",
+        "cycle": 4,
+        "mode": "baseline",
+        "repetition": 8
+      },
+      {
+        "case": "shared",
+        "context_phase": "matched",
+        "cycle": 5,
+        "mode": "baseline",
+        "repetition": 9
+      },
+      {
+        "case": "shared",
+        "context_phase": "matched",
+        "cycle": 5,
+        "mode": "cache",
+        "repetition": 10
+      }
+    ],
+    "schema": "lattica-opening-cache-native-matched-comparison-v1",
+    "scope": "Five alternating pairs of native count-eight roots on both GPUs. The same six user and two issuance inputs are applied in ten isolated journals. Existing wallet proofs; no sustained transaction campaign.",
+    "secondary_metrics": [
+      "recursive proving interval",
+      "seal start to controller exit",
+      "seal completion to controller exit",
+      "inclusive CPU quotient and GPU opening spans",
+      "avoided upload bytes"
+    ],
+    "timing": "Exact monotonic and UTC seal stamps; pipeline ends at final controller exit, an upper bound on host-ready time."
+  },
+  "created_utc": "2026-10-06T17:30:50.077288+00:00",
+  "matched_comparison_completed": false,
+  "note": "Immutable pre-run declaration; all results will be retained separately.",
+  "pilot_started": false,
+  "runs_completed": 0,
+  "runtime_manifest": {
+    "bytes": 85291,
+    "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-denominator-compare-20261006-a/frozen-r1/manifest.json",
+    "sha256": "d1486306669ba122191e695130c693ea26dba62d82d3b7cff988d9e5832befff"
+  },
+  "schema_version": 1,
+  "speedup_claimed": false,
+  "status": "prepared"
+}

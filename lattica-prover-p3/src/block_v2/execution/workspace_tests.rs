@@ -30,6 +30,27 @@ fn idle_workspace_stays_charged_through_timers_and_pruning() {
 }
 
 #[test]
+fn idle_cache_without_cpu_slots_survives_checkpoint_and_stays_charged() {
+    let temp = Temp::new();
+    let mut d = temp.create();
+    let resident = Resources {
+        threads: 0,
+        ..request()
+    };
+    let mut workspace = d.reserve_workspace(WorkerId(7), resident, 0).unwrap();
+    assert_eq!(d.resource_use().unwrap(), resident);
+    let bytes = d.core.snapshot().unwrap();
+    let parsed = restored(&bytes, &d.store, 2).unwrap();
+    assert_eq!(parsed.workspaces, vec![workspace.lease().unwrap()]);
+    // Recovery retains workspace reservations separately until the runtime
+    // reconciles their carrier. It does not silently revive an active cache.
+    assert_eq!(parsed.workspaces[0].resources(), resident);
+    assert_eq!(parsed.dag.resource_use(), Resources::default());
+    d.release_workspace(&mut workspace, 1).unwrap();
+    assert_eq!(d.resource_use().unwrap(), Resources::default());
+}
+
+#[test]
 fn workspace_and_cold_attempts_share_one_budget_without_worker_aliases() {
     let temp = Temp::new();
     let mut d = temp.create();
@@ -228,13 +249,7 @@ fn workspace_snapshot_rejects_malformed_identity_budgets_and_nesting() {
         changed[offset..offset + 8].copy_from_slice(&u64::to_le_bytes(value));
         malformed_workspace_rejected_before_proofs(&changed);
     }
-    for (offset, value) in [
-        (8, 0),
-        (meta + 8, 0),
-        (meta + 8, 257),
-        (first + 40, 0),
-        (first + 40, 5),
-    ] {
+    for (offset, value) in [(8, 0), (meta + 8, 0), (meta + 8, 257), (first + 40, 5)] {
         let mut changed = bytes.clone();
         changed[offset..offset + 4].copy_from_slice(&u32::to_le_bytes(value));
         malformed_workspace_rejected_before_proofs(&changed);

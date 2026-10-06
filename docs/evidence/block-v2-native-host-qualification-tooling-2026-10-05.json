@@ -1,0 +1,66 @@
+{
+  "captured_utc": "2026-10-05T10:19:00.611423+00:00",
+  "checks": {
+    "cli_help_exit_code": 0,
+    "logs": [
+      {
+        "bytes": 118,
+        "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/qualification-tooling-r1/syntax.log",
+        "sha256": "741b475fc5ddca109660674f36bec0470695a8d1c0220760c835f1de3eb2dfda"
+      },
+      {
+        "bytes": 1300,
+        "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/qualification-tooling-r1/help.log",
+        "sha256": "a93c3e3890b4a3e3973c69c58af49016a701a6b03c2a09b28678601d0f89d05a"
+      }
+    ],
+    "python_syntax_passed": true
+  },
+  "delivered_transactions_measured": false,
+  "durable_complete_body_application_qualified": false,
+  "native_execution_tested": false,
+  "prerequisites": [
+    "Queued native build and interoperability validation passes",
+    "Fresh count-four recursive roots for fixture indices 0-3 and 4-7 each pass independent CPU audit",
+    "Timed proving has stopped; host registry, context, genesis and issuance grant 3:7 supplied independently"
+  ],
+  "production_ready": false,
+  "record_type": "research_native_host_qualification_tooling",
+  "retained_sources": [
+    {
+      "bytes": 18275,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/qualification-tooling-r1/qualify-block-v2-native-host.py",
+      "sha256": "f663e781a8f25baeef64cad3e40575032fe4ba9c8200d7782a10c48e5746a0e6"
+    },
+    {
+      "bytes": 21863,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/qualification-tooling-r1/block_v2_host_store.py",
+      "sha256": "fa1e9dc40cf30bad5428ed0cda81618a12f19f0763d749a0489c1cc87226b448"
+    }
+  ],
+  "schema_version": 1,
+  "scope": "Real CPU verifier only; requires two independently supplied complete-body fixtures and matching fresh recursive roots. Checks native state totals, exact ciphertext retention, fresh-process recovery, reorg and rollback, five process exits, ten ENOSPC/EIO boundaries, and two barrier-synchronized writers. Pending native execution; no stub qualification.",
+  "source_archive": {
+    "bytes": 11188,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/qualification-tooling-r1/source.tar.gz",
+    "sha256": "385cd348dc30c88be4db18af8993597688e072b0dc531f7813800d93bda03842"
+  },
+  "sources": [
+    {
+      "bytes": 18275,
+      "path": "lattica-prover-p3/scripts/qualify-block-v2-native-host.py",
+      "sha256": "f663e781a8f25baeef64cad3e40575032fe4ba9c8200d7782a10c48e5746a0e6"
+    },
+    {
+      "bytes": 21863,
+      "path": "lattica-prover-p3/scripts/block_v2_host_store.py",
+      "sha256": "fa1e9dc40cf30bad5428ed0cda81618a12f19f0763d749a0489c1cc87226b448"
+    }
+  ],
+  "status": "prepared_native_execution_pending",
+  "tooling_manifest": {
+    "bytes": 2765,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/qualification-tooling-r1/manifest.json",
+    "sha256": "acb0d9cbed8478e85de60e117043ac2c8b2f7e0ca4c288d789c956e1194d6acd"
+  }
+}

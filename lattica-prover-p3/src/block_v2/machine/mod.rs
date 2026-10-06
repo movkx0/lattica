@@ -12,6 +12,8 @@ pub mod merkle;
 pub mod program;
 pub mod programs;
 pub mod transcript;
+pub mod typed_finalizer;
+pub mod typed_pairs;
 pub mod typed_programs;
 pub mod usage;
 pub mod verifier;

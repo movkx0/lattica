@@ -1,0 +1,351 @@
+{
+  "campaign": {
+    "bytes": 7296,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/summary.json",
+    "sha256": "bfe787e5f9116edf2c5e972b6e5d74ce45ea101e8ee9a69f9a3731ae204ae408"
+  },
+  "captured_utc": "2026-10-05T11:04:25.138938+00:00",
+  "checks": [
+    {
+      "name": "independent genesis has the expected native state",
+      "passed": true
+    },
+    {
+      "name": "real CPU verifier accepts both complete-body roots",
+      "passed": true
+    },
+    {
+      "name": "native supply/nullifier/output/event totals",
+      "passed": true
+    },
+    {
+      "name": "native supply/nullifier/output/event totals",
+      "passed": true
+    },
+    {
+      "name": "different wallet inputs produce different native state",
+      "passed": true
+    },
+    {
+      "name": "durable commit matches independent native replay",
+      "passed": true
+    },
+    {
+      "name": "journal retains complete ciphertext body and exact root proof",
+      "passed": true
+    },
+    {
+      "name": "fresh process reopens and verifies published branch",
+      "passed": true
+    },
+    {
+      "name": "fresh process restores exact state and head",
+      "passed": true
+    },
+    {
+      "name": "real-proof reorg restores alternate supply/events/notes/nullifiers",
+      "passed": true
+    },
+    {
+      "name": "reorg retains previous immutable branch",
+      "passed": true
+    },
+    {
+      "name": "rollback restores trusted genesis without head-token ABA",
+      "passed": true
+    },
+    {
+      "name": "rollback fences stale writer",
+      "passed": true
+    },
+    {
+      "name": "original real proof can be applied after explicit rollback",
+      "passed": true
+    },
+    {
+      "name": "mismatched-body cannot publish",
+      "passed": true
+    },
+    {
+      "name": "truncated-root cannot publish",
+      "passed": true
+    },
+    {
+      "name": "wrong-height cannot publish",
+      "passed": true
+    },
+    {
+      "name": "child exits at record_file_synced",
+      "passed": true
+    },
+    {
+      "name": "recovery verifies published history at record_file_synced",
+      "passed": true
+    },
+    {
+      "name": "orphan records are not adopted at record_file_synced",
+      "passed": true
+    },
+    {
+      "name": "retry after crash at record_file_synced",
+      "passed": true
+    },
+    {
+      "name": "child exits at record_directory_synced",
+      "passed": true
+    },
+    {
+      "name": "recovery verifies published history at record_directory_synced",
+      "passed": true
+    },
+    {
+      "name": "orphan records are not adopted at record_directory_synced",
+      "passed": true
+    },
+    {
+      "name": "retry after crash at record_directory_synced",
+      "passed": true
+    },
+    {
+      "name": "child exits at head_file_synced",
+      "passed": true
+    },
+    {
+      "name": "recovery verifies published history at head_file_synced",
+      "passed": true
+    },
+    {
+      "name": "orphan records are not adopted at head_file_synced",
+      "passed": true
+    },
+    {
+      "name": "retry after crash at head_file_synced",
+      "passed": true
+    },
+    {
+      "name": "child exits at head_replaced",
+      "passed": true
+    },
+    {
+      "name": "recovery verifies published history at head_replaced",
+      "passed": true
+    },
+    {
+      "name": "child exits at head_directory_synced",
+      "passed": true
+    },
+    {
+      "name": "recovery verifies published history at head_directory_synced",
+      "passed": true
+    },
+    {
+      "name": "storage error recovery 28 at record_file_synced",
+      "passed": true
+    },
+    {
+      "name": "storage retry 28 at record_file_synced",
+      "passed": true
+    },
+    {
+      "name": "storage error recovery 28 at record_directory_synced",
+      "passed": true
+    },
+    {
+      "name": "storage retry 28 at record_directory_synced",
+      "passed": true
+    },
+    {
+      "name": "storage error recovery 28 at head_file_synced",
+      "passed": true
+    },
+    {
+      "name": "storage retry 28 at head_file_synced",
+      "passed": true
+    },
+    {
+      "name": "storage error recovery 28 at head_replaced",
+      "passed": true
+    },
+    {
+      "name": "indeterminate retry is fenced 28 at head_replaced",
+      "passed": true
+    },
+    {
+      "name": "storage error recovery 28 at head_directory_synced",
+      "passed": true
+    },
+    {
+      "name": "indeterminate retry is fenced 28 at head_directory_synced",
+      "passed": true
+    },
+    {
+      "name": "storage error recovery 5 at record_file_synced",
+      "passed": true
+    },
+    {
+      "name": "storage retry 5 at record_file_synced",
+      "passed": true
+    },
+    {
+      "name": "storage error recovery 5 at record_directory_synced",
+      "passed": true
+    },
+    {
+      "name": "storage retry 5 at record_directory_synced",
+      "passed": true
+    },
+    {
+      "name": "storage error recovery 5 at head_file_synced",
+      "passed": true
+    },
+    {
+      "name": "storage retry 5 at head_file_synced",
+      "passed": true
+    },
+    {
+      "name": "storage error recovery 5 at head_replaced",
+      "passed": true
+    },
+    {
+      "name": "indeterminate retry is fenced 5 at head_replaced",
+      "passed": true
+    },
+    {
+      "name": "storage error recovery 5 at head_directory_synced",
+      "passed": true
+    },
+    {
+      "name": "indeterminate retry is fenced 5 at head_directory_synced",
+      "passed": true
+    },
+    {
+      "name": "one competing real-proof writer publishes and one is fenced",
+      "passed": true
+    },
+    {
+      "name": "competing writer recovery matches winner",
+      "passed": true
+    }
+  ],
+  "checks_passed": 55,
+  "commit_including_history_replay_seconds": 0.10850089899031445,
+  "controller": {
+    "bytes": 6254,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/run-after-validation.py",
+    "sha256": "b551364d617dbc069b87690781674d344864068b0fe416fd4452fa6e2e85825c"
+  },
+  "delivered_transactions_measured": false,
+  "durable_complete_body_application_qualified": true,
+  "gpu_worker_termination_with_native_application_tested": false,
+  "injected_storage_error_recovery_qualified": true,
+  "manifest": {
+    "bytes": 10853,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/manifest.json",
+    "sha256": "9c1a2a2199683e6d596725e0e09124c458f530b23786d408ff0574ccf7372a28"
+  },
+  "multi_height_native_history_tested": false,
+  "native_inputs": {
+    "bytes": 18351,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/native-journal/inputs.json",
+    "sha256": "2b7270e8017696d5a3642ae194ef3315f52fc6f2d4a1a8aeb372c4675396d51a"
+  },
+  "native_qualification": {
+    "bytes": 7823,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/native-journal/summary.json",
+    "sha256": "7de7a7302d939998900ef62b14aae7d843cced165b2e2f15eb0cedd6c1998052"
+  },
+  "native_state_after_alternate_block": {
+    "anchor": "6e59593e83a1a7cad1d48bd8e1f4af8eb4a6d9ac17b9edcb2a1dc4c96f6f40ad",
+    "blocks": 1,
+    "event_root": "ab0d63407b8ae41eeee6f56548307c9d52e30ee9f68b4231aea14276a0b28829",
+    "events": 1,
+    "height": 10,
+    "nullifiers": 8,
+    "outputs": 136,
+    "state_root": "f65656e68c1865db460deca754cee40fe5815f0396be6d979fb0593556d75ec8",
+    "supply": {
+      "burned": "0",
+      "fees_paid": "0",
+      "issued": "64007",
+      "shielded_pool": "64007"
+    }
+  },
+  "native_state_after_first_block": {
+    "anchor": "febc3cbfc8c3585006bb043e468877b55e8b9365b19e5577e60beb20f2962a28",
+    "blocks": 1,
+    "event_root": "920bec34b2024500be66065b1634876ef47c4ecedafb0d070b85fdde1eaee1bb",
+    "events": 1,
+    "height": 10,
+    "nullifiers": 8,
+    "outputs": 136,
+    "state_root": "619d9a723c607960f6f9e2a097de70f27268b042f0961899784c81a716e82525",
+    "supply": {
+      "burned": "0",
+      "fees_paid": "0",
+      "issued": "64007",
+      "shielded_pool": "64007"
+    }
+  },
+  "power_loss_recovery_tested": false,
+  "process_exit_recovery_qualified": true,
+  "production_ready": false,
+  "record_type": "research_complete_body_host_qualification",
+  "roots": [
+    {
+      "branch": "first",
+      "complete_body_fixture_manifest": {
+        "bytes": 11793,
+        "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/native-fixture/manifest.json",
+        "sha256": "6cfc6d06dbcb33915f43e798628ac586545ccc22379a5a8c0889d077163a7771"
+      },
+      "count": 4,
+      "cpu_audit_seconds": 0.07292438000149559,
+      "cpu_audited": true,
+      "fresh_recursive_proofs": 4,
+      "proof": {
+        "bytes": 1683948,
+        "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/first-root/001-typed/root-only/node.6.0",
+        "sha256": "b4591e2f6f1496eee551d9ac9cc673c5b5fa66c1698afebba673b8022e05de59"
+      },
+      "root_bytes": 1683948,
+      "summary": {
+        "bytes": 10177,
+        "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/first-root/summary.json",
+        "sha256": "6b7e73b6691e5d5474f281d792c607985b5903af9ea471b2c7b0782750ac5445"
+      },
+      "worker_seconds": 132.7085941969999
+    },
+    {
+      "branch": "alternate",
+      "complete_body_fixture_manifest": {
+        "bytes": 11866,
+        "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/alternate-fixture/manifest.json",
+        "sha256": "6be1469828f2c652cb0b4793a97fc7d2f9de7d5b27422a612c75b188ae9c1457"
+      },
+      "count": 4,
+      "cpu_audit_seconds": 0.08432699499826413,
+      "cpu_audited": true,
+      "fresh_recursive_proofs": 4,
+      "proof": {
+        "bytes": 1683948,
+        "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/alternate-root/001-typed/root-only/node.6.0",
+        "sha256": "ef948501d3e7018e566eb89d35181c69936601730d295ccaa7477d1c2cec0de2"
+      },
+      "root_bytes": 1683948,
+      "summary": {
+        "bytes": 10182,
+        "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/alternate-root/summary.json",
+        "sha256": "9e32391a20faf86d98e3c071595555b1d4f6a32b15742004a570931dd30c54c7"
+      },
+      "worker_seconds": 132.90579289798916
+    }
+  ],
+  "schema_version": 1,
+  "scope": "Two independently CPU-audited complete-body count-four branches at height 10, with real leaf ciphertexts and host-authorized issuance. Native supply, nullifiers, outputs, events and roots restore after restart/reorg. Includes process exits and injected ENOSPC/EIO around journal publication. This is bounded host qualification; no sustained-delivery rate or two-hour pilot has been measured.",
+  "source_validation": {
+    "bytes": 6095,
+    "path": "docs/evidence/block-v2-host-validation-2026-10-05-r4.json",
+    "sha256": "c2b3c4a92080bfb5bff57512355778a3b0f47e3025f90c22cf34fbf2fe7e1510"
+  },
+  "status": "passed"
+}

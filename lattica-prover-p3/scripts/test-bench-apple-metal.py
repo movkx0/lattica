@@ -14,6 +14,44 @@ B = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(B)
 
 class Experiment(unittest.TestCase):
+    def test_fixture_audit_threads_fit_the_host_and_selected_schedule(self):
+        from unittest.mock import patch
+        with patch.object(B.os, "cpu_count", return_value=18):
+            self.assertEqual(B.fixture_check_threads(B.screening_schedule(8)), 8)
+            self.assertEqual(B.fixture_check_threads(B.screening_schedule(18)), 18)
+            self.assertEqual(B.fixture_check_threads(B.schedule()), 18)
+        with patch.object(B.os, "cpu_count", return_value=None):
+            self.assertEqual(B.fixture_check_threads(B.screening_schedule()), 1)
+
+    def test_repeated_screening_rejects_reused_pilots_and_full_matrix(self):
+        from unittest.mock import patch
+        required = ["bench", "--out", "/tmp/unused", "--fixture", "/tmp/unused",
+                    "--linux", "/tmp/unused", "--qualification", "/tmp/unused",
+                    "--screening-repeats", "3"]
+        for options in (["--reuse-screening-from", "/tmp/old.json"],
+                        ["--full-matrix"], ["--reuse-pilots-from", "/tmp/old.json"]):
+            with self.subTest(options=options), patch("sys.argv", required + options), \
+                    patch("sys.stderr", new_callable=io.StringIO) as error, \
+                    patch.object(B, "screening_schedule") as schedule:
+                with self.assertRaises(SystemExit) as result:
+                    B.main()
+                self.assertEqual(result.exception.code, 2)
+                self.assertNotIn("requires Apple Silicon", error.getvalue())
+                schedule.assert_not_called()
+
+    def test_repeated_screening_keeps_fresh_repetitions_and_reverses_order(self):
+        schedule = B.screening_schedule(18, 3)
+        self.assertEqual(len(schedule), 9)
+        levels = [case['level'] for case in B.screening_schedule(18)]
+        for repeat in range(1, 4):
+            cases = schedule[(repeat - 1) * 3:repeat * 3]
+            self.assertEqual([case['level'] for case in cases], levels if repeat % 2 else levels[::-1])
+            self.assertTrue(all(case['repeat'] == repeat and case['phase'] == 'measured' for case in cases))
+        self.assertEqual(collections.Counter(case['level'] for case in schedule), dict.fromkeys(levels, 3))
+        for repeats in [0, 6, True, 1.5]:
+            with self.assertRaises(ValueError):
+                B.screening_schedule(18, repeats)
+
     def test_cli_defaults_to_screening_and_requires_full_matrix_opt_in(self):
         from unittest.mock import patch
         required = ["bench", "--out", "/tmp/unused", "--fixture", "/tmp/unused", "--linux", "/tmp/unused", "--qualification", "/tmp/unused"]

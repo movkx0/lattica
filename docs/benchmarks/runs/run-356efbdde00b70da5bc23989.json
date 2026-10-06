@@ -1,0 +1,112 @@
+{
+  "campaign_ids": ["block-v2-throughput-report-qa-2026-10-05-r14","block-v2-typed-process-2026-10-05","block-v2-typed-recovery-2026-10-05","block-v2-typed-worker-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "report-qa-20261005-typed",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1","P2"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-356efbdde00b70da5bc23989",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 630,
+      "path": "lattica-prover-p3/target/report-qa-20261005-typed/benchmark-report-tests-r1.log",
+      "sha256": "d6dddcb8c22660325c50be4a25f92cb45ec7d7f9ae5b4e08c010ea95f0b51216"
+    },
+    {
+      "bytes": 201,
+      "path": "lattica-prover-p3/target/report-qa-20261005-typed/benchmark-report-tests-r3.log",
+      "sha256": "bf747b0c376fad2b2ba8a360c73f51e4b084cf470c824a4954d20e3a2923ed12"
+    },
+    {
+      "bytes": 1389,
+      "path": "lattica-prover-p3/target/report-qa-20261005-typed/fleet-admission-r1.log",
+      "sha256": "92d5db7383957c35a18f0b55a07aea2d11064c24aeaff6b77b92b4cd659cfaa3"
+    },
+    {
+      "bytes": 554,
+      "path": "lattica-prover-p3/target/report-qa-20261005-typed/process-gpu-trial-r1.log",
+      "sha256": "cbdabce9207ef8f0dcd04df5d5d98074e0f1c044975fe1f82c279ddf65329473"
+    },
+    {
+      "bytes": 55,
+      "path": "lattica-prover-p3/target/report-qa-20261005-typed/process-gpu-trial-r2.log",
+      "sha256": "7d0cc8bf2b715ef7752529258a3d8ff8bcda3ca1d2afba10484fa040d2d34fa5"
+    },
+    {
+      "bytes": 2553,
+      "path": "lattica-prover-p3/target/report-qa-20261005-typed/process-observation-r2.log",
+      "sha256": "b65606b33de482f7a16a4abc02f2f5be645567ee6329e493f715b6837d789e53"
+    },
+    {
+      "bytes": 952,
+      "path": "lattica-prover-p3/target/report-qa-20261005-typed/recovery-controller-r1.log",
+      "sha256": "2bb6636be5105026598d3ee34e0803360f1458568c3c7f7e32fbc0906023450f"
+    },
+    {
+      "bytes": 115,
+      "path": "lattica-prover-p3/target/report-qa-20261005-typed/typed-fleet-tests-r1.log",
+      "sha256": "68434668ac903c7c2aa54b78c0042a68e7c821c5cfb61f7d264da84edaa9aedb"
+    },
+    {
+      "bytes": 973,
+      "path": "lattica-prover-p3/target/report-qa-20261005-typed/typed-report-tests-r1.log",
+      "sha256": "725697d31849cc0dba9b5457e7ca2fbb0f60acd08089e8c00b735cc2fc680491"
+    },
+    {
+      "bytes": 619,
+      "path": "lattica-prover-p3/target/report-qa-20261005-typed/typed-report-tests-r3.log",
+      "sha256": "7dce2a87c7259576e80bf8456fb3f4f9b248c66d35edcbba85427d6ea4a3a4c0"
+    },
+    {
+      "bytes": 110,
+      "path": "lattica-prover-p3/target/report-qa-20261005-typed/typed-report-tests-r4.log",
+      "sha256": "53ec6bfd32b426a23950e2fbbff5aba6e95df6d3ed7324d3edb40dd8151e63f8"
+    },
+    {
+      "bytes": 201,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/test-block-v2-benchmark-report.py.log",
+        "run_id": "run-0ac1ee6563cf372c6dcc1b05"
+      },
+      "path": "lattica-prover-p3/target/report-qa-20261005-typed/benchmark-report-tests-r2.log",
+      "sha256": "5fa75cdc21ce944b40014bbab6ff7cfb1eb456d80f3d253131e318cfb7d6fd70"
+    },
+    {
+      "bytes": 110,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/report-qa-20261005-typed/typed-report-tests-r4.log",
+        "run_id": "run-356efbdde00b70da5bc23989"
+      },
+      "path": "lattica-prover-p3/target/report-qa-20261005-typed/typed-report-tests-r5.log",
+      "sha256": "53ec6bfd32b426a23950e2fbbff5aba6e95df6d3ed7324d3edb40dd8151e63f8"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

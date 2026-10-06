@@ -158,6 +158,10 @@ def validate_run(run):
     for key in ("stages", "proofs", "sources", "limitations"):
         if not isinstance(run.get(key), list):
             raise ValueError("missing run " + key)
+    if run.get("adapter") == "typed-worker" and run.get("status") == "succeeded":
+        recorded = run["configuration"].get("recorded_fresh_proofs")
+        if recorded is not None and (type(recorded) is not int or recorded < 0 or recorded != len(run["proofs"])):
+            raise ValueError("fresh proof timings do not match the successful typed worker result")
     for field in ("user_transactions", "issuance_transactions"):
         n = run["workload"].get(field)
         if n is not None and (type(n) is not int or n < 0):
@@ -215,6 +219,8 @@ def successful(run):
 
 
 def transaction_rate(run):
+    if run.get('configuration', {}).get('coordinator_recovery', {}).get('cached_native_continuation'):
+        return None
     n = run["workload"].get("user_transactions")
     elapsed = run["timing"].get("elapsed_seconds")
     if not successful(run) or n is None or not elapsed or run["measurement_scope"] == "unknown":

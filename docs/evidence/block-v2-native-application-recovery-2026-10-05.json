@@ -1,0 +1,3776 @@
+{
+  "accepted_proofs_by_phase": {
+    "application-recovered-r4": 0,
+    "intake-after-commit-r3": 0,
+    "intake-before-commit-r2": 0,
+    "native-interrupted-r1": 4
+  },
+  "accepted_proofs_regenerated_after_observer_repair": 0,
+  "captured_utc": "2026-10-06T03:09:40.428825+00:00",
+  "cleanup": {
+    "bytes": 6432,
+    "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/cleanup-r1.json",
+    "sha256": "dc1dd2eb622a51a496ba295059403e05a94f0ff04c1d267989601cd67b19d197"
+  },
+  "controller_interruption_stages": 3,
+  "coordinator_ram_limit_bytes": 1342177280,
+  "coordinator_rayon_threads": 1,
+  "elapsed_seconds": 315.18260426001507,
+  "final_owner_peak_ram_bytes": 74682368,
+  "final_recovery": {
+    "controller_seconds": 30.470899975014618,
+    "fresh_native_blocks_applied": 0,
+    "intake_publication_seconds": 3.6985817679960746,
+    "invocation_seconds": 41.70454091299325,
+    "journal_seconds": 3.4758139539917465,
+    "native_receipt_recovery_seconds": 5.502741447999142,
+    "owner_seconds": 24.280494250997435
+  },
+  "final_service_accounting_records": 6,
+  "fresh_process_replay": true,
+  "fresh_recovery_proofs": 0,
+  "identical_root_sha256": "5a444750a5376ce571df26370131016d3d980f20074805a6e08213874407446f",
+  "intake_receipt_publication_interruption_qualified": true,
+  "integrity": {
+    "pinned_runtime_files_checked": 146,
+    "source_archive_files_verified": 113,
+    "status": "passed"
+  },
+  "isolated_issuance_transactions_applied": 1,
+  "isolated_user_transactions_applied": 3,
+  "memory_events_after": {
+    "high": 0,
+    "low": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_group_kill": 0,
+    "oom_kill": 0,
+    "sock_throttled": 0
+  },
+  "memory_events_before": {
+    "high": 0,
+    "low": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_group_kill": 0,
+    "oom_kill": 0,
+    "sock_throttled": 0
+  },
+  "missing_trial_service_accounting_records": 0,
+  "native_application_interruption_qualified": true,
+  "native_blocks_applied": 1,
+  "native_storage_boundaries": [
+    {
+      "application": {
+        "complete_body_sha256": "9aa20b209b9f72f9e24add6f716817b12f1fa880226d2b810b71bb2544c2e411",
+        "count": 4,
+        "durability_confirmed": true,
+        "generation": 1,
+        "head_token": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a",
+        "host_configuration_sha256": "35f3ecf835dc433897ec0a4ace26f1ffaf967fa2a969589641c1a4dcb05725fe",
+        "native_verifier": {
+          "kind": "native-root-replay-v1",
+          "library_path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/liblattica_host_bridge.so",
+          "library_sha256": "f0635e0f62b271715bf6ef16703de2657aae7f6dbf7374e9e2eab619c95eef3c"
+        },
+        "parent_head_token": "8a15b2656c006375187bde8368d41e2f56d8874b85034f27da782159d945c411",
+        "record_type": "native_shared_candidate_application",
+        "root_sha256": "5a444750a5376ce571df26370131016d3d980f20074805a6e08213874407446f",
+        "schema_version": 1,
+        "state": {
+          "anchor": "64e410cc0ae8b1ad637779a239065012c3cf622dbd9ad331e46a0fe8f969561a",
+          "blocks": 1,
+          "event_root": "920bec34b2024500be66065b1634876ef47c4ecedafb0d070b85fdde1eaee1bb",
+          "events": 1,
+          "height": 10,
+          "nullifiers": 8,
+          "outputs": 1416,
+          "state_root": "59b8f6d3c3eef004509da6da22e350007aef5e4368f6283f4b32f8d8e1e2c0d3",
+          "supply": {
+            "burned": "0",
+            "fees_paid": "0",
+            "issued": "704007",
+            "shielded_pool": "704007"
+          }
+        },
+        "tip": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5"
+      },
+      "final_view": {
+        "durability_confirmed": true,
+        "generation": 1,
+        "state": {
+          "anchor": "64e410cc0ae8b1ad637779a239065012c3cf622dbd9ad331e46a0fe8f969561a",
+          "blocks": 1,
+          "event_root": "920bec34b2024500be66065b1634876ef47c4ecedafb0d070b85fdde1eaee1bb",
+          "events": 1,
+          "height": 10,
+          "nullifiers": 8,
+          "outputs": 1416,
+          "state_root": "59b8f6d3c3eef004509da6da22e350007aef5e4368f6283f4b32f8d8e1e2c0d3",
+          "supply": {
+            "burned": "0",
+            "fees_paid": "0",
+            "issued": "704007",
+            "shielded_pool": "704007"
+          }
+        },
+        "tip": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5",
+        "token": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a"
+      },
+      "native_history_length": 1,
+      "returncode": -9,
+      "seconds": 25.658411984011764,
+      "stage": "record_file_synced",
+      "status": "passed",
+      "was_published": false
+    },
+    {
+      "application": {
+        "complete_body_sha256": "9aa20b209b9f72f9e24add6f716817b12f1fa880226d2b810b71bb2544c2e411",
+        "count": 4,
+        "durability_confirmed": true,
+        "generation": 1,
+        "head_token": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a",
+        "host_configuration_sha256": "35f3ecf835dc433897ec0a4ace26f1ffaf967fa2a969589641c1a4dcb05725fe",
+        "native_verifier": {
+          "kind": "native-root-replay-v1",
+          "library_path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/liblattica_host_bridge.so",
+          "library_sha256": "f0635e0f62b271715bf6ef16703de2657aae7f6dbf7374e9e2eab619c95eef3c"
+        },
+        "parent_head_token": "8a15b2656c006375187bde8368d41e2f56d8874b85034f27da782159d945c411",
+        "record_type": "native_shared_candidate_application",
+        "root_sha256": "5a444750a5376ce571df26370131016d3d980f20074805a6e08213874407446f",
+        "schema_version": 1,
+        "state": {
+          "anchor": "64e410cc0ae8b1ad637779a239065012c3cf622dbd9ad331e46a0fe8f969561a",
+          "blocks": 1,
+          "event_root": "920bec34b2024500be66065b1634876ef47c4ecedafb0d070b85fdde1eaee1bb",
+          "events": 1,
+          "height": 10,
+          "nullifiers": 8,
+          "outputs": 1416,
+          "state_root": "59b8f6d3c3eef004509da6da22e350007aef5e4368f6283f4b32f8d8e1e2c0d3",
+          "supply": {
+            "burned": "0",
+            "fees_paid": "0",
+            "issued": "704007",
+            "shielded_pool": "704007"
+          }
+        },
+        "tip": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5"
+      },
+      "final_view": {
+        "durability_confirmed": true,
+        "generation": 1,
+        "state": {
+          "anchor": "64e410cc0ae8b1ad637779a239065012c3cf622dbd9ad331e46a0fe8f969561a",
+          "blocks": 1,
+          "event_root": "920bec34b2024500be66065b1634876ef47c4ecedafb0d070b85fdde1eaee1bb",
+          "events": 1,
+          "height": 10,
+          "nullifiers": 8,
+          "outputs": 1416,
+          "state_root": "59b8f6d3c3eef004509da6da22e350007aef5e4368f6283f4b32f8d8e1e2c0d3",
+          "supply": {
+            "burned": "0",
+            "fees_paid": "0",
+            "issued": "704007",
+            "shielded_pool": "704007"
+          }
+        },
+        "tip": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5",
+        "token": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a"
+      },
+      "native_history_length": 1,
+      "returncode": -9,
+      "seconds": 25.753475945006358,
+      "stage": "record_directory_synced",
+      "status": "passed",
+      "was_published": false
+    },
+    {
+      "application": {
+        "complete_body_sha256": "9aa20b209b9f72f9e24add6f716817b12f1fa880226d2b810b71bb2544c2e411",
+        "count": 4,
+        "durability_confirmed": true,
+        "generation": 1,
+        "head_token": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a",
+        "host_configuration_sha256": "35f3ecf835dc433897ec0a4ace26f1ffaf967fa2a969589641c1a4dcb05725fe",
+        "native_verifier": {
+          "kind": "native-root-replay-v1",
+          "library_path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/liblattica_host_bridge.so",
+          "library_sha256": "f0635e0f62b271715bf6ef16703de2657aae7f6dbf7374e9e2eab619c95eef3c"
+        },
+        "parent_head_token": "8a15b2656c006375187bde8368d41e2f56d8874b85034f27da782159d945c411",
+        "record_type": "native_shared_candidate_application",
+        "root_sha256": "5a444750a5376ce571df26370131016d3d980f20074805a6e08213874407446f",
+        "schema_version": 1,
+        "state": {
+          "anchor": "64e410cc0ae8b1ad637779a239065012c3cf622dbd9ad331e46a0fe8f969561a",
+          "blocks": 1,
+          "event_root": "920bec34b2024500be66065b1634876ef47c4ecedafb0d070b85fdde1eaee1bb",
+          "events": 1,
+          "height": 10,
+          "nullifiers": 8,
+          "outputs": 1416,
+          "state_root": "59b8f6d3c3eef004509da6da22e350007aef5e4368f6283f4b32f8d8e1e2c0d3",
+          "supply": {
+            "burned": "0",
+            "fees_paid": "0",
+            "issued": "704007",
+            "shielded_pool": "704007"
+          }
+        },
+        "tip": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5"
+      },
+      "final_view": {
+        "durability_confirmed": true,
+        "generation": 1,
+        "state": {
+          "anchor": "64e410cc0ae8b1ad637779a239065012c3cf622dbd9ad331e46a0fe8f969561a",
+          "blocks": 1,
+          "event_root": "920bec34b2024500be66065b1634876ef47c4ecedafb0d070b85fdde1eaee1bb",
+          "events": 1,
+          "height": 10,
+          "nullifiers": 8,
+          "outputs": 1416,
+          "state_root": "59b8f6d3c3eef004509da6da22e350007aef5e4368f6283f4b32f8d8e1e2c0d3",
+          "supply": {
+            "burned": "0",
+            "fees_paid": "0",
+            "issued": "704007",
+            "shielded_pool": "704007"
+          }
+        },
+        "tip": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5",
+        "token": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a"
+      },
+      "native_history_length": 1,
+      "returncode": -9,
+      "seconds": 25.661808081989875,
+      "stage": "head_file_synced",
+      "status": "passed",
+      "was_published": false
+    },
+    {
+      "application": {
+        "complete_body_sha256": "9aa20b209b9f72f9e24add6f716817b12f1fa880226d2b810b71bb2544c2e411",
+        "count": 4,
+        "durability_confirmed": true,
+        "generation": 1,
+        "head_token": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a",
+        "host_configuration_sha256": "35f3ecf835dc433897ec0a4ace26f1ffaf967fa2a969589641c1a4dcb05725fe",
+        "native_verifier": {
+          "kind": "native-root-replay-v1",
+          "library_path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/liblattica_host_bridge.so",
+          "library_sha256": "f0635e0f62b271715bf6ef16703de2657aae7f6dbf7374e9e2eab619c95eef3c"
+        },
+        "parent_head_token": "8a15b2656c006375187bde8368d41e2f56d8874b85034f27da782159d945c411",
+        "record_type": "native_shared_candidate_application",
+        "root_sha256": "5a444750a5376ce571df26370131016d3d980f20074805a6e08213874407446f",
+        "schema_version": 1,
+        "state": {
+          "anchor": "64e410cc0ae8b1ad637779a239065012c3cf622dbd9ad331e46a0fe8f969561a",
+          "blocks": 1,
+          "event_root": "920bec34b2024500be66065b1634876ef47c4ecedafb0d070b85fdde1eaee1bb",
+          "events": 1,
+          "height": 10,
+          "nullifiers": 8,
+          "outputs": 1416,
+          "state_root": "59b8f6d3c3eef004509da6da22e350007aef5e4368f6283f4b32f8d8e1e2c0d3",
+          "supply": {
+            "burned": "0",
+            "fees_paid": "0",
+            "issued": "704007",
+            "shielded_pool": "704007"
+          }
+        },
+        "tip": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5"
+      },
+      "final_view": {
+        "durability_confirmed": true,
+        "generation": 1,
+        "state": {
+          "anchor": "64e410cc0ae8b1ad637779a239065012c3cf622dbd9ad331e46a0fe8f969561a",
+          "blocks": 1,
+          "event_root": "920bec34b2024500be66065b1634876ef47c4ecedafb0d070b85fdde1eaee1bb",
+          "events": 1,
+          "height": 10,
+          "nullifiers": 8,
+          "outputs": 1416,
+          "state_root": "59b8f6d3c3eef004509da6da22e350007aef5e4368f6283f4b32f8d8e1e2c0d3",
+          "supply": {
+            "burned": "0",
+            "fees_paid": "0",
+            "issued": "704007",
+            "shielded_pool": "704007"
+          }
+        },
+        "tip": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5",
+        "token": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a"
+      },
+      "native_history_length": 1,
+      "returncode": -9,
+      "seconds": 31.15398794299108,
+      "stage": "head_replaced",
+      "status": "passed",
+      "was_published": true
+    },
+    {
+      "application": {
+        "complete_body_sha256": "9aa20b209b9f72f9e24add6f716817b12f1fa880226d2b810b71bb2544c2e411",
+        "count": 4,
+        "durability_confirmed": true,
+        "generation": 1,
+        "head_token": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a",
+        "host_configuration_sha256": "35f3ecf835dc433897ec0a4ace26f1ffaf967fa2a969589641c1a4dcb05725fe",
+        "native_verifier": {
+          "kind": "native-root-replay-v1",
+          "library_path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/liblattica_host_bridge.so",
+          "library_sha256": "f0635e0f62b271715bf6ef16703de2657aae7f6dbf7374e9e2eab619c95eef3c"
+        },
+        "parent_head_token": "8a15b2656c006375187bde8368d41e2f56d8874b85034f27da782159d945c411",
+        "record_type": "native_shared_candidate_application",
+        "root_sha256": "5a444750a5376ce571df26370131016d3d980f20074805a6e08213874407446f",
+        "schema_version": 1,
+        "state": {
+          "anchor": "64e410cc0ae8b1ad637779a239065012c3cf622dbd9ad331e46a0fe8f969561a",
+          "blocks": 1,
+          "event_root": "920bec34b2024500be66065b1634876ef47c4ecedafb0d070b85fdde1eaee1bb",
+          "events": 1,
+          "height": 10,
+          "nullifiers": 8,
+          "outputs": 1416,
+          "state_root": "59b8f6d3c3eef004509da6da22e350007aef5e4368f6283f4b32f8d8e1e2c0d3",
+          "supply": {
+            "burned": "0",
+            "fees_paid": "0",
+            "issued": "704007",
+            "shielded_pool": "704007"
+          }
+        },
+        "tip": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5"
+      },
+      "final_view": {
+        "durability_confirmed": true,
+        "generation": 1,
+        "state": {
+          "anchor": "64e410cc0ae8b1ad637779a239065012c3cf622dbd9ad331e46a0fe8f969561a",
+          "blocks": 1,
+          "event_root": "920bec34b2024500be66065b1634876ef47c4ecedafb0d070b85fdde1eaee1bb",
+          "events": 1,
+          "height": 10,
+          "nullifiers": 8,
+          "outputs": 1416,
+          "state_root": "59b8f6d3c3eef004509da6da22e350007aef5e4368f6283f4b32f8d8e1e2c0d3",
+          "supply": {
+            "burned": "0",
+            "fees_paid": "0",
+            "issued": "704007",
+            "shielded_pool": "704007"
+          }
+        },
+        "tip": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5",
+        "token": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a"
+      },
+      "native_history_length": 1,
+      "returncode": -9,
+      "seconds": 31.86049872302101,
+      "stage": "head_directory_synced",
+      "status": "passed",
+      "was_published": true
+    }
+  ],
+  "observer_failure_reason": "The observer requested MainPID from a helper that omits that property. A direct systemd query confirmed all processes had exited, then the corrected observer continued the original journal without regenerating proofs.",
+  "original_accepted_proofs_preserved": true,
+  "original_failed_observer": {
+    "bytes": 862,
+    "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/qualification-r1.json",
+    "sha256": "35b28bcd8f14ddd1ff54bdd4b67e5874d0315edb4295f02e63df3547af2e0818"
+  },
+  "original_native_head_preserved": true,
+  "pilot_started": false,
+  "production_ready": false,
+  "record_type": "native_application_receipt_recovery_qualification",
+  "recovery_epochs": [
+    2,
+    3,
+    4
+  ],
+  "recovery_gpu_workers_started": 0,
+  "remaining_limitations": [
+    "Explicit invocation; automatic supervision and worker replacement remain open.",
+    "Startup/dispatch and proof-export interruption, OOM/resource exhaustion, active reorg/stale results, and all-worker failure recovery remain open.",
+    "SIGKILL process crashes were exercised; machine power loss was not tested.",
+    "Matched staged repetitions, larger counts, cold-full-64/post-seal boundaries, full-size CPU proving, repeated Apple results, and the two-hour pilot remain open."
+  ],
+  "retained_observer_failure": "qualification-r1.json",
+  "schema_version": 1,
+  "scope": "Crash qualification using existing wallet proofs, one fresh shared GPU root, and cached continuation. Storage boundary exercises reuse that root in five independent journals. No delivered throughput or matched speedup claim.",
+  "sources": [
+    {
+      "bytes": 23679,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/admission.json",
+      "sha256": "edfe14f5e57d07344dac991b7ee6db18b813c5b25265d02ca652e8e2f5f75744"
+    },
+    {
+      "bytes": 40047,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/config.json",
+      "sha256": "f213ffbc68c3c6a6dd49ca118682977567f06490e8f68e92486c04f36260e430"
+    },
+    {
+      "bytes": 438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/expected.json",
+      "sha256": "098301a2dbeacdfdd08bb3e1243f28213670784a2ad9bce0038ad04ca4956c41"
+    },
+    {
+      "bytes": 25831,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/fleet-plan.json",
+      "sha256": "8102dc6b2ef567e1fcf79382a9d19f85e444e56cd434c33ec64e187f9dac1fb8"
+    },
+    {
+      "bytes": 2264,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/native-host.json",
+      "sha256": "11e8a1ef753836a69e8c714250e97c801f7414d68504297dc0e0b9a4e1b9544a"
+    },
+    {
+      "bytes": 424,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/accounting.json",
+      "sha256": "d8fa51acd7b511a8380bce0afba1473457774bfba8f05385cf72a537bd89331c"
+    },
+    {
+      "bytes": 4847,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/arrival-application.json",
+      "sha256": "eb92eb823086e92c579b5f895b3bc82e5fcb3bfb8bbbba6250fc17b3d3bf4a71"
+    },
+    {
+      "bytes": 119,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/audit.log",
+      "sha256": "22a361a34a3c11981e0eb769d103f014bc633d4a127d9f23dff1a8e009dba57d"
+    },
+    {
+      "bytes": 2388,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/body.json",
+      "sha256": "310dab2c2ec736b196b5d07b14a1917a5488af65e0d05f4aac0e20d3c9b2fd7f"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 853831,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/wallet.0",
+      "sha256": "85ef7743f640eb98c860a75ba8b0fde7bb2ac6960181d96b96594af5740bcc26"
+    },
+    {
+      "bytes": 875611,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/wallet.1",
+      "sha256": "75b0dbf2f3b28386400460c36723cf0f5fed349292fe3098e205c1b66442eef8"
+    },
+    {
+      "bytes": 875314,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/wallet.2",
+      "sha256": "21cdad35434d1a77d65d2d9b30eb966915b8e55813b581e2b2f301f67c5489c7"
+    },
+    {
+      "bytes": 853889,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/input/wallet.3",
+      "sha256": "d475c6b04c7a8c889b8df31846670f3ed6e103440368a95ea08185b9eedf38f0"
+    },
+    {
+      "bytes": 1473,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/native-application.json",
+      "sha256": "64b5d0b55c9ce6613a298c94ffbb241a63c4b1a0748440e8235a1d61d0de80e2"
+    },
+    {
+      "bytes": 722,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/proofs/coordinator-recovery.json",
+      "sha256": "5c0ec6da1a34035579434f57bf599af01f57ecbe67cc3e38e1675fb8bb43129e"
+    },
+    {
+      "bytes": 1123,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/proofs/coordinator.json",
+      "sha256": "29bc034b47e6128cc7f34358e30f8134de9c2255502d5738614a3e0c25c2b6b7"
+    },
+    {
+      "bytes": 2,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/proofs/execution-jobs.json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "bytes": 2230,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/proofs/execution-plan.json",
+      "sha256": "ebe77c8d2509d4770459c087cd9c5b54e28a17e7e5ad122ea827a0ba088edc88"
+    },
+    {
+      "bytes": 1438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/proofs/execution-reused.json",
+      "sha256": "93b2a09a6b4346563d6c41ad88d23f3fc812c51145a7628f6434966077575ad2"
+    },
+    {
+      "bytes": 824,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/proofs/expected.json",
+      "sha256": "42d86464d51b2ba2dc647a9f7abd84eb5892d8afb6b5cf93073ea42b0e256f5c"
+    },
+    {
+      "bytes": 25830,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/proofs/fleet-plan.json",
+      "sha256": "8228514d5f1aae2b7979d779a9d2fd87871b0893cd9a96e02d01b2a666129ff6"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/proofs/node.1.0",
+      "sha256": "87e5dbffdc8e75a762d315f0f047bf476149e965f6add866112543c2592c4320"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/proofs/node.1.1",
+      "sha256": "21f81d3b91b6a9c0a12c0ff07a303775ae001c4a018d64b84b559e4d5f3c4a9f"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/proofs/node.2.0",
+      "sha256": "ac4d733a9b707b355769c866b218e3fdbf20902eb2ff655a72291c4e50037d21"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/proofs/node.6.0",
+      "sha256": "5a444750a5376ce571df26370131016d3d980f20074805a6e08213874407446f"
+    },
+    {
+      "bytes": 200,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/proofs/recovery-state.json",
+      "sha256": "aee862d48b2e9e478030724338089e62576870eaaf45a32aa90cf07284c754a6"
+    },
+    {
+      "bytes": 5883,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/proofs/result.json",
+      "sha256": "cf323fc565587a0124e168289e38f168907c447f0ef2e669d8492f4226e92d52"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/prove.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 19545,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/result.json",
+      "sha256": "9105621d36b3d3789e6485859b915a33652c468774b0cbd99347b387a25fd925"
+    },
+    {
+      "bytes": 2388,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/body.json",
+      "sha256": "310dab2c2ec736b196b5d07b14a1917a5488af65e0d05f4aac0e20d3c9b2fd7f"
+    },
+    {
+      "bytes": 438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/expected.json",
+      "sha256": "098301a2dbeacdfdd08bb3e1243f28213670784a2ad9bce0038ad04ca4956c41"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/root-only/node.6.0",
+      "sha256": "5a444750a5376ce571df26370131016d3d980f20074805a6e08213874407446f"
+    },
+    {
+      "bytes": 17304,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/telemetry.jsonl",
+      "sha256": "320241d8ee3265134d36705cd9ef25e656451de2cfa62b3b521c7a987b8a6412"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/owner/worker.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 303,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/proof-plan.json",
+      "sha256": "ba5254ce3e541fcf64a8bf52a478920f94c5e44ac1c214266fa78136b34746a3"
+    },
+    {
+      "bytes": 68240,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/summary.json",
+      "sha256": "1c2d471c66d1878a3cee2133fffbf528d4dc04dbb8994e7a01d8cb6e35a5d662"
+    },
+    {
+      "bytes": 7776,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/workers/gpu-01/budget.json",
+      "sha256": "f39bfaf4519e20ee2f52aa411ba5e3c95f12c7a3a80e241c6111beebe86180de"
+    },
+    {
+      "bytes": 7754,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4/workers/gpu-02/budget.json",
+      "sha256": "3394724d610fe3094de61641d494e79d801f0cb9a346273a81590f7194d8aebd"
+    },
+    {
+      "bytes": 45,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4-exit.json",
+      "sha256": "1ad36e523bf1af671e515b146c961a766997e1fa743ecad27420326bb3783449"
+    },
+    {
+      "bytes": 1588,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4-process.json",
+      "sha256": "fb05d5d5bb1cec6556f572a8d9ec527f79ae1c5018a9ed40a163a82272a88b8e"
+    },
+    {
+      "bytes": 45,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4-qualification.json",
+      "sha256": "1ad36e523bf1af671e515b146c961a766997e1fa743ecad27420326bb3783449"
+    },
+    {
+      "bytes": 131,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/application-recovered-r4.log",
+      "sha256": "6e9c0290e0797931b02955e7b28345e66e012a0be70878135592fa0af2bb2b29"
+    },
+    {
+      "bytes": 2819,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/capture-cleanup-r1.py",
+      "sha256": "109eac90c9519ae48b58395f42177efb70d48995ca9fa63d44e0440c408739bc"
+    },
+    {
+      "bytes": 6432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/cleanup-r1.json",
+      "sha256": "dc1dd2eb622a51a496ba295059403e05a94f0ff04c1d267989601cd67b19d197"
+    },
+    {
+      "bytes": 1134,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/continuation-manifest-r2.json",
+      "sha256": "05c8fb043b035e59c2cfd771a9078b0e0eccc8e13ef9d787cf3259408fa0c74e"
+    },
+    {
+      "bytes": 1773,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/controller-entry-r1.py",
+      "sha256": "6fbf09ac1116e7f3dbed5d7d008cbc9c9699dc0944c583b7a4402179b1d509bf"
+    },
+    {
+      "bytes": 9761,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/finalize-evidence-r1.py",
+      "sha256": "9d40dbce7d913f3c88009924f8785e00e607cf99f02d09a9cac72adb7cdae28e"
+    },
+    {
+      "bytes": 51,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/freeze-r1.log",
+      "sha256": "f7ec68a6334d9eac9ac61123c2090175162e655d7027233126ada82499f2e5cd"
+    },
+    {
+      "bytes": 2969,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/freeze-r1.py",
+      "sha256": "533dff7f44de6f4cbc6c272208091cf8873aedf6479dd04bd757782604f3a80a"
+    },
+    {
+      "bytes": 11219,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/fresh-process-replay-r1.json",
+      "sha256": "0cab82e52e646ae04d7788aba7f804dbbb6dad788cb3dae5290279258ae09b08"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/fresh-process-replay-r1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 10637,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/apple_benchmark_export.py",
+      "sha256": "6b99e19455b9283568c9c3f270f8276908dea01d0ae173cac4ec755d8c7fb5bc"
+    },
+    {
+      "bytes": 29915,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/bench-apple-metal.py",
+      "sha256": "26d6efa986ec816a65bd815a9d784a253cbfdec0eafea12ab44fbc9c645aefd2"
+    },
+    {
+      "bytes": 1826,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-accounting.py",
+      "sha256": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0"
+    },
+    {
+      "bytes": 1492,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-benchmark-report.py",
+      "sha256": "dfc2ef3965bbcac9b675d1d1bb8a7c1438ca1aa4b017c86d25ee85fb63f2e1f7"
+    },
+    {
+      "bytes": 8073,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-count-phase-analysis.py",
+      "sha256": "29b6d103572b6c10acb59431a811b64f86849c22a6b3bc1b5ca7e6b833f4d3ed"
+    },
+    {
+      "bytes": 22391,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-eight-series.py",
+      "sha256": "31d6f084965ad61ae8ae6faca2f249db01353894c6c5f06c71a40cee6ea16ea1"
+    },
+    {
+      "bytes": 13307,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-fusion-prune.py",
+      "sha256": "81e7b9b4d700b7dacfc3cd858cf54bf6a436b9b81a4712395ef7d2c14db5a06c"
+    },
+    {
+      "bytes": 16287,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-fusion-trial.py",
+      "sha256": "cb36fd551f3442a4eaa534536691cca8a0bda01c1b7dbe7bf7cfccfb87ec8e2c"
+    },
+    {
+      "bytes": 39234,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-gpu-compact-trial.py",
+      "sha256": "f294ce1abda041306bf3b6f4d74df8843495c7cfec571fdb9a5361b6bace7953"
+    },
+    {
+      "bytes": 35245,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-gpu-grouped-trial.py",
+      "sha256": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614"
+    },
+    {
+      "bytes": 28024,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-grouped-trial.py",
+      "sha256": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e"
+    },
+    {
+      "bytes": 5538,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-lookup-mask-model.py",
+      "sha256": "fb4410f6c83037209d736d0f40165113cbad426ccc9c91fa9dadfff308354d80"
+    },
+    {
+      "bytes": 7144,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-multi-gpu-compare.py",
+      "sha256": "d3373d87bd0abc0c44a408f70394ca727343ee21782094876efaba29b515ee12"
+    },
+    {
+      "bytes": 5017,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-multi-gpu-direct-readback-workload.json",
+      "sha256": "48174de0b9de99549e86b39966c416fd3021bf8f69014dd6bffe8fe8c90b3d64"
+    },
+    {
+      "bytes": 33480,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-multi-gpu-run.py",
+      "sha256": "ef22b8365a466de50c5ec1b79b6f55fd6ab0a39cbb883dcc1638f2f2ff335b4f"
+    },
+    {
+      "bytes": 4477,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-multi-gpu-workload.json",
+      "sha256": "4f58c95a83bc721bf309fb237e7838b10053a7c387c9bd27ca42293d88fd6498"
+    },
+    {
+      "bytes": 4258,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-native-arrivals.py",
+      "sha256": "962e53d3527f362a9b16ea85f17adc4987b503e9235df93e4395de6fa1e14ad9"
+    },
+    {
+      "bytes": 9715,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-native-fixture.py",
+      "sha256": "b357fa7430d8eb8a2a0eceb7f928bc00c55c926839705c1c0c8f353b7033a4a2"
+    },
+    {
+      "bytes": 15201,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-padding-trial.py",
+      "sha256": "7035b25465251f2e486ab21431671cf9e96f0b06fe9400a8bf80f607977fe9bf"
+    },
+    {
+      "bytes": 11736,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-query-compare.py",
+      "sha256": "1dadef9a587d1eed3e355ddec6a73b07da4617ec3489bc656203724a9a1abada"
+    },
+    {
+      "bytes": 12276,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-readback-compare.py",
+      "sha256": "9ad3da456c33c7ef4763218c54f70162969abb4d4d1849d2f9bc2674d09a6ac6"
+    },
+    {
+      "bytes": 6586,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-retention-model.py",
+      "sha256": "799ad4fe2693a37ec2acd6c7f2b48d276b7d35319ab4ff1a12f7fe78139198d3"
+    },
+    {
+      "bytes": 42554,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-scalability.py",
+      "sha256": "57d8cf346c5de468cc125c130e075fbc9ab696374236102aa6e8098faa551de9"
+    },
+    {
+      "bytes": 26135,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-scratch-bench.py",
+      "sha256": "8f57c624b4193e00561a19928728295e07e6758ba66178a0b6e8f642bbccccf0"
+    },
+    {
+      "bytes": 28107,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-single-eight-trial.py",
+      "sha256": "919c120d597cb9197b0531949fd5327a9e3a1ff67564b51e3223d022991db302"
+    },
+    {
+      "bytes": 1961,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-throughput-contract.json",
+      "sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f"
+    },
+    {
+      "bytes": 2651,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-throughput-pilot.py",
+      "sha256": "83c07ca43d7985bdc6caa5470a6a33fa240ebdf347e0f260895b10d6dd84477d"
+    },
+    {
+      "bytes": 16013,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-typed-compare.py",
+      "sha256": "d303f3c816a43b66472150072e694e63d60a4989b044d9d61f9264d517490238"
+    },
+    {
+      "bytes": 11027,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-typed-count-analysis.py",
+      "sha256": "4423899c470bac59bcbae0b0db4dc64afb55c43e03f3f573d6c318ff684a2788"
+    },
+    {
+      "bytes": 9623,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-typed-count-matrix.py",
+      "sha256": "c4ef6cb8d9602f138e654ffc2b95aa754c7d1ac9cf42b71e9a26074413123b7a"
+    },
+    {
+      "bytes": 9076,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-typed-cpu-prepare.py",
+      "sha256": "5c01955aa29cedbd69cd87fd7edc1ab3bff0e34dce33e2b626fdd5567f5b8ff7"
+    },
+    {
+      "bytes": 14787,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-typed-fleet-compare.py",
+      "sha256": "be8eb38d57c9609b0c3ee5cc523e81f4a094da7ffe70c4e51f68b81c91ceba49"
+    },
+    {
+      "bytes": 28715,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-typed-gpu-run.py",
+      "sha256": "fd3cc9a9491950dac84a9f7d18c7af75930d5d7b97c0d34f7ab6e28521dd6b42"
+    },
+    {
+      "bytes": 6223,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-typed-interop.py",
+      "sha256": "791724074085bb733b8359c68ce304bb09eb33984bd07ebb0561d5e667f9ee2f"
+    },
+    {
+      "bytes": 23922,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-typed-multi-gpu-run.py",
+      "sha256": "68bd8f0b311769e5a8db235fe050eb036d71e30baeaf6722d27fa80ec00da6ac"
+    },
+    {
+      "bytes": 6289,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-typed-negative-audit.py",
+      "sha256": "8e70f7da4fbdb0bb1dc6ba952f83c129fa25bcb293b3f36f3c428f86231f8f8b"
+    },
+    {
+      "bytes": 50407,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block-v2-typed-shared-gpu-run.py",
+      "sha256": "f5ed9dbd24fb982a5c7f1b9d22b28aba803a3752f7cf59377c555bec21eaaed6"
+    },
+    {
+      "bytes": 28894,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block_v2_host_store.py",
+      "sha256": "8e676cacfccdb5064a5bc4031b8f2ee6d67946436f698a82f2484e195f012ffa"
+    },
+    {
+      "bytes": 26948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block_v2_native_arrivals.py",
+      "sha256": "2f34afb8f600eb6586ad0629b8bbcffc7497130aa3abb2da5343264db40fc418"
+    },
+    {
+      "bytes": 10032,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block_v2_native_delivery.py",
+      "sha256": "394eafdf743d7ebb27c1822215fc7de0275aa6cd4d42b7f3556e6c78c6b0dc08"
+    },
+    {
+      "bytes": 12537,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block_v2_native_shared.py",
+      "sha256": "e89220ba90e36e0610e7cf09d46ff955a93ab78ea294d22de1ac385a90e5e364"
+    },
+    {
+      "bytes": 12432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block_v2_pending_candidate.py",
+      "sha256": "e38e153d1db12fa60caf452e485888361f15e78bb32f425e95707234030cd9f3"
+    },
+    {
+      "bytes": 901,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block_v2_report_export.py",
+      "sha256": "f378382cf1a54bbc05a4dc15528cbadb4a146ae3488fabe72048ecfc7d5c7018"
+    },
+    {
+      "bytes": 15591,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block_v2_resources.py",
+      "sha256": "0eb3c6f674851a6e61ab4ba0a884f5a78c12c518069b3564b8a6bbef2e77d6eb"
+    },
+    {
+      "bytes": 11975,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/block_v2_throughput.py",
+      "sha256": "0be9d7008ee64810ebb56769f029bddc43ee38dc08d966def1bacdbbbd2e4d0e"
+    },
+    {
+      "bytes": 2646,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/build-apple-metal.py",
+      "sha256": "6f0cabe07fe870427795bc8f2529bf1677ab17198529311e3803f85bf5f6486c"
+    },
+    {
+      "bytes": 2937,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/build-block-v2-host.py",
+      "sha256": "f85b0303ebe9de49dc187e3785dac234e0df1b91a5e028f84041719f25396c67"
+    },
+    {
+      "bytes": 1773,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/controller-entry-r1.py",
+      "sha256": "6fbf09ac1116e7f3dbed5d7d008cbc9c9699dc0944c583b7a4402179b1d509bf"
+    },
+    {
+      "bytes": 1379,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/export-apple-benchmarks.py",
+      "sha256": "0f87abe3e5649d8f28ba521ccc85d60fee4f153105ce8ddf1a87fa4ea6e33842"
+    },
+    {
+      "bytes": 3983,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/generate-metal-kernels.py",
+      "sha256": "1056db237802414d8a78533d509c73946b3bb0d2f896fbcfeb96c6c12b5c24c8"
+    },
+    {
+      "bytes": 4263,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/prepare-apple-benchmark-package.py",
+      "sha256": "044f32f40be32c5d3d3e9b08383584a30a6096d9963ae5da58d4269f9923020d"
+    },
+    {
+      "bytes": 9570,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/prepare-block-v2-gpu-default-bench.py",
+      "sha256": "84b056864519c7aa14a795314b68d83d005cf83ae0291b108a0390f83a528d1f"
+    },
+    {
+      "bytes": 6607,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/prepare-block-v2-max-threads.py",
+      "sha256": "80dc876ff27b844f67b78d3ada6868adec3bfbf82253f90bbac085696ac47078"
+    },
+    {
+      "bytes": 13154,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/prepare-block-v2-pipeline-bench.py",
+      "sha256": "d43936a71a87fbe83b469c31f7ac4de90f0c3947b43a4f7687c98a22731b0b55"
+    },
+    {
+      "bytes": 13762,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/qualify-block-v2-native-delivery.py",
+      "sha256": "bd4c51f65f2e3cc5268b2b5dee658234999bf17a4805bffc44db5e3c8238c772"
+    },
+    {
+      "bytes": 18275,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/qualify-block-v2-native-host.py",
+      "sha256": "f663e781a8f25baeef64cad3e40575032fe4ba9c8200d7782a10c48e5746a0e6"
+    },
+    {
+      "bytes": 6836,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/qualify-block-v2-typed-execution.py",
+      "sha256": "6b661c02b0e16e3f506a39a07a88f09ba4ce69384b26ecdf0a246a666e3efc61"
+    },
+    {
+      "bytes": 10981,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/qualify-block-v2-typed-recovery.py",
+      "sha256": "e4ce4ee76b73de422616e5bd4b84f549afe3c5821246b5262cf9f62a9e99a2cb"
+    },
+    {
+      "bytes": 26583,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/report-apple-metal.py",
+      "sha256": "60d131627669e6ca94308ab007c7038c18da49014488a058a5917d0e11e51536"
+    },
+    {
+      "bytes": 15471,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/report-block-v2-fusion.py",
+      "sha256": "07a8a626880ddf41e64e1936070ca8d5cd4be059c566a20200ac041bf65ade7e"
+    },
+    {
+      "bytes": 7048,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/report-block-v2-gpu-default-bench.py",
+      "sha256": "3baf3bf7c8218c6a4e065a8a3e9f91b43a168916f604f9925439511fb9d47922"
+    },
+    {
+      "bytes": 4847,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/report-retained-pilot.py",
+      "sha256": "c0e4d314bb2ce9aaed8b7d8ed2834e2db1377917c83158b5713ef756e58bfb11"
+    },
+    {
+      "bytes": 12280,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/run-apple-benchmark-package.py",
+      "sha256": "8992aad8dbade339c0a843753c9047f36cf9f2ca25f47c661faff5de556dce66"
+    },
+    {
+      "bytes": 7498,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-apple-benchmark-export.py",
+      "sha256": "e9355ac244a706aa73ea60fad6e08c25705a7a029b3288251d7da412592809bd"
+    },
+    {
+      "bytes": 6853,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-apple-benchmark-package.py",
+      "sha256": "8596a50f4dbe73c13e49f58281d2b9e75e9b62e9d04796a3857fed958e269519"
+    },
+    {
+      "bytes": 12979,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-bench-apple-metal.py",
+      "sha256": "9294dee7ba1633c29f65d82b48d26a556ee2101c5394cd5b6b81ce0afce669eb"
+    },
+    {
+      "bytes": 14763,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-benchmark-report.py",
+      "sha256": "559b9a765d782fe41dae0f350178def7f62b629be771a4ec653bc5fe89a2d740"
+    },
+    {
+      "bytes": 3362,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-count-phase-analysis.py",
+      "sha256": "c0e0b9df253c0c6d1822fb442f6a1bec8812e8dfd325c551f23673df6dd04627"
+    },
+    {
+      "bytes": 6895,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-eight-series-lifecycle-harness.py",
+      "sha256": "cdcaea7b1f6cacebe60e3111bb3ca160f0a10e493a7dd0807d13b5844e47e239"
+    },
+    {
+      "bytes": 16326,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-eight-series-lifecycle.py",
+      "sha256": "d58864bdcd7d7ad23ebeedb261318229066ba5a74aa4b7b611dfa4075a7709d3"
+    },
+    {
+      "bytes": 18161,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-eight-series.py",
+      "sha256": "7cb7429b5b7456dd2e83368188c69358557b289f0d955c933dc12d1b3bd0ad71"
+    },
+    {
+      "bytes": 14835,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-fusion-prune.py",
+      "sha256": "3a65d15216eabe4439ba3f768e14bb33204261894f2cd308256e26dbd5f52b09"
+    },
+    {
+      "bytes": 13449,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-fusion-trial.py",
+      "sha256": "9731157ec1c710906274b0864c66a6de553c368b6312b868aeada34472adee54"
+    },
+    {
+      "bytes": 6541,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-gpu-compact-entrypoints.py",
+      "sha256": "24d8b08e48786317745c9dcb4ab28ecbfd3a1a8007317c86b8616945f39bb054"
+    },
+    {
+      "bytes": 9707,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-gpu-compact-lifecycle.py",
+      "sha256": "c2527109e6a8cbc4c0557509ebb99dcfbd5fb6178a29cb906586c9f05b79671d"
+    },
+    {
+      "bytes": 41340,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-gpu-compact-trial.py",
+      "sha256": "9a4d9aea241b78652fa66373bcd5c1de7e7c94ca452487ca3a73fe4ebc4c86b6"
+    },
+    {
+      "bytes": 4998,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-gpu-grouped-entrypoints.py",
+      "sha256": "173e91ce661ce518eee5551910f89f0f59c32e02d5d8af5c813dc7df90bb06bf"
+    },
+    {
+      "bytes": 9662,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-gpu-grouped-lifecycle.py",
+      "sha256": "acb76c504fc8ddf5bd2166c38aaa682502a8c962ed68dfc19f5c60d2a1d8781f"
+    },
+    {
+      "bytes": 33404,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-gpu-grouped-trial.py",
+      "sha256": "fa4925581af4093acaed5d97d9e02e62144919185ae449c2271ff6bfd25b9827"
+    },
+    {
+      "bytes": 9912,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-grouped-lifecycle.py",
+      "sha256": "9fd78f199a40c09f153ae216e7d024b49006235e782e1e40c0d218b847c2ad6e"
+    },
+    {
+      "bytes": 27088,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-grouped-trial.py",
+      "sha256": "c958089527d5a7becc3bd83a07cb10fd82960dbcabd44a313a27e89e3e2be52c"
+    },
+    {
+      "bytes": 19137,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-host-store.py",
+      "sha256": "931db9c62abc0d9526cd6b90cefe28a067649542b5c522841c0dbf5e73310585"
+    },
+    {
+      "bytes": 3515,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-lookup-mask-model.py",
+      "sha256": "88b6591b51995ecec2dc6497d845ff504276e75644d60ce9eabb7f89c3c32521"
+    },
+    {
+      "bytes": 20188,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-multi-gpu.py",
+      "sha256": "feb92e87ad6197354d8ed1ad38dfdac64574f4d7fe6830138d2ac6d128bda424"
+    },
+    {
+      "bytes": 20138,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-native-arrivals.py",
+      "sha256": "cef46e6a8d42aa2e69109ebfd63ce3e9e0ad7cc42f96dc3092827a32590d2d63"
+    },
+    {
+      "bytes": 7447,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-native-host.py",
+      "sha256": "871d0a0c82918abf76c6d5fe917470c95db737e1e0f00fe1be7f00e31882485d"
+    },
+    {
+      "bytes": 3110,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-native-preflight.py",
+      "sha256": "299ebddf37673b6b1a3078eac24405197ae33e14c053f6f2dd8323a99c714c38"
+    },
+    {
+      "bytes": 11045,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-native-shared.py",
+      "sha256": "700622ee781e4e6c98c5892b88b9b96fc9c3e5d16ce276bb20c0c49c52b1fffb"
+    },
+    {
+      "bytes": 7692,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-padding-trial.py",
+      "sha256": "8ce6e10681525ea8c30d84f16fe504c5cfc573ee5151212ff70dd3e6548a82ae"
+    },
+    {
+      "bytes": 3953,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-pending-candidate.py",
+      "sha256": "537a7cd9795db9300d4a6ca0836abb40c7ffa15e1bf5d204f76d67325cfe66f3"
+    },
+    {
+      "bytes": 9163,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-pipeline-bench.py",
+      "sha256": "8a87ffd3b0b0a273cbe93e2fb890a49a471a8fafb6c77f66cdf45b11188d096c"
+    },
+    {
+      "bytes": 5449,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-query-compare.py",
+      "sha256": "8ee1ffa3f4e3ce1c6e72138b189237e1bf7f06ec7a45e9c553b8f7d2354582ec"
+    },
+    {
+      "bytes": 8270,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-query-report.py",
+      "sha256": "4fd14e84a651f5d4841df329179242a7105bbe32a8f30b49b66728fbee35ffc1"
+    },
+    {
+      "bytes": 14302,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-readback-compare.py",
+      "sha256": "ec8e8784cf539dd178a2205542eab9ac73caefd338f7007ba8ec35319b43b8f9"
+    },
+    {
+      "bytes": 2300,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-retention-model.py",
+      "sha256": "8d1c75fd82889b7fdec720a5d640500f8e589f058c246e24829e396f0b232789"
+    },
+    {
+      "bytes": 34912,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-scalability.py",
+      "sha256": "c2aca406d4ec307c9b83951338d736ae504acda3969ab835aca6a4f69e7ce486"
+    },
+    {
+      "bytes": 8790,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-scratch-bench.py",
+      "sha256": "c7ce37cd76c9d4e94233d799ad0b4e93373e12e0d1f2edda5d3aa240ad587235"
+    },
+    {
+      "bytes": 9932,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-single-eight-lifecycle.py",
+      "sha256": "85f33a352794e9462e9996d32d9c1659b6f86bd688373fa9ac64d7445feefe6b"
+    },
+    {
+      "bytes": 27788,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-single-eight-trial.py",
+      "sha256": "c9ec6ee26e6dd268e3416e386a46e5a7fc79aa822dde109512ff55260e9ce26f"
+    },
+    {
+      "bytes": 18604,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-throughput.py",
+      "sha256": "e3831558e47e5b0f818c2a283b6447dddbca682c64cf25d99fa713071b84e4a2"
+    },
+    {
+      "bytes": 5775,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-typed-compare.py",
+      "sha256": "8d79570e251373888c1aa33d73a321df13ca5fd9bf1b32e6969e4a9b9c7425f3"
+    },
+    {
+      "bytes": 7512,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-typed-comparison-report.py",
+      "sha256": "35d5f027511e55de4e9c099a0eb703c3315b955e076ddb7207fcef20db9810be"
+    },
+    {
+      "bytes": 7342,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-typed-count-analysis.py",
+      "sha256": "1322e6152443f278d946bbff1b56ccd24e09cf943de627b0ad17d1a1fe078156"
+    },
+    {
+      "bytes": 4680,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-typed-count-matrix.py",
+      "sha256": "13466b20761effd4804be39c2eb28fb3f775622a3d974a1469c950dd97ca9a4c"
+    },
+    {
+      "bytes": 6796,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-typed-cpu-prepare.py",
+      "sha256": "ee3b33937377686d95df14a671e4651ae8f222519c4571b6a9eade24b034d51c"
+    },
+    {
+      "bytes": 10147,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-typed-fleet-compare.py",
+      "sha256": "3d238008d5e131f261e460abc2ced9a4d0514f4277ba2a0bba4930f5a25d61f1"
+    },
+    {
+      "bytes": 7802,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-typed-fleet-report.py",
+      "sha256": "b9190ec0b1a738bef46cc286d738f6502750f02afeea24a33f538486fa478dec"
+    },
+    {
+      "bytes": 22286,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-typed-gpu-run.py",
+      "sha256": "971ab48d787cce9e2dc6fee138e98a5d8bf06f5ff2f340eacfc83cc8bbd31a3b"
+    },
+    {
+      "bytes": 26446,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-typed-multi-gpu-run.py",
+      "sha256": "5619fd7e2b4dc5d0edaaeb17d03afac390cbbbf7dd54be442ec82315e23f43a8"
+    },
+    {
+      "bytes": 6451,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-typed-recovery.py",
+      "sha256": "b736e65f5a9d9b5fe9c9188fd2115f7e3aeee68a039b640773fd8b59d4050f08"
+    },
+    {
+      "bytes": 44435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-typed-report.py",
+      "sha256": "39075a3eb5549c1f7aed7eb42b84e7c3ffc3bf75ce9e3d03149169a5821c208b"
+    },
+    {
+      "bytes": 21064,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-block-v2-typed-shared-gpu-run.py",
+      "sha256": "49237341b8528975de5e536ead6096849d7b201d067091fd075a80360200158a"
+    },
+    {
+      "bytes": 7368,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-metal-backend.py",
+      "sha256": "b01d8b32f02822c579b2c8e17b456e98202dc43d088238d6b98a7e3ebed72b1a"
+    },
+    {
+      "bytes": 10034,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/controllers/test-report-block-v2-fusion.py",
+      "sha256": "f095d638775588279592e28e1cdd0087d015b708b99a5ce5fe490db754178e56"
+    },
+    {
+      "bytes": 3995920,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/cpu-block-v2-paired-probe",
+      "sha256": "305adf5bb1f62e1fd0725c618f2ba3e4d17977179a6c69862fa0fe3c5e6b0be2"
+    },
+    {
+      "bytes": 1731908,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/genesis.bin",
+      "sha256": "05d3a0c9a9eab3a7b7886c97828964d0ae87d2c58210c6a87d7664b41655de37"
+    },
+    {
+      "bytes": 5816496,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/gpu-block-v2-paired-probe",
+      "sha256": "5bae8c2888d5c47d19b0f768ca65e4a44f91c8e861238be6014c86c95ca948ec"
+    },
+    {
+      "bytes": 1594,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/host-inputs.json",
+      "sha256": "029cc37942174c5aedd712c40f6cd7b4476146c14ae764b7f5a7487b85c45af7"
+    },
+    {
+      "bytes": 29163,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/host-registry.bin",
+      "sha256": "3b9b74f3b632f369c905b132d61b97d7cdc73bcbd664bf13344ae3d372367947"
+    },
+    {
+      "bytes": 16853720,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/liblattica_host_bridge.so",
+      "sha256": "f0635e0f62b271715bf6ef16703de2657aae7f6dbf7374e9e2eab619c95eef3c"
+    },
+    {
+      "bytes": 64561,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/manifest.json",
+      "sha256": "4028492a0beb6b1ae2aeee24698a53cc559c8b9e81ee0afbd40e898d830a8fef"
+    },
+    {
+      "bytes": 11916,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/qualify-application-r1.py",
+      "sha256": "041807a786e1c1ffe2364f5c799ad379817459d027d7f5a8821ce6ebf4148b53"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/registry-fixture/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/registry-fixture/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/registry-fixture/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/registry-fixture/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/registry-fixture/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/registry-fixture/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/registry-fixture/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/registry-fixture/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/registry-fixture/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/registry-fixture/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/registry-fixture/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/registry-fixture/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/frozen-r1/registry-fixture/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 117,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/host-store-tests-r1.log",
+      "sha256": "001c5f0e529a081ac254fdf4eeb8d1d719a1083983267ce4a408484607b97d50"
+    },
+    {
+      "bytes": 23679,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/admission.json",
+      "sha256": "0d2a26529629c4a241b1acaaeb78cb92d407ea0495db168acd6e5d6684951d4b"
+    },
+    {
+      "bytes": 40031,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/config.json",
+      "sha256": "70377bd8b9498d1746612b54e65da7731ad789d4441996b47bed1e67bb4ee7a5"
+    },
+    {
+      "bytes": 438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/expected.json",
+      "sha256": "098301a2dbeacdfdd08bb3e1243f28213670784a2ad9bce0038ad04ca4956c41"
+    },
+    {
+      "bytes": 305,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/fault-injection.json",
+      "sha256": "9a1cf2972f0c24df19052aad941bfad94a5035aa381c605205076eb8b585c64f"
+    },
+    {
+      "bytes": 25820,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/fleet-plan.json",
+      "sha256": "aba4118212d1dba31a3fe4b2e527ee7ebf2a7a5885218a60b01da6c9b64a2eab"
+    },
+    {
+      "bytes": 2264,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/native-host.json",
+      "sha256": "11e8a1ef753836a69e8c714250e97c801f7414d68504297dc0e0b9a4e1b9544a"
+    },
+    {
+      "bytes": 424,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/accounting.json",
+      "sha256": "f0a507b7a22f6d40f46b8b0dbff1ea6cbf1673627d716b309cd7266ac8be1fd6"
+    },
+    {
+      "bytes": 119,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/audit.log",
+      "sha256": "22a361a34a3c11981e0eb769d103f014bc633d4a127d9f23dff1a8e009dba57d"
+    },
+    {
+      "bytes": 2388,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/body.json",
+      "sha256": "310dab2c2ec736b196b5d07b14a1917a5488af65e0d05f4aac0e20d3c9b2fd7f"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 853831,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/wallet.0",
+      "sha256": "85ef7743f640eb98c860a75ba8b0fde7bb2ac6960181d96b96594af5740bcc26"
+    },
+    {
+      "bytes": 875611,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/wallet.1",
+      "sha256": "75b0dbf2f3b28386400460c36723cf0f5fed349292fe3098e205c1b66442eef8"
+    },
+    {
+      "bytes": 875314,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/wallet.2",
+      "sha256": "21cdad35434d1a77d65d2d9b30eb966915b8e55813b581e2b2f301f67c5489c7"
+    },
+    {
+      "bytes": 853889,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/input/wallet.3",
+      "sha256": "d475c6b04c7a8c889b8df31846670f3ed6e103440368a95ea08185b9eedf38f0"
+    },
+    {
+      "bytes": 1473,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/native-application.json",
+      "sha256": "64b5d0b55c9ce6613a298c94ffbb241a63c4b1a0748440e8235a1d61d0de80e2"
+    },
+    {
+      "bytes": 723,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/proofs/coordinator-recovery.json",
+      "sha256": "34b099ee51b7532e671c102211205575661cc6f9d21307f913c6f95156afa1bf"
+    },
+    {
+      "bytes": 1125,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/proofs/coordinator.json",
+      "sha256": "9a97847baf10bf1428bb3f248d5a36569f777ac276cd9058f1d2c462808906ba"
+    },
+    {
+      "bytes": 2,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/proofs/execution-jobs.json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "bytes": 2230,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/proofs/execution-plan.json",
+      "sha256": "ebe77c8d2509d4770459c087cd9c5b54e28a17e7e5ad122ea827a0ba088edc88"
+    },
+    {
+      "bytes": 1438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/proofs/execution-reused.json",
+      "sha256": "93b2a09a6b4346563d6c41ad88d23f3fc812c51145a7628f6434966077575ad2"
+    },
+    {
+      "bytes": 824,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/proofs/expected.json",
+      "sha256": "42d86464d51b2ba2dc647a9f7abd84eb5892d8afb6b5cf93073ea42b0e256f5c"
+    },
+    {
+      "bytes": 25819,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/proofs/fleet-plan.json",
+      "sha256": "9948b030a75692cc1c1c39cb019aa7372e951aacc31e0fb86fd6520ec7ac6f46"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/proofs/node.1.0",
+      "sha256": "87e5dbffdc8e75a762d315f0f047bf476149e965f6add866112543c2592c4320"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/proofs/node.1.1",
+      "sha256": "21f81d3b91b6a9c0a12c0ff07a303775ae001c4a018d64b84b559e4d5f3c4a9f"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/proofs/node.2.0",
+      "sha256": "ac4d733a9b707b355769c866b218e3fdbf20902eb2ff655a72291c4e50037d21"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/proofs/node.6.0",
+      "sha256": "5a444750a5376ce571df26370131016d3d980f20074805a6e08213874407446f"
+    },
+    {
+      "bytes": 200,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/proofs/recovery-state.json",
+      "sha256": "c143645c9f84d8e543b2110b79ff7776d0ccc714b44f02d72de36f490c71bb4c"
+    },
+    {
+      "bytes": 5884,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/proofs/result.json",
+      "sha256": "9697c1dcad55bae0e7856f48ca675ce24ac13805c50d9f0e4d81d9d522f6e97e"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/prove.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 2388,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/body.json",
+      "sha256": "310dab2c2ec736b196b5d07b14a1917a5488af65e0d05f4aac0e20d3c9b2fd7f"
+    },
+    {
+      "bytes": 438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/expected.json",
+      "sha256": "098301a2dbeacdfdd08bb3e1243f28213670784a2ad9bce0038ad04ca4956c41"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/root-only/node.6.0",
+      "sha256": "5a444750a5376ce571df26370131016d3d980f20074805a6e08213874407446f"
+    },
+    {
+      "bytes": 16953,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/telemetry.jsonl",
+      "sha256": "b7521a5b88d0894897e980cc508237eb9d9e7481faa436ba5c8fa90d0001c1b0"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/owner/worker.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 303,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/proof-plan.json",
+      "sha256": "ba5254ce3e541fcf64a8bf52a478920f94c5e44ac1c214266fa78136b34746a3"
+    },
+    {
+      "bytes": 45869,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/summary.json",
+      "sha256": "aba462e4463673bcf96365e6d11fe9487c493eb08678367406149030c5112415"
+    },
+    {
+      "bytes": 7776,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/workers/gpu-01/budget.json",
+      "sha256": "7b3943ded378165df0476726263ef7261f242b279999a6426861cafadf121f85"
+    },
+    {
+      "bytes": 7754,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3/workers/gpu-02/budget.json",
+      "sha256": "21fcffb1e9c4b7bc0c94463ef3e594595551480abc3e05cdc2ad9cd250c84ca3"
+    },
+    {
+      "bytes": 45,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3-exit.json",
+      "sha256": "b0c29147105d1213e8510149010c3dfb1c5618f22c57e601ba655118c9ae57a3"
+    },
+    {
+      "bytes": 1587,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3-process.json",
+      "sha256": "61fbfc66423b4f51b881a401cad29903dd5eb23f326588cebb3ba4be75d81202"
+    },
+    {
+      "bytes": 570,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3-qualification.json",
+      "sha256": "1ebd8dca69b77d8dd4f398fa1b07cd6ce2d4ce7809cace254c66b3928d92712a"
+    },
+    {
+      "bytes": 813,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-after-commit-r3.log",
+      "sha256": "df2fd14423134cddb2c6d1f8015e1ec7aa4adec318678ff6daa7101d4943697a"
+    },
+    {
+      "bytes": 23679,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/admission.json",
+      "sha256": "73a8318bd25c5d740fa58faf988cfc4238149c9e5e687255ab741baafee2ad2c"
+    },
+    {
+      "bytes": 40491,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/config.json",
+      "sha256": "d7925562074bdf440bd45971ec2ee3c70e2967ec002c20ae2160643672aaa3eb"
+    },
+    {
+      "bytes": 438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/expected.json",
+      "sha256": "098301a2dbeacdfdd08bb3e1243f28213670784a2ad9bce0038ad04ca4956c41"
+    },
+    {
+      "bytes": 306,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/fault-injection.json",
+      "sha256": "ebf4d742baa725a2b7de02120ebf801ece107e8d61f75c2672d84c695db5d621"
+    },
+    {
+      "bytes": 25824,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/fleet-plan.json",
+      "sha256": "c2473ac3d86a87ee52ebd74cfe2740134517f7e27e798140e46723eeadfb0f33"
+    },
+    {
+      "bytes": 2264,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/native-host.json",
+      "sha256": "11e8a1ef753836a69e8c714250e97c801f7414d68504297dc0e0b9a4e1b9544a"
+    },
+    {
+      "bytes": 426,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/accounting.json",
+      "sha256": "4e9bf2dd86a6fd032a61cf55679109e0914a035048bd479e8757122421aafbba"
+    },
+    {
+      "bytes": 119,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/audit.log",
+      "sha256": "22a361a34a3c11981e0eb769d103f014bc633d4a127d9f23dff1a8e009dba57d"
+    },
+    {
+      "bytes": 2388,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/body.json",
+      "sha256": "310dab2c2ec736b196b5d07b14a1917a5488af65e0d05f4aac0e20d3c9b2fd7f"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 853831,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/wallet.0",
+      "sha256": "85ef7743f640eb98c860a75ba8b0fde7bb2ac6960181d96b96594af5740bcc26"
+    },
+    {
+      "bytes": 875611,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/wallet.1",
+      "sha256": "75b0dbf2f3b28386400460c36723cf0f5fed349292fe3098e205c1b66442eef8"
+    },
+    {
+      "bytes": 875314,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/wallet.2",
+      "sha256": "21cdad35434d1a77d65d2d9b30eb966915b8e55813b581e2b2f301f67c5489c7"
+    },
+    {
+      "bytes": 853889,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/input/wallet.3",
+      "sha256": "d475c6b04c7a8c889b8df31846670f3ed6e103440368a95ea08185b9eedf38f0"
+    },
+    {
+      "bytes": 1473,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/native-application.json",
+      "sha256": "64b5d0b55c9ce6613a298c94ffbb241a63c4b1a0748440e8235a1d61d0de80e2"
+    },
+    {
+      "bytes": 747,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/proofs/coordinator-recovery.json",
+      "sha256": "a83ce5558f451a0af8886b4b3ac09b2d6ca98591d9e407562ef85a001f6b14bf"
+    },
+    {
+      "bytes": 1124,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/proofs/coordinator.json",
+      "sha256": "9ac11d0a442e8432477a262b22b5271289760c60c3f21865a5f7271874bdc99a"
+    },
+    {
+      "bytes": 2,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/proofs/execution-jobs.json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "bytes": 2230,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/proofs/execution-plan.json",
+      "sha256": "ebe77c8d2509d4770459c087cd9c5b54e28a17e7e5ad122ea827a0ba088edc88"
+    },
+    {
+      "bytes": 1438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/proofs/execution-reused.json",
+      "sha256": "93b2a09a6b4346563d6c41ad88d23f3fc812c51145a7628f6434966077575ad2"
+    },
+    {
+      "bytes": 824,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/proofs/expected.json",
+      "sha256": "42d86464d51b2ba2dc647a9f7abd84eb5892d8afb6b5cf93073ea42b0e256f5c"
+    },
+    {
+      "bytes": 25823,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/proofs/fleet-plan.json",
+      "sha256": "68dbd451d417c2a6406e6f4896e889f394ee364387eadf9680af49db58ed35aa"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/proofs/node.1.0",
+      "sha256": "87e5dbffdc8e75a762d315f0f047bf476149e965f6add866112543c2592c4320"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/proofs/node.1.1",
+      "sha256": "21f81d3b91b6a9c0a12c0ff07a303775ae001c4a018d64b84b559e4d5f3c4a9f"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/proofs/node.2.0",
+      "sha256": "ac4d733a9b707b355769c866b218e3fdbf20902eb2ff655a72291c4e50037d21"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/proofs/node.6.0",
+      "sha256": "5a444750a5376ce571df26370131016d3d980f20074805a6e08213874407446f"
+    },
+    {
+      "bytes": 200,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/proofs/recovery-state.json",
+      "sha256": "aa16ec7143c5d85490752ecc446064214d95a653c14c72a2e46ca6c74cfd4a3f"
+    },
+    {
+      "bytes": 5914,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/proofs/result.json",
+      "sha256": "3296af20c86236b9deba21f6f27401289c96824410273cbd879b4cea9323241d"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/prove.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 2388,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/body.json",
+      "sha256": "310dab2c2ec736b196b5d07b14a1917a5488af65e0d05f4aac0e20d3c9b2fd7f"
+    },
+    {
+      "bytes": 438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/expected.json",
+      "sha256": "098301a2dbeacdfdd08bb3e1243f28213670784a2ad9bce0038ad04ca4956c41"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/root-only/node.6.0",
+      "sha256": "5a444750a5376ce571df26370131016d3d980f20074805a6e08213874407446f"
+    },
+    {
+      "bytes": 17303,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/telemetry.jsonl",
+      "sha256": "7fcc09f7a7a1adaf12cf3315637aa32af5de2c58b05a5ce245106f827eba914c"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/owner/worker.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 303,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/proof-plan.json",
+      "sha256": "ba5254ce3e541fcf64a8bf52a478920f94c5e44ac1c214266fa78136b34746a3"
+    },
+    {
+      "bytes": 46329,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/summary.json",
+      "sha256": "8c28112692ff0568db990c62da3d7f50fec86d21be9309516e01369547a4fc86"
+    },
+    {
+      "bytes": 7776,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/workers/gpu-01/budget.json",
+      "sha256": "b9abd880cfaf02b8bf03ebf970510a90ff8db371060aa1fc8be6c6e0dfaf8fe1"
+    },
+    {
+      "bytes": 7754,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2/workers/gpu-02/budget.json",
+      "sha256": "0b581ed0cf74ee51f5ee657cee68d0446ff3fdb85a23c5147a7e80455a64c16c"
+    },
+    {
+      "bytes": 44,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2-exit.json",
+      "sha256": "6e6d5830f96b1ad88f23142498e42d5cf7de5c878a74587ff5a4ba689fa86e25"
+    },
+    {
+      "bytes": 1586,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2-process.json",
+      "sha256": "d86c9eb7cdb0e1560e984be81626e8faa4707b17eb59498462616d4ec4e284c3"
+    },
+    {
+      "bytes": 570,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2-qualification.json",
+      "sha256": "ff7355715c00cd232663e73234c715bea6cddf4a65d329999e13de3b54d84597"
+    },
+    {
+      "bytes": 813,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/intake-before-commit-r2.log",
+      "sha256": "df2fd14423134cddb2c6d1f8015e1ec7aa4adec318678ff6daa7101d4943697a"
+    },
+    {
+      "bytes": 123,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-arrivals-tests-r1.log",
+      "sha256": "36955aabd503e34c408fe19b085f027bc7aef89c49d4a50cc4f87538bc013974"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_directory_synced/child.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 66,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_directory_synced/fault.json",
+      "sha256": "a3f02223fe30fef318b7d490cc460a672d0a697412c8393fcd37831aea905664"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_directory_synced/journal/.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 893,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_directory_synced/journal/HEAD.json",
+      "sha256": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a"
+    },
+    {
+      "bytes": 507,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_directory_synced/journal/configuration.json",
+      "sha256": "35f3ecf835dc433897ec0a4ace26f1ffaf967fa2a969589641c1a4dcb05725fe"
+    },
+    {
+      "bytes": 2260471,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_directory_synced/journal/records/15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5.json",
+      "sha256": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5"
+    },
+    {
+      "bytes": 2061,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_directory_synced/qualification.json",
+      "sha256": "661e0d78cbc4e5e4b575df0633b4dbc84ed3146327ebe11ad38bc9f76ec69f1e"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_file_synced/child.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 61,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_file_synced/fault.json",
+      "sha256": "4229dca8d78760e28f056ea6641f70c6f8c352f760dc48ca02ea1b6918f75970"
+    },
+    {
+      "bytes": 893,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_file_synced/journal/.head-feerd_65",
+      "sha256": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_file_synced/journal/.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 893,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_file_synced/journal/HEAD.json",
+      "sha256": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a"
+    },
+    {
+      "bytes": 507,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_file_synced/journal/configuration.json",
+      "sha256": "35f3ecf835dc433897ec0a4ace26f1ffaf967fa2a969589641c1a4dcb05725fe"
+    },
+    {
+      "bytes": 2260471,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_file_synced/journal/records/15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5.json",
+      "sha256": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5"
+    },
+    {
+      "bytes": 2058,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_file_synced/qualification.json",
+      "sha256": "83696829f06f90f56190028cc236d49648ad33e8321db5fa5fa42240b0d3de4b"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_replaced/child.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 58,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_replaced/fault.json",
+      "sha256": "2be9890009f32b1df7644aa144f23cc7f97e3753afc8b6fec299d501ed60be73"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_replaced/journal/.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 893,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_replaced/journal/HEAD.json",
+      "sha256": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a"
+    },
+    {
+      "bytes": 507,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_replaced/journal/configuration.json",
+      "sha256": "35f3ecf835dc433897ec0a4ace26f1ffaf967fa2a969589641c1a4dcb05725fe"
+    },
+    {
+      "bytes": 2260471,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_replaced/journal/records/15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5.json",
+      "sha256": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5"
+    },
+    {
+      "bytes": 2053,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-head_replaced/qualification.json",
+      "sha256": "48d5107cd943fede4edc08ca5db79f90483796348d866a82b8678edd4dbcae6c"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-record_directory_synced/child.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 68,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-record_directory_synced/fault.json",
+      "sha256": "09e687d80e4afc1304a2841f640fcdc5a84494b45bb238f4b88314d360a50c68"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-record_directory_synced/journal/.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 893,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-record_directory_synced/journal/HEAD.json",
+      "sha256": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a"
+    },
+    {
+      "bytes": 507,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-record_directory_synced/journal/configuration.json",
+      "sha256": "35f3ecf835dc433897ec0a4ace26f1ffaf967fa2a969589641c1a4dcb05725fe"
+    },
+    {
+      "bytes": 2260471,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-record_directory_synced/journal/records/15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5.json",
+      "sha256": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5"
+    },
+    {
+      "bytes": 2065,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-record_directory_synced/qualification.json",
+      "sha256": "528181b1d5ad7c4fd1d46bd948d0d04d4415230f4b1b37b8c319c11aa268f54a"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-record_file_synced/child.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 63,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-record_file_synced/fault.json",
+      "sha256": "e4006a43abd2846f562028f2780aa868ae67bb4d32419416665ad2bd4b4ce1bb"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-record_file_synced/journal/.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 893,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-record_file_synced/journal/HEAD.json",
+      "sha256": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a"
+    },
+    {
+      "bytes": 507,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-record_file_synced/journal/configuration.json",
+      "sha256": "35f3ecf835dc433897ec0a4ace26f1ffaf967fa2a969589641c1a4dcb05725fe"
+    },
+    {
+      "bytes": 2260471,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-record_file_synced/journal/records/.record-s7ad1xgb",
+      "sha256": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5"
+    },
+    {
+      "bytes": 2260471,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-record_file_synced/journal/records/15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5.json",
+      "sha256": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5"
+    },
+    {
+      "bytes": 2060,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-boundary-record_file_synced/qualification.json",
+      "sha256": "4e535ef428949552dd37134d7b232b251245713da5f53d105df8a2dc2a61982c"
+    },
+    {
+      "bytes": 23624,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/admission.json",
+      "sha256": "9404830d9420f835e17770017735bdcf4fba20da866c6bffe130168926d4d4b2"
+    },
+    {
+      "bytes": 73079,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/config.json",
+      "sha256": "1ab090b8c10ee92fce844cc8502814cd50d649c9e6ae9c8bf0ca4c83f9f1dcbb"
+    },
+    {
+      "bytes": 438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/expected.json",
+      "sha256": "098301a2dbeacdfdd08bb3e1243f28213670784a2ad9bce0038ad04ca4956c41"
+    },
+    {
+      "bytes": 314,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/fault-injection.json",
+      "sha256": "31cba83a1a8bc547c9a965fc912277d98f199d49ea4239a57e5b8d40d211c9ae"
+    },
+    {
+      "bytes": 26347,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/fleet-plan.json",
+      "sha256": "931e0827e03f3a34d94a2820a555f7c7ee68e9a45beb8816d264c5e3759e7d5c"
+    },
+    {
+      "bytes": 2264,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/native-host.json",
+      "sha256": "11e8a1ef753836a69e8c714250e97c801f7414d68504297dc0e0b9a4e1b9544a"
+    },
+    {
+      "bytes": 430,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/accounting.json",
+      "sha256": "9b9505fa23b03540f2b86caa960103560aa6b5445dd002eeda9f73d794fec2ef"
+    },
+    {
+      "bytes": 119,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/audit.log",
+      "sha256": "22a361a34a3c11981e0eb769d103f014bc633d4a127d9f23dff1a8e009dba57d"
+    },
+    {
+      "bytes": 2388,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/body.json",
+      "sha256": "310dab2c2ec736b196b5d07b14a1917a5488af65e0d05f4aac0e20d3c9b2fd7f"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 853831,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/wallet.0",
+      "sha256": "85ef7743f640eb98c860a75ba8b0fde7bb2ac6960181d96b96594af5740bcc26"
+    },
+    {
+      "bytes": 875611,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/wallet.1",
+      "sha256": "75b0dbf2f3b28386400460c36723cf0f5fed349292fe3098e205c1b66442eef8"
+    },
+    {
+      "bytes": 875314,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/wallet.2",
+      "sha256": "21cdad35434d1a77d65d2d9b30eb966915b8e55813b581e2b2f301f67c5489c7"
+    },
+    {
+      "bytes": 853889,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/input/wallet.3",
+      "sha256": "d475c6b04c7a8c889b8df31846670f3ed6e103440368a95ea08185b9eedf38f0"
+    },
+    {
+      "bytes": 1124,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/coordinator.json",
+      "sha256": "939b957e7395fe6cb760410457c73bd86ff96424824f336fd977bd33ec728dba"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/artifacts/.owner.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/artifacts/n-25aba2fc800fd1488922218cb54e6fe91ac94617c7b3b4e7ea415e72225eaba4.proof",
+      "sha256": "87e5dbffdc8e75a762d315f0f047bf476149e965f6add866112543c2592c4320"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/artifacts/n-487e3fe99391a5840886302fe2b9577076ec8409d1dadd37fc5b0b1b0713a792.proof",
+      "sha256": "21f81d3b91b6a9c0a12c0ff07a303775ae001c4a018d64b84b559e4d5f3c4a9f"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/artifacts/n-554a81af8a32087afc4178619e5132a3a70955b1e09eea47aee1be70b09854c4.proof",
+      "sha256": "ac4d733a9b707b355769c866b218e3fdbf20902eb2ff655a72291c4e50037d21"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/artifacts/n-ad3fdd9019f8e62f9e1c5ec4619748d5e6b86e00458621b82ee4a172d91e74a6.proof",
+      "sha256": "5a444750a5376ce571df26370131016d3d980f20074805a6e08213874407446f"
+    },
+    {
+      "bytes": 853831,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/artifacts/w-41fb5ecf089fd85432a1432da12f24163f99799409f70a04dfe8263375c7e987.proof",
+      "sha256": "85ef7743f640eb98c860a75ba8b0fde7bb2ac6960181d96b96594af5740bcc26"
+    },
+    {
+      "bytes": 853889,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/artifacts/w-6c2babb53ed3664436a149422b1970fc4d969e2d763f42ff07fc7951d9d37cbb.proof",
+      "sha256": "d475c6b04c7a8c889b8df31846670f3ed6e103440368a95ea08185b9eedf38f0"
+    },
+    {
+      "bytes": 875314,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/artifacts/w-bbd14a26cb8e24b15e69dc9465477d4bff0e993f24a052c21c9bf4d749bf6627.proof",
+      "sha256": "21cdad35434d1a77d65d2d9b30eb966915b8e55813b581e2b2f301f67c5489c7"
+    },
+    {
+      "bytes": 875611,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/artifacts/w-cb08182eabb2c59c8e29dd7133a36b79140f09fa5dd8850d9d1420e6ac48ce5a.proof",
+      "sha256": "75b0dbf2f3b28386400460c36723cf0f5fed349292fe3098e205c1b66442eef8"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/journal/.owner.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 919,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/journal/state",
+      "sha256": "7069e4cbe8569f7484859b5298cfa99b96ee2c971b582c97d4485d3ff8bc0241"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/.owner.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 180,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/92b819fc5ba51b6392d61e7ba9cac74766f7aa5f3c481a31505301077684df75.intent",
+      "sha256": "ec7005431b870a17ee41f272db8af514eb0c19234b5d85c78f56b6f9e2d1be37"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/92b819fc5ba51b6392d61e7ba9cac74766f7aa5f3c481a31505301077684df75.reserved",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/92b819fc5ba51b6392d61e7ba9cac74766f7aa5f3c481a31505301077684df75.revoked",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/92b819fc5ba51b6392d61e7ba9cac74766f7aa5f3c481a31505301077684df75.started",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/92b819fc5ba51b6392d61e7ba9cac74766f7aa5f3c481a31505301077684df75.worker",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 180,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/a00df76c0e8ed3ca26c9f301b390003937fead236b128b44d99f0376d3336fcf.intent",
+      "sha256": "d3019b43929e904a70b2e0b298497f31766855162cef78b015377c748586100f"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/a00df76c0e8ed3ca26c9f301b390003937fead236b128b44d99f0376d3336fcf.reserved",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/a00df76c0e8ed3ca26c9f301b390003937fead236b128b44d99f0376d3336fcf.revoked",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/a00df76c0e8ed3ca26c9f301b390003937fead236b128b44d99f0376d3336fcf.started",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/a00df76c0e8ed3ca26c9f301b390003937fead236b128b44d99f0376d3336fcf.worker",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 180,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/d6b0e983b1f7f3b630b61f5b3794fb957e8cf5c98ff078462b4d633ba9cb05db.intent",
+      "sha256": "fc1554135be5ba06edbf2353841cf5fba713c64d74ff81ae5e4fcb8e419c7da2"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/d6b0e983b1f7f3b630b61f5b3794fb957e8cf5c98ff078462b4d633ba9cb05db.reserved",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/d6b0e983b1f7f3b630b61f5b3794fb957e8cf5c98ff078462b4d633ba9cb05db.revoked",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/d6b0e983b1f7f3b630b61f5b3794fb957e8cf5c98ff078462b4d633ba9cb05db.started",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/d6b0e983b1f7f3b630b61f5b3794fb957e8cf5c98ff078462b4d633ba9cb05db.worker",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 180,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/d79b10780ad57855a6afb5c493bdc83ae68750d381223c30796ebdedd78e4fac.intent",
+      "sha256": "41698638da012a439acac904a21926de121a3db71a86a49c40054d5658d8b6db"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/d79b10780ad57855a6afb5c493bdc83ae68750d381223c30796ebdedd78e4fac.reserved",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/d79b10780ad57855a6afb5c493bdc83ae68750d381223c30796ebdedd78e4fac.revoked",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/d79b10780ad57855a6afb5c493bdc83ae68750d381223c30796ebdedd78e4fac.started",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/launches/d79b10780ad57855a6afb5c493bdc83ae68750d381223c30796ebdedd78e4fac.worker",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1729719,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/node.1.0.d79b10780ad57855a6afb5c493bdc83ae68750d381223c30796ebdedd78e4fac.request",
+      "sha256": "83e78b0fc76cf37fa5004ab72ece5b622b0aef630b4d9d3e52fc72422498eeef"
+    },
+    {
+      "bytes": 1729480,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/node.1.1.d6b0e983b1f7f3b630b61f5b3794fb957e8cf5c98ff078462b4d633ba9cb05db.request",
+      "sha256": "a308ae1da02928b1866710d67fd5cfda330d1689add07d35080ddf19e839b2e4"
+    },
+    {
+      "bytes": 3368309,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/node.2.0.a00df76c0e8ed3ca26c9f301b390003937fead236b128b44d99f0376d3336fcf.request",
+      "sha256": "b0c657905b2bc6caff40e108a749704e53c8eef1fec1c71f88fe9382adde7019"
+    },
+    {
+      "bytes": 1684256,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/node.6.0.92b819fc5ba51b6392d61e7ba9cac74766f7aa5f3c481a31505301077684df75.request",
+      "sha256": "b6162f75ae12b6353c917b736810d079a730cfd471fef90ed846e2e99b92cc0a"
+    },
+    {
+      "bytes": 412,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/worker-0-exit.json",
+      "sha256": "f0611d41ff5ad978b076cc2ef27668d82b1d613fa6bfc7a56968d7a6ea0ef1eb"
+    },
+    {
+      "bytes": 10164,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/worker-0-start.json",
+      "sha256": "c77f4691c9cacdba66d66fa1ffb5938d5b9c8b0fff24718d01d5df2878997024"
+    },
+    {
+      "bytes": 296,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/worker-0.session",
+      "sha256": "867551b86fdc2422463dac8145df92657bc96ee6baba27bbadf6c59ae36b1c21"
+    },
+    {
+      "bytes": 412,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/worker-1-exit.json",
+      "sha256": "19640137cbc1d5df116772a7eed18337eab42e2d882fd2b97cc1f4b6ff4f33c4"
+    },
+    {
+      "bytes": 10144,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/worker-1-start.json",
+      "sha256": "6ff8e305025abae3d580b7ec5b475e8f39b2ee904a4bff616a7e6ce9e4ebc4d9"
+    },
+    {
+      "bytes": 296,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution/worker-1.session",
+      "sha256": "82979b1c2b5d6814a373fad2e768a1ec615332f2289e6111271b60bae6fd9b88"
+    },
+    {
+      "bytes": 1913,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution-jobs.json",
+      "sha256": "60fa79bf0c0e7c5131f0ab20afd6fd6ff5304d34399274e583654c3cac8c98fc"
+    },
+    {
+      "bytes": 2230,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution-plan.json",
+      "sha256": "ebe77c8d2509d4770459c087cd9c5b54e28a17e7e5ad122ea827a0ba088edc88"
+    },
+    {
+      "bytes": 2,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/execution-reused.json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "bytes": 824,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/expected.json",
+      "sha256": "42d86464d51b2ba2dc647a9f7abd84eb5892d8afb6b5cf93073ea42b0e256f5c"
+    },
+    {
+      "bytes": 26346,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/fleet-plan.json",
+      "sha256": "c76b503b1c1f8c3e9ea89d7eee9ce6fa0d8b4669565fc7e2487475a07bb5f8f9"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/node.1.0",
+      "sha256": "87e5dbffdc8e75a762d315f0f047bf476149e965f6add866112543c2592c4320"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/node.1.1",
+      "sha256": "21f81d3b91b6a9c0a12c0ff07a303775ae001c4a018d64b84b559e4d5f3c4a9f"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/node.2.0",
+      "sha256": "ac4d733a9b707b355769c866b218e3fdbf20902eb2ff655a72291c4e50037d21"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/node.6.0",
+      "sha256": "5a444750a5376ce571df26370131016d3d980f20074805a6e08213874407446f"
+    },
+    {
+      "bytes": 200,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/recovery-state.json",
+      "sha256": "54d988021d772edc2c368b943fd8cd35fb5d896b341ed99488f96e5c089fda27"
+    },
+    {
+      "bytes": 4560,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/proofs/result.json",
+      "sha256": "f9ff8ff08a351b56057a7add6c55198683ad9fb8fd57d39581365762dd20db15"
+    },
+    {
+      "bytes": 2517,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/prove.log",
+      "sha256": "0e7ffc51d914395147a4af2bfdaf48a32ec02c723625a0a34acd2e4da7945c01"
+    },
+    {
+      "bytes": 2388,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/body.json",
+      "sha256": "310dab2c2ec736b196b5d07b14a1917a5488af65e0d05f4aac0e20d3c9b2fd7f"
+    },
+    {
+      "bytes": 438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/expected.json",
+      "sha256": "098301a2dbeacdfdd08bb3e1243f28213670784a2ad9bce0038ad04ca4956c41"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 1683948,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/root-only/node.6.0",
+      "sha256": "5a444750a5376ce571df26370131016d3d980f20074805a6e08213874407446f"
+    },
+    {
+      "bytes": 85903,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/telemetry.jsonl",
+      "sha256": "272ff6025ba346d158e1a6b745bb795e67d7cf49426170d08c43450c6a6567ec"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/owner/worker.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 303,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/proof-plan.json",
+      "sha256": "ba5254ce3e541fcf64a8bf52a478920f94c5e44ac1c214266fa78136b34746a3"
+    },
+    {
+      "bytes": 46060,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/summary.json",
+      "sha256": "72092a28a1b05f406ed3701de05a0989c27e5b96a006c6d9bc5930b909760ea9"
+    },
+    {
+      "bytes": 433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/workers/gpu-01/accounting.json",
+      "sha256": "987610e32de78d128ec371d9182806351643193446e2a0432ae2ea36d125ffa6"
+    },
+    {
+      "bytes": 7776,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/workers/gpu-01/budget.json",
+      "sha256": "30ab4c06e2eeff3b695da2761cb5b9c35f38b575c4d85dd37220ee97503f2a78"
+    },
+    {
+      "bytes": 25410,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/workers/gpu-01/launch.json",
+      "sha256": "2556e784741469af245f2000b355bfe6f3400ae5a36601b7ec8bd73136b69ad1"
+    },
+    {
+      "bytes": 32783,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/workers/gpu-01/prove.log",
+      "sha256": "3a6a252c75a01003dfa37b909ab106187a2a7a067ea9330cf4ffb5c28cd918c9"
+    },
+    {
+      "bytes": 209763,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/workers/gpu-01/telemetry.jsonl",
+      "sha256": "0deb1aa649bd8dc0406eac7c8f707746318bb97dff8ab7d5da1c33acca92c77f"
+    },
+    {
+      "bytes": 433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/workers/gpu-02/accounting.json",
+      "sha256": "3ab2cdab652404e77a9ad5b1e2c7f9f6a4007085b0c68b99df99e2c55f14052d"
+    },
+    {
+      "bytes": 7754,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/workers/gpu-02/budget.json",
+      "sha256": "4d6813fb5c9a28be27bbc91f3c9df49de250e8e5ab1764e61ee00534af699842"
+    },
+    {
+      "bytes": 25820,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/workers/gpu-02/launch.json",
+      "sha256": "fa50457d01a367109bff929f7f41ceec5920dc0dc5d89a058fe81bf8f5b16a52"
+    },
+    {
+      "bytes": 19934,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/workers/gpu-02/prove.log",
+      "sha256": "0cee95d94d720a0e9e7a53d83d50cf8f7176847495b5dcfda551d3d1e828088e"
+    },
+    {
+      "bytes": 208698,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1/workers/gpu-02/telemetry.jsonl",
+      "sha256": "b514bd3c7035cd725288227c289f1790d16fbebecb9123ea970e5dbda74f2bea"
+    },
+    {
+      "bytes": 46,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1-exit.json",
+      "sha256": "2019df6230ca046f97e8e804a132c4f17271f19e3a6fca332c21fc13eef07469"
+    },
+    {
+      "bytes": 1420,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1-process.json",
+      "sha256": "1e6b6fae5f6439c1f7830fbc424f361d0140fade55da8812f526fa69bb162bfa"
+    },
+    {
+      "bytes": 626,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1-qualification-r2.json",
+      "sha256": "2596f7a4d77b7896e2fc40d74ab508ab128176de17bc216dd741dd559bb10591"
+    },
+    {
+      "bytes": 813,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-interrupted-r1.log",
+      "sha256": "df2fd14423134cddb2c6d1f8015e1ec7aa4adec318678ff6daa7101d4943697a"
+    },
+    {
+      "bytes": 110,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/native-shared-tests-r1.log",
+      "sha256": "61d98a7f3c197b1acc2cec656250c9a9d323d25a201b1c07bae437a2e3f4c695"
+    },
+    {
+      "bytes": 869,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/observer-r1.log",
+      "sha256": "cdde275872f3953abb5cb90e9006cef15006f9070ef145ffb7d3d60fcb0276d0"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/observer-r2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 235,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/observer-revalidation-r2.json",
+      "sha256": "c26009a83f9b45be0a3b3f8b4b67a24495de2eb63b43455053cff99f5a114f4e"
+    },
+    {
+      "bytes": 361,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preflight-r1.json",
+      "sha256": "b889d27b01691ea41fb45c903301f83474c15452ccf232e93fd8db3a53ac411b"
+    },
+    {
+      "bytes": 409,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/arrival-0.json",
+      "sha256": "012b6c81a2159cd35c1bfc4eb5ed95ceb37e9075efc30fa1155cc8d5d6a2fa28"
+    },
+    {
+      "bytes": 409,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/arrival-1.json",
+      "sha256": "4d635d32b10acabffa76fb7388eadbec0896d6f15049dca72c842cb9d6f6525f"
+    },
+    {
+      "bytes": 409,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/arrival-2.json",
+      "sha256": "1f2ef8b6668548562d93687c4ef19b8a2fc78500fd354b240b9bb825a8a05eb1"
+    },
+    {
+      "bytes": 409,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/arrival-3.json",
+      "sha256": "b84922ef3bd43f0e558174d575871598af1c61972392bae0767ba93c5e48cfbf"
+    },
+    {
+      "bytes": 2388,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/body.json",
+      "sha256": "310dab2c2ec736b196b5d07b14a1917a5488af65e0d05f4aac0e20d3c9b2fd7f"
+    },
+    {
+      "bytes": 2657,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/complete-body.0",
+      "sha256": "6804d48ce8c518c2ea8d591e6308e16faf1952dffd74dac7fb3f131b633c2585"
+    },
+    {
+      "bytes": 2698,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/complete-body.1",
+      "sha256": "3f702aebd8e6dc8f898f1b77e43ca9fa72526b6dc68c35cd840920a816861436"
+    },
+    {
+      "bytes": 2666,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/complete-body.2",
+      "sha256": "926da2aff0f2ef45501d62319f1239f20a2817e40ebc609c40789800844152a3"
+    },
+    {
+      "bytes": 2657,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/complete-body.3",
+      "sha256": "64534a0ba0cc6032fdd6d71d8a43f28c7694b140c8fb4eb720f3d2fbf2160301"
+    },
+    {
+      "bytes": 10642,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/complete-body.bin",
+      "sha256": "9aa20b209b9f72f9e24add6f716817b12f1fa880226d2b810b71bb2544c2e411"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/cpu-verification-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/cpu-verification-2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/cpu-verification-3.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/expected.json",
+      "sha256": "098301a2dbeacdfdd08bb3e1243f28213670784a2ad9bce0038ad04ca4956c41"
+    },
+    {
+      "bytes": 1731908,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/genesis.bin",
+      "sha256": "05d3a0c9a9eab3a7b7886c97828964d0ae87d2c58210c6a87d7664b41655de37"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 29163,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/host-registry.bin",
+      "sha256": "3b9b74f3b632f369c905b132d61b97d7cdc73bcbd664bf13344ae3d372367947"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 18838,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/manifest.json",
+      "sha256": "1da58977db8dc291841205c4492fc79ef023fac64c0c88a6f9acaac6df7005f9"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/native-expected.bin",
+      "sha256": "e89cbc7a7fc90b8386f8bc0e6b6fe00d32740cc99da960aacc26241503548da8"
+    },
+    {
+      "bytes": 1917,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/pending-arrivals.json",
+      "sha256": "00f33350c0b48dd4a36798bcc0eee0eeac91a37937f5f0a0a3507f4b2e0a415f"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/rust-expected.bin",
+      "sha256": "e89cbc7a7fc90b8386f8bc0e6b6fe00d32740cc99da960aacc26241503548da8"
+    },
+    {
+      "bytes": 706,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/body.json",
+      "sha256": "bfb4b2010fed721c68bf9bcb80438a0d4a06810116482db95e72d00e3446ca2c"
+    },
+    {
+      "bytes": 2657,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/complete-body.0",
+      "sha256": "6804d48ce8c518c2ea8d591e6308e16faf1952dffd74dac7fb3f131b633c2585"
+    },
+    {
+      "bytes": 2657,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/complete-body.bin",
+      "sha256": "6804d48ce8c518c2ea8d591e6308e16faf1952dffd74dac7fb3f131b633c2585"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/cpu-verification-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/cpu-verification-2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/cpu-verification-3.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 431,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/expected.json",
+      "sha256": "ff6c9631a56029ec244746144492801dabf8d22f5f8254004cecf328bd6a4221"
+    },
+    {
+      "bytes": 1731908,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/genesis.bin",
+      "sha256": "05d3a0c9a9eab3a7b7886c97828964d0ae87d2c58210c6a87d7664b41655de37"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 29163,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/host-registry.bin",
+      "sha256": "3b9b74f3b632f369c905b132d61b97d7cdc73bcbd664bf13344ae3d372367947"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 13333,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/manifest.json",
+      "sha256": "604fa40ae2cc69225e45da55abe917338782fdd69dfaf00108487384e545c7ba"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/native-expected.bin",
+      "sha256": "663c29073e5ae8273dc0270009fdb18cf2852f950cd7b2e95e8cd74a7fd03035"
+    },
+    {
+      "bytes": 660,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/pending-arrivals.json",
+      "sha256": "af39aebb9e59163ab47dc1f89b5dcdec3dc609b5fb13c55cd340e4ae02c481d3"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/rust-expected.bin",
+      "sha256": "663c29073e5ae8273dc0270009fdb18cf2852f950cd7b2e95e8cd74a7fd03035"
+    },
+    {
+      "bytes": 210,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/wallet-verification.json",
+      "sha256": "f63eee74e2ee6c5a41abb297c5404d7ffa2561c57deb36504810ce68b2de2216"
+    },
+    {
+      "bytes": 853831,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0001/wallet.0",
+      "sha256": "85ef7743f640eb98c860a75ba8b0fde7bb2ac6960181d96b96594af5740bcc26"
+    },
+    {
+      "bytes": 793,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/body.json",
+      "sha256": "a520c5b79f542d531ed898bd58ded458ede75eb07bd371e32a7e341b3b013747"
+    },
+    {
+      "bytes": 2698,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/complete-body.0",
+      "sha256": "3f702aebd8e6dc8f898f1b77e43ca9fa72526b6dc68c35cd840920a816861436"
+    },
+    {
+      "bytes": 2698,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/complete-body.bin",
+      "sha256": "3f702aebd8e6dc8f898f1b77e43ca9fa72526b6dc68c35cd840920a816861436"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/cpu-verification-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/cpu-verification-2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/cpu-verification-3.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/expected.json",
+      "sha256": "fa072bd5cb3c1d01f09ac01698d16b3562c28ed50c26ed4bb3cb3f13e63ca6bd"
+    },
+    {
+      "bytes": 1731908,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/genesis.bin",
+      "sha256": "05d3a0c9a9eab3a7b7886c97828964d0ae87d2c58210c6a87d7664b41655de37"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 29163,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/host-registry.bin",
+      "sha256": "3b9b74f3b632f369c905b132d61b97d7cdc73bcbd664bf13344ae3d372367947"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 13333,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/manifest.json",
+      "sha256": "7ee21124b62718d156c6488af0ca73962a8b7f9769fe7401553c9c933cacaa75"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/native-expected.bin",
+      "sha256": "df82e305b5e5831da2abc8dbc293dccaa93ed4e580ae5590f4d1a6a9c4b67e1d"
+    },
+    {
+      "bytes": 660,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/pending-arrivals.json",
+      "sha256": "30a5df7ed4949d9d2c1ebb9f150a4689123ee427feccf0a90fb47b1bcfd56a44"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/rust-expected.bin",
+      "sha256": "df82e305b5e5831da2abc8dbc293dccaa93ed4e580ae5590f4d1a6a9c4b67e1d"
+    },
+    {
+      "bytes": 210,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/wallet-verification.json",
+      "sha256": "f63eee74e2ee6c5a41abb297c5404d7ffa2561c57deb36504810ce68b2de2216"
+    },
+    {
+      "bytes": 875611,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0002/wallet.0",
+      "sha256": "75b0dbf2f3b28386400460c36723cf0f5fed349292fe3098e205c1b66442eef8"
+    },
+    {
+      "bytes": 717,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/body.json",
+      "sha256": "5d66a9d6da48dd3f9bc4baa3a10bc459ddd1fb59cd07061a4a819cbed0f4d980"
+    },
+    {
+      "bytes": 2666,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/complete-body.0",
+      "sha256": "926da2aff0f2ef45501d62319f1239f20a2817e40ebc609c40789800844152a3"
+    },
+    {
+      "bytes": 2666,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/complete-body.bin",
+      "sha256": "926da2aff0f2ef45501d62319f1239f20a2817e40ebc609c40789800844152a3"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/cpu-verification-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/cpu-verification-2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/cpu-verification-3.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 431,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/expected.json",
+      "sha256": "26b83d17a1fc412f424dd0de2a35f1d0e71aa626b9e4c50ecca8c473759a54d4"
+    },
+    {
+      "bytes": 1731908,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/genesis.bin",
+      "sha256": "05d3a0c9a9eab3a7b7886c97828964d0ae87d2c58210c6a87d7664b41655de37"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 29163,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/host-registry.bin",
+      "sha256": "3b9b74f3b632f369c905b132d61b97d7cdc73bcbd664bf13344ae3d372367947"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 13333,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/manifest.json",
+      "sha256": "c9706a6b193d0e3a858d61d8a9fd2d011e1b8fb1039fdddce99e49a03bae4061"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/native-expected.bin",
+      "sha256": "c11946408fe298eeef0c8f70b470b9190e63e7735adb259286835e1f06ab7bf8"
+    },
+    {
+      "bytes": 660,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/pending-arrivals.json",
+      "sha256": "73958d2bb819d23d4ac9e64ac86fb04541cfe7147d4ea1063a9bb07561e558a2"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/rust-expected.bin",
+      "sha256": "c11946408fe298eeef0c8f70b470b9190e63e7735adb259286835e1f06ab7bf8"
+    },
+    {
+      "bytes": 210,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/wallet-verification.json",
+      "sha256": "f63eee74e2ee6c5a41abb297c5404d7ffa2561c57deb36504810ce68b2de2216"
+    },
+    {
+      "bytes": 875314,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0003/wallet.0",
+      "sha256": "21cdad35434d1a77d65d2d9b30eb966915b8e55813b581e2b2f301f67c5489c7"
+    },
+    {
+      "bytes": 700,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/body.json",
+      "sha256": "6d05172b1342fe8e98d26dd38a87ae61d4c7717a01105c0384d31ce7f7fa9481"
+    },
+    {
+      "bytes": 2657,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/complete-body.0",
+      "sha256": "64534a0ba0cc6032fdd6d71d8a43f28c7694b140c8fb4eb720f3d2fbf2160301"
+    },
+    {
+      "bytes": 2657,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/complete-body.bin",
+      "sha256": "64534a0ba0cc6032fdd6d71d8a43f28c7694b140c8fb4eb720f3d2fbf2160301"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/cpu-verification-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/cpu-verification-2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/cpu-verification-3.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 437,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/expected.json",
+      "sha256": "410ce72c7f1c61065de6ccd35503e5f0d7b098097c355a22a295d8715dcadd94"
+    },
+    {
+      "bytes": 1731908,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/genesis.bin",
+      "sha256": "05d3a0c9a9eab3a7b7886c97828964d0ae87d2c58210c6a87d7664b41655de37"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 29163,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/host-registry.bin",
+      "sha256": "3b9b74f3b632f369c905b132d61b97d7cdc73bcbd664bf13344ae3d372367947"
+    },
+    {
+      "bytes": 2443,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/key.1",
+      "sha256": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/key.10",
+      "sha256": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/key.11",
+      "sha256": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1"
+    },
+    {
+      "bytes": 2438,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/key.12",
+      "sha256": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f"
+    },
+    {
+      "bytes": 2433,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/key.2",
+      "sha256": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/key.3",
+      "sha256": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269"
+    },
+    {
+      "bytes": 2442,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/key.4",
+      "sha256": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764"
+    },
+    {
+      "bytes": 2425,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/key.5",
+      "sha256": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef"
+    },
+    {
+      "bytes": 2445,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/key.6",
+      "sha256": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630"
+    },
+    {
+      "bytes": 2439,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/key.7",
+      "sha256": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507"
+    },
+    {
+      "bytes": 2432,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/key.8",
+      "sha256": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c"
+    },
+    {
+      "bytes": 2435,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/key.9",
+      "sha256": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf"
+    },
+    {
+      "bytes": 13332,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/manifest.json",
+      "sha256": "30981e21357ef36445ba6ca7026c5df847db9db8cb1819d2027608960942e41c"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/native-expected.bin",
+      "sha256": "654e369f013f934dcc45d3cc2bfba362ac23ceaf3ff1eb23198c81d04865ba3f"
+    },
+    {
+      "bytes": 660,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/pending-arrivals.json",
+      "sha256": "eb6e647a00b73c7f5e0f18c77ec62633caa7c2483880bd763ebb1c6193884e83"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/rust-expected.bin",
+      "sha256": "654e369f013f934dcc45d3cc2bfba362ac23ceaf3ff1eb23198c81d04865ba3f"
+    },
+    {
+      "bytes": 210,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/wallet-verification.json",
+      "sha256": "f63eee74e2ee6c5a41abb297c5404d7ffa2561c57deb36504810ce68b2de2216"
+    },
+    {
+      "bytes": 853889,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/screen-0004/wallet.0",
+      "sha256": "d475c6b04c7a8c889b8df31846670f3ed6e103440368a95ea08185b9eedf38f0"
+    },
+    {
+      "bytes": 210,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/wallet-verification.json",
+      "sha256": "45e92266e59e943a906d46fbf674d474ef77d68b6767925c5e15ca09b29a6cd0"
+    },
+    {
+      "bytes": 853831,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/wallet.0",
+      "sha256": "85ef7743f640eb98c860a75ba8b0fde7bb2ac6960181d96b96594af5740bcc26"
+    },
+    {
+      "bytes": 875611,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/wallet.1",
+      "sha256": "75b0dbf2f3b28386400460c36723cf0f5fed349292fe3098e205c1b66442eef8"
+    },
+    {
+      "bytes": 875314,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/wallet.2",
+      "sha256": "21cdad35434d1a77d65d2d9b30eb966915b8e55813b581e2b2f301f67c5489c7"
+    },
+    {
+      "bytes": 853889,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/candidate/wallet.3",
+      "sha256": "d475c6b04c7a8c889b8df31846670f3ed6e103440368a95ea08185b9eedf38f0"
+    },
+    {
+      "bytes": 3522560,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/intake/arrivals.sqlite3",
+      "sha256": "28878e6620d470454b3715073a526f8670f2202ca2307fed053b53b6e24fa98f"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/native-journal/.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 893,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/native-journal/HEAD.json",
+      "sha256": "21004c9939d906186701b11063cd7eb4c7b90701239476ecf107838a946b106a"
+    },
+    {
+      "bytes": 507,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/native-journal/configuration.json",
+      "sha256": "35f3ecf835dc433897ec0a4ace26f1ffaf967fa2a969589641c1a4dcb05725fe"
+    },
+    {
+      "bytes": 2260471,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/native-journal/records/15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5.json",
+      "sha256": "15fb4a4194be5b512e5f3a846e16e4764b6ca585e974baa9003a9db4e4fe4ac5"
+    },
+    {
+      "bytes": 1698,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/qualification.json",
+      "sha256": "3aa894d7abd6069533c1a31238c1fec8553cf2562c50391575a920901d8ce15a"
+    },
+    {
+      "bytes": 1580,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/preparation-r1/selection.json",
+      "sha256": "2c0f8bb3f7e40e4d8cc7d1a429ef1c054d6e37b927f531467843462129d936c2"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/prepare-r1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 862,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/qualification-r1.json",
+      "sha256": "35b28bcd8f14ddd1ff54bdd4b67e5874d0315edb4295f02e63df3547af2e0818"
+    },
+    {
+      "bytes": 11154,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/qualification-r2.json",
+      "sha256": "5500777991cbdf59de54466b386d59f252843dc3f770b3d5433b2fde313101c5"
+    },
+    {
+      "bytes": 11916,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/qualify-application-r1.py",
+      "sha256": "041807a786e1c1ffe2364f5c799ad379817459d027d7f5a8821ce6ebf4148b53"
+    },
+    {
+      "bytes": 385,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/report-tests-r1.log",
+      "sha256": "382fc2324119d374e6713e18121c2e257ccfdd33fbd5674c29cd8c4b663179d3"
+    },
+    {
+      "bytes": 130,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/report-tests-r2.log",
+      "sha256": "e8a96e60489440bcadfc12352d7d582dda56a8d79a37306244a53bc4eac49e5b"
+    },
+    {
+      "bytes": 13031,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/resume-application-r2.py",
+      "sha256": "62ab365b2e9e5e7630c2fdbfebffd2d5c5f9cabbe956865eca127ff0984e694c"
+    },
+    {
+      "bytes": 381740,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/source-r1.tar.gz",
+      "sha256": "a94f5bcf1a58d9e0f4ac1bac8337571d0f77ad533c7a19f6425f39dd642ac5e8"
+    },
+    {
+      "bytes": 121,
+      "path": "lattica-prover-p3/target/block-v2-application-recovery-20261005-a/typed-shared-gpu-run-tests-r1.log",
+      "sha256": "ab96c78076f829e47ea0302c62578f1a69d7908f3c9f0dcf594af7663beb9367"
+    }
+  ],
+  "status": "succeeded",
+  "tests": {
+    "controller": 22,
+    "host_store": 18,
+    "native_arrivals": 24,
+    "native_shared": 11,
+    "typed_report": 31
+  },
+  "timing_boundary_note": "Recovery uses existing proofs and an already-published block. The overall interruption interval includes an observer repair gap. No fresh solving throughput or matched speedup is claimed."
+}

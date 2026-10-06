@@ -1,0 +1,99 @@
+{
+  "campaign_ids": ["block-v2-count-phase-analysis-2026-10-05","block-v2-count-phase-progress-2026-10-05-r1","block-v2-throughput-qualification-2026-10-05-r10","block-v2-throughput-qualification-2026-10-05-r12","block-v2-throughput-qualification-2026-10-05-r13","block-v2-throughput-qualification-2026-10-05-r14","block-v2-throughput-qualification-2026-10-05-r15","block-v2-throughput-qualification-2026-10-05-r16","block-v2-throughput-qualification-2026-10-05-r9","block-v2-throughput-resources-2026-10-05-r11","block-v2-throughput-resources-2026-10-05-r12","block-v2-throughput-resources-2026-10-05-r13","block-v2-throughput-resources-2026-10-05-r14","block-v2-throughput-resources-2026-10-05-r15","block-v2-throughput-resources-2026-10-05-r16","block-v2-throughput-resources-2026-10-05-r9","block-v2-typed-count-matrix-2026-10-05","block-v2-typed-count-matrix-progress-2026-10-05-r3","block-v2-typed-count-matrix-progress-2026-10-05-r4","block-v2-typed-count-matrix-progress-2026-10-05-r5","block-v2-typed-count-matrix-tooling-2026-10-05","block-v2-typed-local-dag-2026-10-05","block-v2-typed-paired-calibration-2026-10-05","block-v2-typed-paired-comparison-2026-10-05","block-v2-typed-paired-gpu-2026-10-05","block-v2-typed-paired-phase-profile-2026-10-05","block-v2-typed-paired-repetitions-2026-10-05","block-v2-typed-process-concurrent-2026-10-05","block-v2-typed-recovery-2026-10-05","block-v2-typed-worker-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-paired-gpu-20261004-a",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1","P2"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-716e57ce5c86d0ea47ff7341",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 480,
+      "path": "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-build.log",
+      "sha256": "82106a4a219c2650dfa4e51962dbe3b4bc2b0201eb5592045340ffeb351cb2d3"
+    },
+    {
+      "bytes": 2701,
+      "path": "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/cpu-driver-tests-attempt01.log",
+      "sha256": "3cec8e1ee468021cfd5d7581a927586997fbe3ad1bf4515a74de04e17c1f2da1"
+    },
+    {
+      "bytes": 577,
+      "path": "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/gpu-build.log",
+      "sha256": "6dd6cc41d86506a0a1ac40d8fc1c5310b6613b4383934c33091468c8875752b2"
+    },
+    {
+      "bytes": 3704,
+      "path": "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/gpu-driver-tests.log",
+      "sha256": "f9d4d480ca20fef214434ce095f3b0e0989fd22c7aac222e80077d1b97cc893e"
+    },
+    {
+      "bytes": 1317,
+      "path": "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/session-tests-attempt01.log",
+      "sha256": "caa6b32226da85148636ea2bc14689ca58826011817631c0937bd3f95d4293b9"
+    },
+    {
+      "bytes": 104,
+      "path": "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/test-block-v2-typed-compare.py.log",
+      "sha256": "d26bdd8902cfd9615fdc56631c8cf5c6f50365669f489e98ad81e93f48fdb11a"
+    },
+    {
+      "bytes": 1281,
+      "path": "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/test-block-v2-typed-cpu-prepare.py.log",
+      "sha256": "1271460dd22d6fc367ccf0ecadf27df32e4f1d6c3cdf16fdb2056e10400efa4d"
+    },
+    {
+      "bytes": 103,
+      "path": "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/test-block-v2-typed-fleet-compare.py.log",
+      "sha256": "6299c61ecefc2c6e262ba2dccd92b35e4ade4e41b723fe2eac602dbd7b324b98"
+    },
+    {
+      "bytes": 105,
+      "path": "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/test-block-v2-typed-fleet-report.py.log",
+      "sha256": "bee1deaeee8a500be7b285bf332ca87c31cd4a45337eff4bd8ff3032b84d90a2"
+    },
+    {
+      "bytes": 114,
+      "path": "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/test-block-v2-typed-gpu-run.py.log",
+      "sha256": "2fdf7a432a53fceb691486981be60fcb65192fbaa6b7627e6b3fe3a0c95917bf"
+    },
+    {
+      "bytes": 109,
+      "path": "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/test-block-v2-typed-multi-gpu-run.py.log",
+      "sha256": "811eabda5dc298da232b3c7953fbe433089645edff6f53063d91016c4136c0a2"
+    },
+    {
+      "bytes": 105,
+      "path": "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/test-block-v2-typed-report.py.log",
+      "sha256": "21c7e48d0b1ec908feef784bbce1fa55f2c9a7acf76382fa7578754a78bd1ed8"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

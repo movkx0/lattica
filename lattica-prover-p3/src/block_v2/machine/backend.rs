@@ -110,19 +110,25 @@ impl RegisteredProgram {
         let _phase =
             tracing::info_span!(target: "lattica_block_v2_perf", "preprocessing setup").entered();
         let analysis = super::analysis::analyze(&air)?;
-        analysis.check_ram_lower_bound_with_budget(budget)?;
+        // Configuring the PCS records the actual storage mode before selecting
+        // a payload bound. No preprocessing matrices are allocated until after
+        // admission. CPU/full-storage paths retain the existing full-LDE guard.
+        let preprocessing_config = profile::preprocessing_config();
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
-        if super::super::resident_pcs::compact_prover_data() {
-            assert!(
-                analysis.quotient_chunks <= (1 << profile::LOG_BLOWUP),
-                "compact prover data requires quotient domain within half LDE"
-            );
+        let compact = super::super::resident_pcs::compact_prover_data();
+        #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+        let compact = false;
+        if compact {
+            analysis.check_compact_ram_lower_bound_with_budget(budget)?;
+        } else {
+            analysis.check_ram_lower_bound_with_budget(budget)?;
         }
         let data = ProverData::from_airs_and_degrees(
-            &profile::preprocessing_config(),
+            &preprocessing_config,
             core::slice::from_ref(&air),
             &[air.program().height().ilog2() as usize + 1],
         );
+        drop(preprocessing_config);
         // An execution-program identity, NOT the not-yet-defined recursive
         // profile identity. Bind parameters, program, AIR and lookup constraints,
         // including their emission order, and deterministic preprocessing key.

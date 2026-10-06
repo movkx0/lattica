@@ -3,6 +3,9 @@
 //! The GPU produces complete transforms in column bands. Scatter-writing every
 //! band over a large spill-backed row-major matrix repeatedly dirties the same
 //! pages. Append each band contiguously instead, then fill whole row blocks once.
+//! An explicit direct layout decodes into the final rows when avoiding the
+//! second matrix matters more than contiguous staging. Both layouts reserve
+//! their complete storage before accepting any GPU output.
 //! This is host layout work only: no arithmetic, randomness, or transcript change.
 //! Quotient outputs use explicitly bounded heap storage, matching the CPU
 //! quotient profile; retaining these outputs must not consume the separate
@@ -27,6 +30,24 @@ pub(super) enum OutputStorage {
     Global,
     /// Matches the CPU fused quotient's per-matrix bounded heap retention.
     QuotientHeap,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(super) enum ReadbackLayout {
+    #[default]
+    Banded,
+    /// Decode each column band into its final rows without a second matrix.
+    Direct,
+}
+
+impl ReadbackLayout {
+    pub(super) fn from_env() -> Result<Self, String> {
+        Ok(if super::switch("LATTICA_V2_GPU_DIRECT_READBACK")? {
+            Self::Direct
+        } else {
+            Self::Banded
+        })
+    }
 }
 
 fn allocation_context() -> String {
@@ -71,6 +92,8 @@ pub(super) struct HostReadback {
     columns_per_band: usize,
     elements: usize,
     values: Vec<Val>,
+    initialized_elements: usize,
+    layout: ReadbackLayout,
     parallel_decode: bool,
     output_storage: OutputStorage,
 }
@@ -88,11 +111,28 @@ impl HostReadback {
         Self::with_storage(height, width, columns_per_band, OutputStorage::Global)
     }
 
+    #[cfg(test)]
     pub fn with_storage(
         height: usize,
         width: usize,
         columns_per_band: usize,
         output_storage: OutputStorage,
+    ) -> Result<Self, String> {
+        Self::with_layout(
+            height,
+            width,
+            columns_per_band,
+            output_storage,
+            ReadbackLayout::Banded,
+        )
+    }
+
+    pub fn with_layout(
+        height: usize,
+        width: usize,
+        columns_per_band: usize,
+        output_storage: OutputStorage,
+        layout: ReadbackLayout,
     ) -> Result<Self, String> {
         if height == 0 || width == 0 || columns_per_band == 0 {
             return Err("LDE readback dimensions must be nonzero".into());
@@ -117,7 +157,7 @@ impl HostReadback {
         }
         // Banded staging stays in spill storage. Only the final, retained
         // quotient output uses explicit heap storage; a single band is final.
-        let initial_storage = if columns_per_band >= width {
+        let initial_storage = if layout == ReadbackLayout::Direct || columns_per_band >= width {
             output_storage
         } else {
             OutputStorage::Global
@@ -129,6 +169,8 @@ impl HostReadback {
             columns_per_band: columns_per_band.min(width),
             elements,
             values,
+            initialized_elements: 0,
+            layout,
             parallel_decode: false,
             output_storage,
         })
@@ -170,14 +212,43 @@ impl HostReadback {
             || first.checked_mul(self.height).and_then(|base| {
                 row0.checked_mul(columns)
                     .and_then(|offset| base.checked_add(offset))
-            }) != Some(self.values.len())
+            }) != Some(self.initialized_elements)
             || self
-                .values
-                .len()
+                .initialized_elements
                 .checked_add(raw.len())
                 .is_none_or(|end| end > self.elements)
         {
             return Err("LDE readback rows are out of order or out of bounds".into());
+        }
+        if self.layout == ReadbackLayout::Direct {
+            let parallel = self.uses_parallel_decode(raw.len());
+            let width = self.width;
+            let rows_per_task = (DECODE_TASK_ELEMENTS / width).max(1);
+            let destination =
+                &mut self.values.spare_capacity_mut()[row0 * width..(row0 + rows) * width];
+            let decode = |destination: &mut [std::mem::MaybeUninit<Val>], source: &[u64]| {
+                for (row, words) in destination
+                    .chunks_exact_mut(width)
+                    .zip(source.chunks_exact(columns))
+                {
+                    for (slot, &word) in row[first..first + columns].iter_mut().zip(words) {
+                        slot.write(Val::new(word));
+                    }
+                }
+            };
+            if parallel {
+                destination
+                    .par_chunks_mut(rows_per_task * width)
+                    .zip(raw.par_chunks(rows_per_task * columns))
+                    .for_each(|(destination, source)| decode(destination, source));
+            } else {
+                decode(destination, raw);
+            }
+            // Keep Vec's length zero while row-major holes remain. Admission and
+            // the ordered-band checks ensure every cell is initialized exactly
+            // once before finish publishes the complete matrix.
+            self.initialized_elements += raw.len();
+            return Ok(());
         }
         // The full allocation was reserved at admission. extend initializes only
         // this contiguous prefix, avoiding an initial full-matrix zero write.
@@ -199,12 +270,24 @@ impl HostReadback {
         } else {
             self.values.extend(raw.iter().map(|&word| Val::new(word)));
         }
+        self.initialized_elements += raw.len();
         Ok(())
     }
 
-    pub fn finish(self) -> Result<(RowMajorMatrix<Val>, ReorderStats), String> {
-        if self.values.len() != self.elements {
+    pub fn finish(mut self) -> Result<(RowMajorMatrix<Val>, ReorderStats), String> {
+        if self.initialized_elements != self.elements {
             return Err("LDE readback is incomplete".into());
+        }
+        if self.layout == ReadbackLayout::Direct {
+            // SAFETY: append_rows validates consecutive complete rows in every
+            // planned band before writing. All bands now cover every row and
+            // column exactly once, and parallel writers have joined. An early
+            // return or panic leaves length zero; no uninitialized Val is read.
+            unsafe { self.values.set_len(self.elements) };
+            return Ok((
+                RowMajorMatrix::new(self.values, self.width),
+                ReorderStats::default(),
+            ));
         }
         if self.columns_per_band == self.width {
             return Ok((
@@ -264,6 +347,151 @@ impl HostReadback {
 mod tests {
     use super::*;
     use p3_field::PrimeField64;
+
+    #[test]
+    fn direct_layout_matches_banded_without_reorder_storage() {
+        for height in [1, 7, 64] {
+            for width in [1, 3, 7, 35] {
+                for band in [1, 3, 8, 64] {
+                    for storage in [OutputStorage::Global, OutputStorage::QuotientHeap] {
+                        let mut writer = HostReadback::with_layout(
+                            height,
+                            width,
+                            band,
+                            storage,
+                            ReadbackLayout::Direct,
+                        )
+                        .unwrap();
+                        let pointer = writer.values.as_ptr();
+                        for first in (0..width).step_by(band) {
+                            let columns = band.min(width - first);
+                            for row0 in (0..height).step_by(3) {
+                                let rows = 3.min(height - row0);
+                                let raw: Vec<_> = (row0..row0 + rows)
+                                    .flat_map(|row| {
+                                        (first..first + columns).map(move |col| word(row, col))
+                                    })
+                                    .collect();
+                                writer.append_rows(first, columns, row0, &raw).unwrap();
+                                assert_eq!(writer.values.len(), 0);
+                            }
+                        }
+                        let (output, stats) = writer.finish().unwrap();
+                        assert_eq!(output.values.as_ptr(), pointer);
+                        assert_eq!(stats.workspace_bytes, 0);
+                        assert_eq!(
+                            output.values,
+                            filled(height, width, band, 3).finish().unwrap().0.values
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn direct_layout_rejects_holes_and_replayed_rows() {
+        let mut writer =
+            HostReadback::with_layout(3, 5, 2, OutputStorage::Global, ReadbackLayout::Direct)
+                .unwrap();
+        assert!(writer.append_rows(0, 2, 1, &[1, 2]).is_err());
+        assert!(writer.append_rows(2, 2, 0, &[1, 2]).is_err());
+        assert!(writer.append_rows(0, 2, usize::MAX, &[1, 2]).is_err());
+        assert!(writer.append_rows(0, 2, 0, &[1]).is_err());
+        assert_eq!(writer.initialized_elements, 0);
+        writer.append_rows(0, 2, 0, &[1, 2]).unwrap();
+        assert!(writer.append_rows(0, 2, 0, &[1, 2]).is_err());
+        assert_eq!(writer.initialized_elements, 2);
+        assert_eq!(writer.values.len(), 0);
+        assert!(writer.finish().is_err());
+    }
+
+    #[test]
+    fn direct_parallel_decode_preserves_partial_bands_and_field_edges() {
+        let height = DECODE_TASK_ELEMENTS / 3 + 5;
+        let width = 7;
+        let edges = [0, 1, Val::ORDER_U64 - 1, Val::ORDER_U64, u64::MAX];
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(2)
+            .build()
+            .unwrap();
+        let mut writer = HostReadback::with_layout(
+            height,
+            width,
+            3,
+            OutputStorage::Global,
+            ReadbackLayout::Direct,
+        )
+        .unwrap()
+        .with_parallel_decode(true);
+        for first in (0..width).step_by(3) {
+            let columns = 3.min(width - first);
+            let raw: Vec<_> = (0..height)
+                .flat_map(|row| {
+                    (first..first + columns)
+                        .map(move |col| edges[(row * width + col) % edges.len()])
+                })
+                .collect();
+            pool.install(|| writer.append_rows(first, columns, 0, &raw))
+                .unwrap();
+        }
+        let (output, stats) = writer.finish().unwrap();
+        assert_eq!(stats.workspace_bytes, 0);
+        for (i, value) in output.values.iter().enumerate() {
+            assert_eq!(*value, Val::new(edges[i % edges.len()]));
+        }
+    }
+
+    #[cfg(feature = "stream")]
+    #[test]
+    fn direct_layout_finishes_with_only_one_matrix_spill_reservation() {
+        const FLAG: &str = "LATTICA_DIRECT_READBACK_PRESSURE_TEST";
+        const NAME: &str = "block_v2::gpu_hash::engine::lde_readback::tests::direct_layout_finishes_with_only_one_matrix_spill_reservation";
+        // 70 MiB exceeds the allocator's 64 MiB spill threshold.
+        const HEIGHT: usize = 1 << 18;
+        const WIDTH: usize = 35;
+        const BYTES: usize = HEIGHT * WIDTH * 8;
+        if std::env::var_os(FLAG).is_none() {
+            assert!(std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", NAME, "--test-threads=1"])
+                .env(FLAG, "1")
+                .env("LATTICA_SPILL_MAX_BYTES", (BYTES + 4096).to_string())
+                .status()
+                .unwrap()
+                .success());
+            return;
+        }
+        let _scope = crate::spill_alloc::SpillScope::arm();
+        for layout in [ReadbackLayout::Direct, ReadbackLayout::Banded] {
+            let mut writer =
+                HostReadback::with_layout(HEIGHT, WIDTH, 16, OutputStorage::Global, layout)
+                    .unwrap();
+            for first in (0..WIDTH).step_by(16) {
+                let columns = 16.min(WIDTH - first);
+                for row0 in (0..HEIGHT).step_by(128) {
+                    let raw: Vec<_> = (row0..row0 + 128)
+                        .flat_map(|row| (first..first + columns).map(move |col| word(row, col)))
+                        .collect();
+                    writer.append_rows(first, columns, row0, &raw).unwrap();
+                }
+            }
+            assert_eq!(
+                crate::spill_alloc::spill_stats(),
+                (1, (BYTES + 4096) as u64)
+            );
+            match layout {
+                ReadbackLayout::Direct => {
+                    let (output, stats) = writer.finish().unwrap();
+                    assert_eq!(stats.workspace_bytes, 0);
+                    for (i, value) in output.values.iter().enumerate() {
+                        assert_eq!(*value, Val::new(word(i / WIDTH, i % WIDTH)));
+                    }
+                }
+                ReadbackLayout::Banded => assert!(writer.finish().is_err()),
+            }
+            assert_eq!(crate::spill_alloc::spill_stats(), (0, 0));
+        }
+    }
 
     #[test]
     fn explicit_heap_output_matches_global_for_partial_bands() {

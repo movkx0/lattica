@@ -1,0 +1,66 @@
+{
+  "campaign_ids": ["block-v2-native-delivery-2026-10-05","block-v2-typed-local-dag-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "third-fixture",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1","P2"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-627b1012d615228e3638c27e",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/third-fixture/public-check-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 303,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/height11-policy-preflight-r4/public-check-2.log",
+        "run_id": "run-ede93f015cba0a3671e6192b"
+      },
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/third-fixture/public-check-2.log",
+      "sha256": "ba5254ce3e541fcf64a8bf52a478920f94c5e44ac1c214266fa78136b34746a3"
+    },
+    {
+      "bytes": 0,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap/001-bootstrap-gpu-1/worker.log",
+        "run_id": "run-6211ae5ae50cda69248d79cf"
+      },
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/third-fixture/public-check-3.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}
