@@ -20,7 +20,7 @@ MILESTONES = [
     ("P1", "GPU proving pipeline", "in progress",
      "CPU-audited recursive GPU runs are recorded. Full-tree qualification remains open."),
     ("P2", "Local DAG and durable state", "in progress",
-     "Local DAG, persistence and worker evidence exist. Integrated recovery qualification remains open."),
+     "Native shared GPU application and durable sealed intake pass. A late arrival was retained outside the applied candidate. Building candidates from pending arrivals, pre-seal dispatch and recovery during active proving remain open."),
     ("P3", "Remote subtree pool", "planned",
      "No remote-pool qualification is established by the retained benchmark evidence."),
     ("P4", "Capacity and cadence profiles", "planned",
@@ -160,10 +160,11 @@ def import_history(output, root=DEFAULT_ROOT, inputs=None):
     comparisons = {c["id"]: c for c in old["comparisons"]}
     for group, values in windows.items():
         result = observed_throughput(catalog["runs"], values) if all(w["complete_mapping"] for w in values) else None
+        scopes = {by_id[rid]["measurement_scope"] for w in values for rid in w["run_ids"]}
         comparisons[group] = {"id": group, "label": group.split("/")[-1],
-                              "scope": "recursive_aggregation", "windows": values,
+                              "scope": next(iter(scopes)) if len(scopes) == 1 else "unknown", "windows": values,
                               "aggregate": result,
-                              "note": "Completed, CPU-audited fixture transactions divided by pair wall time. Each concurrent window is counted once."}
+                              "note": "Completed, CPU-audited useful fixture inputs divided by measured window time. Each worker or concurrent fleet window is counted once."}
     catalog["comparisons"] = list(comparisons.values())
     documents = {d["source"]["path"]: d for d in old.get("archive_documents", [])}
     for d in inventory(root, inputs):

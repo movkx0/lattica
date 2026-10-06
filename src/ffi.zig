@@ -19,6 +19,62 @@ const std = @import("std");
 const p = @import("primitives.zig");
 const Hash32 = p.Hash32;
 
+/// Separate, versioned candidate root verifier. Installing a legacy verifier
+/// never installs this backend. The node supplies its independently selected
+/// registry and derives this statement from complete transaction envelopes.
+pub const BlockV2ResearchExpected = struct {
+    profile_id: Hash32,
+    chain_id: Hash32,
+    root: Hash32,
+    count: u8,
+
+    pub const ENCODED_LEN: usize = 112;
+
+    pub fn encode(self: BlockV2ResearchExpected) [ENCODED_LEN]u8 {
+        var bytes: [ENCODED_LEN]u8 = undefined;
+        bytes[0..8].* = "LBV2EX01".*;
+        bytes[8..40].* = self.profile_id;
+        bytes[40..72].* = self.chain_id;
+        bytes[72..104].* = self.root;
+        std.mem.writeInt(u64, bytes[104..112], self.count, .little);
+        return bytes;
+    }
+};
+
+pub const BlockV2ResearchVerifyFn = *const fn (
+    proof_ptr: [*]const u8,
+    proof_len: usize,
+    expected_ptr: [*]const u8,
+    expected_len: usize,
+    registry_ptr: [*]const u8,
+    registry_len: usize,
+) callconv(.c) c_int;
+
+pub const MAX_BLOCK_V2_REGISTRY_BYTES: usize = 64 * 1024;
+var block_v2_research_backend: ?BlockV2ResearchVerifyFn = null;
+
+/// Configure once before concurrent verification, as for the legacy backends.
+pub fn setBlockV2ResearchBackend(f: BlockV2ResearchVerifyFn) void {
+    block_v2_research_backend = f;
+}
+
+pub fn clearBlockV2ResearchBackend() void {
+    block_v2_research_backend = null;
+}
+
+pub fn hasBlockV2ResearchBackend() bool {
+    return block_v2_research_backend != null;
+}
+
+pub fn verifyBlockV2Research(proof: []const u8, expected: BlockV2ResearchExpected, trusted_registry: []const u8) bool {
+    if (proof.len == 0 or proof.len > MAX_PROOF_LEN or expected.count == 0 or expected.count > 64) return false;
+    if (trusted_registry.len > MAX_BLOCK_V2_REGISTRY_BYTES or !std.mem.startsWith(u8, trusted_registry, "LBV2RG01")) return false;
+    _ = @import("block_v2.zig").digestFromBytes(&expected.root) catch return false;
+    const verify = block_v2_research_backend orelse return false;
+    const bytes = expected.encode();
+    return verify(proof.ptr, proof.len, &bytes, bytes.len, trusted_registry.ptr, trusted_registry.len) == 0;
+}
+
 /// The public statement of a **join-split** (N-input, M-output) shielded transaction — the
 /// audit-target shape (`lattica-prover-p3::joinsplit_air`). All inputs are proven under one
 /// `anchor`; `N` nullifiers + `M` output commitments are revealed; the proof enforces

@@ -1,0 +1,454 @@
+{
+  "accounting": {
+    "cpu.max": "2300000 100000",
+    "cpu.stat": "usage_usec 929565525\nuser_usec 810635547\nsystem_usec 118929978\nnice_usec 0\ncore_sched.force_idle_usec 0\nnr_periods 1325\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+    "cpuset.cpus.effective": "0-23",
+    "memory.current": "27324416",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+    "memory.peak": "16848384000"
+  },
+  "budget": {
+    "cpu": {
+      "allowed_cpus": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "coordinator_capacity": "1",
+      "effective_capacity": "24",
+      "quota_percent": "2300%",
+      "rayon_threads": 23,
+      "version": 1
+    },
+    "detected_gpu": {
+      "nvidia": {
+        "driver": "615.71.09",
+        "free_bytes": 16548626432,
+        "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+        "pci": "00000000:02:00.0",
+        "total_bytes": 17094934528,
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      "opencl": {
+        "driver": "615.71.09",
+        "global_bytes": 16697327616,
+        "max_allocation_bytes": 4174331904,
+        "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+        "opencl_index": 1,
+        "pci": "0000:02:00.0",
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+    },
+    "detected_host": {
+      "affinity_cpus": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "ancestors": [
+        {
+          "cpuset": "0-23",
+          "path": "/sys/fs/cgroup"
+        },
+        {
+          "cpu_max": "max 100000",
+          "cpuset": "0-23",
+          "memory_current": 21050998784,
+          "memory_max": "max",
+          "path": "/sys/fs/cgroup/user.slice"
+        },
+        {
+          "cpu_max": "max 100000",
+          "cpuset": "0-23",
+          "memory_current": 21041627136,
+          "memory_max": "max",
+          "path": "/sys/fs/cgroup/user.slice/user-1000.slice"
+        },
+        {
+          "cpu_max": "max 100000",
+          "cpuset": "0-23",
+          "memory_current": 18553942016,
+          "memory_max": "max",
+          "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+        },
+        {
+          "cpu_max": "max 100000",
+          "cpuset": "0-23",
+          "memory_current": 16809869312,
+          "memory_max": "max",
+          "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice"
+        },
+        {
+          "cpu_max": "max 100000",
+          "cpuset": "0-23",
+          "memory_current": 6262001664,
+          "memory_max": "max",
+          "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.kde.konsole-15756.scope"
+        },
+        {
+          "cpu_max": "max 100000",
+          "cpuset": "0-23",
+          "memory_current": 6199832576,
+          "memory_max": "max",
+          "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.kde.konsole-15756.scope/tab(15768).scope"
+        },
+        {
+          "cpu_max": "max 100000",
+          "cpuset": "0-23",
+          "memory_current": 617172992,
+          "memory_max": "max",
+          "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice"
+        },
+        {
+          "memory_current": 617115648,
+          "memory_max": "max",
+          "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice"
+        },
+        {
+          "memory_current": 617058304,
+          "memory_limit_owned_by_controller": true,
+          "memory_max": "40265318400",
+          "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice"
+        }
+      ],
+      "available_bytes": 49541480448,
+      "cgroup_memory_headroom": null,
+      "cpu_capacity": "24",
+      "effective_cpus": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "online_cpus": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "physical_bytes": 66811260928,
+      "scratch": {
+        "available_bytes": 32642072576,
+        "capacity_bytes": 33405628416,
+        "device": 51,
+        "filesystem": {
+          "fstype": "tmpfs",
+          "options": "rw,noatime,inode64,huge=advise",
+          "source": "tmpfs",
+          "target": "/tmp"
+        },
+        "page_bytes": 4096,
+        "path": "/tmp",
+        "quota_bytes": null,
+        "tmpfs": true
+      },
+      "version": 1
+    },
+    "gpu": {
+      "available_bytes": 16548626432,
+      "bootstrap": true,
+      "context_bytes": 7784628224,
+      "headroom_bytes": 1073741824,
+      "managed_bytes": 7516192768,
+      "max_allocation_bytes": 4174331904,
+      "total_bytes": 15300820992,
+      "usable_bytes": 16697327616,
+      "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "version": 1
+    },
+    "host": {
+      "coordinator_bytes": 1073741824,
+      "filesystem_headroom_bytes": 1670281421,
+      "fleet_bytes": 42681237504,
+      "os_headroom_bytes": 6681126093,
+      "scratch_device": 51,
+      "scratch_path": "/tmp",
+      "spill_bytes": 30870077440,
+      "swap_bytes": 0,
+      "tmpfs": true,
+      "version": 1,
+      "worker_bytes": 41607495680
+    },
+    "qualification_capacity_test": true,
+    "query_readback_layout": "gather",
+    "readback_layout": "direct",
+    "slice": "lattica-v2-multi.slice",
+    "typed_ram_admission": "compact",
+    "unit": "lattica-v2-multi-476684-typed.service",
+    "workload_kind": "typed-paired-compact-depth-six-bootstrap-v1"
+  },
+  "captured_utc": "2026-10-05T06:48:31.455871+00:00",
+  "context_measurement": {
+    "binary_sha256": "f786ebc2f0846c941e69683d38d614a34407180b541af8ca861c048dfd27b4a6",
+    "driver": "615.71.09",
+    "peak_context_bytes": 209713424,
+    "profile_sha256": "b8b8da945618827a16ab4572baa16425dcef026d7dda36fcc70a4de63c42c9de",
+    "runtime": "615.71.09",
+    "samples": 21,
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+  },
+  "controller_manifest": {
+    "bytes": 1687,
+    "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/comparison-controller-manifest.json",
+    "sha256": "1b6611ba4f7f6aa7753c88b409706d1f8ce7b4e08e59013f9299767c381614de"
+  },
+  "delivered_transactions_measured": false,
+  "negative_audits": {
+    "passed_cases": 7,
+    "positive_control_passed": true,
+    "source": {
+      "bytes": 20643,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/negative-root-audits/summary.json",
+      "sha256": "18dbb3a1dc7d4028b18974447b51faf15bb82e77a4d1c19cd6f7eed750e37a87"
+    }
+  },
+  "package": {
+    "bytes": 45766,
+    "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/package/manifest.json",
+    "sha256": "7602d13c518adec3166fde4c3f87889a0b0ded521f646ace9d51922492b331a6"
+  },
+  "production_ready": false,
+  "schema_version": 1,
+  "scope": "Full-size paired count-four query-gather root on laptop GPU, conservative bootstrap allowance. Performance comparison and Metal execution pending.",
+  "sources": [
+    {
+      "bytes": 434,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/accounting.json",
+      "sha256": "dc4f244a5cb88ec9744787cf0c012409a2fb482270d921f527cdd5891f280048"
+    },
+    {
+      "bytes": 17746,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/attempt.json",
+      "sha256": "914d72c3e02f0f2170400074a23dab29bf1c424fec05e3d3cae6ba229cd14746"
+    },
+    {
+      "bytes": 119,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/audit.log",
+      "sha256": "22a361a34a3c11981e0eb769d103f014bc633d4a127d9f23dff1a8e009dba57d"
+    },
+    {
+      "bytes": 5559,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/budget.json",
+      "sha256": "4f8acba33b06b1966ad3654fb94422b6eae2886ec755f6256bf3527c726aae2b"
+    },
+    {
+      "bytes": 49717,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/fixture/body.json",
+      "sha256": "439bfdd59b1711eeb06970235c2dd987c33af81ca78c4020810cb7f3c01cc87b"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/fixture/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 823,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/proofs/expected.json",
+      "sha256": "9e3442df4f00ac0eb98a2be711ba9c9dae22dda46ee9d8df3a706812e67de61b"
+    },
+    {
+      "bytes": 335,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/proofs/result.json",
+      "sha256": "d32698737d7f87f0958d9f1aea9dd30b1048bf85a2e558139fc3a912dbee64f8"
+    },
+    {
+      "bytes": 38717,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/prove.log",
+      "sha256": "57cd2552ecb996e50c6994af5bf2d304d5505ffb372f395311ad9787ba17717a"
+    },
+    {
+      "bytes": 8055,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/result.json",
+      "sha256": "4d999d70c36e2d857abd5fb43a185df856711a7d22b3abf13e92c1aa5c156935"
+    },
+    {
+      "bytes": 49717,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/root-only/body.json",
+      "sha256": "439bfdd59b1711eeb06970235c2dd987c33af81ca78c4020810cb7f3c01cc87b"
+    },
+    {
+      "bytes": 823,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/root-only/expected.json",
+      "sha256": "9e3442df4f00ac0eb98a2be711ba9c9dae22dda46ee9d8df3a706812e67de61b"
+    },
+    {
+      "bytes": 6,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/root-only/height.json",
+      "sha256": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8"
+    },
+    {
+      "bytes": 214442,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/telemetry.jsonl",
+      "sha256": "2c6eb5f0e9b54235202283dce3b5186fc314c747ffb62af20304cb16495e9bb1"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/worker.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 16248,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/admission.json",
+      "sha256": "187d4f1c2037e72b75c0cf71152838bb84488cf904962ed50cc4b0034ac9eeab"
+    },
+    {
+      "bytes": 11142,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/config.json",
+      "sha256": "31cfe8450aa5a85a7948b12e9c974c7deae98bdc3ade2ac9617a225fe4e41163"
+    },
+    {
+      "bytes": 823,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/expected.json",
+      "sha256": "9e3442df4f00ac0eb98a2be711ba9c9dae22dda46ee9d8df3a706812e67de61b"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/expected.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 303,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/plan.json",
+      "sha256": "ba5254ce3e541fcf64a8bf52a478920f94c5e44ac1c214266fa78136b34746a3"
+    },
+    {
+      "bytes": 10155,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/summary.json",
+      "sha256": "652f1f4f4c0c8d99c6df7e026a9df3ffcc86204351d0802af3d47e5a6bf1483b"
+    }
+  ],
+  "status": "count4_cpu_audited",
+  "trial": {
+    "binary_sha256": "f786ebc2f0846c941e69683d38d614a34407180b541af8ca861c048dfd27b4a6",
+    "config_source": {
+      "bytes": 11142,
+      "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/config.json",
+      "sha256": "31cfe8450aa5a85a7948b12e9c974c7deae98bdc3ade2ac9617a225fe4e41163"
+    },
+    "construction": "paired",
+    "context_measurement": {
+      "binary_sha256": "f786ebc2f0846c941e69683d38d614a34407180b541af8ca861c048dfd27b4a6",
+      "driver": "615.71.09",
+      "peak_context_bytes": 209713424,
+      "profile_sha256": "b8b8da945618827a16ab4572baa16425dcef026d7dda36fcc70a4de63c42c9de",
+      "runtime": "615.71.09",
+      "samples": 21,
+      "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+    },
+    "cpu_audit_seconds": 0.07535953100887127,
+    "cpu_audited": true,
+    "cpu_binary_sha256": "7085223e7c775ff6ffeafe9e7f1be2f7e8741bc4760a4ddee78d0ae256fd7a24",
+    "fresh_proofs": 4,
+    "peak_charged_ram_bytes": 16848384000,
+    "profile_sha256": "b8b8da945618827a16ab4572baa16425dcef026d7dda36fcc70a4de63c42c9de",
+    "proving_seconds": 132.34941665499355,
+    "query_checkpoints": [
+      {
+        "calls": 20,
+        "downloaded_bytes": 1933312,
+        "gather_device_ns": 776800,
+        "label": "typed GPU process",
+        "readbacks": 120,
+        "tiles": 120,
+        "wall_ns": 10837389622
+      }
+    ],
+    "query_readback_layout": "gather",
+    "result_source": {
+      "bytes": 8055,
+      "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/001-typed/result.json",
+      "sha256": "4d999d70c36e2d857abd5fb43a185df856711a7d22b3abf13e92c1aa5c156935"
+    },
+    "root_bytes": 1683948,
+    "root_sha256": "b8bce5aa407286cbd8da4f9347c7cdad544368d37ba002f6397f91a009f539d7",
+    "summary_source": {
+      "bytes": 10155,
+      "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4/summary.json",
+      "sha256": "652f1f4f4c0c8d99c6df7e026a9df3ffcc86204351d0802af3d47e5a6bf1483b"
+    },
+    "worker_seconds": 132.4449247589946
+  }
+}

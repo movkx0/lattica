@@ -1,0 +1,460 @@
+{
+  "alternate_useful_transactions": 3,
+  "canonical_useful_transactions": 9,
+  "captured_utc": "2026-10-05T12:22:23.875098+00:00",
+  "changes": [
+    "Bounded synthetic funding for 1..2048 slots; 704 slots exercised and four participants rotate through all transaction types.",
+    "Wallet preparation restores independently verified journal history, uses its current anchor and next height, and rejects unfunded/spent slots.",
+    "Verified journal snapshots expose the exact head token for fenced application.",
+    "GPU controller accepts an independently pinned host expectation instead of the optional fixed height-10 fixture policy."
+  ],
+  "checks": [
+    "public funded genesis covers planned arrivals",
+    "unfunded slot rejected before proving",
+    "first: Rust rejects changed host height",
+    "first: Rust rejects changed host issuance",
+    "first: Rust rejects changed host chain",
+    "first: Rust rejects changed host root",
+    "first: complete bodies and proof retained",
+    "first: fresh process replays exact published state",
+    "spent delivery slot rejected before leaf proof",
+    "wallet preparation verifies history proofs",
+    "second: Rust rejects changed host height",
+    "second: Rust rejects changed host issuance",
+    "second: Rust rejects changed host chain",
+    "second: Rust rejects changed host root",
+    "second: complete bodies and proof retained",
+    "second: fresh process replays exact published state",
+    "third: Rust rejects changed host height",
+    "third: Rust rejects changed host issuance",
+    "third: Rust rejects changed host chain",
+    "third: Rust rejects changed host root",
+    "third: complete bodies and proof retained",
+    "third: fresh process replays exact published state",
+    "three heights have exact supply, notes, nullifiers and events",
+    "each height uses a different current anchor",
+    "completed preparation cannot be applied twice",
+    "prior proof and bodies cannot be reused at a later height",
+    "rollback restores exact first-height native state",
+    "ABA return to a parent fences old prepared result",
+    "alternate-second: Rust rejects changed host height",
+    "alternate-second: Rust rejects changed host issuance",
+    "alternate-second: Rust rejects changed host chain",
+    "alternate-second: Rust rejects changed host root",
+    "alternate-second: complete bodies and proof retained",
+    "alternate-second: fresh process replays exact published state",
+    "alternative height 11 changes the native state and event roots",
+    "old third-height result is fenced after reorg",
+    "native replay rejects mismatched replacement ancestry",
+    "multi-height reorg restores exact former native state",
+    "restored-three-heights: fresh process replays exact published state",
+    "reorg retains all four immutable records",
+    "all funding participants exercised at each height"
+  ],
+  "final_state": {
+    "anchor": "f16bf8bff5e8ab69dfcd3bd17f5c45abd7d62b9ceafc65e7c3b0c7d059b2a4b7",
+    "blocks": 3,
+    "event_root": "0e7c1b46327e7363510267a70f6a156e37d2c8f6b1bc6342c80f700aceb20de3",
+    "events": 3,
+    "height": 12,
+    "nullifiers": 24,
+    "outputs": 1432,
+    "state_root": "c6081e0d1e44952d738f35ef3cef167084ec7049a81a261b3c7e65fa6c8e364a",
+    "supply": {
+      "burned": "0",
+      "fees_paid": "0",
+      "issued": "704021",
+      "shielded_pool": "704021"
+    }
+  },
+  "funded_slots": 704,
+  "genesis_preparation_seconds": 1.8235194139997475,
+  "limitations": [
+    "No sustained arrival-driven throughput campaign.",
+    "GPU-worker termination and coordinator restart during active proving remain unqualified.",
+    "Bounded history replays at most 128 blocks; no physical power-loss qualification.",
+    "Four serial count-four roots; no larger shared-fleet geometry qualification.",
+    "Preparation-through-commit times include qualification policy checks and prebuilt registry inputs. They are count-four observations and do not qualify cold full-64 or complete post-seal limits.",
+    "An earlier successful height-10 root is retained separately from the final four-root campaign; failed controllers and fresh leaf preparation are included in work-unit accounting."
+  ],
+  "native_complete_body_counts": [
+    4
+  ],
+  "native_tested_heights": [
+    10,
+    11,
+    12
+  ],
+  "pilot_started": false,
+  "production_ready": false,
+  "prototype_history_limit": 128,
+  "qualification_elapsed_seconds": 748.7170575760101,
+  "record_type": "native_multi_height_delivery_qualification",
+  "retained_attempts": [
+    {
+      "attempt": 1,
+      "completed_roots": 0,
+      "failure": "ValueError: first: proving controller failed",
+      "status": "failed",
+      "summary": {
+        "bytes": 2330,
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r1/summary.json",
+        "sha256": "c5ffdea5998baa3976e992206371006bb4900d61583d13ed02dd909328bfeabb"
+      }
+    },
+    {
+      "attempt": 2,
+      "completed_roots": 0,
+      "failure": "ValueError: first: proving controller failed",
+      "status": "failed",
+      "summary": {
+        "bytes": 2329,
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r2/summary.json",
+        "sha256": "29083c2a0d0f54d9e07cad494377140cce185fd8510456060554f29d3073166d"
+      }
+    },
+    {
+      "attempt": 3,
+      "completed_roots": 1,
+      "failure": "RejectedBlock: public validation command 2 failed",
+      "status": "failed",
+      "summary": {
+        "bytes": 4229,
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r3/summary.json",
+        "sha256": "ae9dbaf97a2b35f4c0d17870717ae1920160a6391c8b80199774c10ca95a1207"
+      }
+    }
+  ],
+  "retained_validation_correction": {
+    "reason": "Validation-r2 check 7 used the typed probe and a matching reference rather than the paired probe with the intended mismatch fixture. Checks 1\u20136 passed; corrected interoperability check passed 20 assertions without rebuilding.",
+    "source": {
+      "bytes": 1221,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/legacy-interop-r3-command.json",
+      "sha256": "dfed9fb581f58247389ebf3d6c1286044c3581e764fb758ac0d7f2fd36bb3e6f"
+    }
+  },
+  "schema_version": 1,
+  "scope": "Three consecutive native heights and an alternate height-11 branch. Complete bodies, recipient-decryptable ciphertexts, fresh CPU-verified leaves, independently CPU-audited recursive roots, durable application and fresh-process recovery. This is a boundary qualification, not a sustained arrival-driven throughput campaign.",
+  "sources": [
+    {
+      "bytes": 25480,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/summary.json",
+      "sha256": "7aeb9885ae25cb1216da83ea34d224753b786190748155243b9f4364e87da9ba"
+    },
+    {
+      "bytes": 8874,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/inputs.json",
+      "sha256": "082858a9a7eb249d7ae3eb3c99cc26e586a488b695ade0ca08c102cf71caf422"
+    },
+    {
+      "bytes": 1409566,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-tooling-r4/tooling.tar.gz",
+      "sha256": "15cfeddbfb1a90ef74bdd1e4d1721c64411326e8e67dcf256f56f6637b6858f6"
+    },
+    {
+      "bytes": 36333,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/validation-r2/manifest.json",
+      "sha256": "d194e76a481ff94a5ac05cb829af9759e6188aace08b428c2bf778f59c381ca2"
+    },
+    {
+      "bytes": 4275,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/validation-r2/validation.json",
+      "sha256": "238ded32a9267419d007ab65c44b66016fbe472b0b11d8ed9f6fb8b74f9eab59"
+    },
+    {
+      "bytes": 2685399,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/validation-r2/source.tar.gz",
+      "sha256": "47c7652985e9ab25108f544df7434acb396219b0d19eb58c399a57ad25e9be65"
+    },
+    {
+      "bytes": 6491,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/validation-r2/bridge/manifest.json",
+      "sha256": "c7f21cdb959a9101f85a9a9af6e22317e18032de30b29dff498c6c500c282a7a"
+    },
+    {
+      "bytes": 4830,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/legacy-interop-r3/summary.json",
+      "sha256": "b9768b574d208e82137995176bdc90163110f3ad0f9b8b64475a366316d216a8"
+    },
+    {
+      "bytes": 40032,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/post-qualification-tests-r4/summary.json",
+      "sha256": "ec5a5f1bf362490db3c8517b3be2d27d7a729b0a991dc8d2bc2ca2f4634a7a8d"
+    },
+    {
+      "bytes": 2693463,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/post-qualification-tests-r4/source.tar.gz",
+      "sha256": "9c0899eaf01205de2a91fe90b95719b42d5d6e4bed91e8f0f53740afe416d493"
+    },
+    {
+      "bytes": 15425,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/height11-policy-preflight-r4/manifest.json",
+      "sha256": "04ec6990b1b5e87f59497fb38613c140bdc8dabbf9b7f487815c72df69cff743"
+    }
+  ],
+  "stages": [
+    {
+      "cpu_audit_seconds": 0.08243721700273454,
+      "cpu_audited": true,
+      "gpu_binary_sha256": "b20202fcc5cc731ac65dbf8f9818264cd3fcb3b30224de2205cac18b5a62e523",
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "head_token": "5082d4edebe85a72fb10e749114e9c511e598b677125abb04693e5037db90aee",
+      "height": 10,
+      "indices": [
+        0,
+        5,
+        10,
+        15
+      ],
+      "label": "first",
+      "native_commit_seconds": 1.998892788993544,
+      "native_state": {
+        "anchor": "fffc619c5a704a2aa1972de7ab5c6f30d340c195f8f76575771694ff23e61e8c",
+        "blocks": 1,
+        "event_root": "ab0d63407b8ae41eeee6f56548307c9d52e30ee9f68b4231aea14276a0b28829",
+        "events": 1,
+        "height": 10,
+        "nullifiers": 8,
+        "outputs": 1416,
+        "state_root": "3d36974d7ed005c71e840333994c42ad3811187672ad64763e5557ba614fb14e",
+        "supply": {
+          "burned": "0",
+          "fees_paid": "0",
+          "issued": "704007",
+          "shielded_pool": "704007"
+        }
+      },
+      "preparation": {
+        "bytes": 15271,
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/first-fixture/manifest.json",
+        "sha256": "383850c3e850d3a22eb44d72711ba5b29cc0e3a09d1392e1a9d6b8a622b42dfb"
+      },
+      "preparation_seconds": 21.133969812988653,
+      "preparation_through_commit_seconds": 167.6379042329936,
+      "profile_sha256": "a7c44db10099c1100f575a31a5196e22620ca11369bf322a44f2923ee8672857",
+      "proof": {
+        "bytes": 1683948,
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/first-root/001-typed/root-only/node.6.0",
+        "sha256": "af976a9a8ca9e9b27621f99a32971ada91f8fac3e480c6424d1d9b800bfa1f74"
+      },
+      "proving_seconds": 143.4469138939894,
+      "resource_accounting": {
+        "cpu.max": "2300000 100000",
+        "cpu.stat": "usage_usec 978660904\nuser_usec 854378304\nsystem_usec 124282599\nnice_usec 0\ncore_sched.force_idle_usec 0\nnr_periods 1437\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpuset.cpus.effective": "0-23",
+        "memory.current": "26435584",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "memory.peak": "16919068672"
+      },
+      "root_bytes": 1683948,
+      "root_summary": {
+        "bytes": 10250,
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/first-root/summary.json",
+        "sha256": "141ab93c2af1a0647f6735f0dfa7dbbc73df2835201867b1b99c448b5689be60"
+      },
+      "worker_seconds": 143.55302732199198
+    },
+    {
+      "cpu_audit_seconds": 0.07412050499988254,
+      "cpu_audited": true,
+      "gpu_binary_sha256": "b20202fcc5cc731ac65dbf8f9818264cd3fcb3b30224de2205cac18b5a62e523",
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "head_token": "83f8102c95235bff386d41a54e2297595ece5b8a8bfee522b8bc61b179c2970a",
+      "height": 11,
+      "indices": [
+        64,
+        69,
+        74,
+        79
+      ],
+      "label": "second",
+      "native_commit_seconds": 1.9970167950086761,
+      "native_state": {
+        "anchor": "da76ef3b53c20fe61cd1c5e83589ab0e34ae46c9f3f7bdbc24c47f9fe2ef148f",
+        "blocks": 2,
+        "event_root": "471fe2d8c0cf1536650889e830154a65008b47caee5b338cf3d01c5fa562016a",
+        "events": 2,
+        "height": 11,
+        "nullifiers": 16,
+        "outputs": 1424,
+        "state_root": "fd15d96fa895ca54ecb5489b7c5cbb9451f9d5a5f7e75a7228a9e2ce0d145762",
+        "supply": {
+          "burned": "0",
+          "fees_paid": "0",
+          "issued": "704014",
+          "shielded_pool": "704014"
+        }
+      },
+      "preparation": {
+        "bytes": 15556,
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/second-fixture/manifest.json",
+        "sha256": "b3dd17dc51f689c55ce1b3e4a4a09c42fe8cd61c089aa472f24660fadd52f9f7"
+      },
+      "preparation_seconds": 22.241464042992448,
+      "preparation_through_commit_seconds": 164.0308227880014,
+      "profile_sha256": "a7c44db10099c1100f575a31a5196e22620ca11369bf322a44f2923ee8672857",
+      "proof": {
+        "bytes": 1683948,
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/second-root/001-typed/root-only/node.6.0",
+        "sha256": "8c311b572e557c320f38224276e27ff23c11c2778ac545d5d30b19faeca7e0f9"
+      },
+      "proving_seconds": 138.72605736799596,
+      "resource_accounting": {
+        "cpu.max": "2300000 100000",
+        "cpu.stat": "usage_usec 972275642\nuser_usec 848170679\nsystem_usec 124104963\nnice_usec 0\ncore_sched.force_idle_usec 0\nnr_periods 1389\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpuset.cpus.effective": "0-23",
+        "memory.current": "27443200",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "memory.peak": "16872763392"
+      },
+      "root_bytes": 1683948,
+      "root_summary": {
+        "bytes": 10253,
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/second-root/summary.json",
+        "sha256": "45a84cdbb29347c2ffb4aa82efdb4005e9324bbf27d33ae47041b9ddb2eefb3f"
+      },
+      "worker_seconds": 138.8235802929994
+    },
+    {
+      "cpu_audit_seconds": 0.07975940800679382,
+      "cpu_audited": true,
+      "gpu_binary_sha256": "b20202fcc5cc731ac65dbf8f9818264cd3fcb3b30224de2205cac18b5a62e523",
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "head_token": "1c95f9df5637bf0f2bdb46acead07371395351f16896316428e83c532b312593",
+      "height": 12,
+      "indices": [
+        688,
+        693,
+        698,
+        703
+      ],
+      "label": "third",
+      "native_commit_seconds": 2.136755968997022,
+      "native_state": {
+        "anchor": "f16bf8bff5e8ab69dfcd3bd17f5c45abd7d62b9ceafc65e7c3b0c7d059b2a4b7",
+        "blocks": 3,
+        "event_root": "0e7c1b46327e7363510267a70f6a156e37d2c8f6b1bc6342c80f700aceb20de3",
+        "events": 3,
+        "height": 12,
+        "nullifiers": 24,
+        "outputs": 1432,
+        "state_root": "c6081e0d1e44952d738f35ef3cef167084ec7049a81a261b3c7e65fa6c8e364a",
+        "supply": {
+          "burned": "0",
+          "fees_paid": "0",
+          "issued": "704021",
+          "shielded_pool": "704021"
+        }
+      },
+      "preparation": {
+        "bytes": 15699,
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/third-fixture/manifest.json",
+        "sha256": "6f67cb246f315460ecee9fae93f5ab06007ff1869474fc8c4b897d63266164dd"
+      },
+      "preparation_seconds": 21.72647560700716,
+      "preparation_through_commit_seconds": 166.63895465098904,
+      "profile_sha256": "a7c44db10099c1100f575a31a5196e22620ca11369bf322a44f2923ee8672857",
+      "proof": {
+        "bytes": 1683948,
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/third-root/001-typed/root-only/node.6.0",
+        "sha256": "b5c0d0ff73daa4e3a8ecc3c29a9431936c1091ab8b7b861caec538685839cec4"
+      },
+      "proving_seconds": 142.00863427700824,
+      "resource_accounting": {
+        "cpu.max": "2300000 100000",
+        "cpu.stat": "usage_usec 977626154\nuser_usec 852044052\nsystem_usec 125582102\nnice_usec 0\ncore_sched.force_idle_usec 0\nnr_periods 1422\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpuset.cpus.effective": "0-23",
+        "memory.current": "27926528",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "memory.peak": "16842260480"
+      },
+      "root_bytes": 1683948,
+      "root_summary": {
+        "bytes": 10251,
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/third-root/summary.json",
+        "sha256": "2862d8e7b063e4fae60621a8e4cd964ecbf238683844a1bf20ab2a76b236e761"
+      },
+      "worker_seconds": 142.11394471999665
+    },
+    {
+      "cpu_audit_seconds": 0.08080700499704108,
+      "cpu_audited": true,
+      "gpu_binary_sha256": "b20202fcc5cc731ac65dbf8f9818264cd3fcb3b30224de2205cac18b5a62e523",
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "head_token": "9dd954b773c5824d115b50dd15f7f63d11c509df4e1caeeadc8a02564bc39498",
+      "height": 11,
+      "indices": [
+        80,
+        85,
+        90,
+        95
+      ],
+      "label": "alternate-second",
+      "native_commit_seconds": 2.446383575006621,
+      "native_state": {
+        "anchor": "1af56f19b68cbcdde99852446cac12ccffd65af3a7f7cc401695ea60c2b6f9ed",
+        "blocks": 2,
+        "event_root": "79f3de4a7da9212009d9bcc5dbf9c86f65f39e0a169b81671e1a6eeef075be29",
+        "events": 2,
+        "height": 11,
+        "nullifiers": 16,
+        "outputs": 1424,
+        "state_root": "28ecaaa29acb8866e6d0d519fd662a31f38c32acefbd9efa3a813c49d408a52b",
+        "supply": {
+          "burned": "0",
+          "fees_paid": "0",
+          "issued": "704014",
+          "shielded_pool": "704014"
+        }
+      },
+      "preparation": {
+        "bytes": 16005,
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/alternate-second-fixture/manifest.json",
+        "sha256": "4112c848216548ea67f4162a56da8a8703a138cbc842a5b791eb3817635a24ef"
+      },
+      "preparation_seconds": 23.04832936800085,
+      "preparation_through_commit_seconds": 171.20584016399516,
+      "profile_sha256": "a7c44db10099c1100f575a31a5196e22620ca11369bf322a44f2923ee8672857",
+      "proof": {
+        "bytes": 1683948,
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/alternate-second-root/001-typed/root-only/node.6.0",
+        "sha256": "1b795a2c5c5c59ae26382301fe269425e6ae401740769f4944590b02d515a323"
+      },
+      "proving_seconds": 144.98718359600753,
+      "resource_accounting": {
+        "cpu.max": "2300000 100000",
+        "cpu.stat": "usage_usec 987725749\nuser_usec 863262072\nsystem_usec 124463677\nnice_usec 0\ncore_sched.force_idle_usec 0\nnr_periods 1453\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpuset.cpus.effective": "0-23",
+        "memory.current": "27246592",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "memory.peak": "16870879232"
+      },
+      "root_bytes": 1683948,
+      "root_summary": {
+        "bytes": 10284,
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/qualification-r4/alternate-second-root/summary.json",
+        "sha256": "d9d31e6a76397deb343fa0f11bd571816fb81d8eb660f010f54615f5869056dd"
+      },
+      "worker_seconds": 145.09267874300713
+    }
+  ],
+  "status": "PASSED_BOUNDED_MULTI_HEIGHT_NATIVE_DELIVERY",
+  "validation": {
+    "all_memory_limit_and_oom_events_zero": true,
+    "body_codec_tests": 4,
+    "final_qualification_cpu_audited_roots": 4,
+    "final_qualification_fresh_leaf_proofs": 16,
+    "final_qualification_fresh_recursive_proofs": 16,
+    "fixture_tests": 2,
+    "full_zig_regression": "passed",
+    "gpu_controller_tests": 17,
+    "legacy_native_interop_checks": 20,
+    "native_application_tests": 7,
+    "persistence_tests": 14,
+    "policy_mutation_checks": 16,
+    "qualification_checks": 41,
+    "total_work_unit_cpu_audited_roots": 5,
+    "total_work_unit_fresh_leaf_proofs": 36,
+    "total_work_unit_fresh_recursive_proofs": 20
+  }
+}

@@ -31,6 +31,85 @@ def calibration(uuid='GPU-a', overhead=600 * R.MIB):
 
 
 class ResourceTests(unittest.TestCase):
+    def test_opening_denominator_cache_is_pinned_and_memory_bounded(self):
+        profile = json.loads(Path(__file__).with_name('block-v2-multi-gpu-direct-readback-workload.json').read_text())
+        cached = copy.deepcopy(profile)
+        cached['geometry']['opening_denominator_cache'] = True
+        self.assertNotEqual(S.profile_digest({'workload': profile}), S.profile_digest({'workload': cached}))
+        control = R.plan(host(), [device()], 1, profile)['GPU-a']
+        candidate = R.plan(host(), [device()], 1, cached)['GPU-a']
+        for section in ('cpu', 'host', 'gpu'):
+            self.assertEqual(control[section], candidate[section])
+        for budget, expected in [(control, '0'), (candidate, '1')]:
+            budget = dict(budget, unit='lattica-v2-multi-test.service')
+            self.assertEqual(S.environment(budget, Path('/tmp/test'))[
+                'LATTICA_V2_GPU_OPENING_DENOMINATOR_CACHE'], expected)
+        cached['geometry']['opening_denominator_cache'] = 'true'
+        with self.assertRaisesRegex(ValueError, 'must be boolean'):
+            R.plan(host(), [device()], 1, cached)
+        with self.assertRaisesRegex(ValueError, 'must be boolean'):
+            S.environment(dict(candidate, opening_denominator_cache=1), Path('/tmp/test'))
+
+    def test_query_gather_is_profile_bound_and_preserves_resource_reservations(self):
+        profile = json.loads(Path(__file__).with_name('block-v2-multi-gpu-direct-readback-workload.json').read_text())
+        gathered = copy.deepcopy(profile)
+        gathered['geometry']['query_readback_layout'] = 'gather'
+        self.assertNotEqual(S.profile_digest({'workload': profile}), S.profile_digest({'workload': gathered}))
+        controls = R.plan(host(), [device()], 1, profile)
+        candidates = R.plan(host(), [device()], 1, gathered)
+        for section in ('host', 'cpu', 'gpu'):
+            self.assertEqual(controls['GPU-a'][section], candidates['GPU-a'][section])
+        for budgets, expected in ((controls, '0'), (candidates, '1')):
+            budget = dict(budgets['GPU-a'], unit='lattica-v2-multi-test.service')
+            self.assertEqual(S.environment(budget, Path('/tmp/test'))['LATTICA_V2_GPU_QUERY_GATHER'], expected)
+        gathered['geometry']['query_readback_layout'] = 'typo'
+        with self.assertRaisesRegex(ValueError, 'query readback layout'):
+            R.plan(host(), [device()], 1, gathered)
+        budget = dict(candidates['GPU-a'], unit='lattica-v2-multi-test.service', query_readback_layout='typo')
+        with self.assertRaisesRegex(ValueError, 'query readback layout'):
+            S.environment(budget, Path('/tmp/test'))
+
+    def test_direct_readback_admits_two_workers_without_relaxing_budgets(self):
+        directory = Path(__file__).parent
+        banded = json.loads((directory / 'block-v2-multi-gpu-workload.json').read_text())
+        direct = json.loads((directory / 'block-v2-multi-gpu-direct-readback-workload.json').read_text())
+        h = host()
+        h['available_bytes'] = 43 * R.GIB
+        devices = [device('GPU-a'), device('GPU-b')]
+        calibrations = {d['uuid']: calibration(d['uuid']) for d in devices}
+        with self.assertRaisesRegex(ValueError, 'host RAM|spill'):
+            R.plan(h, devices, 2, banded, calibrations)
+        budgets = R.plan(h, devices, 2, direct, calibrations)
+        self.assertEqual(len(budgets), 2)
+        unchanged = R.shared_budgets(h, ['GPU-a', 'GPU-b'])
+        for uuid, b in budgets.items():
+            self.assertEqual(b['host'], unchanged[uuid]['host'])
+            self.assertEqual(b['cpu'], unchanged[uuid]['cpu'])
+            self.assertEqual(b['readback_layout'], 'direct')
+            self.assertEqual(R.workload_failures(b, direct), [])
+            env = S.environment(dict(b, unit='lattica-v2-multi-test.service'), Path('/tmp/test'))
+            self.assertEqual(env['LATTICA_V2_GPU_DIRECT_READBACK'], '1')
+            self.assertEqual(env['LATTICA_SPILL_MAX_BYTES'], str(b['host']['spill_bytes']))
+        for a, b in zip(banded['phases'], direct['phases']):
+            self.assertEqual(a['heap_bytes'], b['heap_bytes'])
+            self.assertEqual(a['driver_host_bytes'], b['driver_host_bytes'])
+            self.assertEqual(a['managed_gpu_bytes'], b['managed_gpu_bytes'])
+
+    def test_readback_layout_is_pinned_and_invalid_modes_fail_closed(self):
+        profile = json.loads(Path(__file__).with_name('block-v2-multi-gpu-workload.json').read_text())
+        reference = S.profile_digest({'workload': profile})
+        profile['geometry']['host_readback_layout'] = 'direct'
+        self.assertNotEqual(reference, S.profile_digest({'workload': profile}))
+        profile['geometry']['host_readback_layout'] = 'typo'
+        with self.assertRaisesRegex(ValueError, 'readback layout'):
+            R.plan(host(), [device()], 1, profile)
+        budget = {**R.shared_budgets(host(), ['GPU-a'])['GPU-a'],
+                  'gpu': vars(R.gpu_budget(device())), 'unit': 'lattica-v2-multi-test.service'}
+        self.assertEqual(S.environment(budget, Path('/tmp/test'))['LATTICA_V2_GPU_DIRECT_READBACK'], '0')
+        budget['readback_layout'] = 'typo'
+        with self.assertRaisesRegex(ValueError, 'readback layout'):
+            S.environment(budget, Path('/tmp/test'))
+
     def test_heterogeneous_devices_never_share_vram(self):
         large = R.gpu_budget(device(), calibration())
         small = R.gpu_budget(device('GPU-b', 8 * R.GIB, 5 * R.GIB), calibration('GPU-b'))
@@ -101,6 +180,42 @@ class ResourceTests(unittest.TestCase):
             # Without the explicit controller-owned exception, the fleet limit applies.
             self.assertEqual(R.cgroup_limits([fleet], range(24), root=root)
                              ['cgroup_memory_headroom'], R.GIB)
+
+    def test_worker_inventory_uses_assigned_slice_instead_of_bounded_observer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            observer = root / 'observer.service'
+            parent = root / 'user.slice'
+            fleet = parent / 'fleet.slice'
+            observer.mkdir()
+            fleet.mkdir(parents=True)
+            for path, values in [
+                (root, {'cpu.max': '2400000 100000'}),
+                (observer, {'cpu.max': '100000 100000', 'memory.max': str(2 * R.GIB),
+                            'memory.current': str(R.GIB)}),
+                (parent, {'cpu.max': '1200000 100000', 'memory.max': str(60 * R.GIB),
+                          'memory.current': str(8 * R.GIB)}),
+                (fleet, {'memory.max': str(40 * R.GIB), 'memory.current': str(R.GIB)}),
+            ]:
+                for name, value in values.items():
+                    (path / name).write_text(value)
+            original = R.cgroup_limits
+            def limits(paths, cpus, ignored):
+                return original(paths, cpus, ignored, root=root)
+            filesystem = {'filesystems': [{'fstype': 'tmpfs', 'options': 'rw'}]}
+            with patch.object(R, 'cgroup_path', return_value=observer), \
+                 patch.object(R, 'cgroup_limits', side_effect=limits), \
+                 patch.object(R.os, 'sched_getaffinity', return_value=set(range(24))), \
+                 patch.object(R, 'command_json', return_value=filesystem):
+                workers = R.detect_host(tmp, worker_cgroup=fleet)
+                current = R.detect_host(tmp)
+            self.assertEqual(workers['cpu_capacity'], '12')
+            self.assertEqual(workers['cgroup_memory_headroom'], 52 * R.GIB)
+            self.assertEqual(workers['resource_cgroup_scope'], 'assigned_workers')
+            self.assertNotIn(str(observer), [group['path'] for group in workers['ancestors']])
+            self.assertEqual(current['cpu_capacity'], '1')
+            self.assertEqual(current['cgroup_memory_headroom'], R.GIB)
+            self.assertEqual(current['resource_cgroup_scope'], 'current_process')
 
     def test_inactive_worker_slice_plan_still_observes_existing_parents(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -1,0 +1,112 @@
+{
+  "campaign_ids": ["block-v2-query-gather-controller-validation-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "python-validation",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-4e661b0949f4a44525a3fbf1",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 201,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/python-validation/test-block-v2-benchmark-report.py.log",
+      "sha256": "16f0c9d643a628a96a0e33163d4ba5c16ae30578d35c2fe349d16091f0e2a59f"
+    },
+    {
+      "bytes": 120,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/python-validation/test-block-v2-multi-gpu.py.log",
+      "sha256": "019d928826775c4ff088cfb2dd8c548ff4b0b49c6b6f2bc898976dca7df0357b"
+    },
+    {
+      "bytes": 110,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/python-validation/test-block-v2-query-report.py.log",
+      "sha256": "d626a766f48519c6c474c755e92be44c73e82f732c3d9e447b8a89aca74b6565"
+    },
+    {
+      "bytes": 120,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/python-validation/test-block-v2-throughput.py.log",
+      "sha256": "b7dc83395163d724e5a77510d6ca1240d7dbc15beadd08735a82fba9c86a7941"
+    },
+    {
+      "bytes": 104,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/python-validation/test-block-v2-typed-compare.py.log",
+      "sha256": "c57bdec5f19166a93690118c71d5c3ee68b3bfc2827da2e950a0cdc421d4bd4f"
+    },
+    {
+      "bytes": 106,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/python-validation/test-block-v2-typed-comparison-report.py.log",
+      "sha256": "68e7f37396a593bcbf52f67fb716726966b77d6d9b1b2b623c91cbffd88610ea"
+    },
+    {
+      "bytes": 103,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/python-validation/test-block-v2-typed-fleet-compare.py.log",
+      "sha256": "78eef06a986d8417523e74a16d2bb14e35ab64ab86924c647f2bc690902433d9"
+    },
+    {
+      "bytes": 105,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/python-validation/test-block-v2-typed-fleet-report.py.log",
+      "sha256": "b360eeb5d049d720cd0fa667a572f7feb0466a4bfec0d1bdc179fe290d19cd93"
+    },
+    {
+      "bytes": 116,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/python-validation/test-block-v2-typed-gpu-run.py.log",
+      "sha256": "837075977bcb1b6c115c621296c75d898d5a9d4c21f4316b80fa8af2bbe05dae"
+    },
+    {
+      "bytes": 113,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/python-validation/test-block-v2-typed-multi-gpu-run.py.log",
+      "sha256": "b32d831dddcef201a9efc4f36d438b1964133c7bc9157c11c344d3596e652949"
+    },
+    {
+      "bytes": 107,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/python-validation/test-block-v2-typed-report.py.log",
+      "sha256": "5684d13977a1f6829bcd5f644c72b35ab6f8d42951d571a5f230c4cc35a359f3"
+    },
+    {
+      "bytes": 103,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-query-compare.log",
+        "run_id": "run-bbf72e91942fdf6e866c7478"
+      },
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/python-validation/test-block-v2-query-compare.py.log",
+      "sha256": "0f7e4b97443e54aca647179972594d13bb587afcbf151fab8228148587ea844a"
+    },
+    {
+      "bytes": 103,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-query-compare.log",
+        "run_id": "run-bbf72e91942fdf6e866c7478"
+      },
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/python-validation/test-block-v2-typed-count-matrix.py.log",
+      "sha256": "0f7e4b97443e54aca647179972594d13bb587afcbf151fab8228148587ea844a"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

@@ -1,0 +1,574 @@
+{
+  "schema_version": 1,
+  "status": "BASELINE_CALIBRATION_COMPLETE_RESEARCH_ONLY",
+  "source_commit": "094cade18a59d38d7d65bd805511a7809b348a9e",
+  "binary_sha256": "fc5c090b154147d2d099f9a84c187aef6925c4b742864003ad6e1d4ac917d965",
+  "build_command": "cargo build --locked --offline --release --no-default-features --features block-v2-wide-lanes,stream,gpu --bin block-v2-gpu-grouped-probe",
+  "rustflags": "-C target-cpu=x86-64-v3 (repository .cargo/config.toml)",
+  "scope": "Eight reused public wallet-proof inputs, seven fresh recursive proofs and an independent CPU root audit on each selected GPU. No current-build matched speedup or mixed-root qualification is claimed.",
+  "timing_boundary": "Worker elapsed time from the initial registered-input check through wrapping, merging, registered-output check and root CPU audit. Fixture copying, controller startup and compilation are excluded.",
+  "production_ready": false,
+  "runs": [
+    {
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "gpu_name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+      "status": "succeeded",
+      "cpu_audited": true,
+      "elapsed_seconds": 224.3949236039989,
+      "root_bytes": 1683948,
+      "peak_worker_ram_bytes": 17184768000,
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "gpu_process_peak_bytes": 7656701952,
+      "assigned": {
+        "gpu": {
+          "available_bytes": 16614686720,
+          "bootstrap": true,
+          "context_bytes": 7784628224,
+          "headroom_bytes": 1073741824,
+          "managed_bytes": 7516192768,
+          "max_allocation_bytes": 4174331904,
+          "total_bytes": 15300820992,
+          "usable_bytes": 16697327616,
+          "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+          "version": 1
+        },
+        "cpu": {
+          "allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "coordinator_capacity": "1",
+          "effective_capacity": "24",
+          "quota_percent": "2300%",
+          "rayon_threads": 23,
+          "version": 1
+        },
+        "host": {
+          "coordinator_bytes": 805306368,
+          "filesystem_headroom_bytes": 1670281421,
+          "fleet_bytes": 39728447488,
+          "os_headroom_bytes": 6681126093,
+          "scratch_device": 51,
+          "scratch_path": "/tmp",
+          "spill_bytes": 30870077440,
+          "swap_bytes": 0,
+          "tmpfs": true,
+          "version": 1,
+          "worker_bytes": 38923141120
+        }
+      },
+      "calibration": {
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "driver": "615.71.09",
+        "runtime": "615.71.09",
+        "peak_context_bytes": 209713456,
+        "samples": 39,
+        "binary_sha256": "fc5c090b154147d2d099f9a84c187aef6925c4b742864003ad6e1d4ac917d965",
+        "profile_sha256": "0c4a5fb5adf7ec97ec6880dbd6cf009946bb904bf1f40f51c24d06b6e05509a8"
+      },
+      "summary": {
+        "path": "lattica-prover-p3/target/block-v2-merged-baseline-20261004-a/gpu-1-summary.json",
+        "sha256": "95f62a13ad1bc974beac6324a8e97e69a036e9bd3feaa4ed3f0986a76cab773a"
+      }
+    },
+    {
+      "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "gpu_name": "NVIDIA GeForce RTX 5080",
+      "status": "succeeded",
+      "cpu_audited": true,
+      "elapsed_seconds": 257.3266360110065,
+      "root_bytes": 1683948,
+      "peak_worker_ram_bytes": 16954195968,
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "gpu_process_peak_bytes": 6920601600,
+      "assigned": {
+        "gpu": {
+          "available_bytes": 14904459264,
+          "bootstrap": true,
+          "context_bytes": 6979321856,
+          "headroom_bytes": 1073741824,
+          "managed_bytes": 6710886400,
+          "max_allocation_bytes": 4176773120,
+          "total_bytes": 13690208256,
+          "usable_bytes": 16707092480,
+          "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "version": 1
+        },
+        "cpu": {
+          "allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "coordinator_capacity": "1",
+          "effective_capacity": "24",
+          "quota_percent": "2300%",
+          "rayon_threads": 23,
+          "version": 1
+        },
+        "host": {
+          "coordinator_bytes": 805306368,
+          "filesystem_headroom_bytes": 1670281421,
+          "fleet_bytes": 39996882944,
+          "os_headroom_bytes": 6681126093,
+          "scratch_device": 51,
+          "scratch_path": "/tmp",
+          "spill_bytes": 30870077440,
+          "swap_bytes": 0,
+          "tmpfs": true,
+          "version": 1,
+          "worker_bytes": 39191576576
+        }
+      },
+      "calibration": {
+        "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "driver": "615.71.09",
+        "runtime": "615.71.09",
+        "peak_context_bytes": 278919472,
+        "samples": 39,
+        "binary_sha256": "fc5c090b154147d2d099f9a84c187aef6925c4b742864003ad6e1d4ac917d965",
+        "profile_sha256": "0c4a5fb5adf7ec97ec6880dbd6cf009946bb904bf1f40f51c24d06b6e05509a8"
+      },
+      "summary": {
+        "path": "lattica-prover-p3/target/block-v2-merged-baseline-20261004-a/gpu-2-summary.json",
+        "sha256": "c06a1d1b2e8d689d7df8c1d85b60784eac1a7e76bd57fd711ca52c0416cd9798"
+      }
+    }
+  ],
+  "initial_two_worker_admission": {
+    "requested_workers": 2,
+    "admitted_workers": 1,
+    "admission_failures": [
+      {
+        "worker_slots": 2,
+        "gpu_uuids": [
+          "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+          "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+        ],
+        "reason": "workload does not fit assigned resources on GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b: preprocessing_commit: host RAM requires 19847499776 bytes; budget 19058917376 bytes; preprocessing_commit: spill requires 15485423616 bytes; budget 15300820992 bytes; main_commit: host RAM requires 19331608576 bytes; budget 19058917376 bytes; permutation_commit: host RAM requires 19929309184 bytes; budget 19058917376 bytes; permutation_commit: spill requires 15567233024 bytes; budget 15300820992 bytes"
+      }
+    ],
+    "source": {
+      "path": "lattica-prover-p3/target/block-v2-merged-baseline-20261004-a/fleet-initial-plan.json",
+      "sha256": "4098324aae8131f2161702591be1e68a325a1936f1323cc0263361815a2a65c7"
+    }
+  },
+  "sources": [
+    {
+      "path": "lattica-prover-p3/target/block-v2-merged-baseline-20261004-a/manifest.json",
+      "sha256": "a9586dcdd5125fea6f6eedde63138f3f862a97db8af567d28ed20b54ced1ef5d"
+    },
+    {
+      "path": "lattica-prover-p3/target/block-v2-merged-baseline-20261004-a/source.tar.gz",
+      "sha256": "8619910eccec985b1c25d1b71999ef76e19b81e6cbed16be5319a35b666d8522"
+    },
+    {
+      "path": "lattica-prover-p3/target/block-v2-merged-baseline-20261004-a/calibrated-config.json",
+      "sha256": "0b68ccae83cf46516b5f448c5232a9050fa7a2acf83356407550cbbeb7221c69"
+    }
+  ],
+  "next": "Qualify the direct-readback candidate against the frozen banded baseline without changing resource safety margins; capture complete profiles and measured pair throughput.",
+  "profiling": {
+    "interpretation": "Span totals include overlapping/nested work and are not additive. Cumulative LDE counters are the final checkpoint from each distinct pairs/merges process. These calibration observations are not a matched speedup.",
+    "runs": [
+      {
+        "gpu": 1,
+        "top_inclusive_spans": [
+          {
+            "target": "lattica_block_v2_perf",
+            "name": "native batch prove",
+            "calls": 7,
+            "total_ns": 183523575487,
+            "max_ns": 29304587885
+          },
+          {
+            "target": "p3_batch_stark::prover",
+            "name": "compute quotient polynomial",
+            "calls": 7,
+            "total_ns": 54164665309,
+            "max_ns": 8109002185
+          },
+          {
+            "target": "p3_field::batch_inverse",
+            "name": "batch_multiplicative_inverse",
+            "calls": 115522,
+            "total_ns": 26881276650,
+            "max_ns": 410080397
+          },
+          {
+            "target": "lattica_block_v2_perf",
+            "name": "preprocessing setup",
+            "calls": 2,
+            "total_ns": 17079011451,
+            "max_ns": 8854395139
+          },
+          {
+            "target": "lattica_block_v2_perf",
+            "name": "paired wrapper compilation",
+            "calls": 4,
+            "total_ns": 11435949453,
+            "max_ns": 3090159885
+          },
+          {
+            "target": "lattica_block_v2_perf",
+            "name": "bounded GPU commitment",
+            "calls": 133,
+            "total_ns": 7790576336,
+            "max_ns": 720563667
+          },
+          {
+            "target": "lattica_block_v2_perf",
+            "name": "merge compilation",
+            "calls": 3,
+            "total_ns": 3640172614,
+            "max_ns": 1271171688
+          },
+          {
+            "target": "p3_matrix::dense",
+            "name": "with_random_cols",
+            "calls": 126,
+            "total_ns": 3150181368,
+            "max_ns": 285350582
+          },
+          {
+            "target": "p3_lookup::logup",
+            "name": "generate lookup permutation",
+            "calls": 7,
+            "total_ns": 2903646663,
+            "max_ns": 460434351
+          },
+          {
+            "target": "lattica_block_v2_perf",
+            "name": "execution trace",
+            "calls": 7,
+            "total_ns": 1689060534,
+            "max_ns": 350658458
+          },
+          {
+            "target": "p3_matrix::dense",
+            "name": "with_zero_cols",
+            "calls": 2,
+            "total_ns": 1063474499,
+            "max_ns": 534699043
+          },
+          {
+            "target": "p3_batch_stark::verifier",
+            "name": "verify_batch",
+            "calls": 30,
+            "total_ns": 1053073824,
+            "max_ns": 42096631
+          },
+          {
+            "target": "p3_matrix",
+            "name": "columnwise_dot_product",
+            "calls": 939,
+            "total_ns": 850420755,
+            "max_ns": 40797233
+          },
+          {
+            "target": "p3_uni_stark::verifier",
+            "name": "verify",
+            "calls": 24,
+            "total_ns": 654437292,
+            "max_ns": 34048420
+          },
+          {
+            "target": "p3_uni_stark::verifier",
+            "name": "verify_with_preprocessed",
+            "calls": 24,
+            "total_ns": 654413979,
+            "max_ns": 34046913
+          },
+          {
+            "target": "p3_batch_stark::prover",
+            "name": "Compute Selectors",
+            "calls": 7,
+            "total_ns": 347598447,
+            "max_ns": 57518741
+          },
+          {
+            "target": "lattica_block_v2_perf",
+            "name": "child verification",
+            "calls": 3,
+            "total_ns": 279365818,
+            "max_ns": 95127717
+          },
+          {
+            "target": "p3_fri::two_adic_pcs",
+            "name": "fold_matrix",
+            "calls": 133,
+            "total_ns": 258352912,
+            "max_ns": 20999895
+          }
+        ],
+        "final_cumulative_lde_counters_by_process": {
+          "pairs": {
+            "label": "GPU grouped process remainder",
+            "counters": "cumulative",
+            "commits": "17",
+            "column_tiles": "167",
+            "transform_device_ns": "18354146368",
+            "sponge_device_ns": "7884685888",
+            "wall_ns": "25948724064",
+            "host_reorder_ns": "3218878862",
+            "host_reordered_bytes": "29242687488",
+            "host_workspace_peak_bytes": "6710886400"
+          },
+          "merges": {
+            "label": "GPU grouped process remainder",
+            "counters": "cumulative",
+            "commits": "13",
+            "column_tiles": "127",
+            "transform_device_ns": "14292833152",
+            "sponge_device_ns": "6266493440",
+            "wall_ns": "21678232814",
+            "host_reorder_ns": "2789889689",
+            "host_reordered_bytes": "23609737216",
+            "host_workspace_peak_bytes": "6710886400"
+          }
+        },
+        "source_logs": [
+          {
+            "path": "lattica-prover-p3/target/block-v2-merged-baseline-20261004-a/gpu-1-bootstrap/001-baseline-gpu-1/pairs.log",
+            "sha256": "073296215217b6350d95452150167c724bb4e1c06788d720ca45b841e1d937af"
+          },
+          {
+            "path": "lattica-prover-p3/target/block-v2-merged-baseline-20261004-a/gpu-1-bootstrap/001-baseline-gpu-1/merges.log",
+            "sha256": "f44447f9be806d5665d5eba3205e8426cf01029e2f03393be8af1916333dfff7"
+          }
+        ]
+      },
+      {
+        "gpu": 2,
+        "top_inclusive_spans": [
+          {
+            "target": "lattica_block_v2_perf",
+            "name": "native batch prove",
+            "calls": 7,
+            "total_ns": 214211386832,
+            "max_ns": 30856290186
+          },
+          {
+            "target": "p3_batch_stark::prover",
+            "name": "compute quotient polynomial",
+            "calls": 7,
+            "total_ns": 51041055209,
+            "max_ns": 7413582057
+          },
+          {
+            "target": "p3_field::batch_inverse",
+            "name": "batch_multiplicative_inverse",
+            "calls": 115522,
+            "total_ns": 28695792364,
+            "max_ns": 398145035
+          },
+          {
+            "target": "lattica_block_v2_perf",
+            "name": "preprocessing setup",
+            "calls": 2,
+            "total_ns": 18650620309,
+            "max_ns": 9906716225
+          },
+          {
+            "target": "lattica_block_v2_perf",
+            "name": "paired wrapper compilation",
+            "calls": 4,
+            "total_ns": 11283635477,
+            "max_ns": 2910219616
+          },
+          {
+            "target": "lattica_block_v2_perf",
+            "name": "bounded GPU commitment",
+            "calls": 133,
+            "total_ns": 8100005879,
+            "max_ns": 769946567
+          },
+          {
+            "target": "lattica_block_v2_perf",
+            "name": "merge compilation",
+            "calls": 3,
+            "total_ns": 3992892608,
+            "max_ns": 1654386792
+          },
+          {
+            "target": "p3_lookup::logup",
+            "name": "generate lookup permutation",
+            "calls": 7,
+            "total_ns": 3005494622,
+            "max_ns": 467148566
+          },
+          {
+            "target": "p3_matrix::dense",
+            "name": "with_random_cols",
+            "calls": 126,
+            "total_ns": 2926206068,
+            "max_ns": 240598394
+          },
+          {
+            "target": "lattica_block_v2_perf",
+            "name": "execution trace",
+            "calls": 7,
+            "total_ns": 1689687407,
+            "max_ns": 318498524
+          },
+          {
+            "target": "p3_batch_stark::verifier",
+            "name": "verify_batch",
+            "calls": 30,
+            "total_ns": 1299565410,
+            "max_ns": 92180012
+          },
+          {
+            "target": "p3_matrix::dense",
+            "name": "with_zero_cols",
+            "calls": 2,
+            "total_ns": 1091252346,
+            "max_ns": 557771986
+          },
+          {
+            "target": "p3_matrix",
+            "name": "columnwise_dot_product",
+            "calls": 939,
+            "total_ns": 860166017,
+            "max_ns": 36760811
+          },
+          {
+            "target": "p3_uni_stark::verifier",
+            "name": "verify",
+            "calls": 24,
+            "total_ns": 672796268,
+            "max_ns": 39931673
+          },
+          {
+            "target": "p3_uni_stark::verifier",
+            "name": "verify_with_preprocessed",
+            "calls": 24,
+            "total_ns": 672765925,
+            "max_ns": 39928679
+          },
+          {
+            "target": "lattica_block_v2_perf",
+            "name": "child verification",
+            "calls": 3,
+            "total_ns": 396284916,
+            "max_ns": 220653982
+          },
+          {
+            "target": "p3_batch_stark::prover",
+            "name": "Compute Selectors",
+            "calls": 7,
+            "total_ns": 379028104,
+            "max_ns": 67492038
+          },
+          {
+            "target": "lattica_block_v2_perf",
+            "name": "native verification",
+            "calls": 7,
+            "total_ns": 284056130,
+            "max_ns": 77313598
+          }
+        ],
+        "final_cumulative_lde_counters_by_process": {
+          "pairs": {
+            "label": "GPU grouped process remainder",
+            "counters": "cumulative",
+            "commits": "17",
+            "column_tiles": "175",
+            "transform_device_ns": "9340439840",
+            "sponge_device_ns": "3863036704",
+            "wall_ns": "37623707557",
+            "host_reorder_ns": "3476927360",
+            "host_reordered_bytes": "29242687488",
+            "host_workspace_peak_bytes": "6710886400"
+          },
+          "merges": {
+            "label": "GPU grouped process remainder",
+            "counters": "cumulative",
+            "commits": "13",
+            "column_tiles": "133",
+            "transform_device_ns": "7408153216",
+            "sponge_device_ns": "3097564480",
+            "wall_ns": "29211771387",
+            "host_reorder_ns": "2792274998",
+            "host_reordered_bytes": "23609737216",
+            "host_workspace_peak_bytes": "6710886400"
+          }
+        },
+        "source_logs": [
+          {
+            "path": "lattica-prover-p3/target/block-v2-merged-baseline-20261004-a/gpu-2-bootstrap/001-baseline-gpu-2/pairs.log",
+            "sha256": "5226d9e8b09c30d4ad7bf5fb0fab54c5514b7370f313951cfeb88a7fa5d2623f"
+          },
+          {
+            "path": "lattica-prover-p3/target/block-v2-merged-baseline-20261004-a/gpu-2-bootstrap/001-baseline-gpu-2/merges.log",
+            "sha256": "1c77d22e34e24ae23b154999bd505d4e037a8170321c2aae672edc422adaf14b"
+          }
+        ]
+      }
+    ],
+    "priorities": [
+      "Remove duplicate host readback/reorder allocations to restore two-worker admission; qualify the direct layout.",
+      "Measure quotient polynomial evaluation and batch inversion after the memory change; quotient totals were 51\u201354 seconds across seven proofs.",
+      "Measure transfer and readback separately from kernel time; do not infer GPU utilization from inclusive span totals."
+    ]
+  }
+}

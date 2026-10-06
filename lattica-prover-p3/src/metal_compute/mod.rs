@@ -34,6 +34,7 @@ const KERNELS: &[&str] = &[
     "leaf_hash",
     "compress_layer",
     "retained_merkle_path",
+    "query_gather",
     "lde_absorb",
     "lde_leaf_finalize",
     "quotient_mask",

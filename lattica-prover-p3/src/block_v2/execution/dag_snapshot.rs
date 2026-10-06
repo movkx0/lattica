@@ -41,6 +41,7 @@ pub struct PreviousAttempt {
 
 pub(crate) struct Restored {
     pub dag: Dag,
+    pub previous_epoch: u64,
     pub candidates: Vec<PreviousCandidate>,
     pub attempts: Vec<PreviousAttempt>,
     pub workspaces: Vec<WorkspaceLease>,
@@ -74,18 +75,10 @@ fn artifact(out: &mut Vec<u8>, value: ArtifactRef) {
     out.extend(value.digest_bytes());
 }
 fn construction(value: RegistryPin) -> u8 {
-    match value.construction() {
-        WrapperConstruction::SingleWallet => 1,
-        WrapperConstruction::GroupedPair => 2,
-    }
+    value.code() as u8
 }
 fn operation(value: Operation) -> u8 {
-    match value {
-        Operation::Wrap => 1,
-        Operation::WrapPair => 2,
-        Operation::Empty => 3,
-        Operation::Merge => 4,
-    }
+    value.code() as u8
 }
 fn attempt_status(value: AttemptStatus) -> Result<u8, Error> {
     Ok(match value {
@@ -120,7 +113,7 @@ pub(super) fn encode(dag: &Dag) -> Result<Vec<u8>, Error> {
         .map(|a| a.lease.worker)
         .collect();
     for (id, lease) in &dag.workspaces {
-        lease.resources.validate_request()?;
+        lease.resources.validate_workspace()?;
         if *id != lease.id
             || id.session != dag.session
             || id.epoch != dag.epoch
@@ -399,7 +392,7 @@ pub(crate) fn restore(
     limits: Limits,
     store: &ArtifactStore,
 ) -> Result<Restored, Error> {
-    RegistryPin::new(registry, pin.profile(), pin.construction())?;
+    pin.check(registry)?;
     restore_with(
         bytes,
         pin,
@@ -411,8 +404,30 @@ pub(crate) fn restore(
     )
 }
 
-// The live caller always uses restore above. Test callbacks can supply tiny
-// cfg(test)-only tickets; there is no public switch bypassing CPU revalidation.
+pub(crate) fn restore_typed(
+    bytes: &[u8],
+    pin: RegistryPin,
+    registry: &crate::block_v2::typed_recursive::Registry<12>,
+    chain: [u8; 32],
+    epoch: u64,
+    limits: Limits,
+    store: &ArtifactStore,
+    mut policy: impl FnMut(ArtifactRef) -> Result<crate::block_v2::typed_recursive::Policy, Error>,
+) -> Result<Restored, Error> {
+    pin.check_typed(registry)?;
+    restore_with(
+        bytes,
+        pin,
+        chain,
+        epoch,
+        limits,
+        |identity| store.load_typed_wallet(identity, pin, registry, chain, policy(identity)?),
+        |job, identity| store.load_typed_node(identity, job, registry),
+    )
+}
+
+// Live callers use the registry-specific restorers above. Test callbacks can
+// supply tiny cfg(test)-only tickets; no public switch bypasses CPU verification.
 pub(crate) fn restore_with(
     bytes: &[u8],
     pin: RegistryPin,
@@ -465,7 +480,7 @@ fn split_workspaces(bytes: &[u8], limits: Limits) -> Result<(&[u8], Vec<RawWorks
         let id = r.u64()?;
         let worker = WorkerId(r.u64()?);
         let resources = r.resources()?;
-        resources.validate_request()?;
+        resources.validate_workspace()?;
         if id <= previous || id > sequence || worker.0 == 0 || !workers.insert(worker) {
             return Err("checkpoint workspace order/identity".into());
         }
@@ -543,13 +558,7 @@ fn restore_base_with(
     let mut logical = 0usize;
     for _ in 0..count {
         let id = r.job()?;
-        let op = match r.byte()? {
-            1 => Operation::Wrap,
-            2 => Operation::WrapPair,
-            3 => Operation::Empty,
-            4 => Operation::Merge,
-            _ => return Err("checkpoint operation".into()),
-        };
+        let op = Operation::from_code(r.byte()?)?;
         let start = r.byte()?;
         let level = r.byte()?;
         if level > DEPTH {
@@ -578,12 +587,7 @@ fn restore_base_with(
         if output.is_some_and(|a| a.kind() != ArtifactKind::Node) {
             return Err("checkpoint node kind".into());
         }
-        let shape = match op {
-            Operation::Wrap => (1, 0),
-            Operation::WrapPair => (2, 0),
-            Operation::Empty => (0, 0),
-            Operation::Merge => (0, 2),
-        };
+        let shape = op.arity();
         if (wallets.len(), dependencies.len()) != shape {
             return Err("checkpoint operation arity".into());
         }
@@ -593,14 +597,35 @@ fn restore_base_with(
         }
         match op {
             Operation::Wrap
-                if level != 0 || pin.construction() != WrapperConstruction::SingleWallet =>
+                if pin.is_typed()
+                    || level != 0
+                    || pin.construction() != WrapperConstruction::SingleWallet =>
             {
                 return Err("checkpoint single wrapper geometry".into())
             }
             Operation::WrapPair
-                if level != 1 || pin.construction() != WrapperConstruction::GroupedPair =>
+                if pin.is_typed()
+                    || level != 1
+                    || pin.construction() != WrapperConstruction::GroupedPair =>
             {
                 return Err("checkpoint paired wrapper geometry".into())
+            }
+            Operation::TypedPair { .. } => {
+                if !pin.is_typed() || level != 1 {
+                    return Err("checkpoint typed wrapper geometry".into());
+                }
+            }
+            Operation::Finalize => {
+                let child = &raw[seen[&dependencies[0]]];
+                if !pin.is_typed()
+                    || start != 0
+                    || level != DEPTH
+                    || child.start != 0
+                    || child.level >= DEPTH
+                    || child.op == Operation::Finalize
+                {
+                    return Err("checkpoint typed terminal geometry".into());
+                }
             }
             Operation::Merge => {
                 let left = &raw[seen[&dependencies[0]]];
@@ -860,13 +885,22 @@ fn restore_base_with(
         let job = match entry.op {
             Operation::Wrap => Job::wrap(entry.start, tickets[0])?,
             Operation::WrapPair => Job::wrap_pair(entry.start, tickets[0], tickets[1])?,
+            Operation::TypedPair { padded, .. } => Job::typed_pair(
+                entry.start,
+                tickets[0],
+                if padded { None } else { Some(tickets[1]) },
+            )?,
+            Operation::Finalize => Job::finalize(&dag.jobs[&entry.dependencies[0]].job)?,
             Operation::Empty => Job::empty(pin, chain, entry.start, entry.level)?,
             Operation::Merge => Job::merge(
                 &dag.jobs[&entry.dependencies[0]].job,
                 &dag.jobs[&entry.dependencies[1]].job,
             )?,
         };
-        if job.id() != entry.id || job.start() != entry.start || job.expected().level != entry.level
+        if job.id() != entry.id
+            || job.operation() != entry.op
+            || job.start() != entry.start
+            || job.expected().level != entry.level
         {
             return Err("checkpoint derived job mismatch".into());
         }
@@ -886,6 +920,7 @@ fn restore_base_with(
     }
     Ok(Restored {
         dag,
+        previous_epoch: old_epoch,
         candidates,
         attempts,
         workspaces,

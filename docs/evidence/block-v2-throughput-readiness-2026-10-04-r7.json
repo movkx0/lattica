@@ -1,0 +1,532 @@
+{
+  "apple_repetitions": {
+    "measured_results": 0,
+    "package": {
+      "bytes": 6240069,
+      "path": "benchmark-results/lattica-apple-repetitions-094cade-20261004-r3.tar.gz",
+      "sha256": "f283a21e9dc15653aee5be40a1b7c95bc8ad8e62c8fd4795d32f7f778b96d190"
+    },
+    "sources": [
+      {
+        "bytes": 5775,
+        "path": "docs/evidence/block-v2-apple-benchmark-package-2026-10-04.json",
+        "sha256": "95f26eb3c2a3927cfac88ee7d194fd619679a059b75867f637ae8c5896389217"
+      }
+    ],
+    "status": "pending_external_execution"
+  },
+  "captured_utc": "2026-10-05T02:10:11.040594+00:00",
+  "complete_post_seal_finalization": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {},
+    "reason": "No complete seal-to-host-ready 64-transaction root/body result meets 180 seconds. The historical count-three experiment measured 2004.169 seconds to its root and excluded complete host finalization.",
+    "sources": [
+      {
+        "bytes": 35971,
+        "path": "docs/evidence/block-v2-cpu-arrivals-2026-10-02.json",
+        "sha256": "a9af5db59ad4a72e071f414f408605927c80fe85c949a9767df57e599cb8a53d"
+      }
+    ],
+    "status": "blocked"
+  },
+  "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+  "durable_candidate_host_application": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {},
+    "reason": "The node Chain is in-memory. No durable adapter applies this candidate root with independently authorized issuance, atomic state commits, restart replay and reorg state.",
+    "sources": [
+      {
+        "bytes": 109960,
+        "path": "src/node.zig",
+        "sha256": "6e1c481822d2ffa9eb7526551944fbaa3730ea2e5ec423a86d9a4220728aa752"
+      },
+      {
+        "bytes": 19858,
+        "path": "src/block_v2.zig",
+        "sha256": "222db2a95be66f70779b54e245aef6092f24db5f6a078434162e4431217c86aa"
+      }
+    ],
+    "status": "blocked"
+  },
+  "full_count_cold_64": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {},
+    "reason": "No complete cold 64-transaction mixed root has been measured against the 600-second boundary.",
+    "sources": [
+      {
+        "bytes": 5306,
+        "path": "docs/evidence/block-v2-throughput-validation-2026-10-04.json",
+        "sha256": "07d935b35a8a9453f39447c2f00c04c5495c7a6d7a4589a6c3e02c36e5338a90"
+      }
+    ],
+    "status": "blocked"
+  },
+  "grouped_eight_comparison_source": {
+    "bytes": 73983,
+    "path": "docs/evidence/block-v2-direct-readback-2026-10-04.json",
+    "sha256": "37f207f46b59f72064fc31c19509f67b45d476181b12b7e15540a500b3c6ebb4"
+  },
+  "mixed_recursive_registry_and_cpu_replay": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "matched_comparison": {
+      "all_worker_memory_events_zero": true,
+      "cpu_audited_roots": 10,
+      "finalizer_faster_pairs": 5,
+      "fresh_recursive_proofs": 115,
+      "matched_pairs": 5,
+      "median_within_pair_reduction_percent": 41.8933497766961,
+      "median_worker_seconds": {
+        "finalizer": 252.7675911230035,
+        "reference": 439.25595016099396
+      },
+      "passed_counts": [
+        4
+      ],
+      "reference_negative_audits_passed": 6,
+      "source": {
+        "bytes": 114324,
+        "path": "docs/evidence/block-v2-typed-comparison-2026-10-04.json",
+        "sha256": "9ae38fbf62e9931a48ec34427d6b92068fc58fcedaca8f2168d5c86c529e0d4d"
+      },
+      "within_pair_reduction_range_percent": [
+        41.23106582189393,
+        50.04271277541046
+      ]
+    },
+    "measurement": {
+      "construction": "typed-finalizer-v1",
+      "counts": [
+        4
+      ],
+      "cpu_audit_seconds": 0.07402191701112315,
+      "cpu_audited": true,
+      "cpu_root_replay_without_inner_artifacts": true,
+      "delivered_transactions_measured": false,
+      "depth": 6,
+      "durable_host_applied": false,
+      "fresh_recursive_proofs": 8,
+      "issuance_inputs": 1,
+      "negative_audits_passed": 7,
+      "passed_counts": [
+        4
+      ],
+      "pending_counts": [
+        1,
+        2,
+        3,
+        8,
+        16,
+        32,
+        63,
+        64
+      ],
+      "registry_keys": 6,
+      "root_bytes": 1683948,
+      "root_only_bundle_hashes_revalidated": true,
+      "root_sha256": "cf5d6a648df3e09bc3fd317f019fde8b352db4d8bcc40a5bd0c007737c373ad0",
+      "transaction_types": [
+        "joinsplit",
+        "htlc_redeem",
+        "htlc_refund",
+        "issuance"
+      ],
+      "useful_user_inputs": 3,
+      "worker_seconds": 249.37039616701077
+    },
+    "previous_measurement": {
+      "cpu_audited": true,
+      "delivered_transactions_measured": false,
+      "depth": 6,
+      "durable_host_applied": false,
+      "fresh_recursive_proofs": 15,
+      "issuance_inputs": 1,
+      "negative_audits_passed": 6,
+      "passed_counts": [
+        4
+      ],
+      "pending_counts": [
+        1,
+        2,
+        3,
+        8,
+        16,
+        32,
+        63,
+        64
+      ],
+      "root_bytes": 1683948,
+      "root_only_bundle_hashes_revalidated": true,
+      "root_sha256": "9148c5a00c670cb9fc2a862ee30c67bf66c624febf23dad862294047ceb53045",
+      "useful_user_inputs": 3,
+      "worker_seconds": 515.8103286800033
+    },
+    "reason": "Five matched count-four pairs passed ten independent CPU root audits. The finalizer used eight fresh proofs per root versus fifteen for the reference. Other required counts and complete mixed-registry security qualification remain pending.",
+    "sources": [
+      {
+        "bytes": 50992,
+        "path": "docs/evidence/block-v2-typed-gpu-2026-10-04.json",
+        "sha256": "afd30304388c83ae7362678d6bc329802c5218df651bf3b222a62ffc862e0f6f"
+      },
+      {
+        "bytes": 80516,
+        "path": "docs/evidence/block-v2-typed-finalizer-gpu-2026-10-04.json",
+        "sha256": "6f5ecd5c4488b0fefc54890e58acc1cfefab8a15c268c8d5488e030ee6af3180"
+      },
+      {
+        "bytes": 114324,
+        "path": "docs/evidence/block-v2-typed-comparison-2026-10-04.json",
+        "sha256": "9ae38fbf62e9931a48ec34427d6b92068fc58fcedaca8f2168d5c86c529e0d4d"
+      },
+      {
+        "bytes": 121426,
+        "path": "docs/evidence/block-v2-typed-compact-multi-gpu-2026-10-04.json",
+        "sha256": "97f56ac0844e31e22ce1c84639819df1cc6a2f65782cdc2667f1240c59f37183"
+      },
+      {
+        "bytes": 154641,
+        "path": "docs/evidence/block-v2-typed-compact-multi-gpu-2026-10-04-r2.json",
+        "sha256": "54cf0f5f077c69b9bbfd6d368387fdd3390f0350c96119fbbb32ad648ac4a6e7"
+      },
+      {
+        "bytes": 157974,
+        "path": "docs/evidence/block-v2-typed-calibrated-multi-gpu-2026-10-04.json",
+        "sha256": "a332f24a96d19a9bb76f148039606d3db270419e797af00d5b1d903df395749c"
+      }
+    ],
+    "status": "blocked"
+  },
+  "next_measured_optimization": {
+    "finalizer_count4_fresh_proofs": 8,
+    "full64_proof_count_unchanged": 127,
+    "median_within_pair_reduction_percent": 41.8933497766961,
+    "median_worker_seconds": {
+      "finalizer": 252.7675911230035,
+      "reference": 439.25595016099396
+    },
+    "qualification_required": true,
+    "reference_count4_fresh_proofs": 15,
+    "sources": [
+      {
+        "bytes": 114324,
+        "path": "docs/evidence/block-v2-typed-comparison-2026-10-04.json",
+        "sha256": "9ae38fbf62e9931a48ec34427d6b92068fc58fcedaca8f2168d5c86c529e0d4d"
+      },
+      {
+        "bytes": 121426,
+        "path": "docs/evidence/block-v2-typed-compact-multi-gpu-2026-10-04.json",
+        "sha256": "97f56ac0844e31e22ce1c84639819df1cc6a2f65782cdc2667f1240c59f37183"
+      },
+      {
+        "bytes": 154641,
+        "path": "docs/evidence/block-v2-typed-compact-multi-gpu-2026-10-04-r2.json",
+        "sha256": "54cf0f5f077c69b9bbfd6d368387fdd3390f0350c96119fbbb32ad648ac4a6e7"
+      },
+      {
+        "bytes": 157974,
+        "path": "docs/evidence/block-v2-typed-calibrated-multi-gpu-2026-10-04.json",
+        "sha256": "a332f24a96d19a9bb76f148039606d3db270419e797af00d5b1d903df395749c"
+      }
+    ],
+    "target": "Complete five alternating matched sequential/concurrent pairs at the calibrated count-four allocation. Then evaluate paired typed wrappers to reduce the 127-proof full64 workload, qualify remaining mixed counts and continue quotient/opening profiling."
+  },
+  "per_geometry_device_qualification": {
+    "calibrated_count4_qualification": {
+      "all_worker_and_parent_memory_event_deltas_zero": true,
+      "context_bytes_by_gpu": {
+        "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b": 536870912,
+        "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c": 536870912
+      },
+      "cpu_audited_roots": 4,
+      "fresh_recursive_proofs": 32,
+      "source": {
+        "bytes": 157974,
+        "path": "docs/evidence/block-v2-typed-calibrated-multi-gpu-2026-10-04.json",
+        "sha256": "a332f24a96d19a9bb76f148039606d3db270419e797af00d5b1d903df395749c"
+      }
+    },
+    "compact_count4_qualification": {
+      "all_worker_and_parent_memory_event_deltas_zero": true,
+      "cpu_audited_roots": 4,
+      "fresh_recursive_proofs": 32,
+      "gpu_uuids": [
+        "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      ],
+      "modes": [
+        "sequential",
+        "concurrent"
+      ],
+      "source": {
+        "bytes": 154641,
+        "path": "docs/evidence/block-v2-typed-compact-multi-gpu-2026-10-04-r2.json",
+        "sha256": "54cf0f5f077c69b9bbfd6d368387fdd3390f0350c96119fbbb32ad648ac4a6e7"
+      }
+    },
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "matched_comparison": {
+      "all_worker_memory_events_zero": true,
+      "cpu_audited_roots": 10,
+      "finalizer_faster_pairs": 5,
+      "fresh_recursive_proofs": 115,
+      "matched_pairs": 5,
+      "median_within_pair_reduction_percent": 41.8933497766961,
+      "median_worker_seconds": {
+        "finalizer": 252.7675911230035,
+        "reference": 439.25595016099396
+      },
+      "passed_counts": [
+        4
+      ],
+      "reference_negative_audits_passed": 6,
+      "source": {
+        "bytes": 114324,
+        "path": "docs/evidence/block-v2-typed-comparison-2026-10-04.json",
+        "sha256": "9ae38fbf62e9931a48ec34427d6b92068fc58fcedaca8f2168d5c86c529e0d4d"
+      },
+      "within_pair_reduction_range_percent": [
+        41.23106582189393,
+        50.04271277541046
+      ]
+    },
+    "measurement": {
+      "all_required_geometries": false,
+      "all_worker_and_parent_memory_event_deltas_zero": true,
+      "binary_sha256": "ff84c8460db015065ae2c0f99758b3c45ebb264d08f5d081eb8175f27e50dd23",
+      "concurrent_cpu_audited_roots": 2,
+      "construction": "typed-finalizer-v1",
+      "context_calibration_qualified": true,
+      "counts": [
+        4
+      ],
+      "depth": 6,
+      "gpu_uuids": [
+        "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      ],
+      "individually_cpu_audited": true,
+      "modes": [
+        "sequential",
+        "concurrent"
+      ],
+      "passed_scope": "Both GPUs passed sequential and concurrent count-four mixed finalizer root audits with 512 MiB context allowances and fixed managed VRAM. Other counts and repeated performance remain pending.",
+      "per_device": [
+        {
+          "context_measurement": {
+            "binary_sha256": "ff84c8460db015065ae2c0f99758b3c45ebb264d08f5d081eb8175f27e50dd23",
+            "driver": "615.71.09",
+            "peak_context_bytes": 209713424,
+            "profile_sha256": "c0fd3f0b74330e48126b6e60061f2fce6ce752e6244b285bec6cb3f92217f516",
+            "runtime": "615.71.09",
+            "samples": 38,
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+          },
+          "cpu_audited": true,
+          "fresh_proofs": 8,
+          "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+          "peak_charged_ram_bytes": 16840380416,
+          "root_bytes": 1683948,
+          "worker_seconds": 282.2771408819972
+        },
+        {
+          "context_measurement": {
+            "binary_sha256": "ff84c8460db015065ae2c0f99758b3c45ebb264d08f5d081eb8175f27e50dd23",
+            "driver": "615.71.09",
+            "peak_context_bytes": 278919440,
+            "profile_sha256": "c0fd3f0b74330e48126b6e60061f2fce6ce752e6244b285bec6cb3f92217f516",
+            "runtime": "615.71.09",
+            "samples": 38,
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          "cpu_audited": true,
+          "fresh_proofs": 8,
+          "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "peak_charged_ram_bytes": 16820359168,
+          "root_bytes": 1683948,
+          "worker_seconds": 355.5483891360054
+        }
+      ],
+      "profile_sha256": "c0fd3f0b74330e48126b6e60061f2fce6ce752e6244b285bec6cb3f92217f516",
+      "ram_admission": "compact",
+      "repeat_qualified": false
+    },
+    "previous_context_measurement": {
+      "all_required_geometries": false,
+      "all_worker_and_parent_memory_event_deltas_zero": true,
+      "binary_sha256": "ff84c8460db015065ae2c0f99758b3c45ebb264d08f5d081eb8175f27e50dd23",
+      "concurrent_cpu_audited_roots": 2,
+      "construction": "typed-finalizer-v1",
+      "context_calibration_qualified": false,
+      "counts": [
+        4
+      ],
+      "depth": 6,
+      "gpu_uuids": [
+        "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      ],
+      "individually_cpu_audited": true,
+      "modes": [
+        "sequential",
+        "concurrent"
+      ],
+      "passed_scope": "Count-four mixed finalizer roots on both GPUs, sequentially and concurrently with the same per-device allocations. Other geometries and repeated performance measurements remain pending.",
+      "per_device": [
+        {
+          "context_measurement": {
+            "binary_sha256": "ff84c8460db015065ae2c0f99758b3c45ebb264d08f5d081eb8175f27e50dd23",
+            "driver": "615.71.09",
+            "peak_context_bytes": 209713424,
+            "profile_sha256": "c0fd3f0b74330e48126b6e60061f2fce6ce752e6244b285bec6cb3f92217f516",
+            "runtime": "615.71.09",
+            "samples": 38,
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+          },
+          "cpu_audited": true,
+          "fresh_proofs": 8,
+          "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+          "peak_charged_ram_bytes": 16875335680,
+          "root_bytes": 1683948,
+          "worker_seconds": 302.4682812480023
+        },
+        {
+          "context_measurement": {
+            "binary_sha256": "ff84c8460db015065ae2c0f99758b3c45ebb264d08f5d081eb8175f27e50dd23",
+            "driver": "615.71.09",
+            "peak_context_bytes": 278919440,
+            "profile_sha256": "c0fd3f0b74330e48126b6e60061f2fce6ce752e6244b285bec6cb3f92217f516",
+            "runtime": "615.71.09",
+            "samples": 38,
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          "cpu_audited": true,
+          "fresh_proofs": 8,
+          "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "peak_charged_ram_bytes": 16841584640,
+          "root_bytes": 1683948,
+          "worker_seconds": 376.76404332100356
+        }
+      ],
+      "profile_sha256": "c0fd3f0b74330e48126b6e60061f2fce6ce752e6244b285bec6cb3f92217f516",
+      "ram_admission": "compact",
+      "repeat_qualified": false
+    },
+    "previous_measurement": {
+      "binary_sha256": "1632e2164853ff803ae0c8282428decc0efb9950d1a3d266c9f88e16f5903c4c",
+      "context_allowance_bytes": 7784628224,
+      "context_samples": 66,
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "managed_gpu_bytes": 7516192768,
+      "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+      "observed_peak_context_bytes": 209713424,
+      "passed_scope": "One complete count-four mixed root on the laptop GPU, under a 36.5 GiB worker cap and the provisional per-device GPU context allowance. All other counts, the second device, smaller calibrated budgets and durable application remain unqualified.",
+      "peak_charged_ram_bytes": 17066856448,
+      "profile_sha256": "2dc74966101b04d98e3e89308432ba29da0cd7137799db41f312528ebacb793b",
+      "rayon_threads": 23,
+      "worker_ram_bytes": 39191576576
+    },
+    "previous_single_device_measurement": {
+      "binary_sha256": "78080386e55df92dc704332db52158f09aa2118ee58013bddfc76bd61ddcda5c",
+      "context_allowance_bytes": 7784628224,
+      "context_samples": 38,
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "managed_gpu_bytes": 7516192768,
+      "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+      "observed_peak_context_bytes": 209713424,
+      "passed_scope": "One complete depth-six count-four mixed finalizer root on the laptop GPU with conservative single-worker admission. This does not qualify other counts, devices, smaller budgets, concurrent mixed jobs or durable application.",
+      "peak_charged_ram_bytes": 17037471744,
+      "profile_sha256": "034602a70f239525190c7a92c1cfc75ba88f530430fcd08f5c132d0b72ec3982",
+      "rayon_threads": 23,
+      "worker_ram_bytes": 43754979328
+    },
+    "reason": "Both GPUs passed count-four mixed finalizer qualification sequentially and concurrently with individually calibrated context allowances. Other counts, repeated performance and within-root scheduling remain pending.",
+    "sources": [
+      {
+        "bytes": 50992,
+        "path": "docs/evidence/block-v2-typed-gpu-2026-10-04.json",
+        "sha256": "afd30304388c83ae7362678d6bc329802c5218df651bf3b222a62ffc862e0f6f"
+      },
+      {
+        "bytes": 80516,
+        "path": "docs/evidence/block-v2-typed-finalizer-gpu-2026-10-04.json",
+        "sha256": "6f5ecd5c4488b0fefc54890e58acc1cfefab8a15c268c8d5488e030ee6af3180"
+      },
+      {
+        "bytes": 114324,
+        "path": "docs/evidence/block-v2-typed-comparison-2026-10-04.json",
+        "sha256": "9ae38fbf62e9931a48ec34427d6b92068fc58fcedaca8f2168d5c86c529e0d4d"
+      },
+      {
+        "bytes": 121426,
+        "path": "docs/evidence/block-v2-typed-compact-multi-gpu-2026-10-04.json",
+        "sha256": "97f56ac0844e31e22ce1c84639819df1cc6a2f65782cdc2667f1240c59f37183"
+      },
+      {
+        "bytes": 154641,
+        "path": "docs/evidence/block-v2-typed-compact-multi-gpu-2026-10-04-r2.json",
+        "sha256": "54cf0f5f077c69b9bbfd6d368387fdd3390f0350c96119fbbb32ad648ac4a6e7"
+      },
+      {
+        "bytes": 157974,
+        "path": "docs/evidence/block-v2-typed-calibrated-multi-gpu-2026-10-04.json",
+        "sha256": "a332f24a96d19a9bb76f148039606d3db270419e797af00d5b1d903df395749c"
+      }
+    ],
+    "status": "blocked"
+  },
+  "pilot_started": false,
+  "previous_snapshot": {
+    "bytes": 18238,
+    "path": "docs/evidence/block-v2-throughput-readiness-2026-10-04-r6.json",
+    "sha256": "5cae11b4e1507639e70f6a9f2036372c5cab383144f34d413aaaf3d980c99b4a"
+  },
+  "resource_admission_note": "Each GPU now passes complete sequential and concurrent count-four root audits with a 512 MiB context allowance. The policy uses the larger of 512 MiB or 125% of that GPU\u2019s measured context peak, rounded upward. The source trials recorded about 200 MiB on the laptop GPU and 266 MiB on the desktop GPU, so both independently reach the 512 MiB floor. Managed VRAM remains 7 and 5.5 GiB, Rayon threads remain 12 and 11, worker RAM remains 18 GiB, spill remains 14.25 GiB and the shared fleet cap remains 37.5 GiB. All memory-event deltas were zero. Repeated performance and other counts remain unqualified.",
+  "restart_reorg_and_resource_failure_recovery": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {},
+    "reason": "Existing worker recovery tests do not establish durable mixed-chain restart/reorg/resource-failure recovery. No real pilot backend is present.",
+    "sources": [
+      {
+        "bytes": 109960,
+        "path": "src/node.zig",
+        "sha256": "6e1c481822d2ffa9eb7526551944fbaa3730ea2e5ec423a86d9a4220728aa752"
+      },
+      {
+        "bytes": 1961,
+        "path": "lattica-prover-p3/scripts/block-v2-throughput-contract.json",
+        "sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f"
+      }
+    ],
+    "status": "blocked"
+  },
+  "schema_version": 1,
+  "scope": "Revised readiness after both GPUs passed compact count-four finalizer roots at 18 GiB per worker, seven negative audits, and two concurrent launch rejections caused by declining live host RAM.",
+  "status": "blocked",
+  "typed_leaf_verification": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {
+      "context_and_policy_mutation_tests": true,
+      "cpu_audited": true,
+      "leaf_proven_bits": 127,
+      "scope": "Context-bound leaf verification only; complete mixed recursive security is unqualified.",
+      "transaction_types": [
+        "joinsplit",
+        "htlc_redeem",
+        "htlc_refund",
+        "issuance"
+      ]
+    },
+    "sources": [
+      {
+        "bytes": 5306,
+        "path": "docs/evidence/block-v2-throughput-validation-2026-10-04.json",
+        "sha256": "07d935b35a8a9453f39447c2f00c04c5495c7a6d7a4589a6c3e02c36e5338a90"
+      },
+      {
+        "bytes": 5417,
+        "path": "docs/evidence/block-v2-typed-validation-2026-10-04.json",
+        "sha256": "0a94fe4f64cd3112fec26975fdf09d2b0f5f10754afa9142aca1ce915da6be4e"
+      }
+    ],
+    "status": "passed"
+  }
+}

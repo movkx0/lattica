@@ -1,0 +1,41 @@
+{
+  "campaign_manifest": {
+    "bytes": 10702,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r1/manifest.json",
+    "sha256": "7b984938a084c63a3ee3bec18b6e62e333e1089fc2dc1e0dfed0a568ad7524be"
+  },
+  "captured_utc": "2026-10-05T10:23:45.754750+00:00",
+  "controller": {
+    "bytes": 6254,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r1/run-after-validation.py",
+    "sha256": "b551364d617dbc069b87690781674d344864068b0fe416fd4452fa6e2e85825c"
+  },
+  "delivered_transactions_measured": false,
+  "durable_complete_body_application_qualified": false,
+  "execution": [
+    "Wait for all eleven native validation commands to pass",
+    "Conservatively admit and prove the first count-four complete-body root on the laptop GPU; require independent CPU audit",
+    "Do the same for the alternate complete-body fixture, after the first job stops",
+    "Run positive native durable application and journal recovery qualification"
+  ],
+  "prerequisite_validation_manifest": {
+    "bytes": 42810,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r2/manifest.json",
+    "sha256": "3f2ea8e4c365b566c7f22f3e9b08e0d267d0aa92b1c2b6179d1443fa8a3bf41a"
+  },
+  "production_ready": false,
+  "qualification_tooling_manifest": {
+    "bytes": 2765,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/qualification-tooling-r1/manifest.json",
+    "sha256": "acb0d9cbed8478e85de60e117043ac2c8b2f7e0ca4c288d789c956e1194d6acd"
+  },
+  "queued_snapshot": {
+    "bytes": 595,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r1/queued-campaign.json",
+    "sha256": "c2263cbe79c671f91d8a3298c84ea740c36e8433ad786fa216f56ea2c1e633c4"
+  },
+  "record_type": "research_complete_body_host_campaign_queued",
+  "schema_version": 1,
+  "scope": "Serial follow-up with frozen inputs and separate failure logs. Does not compile source or overlap another timed proving service. A failed prerequisite or command stops this retained attempt.",
+  "status": "waiting_for_native_validation"
+}

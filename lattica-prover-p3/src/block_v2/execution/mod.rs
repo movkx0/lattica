@@ -29,6 +29,8 @@ pub mod transport;
 
 #[cfg(target_os = "linux")]
 pub mod os_worker;
+#[cfg(all(target_os = "linux", feature = "stream"))]
+pub mod startup;
 
 #[cfg(all(target_os = "linux", feature = "stream"))]
 pub mod process;

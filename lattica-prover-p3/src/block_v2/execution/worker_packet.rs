@@ -1,4 +1,5 @@
-//! Bounded local CPU-worker packets, not a network/consensus protocol or ABI.
+//! Bounded local execution packets, not a network/consensus protocol or ABI.
+//! Legacy CPU and typed registry families use distinct request/result formats.
 //! A decoder never reconstructs a scheduler Assignment or a verification ticket.
 //! Launch permission binds the exact packet; the owner independently verifies
 //! result bytes against its original Job and current attempt before acceptance.
@@ -12,26 +13,28 @@ use crate::block_v2::{
 
 const REQUEST_MAGIC: &[u8; 8] = b"LVCPUR01";
 const RESULT_MAGIC: &[u8; 8] = b"LVCPUS01";
+const TYPED_REQUEST_MAGIC: &[u8; 8] = b"LVTYPR01";
+const TYPED_RESULT_MAGIC: &[u8; 8] = b"LVTYPS01";
 pub const MAX_RESULT_BYTES: usize = MAX_PROOF_BYTES + 256;
 
 #[derive(Clone)]
-struct Child {
-    job: JobId,
-    operation: Operation,
-    start: u8,
-    expected: NodeSummary,
+pub(super) struct Child {
+    pub(super) job: JobId,
+    pub(super) operation: Operation,
+    pub(super) start: u8,
+    pub(super) expected: NodeSummary,
 }
-struct Request {
-    key: [u8; 32],
-    resources: Resources,
-    pin: RegistryPin,
-    job: JobId,
-    operation: Operation,
-    start: u8,
-    expected: NodeSummary,
-    children: Vec<Child>,
-    manifest: Vec<ArtifactRef>,
-    inputs: Vec<Arc<[u8]>>,
+pub(super) struct Request {
+    pub(super) key: [u8; 32],
+    pub(super) resources: Resources,
+    pub(super) pin: RegistryPin,
+    pub(super) job: JobId,
+    pub(super) operation: Operation,
+    pub(super) start: u8,
+    pub(super) expected: NodeSummary,
+    pub(super) children: Vec<Child>,
+    pub(super) manifest: Vec<ArtifactRef>,
+    pub(super) inputs: Vec<Arc<[u8]>>,
 }
 
 /// Observation of a CPU-checked request, not scheduler eligibility/authority.
@@ -43,22 +46,19 @@ pub struct RequestInfo {
 }
 
 fn construction(pin: RegistryPin) -> u8 {
+    if pin.is_typed() {
+        return 3;
+    }
     match pin.construction() {
         WrapperConstruction::SingleWallet => 1,
         WrapperConstruction::GroupedPair => 2,
     }
 }
 fn operation(code: u8) -> Result<Operation, Error> {
-    match code {
-        1 => Ok(Operation::Wrap),
-        2 => Ok(Operation::WrapPair),
-        3 => Ok(Operation::Empty),
-        4 => Ok(Operation::Merge),
-        _ => Err("CPU packet operation".into()),
-    }
+    Operation::from_code(code)
 }
 fn cpu_resources(value: Resources) -> Result<(), Error> {
-    value.validate_capacity()?;
+    value.validate_legacy_capacity()?;
     if value.vram_bytes != 0 {
         return Err("CPU packet reserves VRAM".into());
     }
@@ -120,7 +120,7 @@ impl<'a> Reader<'a> {
             scratch_bytes: self.u64()?,
             threads: self.u32()?,
         };
-        cpu_resources(resources)?;
+        resources.validate_capacity()?;
         Ok(resources)
     }
     fn summary(&mut self, context: Context) -> Result<NodeSummary, Error> {
@@ -160,17 +160,28 @@ fn shape(pin: RegistryPin, op: Operation, start: u8, expected: NodeSummary) -> R
     }
     let valid = match op {
         Operation::Wrap => {
-            pin.construction() == WrapperConstruction::SingleWallet
+            !pin.is_typed()
+                && pin.construction() == WrapperConstruction::SingleWallet
                 && expected.level == 0
                 && expected.count == 1
         }
         Operation::WrapPair => {
-            pin.construction() == WrapperConstruction::GroupedPair
+            !pin.is_typed()
+                && pin.construction() == WrapperConstruction::GroupedPair
                 && expected.level == 1
                 && expected.count == 2
         }
         Operation::Empty => expected.count == 0,
         Operation::Merge => expected.level > 0,
+        Operation::TypedPair { mode, padded } => {
+            pin.is_typed()
+                && crate::block_v2::machine::typed_pairs::leaf_modes(u64::from(mode)).is_ok()
+                && expected.level == 1
+                && expected.count == if padded { 1 } else { 2 }
+        }
+        Operation::Finalize => {
+            pin.is_typed() && start == 0 && expected.level == DEPTH && expected.count > 0
+        }
     };
     if !valid {
         return Err("CPU packet operation/statement shape".into());
@@ -179,16 +190,15 @@ fn shape(pin: RegistryPin, op: Operation, start: u8, expected: NodeSummary) -> R
 }
 
 impl Request {
-    fn validate(&self) -> Result<(), Error> {
-        cpu_resources(self.resources)?;
+    pub(super) fn validate(&self) -> Result<(), Error> {
+        if self.pin.is_typed() {
+            self.resources.validate_capacity()?;
+        } else {
+            cpu_resources(self.resources)?;
+        }
         commitment::digest_from_bytes(&self.key)?;
         shape(self.pin, self.operation, self.start, self.expected)?;
-        let (wallets, children) = match self.operation {
-            Operation::Wrap => (1, 0),
-            Operation::WrapPair => (2, 0),
-            Operation::Empty => (0, 0),
-            Operation::Merge => (0, 2),
-        };
+        let (wallets, children) = self.operation.arity();
         if self.children.len() != children
             || self.manifest.len() != wallets + children
             || self.inputs.len() != self.manifest.len()
@@ -222,6 +232,31 @@ impl Request {
                 return Err("CPU packet ordered merge statement".into());
             }
         }
+        if self.operation == Operation::Finalize {
+            let child = &self.children[0];
+            if child.start != 0
+                || child.expected.level >= DEPTH
+                || child.operation == Operation::Finalize
+                || child.expected.count == 0
+            {
+                return Err("typed packet finalizer child geometry".into());
+            }
+            let mut expected = child.expected;
+            while expected.level < DEPTH {
+                expected = commitment::merge_nodes(
+                    expected,
+                    commitment::empty_subtree(expected.context, expected.level)?,
+                )?;
+            }
+            if expected != self.expected {
+                return Err("typed packet finalizer statement".into());
+            }
+        }
+        if matches!(self.operation, Operation::TypedPair { padded: true, .. })
+            && self.manifest[0] != self.manifest[1]
+        {
+            return Err("typed packet padding must repeat its verified wallet".into());
+        }
         let deps: Vec<_> = self.children.iter().map(|c| c.job).collect();
         if JobId::for_summary(self.pin, self.operation, self.start, self.expected, &deps)?
             != self.job
@@ -233,7 +268,12 @@ impl Request {
 
     fn encode(&self) -> Result<Vec<u8>, Error> {
         self.validate()?;
-        let mut out = REQUEST_MAGIC.to_vec();
+        let mut out = if self.pin.is_typed() {
+            TYPED_REQUEST_MAGIC
+        } else {
+            REQUEST_MAGIC
+        }
+        .to_vec();
         out.extend(self.key);
         put_resources(&mut out, self.resources);
         out.extend(self.pin.profile());
@@ -259,12 +299,17 @@ impl Request {
         Ok(out)
     }
 
-    fn decode(bytes: &[u8], pin: RegistryPin, chain: [u8; 32]) -> Result<Self, Error> {
+    pub(super) fn decode(bytes: &[u8], pin: RegistryPin, chain: [u8; 32]) -> Result<Self, Error> {
         if bytes.len() > launch::MAX_REQUEST_BYTES {
             return Err("CPU packet size".into());
         }
         let mut r = Reader { bytes, at: 0 };
-        if r.take(8)? != REQUEST_MAGIC {
+        let magic = if pin.is_typed() {
+            TYPED_REQUEST_MAGIC
+        } else {
+            REQUEST_MAGIC
+        };
+        if r.take(8)? != magic {
             return Err("CPU packet schema".into());
         }
         let key = r.array()?;
@@ -325,7 +370,7 @@ impl Request {
         Ok(request)
     }
 
-    fn bind(&self, token: &Token, bytes: &[u8]) -> Result<(), Error> {
+    pub(super) fn bind(&self, token: &Token, bytes: &[u8]) -> Result<(), Error> {
         token.check_request(bytes)?;
         if token.key() != self.key || token.resources() != self.resources {
             return Err("CPU packet launch key/resources".into());
@@ -414,6 +459,9 @@ impl CpuWorker {
                 let right = proofs.pop().unwrap();
                 let left = proofs.pop().unwrap();
                 (None, Inputs::Merge([left, right]))
+            }
+            Operation::TypedPair { .. } | Operation::Finalize => {
+                return Err("legacy CPU packet rejects typed jobs".into())
             }
         };
         if let Some(job) = derived {
@@ -526,8 +574,25 @@ fn encode_result(
     timings: Timings,
     stats: CacheStats,
 ) -> Result<Vec<u8>, Error> {
+    encode_result_for(false, key, job, request, proof, timings, stats)
+}
+
+pub(super) fn encode_result_for(
+    typed: bool,
+    key: [u8; 32],
+    job: JobId,
+    request: [u8; 32],
+    proof: &[u8],
+    timings: Timings,
+    stats: CacheStats,
+) -> Result<Vec<u8>, Error> {
     let identity = ArtifactRef::from_bytes(ArtifactKind::Node, proof)?;
-    let mut out = RESULT_MAGIC.to_vec();
+    let mut out = if typed {
+        TYPED_RESULT_MAGIC
+    } else {
+        RESULT_MAGIC
+    }
+    .to_vec();
     out.extend(key);
     out.extend(job.to_bytes());
     out.extend(request);
@@ -562,7 +627,12 @@ pub fn decode_result(
         return Err("CPU result original request binding".into());
     }
     let mut r = Reader { bytes, at: 0 };
-    if r.take(8)? != RESULT_MAGIC
+    let magic = if assignment.job.pin().is_typed() {
+        TYPED_RESULT_MAGIC
+    } else {
+        RESULT_MAGIC
+    };
+    if r.take(8)? != magic
         || r.array()? != assignment.lease.process_key()?
         || r.job()? != assignment.job.id()
         || r.array()? != launch::request_digest(request)?
@@ -595,3 +665,7 @@ pub fn decode_result(
 #[cfg(test)]
 #[path = "worker_packet_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "worker_typed_packet_tests.rs"]
+mod typed_tests;

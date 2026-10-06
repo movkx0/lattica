@@ -1,0 +1,197 @@
+{
+  "artifacts": [
+    {
+      "bytes": 88792433,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/report-index.html",
+      "sha256": "4986158a58e2de9c0cecc79d74a06ce09e969b6dc348577197648577e8320263"
+    },
+    {
+      "bytes": 28482419,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/report-catalog.json",
+      "sha256": "3ecdbc11e693469626a76ea98756f380268a12277cf8a8657559fe1036534bd3"
+    },
+    {
+      "bytes": 2880,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/report-source.json",
+      "sha256": "b52541509e6ec0e1248ccd7a25be3d6b7c77e148e797454d9fbd0cf3fa4aad9a"
+    },
+    {
+      "bytes": 84086,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/report-source.tar.gz",
+      "sha256": "30e072b9176878d6a0358e0749af2e2f1a1f5f9cab4af827bb23bd4fdaae5197"
+    },
+    {
+      "bytes": 89,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/report-check-r1.json",
+      "sha256": "09ec217f80f8d43d5f373dc9d80742cf58ba8b2d0f88f080529f179de72c0a95"
+    },
+    {
+      "bytes": 6174,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/check-intake.mjs",
+      "sha256": "f9feb396dfdb09de79aca07e9649018ef3b791add91ec0b1ab6c03a9afef5b57"
+    },
+    {
+      "bytes": 109,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/browser-check-r1.log",
+      "sha256": "581e935e448872011931d4f5577481c455baa7083e7601e442bcb560aece84e5"
+    },
+    {
+      "bytes": 697,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/intake-browser-check-r1.log",
+      "sha256": "9f3c8599fc92b51502b913905783c3c251a03869bb4e9e808f47f5b5ab135ca4"
+    },
+    {
+      "bytes": 2894,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/publish-report-r1.py",
+      "sha256": "3fab27ecd198769b79bde569e7b5b5d1c5d8b283c8222e913d619c2a65ab2482"
+    },
+    {
+      "bytes": 3667,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/finalize-qa-r1.py",
+      "sha256": "579bbecde4fc7c1d87c48a874a0bc4a8840c2205474920c947c45c223694e36c"
+    },
+    {
+      "bytes": 221988,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/browser-r1/apple-738f4dea8eb2559015eb-01-pilot-shared-18t-quotient-compact-deferred-r1.json",
+      "sha256": "0df48f95d34872441edf41dd34e61c600c017de837f528eb3ead4bdb27d41fc2"
+    },
+    {
+      "bytes": 159163,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/browser-r1/desktop.png",
+      "sha256": "6998ed652365b834b540e96fe4c9eba83a9fa9e5fd3aa8465d69533e7ace98d3"
+    },
+    {
+      "bytes": 69114,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/browser-r1/mobile.png",
+      "sha256": "aaf5b8b488e88f99dbafaca9d65e5ab25d511a1c06539b3a3daa364530fad6ee"
+    },
+    {
+      "bytes": 158466,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/browser-r1/persistent-worker.png",
+      "sha256": "3e7b9035972994dc594fecbbcf119691354b5dc0aea733adeb2090e6b2153186"
+    },
+    {
+      "bytes": 277061,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/browser-r1/run-0aca94e56d4e7aa35685e604.json",
+      "sha256": "ef0a953de327e8751a1030848eee35abd9424775eacc3e96d667e171fe36d2e7"
+    },
+    {
+      "bytes": 577759,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/browser-r1/run-3a5c96247d51de91ca1b9086.json",
+      "sha256": "fd0d2cc84f6dd53b50d6b50ad5606cad905bad7cb5dfc24a1a09d2d8b04f6929"
+    },
+    {
+      "bytes": 529835,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/browser-r1/run-4dd7dea0a1b4c15704e096d5.json",
+      "sha256": "548a65cbc60c553cb962a92563f5c69b8b9406f2cd6059d297e7d7c52987057e"
+    },
+    {
+      "bytes": 146917,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/browser-r1/throughput-d20a0512e7e260b7.json",
+      "sha256": "ba53d3ed03c6f9c5ce3af6ce697a2e880b56f1d3755f352c2fb527ff097d21ef"
+    },
+    {
+      "bytes": 98792,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/browser-r1/timeline.png",
+      "sha256": "21f4160f9966fce795a59f226c22438373008a9eaac1ea3ed5d2c57f83218dde"
+    },
+    {
+      "bytes": 230281,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/browser-r1/typed-worker.png",
+      "sha256": "437e6b5e122f9fbb00579212394dd3ad17f94f30c2fbf3b41c07dcd2cbc84c72"
+    },
+    {
+      "bytes": 195166,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/intake-browser-r1/intake-desktop.png",
+      "sha256": "702f010bb596caa9ac37d6fe839093e1ffb2de1dbfd379ce22cb681b46e6d125"
+    },
+    {
+      "bytes": 194264,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/intake-browser-r1/intake-mobile.png",
+      "sha256": "04c7589bd126d0ef0ee4a23ed65cc987fe067dc505c6742f11a45c3c51a3794f"
+    },
+    {
+      "bytes": 233968,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/intake-browser-r1/intake-proofs.png",
+      "sha256": "470f6d4e4174e780c2530442d35316b4c003a0dd230166151afe808fa0754495"
+    },
+    {
+      "bytes": 578347,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/intake-browser-r1/run-71d8e8f5b4eaee5617365b49.json",
+      "sha256": "2797f9c73a324f8f6bcfc161ee77bb11c246ba322147bea1375443c35ef0939c"
+    },
+    {
+      "bytes": 146917,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/intake-browser-r1/throughput-d20a0512e7e260b7.json",
+      "sha256": "ba53d3ed03c6f9c5ce3af6ce697a2e880b56f1d3755f352c2fb527ff097d21ef"
+    }
+  ],
+  "browser_regression": {
+    "artifacts": "/tmp/lattica-report-browser-HQc69x",
+    "browser_errors": 0,
+    "network_requests": 0,
+    "retained_artifacts": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/browser-r1",
+    "status": "passed"
+  },
+  "captured_utc": "2026-10-05T21:22:48.533603+00:00",
+  "catalog": {
+    "bytes": 28482419,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r20/report-catalog.json",
+    "sha256": "3ecdbc11e693469626a76ea98756f380268a12277cf8a8657559fe1036534bd3"
+  },
+  "counts": {
+    "campaigns": 183,
+    "cpu_audited_runs": 339,
+    "runs": 750,
+    "transaction_campaigns": 0
+  },
+  "intake_run_browser": {
+    "audited_roots": 1,
+    "console_errors": 0,
+    "download_sha256": "2797f9c73a324f8f6bcfc161ee77bb11c246ba322147bea1375443c35ef0939c",
+    "downloaded_qualification": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-readiness-20261005-r20/intake-browser-r1/throughput-d20a0512e7e260b7.json",
+    "downloaded_run": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-readiness-20261005-r20/intake-browser-r1/run-71d8e8f5b4eaee5617365b49.json",
+    "external_requests": 0,
+    "proofs": 4,
+    "retained_sha256": "9f6d08de6b42302af23569768e84ac36ea413a328d3ec91bebb9536ab214596b",
+    "run_id": "run-71d8e8f5b4eaee5617365b49",
+    "status": "passed",
+    "worker_proofs": [
+      3,
+      1
+    ]
+  },
+  "native_intake_evidence": {
+    "bytes": 183922,
+    "path": "docs/evidence/block-v2-native-arrival-intake-2026-10-05.json",
+    "sha256": "307b64c70662a38bf4cfd4fb9951376cca2ae5073eabf437a421b274c39adaf9"
+  },
+  "pilot_started": false,
+  "production_ready": false,
+  "qualification": {
+    "bytes": 134047,
+    "path": "docs/evidence/block-v2-throughput-qualification-2026-10-05-r20.json",
+    "sha256": "328ed06885f9d03bb169e79aec7a00e21763f2ee8abd13e6f48dcfaf201c226a"
+  },
+  "record_type": "benchmark_report_qa",
+  "run": {
+    "bytes": 482648,
+    "path": "docs/benchmarks/runs/run-71d8e8f5b4eaee5617365b49.json",
+    "sha256": "9f6d08de6b42302af23569768e84ac36ea413a328d3ec91bebb9536ab214596b"
+  },
+  "schema_version": 1,
+  "source_integrity": {
+    "checked_files": 250,
+    "status": "passed"
+  },
+  "status": "passed",
+  "visual_review": {
+    "observed": "Desktop and mobile views show the shared GPU allocation, four proof records, CPU audit, native application and durable intake receipt stages. Wide tables scroll inside their panels; no page overflow.",
+    "screenshots": [
+      "lattica-prover-p3/target/block-v2-readiness-20261005-r20/intake-browser-r1/intake-desktop.png",
+      "lattica-prover-p3/target/block-v2-readiness-20261005-r20/intake-browser-r1/intake-mobile.png",
+      "lattica-prover-p3/target/block-v2-readiness-20261005-r20/intake-browser-r1/intake-proofs.png"
+    ],
+    "status": "passed"
+  }
+}

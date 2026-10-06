@@ -40,14 +40,31 @@ fn hex(comptime size: usize, bytes: [size]u8) [size * 2]u8 {
     return out;
 }
 
-fn parsePublic(text: []const u8) HexError!Public {
-    const bytes = try parseHex(FIELD_COUNT * 8, text);
-    var values: Public = undefined;
+fn parseFields(comptime count: usize, text: []const u8) HexError![count]u64 {
+    const bytes = try parseHex(count * 8, text);
+    var values: [count]u64 = undefined;
     for (&values, 0..) |*value, index| {
         value.* = std.mem.readInt(u64, bytes[index * 8 ..][0..8], .little);
         if (value.* >= MODULUS) return error.NonCanonicalField;
     }
     return values;
+}
+
+fn parsePublic(text: []const u8) HexError!Public {
+    return parseFields(FIELD_COUNT, text);
+}
+
+/// KIND:HEX, where kinds 1/2/3 are JoinSplit/HTLC/issuance and HEX is the
+/// complete public statement in canonical little-endian u64 fields. This
+/// calculates a commitment only; the host must independently enforce policy.
+fn parseMixedEntry(text: []const u8) !commitment.Entry {
+    if (text.len < 2 or text[1] != ':') return error.InvalidArguments;
+    return switch (text[0]) {
+        '1' => .{ .kind = .join_split, .statement_digest = try commitment.statementDigest(1, &try parseFields(26, text[2..])) },
+        '2' => .{ .kind = .htlc, .statement_digest = try commitment.statementDigest(2, &try parseFields(31, text[2..])) },
+        '3' => .{ .kind = .coinbase, .statement_digest = try commitment.statementDigest(3, &try parseFields(26, text[2..])) },
+        else => error.InvalidKind,
+    };
 }
 
 fn derive(context: commitment.Context, public: Publics) !commitment.NodeSummary {
@@ -116,10 +133,64 @@ fn selectionArguments(args: []const []const u8) !commitment.NodeSummary {
     return deriveSelection(context, public[0 .. args.len - 4]);
 }
 
+fn mixedArguments(args: []const []const u8) !commitment.NodeSummary {
+    if (args.len < 5 or args.len > commitment.CAPACITY + 4 or !std.mem.eql(u8, args[1], "root-mixed"))
+        return error.InvalidArguments;
+    const context = commitment.Context{ .profile_id = try parseHex(32, args[2]), .chain_id = try parseHex(32, args[3]) };
+    var entries: [commitment.CAPACITY]commitment.Entry = undefined;
+    for (args[4..], 0..) |value, index| entries[index] = try parseMixedEntry(value);
+    const count = args.len - 4;
+    return .{ .context = context, .level = commitment.DEPTH, .count = @intCast(count), .root = try commitment.root(context, entries[0..count]) };
+}
+
+test "mixed arguments bind type order and every required depth-six count" {
+    const js = "1:" ++ ("00" ** (26 * 8));
+    const htlc = "2:" ++ ("00" ** (31 * 8));
+    const issuance = "3:" ++ ("00" ** (26 * 8));
+    const kinds = [_][]const u8{ js, htlc, htlc, issuance };
+    const id = "11" ** 32;
+    var args: [commitment.CAPACITY + 4][]const u8 = undefined;
+    args[0..4].* = .{ "tool", "root-mixed", id, id };
+    for (args[4..], 0..) |*arg, index| arg.* = kinds[index % kinds.len];
+    for ([_]usize{ 1, 2, 3, 4, 8, 16, 32, 63, 64 }) |count| {
+        const node = try mixedArguments(args[0 .. count + 4]);
+        try std.testing.expectEqual(@as(u8, 6), node.level);
+        try std.testing.expectEqual(@as(u8, @intCast(count)), node.count);
+    }
+    const before = (try mixedArguments(args[0..8])).root;
+    std.mem.swap([]const u8, &args[4], &args[7]);
+    const swapped = (try mixedArguments(args[0..8])).root;
+    try std.testing.expect(!std.mem.eql(u64, &before, &swapped));
+    args[4] = js;
+    args[7] = js;
+    const relabeled = (try mixedArguments(args[0..8])).root;
+    try std.testing.expect(!std.mem.eql(u64, &before, &relabeled));
+    args[7] = issuance;
+    args[2] = "22" ** 32;
+    const other_profile = (try mixedArguments(args[0..8])).root;
+    try std.testing.expect(!std.mem.eql(u64, &before, &other_profile));
+}
+
+test "mixed public input rejects unknown type wrong field width and noncanonical fields" {
+    try std.testing.expectError(error.InvalidKind, parseMixedEntry("4:"));
+    try std.testing.expectError(error.InvalidArguments, parseMixedEntry("1"));
+    try std.testing.expectError(error.InvalidArguments, parseMixedEntry("1-00"));
+    try std.testing.expectError(error.InvalidLength, parseMixedEntry("2:" ++ ("00" ** (26 * 8))));
+    try std.testing.expectError(error.InvalidLength, parseMixedEntry("3:" ++ ("00" ** (31 * 8))));
+    const noncanonical = "ffffffffffffffff" ++ ("00" ** (30 * 8));
+    try std.testing.expectError(error.NonCanonicalField, parseMixedEntry("2:" ++ noncanonical));
+    const id = "11" ** 32;
+    try std.testing.expectError(error.InvalidArguments, mixedArguments(&.{ "tool", "root-mixed", id, id }));
+    const too_many = [_][]const u8{"x"} ** (commitment.CAPACITY + 5);
+    try std.testing.expectError(error.InvalidArguments, mixedArguments(&too_many));
+}
+
 pub fn main(init: std.process.Init) !void {
     const args = try init.minimal.args.toSlice(init.arena.allocator());
     const node = if (args.len >= 2 and std.mem.eql(u8, args[1], "root-padded"))
         try selectionArguments(args)
+    else if (args.len >= 2 and std.mem.eql(u8, args[1], "root-mixed"))
+        try mixedArguments(args)
     else legacy: {
         const input = try arguments(args);
         break :legacy switch (input.kind) {

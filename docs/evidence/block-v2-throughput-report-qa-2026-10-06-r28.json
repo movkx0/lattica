@@ -1,0 +1,232 @@
+{
+  "captured_utc": "2026-10-06T04:20:28.145746+00:00",
+  "checks": {
+    "browser_regression": {
+      "artifacts": "/tmp/lattica-report-browser-VGDtCC",
+      "browser_errors": 0,
+      "network_requests": 0,
+      "status": "passed"
+    },
+    "cached_export_recovery": "CPU-only; four reused proofs; one unexported proof matched to retained artifact; zero fresh proofs/GPU workers; one native block; no transaction throughput rate.",
+    "desktop_and_mobile_visual_review": "passed",
+    "export_browser": {
+      "artifacts": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-readiness-20261006-r28/export-browser-r1",
+      "console_errors": 0,
+      "external_requests": 0,
+      "run_id": "run-311c88462b5be14e6918abfe",
+      "status": "passed"
+    },
+    "report": {
+      "campaigns": 222,
+      "runs": 763,
+      "status": "valid",
+      "transaction_campaigns": 0
+    },
+    "report_regression_tests": 26,
+    "source_refs_verified": 721,
+    "typed_report_tests": 34
+  },
+  "dataset": {
+    "campaigns": 222,
+    "cpu_audited_records": 347,
+    "records": 763,
+    "transaction_campaigns": 0
+  },
+  "limitation": "This records one recovery qualification using retained proofs. The full recovery and transaction-throughput gates remain blocked; the two-hour pilot was not started.",
+  "new_runs": {
+    "export_recovery": {
+      "bytes": 165801,
+      "path": "docs/benchmarks/runs/run-311c88462b5be14e6918abfe.json",
+      "sha256": "0e2c1096d497701d17d200d81d08d5ee0d8ad34fa960584bd1353bdd4657c7bc"
+    }
+  },
+  "qualification": {
+    "bytes": 180557,
+    "path": "docs/evidence/block-v2-throughput-qualification-2026-10-06-r28.json",
+    "sha256": "cad6d5f115169922bf452abb952f1ed11ff0a994e2cc99f3ae9179f55b9700e5"
+  },
+  "report_source": {
+    "bytes": 4048,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/report-source.json",
+    "sha256": "fe8dd7c2db34c9786c9a11ac9fea4e49ab21e7aa53a1ae259311a69ab1224679"
+  },
+  "retained_catalog": {
+    "bytes": 36880913,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/report-catalog.json",
+    "sha256": "67049d133aa38eee68a44f1e970ca9dd24b739a42cf5167f3c4ffb3848bc9758"
+  },
+  "retained_report": {
+    "bytes": 90371458,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/report-index.html",
+    "sha256": "d22880a3ead4252bb20e2a4ec1fb9bb5e963b2cc0059155d88a3bcea92405c5b"
+  },
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 221988,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/browser-regression-r1/apple-738f4dea8eb2559015eb-01-pilot-shared-18t-quotient-compact-deferred-r1.json",
+      "sha256": "0df48f95d34872441edf41dd34e61c600c017de837f528eb3ead4bdb27d41fc2"
+    },
+    {
+      "bytes": 158672,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/browser-regression-r1/desktop.png",
+      "sha256": "b23d531656848168b7aa5632c280ae5ddd1ee8cc4c0636b0b05c6751acf95646"
+    },
+    {
+      "bytes": 69114,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/browser-regression-r1/mobile.png",
+      "sha256": "aaf5b8b488e88f99dbafaca9d65e5ab25d511a1c06539b3a3daa364530fad6ee"
+    },
+    {
+      "bytes": 158465,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/browser-regression-r1/persistent-worker.png",
+      "sha256": "98303108885549fa6cf33e7b255f1a18a0395434218f1e7969b2ea2d4603c44d"
+    },
+    {
+      "bytes": 277061,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/browser-regression-r1/run-0aca94e56d4e7aa35685e604.json",
+      "sha256": "ef0a953de327e8751a1030848eee35abd9424775eacc3e96d667e171fe36d2e7"
+    },
+    {
+      "bytes": 577759,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/browser-regression-r1/run-3a5c96247d51de91ca1b9086.json",
+      "sha256": "fd0d2cc84f6dd53b50d6b50ad5606cad905bad7cb5dfc24a1a09d2d8b04f6929"
+    },
+    {
+      "bytes": 529835,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/browser-regression-r1/run-4dd7dea0a1b4c15704e096d5.json",
+      "sha256": "548a65cbc60c553cb962a92563f5c69b8b9406f2cd6059d297e7d7c52987057e"
+    },
+    {
+      "bytes": 206688,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/browser-regression-r1/throughput-3f3281e9a94233d4.json",
+      "sha256": "18196fd7eaef058afd7c1335f556c28a29952e21a95180992ac62f226605af03"
+    },
+    {
+      "bytes": 98550,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/browser-regression-r1/timeline.png",
+      "sha256": "b4d7c6e33c80be213de0ec73ddf6711fe72b5e422da6fadb40dee028f3992f0f"
+    },
+    {
+      "bytes": 230281,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/browser-regression-r1/typed-worker.png",
+      "sha256": "29c7ff8119956e64fb42b26f11127cadd09a0c5c3b5d7682ed3365a5a132b75e"
+    },
+    {
+      "bytes": 109,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/browser-regression-r1.log",
+      "sha256": "9a8276e80a7915d5263c8c6994fe33da3c9b04496b139bee8e298eabbadf1d66"
+    },
+    {
+      "bytes": 5128,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/check-export-r1.mjs",
+      "sha256": "4e61a7fea3a848b56e4c9453b0b7ac5e84d85c3abeaa9b3276eb7fa7da34c626"
+    },
+    {
+      "bytes": 176953,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/export-browser-r1/export-desktop.png",
+      "sha256": "c09199cd6a33957b9fb38a0a22915c03d419fe5532da48ad7da867ca1b381328"
+    },
+    {
+      "bytes": 180169,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/export-browser-r1/export-mobile.png",
+      "sha256": "a27d9cf4bd902c2d20c1cbbc75dd6b2fc5d206697f31b9a84179b6d9675d074a"
+    },
+    {
+      "bytes": 268714,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/export-browser-r1/run-311c88462b5be14e6918abfe.json",
+      "sha256": "7ce5165c131cd95e650809f307d08b038f963223a86b4454d3cf254f336d21d4"
+    },
+    {
+      "bytes": 206688,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/export-browser-r1/throughput-3f3281e9a94233d4.json",
+      "sha256": "18196fd7eaef058afd7c1335f556c28a29952e21a95180992ac62f226605af03"
+    },
+    {
+      "bytes": 216,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/export-browser-r1.log",
+      "sha256": "5e396a940fafcb1f2f16ab1d4b20641ddef45dc237a08a868eeccac783fa19be"
+    },
+    {
+      "bytes": 3791,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/finalize-qa-r1.py",
+      "sha256": "0490de7928ba9be726bd43180bf872750d5ce90aa81c77f38fded6b1c7b973f7"
+    },
+    {
+      "bytes": 1450,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/finalize-report-r1.py",
+      "sha256": "6a9ce9ccc2984e2f900dbbf527e6c8ef0e52ba2fe6271eed641daf2d1d798061"
+    },
+    {
+      "bytes": 56,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/new-runs.json",
+      "sha256": "6d36af3f3a5880aca479da0da74373a58e74aa828ef2950ee393b98f86488e52"
+    },
+    {
+      "bytes": 137,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/publish-report-r1.log",
+      "sha256": "5fb1a1dbb68c48913c7a00c1f90e042fee8a730f9ee4d5c7212ae8346d14c9f7"
+    },
+    {
+      "bytes": 2881,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/publish-report-r1.py",
+      "sha256": "fb9dc6c4af849696d5b915f125e5be6ee841a28d61707f7485071a37965f1435"
+    },
+    {
+      "bytes": 143,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/qualification-r1.log",
+      "sha256": "33c16bef630364a34ca8c19bb5906f0ff4a67f871badb96fc78b4b3ab28aca10"
+    },
+    {
+      "bytes": 180557,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/qualification.json",
+      "sha256": "cad6d5f115169922bf452abb952f1ed11ff0a994e2cc99f3ae9179f55b9700e5"
+    },
+    {
+      "bytes": 36880913,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/report-catalog.json",
+      "sha256": "67049d133aa38eee68a44f1e970ca9dd24b739a42cf5167f3c4ffb3848bc9758"
+    },
+    {
+      "bytes": 89,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/report-check-r1.json",
+      "sha256": "08a7074d10e0cad3b7e162553fd88a4cc0acad4e33222779398800c8d565f148"
+    },
+    {
+      "bytes": 48,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/report-finalization-r1.log",
+      "sha256": "8eef59779940daeb7a1d57363da2b1cc87952cad03336ddbe1e2c2c155399429"
+    },
+    {
+      "bytes": 90371458,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/report-index.html",
+      "sha256": "d22880a3ead4252bb20e2a4ec1fb9bb5e963b2cc0059155d88a3bcea92405c5b"
+    },
+    {
+      "bytes": 201,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/report-regression-r1.log",
+      "sha256": "5fa75cdc21ce944b40014bbab6ff7cfb1eb456d80f3d253131e318cfb7d6fd70"
+    },
+    {
+      "bytes": 4048,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/report-source.json",
+      "sha256": "fe8dd7c2db34c9786c9a11ac9fea4e49ab21e7aa53a1ae259311a69ab1224679"
+    },
+    {
+      "bytes": 139200,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/report-source.tar.gz",
+      "sha256": "a79f3d5bde53bb5e9cfafaef3957e1f19ce364bf05e442a86c125c6aa2b43083"
+    },
+    {
+      "bytes": 54333,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/resources.json",
+      "sha256": "a5f6677bbe5cecf07752eaa0937c90121f4bbf4240d5faaf40f0720f806654a6"
+    },
+    {
+      "bytes": 133,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r28/typed-report-tests-r1.log",
+      "sha256": "9cf10eb8223eaddd649467b793fc13f0cdc0c45af41b54875aa49484b2b885a5"
+    }
+  ],
+  "status": "passed"
+}

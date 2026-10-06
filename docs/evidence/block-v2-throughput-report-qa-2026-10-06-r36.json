@@ -1,0 +1,497 @@
+{
+  "captured_utc": "2026-10-06T12:19:19.437218+00:00",
+  "checks": {
+    "browser_regression": {
+      "artifacts": "/tmp/lattica-report-browser-kPLIEY",
+      "browser_errors": 0,
+      "network_requests": 0,
+      "status": "passed"
+    },
+    "complete_pipeline_rates": true,
+    "desktop_and_mobile_visual_review": "passed",
+    "final_phase_timings_separately_retained": true,
+    "pipeline_browser": {
+      "artifacts": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2",
+      "console_errors": 0,
+      "desktop_and_mobile": true,
+      "external_requests": 0,
+      "full_pipeline_rates": true,
+      "json_downloads": true,
+      "offline": true,
+      "prefix_rate_suppressed": true,
+      "runs": {
+        "prefix": "run-532944540c9e66ab40ceeca6",
+        "shared": "run-5dd1c3e61f846a4bad0c3526",
+        "single-desktop": "run-2ce0dab44ae383dfb81de697",
+        "single-laptop": "run-07937bdd09306124f5c8a2e2",
+        "staged": "run-20e5232b69ef693e6c8fa720"
+      },
+      "staged_work_retained": true,
+      "status": "passed"
+    },
+    "prefix_rate_suppressed": true,
+    "python_tests": 177,
+    "report": {
+      "campaigns": 265,
+      "runs": 784,
+      "status": "valid",
+      "transaction_campaigns": 0
+    },
+    "report_regression_tests": 26,
+    "source_refs_verified": 2489,
+    "typed_report_tests": 45
+  },
+  "dataset": {
+    "campaigns": 265,
+    "cpu_audited_records": 363,
+    "records": 784,
+    "transaction_campaigns": 0
+  },
+  "final_host_observation": {
+    "bytes": 2137,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/final-host-observation-r1.json",
+    "sha256": "11009ac5065f3aab4513503427cef3ec398b86fd8698c4f4f98a67d5ba4389b9"
+  },
+  "limitation": "One qualification cycle with fixed per-GPU limits and identical complete fixtures, using retained wallet proofs. Each arm applies the same six user transactions and two issuance transactions in its own isolated journal. Pipeline timing includes pending-candidate preparation, prefix work when staged, final proving, CPU audit, native application and controller cleanup. Arrival submission, wallet proof generation and separate replay are excluded. The recorded sealed_application interval starts after preparation, durable sealing and selection checks, so it does not qualify a complete seal-to-ready boundary. Staging shortens the final proving phase but increases total pipeline time in this cycle. Five matched repetitions and the proposed 512 MiB context allowance still need qualification. Larger counts, complete cold/post-seal timings, full-size CPU proving, returned Mac measurements and the two-hour throughput pilot remain pending.",
+  "native_qualification": {
+    "bytes": 685879,
+    "path": "docs/evidence/block-v2-native-fixed-allocation-2026-10-06.json",
+    "sha256": "99722d903bf2ccd7c8cb49242ad8b58ff57aeddfb5403fc1e7cbd50fea7bb627"
+  },
+  "new_runs": {
+    "prefix": {
+      "bytes": 387493,
+      "path": "docs/benchmarks/runs/run-532944540c9e66ab40ceeca6.json",
+      "sha256": "52d4d7b60e7dd5c7ad8daced544931fde2527bfeb10b2a0a9935d908fc63e5d6"
+    },
+    "shared": {
+      "bytes": 802079,
+      "path": "docs/benchmarks/runs/run-5dd1c3e61f846a4bad0c3526.json",
+      "sha256": "47202b22d5a40156274d6873ebae5a97c7ba707653f6891cb9e545b915c0d690"
+    },
+    "single-desktop": {
+      "bytes": 660977,
+      "path": "docs/benchmarks/runs/run-2ce0dab44ae383dfb81de697.json",
+      "sha256": "41186ca1783dfcb17649d2803723126a669fadc2f191a774bea7cf690e8d29a3"
+    },
+    "single-laptop": {
+      "bytes": 558151,
+      "path": "docs/benchmarks/runs/run-07937bdd09306124f5c8a2e2.json",
+      "sha256": "754b0bad81c2a5261dda05b50c6522ef6a0d9472a87ebc3ae46da306e5953483"
+    },
+    "staged": {
+      "bytes": 640222,
+      "path": "docs/benchmarks/runs/run-20e5232b69ef693e6c8fa720.json",
+      "sha256": "59470bafcef2d9e6242d7ef337c86c3bfb90b1edf746f68bb21885ad8c4da251"
+    }
+  },
+  "qualification": {
+    "bytes": 182424,
+    "path": "docs/evidence/block-v2-throughput-qualification-2026-10-06-r36.json",
+    "sha256": "e0275ed2d93c3507b3e9db17015759071bca9f27dfba3b8496c58b729a22fa88"
+  },
+  "readiness": {
+    "bytes": 84353,
+    "path": "docs/evidence/block-v2-throughput-readiness-2026-10-06-r36.json",
+    "sha256": "cb34c1ae6391e13817e76d76c560cc3959d611e9b1a122d61f2376643dd730af"
+  },
+  "report_source": {
+    "bytes": 5041,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/report-source.json",
+    "sha256": "8f605e1684083231ca1718966faef6594a7474e018a5a9ebb9cdb0e5ad18632e"
+  },
+  "retained_catalog": {
+    "bytes": 51235300,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/report-catalog-r2.json",
+    "sha256": "c1937fd2ef62f3b6c4414b76c58f1ee520604acc4ef06d6b8f79585823779f9f"
+  },
+  "retained_report": {
+    "bytes": 93481641,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/report-index-r2.html",
+    "sha256": "e33fb2d45686bd5a2434c7b99e5b98936c72f786ba6c1a8756db9f0f9cdf9403"
+  },
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 109,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/browser-regression-r1.log",
+      "sha256": "67d30ce091904bcb23e5234e84caf7e233b5758894b0c4214de324f8da0a407f"
+    },
+    {
+      "bytes": 221988,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/browser-regression-r2/apple-738f4dea8eb2559015eb-01-pilot-shared-18t-quotient-compact-deferred-r1.json",
+      "sha256": "0df48f95d34872441edf41dd34e61c600c017de837f528eb3ead4bdb27d41fc2"
+    },
+    {
+      "bytes": 158687,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/browser-regression-r2/desktop.png",
+      "sha256": "492dd050b473f2813986318e39ef701a8ecf2968512b6da4a0a2e660f2ad3c7a"
+    },
+    {
+      "bytes": 69114,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/browser-regression-r2/mobile.png",
+      "sha256": "aaf5b8b488e88f99dbafaca9d65e5ab25d511a1c06539b3a3daa364530fad6ee"
+    },
+    {
+      "bytes": 158465,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/browser-regression-r2/persistent-worker.png",
+      "sha256": "98303108885549fa6cf33e7b255f1a18a0395434218f1e7969b2ea2d4603c44d"
+    },
+    {
+      "bytes": 277061,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/browser-regression-r2/run-0aca94e56d4e7aa35685e604.json",
+      "sha256": "ef0a953de327e8751a1030848eee35abd9424775eacc3e96d667e171fe36d2e7"
+    },
+    {
+      "bytes": 577759,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/browser-regression-r2/run-3a5c96247d51de91ca1b9086.json",
+      "sha256": "fd0d2cc84f6dd53b50d6b50ad5606cad905bad7cb5dfc24a1a09d2d8b04f6929"
+    },
+    {
+      "bytes": 529835,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/browser-regression-r2/run-4dd7dea0a1b4c15704e096d5.json",
+      "sha256": "548a65cbc60c553cb962a92563f5c69b8b9406f2cd6059d297e7d7c52987057e"
+    },
+    {
+      "bytes": 195753,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/browser-regression-r2/throughput-185f297d590517a6.json",
+      "sha256": "b7bde426f802acd7ef7d1db1b2eee35316a387cbdc30be3da9c2536cf65ee027"
+    },
+    {
+      "bytes": 98554,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/browser-regression-r2/timeline.png",
+      "sha256": "5beff3ae6e191ff2a3e366b6a282c1b56caaf12c13e4551ab1390565276ad632"
+    },
+    {
+      "bytes": 230281,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/browser-regression-r2/typed-worker.png",
+      "sha256": "29c7ff8119956e64fb42b26f11127cadd09a0c5c3b5d7682ed3365a5a132b75e"
+    },
+    {
+      "bytes": 109,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/browser-regression-r2.log",
+      "sha256": "cb296b4659d050a2fea96d064d5b481f45f8b0c0ddd1b047aa71297c05b58c9d"
+    },
+    {
+      "bytes": 4666,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/check-pipeline-r1.mjs",
+      "sha256": "0e8a82dbfca427fe2adcc0f0f8218b0eedb1df128fe2e61c640883734046aba0"
+    },
+    {
+      "bytes": 4850,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/check-pipeline-r2.mjs",
+      "sha256": "d408287ca6b0959f54062f6601e754fb67c2f7eee10f3fdbf2cd67ec94f2ecb7"
+    },
+    {
+      "bytes": 2137,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/final-host-observation-r1.json",
+      "sha256": "11009ac5065f3aab4513503427cef3ec398b86fd8698c4f4f98a67d5ba4389b9"
+    },
+    {
+      "bytes": 4018,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/finalize-qa-r1.py",
+      "sha256": "51d4825d2c38d1af63677b7b182a1e82428552d4dc6d5d4f783f3f175c0a5140"
+    },
+    {
+      "bytes": 1434,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/finalize-report-source-r1.py",
+      "sha256": "a0daef34384216c24e568fa214ded1ce7c53149a499df08d928e6109f607a777"
+    },
+    {
+      "bytes": 558152,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/initial-run-exports/run-07937bdd09306124f5c8a2e2.json",
+      "sha256": "74cf7d2efb9f50d8a99e2dd586b3c65c9f709387827007837458de1fa07f8760"
+    },
+    {
+      "bytes": 640215,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/initial-run-exports/run-20e5232b69ef693e6c8fa720.json",
+      "sha256": "7796eb5bc29c7ad49466407feea2d8b51843fbb72c39b1621545f41bbd44d3f9"
+    },
+    {
+      "bytes": 660977,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/initial-run-exports/run-2ce0dab44ae383dfb81de697.json",
+      "sha256": "fb518f1c484c6af3f6829555ef25bbe6ee4da98d843f07310f9ec98030283d8c"
+    },
+    {
+      "bytes": 387493,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/initial-run-exports/run-532944540c9e66ab40ceeca6.json",
+      "sha256": "52d4d7b60e7dd5c7ad8daced544931fde2527bfeb10b2a0a9935d908fc63e5d6"
+    },
+    {
+      "bytes": 802086,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/initial-run-exports/run-5dd1c3e61f846a4bad0c3526.json",
+      "sha256": "2ff4160e85315dfbad448a7f08a85d2cdb3f97ceefa849b58eebb5e5c85b5036"
+    },
+    {
+      "bytes": 238,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/new-runs.json",
+      "sha256": "eba2a829df497b1800225f6f9efdc4ec93171ef68ba74b3062d4123ac1cdf78b"
+    },
+    {
+      "bytes": 175946,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/prefix-desktop.png",
+      "sha256": "31b4ef0b9c1a0cf6b78b48716e8cae65e0b0b8e84c0965f7c433a65a640b6014"
+    },
+    {
+      "bytes": 150700,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/prefix-mobile.png",
+      "sha256": "733080627046afd0b4196dbe2fda9ed38b4802f25789b66fa7cdae47f862e2f8"
+    },
+    {
+      "bytes": 667685,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/run-07937bdd09306124f5c8a2e2.json",
+      "sha256": "5c110664559131c5d7c87fb1a1357347bed6710fabcc117a0e18d5eed230a0d2"
+    },
+    {
+      "bytes": 746726,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/run-20e5232b69ef693e6c8fa720.json",
+      "sha256": "d14154e345af79c321f3dc22c95c93415ba682727049dda14419f6b48c75dc39"
+    },
+    {
+      "bytes": 786527,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/run-2ce0dab44ae383dfb81de697.json",
+      "sha256": "94fdcd0b360909e041acde026c224528db0f9ef252dca5aa5384c1ee729171bf"
+    },
+    {
+      "bytes": 478147,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/run-532944540c9e66ab40ceeca6.json",
+      "sha256": "0957be1901f28f65a493f22502a700ab1c3d6b5c5ad1c79694e97108c324d544"
+    },
+    {
+      "bytes": 925741,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/run-5dd1c3e61f846a4bad0c3526.json",
+      "sha256": "f3eb60048c1cd8e7af7396c86c8e85b0fdb532bf7ddc6e4537e90fee21cc960c"
+    },
+    {
+      "bytes": 252865,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/shared-desktop.png",
+      "sha256": "b8789952194056fc65bd6758da76382bec39d96cd17126b47f483e9f8796459b"
+    },
+    {
+      "bytes": 223755,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/shared-mobile.png",
+      "sha256": "977b18f9a446a1d10898d580d9416125ab2a91423bce0267473a3c9b72cc2e35"
+    },
+    {
+      "bytes": 251864,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/single-desktop-desktop.png",
+      "sha256": "2e6b9da66946ebaa0d09b7f5544f54d72b4659107f3b384f91b3d06afdb8dee5"
+    },
+    {
+      "bytes": 221668,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/single-desktop-mobile.png",
+      "sha256": "5677cf44cdce9dac28865d126b0921579d65f529e8d12e0055ed3e722bb6f390"
+    },
+    {
+      "bytes": 256011,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/single-laptop-desktop.png",
+      "sha256": "0be7e12756f0dcdde2108973ddafb07322a27b0d8a489c98f5fbe7124648ecab"
+    },
+    {
+      "bytes": 223876,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/single-laptop-mobile.png",
+      "sha256": "b455c89f9bd5085cda9a71d096bdc5cb0d083ce889b499d10b5179165997be4e"
+    },
+    {
+      "bytes": 282370,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/staged-desktop.png",
+      "sha256": "80a992822dec9c91c82acbd083660b0baafcba1b06d0ac8935da267e43d8001d"
+    },
+    {
+      "bytes": 243583,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/staged-mobile.png",
+      "sha256": "b2e2afc35508b508a7796e9d9a98b468341219ee053a4e5027bf08ef71c3bdd7"
+    },
+    {
+      "bytes": 195753,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1/throughput-185f297d590517a6.json",
+      "sha256": "b7bde426f802acd7ef7d1db1b2eee35316a387cbdc30be3da9c2536cf65ee027"
+    },
+    {
+      "bytes": 550,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r1.log",
+      "sha256": "1f266e1ebf8a8be43abefe1e444b7b2db1b71bb2c5a59bea9b8325546738b71d"
+    },
+    {
+      "bytes": 175946,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/prefix-desktop.png",
+      "sha256": "31b4ef0b9c1a0cf6b78b48716e8cae65e0b0b8e84c0965f7c433a65a640b6014"
+    },
+    {
+      "bytes": 150700,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/prefix-mobile.png",
+      "sha256": "733080627046afd0b4196dbe2fda9ed38b4802f25789b66fa7cdae47f862e2f8"
+    },
+    {
+      "bytes": 667684,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/run-07937bdd09306124f5c8a2e2.json",
+      "sha256": "7f518d9c1b5fbc6d7857bf62ba297591e38b4776282f8a0ea2ca6bbcf2ad6679"
+    },
+    {
+      "bytes": 746733,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/run-20e5232b69ef693e6c8fa720.json",
+      "sha256": "989144c33564f2fd42867b887b26a6a29cfc307462d18927112bd11db1d005fb"
+    },
+    {
+      "bytes": 786527,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/run-2ce0dab44ae383dfb81de697.json",
+      "sha256": "84934634cf476c02808acb865d049d798180d48ba070daba956afe43942c73ec"
+    },
+    {
+      "bytes": 478147,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/run-532944540c9e66ab40ceeca6.json",
+      "sha256": "0957be1901f28f65a493f22502a700ab1c3d6b5c5ad1c79694e97108c324d544"
+    },
+    {
+      "bytes": 925734,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/run-5dd1c3e61f846a4bad0c3526.json",
+      "sha256": "207a247153dab237e33c5081e44e3c7758ae0d2e13f3c51ff0d09fa6ecd333a5"
+    },
+    {
+      "bytes": 252490,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/shared-desktop.png",
+      "sha256": "076c32612d5c34b9efa7c69a309802e3aaf867207f8f82bbe8713109b8dbe5f3"
+    },
+    {
+      "bytes": 222953,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/shared-mobile.png",
+      "sha256": "41938204fe266f9ec6fb23f5856d4b748de23f35d8067fb63cc626b8aa24c79b"
+    },
+    {
+      "bytes": 252761,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/single-desktop-desktop.png",
+      "sha256": "095432636d8160f5e8502433b92a133ffe05f7946ad283376fbff27ef80adcbd"
+    },
+    {
+      "bytes": 222465,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/single-desktop-mobile.png",
+      "sha256": "821935685a1c0c7b6bdf506bcc4a309771f099fa9e9191235043947981184292"
+    },
+    {
+      "bytes": 256595,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/single-laptop-desktop.png",
+      "sha256": "632f8878dd2d4b3755da68a68b05308a08f9c5f605e9ff3ee1089ccf1dc0e1a4"
+    },
+    {
+      "bytes": 223922,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/single-laptop-mobile.png",
+      "sha256": "f820d76c3268e5a3b940d1cfa290bb821fcb2b8795c7a1c4d52b9d3a8700cdcb"
+    },
+    {
+      "bytes": 284587,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/staged-desktop.png",
+      "sha256": "a9cf351b1c03d0f1f0bab9aa16222eac6d8b62661594f046033904b359d8c175"
+    },
+    {
+      "bytes": 245864,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/staged-mobile.png",
+      "sha256": "cf4564cb4885cd85a3a23b6aadc985bc0835ecb827dd28da4d2e1fb9c6891562"
+    },
+    {
+      "bytes": 195753,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2/throughput-185f297d590517a6.json",
+      "sha256": "b7bde426f802acd7ef7d1db1b2eee35316a387cbdc30be3da9c2536cf65ee027"
+    },
+    {
+      "bytes": 550,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/pipeline-browser-r2.log",
+      "sha256": "efd7c837905c9c3f4d0a15f4e0ec701cfadfdf87e0dbf68bc96f713aeeb364b1"
+    },
+    {
+      "bytes": 2562,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/publish-report-r1.py",
+      "sha256": "bd6e63e4311b1d0dc2ec700ab42828c4dbc0e46e20f9810f78c41d57b41c0d2f"
+    },
+    {
+      "bytes": 2610,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/publish-report-r2.py",
+      "sha256": "24e32debebaf272f9d9dda8435d64ea5f00139c470c939bcd66a906fe1bdf1d1"
+    },
+    {
+      "bytes": 612,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/qualification-preparation-r1.json",
+      "sha256": "257a09f7dae00ac88a1308ad08ed150edd4bd732c20486904f50da897d34b6e3"
+    },
+    {
+      "bytes": 182424,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/qualification.json",
+      "sha256": "e0275ed2d93c3507b3e9db17015759071bca9f27dfba3b8496c58b729a22fa88"
+    },
+    {
+      "bytes": 1232,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/render-report-r2.py",
+      "sha256": "79cd998d66f2464c1bd5974858396d533e48789af4936f054e52fc5db39b95f8"
+    },
+    {
+      "bytes": 51235300,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/report-catalog-r2.json",
+      "sha256": "c1937fd2ef62f3b6c4414b76c58f1ee520604acc4ef06d6b8f79585823779f9f"
+    },
+    {
+      "bytes": 51235301,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/report-catalog.json",
+      "sha256": "95579212dcbbc7bc252fe73bc185f8175e424216990a8a55c21724830453e72f"
+    },
+    {
+      "bytes": 89,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/report-check-r1.json",
+      "sha256": "5db42cf17acf241e30e9b8d584ca5ba6f555a7c47a2c906b72e1d427418a8628"
+    },
+    {
+      "bytes": 89,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/report-check-r2.json",
+      "sha256": "5db42cf17acf241e30e9b8d584ca5ba6f555a7c47a2c906b72e1d427418a8628"
+    },
+    {
+      "bytes": 93481641,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/report-index-r2.html",
+      "sha256": "e33fb2d45686bd5a2434c7b99e5b98936c72f786ba6c1a8756db9f0f9cdf9403"
+    },
+    {
+      "bytes": 93481745,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/report-index.html",
+      "sha256": "999bbab06873257b1da00b5e842a400aeaf8903d4634b06e83108a72546f9774"
+    },
+    {
+      "bytes": 295,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/report-publication-r1.log",
+      "sha256": "b2d45da62d29f7a05032c180b8556d5897d06f79a0e61eb95a3d60cf2dfa729a"
+    },
+    {
+      "bytes": 353,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/report-publication-r2.log",
+      "sha256": "d602deca738458321e244a57d33edb6ea0fd693414cbf94cf322c81f2142e766"
+    },
+    {
+      "bytes": 66,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/report-render-r2.log",
+      "sha256": "19311ebf3d358540be2500ca21534b6451775996f53c7e8d3e7c09d836010b38"
+    },
+    {
+      "bytes": 41,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/report-source-finalization-r1.log",
+      "sha256": "5d5a4a0ef400cb9b763dc16859d360f730f48980bd17968d54f854afa2bcbc13"
+    },
+    {
+      "bytes": 5041,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/report-source.json",
+      "sha256": "8f605e1684083231ca1718966faef6594a7474e018a5a9ebb9cdb0e5ad18632e"
+    },
+    {
+      "bytes": 197591,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/report-source.tar.gz",
+      "sha256": "b0a30733c18d90f87a9e4e34c6158577ea86115f23d841a6cad51b7a294a7f94"
+    },
+    {
+      "bytes": 35738,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/resources.json",
+      "sha256": "8817d74a49d4e7d0131681fcff3e8aca413be0a6da5a2b5466039d97813f2414"
+    },
+    {
+      "bytes": 144,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r36/typed-report-tests-r2.log",
+      "sha256": "f8216361c094636eeaac0cae596644600e5d034b1aa8484c01c18eb9a135312e"
+    }
+  ],
+  "status": "passed"
+}

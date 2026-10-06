@@ -1,0 +1,54 @@
+{
+  "campaign_ids": ["block-v2-typed-finalizer-2026-10-04"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-typed-finalizer-research-20261004-r2",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-017f63537303cc1090eda90f",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 2554,
+      "path": "lattica-prover-p3/target/block-v2-typed-finalizer-research-20261004-r2/cpu-eight-lane-tests.log",
+      "sha256": "5fe6412d15604ef052fa0ac12995451df1cd5431c48a4aadfa483670e019d924"
+    },
+    {
+      "bytes": 415,
+      "path": "lattica-prover-p3/target/block-v2-typed-finalizer-research-20261004-r2/legacy-registry-tests.log",
+      "sha256": "4985bd9bf34d54369dac22a22e75f061898a54bf1d59d5d7462f124a46b73555"
+    },
+    {
+      "bytes": 1633,
+      "path": "lattica-prover-p3/target/block-v2-typed-finalizer-research-20261004-r2/typed-tests.log",
+      "sha256": "edd1af0b87f7c5f8b3272ad7a98944b44102b56fc2b898eb42adb8bdbb7ee440"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

@@ -96,8 +96,9 @@ impl DurableDag {
         reservation.begin_use()
     }
 
-    /// Only the inline cached adapter mints its opaque completed-job receipt.
-    /// Its synchronous CPU call has returned and its single-use launch guard
+    /// Only trusted cached adapters mint their opaque completed-job receipts.
+    /// The inline call or bound child response has completed after GPU drain,
+    /// and its single-use launch guard
     /// has been dropped. Mark that per-job producer quiescent, not the cache
     /// carrier process terminated: the workspace remains fully reserved.
     #[cfg(feature = "stream")]

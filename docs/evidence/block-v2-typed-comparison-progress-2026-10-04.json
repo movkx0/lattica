@@ -1,0 +1,486 @@
+{
+  "active_trial_at_capture": {
+    "command": [
+      "/usr/bin/python3",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-comparison-20261004-a/block-v2-typed-gpu-run.py",
+      "--construction",
+      "finalizer",
+      "--gpu-binary",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/gpu-block-v2-finalized-probe",
+      "--cpu-binary",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe",
+      "--fixture",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/fixture",
+      "--gpu-uuid",
+      "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "--count",
+      "4",
+      "--scratch",
+      "/tmp",
+      "--workload",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-comparison-20261004-a/block-v2-multi-gpu-direct-readback-workload.json",
+      "--resource-assignment",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-comparison-20261004-a/pairs/resource-assignment.json",
+      "--evidence",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-comparison-20261004-a/pairs/pair-02-finalizer"
+    ],
+    "construction": "finalizer",
+    "directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-comparison-20261004-a/pairs/pair-02-finalizer",
+    "pair": 2
+  },
+  "assignment": {
+    "limits": {
+      "cpu": {
+        "allowed_cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "coordinator_capacity": "1",
+        "effective_capacity": "24",
+        "quota_percent": "2300%",
+        "rayon_threads": 23,
+        "version": 1
+      },
+      "drivers": {
+        "nvidia": "615.71.09",
+        "opencl": "615.71.09"
+      },
+      "gpu": {
+        "bootstrap": true,
+        "context_bytes": 7784628224,
+        "headroom_bytes": 1073741824,
+        "managed_bytes": 7516192768,
+        "max_allocation_bytes": 4174331904,
+        "total_bytes": 15300820992,
+        "usable_bytes": 16697327616,
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "version": 1
+      },
+      "host": {
+        "coordinator_bytes": 1342177280,
+        "filesystem_headroom_bytes": 1670281421,
+        "fleet_bytes": 40802189312,
+        "os_headroom_bytes": 6681126093,
+        "scratch_device": 51,
+        "scratch_path": "/tmp",
+        "spill_bytes": 27648851968,
+        "swap_bytes": 0,
+        "tmpfs": true,
+        "version": 1,
+        "worker_bytes": 39460012032
+      }
+    },
+    "schema": "lattica-typed-resource-assignment-v1"
+  },
+  "assignment_sha256": "31092e780d3f4595a1041f71c2c95ca78adcf52c95c355faea592a3854f270d2",
+  "campaign_directory": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-comparison-20261004-a/pairs",
+  "completed_pair_measurements": [
+    {
+      "order": [
+        "reference",
+        "finalizer"
+      ],
+      "pair": 1,
+      "worker_reduction_percent": 41.55156554193681,
+      "worker_seconds": {
+        "finalizer": 256.73822613299126,
+        "reference": 439.25595016099396
+      }
+    }
+  ],
+  "completed_pairs": 1,
+  "completed_trial_results": [
+    {
+      "construction": "reference",
+      "context_measurement": {
+        "binary_sha256": "c7740e6cd5f6448cbd1809ca60f2badcaa236d1b5e0cbd7c321e245562b19bf1",
+        "driver": "615.71.09",
+        "peak_context_bytes": 209713424,
+        "profile_sha256": "2dc74966101b04d98e3e89308432ba29da0cd7137799db41f312528ebacb793b",
+        "runtime": "615.71.09",
+        "samples": 66,
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      "cpu_audit_seconds": 0.06469208501221146,
+      "cpu_audited": true,
+      "fresh_proofs": 15,
+      "pair": 1,
+      "peak_charged_ram_bytes": 16985669632,
+      "proving_seconds": 439.16836299300485,
+      "result_source": {
+        "bytes": 7429,
+        "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-comparison-20261004-a/pairs/pair-01-reference/001-typed/result.json",
+        "sha256": "9dadf5ad72b4a09b6410fba35ced7410ad7b9cbc9bb8323262f1d09f2d80a4ee"
+      },
+      "root_bytes": 1683948,
+      "root_sha256": "2f6f91a254a56ddfabf431163068bc6e046357052d36b0bf15658bee1f55c76d",
+      "summary_source": {
+        "bytes": 9521,
+        "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-comparison-20261004-a/pairs/pair-01-reference/summary.json",
+        "sha256": "96c6a9c164243a0a0d7df3bea84863dbb8fb42f4cb1044f76c3da0e80409102a"
+      },
+      "worker_seconds": 439.25595016099396
+    },
+    {
+      "construction": "finalizer",
+      "context_measurement": {
+        "binary_sha256": "78080386e55df92dc704332db52158f09aa2118ee58013bddfc76bd61ddcda5c",
+        "driver": "615.71.09",
+        "peak_context_bytes": 209713424,
+        "profile_sha256": "034602a70f239525190c7a92c1cfc75ba88f530430fcd08f5c132d0b72ec3982",
+        "runtime": "615.71.09",
+        "samples": 38,
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      "cpu_audit_seconds": 0.0660499380028341,
+      "cpu_audited": true,
+      "fresh_proofs": 8,
+      "pair": 1,
+      "peak_charged_ram_bytes": 17055973376,
+      "proving_seconds": 256.65064214800077,
+      "result_source": {
+        "bytes": 7518,
+        "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-comparison-20261004-a/pairs/pair-01-finalizer/001-typed/result.json",
+        "sha256": "c2d5fe6e67c8c2eadbdf789380dab557aac54d1e54e685cf283538ebd8fd5fe0"
+      },
+      "root_bytes": 1683948,
+      "root_sha256": "597957e55e1420691f888a39b70e7384e3ab3121ad8c9382d481791fe6a700e0",
+      "summary_source": {
+        "bytes": 9612,
+        "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-typed-comparison-20261004-a/pairs/pair-01-finalizer/summary.json",
+        "sha256": "c1a8eb10065c49170ee2ca4b214e3db346639939a801b7e2d4adc5ca1f001743"
+      },
+      "worker_seconds": 256.73822613299126
+    }
+  ],
+  "completed_trials": 2,
+  "cpu_reference_preparation": {
+    "sha256": "d4304cb4acacc44fa27c14ff28434ad8c0afee8e24cca73bba5ab0b95158d1d6",
+    "source": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/summary.json",
+    "summary": {
+      "accounting": {
+        "cpu.max": "2300000 100000",
+        "cpu.stat": "usage_usec 3312004755\nuser_usec 3283133034\nsystem_usec 28871720\nnice_usec 0\ncore_sched.force_idle_usec 0\nnr_periods 2044\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpuset.cpus.effective": "0-23",
+        "memory.current": "73306112",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "memory.peak": "16171438080"
+      },
+      "construction": "reference",
+      "production_ready": false,
+      "recursive_root_produced": false,
+      "result": {
+        "artifacts": {
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/body.json": "439bfdd59b1711eeb06970235c2dd987c33af81ca78c4020810cb7f3c01cc87b",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/height.json": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/key.1": "11c84e82c1beceee05606b2ab29d508871a06bea119e0147dbf8ba552906b933",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/key.2": "141c75eb92678406cad5a8f8460232f29370658afdab26ccc07154641ba25963",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/key.3": "19afb9d3835d77764bb543a92542ff7534c5b535b1b094e44da6edb772f0245d",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/key.4": "d3ae43c24f56e18c396c0bb4199a09658ea5337d7679b3feb9a87b759c9bbe51",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/key.5": "bc058f71f1aea7f1ec456f47b52a721f3005dbadbaf79890974d0d450e6f43bf",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.0": "a13779aa339ded5c4b317904bd84e164e9a2e8cedb00114ac6f392227fb1fcc0",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.1": "47aad055455d5723788b6b68e489fa3f7ab55316a67aa99956c1d70997b5762c",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.10": "7850e13029bd98e9cf9002f9602da46e6684f78803555d25f44f9f641575f34e",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.11": "bbb9d1350548d443692ee9e7a9bc32447eadbf95ecf1d85047f227430052ff2f",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.12": "525179ab948089f2c031558e1abe0462522967a51d01b6b79435e65a9058d01e",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.13": "3ddbc3fc355482290b84e8fee200a1dc8e5b498574f53567880d37934491cc13",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.14": "2f22ddbab6f36ff0658241620bebab77419d98cfd33cffe3ebd0f24bdcbff3ea",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.15": "0be221351029e9d09e261f9a3f8a20dbe00d5c09c595f138025db39dcb195499",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.16": "03f5c197b21870dfda58446008806546e0fbd555ba5976d542ca85c6170f81e7",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.17": "ea7230291c9b86a2fffd37a4836d2f28aa8645eccabad5b21df0bd7b44f771b3",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.18": "6f6f684177668fdb190930a0446cab14bc8f9702b5ec20877cc96100707dea7b",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.19": "0b4efa66414e3016c4603b155e467cfddcf8783aa8463a7d77f9d4e4a5a5cab8",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.2": "729803287b03d059736559b1d906d2814f098c5a9f526e156bf5d8b47980f7d2",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.20": "e5d12e1336880d392853f25210752fc25b76763766f2c813e9377ec452d0dcf0",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.21": "5b79e608b4bf2f1f73a23ef111b6b441f3a877c1a802ac2bd0f8ed4b64471122",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.22": "d1916b9dd5cd9143aeca47ea765d20631445dccea5060ed6c808b3b8f614aebd",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.23": "184b07068c702fa15d7b88f6e05d407c7fb6eb9c132ac66c72b5766b68a6e9c5",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.24": "2d523014c3395db70b86212b7dedd09c10433dffe4cb92d482b1a518d6fe9a10",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.25": "3674f3d114776ef1df6a8a94a9fadd42eb190e596cddc4ceb518bcd125d8a295",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.26": "a246a4f58359b5f99b6dd9666be78f235358ffcc2d941e33f18f11daed9d0fc1",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.27": "2a66320eec4c0f1bcdc5259fd6c9b4528c0512e5a3504eed869a4a3804c30454",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.28": "3dc37209ba6216b10c72a4cedc618aadbf9addac9ca87ce5a9acc8cb2a639206",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.29": "4d6635f146df13b81ac20263f92e8db15ffb240885b36be1904f37511f7db4b2",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.3": "710d66931d1eb49fc91f69e3d59b5afd5ae535b88aaac7d76e73b525d4a0d15d",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.30": "b63a02368e6600c2bd7acd7761bfe7ff38d40696f0851c5603ff528666f84036",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.31": "f9aacc0b8bae06a52c1f5cf8cd02f5a1bf76e71f1e20dd5ae569064d0a075ad4",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.32": "aeebbbd2695c718c2266c08670612df13815b7c5c5ca7df48b458dbd96502363",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.33": "c8a7c1014ba5681eaeaf133ad3dc685a127663c3618bd8e1f4309aa8e3e713cd",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.34": "b63b934b0b0602bdb1d573c57c717376eafc01d855f34f9c7467b3ddf563765f",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.35": "42840791711285a6a5a070d351da2ac6ac7097e28afe28be1c967a07308ceb9c",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.36": "f505b2aa26c0207bee2bf2a2b4322b0517c07a1a73a596bd3096d70f6c95a6b1",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.37": "902277824ce7ca4ae2e6d024baaf018e3e564b32143af54fa2c3e0bd30453929",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.38": "01fe3343ee3a724488bade5b19973909339e3a6157f6a71386408da2bb224de6",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.39": "5f5ab6b9d196b9bac79434451e8277d155adc31a6237f50506403459dd85f6d5",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.4": "32f2c75034838a4af9d533ec06631e4043ed9f627261eace1e73f47ce0f6feb8",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.40": "83957f6c30a4af5711438593b8c830a11dccb5f379b7278f5c1c22e2028d104e",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.41": "5d3ed901ea2ee5d395d02cc5e281c97ad2de49d041214147661ab822b9707b55",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.42": "7d2358ab8828556c53152224b70d461b283db4da96c80e5bb36a10918699dac9",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.43": "d876a198449b1d0d2290c5a19f652d4853c5b770efa4242682e618a29c37d61b",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.44": "2ae16add49dff84093c26eeddf7e2302a06db77f192fedba82553e5ca589b714",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.45": "446a5f3946e7283902cae0a8dc0dd13a64897b86774e79f8c0f341340996c9ab",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.46": "fc638e655da012f0caa3a4938528ba7350dd47c149d3545dc22ae4cdcaf226bb",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.47": "3bbe0e03b9d12db19a81636483ed3e33fc98207c0ddb6726eef1d0123eaf6dc8",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.48": "007c5924f1edc035bd486af11a18e421f685ad31d17e6c1129cced19127ca7e3",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.49": "d56429292edd2d22aa0f39a960d10daaefb52051ef5ff1d993e2189c32b19ce5",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.5": "27b4bf7d2e373b508a8e5e7ff2efcded807a7019765de0a09e25a61981c5f58c",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.50": "0093a90e09c118e973967a62143c76a822cf75d4123a0ddf87a75836800fc239",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.51": "587bcd0ab25659c4645706b985611f3f4425903f72d1596c90a5c136331412ba",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.52": "689532e6e4547f28f836426a2cacb28ddf9cb33ba1fa7b8a0cbeec73c25c87c5",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.53": "c43614563a5f59026fee2dbd010413c3186925e474eb377168d8ad9e00a6d3ea",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.54": "7aa321f033bffb29cd26f4f2de32018a99354b1eaaf051545ec200e5739aefb7",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.55": "af421b83def815e8cf479223a09de9da8a782c315c072da657d57bb80878c6bb",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.56": "4afb80c37e80ec06ac921a567b8c57e8629412a0c9d09260b85ffeda10a68403",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.57": "774be5ac338c7531ae9fdf4317b0fd27069c86082714c0c9c4d8028483e753ec",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.58": "7424a6792904762ec700a2396425b5d2904fc2a77ea4ad2ffdd382d2075cc3f1",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.59": "552e7ddc77743fd535f163ab6de093778598c25da247077018190f93670f85b2",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.6": "f3ef3b42974e0032d1e6ac2357afa14ce9e1f66c243d12592237e766288d2c7c",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.60": "dea1e007f7fcdfb019d7bae024e0dce0bba108a9a3613b1f173be848c98a35a5",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.61": "11deb0f44020d5c5f967561f5c1f1cf522b82603e3ef76f851d038379df6d08c",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.62": "53c686fb20c2b762586890bf428fb60f23186929c491fae1d4f714c1e4a58b2a",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.63": "2d9123745ea5c208f32565b006bff1f54c863ecafb735789d2dc83571e92c3b3",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.7": "f00a95f137131f16c6a06eedca2c415df59f4951fddac60a0dea6e7184a9a722",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.8": "d153cc442a09399ae19f4630dc5737668cac728b25213720e56dc7c9821baef2",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture/wallet.9": "ebbb486b3f752ea5054f99acca85d382ad4575f3159e552e6320f0229d0514ae"
+        },
+        "construction": "reference",
+        "cpu_registered": true,
+        "elapsed_seconds": 204.2342936710047,
+        "fixture_reuse": true,
+        "production_ready": false,
+        "recursive_root_produced": false,
+        "registry_keys": 5,
+        "schema": "lattica-typed-cpu-preparation-v1",
+        "stages": [
+          {
+            "elapsed_seconds": 0.07050092100689653,
+            "name": "copy-public-fixture",
+            "status": "succeeded"
+          },
+          {
+            "command": [
+              "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-typed-probe",
+              "geometry",
+              "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture"
+            ],
+            "elapsed_seconds": 5.708057833995554,
+            "name": "geometry",
+            "status": "succeeded"
+          },
+          {
+            "command": [
+              "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-typed-probe",
+              "register",
+              "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture",
+              "1",
+              "44023414784"
+            ],
+            "elapsed_seconds": 40.24833486099669,
+            "name": "register-1",
+            "status": "succeeded"
+          },
+          {
+            "command": [
+              "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-typed-probe",
+              "register",
+              "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture",
+              "2",
+              "44023414784"
+            ],
+            "elapsed_seconds": 36.52592897499562,
+            "name": "register-2",
+            "status": "succeeded"
+          },
+          {
+            "command": [
+              "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-typed-probe",
+              "register",
+              "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture",
+              "3",
+              "44023414784"
+            ],
+            "elapsed_seconds": 41.486059097005636,
+            "name": "register-3",
+            "status": "succeeded"
+          },
+          {
+            "command": [
+              "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-typed-probe",
+              "register",
+              "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture",
+              "4",
+              "44023414784"
+            ],
+            "elapsed_seconds": 40.15161205700133,
+            "name": "register-4",
+            "status": "succeeded"
+          },
+          {
+            "command": [
+              "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-typed-probe",
+              "register",
+              "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/fixture",
+              "5",
+              "44023414784"
+            ],
+            "elapsed_seconds": 39.724141430997406,
+            "name": "register-5",
+            "status": "succeeded"
+          }
+        ],
+        "status": "succeeded"
+      },
+      "schema": "lattica-typed-cpu-preparation-v1",
+      "status": "succeeded",
+      "unit": "lattica-v2-multi-320795-typed-cpu.service"
+    }
+  },
+  "delivered_transactions_measured": false,
+  "manifest": {
+    "binaries": {
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-finalized-probe": "dd91eb4c291a01a78c005a12348156d2990a3038ee6e6f94ff8edc9315d13554",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-block-v2-typed-probe": "d81e83ff10513396f82fe8622a4449f1b1de7f2bcea9d6e709656fca3b2ce7a7",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/gpu-block-v2-finalized-probe": "78080386e55df92dc704332db52158f09aa2118ee58013bddfc76bd61ddcda5c",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/gpu-block-v2-typed-probe": "c7740e6cd5f6448cbd1809ca60f2badcaa236d1b5e0cbd7c321e245562b19bf1"
+    },
+    "binary_source_manifest": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/manifest.json",
+      "sha256": "1fe6d4a1f6494d0a6476444e13c55c9dbac8e3f23aab8840c4def44b67af2afe"
+    },
+    "captured_utc": "2026-10-04T23:27:59.365214+00:00",
+    "files": {
+      "block-v2-multi-gpu-direct-readback-workload.json": "48174de0b9de99549e86b39966c416fd3021bf8f69014dd6bffe8fe8c90b3d64",
+      "block-v2-multi-gpu-run.py": "c9f1cfe4176096cefe5f6a187b8f591c9a4326d74f0042e725753d1a2a118321",
+      "block-v2-typed-compare.py": "471d16be909e5b1e76262724bd6ab284ba219ade1e79e9489d704512cf20538d",
+      "block-v2-typed-gpu-run.py": "af897690c81e9e2e74169ed7d78e4dc85762772fc7b7fb814ac16bf20ff67781",
+      "block_v2_resources.py": "87c6ea2edb43e1085caccd021662ec0ffd714b037304414ea181fc9ada13f1f0",
+      "test-block-v2-typed-compare.py": "a0d22fba48bdf0a462e02fc9a6992b6b9c22a1d8d36ef56a1ee74b788f2dea4f",
+      "test-block-v2-typed-gpu-run.py": "c8bb838e0d0838fafd58410c27ad64bfdb3eda655cf7795e88209c244fdf2159",
+      "validation.json": "8a9da827c9582542d6a3dc8c85995a9a2aad18f1dd95eeeb467f03d0374195ee"
+    },
+    "fixture_preparation_summaries": {
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-preparation/summary.json": "d6ca0abf04ae06e942751dbbb6eeef81da10fce1093a0957212ad02d20428e4d",
+      "/home/access/code/lattica/lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/cpu-reference-preparation/summary.json": "d4304cb4acacc44fa27c14ff28434ad8c0afee8e24cca73bba5ab0b95158d1d6"
+    },
+    "schema_version": 1,
+    "scope": "Five alternating count-four reference/finalizer pairs, fresh roots, identical public leaves and checked equal CPU/GPU/RAM/spill assignments. Proving binaries use the earlier frozen working-tree source archive.",
+    "source_commit": "094cade18a59d38d7d65bd805511a7809b348a9e"
+  },
+  "manifest_sha256": "c79e75ee1a43e28c9d273b0187d27b7c2d78b66de6120969a6e6b1264c1055c8",
+  "observed_utc": "2026-10-04T23:42:42.831748+00:00",
+  "production_ready": false,
+  "public_fixture": {
+    "height": 262144,
+    "identical_files": {
+      "body.json": "439bfdd59b1711eeb06970235c2dd987c33af81ca78c4020810cb7f3c01cc87b",
+      "wallet.0": "a13779aa339ded5c4b317904bd84e164e9a2e8cedb00114ac6f392227fb1fcc0",
+      "wallet.1": "47aad055455d5723788b6b68e489fa3f7ab55316a67aa99956c1d70997b5762c",
+      "wallet.10": "7850e13029bd98e9cf9002f9602da46e6684f78803555d25f44f9f641575f34e",
+      "wallet.11": "bbb9d1350548d443692ee9e7a9bc32447eadbf95ecf1d85047f227430052ff2f",
+      "wallet.12": "525179ab948089f2c031558e1abe0462522967a51d01b6b79435e65a9058d01e",
+      "wallet.13": "3ddbc3fc355482290b84e8fee200a1dc8e5b498574f53567880d37934491cc13",
+      "wallet.14": "2f22ddbab6f36ff0658241620bebab77419d98cfd33cffe3ebd0f24bdcbff3ea",
+      "wallet.15": "0be221351029e9d09e261f9a3f8a20dbe00d5c09c595f138025db39dcb195499",
+      "wallet.16": "03f5c197b21870dfda58446008806546e0fbd555ba5976d542ca85c6170f81e7",
+      "wallet.17": "ea7230291c9b86a2fffd37a4836d2f28aa8645eccabad5b21df0bd7b44f771b3",
+      "wallet.18": "6f6f684177668fdb190930a0446cab14bc8f9702b5ec20877cc96100707dea7b",
+      "wallet.19": "0b4efa66414e3016c4603b155e467cfddcf8783aa8463a7d77f9d4e4a5a5cab8",
+      "wallet.2": "729803287b03d059736559b1d906d2814f098c5a9f526e156bf5d8b47980f7d2",
+      "wallet.20": "e5d12e1336880d392853f25210752fc25b76763766f2c813e9377ec452d0dcf0",
+      "wallet.21": "5b79e608b4bf2f1f73a23ef111b6b441f3a877c1a802ac2bd0f8ed4b64471122",
+      "wallet.22": "d1916b9dd5cd9143aeca47ea765d20631445dccea5060ed6c808b3b8f614aebd",
+      "wallet.23": "184b07068c702fa15d7b88f6e05d407c7fb6eb9c132ac66c72b5766b68a6e9c5",
+      "wallet.24": "2d523014c3395db70b86212b7dedd09c10433dffe4cb92d482b1a518d6fe9a10",
+      "wallet.25": "3674f3d114776ef1df6a8a94a9fadd42eb190e596cddc4ceb518bcd125d8a295",
+      "wallet.26": "a246a4f58359b5f99b6dd9666be78f235358ffcc2d941e33f18f11daed9d0fc1",
+      "wallet.27": "2a66320eec4c0f1bcdc5259fd6c9b4528c0512e5a3504eed869a4a3804c30454",
+      "wallet.28": "3dc37209ba6216b10c72a4cedc618aadbf9addac9ca87ce5a9acc8cb2a639206",
+      "wallet.29": "4d6635f146df13b81ac20263f92e8db15ffb240885b36be1904f37511f7db4b2",
+      "wallet.3": "710d66931d1eb49fc91f69e3d59b5afd5ae535b88aaac7d76e73b525d4a0d15d",
+      "wallet.30": "b63a02368e6600c2bd7acd7761bfe7ff38d40696f0851c5603ff528666f84036",
+      "wallet.31": "f9aacc0b8bae06a52c1f5cf8cd02f5a1bf76e71f1e20dd5ae569064d0a075ad4",
+      "wallet.32": "aeebbbd2695c718c2266c08670612df13815b7c5c5ca7df48b458dbd96502363",
+      "wallet.33": "c8a7c1014ba5681eaeaf133ad3dc685a127663c3618bd8e1f4309aa8e3e713cd",
+      "wallet.34": "b63b934b0b0602bdb1d573c57c717376eafc01d855f34f9c7467b3ddf563765f",
+      "wallet.35": "42840791711285a6a5a070d351da2ac6ac7097e28afe28be1c967a07308ceb9c",
+      "wallet.36": "f505b2aa26c0207bee2bf2a2b4322b0517c07a1a73a596bd3096d70f6c95a6b1",
+      "wallet.37": "902277824ce7ca4ae2e6d024baaf018e3e564b32143af54fa2c3e0bd30453929",
+      "wallet.38": "01fe3343ee3a724488bade5b19973909339e3a6157f6a71386408da2bb224de6",
+      "wallet.39": "5f5ab6b9d196b9bac79434451e8277d155adc31a6237f50506403459dd85f6d5",
+      "wallet.4": "32f2c75034838a4af9d533ec06631e4043ed9f627261eace1e73f47ce0f6feb8",
+      "wallet.40": "83957f6c30a4af5711438593b8c830a11dccb5f379b7278f5c1c22e2028d104e",
+      "wallet.41": "5d3ed901ea2ee5d395d02cc5e281c97ad2de49d041214147661ab822b9707b55",
+      "wallet.42": "7d2358ab8828556c53152224b70d461b283db4da96c80e5bb36a10918699dac9",
+      "wallet.43": "d876a198449b1d0d2290c5a19f652d4853c5b770efa4242682e618a29c37d61b",
+      "wallet.44": "2ae16add49dff84093c26eeddf7e2302a06db77f192fedba82553e5ca589b714",
+      "wallet.45": "446a5f3946e7283902cae0a8dc0dd13a64897b86774e79f8c0f341340996c9ab",
+      "wallet.46": "fc638e655da012f0caa3a4938528ba7350dd47c149d3545dc22ae4cdcaf226bb",
+      "wallet.47": "3bbe0e03b9d12db19a81636483ed3e33fc98207c0ddb6726eef1d0123eaf6dc8",
+      "wallet.48": "007c5924f1edc035bd486af11a18e421f685ad31d17e6c1129cced19127ca7e3",
+      "wallet.49": "d56429292edd2d22aa0f39a960d10daaefb52051ef5ff1d993e2189c32b19ce5",
+      "wallet.5": "27b4bf7d2e373b508a8e5e7ff2efcded807a7019765de0a09e25a61981c5f58c",
+      "wallet.50": "0093a90e09c118e973967a62143c76a822cf75d4123a0ddf87a75836800fc239",
+      "wallet.51": "587bcd0ab25659c4645706b985611f3f4425903f72d1596c90a5c136331412ba",
+      "wallet.52": "689532e6e4547f28f836426a2cacb28ddf9cb33ba1fa7b8a0cbeec73c25c87c5",
+      "wallet.53": "c43614563a5f59026fee2dbd010413c3186925e474eb377168d8ad9e00a6d3ea",
+      "wallet.54": "7aa321f033bffb29cd26f4f2de32018a99354b1eaaf051545ec200e5739aefb7",
+      "wallet.55": "af421b83def815e8cf479223a09de9da8a782c315c072da657d57bb80878c6bb",
+      "wallet.56": "4afb80c37e80ec06ac921a567b8c57e8629412a0c9d09260b85ffeda10a68403",
+      "wallet.57": "774be5ac338c7531ae9fdf4317b0fd27069c86082714c0c9c4d8028483e753ec",
+      "wallet.58": "7424a6792904762ec700a2396425b5d2904fc2a77ea4ad2ffdd382d2075cc3f1",
+      "wallet.59": "552e7ddc77743fd535f163ab6de093778598c25da247077018190f93670f85b2",
+      "wallet.6": "f3ef3b42974e0032d1e6ac2357afa14ce9e1f66c243d12592237e766288d2c7c",
+      "wallet.60": "dea1e007f7fcdfb019d7bae024e0dce0bba108a9a3613b1f173be848c98a35a5",
+      "wallet.61": "11deb0f44020d5c5f967561f5c1f1cf522b82603e3ef76f851d038379df6d08c",
+      "wallet.62": "53c686fb20c2b762586890bf428fb60f23186929c491fae1d4f714c1e4a58b2a",
+      "wallet.63": "2d9123745ea5c208f32565b006bff1f54c863ecafb735789d2dc83571e92c3b3",
+      "wallet.7": "f00a95f137131f16c6a06eedca2c415df59f4951fddac60a0dea6e7184a9a722",
+      "wallet.8": "d153cc442a09399ae19f4630dc5737668cac728b25213720e56dc7c9821baef2",
+      "wallet.9": "ebbb486b3f752ea5054f99acca85d382ad4575f3159e552e6320f0229d0514ae"
+    },
+    "issuance_inputs": 1,
+    "ordered_input_kinds": [
+      "joinsplit",
+      "htlc_redeem",
+      "htlc_refund",
+      "issuance"
+    ],
+    "user_inputs": 3
+  },
+  "remaining": [
+    "Finish all five alternating pairs under the same assignment; preserve any failed attempt.",
+    "Audit a mutated root from the newly prepared reference registry.",
+    "Import terminal results and update the report only after timed trials stop.",
+    "Qualify lower RAM admission for the enabled compact storage layout and both GPUs.",
+    "Run the other mixed counts, qualify durable host application/recovery and complete the cold/post-seal gates before the pilot.",
+    "Await the Mac package results."
+  ],
+  "requested_pairs": 5,
+  "schema_version": 1,
+  "scope": "Progress snapshot of fresh count-four mixed-root solving. The full five-pair campaign is unfinished; no final speedup or delivered-throughput claim.",
+  "source_commit": "094cade18a59d38d7d65bd805511a7809b348a9e",
+  "source_state": "Frozen working-tree controllers and the earlier frozen proving source archive; the base commit does not contain these uncommitted additions.",
+  "status": "MATCHED_CAMPAIGN_IN_PROGRESS"
+}

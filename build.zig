@@ -55,11 +55,11 @@ pub fn build(b: *std.Build) void {
         .root_module = expected_root_mod,
     });
     const install_expected_root = b.addInstallArtifact(expected_root, .{});
-    b.step("block-v2-expected-root", "Build the research grouped-eight statement calculator")
+    b.step("block-v2-expected-root", "Build the research ordered statement calculator")
         .dependOn(&install_expected_root.step);
     const expected_root_tests = b.addTest(.{ .root_module = expected_root_mod });
     const run_expected_root_tests = b.addRunArtifact(expected_root_tests);
-    b.step("test-block-v2-expected-root", "Test native grouped-eight statement derivation")
+    b.step("test-block-v2-expected-root", "Test native ordered statement derivation")
         .dependOn(&run_expected_root_tests.step);
 
     // Production-mode compile probe (audit M-09/M-10): builds the consensus surface with

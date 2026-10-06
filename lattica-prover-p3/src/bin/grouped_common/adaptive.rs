@@ -23,6 +23,23 @@ pub(crate) fn validate(group: &Path, parent: &Path) -> Result<(), Error> {
             return Err("unsupported resource budget version".into());
         }
     }
+    let layout = match budget.get("readback_layout") {
+        None => "banded",
+        Some(value) => value.as_str().ok_or("invalid readback layout assignment")?,
+    };
+    let direct = match layout {
+        "banded" => false,
+        "direct" => true,
+        _ => return Err("unsupported readback layout assignment".into()),
+    };
+    let configured_direct = match std::env::var("LATTICA_V2_GPU_DIRECT_READBACK").as_deref() {
+        Err(std::env::VarError::NotPresent) | Ok("0") => false,
+        Ok("1") => true,
+        _ => return Err("LATTICA_V2_GPU_DIRECT_READBACK must be 0 or 1".into()),
+    };
+    if direct != configured_direct {
+        return Err("readback layout differs from resource assignment".into());
+    }
     let unit = budget["unit"].as_str().ok_or("missing budget unit")?;
     let slice = budget["slice"].as_str().ok_or("missing budget slice")?;
     if !unit.starts_with("lattica-v2-multi-")

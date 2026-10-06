@@ -83,9 +83,24 @@ path = "src/bin/block_v2_padding_probe.rs"
 required-features = ["block-v2", "stream"]
 
 [[bin]]
+name = "block-v2-typed-probe"
+path = "src/bin/block_v2_typed_probe.rs"
+required-features = ["block-v2", "stream"]
+
+[[bin]]
+name = "block-v2-finalized-probe"
+path = "src/bin/block_v2_finalized_probe.rs"
+required-features = ["block-v2", "stream"]
+
+[[bin]]
 name = "apple-field-bench"
 path = "src/bin/apple_field_bench.rs"
 required-features = ["cpu-sme2"]
+
+[[bin]]
+name = "block-v2-paired-probe"
+path = "src/bin/block_v2_paired_probe.rs"
+required-features = ["block-v2", "stream"]
 
 [dependencies]
 itertools = "0.14"
@@ -148,6 +163,8 @@ block-v2 = ["dep:p3-batch-stark", "dep:p3-lookup", "dep:tracing", "dep:libc", "d
 # Never use this build with legacy candidate keys or as a measured-series runner.
 # No production ABI/activation. Native validation and recursive closure are separate gates.
 block-v2-wide-lanes = ["block-v2"]
+# Versioned research host verification. No legacy verifier fallback or activation.
+block-v2-host = ["block-v2-wide-lanes"]
 # Enable the RESEARCH out-of-core (streaming) prover: a `#[global_allocator]` that spills large
 # allocations (the trace/quotient/Merkle LDE) to a memory-mapped file on NVMe, bounding the prover's
 # peak RSS under a cgroup ceiling instead of holding the whole LDE in RAM. Additive + prove-only +

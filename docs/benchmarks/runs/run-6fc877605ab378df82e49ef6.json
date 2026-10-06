@@ -1,0 +1,48 @@
+{
+  "campaign_ids": ["block-v2-typed-paired-gpu-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "expected-root",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-6fc877605ab378df82e49ef6",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 84,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/negative-root-audits/body-order/audit.log",
+        "run_id": "run-b1be7f4aa965b14cd65a3f7a"
+      },
+      "path": "lattica-prover-p3/target/block-v2-paired-gpu-20261004-a/negative-root-audits/expected-root/audit.log",
+      "sha256": "ed4d243c0e9d0e394bd62a6cdd7ce2de632b0e321ca95d84a2c185134cb2e75b"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

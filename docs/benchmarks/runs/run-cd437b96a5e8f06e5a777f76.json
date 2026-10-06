@@ -1,0 +1,49 @@
+{
+  "campaign_ids": ["block-v2-typed-local-dag-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "validation-r2",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P2"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-cd437b96a5e8f06e5a777f76",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 27491,
+      "path": "lattica-prover-p3/target/block-v2-typed-arrival-20261005-a/validation-r2/execution-tests-native.log",
+      "sha256": "2f18f43dcb130e6c3f9ac69d7681834a23aeb18afb75ceae83771b1140838745"
+    },
+    {
+      "bytes": 28211,
+      "path": "lattica-prover-p3/target/block-v2-typed-arrival-20261005-a/validation-r2/execution-tests.log",
+      "sha256": "5ee8760dbf611a6793b00416d2c951c73080c1ebe649bbed4991ec860b758bb5"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

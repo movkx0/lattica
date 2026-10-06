@@ -448,7 +448,7 @@ impl Engine {
             .map_err(|_| "GPU accounting poisoned")?
             .live;
         let old_workspace = self.workspace.as_ref().map_or(0, super::Workspace::bytes);
-        let plan = LdeCommitPlan::new_retained(
+        let plan = LdeCommitPlan::new_retained_with_layout(
             &shapes,
             cap_height,
             self.limits,
@@ -458,8 +458,13 @@ impl Engine {
             old_workspace,
             host_budget,
             retention_bits,
+            super::lde_readback::ReadbackLayout::from_env()?,
         )?;
         let height = plan.output_height();
+        eprintln!(
+            "bounded_lde_readback_layout layout={:?} matrices={} output_bytes={} reorder_workspace_bytes={}",
+            plan.readback_layout, shapes.len(), plan.host_output_bytes, plan.host_reorder_workspace_bytes,
+        );
         if masks.is_some() {
             plan.validate_quotient_storage()?;
             eprintln!(
@@ -526,7 +531,7 @@ impl Engine {
         })?;
         for (matrix_index, input) in inputs.iter().enumerate() {
             let shape = shapes[matrix_index];
-            let mut readback = HostReadback::with_storage(
+            let mut readback = HostReadback::with_layout(
                 plan.retained_height(),
                 shape.width,
                 plan.columns_per_tile(),
@@ -535,6 +540,7 @@ impl Engine {
                 } else {
                     super::lde_readback::OutputStorage::Global
                 },
+                plan.readback_layout,
             )?
             .with_parallel_decode(parallel_readback);
             for tile in plan.tiles().filter(|t| t.matrix == matrix_index) {

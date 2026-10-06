@@ -27,7 +27,8 @@ const CONTROL_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Exact observed process birth and cgroup instance. Local recovery metadata,
 /// not a proof-validity ticket or permission to launch/stop arbitrary services.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Identity {
     pub(super) boot: [u8; 16],
     pub(super) invocation: [u8; 16],
@@ -49,6 +50,17 @@ impl Identity {
     }
     pub fn boot_id(&self) -> [u8; 16] {
         self.boot
+    }
+    /// Retain the exact birth and cgroup object alongside a durable observation.
+    /// These values alone never authorize release or stopping a service.
+    pub fn start_ticks(&self) -> u64 {
+        self.start_ticks
+    }
+    pub fn cgroup_device(&self) -> u64 {
+        self.device
+    }
+    pub fn cgroup_inode(&self) -> u64 {
+        self.inode
     }
     pub(super) fn validate(&self, name: &str) -> Result<(), Error> {
         group_path(&self.group, name)?;
@@ -154,6 +166,7 @@ pub(super) fn current_controller() -> Result<String, Error> {
         || !name.starts_with("lattica-v2-")
         || !name.ends_with(".service")
         || name.starts_with("lattica-v2-worker-")
+        || name.starts_with("lattica-v2-multi-persistent-")
         || !name
             .bytes()
             .all(|b| b.is_ascii_alphanumeric() || b".-".contains(&b))
@@ -165,6 +178,8 @@ pub(super) fn current_controller() -> Result<String, Error> {
 fn unit_name(name: &str) -> Result<(), Error> {
     let key = name
         .strip_prefix("lattica-v2-worker-")
+        .or_else(|| name.strip_prefix("lattica-v2-multi-persistent-"))
+        .or_else(|| name.strip_prefix("lattica-v2-multi-owner-"))
         .and_then(|s| s.strip_suffix(".service"))
         .ok_or("unexpected worker service namespace")?;
     if key.len() != 64
@@ -418,7 +433,84 @@ pub(super) fn service(name: &str) -> Result<Service, Error> {
 /// Capture only the exact expected executable/task in the named service.
 /// None means not currently observable, NOT that work is stopped or unlaunched.
 pub fn observe(name: &str, image: [u8; 32], task: &Path) -> Result<Option<LiveProcess>, Error> {
+    if !name.starts_with("lattica-v2-worker-") {
+        return Err("single-job observation requires a worker service".into());
+    }
     transport::absolute_path(task)?;
+    observe_arguments(name, image, &["--task".into(), task.as_os_str().to_owned()])
+}
+
+/// Persistent services use a distinct, single-use session namespace.
+pub(super) fn persistent_unit_name(name: &str) -> Result<(), Error> {
+    if !name.starts_with("lattica-v2-multi-persistent-") {
+        return Err("unexpected persistent worker service namespace".into());
+    }
+    unit_name(name)
+}
+
+/// Only a durable startup fence may make absence of a service sufficient.
+/// A queued or active service is not quiescent, even before it has a main PID.
+#[cfg(feature = "stream")]
+pub(super) fn persistent_service_quiescent(name: &str) -> Result<bool, Error> {
+    persistent_unit_name(name)?;
+    let observed = service(name)?;
+    if (observed.load != "not-found" && !matches!(observed.active.as_str(), "inactive" | "failed"))
+        || observed.pid != 0
+        || observed.control_pid != 0
+    {
+        return Ok(false);
+    }
+    let (status, output) = control(&["--user", "show", name, "--property=Job", "--value"])?;
+    if !status.success() {
+        return Err("cannot observe pending persistent startup job".into());
+    }
+    if !observed.group.is_empty() {
+        match open_directory(&group_path(&observed.group, name)?) {
+            Ok(group) if !group_quiescent(&group)? => return Ok(false),
+            Ok(_) => {}
+            Err(error)
+                if error
+                    .downcast_ref::<std::io::Error>()
+                    .is_some_and(|e| e.kind() == std::io::ErrorKind::NotFound) => {}
+            Err(error) => return Err(error),
+        }
+    }
+    Ok((output.trim().is_empty() || output.trim() == "0") && service(name)? == observed)
+}
+
+pub(super) fn observe_persistent(
+    name: &str,
+    image: [u8; 32],
+    arguments: &[std::ffi::OsString],
+) -> Result<Option<LiveProcess>, Error> {
+    persistent_unit_name(name)?;
+    if arguments.is_empty() {
+        return Err("persistent worker arguments missing".into());
+    }
+    observe_arguments(name, image, arguments)
+}
+
+fn check_arguments(args: &[u8], expected: &[std::ffi::OsString]) -> Result<(), Error> {
+    use std::os::unix::ffi::OsStrExt;
+    let words: Vec<_> = args.split(|byte| *byte == 0).collect();
+    if words.len() != expected.len() + 2
+        || words[0].is_empty()
+        || !words.last().unwrap().is_empty()
+        || expected
+            .iter()
+            .zip(&words[1..])
+            .any(|(a, b)| a.as_bytes() != *b)
+    {
+        return Err("observed worker command substitution".into());
+    }
+    Ok(())
+}
+
+fn observe_arguments(
+    name: &str,
+    image: [u8; 32],
+    expected_arguments: &[std::ffi::OsString],
+) -> Result<Option<LiveProcess>, Error> {
     let observed = service(name)?;
     if observed.load != "loaded" || observed.active != "active" || observed.sub != "running" {
         return Ok(None);
@@ -455,15 +547,7 @@ pub fn observe(name: &str, image: [u8; 32], task: &Path) -> Result<Option<LivePr
         &PathBuf::from(format!("/proc/{}/cmdline", observed.pid)),
         16384,
     )?;
-    let words: Vec<_> = args.split(|b| *b == 0).collect();
-    use std::os::unix::ffi::OsStrExt;
-    if words.len() != 4
-        || words[1] != b"--task"
-        || words[2] != task.as_os_str().as_bytes()
-        || !words[3].is_empty()
-    {
-        return Err("observed worker command substitution".into());
-    }
+    check_arguments(&args, expected_arguments)?;
     let process_group = text_file(
         &PathBuf::from(format!("/proc/{}/cgroup", observed.pid)),
         8192,
@@ -507,6 +591,37 @@ pub(super) fn capture_current(name: &str, image: [u8; 32], task: &Path) -> Resul
 /// Requires a previously captured identity and a durable future-dispatch fence.
 /// This observes disappearance of that exact process/cgroup, not a new service
 /// with the same name. The caller still must drain coordinator verification.
+/// Record this coordinator's process birth and exact containing service instance.
+/// The service main process may be a controller wrapping this Rust process.
+pub fn capture_coordinator(name: &str) -> Result<Identity, Error> {
+    if !name.starts_with("lattica-v2-multi-owner-") || current_controller()? != name {
+        return Err("coordinator identity requires its own dedicated service".into());
+    }
+    let observed = service(name)?;
+    if observed.active != "active" || observed.sub != "running" {
+        return Err("coordinator service is not active".into());
+    }
+    let group = open_directory(&group_path(&observed.group, name)?)?;
+    let metadata = group.metadata()?;
+    let process_group = text_file(Path::new("/proc/self/cgroup"), 8192)?;
+    if process_group.trim_end_matches('\n') != format!("0::{}", observed.group) {
+        return Err("coordinator process cgroup substitution".into());
+    }
+    let identity = Identity {
+        boot: boot_id()?,
+        invocation: observed
+            .invocation
+            .ok_or("coordinator invocation missing")?,
+        pid: std::process::id(),
+        start_ticks: proc_start(std::process::id())?,
+        group: observed.group,
+        device: metadata.dev(),
+        inode: metadata.ino(),
+    };
+    identity.validate(name)?;
+    Ok(identity)
+}
+
 pub fn exited(identity: &Identity, name: &str) -> Result<bool, Error> {
     identity.validate(name)?;
     if boot_id()? != identity.boot {
@@ -539,6 +654,9 @@ pub fn exited(identity: &Identity, name: &str) -> Result<bool, Error> {
 /// The exclusive supervisor must never dispatch this service name again. systemd
 /// has no compare-and-stop operation: same-UID namespace mutation is not covered.
 pub fn request_stop(identity: &Identity, name: &str) -> Result<(), Error> {
+    if name.starts_with("lattica-v2-multi-owner-") {
+        return Err("worker stop cannot target a coordinator".into());
+    }
     identity.validate(name)?;
     if boot_id()? != identity.boot {
         return Ok(());

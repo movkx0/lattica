@@ -1,0 +1,54 @@
+{
+  "campaign_ids": ["block-v2-host-validation-2026-10-05-r4","block-v2-native-host-qualification-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "complete-body-qualification-r3",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-5f4e89f3c9242aa5fea3a30b",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 7446,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/command-1.log",
+      "sha256": "329e0e5ae1598da1b14a2b0211d473705672d4636a7477d85028fe9b95f52c1b"
+    },
+    {
+      "bytes": 7500,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/command-2.log",
+      "sha256": "37d553aa393cf0942de5e254be81f006e17e6e039c670f90020e36aaaa7c8a4f"
+    },
+    {
+      "bytes": 213,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/command-3.log",
+      "sha256": "ac247f43106078576d6f8acee8772eac9e6d6cf48cfad6d92569f96b26014ae3"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

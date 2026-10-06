@@ -1,0 +1,78 @@
+{
+  "campaign_ids": ["block-v2-paired-comparison-report-validation-2026-10-05","block-v2-typed-paired-comparison-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-paired-comparison-validation-20261005-a",
+  "limitations": ["lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/report-check.log:1: Expecting property name enclosed in double quotes: line 2 column 1 (char 2)","lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/validation.log:1: Expecting property name enclosed in double quotes: line 2 column 1 (char 2)","No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-0ac1ee6563cf372c6dcc1b05",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 496,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/browser-attempt01.log",
+      "sha256": "c911a35fd83304da158f55bb3b36bafd1879178f70590778333e0295f41ecd6d"
+    },
+    {
+      "bytes": 89,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/report-check.log",
+      "sha256": "92f2cac97d80b975eaeb39c1d999aa60a4101ac51b3a740872426d5a5c52f7b1"
+    },
+    {
+      "bytes": 201,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/test-block-v2-benchmark-report.py.log",
+      "sha256": "5fa75cdc21ce944b40014bbab6ff7cfb1eb456d80f3d253131e318cfb7d6fd70"
+    },
+    {
+      "bytes": 106,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/test-block-v2-typed-comparison-report.py.log",
+      "sha256": "e86c589b4c6d254afc3847cc8eb6f050f14e95e78b2fc8d168cfffaa0b766b73"
+    },
+    {
+      "bytes": 105,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/test-block-v2-typed-fleet-report.py.log",
+      "sha256": "68ed390d20911ea0d419170d91b1adbf760260146a95671bc5f8ce59a6d4c004"
+    },
+    {
+      "bytes": 1310,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/validation.log",
+      "sha256": "7d5d0756f2193c9355f5c410991ab5cccdd5de7a75429641218aa23367e599de"
+    },
+    {
+      "bytes": 106,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/test-block-v2-typed-gpu-run.py.finalizer.log",
+        "run_id": "run-592a80c1409e764bbe99b5ab"
+      },
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/test-block-v2-typed-report.py.log",
+      "sha256": "637ad693971420b70a01476cd5d51065ecc3c7af270c41cfe91899ec8c2db4bd"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

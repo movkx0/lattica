@@ -1,10 +1,12 @@
 """Adapters for retained research evidence. Never infer transactions from proofs."""
 
 from collections import defaultdict
+import math
 from pathlib import Path
 import re
 
 from .measurements import collect
+from . import typed, query
 from .model import blank_run, digest, identity, read, reference, relative, seconds
 
 
@@ -91,6 +93,8 @@ def safe_metadata(path):
 
 
 def classify(data, path):
+    if adapter := typed.classify(data, path):
+        return adapter
     if path.name == "result.json" and "cpu_audited" in data and "budget" in data:
         return "worker"
     if path.name == "attempt.json" and all(k in data for k in ("budget", "config", "job")):
@@ -104,6 +108,11 @@ def classify(data, path):
 
 
 def apply_metadata(run, data, adapter):
+    if adapter.startswith("typed-"):
+        if adapter == "typed-worker":
+            apply_metadata(run, data, "worker")
+        typed.metadata(run, data, adapter)
+        return
     run["retained_metadata"] = data
     run["adapter"] = adapter
     run["measurement_scope"] = "recursive_aggregation"
@@ -165,6 +174,9 @@ def discover(root, inputs=None, campaigns=None):
             all_files.update(measurement_files(directory))
             metadata.update(directory.rglob("manifest.json"))
             metadata.update(directory.rglob("result.json"))
+            metadata.update(directory.rglob("worker-result.json"))
+            metadata.update(p for p in directory.rglob('summary.json')
+                            if not (p.parent / 'owner/result.json').is_file())
             metadata.update(p for p in directory.rglob("attempt.json")
                             if not p.with_name("result.json").exists())
             metadata.update(directory.glob("pair-*.json"))
@@ -185,10 +197,11 @@ def discover(root, inputs=None, campaigns=None):
         adapter = classify(data, p) if data else None
         if not adapter:
             continue
-        key = relative(p.with_name("result.json") if adapter == "worker" else p, root)
+        key = relative(p.with_name("result.json") if adapter in ("worker", "typed-worker", "typed-attempt") else p, root)
         run = blank_run("run-" + identity(key), p.parent.name if adapter != "legacy" else p.stem)
         apply_metadata(run, data, adapter)
         run["sources"] = [reference(p, root)]
+        typed.enrich(run, data, p, root)
         run["_files"] = set()
         run["_base"] = p.parent
         if adapter == "legacy":
@@ -198,6 +211,8 @@ def discover(root, inputs=None, campaigns=None):
                 owned.update(measurement_files(job))
         else:
             owned = set(measurement_files(p.parent))
+            if adapter == "typed-worker" and data.get("schema") == typed.SHARED_SCHEMA:
+                owned.update(measurement_files(p.parent.parent))
             for name in ("attempt.json", "accounting.json", "budget.json"):
                 extra = p.with_name(name)
                 if extra.is_file():
@@ -254,7 +269,8 @@ def discover(root, inputs=None, campaigns=None):
                 local_hashes[sha] = ref
                 hashes.setdefault(sha, ref)
                 files.append(p)
-        measurements, sources, warnings, proofs = collect(files, root)
+        measurements, sources, warnings, proofs = collect(files, root,
+            typed_construction=run.get("configuration", {}).get("construction"))
         run["measurements"], run["proofs"] = measurements, proofs
         run["sources"].extend(sources + aliases)
         run["limitations"].extend(warnings)
@@ -293,6 +309,138 @@ def enrich_multi(run, campaign):
     run["milestones"] = sorted(set(run["milestones"] + ["P0", "P1"]))
 
 
+def pinned_comparison_source(root, source):
+    """Only resolve recorded benchmark inputs inside this repository."""
+    if not isinstance(source, dict) or not source.get("path"):
+        return None
+    path = (root / source["path"]).resolve()
+    if (not path.is_relative_to(root.resolve()) or not path.is_file()
+            or digest(path) != source.get("sha256")):
+        return None
+    return path
+
+
+def typed_fleet_windows(root, path, data, by_source):
+    trials = data.get("trials", [])
+    requested = data.get("requested_pairs")
+    complete = (data.get("status") == "succeeded" and type(requested) is int and requested > 0
+                and len(data.get("pairs", [])) == requested and len(trials) == 2 * requested)
+    if complete:
+        expected = {(number, mode) for number in range(1, requested + 1)
+                    for mode in ("sequential", "concurrent")}
+        complete = ({(t.get("pair"), t.get("mode")) for t in trials} == expected
+                    and {p.get("pair") for p in data["pairs"]} == set(range(1, requested + 1)))
+    windows = []
+    for trial in trials:
+        mode = trial.get("mode")
+        if mode not in ("sequential", "concurrent"):
+            continue
+        fleet = pinned_comparison_source(root, trial.get("source"))
+        workers = trial.get("trials", [])
+        recorded = safe_metadata(fleet) if fleet else None
+        consistent = (recorded is not None and recorded.get("schema") == "lattica-typed-fleet-v1"
+            and recorded.get("status") == "succeeded" and recorded.get("mode") == mode
+            and recorded.get("construction") == data.get("construction")
+            and recorded.get("count_per_root") == data.get("count_per_root")
+            and recorded.get("execution_elapsed_seconds") == trial.get("execution_elapsed_seconds")
+            and recorded.get("trials") == workers
+            and recorded.get("cpu_audited_roots") == trial.get("cpu_audited_roots") == len(workers)
+            and recorded.get("fresh_recursive_proofs") == trial.get("fresh_recursive_proofs"))
+        sources = [pinned_comparison_source(root, worker.get("result_source")) for worker in workers]
+        ids = [by_source[relative(source, root)] for source in sources
+               if source is not None and relative(source, root) in by_source]
+        windows.append((relative(path.parent, root) + ":" + mode, {
+            "run_ids": ids, "elapsed_seconds": trial.get("execution_elapsed_seconds"),
+            "source": reference(fleet or path, root), "campaign_source": reference(path, root),
+            "recorded": {"arm": mode, "pair": trial.get("pair"),
+                "individual_seconds": [worker.get("worker_seconds") for worker in workers],
+                "construction": data.get("construction"), "count_per_root": data.get("count_per_root"),
+                "series_status": data.get("status"), "requested_pairs": requested,
+                "repeat_qualified": complete and requested >= 5 and data.get("repeat_qualified") is True,
+                "first_worker_sample_ns": str(trial.get("first_worker_sample_ns", "")),
+                "last_worker_sample_ns": str(trial.get("last_worker_sample_ns", "")),
+                "adopted": trial.get("adopted", False)},
+            # Incomplete campaigns have unmeasured or failed windows. Retain their
+            # completed trials without promoting a partial denominator to a rate.
+            "source_consistent": consistent,
+            "complete_mapping": bool(complete and consistent and workers and all(sources)
+                and len(ids) == len(workers) == len(set(ids))),
+        }))
+    return windows
+
+
+def typed_construction_windows(root, path, data, by_source):
+    """Keep matched single-worker comparisons separate from fleet windows."""
+    baseline, candidate = data.get("baseline_construction", "reference"), data.get("candidate_construction", "finalizer")
+    if baseline == candidate or any(c not in ("reference", "finalizer", "paired")
+                                    for c in (baseline, candidate)):
+        return []
+    trials, pairs = data.get("trials", []), data.get("pairs", [])
+    requested = data.get("requested_pairs")
+    complete = (data.get("status") == "succeeded" and type(requested) is int
+                and requested > 0 and len(pairs) == requested and len(trials) == 2 * requested)
+    if complete:
+        expected = [(number, construction) for number in range(1, requested + 1)
+                    for construction in ((baseline, candidate) if number % 2 else (candidate, baseline))]
+        complete = ([(t.get("pair"), t.get("construction")) for t in trials] == expected
+                    and [p.get("pair") for p in pairs] == list(range(1, requested + 1)))
+    if complete:
+        for pair in pairs:
+            rows = [t for t in trials if t["pair"] == pair["pair"]]
+            seconds = {t["construction"]: t.get("worker_seconds") for t in rows}
+            valid_times = all(type(value) in (int, float) and math.isfinite(value) and value > 0
+                              for value in seconds.values())
+            reduction = pair.get("worker_reduction_percent")
+            complete = bool(complete and valid_times and pair.get("worker_seconds") == seconds
+                and pair.get("order") == [t["construction"] for t in rows]
+                and type(reduction) in (int, float) and math.isfinite(reduction)
+                and math.isclose(reduction, (1 - seconds[candidate] / seconds[baseline]) * 100,
+                                 rel_tol=1e-12, abs_tol=1e-9))
+    assignment = pinned_comparison_source(root, data.get("resource_assignment"))
+    windows = []
+    for trial in trials:
+        construction = trial.get("construction")
+        if construction not in (baseline, candidate):
+            continue
+        result_path = pinned_comparison_source(root, trial.get("result_source"))
+        summary_path = pinned_comparison_source(root, trial.get("summary_source"))
+        result = safe_metadata(result_path) if result_path else None
+        summary = safe_metadata(summary_path) if summary_path else None
+        consistent = bool(assignment and result is not None and summary is not None
+            and result.get("schema") == typed.GPU_SCHEMA and summary.get("schema") == typed.GPU_SCHEMA
+            and result.get("status") == summary.get("status") == "succeeded"
+            and summary.get("result") == result and result.get("construction") == construction
+            and result.get("count") == data.get("count") and result.get("cpu_audited") is True
+            and trial.get("cpu_audited") is True
+            and result.get("fresh_proofs") == trial.get("fresh_proofs")
+            and result.get("elapsed_seconds") == trial.get("worker_seconds")
+            and result.get("resource_assignment_sha256") == data["resource_assignment"].get("sha256")
+            and result.get("artifacts", {}).get("node.6.0") == trial.get("root_sha256"))
+        ids = ([by_source[relative(result_path, root)]]
+               if result_path and relative(result_path, root) in by_source else [])
+        pair = next((p for p in pairs if p.get("pair") == trial.get("pair")), {})
+        windows.append((relative(path.parent, root) + ":" + construction, {
+            "run_ids": ids, "elapsed_seconds": trial.get("worker_seconds"),
+            "source": reference(summary_path or path, root), "campaign_source": reference(path, root),
+            "recorded": {"arm": construction, "pair": trial.get("pair"),
+                "individual_seconds": [trial.get("worker_seconds")],
+                "construction": construction, "count_per_root": data.get("count"),
+                "baseline_construction": baseline, "candidate_construction": candidate,
+                "series_status": data.get("status"), "requested_pairs": requested,
+                "worker_reduction_percent": pair.get("worker_reduction_percent"),
+                "timing_boundary": data.get("timing_boundary")},
+            "source_consistent": consistent,
+            "complete_mapping": bool(consistent and len(ids) == 1),
+        }))
+    ids = [rid for _, window in windows for rid in window["run_ids"]]
+    complete = bool(complete and len(windows) == len(trials) and len(ids) == len(set(ids))
+                    and all(window["complete_mapping"] for _, window in windows))
+    for _, window in windows:
+        window["complete_mapping"] = complete
+        window["recorded"]["repeat_qualified"] = bool(complete and requested >= 5)
+    return windows
+
+
 def comparison_windows(root, input_paths, summaries):
     by_source = {s["path"]: r["run_id"] for r in summaries for s in r.get("sources", [])}
     groups = defaultdict(list)
@@ -300,6 +448,17 @@ def comparison_windows(root, input_paths, summaries):
     for directory in paths:
         if not Path(directory).is_dir():
             continue
+        for p in sorted(Path(directory).rglob("summary.json")):
+            data = safe_metadata(p)
+            if data and data.get("schema") == "lattica-typed-fleet-comparison-v1":
+                for group, window in typed_fleet_windows(root, p, data, by_source):
+                    groups[group].append(window)
+            if data and data.get("schema") == "lattica-typed-query-comparison-v1":
+                for group, window in query.windows(root, p, data, by_source):
+                    groups[group].append(window)
+            if data and data.get("schema") == "lattica-typed-comparison-v1":
+                for group, window in typed_construction_windows(root, p, data, by_source):
+                    groups[group].append(window)
         for p in sorted(Path(directory).rglob("*-result.json")):
             data = safe_metadata(p)
             if not data or "pair_makespan_seconds" not in data:

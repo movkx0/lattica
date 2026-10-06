@@ -2,6 +2,7 @@
 from collections import defaultdict
 import csv
 import json
+import math
 from pathlib import Path
 import re
 
@@ -111,7 +112,7 @@ def flatten(data, prefix="", result=None):
     return result
 
 
-def collect(paths, root):
+def collect(paths, root, typed_construction=None):
     tables, sources, warnings, proofs = [], [], [], []
     hashes = set()
     timeline_count = resource_count = 0
@@ -146,6 +147,50 @@ def collect(paths, root):
         checkpoint = None
         with path.open(errors="replace") as stream:
             for line_no, line in enumerate(stream, 1):
+                if line.startswith("{"):
+                    # Typed workers emit public node timings as JSON. Import
+                    # only these bounded fields, never arbitrary JSON payloads.
+                    try:
+                        event = json.loads(line)
+                        if event.get("event") != "fresh_typed_node":
+                            continue
+                        key_count = {"reference": 5, "finalizer": 6, "paired": 12}.get(typed_construction, 6)
+                        bounds = {"level": (0, 6), "index": (0, 63), "mode": (1, key_count),
+                                  "count": (0, 64), "bytes": (1, 2 * 1024 * 1024)}
+                        if any(type(event.get(key)) is not int or not low <= event[key] <= high
+                               for key, (low, high) in bounds.items()):
+                            raise ValueError("invalid typed node dimensions")
+                        terminal = 12 if typed_construction == "paired" else 6
+                        if event["mode"] == terminal and (event["level"] != 6 or event["index"] != 0 or event["count"] > 32):
+                            raise ValueError("invalid terminal finalizer node")
+                        if typed_construction == "paired" and event["mode"] not in (2, 3, 12):
+                            if event["level"] != 1 or event["index"] >= 32 or event["count"] not in (1, 2):
+                                raise ValueError("invalid paired wrapper node")
+                        elapsed = event["seconds"]
+                        if type(elapsed) not in (int, float) or not math.isfinite(elapsed) or elapsed < 0:
+                            raise ValueError("invalid typed node duration")
+                        optional = {"cache_setups": "setups", "cache_hits": "cache_hits",
+                                    "input_verification_ms": "input_verification_ms", "proving_ms": "proving_ms",
+                                    "serialization_ms": "serialization_ms",
+                                    "worker_pid": "worker_pid", "accepted_ms": "accepted_ms"}
+                        extra = {}
+                        for key, target in optional.items():
+                            if key in event:
+                                if type(event[key]) is not int or not 0 <= event[key] <= 2**63 - 1:
+                                    raise ValueError(f"invalid typed node counter: {key}")
+                                extra[target] = event[key]
+                        if "gpu_uuid" in event:
+                            if not isinstance(event["gpu_uuid"], str) or not re.fullmatch(
+                                    r"GPU-[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", event["gpu_uuid"]):
+                                raise ValueError("invalid typed node GPU identity")
+                            extra["gpu_uuid"] = event["gpu_uuid"]
+                        line = (f"node_complete artifact=node.{event['level']}.{event['index']} "
+                                f"elapsed_ms={elapsed * 1000} mode={event['mode']} "
+                                f"count={event['count']} bytes={event['bytes']} resumed=false")
+                        line += "".join(f" {key}={value}" for key, value in extra.items())
+                    except (ValueError, TypeError, KeyError, AttributeError) as error:
+                        warnings.append(f"{source}:{line_no}: {error}")
+                        continue
                 prefix = line.split(" ", 1)[0].split("=", 1)[0].strip()
                 if not prefix.startswith(PREFIXES):
                     continue
@@ -169,6 +214,8 @@ def collect(paths, root):
                                    "elapsed_seconds": float(data["elapsed_ms"]) / 1000,
                                    "cache_hits": data.get("cache_hits"), "setups": data.get("setups"),
                                    "resumed": data.get("resumed"), "source": source, "source_line": line_no})
+                    proofs[-1].update({key: data[key] for key in ("gpu_uuid", "worker_pid", "accepted_ms")
+                                       if key in data})
                 if "checkpoint" in prefix:
                     for key in ("dropped", "spans_dropped", "spans_open", "malformed", "open_frames", "events_dropped"):
                         if isinstance(data.get(key), (int, float)) and data[key] > 0:

@@ -1,0 +1,44 @@
+{
+  "campaign_ids": [],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "check-r3",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": [],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-8b2794582be07ddead206398",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 751,
+      "path": "lattica-prover-p3/target/block-v2-typed-arrival-20261005-a/check-r3/check.log",
+      "sha256": "bef68572a858c0b9e1683926540d5ae94f6d852bd6d55c31fcc8279022c1cfb1"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

@@ -100,6 +100,34 @@ impl Drop for Temp {
         let _ = fs::remove_dir_all(&self.path);
     }
 }
+#[test]
+fn recovered_revocation_rejects_a_substituted_launch_directory() {
+    let temp = Temp::new();
+    let other = Temp::new();
+    let mut launches = temp.gate();
+    let mut wrong = other.gate();
+    let (mut owner, lease, _) = temp.owner();
+    let token = launches.issue(&mut owner, lease, REQUEST).unwrap();
+    let previous = super::super::journal::PreviousAttempt {
+        lease,
+        resources: request(),
+        status: super::super::dag::AttemptStatus::Leased,
+        worker_stopped: false,
+        verification_active: false,
+        input_manifest: Vec::new(),
+        launch_binding: None,
+        launch_root: Some(super::super::dag::LaunchRoot {
+            journal: [1, 1],
+            store: launches.directory.identity().unwrap(),
+        }),
+    };
+    assert!(wrong.revoke_recovered(&previous).is_err());
+    drop(WorkerGate::enter(&temp.launches(), &token, REQUEST).unwrap());
+    let revoked = launches.revoke_recovered(&previous).unwrap();
+    assert!(launches.try_idle(&revoked).unwrap().is_some());
+    assert!(WorkerGate::enter(&temp.launches(), &token, REQUEST).is_err());
+}
+
 fn limits() -> LaunchLimits {
     LaunchLimits { records: 16 }
 }
@@ -228,19 +256,19 @@ fn token_rejects_noncanonical_digests_and_invalid_cpu_budgets() {
             ..request()
         },
         Resources {
-            ram_bytes: 46 << 30,
+            ram_bytes: u64::MAX,
             ..request()
         },
         Resources {
-            vram_bytes: 1,
+            vram_bytes: u64::MAX,
             ..request()
         },
         Resources {
-            scratch_bytes: 129 << 30,
+            scratch_bytes: u64::MAX,
             ..request()
         },
         Resources {
-            threads: 257,
+            threads: u32::MAX,
             ..request()
         },
     ] {
@@ -248,6 +276,17 @@ fn token_rejects_noncanonical_digests_and_invalid_cpu_budgets() {
         invalid.resources = resources;
         assert!(invalid.encode().is_err());
     }
+    // The issuing DAG and device admission bind actual capacity. Tokens carry
+    // that reservation without imposing a historical single-workstation cap.
+    let mut admitted = t.clone();
+    admitted.resources = Resources {
+        ram_bytes: 46 << 30,
+        vram_bytes: 13 << 30,
+        scratch_bytes: 129 << 30,
+        threads: 257,
+    };
+    let encoded = admitted.encode().unwrap();
+    assert_eq!(Token::decode(&encoded).unwrap(), admitted);
     // A valid checksum cannot turn a zero-RAM request into an admitted token.
     let mut bytes = t.encode().unwrap();
     bytes[56..64].fill(0);

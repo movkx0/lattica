@@ -1,0 +1,1882 @@
+{
+  "apple_repetitions": {
+    "measured_results": 0,
+    "package": {
+      "bytes": 6240069,
+      "path": "benchmark-results/lattica-apple-repetitions-094cade-20261004-r3.tar.gz",
+      "sha256": "f283a21e9dc15653aee5be40a1b7c95bc8ad8e62c8fd4795d32f7f778b96d190"
+    },
+    "sources": [
+      {
+        "bytes": 5775,
+        "path": "docs/evidence/block-v2-apple-benchmark-package-2026-10-04.json",
+        "sha256": "95f26eb3c2a3927cfac88ee7d194fd619679a059b75867f637ae8c5896389217"
+      }
+    ],
+    "status": "pending_external_execution"
+  },
+  "captured_utc": "2026-10-06T05:00:47.413060+00:00",
+  "complete_post_seal_finalization": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {},
+    "reason": "No complete seal-to-host-ready 64-transaction result meets 180 seconds. The new native journal tests apply four-transaction branches and do not qualify this full-count timing boundary.",
+    "sources": [
+      {
+        "bytes": 35971,
+        "path": "docs/evidence/block-v2-cpu-arrivals-2026-10-02.json",
+        "sha256": "a9af5db59ad4a72e071f414f408605927c80fe85c949a9767df57e599cb8a53d"
+      },
+      {
+        "bytes": 11097,
+        "path": "docs/evidence/block-v2-native-host-qualification-2026-10-05.json",
+        "sha256": "38cf521412f293613cad4fe26f4e37973ab0f8e27bbd47090e0af4006b8f1dc1"
+      },
+      {
+        "bytes": 20733,
+        "path": "docs/evidence/block-v2-native-delivery-2026-10-05.json",
+        "sha256": "9e716bf6e1a86662cfa312d829bdbc2faa1f03f1a5a6bd3538b7ffabf728b6a4"
+      }
+    ],
+    "status": "blocked"
+  },
+  "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+  "current_resource_plan": {
+    "bytes": 25513,
+    "path": "docs/evidence/block-v2-throughput-resources-2026-10-06-r29.json",
+    "sha256": "32976ef2b4c3fd91a9d2d9e9f6e61b6de4cbba3bddc21ffa7cabb0aa7cbe2856"
+  },
+  "durable_candidate_host_application": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {
+      "accepted_subtree_retained_after_coordinator_restart": true,
+      "accepted_subtree_retained_after_worker_failure": true,
+      "arrival_backend_integrated": false,
+      "cached_root_native_continuation_qualified": true,
+      "commit_including_history_replay_samples_seconds": [
+        1.998892788993544,
+        1.9970167950086761,
+        2.136755968997022,
+        2.446383575006621
+      ],
+      "commit_including_history_replay_seconds": null,
+      "coordinator_restart_application_qualified": true,
+      "cpu_reverified_preseal_reuse": true,
+      "deferred_arrival_revalidation": true,
+      "delivered_transactions_measured": false,
+      "durable_intake_selected_native_application": true,
+      "durable_restart_replay": true,
+      "fresh_process_intake_replay": true,
+      "independent_policy_selection": true,
+      "independently_cpu_audited_roots": 8,
+      "invalid_arrivals_skipped_and_retained": true,
+      "late_arrival_excluded_and_retained": true,
+      "multi_height_native_history_tested": true,
+      "native_application_receipt_recovery_qualified": true,
+      "native_complete_body_counts": [
+        4,
+        8
+      ],
+      "native_tested_heights": [
+        10,
+        11,
+        12
+      ],
+      "original_arrival_receipts_preserved": true,
+      "pending_candidate_assembly": true,
+      "pending_candidate_cpu_authenticated_wallets": 4,
+      "pending_candidate_fresh_recursive_proofs": 4,
+      "pending_candidate_fresh_wallet_proofs": 0,
+      "pending_candidate_native_blocks_applied": 1,
+      "positive_native_checks_passed": 41,
+      "preseal_dispatch": true,
+      "preseal_fresh_postseal_proofs": 5,
+      "preseal_late_arrivals_during_proving": true,
+      "preseal_reused_subtrees": 3,
+      "prior_single_height_journal_checks": 55,
+      "prototype_history_limit": 128,
+      "real_candidate_root_verified": true,
+      "revalidated_arrivals_applied": 2,
+      "revalidation_fresh_recursive_proofs": 4,
+      "revalidation_fresh_wallet_proofs": 0,
+      "revalidation_native_blocks_applied": 1,
+      "shared_native_gpu_application": true,
+      "shared_native_gpu_blocks_applied": 2,
+      "shared_native_gpu_counts": [
+        4
+      ],
+      "shared_native_gpu_fresh_process_replay": true,
+      "shared_native_gpu_heights": [
+        10,
+        11
+      ],
+      "surviving_worker_failover_qualified": true
+    },
+    "reason": "Current-head and deferred-arrival candidate application pass, including independent issuance policy, native state checks, CPU wallet authentication and replay. Pre-seal dispatch and active proving recovery remain open.",
+    "sources": [
+      {
+        "bytes": 11097,
+        "path": "docs/evidence/block-v2-native-host-qualification-2026-10-05.json",
+        "sha256": "38cf521412f293613cad4fe26f4e37973ab0f8e27bbd47090e0af4006b8f1dc1"
+      },
+      {
+        "bytes": 6095,
+        "path": "docs/evidence/block-v2-host-validation-2026-10-05-r4.json",
+        "sha256": "c2b3c4a92080bfb5bff57512355778a3b0f47e3025f90c22cf34fbf2fe7e1510"
+      },
+      {
+        "bytes": 20733,
+        "path": "docs/evidence/block-v2-native-delivery-2026-10-05.json",
+        "sha256": "9e716bf6e1a86662cfa312d829bdbc2faa1f03f1a5a6bd3538b7ffabf728b6a4"
+      },
+      {
+        "bytes": 252465,
+        "path": "docs/evidence/block-v2-native-shared-owner-2026-10-05.json",
+        "sha256": "c883ab2202259257cd075c7840b905610e4276f0ef041fca34d05b4ceeb67700"
+      },
+      {
+        "bytes": 183922,
+        "path": "docs/evidence/block-v2-native-arrival-intake-2026-10-05.json",
+        "sha256": "307b64c70662a38bf4cfd4fb9951376cca2ae5073eabf437a421b274c39adaf9"
+      },
+      {
+        "bytes": 126825,
+        "path": "docs/evidence/block-v2-native-pending-candidate-2026-10-05.json",
+        "sha256": "58a83f6a2147d7fd1d2b051402e77194d0b35bf35c7cd58ff629140449c57260"
+      },
+      {
+        "bytes": 148082,
+        "path": "docs/evidence/block-v2-native-deferred-arrivals-2026-10-05.json",
+        "sha256": "7fa3240f166eefa1847609e11b44ea0fa2053ecbdbe2dfe85a0d0f7a972cf64c"
+      },
+      {
+        "bytes": 369932,
+        "path": "docs/evidence/block-v2-native-preseal-arrivals-2026-10-05.json",
+        "sha256": "c05c3d28f574139f9834b985fa55ac025a594da57e22b524d095d9cb94c61c8e"
+      },
+      {
+        "bytes": 95724,
+        "path": "docs/evidence/block-v2-native-active-failover-2026-10-05.json",
+        "sha256": "c044ef9edf0d07ff1a0b47bdd956f0bc5e975edeb0cb70d0c66a8f268c5a7ee0"
+      },
+      {
+        "bytes": 304409,
+        "path": "docs/evidence/block-v2-native-coordinator-recovery-2026-10-05.json",
+        "sha256": "f0e34fa355b75475b7a1df563bd0b3fc6f1d29bb56e0e9a80b9c27e542278546"
+      },
+      {
+        "bytes": 126704,
+        "path": "docs/evidence/block-v2-native-cached-recovery-2026-10-05.json",
+        "sha256": "798b639b3cdfab6eb3d82b75087d9c230606ccfa682b8e94b456a749403bd745"
+      },
+      {
+        "bytes": 185877,
+        "path": "docs/evidence/block-v2-native-application-recovery-2026-10-05.json",
+        "sha256": "118cad46bb828ac88e655d9920789bcc1bc642e4a242b4a8949cb08423908e94"
+      }
+    ],
+    "status": "passed"
+  },
+  "full_count_cold_64": {
+    "aggregation_only_observations": [
+      {
+        "cpu_audit_seconds": 0.057007686991710216,
+        "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "root_bytes": 1683948,
+        "worker_seconds": 1692.2168257909943
+      },
+      {
+        "cpu_audit_seconds": 0.0899018110067118,
+        "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "root_bytes": 1683948,
+        "worker_seconds": 2201.470870202
+      }
+    ],
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {},
+    "reason": "No complete cold full-64 result meets the 600-second boundary. Single-worker aggregation alone took 1692.217 and 2201.471 seconds; those intervals exclude wallet proving, registry preparation and durable application.",
+    "sources": [
+      {
+        "bytes": 5306,
+        "path": "docs/evidence/block-v2-throughput-validation-2026-10-04.json",
+        "sha256": "07d935b35a8a9453f39447c2f00c04c5495c7a6d7a4589a6c3e02c36e5338a90"
+      },
+      {
+        "bytes": 297786,
+        "path": "docs/evidence/block-v2-typed-count-matrix-2026-10-05.json",
+        "sha256": "6a169183d4eefe84c79ce4bc8f5ec77a74007ce82d32d6cc8f7ded77d1b4d920"
+      },
+      {
+        "bytes": 20733,
+        "path": "docs/evidence/block-v2-native-delivery-2026-10-05.json",
+        "sha256": "9e716bf6e1a86662cfa312d829bdbc2faa1f03f1a5a6bd3538b7ffabf728b6a4"
+      }
+    ],
+    "status": "blocked"
+  },
+  "grouped_eight_comparison_source": {
+    "bytes": 73983,
+    "path": "docs/evidence/block-v2-direct-readback-2026-10-04.json",
+    "sha256": "37f207f46b59f72064fc31c19509f67b45d476181b12b7e15540a500b3c6ebb4"
+  },
+  "mixed_recursive_registry_and_cpu_replay": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "matched_comparison": {
+      "matched_pairs": 5,
+      "median_within_pair_reduction_percent": 43.06847075928657,
+      "median_worker_seconds": {
+        "finalizer": 238.31222996900033,
+        "paired": 135.67479688899766
+      },
+      "paired_faster_pairs": 5,
+      "source": {
+        "bytes": 106811,
+        "path": "docs/evidence/block-v2-typed-paired-comparison-2026-10-05.json",
+        "sha256": "96138efdc549c4a9012d6b16e7ab1cb6905cc92594ea4dbb0d00fdb63e1cc53a"
+      },
+      "within_pair_reduction_range_percent": [
+        42.35698965864153,
+        43.417857579068865
+      ]
+    },
+    "measurement": {
+      "construction": "typed-paired-v1",
+      "counts": [
+        1,
+        2,
+        3,
+        4,
+        8,
+        16,
+        32,
+        63,
+        64
+      ],
+      "cpu_audited": true,
+      "cpu_root_replay_without_inner_artifacts": true,
+      "delivered_transactions_measured": false,
+      "depth": 6,
+      "native_complete_body_counts": [
+        4
+      ],
+      "negative_audit_scope": "Retained count-four typed-root rejection checks; separate real-ABI mutation/body-mismatch checks are linked in native validation.",
+      "negative_audits_passed": 7,
+      "passed_counts": [
+        1,
+        2,
+        3,
+        4,
+        8,
+        16,
+        32,
+        63,
+        64
+      ],
+      "pending_counts": [],
+      "proof_accounting": {
+        "new_cpu_audited_roots": 16,
+        "new_recursive_proofs": 380,
+        "recursive_proofs_in_all_covered_roots": 388,
+        "recursive_proofs_in_prior_roots": 8,
+        "revalidated_prior_roots": 2,
+        "total_covered_roots": 18
+      },
+      "registry_keys": 12,
+      "root_bytes": 1683948,
+      "root_only_bundle_hashes_revalidated": true,
+      "transaction_types": [
+        "joinsplit",
+        "htlc_redeem",
+        "htlc_refund",
+        "issuance"
+      ]
+    },
+    "previous_count4_measurement": {
+      "construction": "typed-paired-v1",
+      "counts": [
+        4
+      ],
+      "cpu_audited": true,
+      "cpu_root_replay_without_inner_artifacts": true,
+      "delivered_transactions_measured": false,
+      "depth": 6,
+      "durable_host_applied": false,
+      "fresh_recursive_proofs": 4,
+      "issuance_inputs": 1,
+      "negative_audits_passed": 7,
+      "passed_counts": [
+        4
+      ],
+      "pending_counts": [
+        1,
+        2,
+        3,
+        8,
+        16,
+        32,
+        63,
+        64
+      ],
+      "registry_keys": 12,
+      "root_bytes": 1683948,
+      "root_only_bundle_hashes_revalidated": true,
+      "root_sha256": "5e87acff289344a3c53988ba757984a8db4cd57187a29fc21bb86fb504d735c3",
+      "transaction_types": [
+        "joinsplit",
+        "htlc_redeem",
+        "htlc_refund",
+        "issuance"
+      ],
+      "useful_user_inputs": 3
+    },
+    "previous_measurement": {
+      "construction": "typed-finalizer-v1",
+      "counts": [
+        4
+      ],
+      "cpu_audit_seconds": 0.07402191701112315,
+      "cpu_audited": true,
+      "cpu_root_replay_without_inner_artifacts": true,
+      "delivered_transactions_measured": false,
+      "depth": 6,
+      "durable_host_applied": false,
+      "fresh_recursive_proofs": 8,
+      "issuance_inputs": 1,
+      "negative_audits_passed": 7,
+      "passed_counts": [
+        4
+      ],
+      "pending_counts": [
+        1,
+        2,
+        3,
+        8,
+        16,
+        32,
+        63,
+        64
+      ],
+      "registry_keys": 6,
+      "root_bytes": 1683948,
+      "root_only_bundle_hashes_revalidated": true,
+      "root_sha256": "cf5d6a648df3e09bc3fd317f019fde8b352db4d8bcc40a5bd0c007737c373ad0",
+      "transaction_types": [
+        "joinsplit",
+        "htlc_redeem",
+        "htlc_refund",
+        "issuance"
+      ],
+      "useful_user_inputs": 3,
+      "worker_seconds": 249.37039616701077
+    },
+    "reason": "All nine required counts passed independent root-only CPU audits on both GPUs, with exact stage coverage and unchanged input pins. New complete-body count-four roots also passed the native verifier.",
+    "sources": [
+      {
+        "bytes": 115315,
+        "path": "docs/evidence/block-v2-typed-paired-gpu-2026-10-05.json",
+        "sha256": "03c0d56fb599a366c5ee571a39b1fc41feccd418e4ea898ee8a19d2395f10e8c"
+      },
+      {
+        "bytes": 106811,
+        "path": "docs/evidence/block-v2-typed-paired-comparison-2026-10-05.json",
+        "sha256": "96138efdc549c4a9012d6b16e7ab1cb6905cc92594ea4dbb0d00fdb63e1cc53a"
+      },
+      {
+        "bytes": 373086,
+        "path": "docs/evidence/block-v2-typed-paired-repetitions-2026-10-05.json",
+        "sha256": "f5d294b056f56f2826edee6d611ef28a9189ddf59fd6010ed171bba0eefb2322"
+      },
+      {
+        "bytes": 297786,
+        "path": "docs/evidence/block-v2-typed-count-matrix-2026-10-05.json",
+        "sha256": "6a169183d4eefe84c79ce4bc8f5ec77a74007ce82d32d6cc8f7ded77d1b4d920"
+      },
+      {
+        "bytes": 11097,
+        "path": "docs/evidence/block-v2-native-host-qualification-2026-10-05.json",
+        "sha256": "38cf521412f293613cad4fe26f4e37973ab0f8e27bbd47090e0af4006b8f1dc1"
+      }
+    ],
+    "status": "passed"
+  },
+  "next_measured_optimization": "Qualify interrupted initialization of an existing recovery journal and controller pre-admission, then resource exhaustion, active reorg/stale results and all-worker failure; add supervision/replacement. Repeat matched staged/all-fresh trials, profile quotient/openings, qualify larger counts and complete timing boundaries.",
+  "per_geometry_device_qualification": {
+    "calibrated_count4_qualification": {
+      "all_worker_and_parent_memory_event_deltas_zero": true,
+      "context_bytes_by_gpu": {
+        "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b": 536870912,
+        "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c": 536870912
+      },
+      "cpu_audited_roots": 4,
+      "fresh_recursive_proofs": 32,
+      "source": {
+        "bytes": 157974,
+        "path": "docs/evidence/block-v2-typed-calibrated-multi-gpu-2026-10-04.json",
+        "sha256": "a332f24a96d19a9bb76f148039606d3db270419e797af00d5b1d903df395749c"
+      }
+    },
+    "compact_count4_qualification": {
+      "all_worker_and_parent_memory_event_deltas_zero": true,
+      "cpu_audited_roots": 4,
+      "fresh_recursive_proofs": 32,
+      "gpu_uuids": [
+        "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      ],
+      "modes": [
+        "sequential",
+        "concurrent"
+      ],
+      "source": {
+        "bytes": 154641,
+        "path": "docs/evidence/block-v2-typed-compact-multi-gpu-2026-10-04-r2.json",
+        "sha256": "54cf0f5f077c69b9bbfd6d368387fdd3390f0350c96119fbbb32ad648ac4a6e7"
+      }
+    },
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "matched_comparison": {
+      "all_worker_memory_events_zero": true,
+      "cpu_audited_roots": 10,
+      "finalizer_faster_pairs": 5,
+      "fresh_recursive_proofs": 115,
+      "matched_pairs": 5,
+      "median_within_pair_reduction_percent": 41.8933497766961,
+      "median_worker_seconds": {
+        "finalizer": 252.7675911230035,
+        "reference": 439.25595016099396
+      },
+      "passed_counts": [
+        4
+      ],
+      "reference_negative_audits_passed": 6,
+      "source": {
+        "bytes": 114324,
+        "path": "docs/evidence/block-v2-typed-comparison-2026-10-04.json",
+        "sha256": "9ae38fbf62e9931a48ec34427d6b92068fc58fcedaca8f2168d5c86c529e0d4d"
+      },
+      "within_pair_reduction_range_percent": [
+        41.23106582189393,
+        50.04271277541046
+      ]
+    },
+    "measurement": {
+      "all_required_geometries": false,
+      "binary_sha256": "b20202fcc5cc731ac65dbf8f9818264cd3fcb3b30224de2205cac18b5a62e523",
+      "construction": "typed-paired-v1",
+      "count4_fleet_repeat_qualified": true,
+      "counts": [
+        1,
+        2,
+        3,
+        4,
+        8,
+        16,
+        32,
+        63,
+        64
+      ],
+      "counts_qualified_for_shared_two_worker_assignment": [
+        4
+      ],
+      "depth": 6,
+      "gpu_uuids": [
+        "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      ],
+      "individually_cpu_audited": true,
+      "mode_for_full_count_matrix": "sequential",
+      "native_shared_owner_counts": [
+        4
+      ],
+      "native_shared_owner_heights": [
+        10,
+        11
+      ],
+      "passed_scope": "Nine counts on each GPU, using independently admitted single-worker allocations. Shared count-four assignment remains qualified by five matched sequential/concurrent pairs.",
+      "profile_sha256": "a7c44db10099c1100f575a31a5196e22620ca11369bf322a44f2923ee8672857",
+      "single_worker_count_device_combinations": 18,
+      "typed_shared_owner_counts": [
+        8
+      ],
+      "typed_shared_owner_repetitions": 1
+    },
+    "persistent_child_backend_qualification": {
+      "active_worker_recovery_qualified": false,
+      "cache_hits_per_root": 4,
+      "cache_setups_per_root": 4,
+      "concurrent_execution_seconds": 343.26779988899943,
+      "concurrent_qualified": true,
+      "concurrent_repetitions": 1,
+      "counts": [
+        8
+      ],
+      "cpu_audited_roots": 4,
+      "earlier_laptop_benchmark_monitor_interrupted": true,
+      "fresh_recursive_proofs": 32,
+      "gpu_uuids": [
+        "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      ],
+      "initial_source": {
+        "bytes": 37637,
+        "path": "docs/evidence/block-v2-typed-process-2026-10-05.json",
+        "sha256": "f8a295c898566f9763006cdd5085db98b47d7ec6a473d40ab5520269778c3c90"
+      },
+      "native_arrival_integrated": false,
+      "new_trial_monitor_exit_codes": [
+        0,
+        0
+      ],
+      "new_trial_telemetry": [
+        {
+          "first_time_ns": 1791222517658887426,
+          "last_time_ns": 1791222809362495213,
+          "max_sample_interval_seconds": 0.667765006,
+          "samples": 528
+        },
+        {
+          "first_time_ns": 1791222884727483328,
+          "last_time_ns": 1791223188297045072,
+          "max_sample_interval_seconds": 0.908487943,
+          "samples": 522
+        },
+        {
+          "first_time_ns": 1791222884757196028,
+          "last_time_ns": 1791223227767889735,
+          "max_sample_interval_seconds": 0.864826584,
+          "samples": 594
+        }
+      ],
+      "new_worker_seconds": [
+        291.2471798059996,
+        303.48575665199314,
+        342.70337966800435
+      ],
+      "shared_dag_owner_across_gpus": false,
+      "source": {
+        "bytes": 114508,
+        "path": "docs/evidence/block-v2-typed-process-concurrent-2026-10-05.json",
+        "sha256": "f24dd786a55d1068d860a8cc9f4a71fa254f521325c35b273f264612a12800ef"
+      },
+      "status": "passed_for_desktop_and_one_concurrent_count_eight_trial",
+      "worker_process_exited": true,
+      "workspace_released_after_gpu_teardown": true
+    },
+    "previous_context_measurement": {
+      "all_required_geometries": false,
+      "all_worker_and_parent_memory_event_deltas_zero": true,
+      "binary_sha256": "ff84c8460db015065ae2c0f99758b3c45ebb264d08f5d081eb8175f27e50dd23",
+      "concurrent_cpu_audited_roots": 2,
+      "construction": "typed-finalizer-v1",
+      "context_calibration_qualified": false,
+      "counts": [
+        4
+      ],
+      "depth": 6,
+      "gpu_uuids": [
+        "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      ],
+      "individually_cpu_audited": true,
+      "modes": [
+        "sequential",
+        "concurrent"
+      ],
+      "passed_scope": "Count-four mixed finalizer roots on both GPUs, sequentially and concurrently with the same per-device allocations. Other geometries and repeated performance measurements remain pending.",
+      "per_device": [
+        {
+          "context_measurement": {
+            "binary_sha256": "ff84c8460db015065ae2c0f99758b3c45ebb264d08f5d081eb8175f27e50dd23",
+            "driver": "615.71.09",
+            "peak_context_bytes": 209713424,
+            "profile_sha256": "c0fd3f0b74330e48126b6e60061f2fce6ce752e6244b285bec6cb3f92217f516",
+            "runtime": "615.71.09",
+            "samples": 38,
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+          },
+          "cpu_audited": true,
+          "fresh_proofs": 8,
+          "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+          "peak_charged_ram_bytes": 16875335680,
+          "root_bytes": 1683948,
+          "worker_seconds": 302.4682812480023
+        },
+        {
+          "context_measurement": {
+            "binary_sha256": "ff84c8460db015065ae2c0f99758b3c45ebb264d08f5d081eb8175f27e50dd23",
+            "driver": "615.71.09",
+            "peak_context_bytes": 278919440,
+            "profile_sha256": "c0fd3f0b74330e48126b6e60061f2fce6ce752e6244b285bec6cb3f92217f516",
+            "runtime": "615.71.09",
+            "samples": 38,
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          "cpu_audited": true,
+          "fresh_proofs": 8,
+          "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "peak_charged_ram_bytes": 16841584640,
+          "root_bytes": 1683948,
+          "worker_seconds": 376.76404332100356
+        }
+      ],
+      "profile_sha256": "c0fd3f0b74330e48126b6e60061f2fce6ce752e6244b285bec6cb3f92217f516",
+      "ram_admission": "compact",
+      "repeat_qualified": false
+    },
+    "previous_measurement": {
+      "all_required_geometries": false,
+      "all_worker_and_parent_memory_event_deltas_zero": true,
+      "binary_sha256": "ff84c8460db015065ae2c0f99758b3c45ebb264d08f5d081eb8175f27e50dd23",
+      "concurrent_cpu_audited_roots": 2,
+      "construction": "typed-finalizer-v1",
+      "context_calibration_qualified": true,
+      "counts": [
+        4
+      ],
+      "depth": 6,
+      "gpu_uuids": [
+        "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      ],
+      "individually_cpu_audited": true,
+      "modes": [
+        "sequential",
+        "concurrent"
+      ],
+      "passed_scope": "Five alternating matched sequential/concurrent pairs passed at count four on both GPUs with individually calibrated context allowances and fixed managed VRAM, CPU, host RAM and spill. Other counts and within-root scheduling remain pending.",
+      "per_device": [
+        {
+          "context_measurement": {
+            "binary_sha256": "ff84c8460db015065ae2c0f99758b3c45ebb264d08f5d081eb8175f27e50dd23",
+            "driver": "615.71.09",
+            "peak_context_bytes": 209713424,
+            "profile_sha256": "c0fd3f0b74330e48126b6e60061f2fce6ce752e6244b285bec6cb3f92217f516",
+            "runtime": "615.71.09",
+            "samples": 38,
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+          },
+          "cpu_audited": true,
+          "fresh_proofs": 8,
+          "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+          "peak_charged_ram_bytes": 16840380416,
+          "root_bytes": 1683948,
+          "worker_seconds": 282.2771408819972
+        },
+        {
+          "context_measurement": {
+            "binary_sha256": "ff84c8460db015065ae2c0f99758b3c45ebb264d08f5d081eb8175f27e50dd23",
+            "driver": "615.71.09",
+            "peak_context_bytes": 278919440,
+            "profile_sha256": "c0fd3f0b74330e48126b6e60061f2fce6ce752e6244b285bec6cb3f92217f516",
+            "runtime": "615.71.09",
+            "samples": 38,
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          "cpu_audited": true,
+          "fresh_proofs": 8,
+          "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "peak_charged_ram_bytes": 16820359168,
+          "root_bytes": 1683948,
+          "worker_seconds": 355.5483891360054
+        }
+      ],
+      "profile_sha256": "c0fd3f0b74330e48126b6e60061f2fce6ce752e6244b285bec6cb3f92217f516",
+      "ram_admission": "compact",
+      "repeat_qualified": true
+    },
+    "previous_single_device_measurement": {
+      "binary_sha256": "78080386e55df92dc704332db52158f09aa2118ee58013bddfc76bd61ddcda5c",
+      "context_allowance_bytes": 7784628224,
+      "context_samples": 38,
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "managed_gpu_bytes": 7516192768,
+      "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+      "observed_peak_context_bytes": 209713424,
+      "passed_scope": "One complete depth-six count-four mixed finalizer root on the laptop GPU with conservative single-worker admission. This does not qualify other counts, devices, smaller budgets, concurrent mixed jobs or durable application.",
+      "peak_charged_ram_bytes": 17037471744,
+      "profile_sha256": "034602a70f239525190c7a92c1cfc75ba88f530430fcd08f5c132d0b72ec3982",
+      "rayon_threads": 23,
+      "worker_ram_bytes": 43754979328
+    },
+    "qualified_count4_fleet_measurement": {
+      "all_required_geometries": false,
+      "all_worker_and_parent_memory_event_deltas_zero": true,
+      "binary_sha256": "b20202fcc5cc731ac65dbf8f9818264cd3fcb3b30224de2205cac18b5a62e523",
+      "concurrent_cpu_audited_roots": 10,
+      "construction": "typed-paired-v1",
+      "context_calibration_qualified": true,
+      "counts": [
+        4
+      ],
+      "cpu_audited_roots": 20,
+      "depth": 6,
+      "fresh_recursive_proofs": 80,
+      "gpu_uuids": [
+        "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      ],
+      "individually_cpu_audited": true,
+      "modes": [
+        "sequential",
+        "concurrent"
+      ],
+      "passed_scope": "Five alternating pairs, one independent paired count-four root per GPU, fixed device-specific assignment. Other counts and the query-gather binary remain unqualified.",
+      "profile_sha256": "a7c44db10099c1100f575a31a5196e22620ca11369bf322a44f2923ee8672857",
+      "ram_admission": "compact",
+      "repeat_qualified": true
+    },
+    "reason": "Earlier per-device count qualification remains retained. The shared owner passes one count-eight fixture trial and two count-four native blocks across both GPUs. Counts 16 and above remain unqualified under shared allocations; matched repetitions remain pending.",
+    "repeated_count4_qualification": {
+      "all_trials_in_prescribed_order_without_overlap": true,
+      "all_worker_and_parent_memory_event_deltas_zero": true,
+      "concurrent_faster_pairs": 5,
+      "cpu_audited_roots": 20,
+      "fixture_aggregation_rates": {
+        "concurrent": {
+          "cpu_audited_roots": 10,
+          "issuance_inputs_excluded": 10,
+          "measured_seconds": 993.0314676120033,
+          "useful_fixture_inputs": 30,
+          "useful_fixture_inputs_per_minute": 1.8126313804823906
+        },
+        "sequential": {
+          "cpu_audited_roots": 10,
+          "issuance_inputs_excluded": 10,
+          "measured_seconds": 1582.0314130400075,
+          "useful_fixture_inputs": 30,
+          "useful_fixture_inputs_per_minute": 1.1377776605213845
+        }
+      },
+      "fresh_recursive_proofs": 80,
+      "identical_resource_assignment_across_all_trials": true,
+      "input_controller_and_root_artifact_pins_revalidated": true,
+      "matched_pairs": 5,
+      "median_execution_elapsed_seconds": {
+        "concurrent": 197.8716214790038,
+        "sequential": 316.5214627420064
+      },
+      "median_within_pair_reduction_percent": 37.48555950523739,
+      "source": {
+        "bytes": 373086,
+        "path": "docs/evidence/block-v2-typed-paired-repetitions-2026-10-05.json",
+        "sha256": "f5d294b056f56f2826edee6d611ef28a9189ddf59fd6010ed171bba0eefb2322"
+      },
+      "within_pair_reduction_range_percent": [
+        36.24903995564518,
+        37.85467956835993
+      ]
+    },
+    "sources": [
+      {
+        "bytes": 84498,
+        "path": "docs/evidence/block-v2-typed-paired-calibration-2026-10-05.json",
+        "sha256": "4d90a76629e392d8743b39a32c886f8fd24387ceb6ab9b604c6c08b2f49729fe"
+      },
+      {
+        "bytes": 373086,
+        "path": "docs/evidence/block-v2-typed-paired-repetitions-2026-10-05.json",
+        "sha256": "f5d294b056f56f2826edee6d611ef28a9189ddf59fd6010ed171bba0eefb2322"
+      },
+      {
+        "bytes": 297786,
+        "path": "docs/evidence/block-v2-typed-count-matrix-2026-10-05.json",
+        "sha256": "6a169183d4eefe84c79ce4bc8f5ec77a74007ce82d32d6cc8f7ded77d1b4d920"
+      },
+      {
+        "bytes": 274561,
+        "path": "docs/evidence/block-v2-typed-worker-2026-10-05.json",
+        "sha256": "b4491ff97e9bf13a8caac85b82591a123512e5c2a69b84073a5c92343f5abf96"
+      },
+      {
+        "bytes": 37637,
+        "path": "docs/evidence/block-v2-typed-process-2026-10-05.json",
+        "sha256": "f8a295c898566f9763006cdd5085db98b47d7ec6a473d40ab5520269778c3c90"
+      },
+      {
+        "bytes": 114508,
+        "path": "docs/evidence/block-v2-typed-process-concurrent-2026-10-05.json",
+        "sha256": "f24dd786a55d1068d860a8cc9f4a71fa254f521325c35b273f264612a12800ef"
+      },
+      {
+        "bytes": 91412,
+        "path": "docs/evidence/block-v2-typed-shared-owner-2026-10-05.json",
+        "sha256": "cf658aeeaea48fb368d093305cc01c54f8b21699e79bf7f021131f849518be50"
+      },
+      {
+        "bytes": 252465,
+        "path": "docs/evidence/block-v2-native-shared-owner-2026-10-05.json",
+        "sha256": "c883ab2202259257cd075c7840b905610e4276f0ef041fca34d05b4ceeb67700"
+      }
+    ],
+    "status": "blocked",
+    "typed_inline_dag_count8_concurrency": {
+      "all_worker_and_parent_memory_event_deltas_zero": true,
+      "binary_sha256": "447d0147b49b7c9b23513bc28cad22badf2a12e1942d85c1e8c78ee6680495ef",
+      "context_allowance": "conservative bootstrap",
+      "counts": [
+        8
+      ],
+      "cpu_audited_roots": 2,
+      "execution_backend": "typed_inline_dag_v1",
+      "fresh_recursive_proofs": 16,
+      "gpu_uuids": [
+        "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      ],
+      "repeat_qualified": false,
+      "source": {
+        "bytes": 274561,
+        "path": "docs/evidence/block-v2-typed-worker-2026-10-05.json",
+        "sha256": "b4491ff97e9bf13a8caac85b82591a123512e5c2a69b84073a5c92343f5abf96"
+      }
+    }
+  },
+  "pilot_started": false,
+  "previous_snapshot": {
+    "bytes": 73198,
+    "path": "docs/evidence/block-v2-throughput-readiness-2026-10-06-r28.json",
+    "sha256": "8dfe03f52c675c1e0dd3cb10d927282c90508d885ccdc5c5d61c0390975b5547"
+  },
+  "query_readback_comparison": {
+    "aggregate": {
+      "gather_faster_pairs": 3,
+      "matched_pairs": 5,
+      "median_within_pair_reduction_percent": 0.22498917603059887,
+      "median_worker_seconds": {
+        "gather": 133.29818288100068,
+        "rows": 133.59876564300794
+      },
+      "within_pair_reduction_range_percent": [
+        -0.6680998293028484,
+        0.9183556884495792
+      ]
+    },
+    "decision": "Keep row readback as the default. Gather reduced read calls but did not produce a consistent solving-time reduction in the five matched pairs.",
+    "default_query_readback_layout": "rows",
+    "fixture_aggregation_rates": {
+      "gather": {
+        "elapsed_worker_seconds": 666.5669934739999,
+        "issuance_inputs_excluded": 5,
+        "useful_fixture_inputs": 15,
+        "useful_fixture_inputs_per_minute": 1.3502018683964516
+      },
+      "rows": {
+        "elapsed_worker_seconds": 667.6979844559974,
+        "issuance_inputs_excluded": 5,
+        "useful_fixture_inputs": 15,
+        "useful_fixture_inputs_per_minute": 1.3479148072212157
+      }
+    },
+    "median_final_query_checkpoint": {
+      "gather": {
+        "calls": 20,
+        "downloaded_bytes": 1933312,
+        "gather_device_ns": 752224,
+        "readbacks": 120,
+        "tiles": 120,
+        "wall_ns": 10877976041
+      },
+      "rows": {
+        "calls": 20,
+        "downloaded_bytes": 1933312,
+        "gather_device_ns": 0,
+        "readbacks": 15360,
+        "tiles": 120,
+        "wall_ns": 10869113337
+      }
+    },
+    "metal_tested": false,
+    "source": {
+      "bytes": 63036,
+      "path": "docs/evidence/block-v2-query-gather-comparison-2026-10-05.json",
+      "sha256": "5823a39867c4eef6fe6699207a2b16b0839a2556747974c4061b0b8fa63f8df6"
+    }
+  },
+  "resource_admission_note": "New-candidate bootstrap trial used 20.75 GiB RAM and 14.25 GiB spill per worker, 12/11 Rayon threads, 7/6 GiB managed VRAM and 7.25/6.5 GiB context. Fleet cap: 43 GiB, with a 1.25 GiB one-thread owner. All 23 observed processes exited; six final accounting records and fleet counters show zero memory events. Five interrupted owner final accounting records are unavailable.",
+  "restart_reorg_and_resource_failure_recovery": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {
+      "accepted_root_export_io_failure_qualified": true,
+      "accepted_subtree_preserved": true,
+      "active_failure_scope": "One collection-time failure on an active desktop worker; same coordinator, surviving original laptop assignment.",
+      "active_worker_recovery_qualified": true,
+      "all_cached_native_continuation_qualified": true,
+      "arrival_backend_integrated": false,
+      "automatic_coordinator_supervision_qualified": false,
+      "benchmark_monitor_interrupted": true,
+      "cached_recovery_epochs": [
+        2,
+        3,
+        4
+      ],
+      "cached_recovery_without_gpu_start": true,
+      "changed_and_semantically_substituted_cache_rejected_before_gpu_dispatch": true,
+      "completed_gpu_journal_recovery_epochs": [
+        2,
+        3
+      ],
+      "completed_gpu_journal_rejection_cases": 4,
+      "controller_pre_admission_interruption_qualified": false,
+      "coordinator_delayed_entry_revocation_qualified": true,
+      "coordinator_recovery_epoch": 2,
+      "coordinator_recovery_qualified": true,
+      "coordinator_termination_during_proving_tested": true,
+      "dag_owner_restart_during_gpu_work_tested": false,
+      "delayed_startup_revocation_qualified": true,
+      "dispatched_job_interruption_qualified": true,
+      "duplicate_intake_events_after_recovery": 0,
+      "duplicate_native_blocks_after_recovery": 0,
+      "durable_intake_fresh_process_replay": true,
+      "existing_journal_recovery_initialization_interruption_qualified": false,
+      "failed_job_retried_on_other_gpu": true,
+      "final_root_before_native_application_interruption_qualified": true,
+      "fresh_cpu_recovery_processes": 2,
+      "gpu_recovery_after_cpu_only_rejection_qualified": true,
+      "idle_worker_shutdown_tested": true,
+      "incomplete_cached_recovery_rejected": true,
+      "initialized_startup_before_launch_interruption_qualified": true,
+      "initialized_startup_before_ready_interruption_qualified": true,
+      "injected_storage_error_cases": 10,
+      "intake_commit_crash_boundary_unit_tests": true,
+      "intake_receipt_publication_interruption_qualified": true,
+      "multi_height_native_history_tested": true,
+      "native_application_interruption_qualified": true,
+      "native_shared_completed_journal_replay": true,
+      "native_shared_stale_preparation_and_root_rejected": true,
+      "native_snapshot_bound_gpu_dispatch": true,
+      "native_storage_publication_boundaries_qualified": 5,
+      "new_candidate_bootstrap_interruption_qualified": true,
+      "new_candidate_bootstrap_sigkill_stages": 4,
+      "oom_recovery_qualified": false,
+      "original_gpu_journal_fresh_process_recovery_tested": true,
+      "original_journal_resumed": true,
+      "passed_cases": [
+        "coordinator_restart",
+        "reorg",
+        "resource_exhaustion",
+        "stale_results"
+      ],
+      "pending_candidate_completed_intake_and_native_replay": true,
+      "persistent_child_clean_exit_tested": true,
+      "power_loss_recovery_tested": false,
+      "preinitialization_coordinator_bootstrap_interruption_qualified": false,
+      "preseal_dispatch": true,
+      "process_exit_boundaries": 5,
+      "proof_export_sigkill_qualified": false,
+      "recovered_accepted_subtree_cpu_reverified": true,
+      "recovery_preserved_original_assignments": true,
+      "revalidated_candidate_completed_intake_and_native_replay": true,
+      "scope": "One active worker failure and one explicit coordinator restart during proving have audited/applied native roots. OOM, active reorg/stale results and broader interruption boundaries remain unqualified.",
+      "shared_owner_clean_shutdown_tested": true,
+      "stale_head_and_policy_cache_rejected_before_gpu_dispatch": true,
+      "startup_recovery_epochs": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "surviving_worker_failover_qualified": true,
+      "typed_gpu_arrival_dispatch": false,
+      "typed_graph_cache_reopen_tested": true,
+      "typed_inline_gpu_dispatch": true,
+      "typed_persistent_child_dispatch": true,
+      "typed_shared_owner_gpu_dispatch": true,
+      "worker_replacement_qualified": false,
+      "worker_termination_during_proving_tested": true,
+      "worker_termination_tested": false
+    },
+    "reason": "New-candidate bootstrap before entry, before the Rust prover, during metadata initialization and before worker intents now passes, alongside initialized startup/dispatch/export and native receipt recovery. Interrupted initialization of an existing journal, controller pre-admission, OOM/resource exhaustion, active reorg/stale results, all-worker failure and automatic supervision/replacement remain open.",
+    "sources": [
+      {
+        "bytes": 11097,
+        "path": "docs/evidence/block-v2-native-host-qualification-2026-10-05.json",
+        "sha256": "38cf521412f293613cad4fe26f4e37973ab0f8e27bbd47090e0af4006b8f1dc1"
+      },
+      {
+        "bytes": 6095,
+        "path": "docs/evidence/block-v2-host-validation-2026-10-05-r4.json",
+        "sha256": "c2b3c4a92080bfb5bff57512355778a3b0f47e3025f90c22cf34fbf2fe7e1510"
+      },
+      {
+        "bytes": 20733,
+        "path": "docs/evidence/block-v2-native-delivery-2026-10-05.json",
+        "sha256": "9e716bf6e1a86662cfa312d829bdbc2faa1f03f1a5a6bd3538b7ffabf728b6a4"
+      },
+      {
+        "bytes": 89840,
+        "path": "docs/evidence/block-v2-typed-local-dag-2026-10-05.json",
+        "sha256": "9833f2626bbdd41c06b6c38955efabc024664bcba6bd0517b0f9dda338455d89"
+      },
+      {
+        "bytes": 274561,
+        "path": "docs/evidence/block-v2-typed-worker-2026-10-05.json",
+        "sha256": "b4491ff97e9bf13a8caac85b82591a123512e5c2a69b84073a5c92343f5abf96"
+      },
+      {
+        "bytes": 110917,
+        "path": "docs/evidence/block-v2-typed-recovery-2026-10-05.json",
+        "sha256": "aa081325babcf378e760db03cf4b6feb688627f0d491929cbc3ed0fb6053cc0a"
+      },
+      {
+        "bytes": 37637,
+        "path": "docs/evidence/block-v2-typed-process-2026-10-05.json",
+        "sha256": "f8a295c898566f9763006cdd5085db98b47d7ec6a473d40ab5520269778c3c90"
+      },
+      {
+        "bytes": 114508,
+        "path": "docs/evidence/block-v2-typed-process-concurrent-2026-10-05.json",
+        "sha256": "f24dd786a55d1068d860a8cc9f4a71fa254f521325c35b273f264612a12800ef"
+      },
+      {
+        "bytes": 91412,
+        "path": "docs/evidence/block-v2-typed-shared-owner-2026-10-05.json",
+        "sha256": "cf658aeeaea48fb368d093305cc01c54f8b21699e79bf7f021131f849518be50"
+      },
+      {
+        "bytes": 252465,
+        "path": "docs/evidence/block-v2-native-shared-owner-2026-10-05.json",
+        "sha256": "c883ab2202259257cd075c7840b905610e4276f0ef041fca34d05b4ceeb67700"
+      },
+      {
+        "bytes": 183922,
+        "path": "docs/evidence/block-v2-native-arrival-intake-2026-10-05.json",
+        "sha256": "307b64c70662a38bf4cfd4fb9951376cca2ae5073eabf437a421b274c39adaf9"
+      },
+      {
+        "bytes": 126825,
+        "path": "docs/evidence/block-v2-native-pending-candidate-2026-10-05.json",
+        "sha256": "58a83f6a2147d7fd1d2b051402e77194d0b35bf35c7cd58ff629140449c57260"
+      },
+      {
+        "bytes": 148082,
+        "path": "docs/evidence/block-v2-native-deferred-arrivals-2026-10-05.json",
+        "sha256": "7fa3240f166eefa1847609e11b44ea0fa2053ecbdbe2dfe85a0d0f7a972cf64c"
+      },
+      {
+        "bytes": 369932,
+        "path": "docs/evidence/block-v2-native-preseal-arrivals-2026-10-05.json",
+        "sha256": "c05c3d28f574139f9834b985fa55ac025a594da57e22b524d095d9cb94c61c8e"
+      },
+      {
+        "bytes": 95724,
+        "path": "docs/evidence/block-v2-native-active-failover-2026-10-05.json",
+        "sha256": "c044ef9edf0d07ff1a0b47bdd956f0bc5e975edeb0cb70d0c66a8f268c5a7ee0"
+      },
+      {
+        "bytes": 304409,
+        "path": "docs/evidence/block-v2-native-coordinator-recovery-2026-10-05.json",
+        "sha256": "f0e34fa355b75475b7a1df563bd0b3fc6f1d29bb56e0e9a80b9c27e542278546"
+      },
+      {
+        "bytes": 126704,
+        "path": "docs/evidence/block-v2-native-cached-recovery-2026-10-05.json",
+        "sha256": "798b639b3cdfab6eb3d82b75087d9c230606ccfa682b8e94b456a749403bd745"
+      },
+      {
+        "bytes": 185877,
+        "path": "docs/evidence/block-v2-native-application-recovery-2026-10-05.json",
+        "sha256": "118cad46bb828ac88e655d9920789bcc1bc642e4a242b4a8949cb08423908e94"
+      },
+      {
+        "bytes": 311708,
+        "path": "docs/evidence/block-v2-native-startup-recovery-2026-10-06.json",
+        "sha256": "8d7cc0f2efe2ae113ff28386bd30fda8c90b0157ff4ad76faef65f15d82678b9"
+      },
+      {
+        "bytes": 273507,
+        "path": "docs/evidence/block-v2-native-bootstrap-recovery-2026-10-06.json",
+        "sha256": "600486229d702b5870f47ff6da1651966ea6de74191961eb1dfca00fd97e8557"
+      }
+    ],
+    "status": "blocked"
+  },
+  "schema_version": 1,
+  "scope": "Readiness after explicit recovery from native head publication and intake receipt-publication crashes, with zero duplicate blocks or application events.",
+  "status": "blocked",
+  "typed_gpu_journal_recovery": {
+    "active_worker_recovery_qualified": false,
+    "arrival_backend_integrated": false,
+    "epochs": [
+      2,
+      3
+    ],
+    "exact_root_reused": true,
+    "fresh_cpu_processes": 2,
+    "fresh_recursive_proofs": 0,
+    "native_blocks_applied": 0,
+    "negative_rejections": 4,
+    "recovery_seconds": [
+      4.676114243,
+      4.675825478
+    ],
+    "source": {
+      "bytes": 110917,
+      "path": "docs/evidence/block-v2-typed-recovery-2026-10-05.json",
+      "sha256": "aa081325babcf378e760db03cf4b6feb688627f0d491929cbc3ed0fb6053cc0a"
+    },
+    "status": "passed_for_completed_original_gpu_journal",
+    "verified_cached_nodes_per_process": 8
+  },
+  "typed_gpu_worker": {
+    "arrival_backend_integrated": false,
+    "concurrent_counts": [
+      8
+    ],
+    "concurrent_execution_seconds": 422.63399079599185,
+    "concurrent_repetitions": 1,
+    "cpu_audited_roots": 11,
+    "durable_host_applied": false,
+    "native_blocks_applied": 0,
+    "native_shared_owner_source": {
+      "bytes": 252465,
+      "path": "docs/evidence/block-v2-native-shared-owner-2026-10-05.json",
+      "sha256": "c883ab2202259257cd075c7840b905610e4276f0ef041fca34d05b4ceeb67700"
+    },
+    "original_gpu_journal_fresh_process_recovery_tested": true,
+    "persistent_process_initial_source": {
+      "bytes": 37637,
+      "path": "docs/evidence/block-v2-typed-process-2026-10-05.json",
+      "sha256": "f8a295c898566f9763006cdd5085db98b47d7ec6a473d40ab5520269778c3c90"
+    },
+    "persistent_process_source": {
+      "bytes": 114508,
+      "path": "docs/evidence/block-v2-typed-process-concurrent-2026-10-05.json",
+      "sha256": "f24dd786a55d1068d860a8cc9f4a71fa254f521325c35b273f264612a12800ef"
+    },
+    "recovery_source": {
+      "bytes": 110917,
+      "path": "docs/evidence/block-v2-typed-recovery-2026-10-05.json",
+      "sha256": "aa081325babcf378e760db03cf4b6feb688627f0d491929cbc3ed0fb6053cc0a"
+    },
+    "recursive_proofs": 80,
+    "shared_owner_source": {
+      "bytes": 91412,
+      "path": "docs/evidence/block-v2-typed-shared-owner-2026-10-05.json",
+      "sha256": "cf658aeeaea48fb368d093305cc01c54f8b21699e79bf7f021131f849518be50"
+    },
+    "source": {
+      "bytes": 274561,
+      "path": "docs/evidence/block-v2-typed-worker-2026-10-05.json",
+      "sha256": "b4491ff97e9bf13a8caac85b82591a123512e5c2a69b84073a5c92343f5abf96"
+    },
+    "standalone_counts_per_gpu": [
+      4,
+      8
+    ],
+    "wallet_proofs": 0
+  },
+  "typed_leaf_verification": {
+    "contract_sha256": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "measurement": {
+      "context_and_policy_mutation_tests": true,
+      "cpu_audited": true,
+      "leaf_proven_bits": 127,
+      "scope": "Context-bound leaf proofs and policy rejection tests; full-count paired root replay and complete-body native application are recorded in their own gates.",
+      "transaction_types": [
+        "joinsplit",
+        "htlc_redeem",
+        "htlc_refund",
+        "issuance"
+      ]
+    },
+    "sources": [
+      {
+        "bytes": 5306,
+        "path": "docs/evidence/block-v2-throughput-validation-2026-10-04.json",
+        "sha256": "07d935b35a8a9453f39447c2f00c04c5495c7a6d7a4589a6c3e02c36e5338a90"
+      },
+      {
+        "bytes": 5417,
+        "path": "docs/evidence/block-v2-typed-validation-2026-10-04.json",
+        "sha256": "0a94fe4f64cd3112fec26975fdf09d2b0f5f10754afa9142aca1ce915da6be4e"
+      },
+      {
+        "bytes": 6095,
+        "path": "docs/evidence/block-v2-host-validation-2026-10-05-r4.json",
+        "sha256": "c2b3c4a92080bfb5bff57512355778a3b0f47e3025f90c22cf34fbf2fe7e1510"
+      }
+    ],
+    "status": "passed"
+  },
+  "typed_local_dag": {
+    "count_matrix_plans": 9,
+    "execution_backend": "typed_inline_dag_v1",
+    "live_gpu_dispatch": true,
+    "native_roots_replayed": 4,
+    "persistent_cross_process_dispatch": true,
+    "persistent_dispatch_qualified_scope": "Count eight on each GPU and one concurrent assignment, with one independent DAG owner per GPU; shared-owner native arrival integration remains open.",
+    "persistent_process_source": {
+      "bytes": 114508,
+      "path": "docs/evidence/block-v2-typed-process-concurrent-2026-10-05.json",
+      "sha256": "f24dd786a55d1068d860a8cc9f4a71fa254f521325c35b273f264612a12800ef"
+    },
+    "recovery_source": {
+      "bytes": 110917,
+      "path": "docs/evidence/block-v2-typed-recovery-2026-10-05.json",
+      "sha256": "aa081325babcf378e760db03cf4b6feb688627f0d491929cbc3ed0fb6053cc0a"
+    },
+    "retained_nodes_reverified": 16,
+    "source": {
+      "bytes": 89840,
+      "path": "docs/evidence/block-v2-typed-local-dag-2026-10-05.json",
+      "sha256": "9833f2626bbdd41c06b6c38955efabc024664bcba6bd0517b0f9dda338455d89"
+    },
+    "status": "passed_for_recorded_inline_gpu_and_artifact_replay_scope",
+    "worker_source": {
+      "bytes": 274561,
+      "path": "docs/evidence/block-v2-typed-worker-2026-10-05.json",
+      "sha256": "b4491ff97e9bf13a8caac85b82591a123512e5c2a69b84073a5c92343f5abf96"
+    }
+  },
+  "typed_native_active_failover": {
+    "accepted_subtree_preserved": true,
+    "arrival_backend_integrated": false,
+    "controller_seconds": 179.5295614300121,
+    "coordinator_recovery_qualified": false,
+    "count": 4,
+    "cpu_audited_roots": 1,
+    "failed_job_retried_on_other_gpu": true,
+    "failed_workers": 1,
+    "fresh_process_native_and_intake_replay": true,
+    "fresh_recursive_proofs": 4,
+    "fresh_wallet_proofs": 0,
+    "frozen_manifest": {
+      "bytes": 19659,
+      "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-active-failover-20261005-a/frozen-r1/manifest.json",
+      "sha256": "00d8e9624cda6e19382b44c90d99c98f2501f574f91b57a9728e736d9efc75ce"
+    },
+    "gpu_jobs_dispatched": 5,
+    "injection": {
+      "bytes": 6425,
+      "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-active-failover-20261005-a/injection-r1.json",
+      "sha256": "4bf1b3febb00f5465b0f11046b7aca7c090989819a7c18d5dde09b9987fbcf8f"
+    },
+    "isolated_issuance_transactions_applied": 1,
+    "isolated_user_transactions_applied": 3,
+    "matched_speedup_claimed": false,
+    "native_blocks_applied": 1,
+    "oom_recovery_qualified": false,
+    "original_exact_retries_preserved": true,
+    "owner_seconds": 172.76112461197772,
+    "pilot_started": false,
+    "production_ready": false,
+    "proving_seconds": 157.67602706799516,
+    "qualified": true,
+    "record_type": "native_active_worker_failover_qualification",
+    "root_bytes": 1683948,
+    "schema_version": 1,
+    "scope": "One native four-transaction candidate survived SIGKILL of an active desktop GPU worker after another subtree had been accepted. The same coordinator retained that proof, confirmed exact process/cgroup exit, revoked the lease, released the workspace and retried on the surviving laptop GPU under its original assignment.",
+    "sources": [
+      {
+        "bytes": 95724,
+        "path": "docs/evidence/block-v2-native-active-failover-2026-10-05.json",
+        "sha256": "c044ef9edf0d07ff1a0b47bdd956f0bc5e975edeb0cb70d0c66a8f268c5a7ee0"
+      }
+    ],
+    "status": "succeeded",
+    "surviving_worker_failover_qualified": true,
+    "worker_replacement_qualified": false,
+    "worker_termination_during_proving_tested": true
+  },
+  "typed_native_application_recovery": {
+    "controller_interruption_stages": 3,
+    "duplicate_intake_application_events": 0,
+    "duplicate_native_blocks": 0,
+    "fresh_recovery_proofs": 0,
+    "intake_receipt_publication_interruption_qualified": true,
+    "native_application_interruption_qualified": true,
+    "native_storage_boundaries": 5,
+    "qualified": true,
+    "recovery_gpu_workers_started": 0,
+    "sources": [
+      {
+        "bytes": 185877,
+        "path": "docs/evidence/block-v2-native-application-recovery-2026-10-05.json",
+        "sha256": "118cad46bb828ac88e655d9920789bcc1bc642e4a242b4a8949cb08423908e94"
+      }
+    ]
+  },
+  "typed_native_arrival_intake": {
+    "active_worker_recovery_qualified": false,
+    "already_applied_selection_rejected": true,
+    "arrival_backend_integrated": false,
+    "arrival_order_preserved": true,
+    "controller_window_seconds": 148.73925322902505,
+    "coordinator_recovery_qualified": false,
+    "count": 4,
+    "cpu_audit_seconds": 0.07005466500413604,
+    "cpu_audited_roots": 1,
+    "duplicate_transaction_rejected": true,
+    "durable_arrival_intake": true,
+    "exact_retry_idempotent": true,
+    "final_head_token": "52a4d01f60baae9f7c7bb2e388790d157901ed9c583c83c42eb86a9b406e4dfb",
+    "fresh_process_intake_and_native_replay": true,
+    "fresh_recursive_proofs": 4,
+    "fresh_wallet_proofs": 0,
+    "host_selected_order_preserved": true,
+    "intake_publication_seconds": 3.725231445976533,
+    "isolated_issuance_transactions_applied": 1,
+    "isolated_user_transactions_applied": 3,
+    "late_arrival_excluded_and_retained": true,
+    "late_arrival_received_during_proving": true,
+    "late_arrival_requires_head_revalidation": true,
+    "native_application_seconds": 3.716581340006087,
+    "native_blocks_applied": 1,
+    "native_height": 10,
+    "owner_elapsed_seconds": 141.40688785800012,
+    "parent_head_token": "8075d890e959a70c59fe229f10297b202a9e8c8ea75f320978a02e53a5f6021c",
+    "pilot_started": false,
+    "preseal_dispatch": false,
+    "production_ready": false,
+    "proving_seconds": 126.86115430801874,
+    "qualified": true,
+    "record_type": "native_arrival_intake_qualification",
+    "schema_version": 1,
+    "scope": "One explicit prepared, sealed selection in an isolated native journal. Late arrival persisted during proving; no candidate assembly from pending arrivals or pre-seal dispatch.",
+    "selection_id": "b496d763d211121ca30f1208c73cb9450897222798e8893bcc29a2afbbd77363",
+    "source": {
+      "bytes": 183922,
+      "path": "docs/evidence/block-v2-native-arrival-intake-2026-10-05.json",
+      "sha256": "307b64c70662a38bf4cfd4fb9951376cca2ae5073eabf437a421b274c39adaf9"
+    },
+    "timing_scope": "One isolated prepared count-four selection; existing wallet proofs reused. No pre-seal dispatch, timing speedup, active proving recovery or sustained throughput qualification.",
+    "worker_proofs": [
+      3,
+      1
+    ]
+  },
+  "typed_native_bootstrap_recovery": {
+    "accepted_recursive_proofs_discarded": 0,
+    "controller_pre_admission_qualified": false,
+    "duplicate_intake_application_events": 0,
+    "duplicate_native_blocks": 0,
+    "existing_journal_recovery_initialization_qualified": false,
+    "initialized_dispatch_sigkill_stages": 1,
+    "native_blocks_applied": 1,
+    "new_candidate_sigkill_stages": 4,
+    "partial_journals_preserved": true,
+    "qualified": true,
+    "source": {
+      "bytes": 273507,
+      "path": "docs/evidence/block-v2-native-bootstrap-recovery-2026-10-06.json",
+      "sha256": "600486229d702b5870f47ff6da1651966ea6de74191961eb1dfca00fd97e8557"
+    }
+  },
+  "typed_native_cached_recovery": {
+    "active_reorg_recovery_qualified": false,
+    "all_cached_native_continuation_qualified": true,
+    "arrival_backend_integrated": false,
+    "cached_owner_seconds": 20.943265915004304,
+    "cached_recovery_seconds": 3.479135325003881,
+    "continuation_manifest": {
+      "bytes": 1586,
+      "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-cached-recovery-20261005-a/continuation-manifest-r2.json",
+      "sha256": "60b3d93a8c8d20a092b02148eb3ba3fb245d1972c7da80904b4f23bbdd53a4e4"
+    },
+    "continuation_seconds": 175.57475149800302,
+    "count": 4,
+    "cpu_audited_roots": 1,
+    "fresh_process_native_and_intake_replay": true,
+    "fresh_recursive_proofs": 4,
+    "fresh_wallet_proofs": 0,
+    "frozen_manifest": {
+      "bytes": 19197,
+      "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-cached-recovery-20261005-a/frozen-r1/manifest.json",
+      "sha256": "46e7c9cbd04513009ce53bb1cb5ecf06b965a6dabd2a51aabdb0edec02a80f75"
+    },
+    "gpu_workers_started_in_cached_continuation": 0,
+    "incomplete_cache_rejection_qualified": true,
+    "interruption_through_recovery_seconds": 391.65506960399216,
+    "isolated_issuance_transactions_applied": 1,
+    "isolated_user_transactions_applied": 3,
+    "matched_speedup_claimed": false,
+    "native_blocks_applied": 1,
+    "oom_recovery_qualified": false,
+    "original_exact_retries_preserved": true,
+    "original_journal_resumed": true,
+    "pilot_started": false,
+    "production_ready": false,
+    "qualified": true,
+    "record_type": "native_cached_coordinator_recovery_qualification",
+    "recovery_epochs": [
+      2,
+      3,
+      4
+    ],
+    "recovery_fresh_proofs": 0,
+    "recovery_reused_proofs": 4,
+    "retained_harness_failure": "qualification-r1.json",
+    "root_bytes": 1683948,
+    "schema_version": 1,
+    "scope": "One native count-four journal through epochs one to four: active-subtree interruption, incomplete cached-only rejection with zero GPU starts, GPU continuation from that rejected epoch, interruption after accepted final root before native application, and CPU-only cached native continuation.",
+    "sources": [
+      {
+        "bytes": 126704,
+        "path": "docs/evidence/block-v2-native-cached-recovery-2026-10-05.json",
+        "sha256": "798b639b3cdfab6eb3d82b75087d9c230606ccfa682b8e94b456a749403bd745"
+      }
+    ],
+    "status": "succeeded"
+  },
+  "typed_native_coordinator_recovery": {
+    "accepted_subtree_preserved": true,
+    "active_reorg_recovery_qualified": false,
+    "arrival_backend_integrated": false,
+    "coordinator_recovery_qualified": true,
+    "coordinator_terminated_during_gpu_work": true,
+    "count": 4,
+    "cpu_audited_roots": 1,
+    "fresh_process_native_and_intake_replay": true,
+    "fresh_recursive_proofs": 4,
+    "fresh_wallet_proofs": 0,
+    "frozen_manifest": {
+      "bytes": 19446,
+      "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-coordinator-recovery-20261005-a/frozen-r4/manifest.json",
+      "sha256": "f9a23e85d1646dbdc6010991e36bba6fc1a9fdb900a1c263733b3e1f96e54c28"
+    },
+    "idle_worker_shutdown_qualified": true,
+    "injection": {
+      "bytes": 2227,
+      "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-coordinator-recovery-20261005-a/injection-r6.json",
+      "sha256": "04be84245f4c4b97bc2a41f53aa91812b51c630a86d153674b2cba35c0fc579e"
+    },
+    "interruption_through_recovery_seconds": 267.5658308250131,
+    "isolated_issuance_transactions_applied": 1,
+    "isolated_user_transactions_applied": 3,
+    "matched_speedup_claimed": false,
+    "native_blocks_applied": 1,
+    "oom_recovery_qualified": false,
+    "original_exact_retries_preserved": true,
+    "original_journal_resumed": true,
+    "pilot_started": false,
+    "production_ready": false,
+    "qualified": true,
+    "record_type": "native_active_coordinator_recovery_qualification",
+    "recovery_fresh_proofs": 3,
+    "recovery_owner_seconds": 129.76117097001406,
+    "recovery_proving_seconds": 115.03217734201462,
+    "recovery_reused_proofs": 1,
+    "root_bytes": 1683948,
+    "schema_version": 1,
+    "scope": "One explicit coordinator SIGKILL during native count-four GPU proving; original journal resumed at epoch two with exact old process/cgroup reconciliation, one CPU-reverified accepted subtree, three fresh recursive proofs, one CPU-audited root and one isolated native application.",
+    "sources": [
+      {
+        "bytes": 304409,
+        "path": "docs/evidence/block-v2-native-coordinator-recovery-2026-10-05.json",
+        "sha256": "f0e34fa355b75475b7a1df563bd0b3fc6f1d29bb56e0e9a80b9c27e542278546"
+      }
+    ],
+    "status": "succeeded"
+  },
+  "typed_native_deferred_arrivals": {
+    "active_worker_recovery_qualified": false,
+    "arrival_backend_integrated": false,
+    "baseline_native_blocks_applied_with_retained_root": 1,
+    "builder_seconds": 21.09366182499798,
+    "controller_window_seconds": 152.52267080300953,
+    "coordinator_recovery_qualified": false,
+    "count": 4,
+    "cpu_audit_seconds": 0.0689253639720846,
+    "cpu_audited_roots": 1,
+    "deferred_arrival_revalidation": true,
+    "durable_arrival_intake": true,
+    "final_head_token": "6bc9ac49282b56408ddf9232f6d6e2f0306dfd163f15f9a8535ecacd4cfe0b99",
+    "fresh_process_native_and_intake_replay": true,
+    "fresh_recursive_proofs": 4,
+    "fresh_wallet_proofs": 0,
+    "intake_publication_seconds": 3.945782162976684,
+    "isolated_issuance_transactions_applied": 1,
+    "isolated_user_transactions_applied": 3,
+    "native_application_seconds": 3.839514742983738,
+    "native_blocks_applied": 1,
+    "native_height": 11,
+    "original_exact_retries_preserved_after_application": true,
+    "original_head_token": "dbe14c147d922c760694365968249b0d6c6e55a8d87b9de47f6a84915c10f641",
+    "original_receipts_preserved": true,
+    "owner_elapsed_seconds": 143.9863916139875,
+    "parent_head_token": "9c9a6a51d99373e6659387eba6ff4ada10256d44aec17dd1e20899d0db275e5f",
+    "pilot_started": false,
+    "policy_aware_selection": true,
+    "preparation_backend": "durable-pending-arrivals",
+    "preparation_seconds": 26.72915020099026,
+    "preseal_dispatch": false,
+    "production_ready": false,
+    "proving_seconds": 126.80103323399089,
+    "qualified": true,
+    "real_native_cpu_preparation_checks": 7,
+    "record_type": "native_deferred_arrival_gpu_qualification",
+    "request_ids": [
+      "deferred-joinsplit",
+      "current-redeem",
+      "current-refund",
+      "issuance-first"
+    ],
+    "revalidated_request_ids": [
+      "deferred-joinsplit",
+      "issuance-first"
+    ],
+    "schema_version": 1,
+    "scope": "One count-four candidate at height eleven: two old-head arrivals revalidated, two current-head arrivals selected, and three invalid entries retained outside the candidate. Original receipts and retry responses are unchanged.",
+    "selection_id": "1166faed29930f98a3d0bfbecdd9052499ed172b7c3a7a1b97fc8f3ddf408ace",
+    "skipped_arrivals_retained_and_unclaimed": true,
+    "skipped_request_ids": [
+      "bad-ciphertext",
+      "expired-htlc",
+      "spent-joinsplit"
+    ],
+    "source": {
+      "bytes": 148082,
+      "path": "docs/evidence/block-v2-native-deferred-arrivals-2026-10-05.json",
+      "sha256": "7fa3240f166eefa1847609e11b44ea0fa2053ecbdbe2dfe85a0d0f7a972cf64c"
+    },
+    "timing_scope": "One isolated revalidated height-eleven candidate. Baseline height ten used a retained root. All wallet proofs reused. Four fresh recursive proofs. No pre-seal dispatch, active recovery, matched speedup or sustained throughput qualification.",
+    "worker_proofs": [
+      3,
+      1
+    ]
+  },
+  "typed_native_pending_candidate": {
+    "active_worker_recovery_qualified": false,
+    "already_applied_selection_rejected": true,
+    "arrival_backend_integrated": false,
+    "automatic_arrival_order_preserved": true,
+    "candidate_builder_seconds": 7.614249519014265,
+    "controller_window_seconds": 152.87779120000778,
+    "coordinator_recovery_qualified": false,
+    "count": 4,
+    "cpu_audit_seconds": 0.05630238397861831,
+    "cpu_audited_roots": 1,
+    "durable_arrival_intake": true,
+    "expected_root_changed_from_source_fixture": true,
+    "final_head_token": "a3b5c2849c5d737436f5eed215ca37cdafab62774a66c00ff6f8e7f71ae03ccb",
+    "fresh_process_intake_and_native_replay": true,
+    "fresh_recursive_proofs": 4,
+    "fresh_wallet_proofs": 0,
+    "independently_cpu_verified_wallets": 4,
+    "intake_publication_seconds": 3.804967272997601,
+    "isolated_issuance_transactions_applied": 1,
+    "isolated_user_transactions_applied": 3,
+    "late_arrival_excluded_and_retained": true,
+    "late_arrival_received_during_proving": true,
+    "late_arrival_requires_head_revalidation": true,
+    "native_application_seconds": 3.751131085999077,
+    "native_blocks_applied": 1,
+    "native_height": 10,
+    "owner_elapsed_seconds": 146.04537482900196,
+    "parent_head_token": "8ae0c9f8d1ffa19be5e9119d9972ae79f34a32fccfef60a355e1d0c5c5d3b3d2",
+    "pilot_started": false,
+    "preparation_backend": "durable-pending-arrivals",
+    "preparation_seconds": 13.834355961007532,
+    "preseal_dispatch": false,
+    "production_ready": false,
+    "proving_seconds": 129.98568047798472,
+    "qualified": true,
+    "record_type": "native_pending_candidate_qualification",
+    "request_ids": [
+      "pending-0",
+      "pending-2",
+      "pending-1",
+      "pending-3"
+    ],
+    "schema_version": 1,
+    "scope": "One current-head FIFO selection built from stored transaction/proof bytes, with independent native policy preflight and CPU wallet authentication. No policy-aware reordering or stale-arrival rebinding.",
+    "selection_id": "19e46c77dc93c65e0834f10469e1a9fdbd228baa2e761cda2d987a0e7d68869e",
+    "source": {
+      "bytes": 126825,
+      "path": "docs/evidence/block-v2-native-pending-candidate-2026-10-05.json",
+      "sha256": "58a83f6a2147d7fd1d2b051402e77194d0b35bf35c7cd58ff629140449c57260"
+    },
+    "timing_scope": "One isolated count-four candidate assembled from pending bytes. Existing wallet proofs reused. Four fresh recursive proofs. No pre-seal dispatch, matched speedup, active recovery or sustained throughput qualification.",
+    "worker_proofs": [
+      3,
+      1
+    ]
+  },
+  "typed_native_preseal_arrivals": {
+    "active_worker_recovery_qualified": false,
+    "arrival_backend_integrated": false,
+    "checks": [
+      {
+        "case": "late_arrivals_accepted_during_unsealed_subtree_proving",
+        "status": "passed"
+      },
+      {
+        "case": "head_cache_rejected_before_gpu_dispatch",
+        "log": {
+          "bytes": 86,
+          "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-preseal-arrivals-20261005-a/rejected-head-r3/owner/prove.log",
+          "sha256": "9af75b172abbbc1059a110b8d9e9472b0c7581adc59dd3f9a448766a88934afe"
+        },
+        "status": "passed"
+      },
+      {
+        "case": "policy_cache_rejected_before_gpu_dispatch",
+        "log": {
+          "bytes": 86,
+          "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-preseal-arrivals-20261005-a/rejected-policy-r3/owner/prove.log",
+          "sha256": "9af75b172abbbc1059a110b8d9e9472b0c7581adc59dd3f9a448766a88934afe"
+        },
+        "status": "passed"
+      },
+      {
+        "case": "altered-bytes_cache_rejected_before_gpu_dispatch",
+        "log": {
+          "bytes": 68,
+          "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-preseal-arrivals-20261005-a/rejected-altered-bytes-r3/owner/prove.log",
+          "sha256": "ae01de8e8b05d0596fc0a2f00fd7248cdafb535751ca6d20dad12e59914d754f"
+        },
+        "status": "passed"
+      },
+      {
+        "case": "substituted-proof_cache_rejected_before_gpu_dispatch",
+        "log": {
+          "bytes": 80,
+          "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-preseal-arrivals-20261005-a/rejected-substituted-proof-r3/owner/prove.log",
+          "sha256": "00249d4ae708e0380a7162af8a0c670ffc7e5279983145bf5a05a2aba5ae9d9a"
+        },
+        "status": "passed"
+      },
+      {
+        "case": "sealed_reuse_root_audit_native_application_replay_and_exact_retries",
+        "status": "passed"
+      }
+    ],
+    "continuation_manifest": {
+      "bytes": 76281,
+      "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-preseal-arrivals-20261005-a/resume-r4-manifest.json",
+      "sha256": "fcb8274505f7825a17dea6662d7f165d00f98729802a7b0f130161c6cee5882a"
+    },
+    "continuation_reason": "CPU rejected the substituted semantic proof with FAILED instead of Error. The r3 harness stopped after that expected rejection; no sealed-phase GPU work had started.",
+    "coordinator_recovery_qualified": false,
+    "count": 8,
+    "cpu_audited_prefix_nodes": 3,
+    "cpu_audited_roots": 1,
+    "cpu_root_audit_seconds": 0.06641242900514044,
+    "fresh_postseal_proofs": 5,
+    "fresh_prefix_proofs": 3,
+    "fresh_process_native_and_intake_replay": true,
+    "fresh_recursive_proofs": 8,
+    "fresh_wallet_proofs": 0,
+    "frozen_manifest": {
+      "bytes": 20547,
+      "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-preseal-arrivals-20261005-a/frozen-r3/manifest.json",
+      "sha256": "88223f4262aacc737df6edde89664e165a4845d61880c1560af80f6203ed94da"
+    },
+    "intake_publication_seconds": 4.837376704002963,
+    "late_arrivals": {
+      "finished_monotonic_ns": 166644564965958,
+      "pid": 684201,
+      "request_ids": [
+        "late-0",
+        "late-1",
+        "late-2",
+        "late-3"
+      ],
+      "started_monotonic_ns": 166635932614434,
+      "status": "succeeded"
+    },
+    "matched_speedup_claimed": false,
+    "native_application_seconds": 3.68904532698798,
+    "native_blocks_applied": 1,
+    "original_exact_retries_preserved_after_application": true,
+    "pilot_started": false,
+    "postseal_owner_seconds": 176.4010830000043,
+    "postseal_proving_seconds": 159.08757397800218,
+    "prefix_count": 4,
+    "prefix_owner_seconds": 108.32199882398709,
+    "prefix_preparation_seconds": 16.371508639975218,
+    "prefix_proving_seconds": 94.08095015698927,
+    "preseal_dispatch": true,
+    "production_ready": false,
+    "qualified": true,
+    "record_type": "native_preseal_gpu_qualification",
+    "request_ids": [
+      "initial-0",
+      "initial-1",
+      "initial-2",
+      "initial-3",
+      "late-0",
+      "late-1",
+      "late-2",
+      "late-3"
+    ],
+    "retained_harness_failure": {
+      "bytes": 1415,
+      "path": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-preseal-arrivals-20261005-a/qualification-r3.json",
+      "sha256": "fc38ac1eca70627932f314c29b34548ee3d1796a74b440e20bfa278fbcacd331"
+    },
+    "schema_version": 1,
+    "scope": "Staged count-four prefix to count-eight native candidate with three CPU-reverified cached subtrees, independently assigned issuance slots, and arrivals during proving.",
+    "sealed_preparation_seconds": 27.83991626300849,
+    "selection_id": "28485c42365617e9dffacd8555b9c0de5e31843d56230b99dc1c8805c491a322",
+    "sources": [
+      {
+        "bytes": 369932,
+        "path": "docs/evidence/block-v2-native-preseal-arrivals-2026-10-05.json",
+        "sha256": "c05c3d28f574139f9834b985fa55ac025a594da57e22b524d095d9cb94c61c8e"
+      }
+    ],
+    "stable_subtrees_reused": 3,
+    "status": "succeeded"
+  },
+  "typed_native_shared_owner": {
+    "active_worker_recovery_qualified": false,
+    "arrival_backend_integrated": false,
+    "canonical_issuance_transactions": 2,
+    "canonical_user_transactions": 6,
+    "coordinator_recovery_qualified": false,
+    "counts": [
+      4
+    ],
+    "cpu_audited_roots": 2,
+    "durable_host_applied": true,
+    "fresh_recursive_proofs": 8,
+    "fresh_wallet_proofs_applied": 8,
+    "fresh_wallet_proofs_prepared": 12,
+    "heights": [
+      10,
+      11
+    ],
+    "independent_published_state_replay": true,
+    "matched_speedup_established": false,
+    "native_application_seconds": [
+      3.6205192980123684,
+      3.754781872004969
+    ],
+    "native_blocks_applied": 2,
+    "native_snapshot_binding_verified": true,
+    "proving_seconds": [
+      126.3853868470178,
+      126.51178611302748
+    ],
+    "qualified": true,
+    "shared_dag_owner_across_gpus": true,
+    "source": {
+      "bytes": 252465,
+      "path": "docs/evidence/block-v2-native-shared-owner-2026-10-05.json",
+      "sha256": "c883ab2202259257cd075c7840b905610e4276f0ef041fca34d05b4ceeb67700"
+    },
+    "stale_preparation_rejected_before_dispatch": true,
+    "stale_root_rejected_at_native_commit": true
+  },
+  "typed_native_startup_recovery": {
+    "bootstrap_before_durable_initialization_qualified": false,
+    "dispatch_sigkill_stages": 1,
+    "duplicate_intake_application_events": 0,
+    "duplicate_native_blocks": 0,
+    "export_io_failure_stages": 1,
+    "final_fresh_proofs": 0,
+    "final_gpu_workers_started": 0,
+    "final_reused_proofs": 4,
+    "initialized_startup_sigkill_stages": 2,
+    "native_blocks_applied": 1,
+    "qualified": true,
+    "source": {
+      "bytes": 311708,
+      "path": "docs/evidence/block-v2-native-startup-recovery-2026-10-06.json",
+      "sha256": "8d7cc0f2efe2ae113ff28386bd30fda8c90b0157ff4ad76faef65f15d82678b9"
+    }
+  },
+  "typed_persistent_gpu_process": {
+    "active_worker_recovery_qualified": false,
+    "cache_hits_per_root": 4,
+    "cache_setups_per_root": 4,
+    "concurrent_execution_seconds": 343.26779988899943,
+    "concurrent_qualified": true,
+    "concurrent_repetitions": 1,
+    "counts": [
+      8
+    ],
+    "cpu_audited_roots": 4,
+    "earlier_laptop_benchmark_monitor_interrupted": true,
+    "fresh_recursive_proofs": 32,
+    "gpu_uuids": [
+      "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+    ],
+    "initial_source": {
+      "bytes": 37637,
+      "path": "docs/evidence/block-v2-typed-process-2026-10-05.json",
+      "sha256": "f8a295c898566f9763006cdd5085db98b47d7ec6a473d40ab5520269778c3c90"
+    },
+    "native_arrival_integrated": false,
+    "new_trial_monitor_exit_codes": [
+      0,
+      0
+    ],
+    "new_trial_telemetry": [
+      {
+        "first_time_ns": 1791222517658887426,
+        "last_time_ns": 1791222809362495213,
+        "max_sample_interval_seconds": 0.667765006,
+        "samples": 528
+      },
+      {
+        "first_time_ns": 1791222884727483328,
+        "last_time_ns": 1791223188297045072,
+        "max_sample_interval_seconds": 0.908487943,
+        "samples": 522
+      },
+      {
+        "first_time_ns": 1791222884757196028,
+        "last_time_ns": 1791223227767889735,
+        "max_sample_interval_seconds": 0.864826584,
+        "samples": 594
+      }
+    ],
+    "new_worker_seconds": [
+      291.2471798059996,
+      303.48575665199314,
+      342.70337966800435
+    ],
+    "shared_dag_owner_across_gpus": false,
+    "source": {
+      "bytes": 114508,
+      "path": "docs/evidence/block-v2-typed-process-concurrent-2026-10-05.json",
+      "sha256": "f24dd786a55d1068d860a8cc9f4a71fa254f521325c35b273f264612a12800ef"
+    },
+    "status": "passed_for_desktop_and_one_concurrent_count_eight_trial",
+    "worker_process_exited": true,
+    "workspace_released_after_gpu_teardown": true
+  },
+  "typed_shared_gpu_owner": {
+    "active_worker_recovery_qualified": false,
+    "all_memory_event_deltas_zero": true,
+    "coordinator_peak_bytes": 150876160,
+    "coordinator_recovery_qualified": false,
+    "counts": [
+      8
+    ],
+    "cpu_audit_seconds": 0.14406091900309548,
+    "cpu_audited_roots": 1,
+    "durable_host_applied": false,
+    "fleet_execution_seconds": 238.26880768101546,
+    "fresh_recursive_proofs": 8,
+    "gpu_uuids": [
+      "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+    ],
+    "matched_speedup_established": false,
+    "maximum_active_jobs": 2,
+    "native_arrival_integrated": false,
+    "proofs_per_worker": [
+      5,
+      3
+    ],
+    "proving_seconds": 237.67893492800067,
+    "qualified": true,
+    "repetitions": 1,
+    "scope": "The retained eight-input fixture qualification; native count-four application is qualified separately below.",
+    "shared_dag_owner_across_gpus": true,
+    "source": {
+      "bytes": 91412,
+      "path": "docs/evidence/block-v2-typed-shared-owner-2026-10-05.json",
+      "sha256": "cf658aeeaea48fb368d093305cc01c54f8b21699e79bf7f021131f849518be50"
+    },
+    "worker_peak_bytes": [
+      16798044160,
+      16706875392
+    ],
+    "worker_processes_exited": true,
+    "workspace_released_after_gpu_teardown": true
+  }
+}

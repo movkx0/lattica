@@ -1,0 +1,53 @@
+{
+  "campaign_count": 143,
+  "captured_utc": "2026-10-05T12:30:16.739337+00:00",
+  "checks": {
+    "browser_errors": 0,
+    "dataset_hashes": "passed",
+    "desktop": "passed",
+    "desktop_mobile_visual_inspection": "passed",
+    "mobile_no_horizontal_overflow": "passed",
+    "network_requests": 0,
+    "print_navigation_hidden": "passed",
+    "readiness_and_run_json_downloads": "passed"
+  },
+  "cpu_audited_records": 324,
+  "delivered_transaction_campaigns": 0,
+  "note": "Created after rendering so the QA evidence does not import its own verified snapshot. No proving process was active during rendering or browser QA.",
+  "record_count": 684,
+  "schema_version": 1,
+  "selected_qualification": "throughput-4f7494e065eea1d0",
+  "sources": [
+    {
+      "bytes": 87180397,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r12/report-index.html",
+      "sha256": "47ac4faf1a54478970f455332317015da4fe51c7b3034ad059b1c8d1ac63deba"
+    },
+    {
+      "bytes": 22960808,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r12/report-catalog.json",
+      "sha256": "1f46c885f224022281ad8e7b9f08d873adb685665964e5d9ec0273e146430579"
+    },
+    {
+      "bytes": 89,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r12/report-check.json",
+      "sha256": "c772b94a386a1ad57b58d6dee47ccb808cbab75d57c59d2bc04e25838dbb81fd"
+    },
+    {
+      "bytes": 878,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r12/browser-check.json",
+      "sha256": "f0848e5c5f8febaedc5ced58b684ddc579e1376b79c3467c064c181e16076e3e"
+    },
+    {
+      "bytes": 153651,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r12/qualification.json",
+      "sha256": "658f7d5d7469d9eb26f8b5805962b19e4404487f4fd0593ea0f36685662a99af"
+    },
+    {
+      "bytes": 135,
+      "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/final-pin-audit.json",
+      "sha256": "ea4c3b52c01ab0665fea8bcaa3b810c9f8126b473d9f6a15cb11063e28a69dc1"
+    }
+  ],
+  "status": "PASSED_OFFLINE_REPORT_QA"
+}

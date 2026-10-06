@@ -1,0 +1,241 @@
+{
+  "cpu_audited_finalizer_root": false,
+  "frozen_source_archive": {
+    "bytes": 831657,
+    "path": "lattica-prover-p3/target/block-v2-typed-finalizer-research-20261004-r2/sources.tar.gz",
+    "sha256": "ccef0ecc5af1e4f8796d8f8d2580f569929b12bfc1ca3962c07f099792dbf967"
+  },
+  "frozen_source_manifest": {
+    "bytes": 16471,
+    "path": "lattica-prover-p3/target/block-v2-typed-finalizer-research-20261004-r2/manifest.json",
+    "sha256": "84816c889b1420f4b78e47b84f1a13dd81e8a23cc1153f4431f38b7f6eadc7a2"
+  },
+  "geometry": {
+    "active_rows": 129983,
+    "minimum_compiler_height": 131072,
+    "proposed_shared_height": 262144,
+    "wires": 1832531
+  },
+  "hardware_qualified": false,
+  "implementation": {
+    "behavior": "Verify one registered subtree proof; preserve its count and context; constrain canonical right padding to depth six. Reject finalizer children and depth-six children.",
+    "child_levels": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "child_modes": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "dispatch": "Current five-key CLI and frozen benchmark binaries do not select this compiler.",
+    "output_level": 6,
+    "registry_domain_suffix": "TYPED_F1",
+    "registry_keys": 6,
+    "security_parameters_changed": false,
+    "terminal_mode": 6
+  },
+  "measured_speedup": null,
+  "motivation": {
+    "bytes": 50992,
+    "path": "docs/evidence/block-v2-typed-gpu-2026-10-04.json",
+    "sha256": "afd30304388c83ae7362678d6bc329802c5218df651bf3b222a62ffc862e0f6f"
+  },
+  "observed_utc": "2026-10-04T22:20:51.145809+00:00",
+  "planned_fresh_recursive_proofs": [
+    {
+      "count": 1,
+      "finalizer_used": true,
+      "proposed": 2,
+      "reference": 13
+    },
+    {
+      "count": 2,
+      "finalizer_used": true,
+      "proposed": 4,
+      "reference": 13
+    },
+    {
+      "count": 3,
+      "finalizer_used": true,
+      "proposed": 8,
+      "reference": 15
+    },
+    {
+      "count": 4,
+      "finalizer_used": true,
+      "proposed": 8,
+      "reference": 15
+    },
+    {
+      "count": 8,
+      "finalizer_used": true,
+      "proposed": 16,
+      "reference": 21
+    },
+    {
+      "count": 16,
+      "finalizer_used": true,
+      "proposed": 32,
+      "reference": 35
+    },
+    {
+      "count": 32,
+      "finalizer_used": true,
+      "proposed": 64,
+      "reference": 65
+    },
+    {
+      "count": 63,
+      "finalizer_used": false,
+      "proposed": 127,
+      "reference": 127
+    },
+    {
+      "count": 64,
+      "finalizer_used": false,
+      "proposed": 127,
+      "reference": 127
+    }
+  ],
+  "production_ready": false,
+  "proof_count_scope": "Wallet proofs and registration excluded. Counts above 32 bypass the finalizer. These counts are not measured timing gains.",
+  "remaining": [
+    "Register all six modes at a stable shared height and pin the new registry/profile.",
+    "Integrate a bounded worker and independent root-only CPU auditor.",
+    "Qualify geometry, RAM, spill, context allowance and actual GPU work for the new binary on each device.",
+    "Run real proofs, negative audits and matched fresh-proof comparisons before claiming a time reduction.",
+    "Keep full-64 proof-count work and durable host application/recovery as separate prerequisites for the pilot."
+  ],
+  "schema_version": 1,
+  "scope": "Separate six-key research registry and depth-six finalizer compiler. No complete finalizer root proof, GPU qualification, or solving-time measurement.",
+  "source_commit": "094cade18a59d38d7d65bd805511a7809b348a9e",
+  "sources": [
+    {
+      "bytes": 15373,
+      "path": "lattica-prover-p3/src/block_v2/machine/typed_finalizer.rs",
+      "sha256": "3c59b6e943ef79d45c773661db38dedc2891dd54bad4f9fb5cea31642a4c82dc"
+    },
+    {
+      "bytes": 8127,
+      "path": "lattica-prover-p3/src/block_v2/machine/typed_programs.rs",
+      "sha256": "ed24e8bca831c81ce4742ce670fa7ba92a1d715f39689db13efcd988c80b1cfd"
+    },
+    {
+      "bytes": 38541,
+      "path": "lattica-prover-p3/src/block_v2/machine/programs.rs",
+      "sha256": "1e3d6b5194a2ade9c30579625905cd14db5b830738b378a506cf898d0e8dc738"
+    },
+    {
+      "bytes": 583,
+      "path": "lattica-prover-p3/src/block_v2/machine/mod.rs",
+      "sha256": "ae88868f7f299a384f60f1bedaa7163f8db23238ed83dc16d158865478fcec77"
+    }
+  ],
+  "status": "COMPILER_AND_INTERPRETER_CHECKS_PASSED",
+  "validation": {
+    "diff_check": "passed",
+    "inner_verifier_scope": "Genuine small CPU child proofs at levels 0 and 5 pass the finalizer interpreter; a genuine depth-six child is rejected. Forged context/count/root statements, wrong modes, public metadata and registry keys are rejected. No outer finalizer proof was generated.",
+    "legacy_scope": "Existing three-key empty-program constraints still pass.",
+    "padding_counts_tested": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32
+    ],
+    "padding_scope": "Every valid enclosing subtree level below six; roots match the native ordered commitment and altered roots/levels are rejected.",
+    "report_check": {
+      "campaigns": 62,
+      "runs": 408,
+      "status": "valid",
+      "transaction_campaigns": 0
+    },
+    "tests": [
+      {
+        "failed": 0,
+        "features": [
+          "block-v2-wide-lanes",
+          "stream",
+          "gpu"
+        ],
+        "log": {
+          "bytes": 1633,
+          "path": "lattica-prover-p3/target/block-v2-typed-finalizer-research-20261004-r2/typed-tests.log",
+          "sha256": "edd1af0b87f7c5f8b3272ad7a98944b44102b56fc2b898eb42adb8bdbb7ee440"
+        },
+        "passed": 7,
+        "selector": "block_v2::machine::typed_",
+        "test_execution_seconds": 35.19,
+        "timing_scope": "Test suite execution only, not solving throughput."
+      },
+      {
+        "failed": 0,
+        "features": [
+          "block-v2",
+          "stream"
+        ],
+        "log": {
+          "bytes": 2554,
+          "path": "lattica-prover-p3/target/block-v2-typed-finalizer-research-20261004-r2/cpu-eight-lane-tests.log",
+          "sha256": "5fe6412d15604ef052fa0ac12995451df1cd5431c48a4aadfa483670e019d924"
+        },
+        "passed": 6,
+        "selector": "block_v2::machine::typed_",
+        "test_execution_seconds": 33.14,
+        "timing_scope": "Test suite execution only, not solving throughput."
+      },
+      {
+        "failed": 0,
+        "features": [
+          "block-v2-wide-lanes",
+          "stream",
+          "gpu"
+        ],
+        "log": {
+          "bytes": 415,
+          "path": "lattica-prover-p3/target/block-v2-typed-finalizer-research-20261004-r2/legacy-registry-tests.log",
+          "sha256": "4985bd9bf34d54369dac22a22e75f061898a54bf1d59d5d7462f124a46b73555"
+        },
+        "passed": 1,
+        "selector": "block_v2::machine::programs::tests::empty_program_binds_canonical_padding_context_mode_and_registry",
+        "test_execution_seconds": 0.04,
+        "timing_scope": "Test suite execution only, not solving throughput."
+      }
+    ],
+    "typed_leaf_scope": "Actual HTLC redeem/refund and issuance leaf proofs pass under five-key and six-key compiler registries; altered statements are rejected."
+  }
+}
