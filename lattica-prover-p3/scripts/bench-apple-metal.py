@@ -158,6 +158,11 @@ def validate_extension(prior, current):
 def environment(config, scratch, gpu):
     env = os.environ.copy()
     env.pop("LATTICA_V2_METAL_RSS_LIMIT_BYTES", None)
+    # These shared-prover experiments are outside this declared Metal screen.
+    # In particular the OpenCL-only fold must not leak in from a Linux shell.
+    for name in ("LATTICA_V2_GPU_FRI_FOLD", "LATTICA_V2_GPU_LDE_WORKSPACE_BYTES",
+                 "LATTICA_V2_GPU_OPENING_DENOMINATOR_CACHE"):
+        env[name] = "0"
     env.update({"RAYON_NUM_THREADS": str(config["threads"]), "LATTICA_FFT_TRACE": "1",
                 "LATTICA_PROFILE": "1", "LATTICA_PROFILE_TIMELINE": "0",
                 "LATTICA_BENCHMARK_REPORT_DEFER": "1", "LATTICA_V2_METAL_DEFER_TIMING": "0",

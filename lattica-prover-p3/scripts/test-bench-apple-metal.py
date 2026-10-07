@@ -14,6 +14,15 @@ B = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(B)
 
 class Experiment(unittest.TestCase):
+    def test_linux_experiments_cannot_leak_into_the_metal_screen(self):
+        from unittest.mock import patch
+        names = ("LATTICA_V2_GPU_FRI_FOLD", "LATTICA_V2_GPU_LDE_WORKSPACE_BYTES",
+                 "LATTICA_V2_GPU_OPENING_DENOMINATOR_CACHE")
+        with patch.dict(B.os.environ, dict.fromkeys(names, "unexpected")):
+            for gpu in (False, True):
+                env = B.environment(B.arm("shared", 18, "quotient"), Path("/tmp/example"), gpu)
+                self.assertEqual({name: env[name] for name in names}, dict.fromkeys(names, "0"))
+
     def test_rss_policy_has_no_fixed_cap_and_accepts_larger_explicit_budgets(self):
         self.assertIsNone(B.WORKER_RSS_LIMIT_BYTES)
         self.assertIsNone(B.AGGREGATE_RSS_LIMIT_BYTES)
