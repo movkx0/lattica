@@ -5,89 +5,67 @@ main is the integration branch for the committed Apple Silicon/Metal backend,
 benchmark tooling, shared prover, and persistent multi-GPU pool. Start new work
 and create current-source benchmark packages from main.
 
-Next Mac source commit: preserve the pending Apple implementation
---------------------------------------------------------------
+Completed Mac source integration
+--------------------------------
 
-Run this handoff locally on the MacBook Pro, in /Users/access/code/lattica.
-The October 4 Apple reports include research source that is still uncommitted
-there. The Linux main branch contains the previously committed Apple history
-and the persistent pool, but does not yet contain those additional Mac changes.
-Do not reset, clean, stash away, or replace the Mac working files with main
-before capturing them. Fetching main and creating a branch at the current HEAD
-preserve the working files and index.
+The pending Mac implementation is preserved in checkpoint 1604392 and integrated
+with current main at 9733a24. All six previously omitted Rust/Metal modules and
+the new benchmark helpers are tracked. The original October 4 and October 6
+source archives and measurement evidence are unchanged. See:
 
-The commands below fetch the checker without merging main into the dirty Mac
-checkout. They create a checkpoint branch and stage source/configuration changes
-from root src/scripts/.cargo and lattica-prover-p3 src/scripts/tests, plus the
-declared build/Cargo/toolchain files. Each parenthesized block stops on failure.
+  docs/apple-main-integration-2026-10-06.html
+  docs/evidence/apple-main-integration-2026-10-06.json
 
-  (
-    set -eu
-    cd /Users/access/code/lattica
-    git status --short
-    git fetch origin main
-    checkpoint_tool="$(mktemp "${TMPDIR:-/tmp}/lattica-apple-source-commit.XXXXXX")"
-    git show origin/main:lattica-prover-p3/scripts/check-apple-source-commit.py > "$checkpoint_tool"
-    checkpoint_tag="$(date -u +%Y%m%dT%H%M%SZ)"
-    git switch -c "checkpoint/apple-source-$checkpoint_tag"
-    python3 "$checkpoint_tool" --repo "$PWD" --stage
-    git diff --cached --stat
-    git diff --cached
-  )
+The checkpoint was taken in .tools/worktrees/mac-metal, which contained the
+pending source; the older root checkout's local edits were preserved. On this
+Mac, the main worktree is /Users/access/code/lattica/.tools/worktrees/main.
+Future source commits can use scripts/check-apple-source-commit.py --repo .. to
+check completeness, followed by review and relevant correctness tests.
 
-The checker requires these six previously omitted modules in the index:
+Minimal comparison: two jobs on this 18-thread Mac
+-------------------------------------------------
 
-  lattica-prover-p3/src/block_v2/gpu_hash/prefix_storage.rs
-  lattica-prover-p3/src/block_v2/gpu_quotient_prover/metal.rs
-  lattica-prover-p3/src/metal_compute/backing.rs
-  lattica-prover-p3/src/metal_compute/diagnostics.rs
-  lattica-prover-p3/src/metal_compute/quotient.metal
-  lattica-prover-p3/src/metal_compute/resident.rs
+Use focused checks and this two-job screen for routine integration validation.
+It compares compact baseline versus direct readback, one fresh eight-input job
+per arm. Each arm produces seven recursive proofs and receives an independent
+CPU audit. Wallet proof generation and compilation are outside the timing.
+A single pair is a screening result, not a repeatable speedup claim.
 
-It also rejects unstaged source edits, new source files, ignored source files,
-merge conflicts and whitespace errors. New Python helpers such as
-check-apple-priorities.py and metal_kernel_variants.py are in scope. If it fails,
-resolve and explicitly stage the reported paths on this checkpoint branch,
-then review the staged diff and continue with the second block below, which
-reruns the checker. Do not restart the whole branch-creation block.
-Missing modules must be recovered
-from the actual Mac source or preserved archive, not reconstructed from reports.
+From lattica-prover-p3 in a clean checkout of the intended main revision, with
+Rust 1.96.0, Python and Xcode command-line tools on PATH:
 
-Review the entire staged diff. --stage includes the current contents of files
-that were only partially staged. It does not unstage unrelated files already in
-the index. Add intended documentation or files outside the declared source scope
-explicitly. Keep generated binaries/results out of the commit and retain the
-original benchmark evidence and source archive at:
+  python3 scripts/build-apple-metal.py --target-root target
+  RUSTFLAGS="-C target-cpu=native" cargo test --offline --locked --release \
+    --no-default-features --features block-v2-wide-lanes,stream,gpu-metal \
+    --lib --no-run
 
-  benchmark-results/apple-priorities-20261004/run-01
+Set native_test_binary to the native libtest executable printed by Cargo, and
+screen_output to a new output directory. Then:
 
-After review, run this second block to recheck the index, commit locally, and
-push the checkpoint branch. If any source changed since staging, the check
-stops the commit; restage and review it first. A failed push leaves the local
-checkpoint commit intact; retry the push without creating another commit.
+  python3 scripts/check-apple-latency.py --binary "$native_test_binary" \
+    --out "$screen_output/qualification"
+  caffeinate -is python3 scripts/bench-apple-latency.py \
+    --build target/metal-build-metadata.json \
+    --qualification "$screen_output/qualification/result.json" \
+    --fixture fixtures/apple-benchmark-eight \
+    --linux ../docs/evidence/block-v2-gpu-default-ram-bench-2026-10-02.json \
+    --out "$screen_output/screen" --compact-data --order baseline-first
 
-  (
-    set -eu
-    cd /Users/access/code/lattica
-    checkpoint_branch="$(git branch --show-current)"
-    case "$checkpoint_branch" in
-      checkpoint/apple-source-*) ;;
-      *) echo "Stop: use the reviewed Apple source checkpoint branch." >&2; exit 1 ;;
-    esac
-    checkpoint_tool="$(mktemp "${TMPDIR:-/tmp}/lattica-apple-source-commit.XXXXXX")"
-    git show origin/main:lattica-prover-p3/scripts/check-apple-source-commit.py > "$checkpoint_tool"
-    python3 "$checkpoint_tool" --repo "$PWD"
-    git commit -m "feat: preserve pending Apple Silicon research source"
-    git push -u origin "$checkpoint_branch"
-  )
+The qualification checks source/binary hashes and both compact readback layouts
+before full-job timing. The screen uses shared Metal storage, specialized
+Poseidon, cached NTT tables, CPU quotient and query gather. Direct readback is the
+only difference between its arms. The report is screen/report.html. No total
+screen timeout or fixed worker RSS cap is applied; system memory pressure remains
+monitored. Use a new output directory for each attempt and retain failures.
 
-This is an explicit check in the workflow, not an automatically installed Git
-hook. It proves completeness within the declared source scope, not build or
-proof correctness. Before integrating the checkpoint into main, run the relevant
-Apple controller and Metal correctness checks and record their results. Merge
-the changes while preserving the shared pool/native-delivery work already on
-main; do not overwrite main with an older source snapshot. Generate a benchmark
-package from the resulting integration commit to measure the combined code.
+Optional repetition package for a larger campaign
+-------------------------------------------------
+
+The following standard package runs nine full jobs (three settings, three
+repetitions). Generate it to freeze a reproducible recipe; execute it only when
+a larger repetition campaign is intended. Routine checks use the two-job recipe
+above. The integration validation generated this package but ran the minimal
+screen, not its nine-job schedule.
 
 Benchmark the current committed integration
 ------------------------------------------
@@ -137,9 +115,10 @@ Managed Metal buffers, scratch reservations and stage timeouts remain explicit.
 
 This recipe measures the current shared Metal proving sources on the retained
 eight-input workload. The Linux typed two-GPU scheduler uses cgroups/systemd and
-needs a separate macOS integration. The new direct-readback and opening-denominator
-cache switches remain disabled in this recipe; they need explicit Metal
-qualification before adding them to a declared comparison. NVIDIA observations
+needs a separate macOS integration. The direct-readback and opening-denominator
+cache switches remain disabled in this optional repetition recipe. The minimal
+recipe above explicitly qualifies direct readback on Metal before comparing it;
+opening-denominator caching still needs a declared full-job performance comparison. NVIDIA observations
 do not qualify their performance or resources on Apple Silicon.
 
 The completed 2026-10-06 workstation capacity qualification is retained in
@@ -158,5 +137,6 @@ host with:
 
 These measurements track proving latency and development milestones. Wallet
 proof creation, delivered transaction throughput and the two-hour pilot require
-their own measurements. No new workstation experiment was started for this
-handoff; the workstation capacity campaign is complete and its workers are stopped.
+their own measurements. The Linux workstation capacity campaign remains complete and its workers are
+stopped. The separate Mac integration result above measures eight-input Metal
+aggregation and does not establish the NVIDIA capacity limits on Apple Silicon.
