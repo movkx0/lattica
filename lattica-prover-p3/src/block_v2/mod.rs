@@ -24,6 +24,9 @@ pub mod heap_dft;
 pub mod leaf;
 pub mod typed_leaf;
 pub mod typed_recursive;
+#[cfg(feature = "block-v2-host")]
+pub mod host;
+pub mod typed_fixture;
 pub mod machine;
 #[cfg(feature = "stream")]
 pub mod normalization_workspace;

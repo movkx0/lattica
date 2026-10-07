@@ -57,6 +57,22 @@ This index is the canonical map of the repository documentation. Documents are g
 
 ## Apple hardware acceleration
 
+`main` is the canonical integration branch for committed Apple Silicon/Metal
+code, benchmark tools and shared prover/pool changes. Start from the
+[current-source Mac recipe](../lattica-prover-p3/scripts/apple-current-benchmark-README.txt).
+The `codex/mac-metal` and `v3` histories are retained in the merge; their measured
+results keep their original source and binary hashes.
+
+The optimization reports below also reference uncommitted Mac research code at
+`/Users/access/code/lattica/benchmark-results/apple-priorities-20261004/run-01`.
+That source has not yet been imported from the Mac. Its recorded source archive
+SHA-256 is `f3dbb3598556a52677c95cbab13e0c11bd7d81adc09188e9028136e46f75e323`.
+Six measured files are absent from this checkout: `gpu_hash/prefix_storage.rs`,
+`gpu_quotient_prover/metal.rs` (under `src/block_v2/`), and
+`metal_compute/{backing.rs,diagnostics.rs,quotient.metal,resident.rs}` (under `src/`).
+These paths are relative to `lattica-prover-p3`. Keep the reports as historical
+evidence until the corresponding source is imported and validated.
+
 - [Next acceleration priorities](apple-acceleration-next-priorities-2026-10-04.html) — start here for exact Metal squaring, shared-buffer reuse, quotient temporary reuse, fair SME comparisons, targeted scheduling, and native Zig hashing. Each priority includes source locations, evidence, and correctness gates.
 - [Completed optimization comparison](apple-priorities-implementation-2026-10-04.html) — the supporting 18-thread research comparison: 254.03s to 204.57s, or 19.5% lower latency in one matched pair, with independent CPU audits.
 

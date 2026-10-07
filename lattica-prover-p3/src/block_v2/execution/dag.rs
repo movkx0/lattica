@@ -407,7 +407,7 @@ impl Dag {
         now_ms: u64,
     ) -> Result<WorkspaceLease, Error> {
         self.advance(now_ms)?;
-        resources.validate_request()?;
+        resources.validate_workspace()?;
         if worker.0 == 0
             || self.workspaces.len() >= self.limits.attempts
             || self.workspaces.values().any(|w| w.worker == worker)
@@ -536,6 +536,18 @@ impl Dag {
                 .job;
             if !Job::merge(left, right)?.same_semantics(&job) {
                 return Err("execution merge derivation mismatch".into());
+            }
+        } else if job.operation() == Operation::Finalize {
+            if job.dependencies().len() != 1 {
+                return Err("execution terminal dependency count".into());
+            }
+            let child = &self
+                .jobs
+                .get(&job.dependencies()[0])
+                .ok_or("execution missing terminal child")?
+                .job;
+            if !Job::finalize(child)?.same_semantics(&job) {
+                return Err("execution terminal derivation mismatch".into());
             }
         } else if !job.dependencies().is_empty() {
             return Err("execution unexpected dependency".into());
@@ -686,6 +698,11 @@ impl Dag {
         Ok(())
     }
 
+    pub(super) fn verified_node_bytes(&self, job: JobId) -> Result<Option<&[u8]>, Error> {
+        let record = self.jobs.get(&job).ok_or("execution unknown job")?;
+        Ok(record.output.as_ref().map(|(_, bytes)| bytes.as_ref()))
+    }
+
     pub fn status(&self, job: JobId) -> Result<JobStatus, Error> {
         let r = self.jobs.get(&job).ok_or("execution unknown job")?;
         if r.output.is_some() {
@@ -729,6 +746,12 @@ impl Dag {
             .collect();
         ready.sort();
         ready.into_iter().map(|(_, _, _, id)| id).collect()
+    }
+    /// Scheduling metadata only. The lease path independently rechecks the
+    /// deadline and eligibility after the caller selects a worker.
+    pub fn job_deadline(&self, job: JobId) -> Result<u64, Error> {
+        let record = self.jobs.get(&job).ok_or("execution unknown job")?;
+        Ok(self.deadline(record))
     }
 
     fn deadline(&self, r: &Record) -> u64 {

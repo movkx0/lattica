@@ -48,7 +48,10 @@ impl Selection {
         }
         // This registered circuit proves exactly two actual wallet proofs.
         // Never pad an odd input with a duplicate, witness, or weaker circuit.
-        if pin.construction() == WrapperConstruction::GroupedPair && inputs.len() % 2 != 0 {
+        if !pin.is_typed()
+            && pin.construction() == WrapperConstruction::GroupedPair
+            && inputs.len() % 2 != 0
+        {
             return Err("paired selection requires an even transaction count".into());
         }
         for input in inputs {
@@ -60,7 +63,19 @@ impl Selection {
         let mut selection = Self {
             entries: Vec::with_capacity(2 * CAPACITY - 1),
         };
-        let root = selection.subtree(pin, chain, inputs, 0, DEPTH)?;
+        let level = if pin.is_typed() {
+            inputs.len().next_power_of_two().trailing_zeros().max(1) as u8
+        } else {
+            DEPTH
+        };
+        let mut root = selection.subtree(pin, chain, inputs, 0, level)?;
+        if pin.is_typed() && level < DEPTH {
+            root = Job::finalize(&root)?;
+            selection.entries.push(Entry {
+                job: root.clone(),
+                inputs: vec![],
+            });
+        }
         if root.start() != 0
             || root.expected().level != DEPTH
             || root.expected().count as usize != inputs.len()
@@ -93,11 +108,19 @@ impl Selection {
                 (Job::wrap(start, input.wallet)?, vec![input.clone()])
             } else {
                 let left = &inputs[start_index];
-                let right = &inputs[start_index + 1];
-                (
-                    Job::wrap_pair(start, left.wallet, right.wallet)?,
-                    vec![left.clone(), right.clone()],
-                )
+                if pin.is_typed() {
+                    let right = inputs.get(start_index + 1);
+                    (
+                        Job::typed_pair(start, left.wallet, right.map(|r| r.wallet))?,
+                        vec![left.clone(), right.unwrap_or(left).clone()],
+                    )
+                } else {
+                    let right = &inputs[start_index + 1];
+                    (
+                        Job::wrap_pair(start, left.wallet, right.wallet)?,
+                        vec![left.clone(), right.clone()],
+                    )
+                }
             }
         } else {
             let child_level = level.checked_sub(1).ok_or("selection wrapper geometry")?;
@@ -172,3 +195,7 @@ impl Selection {
 #[cfg(test)]
 #[path = "selection_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "typed_selection_tests.rs"]
+mod typed_tests;

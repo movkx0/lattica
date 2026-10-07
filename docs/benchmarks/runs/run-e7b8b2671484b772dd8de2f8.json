@@ -1,0 +1,49 @@
+{
+  "campaign_ids": ["block-v2-native-host-campaign-queued-2026-10-05","block-v2-native-host-qualification-tooling-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "qualification-tooling-r1",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-e7b8b2671484b772dd8de2f8",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 1300,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/qualification-tooling-r1/help.log",
+      "sha256": "a93c3e3890b4a3e3973c69c58af49016a701a6b03c2a09b28678601d0f89d05a"
+    },
+    {
+      "bytes": 118,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/qualification-tooling-r1/syntax.log",
+      "sha256": "741b475fc5ddca109660674f36bec0470695a8d1c0220760c835f1de3eb2dfda"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

@@ -45,8 +45,36 @@ impl Resources {
         Ok(())
     }
 
-    pub(crate) fn validate_capacity(self) -> Result<(), Error> {
+    /// Check representation and nonzero active capacity. The host must still
+    /// admit these values against the actual hardware and enforce its limits.
+    pub fn validate_capacity(self) -> Result<(), Error> {
         self.validate_request()?;
+        self.validate_bounds()
+    }
+    /// An idle cache retains RAM/device/scratch ownership without consuming
+    /// a CPU scheduling slot. Active jobs reserve the assigned CPU threads.
+    pub(crate) fn validate_workspace(self) -> Result<(), Error> {
+        if self.ram_bytes == 0 {
+            return Err("execution workspace requires RAM capacity".into());
+        }
+        self.validate_bounds()
+    }
+    fn validate_bounds(self) -> Result<(), Error> {
+        // Capacity comes from independent host/device admission. A fixed
+        // workstation ceiling cannot describe another host or a GPU fleet.
+        // Only representation/arithmetic bounds belong in the shared ledger.
+        if [self.ram_bytes, self.vram_bytes, self.scratch_bytes]
+            .into_iter()
+            .any(|bytes| bytes > i64::MAX as u64)
+            || self.threads.checked_mul(100).is_none()
+            || self.threads.checked_add(8).is_none()
+        {
+            return Err("execution resource capacity is not representable".into());
+        }
+        Ok(())
+    }
+    pub(crate) fn validate_legacy_capacity(self) -> Result<(), Error> {
+        self.validate_capacity()?;
         // Reserve 3 GiB for the coordinator/cache within the 48 GiB total.
         if self.ram_bytes > 45 * GIB
             || self.vram_bytes > 12 * GIB
@@ -91,16 +119,39 @@ mod tests {
             ram_bytes: 46 * GIB,
             ..r
         }
-        .validate_capacity()
+        .validate_legacy_capacity()
         .is_err());
         assert!(Resources {
             vram_bytes: 13 * GIB,
             ..r
         }
-        .validate_capacity()
+        .validate_legacy_capacity()
         .is_err());
         assert!(Resources {
             scratch_bytes: 129 * GIB,
+            ..r
+        }
+        .validate_legacy_capacity()
+        .is_err());
+        let fleet = Resources {
+            ram_bytes: 60 * GIB,
+            vram_bytes: 24 * GIB,
+            scratch_bytes: 256 * GIB,
+            threads: 384,
+        };
+        assert!(fleet.validate_capacity().is_ok());
+        assert!(!fleet.fits(Resources {
+            vram_bytes: 12 * GIB,
+            ..fleet
+        }));
+        assert!(Resources {
+            ram_bytes: u64::MAX,
+            ..r
+        }
+        .validate_capacity()
+        .is_err());
+        assert!(Resources {
+            threads: u32::MAX,
             ..r
         }
         .validate_capacity()

@@ -23,13 +23,16 @@ pub const ISSUANCE: u64 = 5;
 
 /// The mint amount and HTLC height are bound inside the typed statement digest.
 /// The host must separately check them against its own policy and chain state.
-pub fn wrapper(
+pub fn wrapper<const N: usize>(
     height: usize,
-    caps: &Caps,
+    caps: &programs::Caps<N>,
     mode: u64,
     wallet_public: &[Val],
     proof: &Proof<Config>,
 ) -> Result<Compiled, CompileError> {
+    if !matches!(N, 5 | 6) {
+        return Err(CompileError::Shape("typed registry key count"));
+    }
     if mode == programs::WRAPPER {
         return programs::wrapper(height, caps, wallet_public, proof);
     }
@@ -99,9 +102,20 @@ mod tests {
     use p3_field::PrimeField64;
 
     fn check(mode: u64, values: Vec<Val>, bytes: Vec<u8>, chain: [u8; 32]) {
-        let caps: Caps = core::array::from_fn(|_| vec![[Val::ZERO; 4]; 1 << profile::CAP_HEIGHT]);
-        let height = 1 << 19;
         let proof: Proof<Config> = postcard::from_bytes(&bytes[72..]).unwrap();
+        check_registry::<5>(mode, &values, &proof, chain);
+        check_registry::<6>(mode, &values, &proof, chain);
+    }
+
+    fn check_registry<const N: usize>(
+        mode: u64,
+        values: &[Val],
+        proof: &Proof<Config>,
+        chain: [u8; 32],
+    ) {
+        let caps: programs::Caps<N> =
+            core::array::from_fn(|_| vec![[Val::ZERO; 4]; 1 << profile::CAP_HEIGHT]);
+        let height = 1 << 19;
         let context = Context {
             profile_id: programs::profile_id(height, &caps).unwrap(),
             chain_id: chain,
@@ -118,7 +132,7 @@ mod tests {
         };
         let node = commitment::leaf(context, entry).unwrap();
         let public = programs::statement(node, mode);
-        let compiled = wrapper(height, &caps, mode, &values, &proof).unwrap();
+        let compiled = wrapper(height, &caps, mode, values, proof).unwrap();
         compiled
             .program
             .evaluate(&public, &compiled.witness)
@@ -137,13 +151,14 @@ mod tests {
                 .evaluate(&wrong, &compiled.witness)
                 .is_err());
         }
-        let mut wrong = values;
+        let mut wrong = values.to_vec();
         wrong[0] += Val::ONE;
-        let changed = wrapper(height, &caps, mode, &wrong, &proof).unwrap();
+        let changed = wrapper(height, &caps, mode, &wrong, proof).unwrap();
         assert_eq!(compiled.program, changed.program);
         assert!(changed.program.evaluate(&public, &changed.witness).is_err());
         let legacy: programs::Caps =
             core::array::from_fn(|_| vec![[Val::ZERO; 4]; 1 << profile::CAP_HEIGHT]);
+        assert!(wrapper(height, &legacy, mode, values, proof).is_err());
         assert_ne!(
             programs::profile_id(height, &legacy).unwrap(),
             context.profile_id

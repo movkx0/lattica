@@ -1,0 +1,52 @@
+{
+  "captured_utc": "2026-10-05T10:45:48.741572+00:00",
+  "diagnosis": "Native tests rejected immutable ciphertext slices where TransmittedNote required []u8. The complete-body decoder has the same mismatch when borrowing read-only input. No native host test executed; the preceding 13 Python persistence tests passed.",
+  "durable_complete_body_application_qualified": false,
+  "followup_manifest": {
+    "bytes": 10702,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r1/manifest.json",
+    "sha256": "7b984938a084c63a3ee3bec18b6e62e333e1089fc2dc1e0dfed0a568ad7524be"
+  },
+  "followup_stopped": {
+    "bytes": 858,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r1/summary.json",
+    "sha256": "7b59bcf7f9689361e46df74e252ee89399ae389f5e966fb07557669b41fdb52e"
+  },
+  "logs": [
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r2/check-01.log",
+      "sha256": "4557fa8df8c747e9f8712301ed03eef6a65a80ce4b33f72f74993a49cedf564c"
+    },
+    {
+      "bytes": 937,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r2/check-02.log",
+      "sha256": "fb773dca0921cb2dcd57e90bfae61682147e78b0331300f0c4f2d75b6492f4ac"
+    }
+  ],
+  "native_execution_tested": false,
+  "prior_tx_source": {
+    "bytes": 37736,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/pre-readonly-note-tx.zig",
+    "sha256": "44a21444cf9adab194e26801a00cf6ee6c3eac9d8a5b58bae7ff33c0b3a98178"
+  },
+  "production_ready": false,
+  "record_type": "research_native_host_validation_failure",
+  "schema_version": 1,
+  "status": "failed",
+  "validation": {
+    "bytes": 1595,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r2/validation.json",
+    "sha256": "cffce68a39c9bde43bcc09f133ea3ff64427e3b777dd4ef1fc0b8ae83e131800"
+  },
+  "validation_manifest": {
+    "bytes": 42810,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r2/manifest.json",
+    "sha256": "3f2ea8e4c365b566c7f22f3e9b08e0d267d0aa92b1c2b6179d1443fa8a3bf41a"
+  },
+  "validation_source_archive": {
+    "bytes": 958652,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r2/source.tar.gz",
+    "sha256": "c7159c82ef5c9101940f1424127cf15db0ba2a458f09ffd7094d0f819b84dc5a"
+  }
+}

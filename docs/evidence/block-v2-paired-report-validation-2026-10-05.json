@@ -1,0 +1,96 @@
+{
+  "benchmark_artifacts_unchanged": true,
+  "benchmark_evidence": {
+    "bytes": 115315,
+    "path": "docs/evidence/block-v2-typed-paired-gpu-2026-10-05.json",
+    "sha256": "03c0d56fb599a366c5ee571a39b1fc41feccd418e4ea898ee8a19d2395f10e8c"
+  },
+  "browser": {
+    "artifacts": [
+      {
+        "bytes": 221988,
+        "path": "lattica-prover-p3/target/block-v2-paired-report-20261005-a/browser/apple-738f4dea8eb2559015eb-01-pilot-shared-18t-quotient-compact-deferred-r1.json",
+        "sha256": "0df48f95d34872441edf41dd34e61c600c017de837f528eb3ead4bdb27d41fc2"
+      },
+      {
+        "bytes": 177007,
+        "path": "lattica-prover-p3/target/block-v2-paired-report-20261005-a/browser/desktop.png",
+        "sha256": "18b3bd83d2be0b2b4bd2c37ce979889c0260f78adc26a1bd551698b915cfb769"
+      },
+      {
+        "bytes": 69233,
+        "path": "lattica-prover-p3/target/block-v2-paired-report-20261005-a/browser/mobile.png",
+        "sha256": "9d8e716a651bd92cd259abca8f8f5ac42ed4e0413046780677839ba132449c2d"
+      },
+      {
+        "bytes": 273645,
+        "path": "lattica-prover-p3/target/block-v2-paired-report-20261005-a/browser/run-8abf6502012c022e76d3ad14.json",
+        "sha256": "8df7fb147514382ceb859ffbf8f8246b3b551e58b799a7e31ccbfed6e7acbee4"
+      },
+      {
+        "bytes": 114522,
+        "path": "lattica-prover-p3/target/block-v2-paired-report-20261005-a/browser/throughput-b735e9bd9ba9b549.json",
+        "sha256": "fca8cd3725a5e67e5edbb4b7e0f1399e52dc2d73255f07aec558f922022eb547"
+      },
+      {
+        "bytes": 99753,
+        "path": "lattica-prover-p3/target/block-v2-paired-report-20261005-a/browser/timeline.png",
+        "sha256": "18cb71e6bddfc5b7895848a2876b2b1eb47ab5c0803a268a8484fc4afb90f7cb"
+      }
+    ],
+    "browser_errors": 0,
+    "network_requests": 0,
+    "paired_download_issuance_inputs": 1,
+    "paired_download_proofs": 4,
+    "paired_download_registry_keys": 12,
+    "paired_download_user_inputs": 3,
+    "status": "passed"
+  },
+  "captured_utc": "2026-10-05T04:37:20.472053+00:00",
+  "corrected_issue": "The previous log parser admitted only modes one through six, so it omitted paired mode eight and finalizer mode twelve from proof timings. Collection now uses the recorded construction and validates paired node dimensions. Successful typed workers must have as many imported proof timings as declared fresh proofs.",
+  "python_tests": [
+    {
+      "passed": 8,
+      "script": "test-block-v2-typed-report.py"
+    },
+    {
+      "passed": 7,
+      "script": "test-block-v2-typed-fleet-report.py"
+    },
+    {
+      "passed": 26,
+      "script": "test-block-v2-benchmark-report.py"
+    }
+  ],
+  "report_check": {
+    "campaigns": 101,
+    "cpu_audited_runs": 259,
+    "mismatched_pins": [],
+    "missing_pinned_sources": 0,
+    "runs": 516,
+    "status": "valid",
+    "transaction_campaigns": 0
+  },
+  "schema_version": 1,
+  "scope": "Report importer and offline browser validation for the first count-four paired GPU qualification. No new proving or timing qualification.",
+  "source_archive": {
+    "bytes": 49531,
+    "path": "lattica-prover-p3/target/block-v2-paired-report-20261005-a/sources.tar.gz",
+    "sha256": "fce0484e437d33486cfb921949e5fb8affbe24f085527a98fd5b21d06a12acb5"
+  },
+  "source_pins": {
+    "lattica-prover-p3/scripts/benchmark_report/__init__.py": "2439075037e8f11deac0b8215ead675541204ba706b48805014776fb886760dd",
+    "lattica-prover-p3/scripts/benchmark_report/campaign.py": "a140924e76b0adc0d3bb0b0f627dc3647a6c84711d699d462e86326a0b205945",
+    "lattica-prover-p3/scripts/benchmark_report/history.py": "68d27bb7a4e756c41cbc9e94d87a4c27838261f29d6bfc41858dabc7ed9331a3",
+    "lattica-prover-p3/scripts/benchmark_report/measurements.py": "4293982a9198517cd5f636391b40579314a5fcc7358a8370b0fd70b5fc120ee1",
+    "lattica-prover-p3/scripts/benchmark_report/model.py": "e09ffd66e5ffcfdc885717e0af34a516db6ac079d6f6032e3171307bbed4b5b3",
+    "lattica-prover-p3/scripts/benchmark_report/page.html": "5afa60410f52a2486b759ec33f7bead36556065cef21898ea3491226aade3f53",
+    "lattica-prover-p3/scripts/benchmark_report/report.py": "fc47ed219e7259d8b0bde8cf9480f95522783ed12cc533614ff1269358e3bb13",
+    "lattica-prover-p3/scripts/benchmark_report/typed.py": "52567274527165481505db4f64f8abd6239b7aae1cbbdd6a7f0b49982e14ecbf",
+    "lattica-prover-p3/scripts/test-block-v2-benchmark-browser.mjs": "7cc4cff4c54c259e02d7749f7c00fb83e1135adcb38383a156bcf2e952315403",
+    "lattica-prover-p3/scripts/test-block-v2-benchmark-report.py": "559b9a765d782fe41dae0f350178def7f62b629be771a4ec653bc5fe89a2d740",
+    "lattica-prover-p3/scripts/test-block-v2-typed-fleet-report.py": "b9190ec0b1a738bef46cc286d738f6502750f02afeea24a33f538486fa478dec",
+    "lattica-prover-p3/scripts/test-block-v2-typed-report.py": "c8296a155be118fe775ef78244a8b2f200c63a10a30ce275d996a8258ef1a418"
+  },
+  "status": "passed"
+}

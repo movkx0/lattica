@@ -103,9 +103,6 @@ impl Token {
             commitment::digest_from_bytes(&execution)?;
         }
         self.resources.validate_capacity()?;
-        if self.resources.vram_bytes != 0 {
-            return Err("CPU launch reservation has VRAM".into());
-        }
         Ok(())
     }
     pub fn encode(&self) -> Result<Vec<u8>, Error> {
@@ -652,6 +649,22 @@ impl LaunchStore {
 
     /// Irreversibly fence this lease before stopping/querying its exact OS unit.
     /// Also records a tombstone if no launch was issued before a coordinator crash.
+    /// Revoke only in the launch directory committed by the recovered attempt.
+    /// Process/cgroup exit and an idle gate remain separate requirements.
+    pub fn revoke_recovered(
+        &mut self,
+        attempt: &super::journal::PreviousAttempt,
+    ) -> Result<Revocation, Error> {
+        if attempt.launch_root.is_some_and(|root| {
+            self.directory
+                .identity()
+                .map_or(true, |identity| root.store != identity)
+        }) {
+            return Err("recovered attempt belongs to a different launch store".into());
+        }
+        self.revoke(attempt.lease)
+    }
+
     pub fn revoke(&mut self, lease: Lease) -> Result<Revocation, Error> {
         self.revoke_key(lease.process_key()?)?;
         Ok(Revocation {

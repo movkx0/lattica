@@ -1,0 +1,1534 @@
+{
+  "campaign_ids": ["block-v2-query-gather-comparison-2026-10-05","block-v2-query-gather-controller-validation-2026-10-05","block-v2-query-gather-gpu-2026-10-05","block-v2-query-gather-validation-2026-10-05","block-v2-query-report-validation-2026-10-05","block-v2-typed-count-matrix-tooling-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-query-gather-20261005-a",
+  "limitations": ["lattica-prover-p3/target/block-v2-query-gather-20261005-a/comparison-validation.log:1: Expecting property name enclosed in double quotes: line 2 column 1 (char 2)","No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [0,"NVIDIA GeForce RTX 5080",16707092480,4176773120,268435456,4294967296,1048576,65536,1,"compatible",5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          [0,true,0,4032,4032,2,31136,0,0,0,9],
+          [1,true,0,4032,4032,2,31136,0,0,0,20],
+          [0,true,0,4032,4032,2,68256,0,0,0,33],
+          [1,true,0,4032,4032,2,68256,0,0,0,44],
+          [0,true,0,65472,65472,2,107328,0,0,0,57],
+          [1,true,0,65472,65472,2,107328,0,0,0,68],
+          [0,true,0,65472,65472,2,145312,23104,680773,10,81],
+          [1,true,0,65472,65472,2,145312,23104,680773,10,92],
+          [0,true,0,524224,524224,2,202272,66016,1402358,20,105],
+          [1,true,0,524224,524224,2,202272,66016,1402358,20,116],
+          [0,true,0,524224,524224,2,253792,110368,3374025,30,129],
+          [1,true,0,524224,524224,2,253792,110368,3374025,30,140],
+          [0,true,0,8388544,8388544,2,337184,186304,10974234,40,153],
+          [1,true,0,8388544,8388544,2,337184,186304,10974234,40,164],
+          [0,true,0,8388544,8388544,2,426240,248288,12863340,50,177],
+          [1,true,0,8388544,8388544,2,426240,248288,12863340,50,188]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          [0,0,2,2240,2432,2476387,453548,117344,192608,0,73136,75776,23,65536,2005104,451225,90461,358360,10],
+          [1,0,2,2368,2464,2876489,453548,117344,192608,0,70320,75776,29,65536,2260313,591590,90461,358360,21],
+          [0,0,4,4608,4784,4313664,675896,246016,394912,0,73136,75776,47,65536,3200243,1062697,183792,483109,34],
+          [1,0,4,4736,4816,4443962,675896,246016,394912,0,70320,75776,53,65536,3246568,1144377,183792,483109,45],
+          [0,0,6,41376,51920,5475360,962496,433056,760800,0,201392,267072,71,65536,3980602,1431075,325553,620439,58],
+          [1,0,6,43344,52144,5679655,962496,433056,760800,0,131760,267072,77,65536,4104473,1508955,325553,620439,69],
+          [0,0,8,79984,87664,6672698,1520162,621344,1134624,0,202416,268096,96,65536,4819898,1779582,671843,816035,82],
+          [1,0,8,81952,87888,6927983,1520162,621344,1134624,0,132784,268096,102,65536,4933619,1910424,671843,816035,93],
+          [0,0,10,487840,1813264,8332549,3708146,1215584,1672000,0,1836464,4195952,120,65536,5646514,2589290,1971119,1664850,106],
+          [1,0,10,559744,1814384,8889526,3708146,1215584,1672000,0,591536,4195952,126,65536,5948687,2833761,1971119,1664850,117],
+          [0,0,12,965632,3038960,10332287,6347351,1812384,2208128,0,1836464,4195952,144,65536,6770544,3442340,2991257,3237586,130],
+          [1,0,12,1037536,3040080,16153206,6347351,1812384,2208128,0,591536,4195952,150,65536,7122652,8906299,2991257,3237586,141],
+          [0,0,14,22075104,205159120,58539375,186675939,16278048,3017824,0,12649760,151062048,168,65536,31089976,27012111,150101933,34650525,154],
+          [1,0,14,30496768,205167344,71454489,186675939,16278048,3017824,0,8455856,267462320,174,65536,36503258,34402071,150101933,34650525,165],
+          [0,0,16,51534336,348338032,108522257,324333065,30753632,3830496,0,12649760,267462320,192,65536,55516460,52142207,263474636,57657368,178],
+          [1,0,16,59956000,348346256,121358301,324333065,30753632,3830496,0,8455856,267462320,198,65536,61073724,59303033,263474636,57657368,189]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          [0,0,0,3840,1344,451225,0,0,0,11],
+          [1,0,0,4608,1344,591590,0,0,0,22],
+          [0,0,0,8352,2688,1062697,0,0,0,35],
+          [1,0,0,9184,2688,1144377,0,0,0,46],
+          [0,0,0,12864,5760,1431075,0,0,0,59],
+          [1,0,0,13728,5760,1508955,0,0,0,70],
+          [0,0,0,17504,11872,1779582,0,0,0,83],
+          [1,0,0,18336,11872,1910424,0,0,0,94],
+          [0,0,0,207968,229088,2589290,0,0,0,107],
+          [1,0,0,240928,229088,2833761,0,0,0,118],
+          [0,0,0,429600,383680,3442340,0,0,0,131],
+          [1,0,0,461664,383680,8906299,0,0,0,142],
+          [0,0,0,10445792,35348192,27012111,0,0,0,155],
+          [1,0,0,14485024,35348192,34402071,0,0,0,166],
+          [0,0,0,24359392,62862688,52142207,0,0,0,179],
+          [1,0,0,28329824,62862688,59303033,0,0,0,190]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          [0,0,2,2,23680,117344,4931909,0,0,0,12],
+          [1,0,2,2,31840,117344,4931909,0,0,0,23],
+          [0,0,4,4,54592,246016,8585441,0,0,0,36],
+          [1,0,4,4,64352,246016,8585441,0,0,0,47],
+          [0,0,6,8,198848,433056,12513276,0,0,0,60],
+          [1,0,6,8,250592,433056,12513276,0,0,0,71],
+          [0,0,8,12,373472,621344,16293750,0,0,0,84],
+          [1,0,8,12,429216,621344,16293750,0,0,0,95],
+          [0,0,10,16,641344,1215584,23467173,0,0,0,108],
+          [1,0,10,16,729632,1215584,23467173,0,0,0,119],
+          [0,0,12,20,942336,1812384,29907176,0,0,0,132],
+          [1,0,12,20,1036224,1812384,29907176,0,0,0,143],
+          [0,0,14,26,6319328,16278048,278121481,0,0,0,156],
+          [1,0,14,26,8982080,16278048,278121481,0,0,0,167],
+          [0,0,16,32,14256160,30753632,478437734,0,0,0,180],
+          [1,0,16,32,16930944,30753632,478437734,0,0,0,191]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","mask_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_quotient_checkpoint",
+        "rows": [
+          [0,0,0,0,13],
+          [1,0,0,0,24],
+          [0,0,0,0,37],
+          [1,0,0,0,48],
+          [0,0,0,0,61],
+          [1,0,0,0,72],
+          [0,0,0,0,85],
+          [1,0,0,0,96],
+          [0,0,0,0,109],
+          [1,0,0,0,120],
+          [0,0,0,0,133],
+          [1,0,0,0,144],
+          [0,0,0,0,157],
+          [1,0,0,0,168],
+          [0,0,0,0,181],
+          [1,0,0,0,192]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","parallel_decode_bytes","parallel_decode_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_readback_checkpoint",
+        "rows": [
+          [0,0,0,0,14],
+          [1,0,0,0,25],
+          [0,0,0,0,38],
+          [1,0,0,0,49],
+          [0,0,0,0,62],
+          [1,0,0,0,73],
+          [0,0,0,0,86],
+          [1,0,0,0,97],
+          [0,0,0,0,110],
+          [1,0,0,0,121],
+          [0,0,0,0,134],
+          [1,0,0,0,145],
+          [0,0,0,0,158],
+          [1,0,0,0,169],
+          [0,0,0,0,182],
+          [1,0,0,0,193]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,0,15],
+          [1,0,0,0,0,0,0,0,26],
+          [0,0,0,0,0,0,0,0,39],
+          [1,0,0,0,0,0,0,0,50],
+          [0,0,0,0,0,0,0,0,63],
+          [1,0,0,0,0,0,0,0,74],
+          [0,0,0,0,0,0,0,0,87],
+          [1,0,0,0,0,0,0,0,98],
+          [0,0,0,0,0,0,0,0,111],
+          [1,0,0,0,0,0,0,0,122],
+          [0,0,0,0,0,0,0,0,135],
+          [1,0,0,0,0,0,0,0,146],
+          [0,0,0,0,0,0,0,0,159],
+          [1,0,0,0,0,0,0,0,170],
+          [0,0,0,0,0,0,0,0,183],
+          [1,0,0,0,0,0,0,0,194]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,0,0,0,0,0,16],
+          [1,0,0,0,0,0,0,0,0,0,0,0,27],
+          [0,0,0,0,0,0,0,0,0,0,0,0,40],
+          [1,0,0,0,0,0,0,0,0,0,0,0,51],
+          [0,0,0,0,0,0,0,0,0,0,0,0,64],
+          [1,0,0,0,0,0,0,0,0,0,0,0,75],
+          [0,0,0,0,0,0,0,0,0,0,0,0,88],
+          [1,0,0,0,0,0,0,0,0,0,0,0,99],
+          [0,0,0,0,0,0,0,0,0,0,0,0,112],
+          [1,0,0,0,0,0,0,0,0,0,0,0,123],
+          [0,0,0,0,0,0,0,0,0,0,0,0,136],
+          [1,0,0,0,0,0,0,0,0,0,0,0,147],
+          [0,0,0,0,0,0,0,0,0,0,0,0,160],
+          [1,0,0,0,0,0,0,0,0,0,0,0,171],
+          [0,0,0,0,0,0,0,0,0,0,0,0,184],
+          [1,0,0,0,0,0,0,0,0,0,0,0,195]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          [0,0,0,0,17],
+          [1,0,0,0,28],
+          [0,0,0,0,41],
+          [1,0,0,0,52],
+          [0,0,0,0,65],
+          [1,0,0,0,76],
+          [0,0,0,0,89],
+          [1,0,0,0,100],
+          [0,0,0,0,113],
+          [1,0,0,0,124],
+          [0,0,0,0,137],
+          [1,0,0,0,148],
+          [0,0,0,0,161],
+          [1,0,0,0,172],
+          [0,0,0,0,185],
+          [1,0,0,0,196]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","saved_input_bytes","compress_ns","ntt_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_compact_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,18],
+          [1,0,0,0,0,0,0,29],
+          [0,0,0,0,0,0,0,42],
+          [1,0,0,0,0,0,0,53],
+          [0,0,0,0,0,0,0,66],
+          [1,0,0,0,0,0,0,77],
+          [0,0,0,0,0,0,0,90],
+          [1,0,0,0,0,0,0,101],
+          [0,0,0,0,0,0,0,114],
+          [1,0,0,0,0,0,0,125],
+          [0,0,0,0,0,0,0,138],
+          [1,0,0,0,0,0,0,149],
+          [0,0,0,0,0,0,0,162],
+          [1,0,0,0,0,0,0,173],
+          [0,0,0,0,0,0,0,186],
+          [1,0,0,0,0,0,0,197]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","gather","calls","tiles","readbacks","downloaded_bytes","gather_device_ns","wall_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_query_checkpoint",
+        "rows": [
+          [0,0,true,0,0,0,0,0,0,0,19],
+          [1,0,true,1,1,1,32,1760,685158,0,30],
+          [0,0,true,1,1,1,32,1760,685158,0,43],
+          [1,0,true,2,2,2,64,4000,1075501,0,54],
+          [0,0,true,2,2,2,64,4000,1075501,0,67],
+          [1,0,true,3,3,3,288,6368,1765539,0,78],
+          [0,0,true,3,3,3,288,6368,1765539,0,91],
+          [1,0,true,4,4,4,512,8832,2324748,0,102],
+          [0,0,true,4,4,4,512,8832,2324748,0,115],
+          [1,0,true,5,5,5,1632,10848,3295887,0,126],
+          [0,0,true,5,5,5,1632,10848,3295887,0,139],
+          [1,0,true,6,6,6,2752,17024,15882533,0,150],
+          [0,0,true,6,6,6,2752,17024,15882533,0,163],
+          [1,0,true,7,8,8,10976,24928,32179358,0,174],
+          [0,0,true,7,8,8,10976,24928,32179358,0,187],
+          [1,0,true,8,10,10,19200,31008,48377896,0,198]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,199]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [0,"NVIDIA GeForce RTX 5080",16707092480,4176773120,268435456,4294967296,1048576,65536,1,"compatible",5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          [0,true,0,4032,4032,2,30016,0,0,0,9],
+          [1,true,0,4032,4032,2,30016,0,0,0,20],
+          [0,true,0,4032,4032,2,57504,0,0,0,33],
+          [1,true,0,4032,4032,2,57504,0,0,0,44],
+          [0,true,0,65472,65472,2,100896,0,0,0,57],
+          [1,true,0,65472,65472,2,100896,0,0,0,68],
+          [0,true,0,65472,65472,2,145888,50016,1950979,10,81],
+          [1,true,0,65472,65472,2,145888,50016,1950979,10,92],
+          [0,true,0,524224,524224,2,208896,96384,3433877,20,105],
+          [1,true,0,524224,524224,2,208896,96384,3433877,20,116],
+          [0,true,0,524224,524224,2,263360,122656,4129571,30,129],
+          [1,true,0,524224,524224,2,263360,122656,4129571,30,140],
+          [0,true,0,8388544,8388544,2,344192,165152,4957160,40,153],
+          [1,true,0,8388544,8388544,2,344192,165152,4957160,40,164],
+          [0,true,0,8388544,8388544,2,432320,225472,5921989,50,177],
+          [1,true,0,8388544,8388544,2,432320,225472,5921989,50,188]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          [0,0,2,2240,2432,3383302,188765,133152,193056,0,73136,75776,23,65536,2885036,474619,90377,93092,10],
+          [1,0,2,2336,2464,3657210,188765,133152,193056,0,70320,75776,27,65536,3055408,572502,90377,93092,21],
+          [0,0,4,4576,4784,15988609,634966,280448,385216,0,73136,75776,45,65536,9114819,6826485,179442,446121,34],
+          [1,0,4,4672,4816,16360821,634966,280448,385216,0,70320,75776,49,65536,9375083,6931320,179442,446121,45],
+          [0,0,6,41312,51920,18156103,868638,468768,745344,0,201392,267072,67,65536,10693371,7389695,324501,530055,58],
+          [1,0,6,43248,52144,18322706,868638,468768,745344,0,131760,267072,71,65536,10783485,7464025,324501,530055,69],
+          [0,0,8,79888,87664,19231804,2593985,657856,1110496,0,202416,268096,90,65536,11385844,7759093,700947,1848426,82],
+          [1,0,8,81824,87888,19432298,2593985,657856,1110496,0,132784,268096,94,65536,11495474,7846145,700947,1848426,93],
+          [0,0,10,487712,1813264,20944703,5679518,1256960,1649216,0,1836464,4195952,112,65536,12236448,8604713,2024581,3564474,106],
+          [1,0,10,559584,1814384,21460029,5679518,1256960,1649216,0,591536,4195952,116,65536,12494096,8856810,2024581,3564474,117],
+          [0,0,12,965472,3038960,22807112,7067784,1848096,2185376,0,1836464,4195952,134,65536,13194764,9490696,3024252,3928425,130],
+          [1,0,12,1037344,3040080,23141194,7067784,1848096,2185376,0,591536,4195952,138,65536,13336586,9679510,3024252,3928425,141],
+          [0,0,14,22074912,205159120,71515605,171094231,17829184,2990464,0,12649760,151062048,156,65536,37931702,33153562,134465493,34715792,154],
+          [1,0,14,30496544,205167344,101863478,171094231,17829184,2990464,0,8455856,267454384,160,65536,48195369,53107404,134465493,34715792,165],
+          [0,0,16,51534112,348338032,155053361,276877896,32232128,3793472,0,12649760,267454384,178,65536,67172824,87047508,216580059,57067227,178],
+          [1,0,16,59955744,348346256,168561195,276877896,32232128,3793472,0,8455856,267454384,182,65536,73377247,94223191,216580059,57067227,189]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          [0,0,0,3872,1280,474619,0,0,0,11],
+          [1,0,0,4672,1280,572502,0,0,0,22],
+          [0,0,0,20384,2624,6826485,0,0,0,35],
+          [1,0,0,21216,2624,6931320,0,0,0,46],
+          [0,0,0,24992,5664,7389695,0,0,0,59],
+          [1,0,0,25888,5664,7464025,0,0,0,70],
+          [0,0,0,29760,11744,7759093,0,0,0,83],
+          [1,0,0,30592,11744,7846145,0,0,0,94],
+          [0,0,0,222336,228608,8604713,0,0,0,107],
+          [1,0,0,255264,228608,8856810,0,0,0,118],
+          [0,0,0,441280,383104,9490696,0,0,0,131],
+          [1,0,0,472352,383104,9679510,0,0,0,142],
+          [0,0,0,12489152,30468640,33153562,0,0,0,155],
+          [1,0,0,21291360,30468640,53107404,0,0,0,166],
+          [0,0,0,37568256,48499680,87047508,0,0,0,179],
+          [1,0,0,41534048,48499680,94223191,0,0,0,190]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          [0,0,2,2,26144,133152,5645627,0,0,0,12],
+          [1,0,2,2,34752,133152,5645627,0,0,0,23],
+          [0,0,4,4,59296,280448,28386138,0,0,0,36],
+          [1,0,4,4,73248,280448,28386138,0,0,0,47],
+          [0,0,6,8,210560,468768,33093031,0,0,0,60],
+          [1,0,6,8,262176,468768,33093031,0,0,0,71],
+          [0,0,8,12,386624,657856,36950866,0,0,0,84],
+          [1,0,8,12,438016,657856,36950866,0,0,0,95],
+          [0,0,10,16,656928,1256960,44626384,0,0,0,108],
+          [1,0,10,16,746240,1256960,44626384,0,0,0,119],
+          [0,0,12,20,961952,1848096,51017808,0,0,0,132],
+          [1,0,12,20,1048448,1848096,51017808,0,0,0,143],
+          [0,0,14,26,6339840,17829184,297115593,0,0,0,156],
+          [1,0,14,26,9013920,17829184,297115593,0,0,0,167],
+          [0,0,16,32,14290208,32232128,498078644,0,0,0,180],
+          [1,0,16,32,16959584,32232128,498078644,0,0,0,191]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","mask_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_quotient_checkpoint",
+        "rows": [
+          [0,0,0,0,13],
+          [1,0,0,0,24],
+          [0,0,0,0,37],
+          [1,0,0,0,48],
+          [0,0,0,0,61],
+          [1,0,0,0,72],
+          [0,0,0,0,85],
+          [1,0,0,0,96],
+          [0,0,0,0,109],
+          [1,0,0,0,120],
+          [0,0,0,0,133],
+          [1,0,0,0,144],
+          [0,0,0,0,157],
+          [1,0,0,0,168],
+          [0,0,0,0,181],
+          [1,0,0,0,192]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","parallel_decode_bytes","parallel_decode_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_readback_checkpoint",
+        "rows": [
+          [0,0,0,0,14],
+          [1,0,0,0,25],
+          [0,0,0,0,38],
+          [1,0,0,0,49],
+          [0,0,0,0,62],
+          [1,0,0,0,73],
+          [0,0,0,0,86],
+          [1,0,0,0,97],
+          [0,0,0,0,110],
+          [1,0,0,0,121],
+          [0,0,0,0,134],
+          [1,0,0,0,145],
+          [0,0,0,0,158],
+          [1,0,0,0,169],
+          [0,0,0,0,182],
+          [1,0,0,0,193]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,0,15],
+          [1,0,0,0,0,0,0,0,26],
+          [0,0,0,0,0,0,0,0,39],
+          [1,0,0,0,0,0,0,0,50],
+          [0,0,0,0,0,0,0,0,63],
+          [1,0,0,0,0,0,0,0,74],
+          [0,0,0,0,0,0,0,0,87],
+          [1,0,0,0,0,0,0,0,98],
+          [0,0,0,0,0,0,0,0,111],
+          [1,0,0,0,0,0,0,0,122],
+          [0,0,0,0,0,0,0,0,135],
+          [1,0,0,0,0,0,0,0,146],
+          [0,0,0,0,0,0,0,0,159],
+          [1,0,0,0,0,0,0,0,170],
+          [0,0,0,0,0,0,0,0,183],
+          [1,0,0,0,0,0,0,0,194]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,0,0,0,0,0,16],
+          [1,0,0,0,0,0,0,0,0,0,0,0,27],
+          [0,0,0,0,0,0,0,0,0,0,0,0,40],
+          [1,0,0,0,0,0,0,0,0,0,0,0,51],
+          [0,0,0,0,0,0,0,0,0,0,0,0,64],
+          [1,0,0,0,0,0,0,0,0,0,0,0,75],
+          [0,0,0,0,0,0,0,0,0,0,0,0,88],
+          [1,0,0,0,0,0,0,0,0,0,0,0,99],
+          [0,0,0,0,0,0,0,0,0,0,0,0,112],
+          [1,0,0,0,0,0,0,0,0,0,0,0,123],
+          [0,0,0,0,0,0,0,0,0,0,0,0,136],
+          [1,0,0,0,0,0,0,0,0,0,0,0,147],
+          [0,0,0,0,0,0,0,0,0,0,0,0,160],
+          [1,0,0,0,0,0,0,0,0,0,0,0,171],
+          [0,0,0,0,0,0,0,0,0,0,0,0,184],
+          [1,0,0,0,0,0,0,0,0,0,0,0,195]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          [0,0,0,0,17],
+          [1,0,0,0,28],
+          [0,0,0,0,41],
+          [1,0,0,0,52],
+          [0,0,0,0,65],
+          [1,0,0,0,76],
+          [0,0,0,0,89],
+          [1,0,0,0,100],
+          [0,0,0,0,113],
+          [1,0,0,0,124],
+          [0,0,0,0,137],
+          [1,0,0,0,148],
+          [0,0,0,0,161],
+          [1,0,0,0,172],
+          [0,0,0,0,185],
+          [1,0,0,0,196]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","saved_input_bytes","compress_ns","ntt_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_compact_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,18],
+          [1,0,0,0,0,0,0,29],
+          [0,0,0,0,0,0,0,42],
+          [1,0,0,0,0,0,0,53],
+          [0,0,0,0,0,0,0,66],
+          [1,0,0,0,0,0,0,77],
+          [0,0,0,0,0,0,0,90],
+          [1,0,0,0,0,0,0,101],
+          [0,0,0,0,0,0,0,114],
+          [1,0,0,0,0,0,0,125],
+          [0,0,0,0,0,0,0,138],
+          [1,0,0,0,0,0,0,149],
+          [0,0,0,0,0,0,0,162],
+          [1,0,0,0,0,0,0,173],
+          [0,0,0,0,0,0,0,186],
+          [1,0,0,0,0,0,0,197]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","gather","calls","tiles","readbacks","downloaded_bytes","gather_device_ns","wall_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_query_checkpoint",
+        "rows": [
+          [0,0,false,0,0,0,0,0,0,0,19],
+          [1,0,false,1,1,4,32,0,527914,0,30],
+          [0,0,false,1,1,4,32,0,527914,0,43],
+          [1,0,false,2,2,8,64,0,1252065,0,54],
+          [0,0,false,2,2,8,64,0,1252065,0,67],
+          [1,0,false,3,3,12,288,0,1712565,0,78],
+          [0,0,false,3,3,12,288,0,1712565,0,91],
+          [1,0,false,4,4,16,512,0,2222517,0,102],
+          [0,0,false,4,4,16,512,0,2222517,0,115],
+          [1,0,false,5,5,20,1632,0,3115251,0,126],
+          [0,0,false,5,5,20,1632,0,3115251,0,139],
+          [1,0,false,6,6,24,2752,0,3811351,0,150],
+          [0,0,false,6,6,24,2752,0,3811351,0,163],
+          [1,0,false,7,8,32,10976,0,37563849,0,174],
+          [0,0,false,7,8,32,10976,0,37563849,0,187],
+          [1,0,false,8,10,40,19200,0,54425184,0,198]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,199]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [1,"NVIDIA GeForce RTX 5080 Laptop GPU",16697327616,4174331904,268435456,4294967296,1048576,65536,1,"compatible",5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          [0,true,0,4032,4032,2,34656,0,0,0,9],
+          [1,true,0,4032,4032,2,34656,0,0,0,20],
+          [0,true,0,4032,4032,2,75680,0,0,0,33],
+          [1,true,0,4032,4032,2,75680,0,0,0,44],
+          [0,true,0,65472,65472,2,141568,0,0,0,57],
+          [1,true,0,65472,65472,2,141568,0,0,0,68],
+          [0,true,0,65472,65472,2,209504,34112,434535,10,81],
+          [1,true,0,65472,65472,2,209504,34112,434535,10,92],
+          [0,true,0,524224,524224,2,289920,70624,845298,20,105],
+          [1,true,0,524224,524224,2,289920,70624,845298,20,116],
+          [0,true,0,524224,524224,2,391968,117760,1366307,30,129],
+          [1,true,0,524224,524224,2,391968,117760,1366307,30,140],
+          [0,true,0,8388544,8388544,2,510848,161728,1879603,40,153],
+          [1,true,0,8388544,8388544,2,510848,161728,1879603,40,164],
+          [0,true,0,8388544,8388544,2,657824,237216,3502449,50,177],
+          [1,true,0,8388544,8388544,2,657824,237216,3502449,50,188]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          [0,0,2,2240,2432,2597601,125979,136096,202240,0,73136,75776,23,65536,2220279,356158,44079,78101,10],
+          [1,0,2,2368,2464,2883529,125979,136096,202240,0,70320,75776,29,65536,2448269,410489,44079,78101,21],
+          [0,0,4,4608,4784,4335418,373431,256096,403456,0,73136,75776,47,65536,3664860,630524,86445,279881,34],
+          [1,0,4,4736,4816,4419060,373431,256096,403456,0,70320,75776,53,65536,3690408,685343,86445,279881,45],
+          [0,0,6,41376,51920,5276497,617917,457440,786144,0,201392,267072,71,65536,4367127,853614,155084,448274,58],
+          [1,0,6,43344,52144,5492566,617917,457440,786144,0,131760,267072,77,65536,4530527,902878,155084,448274,69],
+          [0,0,8,79984,87664,6108052,978114,655776,1173472,0,202416,268096,96,65536,4999757,1041897,311532,639587,82],
+          [1,0,8,81952,87888,6249566,978114,655776,1173472,0,132784,268096,102,65536,5100329,1080120,311532,639587,93],
+          [0,0,10,487840,1813264,7297565,2358166,1275104,1743424,0,1836464,4195952,120,65536,5739478,1473326,757770,1545324,106],
+          [1,0,10,559744,1814384,7762972,2358166,1275104,1743424,0,591536,4195952,126,65536,6034591,1636750,757770,1545324,117],
+          [0,0,12,965632,3038960,9127464,3081784,1892224,2313184,0,1836464,4195952,144,65536,7031477,1991401,1128038,1869820,130],
+          [1,0,12,1037536,3040080,9426698,3081784,1892224,2313184,0,591536,4195952,150,65536,7184421,2132150,1128038,1869820,141],
+          [0,0,14,22075104,205159120,31145834,79371593,20379424,3419360,0,12649760,151062048,168,65536,19526530,11241904,43105354,34254049,154],
+          [1,0,14,30496768,205167344,37368893,79371593,20379424,3419360,0,8455856,267462320,174,65536,22964569,13912542,43105354,34254049,165],
+          [0,0,16,51534336,348338032,56759771,134250976,38655744,4429760,0,12649760,267462320,192,65536,36651006,19323658,72893647,57936205,178],
+          [1,0,16,59956000,348346256,69242502,134250976,38655744,4429760,0,8455856,267462320,198,65536,44200458,24090304,72893647,57936205,189]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          [0,0,0,3584,1344,356158,0,0,0,11],
+          [1,0,0,4288,1344,410489,0,0,0,22],
+          [0,0,0,7872,2592,630524,0,0,0,35],
+          [1,0,0,8640,2592,685343,0,0,0,46],
+          [0,0,0,12160,5280,853614,0,0,0,59],
+          [1,0,0,12960,5280,902878,0,0,0,70],
+          [0,0,0,16512,10688,1041897,0,0,0,83],
+          [1,0,0,17312,10688,1080120,0,0,0,94],
+          [0,0,0,43392,48192,1473326,0,0,0,107],
+          [1,0,0,52512,48192,1636750,0,0,0,118],
+          [0,0,0,78784,76128,1991401,0,0,0,131],
+          [1,0,0,85920,76128,2132150,0,0,0,142],
+          [0,0,0,1125248,6920544,11241904,0,0,0,155],
+          [1,0,0,1588160,6920544,13912542,0,0,0,166],
+          [0,0,0,2715264,11745248,19323658,0,0,0,179],
+          [1,0,0,3155488,11745248,24090304,0,0,0,190]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          [0,0,2,2,22816,136096,4191568,0,0,0,12],
+          [1,0,2,2,32832,136096,4191568,0,0,0,23],
+          [0,0,4,4,58560,256096,7195035,0,0,0,36],
+          [1,0,4,4,72640,256096,7195035,0,0,0,47],
+          [0,0,6,8,219616,457440,10322305,0,0,0,60],
+          [1,0,6,8,273664,457440,10322305,0,0,0,71],
+          [0,0,8,12,412288,655776,13012255,0,0,0,84],
+          [1,0,8,12,465920,655776,13012255,0,0,0,95],
+          [0,0,10,16,716320,1275104,18192912,0,0,0,108],
+          [1,0,10,16,816800,1275104,18192912,0,0,0,119],
+          [0,0,12,20,1073184,1892224,23026393,0,0,0,132],
+          [1,0,12,20,1176480,1892224,23026393,0,0,0,143],
+          [0,0,14,26,8966080,20379424,154310660,0,0,0,156],
+          [1,0,14,26,13191488,20379424,154310660,0,0,0,167],
+          [0,0,16,32,20741440,38655744,263740864,0,0,0,180],
+          [1,0,16,32,25052192,38655744,263740864,0,0,0,191]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","mask_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_quotient_checkpoint",
+        "rows": [
+          [0,0,0,0,13],
+          [1,0,0,0,24],
+          [0,0,0,0,37],
+          [1,0,0,0,48],
+          [0,0,0,0,61],
+          [1,0,0,0,72],
+          [0,0,0,0,85],
+          [1,0,0,0,96],
+          [0,0,0,0,109],
+          [1,0,0,0,120],
+          [0,0,0,0,133],
+          [1,0,0,0,144],
+          [0,0,0,0,157],
+          [1,0,0,0,168],
+          [0,0,0,0,181],
+          [1,0,0,0,192]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","parallel_decode_bytes","parallel_decode_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_readback_checkpoint",
+        "rows": [
+          [0,0,0,0,14],
+          [1,0,0,0,25],
+          [0,0,0,0,38],
+          [1,0,0,0,49],
+          [0,0,0,0,62],
+          [1,0,0,0,73],
+          [0,0,0,0,86],
+          [1,0,0,0,97],
+          [0,0,0,0,110],
+          [1,0,0,0,121],
+          [0,0,0,0,134],
+          [1,0,0,0,145],
+          [0,0,0,0,158],
+          [1,0,0,0,169],
+          [0,0,0,0,182],
+          [1,0,0,0,193]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,0,15],
+          [1,0,0,0,0,0,0,0,26],
+          [0,0,0,0,0,0,0,0,39],
+          [1,0,0,0,0,0,0,0,50],
+          [0,0,0,0,0,0,0,0,63],
+          [1,0,0,0,0,0,0,0,74],
+          [0,0,0,0,0,0,0,0,87],
+          [1,0,0,0,0,0,0,0,98],
+          [0,0,0,0,0,0,0,0,111],
+          [1,0,0,0,0,0,0,0,122],
+          [0,0,0,0,0,0,0,0,135],
+          [1,0,0,0,0,0,0,0,146],
+          [0,0,0,0,0,0,0,0,159],
+          [1,0,0,0,0,0,0,0,170],
+          [0,0,0,0,0,0,0,0,183],
+          [1,0,0,0,0,0,0,0,194]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,0,0,0,0,0,16],
+          [1,0,0,0,0,0,0,0,0,0,0,0,27],
+          [0,0,0,0,0,0,0,0,0,0,0,0,40],
+          [1,0,0,0,0,0,0,0,0,0,0,0,51],
+          [0,0,0,0,0,0,0,0,0,0,0,0,64],
+          [1,0,0,0,0,0,0,0,0,0,0,0,75],
+          [0,0,0,0,0,0,0,0,0,0,0,0,88],
+          [1,0,0,0,0,0,0,0,0,0,0,0,99],
+          [0,0,0,0,0,0,0,0,0,0,0,0,112],
+          [1,0,0,0,0,0,0,0,0,0,0,0,123],
+          [0,0,0,0,0,0,0,0,0,0,0,0,136],
+          [1,0,0,0,0,0,0,0,0,0,0,0,147],
+          [0,0,0,0,0,0,0,0,0,0,0,0,160],
+          [1,0,0,0,0,0,0,0,0,0,0,0,171],
+          [0,0,0,0,0,0,0,0,0,0,0,0,184],
+          [1,0,0,0,0,0,0,0,0,0,0,0,195]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          [0,0,0,0,17],
+          [1,0,0,0,28],
+          [0,0,0,0,41],
+          [1,0,0,0,52],
+          [0,0,0,0,65],
+          [1,0,0,0,76],
+          [0,0,0,0,89],
+          [1,0,0,0,100],
+          [0,0,0,0,113],
+          [1,0,0,0,124],
+          [0,0,0,0,137],
+          [1,0,0,0,148],
+          [0,0,0,0,161],
+          [1,0,0,0,172],
+          [0,0,0,0,185],
+          [1,0,0,0,196]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","saved_input_bytes","compress_ns","ntt_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_compact_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,18],
+          [1,0,0,0,0,0,0,29],
+          [0,0,0,0,0,0,0,42],
+          [1,0,0,0,0,0,0,53],
+          [0,0,0,0,0,0,0,66],
+          [1,0,0,0,0,0,0,77],
+          [0,0,0,0,0,0,0,90],
+          [1,0,0,0,0,0,0,101],
+          [0,0,0,0,0,0,0,114],
+          [1,0,0,0,0,0,0,125],
+          [0,0,0,0,0,0,0,138],
+          [1,0,0,0,0,0,0,149],
+          [0,0,0,0,0,0,0,162],
+          [1,0,0,0,0,0,0,173],
+          [0,0,0,0,0,0,0,186],
+          [1,0,0,0,0,0,0,197]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","gather","calls","tiles","readbacks","downloaded_bytes","gather_device_ns","wall_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_query_checkpoint",
+        "rows": [
+          [0,0,true,0,0,0,0,0,0,0,19],
+          [1,0,true,1,1,1,32,3584,487815,0,30],
+          [0,0,true,1,1,1,32,3584,487815,0,43],
+          [1,0,true,2,2,2,64,6496,790386,0,54],
+          [0,0,true,2,2,2,64,6496,790386,0,67],
+          [1,0,true,3,3,3,288,9472,1243903,0,78],
+          [0,0,true,3,3,3,288,9472,1243903,0,91],
+          [1,0,true,4,4,4,512,13248,1612124,0,102],
+          [0,0,true,4,4,4,512,13248,1612124,0,115],
+          [1,0,true,5,5,5,1632,17312,2393457,0,126],
+          [0,0,true,5,5,5,1632,17312,2393457,0,139],
+          [1,0,true,6,6,6,2752,21120,3025300,0,150],
+          [0,0,true,6,6,6,2752,21120,3025300,0,163],
+          [1,0,true,7,8,8,10976,32000,14072486,0,174],
+          [0,0,true,7,8,8,10976,32000,14072486,0,187],
+          [1,0,true,8,10,10,19200,42944,31483259,0,198]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,199]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["device_index","name","global_bytes","max_allocation_bytes","managed_limit_bytes","driver_reserve_bytes","tile_bytes","staging_bytes","contexts","job_lease","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_initialized",
+        "rows": [
+          [1,"NVIDIA GeForce RTX 5080 Laptop GPU",16697327616,4174331904,268435456,4294967296,1048576,65536,1,"compatible",5]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["mode","slots","queues","input_pool_bytes","staging_pool_bytes","timeline","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_transfer_mode",
+        "rows": [
+          ["serial",1,1,1048576,65536,false,6]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","enabled","counters","retained_live_bytes","retained_peak_bytes","retained_trees","copy_device_ns","query_device_ns","query_wall_ns","queries","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_retention_checkpoint",
+        "rows": [
+          [0,true,0,4032,4032,2,57120,0,0,0,9],
+          [1,true,0,4032,4032,2,57120,0,0,0,20],
+          [0,true,0,4032,4032,2,96032,0,0,0,33],
+          [1,true,0,4032,4032,2,96032,0,0,0,44],
+          [0,true,0,65472,65472,2,169344,0,0,0,57],
+          [1,true,0,65472,65472,2,169344,0,0,0,68],
+          [0,true,0,65472,65472,2,234976,39168,1887794,10,81],
+          [1,true,0,65472,65472,2,234976,39168,1887794,10,92],
+          [0,true,0,524224,524224,2,328416,79904,2997965,20,105],
+          [1,true,0,524224,524224,2,328416,79904,2997965,20,116],
+          [0,true,0,524224,524224,2,385376,115328,3786062,30,129],
+          [1,true,0,524224,524224,2,385376,115328,3786062,30,140],
+          [0,true,0,8388544,8388544,2,506912,147424,5104078,40,153],
+          [1,true,0,8388544,8388544,2,506912,147424,5104078,40,164],
+          [0,true,0,8388544,8388544,2,625984,190144,6012242,50,177],
+          [1,true,0,8388544,8388544,2,625984,190144,6012242,50,188]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","uploaded_bytes","downloaded_bytes","upload_and_marshal_ns","download_and_decode_ns","leaf_kernel_ns","compress_kernel_ns","hashing_wall_ns","managed_live_bytes","managed_peak_bytes","allocations","staging_bytes","marshal_ns","upload_wall_ns","download_wall_ns","decode_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_checkpoint",
+        "rows": [
+          [0,0,2,2240,2432,4746393,212188,132320,200544,0,73136,75776,23,65536,3657863,1050458,91687,116627,10],
+          [1,0,2,2336,2464,5179727,212188,132320,200544,0,70320,75776,27,65536,3793082,1344310,91687,116627,21],
+          [0,0,4,4576,4784,6066052,391185,240416,405952,0,73136,75776,45,65536,4239723,1773230,174455,203790,34],
+          [1,0,4,4672,4816,6270108,391185,240416,405952,0,70320,75776,49,65536,4265357,1948432,174455,203790,45],
+          [0,0,6,41312,51920,7480398,649827,444448,781312,0,201392,267072,67,65536,4835321,2576340,313159,314670,58],
+          [1,0,6,43248,52144,7988073,649827,444448,781312,0,131760,267072,71,65536,5033975,2878873,313159,314670,69],
+          [0,0,8,79888,87664,9278778,2086784,642688,1161280,0,202416,268096,90,65536,5586109,3607558,671892,1361403,82],
+          [1,0,8,81824,87888,9709728,2086784,642688,1161280,0,132784,268096,94,65536,5725292,3894849,671892,1361403,93],
+          [0,0,10,487712,1813264,12287567,4157215,1249888,1726400,0,1836464,4195952,112,65536,7111037,5070387,2014299,1933420,106],
+          [1,0,10,559584,1814384,12884680,4157215,1249888,1726400,0,591536,4195952,116,65536,7290253,5480946,2014299,1933420,117],
+          [0,0,12,965472,3038960,14879100,5845123,1854752,2274368,0,1836464,4195952,134,65536,8159354,6588147,3023247,2584327,130],
+          [1,0,12,1037344,3040080,15469588,5845123,1854752,2274368,0,591536,4195952,138,65536,8363676,6969693,3023247,2584327,141],
+          [0,0,14,22074912,205159120,52946624,124991554,36391200,3494464,0,12649760,151062048,156,65536,25493665,27023411,89634575,33373556,154],
+          [1,0,14,30496544,205167344,59001879,124991554,36391200,3494464,0,8455856,267454384,160,65536,29157738,29293844,89634575,33373556,165],
+          [0,0,16,51534112,348338032,91477872,181557275,63098528,4463136,0,12649760,267454384,178,65536,49703443,40896678,123676284,54628477,178],
+          [1,0,16,59955744,348346256,114099148,181557275,63098528,4463136,0,8455856,267454384,182,65536,55534073,57566145,123676284,54628477,189]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","mode","counters","upload_device_ns","download_device_ns","upload_api_ns","upload_wait_ns","slot_wait_ns","tiles","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "mode": ["serial"]
+        },
+        "kind": "bounded_gpu_pipeline_checkpoint",
+        "rows": [
+          [0,0,0,3616,1344,1050458,0,0,0,11],
+          [1,0,0,4416,1344,1344310,0,0,0,22],
+          [0,0,0,8128,2592,1773230,0,0,0,35],
+          [1,0,0,8864,2592,1948432,0,0,0,46],
+          [0,0,0,12416,8288,2576340,0,0,0,59],
+          [1,0,0,13248,8288,2878873,0,0,0,70],
+          [0,0,0,16928,16096,3607558,0,0,0,83],
+          [1,0,0,17760,16096,3894849,0,0,0,94],
+          [0,0,0,145728,427264,5070387,0,0,0,107],
+          [1,0,0,168064,427264,5480946,0,0,0,118],
+          [0,0,0,298560,715232,6588147,0,0,0,131],
+          [1,0,0,320928,715232,6969693,0,0,0,142],
+          [0,0,0,3679968,32102016,27023411,0,0,0,155],
+          [1,0,0,4089888,32102016,29293844,0,0,0,166],
+          [0,0,0,6942720,39596608,40896678,0,0,0,179],
+          [1,0,0,10101344,39596608,57566145,0,0,0,190]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","column_tiles","transform_device_ns","sponge_device_ns","wall_ns","host_reorder_ns","host_reordered_bytes","host_workspace_peak_bytes","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_lde_checkpoint",
+        "rows": [
+          [0,0,2,2,49312,132320,7082076,0,0,0,12],
+          [1,0,2,2,62048,132320,7082076,0,0,0,23],
+          [0,0,4,4,81600,240416,9944448,0,0,0,36],
+          [1,0,4,4,97568,240416,9944448,0,0,0,47],
+          [0,0,6,8,234592,444448,14144089,0,0,0,60],
+          [1,0,6,8,299040,444448,14144089,0,0,0,71],
+          [0,0,8,12,431936,642688,18542940,0,0,0,84],
+          [1,0,8,12,490112,642688,18542940,0,0,0,95],
+          [0,0,10,16,729600,1249888,27270715,0,0,0,108],
+          [1,0,10,16,835360,1249888,27270715,0,0,0,119],
+          [0,0,12,20,1087680,1854752,35132675,0,0,0,132],
+          [1,0,12,20,1189120,1854752,35132675,0,0,0,143],
+          [0,0,14,26,33638400,36391200,269656208,0,0,0,156],
+          [1,0,14,26,37602528,36391200,269656208,0,0,0,167],
+          [0,0,16,32,57366080,63098528,418365786,0,0,0,180],
+          [1,0,16,32,95798496,63098528,418365786,0,0,0,191]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","commits","mask_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_quotient_checkpoint",
+        "rows": [
+          [0,0,0,0,13],
+          [1,0,0,0,24],
+          [0,0,0,0,37],
+          [1,0,0,0,48],
+          [0,0,0,0,61],
+          [1,0,0,0,72],
+          [0,0,0,0,85],
+          [1,0,0,0,96],
+          [0,0,0,0,109],
+          [1,0,0,0,120],
+          [0,0,0,0,133],
+          [1,0,0,0,144],
+          [0,0,0,0,157],
+          [1,0,0,0,168],
+          [0,0,0,0,181],
+          [1,0,0,0,192]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","parallel_decode_bytes","parallel_decode_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_readback_checkpoint",
+        "rows": [
+          [0,0,0,0,14],
+          [1,0,0,0,25],
+          [0,0,0,0,38],
+          [1,0,0,0,49],
+          [0,0,0,0,62],
+          [1,0,0,0,73],
+          [0,0,0,0,86],
+          [1,0,0,0,97],
+          [0,0,0,0,110],
+          [1,0,0,0,121],
+          [0,0,0,0,134],
+          [1,0,0,0,145],
+          [0,0,0,0,158],
+          [1,0,0,0,169],
+          [0,0,0,0,182],
+          [1,0,0,0,193]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","tiles","uploaded_bytes","downloaded_bytes","kernel_ns","wall_ns","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_opening_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,0,15],
+          [1,0,0,0,0,0,0,0,26],
+          [0,0,0,0,0,0,0,0,39],
+          [1,0,0,0,0,0,0,0,50],
+          [0,0,0,0,0,0,0,0,63],
+          [1,0,0,0,0,0,0,0,74],
+          [0,0,0,0,0,0,0,0,87],
+          [1,0,0,0,0,0,0,0,98],
+          [0,0,0,0,0,0,0,0,111],
+          [1,0,0,0,0,0,0,0,122],
+          [0,0,0,0,0,0,0,0,135],
+          [1,0,0,0,0,0,0,0,146],
+          [0,0,0,0,0,0,0,0,159],
+          [1,0,0,0,0,0,0,0,170],
+          [0,0,0,0,0,0,0,0,183],
+          [1,0,0,0,0,0,0,0,194]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","marshal_ns","upload_api_ns","upload_device_ns","kernel_build_ns","kernel_enqueue_ns","kernel_wait_ns","download_api_ns","download_device_ns","decode_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_host_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,0,0,0,0,0,16],
+          [1,0,0,0,0,0,0,0,0,0,0,0,27],
+          [0,0,0,0,0,0,0,0,0,0,0,0,40],
+          [1,0,0,0,0,0,0,0,0,0,0,0,51],
+          [0,0,0,0,0,0,0,0,0,0,0,0,64],
+          [1,0,0,0,0,0,0,0,0,0,0,0,75],
+          [0,0,0,0,0,0,0,0,0,0,0,0,88],
+          [1,0,0,0,0,0,0,0,0,0,0,0,99],
+          [0,0,0,0,0,0,0,0,0,0,0,0,112],
+          [1,0,0,0,0,0,0,0,0,0,0,0,123],
+          [0,0,0,0,0,0,0,0,0,0,0,0,136],
+          [1,0,0,0,0,0,0,0,0,0,0,0,147],
+          [0,0,0,0,0,0,0,0,0,0,0,0,160],
+          [1,0,0,0,0,0,0,0,0,0,0,0,171],
+          [0,0,0,0,0,0,0,0,0,0,0,0,184],
+          [1,0,0,0,0,0,0,0,0,0,0,0,195]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","pinned_uploaded_bytes","pinned_chunks","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"]
+        },
+        "kind": "bounded_gpu_opening_upload_checkpoint",
+        "rows": [
+          [0,0,0,0,17],
+          [1,0,0,0,28],
+          [0,0,0,0,41],
+          [1,0,0,0,52],
+          [0,0,0,0,65],
+          [1,0,0,0,76],
+          [0,0,0,0,89],
+          [1,0,0,0,100],
+          [0,0,0,0,113],
+          [1,0,0,0,124],
+          [0,0,0,0,137],
+          [1,0,0,0,148],
+          [0,0,0,0,161],
+          [1,0,0,0,172],
+          [0,0,0,0,185],
+          [1,0,0,0,196]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","calls","saved_input_bytes","compress_ns","ntt_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_opening_compact_checkpoint",
+        "rows": [
+          [0,0,0,0,0,0,0,18],
+          [1,0,0,0,0,0,0,29],
+          [0,0,0,0,0,0,0,42],
+          [1,0,0,0,0,0,0,53],
+          [0,0,0,0,0,0,0,66],
+          [1,0,0,0,0,0,0,77],
+          [0,0,0,0,0,0,0,90],
+          [1,0,0,0,0,0,0,101],
+          [0,0,0,0,0,0,0,114],
+          [1,0,0,0,0,0,0,125],
+          [0,0,0,0,0,0,0,138],
+          [1,0,0,0,0,0,0,149],
+          [0,0,0,0,0,0,0,162],
+          [1,0,0,0,0,0,0,173],
+          [0,0,0,0,0,0,0,186],
+          [1,0,0,0,0,0,0,197]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["label","counters","gather","calls","tiles","readbacks","downloaded_bytes","gather_device_ns","wall_ns","timings","_source_line"],
+        "dictionaries": {
+          "counters": ["cumulative"],
+          "label": ["compact query oracle before","compact query oracle after"],
+          "timings": ["nonadditive"]
+        },
+        "kind": "bounded_gpu_query_checkpoint",
+        "rows": [
+          [0,0,false,0,0,0,0,0,0,0,19],
+          [1,0,false,1,1,4,32,0,713076,0,30],
+          [0,0,false,1,1,4,32,0,713076,0,43],
+          [1,0,false,2,2,8,64,0,1174710,0,54],
+          [0,0,false,2,2,8,64,0,1174710,0,67],
+          [1,0,false,3,3,12,288,0,2014192,0,78],
+          [0,0,false,3,3,12,288,0,2014192,0,91],
+          [1,0,false,4,4,16,512,0,2740661,0,102],
+          [0,0,false,4,4,16,512,0,2740661,0,115],
+          [1,0,false,5,5,20,1632,0,3766880,0,126],
+          [0,0,false,5,5,20,1632,0,3766880,0,139],
+          [1,0,false,6,6,24,2752,0,4746976,0,150],
+          [0,0,false,6,6,24,2752,0,4746976,0,163],
+          [1,0,false,7,8,32,10976,0,15196299,0,174],
+          [0,0,false,7,8,32,10976,0,15196299,0,187],
+          [1,0,false,8,10,40,19200,0,78020147,0,198]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log"
+      },
+      {
+        "clock": "reported",
+        "columns": ["managed_live_bytes","lease_released","_source_line"],
+        "dictionaries": {},
+        "kind": "bounded_gpu_shutdown",
+        "rows": [
+          [0,true,199]
+        ],
+        "source": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log"
+      }
+    ],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-bbf72e91942fdf6e866c7478",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 492,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/candidate-build.log",
+      "sha256": "ec43bab03362622a674fbde2695bdc9ee7b058b7981e8e53a05b550aecd371de"
+    },
+    {
+      "bytes": 1456,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/comparison-validation.log",
+      "sha256": "f9acfe780ef4bc425f1625e366ac04c16d86f49eabba5aecdf71d0280a5aeb8d"
+    },
+    {
+      "bytes": 39824,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log",
+      "sha256": "46e8f2c0d12bee64f65720cac137dbba0363d15017bb20786a66c7c4268c43b9"
+    },
+    {
+      "bytes": 39763,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log",
+      "sha256": "4b7a722d09dfb37364a47d5211e513518f0da3ab8cb87e385d5769e6acbfcfc8"
+    },
+    {
+      "bytes": 7424,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather-count4.controller.log",
+      "sha256": "a3a2cfb2500b594fd9ab86af85a52e03a28f455e6cb643641a86133a50b81b77"
+    },
+    {
+      "bytes": 39799,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log",
+      "sha256": "548e7c62ecb5de9576aab703e0d69be0d26b9251f88dc345b03d9bd480136d48"
+    },
+    {
+      "bytes": 39818,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log",
+      "sha256": "b2eb3e7cb1e2c0c60772e93b84e10bfafc73df03cfac6a25c38b0c0f0cb83cff"
+    },
+    {
+      "bytes": 42,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/negative-root-audits.controller.log",
+      "sha256": "0080ee0f77e97a6d11377d9ea123b74696cfc434894a6f73ebb8f7d9cc479136"
+    },
+    {
+      "bytes": 1605,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison.controller.log",
+      "sha256": "c377fb78bb6a53b7f5f076d24eb0182e9c7b544d405ea2ab8a425ad442f7624c"
+    },
+    {
+      "bytes": 602,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/rust-planner-tests.log",
+      "sha256": "7d780e04a85aa061ea0a2323e2a6dc718b4056e30edebd934a8bbdba791b1dcf"
+    },
+    {
+      "bytes": 114,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-bench-apple-metal.py.log",
+      "sha256": "806f01f047c8ec9a9c18ca86883baa0158190fbc78ef7598b22902e1f44741d1"
+    },
+    {
+      "bytes": 120,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-multi-gpu.py.log",
+      "sha256": "1d8170c6d126f7d82088a647b4863a8c5c09c279d6d63f82f2fda0ad3a747c0d"
+    },
+    {
+      "bytes": 103,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-query-compare.log",
+      "sha256": "0f7e4b97443e54aca647179972594d13bb587afcbf151fab8228148587ea844a"
+    },
+    {
+      "bytes": 109,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-query-report-r2.log",
+      "sha256": "3e9ef16b63daf641dba75d8f439997d18a421905e12ce983f4ba101415ead02c"
+    },
+    {
+      "bytes": 106,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-query-report.log",
+      "sha256": "3eb98cb065fd31348243b1da43c6c592b415fc7f92aec4747205323566838528"
+    },
+    {
+      "bytes": 832,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-typed-gpu-run-r2.log",
+      "sha256": "5bdb21133b6f3ca092a5cfd3bb12a536e409a3946bbc9ef1600eb6a93e946f1d"
+    },
+    {
+      "bytes": 113,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-typed-multi-gpu-run.py.log",
+      "sha256": "004071ba4bb7431a4e9b3b1b0193c9b768b0cc1b60801af7fa374bb3aa3de4e6"
+    },
+    {
+      "bytes": 107,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-typed-report.log",
+      "sha256": "3a1c4cd02a1576f2aafd89a805ce14566da40f26587c010179bb2611fcfbc795"
+    },
+    {
+      "bytes": 103,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-query-compare.log",
+        "run_id": "run-bbf72e91942fdf6e866c7478"
+      },
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-typed-count-matrix.log",
+      "sha256": "0f7e4b97443e54aca647179972594d13bb587afcbf151fab8228148587ea844a"
+    },
+    {
+      "bytes": 103,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-paired-calibrated-20261005-a/test-block-v2-typed-fleet-compare.py.r2.log",
+        "run_id": "run-cd42b46b3a24d80755aa516e"
+      },
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-typed-fleet-compare.py.log",
+      "sha256": "a2e97b7515932007aa3d038fcfa41fdd107cb2467ff84d182512ff3c7e24f045"
+    },
+    {
+      "bytes": 116,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-native-delivery-20261005-a/post-qualification-tests-r4/check-2.log",
+        "run_id": "run-621d1e544966bc0fbdaced75"
+      },
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-typed-gpu-run-r3.log",
+      "sha256": "938170522077765b26f6292b200d0dbc0f8d4d0557fa800d07bbf54446c026ff"
+    },
+    {
+      "bytes": 114,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-paired-calibrated-20261005-a/test-block-v2-typed-gpu-run.py.log",
+        "run_id": "run-cd42b46b3a24d80755aa516e"
+      },
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-typed-gpu-run.py.log",
+      "sha256": "dc93e1ad8c71598c3eb66567fa8d82decd8763a2bb977499ab18ee5efdb2ed29"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

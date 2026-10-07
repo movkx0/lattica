@@ -1,0 +1,48 @@
+{
+  "campaign_ids": [],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "proof-byte",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": [],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-103463e9c05f6a6ad378ae78",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 102,
+      "identical_to": {
+        "path": "lattica-prover-p3/target/block-v2-finalized-gpu-20261004-a/negative-root-audits/proof-byte/audit.log",
+        "run_id": "run-97691a79fed7dfc77190a693"
+      },
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/negative-root-audits/proof-byte/audit.log",
+      "sha256": "8658acc805f9c4a6ede9ba771dac815ef14ee78109a96f788974cf623d650ead"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

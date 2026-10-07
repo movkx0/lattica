@@ -1,0 +1,223 @@
+{
+  "activity_status": "paused_by_user",
+  "apple_handoff": {
+    "instructions": {
+      "bytes": 3504,
+      "path": "lattica-prover-p3/scripts/apple-current-benchmark-README.txt",
+      "sha256": "3c772950976906d7589c7570f412e1d3a862188348642c1e5be18803d4c74e84"
+    },
+    "selection": "Build a new package from --revision HEAD after fetching origin/v3.",
+    "status": "pending_external_execution"
+  },
+  "browser_validation": {
+    "artifacts": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-readiness-20261006-r40/capacity-browser-r3",
+    "completed_counts": [
+      16
+    ],
+    "console_errors": 0,
+    "desktop_and_mobile": true,
+    "external_requests": 0,
+    "interrupted_counts": [
+      32
+    ],
+    "json_downloads": true,
+    "paused": true,
+    "status": "passed",
+    "unstarted_counts": [
+      64
+    ]
+  },
+  "capacity_checkpoint": {
+    "bytes": 309442,
+    "path": "docs/evidence/block-v2-vram16-capacity-paused-2026-10-06-r1.json",
+    "sha256": "da5907dac65cd9f4c484ac6267957e78c7426c58d71eca0fde66cacc7df6c56f"
+  },
+  "captured_utc": "2026-10-06T19:38:29.465514+00:00",
+  "counts": {
+    "interrupted_by_user": [
+      32
+    ],
+    "not_started": [
+      64
+    ],
+    "passed": [
+      16
+    ]
+  },
+  "pilot_started": false,
+  "python_tests": 37,
+  "python_validation": {
+    "bytes": 724,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/python-validation-r1.json",
+    "sha256": "1d69de7c82170ac8f9455fe5b58cfcf331bf51eaca1638b532d507d05c7a3b04"
+  },
+  "qualification": {
+    "bytes": 204867,
+    "path": "docs/evidence/block-v2-throughput-qualification-2026-10-06-r40.json",
+    "sha256": "2fe4d8cf47ab04755228f8a013e51aa676bd106c558a9e59eaeb7b829e301192"
+  },
+  "readiness": {
+    "bytes": 93429,
+    "path": "docs/evidence/block-v2-throughput-readiness-2026-10-06-r40.json",
+    "sha256": "e210f382849ac470315fcda29ec7bd6d6e9c5c189eba95c80979f6e7b0a41aeb"
+  },
+  "record_type": "benchmark_report_qa",
+  "report_check": {
+    "campaigns": 291,
+    "runs": 819,
+    "status": "valid",
+    "transaction_campaigns": 0
+  },
+  "retained_catalog": {
+    "bytes": 74701390,
+    "path": "docs/benchmarks/catalog.json",
+    "sha256": "d854e9e87b1f2502f3efcf17309bb7f2b29f134f55eb97fb52577112452c471e"
+  },
+  "retained_report": {
+    "bytes": 98885910,
+    "path": "docs/benchmarks/index.html",
+    "sha256": "9d91c606d0cacc4fe5924d77ca2f83ed31ecf4e4dca8bbcf8fef745c4bb85226"
+  },
+  "schema_version": 1,
+  "source_archive": {
+    "bytes": 148418,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/report-source-r1.tar.gz",
+    "sha256": "90f36d36868fd3258039d7b7f80a01f4346c66ee02b3372fb16d83f5a53f0b97"
+  },
+  "source_manifest": {
+    "bytes": 5452,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/report-source-r1.json",
+    "sha256": "24e3dfcaed153d7e567239d3ce136f97a5ad1f09692cf5c0f93280f207a7af71"
+  },
+  "sources": [
+    {
+      "bytes": 121780,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/browser-qa-r2.log",
+      "sha256": "e71d9fdd483385f71d45abc82c342d0d54dd43905df9b7966f41b7e882f17e1d"
+    },
+    {
+      "bytes": 314,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/browser-qa-r3.log",
+      "sha256": "b794104a2d7f610a6416376c3f5a1791a04addc682232bcf4eb880206530d0e7"
+    },
+    {
+      "bytes": 309446,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/capacity-browser-r2/block-v2-vram16-capacity-paused-2026-10-06-r1.json",
+      "sha256": "dcec55b0d85e919047a4389bd33d26200f8b14ff68a6c5ee78663fbd4217521c"
+    },
+    {
+      "bytes": 309446,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/capacity-browser-r3/block-v2-vram16-capacity-paused-2026-10-06-r1.json",
+      "sha256": "dcec55b0d85e919047a4389bd33d26200f8b14ff68a6c5ee78663fbd4217521c"
+    },
+    {
+      "bytes": 73675,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/capacity-browser-r3/capacity-desktop.png",
+      "sha256": "82073d1d5fc442fb1268a6afde5792e94569e97bf863415bc2c50ae2579f1b11"
+    },
+    {
+      "bytes": 66517,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/capacity-browser-r3/capacity-mobile.png",
+      "sha256": "921c93433b05791edad87048d6767c32275fac5844d7b836f18842be268deed5"
+    },
+    {
+      "bytes": 379,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/capacity-browser-r3/qa.json",
+      "sha256": "3fff8e16ce986471a25340d6f01ae04afcb66d4446e6827d0fcf2e3d0a3c41dd"
+    },
+    {
+      "bytes": 3637,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/check-capacity-pause-r1.mjs",
+      "sha256": "dcd1a6f61ba0f2ca78c7774cfe5d382dc2372a3eec54452e5caf0dac0e60d3be"
+    },
+    {
+      "bytes": 3637,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/check-capacity-pause-r2.mjs",
+      "sha256": "08134170493cd6999c3bc1ed4826d86a5f42c64b7cc6f46d198879e48c420539"
+    },
+    {
+      "bytes": 3784,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/check-capacity-pause-r3.mjs",
+      "sha256": "1ee4dfeadfb9276d08b16e8a2537085ac928d77b07f03f029f15f6db5f4037e0"
+    },
+    {
+      "bytes": 4377,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/finalize-capacity-qa-r1.py",
+      "sha256": "b2c23259c2d675749477f19b53cf5787bcb545b96823225c908da212124a20cf"
+    },
+    {
+      "bytes": 1935,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/publish-capacity-pause-r1.py",
+      "sha256": "82f246d221bb28d6963f2ad992b55ec7b7cdf63d2aef063b794d49419fa36fa2"
+    },
+    {
+      "bytes": 724,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/python-validation-r1.json",
+      "sha256": "1d69de7c82170ac8f9455fe5b58cfcf331bf51eaca1638b532d507d05c7a3b04"
+    },
+    {
+      "bytes": 204867,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/qualification.json",
+      "sha256": "2fe4d8cf47ab04755228f8a013e51aa676bd106c558a9e59eaeb7b829e301192"
+    },
+    {
+      "bytes": 74701390,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/report-catalog.json",
+      "sha256": "d854e9e87b1f2502f3efcf17309bb7f2b29f134f55eb97fb52577112452c471e"
+    },
+    {
+      "bytes": 89,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/report-check-r1.json",
+      "sha256": "66a383f2bdf692a4c7f4e4e6cd6a600bc2f0d64044282ac02048b5b0c364065f"
+    },
+    {
+      "bytes": 98885910,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/report-index.html",
+      "sha256": "9d91c606d0cacc4fe5924d77ca2f83ed31ecf4e4dca8bbcf8fef745c4bb85226"
+    },
+    {
+      "bytes": 5452,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/report-source-r1.json",
+      "sha256": "24e3dfcaed153d7e567239d3ce136f97a5ad1f09692cf5c0f93280f207a7af71"
+    },
+    {
+      "bytes": 148418,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/report-source-r1.tar.gz",
+      "sha256": "90f36d36868fd3258039d7b7f80a01f4346c66ee02b3372fb16d83f5a53f0b97"
+    },
+    {
+      "bytes": 7487,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/retain-capacity-pause-r1.py",
+      "sha256": "b4729cf96833000f160a2904c487dc1f18b3b0f5d7374efeaf64aec2c51ce20f"
+    },
+    {
+      "bytes": 659,
+      "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/visual-review-r1.json",
+      "sha256": "b22fc4175128a366bf2c4aba2917b5e27901df650e17dba8a5180610c421952f"
+    }
+  ],
+  "status": "passed",
+  "validation_notes": [
+    "The first browser attempt did not finish in the filesystem sandbox.",
+    "The second attempt reached the JSON comparison; its test expectation used rounded JavaScript integers. The final check uses the report precision policy for exact nanosecond strings; no report data was changed.",
+    "The retained source JSON and downloaded report JSON differ only in serialization of two nanosecond integers as exact strings."
+  ],
+  "visual_review": {
+    "desktop_width": 1440,
+    "mobile_width": 390,
+    "narrow_table": "Horizontal table scrolling within the panel; page width stays at 390 pixels.",
+    "screenshots": [
+      {
+        "bytes": 73675,
+        "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/capacity-browser-r3/capacity-desktop.png",
+        "sha256": "82073d1d5fc442fb1268a6afde5792e94569e97bf863415bc2c50ae2579f1b11"
+      },
+      {
+        "bytes": 66517,
+        "path": "lattica-prover-p3/target/block-v2-readiness-20261006-r40/capacity-browser-r3/capacity-mobile.png",
+        "sha256": "921c93433b05791edad87048d6767c32275fac5844d7b836f18842be268deed5"
+      }
+    ],
+    "status": "passed"
+  }
+}

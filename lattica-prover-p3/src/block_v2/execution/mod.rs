@@ -8,7 +8,11 @@
 
 pub mod dag;
 pub mod job;
+pub mod policy_context;
+#[cfg(all(target_os = "linux", feature = "stream"))]
+pub mod pool;
 pub mod resources;
+pub mod scheduler;
 pub mod selection;
 pub mod worker;
 pub mod workspace;
@@ -29,6 +33,8 @@ pub mod transport;
 
 #[cfg(target_os = "linux")]
 pub mod os_worker;
+#[cfg(all(target_os = "linux", feature = "stream"))]
+pub mod startup;
 
 #[cfg(all(target_os = "linux", feature = "stream"))]
 pub mod process;

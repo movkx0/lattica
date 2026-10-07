@@ -71,6 +71,35 @@ int32_t lattica_htlc_batch_prove(const uint8_t *witness_ptr, size_t witness_len,
                                  uint8_t *proof_out, size_t proof_cap, size_t *proof_len,
                                  uint8_t *root_out, size_t root_cap, size_t *root_len);
 
+/* Opt-in --features block-v2-host only. Research candidate; no activation or
+ * legacy fallback. Inputs are bounded/canonical. Expected bytes are:
+ * "LBV2EX01" || profile[32] || chain[32] || ordered_root[32] || count(u64 LE).
+ * The host must independently select the registry/profile/context and derive
+ * ordered_root from complete transaction envelopes. Registry bytes use the
+ * canonical LBV2RG01 twelve-key envelope. 0 means CPU root verification passed;
+ * nonzero rejects. State, heights, issuance policy and durable application are
+ * checked separately by the host. No wallet/inner proof archive is required. */
+int32_t lattica_v2_research_root_verify_v1(
+    const uint8_t *proof_ptr, size_t proof_len,
+    const uint8_t *expected_ptr, size_t expected_len,
+    const uint8_t *registry_ptr, size_t registry_len);
+
+/* Opt-in research native-witness leaf prover. No state/issuance authority is
+ * inferred from this call. Request: LBV2LW01 || chain[32] || kind(u64 LE)
+ * || height(u64 LE) || authorized_mint(u64 LE), exactly 64 bytes. Kinds are
+ * 1 join-split (height/mint zero), 2 HTLC (mint zero), 3 issuance (height zero,
+ * positive authorized mint). Raw witness uses the existing native witness ABI.
+ * Export: LBV2WP01 || wallet_len(u32 LE) || public_count(u32 LE)
+ * || LBV2TW01 wallet envelope || canonical public u64 LE limbs.
+ * Maximum export size: 2 MiB + 264 bytes. No witness bytes are exported.
+ * Valid output_len is zero on failure; returns 0 only on success.
+ * Buffers and distinct output_len must remain valid throughout the call.
+ */
+int32_t lattica_v2_research_wallet_prove_v1(
+    const uint8_t *request, size_t request_len,
+    const uint8_t *witness, size_t witness_len,
+    uint8_t *output, size_t output_cap, size_t *output_len);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -1,0 +1,78 @@
+{
+  "captured_utc": "2026-10-05T09:57:48.586117+00:00",
+  "delivered_transactions_measured": false,
+  "durable_complete_body_application_qualified": false,
+  "implemented_in_source": [
+    "Bounded canonical complete-body encoding with ciphertexts, KEM fields and HTLC preimages",
+    "Native replay through node.Chain and the separate real Rust root-verifier ABI",
+    "Host-selected registry, context, public genesis and per-height issuance grants",
+    "Synced immutable records and atomic synced head publication, with stale-parent fencing",
+    "Full native replay on recovery and explicit reorg; unpublished temporary/orphan records are not adopted",
+    "Indeterminate commit result after head replacement if durability confirmation fails",
+    "Four deterministic synthetic wallets with in-memory witnesses, recipient-decryption checks and fresh Rust leaf proof generation",
+    "Independent native complete-body and Rust leaf-public expected-root comparison"
+  ],
+  "limitations": [
+    "Native codec, bridge and fixture generator are not compiled or executed yet.",
+    "Persistence tests use synthetic verification and cannot establish proof authorization.",
+    "This bounded research store retains at most 128 blocks on its active branch and replays history on every commit; account for replay cost in finalization.",
+    "No complete-body native transaction delivery has been measured."
+  ],
+  "native_validation": {
+    "admission_guard_checks_passed": 6,
+    "commands": 11,
+    "manifest": {
+      "bytes": 42810,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r2/manifest.json",
+      "sha256": "3f2ea8e4c365b566c7f22f3e9b08e0d267d0aa92b1c2b6179d1443fa8a3bf41a"
+    },
+    "queued_snapshot": {
+      "bytes": 312,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r2/queued-validation.json",
+      "sha256": "a5e97407ef43573ffe1be567cc98a7b02c5f8d84284896345fa0ca6be9255747"
+    },
+    "source_and_input_pins": 202,
+    "source_archive": {
+      "bytes": 958652,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r2/source.tar.gz",
+      "sha256": "c7159c82ef5c9101940f1424127cf15db0ba2a458f09ffd7094d0f819b84dc5a"
+    },
+    "status": "queued_not_started",
+    "superseded_queue": {
+      "bytes": 340,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r1/superseded.json",
+      "sha256": "527ab73c7cf95246628175698e72a57af779d9f8f779de454f2ea63422c609a3"
+    }
+  },
+  "production_ready": false,
+  "record_type": "research_host_journal_tooling",
+  "remaining": [
+    "Execute native/Rust tests and bridge compilation after the timed matrix",
+    "Generate and validate complete-body public leaf fixtures",
+    "Prove fresh matching recursive roots",
+    "Qualify positive durable native application, restart, reorg and resource-failure recovery with real roots",
+    "Measure complete cold/post-seal timing gates and then the two-hour pilot"
+  ],
+  "schema_version": 1,
+  "status": "persistence_tests_passed_native_validation_queued",
+  "tested": {
+    "includes": [
+      "restart replay",
+      "reorg state restoration and retained old branch",
+      "stale head and rollback ABA rejection",
+      "hash/proof/state tampering",
+      "missing records, duplicate JSON keys and symlink rejection",
+      "injected ENOSPC/EIO before and after publication",
+      "real child-process exits at five publication boundaries",
+      "two competing writer processes",
+      "bounded history and independently supplied issuance policy"
+    ],
+    "log": {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-host-store-20261005-a/python-tests-r1.log",
+      "sha256": "58febd44868dd1fd80417f1802e3b4c8258c5d6d216013e274042eb0861fc28d"
+    },
+    "persistence_tests": 13,
+    "verifier": "explicit unit-test stub; not cryptographic qualification"
+  }
+}

@@ -167,6 +167,7 @@ fn gpu_compact_openings_match_original_and_cpu_for_real_ldes_and_all_points() {
     let denoms: Vec<_> = (0..max_height)
         .map(|row| alpha() + Val::from_usize(row))
         .collect();
+    let other_denoms: Vec<_> = denoms.iter().map(|value| *value + Challenge::ONE).collect();
     let inputs: Vec<_> = matrices
         .iter()
         .enumerate()
@@ -176,7 +177,7 @@ fn gpu_compact_openings_match_original_and_cpu_for_real_ldes_and_all_points() {
             height: matrix.values.len() / (matrix.width),
             terms: (0..=i % 3)
                 .map(|point| OpeningTerm {
-                    inverse_denominators: &denoms,
+                    inverse_denominators: if point == 0 { &denoms } else { &other_denoms },
                     alpha_offset: alpha().exp_u64((13 * i + point) as u64),
                     opened: alpha() + Val::from_usize(17 + point),
                 })
@@ -226,6 +227,84 @@ fn gpu_compact_openings_match_original_and_cpu_for_real_ldes_and_all_points() {
     );
     assert_eq!(after.managed_live_bytes, before.managed_live_bytes);
     assert!(after.opening_compact_ntt_ns > before.opening_compact_ntt_ns);
+    engine.opening_denominator_cache = true;
+    let before = engine.snapshot();
+    assert_eq!(
+        engine.compact_openings(&inputs, alpha(), BLOWUP).unwrap(),
+        expected
+    );
+    let after = engine.snapshot();
+    // Matrices 0/3 share one point and matrices 1/4 share two. Matrix 2
+    // has three points and is not reused. Prefixes of different heights
+    // and distinct alpha offsets/opened values must remain correct.
+    let saved = ((matrices[0].height() + 2 * matrices[1].height()) * 24) as u64;
+    assert_eq!(
+        after.opening_uploaded_bytes - before.opening_uploaded_bytes,
+        uploads as u64 - saved
+    );
+    assert_eq!(
+        after.opening_denominator_cache_saved_bytes - before.opening_denominator_cache_saved_bytes,
+        saved
+    );
+    assert_eq!(
+        after.opening_denominator_cache_calls - before.opening_denominator_cache_calls,
+        1
+    );
+    assert_eq!(after.managed_live_bytes, before.managed_live_bytes);
+
+    // Reserve all space beyond the original workspace. The same operation
+    // must succeed using tiled uploads and stay within the assigned cap.
+    let baseline = CompactPlan::new(&inputs, BLOWUP, engine.limits.tile_bytes, engine.max_alloc)
+        .unwrap()
+        .total_bytes;
+    let live = engine.accounting.lock().unwrap().live;
+    let lease = engine::reserve(
+        &engine.accounting,
+        engine.limits.managed_bytes - live - baseline,
+        engine.limits.managed_bytes,
+    )
+    .unwrap();
+    let before = engine.snapshot();
+    assert_eq!(
+        engine.compact_openings(&inputs, alpha(), BLOWUP).unwrap(),
+        expected
+    );
+    let after = engine.snapshot();
+    assert_eq!(
+        after.opening_denominator_cache_calls,
+        before.opening_denominator_cache_calls
+    );
+    assert_eq!(
+        after.opening_denominator_cache_skipped_groups
+            - before.opening_denominator_cache_skipped_groups,
+        2
+    );
+    assert_eq!(after.managed_live_bytes, before.managed_live_bytes);
+    drop(lease);
+
+    // Cached buffers must survive queued work, then be released on both
+    // ordinary errors and panics. A subsequent call must still match the CPU.
+    for panic_after_enqueue in [false, true] {
+        let before = engine.snapshot();
+        engine.fail_compact_reduction_after_enqueue = Some(panic_after_enqueue);
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            engine.compact_openings(&inputs, alpha(), BLOWUP)
+        }));
+        if panic_after_enqueue {
+            assert!(result.is_err());
+        } else {
+            assert!(result.unwrap().is_err());
+        }
+        assert_eq!(
+            engine.snapshot().managed_live_bytes,
+            before.managed_live_bytes
+        );
+        assert_eq!(
+            engine.compact_openings(&inputs, alpha(), BLOWUP).unwrap(),
+            expected
+        );
+    }
+    engine.opening_denominator_cache = false;
     let live = engine.accounting.lock().unwrap().live;
     let lease = engine::reserve(
         &engine.accounting,

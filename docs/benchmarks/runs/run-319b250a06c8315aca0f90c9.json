@@ -1,0 +1,109 @@
+{
+  "campaign_ids": ["block-v2-throughput-report-qa-2026-10-05-r16","block-v2-typed-process-2026-10-05"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "validation-r1",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-319b250a06c8315aca0f90c9",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 118,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/validation-r1/controller-tests-r1.log",
+      "sha256": "05ca96a17a061c121c8df21ff8b133735e5d0abf87f181552cbd9e80f196b480"
+    },
+    {
+      "bytes": 362,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/validation-r1/cpu-compile-r1.log",
+      "sha256": "7ffafc6bc8d24836112e0b250de4fa2450db1846d049fdc547caa6e65fc4c8c8"
+    },
+    {
+      "bytes": 3254,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/validation-r1/cpu-probe-tests-r2.log",
+      "sha256": "afc2bd550e6be7e7b3eab26b2c8a4ba30337f16fd6726b1c24f87b22d3a1bde7"
+    },
+    {
+      "bytes": 29322,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/validation-r1/execution-tests-r1.log",
+      "sha256": "7601b23aca217af639ee6924a24b951024153302ffe49fe5faf71c2efd42fd42"
+    },
+    {
+      "bytes": 29548,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/validation-r1/execution-tests-r2.log",
+      "sha256": "bfe78ae24667496e743a8b3825e4bee093431ceef40fdd4ebf726bc38cdc2532"
+    },
+    {
+      "bytes": 116,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/validation-r1/fleet-tests-r1.log",
+      "sha256": "2a8e68f03033877231cd51e38e19569915582d2b8f42f851cab1d103ca8a16cc"
+    },
+    {
+      "bytes": 201,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/validation-r1/general-report-tests-r1.log",
+      "sha256": "9335a7a8a56fd05a647ac52e202f7b9eae9a2674fb9d421f8aa7224b1990a3c7"
+    },
+    {
+      "bytes": 577,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/validation-r1/gpu-build-r1.log",
+      "sha256": "e9fb888c61e44687b2932278ed8ca1a3d18ddc375a779304ebe565034595f13a"
+    },
+    {
+      "bytes": 577,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/validation-r1/gpu-build-r2.log",
+      "sha256": "4d00b10e57d2e06e64eba11b7c8539dd80f9ddee8e357d8b1cf7665478e123ca"
+    },
+    {
+      "bytes": 1937,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/validation-r1/gpu-probe-tests-r1.log",
+      "sha256": "861f8a19287447ab489aa59fb46301662ec5fb03e237225943252d4906cb47aa"
+    },
+    {
+      "bytes": 1880,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/validation-r1/process-tests-r1.log",
+      "sha256": "e12bb147244ab18d5ba4a25f84425e19599dd0aeddf93591b0969d3d6c326a1f"
+    },
+    {
+      "bytes": 1904,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/validation-r1/process-tests-r2.log",
+      "sha256": "50ba68fe2b39f828d82a50aa2c4ca982fe04baccb2de7b4534ffa702023be3db"
+    },
+    {
+      "bytes": 111,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/validation-r1/report-tests-r1.log",
+      "sha256": "a9a62c93b51eee640410bdd1924c2eb7632ed5f8a5eac2ea425b405c1a8a196c"
+    },
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-typed-process-20261005-a/validation-r1/report-tests-r2.log",
+      "sha256": "26e4fc70ea6b6384bf46375bf00ad2ce38024aabcad5482770bd95e72ba6bbc6"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

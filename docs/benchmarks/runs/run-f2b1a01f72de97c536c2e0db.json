@@ -1,0 +1,69 @@
+{
+  "campaign_ids": ["block-v2-typed-pairs-compiler-2026-10-04"],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-typed-pairs-20261004-a",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": ["P1"],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-f2b1a01f72de97c536c2e0db",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 2839,
+      "path": "lattica-prover-p3/target/block-v2-typed-pairs-20261004-a/compiler-tests-attempt02.log",
+      "sha256": "a9f52b74c2e1fc2c91a0802692abb2f6fb9edc3c8bc3fd394deea4ec1352a2f4"
+    },
+    {
+      "bytes": 3069,
+      "path": "lattica-prover-p3/target/block-v2-typed-pairs-20261004-a/compiler-tests-attempt03.log",
+      "sha256": "254da6a4b75b0b3cce5c4a51d0b7588c65a59616a9e440bf79be099e51459067"
+    },
+    {
+      "bytes": 1188,
+      "path": "lattica-prover-p3/target/block-v2-typed-pairs-20261004-a/compiler-tests.log",
+      "sha256": "5b7654b832d07ccb790ed95af14d4fd19d46bd7258f5a1397dec12ebbff97042"
+    },
+    {
+      "bytes": 1506,
+      "path": "lattica-prover-p3/target/block-v2-typed-pairs-20261004-a/programs-regression.log",
+      "sha256": "1a3809c03c68559452b4960514bb242ef4a4b8cb679539ae548b0d82755bb4fe"
+    },
+    {
+      "bytes": 1290,
+      "path": "lattica-prover-p3/target/block-v2-typed-pairs-20261004-a/typed_finalizer-regression.log",
+      "sha256": "965233f535d3a4e4bca9807759c8d6e020e4ee5886e785c8d4b9520ed99cbce6"
+    },
+    {
+      "bytes": 1111,
+      "path": "lattica-prover-p3/target/block-v2-typed-pairs-20261004-a/typed_recursive-regression.log",
+      "sha256": "ef992f7e370983b9cd0a9c835c205062c0bea4fac350022e2717b0ea3c0fccbd"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

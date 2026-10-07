@@ -1,5 +1,36 @@
 //! Native kernel/parser checks; these do not qualify live systemd recovery.
 use super::*;
+
+#[test]
+fn persistent_service_namespace_and_exact_arguments_remain_bound() {
+    let persistent = format!("lattica-v2-multi-persistent-{}.service", "12".repeat(32));
+    assert!(persistent_unit_name(&persistent).is_ok());
+    for name in [
+        "anything.service",
+        "lattica-v2-multi-persistent-short.service",
+    ] {
+        assert!(persistent_unit_name(name).is_err());
+    }
+    assert!(persistent_unit_name(&name()).is_err());
+    let expected = vec![
+        "serve-process-gpu".into(),
+        "/fixture with spaces".into(),
+        "123".into(),
+    ];
+    assert!(check_arguments(
+        b"/trusted/image\0serve-process-gpu\0/fixture with spaces\0123\0",
+        &expected
+    )
+    .is_ok());
+    for bad in [
+        &b"/trusted/image\0serve-process-gpu\0/other\0123\0"[..],
+        &b"/trusted/image\0serve-process-gpu\0/fixture with spaces\0123"[..],
+        &b"/trusted/image\0serve-process-gpu\0/fixture with spaces\0123\0extra\0"[..],
+        &b"\0serve-process-gpu\0/fixture with spaces\0123\0"[..],
+    ] {
+        assert!(check_arguments(bad, &expected).is_err());
+    }
+}
 use std::io::Write;
 
 fn name() -> String {
@@ -176,6 +207,14 @@ fn os_invalid_persisted_identity_fails_before_boot_shortcut() {
         inode: 1,
     };
     identity.validate(&unit).unwrap();
+    let encoded = serde_json::to_value(&identity).unwrap();
+    assert_eq!(
+        serde_json::from_value::<Identity>(encoded.clone()).unwrap(),
+        identity
+    );
+    let mut extra = encoded;
+    extra["unexpected"] = serde_json::json!(1);
+    assert!(serde_json::from_value::<Identity>(extra).is_err());
     for index in 0..6 {
         let mut invalid = identity.clone();
         match index {
@@ -189,4 +228,21 @@ fn os_invalid_persisted_identity_fails_before_boot_shortcut() {
         assert!(exited(&invalid, &unit).is_err());
         assert!(request_stop(&invalid, &unit).is_err());
     }
+}
+
+#[test]
+fn coordinator_identity_does_not_authorize_worker_observation_or_stop() {
+    let unit = format!("lattica-v2-multi-owner-{}.service", "a".repeat(64));
+    let identity = Identity {
+        boot: [1; 16],
+        invocation: [2; 16],
+        pid: 123,
+        start_ticks: 1,
+        group: format!("/user.slice/{unit}"),
+        device: 1,
+        inode: 1,
+    };
+    identity.validate(&unit).unwrap();
+    assert!(observe(&unit, [0; 32], Path::new("/unused")).is_err());
+    assert!(request_stop(&identity, &unit).is_err());
 }

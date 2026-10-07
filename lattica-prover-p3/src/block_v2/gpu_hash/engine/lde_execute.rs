@@ -174,12 +174,29 @@ fn ntt_groups(height: usize, width: usize) -> Result<Vec<(usize, usize, usize)>,
         .collect())
 }
 
-struct TransformBuffers {
+pub(super) struct TransformBuffers {
     a: Allocation,
     b: Allocation,
     sponge: Allocation,
     forward: Allocation,
     inverse: Allocation,
+}
+
+impl TransformBuffers {
+    pub(super) fn bytes(&self) -> usize {
+        [&self.a, &self.b, &self.sponge, &self.forward, &self.inverse]
+            .into_iter()
+            .map(|a| a.buffer.len() * 8)
+            .sum()
+    }
+
+    fn matches(&self, plan: &LdeCommitPlan) -> bool {
+        self.a.buffer.len() * 8 == plan.transform_buffer_bytes
+            && self.b.buffer.len() * 8 == plan.transform_buffer_bytes
+            && self.sponge.buffer.len() * 8 == plan.sponge_state_bytes
+            && self.forward.buffer.len() * 16 == plan.twiddle_bytes
+            && self.inverse.buffer.len() * 16 == plan.twiddle_bytes
+    }
 }
 
 impl Engine {
@@ -446,9 +463,15 @@ impl Engine {
             .accounting
             .lock()
             .map_err(|_| "GPU accounting poisoned")?
-            .live;
+            .live
+            .checked_sub(
+                self.lde_workspace
+                    .as_ref()
+                    .map_or(0, TransformBuffers::bytes),
+            )
+            .ok_or("cached LDE accounting underflow")?;
         let old_workspace = self.workspace.as_ref().map_or(0, super::Workspace::bytes);
-        let plan = LdeCommitPlan::new_retained(
+        let plan = LdeCommitPlan::new_retained_with_layout(
             &shapes,
             cap_height,
             self.limits,
@@ -458,8 +481,13 @@ impl Engine {
             old_workspace,
             host_budget,
             retention_bits,
+            super::lde_readback::ReadbackLayout::from_env()?,
         )?;
         let height = plan.output_height();
+        eprintln!(
+            "bounded_lde_readback_layout layout={:?} matrices={} output_bytes={} reorder_workspace_bytes={}",
+            plan.readback_layout, shapes.len(), plan.host_output_bytes, plan.host_reorder_workspace_bytes,
+        );
         if masks.is_some() {
             plan.validate_quotient_storage()?;
             eprintln!(
@@ -483,6 +511,8 @@ impl Engine {
         self.fence().finish()?;
         // The planner subtracts only this replaceable workspace. Force exact
         // replacement even if a larger old workspace would otherwise fit.
+        let cached = self.lde_workspace.take().filter(|c| c.matches(&plan));
+        let reused = cached.is_some();
         self.workspace = None;
         self.workspace(hash_plan)?;
         let alloc = |bytes| {
@@ -495,12 +525,15 @@ impl Engine {
                 compute::flags::MEM_READ_WRITE,
             )
         };
-        let buffers = TransformBuffers {
-            a: alloc(plan.transform_buffer_bytes)?,
-            b: alloc(plan.transform_buffer_bytes)?,
-            sponge: alloc(plan.sponge_state_bytes)?,
-            forward: alloc(plan.twiddle_bytes / 2)?,
-            inverse: alloc(plan.twiddle_bytes / 2)?,
+        let buffers = match cached {
+            Some(buffers) => buffers,
+            None => TransformBuffers {
+                a: alloc(plan.transform_buffer_bytes)?,
+                b: alloc(plan.transform_buffer_bytes)?,
+                sponge: alloc(plan.sponge_state_bytes)?,
+                forward: alloc(plan.twiddle_bytes / 2)?,
+                inverse: alloc(plan.twiddle_bytes / 2)?,
+            },
         };
         let mut storage = alloc(plan.retained_tree_bytes)?;
         storage._lease.mark_retained()?;
@@ -526,7 +559,7 @@ impl Engine {
         })?;
         for (matrix_index, input) in inputs.iter().enumerate() {
             let shape = shapes[matrix_index];
-            let mut readback = HostReadback::with_storage(
+            let mut readback = HostReadback::with_layout(
                 plan.retained_height(),
                 shape.width,
                 plan.columns_per_tile(),
@@ -535,6 +568,7 @@ impl Engine {
                 } else {
                     super::lde_readback::OutputStorage::Global
                 },
+                plan.readback_layout,
             )?
             .with_parallel_decode(parallel_readback);
             for tile in plan.tiles().filter(|t| t.matrix == matrix_index) {
@@ -704,6 +738,24 @@ impl Engine {
         }
         self.stats.lde_wall_ns += started.elapsed().as_nanos();
         self.context_checkpoint("resident LDE complete")?;
+        if buffers.bytes() <= self.lde_workspace_limit {
+            // Scratch contains fresh attempt data. Scrub it before retaining
+            // storage; no witness, salts, masks, or RNG state becomes a cache.
+            for allocation in [&buffers.a, &buffers.b, &buffers.sponge] {
+                allocation
+                    .buffer
+                    .cmd()
+                    .fill(0u64, None)
+                    .enq()
+                    .map_err(|e| e.to_string())?;
+            }
+            fence.finish()?;
+            eprintln!(
+                "bounded_lde_workspace retained_bytes={} reused={reused}",
+                buffers.bytes()
+            );
+            self.lde_workspace = Some(buffers);
+        }
         Ok(LdeCommitOutput {
             matrices,
             plan,
@@ -901,6 +953,93 @@ mod tests {
             "live tree must retain context lease"
         );
         output
+    }
+
+    #[test]
+    #[ignore = "requires OpenCL GPU, LATTICA_V2_GPU_RETAIN_TREES=1; run serially in <=3 GiB service"]
+    fn gpu_reused_lde_workspace_matches_cpu_and_stays_charged() {
+        let _shutdown = super::super::TestShutdownGuard;
+        super::super::initialize_mode(
+            super::super::Limits {
+                managed_bytes: 512 * 1024,
+                tile_bytes: 8 * 1024,
+                staging_bytes: 4 * 1024,
+            },
+            super::super::TransferMode::Serial,
+        )
+        .unwrap();
+        let snapshots = || {
+            ENGINE
+                .get()
+                .unwrap()
+                .lock()
+                .unwrap()
+                .as_mut()
+                .unwrap()
+                .snapshot()
+        };
+        ENGINE
+            .get()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .as_mut()
+            .unwrap()
+            .lde_workspace_limit = 128 * 1024;
+        let evals = matrix(128, 7, 31);
+        let salts = matrix(256, 4, 41);
+        let inputs = [LdeInput {
+            evaluations: &evals,
+            salts: &salts,
+            added_bits: 1,
+            shift: Val::GENERATOR,
+        }];
+        let before = snapshots();
+        let first = check_cpu_reference(&inputs, 2);
+        drop(first);
+        let cold = snapshots();
+        {
+            let mut guard = ENGINE.get().unwrap().lock().unwrap();
+            let engine = guard.as_mut().unwrap();
+            let cache = engine.lde_workspace.as_ref().unwrap();
+            assert!(cache.bytes() <= 128 * 1024);
+            assert!(cold.managed_live_bytes >= cache.bytes());
+            for buffer in [&cache.a.buffer, &cache.b.buffer, &cache.sponge.buffer] {
+                let mut words = vec![1u64; buffer.len()];
+                buffer.read(&mut words).enq().unwrap();
+                assert!(
+                    words.iter().all(|word| *word == 0),
+                    "attempt scratch was not cleared"
+                );
+            }
+        }
+        let second = check_cpu_reference(&inputs, 2);
+        drop(second);
+        let warm = snapshots();
+        // The first CPU-reference audit also initializes the query buffer.
+        assert!(
+            (cold.allocations - before.allocations) - (warm.allocations - cold.allocations) >= 5
+        );
+        assert_eq!(warm.managed_live_bytes, cold.managed_live_bytes);
+        // A zero limit releases the reusable payload after the next operation.
+        ENGINE
+            .get()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .as_mut()
+            .unwrap()
+            .lde_workspace_limit = 0;
+        drop(check_cpu_reference(&inputs, 2));
+        assert!(ENGINE
+            .get()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .lde_workspace
+            .is_none());
     }
 
     #[test]

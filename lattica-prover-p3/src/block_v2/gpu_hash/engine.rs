@@ -2,6 +2,7 @@
 //! process-lifetime lease compatible with legacy global-exclusive workers.
 use crate::block_v2::compute;
 use crate::config::Val;
+pub(crate) mod fri_fold;
 pub mod lde_execute;
 pub mod lde_plan;
 mod lde_readback;
@@ -447,6 +448,16 @@ pub struct Snapshot {
     pub opening_compact_saved_input_bytes: u64,
     pub opening_compact_compress_ns: u128,
     pub opening_compact_ntt_ns: u128,
+    pub opening_denominator_cache_calls: u64,
+    pub opening_denominator_cache_saved_bytes: u64,
+    pub opening_denominator_cache_peak_bytes: usize,
+    pub opening_denominator_cache_skipped_groups: u64,
+    pub query_reconstruction_calls: u64,
+    pub query_reconstruction_tiles: u64,
+    pub query_reconstruction_wall_ns: u128,
+    pub query_gather_device_ns: u128,
+    pub query_readbacks: u64,
+    pub query_downloaded_bytes: u64,
 }
 
 #[derive(Clone, Copy)]
@@ -537,6 +548,7 @@ impl DeviceTimeline {
                 }
                 "retain_copy" => self.deferred.retained_copy_ns += ns,
                 "path_gather" => self.deferred.retained_query_ns += ns,
+                "query_gather" => s.query_gather_device_ns += ns,
                 _ => return Err(format!("unaccounted deferred Metal timing kind: {kind}")),
             }
         }
@@ -598,8 +610,13 @@ struct Engine {
     // Each mapping is dropped before its allocation. ENGINE serializes all access.
     staging: Vec<Staging>,
     workspace: Option<Workspace>,
+    lde_workspace: Option<lde_execute::TransformBuffers>,
+    lde_workspace_limit: usize,
+    fri_fold: bool,
     query: Option<Allocation>,
     retain_trees: bool,
+    query_gather: bool,
+    opening_denominator_cache: bool,
     retained_copy_device_ns: u128,
     retained_query_device_ns: u128,
     retained_query_count: u64,
@@ -622,6 +639,8 @@ struct Engine {
     fail_lde_after_enqueue: Option<bool>,
     #[cfg(test)]
     fail_opening_after_enqueue: Option<bool>,
+    #[cfg(test)]
+    fail_compact_reduction_after_enqueue: Option<bool>,
     #[cfg(test)]
     opening_gate: Option<Event>,
     #[cfg(test)]
@@ -765,6 +784,17 @@ pub(super) fn initialize(limits: Limits) -> Result<(), String> {
 
 pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), String> {
     let retain_trees = switch("LATTICA_V2_GPU_RETAIN_TREES")?;
+    let query_gather = switch("LATTICA_V2_GPU_QUERY_GATHER")?;
+    let opening_denominator_cache = switch("LATTICA_V2_GPU_OPENING_DENOMINATOR_CACHE")?;
+    let fri_fold = switch("LATTICA_V2_GPU_FRI_FOLD")?;
+    #[cfg(feature = "gpu-metal")]
+    if fri_fold {
+        return Err("GPU FRI folding is currently supported only for OpenCL research".into());
+    }
+    let lde_workspace_limit = env_bytes("LATTICA_V2_GPU_LDE_WORKSPACE_BYTES", 0)?;
+    if lde_workspace_limit > limits.managed_bytes / 4 {
+        return Err("LDE workspace cache exceeds one quarter of managed GPU budget".into());
+    }
     let _guard = INITIALIZE
         .lock()
         .map_err(|_| "GPU initialization poisoned")?;
@@ -775,6 +805,10 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
             return if engine.limits == limits
                 && engine.mode == mode
                 && engine.retain_trees == retain_trees
+                && engine.query_gather == query_gather
+                && engine.opening_denominator_cache == opening_denominator_cache
+                && engine.lde_workspace_limit == lde_workspace_limit
+                && engine.fri_fold == fri_fold
             {
                 Ok(())
             } else {
@@ -828,11 +862,13 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
             .platform(platform)
             .device(device)
             .src(format!(
-                "{}\n{}\n{}\n{}",
+                "{}\n{}\n{}\n{}\n{}\n{}",
                 crate::gpu::KERNEL_SRC,
                 RETAINED_PATH_KERNEL,
                 lde_execute::KERNEL_SRC,
-                opening_reduce::KERNEL_SRC
+                opening_reduce::KERNEL_SRC,
+                fri_fold::KERNEL_SRC,
+                query_reconstruct::KERNEL_SRC
             ))
             .queue_properties(compute::flags::QUEUE_PROFILING_ENABLE)
             .dims(1)
@@ -926,10 +962,7 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
     pq.queue().finish().map_err(|e| e.to_string())?;
     println!(
         "bounded_gpu_initialized device_index={index} name={:?} global_bytes={global} max_allocation_bytes={max_alloc} managed_limit_bytes={} driver_reserve_bytes={driver_reserve} tile_bytes={} staging_bytes={} contexts=1 job_lease=compatible",
-        device_name,
-        limits.managed_bytes,
-        limits.tile_bytes,
-        limits.staging_bytes
+        device_name, limits.managed_bytes, limits.tile_bytes, limits.staging_bytes
     );
     println!(
         "bounded_gpu_transfer_mode mode={} slots={} queues={} input_pool_bytes={} staging_pool_bytes={} timeline={}",
@@ -961,8 +994,13 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
         constants: constants.try_into().ok().unwrap(),
         staging,
         workspace: None,
+        lde_workspace: None,
+        lde_workspace_limit,
+        fri_fold,
         query: None,
         retain_trees,
+        query_gather,
+        opening_denominator_cache,
         retained_copy_device_ns: 0,
         retained_query_device_ns: 0,
         retained_query_count: 0,
@@ -985,6 +1023,8 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
         fail_lde_after_enqueue: None,
         #[cfg(test)]
         fail_opening_after_enqueue: None,
+        #[cfg(test)]
+        fail_compact_reduction_after_enqueue: None,
         #[cfg(test)]
         opening_gate: None,
         #[cfg(test)]
@@ -1050,7 +1090,7 @@ pub(crate) fn plan_retained_lde_commit(
         .map_err(|_| "GPU accounting poisoned")?
         .live;
     let old_workspace = engine.workspace.as_ref().map_or(0, Workspace::bytes);
-    lde_plan::LdeCommitPlan::new_retained(
+    lde_plan::LdeCommitPlan::new_retained_with_layout(
         inputs,
         cap_height,
         engine.limits,
@@ -1060,6 +1100,7 @@ pub(crate) fn plan_retained_lde_commit(
         old_workspace,
         host_output_budget_bytes,
         retention_bits,
+        lde_readback::ReadbackLayout::from_env()?,
     )
 }
 
@@ -1737,6 +1778,7 @@ impl Engine {
             self.stats.opening_kernel_ns += s.opening_kernel_ns;
             self.stats.opening_compact_compress_ns += s.opening_compact_compress_ns;
             self.stats.opening_compact_ntt_ns += s.opening_compact_ntt_ns;
+            self.stats.query_gather_device_ns += s.query_gather_device_ns;
             self.retained_copy_device_ns += std::mem::take(&mut d.retained_copy_ns);
             self.retained_query_device_ns += std::mem::take(&mut d.retained_query_ns);
         }
@@ -1888,8 +1930,26 @@ pub fn report(label: &str) -> Option<Snapshot> {
     );
     println!(
         "bounded_gpu_opening_compact_checkpoint label={label:?} counters=cumulative calls={} saved_input_bytes={} compress_ns={} ntt_ns={} timings=nonadditive",
-        s.opening_compact_calls, s.opening_compact_saved_input_bytes,
-        s.opening_compact_compress_ns, s.opening_compact_ntt_ns
+        s.opening_compact_calls,
+        s.opening_compact_saved_input_bytes,
+        s.opening_compact_compress_ns,
+        s.opening_compact_ntt_ns
+    );
+    println!(
+        "bounded_gpu_opening_denominator_cache_checkpoint label={label:?} counters=cumulative enabled={} calls={} saved_upload_bytes={} peak_bytes={} skipped_groups={}",
+        e.opening_denominator_cache, s.opening_denominator_cache_calls,
+        s.opening_denominator_cache_saved_bytes, s.opening_denominator_cache_peak_bytes,
+        s.opening_denominator_cache_skipped_groups
+    );
+    println!(
+        "bounded_gpu_query_checkpoint label={label:?} counters=cumulative gather={} calls={} tiles={} readbacks={} downloaded_bytes={} gather_device_ns={} wall_ns={} timings=nonadditive",
+        e.query_gather,
+        s.query_reconstruction_calls,
+        s.query_reconstruction_tiles,
+        s.query_readbacks,
+        s.query_downloaded_bytes,
+        s.query_gather_device_ns,
+        s.query_reconstruction_wall_ns
     );
     if e.timeline.enabled {
         println!(
@@ -1920,8 +1980,22 @@ pub fn report(label: &str) -> Option<Snapshot> {
     Some(s)
 }
 
-/// Quiescent research-runner teardown. Release device objects while retaining the
-/// exclusive lease; do not rely on asynchronous driver cleanup at process exit.
+/// Wait for both GPU queues while retaining the context and cached programs.
+pub fn drain() -> Result<(), String> {
+    let _initialize = INITIALIZE
+        .lock()
+        .map_err(|_| "GPU initialization poisoned")?;
+    let slot = ENGINE
+        .get()
+        .ok_or("GPU drain requires an initialized engine")?;
+    let mut slot = slot.lock().map_err(|_| "GPU engine poisoned")?;
+    let engine = slot.as_mut().ok_or("GPU drain requires a live engine")?;
+    engine.fence().finish()?;
+    engine.resolve_timing()?;
+    Ok(())
+}
+
+/// Release device objects while retaining the exclusive lease through cleanup.
 pub fn shutdown() -> Result<(), String> {
     let _initialize = INITIALIZE
         .lock()
@@ -2225,30 +2299,37 @@ mod tests {
         )
         .unwrap();
         let mut engine = TestEngine::take();
+        engine.opening_denominator_cache = true;
         let values = vec![Val::ONE; 128 * 7];
         let denominators = vec![Challenge::ONE; 128];
-        let inputs = [OpeningMatrix {
-            values: &values,
-            width: 7,
-            height: values.len() / (7),
-            terms: vec![OpeningTerm {
-                inverse_denominators: &denominators,
-                alpha_offset: Challenge::ONE,
-                opened: Challenge::ZERO,
-            }],
-        }];
+        let inputs: Vec<_> = (0..2)
+            .map(|_| OpeningMatrix {
+                values: &values,
+                width: 7,
+                height: values.len() / (7),
+                terms: vec![OpeningTerm {
+                    inverse_denominators: &denominators,
+                    alpha_offset: Challenge::ONE,
+                    opened: Challenge::ZERO,
+                }],
+            })
+            .collect();
         let before = engine.snapshot().managed_live_bytes;
-        for ntt in [false, true] {
+        for stage in ["compression", "ntt", "cached_reduction"] {
             for unwind in [false, true] {
                 let (gate, notify, release) = delayed_gate(&engine);
-                if ntt {
+                if stage == "ntt" {
                     engine.lde_gate = Some(gate);
                     engine.lde_submitted = Some(notify);
                     engine.fail_lde_after_enqueue = Some(unwind);
                 } else {
                     engine.opening_gate = Some(gate);
                     engine.opening_submitted = Some(notify);
-                    engine.fail_opening_after_enqueue = Some(unwind);
+                    if stage == "cached_reduction" {
+                        engine.fail_compact_reduction_after_enqueue = Some(unwind);
+                    } else {
+                        engine.fail_opening_after_enqueue = Some(unwind);
+                    }
                 }
                 let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     engine.reduce_openings_low_degree(
@@ -2286,9 +2367,10 @@ mod tests {
                     crate::block_v2::profile::LOG_BLOWUP
                 )
                 .unwrap(),
-            vec![vec![-Challenge::from_u64(7); 128]]
+            vec![vec![-Challenge::from_u64(14); 128]]
         );
         assert_eq!(engine.snapshot().managed_live_bytes, before);
+        assert!(engine.snapshot().opening_denominator_cache_calls > 0);
     }
 
     struct GateWorker {

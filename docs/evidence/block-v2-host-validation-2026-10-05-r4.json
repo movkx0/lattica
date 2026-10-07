@@ -1,0 +1,138 @@
+{
+  "bridge_manifest": {
+    "bytes": 6477,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/bridge/manifest.json",
+    "sha256": "c2982a2f3be5e8a06421e330eaf1399980db93ef586c52fc4947fd6e5dba1969"
+  },
+  "captured_utc": "2026-10-05T10:56:08.456703+00:00",
+  "delivered_transactions_measured": false,
+  "durable_complete_body_application_qualified": false,
+  "fixes": [
+    "TransmittedNote exposes a read-only ciphertext slice; decoders borrow without casting away constness and chain application still copies bytes.",
+    "The type-mutation test reads the original transaction payload before changing the union tag."
+  ],
+  "fixture_manifests": [
+    {
+      "bytes": 11793,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/native-fixture/manifest.json",
+      "sha256": "6cfc6d06dbcb33915f43e798628ac586545ccc22379a5a8c0889d077163a7771"
+    },
+    {
+      "bytes": 11866,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/alternate-fixture/manifest.json",
+      "sha256": "6be1469828f2c652cb0b4793a97fc7d2f9de7d5b27422a612c75b188ae9c1457"
+    }
+  ],
+  "followup_manifest": {
+    "bytes": 10853,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/complete-body-qualification-r3/manifest.json",
+    "sha256": "9c1a2a2199683e6d596725e0e09124c458f530b23786d408ff0574ccf7372a28"
+  },
+  "library": {
+    "bytes": 16754000,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/bridge/liblattica_host_bridge.so",
+    "sha256": "0243060b16fbaf3b623397500e154c0ec507a0e8aee26a2866d915ef52bf8abb"
+  },
+  "logs": [
+    {
+      "bytes": 112,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/check-01.log",
+      "sha256": "dbaf8d090630be5776fb1ee3a4aee46d9a5802aecef30760499b95a67a95f9c9"
+    },
+    {
+      "bytes": 786,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/check-02.log",
+      "sha256": "cf6b6ec88e8389b98cb976fb436eb41ffbb444cd029e739c9eaa3135e245ebdd"
+    },
+    {
+      "bytes": 424,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/check-03.log",
+      "sha256": "d0421060662b9f1afe67b6a324adaf10fedf92eddd51f450d037284255dc439f"
+    },
+    {
+      "bytes": 124,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/check-04.log",
+      "sha256": "e67e9f52d1ca398a8d2d7c8e72b79e1617348976b5127f8dbfecd7f4dfe9e377"
+    },
+    {
+      "bytes": 0,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/check-05.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 3615,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/check-06.log",
+      "sha256": "a3daa7eeaa9b469748f949967e3de1291855e8613503c56d7c6e2971be6c1d4b"
+    },
+    {
+      "bytes": 2651,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/check-07.log",
+      "sha256": "9acc0f2abee37e65e1f623334ec04bf58980ec2afb88e7dab4ead6746ec58f45"
+    },
+    {
+      "bytes": 412,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/check-08.log",
+      "sha256": "246f495cfd213a6c99d0350cf26d27cf5c7d0d236859e8ea658ae5d80ba5cf5b"
+    },
+    {
+      "bytes": 436,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/check-09.log",
+      "sha256": "cadbedc7d908bb9ee62674d5f4565ed759a3505b3424aaf1e7aa2f33c7452ed2"
+    },
+    {
+      "bytes": 439,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/check-10.log",
+      "sha256": "5fb5f2d1ef2009445f753f610c4b9a2f0087e8d3efa8e9a141ede6e53afec7b2"
+    },
+    {
+      "bytes": 200,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/check-11.log",
+      "sha256": "829877c5f5c777afa3a1441ac31074dab884e33d65697fce038785118dbd0f40"
+    }
+  ],
+  "manifest": {
+    "bytes": 43619,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/manifest.json",
+    "sha256": "6a725f36e81d697956389b70d3ad72819339ce8e0de01acfe948eb3fef413f0d"
+  },
+  "prior_failures": [
+    {
+      "bytes": 1595,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r2/validation.json",
+      "sha256": "cffce68a39c9bde43bcc09f133ea3ff64427e3b777dd4ef1fc0b8ae83e131800"
+    },
+    {
+      "bytes": 1595,
+      "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r3/validation.json",
+      "sha256": "069301e94b9afcf4c5980d95ecbce5e784ec16d9e0b3cca23109272dd546ef85"
+    }
+  ],
+  "production_ready": false,
+  "real_root_abi_and_mismatch_checks": {
+    "bytes": 4855,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/native-interop/summary.json",
+    "sha256": "7b9ac79713191020e888dc3fad0f0ef56c0a5b0a4f1f156c028123eca609d028"
+  },
+  "record_type": "research_native_host_validation",
+  "schema_version": 1,
+  "scope": "Native and Rust compilation, unit/regression checks, fresh CPU leaf proofs, native/Rust expected-root equality and real verifier ABI/mismatch checks. Positive application of a matching complete-body recursive root is a separate follow-up.",
+  "source_archive": {
+    "bytes": 2680080,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/source.tar.gz",
+    "sha256": "7ef4dea3cb26ce4208d0095c5bf1abfb8351d0afbc58b1a11a614efffe370705"
+  },
+  "status": "passed",
+  "tests": {
+    "complete_body_codec": 4,
+    "full_zig_regression_exit_code": 0,
+    "native_application_boundary": 7,
+    "public_genesis_fixture": 1,
+    "python_persistence": 13,
+    "rust_host_abi": 4
+  },
+  "validation": {
+    "bytes": 8832,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r4/validation.json",
+    "sha256": "e85b67e0fcf9163f866c309c26f8553ce165351d7c65f974fa081789ec435336"
+  }
+}

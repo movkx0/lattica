@@ -1,0 +1,107 @@
+{
+  "campaign": {
+    "arms": [
+      "single-laptop",
+      "single-desktop",
+      "shared",
+      "staged"
+    ],
+    "calibration_sources": {
+      "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-matched-native-20261006-a/single-laptop-r1/sealed",
+      "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-matched-native-20261006-a/single-desktop-r1/sealed"
+    },
+    "created_utc": "2026-10-06T12:48:00.036604+00:00",
+    "fixed_resources": "RAM 20.75 GiB and spill 14.25 GiB per worker; Rayon 12/11; coordinator 1.25 GiB and one thread.",
+    "gates": [
+      "complete CPU-audited root",
+      "exact fixed limits",
+      "zero memory-limit and OOM events",
+      "one native application per isolated journal",
+      "fresh-process replay and two idempotent retries",
+      "eight fresh proofs except staged (three reused plus five fresh)",
+      "identical complete fixtures"
+    ],
+    "gpu_budget": "Managed VRAM 7/6 GiB; context 512 MiB per GPU; bootstrap false.",
+    "qualification": "First cycle also qualifies reduced contexts. All five planned cycles are retained; any failure stops the campaign. No selective replacement.",
+    "schedule": [
+      {
+        "order": [
+          "single-laptop",
+          "single-desktop",
+          "shared",
+          "staged"
+        ],
+        "repetition": 1
+      },
+      {
+        "order": [
+          "single-desktop",
+          "shared",
+          "staged",
+          "single-laptop"
+        ],
+        "repetition": 2
+      },
+      {
+        "order": [
+          "shared",
+          "staged",
+          "single-laptop",
+          "single-desktop"
+        ],
+        "repetition": 3
+      },
+      {
+        "order": [
+          "staged",
+          "single-laptop",
+          "single-desktop",
+          "shared"
+        ],
+        "repetition": 4
+      },
+      {
+        "order": [
+          "single-laptop",
+          "single-desktop",
+          "shared",
+          "staged"
+        ],
+        "repetition": 5
+      }
+    ],
+    "schema": "lattica-native-context-comparison-v1",
+    "timing": "Monotonic and wall timestamps around durable seal; pipeline starts before candidate preparation and ends at final controller exit. Controller exit bounds host-ready time from above.",
+    "transaction_scope": "Six user and two issuance inputs per isolated height-10 journal. Wallet proving excluded. No sustained transaction campaign."
+  },
+  "complete_native_roots_planned": 20,
+  "first_cycle_qualifies_reduced_context": true,
+  "frozen_runtime": {
+    "bytes": 123397,
+    "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/frozen-r1/manifest.json",
+    "sha256": "58b924946559384ac6745351cec51e0773e0ebdce7412ca0916b81519efc7c2d"
+  },
+  "matched_repetitions_planned": 5,
+  "pilot_started": false,
+  "prefix_import": {
+    "bytes": 42776,
+    "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/prefix-calibration-import-r2.json",
+    "sha256": "9ca8e0f9e9c9a15e03337ac8226aa34df0096371c4a17ba10cb1855ffb3dae63"
+  },
+  "production_ready": false,
+  "python_tests_passed": 140,
+  "record_type": "native_context_comparison_schedule",
+  "runtime_sources": {
+    "bytes": 421134,
+    "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/runtime-source-r1.tar.gz",
+    "sha256": "b95df35ef9b942048fcc223ba74a052578ea91822498a2febc8ee905b7094ff6"
+  },
+  "schema_version": 1,
+  "status": "prepared",
+  "tests": {
+    "bytes": 3376,
+    "path": "lattica-prover-p3/target/block-v2-context-qualification-20261006-a/python-validation-r1.json",
+    "sha256": "43305231cd15f9b42f0cfe90fd2a675a204237737b54814c5e982b67096e1062"
+  },
+  "transaction_campaigns": 0
+}

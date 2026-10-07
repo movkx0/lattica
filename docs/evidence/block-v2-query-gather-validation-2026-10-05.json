@@ -1,0 +1,124 @@
+{
+  "candidate_manifest": {
+    "bytes": 45766,
+    "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/package/manifest.json",
+    "sha256": "7602d13c518adec3166fde4c3f87889a0b0ded521f646ace9d51922492b331a6"
+  },
+  "captured_utc": "2026-10-05T06:35:11.228252+00:00",
+  "checks": {
+    "actual_gpu_reconstruction_tests": 4,
+    "metal_tested": false,
+    "performance_measured": false,
+    "prior_python_tests": 70,
+    "root_cpu_audit": false,
+    "rust_allocation_tests": 2,
+    "typed_runner_tests_after_layout_fix": 17
+  },
+  "cpu_binary": {
+    "bytes": 3539024,
+    "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/package/cpu-block-v2-paired-probe",
+    "sha256": "7085223e7c775ff6ffeafe9e7f1be2f7e8741bc4760a4ddee78d0ae256fd7a24"
+  },
+  "delivered_transactions_measured": false,
+  "gpu_binary": {
+    "bytes": 4690672,
+    "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/package/gpu-block-v2-paired-probe",
+    "sha256": "f786ebc2f0846c941e69683d38d614a34407180b541af8ca861c048dfd27b4a6"
+  },
+  "production_ready": false,
+  "retained_failures": [
+    {
+      "reason": "New test used a nonexistent budget hash field; corrected to the profile digest before passing all 17 tests.",
+      "source": {
+        "bytes": 832,
+        "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-typed-gpu-run-r2.log",
+        "sha256": "5bdb21133b6f3ca092a5cfd3bb12a536e409a3946bbc9ef1600eb6a93e946f1d"
+      }
+    }
+  ],
+  "schema_version": 1,
+  "scope": "Opt-in query gather; default rows. Reconstruction correctness passed on both GPUs. Full-size proving and speedup not yet measured. Metal compilation/execution pending.",
+  "status": "reconstruction_checks_passed_full_size_pending",
+  "validation": [
+    {
+      "bytes": 492,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/candidate-build.log",
+      "sha256": "ec43bab03362622a674fbde2695bdc9ee7b058b7981e8e53a05b550aecd371de"
+    },
+    {
+      "bytes": 39824,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-gather.log",
+      "sha256": "46e8f2c0d12bee64f65720cac137dbba0363d15017bb20786a66c7c4268c43b9"
+    },
+    {
+      "bytes": 39763,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/desktop-rows.log",
+      "sha256": "4b7a722d09dfb37364a47d5211e513518f0da3ab8cb87e385d5769e6acbfcfc8"
+    },
+    {
+      "bytes": 13332024,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/gpu-query-oracle-tests",
+      "sha256": "c70b4290e551e74e6106e891c4dec00ddfc4dc0a24f30486565dd9296fad3f61"
+    },
+    {
+      "bytes": 39799,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-gather.log",
+      "sha256": "548e7c62ecb5de9576aab703e0d69be0d26b9251f88dc345b03d9bd480136d48"
+    },
+    {
+      "bytes": 39818,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/laptop-rows.log",
+      "sha256": "b2eb3e7cb1e2c0c60772e93b84e10bfafc73df03cfac6a25c38b0c0f0cb83cff"
+    },
+    {
+      "bytes": 5637,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/oracle-summary.json",
+      "sha256": "7ade8e8a4e8705b3ed634b664295b0bcb7ecbc1cdafd6cf6b8523a911fc7388c"
+    },
+    {
+      "bytes": 2755,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/run-oracles.py",
+      "sha256": "9e520b54e95e87f077a922d1c9749607571d43907ef2748efdfabec5a687eedb"
+    },
+    {
+      "bytes": 602,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/rust-planner-tests.log",
+      "sha256": "7d780e04a85aa061ea0a2323e2a6dc718b4056e30edebd934a8bbdba791b1dcf"
+    },
+    {
+      "bytes": 114,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-bench-apple-metal.py.log",
+      "sha256": "806f01f047c8ec9a9c18ca86883baa0158190fbc78ef7598b22902e1f44741d1"
+    },
+    {
+      "bytes": 120,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-multi-gpu.py.log",
+      "sha256": "1d8170c6d126f7d82088a647b4863a8c5c09c279d6d63f82f2fda0ad3a747c0d"
+    },
+    {
+      "bytes": 103,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-typed-fleet-compare.py.log",
+      "sha256": "a2e97b7515932007aa3d038fcfa41fdd107cb2467ff84d182512ff3c7e24f045"
+    },
+    {
+      "bytes": 832,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-typed-gpu-run-r2.log",
+      "sha256": "5bdb21133b6f3ca092a5cfd3bb12a536e409a3946bbc9ef1600eb6a93e946f1d"
+    },
+    {
+      "bytes": 116,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-typed-gpu-run-r3.log",
+      "sha256": "938170522077765b26f6292b200d0dbc0f8d4d0557fa800d07bbf54446c026ff"
+    },
+    {
+      "bytes": 114,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-typed-gpu-run.py.log",
+      "sha256": "dc93e1ad8c71598c3eb66567fa8d82decd8763a2bb977499ab18ee5efdb2ed29"
+    },
+    {
+      "bytes": 113,
+      "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/test-block-v2-typed-multi-gpu-run.py.log",
+      "sha256": "004071ba4bb7431a4e9b3b1b0193c9b768b0cc1b60801af7fa374bb3aa3de4e6"
+    }
+  ]
+}

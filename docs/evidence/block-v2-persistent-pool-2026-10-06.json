@@ -1,0 +1,772 @@
+{
+  "artifacts": {
+    "cpu_binary": {
+      "bytes": 4000536,
+      "path": "lattica-prover-p3/target/block-v2-pool-20261006/cpu-host-probe-final",
+      "sha256": "596eafaf2f7beb79fa88fb8dea6546edceed881e37aec411340b98a1608a2cee"
+    },
+    "gpu_binary": {
+      "bytes": 6400840,
+      "path": "lattica-prover-p3/target/block-v2-pool-20261006/gpu-host-probe-final",
+      "sha256": "bcbf293b43040cda43da2cbd6032482daf1d2e7610a12accd13cd39a9eb12ebc"
+    },
+    "library": {
+      "bytes": 17820008,
+      "path": "/tmp/lattica-pool-host-bridge-final.so",
+      "sha256": "85bee0a209396deb9b888c5355097946e30eeaab258a113a35678f0468af1962"
+    },
+    "workload": {
+      "bytes": 5323,
+      "path": "lattica-prover-p3/target/block-v2-pool-20261006/workload-fri-final.json",
+      "sha256": "6650725752c9fa03f31e32af9eefd4cd67eacc5f6ce41866fe4ec89574f71803"
+    }
+  },
+  "base_revision": "fa9c17214c8a733261b329b696abaaa009c0c4b3",
+  "build_features": {
+    "cpu": "block-v2-host,stream",
+    "gpu": "block-v2-host,stream,gpu",
+    "shared_profile": "block-v2-host enables wide lanes for both binaries"
+  },
+  "date": "2026-10-06",
+  "implemented": [
+    "transport-independent worker endpoint and persistent local supervised pool",
+    "bounded measured-cost scheduling, downstream deadlines, durable leases, CPU result verification, stop-before-retry",
+    "reserved wallet/coordinator resources and weighted per-GPU admission",
+    "opt-in bounded public preprocessing LRU and scrubbed GPU LDE scratch reuse",
+    "opt-in tiled OpenCL Goldilocks cubic arity-two FRI folding with unchanged transcript and proof format",
+    "incremental native verification session and fresh independently funded sustained-workload tooling",
+    "append-only delivered-transaction campaign accounting and strict five-pair comparison tooling",
+    "isolated capacity/cadence proposal tooling through 512 inputs"
+  ],
+  "preserved_defaults": {
+    "cold_full_64_limit_seconds": 600,
+    "complete_post_seal_limit_seconds": 180,
+    "cycle_seconds": 720,
+    "max_inputs": 64,
+    "root_limit_bytes": 2097152,
+    "tree_depth": 6
+  },
+  "production_ready": false,
+  "promotion_gate": {
+    "cold_full_64_qualified": false,
+    "defaults_promoted": false,
+    "matched_pairs_completed": 0,
+    "minimum_completed_roots": 150,
+    "minimum_hours": 24,
+    "no_correctness_resource_deadline_regressions_required": true,
+    "positive_median_gain_required": true,
+    "required_improved_pairs": 4,
+    "required_pairs": 5,
+    "requirements_combined_with": "AND",
+    "sustained_qualification_completed": false
+  },
+  "record_type": "persistent_local_pool_implementation_validation",
+  "remaining_scope": [
+    "measured matched delivered-throughput improvement and sustained qualification",
+    "Quotient polynomial evaluation remains on CPU; FRI commitments, transcript and other FRI operations retain existing implementations",
+    "512-input circuits, registries and protocol/security qualification are not enabled by proposal tooling",
+    "LAN transport, automatic whole-pool/campaign reconstruction and streaming public history loading are not implemented"
+  ],
+  "retained_failed_campaigns": [
+    {
+      "reason": "CPU binary did not include native host exports; wallet generation failed before GPU work.",
+      "records": [
+        {
+          "bytes": 3761,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run/summary.json",
+          "sha256": "1dfe11a1923716881a86a6cd567ad4e558c6a4352c1bec573c2c924cb6688007"
+        },
+        {
+          "bytes": 2447,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run/events.jsonl",
+          "sha256": "97874fa21ff3dbff450b0bc09f85d9594ab143ea7acebf68f2021a800dd3a33a"
+        },
+        {
+          "bytes": 2091,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run/accounting.json",
+          "sha256": "04ddce6fbf788912df7b60ceeda0d4149380db90bffe25218dc488174a9a2a13"
+        }
+      ],
+      "run": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run",
+      "status": "failed"
+    },
+    {
+      "reason": "Conservative RAM admission rejected undersized per-worker budgets.",
+      "records": [
+        {
+          "bytes": 3580,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-r2/summary.json",
+          "sha256": "2c6bc3d04e786515df3d1fed35a768652879705cd38b7dd3c5dada4337b86935"
+        },
+        {
+          "bytes": 3048,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-r2/events.jsonl",
+          "sha256": "72826d006951892ded86cd54655b6830a8e0237538a82034926c8d265ea5941e"
+        },
+        {
+          "bytes": 2555,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-r2/accounting.json",
+          "sha256": "467b41773ea7e2fcdd761d6312052a96b9379a80a964fd6b2e6741af98558244"
+        },
+        {
+          "bytes": 1097,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-r2/service/summary.json",
+          "sha256": "82e2b97daa038fedac94f4a5803501bc2002862ad639cb850e873191560aea27"
+        }
+      ],
+      "run": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-r2",
+      "status": "failed"
+    },
+    {
+      "reason": "Narrow GPU and wide native profiles differed; cleanup error prevented a final campaign summary.",
+      "records": [
+        {
+          "bytes": 3048,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-r3/events.jsonl",
+          "sha256": "8c7e2394350b218e9840a7eefc9855f1a2aebfe09c4905bdca5809a0c7d28a0c"
+        },
+        {
+          "bytes": 2555,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-r3/accounting.json",
+          "sha256": "a56a9851ec6116b86d1519a32c3c60df484e10110b749b5672d87997aed53a5f"
+        },
+        {
+          "bytes": 45248,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-r3/service/summary.json",
+          "sha256": "ce5c8a5fb689a542bc4ba8d29fcaa344ddb0bf4f8649319a704fc3a25263ea45"
+        }
+      ],
+      "run": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-r3",
+      "status": "failed"
+    },
+    {
+      "reason": "Both roots applied, but the single-candidate proof-count check rejected persistent worker shutdown; fallback cleanup also used a coordinator-only observer.",
+      "records": [
+        {
+          "bytes": 5354,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-r4/summary.json",
+          "sha256": "95f4af570e16dbb29d9a7bae1ea7f88afdf9f2803a2a8635a43c951ff6c69025"
+        },
+        {
+          "bytes": 6647,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-r4/events.jsonl",
+          "sha256": "677fb925844343f05034b94869dca4e0f09ac1aaa53b57be70db6d4ceff7b8e2"
+        },
+        {
+          "bytes": 3480,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-r4/accounting.json",
+          "sha256": "98330e87d37092d2150e7b1859112a255e9d18699694bc8120c3e81c966f82f6"
+        },
+        {
+          "bytes": 45241,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-r4/service/summary.json",
+          "sha256": "75f61671dfcd5d562bc1344648daafa991310eb45013e4c0f2a5b762c650aca2"
+        }
+      ],
+      "run": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-r4",
+      "status": "failed"
+    },
+    {
+      "reason": "Typed resource-profile validator rejected the new GPU FRI flag before GPU launch.",
+      "records": [
+        {
+          "bytes": 29890,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final/summary.json",
+          "sha256": "8975c0fc6112aad3a8e0a5573d74823881404e902fca5c338ddc4b5ee7bd72eb"
+        },
+        {
+          "bytes": 3048,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final/events.jsonl",
+          "sha256": "e9a131020dee2e7100678384a335f70d0ab3b1c8ad22c21c1b1562291229593f"
+        },
+        {
+          "bytes": 2555,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final/accounting.json",
+          "sha256": "1343b608453e1acb49d19bcf0b4375e74ea4e49fa2c4b8e0ef93a6c67bf94282"
+        },
+        {
+          "bytes": 793,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final/service/summary.json",
+          "sha256": "ea913ff08d50f6c9d453ba6359ac7b355836fb9f385b46ffa2bf44546b39d5f9"
+        }
+      ],
+      "run": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final",
+      "status": "failed"
+    }
+  ],
+  "retained_validation_failure": {
+    "log": {
+      "bytes": 35386,
+      "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-final-execution-tests.log",
+      "sha256": "40a1e5bc9e55373678b52710eaafcf886f75f8ba59c370cc1a582e9185cc6970"
+    },
+    "reason": "Seven failures from sandbox-blocked Unix socket/subprocess operations and a CPU-only session test run in the GPU build. The final CPU-only suite passed outside the sandbox under explicit resource caps."
+  },
+  "schema_version": 1,
+  "smoke": {
+    "completed_roots": 2,
+    "configuration": {
+      "bytes": 1158,
+      "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/config.json",
+      "sha256": "424977f18bb6c8cc87422b818340a6849d1afea54ddd3eb264cb050f3458c49a"
+    },
+    "events": {
+      "bytes": 6647,
+      "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/events.jsonl",
+      "sha256": "5649336c224be2cc194e9fcc4df56f754cb10416ea595c9a1b79bc4ffeba6a2e"
+    },
+    "final_service_states": {
+      "bytes": 1384,
+      "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/final-service-states.json",
+      "sha256": "25fb252ccc82953ce0916ad97d3b4de91e59237fab291f1c9d2eaa20ff4e330d"
+    },
+    "fresh_recursive_proofs": 8,
+    "fresh_wallet_proofs": 8,
+    "inputs_per_root": 4,
+    "issuance_transactions": 2,
+    "measured_seconds": 306.993228211,
+    "mode": "exploratory",
+    "parent_memory_event_deltas": {
+      "high": 0,
+      "low": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_group_kill": 0,
+      "oom_kill": 0,
+      "sock_throttled": 0
+    },
+    "performance_claim": "Correctness and lifecycle smoke only. Four-input saturation with zero pacing; no matched control, no full-64 timing gate and no sustained qualification.",
+    "post_seal_deadline_misses": 0,
+    "resource_failures": 0,
+    "retained_user_transactions": 6,
+    "reused_recursive_proofs": 0,
+    "roots": [
+      {
+        "cpu_audited": true,
+        "durable_application": {
+          "bytes": 1206,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/application-000000.json",
+          "sha256": "3fdc0faa2f80fae01eebc96178ea3b56485377e823319fbfb0bf695e123b45ed"
+        },
+        "fresh_recursive_proofs": 4,
+        "post_seal_through_application_seconds": 142.87328631,
+        "result": {
+          "bytes": 2953,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/service/owner/proofs/candidate-000000/result.json",
+          "sha256": "1104801cefac376e6ac17995732c3d352b336c9967e5fbc1a7db7fa0e92a783b"
+        },
+        "root": {
+          "bytes": 1683948,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/service/owner/proofs/candidate-000000/node.6.0",
+          "sha256": "55075c1d82955760dd7ebc96bd573db51e44963bb08c251b0f058a5c25462d42"
+        },
+        "state_commit_sha256": "fd39888dad5675bb2dcbd14710f4a9c13e756accfcbd0cf36517697d2290f1c7"
+      },
+      {
+        "cpu_audited": true,
+        "durable_application": {
+          "bytes": 1207,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/application-000001.json",
+          "sha256": "b1804523ce276d2a627fe6e48d4b6433f0d84b4415b770586ee3eed8c792bfe1"
+        },
+        "fresh_recursive_proofs": 4,
+        "post_seal_through_application_seconds": 143.400100776,
+        "result": {
+          "bytes": 2954,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/service/owner/proofs/candidate-000001/result.json",
+          "sha256": "b133982fd8581ec629eb64a7e1f7290a9a4bc8852a936cf3ba458fe46fe15de3"
+        },
+        "root": {
+          "bytes": 1683948,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/service/owner/proofs/candidate-000001/node.6.0",
+          "sha256": "4b8e1ede20e69c1d977d88a02b798b5dc7104514073dbd8ff20edf14eb81f89e"
+        },
+        "state_commit_sha256": "e56f92819312de07e7dd418fdad77c0341dd68d6f53210e04fd09e9175dd6b6d"
+      }
+    ],
+    "same_worker_processes_across_candidates": true,
+    "service_summary": {
+      "bytes": 46024,
+      "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/service/summary.json",
+      "sha256": "077d7c82f2beac3114ff5aacc437cc7fc3bc12a2dcc3557e4d66e345829e0c72"
+    },
+    "shutdown": {
+      "bytes": 103,
+      "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/service/owner/proofs/pool-stopped.json",
+      "sha256": "116d4cc483013ea4299acd88a16ce79cb888a8abb0b650d6e8c8f6b0defeefc1"
+    },
+    "summary": {
+      "bytes": 31548,
+      "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/summary.json",
+      "sha256": "441bf8cc585ac52642f8709ff590666d3cd1c2f9be5df42fdbdab093919ab889"
+    },
+    "workers": [
+      {
+        "accounting": {
+          "bytes": 433,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/service/workers/gpu-01/accounting.json",
+          "sha256": "37cd04c011adfa92275173a8bb735c4df21b2bceeda0b464a01fdd93f900087e"
+        },
+        "budget": {
+          "bytes": 8497,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/service/workers/gpu-01/budget.json",
+          "sha256": "fcb01ec2661ce1b0ac38b7f0a49a163ea68f5348c1e29734bdf65eec1509bc16"
+        },
+        "gpu_fri_fold": true,
+        "gpu_fri_fold_calls": 114,
+        "memory_events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0,
+          "sock_throttled": 0
+        },
+        "memory_peak_bytes": 16715030528,
+        "observed_gpu_pids": [
+          1037261
+        ],
+        "proof_log": {
+          "bytes": 67636,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/service/workers/gpu-01/prove.log",
+          "sha256": "13b0f9ba80d7e8b86ae94c0210abf0f2a7717c00ca06aae95579bb01dba570ea"
+        },
+        "startup": {
+          "bytes": 10938,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/service/owner/proofs/execution/worker-0-start.json",
+          "sha256": "646af101ab0106570b38050975f8b84752c02194898e8000edd5189e1b3625df"
+        },
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      {
+        "accounting": {
+          "bytes": 432,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/service/workers/gpu-02/accounting.json",
+          "sha256": "b6ace50f5922da875f92b74481bdcf1fb76c4e98d5340dbcf49d591c05be9256"
+        },
+        "budget": {
+          "bytes": 8475,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/service/workers/gpu-02/budget.json",
+          "sha256": "f893c0061ade49d562a00cf2c6bcdc834be70c8b314928a8e166727755619db5"
+        },
+        "gpu_fri_fold": true,
+        "gpu_fri_fold_calls": 38,
+        "memory_events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0,
+          "sock_throttled": 0
+        },
+        "memory_peak_bytes": 16362659840,
+        "observed_gpu_pids": [
+          1037336
+        ],
+        "proof_log": {
+          "bytes": 32033,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/service/workers/gpu-02/prove.log",
+          "sha256": "a2d7417fa5c011993e89404ee819304a875f45b6b7df2fdf5f7e89fda5f06274"
+        },
+        "startup": {
+          "bytes": 10912,
+          "path": "lattica-prover-p3/target/block-v2-pool-20261006/smoke-run-final-r2/service/owner/proofs/execution/worker-1-start.json",
+          "sha256": "1437e643e30ae3d8e9cd8006335bca347de7d5c9d0aee7ed21a009ffe46ec5ae"
+        },
+        "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      }
+    ]
+  },
+  "source_files": [
+    {
+      "bytes": 42337,
+      "path": "docs/benchmarks/README.md",
+      "sha256": "c5edecbdb7be83e6fd563cfd0253f2af7f368e1ab939abab560ab87c66dfd535"
+    },
+    {
+      "bytes": 34092,
+      "path": "lattica-prover-p3/scripts/block-v2-multi-gpu-run.py",
+      "sha256": "1c4394f7645e184dab08034a3b23f72864f7b99b3bce1e040dbe2ea37226ccc7"
+    },
+    {
+      "bytes": 10557,
+      "path": "lattica-prover-p3/scripts/block-v2-pool-README.txt",
+      "sha256": "4ebc20a96f36fd2fa6e8322075e70c4835d59f0f1dd6aab9e35397d4bfe01828"
+    },
+    {
+      "bytes": 25422,
+      "path": "lattica-prover-p3/scripts/block-v2-pool-campaign.py",
+      "sha256": "ddc69693507d39948f51ac72dc8cf2fc3b5a5683099026b11d1588b678791b79"
+    },
+    {
+      "bytes": 1251,
+      "path": "lattica-prover-p3/scripts/block-v2-pool-research.py",
+      "sha256": "cd029a476a1dd015d2e52df365e824212e1c638130392be2fc6d3871982bb987"
+    },
+    {
+      "bytes": 30132,
+      "path": "lattica-prover-p3/scripts/block-v2-typed-gpu-run.py",
+      "sha256": "a108c9a0bc43ce9b67b74ec6c70c8ffc837305bc8a060ba381969ccbce8e4e9a"
+    },
+    {
+      "bytes": 70317,
+      "path": "lattica-prover-p3/scripts/block-v2-typed-shared-gpu-run.py",
+      "sha256": "f14d77c82868e4580090f76ccb37780e2f428db0c5ceadca498a69147bf662d5"
+    },
+    {
+      "bytes": 29403,
+      "path": "lattica-prover-p3/scripts/block_v2_host_store.py",
+      "sha256": "adb475775b6834aa8b4ddbc14da14725e1534df34ad874002109dd70f67aba60"
+    },
+    {
+      "bytes": 10315,
+      "path": "lattica-prover-p3/scripts/block_v2_native_delivery.py",
+      "sha256": "5c182140dacb9b564b62c82aff0b78b18d3af3f4b2cc293002bf860c9017176c"
+    },
+    {
+      "bytes": 8031,
+      "path": "lattica-prover-p3/scripts/block_v2_native_session.py",
+      "sha256": "825e5137d8949f280448b7fedd3b8f511ab3f65e6d7e08c3bba3c3e2d606b5e2"
+    },
+    {
+      "bytes": 13381,
+      "path": "lattica-prover-p3/scripts/block_v2_native_shared.py",
+      "sha256": "e858fc5376b32a85ea0f817a5884ae420e5bf0076e4183c6e82d5cb478f092d1"
+    },
+    {
+      "bytes": 5655,
+      "path": "lattica-prover-p3/scripts/block_v2_pool_qualification.py",
+      "sha256": "8829f355c8479d7cd47b18b2acfc35f99f8cbe7eaeda4c4e11c4bb14253800d3"
+    },
+    {
+      "bytes": 21644,
+      "path": "lattica-prover-p3/scripts/block_v2_resources.py",
+      "sha256": "1606e56457186a2b5f4a1b3084a8c2039c4547d3bed56af3a39bb6819240975a"
+    },
+    {
+      "bytes": 12535,
+      "path": "lattica-prover-p3/scripts/block_v2_shared_calibration.py",
+      "sha256": "d391d970ec6048b8bd1659505e58969847589db64027f83ae63da1a4e5fdb635"
+    },
+    {
+      "bytes": 3448,
+      "path": "lattica-prover-p3/scripts/check-block-v2-native-session.py",
+      "sha256": "f97c6d919ba068a8c2a22f05a82ec1d9748e9819c9b51fdfaf846b9c9eb85cef"
+    },
+    {
+      "bytes": 23969,
+      "path": "lattica-prover-p3/scripts/test-block-v2-multi-gpu.py",
+      "sha256": "a742377882b13c0983ff5a53a4527f7437f8264d34aaadee6e117fbacf28173c"
+    },
+    {
+      "bytes": 4202,
+      "path": "lattica-prover-p3/scripts/test-block-v2-native-session.py",
+      "sha256": "3701137abfe52e45df1ac580d8812374aabb8a33e9546744ea281393e9a1f8cb"
+    },
+    {
+      "bytes": 7177,
+      "path": "lattica-prover-p3/scripts/test-block-v2-pool.py",
+      "sha256": "91d78e50b8a9b1a7d18958ae811aaff9ddddcd29fcd173e4d5ce5460064ca038"
+    },
+    {
+      "bytes": 25876,
+      "path": "lattica-prover-p3/scripts/test-block-v2-typed-gpu-run.py",
+      "sha256": "4fd9a3c263b08a6d679c8399a0d0b89a53852296e942ab1579e9fa26cea528a7"
+    },
+    {
+      "bytes": 34433,
+      "path": "lattica-prover-p3/src/bin/typed_common/execution_fleet.rs",
+      "sha256": "e734b73194efebb2301a16a0832c86bba9486a004dc8e1123ef05d0e93966aab"
+    },
+    {
+      "bytes": 8368,
+      "path": "lattica-prover-p3/src/bin/typed_common/execution_native.rs",
+      "sha256": "81efb857f94f886c6c9c463cb5c05c5f447c8edcbfd1f42a37cb7e79a887af93"
+    },
+    {
+      "bytes": 6856,
+      "path": "lattica-prover-p3/src/bin/typed_common/execution_pool_service.rs",
+      "sha256": "484c4b062e52c70867846b523ebf3e37094c85b64f719d8e0862e2dfcf2c6504"
+    },
+    {
+      "bytes": 2785,
+      "path": "lattica-prover-p3/src/bin/typed_common/execution_process.rs",
+      "sha256": "fe085b4b1e828ed14b47e231ad5e38e671526243415e5ec42a1582efaa84e310"
+    },
+    {
+      "bytes": 21570,
+      "path": "lattica-prover-p3/src/bin/typed_common/gpu.rs",
+      "sha256": "65781ab6047b3557a9d91913bef4a6820646e3280e7b5776b3b058ed845825fe"
+    },
+    {
+      "bytes": 18254,
+      "path": "lattica-prover-p3/src/block_v2/batched_fri.rs",
+      "sha256": "e78d26fdc9569850f9f2cb4263aae90dd78630cee031395d5d65728d67e734f3"
+    },
+    {
+      "bytes": 44041,
+      "path": "lattica-prover-p3/src/block_v2/execution/dag.rs",
+      "sha256": "585674b51e285da47df6dd6c6ea64bad7496ac83a37bd3c9a290ffda5089a2a1"
+    },
+    {
+      "bytes": 34107,
+      "path": "lattica-prover-p3/src/block_v2/execution/journal.rs",
+      "sha256": "2317ef69b501a8f29e10fb3aabb240b658a125bf6b9fe848d999409bf2a53a39"
+    },
+    {
+      "bytes": 1397,
+      "path": "lattica-prover-p3/src/block_v2/execution/mod.rs",
+      "sha256": "61640e7676326baf55654806ab9b74e866efc9cd3f68ef74ae0a3d541edb3625"
+    },
+    {
+      "bytes": 6174,
+      "path": "lattica-prover-p3/src/block_v2/execution/policy_context.rs",
+      "sha256": "fa63aedd778214c8c174539c0ad571a57a1d130299a18d3642d441601c2852f1"
+    },
+    {
+      "bytes": 15237,
+      "path": "lattica-prover-p3/src/block_v2/execution/pool.rs",
+      "sha256": "7b4bec38c29753668457c94c7d024cfb6ab740383462a582e4d9961091220502"
+    },
+    {
+      "bytes": 4268,
+      "path": "lattica-prover-p3/src/block_v2/execution/pool/local.rs",
+      "sha256": "29e7ca3a8d2457fb37a31e5ad5c3ba282af303d6eda66327d68d8d247415d86e"
+    },
+    {
+      "bytes": 7062,
+      "path": "lattica-prover-p3/src/block_v2/execution/pool/tests.rs",
+      "sha256": "d57dd9632282f1a31adfdd30de7d8edf9c47d8146638f8080997dbf27c8e3790"
+    },
+    {
+      "bytes": 9686,
+      "path": "lattica-prover-p3/src/block_v2/execution/scheduler.rs",
+      "sha256": "bfc77358d244ecfd9fcf80445c31328eb90ddc2ad61ec5f50d7391ce46e77c69"
+    },
+    {
+      "bytes": 3964,
+      "path": "lattica-prover-p3/src/block_v2/execution/scheduler/tests.rs",
+      "sha256": "8ea4d309b7e77d71510a783b8a9bedfec1410e802cebe9915b1212f2a7bdcb98"
+    },
+    {
+      "bytes": 23677,
+      "path": "lattica-prover-p3/src/block_v2/execution/worker_typed_process.rs",
+      "sha256": "923e62ac04855a6b84392b277a9e8d34d2182604fdc73e23b6ebdd12f6421ec3"
+    },
+    {
+      "bytes": 21512,
+      "path": "lattica-prover-p3/src/block_v2/execution/worker_typed_process_tests.rs",
+      "sha256": "292f17471837c1ea928d486714937c45d7de655f7236c8925847267fd1821052"
+    },
+    {
+      "bytes": 30830,
+      "path": "lattica-prover-p3/src/block_v2/gpu_hash.rs",
+      "sha256": "39813c529065f6e901f73bb1d1011296126cb1ac44aba273d539d52cb3cf069e"
+    },
+    {
+      "bytes": 113261,
+      "path": "lattica-prover-p3/src/block_v2/gpu_hash/engine.rs",
+      "sha256": "f310f0515960b0355d34f37158cb7cdde36e381c6ff15bd461c5b5d84cff56fd"
+    },
+    {
+      "bytes": 7274,
+      "path": "lattica-prover-p3/src/block_v2/gpu_hash/engine/fri_fold.rs",
+      "sha256": "ae403ef2a6ae428d94628de95a809d89c9323394460ac786cdce30541b971a38"
+    },
+    {
+      "bytes": 45850,
+      "path": "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_execute.rs",
+      "sha256": "8f0e2b84940299b83c11e2208297cd18cf8f576c8cc7379738c358873b9ff887"
+    },
+    {
+      "bytes": 20614,
+      "path": "lattica-prover-p3/src/block_v2/opening_pcs.rs",
+      "sha256": "ab0c2c34ea818b90761a5b3892220eb1e446978503c312c33810b9c28fc1468e"
+    },
+    {
+      "bytes": 28210,
+      "path": "lattica-prover-p3/src/block_v2/typed_recursive.rs",
+      "sha256": "56d581848e8cbb1206e4afb80691c91b3fe6cb561f31806db6ba39f1e58fc9af"
+    },
+    {
+      "bytes": 24943,
+      "path": "src/block_v2_host_bridge.zig",
+      "sha256": "13bbe05407af4cc0b2c43dc4320006e9e2bd6be41056fc472359f14332663df4"
+    },
+    {
+      "bytes": 15429,
+      "path": "src/block_v2_host_fixture.zig",
+      "sha256": "24d827efa8c01e85a949cff378b03951c8f24abf95a60bb226ce295ab98e7724"
+    }
+  ],
+  "status": "implementation_smoke_passed",
+  "tests": {
+    "cache_fresh_randomness": {
+      "log": {
+        "bytes": 861,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-cache-test.log",
+        "sha256": "033ec28c15bed76104f530d6be901e34a70d55b9e5d5538a472d885fdda60d4e"
+      },
+      "passed": 1,
+      "status": "passed"
+    },
+    "gpu_fri_desktop": {
+      "log": {
+        "bytes": 3067,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-gpu-fri-desktop.log",
+        "sha256": "5228dd28a5c0d4953621274ba9885c5e3cdb2d3de1b3006c4d899d1b86c14011"
+      },
+      "passed": 1,
+      "status": "passed"
+    },
+    "gpu_fri_laptop": {
+      "log": {
+        "bytes": 3040,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-gpu-fri-laptop.log",
+        "sha256": "d5a58b5a2eea5a269aea8d091244fa6a85b854fc470eab986de6bbd74f34cde1"
+      },
+      "passed": 1,
+      "status": "passed"
+    },
+    "gpu_lde_workspace_desktop": {
+      "log": {
+        "bytes": 1303,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-gpu-reuse-desktop-r2.log",
+        "sha256": "58395b73988326cca5d2c4d4e611312eafc09da04e0855d2a08406ce2f4d3b1a"
+      },
+      "passed": 1,
+      "status": "passed"
+    },
+    "gpu_lde_workspace_laptop": {
+      "log": {
+        "bytes": 1325,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-gpu-reuse-laptop-r2.log",
+        "sha256": "886b0c7019c1e386c0a0782e9962eeecf97d7623ed5e37c73cf8e16815bd9c3a"
+      },
+      "passed": 1,
+      "status": "passed"
+    },
+    "native_session_differential": {
+      "log": {
+        "bytes": 716,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-final-native-differential.log",
+        "sha256": "11ee61588232ba62e9c7d69d02bed366dbac636786cd02048e658e43ab3bc7b8"
+      },
+      "passed": null,
+      "status": "passed"
+    },
+    "python_calibration": {
+      "log": {
+        "bytes": 116,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-final-calibration-tests.log",
+        "sha256": "181a9286e7194271c150164e91a20935e6f709de9ddc47412dd1c421e1f683fa"
+      },
+      "passed": 17,
+      "status": "passed"
+    },
+    "python_native_session": {
+      "log": {
+        "bytes": 103,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-final-native-session-tests.log",
+        "sha256": "464e0ee629edf74de09ef21e4232fbcedc26588ff7cc23c470f47fe2da88c255"
+      },
+      "passed": 5,
+      "status": "passed"
+    },
+    "python_native_shared": {
+      "log": {
+        "bytes": 110,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-final-native-shared-tests.log",
+        "sha256": "0553528fa67f943827c5153de327449fd651055a54686b0fa097e9bc64163d6d"
+      },
+      "passed": 11,
+      "status": "passed"
+    },
+    "python_native_store": {
+      "log": {
+        "bytes": 119,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-final-host-store-tests.log",
+        "sha256": "c3c6fae66824abaa1c58d7fce0e31725c264bdb72adcee8e514ceb35e14c7144"
+      },
+      "passed": 20,
+      "status": "passed"
+    },
+    "python_pool_contracts": {
+      "log": {
+        "bytes": 104,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-final-python-pool.log",
+        "sha256": "13b96ed43ad62b23c6812e318f100b156de88f41891dfeb3b15c976596356e17"
+      },
+      "passed": 6,
+      "status": "passed"
+    },
+    "python_resource_planner": {
+      "log": {
+        "bytes": 124,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-final-python-resources.log",
+        "sha256": "712619bd0527b39dc96e85c3e6ab4d1551f5a576e1012bc19220810868c726f8"
+      },
+      "passed": 25,
+      "status": "passed"
+    },
+    "python_shared_controller": {
+      "log": {
+        "bytes": 138,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-final-shared-tests.log",
+        "sha256": "000f54b1a3a25e33e7d88a268ca1e0c0826f2cccf69962dd6795f0ef3e4ac9e2"
+      },
+      "passed": 39,
+      "status": "passed"
+    },
+    "python_typed_gpu": {
+      "log": {
+        "bytes": 122,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-final-typed-gpu-tests.log",
+        "sha256": "4cdae0d2419bfacdf12a9e078c39c4b65396c10aaa5c9a79cfdf7e336f48036f"
+      },
+      "passed": 23,
+      "status": "passed"
+    },
+    "rust_execution_cpu": {
+      "log": {
+        "bytes": 33117,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-final-cpu-execution-tests.log",
+        "sha256": "1d39382ede762df80cd7312e4323cafa7facde24bb303608c71b6509d9768399"
+      },
+      "passed": 186,
+      "status": "passed"
+    },
+    "rust_fleet_recovery": {
+      "log": {
+        "bytes": 2574,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-final-fleet-tests.log",
+        "sha256": "831bf95d7bb04cc2eb30964b6901c6c8e22793298612b8f03c3cf39971352a61"
+      },
+      "passed": 22,
+      "status": "passed"
+    },
+    "rust_gpu_admission": {
+      "log": {
+        "bytes": 695,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-final-gpu-admission-tests.log",
+        "sha256": "5700147ba9feffbaf4940ea04bca9b5cef84690d001391a838879b4be9018b10"
+      },
+      "passed": 6,
+      "status": "passed"
+    },
+    "zig_native_fixture": {
+      "log": {
+        "bytes": 7968,
+        "path": "lattica-prover-p3/target/block-v2-pool-20261006/validation/lattica-pool-native-fixture-tests.log",
+        "sha256": "c7920794f4bb08d231289a3e6682a027a59548e27ffbae8949a4c15505a91fcb"
+      },
+      "passed": 102,
+      "status": "passed"
+    }
+  },
+  "tests_total_executions_passed": 467,
+  "throughput_gain_qualified": false,
+  "working_tree_modified": true
+}

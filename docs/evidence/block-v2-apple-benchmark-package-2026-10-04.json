@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "status": "PACKAGE_PREPARED_AWAITING_MAC_EXECUTION",
+  "production_ready": false,
+  "package": {
+    "archive": "benchmark-results/lattica-apple-repetitions-094cade-20261004-r3.tar.gz",
+    "archive_sha256": "f283a21e9dc15653aee5be40a1b7c95bc8ad8e62c8fd4795d32f7f778b96d190",
+    "archive_bytes": 6240069,
+    "manifest": {
+      "schema": "lattica-apple-benchmark-package-v1",
+      "source_commit": "094cade18a59d38d7d65bd805511a7809b348a9e",
+      "rust_toolchain": "1.96.0",
+      "python_minimum": "3.11",
+      "platform": "Darwin arm64",
+      "overlays": [
+        "overlays/bench-apple-metal.py"
+      ],
+      "fixture_files": [
+        "height",
+        "key.1",
+        "key.2",
+        "key.3",
+        "wallet.0",
+        "wallet.1",
+        "wallet.2",
+        "wallet.3",
+        "wallet.4",
+        "wallet.5",
+        "wallet.6",
+        "wallet.7"
+      ],
+      "schedule_at_18_threads": [
+        {
+          "backend": "shared",
+          "threads": 18,
+          "level": "quotient",
+          "repeat": 1
+        },
+        {
+          "backend": "shared",
+          "threads": 18,
+          "level": "quotient-deferred",
+          "repeat": 1
+        },
+        {
+          "backend": "shared",
+          "threads": 18,
+          "level": "quotient-compact-deferred",
+          "repeat": 1
+        },
+        {
+          "backend": "shared",
+          "threads": 18,
+          "level": "quotient-compact-deferred",
+          "repeat": 2
+        },
+        {
+          "backend": "shared",
+          "threads": 18,
+          "level": "quotient-deferred",
+          "repeat": 2
+        },
+        {
+          "backend": "shared",
+          "threads": 18,
+          "level": "quotient",
+          "repeat": 2
+        },
+        {
+          "backend": "shared",
+          "threads": 18,
+          "level": "quotient",
+          "repeat": 3
+        },
+        {
+          "backend": "shared",
+          "threads": 18,
+          "level": "quotient-deferred",
+          "repeat": 3
+        },
+        {
+          "backend": "shared",
+          "threads": 18,
+          "level": "quotient-compact-deferred",
+          "repeat": 3
+        }
+      ],
+      "memory_policy": {
+        "minimum_unified_bytes": 68719476736,
+        "mapped_scratch_bytes": 36507222016,
+        "managed_metal_bytes": 8589934592,
+        "sampled_worker_rss_bytes": 47244640256,
+        "stage_timeout_seconds": 7200,
+        "swap": "observed, not prohibited"
+      },
+      "scope": "Merged proof sources plus a hashed controller overlay for three fresh repetitions. All compilation and hardware qualification precede timing. CPU audits follow each root.",
+      "production_ready": false,
+      "payload_sha256": {
+        "README.txt": "fca8d88d1311ec49fa7b76501e8c25ac6df48faffaa2fba9afc2b3d7d1759c44",
+        "fixture/height": "72034de8a594b12de51205feba7ade26899d8425e81eac7f8c296bf974a51c60",
+        "fixture/key.1": "a4d50707b0675959c14f693c0057b88ebe645940479f1e22b71c72c006ab81b5",
+        "fixture/key.2": "c97a7cd4c9089decd752724bc7e1ed5872fae1aa20a48923c437cce983b03802",
+        "fixture/key.3": "8fd1ff0c3dd8c7d1d18db1f4bd610c67ca9e79037ae6e66e3abebcf0fb27ad99",
+        "fixture/wallet.0": "f45d52c7fad6375729492b7ac71d9f15856bd8616c39cb1e8a5538ef2e49e973",
+        "fixture/wallet.1": "2ec42ef6bb2262318c942d783e0ee80b29098b72572357b07cd2b0be57caed79",
+        "fixture/wallet.2": "fb65031ca3ae8837a156eeb5f71b3cf7b026718e7221f03c53fdc7879f20f1b5",
+        "fixture/wallet.3": "5af70c75b7b707367dd4ba24087c67dbad068da1496e74722e07e8ac39fb486b",
+        "fixture/wallet.4": "28b7c99fef199e2054ddba52ff318dec1670e43fa612009aa0853edd4d60ee3b",
+        "fixture/wallet.5": "5864c1f28772571523cc6b4571c7ced273b6cfcc31108eff913b93c5ec6ef7aa",
+        "fixture/wallet.6": "5e10eeb348d88b99635b2dfd6801a81725451cb7ddab644acc99fe8479793117",
+        "fixture/wallet.7": "b071d6981b8199058c26f2acdef54ab2045312438a4e850d616875161eec09e5",
+        "fixture-reference.json": "f65ee39a585025d6c402ce7c801065b4d6e28beefd6a31f6ce17e6fcebfb4917",
+        "overlays/bench-apple-metal.py": "934bf27100a34c9f417646ddbc3ecea152562e630f085303e0be1431c649d730",
+        "run-apple-benchmark-package.py": "8992aad8dbade339c0a843753c9047f36cf9f2ca25f47c661faff5de556dce66"
+      }
+    },
+    "manifest_sha256": "f83b46dd4b950834be9baa019ec01642602a914583213f88e0b81f8bcd6efb23"
+  },
+  "validation": {
+    "archive_extraction_and_payload_hashes": "PASS",
+    "plan_without_checkout_or_build": "PASS",
+    "tests": [
+      {
+        "command": "python3 lattica-prover-p3/scripts/test-apple-benchmark-package.py",
+        "passed": 6
+      },
+      {
+        "command": "python3 lattica-prover-p3/scripts/test-bench-apple-metal.py",
+        "passed": 15
+      },
+      {
+        "command": "python3 lattica-prover-p3/scripts/test-apple-benchmark-export.py",
+        "passed": 6
+      }
+    ],
+    "host": "Linux; macOS build, Metal qualification and nine measurements must run on the Mac",
+    "pinned_remote_ref": "origin/codex/mac-metal (locally observed at 094cade)",
+    "fixture_audit_threads": "Bounded by actual logical CPUs and the selected schedule; all nine measured trials retain the selected thread count."
+  },
+  "scope": "Nine fresh Metal trials on pinned merged proof sources. Source/binary/fixture provenance, independent CPU root audits, complete logs and immutable portable JSON. This is proving milestone evidence; delivered transactions are not measured.",
+  "return_artifact": "portable-results.tar.gz",
+  "git_retention": "Package generator, runner, instructions and this manifest are repository files. Generated archives and public proof payloads remain outside Git. Import Mac portable JSON into docs/benchmarks/runs when available."
+}

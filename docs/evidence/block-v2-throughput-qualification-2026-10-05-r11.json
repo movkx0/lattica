@@ -1,0 +1,56 @@
+{
+  "browser_check": {
+    "bytes": 1951,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r11/browser-check.json",
+    "sha256": "31990506bf70aaaa578be90ff97cbd48c0de36bf4e72791a7068019d6829df04"
+  },
+  "captured_utc": "2026-10-05T11:29:46.644651+00:00",
+  "catalog_snapshot": {
+    "bytes": 22299438,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r11/report-catalog.json",
+    "sha256": "97546fba510b10e2eba3172099a5d81381e97f2fe7af2b5d7b3da1b3f3280bfe"
+  },
+  "check": {
+    "bytes": 285,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r11/report-check.json",
+    "sha256": "23f09b36c34a7639fa79108d25a6676de00e3ac8ceea5c05b4613f2080ed6604"
+  },
+  "delivered_transactions_measured": false,
+  "html_snapshot": {
+    "bytes": 86886785,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r11/report-index.html",
+    "sha256": "6e5e689c97b5a65ceb18df2512bfa7696a54c89ceb5227a53bb7d2c37817b083"
+  },
+  "production_ready": false,
+  "qualification": {
+    "bytes": 152663,
+    "path": "lattica-prover-p3/target/block-v2-readiness-20261005-r11/qualification.json",
+    "sha256": "f5cb078bf03e43f2d8b7f7061d9432758d6f5c33a39a4220c714bf9fd2061f1c"
+  },
+  "readiness": {
+    "bytes": 29124,
+    "path": "docs/evidence/block-v2-throughput-readiness-2026-10-05-r11.json",
+    "sha256": "c6e41581add35c3125ba25250e4685a2c9f7899bdbbcdb294daf1436dadc1cab"
+  },
+  "readiness_status": "blocked",
+  "record_type": "throughput_qualification_report_validation",
+  "report_check": {
+    "campaigns": 138,
+    "cpu_audited_records": 319,
+    "planned_user_requests": 504,
+    "qualification_status": "blocked",
+    "runs": 656,
+    "schedule_is_measured_data": false,
+    "selected_qualification": "throughput-f422f30c28edda39",
+    "status": "valid",
+    "transaction_campaigns": 0
+  },
+  "resource_plan": {
+    "bytes": 58124,
+    "path": "docs/evidence/block-v2-throughput-resources-2026-10-05-r11.json",
+    "sha256": "083bdfdc17c1bcc36137447096e9e64149becdfb34d17a3dfaa2db3b707de029"
+  },
+  "schema_version": 1,
+  "scope": "Report data validation and offline desktop/mobile/print browser QA after completed count coverage and bounded real-proof host qualification. Pilot gates for concurrent larger-count assignments, complete timing and native worker-failure recovery remain open.",
+  "status": "passed"
+}

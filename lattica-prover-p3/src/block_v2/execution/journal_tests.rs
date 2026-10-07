@@ -419,6 +419,48 @@ fn completed_cache_survives_but_old_candidates_and_handles_do_not() {
 }
 
 #[test]
+fn sealed_recovery_checkpoint_can_be_reopened_before_any_new_dispatch() {
+    let temp = Temp::new();
+    let mut owner = temp.create();
+    let (root, candidate) = candidate(&mut owner, 3);
+    let mut now = 0;
+    while let Some(id) = owner.ready().unwrap().first().copied() {
+        complete(&mut owner, id, &mut now);
+    }
+    owner.seal(candidate, [1; 32], now).unwrap();
+    drop(owner);
+    // Each drop simulates losing the owner immediately after the recovery
+    // checkpoint; no separate attach/seal write is needed before the next one.
+    for epoch in 2..=4 {
+        let recovery = recover(&temp, epoch);
+        assert_eq!(recovery.previous_epoch(), epoch - 1);
+        assert_eq!(recovery.previous_candidates().len(), 1);
+        let previous = &recovery.previous_candidates()[0];
+        assert_eq!(previous.root, root.id());
+        assert_eq!(previous.eligibility, [1; 32]);
+        assert!(previous.sealed && !previous.cancelled);
+        let (mut owner, candidate) = recovery
+            .resume_sealed_with_workspaces(
+                |_| panic!("completed attempt resurrected"),
+                |_| panic!("workspace resurrected"),
+                || 5000 * epoch,
+                root.id(),
+                [1; 32],
+                1000,
+            )
+            .unwrap();
+        assert_eq!(
+            owner
+                .candidate_result(candidate, [1; 32], 5000 * epoch)
+                .unwrap()
+                .unwrap(),
+            root.id().to_bytes()
+        );
+        assert!(owner.ready().unwrap().is_empty());
+    }
+}
+
+#[test]
 fn recovery_requires_reconciliation_and_rebases_retention_after_success() {
     let temp = Temp::new();
     let mut d = temp.create();

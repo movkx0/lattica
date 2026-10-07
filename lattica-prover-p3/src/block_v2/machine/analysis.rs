@@ -108,6 +108,70 @@ pub fn analyze(air: &MachineAir) -> Result<MachineAnalysis, AdmissionError> {
 }
 
 impl MachineAnalysis {
+    /// Retained matrix payload at the two compact-storage lifetime boundaries.
+    ///
+    /// Before quotient evaluation, preprocessing, main and permutation data
+    /// retain half of their logical LDE rows. Afterwards main/permutation are
+    /// reduced to degree prefixes, quotient chunks and the random round retain
+    /// degree prefixes, and preprocessing keeps its half-LDE prefix for reuse.
+    /// See resident_pcs, gpu_hash::compact_data and gpu_quotient_prover.
+    ///
+    /// This excludes salts, Merkle trees, natural matrices, compiler storage,
+    /// temporary buffers and driver overhead. It is a necessary payload bound,
+    /// not complete lifetime or peak-memory admission.
+    pub fn compact_retained_lde_lower_bound(&self) -> Result<u64, AdmissionError> {
+        if self.quotient_chunks > (1 << profile::LOG_BLOWUP) {
+            return Err(AdmissionError::QuotientDegree);
+        }
+        let random = profile::NUM_RANDOM_CODEWORDS as u64;
+        let main = (self.main_width as u64)
+            .checked_add(random)
+            .ok_or(AdmissionError::Overflow)?;
+        let permutation = (self.permutation_width_base as u64)
+            .checked_add(random)
+            .ok_or(AdmissionError::Overflow)?;
+        let preprocessing = self.preprocessed_width as u64;
+        let random_round = 3u64.checked_add(random).ok_or(AdmissionError::Overflow)?;
+        let quotient = (self.quotient_chunks as u64)
+            .checked_mul(random_round)
+            .ok_or(AdmissionError::Overflow)?;
+        let degree_rows = (self.height as u64)
+            .checked_mul(2)
+            .ok_or(AdmissionError::Overflow)?;
+        let lde_rows = degree_rows
+            .checked_mul(1 << profile::LOG_BLOWUP)
+            .ok_or(AdmissionError::Overflow)?;
+        let evaluation_cells = preprocessing
+            .checked_add(main)
+            .and_then(|n| n.checked_add(permutation))
+            .and_then(|n| n.checked_mul(lde_rows / 2))
+            .ok_or(AdmissionError::Overflow)?;
+        let opening_cells = main
+            .checked_add(permutation)
+            .and_then(|n| n.checked_add(quotient))
+            .and_then(|n| n.checked_add(random_round))
+            .and_then(|n| n.checked_mul(degree_rows))
+            .and_then(|n| preprocessing.checked_mul(lde_rows / 2)?.checked_add(n))
+            .ok_or(AdmissionError::Overflow)?;
+        evaluation_cells
+            .max(opening_cells)
+            .checked_mul(8)
+            .ok_or(AdmissionError::Overflow)
+    }
+
+    /// Only valid when the active PCS actually uses compact prefixes.
+    /// A separate phase-aware RAM/spill/GPU model is still required.
+    pub fn check_compact_ram_lower_bound_with_budget(
+        &self,
+        budget: u64,
+    ) -> Result<(), AdmissionError> {
+        let required = self.compact_retained_lde_lower_bound()?;
+        if required > budget {
+            return Err(AdmissionError::RamLowerBound { required, budget });
+        }
+        Ok(())
+    }
+
     pub fn check_ram_lower_bound(&self) -> Result<(), AdmissionError> {
         self.check_ram_lower_bound_with_budget(feasibility::RAM_BUDGET_BYTES)
     }
@@ -121,5 +185,66 @@ impl MachineAnalysis {
             });
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod compact_admission_tests {
+    use super::*;
+
+    #[test]
+    fn compact_layout_has_its_own_boundary_without_relaxing_full_storage() {
+        let air = super::super::programs::shape(262144).unwrap();
+        let analysis = analyze(&air).unwrap();
+        let compact = analysis.compact_retained_lde_lower_bound().unwrap();
+        // The wide controller admits an upper bound of 98 main columns,
+        // 200 preprocessing columns and 55 permutation columns. Check the
+        // compiled AIR against that bound, including the hiding codewords.
+        #[cfg(feature = "block-v2-wide-lanes")]
+        {
+            assert_eq!(analysis.main_width, 94);
+            assert_eq!(analysis.preprocessed_width, 200);
+            assert!(analysis.permutation_width_base + 4 <= 55);
+            assert_eq!(analysis.quotient_chunks, 16);
+            assert!(analysis.retained_lde_bytes <= 31_675_383_808);
+            let mut upper = analysis.clone();
+            upper.permutation_width_base = 51;
+            assert_eq!(upper.compact_retained_lde_lower_bound(), Ok(11_844_714_496));
+            assert!(compact <= 11_844_714_496);
+        }
+        assert!(compact < analysis.retained_lde_bytes);
+        assert!(analysis.check_ram_lower_bound_with_budget(compact).is_err());
+        assert_eq!(
+            analysis.check_compact_ram_lower_bound_with_budget(compact),
+            Ok(())
+        );
+        assert_eq!(
+            analysis.check_compact_ram_lower_bound_with_budget(compact - 1),
+            Err(AdmissionError::RamLowerBound {
+                required: compact,
+                budget: compact - 1
+            })
+        );
+        assert_eq!(
+            analysis.check_ram_lower_bound_with_budget(analysis.retained_lde_bytes),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn compact_admission_rejects_unsupported_domains_and_overflow() {
+        let mut analysis = analyze(&super::super::programs::shape(16).unwrap()).unwrap();
+        analysis.quotient_chunks = 2 << profile::LOG_BLOWUP;
+        assert_eq!(
+            analysis.compact_retained_lde_lower_bound(),
+            Err(AdmissionError::QuotientDegree)
+        );
+        analysis.quotient_chunks = 1 << profile::LOG_BLOWUP;
+        analysis.height = usize::MAX;
+        analysis.main_width = usize::MAX;
+        assert_eq!(
+            analysis.compact_retained_lde_lower_bound(),
+            Err(AdmissionError::Overflow)
+        );
     }
 }

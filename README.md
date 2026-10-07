@@ -6,6 +6,12 @@ The repository contains an audited CPU proof/verifier baseline, a complete shiel
 
 ## Start here
 
+`main` is the integration branch for Apple Silicon/Metal and the shared proving
+code, including the persistent multi-GPU pool. Use the
+[current Apple setup and benchmark recipe](lattica-prover-p3/scripts/apple-current-benchmark-README.txt)
+from `origin/main`. The [Apple source inventory](docs/README.md#apple-hardware-acceleration)
+distinguishes committed code from the remaining Mac research source import.
+
 - [Protocol specification](SPEC.md) defines the transaction model and cryptographic construction.
 - [Documentation map](docs/README.md) separates current guidance, normative references, research, and historical audit records.
 - [Solving benchmark report](docs/benchmarks/index.html) retains throughput measurements, process telemetry, and P0–P5 development milestones; [usage and portable imports](docs/benchmarks/README.md).
@@ -484,6 +490,188 @@ adds the executable and local transport. Durable OS supervision, physical quotas
 complete operation coverage and arrival-driven qualification remain open.
 
 ## Benchmarks (including Apple Silicon)
+
+The [five-cycle native comparison](docs/evidence/block-v2-native-context-repetitions-2026-10-06.json)
+now passes on each GPU alone, both GPUs together and staged prefix reuse, with a
+**512 MiB context allowance per GPU**. All twenty arms use identical retained
+fixtures and fixed per-GPU CPU/RAM/spill/VRAM limits. The one-GPU arms retain
+their share of the two-worker plan. Median times across five repetitions:
+
+| Scheduling arm | Final proving | Full candidate pipeline | Seal start to controller exit |
+| --- | ---: | ---: | ---: |
+| Laptop GPU only | 279.925 s | 341.331 s | 317.395 s |
+| Desktop GPU only | 355.958 s | 420.064 s | 396.238 s |
+| Shared owner, both GPUs | 227.187 s | 289.244 s | 265.270 s |
+| Staged prefix reuse, both GPUs | 161.066 s | 366.689 s | 198.038 s |
+
+Within matched cycles, shared execution reduced full pipeline time by a median
+**16.049%** versus the laptop GPU alone. Staging reduced seal-start-to-controller-exit
+time by **24.836%** versus shared execution, while increasing full pipeline time
+by **26.577%**. Controller exit is an upper bound on host-ready time; exact seal
+start/end timestamps are retained.
+
+The campaign produced **20 CPU-audited roots, 160 fresh recursive proofs and 15
+reused proofs**. Each arm applied six user transactions and two issuances in its
+own journal, using existing wallet proofs. Fresh-process replay and two exact
+retries per arm passed without duplicate application. These are isolated native
+applications; wallet proving and arrival waiting are excluded.
+
+Cleanup checked 160 process records and 92 terminal services; all 90 accounting
+records have zero memory-limit/OOM events. Current controller and report checks
+pass **219 Python tests**, plus imports of all ten complete single-GPU trials.
+The [experimental denominator cache](docs/evidence/block-v2-opening-denominator-cache-2026-10-06-r1.json)
+also passes [native qualification](docs/evidence/block-v2-opening-cache-native-qualification-2026-10-06-r1.json):
+**10 CPU-audited roots, 80 fresh recursive proofs and 10 replay checks**, including
+both modes on each GPU and shared execution. This binary qualifies **512 MiB
+context allowances** on both GPUs. All memory-limit/OOM counters were zero.
+Each cache-enabled root avoided **27 GiB of uploads**, with a **192 MiB peak
+cache per worker** inside managed VRAM. It remains opt-in; matched solving-time
+comparisons remain incomplete. Larger workloads and complete cold/post-seal boundaries
+remain in the [action plan](docs/high-throughput-proving-plan.md).
+
+The [report](docs/benchmarks/index.html) retains **819 runs, 393 CPU-audited records
+and zero sustained transaction campaigns**, with full pipeline and durable seal
+intervals and cache counters available in the downloadable JSON.
+
+Workstation experiments are **paused at the user's request**. The
+[partial cache comparison](docs/evidence/block-v2-opening-cache-native-comparison-2026-10-06-partial-r1.json)
+completed nine arms and four of five declared pairs; the final cache arm failed
+fixed host RAM/spill admission before proving. Across the four complete pairs,
+the median pipeline reduction was **2.978%** (range **0.365–4.495%**). The planned
+comparison remains incomplete, and the cache remains opt-in. All nine roots
+passed CPU audit and replay, with 72 fresh recursive proofs and 18 exact retries
+without duplicate application. All 73 process records and 38 services are
+terminal; 36 accounting records show zero memory-limit/OOM events. The report
+retains these nine arms together in its downloadable partial comparison JSON.
+
+For the Mac, use the [current-source handoff](lattica-prover-p3/scripts/apple-current-benchmark-README.txt).
+It freezes the selected Git commit and uses the public fixture now included in
+this repository. Metal execution remains pending on the Apple Silicon machine.
+
+The previous [automatic supervision milestone](docs/evidence/block-v2-native-supervision-2026-10-06.json)
+passes recovery after losing both GPU workers and restart of the supervisor while
+the controller continues proving. Fleet recovery preserved one accepted proof,
+produced three more and applied one native block in **234.063 seconds** for the
+full supervised invocation (**113.478 seconds** for resumed proving). Supervisor
+restart kept the original GPU workers running: **164.515 seconds** for the full
+invocation, including **129.808 seconds** of proving. Each case passed independent
+CPU audit, fresh-process replay and two exact retries without duplicate application.
+An already-applied candidate was rejected before any controller or GPU worker started.
+
+All **29 observed processes** exited, **18 services** are terminal and **18 service
+accounting records** have zero host memory-limit/OOM events. Validation passed
+**148 Python tests**. The [benchmark report](docs/benchmarks/index.html) uses full
+supervised time for these per-run rates and shows final owner/proving time separately.
+The recovery gate now passes its five required cases. Typed hardware/context
+qualification, complete cold/post-seal timing and sustained throughput remain open.
+Supervision currently accepts sealed native candidates; broader supervision fault
+boundaries remain separately listed in the [action plan](docs/high-throughput-proving-plan.md).
+
+
+The previous [resource-failure milestone](docs/evidence/block-v2-native-resource-exhaustion-2026-10-06.json)
+passes physical spill exhaustion and GPU VRAM allocation failure. Each trial
+preserved accepted proofs, retried unfinished work on the surviving GPU, and
+applied one native block. Fresh-process replay and two retries per trial caused
+no duplicate application. Fault-inclusive proving / invocation times were
+**160.718 / 191.343 seconds** for spill exhaustion and **155.011 / 184.621 seconds**
+for VRAM exhaustion. All 25 recorded processes exited, 26 services are terminal,
+and 12 solver accounts have zero host memory-limit/OOM events. A startup socket
+lifetime fix passed CPU and GPU regression tests. The
+[report](docs/benchmarks/index.html) includes the fault causes, preserved proofs,
+resource assignments, and pinned JSON evidence. These count-four recovery trials
+use retained wallet proofs; complete transaction throughput remains unqualified.
+
+The previous [reorg milestone](docs/evidence/block-v2-native-reorg-cancellation-2026-10-06.json)
+passes cancellation during GPU proving and rejection of a stale audited root at
+native application. Accepted proofs are retained, services drain before intake
+claims are released, and both partial and cached recovery reject the old head
+before GPU dispatch. Revalidating the four arrivals produced a replacement block
+in **131.788 seconds proving / 160.711 seconds invocation**. Fresh-process replay
+and two exact retries confirmed one native and intake application, with no duplicates.
+All 28 recorded processes exited, 24 services stopped, and 18 solver accounts have
+zero memory-limit/OOM events. The [report](docs/benchmarks/index.html) preserves
+failed attempts separately. Matched repetitions, larger counts, returned Mac measurements, and complete
+transaction timing remain in the [action plan](docs/high-throughput-proving-plan.md).
+
+The earlier [worker failure milestone](docs/evidence/block-v2-native-worker-failure-2026-10-06.json)
+passes an isolated worker OOM and explicit recovery after losing both GPU workers.
+In the OOM trial, one accepted proof survived and the remaining GPU retried the
+failed job, completed the root, and applied one block. Fleet memory events match
+the failed worker's counters exactly. Proving took **160.032 seconds**, including
+the failed attempt and retry; the full invocation took **188.611 seconds**.
+
+After both workers were terminated in a separate trial, recovery reused one
+accepted proof and produced three more: **114.700 seconds proving**, **145.907
+seconds for the final invocation**. Each isolated candidate applied one block
+with three user transactions and one issuance. Independent replay and repeated
+application produced no duplicates. All 25 recorded processes exited and 22
+services stopped. The [benchmark report](docs/benchmarks/index.html) retains the
+failed attempt and successful results. Remaining VRAM/spill exhaustion, automatic
+supervision, and complete throughput are next in the
+[action plan](docs/high-throughput-proving-plan.md).
+
+The earlier [controller admission milestone](docs/evidence/block-v2-native-controller-admission-2026-10-06.json)
+passes four crashes before owner admission, one after handoff but before owner
+launch, and one after accepted proof work. Killing the controller also stops its
+bound owner and GPU workers. Explicit recovery preserved one accepted proof,
+produced three new proofs, passed the CPU root audit, and applied exactly one
+block containing three user transactions and one issuance. The final continuation
+took **114.635 seconds proving** and **145.858 seconds for the full invocation**.
+
+A subsequent CPU-only continuation reused all four proofs, started no GPU workers,
+and added no block or intake application event. Its **46.072-second controller
+service window** excludes frontend pinning. All 30 recorded processes exited and
+31 services were confirmed stopped. The [benchmark report](docs/benchmarks/index.html)
+retains the recovery measurements and downloadable JSON. Broader failure coverage,
+complete cold/post-seal throughput, and the two-hour pilot remain pending; see the
+[updated action plan](docs/high-throughput-proving-plan.md).
+
+The earlier [recovery-initialization milestone](docs/evidence/block-v2-native-recovery-initialization-2026-10-06.json)
+passes four interruptions while reopening a journal with an accepted proof.
+Recovery preserves that proof across generations **2–5** and commits each new
+generation with its sealed candidate. The final continuation produced **three new
+proofs**, passed the CPU root audit, and applied **one native block and one intake
+event**. Fresh-process replay and two retries preserved those counts. It took
+**114.515 seconds proving** and **143.117 seconds for the invocation**, using
+retained wallets and one recovered proof. These measure a recovery milestone;
+complete cold/post-seal throughput, broader failure coverage and the pilot remain
+pending. See the [updated action plan](docs/high-throughput-proving-plan.md).
+
+The earlier [new-candidate bootstrap milestone](docs/evidence/block-v2-native-bootstrap-recovery-2026-10-06.json)
+passes four coordinator crashes before initialization completes. Durable owner
+admission and an initialization marker prevent premature worker reservations;
+restarting an unfinished candidate retains its partial files. The trial also
+fixed a worker-launch path error and then passed dispatch recovery, CPU root
+audit and fresh-process replay. It applied exactly **one block and one intake
+event**. The resumed count-four phase took **132.551 seconds** proving and
+**162.073 seconds** for the invocation, using retained wallets. The recovery-initialization milestone above extends this coverage. Broader
+failure cases and complete throughput gates remain open.
+
+The earlier [startup, dispatch and export recovery milestone](docs/evidence/block-v2-native-startup-recovery-2026-10-06.json)
+passes coordinator interruption before worker launch, before readiness and after
+dispatch for an initialized, sealed candidate. A final proof-export I/O failure
+also recovered: the CPU-only continuation reused **four accepted proofs**, started
+**zero GPU workers**, and applied exactly **one native block and one intake event**.
+Root audit, fresh-process replay and two exact retries passed. Journal recovery
+took **3.903 seconds** and the owner window took **18.589 seconds**. These are
+recovery measurements using retained proofs. OOM/reorg/all-worker failure, automatic supervision and complete throughput gates
+remain open; the pilot remains blocked.
+
+The earlier [native receipt recovery milestone](docs/evidence/block-v2-native-application-recovery-2026-10-05.json)
+passes three controller crashes: after native head publication and before/after
+intake receipt commit. Recovery reuses all four proofs, starts **zero GPU workers**,
+and preserves exactly **one native block and one intake application event**.
+Five native storage publication boundaries and fresh-process exact retries also
+pass. The final CPU-only phase took **3.476 seconds** for journal recovery and
+**24.280 seconds** for the owner window; it applied **zero new blocks**. These
+measure recovery of existing work, not fresh solving throughput.
+
+[Partial-work restart](docs/evidence/block-v2-native-coordinator-recovery-2026-10-05.json),
+[active-worker failover](docs/evidence/block-v2-native-active-failover-2026-10-05.json)
+and [pre-seal reuse](docs/evidence/block-v2-native-preseal-arrivals-2026-10-05.json)
+remain qualified. Automatic supervision, broader interruption/OOM/reorg recovery,
+full-64 timing and sustained throughput remain open. The
+[dashboard](docs/benchmarks/index.html) retains failures and per-worker outcomes.
 
 With a C compiler installed (Xcode Command Line Tools on macOS), run from the repo root:
 

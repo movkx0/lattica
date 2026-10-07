@@ -1,0 +1,31 @@
+{
+  "captured_utc": "2026-10-05T10:49:26.606412+00:00",
+  "diagnosis": "Zig result-location semantics changed a union tag before the test read the old payload during self-assignment. Use the independent original transaction payload for the kind-mutation test. The read-only ciphertext change compiled and the first three native boundary tests passed.",
+  "log": {
+    "bytes": 1591,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r3/check-02.log",
+    "sha256": "533438f3850ce991528c1f31f414772b9d0a37a22e7273219a0e45ba0f951a27"
+  },
+  "manifest": {
+    "bytes": 43634,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r3/manifest.json",
+    "sha256": "d699dff0d935b78d730bf2e8380a9d86ac6b5187a67c672001e03f00c4df6329"
+  },
+  "native_boundary_tests_passed_before_failure": 3,
+  "native_cryptographic_verification_qualified": false,
+  "production_ready": false,
+  "python_persistence_tests_passed": 13,
+  "record_type": "research_native_host_validation_failure",
+  "schema_version": 1,
+  "source_archive": {
+    "bytes": 2680087,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r3/source.tar.gz",
+    "sha256": "d09fe145dd9b7d34f7e8c7611c67caef50c9c1b468fc16373820f28702a8e5aa"
+  },
+  "status": "failed",
+  "validation": {
+    "bytes": 1595,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/validation-r3/validation.json",
+    "sha256": "069301e94b9afcf4c5980d95ecbce5e784ec16d9e0b3cca23109272dd546ef85"
+  }
+}

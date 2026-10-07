@@ -385,6 +385,22 @@ impl VerificationTask {
         }
     }
 
+    pub fn verify_typed(
+        self,
+        registry: &crate::block_v2::typed_recursive::Registry<12>,
+        bytes: Vec<u8>,
+    ) -> VerificationResult {
+        let (result, error) = match VerifiedNode::verify_typed(&self.job, registry, &bytes) {
+            Ok(ticket) => (Some((ticket, bytes)), None),
+            Err(error) => (None, Some(error.to_string())),
+        };
+        VerificationResult {
+            owner: self.owner,
+            result,
+            error,
+        }
+    }
+
     /// Explicitly complete without starting CPU verification.
     pub fn reject(self) -> VerificationResult {
         VerificationResult {
@@ -410,6 +426,12 @@ pub struct Recovery {
 }
 
 impl Recovery {
+    /// Generation actually read from the authoritative checkpoint. A durable
+    /// recovery admission can be newer if its owner died before committing.
+    pub fn previous_epoch(&self) -> u64 {
+        self.restored.previous_epoch
+    }
+
     pub fn previous_candidates(&self) -> &[PreviousCandidate] {
         &self.restored.candidates
     }
@@ -439,11 +461,44 @@ impl Recovery {
     /// lifetime. Neither a missing service nor an available journal lock is
     /// evidence that arbitrary workspace users have drained.
     pub fn resume_with_workspaces(
+        self,
+        reconcile: impl FnMut(&PreviousAttempt) -> Result<(), Error>,
+        reconcile_workspace: impl FnMut(&WorkspaceLease) -> Result<(), Error>,
+        now: impl FnOnce() -> u64,
+    ) -> Result<DurableDag, Error> {
+        self.resume_initialized(reconcile, reconcile_workspace, now, |_, _| Ok(()))
+            .map(|(owner, ())| owner)
+    }
+
+    /// The caller must revalidate the native head first. Publish its sealed
+    /// candidate in the same checkpoint as the new epoch so an interruption
+    /// cannot leave an intermediate checkpoint without candidate provenance.
+    pub fn resume_sealed_with_workspaces(
+        self,
+        reconcile: impl FnMut(&PreviousAttempt) -> Result<(), Error>,
+        reconcile_workspace: impl FnMut(&WorkspaceLease) -> Result<(), Error>,
+        now: impl FnOnce() -> u64,
+        root: JobId,
+        eligibility: [u8; 32],
+        lifetime_ms: u64,
+    ) -> Result<(DurableDag, CandidateId), Error> {
+        self.resume_initialized(reconcile, reconcile_workspace, now, |dag, now| {
+            let deadline = now
+                .checked_add(lifetime_ms)
+                .ok_or("candidate deadline overflow")?;
+            let candidate = dag.attach(root, eligibility, deadline, now)?;
+            dag.seal(candidate, eligibility, now)?;
+            Ok(candidate)
+        })
+    }
+
+    fn resume_initialized<T>(
         mut self,
         mut reconcile: impl FnMut(&PreviousAttempt) -> Result<(), Error>,
         mut reconcile_workspace: impl FnMut(&WorkspaceLease) -> Result<(), Error>,
         now: impl FnOnce() -> u64,
-    ) -> Result<DurableDag, Error> {
+        initialize: impl FnOnce(&mut Dag, u64) -> Result<T, Error>,
+    ) -> Result<(DurableDag, T), Error> {
         self.store.require_ready()?;
         self.journal.check_current()?;
         for attempt in &self.restored.attempts {
@@ -452,20 +507,25 @@ impl Recovery {
         for workspace in &self.restored.workspaces {
             reconcile_workspace(workspace)?;
         }
-        self.restored.dag.rebase_recovered(now())?;
+        let now = now();
+        self.restored.dag.rebase_recovered(now)?;
         self.restored
             .dag
             .pin_launch_journal(self.journal.identity()?)?;
+        let initialized = initialize(&mut self.restored.dag, now)?;
         self.journal.cleanup_pending()?;
         self.journal.commit(&self.restored.dag.snapshot()?)?;
-        Ok(DurableDag {
-            core: self.restored.dag,
-            journal: self.journal,
-            store: self.store,
-            poisoned: false,
-            verifiers: BTreeMap::new(),
-            workspaces: BTreeMap::new(),
-        })
+        Ok((
+            DurableDag {
+                core: self.restored.dag,
+                journal: self.journal,
+                store: self.store,
+                poisoned: false,
+                verifiers: BTreeMap::new(),
+                workspaces: BTreeMap::new(),
+            },
+            initialized,
+        ))
     }
 }
 
@@ -526,6 +586,36 @@ impl DurableDag {
         })
     }
 
+    /// Registry, chain and wallet policy are trusted host inputs, never taken
+    /// from the checkpoint. Every retained proof is independently reverified.
+    pub fn recover_typed(
+        path: &Path,
+        journal_limits: JournalLimits,
+        store: ArtifactStore,
+        pin: RegistryPin,
+        registry: &crate::block_v2::typed_recursive::Registry<12>,
+        chain: [u8; 32],
+        next_epoch: u64,
+        limits: Limits,
+        policy: impl FnMut(ArtifactRef) -> Result<crate::block_v2::typed_recursive::Policy, Error>,
+    ) -> Result<Recovery, Error> {
+        store.require_ready()?;
+        let (journal, bytes) = SnapshotLog::open(path, journal_limits)?;
+        let restored = dag::snapshot::restore_typed(
+            &bytes, pin, registry, chain, next_epoch, limits, &store, policy,
+        )?;
+        if let Some(root) = restored.dag.launch_root() {
+            if root.journal != journal.identity()? {
+                return Err("typed DAG launch journal directory replaced".into());
+            }
+        }
+        Ok(Recovery {
+            restored,
+            journal,
+            store,
+        })
+    }
+
     fn live(&self) -> Result<(), Error> {
         if self.poisoned {
             return Err("durable execution poisoned; recovery required".into());
@@ -553,6 +643,10 @@ impl DurableDag {
     pub fn ready(&self) -> Result<Vec<JobId>, Error> {
         self.live()?;
         Ok(self.core.ready())
+    }
+    pub fn job_deadline(&self, job: JobId) -> Result<u64, Error> {
+        self.live()?;
+        self.core.job_deadline(job)
     }
 
     /// Export only a durably committed current lease. This does not spawn work.
@@ -644,6 +738,13 @@ impl DurableDag {
         self.live()?;
         self.core.assignment(lease)
     }
+    /// Export a durably verified node for recovery. These bytes do not authorize
+    /// native application; the caller must still check the current sealed head.
+    pub fn verified_node_bytes(&self, job: JobId) -> Result<Option<&[u8]>, Error> {
+        self.live()?;
+        self.core.verified_node_bytes(job)
+    }
+
     pub fn status(&self, job: JobId) -> Result<JobStatus, Error> {
         self.live()?;
         self.core.status(job)

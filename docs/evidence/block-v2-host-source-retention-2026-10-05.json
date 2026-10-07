@@ -1,0 +1,16 @@
+{
+  "captured_utc": "2026-10-05T08:02:52.243236+00:00",
+  "coverage_note": "The report history resolver checks retained measurement paths. It does not currently validate every direct working-tree source reference. Source retention must not be inferred from a zero artifact-pin mismatch count.",
+  "original_path": "src/node.zig",
+  "original_revision": "094cade18a59d38d7d65bd805511a7809b348a9e",
+  "original_sha256": "6e1c481822d2ffa9eb7526551944fbaa3730ea2e5ec423a86d9a4220728aa752",
+  "reason": "Preserve exact node source cited by prior readiness snapshots before research host integration. Historical evidence and frozen benchmark packages are unchanged.",
+  "record_type": "historical_source_retention",
+  "retained_source": {
+    "bytes": 109960,
+    "path": "lattica-prover-p3/target/block-v2-host-boundary-20261005-a/pre-host-node.zig",
+    "sha256": "6e1c481822d2ffa9eb7526551944fbaa3730ea2e5ec423a86d9a4220728aa752"
+  },
+  "schema_version": 1,
+  "status": "historical_source_retained"
+}

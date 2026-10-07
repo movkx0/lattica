@@ -84,12 +84,7 @@ impl Assignment {
                 return Err("worker ordered dependency identity".into());
             }
         }
-        let (wallets, children) = match self.job.operation() {
-            Operation::Wrap => (1, 0),
-            Operation::WrapPair => (2, 0),
-            Operation::Empty => (0, 0),
-            Operation::Merge => (0, 2),
-        };
+        let (wallets, children) = self.job.operation().arity();
         if self.job.wallet_inputs().len() != wallets
             || self.dependencies.len() != children
             || self.inputs.len() != wallets + children
@@ -101,7 +96,11 @@ impl Assignment {
         }
         if children != 0 {
             if self.manifest.iter().any(|a| a.kind() != ArtifactKind::Node)
-                || Job::merge(&self.dependencies[0], &self.dependencies[1])? != self.job
+                || (if self.job.operation() == Operation::Finalize {
+                    Job::finalize(&self.dependencies[0])?
+                } else {
+                    Job::merge(&self.dependencies[0], &self.dependencies[1])?
+                }) != self.job
             {
                 return Err("worker merge statement/dependencies".into());
             }
@@ -206,6 +205,9 @@ fn require_cpu_backend() -> Result<(), Error> {
 impl CpuWorker {
     pub fn new(registry: Registry, pin: RegistryPin) -> Result<Self, Error> {
         require_cpu_backend()?;
+        if pin.is_typed() {
+            return Err("legacy CPU worker rejects typed registry".into());
+        }
         RegistryPin::new(&registry, pin.profile(), pin.construction())?;
         Ok(Self { registry, pin })
     }
@@ -252,6 +254,9 @@ impl CpuWorker {
                         codec::decode_node(&assignment.inputs[1])?,
                     ]),
                 )
+            }
+            Operation::TypedPair { .. } | Operation::Finalize => {
+                return Err("legacy CPU worker rejects typed jobs".into())
             }
         };
         if derived != *job {
@@ -328,6 +333,10 @@ pub mod packet;
 #[cfg(all(target_os = "linux", feature = "stream"))]
 #[path = "worker_cached.rs"]
 pub mod cached;
+
+#[cfg(all(target_os = "linux", feature = "stream"))]
+#[path = "worker_typed.rs"]
+pub mod typed;
 
 #[cfg(test)]
 #[path = "worker_tests.rs"]

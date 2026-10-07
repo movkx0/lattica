@@ -1,0 +1,148 @@
+{
+  "browser_artifacts": [
+    {
+      "bytes": 221988,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/browser/apple-738f4dea8eb2559015eb-01-pilot-shared-18t-quotient-compact-deferred-r1.json",
+      "sha256": "0df48f95d34872441edf41dd34e61c600c017de837f528eb3ead4bdb27d41fc2"
+    },
+    {
+      "bytes": 177175,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/browser/desktop.png",
+      "sha256": "4a32caf9181daecd9f8d47a564f1988c94bca89b5e69a3d84a5e247c6f377176"
+    },
+    {
+      "bytes": 69233,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/browser/mobile.png",
+      "sha256": "9d8e716a651bd92cd259abca8f8f5ac42ed4e0413046780677839ba132449c2d"
+    },
+    {
+      "bytes": 279131,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/browser/run-0f1f01c49d163c9dc5cb31b6.json",
+      "sha256": "cbaa68ea2ff2d727a1b89bb08f52148da5bf512b0bb1d52da2b2472c62f50a70"
+    },
+    {
+      "bytes": 114522,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/browser/throughput-b735e9bd9ba9b549.json",
+      "sha256": "fca8cd3725a5e67e5edbb4b7e0f1399e52dc2d73255f07aec558f922022eb547"
+    },
+    {
+      "bytes": 99405,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/browser/timeline.png",
+      "sha256": "dd9dc29d05e84f16549de6c851801d7e27377f1641c0a4c9502aac576ccc52af"
+    }
+  ],
+  "captured_utc": "2026-10-05T05:14:37.275484+00:00",
+  "comparison_evidence": {
+    "bytes": 106811,
+    "path": "docs/evidence/block-v2-typed-paired-comparison-2026-10-05.json",
+    "sha256": "96138efdc549c4a9012d6b16e7ab1cb6905cc92594ea4dbb0d00fdb63e1cc53a"
+  },
+  "coverage": {
+    "campaigns": 103,
+    "cpu_audited_runs": 269,
+    "mismatched_pins": [],
+    "missing_pinned_sources": 0,
+    "runs": 538
+  },
+  "delivered_transaction_campaigns": 0,
+  "delivered_transactions_measured": false,
+  "host_memory_after_comparison": {
+    "available_bytes": 49432915968,
+    "captured_utc": "2026-10-05T05:07:27.462854+00:00",
+    "prior_two_gpu_memory_available": true,
+    "prior_two_gpu_required_bytes": 46946444493,
+    "swap_total_bytes": 0,
+    "total_bytes": 66811260928
+  },
+  "host_memory_source": {
+    "bytes": 235,
+    "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/host-memory.json",
+    "sha256": "594f3047925b1bad652e22040a1e8e4559b554305e5f2666098661fededbe80c"
+  },
+  "production_ready": false,
+  "python_tests_passed": 49,
+  "report_check": {
+    "bytes": 89,
+    "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/report-check.log",
+    "sha256": "92f2cac97d80b975eaeb39c1d999aa60a4101ac51b3a740872426d5a5c52f7b1"
+  },
+  "report_snapshot": {
+    "catalog.json": {
+      "bytes": 16484637,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/checked-report/catalog.json",
+      "sha256": "d37d36eec27050fdae5c3f0a38907f394adcca586fb2e45b4c62dc17e3ca4dc6"
+    },
+    "index.html": {
+      "bytes": 83068139,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/checked-report/index.html",
+      "sha256": "52452f7071378818491d750e5f2fa95feb7bdaf71ea2cd055368f35e49ad3538"
+    }
+  },
+  "retained_browser_failure": {
+    "cause": "The new assertion read innerText from a collapsed details section. Opening the section exposes the existing table; the report data and rendering were correct.",
+    "source": {
+      "bytes": 496,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/browser-attempt01.log",
+      "sha256": "c911a35fd83304da158f55bb3b36bafd1879178f70590778333e0295f41ecd6d"
+    },
+    "source_archive": {
+      "bytes": 51474,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/report-sources.tar.gz",
+      "sha256": "154323fe80194037256a367f70f77316ce073f07ff2ab35398fbe2a8480cb5c3"
+    }
+  },
+  "schema_version": 1,
+  "scope": "Import and offline presentation of five matched finalizer/paired comparisons. Research fixture aggregation only.",
+  "source_archive": {
+    "bytes": 51775,
+    "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/report-sources-r2.tar.gz",
+    "sha256": "d59fb18f7441fcb604ca1a4ac5fdbf1966fb6bdc91374c7484756786df84b345"
+  },
+  "source_pins": {
+    "lattica-prover-p3/scripts/benchmark_report/__init__.py": "2439075037e8f11deac0b8215ead675541204ba706b48805014776fb886760dd",
+    "lattica-prover-p3/scripts/benchmark_report/campaign.py": "a140924e76b0adc0d3bb0b0f627dc3647a6c84711d699d462e86326a0b205945",
+    "lattica-prover-p3/scripts/benchmark_report/history.py": "73b9bf160ec5de21ea675ffab2d6d03f09417da673f1e510bf5cef637897c505",
+    "lattica-prover-p3/scripts/benchmark_report/measurements.py": "4293982a9198517cd5f636391b40579314a5fcc7358a8370b0fd70b5fc120ee1",
+    "lattica-prover-p3/scripts/benchmark_report/model.py": "e09ffd66e5ffcfdc885717e0af34a516db6ac079d6f6032e3171307bbed4b5b3",
+    "lattica-prover-p3/scripts/benchmark_report/page.html": "131efb6922c09a616eab3d435ff669f39a0386313e58716ebd6afefa848f7cfe",
+    "lattica-prover-p3/scripts/benchmark_report/report.py": "0f37d03595f3494b721153697c650ea5521694baaeb291948fd50acd7a792b31",
+    "lattica-prover-p3/scripts/benchmark_report/typed.py": "52567274527165481505db4f64f8abd6239b7aae1cbbdd6a7f0b49982e14ecbf",
+    "lattica-prover-p3/scripts/test-block-v2-benchmark-browser.mjs": "43feb339a11f33ab7bd58579616e9bee5603cbb2c9dc7feb1b8d8dddcc66a1fb",
+    "lattica-prover-p3/scripts/test-block-v2-benchmark-report.py": "559b9a765d782fe41dae0f350178def7f62b629be771a4ec653bc5fe89a2d740",
+    "lattica-prover-p3/scripts/test-block-v2-typed-comparison-report.py": "35d5f027511e55de4e9c099a0eb703c3315b955e076ddb7207fcef20db9810be",
+    "lattica-prover-p3/scripts/test-block-v2-typed-fleet-report.py": "b9190ec0b1a738bef46cc286d738f6502750f02afeea24a33f538486fa478dec",
+    "lattica-prover-p3/scripts/test-block-v2-typed-report.py": "c8296a155be118fe775ef78244a8b2f200c63a10a30ce275d996a8258ef1a418"
+  },
+  "status": "passed",
+  "test_logs": [
+    {
+      "bytes": 201,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/test-block-v2-benchmark-report.py.log",
+      "sha256": "5fa75cdc21ce944b40014bbab6ff7cfb1eb456d80f3d253131e318cfb7d6fd70"
+    },
+    {
+      "bytes": 106,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/test-block-v2-typed-comparison-report.py.log",
+      "sha256": "e86c589b4c6d254afc3847cc8eb6f050f14e95e78b2fc8d168cfffaa0b766b73"
+    },
+    {
+      "bytes": 105,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/test-block-v2-typed-fleet-report.py.log",
+      "sha256": "68ed390d20911ea0d419170d91b1adbf760260146a95671bc5f8ce59a6d4c004"
+    },
+    {
+      "bytes": 106,
+      "path": "lattica-prover-p3/target/block-v2-paired-comparison-validation-20261005-a/test-block-v2-typed-report.py.log",
+      "sha256": "637ad693971420b70a01476cd5d51065ecc3c7af270c41cfe91899ec8c2db4bd"
+    }
+  ],
+  "validation": {
+    "browser_errors": 0,
+    "browser_passed": true,
+    "catalog_check_passed": true,
+    "desktop_and_mobile_checked": true,
+    "full_run_json_downloads_checked": true,
+    "matched_construction_table_checked": true,
+    "network_requests": 0
+  }
+}

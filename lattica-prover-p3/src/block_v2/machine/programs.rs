@@ -119,7 +119,8 @@ fn registry_prefix(height: usize) -> Result<Vec<u64>, CompileError> {
 }
 
 fn check_caps<const N: usize>(caps: &Caps<N>) -> Result<(), CompileError> {
-    if !matches!(N, 3 | 5) || caps.iter().any(|cap| cap.len() != 1 << profile::CAP_HEIGHT) {
+    if !matches!(N, 3 | 5 | 6 | 12) || caps.iter().any(|cap| cap.len() != 1 << profile::CAP_HEIGHT)
+    {
         return Err(CompileError::Shape("registry cap length"));
     }
     Ok(())
@@ -131,6 +132,12 @@ fn registry_prefix_for<const N: usize>(height: usize) -> Result<Vec<u64>, Compil
         // Separate research registry for JoinSplit, empty, merge, HTLC and issuance.
         // Legacy three-key profile identities remain byte-for-byte unchanged.
         fields.extend([0x5459_5045_445f_5631, 5]); // TYPED_V1
+    } else if N == 6 {
+        // Separate research identity for the typed depth-six finalizer.
+        fields.extend([0x5459_5045_445f_4631, 6]); // TYPED_F1
+    } else if N == 12 {
+        // Separate research identity for ordered typed pairs and a finalizer.
+        fields.extend([0x5459_5045_445f_5031, 12]); // TYPED_P1
     }
     Ok(fields)
 }
@@ -220,7 +227,7 @@ pub(super) fn assert_constant(b: &mut ProgramBuilder, wire: Wire, value: u64) {
 }
 
 /// Range constraint with public, fixed Lagrange selectors. No unconstrained mode hints.
-fn selectors(b: &mut ProgramBuilder, value: Wire, first: u64, last: u64) -> Vec<Wire> {
+pub(super) fn selectors(b: &mut ProgramBuilder, value: Wire, first: u64, last: u64) -> Vec<Wire> {
     let one = b.constant(Val::ONE);
     let diffs: Vec<_> = (first..=last)
         .map(|v| {
@@ -249,7 +256,7 @@ fn selectors(b: &mut ProgramBuilder, value: Wire, first: u64, last: u64) -> Vec<
         .collect()
 }
 
-fn parent_root(
+pub(super) fn parent_root(
     b: &mut ProgramBuilder,
     level: Wire,
     lc: Wire,

@@ -67,6 +67,15 @@ fn sample_process(key: Key) -> bool {
                 | "bounded GPU commitment"
         ) | ("p3_batch_stark::prover", "compute quotient")
             | ("p3_fri::two_adic_pcs", "reduce matrix quotient")
+            | (
+                "lattica_prover_p3::block_v2::gpu_quotient_prover",
+                "compute quotient"
+            )
+            | (
+                "lattica_prover_p3::block_v2::batched_fri",
+                "FRI prover" | "commit phase" | "query phase"
+            )
+            | ("lattica_block_v2_perf", "GPU opening proof")
     )
 }
 
@@ -74,7 +83,13 @@ impl Subscriber for Timings {
     fn enabled(&self, metadata: &Metadata<'_>) -> bool {
         metadata.is_span()
             && (metadata.target().starts_with("p3_")
-                || metadata.target() == "lattica_block_v2_perf")
+                || matches!(
+                    metadata.target(),
+                    "lattica_block_v2_perf"
+                        | "lattica_prover_p3::block_v2::gpu_quotient_prover"
+                        | "lattica_prover_p3::block_v2::batched_fri"
+                        | "lattica_prover_p3::block_v2::opening_pcs"
+                ))
     }
 
     fn new_span(&self, attrs: &span::Attributes<'_>) -> span::Id {
@@ -325,6 +340,21 @@ mod tests {
         fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
             panic!("profiling must never format witness/debug fields")
         }
+    }
+
+    #[test]
+    fn adapted_prover_spans_are_visible_without_enabling_unrelated_targets() {
+        let timings = Timings::default();
+        tracing::subscriber::with_default(timings.clone(), || {
+            tracing::info_span!(target: "lattica_prover_p3::block_v2::batched_fri", "FRI prover", secret = ?Secret).in_scope(|| {});
+            tracing::info_span!(target: "lattica_prover_p3::block_v2::gpu_quotient_prover", "compute quotient", secret = ?Secret).in_scope(|| {});
+            tracing::debug_span!(target: "lattica_prover_p3::block_v2::opening_pcs", "evaluate matrix", secret = ?Secret).in_scope(|| {});
+            tracing::info_span!(target: "lattica_prover_p3::unrelated", "unrelated", secret = ?Secret).in_scope(|| {});
+        });
+        let state = timings.0.lock().unwrap();
+        assert_eq!(state.timings.len(), 3);
+        assert!(state.timings.keys().all(|key| key.1 != "unrelated"));
+        assert!(state.live.is_empty());
     }
 
     #[test]

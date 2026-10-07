@@ -3,6 +3,7 @@
 //! Only equal-height, power-of-two batches are admitted by the selected GPU path.
 mod compact_data;
 mod engine;
+pub(crate) use engine::fri_fold::fold as fold_fri;
 pub(crate) use engine::opening_reduce::{
     reduce_lde as reduce_openings, OpeningMatrix, OpeningTerm,
 };
@@ -22,6 +23,7 @@ use std::sync::{
 
 pub use super::resident_pcs::initialize_research_from_env as initialize_resident_from_env;
 pub use engine::{
+    drain,
     lde_execute::{coset_lde_commit, LdeCommitOutput, LdeInput},
     lde_plan::{ColumnTile as LdeColumnTile, InputShape as LdeInputShape, LdeCommitPlan},
     plan_coset_lde_commit, report, shutdown, Limits, Snapshot,

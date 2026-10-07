@@ -1,0 +1,44 @@
+{
+  "campaign_ids": [],
+  "configuration": {},
+  "kind": "diagnostic",
+  "label": "block-v2-typed-finalizer-research-20261004-a",
+  "limitations": ["No recognized complete run manifest; retained measurements only."],
+  "measurement_scope": "diagnostic",
+  "measurements": {
+    "resource_samples": 0,
+    "tables": [],
+    "timeline_events": 0
+  },
+  "milestones": [],
+  "platform": {},
+  "proofs": [],
+  "revision": {},
+  "run_id": "run-2563e0e791e2d0b81f3c9bda",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 1633,
+      "path": "lattica-prover-p3/target/block-v2-typed-finalizer-research-20261004-a/typed-tests.log",
+      "sha256": "de3827cfa8c85a6a38e0975fa9bc6579477a091b2eca987afe4875509152708d"
+    }
+  ],
+  "stages": [],
+  "status": "unknown",
+  "timing": {
+    "elapsed_seconds": null,
+    "recursive_seconds": null
+  },
+  "track": "unknown",
+  "verification": {
+    "cpu_audited": null,
+    "root_bytes": null,
+    "root_sha256": null
+  },
+  "workload": {
+    "count_evidence": null,
+    "fixture_reuse": null,
+    "issuance_transactions": null,
+    "user_transactions": null
+  }
+}

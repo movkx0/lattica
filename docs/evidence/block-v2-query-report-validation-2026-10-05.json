@@ -1,0 +1,455 @@
+{
+  "browser": {
+    "browser_errors": 0,
+    "network_requests": 0,
+    "status": "passed"
+  },
+  "captured_utc": "2026-10-05T07:21:38.295671+00:00",
+  "coverage": {
+    "campaigns": 119,
+    "cpu_audited_runs": 301,
+    "documentary_only_campaigns": [
+      "block-v2-apple-benchmark-package-2026-10-04",
+      "block-v2-cpu-process-2026-10-02",
+      "block-v2-fusion-prune-2026-10-01",
+      "block-v2-lookup-mask-model-2026-10-01",
+      "block-v2-retention-model-2026-10-01",
+      "block-v2-throughput-browser-2026-10-04",
+      "block-v2-throughput-qualification-2026-10-04-r3",
+      "block-v2-throughput-qualification-2026-10-04-r4",
+      "block-v2-throughput-readiness-2026-10-04-r2",
+      "block-v2-throughput-readiness-2026-10-04-r3",
+      "block-v2-throughput-readiness-2026-10-04-r4",
+      "block-v2-throughput-readiness-2026-10-04-r5",
+      "block-v2-throughput-readiness-2026-10-04-r6",
+      "block-v2-throughput-readiness-2026-10-04-r7",
+      "block-v2-throughput-readiness-2026-10-04-r8",
+      "block-v2-throughput-readiness-2026-10-04",
+      "block-v2-throughput-readiness-2026-10-05-r10",
+      "block-v2-throughput-readiness-2026-10-05-r9",
+      "block-v2-throughput-resources-2026-10-04-r3",
+      "block-v2-throughput-resources-2026-10-04",
+      "block-v2-throughput-validation-2026-10-04",
+      "block-v2-typed-validation-2026-10-04"
+    ],
+    "mismatched_pins": [],
+    "missing_pinned_sources": 0,
+    "resource_samples": 224413,
+    "retention": "All discovered structured performance records and resource samples are retained. Original documentary evidence is embedded. Proof payloads, wallet stores and arbitrary log text are excluded.",
+    "runs": 606,
+    "source_bytes": 778712307,
+    "source_files": 4143,
+    "timeline_events": 4597991,
+    "unavailable_references": [
+      "/tmp/lattica-final-recursion-gates.log",
+      "/tmp/lattica-gpu-hash-20260930-1-vram.csv",
+      "/tmp/lattica-gpu-hash-build.log",
+      "/tmp/lattica-gpu-hash-final-checks.log",
+      "/tmp/lattica-gpu-hash-final-checks.sh",
+      "/tmp/lattica-gpu-hash-isolation.log",
+      "/tmp/lattica-gpu-hash-run1.log",
+      "/tmp/lattica-gpu-hash-run2.log",
+      "/tmp/lattica-gpu-hash-run3.log",
+      "/tmp/lattica-gpu-hash-run4.log",
+      "/tmp/lattica-gpu-hash-run5.log",
+      "/tmp/lattica-gpu-hash-series.log",
+      "/tmp/lattica-gpu-hash-series.sh",
+      "/tmp/lattica-gpu-watch-failbin/nvidia-smi",
+      "/tmp/lattica-gpu-watch-negative-v2.log",
+      "/tmp/lattica-gpu-watch-negative.sh",
+      "/tmp/lattica-grouped-integration-draft-g-20261001.tar.gz",
+      "/tmp/lattica-grouped-wrapper-20261001",
+      "/tmp/lattica-perf-cache-hit-audit.log",
+      "/tmp/lattica-perf-cache-run.log",
+      "/tmp/lattica-perf-cache-run.sh",
+      "/tmp/lattica-perf-final-checks.log",
+      "/tmp/lattica-perf-final-checks.sh",
+      "/tmp/lattica-retained-merkle-20261001",
+      "/tmp/lattica-retained-merkle-20261001/block-v2-accounting.py",
+      "/tmp/lattica-retained-merkle-20261001/block-v2-scalability.py",
+      "/tmp/lattica-retained-merkle-20261001/block-v2-two-level.sh",
+      "/tmp/lattica-retained-merkle-20261001/engine.rs",
+      "/tmp/lattica-retained-merkle-20261001/gpu_hash.rs",
+      "/tmp/lattica-retained-merkle-20261001/manifest.json",
+      "/tmp/lattica-retained-merkle-20261001/test-block-v2-scalability.py",
+      "/tmp/lattica-scratch-bench-1000-c9071c4fcf6d",
+      "/tmp/lattica-scratch-bench-1000-c9071c4fcf6d/ram16",
+      "/tmp/lattica-scratch-bench-1000-c9071c4fcf6d/ram16-control",
+      "/tmp/lattica-scratch-bench-1000-c9071c4fcf6d/ram24",
+      "/tmp/lattica-scratch-bench-1000-c9071c4fcf6d/ram8",
+      "/tmp/lattica-two-level-normalized.log",
+      "lattica-prover-p3/target/block-v2-pipeline-readback-pairs-20261003-a (older readback-only binary/controller; no proving runs were started)"
+    ]
+  },
+  "query_comparisons": [
+    {
+      "aggregate": {
+        "measured_seconds": 667.6979844559974,
+        "processed_user_transactions": 15,
+        "transactions_per_minute": 1.3479148072212157,
+        "transactions_per_second": 0.022465246787020263
+      },
+      "id": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison:rows",
+      "label": "row-gather-comparison:rows",
+      "note": "Completed, CPU-audited useful fixture inputs divided by measured window time. Each worker or concurrent fleet window is counted once.",
+      "scope": "typed_recursive_aggregation",
+      "windows": [
+        {
+          "complete_mapping": true,
+          "elapsed_seconds": 132.44123276000028,
+          "recorded": {
+            "arm": "rows",
+            "construction": "paired",
+            "count_per_root": 4,
+            "individual_seconds": [
+              132.44123276000028
+            ],
+            "pair": 1,
+            "repeat_qualified": true,
+            "requested_pairs": 5,
+            "series_status": "succeeded",
+            "timing_boundary": "Worker fixture copy, fresh recursive proving and independent CPU root audit. Wallet proving, registration and durable application excluded.",
+            "type": "typed_query_comparison",
+            "worker_reduction_percent": -0.6680998293028484
+          },
+          "run_ids": [
+            "run-dd841a6f4e6d03b1dce3ed74"
+          ],
+          "source": {
+            "bytes": 43248,
+            "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/summary.json",
+            "sha256": "8901f070e995e15684d57ce0bfedbb4ca59cd35e2565ee94846773f3e544be91"
+          },
+          "source_consistent": true
+        },
+        {
+          "complete_mapping": true,
+          "elapsed_seconds": 133.59876564300794,
+          "recorded": {
+            "arm": "rows",
+            "construction": "paired",
+            "count_per_root": 4,
+            "individual_seconds": [
+              133.59876564300794
+            ],
+            "pair": 2,
+            "repeat_qualified": true,
+            "requested_pairs": 5,
+            "series_status": "succeeded",
+            "timing_boundary": "Worker fixture copy, fresh recursive proving and independent CPU root audit. Wallet proving, registration and durable application excluded.",
+            "type": "typed_query_comparison",
+            "worker_reduction_percent": 0.22498917603059887
+          },
+          "run_ids": [
+            "run-31fd2c8a5f6bbd0d086f268e"
+          ],
+          "source": {
+            "bytes": 43248,
+            "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/summary.json",
+            "sha256": "8901f070e995e15684d57ce0bfedbb4ca59cd35e2565ee94846773f3e544be91"
+          },
+          "source_consistent": true
+        },
+        {
+          "complete_mapping": true,
+          "elapsed_seconds": 134.80201860399393,
+          "recorded": {
+            "arm": "rows",
+            "construction": "paired",
+            "count_per_root": 4,
+            "individual_seconds": [
+              134.80201860399393
+            ],
+            "pair": 3,
+            "repeat_qualified": true,
+            "requested_pairs": 5,
+            "series_status": "succeeded",
+            "timing_boundary": "Worker fixture copy, fresh recursive proving and independent CPU root audit. Wallet proving, registration and durable application excluded.",
+            "type": "typed_query_comparison",
+            "worker_reduction_percent": 0.9183556884495792
+          },
+          "run_ids": [
+            "run-1b78c3bf67b172bbd958b5d5"
+          ],
+          "source": {
+            "bytes": 43248,
+            "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/summary.json",
+            "sha256": "8901f070e995e15684d57ce0bfedbb4ca59cd35e2565ee94846773f3e544be91"
+          },
+          "source_consistent": true
+        },
+        {
+          "complete_mapping": true,
+          "elapsed_seconds": 133.0941744909942,
+          "recorded": {
+            "arm": "rows",
+            "construction": "paired",
+            "count_per_root": 4,
+            "individual_seconds": [
+              133.0941744909942
+            ],
+            "pair": 4,
+            "repeat_qualified": true,
+            "requested_pairs": 5,
+            "series_status": "succeeded",
+            "timing_boundary": "Worker fixture copy, fresh recursive proving and independent CPU root audit. Wallet proving, registration and durable application excluded.",
+            "type": "typed_query_comparison",
+            "worker_reduction_percent": -0.0017213390548276308
+          },
+          "run_ids": [
+            "run-b74ac497537c8f7b7034fadc"
+          ],
+          "source": {
+            "bytes": 43248,
+            "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/summary.json",
+            "sha256": "8901f070e995e15684d57ce0bfedbb4ca59cd35e2565ee94846773f3e544be91"
+          },
+          "source_consistent": true
+        },
+        {
+          "complete_mapping": true,
+          "elapsed_seconds": 133.76179295800102,
+          "recorded": {
+            "arm": "rows",
+            "construction": "paired",
+            "count_per_root": 4,
+            "individual_seconds": [
+              133.76179295800102
+            ],
+            "pair": 5,
+            "repeat_qualified": true,
+            "requested_pairs": 5,
+            "series_status": "succeeded",
+            "timing_boundary": "Worker fixture copy, fresh recursive proving and independent CPU root audit. Wallet proving, registration and durable application excluded.",
+            "type": "typed_query_comparison",
+            "worker_reduction_percent": 0.3585305305734865
+          },
+          "run_ids": [
+            "run-fae583291f5cad294302db41"
+          ],
+          "source": {
+            "bytes": 43248,
+            "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/summary.json",
+            "sha256": "8901f070e995e15684d57ce0bfedbb4ca59cd35e2565ee94846773f3e544be91"
+          },
+          "source_consistent": true
+        }
+      ]
+    },
+    {
+      "aggregate": {
+        "measured_seconds": 666.5669934739999,
+        "processed_user_transactions": 15,
+        "transactions_per_minute": 1.3502018683964516,
+        "transactions_per_second": 0.022503364473274192
+      },
+      "id": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison:gather",
+      "label": "row-gather-comparison:gather",
+      "note": "Completed, CPU-audited useful fixture inputs divided by measured window time. Each worker or concurrent fleet window is counted once.",
+      "scope": "typed_recursive_aggregation",
+      "windows": [
+        {
+          "complete_mapping": true,
+          "elapsed_seconds": 133.3260724099964,
+          "recorded": {
+            "arm": "gather",
+            "construction": "paired",
+            "count_per_root": 4,
+            "individual_seconds": [
+              133.3260724099964
+            ],
+            "pair": 1,
+            "repeat_qualified": true,
+            "requested_pairs": 5,
+            "series_status": "succeeded",
+            "timing_boundary": "Worker fixture copy, fresh recursive proving and independent CPU root audit. Wallet proving, registration and durable application excluded.",
+            "type": "typed_query_comparison",
+            "worker_reduction_percent": -0.6680998293028484
+          },
+          "run_ids": [
+            "run-8899ce013ea08dd8f61e1cc5"
+          ],
+          "source": {
+            "bytes": 43248,
+            "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/summary.json",
+            "sha256": "8901f070e995e15684d57ce0bfedbb4ca59cd35e2565ee94846773f3e544be91"
+          },
+          "source_consistent": true
+        },
+        {
+          "complete_mapping": true,
+          "elapsed_seconds": 133.29818288100068,
+          "recorded": {
+            "arm": "gather",
+            "construction": "paired",
+            "count_per_root": 4,
+            "individual_seconds": [
+              133.29818288100068
+            ],
+            "pair": 2,
+            "repeat_qualified": true,
+            "requested_pairs": 5,
+            "series_status": "succeeded",
+            "timing_boundary": "Worker fixture copy, fresh recursive proving and independent CPU root audit. Wallet proving, registration and durable application excluded.",
+            "type": "typed_query_comparison",
+            "worker_reduction_percent": 0.22498917603059887
+          },
+          "run_ids": [
+            "run-4e530e6513ecd3a20e6b4fe9"
+          ],
+          "source": {
+            "bytes": 43248,
+            "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/summary.json",
+            "sha256": "8901f070e995e15684d57ce0bfedbb4ca59cd35e2565ee94846773f3e544be91"
+          },
+          "source_consistent": true
+        },
+        {
+          "complete_mapping": true,
+          "elapsed_seconds": 133.5640565979993,
+          "recorded": {
+            "arm": "gather",
+            "construction": "paired",
+            "count_per_root": 4,
+            "individual_seconds": [
+              133.5640565979993
+            ],
+            "pair": 3,
+            "repeat_qualified": true,
+            "requested_pairs": 5,
+            "series_status": "succeeded",
+            "timing_boundary": "Worker fixture copy, fresh recursive proving and independent CPU root audit. Wallet proving, registration and durable application excluded.",
+            "type": "typed_query_comparison",
+            "worker_reduction_percent": 0.9183556884495792
+          },
+          "run_ids": [
+            "run-0aca94e56d4e7aa35685e604"
+          ],
+          "source": {
+            "bytes": 43248,
+            "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/summary.json",
+            "sha256": "8901f070e995e15684d57ce0bfedbb4ca59cd35e2565ee94846773f3e544be91"
+          },
+          "source_consistent": true
+        },
+        {
+          "complete_mapping": true,
+          "elapsed_seconds": 133.0964654929994,
+          "recorded": {
+            "arm": "gather",
+            "construction": "paired",
+            "count_per_root": 4,
+            "individual_seconds": [
+              133.0964654929994
+            ],
+            "pair": 4,
+            "repeat_qualified": true,
+            "requested_pairs": 5,
+            "series_status": "succeeded",
+            "timing_boundary": "Worker fixture copy, fresh recursive proving and independent CPU root audit. Wallet proving, registration and durable application excluded.",
+            "type": "typed_query_comparison",
+            "worker_reduction_percent": -0.0017213390548276308
+          },
+          "run_ids": [
+            "run-f00dbfa6418b008cd2e8e401"
+          ],
+          "source": {
+            "bytes": 43248,
+            "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/summary.json",
+            "sha256": "8901f070e995e15684d57ce0bfedbb4ca59cd35e2565ee94846773f3e544be91"
+          },
+          "source_consistent": true
+        },
+        {
+          "complete_mapping": true,
+          "elapsed_seconds": 133.2822160920041,
+          "recorded": {
+            "arm": "gather",
+            "construction": "paired",
+            "count_per_root": 4,
+            "individual_seconds": [
+              133.2822160920041
+            ],
+            "pair": 5,
+            "repeat_qualified": true,
+            "requested_pairs": 5,
+            "series_status": "succeeded",
+            "timing_boundary": "Worker fixture copy, fresh recursive proving and independent CPU root audit. Wallet proving, registration and durable application excluded.",
+            "type": "typed_query_comparison",
+            "worker_reduction_percent": 0.3585305305734865
+          },
+          "run_ids": [
+            "run-3276f154ccbc11422d4b861a"
+          ],
+          "source": {
+            "bytes": 43248,
+            "path": "lattica-prover-p3/target/block-v2-query-gather-20261005-a/row-gather-comparison/summary.json",
+            "sha256": "8901f070e995e15684d57ce0bfedbb4ca59cd35e2565ee94846773f3e544be91"
+          },
+          "source_consistent": true
+        }
+      ]
+    }
+  ],
+  "report_check": {
+    "campaigns": 119,
+    "runs": 606,
+    "status": "valid",
+    "transaction_campaigns": 0
+  },
+  "schema_version": 1,
+  "scope": "Final offline row/gather report and paired r10 readiness, validated after timed comparison completed and before count-matrix proving.",
+  "selected_readiness": {
+    "bytes": 23027,
+    "path": "docs/evidence/block-v2-throughput-readiness-2026-10-05-r10.json",
+    "sha256": "48c9e335fd9b48e3960ac3792ddbe44de47976286e4f9da5b5a438df4e5bcbf8"
+  },
+  "sources": [
+    {
+      "bytes": 221988,
+      "path": "lattica-prover-p3/target/block-v2-query-report-validation-20261005-a/browser/apple-738f4dea8eb2559015eb-01-pilot-shared-18t-quotient-compact-deferred-r1.json",
+      "sha256": "0df48f95d34872441edf41dd34e61c600c017de837f528eb3ead4bdb27d41fc2"
+    },
+    {
+      "bytes": 173606,
+      "path": "lattica-prover-p3/target/block-v2-query-report-validation-20261005-a/browser/desktop.png",
+      "sha256": "dfd15bfce2a44decd17d3c0e94f99bf82fe45e44173eaaff4ee77dc6d46169a2"
+    },
+    {
+      "bytes": 69114,
+      "path": "lattica-prover-p3/target/block-v2-query-report-validation-20261005-a/browser/mobile.png",
+      "sha256": "aaf5b8b488e88f99dbafaca9d65e5ab25d511a1c06539b3a3daa364530fad6ee"
+    },
+    {
+      "bytes": 276984,
+      "path": "lattica-prover-p3/target/block-v2-query-report-validation-20261005-a/browser/run-0aca94e56d4e7aa35685e604.json",
+      "sha256": "1136da91b91f8600de72d7aeefdb55fdae4864580067a947c2ad0f40a7b56cc5"
+    },
+    {
+      "bytes": 114972,
+      "path": "lattica-prover-p3/target/block-v2-query-report-validation-20261005-a/browser/throughput-44d6647e2228f613.json",
+      "sha256": "b4a4f2168082d111399374b4e077371810c753030ef06c6b5adcb37ec84c83f7"
+    },
+    {
+      "bytes": 99753,
+      "path": "lattica-prover-p3/target/block-v2-query-report-validation-20261005-a/browser/timeline.png",
+      "sha256": "18cb71e6bddfc5b7895848a2876b2b1eb47ab5c0803a268a8484fc4afb90f7cb"
+    },
+    {
+      "bytes": 19520486,
+      "path": "lattica-prover-p3/target/block-v2-query-report-validation-20261005-a/catalog.json",
+      "sha256": "fbea62982a9fe8f21913677101b58fe5a911c86861bfd3cbcf5be910570a317c"
+    },
+    {
+      "bytes": 84723463,
+      "path": "lattica-prover-p3/target/block-v2-query-report-validation-20261005-a/index.html",
+      "sha256": "fbdc795bb8ae61f6851eff929676e582b73314e65b5ac8e81887a23d0ba158a2"
+    },
+    {
+      "bytes": 49922,
+      "path": "lattica-prover-p3/target/block-v2-query-report-validation-20261005-a/report-source.tar.gz",
+      "sha256": "498b87e9e3aa79daa74211c5c5a1defc447a3036b14f3c957a8bfa6141f591f6"
+    }
+  ],
+  "status": "passed"
+}

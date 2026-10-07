@@ -1,0 +1,2053 @@
+{
+  "admission": {
+    "admitted_workers": 2,
+    "budgets": {
+      "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b": {
+        "cpu": {
+          "allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "coordinator_capacity": "1",
+          "effective_capacity": "24",
+          "quota_percent": "1200%",
+          "rayon_threads": 12,
+          "version": 1
+        },
+        "gpu": {
+          "available_bytes": 16614686720,
+          "bootstrap": true,
+          "context_bytes": 7784628224,
+          "headroom_bytes": 1073741824,
+          "managed_bytes": 7516192768,
+          "max_allocation_bytes": 4174331904,
+          "total_bytes": 15300820992,
+          "usable_bytes": 16697327616,
+          "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+          "version": 1
+        },
+        "host": {
+          "coordinator_bytes": 805306368,
+          "filesystem_headroom_bytes": 1670281421,
+          "fleet_bytes": 40265318400,
+          "os_headroom_bytes": 6681126093,
+          "scratch_device": 51,
+          "scratch_path": "/tmp",
+          "spill_bytes": 15300820992,
+          "swap_bytes": 0,
+          "tmpfs": true,
+          "version": 1,
+          "worker_bytes": 18790481920
+        },
+        "qualification_capacity_test": true,
+        "readback_layout": "direct"
+      },
+      "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c": {
+        "cpu": {
+          "allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "coordinator_capacity": "1",
+          "effective_capacity": "24",
+          "quota_percent": "1100%",
+          "rayon_threads": 11,
+          "version": 1
+        },
+        "gpu": {
+          "available_bytes": 14945353728,
+          "bootstrap": true,
+          "context_bytes": 6979321856,
+          "headroom_bytes": 1073741824,
+          "managed_bytes": 6710886400,
+          "max_allocation_bytes": 4176773120,
+          "total_bytes": 13690208256,
+          "usable_bytes": 16707092480,
+          "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "version": 1
+        },
+        "host": {
+          "coordinator_bytes": 805306368,
+          "filesystem_headroom_bytes": 1670281421,
+          "fleet_bytes": 40265318400,
+          "os_headroom_bytes": 6681126093,
+          "scratch_device": 51,
+          "scratch_path": "/tmp",
+          "spill_bytes": 15300820992,
+          "swap_bytes": 0,
+          "tmpfs": true,
+          "version": 1,
+          "worker_bytes": 18790481920
+        },
+        "qualification_capacity_test": true,
+        "readback_layout": "direct"
+      }
+    },
+    "failures": [],
+    "requested_workers": 2
+  },
+  "binary_sha256": "a1fb87c6730bf41786847332813b4df248e3fc726fbb69ae0a3f6772bc9c4003",
+  "bootstrap_results": [
+    {
+      "assigned": {
+        "cpu": {
+          "allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "coordinator_capacity": "1",
+          "effective_capacity": "24",
+          "quota_percent": "1200%",
+          "rayon_threads": 12,
+          "version": 1
+        },
+        "gpu": {
+          "available_bytes": 16614686720,
+          "bootstrap": true,
+          "context_bytes": 7784628224,
+          "headroom_bytes": 1073741824,
+          "managed_bytes": 7516192768,
+          "max_allocation_bytes": 4174331904,
+          "total_bytes": 15300820992,
+          "usable_bytes": 16697327616,
+          "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+          "version": 1
+        },
+        "host": {
+          "coordinator_bytes": 1073741824,
+          "filesystem_headroom_bytes": 1670281421,
+          "fleet_bytes": 40533753856,
+          "os_headroom_bytes": 6681126093,
+          "scratch_device": 51,
+          "scratch_path": "/tmp",
+          "spill_bytes": 15300820992,
+          "swap_bytes": 0,
+          "tmpfs": true,
+          "version": 1,
+          "worker_bytes": 18790481920
+        }
+      },
+      "calibration": {
+        "binary_sha256": "a1fb87c6730bf41786847332813b4df248e3fc726fbb69ae0a3f6772bc9c4003",
+        "driver": "615.71.09",
+        "peak_context_bytes": 209713456,
+        "profile_sha256": "f8f54234f6f03d5a305cda5a8e6244ac6c5643ab013aa377d1071f84e5cd2408",
+        "runtime": "615.71.09",
+        "samples": 39,
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      "cpu_audited": true,
+      "elapsed_seconds": 217.91991497300478,
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+      "peak_worker_ram_bytes": 16797286400,
+      "root_bytes": 1683948,
+      "source": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-bootstrap-summary.json",
+        "sha256": "387621cf6b2322c41e57114cd0b507b9dd0878b09feb1124c92be135a798fb58"
+      },
+      "status": "succeeded"
+    },
+    {
+      "assigned": {
+        "cpu": {
+          "allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "coordinator_capacity": "1",
+          "effective_capacity": "24",
+          "quota_percent": "1100%",
+          "rayon_threads": 11,
+          "version": 1
+        },
+        "gpu": {
+          "available_bytes": 15350104064,
+          "bootstrap": true,
+          "context_bytes": 7247757312,
+          "headroom_bytes": 1073741824,
+          "managed_bytes": 6979321856,
+          "max_allocation_bytes": 4176773120,
+          "total_bytes": 14227079168,
+          "usable_bytes": 16707092480,
+          "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "version": 1
+        },
+        "host": {
+          "coordinator_bytes": 1073741824,
+          "filesystem_headroom_bytes": 1670281421,
+          "fleet_bytes": 44560285696,
+          "os_headroom_bytes": 6681126093,
+          "scratch_device": 51,
+          "scratch_path": "/tmp",
+          "spill_bytes": 15569256448,
+          "swap_bytes": 0,
+          "tmpfs": true,
+          "version": 1,
+          "worker_bytes": 18790481920
+        }
+      },
+      "calibration": {
+        "binary_sha256": "a1fb87c6730bf41786847332813b4df248e3fc726fbb69ae0a3f6772bc9c4003",
+        "driver": "615.71.09",
+        "peak_context_bytes": 278919472,
+        "profile_sha256": "f8f54234f6f03d5a305cda5a8e6244ac6c5643ab013aa377d1071f84e5cd2408",
+        "runtime": "615.71.09",
+        "samples": 39,
+        "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      },
+      "cpu_audited": true,
+      "elapsed_seconds": 278.7254856600048,
+      "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+      "peak_worker_ram_bytes": 16808034304,
+      "root_bytes": 1683948,
+      "source": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-2-bootstrap-summary.json",
+        "sha256": "a1bf78c8b170f3575d1013a8f3b5623a75752332f25c0524b73ea0fd82f2dc63"
+      },
+      "status": "succeeded"
+    }
+  ],
+  "calibrated_qualification_results": [
+    {
+      "assigned": {
+        "cpu": {
+          "allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "coordinator_capacity": "1",
+          "effective_capacity": "24",
+          "quota_percent": "1200%",
+          "rayon_threads": 12,
+          "version": 1
+        },
+        "gpu": {
+          "available_bytes": 16631463936,
+          "bootstrap": false,
+          "context_bytes": 536870912,
+          "headroom_bytes": 1073741824,
+          "managed_bytes": 7516192768,
+          "max_allocation_bytes": 4174331904,
+          "total_bytes": 8053063680,
+          "usable_bytes": 16697327616,
+          "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+          "version": 1
+        },
+        "host": {
+          "coordinator_bytes": 1073741824,
+          "filesystem_headroom_bytes": 1670281421,
+          "fleet_bytes": 44560285696,
+          "os_headroom_bytes": 6681126093,
+          "scratch_device": 51,
+          "scratch_path": "/tmp",
+          "spill_bytes": 15569256448,
+          "swap_bytes": 0,
+          "tmpfs": true,
+          "version": 1,
+          "worker_bytes": 18790481920
+        }
+      },
+      "calibration": {
+        "binary_sha256": "a1fb87c6730bf41786847332813b4df248e3fc726fbb69ae0a3f6772bc9c4003",
+        "driver": "615.71.09",
+        "peak_context_bytes": 209713456,
+        "profile_sha256": "f8f54234f6f03d5a305cda5a8e6244ac6c5643ab013aa377d1071f84e5cd2408",
+        "runtime": "615.71.09",
+        "samples": 39,
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      "cpu_audited": true,
+      "elapsed_seconds": 214.4633175590061,
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+      "peak_worker_ram_bytes": 16789585920,
+      "root_bytes": 1683948,
+      "source": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-qualified-summary.json",
+        "sha256": "f3fad25e904d606f8840f678ef1c62fae0411c3bb7fa30027bc4da88c1478d3d"
+      },
+      "status": "succeeded"
+    },
+    {
+      "assigned": {
+        "cpu": {
+          "allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "coordinator_capacity": "1",
+          "effective_capacity": "24",
+          "quota_percent": "1100%",
+          "rayon_threads": 11,
+          "version": 1
+        },
+        "gpu": {
+          "available_bytes": 15354298368,
+          "bootstrap": false,
+          "context_bytes": 536870912,
+          "headroom_bytes": 1073741824,
+          "managed_bytes": 6979321856,
+          "max_allocation_bytes": 4176773120,
+          "total_bytes": 7516192768,
+          "usable_bytes": 16707092480,
+          "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "version": 1
+        },
+        "host": {
+          "coordinator_bytes": 1073741824,
+          "filesystem_headroom_bytes": 1670281421,
+          "fleet_bytes": 44023414784,
+          "os_headroom_bytes": 6681126093,
+          "scratch_device": 51,
+          "scratch_path": "/tmp",
+          "spill_bytes": 15569256448,
+          "swap_bytes": 0,
+          "tmpfs": true,
+          "version": 1,
+          "worker_bytes": 18790481920
+        }
+      },
+      "calibration": {
+        "binary_sha256": "a1fb87c6730bf41786847332813b4df248e3fc726fbb69ae0a3f6772bc9c4003",
+        "driver": "615.71.09",
+        "peak_context_bytes": 278919472,
+        "profile_sha256": "f8f54234f6f03d5a305cda5a8e6244ac6c5643ab013aa377d1071f84e5cd2408",
+        "runtime": "615.71.09",
+        "samples": 39,
+        "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      },
+      "cpu_audited": true,
+      "elapsed_seconds": 270.0212205489952,
+      "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+      "peak_worker_ram_bytes": 16745054208,
+      "root_bytes": 1683948,
+      "source": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-2-qualified-summary.json",
+        "sha256": "209e3f8f14d15f684ca2182b7e219a499ab45c23ab74cd95dc14cdc10515f8a6"
+      },
+      "status": "succeeded"
+    }
+  ],
+  "gpu_equivalence": {
+    "binary_sha256": "f3516c5691742ac149aee2488b67f04245735a012bfe5f6ac1ba4e5a57c8518e",
+    "production_ready": false,
+    "readback_layout": "direct",
+    "status": "PASS",
+    "tests": [
+      {
+        "command": [
+          "systemd-run",
+          "--user",
+          "--wait",
+          "--pipe",
+          "--collect",
+          "--unit=lattica-direct-readback-20261004-gpu-1-test-1",
+          "--property=MemoryMax=3G",
+          "--property=MemorySwapMax=0",
+          "--property=CPUQuota=400%",
+          "--property=RuntimeMaxSec=180",
+          "--property=KillMode=control-group",
+          "--property=LimitCORE=0",
+          "--setenv=RAYON_NUM_THREADS=4",
+          "--setenv=LATTICA_GPU_DEVICE_UUID=GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+          "--setenv=LATTICA_V2_GPU_DIRECT_READBACK=1",
+          "--setenv=LATTICA_V2_GPU_RETAIN_TREES=1",
+          "--setenv=LATTICA_V2_GPU_PIPELINE=0",
+          "--setenv=LATTICA_V2_GPU_OPENING_COMPACT=1",
+          "--setenv=LATTICA_V2_GPU_PARALLEL_READBACK=1",
+          "--setenv=LATTICA_SPILL_BACKING=memory",
+          "--setenv=LATTICA_SPILL_MAX_BYTES=1073741824",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-tests",
+          "block_v2::gpu_hash::resident_pcs_tests::gpu_compact_prefix_readback_reconstructs_original_rows_salts_and_paths",
+          "--exact",
+          "--ignored",
+          "--nocapture",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-test-1.log",
+        "log_sha256": "9d2048d949b3960933508e4d339b16ec646f32583e7975c961fc0bd9da4997a9",
+        "passed": true,
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_compact_prefix_readback_reconstructs_original_rows_salts_and_paths",
+        "wall_seconds": 0.8816476540014264
+      },
+      {
+        "command": [
+          "systemd-run",
+          "--user",
+          "--wait",
+          "--pipe",
+          "--collect",
+          "--unit=lattica-direct-readback-20261004-gpu-1-test-2",
+          "--property=MemoryMax=3G",
+          "--property=MemorySwapMax=0",
+          "--property=CPUQuota=400%",
+          "--property=RuntimeMaxSec=180",
+          "--property=KillMode=control-group",
+          "--property=LimitCORE=0",
+          "--setenv=RAYON_NUM_THREADS=4",
+          "--setenv=LATTICA_GPU_DEVICE_UUID=GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+          "--setenv=LATTICA_V2_GPU_DIRECT_READBACK=1",
+          "--setenv=LATTICA_V2_GPU_RETAIN_TREES=1",
+          "--setenv=LATTICA_V2_GPU_PIPELINE=0",
+          "--setenv=LATTICA_V2_GPU_OPENING_COMPACT=1",
+          "--setenv=LATTICA_V2_GPU_PARALLEL_READBACK=1",
+          "--setenv=LATTICA_SPILL_BACKING=memory",
+          "--setenv=LATTICA_SPILL_MAX_BYTES=1073741824",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-tests",
+          "block_v2::gpu_hash::resident_pcs_tests::gpu_compact_prover_data_preserves_fixed_seed_proof_bytes_and_challenger",
+          "--exact",
+          "--ignored",
+          "--nocapture",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-test-2.log",
+        "log_sha256": "24c81896668bfec2468aa0e766e14c9aa4cf87b6729c2fe37396ca948628196f",
+        "passed": true,
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_compact_prover_data_preserves_fixed_seed_proof_bytes_and_challenger",
+        "wall_seconds": 1.2260240420000628
+      },
+      {
+        "command": [
+          "systemd-run",
+          "--user",
+          "--wait",
+          "--pipe",
+          "--collect",
+          "--unit=lattica-direct-readback-20261004-gpu-2-test-1",
+          "--property=MemoryMax=3G",
+          "--property=MemorySwapMax=0",
+          "--property=CPUQuota=400%",
+          "--property=RuntimeMaxSec=180",
+          "--property=KillMode=control-group",
+          "--property=LimitCORE=0",
+          "--setenv=RAYON_NUM_THREADS=4",
+          "--setenv=LATTICA_GPU_DEVICE_UUID=GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "--setenv=LATTICA_V2_GPU_DIRECT_READBACK=1",
+          "--setenv=LATTICA_V2_GPU_RETAIN_TREES=1",
+          "--setenv=LATTICA_V2_GPU_PIPELINE=0",
+          "--setenv=LATTICA_V2_GPU_OPENING_COMPACT=1",
+          "--setenv=LATTICA_V2_GPU_PARALLEL_READBACK=1",
+          "--setenv=LATTICA_SPILL_BACKING=memory",
+          "--setenv=LATTICA_SPILL_MAX_BYTES=1073741824",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-tests",
+          "block_v2::gpu_hash::resident_pcs_tests::gpu_compact_prefix_readback_reconstructs_original_rows_salts_and_paths",
+          "--exact",
+          "--ignored",
+          "--nocapture",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-2-test-1.log",
+        "log_sha256": "92a20a4dd9ab687c0c1e3b7f48ec8b31f7eca8888ed4fa99f0324b10fbee2041",
+        "passed": true,
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_compact_prefix_readback_reconstructs_original_rows_salts_and_paths",
+        "wall_seconds": 0.7388475030020345
+      },
+      {
+        "command": [
+          "systemd-run",
+          "--user",
+          "--wait",
+          "--pipe",
+          "--collect",
+          "--unit=lattica-direct-readback-20261004-gpu-2-test-2",
+          "--property=MemoryMax=3G",
+          "--property=MemorySwapMax=0",
+          "--property=CPUQuota=400%",
+          "--property=RuntimeMaxSec=180",
+          "--property=KillMode=control-group",
+          "--property=LimitCORE=0",
+          "--setenv=RAYON_NUM_THREADS=4",
+          "--setenv=LATTICA_GPU_DEVICE_UUID=GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "--setenv=LATTICA_V2_GPU_DIRECT_READBACK=1",
+          "--setenv=LATTICA_V2_GPU_RETAIN_TREES=1",
+          "--setenv=LATTICA_V2_GPU_PIPELINE=0",
+          "--setenv=LATTICA_V2_GPU_OPENING_COMPACT=1",
+          "--setenv=LATTICA_V2_GPU_PARALLEL_READBACK=1",
+          "--setenv=LATTICA_SPILL_BACKING=memory",
+          "--setenv=LATTICA_SPILL_MAX_BYTES=1073741824",
+          "/home/access/code/lattica/lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-tests",
+          "block_v2::gpu_hash::resident_pcs_tests::gpu_compact_prover_data_preserves_fixed_seed_proof_bytes_and_challenger",
+          "--exact",
+          "--ignored",
+          "--nocapture",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "log": "/home/access/code/lattica/lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-2-test-2.log",
+        "log_sha256": "89085f0b4db2925267bb86ca135dd601754a7de30969777811d7490a687a3a73",
+        "passed": true,
+        "test": "block_v2::gpu_hash::resident_pcs_tests::gpu_compact_prover_data_preserves_fixed_seed_proof_bytes_and_challenger",
+        "wall_seconds": 0.9825453250014107
+      }
+    ]
+  },
+  "implementation": "Opt-in direct row-major readback eliminates the duplicate reorder matrix. GPU transform geometry, security parameters and RAM/spill safety margins are unchanged.",
+  "matched_layout_calibration": {
+    "bootstrap_qualification_reused_for_smaller_limits": false,
+    "calibrations": {
+      "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b": {
+        "binary_sha256": "a1fb87c6730bf41786847332813b4df248e3fc726fbb69ae0a3f6772bc9c4003",
+        "driver": "615.71.09",
+        "peak_context_bytes": 209713456,
+        "profile_sha256": "0c4a5fb5adf7ec97ec6880dbd6cf009946bb904bf1f40f51c24d06b6e05509a8",
+        "runtime": "615.71.09",
+        "samples": 39,
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      }
+    },
+    "layout": "banded",
+    "memory_events": {
+      "high": "0",
+      "low": "0",
+      "max": "0",
+      "oom": "0",
+      "oom_group_kill": "0",
+      "oom_kill": "0",
+      "sock_throttled": "0"
+    },
+    "peak_charged_ram_bytes": 17058951168,
+    "source": {
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-banded-bootstrap-summary.json",
+      "sha256": "9e841a9e3e44ec0b004a1da1c2fad632caae31a7f334b42e8aa9a994b337d10a"
+    },
+    "status": "CPU_AUDIT_PASSED",
+    "worker_seconds": 228.57091808899713
+  },
+  "matched_layout_comparison": {
+    "assigned_limits": {
+      "cpu": {
+        "allowed_cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "quota_percent": "2300%",
+        "rayon_threads": 23
+      },
+      "gpu": {
+        "context_bytes": 536870912,
+        "managed_bytes": 7516192768,
+        "max_allocation_bytes": 4174331904,
+        "total_bytes": 8053063680,
+        "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b"
+      },
+      "host": {
+        "scratch_device": 51,
+        "scratch_path": "/tmp",
+        "spill_bytes": 20401094656,
+        "swap_bytes": 0,
+        "tmpfs": true,
+        "worker_bytes": 20401094656
+      }
+    },
+    "banded_config": {
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-banded-match-config.json",
+      "sha256": "c736eb9434487e8326f994a812be62f477e0de82c89041e9d89ccf4fa8220923"
+    },
+    "controller": {
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/block-v2-readback-compare-r2.py",
+      "sha256": "9ad3da456c33c7ef4763218c54f70162969abb4d4d1849d2f9bc2674d09a6ac6"
+    },
+    "direct_config": {
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-direct-match-config.json",
+      "sha256": "208c4da50548b86669a42176687bb3d891741c618caeb0baab51608f0b34a5de"
+    },
+    "directory": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2",
+    "distinct_root_hashes": 10,
+    "fresh_recursive_proofs": 70,
+    "independent_cpu_audits": 10,
+    "input": {
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/input.json",
+      "sha256": "341ac15dcb252b32705f449953d221928d1f3e706a2b01e05a04b941203ca449"
+    },
+    "median_within_pair_time_reduction_percent": 5.391084553508863,
+    "median_worker_seconds": {
+      "banded": 231.58288479100156,
+      "direct": 217.02141154700075
+    },
+    "memory_note": "Direct decoding removes the duplicate reorder allocation. Later proving phases still set the whole-job memory peak; measured peak RAM is not claimed to fall by the removed allocation size.",
+    "observed_utc": "2026-10-04T21:24:41.832987+00:00",
+    "pairs": [
+      {
+        "banded_seconds": 231.58288479100156,
+        "direct_seconds": 218.6930224569951,
+        "repeat": 1,
+        "time_reduction_percent": 5.56598228130688
+      },
+      {
+        "banded_seconds": 221.00794752100774,
+        "direct_seconds": 216.44143657200038,
+        "repeat": 2,
+        "time_reduction_percent": 2.066220242407024
+      },
+      {
+        "banded_seconds": 223.1232629110018,
+        "direct_seconds": 217.02141154700075,
+        "repeat": 3,
+        "time_reduction_percent": 2.73474459112536
+      },
+      {
+        "banded_seconds": 241.80948244500905,
+        "direct_seconds": 228.77332878799643,
+        "repeat": 4,
+        "time_reduction_percent": 5.391084553508863
+      },
+      {
+        "banded_seconds": 240.19140699799755,
+        "direct_seconds": 209.59102049199282,
+        "repeat": 5,
+        "time_reduction_percent": 12.740000522275075
+      }
+    ],
+    "promotion": "Recommended for new, qualified Linux grouped-eight research runs. Keep explicit layout selection and separate qualification for mixed roots; no production readiness or delivered-transaction claim.",
+    "ratio_of_medians_time_reduction_percent": 6.287801992423669,
+    "rounds_requested": 5,
+    "status": "PASSED",
+    "summary": {
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/summary.json",
+      "sha256": "3978d31f99eaf7c10d1cd947b3c4ece77a30851c8d1ba986c92a18b48b6f63c2"
+    },
+    "within_pair_time_reduction_range_percent": [
+      2.066220242407024,
+      12.740000522275075
+    ],
+    "workers": [
+      {
+        "audit_log": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/01-banded/001-01-banded/audit.log",
+          "sha256": "80bdf91ccab2d8b5244f946bdee02236abd891d5b1a334f3c4090a277eb79cd0"
+        },
+        "controller_seconds": 233.27435802700347,
+        "cpu_audited": true,
+        "fresh_recursive_proofs": 7,
+        "gpu_process_peak_bytes": 7656701952,
+        "layout": "banded",
+        "memory_events": {
+          "high": "0",
+          "low": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_group_kill": "0",
+          "oom_kill": "0",
+          "sock_throttled": "0"
+        },
+        "peak_charged_ram_bytes": 16868409344,
+        "repeat": 1,
+        "root_bytes": 1683948,
+        "root_sha256": "f931f65a1337cc2e820f3184ac7a9a50cc13b3f85a016768701e60f5d47dfd58",
+        "summary": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/01-banded-worker-summary.json",
+          "sha256": "0d744d254f4c38a65807d39a34388afb8c724077591b8f6a800449de2ed0529b"
+        },
+        "worker_seconds": 231.58288479100156
+      },
+      {
+        "audit_log": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/01-direct/001-01-direct/audit.log",
+          "sha256": "369191e2ea572ebe81910730870189d8d5fc54000b8bfadfde57cd74797f5a7f"
+        },
+        "controller_seconds": 220.39403815299738,
+        "cpu_audited": true,
+        "fresh_recursive_proofs": 7,
+        "gpu_process_peak_bytes": 7656701952,
+        "layout": "direct",
+        "memory_events": {
+          "high": "0",
+          "low": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_group_kill": "0",
+          "oom_kill": "0",
+          "sock_throttled": "0"
+        },
+        "peak_charged_ram_bytes": 16900075520,
+        "repeat": 1,
+        "root_bytes": 1683948,
+        "root_sha256": "f20c0188efef6123143ec023e064e883c43b7e72bed1848ce1a217c3a18b8a96",
+        "summary": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/01-direct-worker-summary.json",
+          "sha256": "986fdb5ebb74f8c3690a0ef7a12cacdc8bad0e6b76bc3f72cee4bb4cb65dbaca"
+        },
+        "worker_seconds": 218.6930224569951
+      },
+      {
+        "audit_log": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/02-direct/001-02-direct/audit.log",
+          "sha256": "80bdf91ccab2d8b5244f946bdee02236abd891d5b1a334f3c4090a277eb79cd0"
+        },
+        "controller_seconds": 217.7351820539916,
+        "cpu_audited": true,
+        "fresh_recursive_proofs": 7,
+        "gpu_process_peak_bytes": 7656701952,
+        "layout": "direct",
+        "memory_events": {
+          "high": "0",
+          "low": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_group_kill": "0",
+          "oom_kill": "0",
+          "sock_throttled": "0"
+        },
+        "peak_charged_ram_bytes": 16936271872,
+        "repeat": 2,
+        "root_bytes": 1683948,
+        "root_sha256": "b540cb3d0e68d353285fd0ae3089fb19c251948afa4173c49326dc78db627f8b",
+        "summary": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/02-direct-worker-summary.json",
+          "sha256": "e537b669f99fa7f1ede93aee00f73c3b7c7241a5da946a453524165855e752db"
+        },
+        "worker_seconds": 216.44143657200038
+      },
+      {
+        "audit_log": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/02-banded/001-02-banded/audit.log",
+          "sha256": "c9c4b299c0d90d2374f9ed37e884ef27c737aac8d751c29ed85df320f4bf0e15"
+        },
+        "controller_seconds": 222.35837871600233,
+        "cpu_audited": true,
+        "fresh_recursive_proofs": 7,
+        "gpu_process_peak_bytes": 7656701952,
+        "layout": "banded",
+        "memory_events": {
+          "high": "0",
+          "low": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_group_kill": "0",
+          "oom_kill": "0",
+          "sock_throttled": "0"
+        },
+        "peak_charged_ram_bytes": 16913801216,
+        "repeat": 2,
+        "root_bytes": 1683948,
+        "root_sha256": "f8c0b7d1d3758e2e0a8600548d25e6d76981dfe14cce63b13faeb9c92d4f65ea",
+        "summary": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/02-banded-worker-summary.json",
+          "sha256": "4ed922a4eee7dcd3b12c1873d128b95a6d84b18fc4a50dbb6817d7db299a8ff4"
+        },
+        "worker_seconds": 221.00794752100774
+      },
+      {
+        "audit_log": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/03-banded/001-03-banded/audit.log",
+          "sha256": "153e9e4ec5d2d4acb27c06192cd51350918b508fafa7d9e88de257147c591147"
+        },
+        "controller_seconds": 224.53825119500107,
+        "cpu_audited": true,
+        "fresh_recursive_proofs": 7,
+        "gpu_process_peak_bytes": 7656701952,
+        "layout": "banded",
+        "memory_events": {
+          "high": "0",
+          "low": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_group_kill": "0",
+          "oom_kill": "0",
+          "sock_throttled": "0"
+        },
+        "peak_charged_ram_bytes": 17080721408,
+        "repeat": 3,
+        "root_bytes": 1683948,
+        "root_sha256": "2e3fe718d8006be12f5854e7ca32bafaac5311a786b1b5ac86ebde6b984384c7",
+        "summary": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/03-banded-worker-summary.json",
+          "sha256": "58ad528f15a1c49cf70a71a77bf1378f66a471d57e12790e7de1d6cadac79434"
+        },
+        "worker_seconds": 223.1232629110018
+      },
+      {
+        "audit_log": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/03-direct/001-03-direct/audit.log",
+          "sha256": "9e7fadf57af8591abe90a09cf5923bde1835a9d4e8c3ba7001eb7fde3fe0fc2e"
+        },
+        "controller_seconds": 218.4108881209977,
+        "cpu_audited": true,
+        "fresh_recursive_proofs": 7,
+        "gpu_process_peak_bytes": 7656701952,
+        "layout": "direct",
+        "memory_events": {
+          "high": "0",
+          "low": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_group_kill": "0",
+          "oom_kill": "0",
+          "sock_throttled": "0"
+        },
+        "peak_charged_ram_bytes": 16911560704,
+        "repeat": 3,
+        "root_bytes": 1683948,
+        "root_sha256": "57e14b8a49e761864f4d0ae701dda42b191252fbbc89f193732bc3bf4f9e8b9f",
+        "summary": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/03-direct-worker-summary.json",
+          "sha256": "7208088b0960b73afccb73ed45aa36d2d5f919de0d270dd153eb29ee497c0b65"
+        },
+        "worker_seconds": 217.02141154700075
+      },
+      {
+        "audit_log": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/04-direct/001-04-direct/audit.log",
+          "sha256": "c6dec85b07becdf360e8572ee708457d1d6c6f6533a374c4ff95b924aaf589f9"
+        },
+        "controller_seconds": 230.26564858200436,
+        "cpu_audited": true,
+        "fresh_recursive_proofs": 7,
+        "gpu_process_peak_bytes": 7656701952,
+        "layout": "direct",
+        "memory_events": {
+          "high": "0",
+          "low": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_group_kill": "0",
+          "oom_kill": "0",
+          "sock_throttled": "0"
+        },
+        "peak_charged_ram_bytes": 16883347456,
+        "repeat": 4,
+        "root_bytes": 1683948,
+        "root_sha256": "b604658b5ed151911bf125b7a28c32a7d5ffbeabe65caa522331643843482f39",
+        "summary": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/04-direct-worker-summary.json",
+          "sha256": "10d84d21f206bb5cb30b8de0d19e84db4a60edbf99b511ced66193980128adcc"
+        },
+        "worker_seconds": 228.77332878799643
+      },
+      {
+        "audit_log": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/04-banded/001-04-banded/audit.log",
+          "sha256": "1cc2c17e718b3e33967fb8465bdc09ef4647e0671b7e248fa5f4be1306a8a8f2"
+        },
+        "controller_seconds": 243.41565737698693,
+        "cpu_audited": true,
+        "fresh_recursive_proofs": 7,
+        "gpu_process_peak_bytes": 7656701952,
+        "layout": "banded",
+        "memory_events": {
+          "high": "0",
+          "low": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_group_kill": "0",
+          "oom_kill": "0",
+          "sock_throttled": "0"
+        },
+        "peak_charged_ram_bytes": 17166680064,
+        "repeat": 4,
+        "root_bytes": 1683948,
+        "root_sha256": "a79c91515a1cda82311b65aec1a61f842424dc9abcfa1e55d1569ab6b57df0c4",
+        "summary": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/04-banded-worker-summary.json",
+          "sha256": "1c31c5aebd30522a84b220ad35dfea16c36cb384433e3f8641b349967410b847"
+        },
+        "worker_seconds": 241.80948244500905
+      },
+      {
+        "audit_log": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/05-banded/001-05-banded/audit.log",
+          "sha256": "1cc2c17e718b3e33967fb8465bdc09ef4647e0671b7e248fa5f4be1306a8a8f2"
+        },
+        "controller_seconds": 241.73311534599634,
+        "cpu_audited": true,
+        "fresh_recursive_proofs": 7,
+        "gpu_process_peak_bytes": 7656701952,
+        "layout": "banded",
+        "memory_events": {
+          "high": "0",
+          "low": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_group_kill": "0",
+          "oom_kill": "0",
+          "sock_throttled": "0"
+        },
+        "peak_charged_ram_bytes": 17069613056,
+        "repeat": 5,
+        "root_bytes": 1683948,
+        "root_sha256": "27101caef9be26f663664b52750e813d35bc2ee35ea89d4fda7441d527709e59",
+        "summary": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/05-banded-worker-summary.json",
+          "sha256": "f73675d25911ea4a272d003e15b406bad5b60869a8000fd5b6517c53287e98ab"
+        },
+        "worker_seconds": 240.19140699799755
+      },
+      {
+        "audit_log": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/05-direct/001-05-direct/audit.log",
+          "sha256": "08a3897fd678b45f073e66aea6d1c51a61bd7de86b66a2622e9eb08f6a25bf83"
+        },
+        "controller_seconds": 210.90830869501224,
+        "cpu_audited": true,
+        "fresh_recursive_proofs": 7,
+        "gpu_process_peak_bytes": 7656701952,
+        "layout": "direct",
+        "memory_events": {
+          "high": "0",
+          "low": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_group_kill": "0",
+          "oom_kill": "0",
+          "sock_throttled": "0"
+        },
+        "peak_charged_ram_bytes": 16900120576,
+        "repeat": 5,
+        "root_bytes": 1683948,
+        "root_sha256": "b28d93dea70d5d41e6d8301964b8e32ec07c81264a4543f7375ac31b8a2d7b44",
+        "summary": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs-r2/05-direct-worker-summary.json",
+          "sha256": "d5bab0849c48e4f309bb7ea2c95f8bb68536ae6a23945db3689e5de16be48539"
+        },
+        "worker_seconds": 209.59102049199282
+      }
+    ]
+  },
+  "matched_layout_failed_attempts": [
+    {
+      "banded_config": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-banded-match-config.json",
+        "sha256": "c736eb9434487e8326f994a812be62f477e0de82c89041e9d89ccf4fa8220923"
+      },
+      "controller": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/block-v2-readback-compare.py",
+        "sha256": "9bfebb917bd118b546efa48cfcd8c4ad29dddfec500191ab217c5d90acf3f2d0"
+      },
+      "diagnosis": {
+        "cause": "Runner summarize() adds accounting and gpu_process_peak_bytes; the original comparison controller compared the enriched object to raw result.json.",
+        "corrected_controller": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/block-v2-readback-compare-r2.py",
+          "sha256": "9ad3da456c33c7ef4763218c54f70162969abb4d4d1849d2f9bc2674d09a6ac6"
+        },
+        "cpu_audit": "passed; audit log and root-only artifact hashes revalidated",
+        "fix": "Reconstruct summary enrichment from preserved accounting and telemetry; require exact equality, zero memory-limit events, and peak memory within the assigned cap.",
+        "memory_events": {
+          "high": "0",
+          "low": "0",
+          "max": "0",
+          "oom": "0",
+          "oom_group_kill": "0",
+          "oom_kill": "0",
+          "sock_throttled": "0"
+        },
+        "original_evidence": [
+          {
+            "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs/01-banded/001-01-banded/result.json",
+            "sha256": "8e5e32d77376e66fdf8e464fa231d9702fe58b785ae9d1c98e3b49a3d2817c88"
+          },
+          {
+            "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs/01-banded/001-01-banded/accounting.json",
+            "sha256": "b7dbd7804c2892cde32fb85c013a40a7bfed423d7ef7b0ef75fa1e468b3bcd73"
+          },
+          {
+            "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs/01-banded/001-01-banded/audit.log",
+            "sha256": "4a5270d1129b94d0e2efa00085d1e4e1c9fac6574ae3988864c3c25f70d6c677"
+          },
+          {
+            "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs/01-banded/001-01-banded/telemetry.jsonl",
+            "sha256": "31e843d30a348da52b502a04eef3aa02fe3d6cdcfe0140561167e212129741be"
+          }
+        ],
+        "peak_charged_ram_bytes": 17054720000,
+        "regression_tests_passed": 10,
+        "revalidation": "The corrected validator accepts the original real worker artifacts.",
+        "valid_timing_pairs": 0,
+        "worker_elapsed_seconds": 232.4138806310075,
+        "worker_status": "succeeded"
+      },
+      "direct_config": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-direct-match-config.json",
+        "sha256": "208c4da50548b86669a42176687bb3d891741c618caeb0baab51608f0b34a5de"
+      },
+      "directory": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs",
+      "input": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs/input.json",
+        "sha256": "679453f4b750ac26b4d03df6d52a61bc427e5f8c613b3f43a9f52e53a0abbc0c"
+      },
+      "observed_utc": "2026-10-04T20:44:46.495070+00:00",
+      "promotion": "pending completion and review; direct readback remains opt-in",
+      "rounds_requested": 5,
+      "status": "FAILED_CONTROLLER_RESULT_VALIDATION",
+      "summary": {
+        "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-five-pairs/summary.json",
+        "sha256": "de18f09d616d46f3deccb6bb273a5ad8710f52b3b2cd03f3de1a242841e5e402"
+      }
+    }
+  ],
+  "matched_layout_preparation": {
+    "controller": {
+      "path": "lattica-prover-p3/scripts/block-v2-readback-compare.py",
+      "sha256": "9bfebb917bd118b546efa48cfcd8c4ad29dddfec500191ab217c5d90acf3f2d0"
+    },
+    "source": {
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/readback-comparison-plan.json",
+      "sha256": "ac9e19b38a693759e334d1b7921b1791f9ecbb2c12358dff019916da6899e381"
+    },
+    "status": "prepared_not_executed",
+    "validation": {
+      "guard_tests_passed": 7,
+      "scope": "Configuration, actual execution layout, budget and freshness guards plus a synthetic CLI lifecycle; no hardware timing or proof qualification from these tests.",
+      "test_command": "python3 lattica-prover-p3/scripts/test-block-v2-readback-compare.py"
+    }
+  },
+  "production_ready": false,
+  "profile_sha256": "f8f54234f6f03d5a305cda5a8e6244ac6c5643ab013aa377d1071f84e5cd2408",
+  "qualified_config": {
+    "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/qualified-config.json",
+    "sha256": "a1eeaf0a682ffa7ae607e73e5d7baa15e964885d68d35b18fe5234331803bc1b"
+  },
+  "qualified_fleet_plan": {
+    "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/qualified-fleet-plan.json",
+    "sha256": "14aac2c3a87ce556fd01b6ed67a2d748b24f013bce0f0aac5d69bb7d5389a8a5"
+  },
+  "remaining": [
+    "Profile adapted FRI, opening, and quotient phases with corrected span filtering; then optimize measured critical-path work.",
+    "Mixed depth-six roots, device admission, durable host application and recovery, cold-64/post-seal gates, then the two-hour pilot."
+  ],
+  "repeated_comparison": {
+    "arms": [
+      {
+        "arm": "sequential",
+        "jobs_per_hour": 17.51941350416374,
+        "proving_overlap_seconds": 0.0,
+        "repeat": 1,
+        "seconds": 410.97266174400283,
+        "source": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/throughput-five-pairs/01-sequential-result.json",
+          "sha256": "92e0cd0e4a7df37bbb93c1430ec47a985cf5529ddadaa363747e734519fd20be"
+        },
+        "workers": [
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16944476160,
+            "root_bytes": 1683948,
+            "root_sha256": "9fc16ed112ce4ed5807c15247ed661079e3dfaae78f9aa1807ea388be6e684fb",
+            "seconds": 202.6845621340035
+          },
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16924909568,
+            "root_bytes": 1683948,
+            "root_sha256": "c4737f09b5d4f3ce4b8ae980c67a1be4a46d5659ce5a62fc43f4e21ad2613b59",
+            "seconds": 204.14338775000942
+          }
+        ]
+      },
+      {
+        "arm": "concurrent",
+        "jobs_per_hour": 23.690420247348452,
+        "proving_overlap_seconds": 247.359189562,
+        "repeat": 1,
+        "seconds": 303.92031567299273,
+        "source": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/throughput-five-pairs/01-concurrent-result.json",
+          "sha256": "b9ed2d554ade3bb5ddc2840281f52898fe2fab8228df19b815a859a2cee4c4dd"
+        },
+        "workers": [
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16798228480,
+            "root_bytes": 1683948,
+            "root_sha256": "bca4af60dd83ced1025fc5870881eff388f38dfbe3d61741ff75e48d4968708a",
+            "seconds": 249.7227168540121
+          },
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16716234752,
+            "root_bytes": 1683948,
+            "root_sha256": "7e0fad329bc62284486cec440e9f8706d06727ee1457820a2127fb741a610d17",
+            "seconds": 301.2025852360093
+          }
+        ]
+      },
+      {
+        "arm": "sequential",
+        "jobs_per_hour": 15.986118577132986,
+        "proving_overlap_seconds": 0.0,
+        "repeat": 2,
+        "seconds": 450.39075403200695,
+        "source": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/throughput-five-pairs/02-sequential-result.json",
+          "sha256": "e0b5d16c249ff204d16067f0242c07162b569831ead6e4744f1c73f42d8849e5"
+        },
+        "workers": [
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16934531072,
+            "root_bytes": 1683948,
+            "root_sha256": "0329b01ded61cdae888c75622ad535b1d37809336568ede8e3471610a6795320",
+            "seconds": 240.59868481800368
+          },
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 17014509568,
+            "root_bytes": 1683948,
+            "root_sha256": "b9bd5d9341168f37cfea0a17b05b03320f0a3140dbd85cc6647abfdfcecbbfe2",
+            "seconds": 205.91700926900376
+          }
+        ]
+      },
+      {
+        "arm": "concurrent",
+        "jobs_per_hour": 23.7246891553227,
+        "proving_overlap_seconds": 245.524947074,
+        "repeat": 2,
+        "seconds": 303.4813207820116,
+        "source": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/throughput-five-pairs/02-concurrent-result.json",
+          "sha256": "10793bb9154c71b14fde9d8b6a14d1c28744ac768561b3a7c44066f94eab78bd"
+        },
+        "workers": [
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16757731328,
+            "root_bytes": 1683948,
+            "root_sha256": "db1203b3cb2f23239453a3fcc66444021949b955174344b1c4a0126483cf41b8",
+            "seconds": 248.01432826300152
+          },
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16762662912,
+            "root_bytes": 1683948,
+            "root_sha256": "2ac9935f2dd02877ce0ff76a5dbb6dc9832201cbafe1e97486a10f197b778ff2",
+            "seconds": 300.4761968899984
+          }
+        ]
+      },
+      {
+        "arm": "sequential",
+        "jobs_per_hour": 16.747430225338697,
+        "proving_overlap_seconds": 0.0,
+        "repeat": 3,
+        "seconds": 429.9167038239975,
+        "source": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/throughput-five-pairs/03-sequential-result.json",
+          "sha256": "6ab61904b9091a5645c2441b54e52103cfe8ae73a468a6650157b34001d7ce42"
+        },
+        "workers": [
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16901505024,
+            "root_bytes": 1683948,
+            "root_sha256": "5cd41bd01d896ed3bea503bf93ef77331d3ea878f859b07fb090a17fca623e51",
+            "seconds": 220.63768731699383
+          },
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16955760640,
+            "root_bytes": 1683948,
+            "root_sha256": "1ba2b5361728419123e9f689580201ae62732bc61df95d4c9295fb9772474b7f",
+            "seconds": 205.11882664200675
+          }
+        ]
+      },
+      {
+        "arm": "concurrent",
+        "jobs_per_hour": 23.75987140948199,
+        "proving_overlap_seconds": 243.501336748,
+        "repeat": 3,
+        "seconds": 303.0319430570089,
+        "source": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/throughput-five-pairs/03-concurrent-result.json",
+          "sha256": "30aaa847e7f7dde3d3b7d5250d8f5a8a6c6acdb2f0704692e97949ae1acd1c07"
+        },
+        "workers": [
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16835985408,
+            "root_bytes": 1683948,
+            "root_sha256": "938706ae9d987d3f254a499fa3b761a7a57f8f3c3763a99b86bf1b0d8003106c",
+            "seconds": 245.89747360399633
+          },
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16719671296,
+            "root_bytes": 1683948,
+            "root_sha256": "9e681cc7dd92621020f883f68a64d1c44c938b8a7f3076894e1a99ef4152db7b",
+            "seconds": 300.32524235699384
+          }
+        ]
+      },
+      {
+        "arm": "sequential",
+        "jobs_per_hour": 17.44285932335651,
+        "proving_overlap_seconds": 0.0,
+        "repeat": 4,
+        "seconds": 412.77636117600196,
+        "source": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/throughput-five-pairs/04-sequential-result.json",
+          "sha256": "0c967dd12f6e660a86f502f75911fb9d4a86768ec6691a3b5b34efbe3623b86c"
+        },
+        "workers": [
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16967614464,
+            "root_bytes": 1683948,
+            "root_sha256": "0115111f62f6564730d48175560e06cd6f09a0493ed349bc8712a4e55307ec84",
+            "seconds": 204.1127909229981
+          },
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 17022058496,
+            "root_bytes": 1683948,
+            "root_sha256": "2a23d28972705f48a54abb1984770bcaf3a72e510f6663baac1a725f10da52c8",
+            "seconds": 204.7482501630002
+          }
+        ]
+      },
+      {
+        "arm": "concurrent",
+        "jobs_per_hour": 23.038903696163146,
+        "proving_overlap_seconds": 248.749919488,
+        "repeat": 4,
+        "seconds": 312.514870280007,
+        "source": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/throughput-five-pairs/04-concurrent-result.json",
+          "sha256": "a17ea63ea4a76cabf52b113fc54f1dcff4def5551f30a14600125a94470f3278"
+        },
+        "workers": [
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16766828544,
+            "root_bytes": 1683948,
+            "root_sha256": "a8888b6e868930bf5665c672f1d195e0b143a485491e74b4c56b5406011500c0",
+            "seconds": 251.27894423798716
+          },
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16759398400,
+            "root_bytes": 1683948,
+            "root_sha256": "a663f15a60b54c3a307f1750dad55f58a16915869338f198fe5ecdaddaba0e65",
+            "seconds": 309.17412295300164
+          }
+        ]
+      },
+      {
+        "arm": "sequential",
+        "jobs_per_hour": 17.319169821867966,
+        "proving_overlap_seconds": 0.0,
+        "repeat": 5,
+        "seconds": 415.72431438999774,
+        "source": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/throughput-five-pairs/05-sequential-result.json",
+          "sha256": "9444c4cec6a2b2194a164b101638818d35bfb1f807accd62e26e6a27b07327a0"
+        },
+        "workers": [
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16976793600,
+            "root_bytes": 1683948,
+            "root_sha256": "5d89c51517f84cc99ce5c1eedf357013fe5be7fe2f03c2f8cc26a4c2af715b2d",
+            "seconds": 204.0936510090105
+          },
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16903270400,
+            "root_bytes": 1683948,
+            "root_sha256": "7e60e4888ec51df81a3b17c55758342b14158ccb16a369e174af56224f864fd0",
+            "seconds": 207.6477924919891
+          }
+        ]
+      },
+      {
+        "arm": "concurrent",
+        "jobs_per_hour": 21.445247853322584,
+        "proving_overlap_seconds": 277.150140597,
+        "repeat": 5,
+        "seconds": 335.7387169989961,
+        "source": {
+          "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/throughput-five-pairs/05-concurrent-result.json",
+          "sha256": "e8e1c1be08ba2b877bf686423e293de330e59cbd9cec875556f91e539decca4f"
+        },
+        "workers": [
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16795721728,
+            "root_bytes": 1683948,
+            "root_sha256": "bfc54504b531cb5f575da52588b822fe2d93ec8f90c9532f1334f582828f8429",
+            "seconds": 279.5720270520105
+          },
+          {
+            "cpu_audited": true,
+            "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+            "memory_events": {
+              "high": "0",
+              "low": "0",
+              "max": "0",
+              "oom": "0",
+              "oom_group_kill": "0",
+              "oom_kill": "0",
+              "sock_throttled": "0"
+            },
+            "peak_charged_ram_bytes": 16739635200,
+            "root_bytes": 1683948,
+            "root_sha256": "3f81191781bce689f4781e03641a846466d869975d67e14850c5ac4d77eb4e97",
+            "seconds": 332.7124448760005
+          }
+        ]
+      }
+    ],
+    "audited_subtree_jobs": 20,
+    "binary_sha256": "a1fb87c6730bf41786847332813b4df248e3fc726fbb69ae0a3f6772bc9c4003",
+    "directory": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/throughput-five-pairs",
+    "fresh_recursive_proofs": 140,
+    "median_audited_subtree_jobs_per_hour": {
+      "concurrent": 23.690420247348452,
+      "sequential": 17.319169821867966
+    },
+    "median_pair_makespan_seconds": {
+      "concurrent": 303.92031567299273,
+      "sequential": 415.72431438999774
+    },
+    "memory_limit_and_oom_events": 0,
+    "order": "odd rounds sequential/concurrent; even rounds concurrent/sequential",
+    "paired_median_reduction_percent": 26.04853218623423,
+    "paired_median_throughput_increase_percent": 35.22382037342793,
+    "paired_reduction_range_percent": [
+      19.240057562754398,
+      32.618216944914295
+    ],
+    "pairs": [
+      {
+        "concurrent_seconds": 303.92031567299273,
+        "reduction_percent": 26.04853218623423,
+        "repeat": 1,
+        "sequential_seconds": 410.97266174400283,
+        "throughput_increase_percent": 35.22382037342793
+      },
+      {
+        "concurrent_seconds": 303.4813207820116,
+        "reduction_percent": 32.618216944914295,
+        "repeat": 2,
+        "sequential_seconds": 450.39075403200695,
+        "throughput_increase_percent": 48.40806441445511
+      },
+      {
+        "concurrent_seconds": 303.0319430570089,
+        "reduction_percent": 29.513801077832426,
+        "repeat": 3,
+        "sequential_seconds": 429.9167038239975,
+        "throughput_increase_percent": 41.871744439535206
+      },
+      {
+        "concurrent_seconds": 312.514870280007,
+        "reduction_percent": 24.28954279512263,
+        "repeat": 4,
+        "sequential_seconds": 412.77636117600196,
+        "throughput_increase_percent": 32.08215046092453
+      },
+      {
+        "concurrent_seconds": 335.7387169989961,
+        "reduction_percent": 19.240057562754398,
+        "repeat": 5,
+        "sequential_seconds": 415.72431438999774,
+        "throughput_increase_percent": 23.82376334369587
+      }
+    ],
+    "peak_worker_charged_ram_bytes": 17022058496,
+    "performance_promotion": "Keep direct readback opt-in pending matched layout comparison.",
+    "ratio_of_medians_reduction_percent": 26.893783896440524,
+    "rounds": 5,
+    "scope": "Two independent eight-wallet subtree jobs per arm. Public wallet proofs are reused; recursive proofs are fresh. This does not measure delivered transaction throughput.",
+    "status": "PASSED",
+    "summary": {
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/throughput-five-pairs/summary.json",
+      "sha256": "b45b6bfe5116f8818ce9315753c4e59690e7cc2eef6c20cc4b69cac7672abfaa"
+    },
+    "timing_boundary": "Controller elapsed from each two-job arm start through copying, proving, independent CPU audits and cleanup. No compile/report rendering was launched during the campaign. OS and driver caches were not flushed.",
+    "unique_root_hashes": 20
+  },
+  "schema_version": 1,
+  "source_commit": "094cade18a59d38d7d65bd805511a7809b348a9e",
+  "sources": [
+    {
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/manifest.json",
+      "sha256": "98fb4b264d89dd876793186aee7cbfcb9431590cd459e1afd4e293f7b61cc656"
+    },
+    {
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/source.tar.gz",
+      "sha256": "d87cdb49ddd1fe9124e7a3254a619108ab71bb932784782ce5f53a62e962f989"
+    },
+    {
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/implementation.patch",
+      "sha256": "1f0d52d29f5bfb2ba00e026ebaefef823a1291b1c2d3cea1a5ccd73663c24449"
+    },
+    {
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-1-initial-plan.json",
+      "sha256": "f12cb2d38ef90d374afdf2b7c734c94b9eef03586e952b7519b8ce0e291f4db0"
+    },
+    {
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/gpu-equivalence.json",
+      "sha256": "3c3ed5ff741ae62e764a66f127f4f280f5da192806ce89a4430d1aa963204b50"
+    }
+  ],
+  "status": "REPEATED_THROUGHPUT_AND_MATCHED_LAYOUT_PASSED",
+  "throughput_screen": {
+    "audited_subtree_jobs_per_hour": {
+      "concurrent": 23.690442654405146,
+      "sequential": 17.407816861324097
+    },
+    "pair_makespan_reduction_percent": 26.519664004306055,
+    "pair_makespan_seconds": {
+      "concurrent": 303.9200282169986,
+      "sequential": 413.6072924800028
+    },
+    "proving_overlap_seconds": 246.469451048,
+    "rounds": 1,
+    "scope": "One exploratory sequential/concurrent pair with four independently CPU-audited roots and fresh recursive proofs. Timing includes complete controller startup, fixture copying, worker execution, CPU audit and cleanup. No performance promotion or delivered-transaction claim.",
+    "source": {
+      "path": "lattica-prover-p3/target/block-v2-direct-readback-20261004-a/throughput-screen/summary.json",
+      "sha256": "b8917cc95a413d446a9c6e6466139c4ef196c7d8fb89d2ab55cae233a2742087"
+    },
+    "status": "succeeded",
+    "throughput_increase_percent": 36.09083116585117,
+    "workers": [
+      {
+        "arm": "sequential",
+        "assigned": {
+          "cpu": {
+            "allowed_cpus": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23
+            ],
+            "coordinator_capacity": "1",
+            "effective_capacity": "24",
+            "quota_percent": "2300%",
+            "rayon_threads": 23,
+            "version": 1
+          },
+          "gpu": {
+            "available_bytes": 16631463936,
+            "bootstrap": false,
+            "context_bytes": 536870912,
+            "headroom_bytes": 1073741824,
+            "managed_bytes": 14763950080,
+            "max_allocation_bytes": 4174331904,
+            "total_bytes": 15300820992,
+            "usable_bytes": 16697327616,
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "version": 1
+          },
+          "host": {
+            "coordinator_bytes": 1073741824,
+            "filesystem_headroom_bytes": 1670281421,
+            "fleet_bytes": 44560285696,
+            "os_headroom_bytes": 6681126093,
+            "scratch_device": 51,
+            "scratch_path": "/tmp",
+            "spill_bytes": 31138512896,
+            "swap_bytes": 0,
+            "tmpfs": true,
+            "version": 1,
+            "worker_bytes": 43486543872
+          }
+        },
+        "cpu_audited": true,
+        "elapsed_seconds": 205.4912816340002,
+        "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "peak_worker_ram_bytes": 16919465984,
+        "root_bytes": 1683948,
+        "root_sha256": "25b128ab82a1a9607eefc0390f6231640981ad933963725fa775351316c48d87"
+      },
+      {
+        "arm": "sequential",
+        "assigned": {
+          "cpu": {
+            "allowed_cpus": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23
+            ],
+            "coordinator_capacity": "1",
+            "effective_capacity": "24",
+            "quota_percent": "2300%",
+            "rayon_threads": 23,
+            "version": 1
+          },
+          "gpu": {
+            "available_bytes": 16631463936,
+            "bootstrap": false,
+            "context_bytes": 536870912,
+            "headroom_bytes": 1073741824,
+            "managed_bytes": 14763950080,
+            "max_allocation_bytes": 4174331904,
+            "total_bytes": 15300820992,
+            "usable_bytes": 16697327616,
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "version": 1
+          },
+          "host": {
+            "coordinator_bytes": 1073741824,
+            "filesystem_headroom_bytes": 1670281421,
+            "fleet_bytes": 44023414784,
+            "os_headroom_bytes": 6681126093,
+            "scratch_device": 51,
+            "scratch_path": "/tmp",
+            "spill_bytes": 31138512896,
+            "swap_bytes": 0,
+            "tmpfs": true,
+            "version": 1,
+            "worker_bytes": 42949672960
+          }
+        },
+        "cpu_audited": true,
+        "elapsed_seconds": 204.21989425899665,
+        "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "peak_worker_ram_bytes": 16971038720,
+        "root_bytes": 1683948,
+        "root_sha256": "ed295b59fd473717e7894b43b3fc0f4ce98f62a5883465a5404b8ccf2b549eb8"
+      },
+      {
+        "arm": "concurrent",
+        "assigned": {
+          "cpu": {
+            "allowed_cpus": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23
+            ],
+            "coordinator_capacity": "1",
+            "effective_capacity": "24",
+            "quota_percent": "1200%",
+            "rayon_threads": 12,
+            "version": 1
+          },
+          "gpu": {
+            "available_bytes": 16631463936,
+            "bootstrap": false,
+            "context_bytes": 536870912,
+            "headroom_bytes": 1073741824,
+            "managed_bytes": 14763950080,
+            "max_allocation_bytes": 4174331904,
+            "total_bytes": 15300820992,
+            "usable_bytes": 16697327616,
+            "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+            "version": 1
+          },
+          "host": {
+            "coordinator_bytes": 1073741824,
+            "filesystem_headroom_bytes": 1670281421,
+            "fleet_bytes": 44291850240,
+            "os_headroom_bytes": 6681126093,
+            "scratch_device": 51,
+            "scratch_path": "/tmp",
+            "spill_bytes": 15569256448,
+            "swap_bytes": 0,
+            "tmpfs": true,
+            "version": 1,
+            "worker_bytes": 21474836480
+          }
+        },
+        "cpu_audited": true,
+        "elapsed_seconds": 248.8475212389967,
+        "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+        "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "peak_worker_ram_bytes": 16804245504,
+        "root_bytes": 1683948,
+        "root_sha256": "177484db38dce5d7ae4ddd67422f253e5fd012494f6c5de9cbf35fc368c7db82"
+      },
+      {
+        "arm": "concurrent",
+        "assigned": {
+          "cpu": {
+            "allowed_cpus": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23
+            ],
+            "coordinator_capacity": "1",
+            "effective_capacity": "24",
+            "quota_percent": "1100%",
+            "rayon_threads": 11,
+            "version": 1
+          },
+          "gpu": {
+            "available_bytes": 15366881280,
+            "bootstrap": false,
+            "context_bytes": 536870912,
+            "headroom_bytes": 1073741824,
+            "managed_bytes": 13690208256,
+            "max_allocation_bytes": 4176773120,
+            "total_bytes": 14227079168,
+            "usable_bytes": 16707092480,
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+            "version": 1
+          },
+          "host": {
+            "coordinator_bytes": 1073741824,
+            "filesystem_headroom_bytes": 1670281421,
+            "fleet_bytes": 44291850240,
+            "os_headroom_bytes": 6681126093,
+            "scratch_device": 51,
+            "scratch_path": "/tmp",
+            "spill_bytes": 15569256448,
+            "swap_bytes": 0,
+            "tmpfs": true,
+            "version": 1,
+            "worker_bytes": 21474836480
+          }
+        },
+        "cpu_audited": true,
+        "elapsed_seconds": 301.2610463279998,
+        "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "peak_worker_ram_bytes": 16738369536,
+        "root_bytes": 1683948,
+        "root_sha256": "095a854239dac7b17e88817cffa776c1e4e1f84b32d99afb7a40be59203bfb04"
+      }
+    ]
+  },
+  "timing_boundary": "Worker elapsed includes input checks, wrappers, merges and independent CPU root audit. Fixture copying, coordinator startup and compilation are excluded. Bootstrap observations are not a matched speedup.",
+  "unit_validation": {
+    "python_multi_gpu": {
+      "failed": 0,
+      "passed": 20
+    },
+    "rust_lde_readback_and_plan": {
+      "failed": 0,
+      "ignored": 1,
+      "passed": 23
+    }
+  }
+}

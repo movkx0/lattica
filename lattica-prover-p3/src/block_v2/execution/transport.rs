@@ -64,6 +64,9 @@ pub struct WorkerConfig {
 }
 impl WorkerConfig {
     fn validate(&self) -> Result<(), Error> {
+        if self.pin.is_typed() {
+            return Err("legacy CPU transport rejects typed registry".into());
+        }
         RegistryPin::new(&self.registry, self.pin.profile(), self.pin.construction())?;
         commitment::digest_from_bytes(&self.executable)?;
         if !(1..=7200).contains(&self.timeout_seconds) {

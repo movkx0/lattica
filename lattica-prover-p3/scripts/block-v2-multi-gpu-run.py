@@ -203,20 +203,40 @@ def reconcile(ledger, lookup=None):
 
 def environment(budget, directory):
     gpu, cpu, host = (budget[k] for k in ('gpu', 'cpu', 'host'))
+    layout = budget.get('readback_layout', 'banded')
+    if layout not in ('banded', 'direct'):
+        raise ValueError('unsupported assigned readback layout')
+    query_layout = budget.get('query_readback_layout', 'rows')
+    if query_layout not in ('rows', 'gather'):
+        raise ValueError('unsupported assigned query readback layout')
+    denominator_cache = budget.get('opening_denominator_cache', False)
+    fri_fold = budget.get('gpu_fri_fold', False)
+    if type(fri_fold) is not bool:
+        raise ValueError('assigned GPU FRI folding selection must be boolean')
+    if type(denominator_cache) is not bool:
+        raise ValueError('assigned opening denominator cache selection must be boolean')
     return {
         'RAYON_NUM_THREADS': str(cpu['rayon_threads']), 'LATTICA_GPU_DEVICE_UUID': gpu['uuid'],
         'LATTICA_V2_ACCOUNTING_UNIT': budget['unit'], 'LATTICA_V2_WORKER_BUDGET': str(directory / 'budget.json'),
-        'LATTICA_V2_GPU_MANAGED_BYTES': str(gpu['managed_bytes']), 'LATTICA_V2_GPU_CONTEXT_BYTES': str(gpu['context_bytes']),
+        'LATTICA_V2_GPU_MANAGED_BYTES': str(gpu['managed_bytes']),
+            'LATTICA_V2_GPU_LDE_WORKSPACE_BYTES': str(budget.get('lde_workspace_bytes', 0)), 'LATTICA_V2_GPU_CONTEXT_BYTES': str(gpu['context_bytes']),
+            'LATTICA_V2_GPU_FRI_FOLD': '1' if fri_fold else '0',
         'LATTICA_V2_HOST_OUTPUT_BYTES': str(host['worker_bytes']), 'LATTICA_SPILL_MAX_BYTES': str(host['spill_bytes']), 'LATTICA_SPILL_DIR': str(directory / 'scratch'),
         'LATTICA_V2_GPU_HASH': '1', 'LATTICA_V2_GPU_RETAIN_TREES': '1', 'LATTICA_V2_GPU_PIPELINE': '0',
         'LATTICA_V2_GPU_RESIDENT_LDE': '1', 'LATTICA_V2_GPU_OPENINGS': '1', 'LATTICA_V2_GPU_OPENING_COMPACT': '1',
         'LATTICA_V2_GPU_OPENING_PINNED': '0', 'LATTICA_V2_QUOTIENT_FUSION': '1', 'LATTICA_V2_GPU_QUOTIENT_LDE': '1',
         'LATTICA_V2_GPU_PARALLEL_READBACK': '1', 'LATTICA_V2_GPU_COMPACT_PROVER_DATA': '1',
+        'LATTICA_V2_GPU_DIRECT_READBACK': '1' if layout == 'direct' else '0',
+        'LATTICA_V2_GPU_QUERY_GATHER': '1' if query_layout == 'gather' else '0',
+        'LATTICA_V2_GPU_OPENING_DENOMINATOR_CACHE': '1' if denominator_cache else '0',
         'LATTICA_FFT_TRACE': '1', 'LATTICA_PROFILE': '1', 'LATTICA_PROFILE_TIMELINE': '0',
     }
 
 
-def launch(config, job, budget, directory):
+def launch(config, job, budget, directory, worker_script=None):
+    worker_script = Path(worker_script or __file__).resolve()
+    if worker_script != Path(__file__).resolve() and config['pins'].get(str(worker_script)) != digest(worker_script):
+        raise ValueError('alternate worker controller must be pinned before launch')
     directory.mkdir(mode=0o700)
     scratch = Path(budget['host']['scratch_path']) / budget['unit'].removesuffix('.service')
     if len(os.fsencode(str(directory / 'scratch'))) > 255:
@@ -234,7 +254,7 @@ def launch(config, job, budget, directory):
                '--property=StandardOutput=append:' + str(directory / 'worker.log'), '--property=StandardError=inherit']
     for name, value in environment(budget, directory).items():
         command.append(f'--setenv={name}={value}')
-    command += [sys.executable, str(Path(__file__).resolve()), '--worker', str(directory / 'attempt.json')]
+    command += [sys.executable, str(worker_script), '--worker', str(directory / 'attempt.json')]
     subprocess.run(command, check=True, timeout=30)
 
 

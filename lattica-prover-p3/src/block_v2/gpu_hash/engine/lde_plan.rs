@@ -32,6 +32,7 @@ pub struct LdeCommitPlan {
     prefixes: Vec<usize>,
     output_height: usize,
     retained_height: usize,
+    pub(super) readback_layout: super::lde_readback::ReadbackLayout,
     columns_per_tile: usize,
     pub transform_buffer_bytes: usize,
     pub sponge_state_bytes: usize,
@@ -117,6 +118,33 @@ impl LdeCommitPlan {
         old_workspace_bytes: usize,
         host_output_budget_bytes: usize,
         retention_bits: usize,
+    ) -> Result<Self, String> {
+        Self::new_retained_with_layout(
+            inputs,
+            cap_height,
+            limits,
+            max_alloc,
+            slots,
+            live_bytes,
+            old_workspace_bytes,
+            host_output_budget_bytes,
+            retention_bits,
+            super::lde_readback::ReadbackLayout::Banded,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn new_retained_with_layout(
+        inputs: &[InputShape],
+        cap_height: usize,
+        limits: Limits,
+        max_alloc: usize,
+        slots: usize,
+        live_bytes: usize,
+        old_workspace_bytes: usize,
+        host_output_budget_bytes: usize,
+        retention_bits: usize,
+        readback_layout: super::lde_readback::ReadbackLayout,
     ) -> Result<Self, String> {
         limits.validate()?;
         if inputs.is_empty() || inputs.len() > MAX_MATRICES {
@@ -217,7 +245,9 @@ impl LdeCommitPlan {
         let columns_per_tile = 1usize << maximum.ilog2();
         let mut host_reorder_workspace_bytes = 0;
         for input in inputs {
-            if input.width > columns_per_tile {
+            if readback_layout == super::lde_readback::ReadbackLayout::Banded
+                && input.width > columns_per_tile
+            {
                 host_reorder_workspace_bytes = host_reorder_workspace_bytes
                     .max(bytes(mul(output_height >> retention_bits, input.width)?)?);
             }
@@ -238,6 +268,7 @@ impl LdeCommitPlan {
             prefixes,
             output_height,
             retained_height: output_height >> retention_bits,
+            readback_layout,
             columns_per_tile,
             transform_buffer_bytes,
             sponge_state_bytes,
@@ -357,6 +388,48 @@ mod tests {
                 compact.predicted_managed_peak_bytes,
                 full.predicted_managed_peak_bytes
             );
+        }
+    }
+
+    #[test]
+    fn direct_layout_admits_only_final_outputs_and_preserves_gpu_geometry() {
+        use super::super::lde_readback::ReadbackLayout;
+        let limits = Limits::default();
+        let shapes = wide();
+        for retention in [0, 1, crate::block_v2::profile::LOG_BLOWUP] {
+            let make = |host, layout| {
+                LdeCommitPlan::new_retained_with_layout(
+                    &shapes,
+                    6,
+                    limits,
+                    4 * GIB,
+                    1,
+                    CONSTANT_BYTES + limits.staging_bytes,
+                    0,
+                    host,
+                    retention,
+                    layout,
+                )
+            };
+            let banded = make(48 * GIB, ReadbackLayout::Banded).unwrap();
+            assert!(banded.host_reorder_workspace_bytes > 0);
+            assert!(make(banded.host_output_bytes, ReadbackLayout::Banded).is_err());
+            let direct = make(banded.host_output_bytes, ReadbackLayout::Direct).unwrap();
+            assert_eq!(direct.host_reorder_workspace_bytes, 0);
+            assert_eq!(direct.predicted_host_peak_bytes, banded.host_output_bytes);
+            assert_eq!(
+                direct.projected_host_readback_bytes,
+                banded.projected_host_readback_bytes
+            );
+            assert_eq!(
+                direct.predicted_managed_peak_bytes,
+                banded.predicted_managed_peak_bytes
+            );
+            assert_eq!(
+                direct.tiles().collect::<Vec<_>>(),
+                banded.tiles().collect::<Vec<_>>()
+            );
+            assert!(make(banded.host_output_bytes - 1, ReadbackLayout::Direct).is_err());
         }
     }
 

@@ -291,6 +291,42 @@ impl ArtifactStore {
         Ok((ticket, bytes))
     }
 
+    pub fn load_typed_wallet(
+        &self,
+        identity: ArtifactRef,
+        pin: RegistryPin,
+        registry: &crate::block_v2::typed_recursive::Registry<12>,
+        chain: [u8; 32],
+        policy: crate::block_v2::typed_recursive::Policy,
+    ) -> Result<(VerifiedWallet, Vec<u8>), Error> {
+        if identity.kind() != ArtifactKind::Wallet {
+            return Err("artifact is not a typed wallet proof".into());
+        }
+        let bytes = self.read_exact(identity)?;
+        let ticket = VerifiedWallet::verify_typed(pin, registry, chain, policy, &bytes)?;
+        if ticket.artifact() != identity {
+            return Err("recovered typed wallet identity".into());
+        }
+        Ok((ticket, bytes))
+    }
+
+    pub fn load_typed_node(
+        &self,
+        identity: ArtifactRef,
+        job: &Job,
+        registry: &crate::block_v2::typed_recursive::Registry<12>,
+    ) -> Result<(VerifiedNode, Vec<u8>), Error> {
+        if identity.kind() != ArtifactKind::Node {
+            return Err("artifact is not a typed recursive node".into());
+        }
+        let bytes = self.read_exact(identity)?;
+        let ticket = VerifiedNode::verify_typed(job, registry, &bytes)?;
+        if ticket.artifact() != identity {
+            return Err("recovered typed node identity".into());
+        }
+        Ok((ticket, bytes))
+    }
+
     fn check_owner(&self) -> Result<(), Error> {
         if self.poisoned {
             return Err("artifact store poisoned; reopen and recover".into());

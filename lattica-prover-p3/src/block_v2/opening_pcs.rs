@@ -50,6 +50,7 @@ impl<F> PrefixView<'_, F> {
 
 /// This FRI-MMCS belongs to one shared proof attempt. Never clone it per call:
 /// the salt stream must advance across active PCS clones.
+#[tracing::instrument(target = "lattica_block_v2_perf", name = "GPU opening proof", skip_all)]
 pub(super) fn open_hiding(
     mmcs: &CandidateMmcs,
     fri: &FriParameters<ChallengeMmcs>,
@@ -143,6 +144,8 @@ fn validate_shapes(
         heights.iter().sum(),
         opened_elements,
     )
+    // Bound cache planning metadata and allocation handles as well as vectors.
+    .and_then(|bytes| bytes.checked_add(64 << 10))
     .ok_or("opening host workspace overflow")?;
     if bytes > (4usize << 30) {
         return Err("opening host workspace allowance");
@@ -367,6 +370,14 @@ fn open(
                 let local: Vec<_> = indices.iter().map(|i| i >> shift).collect();
                 mmcs.prepare_queries(data, &local)
                     .expect("compact query reconstruction failed");
+            }
+        },
+        |beta, log_arity, leaves| {
+            if log_arity == 1 {
+                super::gpu_hash::fold_fri(beta, leaves.values)
+                    .expect("candidate GPU FRI folding failed; no silent fallback")
+            } else {
+                None
             }
         },
     );
