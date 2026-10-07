@@ -113,6 +113,10 @@ fn validate_opening_work(
 fn expected_opening_calls(command: &Command) -> u64 {
     match command {
         Command::Pinned {
+            action: PinnedAction::AggregateTwelve,
+            ..
+        } => 13,
+        Command::Pinned {
             action: PinnedAction::WrapAll,
             ..
         } => 4,
@@ -120,6 +124,10 @@ fn expected_opening_calls(command: &Command) -> u64 {
             action: PinnedAction::MergeAll,
             ..
         } => 3,
+        Command::Pinned {
+            action: PinnedAction::AggregateAll,
+            ..
+        } => 7,
         Command::Pinned {
             action: PinnedAction::WrapPair(_) | PinnedAction::Merge { .. },
             ..
@@ -243,40 +251,64 @@ fn metal_rss_limit(policy: &str) -> Result<Option<u64>, Error> {
 }
 
 #[cfg(feature = "gpu-metal")]
+fn metal_scratch_limit(resident: bool, configured: Option<&str>) -> Result<Option<u64>, Error> {
+    if resident {
+        return Ok(None);
+    }
+    let bytes: u64 = configured
+        .ok_or("missing LATTICA_SPILL_MAX_BYTES")?
+        .parse()?;
+    if bytes == 0 || bytes > 34 * GIB {
+        return Err("reference Metal worker requires 0 < SPILL_MAX_BYTES <= 34 GiB".into());
+    }
+    Ok(Some(bytes))
+}
+
+#[cfg(feature = "gpu-metal")]
+fn metal_timeout(configured: Option<&str>) -> Result<Option<u64>, Error> {
+    match configured {
+        Some("none") => Ok(None),
+        None => Ok(Some(7200)),
+        Some(value) => {
+            let seconds: u64 = value.parse()?;
+            if seconds == 0 || seconds > 7200 {
+                return Err("LATTICA_V2_METAL_TIMEOUT_SECONDS must be none or 1..=7200".into());
+            }
+            Ok(Some(seconds))
+        }
+    }
+}
+
+#[cfg(feature = "gpu-metal")]
 fn require_worker_limits() -> Result<MetalWatchdog, Error> {
     use std::sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     };
-    fn limit(name: &str, default: u64, maximum: u64) -> Result<u64, Error> {
-        let value = match std::env::var(name) {
-            Ok(value) => value.parse()?,
-            Err(std::env::VarError::NotPresent) => default,
-            Err(error) => return Err(error.into()),
-        };
-        if value == 0 || value > maximum {
-            return Err(format!("invalid {name}: must be 1..={maximum}").into());
-        }
-        Ok(value)
-    }
     let rss_limit = metal_rss_limit(include_str!("apple_benchmark_memory.json"))?;
-    let timeout = limit("LATTICA_V2_METAL_TIMEOUT_SECONDS", 7200, 7200)?;
-    let scratch: u64 = std::env::var("LATTICA_SPILL_MAX_BYTES")?.parse()?;
-    if scratch == 0
-        || scratch > 34 * GIB
-        || std::env::var("LATTICA_SPILL_BACKING").as_deref() != Ok("memory")
-    {
-        return Err(
-            "Metal worker requires memory scratch with explicit 0 < SPILL_MAX_BYTES <= 34 GiB"
-                .into(),
-        );
+    let configured_timeout = match std::env::var("LATTICA_V2_METAL_TIMEOUT_SECONDS") {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(error) => return Err(error.into()),
+    };
+    let timeout = metal_timeout(configured_timeout.as_deref())?;
+    let scratch = metal_scratch_limit(
+        std::env::var("LATTICA_V2_METAL_PIPELINE").as_deref() == Ok("resident"),
+        std::env::var("LATTICA_SPILL_MAX_BYTES").ok().as_deref(),
+    )?;
+    if std::env::var("LATTICA_SPILL_BACKING").as_deref() != Ok("memory") {
+        return Err("Metal worker requires memory scratch".into());
     }
     let (rss, footprint) = process_memory()?;
     if rss_limit.is_some_and(|limit| rss > limit) {
         return Err("Metal worker already exceeds its configured RSS limit".into());
     }
     let rss_limit_label = rss_limit.map_or_else(|| "none".to_owned(), |limit| limit.to_string());
-    println!("metal_worker_limits rss_limit_bytes={rss_limit_label} scratch_limit_bytes={scratch} timeout_seconds={timeout} sample_ms=500 enforcement=watchdog swap_enforcement=false initial_rss_bytes={rss} initial_footprint_bytes={footprint}");
+    let scratch_limit_label = scratch.map_or_else(|| "none".to_owned(), |limit| limit.to_string());
+    let timeout_label = timeout.map_or_else(|| "none".to_owned(), |limit| limit.to_string());
+    println!(
+        "metal_worker_limits rss_limit_bytes={rss_limit_label} scratch_limit_bytes={scratch_limit_label} timeout_seconds={timeout_label} sample_ms=500 enforcement=watchdog swap_enforcement=false initial_rss_bytes={rss} initial_footprint_bytes={footprint}"
+    );
     let stop = Arc::new(AtomicBool::new(false));
     let signal = stop.clone();
     let thread = std::thread::Builder::new().name("metal-memory-watchdog".into()).spawn(move || {
@@ -286,7 +318,7 @@ fn require_worker_limits() -> Result<MetalWatchdog, Error> {
             match process_memory() {
                 Ok((rss, footprint)) => {
                     peak_rss = peak_rss.max(rss); peak_footprint = peak_footprint.max(footprint);
-                    if rss_limit.is_some_and(|limit| rss > limit) || started.elapsed().as_secs() >= timeout {
+                    if rss_limit.is_some_and(|limit| rss > limit) || timeout.is_some_and(|limit| started.elapsed().as_secs() >= limit) {
                         eprintln!("FAILED: Metal watchdog limit exceeded rss_bytes={rss} footprint_bytes={footprint} elapsed_seconds={}", started.elapsed().as_secs());
                         std::process::exit(124);
                     }
@@ -333,7 +365,8 @@ impl Drop for GpuGuard {
     }
 }
 
-fn run(args: &[String]) -> Result<(), Error> {
+fn run(args: &[String], cache: Option<&mut grouped_common::SessionCache>) -> Result<(), Error> {
+    let persistent = cache.is_some();
     let started = Instant::now();
     let command = parse_gpu_command(args)?;
     let resident = parse_backend(
@@ -369,7 +402,9 @@ fn run(args: &[String]) -> Result<(), Error> {
     println!("gpu_quotient_research enabled={gpu_quotient} production_ready=false");
     println!("quotient_fusion_research enabled={fusion} production_ready=false");
     println!("gpu_readback_research parallel={parallel_readback} production_ready=false");
-    println!("machine_layout_research name=wide23 revision=3 scalar_lanes=23 cubic_lanes=7 main_width=94 public_bank_width=32 separate_registry_required=true production_ready=false");
+    println!(
+        "machine_layout_research name=wide23 revision=3 scalar_lanes=23 cubic_lanes=7 main_width=94 public_bank_width=32 separate_registry_required=true production_ready=false"
+    );
     println!(
         "node_codec_research revision={} magic={} profile_bound=true production_ready=false",
         profile::NODE_CODEC_REVISION,
@@ -378,18 +413,43 @@ fn run(args: &[String]) -> Result<(), Error> {
     let _spill = spill_alloc::SpillScope::arm();
     let profiler = Profiler::from_env()?;
     gpu_hash::initialize_from_env()?;
-    let mut guard = GpuGuard(true);
+    let mut guard = GpuGuard(!persistent);
+    let before = gpu_hash::report("worker begin").ok_or("GPU telemetry missing")?;
     if gpu_hash::initialize_resident_from_env()? != resident {
         return Err("GPU grouped resident selection mismatch".into());
     }
-    println!("gpu_grouped_research resident_lde={resident} gpu_openings={openings} retained_trees=true transfer_overlap=false cpu_only=false production_ready=false");
-    println!("gpu_grouped_opening_policy compact={compact} pinned=false cpu_only=false production_ready=false");
-    let result = grouped_common::run(command, profiler.as_ref(), false);
+    println!(
+        "gpu_grouped_research resident_lde={resident} gpu_openings={openings} retained_trees=true transfer_overlap=false cpu_only=false production_ready=false"
+    );
+    println!(
+        "gpu_grouped_opening_policy compact={compact} pinned=false cpu_only=false production_ready=false"
+    );
+    let result = if let Some(cache) = cache {
+        grouped_common::run_cached(command, profiler.as_ref(), false, cache)
+    } else {
+        grouped_common::run(command, profiler.as_ref(), false)
+    };
     if let Some(profiler) = &profiler {
         profiler.report("GPU grouped process remainder");
     }
-    let stats = gpu_hash::report("GPU grouped process remainder").ok_or("GPU telemetry missing")?;
-    guard.finish()?;
+    let mut stats =
+        gpu_hash::report("GPU grouped process remainder").ok_or("GPU telemetry missing")?;
+    if !persistent {
+        guard.finish()?;
+    }
+    stats.quotient_lde_commits -= before.quotient_lde_commits;
+    stats.opening_calls -= before.opening_calls;
+    stats.opening_pinned_uploaded_bytes -= before.opening_pinned_uploaded_bytes;
+    stats.opening_pinned_upload_chunks -= before.opening_pinned_upload_chunks;
+    stats.opening_compact_calls -= before.opening_compact_calls;
+    stats.opening_compact_saved_input_bytes -= before.opening_compact_saved_input_bytes;
+    stats.opening_compact_compress_ns -= before.opening_compact_compress_ns;
+    stats.opening_compact_ntt_ns -= before.opening_compact_ntt_ns;
+    stats.lde_parallel_decode_bytes -= before.lde_parallel_decode_bytes;
+    stats.lde_parallel_decode_chunks -= before.lde_parallel_decode_chunks;
+    stats.commits -= before.commits;
+    stats.lde_commits -= before.lde_commits;
+
     result?;
     if stats.quotient_lde_commits != expected_quotients {
         return Err("GPU quotient work differs from requested policy".into());
@@ -406,8 +466,11 @@ fn run(args: &[String]) -> Result<(), Error> {
     {
         return Err("GPU grouped operation did not execute the selected backend; no fallback or resumed timing".into());
     }
-    println!("grouped_stage_elapsed_ms={} spill_peak_bytes={} cpu_only=false resident_lde={resident} gpu_openings={openings} production_ready=false",
-        started.elapsed().as_millis(), spill_alloc::spill_peak_bytes());
+    println!(
+        "grouped_stage_elapsed_ms={} spill_peak_bytes={} cpu_only=false resident_lde={resident} gpu_openings={openings} production_ready=false",
+        started.elapsed().as_millis(),
+        spill_alloc::spill_peak_bytes()
+    );
     Ok(())
 }
 
@@ -428,7 +491,15 @@ fn main() {
         return;
     }
     let args: Vec<_> = std::env::args().skip(1).collect();
-    if let Err(error) = run(&args) {
+    #[cfg(feature = "gpu-metal")]
+    if args == ["--metal-worker"] {
+        if let Err(error) = metal_worker() {
+            eprintln!("FAILED: {error}");
+            std::process::exit(1);
+        }
+        return;
+    }
+    if let Err(error) = run(&args, None) {
         eprintln!("FAILED: {error}");
         std::process::exit(1);
     }
@@ -437,6 +508,51 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(feature = "gpu-metal")]
+    #[test]
+    fn metal_timeout_can_be_disabled_explicitly() {
+        assert_eq!(metal_timeout(Some("none")).unwrap(), None);
+        assert_eq!(metal_timeout(None).unwrap(), Some(7200));
+        for seconds in ["1", "900", "7200"] {
+            assert_eq!(
+                metal_timeout(Some(seconds)).unwrap(),
+                Some(seconds.parse().unwrap())
+            );
+        }
+        for bad in [
+            "0",
+            "-1",
+            "7201",
+            "",
+            "invalid",
+            "NONE",
+            "18446744073709551616",
+        ] {
+            assert!(metal_timeout(Some(bad)).is_err(), "{bad}");
+        }
+    }
+
+    #[cfg(feature = "gpu-metal")]
+    #[test]
+    fn metal_scratch_estimates_do_not_limit_resident_workers() {
+        for configured in [
+            None,
+            Some("1"),
+            Some("0"),
+            Some("invalid"),
+            Some("36507222016"),
+        ] {
+            assert_eq!(metal_scratch_limit(true, configured).unwrap(), None);
+        }
+        assert_eq!(
+            metal_scratch_limit(false, Some("36507222016")).unwrap(),
+            Some(34 * GIB)
+        );
+        for configured in [None, Some("0"), Some("invalid"), Some("36507222017")] {
+            assert!(metal_scratch_limit(false, configured).is_err());
+        }
+    }
 
     #[cfg(feature = "gpu-metal")]
     #[test]
@@ -580,14 +696,16 @@ mod tests {
             assert!(parse_gpu_command(&[verb.into(), "/missing".into()]).is_err());
         }
         for verb in ["check-registered", "remove-inners", "verify-root"] {
-            assert!(parse_gpu_command(&[
-                verb.into(),
-                "/missing".into(),
-                external.clone(),
-                external.clone(),
-                external.clone()
-            ])
-            .is_err());
+            assert!(
+                parse_gpu_command(&[
+                    verb.into(),
+                    "/missing".into(),
+                    external.clone(),
+                    external.clone(),
+                    external.clone()
+                ])
+                .is_err()
+            );
         }
         for verb in ["wrap-all", "merge-all"] {
             let args = [
@@ -608,68 +726,149 @@ mod tests {
         let unit = "lattica-v2-gpu-grouped-test-1.service";
         let mem = (44 * GIB).to_string();
         let total = (48 * GIB).to_string();
-        assert!(validate_worker_limits(
-            unit,
-            unit,
-            "lattica-v2-grouped.slice",
-            &mem,
-            "0",
-            &total,
-            "0"
-        )
-        .is_ok());
-        for bad in ["0", "max", "-1", "47244640257"] {
-            assert!(validate_worker_limits(
+        assert!(
+            validate_worker_limits(
                 unit,
                 unit,
                 "lattica-v2-grouped.slice",
-                bad,
+                &mem,
                 "0",
                 &total,
                 "0"
             )
-            .is_err());
+            .is_ok()
+        );
+        for bad in ["0", "max", "-1", "47244640257"] {
+            assert!(
+                validate_worker_limits(
+                    unit,
+                    unit,
+                    "lattica-v2-grouped.slice",
+                    bad,
+                    "0",
+                    &total,
+                    "0"
+                )
+                .is_err()
+            );
         }
-        assert!(validate_worker_limits(
-            unit,
-            "other.service",
-            "lattica-v2-grouped.slice",
-            &mem,
-            "0",
-            &total,
-            "0"
-        )
-        .is_err());
+        assert!(
+            validate_worker_limits(
+                unit,
+                "other.service",
+                "lattica-v2-grouped.slice",
+                &mem,
+                "0",
+                &total,
+                "0"
+            )
+            .is_err()
+        );
         assert!(validate_worker_limits(unit, unit, "wrong.slice", &mem, "0", &total, "0").is_err());
-        assert!(validate_worker_limits(
-            unit,
-            unit,
-            "lattica-v2-grouped.slice",
-            &mem,
-            "1",
-            &total,
-            "0"
-        )
-        .is_err());
-        assert!(validate_worker_limits(
-            unit,
-            unit,
-            "lattica-v2-grouped.slice",
-            &mem,
-            "0",
-            "max",
-            "0"
-        )
-        .is_err());
-        assert!(validate_worker_limits(
-            unit,
-            unit,
-            "lattica-v2-grouped.slice",
-            &mem,
-            "0",
-            &total,
-            "1"
-        )
-        .is_err());
+        assert!(
+            validate_worker_limits(
+                unit,
+                unit,
+                "lattica-v2-grouped.slice",
+                &mem,
+                "1",
+                &total,
+                "0"
+            )
+            .is_err()
+        );
+        assert!(
+            validate_worker_limits(
+                unit,
+                unit,
+                "lattica-v2-grouped.slice",
+                &mem,
+                "0",
+                "max",
+                "0"
+            )
+            .is_err()
+        );
+        assert!(
+            validate_worker_limits(
+                unit,
+                unit,
+                "lattica-v2-grouped.slice",
+                &mem,
+                "0",
+                &total,
+                "1"
+            )
+            .is_err()
+        );
     }
+}
+
+#[cfg(feature = "gpu-metal")]
+fn metal_worker() -> Result<(), Error> {
+    use std::io::{BufRead, Write};
+    use std::os::fd::FromRawFd;
+    let parent: i32 = std::env::var("LATTICA_V2_METAL_COORDINATOR_PID")?.parse()?;
+    if parent <= 1 || parent != unsafe { libc::getppid() } {
+        return Err("private worker requires its coordinator parent".into());
+    }
+    let fd: i32 = std::env::var("LATTICA_V2_METAL_CONTROL_FD")?.parse()?;
+    if fd < 3 {
+        return Err("worker control descriptor must be private".into());
+    }
+    // Coordinator passes one owned socket descriptor, never stdout/stderr.
+    let mut control = unsafe { std::os::unix::net::UnixStream::from_raw_fd(fd) };
+    let mut reader = std::io::BufReader::new(control.try_clone()?);
+    let stopped = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let signal = stopped.clone();
+    let watcher = std::thread::spawn(move || {
+        while !signal.load(std::sync::atomic::Ordering::Acquire) {
+            if unsafe { libc::getppid() } != parent {
+                eprintln!("FAILED: coordinator lost");
+                std::process::exit(70);
+            }
+            std::thread::sleep(std::time::Duration::from_millis(250));
+        }
+    });
+    let mut cache = None;
+    let mut sequence = 0u64;
+    loop {
+        let mut line = String::new();
+        // A bounded line prevents an untrusted/broken coordinator from allocating without limit.
+        let n = std::io::Read::take(&mut reader, 16385).read_line(&mut line)?;
+        if n == 0 {
+            break;
+        }
+        if n > 16384 || !line.ends_with('\n') {
+            return Err("invalid private worker frame".into());
+        }
+        let request: serde_json::Value = serde_json::from_str(&line)?;
+        if request["stop"] == true {
+            break;
+        }
+        if request["sequence"].as_u64() != Some(sequence) {
+            return Err("worker request sequence mismatch".into());
+        }
+        let args: Vec<String> = serde_json::from_value(request["args"].clone())?;
+        if !matches!(
+            args.first().map(String::as_str),
+            Some("aggregate-all" | "aggregate-twelve")
+        ) {
+            return Err("throughput worker requires a complete job".into());
+        }
+        let started = Instant::now();
+        run(&args, Some(&mut cache))?;
+        writeln!(
+            control,
+            "{}",
+            serde_json::json!({"sequence":sequence,"status":"PROVED","seconds":started.elapsed().as_secs_f64()})
+        )?;
+        control.flush()?;
+        sequence += 1;
+    }
+    drop(cache);
+    gpu_hash::shutdown()?;
+    stopped.store(true, std::sync::atomic::Ordering::Release);
+    watcher.join().map_err(|_| "parent watchdog failed")?;
+    Ok(())
 }

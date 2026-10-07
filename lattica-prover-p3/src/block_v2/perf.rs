@@ -300,7 +300,16 @@ impl Profiler {
             }
         }
         if let Some(timeline) = &mut state.timeline {
+            #[cfg(all(target_os = "macos", feature = "gpu-metal"))]
+            let clock_before = crate::metal_compute::diagnostics::clock_ns();
             let checkpoint = timeline.checkpoint();
+            #[cfg(all(target_os = "macos", feature = "gpu-metal"))]
+            println!(
+                "host_timeline_clock timeline_ns={} mach_before_ns={} mach_after_ns={}",
+                checkpoint.elapsed_ns,
+                clock_before,
+                crate::metal_compute::diagnostics::clock_ns()
+            );
             println!("host_timeline_checkpoint label={label:?} threads={} events={} dropped={} malformed={} open_frames={} clock=host_monotonic_relative interpretation=entered_wall_disjoint_per_thread_not_cpu_time", checkpoint.threads, checkpoint.segments.len(), checkpoint.dropped, checkpoint.malformed, checkpoint.open_frames);
             for segment in checkpoint.segments {
                 println!(

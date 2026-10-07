@@ -333,6 +333,7 @@ impl Engine {
                     &a.buffer,
                     &b.buffer,
                     &inverse.buffer,
+                    true,
                     low_height,
                     3,
                     Val::from_usize(low_height).inverse().as_canonical_u64(),
@@ -340,6 +341,7 @@ impl Engine {
                     false,
                     false,
                     true,
+                    None,
                 )?;
             }
             // Low samples already lie on g*H. Interpolate q(g*X), so no extra
@@ -348,6 +350,7 @@ impl Engine {
                 &b.buffer,
                 &a.buffer,
                 &forward.buffer,
+                false,
                 height,
                 3,
                 1,
@@ -355,6 +358,7 @@ impl Engine {
                 true,
                 true,
                 true,
+                None,
             )?;
             self.stats.opening_compact_ntt_ns += self.stats.lde_transform_ns - before_ntt;
             let expanded = if in_a { &a.buffer } else { &b.buffer };

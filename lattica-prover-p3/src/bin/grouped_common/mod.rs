@@ -6,11 +6,13 @@
 //! chain and expected-root inputs. Never reads profile.hex or a job's expected.
 //! Heavy commands require the separately bounded CPU or explicit GPU controller.
 
+mod twelve;
+
 use lattica_prover_p3::{
     block_v2::{
         codec,
         commitment::{self, Context, NodeSummary},
-        machine::{analysis, programs, usage, MachineAir},
+        machine::{MachineAir, analysis, programs, usage},
         perf::Profiler,
         profile,
         recursive::{
@@ -21,7 +23,7 @@ use lattica_prover_p3::{
 };
 use p3_field::{PrimeCharacteristicRing, PrimeField64};
 use p3_goldilocks::Goldilocks as Val;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use std::{
     collections::BTreeSet,
     fs,
@@ -42,6 +44,8 @@ const WALLET_MAGIC: &[u8; 8] = b"LBV2WL02";
 const USAGE: &str = "\
 Unapproved preparation only:
   prepare DIR
+  prepare-twelve DIR                         (separate twelve-wallet fixture)
+  describe-twelve DIR                        (unapproved external research inputs)
   common-height DIR
   register DIR MODE                         (MODE = 1, 2 or 3; unapproved keys)
   describe-registry DIR                     (candidate fingerprint, NOT approval)
@@ -52,6 +56,7 @@ Externally pinned research commands:
   wrap-all DIR PINNED_PROFILE CHAIN_ID_HEX EXPECTED_ROOT_HEX
   merge DIR PINNED_PROFILE CHAIN_ID_HEX EXPECTED_ROOT_HEX LEVEL INDEX
   merge-all DIR PINNED_PROFILE CHAIN_ID_HEX EXPECTED_ROOT_HEX
+  aggregate-twelve DIR PINNED_PROFILE CHAIN_ID_HEX EXPECTED_ROOT_HEX
   remove-inners DIR PINNED_PROFILE CHAIN_ID_HEX EXPECTED_ROOT_HEX
   verify-root DIR PINNED_PROFILE CHAIN_ID_HEX EXPECTED_ROOT_HEX
 All three hex values encode exactly 32 bytes. Root = four canonical u64 limbs,
@@ -92,6 +97,8 @@ impl ExternalExpected {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Preparation {
     Wallets,
+    TwelveWallets,
+    DescribeTwelve,
     CommonHeight,
     Register(u64),
     DescribeRegistry,
@@ -106,6 +113,8 @@ pub(super) enum PinnedAction {
     WrapAll,
     Merge { level: usize, index: usize },
     MergeAll,
+    AggregateAll,
+    AggregateTwelve,
     RemoveInners,
     VerifyRoot,
 }
@@ -138,7 +147,11 @@ impl Command {
                 action: PinnedAction::WrapPair(_)
                     | PinnedAction::WrapAll
                     | PinnedAction::Merge { .. }
-                    | PinnedAction::MergeAll,
+                    | PinnedAction::MergeAll
+                    | PinnedAction::AggregateAll,
+                ..
+            } | Self::Pinned {
+                action: PinnedAction::AggregateTwelve,
                 ..
             }
         )
@@ -156,6 +169,8 @@ pub(super) fn parse_command(args: &[String]) -> Result<Command, Error> {
     let name = args.first().ok_or(USAGE)?.as_str();
     let preparation = match name {
         "prepare" => Some(Preparation::Wallets),
+        "prepare-twelve" => Some(Preparation::TwelveWallets),
+        "describe-twelve" => Some(Preparation::DescribeTwelve),
         "common-height" => Some(Preparation::CommonHeight),
         "describe-registry" => Some(Preparation::DescribeRegistry),
         "geometry-report" => Some(Preparation::GeometryReport),
@@ -196,6 +211,14 @@ pub(super) fn parse_command(args: &[String]) -> Result<Command, Error> {
                 return Err("pair index must be 0..4".into());
             }
             PinnedAction::WrapPair(index)
+        }
+        "aggregate-all" => {
+            exact_args(args, 5)?;
+            PinnedAction::AggregateAll
+        }
+        "aggregate-twelve" => {
+            exact_args(args, 5)?;
+            PinnedAction::AggregateTwelve
         }
         "wrap-all" => {
             exact_args(args, 5)?;
@@ -539,7 +562,9 @@ fn report_node(
 ) {
     println!(
         "grouped_node_complete artifact={filename} resumed={resumed} elapsed_ms={} setups={} cache_hits={} production_ready=false",
-        started.elapsed().as_millis(), session.stats().setups, session.stats().hits
+        started.elapsed().as_millis(),
+        session.stats().setups,
+        session.stats().hits
     );
     if let Some(profiler) = profiler {
         profiler.report(filename);
@@ -745,13 +770,19 @@ fn four_wallet_geometry(dir: &Path) -> Result<(), Error> {
                 programs::check_four_wallet_template(height, &caps, &wallets, &compiled)?;
             }
             required = required.max(compiled.program.height());
-            println!("four_wallet_geometry iteration={iteration} mode={mode} child_height={height} active_rows={} required_height={} proof_produced=false",
-                compiled.program.active_rows(), compiled.program.height());
+            println!(
+                "four_wallet_geometry iteration={iteration} mode={mode} child_height={height} active_rows={} required_height={} proof_produced=false",
+                compiled.program.active_rows(),
+                compiled.program.height()
+            );
         }
         if required == height {
             let a = analysis::analyze(&programs::shape(height)?).map_err(|e| format!("{e:?}"))?;
-            println!("four_wallet_geometry_result height={height} retained_lde_bytes={} ram_lower_bound_admitted={} proof_produced=false production_ready=false",
-                a.retained_lde_bytes, a.check_ram_lower_bound().is_ok());
+            println!(
+                "four_wallet_geometry_result height={height} retained_lde_bytes={} ram_lower_bound_admitted={} proof_produced=false production_ready=false",
+                a.retained_lde_bytes,
+                a.check_ram_lower_bound().is_ok()
+            );
             return Ok(());
         }
         height = required;
@@ -780,12 +811,25 @@ fn geometry_report(dir: &Path) -> Result<(), Error> {
         let a = analysis::analyze(&MachineAir::new(program)).map_err(|e| format!("{e:?}"))?;
         println!(
             "program_usage construction={CONSTRUCTION:?} mode={mode} child_height={height} height={} active_rows={} padding_rows={} public_rows={} alu_rows={} cubic_rows={} poseidon_rows={} total_operations={} authenticated_reads={} wires={} structural_fit={} proof_produced=false production_ready=false",
-            u.height, u.active_rows, u.padding_rows, u.rows.public, u.rows.alu, u.rows.cubic,
-            u.rows.poseidon, u.total_operations, u.authenticated_reads, u.wires, required_height <= height,
+            u.height,
+            u.active_rows,
+            u.padding_rows,
+            u.rows.public,
+            u.rows.alu,
+            u.rows.cubic,
+            u.rows.poseidon,
+            u.total_operations,
+            u.authenticated_reads,
+            u.wires,
+            required_height <= height,
         );
         println!(
             "program_usage_lanes mode={mode} public_unused={} alu_used={} alu_unused={} cubic_used={} cubic_unused={}",
-            u.public_unused_slots, u.alu_used_lanes, u.alu_unused_lanes, u.cubic_used_lanes, u.cubic_unused_lanes,
+            u.public_unused_slots,
+            u.alu_used_lanes,
+            u.alu_unused_lanes,
+            u.cubic_used_lanes,
+            u.cubic_unused_lanes,
         );
         println!(
             "program_usage_main_cells mode={mode} allocated={} assigned={} unassigned={} scope=natural_main_trace_only removable_without_redesign=false measured_peak_memory=false",
@@ -793,16 +837,24 @@ fn geometry_report(dir: &Path) -> Result<(), Error> {
         );
         println!(
             "program_usage_geometry mode={mode} main_width={} preprocessing_width={} permutation_width_base={} quotient_chunks={} constraint_degree={} retained_lde_bytes={} half_height_target={} rows_to_remove_for_half_height={} half_height_is_recompiled_or_qualified=false",
-            a.main_width, a.preprocessed_width, a.permutation_width_base, a.quotient_chunks,
-            a.max_constraint_degree, a.retained_lde_bytes,
-            u.half_height_target.map_or_else(|| "none".to_string(), |v| v.to_string()),
-            u.rows_to_remove_for_half_height.map_or_else(|| "none".to_string(), |v| v.to_string()),
+            a.main_width,
+            a.preprocessed_width,
+            a.permutation_width_base,
+            a.quotient_chunks,
+            a.max_constraint_degree,
+            a.retained_lde_bytes,
+            u.half_height_target
+                .map_or_else(|| "none".to_string(), |v| v.to_string()),
+            u.rows_to_remove_for_half_height
+                .map_or_else(|| "none".to_string(), |v| v.to_string()),
         );
         for (name, count) in usage::OPERATION_NAMES.iter().zip(u.operations) {
             println!("program_usage_operation mode={mode} name={name} count={count}");
         }
     }
-    println!("program_usage_report=COMPLETE structural_only=true keys_generated=false proof_produced=false profile_approved=false production_ready=false");
+    println!(
+        "program_usage_report=COMPLETE structural_only=true keys_generated=false proof_produced=false profile_approved=false production_ready=false"
+    );
     Ok(())
 }
 
@@ -811,10 +863,22 @@ pub(super) fn run(
     profiler: Option<&Profiler>,
     cpu_only: bool,
 ) -> Result<(), Error> {
+    run_cached(command, profiler, cpu_only, &mut None)
+}
+
+pub(super) type SessionCache = Option<(ExternalExpected, ConstructionSession)>;
+pub(super) fn run_cached(
+    command: Command,
+    profiler: Option<&Profiler>,
+    cpu_only: bool,
+    cache: &mut SessionCache,
+) -> Result<(), Error> {
     let (action, dir, external) = match command {
         Command::Preparation { action, dir } => {
             return match action {
                 Preparation::Wallets => prepare(&dir),
+                Preparation::TwelveWallets => twelve::prepare(&dir),
+                Preparation::DescribeTwelve => twelve::describe(&dir),
                 Preparation::CommonHeight => prepare_common_height(&dir),
                 Preparation::Register(mode) => register(&dir, mode, cpu_only),
                 Preparation::GeometryReport => geometry_report(&dir),
@@ -823,7 +887,8 @@ pub(super) fn run(
                     let registry = read_registry(&dir)?;
                     println!(
                         "grouped_candidate_profile={} height={} approval=false proof_verified=false",
-                        hex(&registry.id()?), registry.height
+                        hex(&registry.id()?),
+                        registry.height
                     );
                     Ok(())
                 }
@@ -836,6 +901,7 @@ pub(super) fn run(
         } => (action, dir, expected),
     };
     match action {
+        PinnedAction::AggregateTwelve => return twelve::aggregate(&dir, external, profiler),
         PinnedAction::VerifyRoot => return verify_root_only(&dir, external),
         PinnedAction::RemoveInners => return remove_inners(&dir, external),
         _ => {}
@@ -850,14 +916,29 @@ pub(super) fn run(
     }
     // A single immutable preprocessing workspace for the entire selected command.
     // No legacy one-shot helper, environment construction switch or self-derived pin.
-    let mut session = CONSTRUCTION.session(job.registry.clone(), external.profile)?;
+    let mut session = if cache
+        .as_ref()
+        .is_some_and(|(pin, _)| pin.profile == external.profile)
+    {
+        cache.take().unwrap().1
+    } else {
+        *cache = None;
+        CONSTRUCTION.session(job.registry.clone(), external.profile)?
+    };
     match action {
         PinnedAction::WrapPair(index) => {
             wrap_pair(&dir, &job, external, index, &mut session, profiler)?;
         }
-        PinnedAction::WrapAll => {
+        PinnedAction::WrapAll | PinnedAction::AggregateAll => {
             for index in 0..WALLETS / 2 {
                 wrap_pair(&dir, &job, external, index, &mut session, profiler)?;
+            }
+            if action == PinnedAction::AggregateAll {
+                for level in 2..=ROOT_LEVEL {
+                    for index in 0..(WALLETS >> level) {
+                        merge(&dir, &job, external, level, index, &mut session, profiler)?;
+                    }
+                }
             }
         }
         PinnedAction::Merge { level, index } => {
@@ -871,6 +952,19 @@ pub(super) fn run(
             }
         }
         _ => return Err("internal command dispatch".into()),
+    }
+    let bytes = session.preprocessing_cache_bytes();
+    if bytes <= 2usize << 30 {
+        println!(
+            "metal_preprocessing_cache retained_bytes={bytes} limit_bytes={} invalidation=registry_program_binary",
+            2usize << 30
+        );
+        *cache = Some((external, session));
+    } else {
+        println!(
+            "metal_preprocessing_cache retained_bytes=0 evicted_bytes={bytes} limit_bytes={}",
+            2usize << 30
+        );
     }
     Ok(())
 }

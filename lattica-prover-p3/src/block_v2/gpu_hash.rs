@@ -2,7 +2,8 @@
 //! No parameter, salt distribution, serialized proof, or production ABI change.
 //! Only equal-height, power-of-two batches are admitted by the selected GPU path.
 mod compact_data;
-mod engine;
+pub(crate) mod engine;
+mod prefix_storage;
 pub(crate) use engine::fri_fold::fold as fold_fri;
 pub(crate) use engine::opening_reduce::{
     reduce_lde as reduce_openings, OpeningMatrix, OpeningTerm,
@@ -47,6 +48,12 @@ pub fn initialize_from_env() -> Result<(), String> {
             let mut limits = Limits::default();
             limits.managed_bytes =
                 engine::env_bytes("LATTICA_V2_GPU_MANAGED_BYTES", limits.managed_bytes)?;
+            #[cfg(feature = "gpu-metal")]
+            if crate::metal_compute::resident::enabled() {
+                // Leave 512 MiB inside the 8 GiB temporary allowance for tables
+                // and the bounded quotient interpreter's code/input/registers.
+                limits.managed_bytes = limits.managed_bytes.min((8usize << 30) - (512 << 20));
+            }
             engine::initialize(limits)?;
             ENABLED.store(true, Ordering::Release);
             Ok(())
@@ -234,7 +241,7 @@ impl CandidateMmcs {
             }
         } else {
             ProverData::Compact(compact_data::CompactData::new(
-                output.matrices,
+                output.prefixes,
                 plan.output_height(),
                 salts,
                 output.tree,

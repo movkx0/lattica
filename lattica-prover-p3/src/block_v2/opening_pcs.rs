@@ -217,10 +217,7 @@ fn open(
             let mats = mmcs
                 .prefix_matrices(data)
                 .into_iter()
-                .map(|(m, height)| PrefixView {
-                    matrix: m.as_view(),
-                    height,
-                })
+                .map(|(m, height)| PrefixView { matrix: m, height })
                 .collect::<Vec<_>>();
             debug_assert_eq!(
                 mats.len(),

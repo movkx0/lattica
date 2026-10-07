@@ -73,6 +73,7 @@ pub struct LdeInput<'a> {
 /// device. Neither the allocation plan nor this output measures whole-job RSS.
 pub struct LdeCommitOutput {
     pub matrices: Vec<RowMajorMatrix<Val>>,
+    pub(crate) prefixes: Vec<super::super::prefix_storage::PrefixMatrix>,
     pub plan: LdeCommitPlan,
     pub(crate) tree: RetainedTree,
     cap_height: usize,
@@ -145,12 +146,17 @@ pub fn coset_lde_commit(
 
 /// Kernel scheduling shared with the existing tiled-NTT arithmetic, without
 /// borrowing that module's separate context or allocator.
-fn ntt_groups(height: usize, width: usize) -> Result<Vec<(usize, usize, usize)>, String> {
+fn ntt_groups(
+    height: usize,
+    width: usize,
+    tile_log2: usize,
+) -> Result<Vec<(usize, usize, usize)>, String> {
     if height < 2
         || !height.is_power_of_two()
         || height > u32::MAX as usize
         || width == 0
         || width > u32::MAX as usize
+        || !(10..=12).contains(&tile_log2)
     {
         return Err("unsupported resident NTT geometry".into());
     }
@@ -160,7 +166,7 @@ fn ntt_groups(height: usize, width: usize) -> Result<Vec<(usize, usize, usize)>,
         .ok_or("NTT column overflow")?
         .trailing_zeros()
         .min(4) as usize;
-    let cap = (12 - log_c).min(log_h);
+    let cap = (tile_log2 - log_c).min(log_h);
     let groups = log_h.div_ceil(cap);
     let (base, extra) = (log_h / groups, log_h % groups);
     let mut stage = 0;
@@ -172,6 +178,16 @@ fn ntt_groups(height: usize, width: usize) -> Result<Vec<(usize, usize, usize)>,
             item
         })
         .collect())
+}
+
+/// The last NTT store may also retain canonical rows without a scatter pass.
+/// This destination is a separate allocation, and each output cell has one writer.
+#[derive(Clone, Copy)]
+pub(super) struct NttPrefix<'a> {
+    buffer: &'a Buffer<u64>,
+    width: usize,
+    first: usize,
+    height: usize,
 }
 
 pub(super) struct TransformBuffers {
@@ -288,6 +304,7 @@ impl Engine {
         src: &Buffer<u64>,
         dst: &Buffer<u64>,
         roots: &Buffer<u64>,
+        inverse: bool,
         height: usize,
         width: usize,
         post_c: u64,
@@ -295,8 +312,13 @@ impl Engine {
         canonical: bool,
         bit_reversed: bool,
         opening: bool,
+        prefix: Option<NttPrefix<'_>>,
     ) -> Result<bool, String> {
-        let groups = ntt_groups(height, width)?;
+        #[cfg(feature = "gpu-metal")]
+        let tile_log2 = self.pq.ntt_tile_log2();
+        #[cfg(feature = "gpu")]
+        let tile_log2 = 12;
+        let groups = ntt_groups(height, width, tile_log2)?;
         let log_h = height.trailing_zeros() as usize;
         if height
             .checked_mul(width)
@@ -304,6 +326,28 @@ impl Engine {
             || roots.len() < log_h
         {
             return Err("resident NTT buffer bounds".into());
+        }
+        if let Some(p) = prefix {
+            if !bit_reversed
+                || !canonical
+                || p.height > height
+                || p.width > u32::MAX as usize
+                || p.first.checked_add(width).is_none_or(|n| n > p.width)
+                || p.height
+                    .checked_mul(p.width)
+                    .is_none_or(|n| n > p.buffer.len())
+            {
+                return Err("NTT prefix bounds or canonical layout".into());
+            }
+        }
+        #[cfg(feature = "gpu-metal")]
+        let tables = self.pq.ntt_tables(roots, inverse, height, post_c, post_b)?;
+        #[cfg(feature = "gpu")]
+        {
+            let _ = inverse;
+            if prefix.is_some() {
+                return Err("fused NTT prefix stores require Metal".into());
+            }
         }
         let mut in_dst = true;
         for (group, &(stage, count, log_c)) in groups.iter().enumerate() {
@@ -317,15 +361,28 @@ impl Engine {
                 in_dst = std::ptr::eq(output, dst);
             }
             let local_elements = 1usize << (count + log_c);
-            let workgroup = (local_elements / 2).clamp(32, 256);
+            #[cfg(feature = "gpu-metal")]
+            let max_group = self.pq.workgroup();
+            #[cfg(feature = "gpu")]
+            let max_group = 256;
+            let workgroup = (local_elements / 2).clamp(32, max_group);
             let workgroups = (height >> count) * width.div_ceil(1 << log_c);
             let mut event = Event::empty();
             // SAFETY: whole independent columns, bounded u32 row/column indexing,
             // 32 KiB local tile, and distinct buffers at permutation boundaries.
             unsafe {
-                let kernel = self
-                    .pq
-                    .kernel_builder("ntt_tile")
+                #[cfg(feature = "gpu-metal")]
+                let name = match (tables.is_some(), last && prefix.is_some()) {
+                    (true, true) => "ntt_tile_cached_prefix",
+                    (false, true) => "ntt_tile_prefix",
+                    (true, false) => "ntt_tile_cached",
+                    (false, false) => "ntt_tile",
+                };
+                #[cfg(feature = "gpu")]
+                let name = "ntt_tile";
+                #[allow(unused_mut)]
+                let mut builder = self.pq.kernel_builder(name);
+                let builder = builder
                     .arg(input)
                     .arg(output)
                     .arg(width as u32)
@@ -339,7 +396,24 @@ impl Engine {
                     .arg(u32::from(last && bit_reversed))
                     .arg(if last { post_c } else { 1 })
                     .arg(if last { post_b } else { 1 })
-                    .arg(roots)
+                    .arg(roots);
+                #[cfg(feature = "gpu-metal")]
+                let builder = if let Some(tables) = &tables {
+                    builder.arg(tables)
+                } else {
+                    builder
+                };
+                #[cfg(feature = "gpu-metal")]
+                let builder = if let Some(p) = prefix.filter(|_| last) {
+                    builder
+                        .arg(p.buffer)
+                        .arg(p.width as u32)
+                        .arg(p.first as u32)
+                        .arg(p.height as u32)
+                } else {
+                    builder
+                };
+                let kernel = builder
                     .arg_local::<u64>(local_elements)
                     .global_work_size(workgroups * workgroup)
                     .local_work_size(workgroup)
@@ -459,6 +533,11 @@ impl Engine {
                 return Err("quotient mask dimensions or hiding blowup mismatch".into());
             }
         }
+        #[cfg(feature = "gpu-metal")]
+        if crate::metal_compute::resident::enabled() && retention_bits > 0 {
+            self.fence().finish()?;
+            self.workspace = None;
+        }
         let live = self
             .accounting
             .lock()
@@ -471,10 +550,13 @@ impl Engine {
             )
             .ok_or("cached LDE accounting underflow")?;
         let old_workspace = self.workspace.as_ref().map_or(0, super::Workspace::bytes);
+        // Tile workspace stays bounded independently of the resident worker's
+        // estimated total footprint. Retained matrices may exceed that estimate.
+        let execution_limits = self.limits;
         let plan = LdeCommitPlan::new_retained_with_layout(
             &shapes,
             cap_height,
-            self.limits,
+            execution_limits,
             self.max_alloc,
             self.mode.slots(),
             live,
@@ -503,7 +585,7 @@ impl Engine {
         let hash_plan = plan_slots(
             height,
             width,
-            self.limits,
+            execution_limits,
             self.max_alloc,
             self.mode.slots(),
         )?;
@@ -540,6 +622,7 @@ impl Engine {
         // Must outlive all pending operations and drop BEFORE any owned buffer
         // above, on normal return, device error, or unwind.
         let fence = self.fence();
+        let mut prefixes = Vec::new();
         let mut matrices = Vec::with_capacity(shapes.len());
         buffers
             .sponge
@@ -559,18 +642,35 @@ impl Engine {
         })?;
         for (matrix_index, input) in inputs.iter().enumerate() {
             let shape = shapes[matrix_index];
-            let mut readback = HostReadback::with_layout(
-                plan.retained_height(),
-                shape.width,
-                plan.columns_per_tile(),
-                if masks.is_some() {
-                    super::lde_readback::OutputStorage::QuotientHeap
-                } else {
-                    super::lde_readback::OutputStorage::Global
-                },
-                plan.readback_layout,
-            )?
-            .with_parallel_decode(parallel_readback);
+            #[cfg(feature = "gpu-metal")]
+            let shared = if crate::metal_compute::resident::enabled() && retention_bits > 0 {
+                Some(crate::metal_compute::resident::SharedWords::new(
+                    self.pq.queue(),
+                    plan.retained_height() * shape.width,
+                )?)
+            } else {
+                None
+            };
+            #[cfg(not(feature = "gpu-metal"))]
+            let shared: Option<()> = None;
+            let mut readback = if shared.is_none() {
+                Some(
+                    HostReadback::with_layout(
+                        plan.retained_height(),
+                        shape.width,
+                        plan.columns_per_tile(),
+                        if masks.is_some() {
+                            super::lde_readback::OutputStorage::QuotientHeap
+                        } else {
+                            super::lde_readback::OutputStorage::Global
+                        },
+                        plan.readback_layout,
+                    )?
+                    .with_parallel_decode(parallel_readback),
+                )
+            } else {
+                None
+            };
             for tile in plan.tiles().filter(|t| t.matrix == matrix_index) {
                 buffers
                     .b
@@ -591,6 +691,7 @@ impl Engine {
                     &buffers.a.buffer,
                     &buffers.b.buffer,
                     &buffers.inverse.buffer,
+                    true,
                     shape.height,
                     tile.columns,
                     Val::from_usize(shape.height).inverse().as_canonical_u64(),
@@ -598,6 +699,7 @@ impl Engine {
                     false,
                     false,
                     false,
+                    None,
                 )?;
                 if let Some(masks) = masks {
                     let mask = &masks[matrix_index];
@@ -636,10 +738,23 @@ impl Engine {
                     }
                     self.stats.quotient_mask_ns += self.timeline.record("quotient_mask", &event)?;
                 }
+                #[cfg(feature = "gpu-metal")]
+                let prefix = shared
+                    .as_ref()
+                    .filter(|_| self.pq.prefix_fusion())
+                    .map(|shared| NttPrefix {
+                        buffer: shared.buffer(),
+                        width: shape.width,
+                        first: tile.first_column,
+                        height: plan.retained_height(),
+                    });
+                #[cfg(feature = "gpu")]
+                let prefix = None;
                 let in_a = self.lde_ntt(
                     &buffers.b.buffer,
                     &buffers.a.buffer,
                     &buffers.forward.buffer,
+                    false,
                     height,
                     tile.columns,
                     1,
@@ -647,6 +762,7 @@ impl Engine {
                     true,
                     true,
                     false,
+                    prefix,
                 )?;
                 let transformed = if in_a {
                     &buffers.a.buffer
@@ -661,21 +777,52 @@ impl Engine {
                     tile.columns,
                     tile.sponge_rate_offset,
                 )?;
-                self.lde_read_columns(transformed, &mut readback, tile.first_column, tile.columns)?;
+                if let Some(readback) = &mut readback {
+                    self.lde_read_columns(transformed, readback, tile.first_column, tile.columns)?;
+                }
+                #[cfg(feature = "gpu-metal")]
+                if let Some(shared) = shared.as_ref().filter(|_| !self.pq.prefix_fusion()) {
+                    let kernel = self
+                        .pq
+                        .kernel_builder("prefix_scatter")
+                        .arg(transformed)
+                        .arg(shared.buffer())
+                        .arg(shape.width as u32)
+                        .arg(tile.first_column as u32)
+                        .arg(tile.columns as u32)
+                        .global_work_size(plan.retained_height() * tile.columns)
+                        .build()?;
+                    unsafe {
+                        kernel.cmd().enq()?;
+                    }
+                }
                 self.stats.lde_column_tiles += 1;
             }
-            let (matrix, reorder) = readback.finish()?;
-            // Keep the existing host-materialization counters inclusive of the
-            // new layout pass; the reorder counter is a nonadditive subset.
-            self.stats.decode_ns += reorder.elapsed_ns;
-            self.stats.download_and_decode_ns += reorder.elapsed_ns;
-            self.stats.lde_host_reorder_ns += reorder.elapsed_ns;
-            self.stats.lde_host_reordered_bytes += reorder.bytes as u64;
-            self.stats.lde_host_workspace_peak_bytes = self
-                .stats
-                .lde_host_workspace_peak_bytes
-                .max(reorder.workspace_bytes);
-            matrices.push(matrix);
+            if let Some(readback) = readback {
+                let (matrix, reorder) = readback.finish()?;
+                // Keep the existing host-materialization counters inclusive of the
+                // new layout pass; the reorder counter is a nonadditive subset.
+                self.stats.decode_ns += reorder.elapsed_ns;
+                self.stats.download_and_decode_ns += reorder.elapsed_ns;
+                self.stats.lde_host_reorder_ns += reorder.elapsed_ns;
+                self.stats.lde_host_reordered_bytes += reorder.bytes as u64;
+                self.stats.lde_host_workspace_peak_bytes = self
+                    .stats
+                    .lde_host_workspace_peak_bytes
+                    .max(reorder.workspace_bytes);
+                if retention_bits > 0 {
+                    prefixes.push(super::super::prefix_storage::host(matrix));
+                } else {
+                    matrices.push(matrix);
+                }
+            }
+            #[cfg(feature = "gpu-metal")]
+            if let Some(shared) = shared {
+                prefixes.push(p3_matrix::dense::DenseMatrix::new(
+                    super::super::prefix_storage::PrefixStorage::Metal(shared.freeze()?),
+                    shape.width,
+                ));
+            }
             // Reuse a transform buffer for bounded salt bands only AFTER its
             // transformed columns have been hashed and read back.
             let salt_columns = plan.columns_per_tile().min(4);
@@ -758,6 +905,7 @@ impl Engine {
         }
         Ok(LdeCommitOutput {
             matrices,
+            prefixes,
             plan,
             cap_height,
             tree: RetainedTree {
@@ -850,21 +998,134 @@ mod tests {
 
     #[test]
     fn ntt_schedule_covers_every_stage_with_bounded_local_storage() {
-        for log_h in 1..32 {
-            for width in [1usize, 2, 3, 4, 7, 16, 35, 98, 204, 1024] {
-                let groups = ntt_groups(1usize << log_h, width).unwrap();
-                let mut stage = 0;
-                for (start, count, log_c) in groups {
-                    assert_eq!(start, stage);
-                    assert!(count > 0 && (1usize << (count + log_c)) * 8 <= 32 * 1024);
-                    stage += count;
+        for tile_log2 in 10..=12 {
+            for log_h in 1..32 {
+                for width in [1usize, 2, 3, 4, 7, 16, 35, 98, 204, 1024] {
+                    let groups = ntt_groups(1usize << log_h, width, tile_log2).unwrap();
+                    let mut stage = 0;
+                    for (start, count, log_c) in groups {
+                        assert_eq!(start, stage);
+                        assert!(count > 0 && (1usize << (count + log_c)) <= 1 << tile_log2);
+                        stage += count;
+                    }
+                    assert_eq!(stage, log_h);
                 }
-                assert_eq!(stage, log_h);
             }
         }
-        for (height, width) in [(0, 1), (1, 1), (3, 1), (8, 0), (8, usize::MAX)] {
-            assert!(ntt_groups(height, width).is_err());
+        for invalid_tile in [0, 9, 13, usize::MAX] {
+            assert!(ntt_groups(1024, 4, invalid_tile).is_err());
         }
+        for (height, width) in [(0, 1), (1, 1), (3, 1), (8, 0), (8, usize::MAX)] {
+            assert!(ntt_groups(height, width, 12).is_err());
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "gpu-metal")]
+    #[ignore = "two component shapes, three samples each; Apple GPU and retained trees required"]
+    fn metal_priority_components() {
+        let _shutdown = super::super::TestShutdownGuard;
+        super::super::initialize_mode(
+            super::super::Limits {
+                managed_bytes: 512 << 20,
+                tile_bytes: 64 << 20,
+                staging_bytes: 8 << 20,
+            },
+            super::super::TransferMode::Serial,
+        )
+        .unwrap();
+        let snapshot = || {
+            ENGINE
+                .get()
+                .unwrap()
+                .lock()
+                .unwrap()
+                .as_mut()
+                .unwrap()
+                .snapshot()
+        };
+        for (height, width) in [(8192usize, 3usize), (131072, 7)] {
+            let evaluations = matrix(height, width, 17);
+            let salts = matrix(height << 3, 4, 29);
+            let inputs = [LdeInput {
+                evaluations: &evaluations,
+                salts: &salts,
+                added_bits: 3,
+                shift: Val::GENERATOR,
+            }];
+            let warmup = retained_lde_commit(&inputs, None, 2, 256 << 20, 1).unwrap();
+            let expected_cap = warmup.cap().to_vec();
+            drop(warmup);
+            for repeat in 1..=3 {
+                let before = snapshot();
+                let start = std::time::Instant::now();
+                let output = retained_lde_commit(&inputs, None, 2, 256 << 20, 1).unwrap();
+                assert_eq!(output.cap(), expected_cap);
+                drop(output);
+                let wall = start.elapsed().as_secs_f64();
+                let after = snapshot();
+                println!(
+                    "metal_priority_sample {}",
+                    serde_json::json!({
+                        "input_rows": height, "output_rows": height << 3, "columns": width, "repeat": repeat,
+                        "wall_seconds": wall, "ntt_gpu_seconds": (after.lde_transform_ns-before.lde_transform_ns) as f64/1e9,
+                        "sponge_gpu_seconds": (after.lde_sponge_ns-before.lde_sponge_ns) as f64/1e9,
+                        "host_reordered_bytes": after.lde_host_reordered_bytes-before.lde_host_reordered_bytes,
+                    })
+                );
+            }
+        }
+        super::super::report("priority components");
+    }
+
+    #[test]
+    #[cfg(feature = "gpu-metal")]
+    #[ignore = "short kernel screen; Apple GPU and retained trees required"]
+    fn metal_kernel_screen() {
+        let _shutdown = super::super::TestShutdownGuard;
+        super::super::initialize_mode(
+            super::super::Limits {
+                managed_bytes: 256 << 20,
+                tile_bytes: 32 << 20,
+                staging_bytes: 1 << 20,
+            },
+            super::super::TransferMode::Serial,
+        )
+        .unwrap();
+        let matrix = RowMajorMatrix::new(
+            (0..8192 * 32)
+                .map(|i| Val::from_u64(i as u64 * 7717 + 19))
+                .collect(),
+            32,
+        );
+        let salts = RowMajorMatrix::new(
+            (0..65536 * 4)
+                .map(|i| Val::from_u64(i as u64 * 1717 + 13))
+                .collect(),
+            4,
+        );
+        let inputs = [LdeInput {
+            evaluations: &matrix,
+            salts: &salts,
+            added_bits: 3,
+            shift: Val::GENERATOR,
+        }];
+        let warmup = coset_lde_commit(&inputs, 2, 128 << 20).unwrap();
+        drop(warmup);
+        let started = std::time::Instant::now();
+        let mut count = 0;
+        while count < 2 || (count < 10 && started.elapsed().as_secs_f64() < 2.0) {
+            let output = coset_lde_commit(&inputs, 2, 128 << 20).unwrap();
+            std::hint::black_box(output.cap());
+            drop(output);
+            count += 1;
+        }
+        println!(
+            "metal_kernel_screen iterations={count} seconds={} seconds_per_iteration={}",
+            started.elapsed().as_secs_f64(),
+            started.elapsed().as_secs_f64() / count as f64
+        );
+        super::super::report("kernel screening");
     }
 
     fn check_cpu_reference(inputs: &[LdeInput<'_>], cap_height: usize) -> LdeCommitOutput {
@@ -1147,8 +1408,8 @@ mod tests {
                 shift: Val::GENERATOR.inverse(),
             },
         ];
-        assert!(ntt_groups(8192, 3).unwrap().len() > 1);
-        assert!(ntt_groups(32768, 3).unwrap().len() > 1);
+        assert!(ntt_groups(8192, 3, 12).unwrap().len() > 1);
+        assert!(ntt_groups(32768, 3, 12).unwrap().len() > 1);
         let output = check_cpu_reference(&inputs, 6);
         let before = ENGINE
             .get()

@@ -1,5 +1,9 @@
 {
   "schema": "lattica-apple-benchmark-memory-v1",
   "aggregate_rss_limit_bytes": null,
-  "worker_rss_limit_bytes": null
+  "worker_rss_limit_bytes": null,
+  "resident_backing_estimate_bytes": 18253611008,
+  "resident_scratch_estimate_bytes": 17179869184,
+  "resident_runtime_headroom_bytes": 4294967296,
+  "system_reserve_bytes": 8589934592
 }

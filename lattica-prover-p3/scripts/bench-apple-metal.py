@@ -24,7 +24,7 @@ import time
 CRATE = Path(__file__).resolve().parents[1]
 GIB = 1 << 30
 FIXTURE_NAMES = ["height", "key.1", "key.2", "key.3", *[f"wallet.{i}" for i in range(8)]]
-GPU_KEYS = ["HASH", "RETAIN_TREES", "PIPELINE", "RESIDENT_LDE", "OPENINGS", "OPENING_COMPACT", "OPENING_PINNED", "PARALLEL_READBACK", "QUOTIENT_LDE", "COMPACT_PROVER_DATA", "QUERY_GATHER"]
+GPU_KEYS = ["HASH", "RETAIN_TREES", "PIPELINE", "RESIDENT_LDE", "OPENINGS", "OPENING_COMPACT", "OPENING_PINNED", "PARALLEL_READBACK", "QUOTIENT_LDE", "COMPACT_PROVER_DATA", "QUERY_GATHER", "DIRECT_READBACK", "OPENING_DENOMINATOR_CACHE"]
 
 def load_memory_policy(path):
     policy = json.loads(path.read_text())
@@ -166,6 +166,8 @@ def environment(config, scratch, gpu):
     env.update({"RAYON_NUM_THREADS": str(config["threads"]), "LATTICA_FFT_TRACE": "1",
                 "LATTICA_PROFILE": "1", "LATTICA_PROFILE_TIMELINE": "0",
                 "LATTICA_BENCHMARK_REPORT_DEFER": "1", "LATTICA_V2_METAL_DEFER_TIMING": "0",
+                "LATTICA_V2_METAL_PIPELINE": "reference", "LATTICA_V2_METAL_KERNEL_VARIANT": "reference",
+                "LATTICA_V2_METAL_BATCH": "1", "LATTICA_V2_METAL_WORKGROUP": "256",
                 "LATTICA_SPILL_DIR": str(scratch), "LATTICA_SPILL_BACKING": "memory",
                 "LATTICA_SPILL_MAX_BYTES": str(34 * GIB), "LATTICA_V2_QUOTIENT_FUSION": "0",
                 "LATTICA_V2_GPU_DEVICE": "0" if gpu else "4294967295",

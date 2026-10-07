@@ -1168,11 +1168,13 @@ impl CandidatePcs {
             domain.size() <= matrix.height(),
             "quotient domain exceeds retained prefix"
         );
-        let view = matrix
-            .split_rows(domain.size())
-            .0
-            .as_cow()
-            .bit_reverse_rows();
+        let values: &'a [Val] = matrix.values;
+        let view = p3_matrix::dense::RowMajorMatrixView::new(
+            &values[..domain.size() * matrix.width],
+            matrix.width,
+        )
+        .as_cow()
+        .bit_reverse_rows();
         let width = view.width();
         HorizontallyTruncated::new(view, width - random_columns).unwrap()
     }
