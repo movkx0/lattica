@@ -12,7 +12,9 @@ use p3_air::Air;
 #[cfg(debug_assertions)]
 use p3_air::DebugConstraintBuilder;
 use p3_commit::{Pcs, PolynomialSpace};
-use p3_field::{Algebra, PrimeField};
+use p3_field::{Algebra, PrimeField64};
+#[cfg(feature = "gpu-metal")]
+mod metal;
 use p3_lookup::folder::ProverConstraintFolderWithLookups;
 use p3_lookup::logup::LogUpGadget;
 use p3_lookup::{
@@ -65,7 +67,7 @@ pub(super) fn prove_batch<
 ) -> BatchProof<SC>
 where
     SC: SGC,
-    Val<SC>: PrimeField,
+    Val<SC>: PrimeField64,
     SymbolicExpressionExt<Val<SC>, SC::Challenge>: Algebra<SC::Challenge>,
     Domain<SC>: Send + Sync,
     SC::Pcs: Sync,
@@ -362,22 +364,52 @@ where
 
             // Compute quotient(x) = constraints(x) / Z_H(x) on the quotient domain.
             let perm_vals: Vec<_> = lookup_terminals[i].iter().map(|t| t.0).collect();
-            let q_values = quotient_values(
-                pcs,
-                airs[i],
-                pub_vals[i],
-                sym_layout,
-                trace_domains[i],
-                quotient_domain,
-                &trace_on_quotient_domain,
-                permutation_on_quotient_domain.as_ref(),
-                all_lookups[i],
-                &perm_vals,
-                &lookup_gadget,
-                &challenges_per_instance[i],
-                preprocessed_on_quotient_domain.as_ref(),
-                alpha,
-            );
+            #[cfg(feature = "gpu-metal")]
+            let gpu_eval = crate::metal_compute::resident::gpu_quotient()
+                .expect("validated Metal quotient policy");
+            #[cfg(not(feature = "gpu-metal"))]
+            let gpu_eval = false;
+            let q_values = if gpu_eval {
+                #[cfg(feature = "gpu-metal")]
+                {
+                    metal::evaluate::<SC, _, _>(
+                        pcs,
+                        airs[i],
+                        pub_vals[i],
+                        sym_layout,
+                        trace_domains[i],
+                        quotient_domain,
+                        &trace_on_quotient_domain,
+                        permutation_on_quotient_domain.as_ref(),
+                        all_lookups[i],
+                        &perm_vals,
+                        &lookup_gadget,
+                        &challenges_per_instance[i],
+                        preprocessed_on_quotient_domain.as_ref(),
+                        alpha,
+                    )
+                    .expect("validated Metal quotient evaluation")
+                }
+                #[cfg(not(feature = "gpu-metal"))]
+                unreachable!()
+            } else {
+                quotient_values(
+                    pcs,
+                    airs[i],
+                    pub_vals[i],
+                    sym_layout,
+                    trace_domains[i],
+                    quotient_domain,
+                    &trace_on_quotient_domain,
+                    permutation_on_quotient_domain.as_ref(),
+                    all_lookups[i],
+                    &perm_vals,
+                    &lookup_gadget,
+                    &challenges_per_instance[i],
+                    preprocessed_on_quotient_domain.as_ref(),
+                    alpha,
+                )
+            };
 
             // Flatten extension values to base field and split into degree-bounded chunks.
             let q_flat = RowMajorMatrix::new_col(q_values).flatten_to_base();

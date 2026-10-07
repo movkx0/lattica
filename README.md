@@ -681,6 +681,91 @@ scripts/run-benchmarks.sh 2
 
 The setup supports ARM64 and x86-64 macOS/Linux and leaves shell profiles and system tools alone.
 On Apple Silicon, run from a native ARM64 terminal (`uname -m` should print `arm64`).
+
+The opt-in Metal throughput screen compares one reference aggregation with up to
+two concurrent resident-pipeline aggregations. It uses 18 Rayon threads total, with
+no total screen deadline or proving-worker timeout. The screen explicitly sets
+`LATTICA_V2_METAL_TIMEOUT_SECONDS=none`; other Metal worker invocations retain their
+default two-hour timeout unless overridden. RSS is sampled without a fixed aggregate
+or proving-worker cap. Resident backing and scratch budgets are planning estimates,
+not allocation limits: exceeding an estimate does not reject an allocation.
+macOS memory-pressure monitoring, hardware buffer limits and bounded
+kernel workspaces remain active. The reference worker retains its scratch and
+managed-allocation limits. Each job must
+produce seven fresh proofs and pass the separate CPU root audit. The resident
+pipeline keeps compact matrices in shared Metal storage, evaluates cubic/LogUp
+quotients on the GPU, and batches compatible dispatches. New arithmetic/Poseidon
+and cached-NTT variants remain explicit experiments; the short component screen
+currently selects the reference kernels.
+
+Worker planning reads `lattica-prover-p3/src/bin/apple_benchmark_memory.json`.
+Scratch is included in tracked backing, so the estimate per resident worker is
+`max(backing, scratch) + runtime headroom`: currently `max(17, 16) + 4 = 21 GiB`.
+After reserving 8 GiB for the system, a 64 GiB Mac estimates two workers, each
+with nine Rayon threads. A single selected worker uses all 18 threads. These
+figures are estimates, not measured peak guarantees. `--workers` is an optional
+upper bound on estimated concurrency; the minimal screen never starts more than
+two resident jobs. Live and peak backing, scratch and RSS telemetry remain enabled.
+
+From `lattica-prover-p3`, after `scripts/build-apple-metal.py` and
+`scripts/check-apple-resident.py` have produced matching build/qualification data:
+
+```sh
+python3 scripts/bench-apple-throughput.py --screen --workers 2 --threads-total 18 \
+  --build target/metal-build-metadata.json \
+  --qualification /path/to/matching-resident-qualification/result.json \
+  --fixture /path/to/pinned/fixture --linux /path/to/linux-reference.json \
+  --kernel-variant reference --workgroup 256 \
+  --output /path/to/new-screen-directory \
+  --html ../docs/benchmarks-apple-gpu-throughput-2026-10-04.html
+```
+
+The [shareable HTML report](docs/benchmarks-apple-gpu-throughput-2026-10-04.html)
+counts concurrent timing windows once and includes audit and resource evidence.
+These are research aggregation jobs/hour, not accepted blockchain transactions.
+
+For latency diagnosis, use `--workers 1 --diagnostic-profile` with the same
+throughput command. This runs one reference and one resident aggregation
+sequentially, each with 18 threads. The opt-in flag enables the existing host
+timeline, records Metal command groups and existing CPU waits without inserting
+extra GPU synchronization, and captures five-second CPU stack samples during the
+first wrapper and final merge. Traces report dropped records and clock-correlation
+uncertainty. Diagnostic timings include instrumentation and are not performance
+promotion measurements. The flag is off by default and does not change proof
+formats, arithmetic, randomness or production activation.
+
+The [Apple hardware acceleration analysis](docs/apple-hardware-acceleration-analysis-2026-10-04.html)
+contains the completed single-worker profiles, stack audit and ranked recommendations.
+Regenerate an analysis from a completed diagnostic pair using
+`scripts/analyze-apple-hardware.py --run /path/to/profile --sme2 /path/to/component/result.json --html /path/to/report.html`.
+
+The [implemented Apple optimization report](docs/apple-priorities-implementation-2026-10-04.html)
+records focused correctness checks, short component comparisons, and one sequential
+18-thread reference/candidate pair. The candidate keeps the reference pipeline and
+CPU quotient evaluation, with independent Poseidon and NTT controls:
+
+```sh
+# Add to the existing bench-apple-throughput.py fixture/build arguments:
+--workers 1 --candidate-pipeline reference \
+  --candidate-poseidon-diagonal specialized --candidate-ntt-tables on \
+  --candidate-quotient cpu
+```
+
+The corresponding research environment switches are
+`LATTICA_V2_METAL_POSEIDON_DIAGONAL=reference|specialized`,
+`LATTICA_V2_METAL_NTT_TABLES=auto|off|on`, and
+`LATTICA_V2_METAL_NTT_TILE_LOG2=10|11|12` (default 12).
+`LATTICA_V2_METAL_QUOTIENT=auto|cpu|gpu` separates quotient execution from resident
+storage. `LATTICA_V2_METAL_PREFIX_STORE=separate|fused` enables retained-prefix
+writes in the final NTT store; it remains experimental and defaults to separate.
+The other defaults preserve historical behavior. The GPU quotient interpreter
+now allocates one word per base temporary and three per extension temporary.
+These switches do not activate Metal in the production C ABI.
+
+Run `scripts/check-apple-priorities.py --binary /path/to/native/libtest --out /new/directory`
+for the focused qualification and short component suite. It uses two shapes and
+three samples per configuration, without running the full benchmark fixture.
+
 The runner uses the local toolchains when present, otherwise those on `PATH`. Rust defaults to
 `-C target-cpu=native` for Plonky3's CPU-specific implementation; set `RUSTFLAGS` to override it.
 Zig uses `ReleaseFast`, Rust uses `release`, and compilation is outside the reported timings.

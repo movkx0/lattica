@@ -624,7 +624,13 @@ fn compact_test_data(
         matrix.values.shrink_to_fit();
     }
     ProverData::Compact(super::compact_data::CompactData::new(
-        matrices, height, salts, tree,
+        matrices
+            .into_iter()
+            .map(super::prefix_storage::host)
+            .collect(),
+        height,
+        salts,
+        tree,
     ))
 }
 

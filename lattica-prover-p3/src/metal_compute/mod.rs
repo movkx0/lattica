@@ -15,7 +15,10 @@ use std::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
     ptr::NonNull,
-    sync::{Arc, Mutex},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex, Weak,
+    },
     time::Instant,
 };
 
@@ -26,11 +29,21 @@ type Result<T> = std::result::Result<T, String>;
 type Object<T> = Retained<ProtocolObject<T>>;
 const TRANSFER_BYTES: usize = 8 << 20;
 const MAX_PENDING_COMMANDS: usize = 256;
+pub(crate) mod backing;
+pub(crate) mod diagnostics;
+pub mod resident;
 pub(crate) fn transfer_budget(managed_bytes: usize) -> usize {
     TRANSFER_BYTES.min(managed_bytes / 64).max(8)
 }
 const KERNELS: &[&str] = &[
     "ntt_tile",
+    "ntt_tile_cached",
+    "ntt_tile_prefix",
+    "ntt_tile_cached_prefix",
+    "diagonal_probe",
+    "ntt_tables",
+    "prefix_scatter",
+    "quotient_eval",
     "leaf_hash",
     "compress_layer",
     "retained_merkle_path",
@@ -90,6 +103,7 @@ struct Accounting {
     buffers: u64,
     kernels: u64,
     kernel_ns: u128,
+    kernel_commands: u64,
     blits: u64,
     blit_ns: u128,
     host_copy_bytes: u64,
@@ -97,10 +111,12 @@ struct Accounting {
     transfer_blit_bytes: u64,
 }
 struct Budget {
-    limit: usize,
+    // Resident workers account allocations without enforcing a planning estimate.
+    limit: Option<usize>,
     counters: Mutex<Accounting>,
 }
 struct NativeAllocation {
+    _backing: backing::Ticket,
     bytes: usize,
     budget: Arc<Budget>,
 }
@@ -114,13 +130,15 @@ impl NativeAllocation {
             .live
             .checked_add(bytes)
             .ok_or("Metal allocation overflow")?;
-        if next > budget.limit {
+        if budget.limit.is_some_and(|limit| next > limit) {
             return Err("Metal managed allocation cap exceeded (includes transfer staging)".into());
         }
+        let backing = backing::charge(bytes).ok_or("Metal backing accounting overflow")?;
         a.live = next;
         a.peak = a.peak.max(next);
         a.buffers += 1;
         Ok(Self {
+            _backing: backing,
             bytes,
             budget: budget.clone(),
         })
@@ -134,11 +152,13 @@ impl Drop for NativeAllocation {
 
 #[derive(Clone)]
 pub struct Queue(Arc<QueueInner>);
-struct QueueInner {
+pub(crate) struct QueueInner {
     device: Object<dyn MTLDevice>,
     queue: Object<dyn MTLCommandQueue>,
     last: Mutex<Option<Object<dyn MTLCommandBuffer>>>,
-    pending: Mutex<Vec<(Object<dyn MTLCommandBuffer>, bool)>>,
+    pending: Mutex<Vec<(Object<dyn MTLCommandBuffer>, u64)>>,
+    batch: Mutex<Option<Batch>>,
+    batch_limit: usize,
     transfer: Object<dyn MTLBuffer>,
     // This mutex serializes use of the single finite transfer buffer.
     transfer_lock: Mutex<()>,
@@ -147,6 +167,17 @@ struct QueueInner {
     mode: MemoryMode,
     operation_lock: Mutex<()>,
 }
+struct Batch {
+    phase: &'static str,
+    state: Arc<BatchState>,
+    dispatches: u64,
+}
+pub struct BatchState {
+    command: Object<dyn MTLCommandBuffer>,
+    committed: AtomicBool,
+}
+unsafe impl Send for BatchState {}
+unsafe impl Sync for BatchState {}
 // Metal devices/queues/resources support cross-thread use. Encoding and host
 // transfers are serialized by operation_lock; transfer staging and the last
 // submitted command have their own locks. Mapped slices require the caller's
@@ -164,20 +195,37 @@ impl Queue {
         }
         Ok(command)
     }
-    fn submit(&self, command: Object<dyn MTLCommandBuffer>, kernel: bool) -> Result<Event> {
+    fn submit(
+        &self,
+        command: Object<dyn MTLCommandBuffer>,
+        kernel: bool,
+        phase: &'static str,
+    ) -> Result<Event> {
+        self.flush()?;
+        self.commit(command.clone(), u64::from(kernel), phase)?;
+        Ok(Event::Commands(vec![command]))
+    }
+    fn commit(
+        &self,
+        command: Object<dyn MTLCommandBuffer>,
+        dispatches: u64,
+        phase: &'static str,
+    ) -> Result<()> {
         if self.0.pending.lock().unwrap().len() >= MAX_PENDING_COMMANDS {
             self.finish()?;
         }
+        diagnostics::submitted(command_address(&command), phase, dispatches);
         command.commit();
         *self.0.last.lock().unwrap() = Some(command.clone());
         self.0
             .pending
             .lock()
             .unwrap()
-            .push((command.clone(), kernel));
-        Ok(Event::Commands(vec![command]))
+            .push((command.clone(), dispatches));
+        Ok(())
     }
     pub fn finish(&self) -> Result<()> {
+        self.flush()?;
         let last = self
             .0
             .last
@@ -194,12 +242,16 @@ impl Queue {
                 .lock()
                 .map_err(|_| "Metal pending accounting poisoned")?,
         );
-        for (command, kernel) in pending {
+        for (command, dispatches) in pending {
             wait_command(&command)?;
-            let ns = ((command.GPUEndTime() - command.GPUStartTime()) * 1e9).max(0.0) as u128;
+            let start = command.GPUStartTime();
+            let end = command.GPUEndTime();
+            let ns = ((end - start) * 1e9).max(0.0) as u128;
+            diagnostics::retired(command_address(&command), start, end);
             let mut a = self.0.budget.counters.lock().unwrap();
-            if kernel {
-                a.kernels += 1;
+            if dispatches != 0 {
+                a.kernels += dispatches;
+                a.kernel_commands += 1;
                 a.kernel_ns += ns;
             } else {
                 a.blits += 1;
@@ -209,16 +261,101 @@ impl Queue {
         Ok(())
     }
     pub fn flush(&self) -> Result<()> {
+        let batch = self
+            .0
+            .batch
+            .lock()
+            .map_err(|_| "Metal batch poisoned")?
+            .take();
+        if let Some(batch) = batch {
+            self.commit(batch.state.command.clone(), batch.dispatches, batch.phase)?;
+            batch.state.committed.store(true, Ordering::Release);
+        }
         Ok(())
+    }
+    fn compute_command(
+        &self,
+        phase: &'static str,
+        dependency: Option<&Event>,
+    ) -> Result<(Object<dyn MTLCommandBuffer>, Option<Event>)> {
+        if self.0.batch_limit == 1 || dependency.is_some() {
+            self.flush()?;
+            return Ok((self.command(dependency)?, None));
+        }
+        let change = self
+            .0
+            .batch
+            .lock()
+            .unwrap()
+            .as_ref()
+            .is_some_and(|b| b.phase != phase || b.dispatches >= self.0.batch_limit as u64);
+        if change {
+            self.flush()?;
+        }
+        let mut slot = self.0.batch.lock().unwrap();
+        if slot.is_none() {
+            *slot = Some(Batch {
+                phase,
+                dispatches: 0,
+                state: Arc::new(BatchState {
+                    command: self.command(None)?,
+                    committed: AtomicBool::new(false),
+                }),
+            });
+        }
+        let batch = slot.as_mut().unwrap();
+        let timing_owner = batch.dispatches == 0;
+        batch.dispatches += 1;
+        Ok((
+            batch.state.command.clone(),
+            Some(Event::Batch {
+                queue: Arc::downgrade(&self.0),
+                state: batch.state.clone(),
+                timing_owner,
+            }),
+        ))
     }
     #[cfg(test)]
     pub fn enqueue_marker(&self, event: Option<&Event>) -> Result<Event> {
-        self.submit(self.command(event)?, false)
+        self.submit(self.command(event)?, false, "marker")
     }
 }
 
+impl Drop for QueueInner {
+    fn drop(&mut self) {
+        // Last queue owner: commit and drain even if an incomplete batch has no
+        // event consumer (cancellation or early-return paths).
+        if let Some(batch) = self.batch.get_mut().unwrap().take() {
+            diagnostics::submitted(
+                command_address(&batch.state.command),
+                batch.phase,
+                batch.dispatches,
+            );
+            batch.state.command.commit();
+            if let Err(error) = wait_command(&batch.state.command) {
+                eprintln!("FAILED Metal batch retirement: {error}");
+                std::process::abort();
+            }
+        }
+        for (command, _) in self.pending.get_mut().unwrap().drain(..) {
+            if let Err(error) = wait_command(&command) {
+                eprintln!("FAILED Metal queue retirement: {error}");
+                std::process::abort();
+            }
+        }
+    }
+}
+
+fn command_address(command: &ProtocolObject<dyn MTLCommandBuffer>) -> usize {
+    command as *const _ as *const () as usize
+}
+
 fn wait_command(command: &ProtocolObject<dyn MTLCommandBuffer>) -> Result<()> {
+    let started = diagnostics::enabled().then(diagnostics::clock_ns);
     command.waitUntilCompleted();
+    if let Some(started) = started {
+        diagnostics::waited(command_address(command), started, diagnostics::clock_ns());
+    }
     if command.status() == MTLCommandBufferStatus::Error {
         return Err(format!("Metal execution failed: {:?}", command.error()));
     }
@@ -234,6 +371,11 @@ pub enum Event {
     Host,
     Commands(Vec<Object<dyn MTLCommandBuffer>>),
     User(Object<dyn MTLSharedEvent>),
+    Batch {
+        queue: Weak<QueueInner>,
+        state: Arc<BatchState>,
+        timing_owner: bool,
+    },
 }
 // Events expose only completion/status on committed command buffers. User
 // events use Metal's explicitly thread-safe shared-event signal operation.
@@ -263,6 +405,12 @@ impl Event {
     }
     pub fn wait_for(&self) -> Result<()> {
         match self {
+            Self::Batch { queue, state, .. } => {
+                if !state.committed.load(Ordering::Acquire) {
+                    Queue(queue.upgrade().ok_or("Metal queue retired before batch")?).flush()?;
+                }
+                wait_command(&state.command)
+            }
             Self::Empty => Err("uninitialized Metal event".into()),
             Self::Commands(commands) => {
                 for c in commands {
@@ -282,7 +430,20 @@ impl Event {
     }
     pub(crate) fn device_intervals(&self) -> Result<Vec<(u64, u64)>> {
         self.wait_for()?;
-        if let Self::Commands(commands) = self {
+        let batch_commands;
+        let commands = match self {
+            Self::Commands(commands) => Some(commands),
+            Self::Batch {
+                state,
+                timing_owner: true,
+                ..
+            } => {
+                batch_commands = vec![state.command.clone()];
+                Some(&batch_commands)
+            }
+            _ => None,
+        };
+        if let Some(commands) = commands {
             if commands.is_empty() {
                 return Err("empty Metal command event".into());
             }
@@ -314,6 +475,9 @@ impl Event {
     pub fn info(&self, _: enums::EventInfo) -> Result<enums::EventInfoResult> {
         let complete = match self {
             Self::Host => true,
+            Self::Batch { state, .. } => {
+                state.command.status() == MTLCommandBufferStatus::Completed
+            }
             Self::Commands(cs) => cs
                 .iter()
                 .all(|c| c.status() == MTLCommandBufferStatus::Completed),
@@ -334,6 +498,10 @@ pub struct ProQue {
     queue: Queue,
     pipelines: HashMap<&'static str, Object<dyn MTLComputePipelineState>>,
     compile_ns: u128,
+    tables: Arc<Mutex<resident::Tables>>,
+    workgroup: usize,
+    optimized: bool,
+    tuning: resident::Tuning,
 }
 impl ProQue {
     pub fn new(index: usize, managed_bytes: usize) -> Result<Self> {
@@ -343,6 +511,30 @@ impl ProQue {
         if index != 0 {
             return Err("Metal currently selects the system default device at index 0".into());
         }
+        resident::validate()?;
+        if resident::enabled() {
+            backing::activate();
+        }
+        let optimized = match std::env::var("LATTICA_V2_METAL_KERNEL_VARIANT").as_deref() {
+            Ok("reference") => false,
+            Ok("optimized") => true,
+            Err(std::env::VarError::NotPresent) => false,
+            _ => return Err("Metal kernel variant must be reference or optimized".into()),
+        };
+        let workgroup = resident::workgroup()?;
+        let tuning = resident::Tuning::from_env(optimized)?;
+        let batch_limit = match std::env::var("LATTICA_V2_METAL_BATCH").as_deref() {
+            Ok("1") => 1,
+            Ok("8") => 8,
+            Err(std::env::VarError::NotPresent) => {
+                if resident::enabled() {
+                    8
+                } else {
+                    1
+                }
+            }
+            _ => return Err("Metal batch must be 1 or 8".into()),
+        };
         let mode = MemoryMode::from_env()?;
         let device = MTLCreateSystemDefaultDevice().ok_or("Metal GPU unavailable")?;
         if !device.hasUnifiedMemory() {
@@ -352,7 +544,11 @@ impl ProQue {
             .newCommandQueue()
             .ok_or("Metal command queue unavailable")?;
         let budget = Arc::new(Budget {
-            limit: managed_bytes,
+            limit: if resident::enabled() {
+                None
+            } else {
+                Some(managed_bytes)
+            },
             counters: Mutex::new(Accounting::default()),
         });
         // Reserve the same finite staging allowance in both modes. There are no
@@ -368,7 +564,12 @@ impl ProQue {
         options.setFastMathEnabled(false);
         let library = device
             .newLibraryWithSource_options_error(
-                &NSString::from_str(include_str!("kernels.metal")),
+                &NSString::from_str(&format!(
+                    "#define LATTICA_OPTIMIZED {}\n#define LATTICA_SPECIALIZED_DIAGONAL {}\n{}",
+                    u8::from(optimized),
+                    u8::from(tuning.specialized_diagonal),
+                    include_str!("kernels.metal")
+                )),
                 Some(&options),
             )
             .map_err(|e| format!("Metal shader compilation: {e}"))?;
@@ -383,13 +584,19 @@ impl ProQue {
             pipelines.insert(name, pipeline);
         }
         let compile_ns = started.elapsed().as_nanos();
-        println!("metal_initialized backend=metal memory={mode:?} unified_memory=true compile_ns={compile_ns} transfer_staging_bytes={transfer_bytes} managed_limit_bytes={managed_bytes}");
+        let tables = Arc::new(Mutex::new(resident::Tables::default()));
+        let managed_limit = budget
+            .limit
+            .map_or_else(|| "none".to_owned(), |n| n.to_string());
+        println!("metal_initialized backend=metal memory={mode:?} unified_memory=true compile_ns={compile_ns} transfer_staging_bytes={transfer_bytes} managed_limit_bytes={managed_limit} workspace_allowance_bytes={managed_bytes}");
         Ok(Self {
             queue: Queue(Arc::new(QueueInner {
                 device,
                 queue: command_queue,
                 last: Mutex::new(None),
                 pending: Mutex::new(Vec::new()),
+                batch: Mutex::new(None),
+                batch_limit,
                 transfer,
                 transfer_lock: Mutex::new(()),
                 _transfer_allocation: transfer_allocation,
@@ -399,7 +606,20 @@ impl ProQue {
             })),
             pipelines,
             compile_ns,
+            tables,
+            workgroup,
+            optimized,
+            tuning,
         })
+    }
+    pub fn workgroup(&self) -> usize {
+        self.workgroup
+    }
+    pub fn ntt_tile_log2(&self) -> usize {
+        self.tuning.ntt_tile_log2
+    }
+    pub fn prefix_fusion(&self) -> bool {
+        self.tuning.prefix_fusion
     }
     pub fn queue(&self) -> &Queue {
         &self.queue
@@ -438,7 +658,17 @@ impl ProQue {
         self.queue
             .finish()
             .expect("Metal telemetry requires completed commands");
+        diagnostics::report();
+        let (live, peak) = backing::snapshot();
+        println!("metal_backing live_bytes={live} peak_bytes={peak} limit_bytes=none shared_aliases_charged_once=true small_runtime_and_driver_in_rss_headroom=true");
+        let tables = self.tables.lock().unwrap();
         let a = self.queue.0.budget.counters.lock().unwrap();
+        println!("metal_tuning poseidon_diagonal={} ntt_tables={} ntt_tile_log2={} prefix_store={} quotient={}",
+            if self.tuning.specialized_diagonal { "specialized" } else { "reference" },
+            self.tuning.ntt_tables, self.tuning.ntt_tile_log2,
+            if self.tuning.prefix_fusion { "fused" } else { "separate" },
+            if self.tuning.gpu_quotient { "gpu" } else { "cpu" });
+        println!("metal_resident pipeline={} kernel_variant={} workgroup={} batch_limit={} kernel_commands={} table_hits={} table_misses={} table_evictions={}", if resident::enabled() { "resident" } else { "reference" }, if self.optimized { "optimized" } else { "reference" }, self.workgroup, self.queue.0.batch_limit, a.kernel_commands, tables.hits, tables.misses, tables.evictions);
         println!("metal_checkpoint memory={:?} compile_ns={} managed_live_bytes={} managed_peak_bytes={} allocation_count={} driver_current_allocated_bytes={} kernel_calls={} kernel_ns={} blit_calls={} blit_ns={} host_copy_bytes={} host_copy_ns={} transfer_blit_bytes={} transfer_staging_bytes={}", self.queue.0.mode, self.compile_ns, a.live, a.peak, a.buffers, self.context().currentAllocatedSize(), a.kernels, a.kernel_ns, a.blits, a.blit_ns, a.host_copy_bytes, a.host_copy_ns, a.transfer_blit_bytes, self.transfer_bytes());
     }
 }
@@ -604,7 +834,7 @@ impl Buffer<u64> {
                     }
                 }
                 encoder.endEncoding();
-                let event = q.submit(command.clone(), false)?;
+                let event = q.submit(command.clone(), false, "transfer_copy")?;
                 event.wait_for()?;
                 q.finish()?;
                 commands.push(command);
@@ -882,7 +1112,7 @@ impl<'a> BufferCommand<'a> {
             }
         }
         encoder.endEncoding();
-        let event = q.submit(command, false)?;
+        let event = q.submit(command, false, "buffer_blit")?;
         // Enqueues gated by test user events must remain asynchronous, so the
         // engine can exercise its existing failure-after-submission fences.
         if let Some(out) = self.event {
@@ -945,7 +1175,9 @@ impl KernelBuilder<'_> {
             .ok_or_else(|| format!("unsupported Metal kernel {}", self.name))?
             .clone();
         let local = self.local.unwrap_or(
-            256.min(pipeline.maxTotalThreadsPerThreadgroup())
+            self.runtime
+                .workgroup
+                .min(pipeline.maxTotalThreadsPerThreadgroup())
                 .min(self.global),
         );
         if self.global == 0 || local == 0 || local > pipeline.maxTotalThreadsPerThreadgroup() {
@@ -961,6 +1193,7 @@ impl KernelBuilder<'_> {
             global: self.global,
             local,
             tiled: self.local.is_some(),
+            phase: KERNELS.iter().copied().find(|n| *n == self.name).unwrap(),
         })
     }
 }
@@ -971,6 +1204,7 @@ pub struct Kernel {
     global: usize,
     local: usize,
     tiled: bool,
+    phase: &'static str,
 }
 impl Kernel {
     pub fn cmd(&self) -> KernelCommand<'_> {
@@ -1003,7 +1237,7 @@ impl<'a> KernelCommand<'a> {
             .operation_lock
             .lock()
             .map_err(|_| "Metal operation poisoned")?;
-        let command = k.queue.command(self.dependency)?;
+        let (command, batch_event) = k.queue.compute_command(k.phase, self.dependency)?;
         let encoder = autoreleasepool(|_| command.computeCommandEncoder())
             .ok_or("Metal compute encoder unavailable")?;
         encoder.setComputePipelineState(&k.pipeline);
@@ -1053,7 +1287,11 @@ impl<'a> KernelCommand<'a> {
             );
         }
         encoder.endEncoding();
-        let event = k.queue.submit(command, true)?;
+        let event = if let Some(event) = batch_event {
+            event
+        } else {
+            k.queue.submit(command, true, k.phase)?
+        };
         if let Some(out) = self.event {
             *out = event;
         }

@@ -1,10 +1,12 @@
 //! Explicit prefixes of bit-reversed LDEs. Geometry describes the original
 //! commitment; prefixes are never returned by the MMCS full-matrix accessor.
+use super::prefix_storage::PrefixMatrix;
 use super::*;
+use p3_matrix::dense::RowMajorMatrixView;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub struct CompactData {
-    pub(super) prefixes: Vec<RowMajorMatrix<Val>>,
+    pub(super) prefixes: Vec<PrefixMatrix>,
     pub(super) height: usize,
     salts: Vec<RowMajorMatrix<Val>>,
     tree: engine::RetainedTree,
@@ -12,7 +14,7 @@ pub struct CompactData {
 }
 impl CompactData {
     pub(super) fn new(
-        prefixes: Vec<RowMajorMatrix<Val>>,
+        prefixes: Vec<PrefixMatrix>,
         height: usize,
         salts: Vec<RowMajorMatrix<Val>>,
         tree: engine::RetainedTree,
@@ -71,13 +73,13 @@ impl CandidateMmcs {
     pub(crate) fn prefix_matrices<'a>(
         &self,
         data: &'a ProverData<RowMajorMatrix<Val>>,
-    ) -> Vec<(&'a RowMajorMatrix<Val>, usize)> {
+    ) -> Vec<(RowMajorMatrixView<'a, Val>, usize)> {
         match data {
-            ProverData::Compact(d) => d.prefixes.iter().map(|p| (p, d.height)).collect(),
+            ProverData::Compact(d) => d.prefixes.iter().map(|p| (p.as_view(), d.height)).collect(),
             _ => self
                 .get_matrices(data)
                 .into_iter()
-                .map(|m| (m, m.height()))
+                .map(|m| (m.as_view(), m.height()))
                 .collect(),
         }
     }
@@ -87,8 +89,8 @@ impl CandidateMmcs {
         if let ProverData::Compact(d) = data {
             for p in &mut d.prefixes {
                 p.values
-                    .truncate((d.height >> super::super::profile::LOG_BLOWUP) * p.width);
-                p.values.shrink_to_fit();
+                    .truncate((d.height >> super::super::profile::LOG_BLOWUP) * p.width)
+                    .expect("compact shared prefix retirement");
             }
         }
     }

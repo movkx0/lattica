@@ -57,7 +57,7 @@ fn tile_columns(
 }
 
 pub(crate) fn reconstruct(
-    prefixes: &[RowMajorMatrix<Val>],
+    prefixes: &[super::super::prefix_storage::PrefixMatrix],
     height: usize,
     indices: &[usize],
 ) -> Result<Vec<Vec<Vec<Val>>>, String> {
@@ -92,10 +92,15 @@ pub(crate) fn reconstruct(
         .map_err(|_| "GPU accounting poisoned")?
         .live;
     let roots = height.trailing_zeros() as usize;
+    #[cfg(feature = "gpu-metal")]
+    let backend_reserve = engine.pq.ntt_cache_reserve(&[low, height])?;
+    #[cfg(not(feature = "gpu-metal"))]
+    let backend_reserve = 0;
     let remaining = engine
         .limits
         .managed_bytes
         .checked_sub(live + 2 * roots * 8)
+        .and_then(|bytes| bytes.checked_sub(backend_reserve))
         .ok_or("query workspace allowance")?;
     let max_width = prefixes.iter().map(|p| p.width).max().unwrap();
     let columns = tile_columns(
@@ -179,6 +184,7 @@ pub(crate) fn reconstruct(
                     &a.buffer,
                     &b.buffer,
                     &inverse.buffer,
+                    true,
                     low,
                     width,
                     Val::from_usize(low).inverse().as_canonical_u64(),
@@ -186,12 +192,14 @@ pub(crate) fn reconstruct(
                     false,
                     false,
                     false,
+                    None,
                 )?;
             }
             let in_a = engine.lde_ntt(
                 &b.buffer,
                 &a.buffer,
                 &forward.buffer,
+                false,
                 height,
                 width,
                 1,
@@ -199,6 +207,7 @@ pub(crate) fn reconstruct(
                 true,
                 true,
                 false,
+                None,
             )?;
             let output = if in_a { &a.buffer } else { &b.buffer };
             if let (Some(query_indices), Some(query_output)) = (&query_indices, &query_output) {

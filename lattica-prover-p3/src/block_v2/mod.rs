@@ -22,8 +22,6 @@ mod gpu_quotient_prover;
 #[cfg(feature = "stream")]
 pub mod heap_dft;
 pub mod leaf;
-pub mod typed_leaf;
-pub mod typed_recursive;
 #[cfg(feature = "block-v2-host")]
 pub mod host;
 pub mod typed_fixture;
@@ -38,6 +36,8 @@ pub mod quotient_pcs;
 pub mod recursive;
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 mod resident_pcs;
+pub mod typed_leaf;
+pub mod typed_recursive;
 
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 mod batched_fri;

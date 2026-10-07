@@ -696,8 +696,12 @@ fn job_lease() -> Result<JobLease, String> {
     {
         return Err("adaptive multi-GPU budgets and UUID selection require Linux OpenCL".into());
     }
+    let coordinated = std::env::var("LATTICA_V2_METAL_COORDINATOR_PID")
+        .ok()
+        .and_then(|p| p.parse::<i32>().ok())
+        .is_some_and(|pid| pid > 1 && pid == unsafe { libc::getppid() });
     Ok(JobLease {
-        _global: lease_file("exclusive.lock", false)?,
+        _global: lease_file("exclusive.lock", coordinated)?,
         _device: None,
     })
 }
@@ -2993,4 +2997,19 @@ impl Engine {
         }
         Ok(())
     }
+}
+
+#[cfg(feature = "gpu-metal")]
+pub(crate) fn with_metal<T>(
+    f: impl FnOnce(&compute::ProQue) -> Result<T, String>,
+) -> Result<T, String> {
+    let mut slot = ENGINE
+        .get()
+        .ok_or("GPU not initialized")?
+        .lock()
+        .map_err(|_| "GPU engine poisoned")?;
+    let engine = slot.as_mut().ok_or("GPU shut down")?;
+    engine.fence().finish()?;
+    engine.workspace = None;
+    f(&engine.pq)
 }

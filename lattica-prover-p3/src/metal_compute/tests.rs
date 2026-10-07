@@ -1,6 +1,110 @@
 use super::*;
 
 #[test]
+#[ignore = "requires Apple GPU; run serially"]
+fn diagonal_and_poseidon_match_cpu_for_redundant_representatives() {
+    use p3_field::{PrimeCharacteristicRing, PrimeField64};
+    use p3_goldilocks::{default_goldilocks_poseidon2_8, Goldilocks};
+    use p3_symmetric::Permutation;
+    const P: u64 = 0xffff_ffff_0000_0001;
+    let mut values = vec![0, 1, 2, P - 2, P - 1, P, P + 1, u64::MAX];
+    let mut seed = 0x7f44_3311_0022_99aau64;
+    for _ in 0..4099 {
+        seed ^= seed << 13;
+        seed ^= seed >> 7;
+        seed ^= seed << 17;
+        values.push(seed);
+    }
+    let pq = ProQue::new(0, 64 << 20).unwrap();
+    let buffer = |words: &[u64]| {
+        let b = Buffer::builder()
+            .queue(pq.queue().clone())
+            .len(words.len())
+            .build()
+            .unwrap();
+        b.write(words).enq().unwrap();
+        b
+    };
+    let input = buffer(&values);
+    let output = buffer(&vec![0; values.len() * 8]);
+    let diag = crate::gpu_constants::poseidon2_consts().3;
+    unsafe {
+        pq.kernel_builder("diagonal_probe")
+            .arg(&input)
+            .arg(&output)
+            .global_work_size(values.len())
+            .build()
+            .unwrap()
+            .cmd()
+            .enq()
+            .unwrap();
+    }
+    let mut actual = vec![0; values.len() * 8];
+    output.read(&mut actual).enq().unwrap();
+    for (row, &v) in values.iter().enumerate() {
+        for lane in 0..8 {
+            assert_eq!(
+                actual[row * 8 + lane],
+                ((v as u128 * diag[lane] as u128) % P as u128) as u64,
+                "diagonal input={v:x} lane={lane}"
+            );
+        }
+    }
+    let rows = 513;
+    let state_words: Vec<_> = (0..rows * 8).map(|i| values[i % values.len()]).collect();
+    let row_words: Vec<_> = (0..rows * 4)
+        .map(|i| values[(i * 13) % values.len()])
+        .collect();
+    let states = buffer(&state_words);
+    let inputs = buffer(&row_words);
+    let (initial, internal, final_, diagonal) = crate::gpu_constants::poseidon2_consts();
+    let constants = [
+        buffer(&initial),
+        buffer(&internal),
+        buffer(&final_),
+        buffer(&diagonal),
+    ];
+    unsafe {
+        pq.kernel_builder("lde_absorb")
+            .arg(&inputs)
+            .arg(&states)
+            .arg(0u32)
+            .arg(rows as u32)
+            .arg(4u32)
+            .arg(0u32)
+            .arg(&constants[0])
+            .arg(&constants[1])
+            .arg(&constants[2])
+            .arg(&constants[3])
+            .global_work_size(rows)
+            .build()
+            .unwrap()
+            .cmd()
+            .enq()
+            .unwrap();
+    }
+    let mut actual = vec![0; rows * 8];
+    states.read(&mut actual).enq().unwrap();
+    let perm = default_goldilocks_poseidon2_8();
+    for row in 0..rows {
+        let mut expected: [Goldilocks; 8] =
+            std::array::from_fn(|i| Goldilocks::from_u64(state_words[row * 8 + i]));
+        for i in 0..4 {
+            expected[i] = Goldilocks::from_u64(row_words[row * 4 + i]);
+        }
+        perm.permute_mut(&mut expected);
+        for i in 0..8 {
+            assert_eq!(
+                Goldilocks::from_u64(actual[row * 8 + i]).as_canonical_u64(),
+                expected[i].as_canonical_u64(),
+                "Poseidon row={row} lane={i}"
+            );
+        }
+    }
+    pq.report();
+}
+
+#[test]
 fn transfer_reservation_is_bounded_and_consistent_with_the_engine() {
     for limit in [512 << 10, 16 << 20, 256 << 20, 8usize << 30] {
         let bytes = transfer_budget(limit);
@@ -11,7 +115,7 @@ fn transfer_reservation_is_bounded_and_consistent_with_the_engine() {
 #[test]
 fn allocation_limit_and_drop_return_the_exact_native_reservation() {
     let budget = Arc::new(Budget {
-        limit: 100,
+        limit: Some(100),
         counters: Mutex::new(Accounting::default()),
     });
     let a = NativeAllocation::new(75, &budget).unwrap();
@@ -21,6 +125,23 @@ fn allocation_limit_and_drop_return_the_exact_native_reservation() {
     assert_eq!(budget.counters.lock().unwrap().peak, 100);
     drop(a);
     drop(b);
+    assert_eq!(budget.counters.lock().unwrap().live, 0);
+}
+
+#[test]
+fn resident_native_accounting_allows_allocations_above_worker_estimate() {
+    // Exercise accounting only; no large host or GPU allocation is needed.
+    let budget = Arc::new(Budget {
+        limit: None,
+        counters: Mutex::new(Accounting::default()),
+    });
+    let a = NativeAllocation::new(17usize << 30, &budget).unwrap();
+    let b = NativeAllocation::new(192 << 20, &budget).unwrap();
+    let expected = (17usize << 30) + (192 << 20);
+    assert_eq!(budget.counters.lock().unwrap().live, expected);
+    assert_eq!(budget.counters.lock().unwrap().peak, expected);
+    assert!(NativeAllocation::new(usize::MAX, &budget).is_err());
+    drop((a, b));
     assert_eq!(budget.counters.lock().unwrap().live, 0);
 }
 
@@ -172,5 +293,92 @@ fn pending_command_retention_is_bounded_and_fully_accounted() {
     assert_eq!(
         pq.queue.0.budget.counters.lock().unwrap().blits,
         (MAX_PENDING_COMMANDS * 3 + 1) as u64
+    );
+}
+
+#[test]
+#[ignore = "requires Apple GPU; serial environment"]
+fn resident_batches_count_each_interval_once_and_flush_incomplete_work() {
+    std::env::set_var("LATTICA_V2_METAL_PIPELINE", "resident");
+    std::env::set_var("LATTICA_V2_METAL_MEMORY", "shared");
+    let pq = ProQue::new(0, 64 << 20).unwrap();
+    let a = Buffer::builder()
+        .queue(pq.queue().clone())
+        .len(32)
+        .build()
+        .unwrap();
+    let b = Buffer::builder()
+        .queue(pq.queue().clone())
+        .len(32)
+        .build()
+        .unwrap();
+    let out = Buffer::builder()
+        .queue(pq.queue().clone())
+        .len(128)
+        .build()
+        .unwrap();
+    a.write(&[7; 32]).enq().unwrap();
+    b.write(&[11; 32]).enq().unwrap();
+    let k = pq
+        .kernel_builder("arithmetic_probe")
+        .arg(&a)
+        .arg(&b)
+        .arg(&out)
+        .global_work_size(32)
+        .build()
+        .unwrap();
+    let mut events = Vec::new();
+    for _ in 0..19 {
+        let mut e = Event::empty();
+        unsafe {
+            k.cmd().enew(&mut e).enq().unwrap();
+        }
+        events.push(e);
+    }
+    let mut values = vec![0; 128];
+    out.read(&mut values).enq().unwrap();
+    assert_eq!(values[0], 77);
+    let intervals = events
+        .iter()
+        .map(|e| e.device_intervals().unwrap().len())
+        .sum::<usize>();
+    assert_eq!(intervals, 3);
+    let a = pq.queue.0.budget.counters.lock().unwrap();
+    assert_eq!(a.kernels, 19);
+    assert_eq!(a.kernel_commands, 3);
+}
+
+#[test]
+#[ignore = "requires Apple GPU; serial environment"]
+fn frozen_storage_rejects_writable_aliases_and_compacts_after_completion() {
+    std::env::set_var("LATTICA_V2_METAL_MEMORY", "shared");
+    let pq = ProQue::new(0, 64 << 20).unwrap();
+    let mut words = resident::SharedWords::new(pq.queue(), 32).unwrap();
+    words
+        .with_cpu_mut(|w| {
+            for (i, v) in w.iter_mut().enumerate() {
+                *v = i as u64;
+            }
+        })
+        .unwrap();
+    let alias = words.buffer().clone();
+    assert!(words.freeze().is_err());
+    drop(alias);
+    let mut words = resident::SharedWords::new(pq.queue(), 32).unwrap();
+    words
+        .with_cpu_mut(|w| {
+            for (i, v) in w.iter_mut().enumerate() {
+                *v = i as u64;
+            }
+        })
+        .unwrap();
+    let frozen = words.freeze().unwrap();
+    let prefix = frozen.prefix(11).unwrap();
+    drop(frozen);
+    assert_eq!(prefix.words(), &(0..11).collect::<Vec<u64>>());
+    drop(prefix);
+    assert_eq!(
+        pq.queue.0.budget.counters.lock().unwrap().live,
+        pq.transfer_bytes()
     );
 }

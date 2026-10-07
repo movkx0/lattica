@@ -8,11 +8,10 @@ use p3_uni_stark::Proof;
 use serde::{Deserialize, Serialize};
 
 use super::machine::{
-    analysis,
+    MachineAir, analysis,
     backend::{RegisteredProgram, RegisteredVerifier},
     programs::{self, Caps, Compiled, PUBLIC_VALUES},
     verifier::template,
-    MachineAir,
 };
 use super::{
     commitment::{self, Context, Entry, Kind, NodeSummary},
@@ -206,7 +205,10 @@ pub fn common_height(wallet: &WalletProof) -> Result<usize, Error> {
         if required == height {
             let a = analysis::analyze(&programs::shape(height)?).map_err(|e| format!("{e:?}"))?;
             a.check_ram_lower_bound().map_err(|e| format!("{e:?}"))?;
-            println!("geometry_closed height={height} main_width={} preprocessing_width={} retained_lde_bytes={}", a.main_width, a.preprocessed_width, a.retained_lde_bytes);
+            println!(
+                "geometry_closed height={height} main_width={} preprocessing_width={} retained_lde_bytes={}",
+                a.main_width, a.preprocessed_width, a.retained_lde_bytes
+            );
             return Ok(height);
         }
         if required > 1 << 21 {
@@ -770,6 +772,13 @@ impl ConstructionSession {
         })
     }
 
+    /// Conservative upper bound includes all retained LDEs, not just preprocessing.
+    pub fn preprocessing_cache_bytes(&self) -> usize {
+        self.session
+            .cached
+            .as_ref()
+            .map_or(0, |c| c.registered.analysis().retained_lde_bytes as usize)
+    }
     pub fn construction(&self) -> WrapperConstruction {
         self.construction
     }
@@ -850,7 +859,11 @@ pub const EIGHT_WALLET_DEMO_SIZE: usize = 8;
 /// paths. This deliberately changes the demo anchor relative to the legacy
 /// four-wallet fixture; do not mix the fixture families in one expected block.
 fn demo_witnesses_eight() -> Vec<js::Witness> {
-    let mut wallets: Vec<_> = (0..EIGHT_WALLET_DEMO_SIZE)
+    demo_witnesses_grouped(EIGHT_WALLET_DEMO_SIZE)
+}
+
+fn demo_witnesses_grouped(count: usize) -> Vec<js::Witness> {
+    let mut wallets: Vec<_> = (0..count)
         .map(|i| {
             let mut w = js::demo_witness();
             for input in &mut w.inputs {
@@ -865,7 +878,7 @@ fn demo_witnesses_eight() -> Vec<js::Witness> {
             w
         })
         .collect();
-    let commitments: Vec<_> = wallets
+    let mut commitments: Vec<_> = wallets
         .iter()
         .flat_map(|w| w.inputs.iter())
         .map(|input| {
@@ -882,6 +895,9 @@ fn demo_witnesses_eight() -> Vec<js::Witness> {
             )
         })
         .collect();
+    // The wallet membership tree also requires a power-of-two leaf count.
+    // Padding commitments are unspent fixture slots, not extra transactions.
+    commitments.resize(commitments.len().next_power_of_two(), [Val::ZERO; 4]);
     let (_, paths) = js::build_paths(&commitments);
     for (i, input) in wallets
         .iter_mut()
@@ -904,7 +920,19 @@ pub fn demo_wallet_eight(index: usize) -> Result<WalletProof, Error> {
         return Err("eight-wallet demo index".into());
     }
     let wallets = demo_witnesses_eight();
-    let wallet = &wallets[index];
+    prove_grouped_fixture_wallet(&wallets[index])
+}
+
+/// Separate twelve-spend fixture with twenty-four inputs under one common anchor.
+/// This does not expand either legacy fixture's accepted index range.
+pub fn demo_wallet_twelve(index: usize) -> Result<WalletProof, Error> {
+    if index >= 12 {
+        return Err("twelve-wallet demo index".into());
+    }
+    prove_grouped_fixture_wallet(&demo_witnesses_grouped(12)[index])
+}
+
+fn prove_grouped_fixture_wallet(wallet: &js::Witness) -> Result<WalletProof, Error> {
     let public = js::public_values(wallet);
     let mut inner = public.clone();
     inner.extend(
@@ -950,9 +978,11 @@ mod grouped_integration_draft_tests {
             WrapperConstruction::SingleWallet,
             WrapperConstruction::GroupedPair,
         ] {
-            assert!(choice
-                .compile_registration(1 << 19, programs::WRAPPER, None)
-                .is_err());
+            assert!(
+                choice
+                    .compile_registration(1 << 19, programs::WRAPPER, None)
+                    .is_err()
+            );
             assert!(choice.compile_registration(1 << 19, 0, None).is_err());
             assert!(choice.compile_registration(1 << 19, 4, None).is_err());
         }
@@ -1000,6 +1030,30 @@ mod grouped_integration_draft_tests {
         assert!(demo_wallet(usize::MAX).is_err());
         assert!(demo_wallet_eight(8).is_err());
         assert!(demo_wallet_eight(usize::MAX).is_err());
+        assert!(demo_wallet_twelve(12).is_err());
+        assert!(demo_wallet_twelve(usize::MAX).is_err());
+    }
+
+    #[test]
+    fn twelve_fixture_has_one_anchor_and_twenty_four_distinct_nullifiers() {
+        let wallets = demo_witnesses_grouped(12);
+        assert_eq!(wallets.len(), 12);
+        let first = js::public_values(&wallets[0]);
+        let mut nullifiers = std::collections::BTreeSet::new();
+        for wallet in wallets {
+            let public = js::public_values(&wallet);
+            assert_eq!(public[js::PI_MINT], Val::ZERO);
+            assert_eq!(
+                public[js::PI_ANCHOR..js::PI_NF],
+                first[js::PI_ANCHOR..js::PI_NF]
+            );
+            for nf in public[js::PI_NF..js::PI_OUTCM].chunks_exact(4) {
+                assert!(
+                    nullifiers.insert(nf.iter().map(|v| v.as_canonical_u64()).collect::<Vec<_>>())
+                );
+            }
+        }
+        assert_eq!(nullifiers.len(), 24);
     }
 
     #[test]
@@ -1018,18 +1072,22 @@ mod grouped_integration_draft_tests {
             );
             assert_eq!(public[js::PI_MINT], Val::ZERO);
             for nf in public[js::PI_NF..js::PI_OUTCM].chunks_exact(4) {
-                assert!(nullifiers.insert(
-                    nf.iter()
+                assert!(
+                    nullifiers.insert(
+                        nf.iter()
+                            .map(|value| value.as_canonical_u64())
+                            .collect::<Vec<_>>()
+                    )
+                );
+            }
+            assert!(
+                bindings.insert(
+                    public[js::PI_TXBIND..]
+                        .iter()
                         .map(|value| value.as_canonical_u64())
                         .collect::<Vec<_>>()
-                ));
-            }
-            assert!(bindings.insert(
-                public[js::PI_TXBIND..]
-                    .iter()
-                    .map(|value| value.as_canonical_u64())
-                    .collect::<Vec<_>>()
-            ));
+                )
+            );
         }
         assert_eq!(
             nullifiers.len(),
@@ -1147,10 +1205,12 @@ mod grouped_integration_draft_tests {
         let reversed_node = wallet_pair_summary(&registry, &wallets[1], &wallets[0]).unwrap();
         assert_ne!(node.root, reversed_node.root);
         let reversed_public = programs::statement(reversed_node, programs::WRAPPER);
-        assert!(compiled
-            .program
-            .evaluate(&reversed_public, &compiled.witness)
-            .is_err());
+        assert!(
+            compiled
+                .program
+                .evaluate(&reversed_public, &compiled.witness)
+                .is_err()
+        );
         {
             let reversed = programs::wrapper_pair(
                 registry.height,
@@ -1176,10 +1236,12 @@ mod grouped_integration_draft_tests {
             wallet_pair_summary(&registry, &wallets[0], &wallets[1]).unwrap(),
             programs::WRAPPER,
         );
-        assert!(compiled
-            .program
-            .evaluate(&changed_context, &compiled.witness)
-            .is_err());
+        assert!(
+            compiled
+                .program
+                .evaluate(&changed_context, &compiled.witness)
+                .is_err()
+        );
         wallets[0].chain[0] ^= 1;
         wallets[1].chain[0] ^= 1;
 
