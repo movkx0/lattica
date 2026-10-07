@@ -65,7 +65,13 @@ results keep their original source and binary hashes.
 
 The optimization reports below also reference uncommitted Mac research code at
 `/Users/access/code/lattica/benchmark-results/apple-priorities-20261004/run-01`.
-That source has not yet been imported from the Mac. Its recorded source archive
+That source has not yet been committed on the Mac or integrated into `main`.
+Capture it in the **next local Mac source commit** using the
+[checkpoint handoff](../lattica-prover-p3/scripts/apple-current-benchmark-README.txt)
+and [source-completeness checker](../lattica-prover-p3/scripts/check-apple-source-commit.py),
+then push the checkpoint branch for integration. The checker catches missing
+modules, unstaged edits and new benchmark helpers; it is not an automatic Git hook.
+Its recorded source archive
 SHA-256 is `f3dbb3598556a52677c95cbab13e0c11bd7d81adc09188e9028136e46f75e323`.
 Six measured files are absent from this checkout: `gpu_hash/prefix_storage.rs`,
 `gpu_quotient_prover/metal.rs` (under `src/block_v2/`), and
