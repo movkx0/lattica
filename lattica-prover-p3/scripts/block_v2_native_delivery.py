@@ -24,15 +24,16 @@ _spec.loader.exec_module(_codec)
 pin = _codec.pin
 
 
-def delivery_genesis(library, slots):
-    if type(slots) is not int or not 1 <= slots <= 2048:
+def delivery_genesis(library, slots, *, sustained=False):
+    limit = 16384 if sustained else 2048
+    if type(slots) is not int or not 1 <= slots <= limit:
         raise ValueError('delivery funding requires 1..2048 synthetic slots')
     native = ctypes.CDLL(str(Path(library).resolve(strict=True)))
-    call = native.lattica_v2_research_delivery_genesis_v1
+    call = native.lattica_v2_research_sustained_genesis_v2 if sustained else native.lattica_v2_research_delivery_genesis_v1
     call.argtypes = [ctypes.c_uint32, ctypes.c_void_p, ctypes.c_size_t,
                      ctypes.POINTER(ctypes.c_size_t)]
     call.restype = ctypes.c_int32
-    output = ctypes.create_string_buffer(68 + 4096 * (32 + 1088 + 2 + 256))
+    output = ctypes.create_string_buffer(68 + (2 * limit) * (32 + 1088 + 2 + 256))
     length = ctypes.c_size_t()
     status = call(slots, output, len(output), ctypes.byref(length))
     if status != 0 or not 68 <= length.value <= len(output):
@@ -40,14 +41,14 @@ def delivery_genesis(library, slots):
     return output.raw[:length.value]
 
 
-def prepare_batch(store, indices, registry_fixture, cpu_probe, output):
+def prepare_batch(store, indices, registry_fixture, cpu_probe, output, *, wallet_provider=None):
     """Retain fresh proofs/bodies tied to an immutable, CPU-verified head.
 
     Returns a manifest; apply_prepared checks all pinned inputs and uses the
     original head token. Reorgs or concurrent writes may make work stale.
     """
     if (not 1 <= len(indices) <= 64 or len(set(indices)) != len(indices)
-            or any(type(i) is not int or not 0 <= i < 2048 for i in indices)):
+            or any(type(i) is not int or not 0 <= i < store.verifier.wallet_slot_limit for i in indices)):
         raise ValueError('choose 1..64 distinct funded delivery slot indices')
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -80,7 +81,8 @@ def prepare_batch(store, indices, registry_fixture, cpu_probe, output):
         bodies, statements = [], []
         for position, index in enumerate(indices):
             before = time.monotonic()
-            packet = store.verifier.prepare_wallet(history, index)
+            packet = (wallet_provider(index, view.token) if wallet_provider is not None
+                      else store.verifier.prepare_wallet(history, index))
             body, wallet, public = _codec.packet(packet, index)
             body_path, wallet_path = output / f'complete-body.{position}', output / f'wallet.{position}'
             body_path.write_bytes(body)

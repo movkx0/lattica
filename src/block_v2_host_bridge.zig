@@ -149,14 +149,21 @@ export fn lattica_v2_research_candidate_preflight_v1(
 const Genesis = struct { chain: node.Chain, height: u64 };
 
 fn initialState(allocator: std.mem.Allocator, bytes: []const u8) !Genesis {
-    if (bytes.len > MAX_GENESIS_BYTES) return error.OversizeGenesis;
+    return initialStateBounded(allocator, bytes, MAX_GENESIS_BYTES, MAX_GENESIS_NOTES);
+}
+
+const MAX_SESSION_GENESIS_NOTES = 2 * fixture.MAX_SUSTAINED_SLOTS;
+const MAX_SESSION_GENESIS_BYTES = 68 + MAX_SESSION_GENESIS_NOTES * (32 + p.CT_LEN + 2 + node.MAX_NOTE_CIPHERTEXT_LEN);
+
+fn initialStateBounded(allocator: std.mem.Allocator, bytes: []const u8, max_bytes: usize, max_notes: usize) !Genesis {
+    if (bytes.len > max_bytes) return error.OversizeGenesis;
     var reader = body.Reader{ .bytes = bytes };
     if (!std.mem.eql(u8, try reader.take(8), GENESIS_MAGIC)) return error.InvalidGenesisVersion;
     const height = try reader.uint(u64);
     if (height >= node.MAX_RANGE_VALUE - 1) return error.InvalidGenesisHeight;
     const issued = try reader.uint(u128);
     const count = try reader.uint(u32);
-    if (count > MAX_GENESIS_NOTES) return error.OversizeGenesis;
+    if (count > max_notes) return error.OversizeGenesis;
     const expected_anchor = try reader.digest();
     var chain = try node.Chain.init(allocator);
     errdefer chain.deinit();
@@ -184,7 +191,7 @@ fn initialState(allocator: std.mem.Allocator, bytes: []const u8) !Genesis {
     return .{ .chain = chain, .height = height };
 }
 
-fn writeState(chain: node.Chain, height: u64, blocks: u32, output: []u8) !void {
+fn writeState(chain: node.Chain, height: u64, blocks: u64, output: []u8) !void {
     var writer = body.Writer{ .bytes = output[0..STATE_BYTES] };
     try writer.put(STATE_MAGIC);
     try writer.put(&chain.stateRoot());
@@ -302,5 +309,209 @@ export fn lattica_v2_research_delivery_wallet_v1(
     defer state.chain.deinit();
     const size = fixture.deliveryWallet(index, &state.chain, state.height + 1, output[0..cap]) catch return -2;
     output_len[0] = size;
+    return 0;
+}
+
+// Research v2: bounded opaque sessions retain only verified native state. The
+// caller still owns durable history and must replay published records after
+// restart/reorg. A session is never a checkpoint authentication mechanism.
+const Session = struct {
+    state: Genesis,
+    registry: []u8,
+    context: commitment.Context,
+    blocks: u64 = 0,
+    poisoned: bool = false,
+};
+const SessionSlot = struct { generation: u64 = 0, value: ?Session = null };
+var session_slots: [16]SessionSlot = @splat(.{});
+var session_lock = std.atomic.Value(bool).init(false);
+
+fn lockSessions() void {
+    while (session_lock.cmpxchgWeak(false, true, .acquire, .monotonic) != null) std.atomic.spinLoopHint();
+}
+fn unlockSessions() void {
+    session_lock.store(false, .release);
+}
+fn sessionFor(handle: u64) ?*Session {
+    const index = handle & 255;
+    if (index == 0 or index > session_slots.len) return null;
+    const slot = &session_slots[@intCast(index - 1)];
+    if (slot.generation != handle >> 8) return null;
+    if (slot.value) |*value| return value;
+    return null;
+}
+
+export fn lattica_v2_research_session_open_v2(
+    registry_ptr: [*c]const u8,
+    registry_len: usize,
+    context_ptr: [*c]const u8,
+    context_len: usize,
+    genesis_ptr: [*c]const u8,
+    genesis_len: usize,
+    handle_ptr: [*c]u64,
+) callconv(.c) i32 {
+    if (handle_ptr == null) return -1;
+    handle_ptr[0] = 0;
+    if (registry_ptr == null or context_ptr == null or genesis_ptr == null or
+        registry_len < 8 or registry_len > ffi.MAX_BLOCK_V2_REGISTRY_BYTES or
+        context_len != 64 or genesis_len < 68 or genesis_len > MAX_SESSION_GENESIS_BYTES) return -1;
+    if (!ffi.hasBlockV2ResearchBackend() or !std.mem.startsWith(u8, registry_ptr[0..registry_len], "LBV2RG01")) return -2;
+    lockSessions();
+    defer unlockSessions();
+    for (&session_slots, 0..) |*slot, index| {
+        if (slot.value != null or slot.generation == std.math.maxInt(u56)) continue;
+        var state = initialStateBounded(std.heap.page_allocator, genesis_ptr[0..genesis_len], MAX_SESSION_GENESIS_BYTES, MAX_SESSION_GENESIS_NOTES) catch return -2;
+        const registry = std.heap.page_allocator.dupe(u8, registry_ptr[0..registry_len]) catch {
+            state.chain.deinit();
+            return -2;
+        };
+        slot.generation += 1;
+        slot.value = .{ .state = state, .registry = registry, .context = .{ .profile_id = context_ptr[0..32].*, .chain_id = context_ptr[32..64].* } };
+        handle_ptr[0] = (slot.generation << 8) | (index + 1);
+        return 0;
+    }
+    return -3;
+}
+
+export fn lattica_v2_research_session_close_v2(handle: u64) callconv(.c) i32 {
+    lockSessions();
+    defer unlockSessions();
+    const session = sessionFor(handle) orelse return -1;
+    session.state.chain.deinit();
+    std.heap.page_allocator.free(session.registry);
+    session_slots[@intCast((handle & 255) - 1)].value = null;
+    return 0;
+}
+
+export fn lattica_v2_research_session_state_v2(handle: u64, output: [*c]u8, cap: usize) callconv(.c) i32 {
+    if (output == null or cap != STATE_BYTES) return -1;
+    lockSessions();
+    defer unlockSessions();
+    const session = sessionFor(handle) orelse return -1;
+    if (session.poisoned) return -2;
+    writeState(session.state.chain, session.state.height, session.blocks, output[0..cap]) catch return -2;
+    return 0;
+}
+
+fn sessionApply(session: *Session, packet: []const u8) !void {
+    var reader = body.Reader{ .bytes = packet };
+    if (!std.mem.eql(u8, try reader.take(8), REPLAY_MAGIC) or try reader.uint(u32) != 1) return error.InvalidReplayVersion;
+    const height = try reader.uint(u64);
+    const body_len = try reader.uint(u32);
+    const proof_len = try reader.uint(u64);
+    const count = try reader.uint(u32);
+    if (height != session.state.height + 1 or height >= node.MAX_RANGE_VALUE or
+        body_len > body.MAX_BODY_BYTES or proof_len == 0 or proof_len > ffi.MAX_PROOF_LEN or
+        count == 0 or count > commitment.CAPACITY or session.blocks == std.math.maxInt(u64)) return error.InvalidRecord;
+    var grants: [commitment.CAPACITY]u64 = undefined;
+    for (grants[0..count]) |*grant| grant.* = try reader.uint(u64);
+    const decoded = try body.decode(try reader.take(body_len));
+    if (decoded.count != count) return error.InvalidGrantCount;
+    const proof = try reader.take(@intCast(proof_len));
+    if (reader.offset != packet.len) return error.TrailingReplayData;
+    try session.state.chain.applyBlockV2Research(session.context, session.registry, decoded.transactions(), proof, height, grants[0..count]);
+    session.state.height = height;
+    session.blocks += 1;
+}
+
+export fn lattica_v2_research_session_apply_v2(handle: u64, packet: [*c]const u8, packet_len: usize, output: [*c]u8, cap: usize) callconv(.c) i32 {
+    const max_record = 12 + 24 + commitment.CAPACITY * 8 + body.MAX_BODY_BYTES + ffi.MAX_PROOF_LEN;
+    if (packet == null or packet_len < 36 or packet_len > max_record or output == null or cap != STATE_BYTES) return -1;
+    lockSessions();
+    defer unlockSessions();
+    const session = sessionFor(handle) orelse return -1;
+    if (session.poisoned) return -2;
+    sessionApply(session, packet[0..packet_len]) catch {
+        // Even allocation/application failures require reconstruction from
+        // durable history. Never serve state after an indeterminate mutation.
+        session.poisoned = true;
+        return -2;
+    };
+    writeState(session.state.chain, session.state.height, session.blocks, output[0..cap]) catch {
+        session.poisoned = true;
+        return -2;
+    };
+    return 0;
+}
+
+export fn lattica_v2_research_session_preflight_v2(
+    handle: u64,
+    body_ptr: [*c]const u8,
+    body_len: usize,
+    height: u64,
+    grants_ptr: [*c]const u8,
+    grants_len: usize,
+    output: [*c]u8,
+    cap: usize,
+    output_len: [*c]usize,
+) callconv(.c) i32 {
+    if (output_len == null) return -1;
+    output_len[0] = 0;
+    if (body_ptr == null or grants_ptr == null or output == null or body_len < body.HEADER_LEN or
+        body_len > body.MAX_BODY_BYTES or grants_len == 0 or grants_len > commitment.CAPACITY * 8 or
+        cap < 120 or cap > MAX_PREFLIGHT_BYTES) return -1;
+    lockSessions();
+    defer unlockSessions();
+    const session = sessionFor(handle) orelse return -1;
+    if (session.poisoned or height != session.state.height + 1 or height >= node.MAX_RANGE_VALUE) return -2;
+    const decoded = body.decode(body_ptr[0..body_len]) catch return -2;
+    if (grants_len != decoded.count * 8) return -2;
+    var grants: [commitment.CAPACITY]u64 = undefined;
+    var reader = body.Reader{ .bytes = grants_ptr[0..grants_len] };
+    for (grants[0..decoded.count]) |*grant| grant.* = reader.uint(u64) catch return -2;
+    const checked = session.state.chain.validateBlockV2Research(session.context, decoded.transactions(), height, grants[0..decoded.count]) catch return -2;
+    var writer = body.Writer{ .bytes = output[0..cap] };
+    writer.put(PREFLIGHT_MAGIC) catch return -1;
+    writer.put(&checked.expected.encode()) catch return -1;
+    for (decoded.transactions()) |item| {
+        const kind: u8 = switch (item) {
+            .joinsplit => 0,
+            .htlc => |h| if (h.redeem_preimage != null) 1 else 2,
+            .issuance => 3,
+        };
+        var fields: [31]u64 = undefined;
+        const count = item.statement(&fields) catch return -2;
+        writer.uint(u8, kind) catch return -1;
+        writer.uint(u8, @intCast(count)) catch return -1;
+        for (fields[0..count]) |field| writer.uint(u64, field) catch return -1;
+    }
+    output_len[0] = writer.offset;
+    return 0;
+}
+
+export fn lattica_v2_research_session_wallet_v2(handle: u64, index: u32, output: [*c]u8, cap: usize, output_len: [*c]usize) callconv(.c) i32 {
+    if (output_len == null) return -1;
+    output_len[0] = 0;
+    if (index >= fixture.MAX_DELIVERY_SLOTS or output == null or cap == 0 or cap > fixture.MAX_EXPORT_BYTES) return -1;
+    lockSessions();
+    defer unlockSessions();
+    const session = sessionFor(handle) orelse return -1;
+    if (session.poisoned or !std.mem.eql(u8, &session.context.chain_id, &fixture.CHAIN)) return -2;
+    const size = fixture.deliveryWallet(index, &session.state.chain, session.state.height + 1, output[0..cap]) catch return -2;
+    output_len[0] = size;
+    return 0;
+}
+
+/// Versioned funded workload for long research campaigns. Legacy fixtures and
+/// the production protocol are unaffected; the host pins this genesis exactly.
+export fn lattica_v2_research_sustained_genesis_v2(slots: u32, output: ?[*]u8, cap: usize, output_len: ?*usize) callconv(.c) i32 {
+    if (output_len == null) return -1;
+    output_len.?.* = 0;
+    if (slots == 0 or slots > fixture.MAX_SUSTAINED_SLOTS or output == null or cap < 68 or cap > MAX_SESSION_GENESIS_BYTES) return -1;
+    const size = fixture.sustainedGenesis(slots, output.?[0..cap]) catch return -2;
+    output_len.?.* = size;
+    return 0;
+}
+
+export fn lattica_v2_research_session_sustained_wallet_v2(handle: u64, index: u32, output: ?[*]u8, cap: usize, output_len: ?*usize) callconv(.c) i32 {
+    if (output_len == null) return -1;
+    output_len.?.* = 0;
+    if (output == null or cap == 0 or cap > fixture.MAX_EXPORT_BYTES or index >= fixture.MAX_SUSTAINED_SLOTS) return -1;
+    lockSessions();
+    defer unlockSessions();
+    const session = sessionFor(handle) orelse return -2;
+    if (session.poisoned or !std.mem.eql(u8, &session.context.chain_id, &fixture.CHAIN)) return -2;
+    const size = fixture.sustainedWallet(index, &session.state.chain, session.state.height + 1, output.?[0..cap]) catch return -2;
+    output_len.?.* = size;
     return 0;
 }

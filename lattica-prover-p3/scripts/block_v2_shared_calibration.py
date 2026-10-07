@@ -126,7 +126,10 @@ def load(directories, *, shared, gpu_sha, cpu_sha, profile, count, assignment, u
             raise ValueError('shared calibration uses a different proof profile')
         worker = config['workers'][0]
         budget = worker['budget']
-        if (budget.get('opening_denominator_cache', False) is not shared.R.opening_denominator_cache(profile)
+        if (budget.get('lde_workspace_bytes', 0) != profile.get('geometry', {}).get('lde_workspace_bytes', 0)
+                or budget.get('gpu_fri_fold', False) is not profile.get('geometry', {}).get('gpu_fri_fold', False)
+                or budget.get('preprocessing_cache') != profile.get('preprocessing_cache')
+                or budget.get('opening_denominator_cache', False) is not shared.R.opening_denominator_cache(profile)
                 or budget.get('query_readback_layout', 'rows') != shared.R.query_readback_layout(profile)):
             raise ValueError('shared calibration worker options differ from its pinned profile')
         recorded = summary['workers'][0]

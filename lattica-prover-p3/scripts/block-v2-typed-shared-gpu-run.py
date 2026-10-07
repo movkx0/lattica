@@ -67,14 +67,14 @@ def accounting_property(directory):
         [sys.executable, Path(G.__file__).resolve(), "--accounting", directory])
 
 
-def properties(unit, memory, quota, cpus, directory):
+def properties(unit, memory, quota, cpus, directory, runtime_seconds=7200):
     return ["systemd-run", "--user", "--quiet", "--expand-environment=no",
             "--service-type=exec", "--unit=" + unit, "--slice=" + G.SLICE,
             "--property=MemoryAccounting=yes", "--property=CPUAccounting=yes",
             "--property=MemoryMax=" + str(memory), "--property=MemorySwapMax=0",
             "--property=CPUQuota=" + quota, "--property=AllowedCPUs=" + ",".join(map(str, cpus)),
             "--property=KillMode=control-group", "--property=OOMPolicy=kill",
-            "--property=TimeoutStopSec=30", "--property=RuntimeMaxSec=7200",
+            "--property=TimeoutStopSec=30", f"--property=RuntimeMaxSec={runtime_seconds}",
             "--property=LimitCORE=0", "--property=UMask=0077", accounting_property(directory)]
 
 
@@ -85,7 +85,7 @@ def launch_worker(path):
     if read(directory / "budget.json") != budget:
         raise ValueError("shared worker budget changed")
     command = properties(budget["unit"], budget["host"]["worker_bytes"],
-                         budget["cpu"]["quota_percent"], budget["cpu"]["allowed_cpus"], directory)
+                         budget["cpu"]["quota_percent"], budget["cpu"]["allowed_cpus"], directory, config.get("runtime_seconds", 7200))
     command += ["--pipe", "--wait", "--property=BindsTo=" + config["owner_unit"],
                 "--property=After=" + config["owner_unit"]]
     command += [f"--setenv={key}={value}" for key, value in G.environment(budget, directory).items()]
@@ -487,6 +487,7 @@ def owner(path):
     config = read(path)
     Bootstrap.enter(path)
     preseal = config.get('preseal_only', False)
+    pool_mode = config.get("pool_requests") is not None
     T.check_pins(config["pins"])
     directory = Path(config["owner_directory"])
     started = time.monotonic()
@@ -516,6 +517,14 @@ def owner(path):
                                    directory / "prove.log", T.clean_environment() | {
                                        "RAYON_NUM_THREADS": str(config["coordinator_threads"])})
         proving = time.monotonic() - proving_started
+        if pool_mode:
+            stopped = read(directory / "proofs/pool-stopped.json")
+            if stopped.get('workers_drained') is not True:
+                raise ValueError('persistent pool did not drain workers')
+            result.update(status='succeeded', pool_service=True, pool_result=stopped,
+                          cpu_audited=False, durable_host_applied=False,
+                          native_blocks_applied=0, elapsed_seconds=time.monotonic() - started)
+            return
         execution = read(directory / "proofs/result.json")
         validate_execution(execution, config["count"], config["workers"], config.get("native_host"),
             preseal_only=preseal, allow_worker_failover=config.get('allow_worker_failover', False),
@@ -628,6 +637,16 @@ def owner(path):
 
 def run(args, control=None):
     preseal = getattr(args, 'preseal', False)
+    pool_requests = getattr(args, 'pool_requests', None)
+    pool_runtime = getattr(args, 'pool_runtime_seconds', 172800)
+    if pool_requests is not None:
+        pool_requests = pool_requests.resolve(strict=True)
+        if (not pool_requests.is_dir() or pool_requests.stat().st_mode & 0o077
+                or not args.host_config or preseal or args.recover_owner or args.reuse_preseal
+                or args.arrival_store or getattr(args, 'allow_worker_failover', False)
+                or not 7200 <= pool_runtime <= 604800):
+            raise ValueError('pool requires private request directory, native host, fresh session, and bounded runtime')
+
     failover = getattr(args, 'allow_worker_failover', False)
     recover_owner = getattr(args, 'recover_owner', None)
     cached_only = getattr(args, 'recover_cached_only', False)
@@ -647,7 +666,7 @@ def run(args, control=None):
                Path(Bootstrap.__file__).resolve()]
     scripts.append(Path(Controller.__file__).resolve())
     scripts.append(Path(Calibration.__file__).resolve())
-    workload = Path(__file__).with_name("block-v2-multi-gpu-direct-readback-workload.json")
+    workload = getattr(args, "workload", None) or Path(__file__).with_name("block-v2-multi-gpu-direct-readback-workload.json")
     pins = dict(T.pin(path) for path in [gpu, cpu, *inputs, *scripts, workload])
     fixed_path = getattr(args, 'resource_assignment', None)
     fixed = None
@@ -776,6 +795,9 @@ def run(args, control=None):
                           arrival_selection=args.arrival_selection)
         if preseal:
             report['scope'] = 'Unsealed native prefix; complete subtrees only; no claims or native application'
+        if pool_requests:
+            config['pool_requests'] = fleet['pool_requests'] = str(pool_requests)
+            report['pool_service'] = True
         packet_share, remainder = divmod(coordinator_bytes, len(devices))
         for index, device in enumerate(devices):
             uuid = device["uuid"]
@@ -791,6 +813,8 @@ def run(args, control=None):
                 scratch = args.scratch.resolve() / budget["unit"].removesuffix(".service")
                 scratch.mkdir(mode=0o700)
                 (directory / "scratch").symlink_to(scratch, target_is_directory=True)
+            if pool_requests:
+                budget['pool_job_limit'] = 16384
             G.durable(directory / "budget.json", budget, True)
             arguments = ["serve-shared-process-gpu", str(owner_dir / "input"), str(expected),
                 launch_directory, str(budget["host"]["worker_bytes"])]
@@ -802,7 +826,7 @@ def run(args, control=None):
                     'launcher': ['/usr/bin/false'], 'log': str(directory / 'prove.log')})
                 continue
             worker_config = {"schema_version": 1, "budget": budget, "directory": str(directory),
-                             "owner_unit": owner_unit, "command": [str(gpu), *arguments], "pins": copy.deepcopy(pins)}
+                             "owner_unit": owner_unit, "runtime_seconds": pool_runtime if pool_requests else 7200, "command": [str(gpu), *arguments], "pins": copy.deepcopy(pins)}
             worker_config["pins"].update(dict([T.pin(directory / "budget.json")]))
             for path in inputs:
                 worker_config["pins"][str(owner_dir / "input" / path.name)] = pins[str(path)]
@@ -825,7 +849,7 @@ def run(args, control=None):
             Controller.authorize(control, out / 'config.json')
         G.systemctl("set-property", "--runtime", G.SLICE, f"MemoryMax={fleet['fleet_bytes']}", "MemorySwapMax=0", "MemoryAccounting=yes")
         before = M.event_counters(Path("/sys/fs/cgroup") / G.unit_state(G.SLICE)["ControlGroup"].lstrip('/') / "memory.events")
-        command = properties(owner_unit, coordinator_bytes, f"{coordinator_threads * 100}%", host["effective_cpus"], owner_dir)
+        command = properties(owner_unit, coordinator_bytes, f"{coordinator_threads * 100}%", host["effective_cpus"], owner_dir, pool_runtime if pool_requests else 7200)
         if control is not None:
             command += ['--property=BindsTo=' + control['unit'], '--property=After=' + control['unit']]
         command += ["--property=StandardOutput=append:" + str(owner_dir / "worker.log"), "--property=StandardError=inherit",
@@ -839,7 +863,7 @@ def run(args, control=None):
         subprocess.run(command, check=True, timeout=30)
         observed = set()
         while True:
-            head_change = HeadGuard.observe(native, owner_dir)
+            head_change = None if pool_requests else HeadGuard.observe(native, owner_dir)
             if head_change is not None:
                 report['native_head_change'] = head_change
                 Controller.publish(out / 'stale-head.json', head_change)
@@ -853,7 +877,7 @@ def run(args, control=None):
             with (owner_dir / "telemetry.jsonl").open("a") as stream:
                 stream.write(json.dumps({"time_ns": time.time_ns(), "unit": state}) + "\n")
             if G.terminated(state):
-                if not owner_succeeded(owner_dir, state, prefix=preseal):
+                if not (pool_requests and state.get("Result") == "success" and state.get("ExecMainStatus") == "0" and read(owner_dir / "result.json").get("pool_service") is True) and not owner_succeeded(owner_dir, state, prefix=preseal):
                     late_change = HeadGuard.failed_application(native, owner_dir)
                     if late_change is not None:
                         report['native_head_change'] = late_change
@@ -862,6 +886,20 @@ def run(args, control=None):
                 break
             time.sleep(0.5)
         result = read(owner_dir / "result.json")
+        if pool_requests:
+            if result.get('status') != 'succeeded' or result.get('pool_service') is not True:
+                raise ValueError('persistent pool owner failed')
+            for worker in config['workers']:
+                accounting = read(Path(worker['directory']) / 'accounting.json')
+                validate_worker_accounting(accounting, worker['budget'], {}, False)
+            after = M.event_counters(Path('/sys/fs/cgroup') / G.unit_state(G.SLICE)['ControlGroup'].lstrip('/') / 'memory.events')
+            deltas = fleet_event_deltas(before, after, [], False)
+            report.update(parent_memory_event_deltas=deltas)
+            report.update(status='succeeded', pool_service=True, pool_result=result['pool_result'],
+                          cpu_audited_roots=0, native_blocks_applied=0,
+                          scope='Persistent aggregation service; per-candidate audit and native receipts are separate evidence')
+            return
+
         validate_execution(result["execution_result"], args.count, config["workers"],
             config.get("native_host"), preseal_only=preseal, allow_worker_failover=failover,
             recovery_source=config.get('recover_from'), recover_cached_only=cached_only)
@@ -979,10 +1017,13 @@ def argument_parser():
     parser.add_argument('--supervisor-restart-delay', type=int, default=2, help='seconds between terminated attempts (0..60)')
     parser.add_argument('--recover-controller', type=Path,
                         help='resume an interrupted controller in a fresh evidence directory')
+    parser.add_argument('--pool-requests', type=Path, help='private local inbox for persistent native candidates')
+    parser.add_argument('--pool-runtime-seconds', type=int, default=172800, help='bounded persistent service lifetime, 7200 to 604800 seconds')
     parser.add_argument("--owner", type=Path)
     parser.add_argument("--launch-worker", type=Path)
     parser.add_argument("--gpu-binary", type=Path)
     parser.add_argument("--cpu-binary", type=Path)
+    parser.add_argument("--workload", type=Path, help="explicit workload and pool allocation policy")
     parser.add_argument("--fixture", type=Path)
     parser.add_argument('--resource-assignment', type=Path,
                         help='retain fixed per-GPU CPU/RAM/spill/VRAM limits when current capacity admits them')
@@ -1043,6 +1084,8 @@ def main():
         paths.append(args.host_config.resolve(strict=True))
     if args.resource_assignment:
         paths.append(args.resource_assignment.resolve(strict=True))
+    if args.workload:
+        paths.append(args.workload.resolve(strict=True))
     pins = dict(T.pin(path) for path in paths)
     if args.calibration_trial:
         pins.update(Calibration.source_pins(args.calibration_trial, sys.modules[__name__]))

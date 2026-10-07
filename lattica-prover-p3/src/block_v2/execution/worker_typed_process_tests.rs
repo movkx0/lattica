@@ -197,6 +197,32 @@ fn child() {
 }
 
 #[test]
+fn idle_context_switch_preserves_process_and_reservation_but_fences_old_identity() {
+    let temp = Temp::new();
+    let (mut owner, mut worker) = fixture(&temp);
+    worker.start(command("idle")).unwrap();
+    let pid = worker.pid();
+    let initial = worker.execution_digest().unwrap();
+    let reserved = owner.resource_use().unwrap();
+    let context = PolicyContext::new([42; 32], vec![]).unwrap();
+    worker.replace_context(&context).unwrap();
+    worker.heartbeat().unwrap();
+    assert_ne!(worker.execution_digest().unwrap(), initial);
+    assert_eq!(worker.pid(), pid);
+    assert_eq!(owner.resource_use().unwrap(), reserved);
+    let next = worker.execution_digest().unwrap();
+    worker.replace_context(&context).unwrap();
+    assert_eq!(worker.execution_digest().unwrap(), next);
+    worker
+        .replace_context(&PolicyContext::new([43; 32], vec![]).unwrap())
+        .unwrap();
+    assert_ne!(worker.execution_digest().unwrap(), next);
+    assert_eq!(worker.stats().unwrap(), CacheStats { setups: 0, hits: 0 });
+    worker.close(&mut owner, 1).unwrap();
+    assert_eq!(owner.resource_use().unwrap(), Resources::default());
+}
+
+#[test]
 fn pending_dispatch_keeps_reservations_while_another_worker_shuts_down() {
     use crate::block_v2::execution::{
         dag::Completion,

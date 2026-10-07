@@ -2,6 +2,7 @@
 //! process-lifetime lease compatible with legacy global-exclusive workers.
 use crate::block_v2::compute;
 use crate::config::Val;
+pub(crate) mod fri_fold;
 pub mod lde_execute;
 pub mod lde_plan;
 mod lde_readback;
@@ -609,6 +610,9 @@ struct Engine {
     // Each mapping is dropped before its allocation. ENGINE serializes all access.
     staging: Vec<Staging>,
     workspace: Option<Workspace>,
+    lde_workspace: Option<lde_execute::TransformBuffers>,
+    lde_workspace_limit: usize,
+    fri_fold: bool,
     query: Option<Allocation>,
     retain_trees: bool,
     query_gather: bool,
@@ -782,6 +786,15 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
     let retain_trees = switch("LATTICA_V2_GPU_RETAIN_TREES")?;
     let query_gather = switch("LATTICA_V2_GPU_QUERY_GATHER")?;
     let opening_denominator_cache = switch("LATTICA_V2_GPU_OPENING_DENOMINATOR_CACHE")?;
+    let fri_fold = switch("LATTICA_V2_GPU_FRI_FOLD")?;
+    #[cfg(feature = "gpu-metal")]
+    if fri_fold {
+        return Err("GPU FRI folding is currently supported only for OpenCL research".into());
+    }
+    let lde_workspace_limit = env_bytes("LATTICA_V2_GPU_LDE_WORKSPACE_BYTES", 0)?;
+    if lde_workspace_limit > limits.managed_bytes / 4 {
+        return Err("LDE workspace cache exceeds one quarter of managed GPU budget".into());
+    }
     let _guard = INITIALIZE
         .lock()
         .map_err(|_| "GPU initialization poisoned")?;
@@ -794,6 +807,8 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
                 && engine.retain_trees == retain_trees
                 && engine.query_gather == query_gather
                 && engine.opening_denominator_cache == opening_denominator_cache
+                && engine.lde_workspace_limit == lde_workspace_limit
+                && engine.fri_fold == fri_fold
             {
                 Ok(())
             } else {
@@ -847,11 +862,12 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
             .platform(platform)
             .device(device)
             .src(format!(
-                "{}\n{}\n{}\n{}\n{}",
+                "{}\n{}\n{}\n{}\n{}\n{}",
                 crate::gpu::KERNEL_SRC,
                 RETAINED_PATH_KERNEL,
                 lde_execute::KERNEL_SRC,
                 opening_reduce::KERNEL_SRC,
+                fri_fold::KERNEL_SRC,
                 query_reconstruct::KERNEL_SRC
             ))
             .queue_properties(compute::flags::QUEUE_PROFILING_ENABLE)
@@ -978,6 +994,9 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
         constants: constants.try_into().ok().unwrap(),
         staging,
         workspace: None,
+        lde_workspace: None,
+        lde_workspace_limit,
+        fri_fold,
         query: None,
         retain_trees,
         query_gather,

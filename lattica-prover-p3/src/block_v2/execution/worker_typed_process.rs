@@ -13,6 +13,7 @@ use crate::block_v2::execution::{
     dag::WorkerId,
     journal::{DurableDag, WorkspaceReservation},
     launch::{Token, MAX_REQUEST_BYTES, MAX_TOKEN_BYTES},
+    policy_context::{PolicyContext, MAX_BYTES as MAX_CONTEXT_BYTES},
     transport::{image_fingerprint, running_image_fingerprint},
     workspace::WorkspaceLease,
 };
@@ -32,6 +33,10 @@ const JOB: u8 = 3;
 const RESULT: u8 = 4;
 const STOP: u8 = 5;
 const STOPPED: u8 = 6;
+const CONTEXT: u8 = 7;
+const CONTEXT_READY: u8 = 8;
+const PING: u8 = 9;
+const PONG: u8 = 10;
 const MAX_FRAME: usize = MAX_REQUEST_BYTES + MAX_TOKEN_BYTES + 512;
 const TIMEOUT: Duration = Duration::from_secs(600);
 
@@ -59,6 +64,8 @@ pub struct Config {
     jobs: Resources,
     executable: [u8; 32],
     policy_assignment: [u8; 32],
+    cache_entries: usize,
+    cache_reserve_bytes: u64,
 }
 
 impl Config {
@@ -88,7 +95,26 @@ impl Config {
             jobs,
             executable,
             policy_assignment,
+            cache_entries: 1,
+            cache_reserve_bytes: 0,
         })
+    }
+
+    pub fn with_preprocessing_cache(
+        mut self,
+        entries: usize,
+        reserve_bytes: u64,
+    ) -> Result<Self, Error> {
+        if entries == 0
+            || entries > 12
+            || (entries == 1) != (reserve_bytes == 0)
+            || reserve_bytes >= self.peak.ram_bytes
+        {
+            return Err("typed worker preprocessing cache admission".into());
+        }
+        self.cache_entries = entries;
+        self.cache_reserve_bytes = reserve_bytes;
+        Ok(self)
     }
 
     fn bytes(&self) -> Result<Vec<u8>, Error> {
@@ -112,6 +138,8 @@ impl Config {
                 bytes.extend(value.to_le_bytes());
             }
         }
+        bytes.extend((self.cache_entries as u64).to_le_bytes());
+        bytes.extend(self.cache_reserve_bytes.to_le_bytes());
         Ok(bytes)
     }
 }
@@ -177,7 +205,8 @@ fn receive_command(socket: &mut UnixStream) -> Result<(u8, Vec<u8>), Error> {
     let size = u64::from_le_bytes(header[1..].try_into()?);
     let bound = match header[0] {
         JOB => MAX_REQUEST_BYTES + MAX_TOKEN_BYTES + 8,
-        STOP => 0,
+        STOP | PING => 0,
+        CONTEXT => MAX_CONTEXT_BYTES,
         _ => return Err("typed process command kind".into()),
     };
     if size > bound as u64 {
@@ -354,6 +383,67 @@ impl ProcessWorker {
     pub fn has_pending(&self) -> bool {
         self.pending.is_some()
     }
+    pub fn scheduling_capabilities(
+        &self,
+    ) -> crate::block_v2::execution::scheduler::WorkerCapabilities {
+        crate::block_v2::execution::scheduler::WorkerCapabilities {
+            worker: self.job_worker,
+            profile: self.config.pin.profile(),
+            resources: self.config.jobs,
+            resident_mode: None,
+        }
+    }
+
+    /// Switch the host-derived public policy without dropping preprocessing or
+    /// the GPU context. Only an idle session may change; old launch tokens are
+    /// fenced by the new execution digest. An ambiguous reply poisons the
+    /// session and leaves its workspace reserved for process reconciliation.
+    pub fn replace_context(&mut self, context: &PolicyContext) -> Result<(), Error> {
+        self.stats()?;
+        self.reservation.require_idle()?;
+        if self.pending.is_some() {
+            return Err("typed process context change while active".into());
+        }
+        let packet = context.encode();
+        let prefix_len = self.config.bytes()?.len();
+        if self.spec.len() != prefix_len + 64 {
+            return Err("typed process session specification size".into());
+        }
+        let mut config = self.config.clone();
+        config.policy_assignment = configuration_digest(&packet)?;
+        let mut spec = config.bytes()?;
+        spec.extend_from_slice(&self.spec[prefix_len..]);
+        let digest = launch::digest(DOMAIN, &spec)?;
+        let socket = self.socket.as_mut().ok_or("typed process is not running")?;
+        self.poisoned = true;
+        send(socket, CONTEXT, &packet)?;
+        if receive(socket, CONTEXT_READY, 32)? != digest {
+            return Err("typed process context acknowledgement mismatch".into());
+        }
+        self.config = config;
+        self.spec = spec;
+        self.poisoned = false;
+        Ok(())
+    }
+
+    /// Keep an idle, supervised worker alive across transaction cycles. A missing
+    /// reply poisons the session; it never releases an outstanding reservation.
+    pub fn heartbeat(&mut self) -> Result<(), Error> {
+        self.stats()?;
+        self.reservation.require_idle()?;
+        if self.pending.is_some() {
+            return Err("typed process heartbeat while active".into());
+        }
+        let digest = self.execution_digest()?;
+        let socket = self.socket.as_mut().ok_or("typed process is not running")?;
+        self.poisoned = true;
+        send(socket, PING, &[])?;
+        if receive(socket, PONG, 32)? != digest {
+            return Err("typed process heartbeat acknowledgement mismatch".into());
+        }
+        self.poisoned = false;
+        Ok(())
+    }
 
     /// Poll only this worker's owned socket. EOF/errors are collected as failures.
     pub fn try_collect(&mut self) -> Result<Option<CompletedJob>, Error> {
@@ -474,7 +564,7 @@ impl Drop for ProcessWorker {
 /// The inherited socket is the only dispatcher; stdout remains a normal log.
 pub fn serve(
     mut socket: UnixStream,
-    config: Config,
+    mut config: Config,
     launches: &Path,
     mut policy: impl FnMut(ArtifactRef) -> Result<Policy, Error>,
     mut shutdown: impl FnMut() -> Result<(), Error>,
@@ -484,7 +574,7 @@ pub fn serve(
         return Err("typed process running image changed".into());
     }
     let prefix = config.bytes()?;
-    let spec = receive(&mut socket, HELLO, prefix.len() + 64)?;
+    let mut spec = receive(&mut socket, HELLO, prefix.len() + 64)?;
     if spec.len() != prefix.len() + 64 || !spec.starts_with(&prefix) {
         return Err("typed process independent configuration mismatch".into());
     }
@@ -496,15 +586,37 @@ pub fn serve(
     if words.iter().any(|v| *v == 0) || words[2] == words[3] {
         return Err("typed process session reservation identity".into());
     }
-    let digest = launch::digest(DOMAIN, &spec)?;
+    let mut digest = launch::digest(DOMAIN, &spec)?;
     let mut ready = std::process::id().to_le_bytes().to_vec();
     ready.extend(digest);
-    let mut worker = TypedWorker::new(config.registry, config.pin, config.peak)?;
+    let mut worker = TypedWorker::new(config.registry.clone(), config.pin, config.peak)?;
+    worker
+        .session
+        .as_mut()
+        .ok_or("typed worker missing session")?
+        .configure_cache(config.cache_entries, config.cache_reserve_bytes)?;
     worker.request_resources = config.jobs;
     send(&mut socket, READY, &ready)?;
     let mut completed = 0u64;
+    let mut public_context: Option<PolicyContext> = None;
     loop {
         let (kind, packet) = receive_command(&mut socket)?;
+        if kind == PING {
+            send(&mut socket, PONG, &digest)?;
+            continue;
+        }
+        if kind == CONTEXT {
+            let context = PolicyContext::decode(&packet)?;
+            worker.drain()?;
+            config.policy_assignment = configuration_digest(&packet)?;
+            let mut next = config.bytes()?;
+            next.extend_from_slice(&spec[prefix.len()..]);
+            digest = launch::digest(DOMAIN, &next)?;
+            spec = next;
+            public_context = Some(context);
+            send(&mut socket, CONTEXT_READY, &digest)?;
+            continue;
+        }
         if kind == STOP {
             let stats = worker.stats()?;
             worker.drain()?;
@@ -528,7 +640,16 @@ pub fn serve(
         let request = &packet[8 + token_len..];
         token.check_execution(digest)?;
         let gate = WorkerGate::enter(launches, &token, request)?;
-        let result = worker.execute_packet(&gate, request, config.chain, &mut policy)?;
+        let result =
+            worker.execute_packet(
+                &gate,
+                request,
+                config.chain,
+                |artifact| match &public_context {
+                    Some(context) => context.policy(artifact),
+                    None => policy(artifact),
+                },
+            )?;
         worker.drain()?;
         drop(gate);
         send(&mut socket, RESULT, &result)?;

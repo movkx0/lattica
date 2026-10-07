@@ -1,5 +1,12 @@
 # Solving benchmark report
 
+The opt-in [persistent local GPU pool](../../lattica-prover-p3/scripts/block-v2-pool-README.txt)
+adds fresh-wallet campaigns, reusable supervised workers, independent CPU audits
+and durable native application. Its matched-pair and sustained gates remain
+separate from implementation tests; no throughput promotion is implied.
+See the [implementation validation](../evidence/block-v2-persistent-pool-2026-10-06.json)
+for the two-GPU smoke result, retained failures and remaining qualification gates.
+
 Open [index.html](index.html) directly in a current Chromium, Firefox or Safari.
 It is a standalone HTML5 report: no server, package install, network connection
 or original benchmark directory is needed.

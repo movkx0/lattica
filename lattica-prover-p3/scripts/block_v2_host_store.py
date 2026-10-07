@@ -149,12 +149,14 @@ class NativeVerifier:
 
     _lock = threading.Lock()
     _libraries = {}
+    max_genesis_bytes = 8 * 1024 * 1024
+    wallet_slot_limit = 2048
 
     def __init__(self, library, registry, profile_id, chain_id, genesis, policy):
         if (type(registry) is not bytes or not registry.startswith(b'LBV2RG01') or len(registry) > 65536
                 or type(profile_id) is not bytes or len(profile_id) != 32
                 or type(chain_id) is not bytes or len(chain_id) != 32
-                or type(genesis) is not bytes or not 68 <= len(genesis) <= 8 * 1024 * 1024
+                or type(genesis) is not bytes or not 68 <= len(genesis) <= self.max_genesis_bytes
                 or not genesis.startswith(b'LBV2GN01') or not isinstance(policy, IssuancePolicy)):
             raise ValueError('invalid independently supplied host configuration')
         library = Path(library).resolve(strict=True)
@@ -466,7 +468,7 @@ class Store:
             tip, records, seen = head['tip'], [], set()
             while tip is not None:
                 _digest(tip)
-                if tip in seen or len(records) == MAX_BLOCKS:
+                if tip in seen or len(records) == getattr(self.verifier, 'history_limit', MAX_BLOCKS):
                     raise CorruptStore('cyclic or oversized journal history')
                 seen.add(tip)
                 raw = self._read_file(self.directory / 'records' / (tip + '.json'), MAX_RECORD_BYTES)
@@ -579,7 +581,7 @@ class Store:
                 if index is None:
                     raise StaleHead('reorg ancestor is not in the published branch')
                 prefix = records[:index + 1]
-            if len(prefix) + len(candidates) > MAX_BLOCKS:
+            if len(prefix) + len(candidates) > getattr(self.verifier, 'history_limit', MAX_BLOCKS):
                 raise RejectedBlock('research journal history limit exceeded')
             for candidate in candidates:
                 candidate.validate()

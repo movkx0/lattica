@@ -1,7 +1,8 @@
 //! Adapted from p3-fri 0.6.1 (Plonky3 contributors), MIT OR Apache-2.0.
 //! Original prover.rs SHA-256: d4d486300cd34dbb68f75543c03bd689cdb6a84251ec68eb013426988a916400
-//! License: gpu_quotient_prover/LICENSE-APACHE. Only input-query preparation
-//! is batched; challenge sampling order and proof query order are unchanged.
+//! License: gpu_quotient_prover/LICENSE-APACHE. Input-query preparation is
+//! batched and an optional algebraic folding backend is supported. Challenge
+//! sampling, commitment order and proof query order are unchanged.
 use std::vec;
 use std::vec::Vec;
 
@@ -10,7 +11,7 @@ use p3_challenger::{CanObserve, FieldChallenger, GrindingChallenger};
 use p3_commit::{BatchOpening, Mmcs};
 use p3_dft::{Radix2DFTSmallBatch, TwoAdicSubgroupDft};
 use p3_field::{ExtensionField, Field, TwoAdicField};
-use p3_matrix::dense::RowMajorMatrix;
+use p3_matrix::dense::{RowMajorMatrix, RowMajorMatrixView};
 use p3_util::{log2_strict_usize, reverse_slice_index_bits};
 use tracing::{debug_span, info_span, instrument};
 
@@ -56,6 +57,11 @@ pub fn prove_fri<Folding, Val, Challenge, InputMmcs, FriMmcs, Challenger>(
     >],
     input_mmcs: &InputMmcs,
     prepare_inputs: impl FnOnce(&[usize]),
+    fold_matrix: impl FnMut(
+        Challenge,
+        usize,
+        RowMajorMatrixView<'_, Challenge>,
+    ) -> Option<Vec<Challenge>>,
 ) -> FriProof<Challenge, FriMmcs, Challenger::Witness, Folding::InputProof>
 where
     Val: TwoAdicField,
@@ -99,7 +105,7 @@ where
     // themselves and the final polynomial.
     // Note that the challenger observes the commitments and the final polynomial inside this function so we don't
     // need to observe the output of this function here.
-    let commit_phase_result = commit_phase(folding, params, inputs, challenger);
+    let commit_phase_result = commit_phase(folding, params, inputs, challenger, fold_matrix);
 
     // Bind the chosen folding arities into the transcript.
     for &log_arity in &commit_phase_result.log_arities {
@@ -193,6 +199,11 @@ fn commit_phase<Folding, Val, Challenge, M, Challenger>(
     params: &FriParameters<M>,
     inputs: Vec<Vec<Challenge>>,
     challenger: &mut Challenger,
+    mut fold_matrix: impl FnMut(
+        Challenge,
+        usize,
+        RowMajorMatrixView<'_, Challenge>,
+    ) -> Option<Vec<Challenge>>,
 ) -> CommitPhaseResult<Challenge, M, <Challenger as GrindingChallenger>::Witness>
 where
     Val: TwoAdicField,
@@ -249,7 +260,8 @@ where
         // We passed ownership of `leaves` to the MMCS, so get a reference to it
         let leaves = params.mmcs.get_matrices(&prover_data).pop().unwrap();
         // Do the folding operation with the computed arity
-        folded = folding.fold_matrix(beta, log_arity, leaves.as_view());
+        folded = fold_matrix(beta, log_arity, leaves.as_view())
+            .unwrap_or_else(|| folding.fold_matrix(beta, log_arity, leaves.as_view()));
 
         data.push(prover_data);
 

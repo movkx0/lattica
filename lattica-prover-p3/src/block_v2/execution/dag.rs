@@ -747,6 +747,12 @@ impl Dag {
         ready.sort();
         ready.into_iter().map(|(_, _, _, id)| id).collect()
     }
+    /// Scheduling metadata only. The lease path independently rechecks the
+    /// deadline and eligibility after the caller selects a worker.
+    pub fn job_deadline(&self, job: JobId) -> Result<u64, Error> {
+        let record = self.jobs.get(&job).ok_or("execution unknown job")?;
+        Ok(self.deadline(record))
+    }
 
     fn deadline(&self, r: &Record) -> u64 {
         r.candidates

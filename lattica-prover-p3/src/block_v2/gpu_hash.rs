@@ -3,6 +3,7 @@
 //! Only equal-height, power-of-two batches are admitted by the selected GPU path.
 mod compact_data;
 mod engine;
+pub(crate) use engine::fri_fold::fold as fold_fri;
 pub(crate) use engine::opening_reduce::{
     reduce_lde as reduce_openings, OpeningMatrix, OpeningTerm,
 };

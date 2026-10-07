@@ -38,6 +38,26 @@ def fixture(root):
 
 
 class TypedGpu(unittest.TestCase):
+    def test_pool_workspace_options_are_admitted_without_changing_proof_geometry(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'workload.json'
+            source = json.loads(PROFILE.read_text())
+            baseline = T.resource_profile(PROFILE, 'paired', 'compact')
+            source['geometry'].update(gpu_fri_fold=True, lde_workspace_bytes=256 << 20)
+            source['preprocessing_cache'] = {'entries': 2, 'reserve_bytes': 1 << 30}
+            path.write_text(json.dumps(source))
+            candidate = T.resource_profile(path, 'paired', 'compact')
+            self.assertEqual(T.minimum_ram(candidate) - T.minimum_ram(baseline), (1 << 30) + (1 << 20))
+            self.assertTrue(candidate['geometry']['gpu_fri_fold'])
+            self.assertEqual(candidate['geometry']['lde_workspace_bytes'], 256 << 20)
+            for key, value in [('gpu_fri_fold', 1), ('lde_workspace_bytes', -1),
+                               ('lde_workspace_bytes', True), ('main_columns', 1)]:
+                invalid = copy.deepcopy(source)
+                invalid['geometry'][key] = value
+                path.write_text(json.dumps(invalid))
+                with self.assertRaises(ValueError):
+                    T.resource_profile(path, 'paired', 'compact')
+
     def test_opening_denominator_cache_has_explicit_profile_identity(self):
         original = T.resource_profile(PROFILE, 'paired', 'compact')
         with tempfile.TemporaryDirectory() as tmp:

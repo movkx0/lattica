@@ -210,12 +210,17 @@ def environment(budget, directory):
     if query_layout not in ('rows', 'gather'):
         raise ValueError('unsupported assigned query readback layout')
     denominator_cache = budget.get('opening_denominator_cache', False)
+    fri_fold = budget.get('gpu_fri_fold', False)
+    if type(fri_fold) is not bool:
+        raise ValueError('assigned GPU FRI folding selection must be boolean')
     if type(denominator_cache) is not bool:
         raise ValueError('assigned opening denominator cache selection must be boolean')
     return {
         'RAYON_NUM_THREADS': str(cpu['rayon_threads']), 'LATTICA_GPU_DEVICE_UUID': gpu['uuid'],
         'LATTICA_V2_ACCOUNTING_UNIT': budget['unit'], 'LATTICA_V2_WORKER_BUDGET': str(directory / 'budget.json'),
-        'LATTICA_V2_GPU_MANAGED_BYTES': str(gpu['managed_bytes']), 'LATTICA_V2_GPU_CONTEXT_BYTES': str(gpu['context_bytes']),
+        'LATTICA_V2_GPU_MANAGED_BYTES': str(gpu['managed_bytes']),
+            'LATTICA_V2_GPU_LDE_WORKSPACE_BYTES': str(budget.get('lde_workspace_bytes', 0)), 'LATTICA_V2_GPU_CONTEXT_BYTES': str(gpu['context_bytes']),
+            'LATTICA_V2_GPU_FRI_FOLD': '1' if fri_fold else '0',
         'LATTICA_V2_HOST_OUTPUT_BYTES': str(host['worker_bytes']), 'LATTICA_SPILL_MAX_BYTES': str(host['spill_bytes']), 'LATTICA_SPILL_DIR': str(directory / 'scratch'),
         'LATTICA_V2_GPU_HASH': '1', 'LATTICA_V2_GPU_RETAIN_TREES': '1', 'LATTICA_V2_GPU_PIPELINE': '0',
         'LATTICA_V2_GPU_RESIDENT_LDE': '1', 'LATTICA_V2_GPU_OPENINGS': '1', 'LATTICA_V2_GPU_OPENING_COMPACT': '1',

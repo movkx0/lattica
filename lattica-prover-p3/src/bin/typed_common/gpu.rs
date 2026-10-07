@@ -78,9 +78,49 @@ fn validate_assignment(assignment: &Value, budget: u64) -> Result<bool, Error> {
     Ok(compact)
 }
 
+fn shared_job_limit(assignment: &Value, single_candidate: u64) -> Result<u64, Error> {
+    match assignment.get("pool_job_limit") {
+        None => Ok(single_candidate),
+        Some(value) => value
+            .as_u64()
+            .filter(|n| (1..=16384).contains(n))
+            .ok_or_else(|| "invalid persistent pool job limit".into()),
+    }
+}
+
+fn fri_workspace(assignment: &Value) -> Result<u64, Error> {
+    match assignment.get("gpu_fri_fold") {
+        None | Some(Value::Bool(false)) => Ok(0),
+        Some(Value::Bool(true)) => Ok(1 << 20),
+        _ => Err("invalid GPU FRI folding assignment".into()),
+    }
+}
+
 fn require_limits(budget: u64) -> Result<bool, Error> {
     let assignment: Value = read_json(Path::new(&std::env::var("LATTICA_V2_WORKER_BUDGET")?))?;
     let compact = validate_assignment(&assignment, budget)?;
+    let fri = fri_workspace(&assignment)? != 0;
+    if std::env::var("LATTICA_V2_GPU_FRI_FOLD").unwrap_or_else(|_| "0".into())
+        != if fri { "1" } else { "0" }
+    {
+        return Err("GPU FRI folding differs from resource assignment".into());
+    }
+    let workspace = match assignment.get("lde_workspace_bytes") {
+        Some(value) => value.as_u64().ok_or("invalid LDE workspace reservation")?,
+        None => 0,
+    };
+    if std::env::var("LATTICA_V2_GPU_LDE_WORKSPACE_BYTES")
+        .unwrap_or_else(|_| "0".into())
+        .parse::<u64>()?
+        != workspace
+        || workspace
+            > assignment["gpu"]["managed_bytes"]
+                .as_u64()
+                .ok_or("missing GPU managed budget")?
+                / 4
+    {
+        return Err("GPU workspace cache differs from resource assignment".into());
+    }
     let membership = fs::read_to_string("/proc/self/cgroup")?;
     let groups: Vec<_> = membership
         .lines()
@@ -119,6 +159,10 @@ fn require_backend() -> Result<(), Error> {
 }
 
 fn require_geometry(directory: &Path, budget: u64, compact: bool) -> Result<(), Error> {
+    let assignment: Value = read_json(Path::new(&std::env::var("LATTICA_V2_WORKER_BUDGET")?))?;
+    let budget = budget
+        .checked_sub(fri_workspace(&assignment)?)
+        .ok_or("GPU FRI host workspace exceeds worker budget")?;
     let height: usize = read_json(&directory.join("height.json"))?;
     if height != 262144 {
         return Err("typed GPU bootstrap model requires height 262144".into());
@@ -211,6 +255,12 @@ pub(crate) fn run(args: &[String]) -> Result<(), Error> {
         let expected: Expected = read_json(Path::new(&normalized[3]))?;
         tasks(&body(Path::new(&normalized[2]))?, &expected)?.len() as u64
     };
+    let shared_limit = if shared_worker {
+        let assignment: Value = read_json(Path::new(&std::env::var("LATTICA_V2_WORKER_BUDGET")?))?;
+        shared_job_limit(&assignment, expected_proofs)?
+    } else {
+        expected_proofs
+    };
     let fusion = quotient_pcs::initialize_research_from_env()?;
     if !fusion || !quotient_pcs::initialize_gpu_quotient_from_env(true, fusion)? {
         return Err("typed GPU bootstrap did not enable quotient commitments".into());
@@ -240,7 +290,7 @@ pub(crate) fn run(args: &[String]) -> Result<(), Error> {
                 },
             )
             .and_then(|count| {
-                if shared_worker && count <= expected_proofs {
+                if shared_worker && count <= shared_limit {
                     expected_proofs = count;
                 } else if count != expected_proofs {
                     return Err("typed process completed work count".into());
@@ -321,6 +371,29 @@ fn validate_completed_work(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn persistent_job_and_fri_workspace_admission_is_explicit_and_bounded() {
+        assert_eq!(shared_job_limit(&serde_json::json!({}), 4).unwrap(), 4);
+        assert_eq!(
+            shared_job_limit(&serde_json::json!({"pool_job_limit": 16384}), 4).unwrap(),
+            16384
+        );
+        for value in [
+            serde_json::json!(0),
+            serde_json::json!(16385),
+            serde_json::json!(true),
+            serde_json::json!("16384"),
+        ] {
+            assert!(shared_job_limit(&serde_json::json!({"pool_job_limit": value}), 4).is_err());
+        }
+        assert_eq!(fri_workspace(&serde_json::json!({})).unwrap(), 0);
+        assert_eq!(
+            fri_workspace(&serde_json::json!({"gpu_fri_fold": true})).unwrap(),
+            1 << 20
+        );
+        assert!(fri_workspace(&serde_json::json!({"gpu_fri_fold": 1})).is_err());
+    }
 
     #[test]
     fn idle_shared_worker_can_close_without_proving() {

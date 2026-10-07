@@ -275,13 +275,15 @@ fn common_height_inner(wallets: [&WalletProof; 3], finalized: bool) -> Result<us
     }
 }
 
-/// Keep one immutable preprocessing program. Fresh proving randomness is made
+/// Keep bounded immutable preprocessing programs. Fresh proving randomness is made
 /// by RegisteredProgram for every invocation, as in the legacy research path.
 pub struct Session<const N: usize = 5> {
     registry: Registry<N>,
     expected_profile: [u8; 32],
     worker_memory_bytes: u64,
-    cached: Option<(u64, RegisteredProgram)>,
+    cached: Vec<(u64, RegisteredProgram)>,
+    cache_entries: usize,
+    cache_reserve_bytes: u64,
     stats: recursive::CacheStats,
 }
 
@@ -298,7 +300,9 @@ impl<const N: usize> Session<N> {
             registry,
             expected_profile,
             worker_memory_bytes,
-            cached: None,
+            cached: Vec::new(),
+            cache_entries: 1,
+            cache_reserve_bytes: 0,
             stats: recursive::CacheStats::default(),
         })
     }
@@ -308,7 +312,25 @@ impl<const N: usize> Session<N> {
     }
 
     pub fn clear(&mut self) {
-        self.cached = None;
+        self.cached.clear();
+    }
+
+    /// Explicit research admission. The caller must reserve/calibrate the extra
+    /// idle preprocessing payload under its enforced RAM and GPU limits. This
+    /// allocation is subtracted from the active prover's RAM budget. Default
+    /// behavior remains one entry; this never retains witnesses or RNG state.
+    pub fn configure_cache(&mut self, entries: usize, reserve_bytes: u64) -> Result<(), Error> {
+        if entries == 0
+            || entries > N
+            || (entries == 1) != (reserve_bytes == 0)
+            || reserve_bytes >= self.worker_memory_bytes
+        {
+            return Err("typed preprocessing cache admission".into());
+        }
+        self.clear();
+        self.cache_entries = entries;
+        self.cache_reserve_bytes = reserve_bytes;
+        Ok(())
     }
 
     fn prove(
@@ -329,27 +351,33 @@ impl<const N: usize> Session<N> {
             .program
             .pad_to(self.registry.height)
             .map_err(|e| format!("{e:?}"))?;
-        if self.cached.as_ref().is_some_and(|(m, _)| *m == mode) {
-            if self.cached.as_ref().unwrap().1.air().program() != &program {
+        if let Some(index) = self.cached.iter().position(|(m, _)| *m == mode) {
+            if self.cached[index].1.air().program() != &program {
                 return Err("typed cached program changed".into());
             }
             drop(program);
+            let entry = self.cached.remove(index);
+            self.cached.push(entry);
             self.stats.hits = self
                 .stats
                 .hits
                 .checked_add(1)
                 .ok_or("typed cache hit overflow")?;
         } else {
-            self.cached = None;
+            // Evict before allocating; the hard runtime allocation still covers
+            // active proving plus every idle entry, including temporary setup.
+            while self.cached.len() >= self.cache_entries {
+                self.cached.remove(0);
+            }
             let registered = RegisteredProgram::new_with_memory_budget(
                 MachineAir::new(program),
-                self.worker_memory_bytes,
+                self.worker_memory_bytes - self.cache_reserve_bytes,
             )
             .map_err(|e| format!("{e:?}"))?;
             if registered.preprocessing_cap().roots() != self.registry.caps[(mode - 1) as usize] {
                 return Err("typed program differs from registered key".into());
             }
-            self.cached = Some((mode, registered));
+            self.cached.push((mode, registered));
             self.stats.setups = self
                 .stats
                 .setups
@@ -358,7 +386,7 @@ impl<const N: usize> Session<N> {
         }
         let proof = self
             .cached
-            .as_ref()
+            .last()
             .unwrap()
             .1
             .prove(&public, &compiled.witness)
@@ -567,6 +595,20 @@ mod tests {
         assert_ne!(legacy.id().unwrap(), pin);
         let mut session = Session::new(registry.clone(), pin, budget).unwrap();
         let root = session.empty([47; 32], commitment::DEPTH).unwrap();
+        session.configure_cache(2, 64 << 20).unwrap();
+        let fresh = session.empty([48; 32], commitment::DEPTH).unwrap();
+        let again = session.empty([48; 32], commitment::DEPTH).unwrap();
+        registry.verify(pin, &fresh, &fresh.public).unwrap();
+        registry.verify(pin, &again, &again.public).unwrap();
+        assert_ne!(
+            super::super::codec::encode_node(&fresh).unwrap(),
+            super::super::codec::encode_node(&again).unwrap(),
+            "cache reused proof randomness"
+        );
+        assert_eq!(session.stats().hits, 1);
+        assert_eq!(session.cached.len(), 1);
+        assert!(session.configure_cache(0, 0).is_err());
+        assert!(session.configure_cache(2, budget).is_err());
         registry.verify(pin, &root, &root.public).unwrap();
         assert!(legacy.verify(pin, &root, &root.public).is_err());
         assert!(session.finalize(&root).is_err());

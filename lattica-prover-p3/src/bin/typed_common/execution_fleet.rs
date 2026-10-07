@@ -4,6 +4,8 @@ use super::*;
 mod bootstrap;
 #[path = "execution_native.rs"]
 mod native;
+#[path = "execution_pool_service.rs"]
+mod pool_service;
 #[path = "execution_preseal.rs"]
 mod preseal;
 #[path = "execution_fleet_recover.rs"]
@@ -12,6 +14,7 @@ use lattica_prover_p3::block_v2::execution::{
     dag::{Completion, Lease, WorkerId},
     job::JobId,
     launch::{LaunchLimits, LaunchStore, MAX_REQUEST_BYTES},
+    scheduler::{CostModel, WorkerCapabilities},
     startup,
     transport::image_fingerprint,
     worker::typed::process::ProcessWorker,
@@ -27,6 +30,8 @@ use std::{
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Plan {
+    #[serde(default)]
+    pool_requests: Option<PathBuf>,
     #[serde(default)]
     coordinator_bootstrap_guard: Option<PathBuf>,
     #[serde(default)]
@@ -69,6 +74,7 @@ struct Slot {
     uuid: String,
     unit: String,
     active: Option<(JobId, Lease, Instant)>,
+    resident_mode: Option<u64>,
 }
 
 fn startup_intent(worker: &Worker) -> Result<startup::Intent, Error> {
@@ -85,6 +91,20 @@ fn startup_intent(worker: &Worker) -> Result<startup::Intent, Error> {
 }
 
 fn validate_plan(plan: &Plan) -> Result<Vec<(Resources, Resources)>, Error> {
+    if let Some(requests) = &plan.pool_requests {
+        if !requests.is_absolute()
+            || plan.native_host.is_none()
+            || plan.recover_from.is_some()
+            || plan.recover_cached_only
+            || plan.preseal_only
+            || !plan.reuse_preseal.is_empty()
+        {
+            return Err(
+                "persistent pool requires a native binding and a fresh, sealed session".into(),
+            );
+        }
+    }
+
     if plan.recover_cached_only && plan.recover_from.is_none() {
         return Err("cached-only continuation requires coordinator recovery".into());
     }
@@ -215,106 +235,42 @@ pub(in super::super) fn audit_preseal(
     preseal::audit(dir, pinned, nodes, out)
 }
 
-pub(in super::super) fn prove(
+fn start_fleet(
+    plan: &Plan,
+    prepared: &Prepared,
+    owner: &mut DurableDag,
+    durable_runtime: &Path,
+    runtime: &Path,
     dir: &Path,
     pinned: &Path,
-    plan_path: &Path,
     out: &Path,
-) -> Result<(), Error> {
-    if !PAIRED {
-        return Err("shared typed execution requires paired construction".into());
-    }
-    let started = Instant::now();
-    let plan: Plan = read_json(plan_path)?;
-    let assignments = validate_plan(&plan)?;
-    require_coordinator(&plan)?;
-    let bootstrap = bootstrap::enter(&plan, plan_path, out)?;
-    let prepared = prepare_for_backend(dir, pinned, true)?;
-    let limits = budget::fleet_limits(&assignments)?;
-    std::fs::DirBuilder::new().mode(0o700).create(out)?;
-    write_json(&out.join("expected.json"), &prepared.expected)?;
-    write_json(&out.join("execution-plan.json"), &describe(&prepared))?;
-    let runtime = out.join("execution");
-    std::fs::DirBuilder::new().mode(0o700).create(&runtime)?;
-    let now = || started.elapsed().as_millis() as u64;
-    // Fixture qualification only. Native intake must supply a verified head token.
-    let head = match &plan.native_host {
-        Some(binding) => binding.head_for(&prepared.expected)?,
-        None => prepared.expected.profile,
-    };
-    let (mut owner, recovery_state, recovered_candidate) = if let Some(source) = &plan.recover_from
-    {
-        let (owner, state, candidate) =
-            recovery::restore(source, &plan, &prepared, head, now, out)?;
-        (owner, state, Some(candidate))
-    } else {
-        let store = ArtifactStore::create(
-            &runtime.join("artifacts"),
-            StoreLimits {
-                bytes: budget::ARTIFACT_BYTES,
-                entries: budget::ARTIFACT_ENTRIES,
-            },
-        )?;
-        (
-            DurableDag::create(
-                &runtime.join("journal"),
-                JournalLimits {
-                    snapshot_bytes: budget::SNAPSHOT_BYTES,
+    bootstrap: Option<bootstrap::Entry>,
+    now: impl Fn() -> u64,
+) -> Result<(LaunchStore, Vec<Slot>), Error> {
+    let assignments = validate_plan(plan)?;
+    let launch_directory = durable_runtime.join("launches");
+    let launches = if plan.recover_from.is_some() {
+        LaunchStore::open(
+            &launch_directory,
+            LaunchLimits {
+                records: if plan.pool_requests.is_some() {
+                    16384
+                } else {
+                    256
                 },
-                store,
-                prepared.pin,
-                prepared.expected.chain,
-                1,
-                limits,
-            )?,
-            recovery::initial(&runtime),
-            None,
-        )
-    };
-    let candidate = if let Some(candidate) = recovered_candidate {
-        candidate
-    } else {
-        recovery::record(&plan, &recovery_state, out)?;
-        let candidate = prepared
-            .selection
-            .attach(&mut owner, head, now() + 3_600_000, now())?;
-        if !plan.preseal_only {
-            owner.seal(candidate, head, now())?;
-        } else if !prepared.selection.jobs().any(preseal::stable) {
-            return Err("no complete subtrees are available for pre-seal proving".into());
-        }
-        candidate
-    };
-    let reused = if plan.recover_from.is_some() {
-        recovery::export(&owner, &prepared, &recovery_state, out)?
-    } else {
-        preseal::import(
-            &plan.reuse_preseal,
-            plan.native_host.as_ref(),
-            &prepared,
-            &mut owner,
-            out,
-            now,
+            },
         )?
-    };
-    write_json(&out.join("execution-reused.json"), &reused)?;
-    let all_cached = reused.len()
-        == prepared
-            .selection
-            .jobs()
-            .filter(|job| !plan.preseal_only || preseal::stable(job))
-            .count();
-    if plan.recover_cached_only && !all_cached {
-        return Err("cached-only recovery has missing proofs; no GPU worker was started".into());
-    }
-    if all_cached && !plan.recover_cached_only {
-        return Err("all requested subtrees are already cached; no GPU phase is needed".into());
-    }
-    let launch_directory = recovery_state.durable_runtime.join("launches");
-    let mut launches = if plan.recover_from.is_some() {
-        LaunchStore::open(&launch_directory, LaunchLimits { records: 256 })?
     } else {
-        LaunchStore::create(&launch_directory, LaunchLimits { records: 256 })?
+        LaunchStore::create(
+            &launch_directory,
+            LaunchLimits {
+                records: if plan.pool_requests.is_some() {
+                    16384
+                } else {
+                    256
+                },
+            },
+        )?
     };
     let mut slots = Vec::new();
     if plan.startup_fenced && !plan.recover_cached_only {
@@ -350,9 +306,9 @@ pub(in super::super) fn prove(
         }
         let id = u64::try_from(index + 1)? * 2;
         let job_worker = WorkerId(id);
-        let config = process::assigned_config(&prepared, &spec.assignment)?;
+        let config = process::assigned_config(prepared, &spec.assignment)?;
         let mut worker =
-            ProcessWorker::prepare(&mut owner, config, WorkerId(id - 1), job_worker, now())?;
+            ProcessWorker::prepare(owner, config, WorkerId(id - 1), job_worker, now())?;
         write_bytes(
             &runtime.join(format!("worker-{index}.session")),
             worker.session_bytes(),
@@ -399,8 +355,155 @@ pub(in super::super) fn prove(
             uuid: spec.assignment["gpu"]["uuid"].as_str().unwrap().to_owned(),
             unit: unit.to_owned(),
             active: None,
+            resident_mode: None,
         });
     }
+    Ok((launches, slots))
+}
+
+pub(in super::super) fn prove(
+    dir: &Path,
+    pinned: &Path,
+    plan_path: &Path,
+    out: &Path,
+) -> Result<(), Error> {
+    if !PAIRED {
+        return Err("shared typed execution requires paired construction".into());
+    }
+    let started = Instant::now();
+    let plan: Plan = read_json(plan_path)?;
+    let assignments = validate_plan(&plan)?;
+    require_coordinator(&plan)?;
+    let bootstrap = bootstrap::enter(&plan, plan_path, out)?;
+    let prepared = prepare_for_backend(dir, pinned, true)?;
+    let mut limits = budget::fleet_limits(&assignments)?;
+    if plan.pool_requests.is_some() {
+        limits.jobs = 4096;
+        limits.candidates = 256;
+        limits.attempts = 16384;
+        limits.artifact_bytes = 512usize << 20;
+        // Completed roots are durably exported before retirement. Keep active
+        // candidates for recovery, but release unreferenced retired artifacts.
+        limits.recovery_window_ms = 0;
+    }
+    std::fs::DirBuilder::new().mode(0o700).create(out)?;
+    write_json(&out.join("expected.json"), &prepared.expected)?;
+    write_json(&out.join("execution-plan.json"), &describe(&prepared))?;
+    let runtime = out.join("execution");
+    std::fs::DirBuilder::new().mode(0o700).create(&runtime)?;
+    let now = || started.elapsed().as_millis() as u64;
+    // Fixture qualification only. Native intake must supply a verified head token.
+    let head = match &plan.native_host {
+        Some(binding) => binding.head_for(&prepared.expected)?,
+        None => prepared.expected.profile,
+    };
+    let (mut owner, recovery_state, recovered_candidate) = if let Some(source) = &plan.recover_from
+    {
+        let (owner, state, candidate) =
+            recovery::restore(source, &plan, &prepared, head, now, out)?;
+        (owner, state, Some(candidate))
+    } else {
+        let store = ArtifactStore::create(
+            &runtime.join("artifacts"),
+            StoreLimits {
+                bytes: if plan.pool_requests.is_some() {
+                    512 << 20
+                } else {
+                    budget::ARTIFACT_BYTES
+                },
+                entries: if plan.pool_requests.is_some() {
+                    4096
+                } else {
+                    budget::ARTIFACT_ENTRIES
+                },
+            },
+        )?;
+        (
+            DurableDag::create(
+                &runtime.join("journal"),
+                JournalLimits {
+                    snapshot_bytes: if plan.pool_requests.is_some() {
+                        8 << 20
+                    } else {
+                        budget::SNAPSHOT_BYTES
+                    },
+                },
+                store,
+                prepared.pin,
+                prepared.expected.chain,
+                1,
+                limits,
+            )?,
+            recovery::initial(&runtime),
+            None,
+        )
+    };
+    if let Some(requests) = &plan.pool_requests {
+        let (launches, slots) = start_fleet(
+            &plan,
+            &prepared,
+            &mut owner,
+            &recovery_state.durable_runtime,
+            &runtime,
+            dir,
+            pinned,
+            out,
+            bootstrap,
+            now,
+        )?;
+        return pool_service::serve(&plan, requests, prepared, owner, launches, slots, out, now);
+    }
+    let candidate = if let Some(candidate) = recovered_candidate {
+        candidate
+    } else {
+        recovery::record(&plan, &recovery_state, out)?;
+        let candidate = prepared
+            .selection
+            .attach(&mut owner, head, now() + 3_600_000, now())?;
+        if !plan.preseal_only {
+            owner.seal(candidate, head, now())?;
+        } else if !prepared.selection.jobs().any(preseal::stable) {
+            return Err("no complete subtrees are available for pre-seal proving".into());
+        }
+        candidate
+    };
+    let reused = if plan.recover_from.is_some() {
+        recovery::export(&owner, &prepared, &recovery_state, out)?
+    } else {
+        preseal::import(
+            &plan.reuse_preseal,
+            plan.native_host.as_ref(),
+            &prepared,
+            &mut owner,
+            out,
+            now,
+        )?
+    };
+    write_json(&out.join("execution-reused.json"), &reused)?;
+    let all_cached = reused.len()
+        == prepared
+            .selection
+            .jobs()
+            .filter(|job| !plan.preseal_only || preseal::stable(job))
+            .count();
+    if plan.recover_cached_only && !all_cached {
+        return Err("cached-only recovery has missing proofs; no GPU worker was started".into());
+    }
+    if all_cached && !plan.recover_cached_only {
+        return Err("all requested subtrees are already cached; no GPU phase is needed".into());
+    }
+    let (mut launches, mut slots) = start_fleet(
+        &plan,
+        &prepared,
+        &mut owner,
+        &recovery_state.durable_runtime,
+        &runtime,
+        dir,
+        pinned,
+        out,
+        bootstrap,
+        now,
+    )?;
     let jobs: BTreeMap<_, _> = prepared
         .selection
         .jobs()
@@ -410,27 +513,48 @@ pub(in super::super) fn prove(
     let mut records = Vec::new();
     let mut retired = Vec::new();
     let mut maximum_active = 0;
+    // Conservative bootstrap assumptions, not measured qualification. Costs are
+    // scoped to this exact binary/profile/fleet and learned from accepted jobs.
+    let mut costs = CostModel::new(300_000)?;
     while records.len() + reused.len() < jobs.len() {
         let mut progress = false;
-        for slot in &mut slots {
-            if slot.active.is_some() {
-                continue;
+        loop {
+            let idle: Vec<_> = slots
+                .iter()
+                .filter(|s| s.active.is_none())
+                .map(|s| WorkerCapabilities {
+                    worker: s.job_worker,
+                    profile: prepared.pin.profile(),
+                    resources: s.jobs,
+                    resident_mode: s.resident_mode,
+                })
+                .collect();
+            if idle.is_empty() {
+                break;
             }
             let mut ready = owner.ready()?;
             ready.retain(|id| jobs.contains_key(id));
-            ready.sort_by_key(|id| {
-                let job = &jobs[id];
-                (
-                    job.expected_public()[programs::MODE].as_canonical_u64(),
-                    job.expected().level,
-                    job.start(),
-                )
-            });
-            let Some(id) = ready.first().copied() else {
-                continue;
+            let deadlines = ready
+                .iter()
+                .map(|id| Ok((*id, owner.job_deadline(*id)?)))
+                .collect::<Result<BTreeMap<_, _>, Error>>()?;
+            let Some(choice) = costs.select(&jobs, &ready, &idle, &deadlines, now())? else {
+                break;
             };
+            let slot = slots
+                .iter_mut()
+                .find(|s| s.job_worker == choice.worker)
+                .ok_or("scheduler selected absent worker")?;
+            let id = choice.job;
             let job = &jobs[&id];
-            let lease = owner.lease(id, slot.job_worker, slot.jobs, 1, 3_600_000, now())?;
+            let lease = owner.lease(
+                id,
+                slot.job_worker,
+                slot.jobs,
+                choice.remaining_path_ms,
+                choice.service_ms.saturating_mul(2).clamp(30_000, 600_000),
+                now(),
+            )?;
             let task = slot.worker.task(&mut owner, lease, now())?;
             let request = task.request()?;
             let stem = format!(
@@ -456,7 +580,9 @@ pub(in super::super) fn prove(
                 json!({"event":"shared_typed_job_dispatched","job":hex(&id.to_bytes()),
                 "worker_pid":slot.worker.pid(),"gpu_uuid":slot.uuid,"level":job.expected().level,
                     "index":job.start() as usize >> job.expected().level,"coordinator_pid":std::process::id(),
-                    "dispatched_ms":now()})
+                "dispatched_ms":now(),"estimated_service_ms":choice.service_ms,
+                "estimated_remaining_path_ms":choice.remaining_path_ms,
+                "estimate_measured":choice.measured,"estimated_cache_hit":choice.warm})
             );
             progress = true;
         }
@@ -532,6 +658,18 @@ pub(in super::super) fn prove(
             write_bytes(&out.join(&stem), output.bytes(), profile::MAX_PROOF_BYTES)?;
             let stats = output.stats();
             let timing = output.timings();
+            costs.observe(
+                &WorkerCapabilities {
+                    worker: slot.job_worker,
+                    profile: prepared.pin.profile(),
+                    resources: slot.jobs,
+                    resident_mode: slot.resident_mode,
+                },
+                job,
+                stats.hits == 1,
+                u64::try_from(stage.elapsed().as_millis())?.max(1),
+            )?;
+            slot.resident_mode = Some(job.expected_public()[programs::MODE].as_canonical_u64());
             let record = json!({"event":"fresh_typed_node","job":hex(&id.to_bytes()),
                 "worker_pid":slot.worker.pid(),"gpu_uuid":slot.uuid,"level":job.expected().level,
                 "index":job.start() as usize >> job.expected().level,"count":job.expected().count,
@@ -628,6 +766,7 @@ mod tests {
             launcher: vec!["/usr/bin/python3".into()], arguments: vec![], log: format!("/tmp/worker-{index}.log").into(),
         }).collect();
         Plan {
+            pool_requests: None,
             coordinator_bootstrap_guard: None,
             startup_fenced: false,
             allow_worker_failover: false,

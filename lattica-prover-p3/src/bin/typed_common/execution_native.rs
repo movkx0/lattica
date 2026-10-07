@@ -34,6 +34,17 @@ pub(super) struct Binding {
 }
 
 impl Binding {
+    pub(super) fn check_pool_session(&self, next: &Self) -> Result<(), Error> {
+        self.check_scope(false)?;
+        next.check_scope(false)?;
+        if self.configuration_sha256 != next.configuration_sha256
+            || self.expected.profile != next.expected.profile
+            || self.expected.chain != next.expected.chain
+        {
+            return Err("pool native configuration changed".into());
+        }
+        Ok(())
+    }
     pub(super) fn check_scope(&self, prefix: bool) -> Result<(), Error> {
         self.validate()?;
         if (self.scope == Scope::Prefix) != prefix {

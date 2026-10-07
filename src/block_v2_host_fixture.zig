@@ -15,10 +15,12 @@ pub const MINT: u64 = 7;
 pub const MAX_DELIVERY_SLOTS: usize = 2048;
 // Covers all heights of the bounded 128-block research journal.
 pub const DELIVERY_REDEEM_TIMEOUT: u64 = HEIGHT + 128;
-const Flavor = enum { legacy, delivery };
+pub const MAX_SUSTAINED_SLOTS: usize = 16384;
+pub const SUSTAINED_REDEEM_TIMEOUT: u64 = HEIGHT + 65536;
+const Flavor = enum { legacy, delivery, sustained };
 fn ownerIndex(index: usize, flavor: Flavor) usize {
     // All four participants rotate through all user transaction kinds.
-    return (if (flavor == .delivery) index / 4 else index) % 4;
+    return (if (flavor != .legacy) index / 4 else index) % 4;
 }
 pub const MAX_LEAF_EXPORT_BYTES: usize = 2 * 1024 * 1024 + 264;
 pub const MAX_EXPORT_BYTES: usize = 16 + body.MAX_BODY_BYTES + MAX_LEAF_EXPORT_BYTES;
@@ -56,7 +58,11 @@ fn terms(index: usize, keys: *const [4]tx.FullKey, flavor: Flavor) Terms {
     const preimage = seed(index, 10);
     var hash: [32]u8 = undefined;
     std.crypto.hash.sha2.Sha256.hash(&preimage, &hash, .{});
-    return .{ .redeem_tag = keys[if (redeem) owner else other].address().recipientId(), .refund_tag = keys[if (redeem) other else owner].address().recipientId(), .hashlock = poseidon.digestBytes(poseidon.digestFromBytes(hash)), .preimage = preimage, .timeout = if (redeem) (if (flavor == .delivery) DELIVERY_REDEEM_TIMEOUT else HEIGHT + 10) else HEIGHT };
+    return .{ .redeem_tag = keys[if (redeem) owner else other].address().recipientId(), .refund_tag = keys[if (redeem) other else owner].address().recipientId(), .hashlock = poseidon.digestBytes(poseidon.digestFromBytes(hash)), .preimage = preimage, .timeout = if (redeem) (switch (flavor) {
+        .legacy => HEIGHT + 10,
+        .delivery => DELIVERY_REDEEM_TIMEOUT,
+        .sustained => SUSTAINED_REDEEM_TIMEOUT,
+    }) else HEIGHT };
 }
 
 const Fixture = struct {
@@ -68,7 +74,7 @@ const Fixture = struct {
         return initSlots(allocator, 64, .legacy);
     }
     fn initSlots(allocator: std.mem.Allocator, slots: usize, flavor: Flavor) !Fixture {
-        if (slots == 0 or slots > MAX_DELIVERY_SLOTS) return error.InvalidFixtureCapacity;
+        if (slots == 0 or slots > (if (flavor == .sustained) MAX_SUSTAINED_SLOTS else MAX_DELIVERY_SLOTS)) return error.InvalidFixtureCapacity;
         var fixture: Fixture = .{ .chain = try node.Chain.init(allocator), .keys = undefined, .inputs = undefined };
         errdefer fixture.chain.deinit();
         fixture.inputs = try allocator.alloc([2]node.Minted, slots);
@@ -95,6 +101,10 @@ pub fn genesis(output: []u8) !usize {
 
 pub fn deliveryGenesis(slots: usize, output: []u8) !usize {
     return genesisSlots(slots, .delivery, output);
+}
+
+pub fn sustainedGenesis(slots: usize, output: []u8) !usize {
+    return genesisSlots(slots, .sustained, output);
 }
 
 fn genesisSlots(slots: usize, flavor: Flavor, output: []u8) !usize {
@@ -130,7 +140,15 @@ pub fn wallet(index: usize, output: []u8) !usize {
 /// Funded synthetic slots are found in the independently verified history.
 /// No real keys or witnesses leave native memory.
 pub fn deliveryWallet(index: usize, chain: *const node.Chain, height: u64, output: []u8) !usize {
-    if (index >= MAX_DELIVERY_SLOTS or height < HEIGHT or height >= DELIVERY_REDEEM_TIMEOUT) return error.InvalidFixtureIndex;
+    return fundedWallet(index, chain, height, .delivery, output);
+}
+
+pub fn sustainedWallet(index: usize, chain: *const node.Chain, height: u64, output: []u8) !usize {
+    return fundedWallet(index, chain, height, .sustained, output);
+}
+
+fn fundedWallet(index: usize, chain: *const node.Chain, height: u64, flavor: Flavor, output: []u8) !usize {
+    if (index >= (if (flavor == .sustained) MAX_SUSTAINED_SLOTS else MAX_DELIVERY_SLOTS) or height < HEIGHT or height >= (if (flavor == .sustained) SUSTAINED_REDEEM_TIMEOUT else DELIVERY_REDEEM_TIMEOUT)) return error.InvalidFixtureIndex;
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
@@ -138,8 +156,8 @@ pub fn deliveryWallet(index: usize, chain: *const node.Chain, height: u64, outpu
     for (&keys, 0..) |*key, key_index| key.* = try tx.FullKey.fromSeed(seed(key_index, 100));
     var scratch = try node.Chain.init(allocator);
     defer scratch.deinit();
-    const owner = keys[ownerIndex(index, .delivery)];
-    const t = terms(index, &keys, .delivery);
+    const owner = keys[ownerIndex(index, flavor)];
+    const t = terms(index, &keys, flavor);
     var inputs: [2]node.Minted = undefined;
     if (index % 4 == 1 or index % 4 == 2) {
         const recipient = poseidon.digestBytes(poseidon.htlcRoot(poseidon.digestFromBytes(t.redeem_tag), poseidon.digestFromBytes(t.refund_tag), poseidon.digestFromBytes(t.hashlock), t.timeout));
@@ -152,7 +170,7 @@ pub fn deliveryWallet(index: usize, chain: *const node.Chain, height: u64, outpu
         input.pos = chain.cm_index.get(input.note.commitment()) orelse return error.UnfundedFixtureSlot;
         if (input.pos != index * 2 + offset) return error.InvalidFixturePosition;
     }
-    return walletOnChain(allocator, index, chain, &keys, inputs, height, .delivery, output);
+    return walletOnChain(allocator, index, chain, &keys, inputs, height, flavor, output);
 }
 
 fn walletOnChain(allocator: std.mem.Allocator, index: usize, chain: *const node.Chain, keys: *const [4]tx.FullKey, inputs: [2]node.Minted, height: u64, flavor: Flavor, output: []u8) !usize {

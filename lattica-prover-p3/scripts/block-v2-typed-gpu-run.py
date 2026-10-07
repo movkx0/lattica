@@ -93,9 +93,14 @@ def resource_profile(path, construction="reference", ram_admission="full"):
                 "quotient_matrices": 16, "host_readback_layout": "direct"}
     R.query_readback_layout(profile)
     R.opening_denominator_cache(profile)
+    R.extra_host_reserve(profile)
     geometry = dict(profile.get("geometry", {}))
     geometry.pop("query_readback_layout", None)
     geometry.pop("opening_denominator_cache", None)
+    geometry.pop("gpu_fri_fold", None)
+    workspace = geometry.pop("lde_workspace_bytes", 0)
+    if type(workspace) is not int or not 0 <= workspace <= 2 * R.GIB:
+        raise ValueError("invalid bounded LDE workspace reservation")
     if profile.get("height") != 262144 or geometry != expected:
         raise ValueError("unsupported typed bootstrap resource geometry")
     profile = copy.deepcopy(profile)
@@ -109,7 +114,7 @@ def resource_profile(path, construction="reference", ram_admission="full"):
 def minimum_ram(profile):
     mode = profile.get("typed_ram_admission", "full")
     if mode == "full":
-        return 31675383808
+        return 31675383808 + R.extra_host_reserve(profile)
     if mode != "compact":
         raise ValueError("unknown typed RAM admission model")
     geometry = profile["geometry"]
@@ -121,7 +126,7 @@ def minimum_ram(profile):
     # compiled-geometry check independently derives and checks this payload.
     evaluation = half_rows * (main + prep + permutation)
     opening = half_rows * prep + degree_rows * (main + permutation + 7 * geometry["quotient_matrices"] + 7)
-    return 8 * max(evaluation, opening)
+    return 8 * max(evaluation, opening) + R.extra_host_reserve(profile)
 
 
 def admit_budget(budget, profile):

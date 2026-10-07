@@ -45,12 +45,19 @@ def open_verifier(config_path):
     if any(str(int(height)) != height or any(str(int(index)) != index for index in row)
            for height, row in grants.items()):
         raise H.RejectedBlock("native issuance policy has ambiguous indices")
-    verifier = H.NativeVerifier(
+    adapter = config.get('native_adapter', 'replay-v1')
+    if adapter not in ('replay-v1', 'session-v2'):
+        raise H.RejectedBlock('unknown native host adapter')
+    verifier_type, extra = H.NativeVerifier, {}
+    if adapter == 'session-v2':
+        from block_v2_native_session import NativeSessionVerifier
+        verifier_type, extra = NativeSessionVerifier, {'history_limit': config.get('history_limit', 4096), 'workload_fixture': config.get('workload_fixture', 'delivery-v1')}
+    verifier = verifier_type(
         config["library"], Path(config["registry"]).read_bytes(),
         bytes.fromhex(config["profile_id"]), bytes.fromhex(config["chain_id"]),
         Path(config["genesis"]).read_bytes(),
         H.IssuancePolicy({int(height): {int(index): value for index, value in row.items()}
-                         for height, row in grants.items()}))
+                          for height, row in grants.items()}), **extra)
     return verifier
 
 
@@ -72,7 +79,7 @@ def native_expected(verifier, complete_body):
 
 class Candidate:
     def __init__(self, config_path, journal, fixture, count, *, prefix=False,
-                 recover_proof=None, recover_binding=None):
+                 recover_proof=None, recover_binding=None, store=None):
         self.prefix = prefix
         self.recovered_application = None
         self.recovered_receipt = None
@@ -85,6 +92,11 @@ class Candidate:
         self.fixture = Path(fixture).resolve(strict=True)
         self.config_pin = D.pin(self.config_path)
         self.store = open_host(self.config_path, self.journal)
+        if store is not None:
+            if (Path(store.directory).resolve() != self.journal
+                    or H.canonical(store.verifier.configuration) != H.canonical(self.store.verifier.configuration)):
+                raise H.RejectedBlock('cached native store differs from pinned configuration')
+            self.store = store
         self.manifest_path = self.fixture / "manifest.json"
         self.manifest_pin = D.pin(self.manifest_path)
         manifest = read(self.manifest_path)

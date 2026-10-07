@@ -31,6 +31,44 @@ def calibration(uuid='GPU-a', overhead=600 * R.MIB):
 
 
 class ResourceTests(unittest.TestCase):
+    def test_fri_and_preprocessing_reservations_survive_every_admission_check(self):
+        profile = json.loads(Path(__file__).with_name('block-v2-multi-gpu-direct-readback-workload.json').read_text())
+        budget = R.plan(host(), [device()], 1, profile)['GPU-a']
+        profile['phases'] = [dict(name='boundary', heap_bytes=budget['host']['worker_bytes'],
+            pinned_bytes=0, driver_host_bytes=0, resident_spill_bytes=0, managed_gpu_bytes=0,
+            max_gpu_allocation_bytes=0, spill_payloads=[])]
+        self.assertTrue(R.workload_fits(budget, profile))
+        profile['geometry']['gpu_fri_fold'] = True
+        self.assertTrue(any('host RAM' in failure for failure in R.workload_failures(budget, profile)))
+        profile['phases'][0]['heap_bytes'] -= R.MIB
+        self.assertTrue(R.workload_fits(budget, profile))
+        profile['preprocessing_cache'] = {'entries': 2, 'reserve_bytes': R.GIB}
+        self.assertFalse(R.workload_fits(budget, profile))
+        profile['phases'][0]['heap_bytes'] -= R.GIB
+        self.assertTrue(R.workload_fits(budget, profile))
+        env = S.environment(dict(budget, gpu_fri_fold=True, unit='test.service'), Path('/tmp/test'))
+        self.assertEqual(env['LATTICA_V2_GPU_FRI_FOLD'], '1')
+        for invalid in (1, 'true', None):
+            with self.assertRaises(ValueError):
+                S.environment(dict(budget, gpu_fri_fold=invalid), Path('/tmp/test'))
+
+    def test_pool_reserves_wallet_and_coordinator_before_weighted_workers(self):
+        policy = {'wallet_threads': 4, 'wallet_bytes': 4 * R.GIB,
+                  'coordinator_threads': 2, 'coordinator_bytes': 2 * R.GIB,
+                  'weights': {'GPU-a': 2, 'GPU-b': 1}}
+        budgets = R.shared_budgets(host(), ['GPU-b', 'GPU-a'], policy)
+        a, b = budgets['GPU-a'], budgets['GPU-b']
+        self.assertEqual(a['cpu']['rayon_threads'] + b['cpu']['rayon_threads'], 17)
+        self.assertGreater(a['cpu']['rayon_threads'], b['cpu']['rayon_threads'])
+        used = a['host']['worker_bytes'] + b['host']['worker_bytes'] + 6 * R.GIB
+        self.assertLessEqual(used, a['host']['fleet_bytes'])
+        self.assertEqual(a['wallet'], {'threads': 4, 'ram_bytes': 4 * R.GIB})
+        for budget in budgets.values():
+            self.assertLessEqual(budget['host']['spill_bytes'], budget['host']['worker_bytes'])
+        policy['wallet_bytes'] = 128 * R.GIB
+        with self.assertRaises(ValueError):
+            R.shared_budgets(host(), ['GPU-a', 'GPU-b'], policy)
+
     def test_opening_denominator_cache_is_pinned_and_memory_bounded(self):
         profile = json.loads(Path(__file__).with_name('block-v2-multi-gpu-direct-readback-workload.json').read_text())
         cached = copy.deepcopy(profile)

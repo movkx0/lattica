@@ -20,6 +20,19 @@ pub(super) fn assigned_config(
     assignment: &serde_json::Value,
 ) -> Result<Config, Error> {
     let (peak, jobs) = budget::resources(assignment)?;
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct CacheAdmission {
+        entries: usize,
+        reserve_bytes: u64,
+    }
+    let cache = match assignment.get("preprocessing_cache") {
+        Some(value) => serde_json::from_value::<CacheAdmission>(value.clone())?,
+        None => CacheAdmission {
+            entries: 1,
+            reserve_bytes: 0,
+        },
+    };
     let identity =
         serde_json::to_vec(&json!({"expected":prepared.expected,"assignment":assignment}))?;
     Config::new(
@@ -30,7 +43,8 @@ pub(super) fn assigned_config(
         jobs,
         image_fingerprint(&std::env::current_exe()?)?,
         worker_process::configuration_digest(&identity)?,
-    )
+    )?
+    .with_preprocessing_cache(cache.entries, cache.reserve_bytes)
 }
 
 pub(in super::super) fn prove(

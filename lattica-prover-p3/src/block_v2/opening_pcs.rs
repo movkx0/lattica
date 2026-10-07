@@ -372,6 +372,14 @@ fn open(
                     .expect("compact query reconstruction failed");
             }
         },
+        |beta, log_arity, leaves| {
+            if log_arity == 1 {
+                super::gpu_hash::fold_fri(beta, leaves.values)
+                    .expect("candidate GPU FRI folding failed; no silent fallback")
+            } else {
+                None
+            }
+        },
     );
 
     (all_opened_values, fri_proof)

@@ -3,6 +3,7 @@
 No system changes here. Detection is separate from pure admission arithmetic so
 heterogeneous hardware, containers and low-resource cases are reproducible.
 """
+import copy
 from dataclasses import asdict, dataclass
 from fractions import Fraction
 from pathlib import Path
@@ -210,7 +211,9 @@ def gpu_budget(device, calibration=None):
                      managed + context, cl['max_allocation_bytes'], calibration is None)
 
 
-def shared_budgets(host, uuids):
+def shared_budgets(host, uuids, allocation=None):
+    if allocation is not None:
+        return pool_budgets(host, uuids, allocation)
     uuids = sorted(uuids)
     if not uuids or len(set(uuids)) != len(uuids):
         raise ValueError('one worker slot per distinct GPU UUID required')
@@ -250,6 +253,63 @@ def shared_budgets(host, uuids):
     return result
 
 
+def pool_budgets(host, uuids, policy):
+    """Reserve wallet/auditor capacity before weighted GPU-worker allocation.
+
+    Weights are declared tuning inputs, never hardware speed claims. The normal
+    per-geometry admission checks still apply to every resulting assignment.
+    """
+    uuids = sorted(uuids)
+    if not uuids or len(set(uuids)) != len(uuids):
+        raise ValueError('pool requires distinct GPU UUIDs')
+    required = {'wallet_threads', 'wallet_bytes', 'coordinator_threads', 'coordinator_bytes', 'weights'}
+    if not isinstance(policy, dict) or set(policy) != required:
+        raise ValueError('pool allocation fields differ')
+    for key in required - {'weights'}:
+        if type(policy[key]) is not int or policy[key] <= 0:
+            raise ValueError('pool allocation must use positive integer reservations')
+    if set(policy['weights']) != set(uuids):
+        raise ValueError('pool weights must name every admitted GPU UUID')
+    weights = {u: Fraction(str(policy['weights'][u])) for u in uuids}
+    if any(w <= 0 or w > 1000 for w in weights.values()):
+        raise ValueError('pool allocation weights out of bounds')
+    # Reuse detection, filesystem and OS margins. No margin is reduced.
+    ordinary = shared_budgets(host, uuids)
+    first = ordinary[uuids[0]]
+    # The existing controller runs outside the GPU slice with a 4 GiB/one-core
+    # cap. Keep its allowance within explicit OS/controller headroom.
+    headroom = max(first['host']['os_headroom_bytes'], 6 * GIB)
+    fleet = down(first['host']['fleet_bytes'] - (headroom - first['host']['os_headroom_bytes']))
+    coordinator = up(policy['coordinator_bytes'])
+    wallet = up(policy['wallet_bytes'])
+    available = down(fleet - coordinator - wallet)
+    capacity = Fraction(host['cpu_capacity'])
+    threads = math.floor(capacity) - policy['coordinator_threads'] - policy['wallet_threads'] - 1
+    if threads < len(uuids) or available < len(uuids) * QUANTUM:
+        raise ValueError('pool wallet/coordinator reservations exhaust host capacity')
+    total = sum(weights.values())
+    # Allocate a minimum thread first; distribute remaining integer cores by
+    # largest remainder. RAM rounds down and leaves rounding slack unassigned.
+    spare = threads - len(uuids)
+    cores = {u: 1 + math.floor(spare * weights[u] / total) for u in uuids}
+    remainder = threads - sum(cores.values())
+    order = sorted(uuids, key=lambda u: (-(spare * weights[u] / total % 1), u))
+    for u in order[:remainder]:
+        cores[u] += 1
+    for u in uuids:
+        budget = ordinary[u]
+        budget['host'].update(coordinator_bytes=coordinator, fleet_bytes=fleet, os_headroom_bytes=headroom,
+                              worker_bytes=down(available * weights[u] // total))
+        if budget['host']['tmpfs']:
+            budget['host']['spill_bytes'] = min(budget['host']['spill_bytes'], budget['host']['worker_bytes'])
+        budget['cpu'].update(coordinator_capacity=str(policy['coordinator_threads']),
+                             rayon_threads=cores[u], quota_percent=f'{cores[u] * 100}%')
+        budget['wallet'] = {'threads': policy['wallet_threads'], 'ram_bytes': wallet}
+        budget['controller'] = {'threads': 1, 'ram_bytes': 4 * GIB, 'charged_to_os_headroom': True}
+        budget['allocation_policy'] = policy
+    return ordinary
+
+
 def readback_layout(profile):
     layout = profile.get('geometry', {}).get('host_readback_layout', 'banded')
     if layout not in ('banded', 'direct'):
@@ -271,6 +331,21 @@ def opening_denominator_cache(profile):
     return enabled
 
 
+def extra_host_reserve(profile):
+    fri = profile.get('geometry', {}).get('gpu_fri_fold', False)
+    if type(fri) is not bool:
+        raise ValueError('GPU FRI folding requires an explicit boolean')
+    cache = profile.get('preprocessing_cache')
+    if cache is not None and (not isinstance(cache, dict)
+            or set(cache) != {'entries', 'reserve_bytes'} or type(cache['entries']) is not int
+            or not 1 <= cache['entries'] <= 12 or type(cache['reserve_bytes']) is not int
+            or cache['reserve_bytes'] < 0 or (cache['entries'] == 1) != (cache['reserve_bytes'] == 0)):
+        raise ValueError('invalid preprocessing cache reservation')
+    # FRI input/output vectors are already in the phase model. The two
+    # additional bounded transfer arrays together fit within this MiB.
+    return (cache['reserve_bytes'] if cache else 0) + (MIB if fri else 0)
+
+
 def workload_failures(budget, profile):
     """Check simultaneous allocations by phase; tmpfs pages belong to RAM.
 
@@ -284,6 +359,7 @@ def workload_failures(budget, profile):
     readback_layout(profile)
     query_readback_layout(profile)
     cache_metadata_bytes = 64 * 1024 if opening_denominator_cache(profile) else 0
+    extra_reserve = extra_host_reserve(profile)
     host, gpu = budget['host'], budget['gpu']
     page = profile.get('page_bytes', 0)
     if page < 1 or page & (page - 1):
@@ -295,7 +371,7 @@ def workload_failures(budget, profile):
         if any(type(n) is not int or n < 0 for n in values):
             raise ValueError('workload allocations must be nonnegative byte counts')
         spill = sum(up(n, page) + page for n in phase['spill_payloads'])
-        ram = phase['heap_bytes'] + phase['pinned_bytes'] + phase['driver_host_bytes'] + cache_metadata_bytes
+        ram = phase['heap_bytes'] + phase['pinned_bytes'] + phase['driver_host_bytes'] + cache_metadata_bytes + extra_reserve
         ram += spill if host['tmpfs'] else phase['resident_spill_bytes']
         for resource, needed, available in (
                 ('host RAM', ram, host['worker_bytes']),
@@ -313,7 +389,7 @@ def workload_fits(budget, profile):
 
 def plan(host, devices, slots, profile, calibrations=None):
     calibrations = calibrations or {}
-    shared = shared_budgets(host, [d['uuid'] for d in devices[:slots]])
+    shared = shared_budgets(host, [d['uuid'] for d in devices[:slots]], profile.get('pool_allocation'))
     budgets = {}
     for device in devices[:slots]:
         uuid = device['uuid']
@@ -322,6 +398,22 @@ def plan(host, devices, slots, profile, calibrations=None):
                   'query_readback_layout': query_readback_layout(profile),
                   'opening_denominator_cache': opening_denominator_cache(profile),
                   'detected_host': host, 'detected_gpu': device}
+        workspace = profile.get('geometry', {}).get('lde_workspace_bytes', 0)
+        if type(workspace) is not int or not 0 <= workspace <= budget['gpu']['managed_bytes'] // 4:
+            raise ValueError('LDE workspace cache exceeds explicit GPU reservation')
+        budget['lde_workspace_bytes'] = workspace
+        fri_fold = profile.get('geometry', {}).get('gpu_fri_fold', False)
+        if type(fri_fold) is not bool:
+            raise ValueError('GPU FRI folding requires an explicit boolean')
+        budget['gpu_fri_fold'] = fri_fold
+        cache = profile.get('preprocessing_cache')
+        if cache is not None:
+            if (set(cache) != {'entries', 'reserve_bytes'} or type(cache['entries']) is not int
+                    or not 1 <= cache['entries'] <= 12 or type(cache['reserve_bytes']) is not int
+                    or cache['reserve_bytes'] < 0 or (cache['entries'] == 1) != (cache['reserve_bytes'] == 0)
+                    or cache['reserve_bytes'] >= budget['host']['worker_bytes']):
+                raise ValueError('invalid preprocessing cache reservation')
+            budget['preprocessing_cache'] = dict(cache)
         failures = workload_failures(budget, profile)
         if failures:
             raise ValueError(f'workload does not fit assigned resources on {uuid}: ' + '; '.join(failures))
@@ -343,6 +435,7 @@ def qualification_budget(budget, profile):
     peak = max(phase['heap_bytes'] + phase['pinned_bytes'] + phase['driver_host_bytes'] +
                (sum(up(n, page) + page for n in phase['spill_payloads']) if budget['host']['tmpfs'] else phase['resident_spill_bytes'])
                for phase in profile['phases'])
+    peak += extra_host_reserve(profile)
     budget['host']['worker_bytes'] = min(budget['host']['worker_bytes'], up(peak) + QUANTUM)
     budget['host']['spill_bytes'] = min(budget['host']['spill_bytes'], budget['host']['worker_bytes'])
     gpu = budget['gpu']

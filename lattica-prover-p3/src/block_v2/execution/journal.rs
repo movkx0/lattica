@@ -644,6 +644,10 @@ impl DurableDag {
         self.live()?;
         Ok(self.core.ready())
     }
+    pub fn job_deadline(&self, job: JobId) -> Result<u64, Error> {
+        self.live()?;
+        self.core.job_deadline(job)
+    }
 
     /// Export only a durably committed current lease. This does not spawn work.
     pub(super) fn bind_launch(
