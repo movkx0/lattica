@@ -5,7 +5,7 @@ use crate::config::Val;
 pub(crate) mod fri_fold;
 pub mod lde_execute;
 pub mod lde_plan;
-mod lde_readback;
+pub(crate) mod lde_readback;
 pub(crate) mod opening_reduce;
 pub(super) mod query_reconstruct;
 use compute::{Buffer, Event, ProQue, Queue};
@@ -1097,7 +1097,7 @@ pub(crate) fn plan_retained_lde_commit(
     lde_plan::LdeCommitPlan::new_retained_with_layout(
         inputs,
         cap_height,
-        engine.limits,
+        engine.lde_limits(inputs)?,
         engine.max_alloc,
         engine.mode.slots(),
         live,
@@ -2127,6 +2127,46 @@ mod tests {
         assert!(timeline.deferred.pending.is_empty());
     }
 
+    #[cfg(feature = "gpu-metal")]
+    #[test]
+    #[ignore = "isolated Apple GPU query permit/fence injection"]
+    fn gpu_apple_query_reconstruction_error_and_unwind_release_permit() {
+        use p3_matrix::dense::RowMajorMatrix;
+        use compute::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
+        use crate::block_v2::apple_memory;
+        let _shutdown = TestShutdownGuard;
+        let dir = std::env::temp_dir().join(format!("lattica-query-fence-{}", std::process::id()));
+        apple_memory::private_directory(&dir).unwrap();
+        std::env::set_var("LATTICA_APPLE_PHASE_DIR", &dir);
+        std::env::set_var("LATTICA_APPLE_QUERY_PHASE_SLOTS", "1");
+        initialize_mode(Limits { managed_bytes: 16*MIB, tile_bytes: 64*1024, staging_bytes: 32*1024 }, TransferMode::Serial).unwrap();
+        let prefixes = vec![super::super::prefix_storage::host(RowMajorMatrix::new(vec![Val::ONE; 8*3], 3))];
+        for unwind in [false, true] {
+            let (before, release) = {
+                let mut slot = ENGINE.get().unwrap().lock().unwrap();
+                let e = slot.as_mut().unwrap();
+                let (gate, notify, release) = delayed_gate(e);
+                e.lde_gate = Some(gate); e.lde_submitted = Some(notify); e.fail_lde_after_enqueue = Some(unwind);
+                (e.snapshot().managed_live_bytes, release)
+            };
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| query_reconstruct::reconstruct(&prefixes, 128, &[0, 127])));
+            if unwind { assert!(result.is_err()); } else { assert!(result.unwrap().is_err()); }
+            let lock = ENGINE.get().unwrap();
+            let mut slot = lock.lock().unwrap_or_else(|e| e.into_inner());
+            lock.clear_poison();
+            let e = slot.as_mut().unwrap();
+            assert!(matches!(e.injected_event.take().unwrap().info(EventInfo::CommandExecutionStatus).unwrap(), EventInfoResult::CommandExecutionStatus(CommandExecutionStatus::Complete)));
+            release.join(); e.lde_gate = None;
+            assert_eq!(e.snapshot().managed_live_bytes, before);
+            drop(slot);
+            let permit = apple_memory::lock_file(&dir.join("query/phase-0.lock")).unwrap();
+            assert!(apple_memory::lock(&permit, true).unwrap(), "query permit leaked");
+        }
+        let rows = query_reconstruct::reconstruct(&prefixes, 128, &[0, 127]).unwrap();
+        assert_eq!(rows, vec![vec![vec![Val::ONE; 3]]; 2]);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
     // Keep assertion failures from leaving an engine detached from the checked
     // shutdown path. The guard is declared before any returned tree handles.
     struct TestEngine(Option<Engine>);
@@ -2161,6 +2201,36 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[cfg(feature = "gpu-metal")]
+    #[test]
+    #[ignore = "requires isolated Apple GPU and LATTICA_APPLE_MEMORY_RECLAIM=1"]
+    fn gpu_apple_transient_retirement_preserves_live_commitments() {
+        use lde_execute::LdeInput;
+        use p3_field::Field;
+        use p3_matrix::dense::RowMajorMatrix;
+        assert!(crate::block_v2::apple_memory::reclaim_enabled());
+        initialize_mode(Limits { managed_bytes: 16 * MIB, tile_bytes: 64 * 1024, staging_bytes: 32 * 1024 }, TransferMode::Serial).unwrap();
+        let mut engine = TestEngine::take();
+        engine.lde_workspace_limit = MIB;
+        let evaluations = RowMajorMatrix::new(vec![Val::ONE; 128 * 7], 7);
+        let salts = RowMajorMatrix::new(vec![Val::ONE; 512 * 4], 4);
+        let inputs = [LdeInput { evaluations: &evaluations, salts: &salts, added_bits: 2, shift: Val::GENERATOR }];
+        let output = engine.coset_lde_commit(&inputs, 6, MIB).unwrap();
+        let path = engine.open_retained(&output.tree, 511).unwrap();
+        let before = engine.snapshot().managed_live_bytes;
+        let cached = engine.lde_workspace.as_ref().expect("test must retain scratch").bytes();
+        assert!(cached > 0);
+        engine.reclaim_transient_scratch("retirement test", false).unwrap();
+        assert!(engine.lde_workspace.is_none() && engine.workspace.is_none());
+        assert!(engine.snapshot().managed_live_bytes <= before - cached);
+        assert_eq!(counters(&engine.accounting).retained_trees, 1);
+        assert_eq!(engine.open_retained(&output.tree, 511).unwrap(), path);
+        engine.reclaim_transient_scratch("retirement repeated", true).unwrap();
+        assert_eq!(engine.open_retained(&output.tree, 511).unwrap(), path);
+        drop(output);
+        assert_eq!(counters(&engine.accounting).retained_trees, 0);
     }
 
     #[test]
@@ -3031,4 +3101,54 @@ pub(crate) fn with_metal<T>(
     engine.fence().finish()?;
     engine.workspace = None;
     f(&engine.pq)
+}
+
+impl Engine {
+    fn lde_limits(&self, inputs: &[lde_plan::InputShape]) -> Result<Limits, String> {
+        #[cfg(feature = "gpu-metal")]
+        {
+            let mut heights = Vec::new();
+            for input in inputs {
+                heights.push(input.height);
+                heights.push(input.height.checked_shl(input.added_bits as u32).ok_or("LDE table height overflow")?);
+            }
+            let reserve = self.pq.ntt_cache_reserve(&heights)?;
+            let mut limits = self.limits;
+            // Backend NTT tables are not engine Lease allocations. Reserve their
+            // possible live size before selecting transform column tiles.
+            limits.managed_bytes = limits.managed_bytes.checked_sub(reserve)
+                .ok_or("LDE NTT cache exceeds managed allowance")?;
+            Ok(limits)
+        }
+        #[cfg(not(feature = "gpu-metal"))]
+        { let _ = inputs; Ok(self.limits) }
+    }
+}
+
+#[cfg(feature = "gpu-metal")]
+pub(crate) fn reclaim_scratch() -> Result<(), String> {
+    if !crate::block_v2::apple_memory::reclaim_enabled() { return Ok(()); }
+    let Some(engine) = ENGINE.get() else { return Ok(()) };
+    let mut slot = engine.lock().map_err(|_| "GPU engine poisoned")?;
+    let Some(engine) = slot.as_mut() else { return Ok(()) };
+    engine.reclaim_transient_scratch("scratch retired", true)
+}
+
+#[cfg(feature = "gpu-metal")]
+impl Engine {
+    /// Called while the engine is already locked. Never re-enter ENGINE here.
+    fn reclaim_transient_scratch(&mut self, label: &str, retire_tables: bool) -> Result<(), String> {
+        if !crate::block_v2::apple_memory::reclaim_enabled() { return Ok(()); }
+        self.fence().finish()?;
+        self.resolve_timing()?;
+        let released_bytes = self.workspace.as_ref().map_or(0, Workspace::bytes)
+            + self.lde_workspace.as_ref().map_or(0, lde_execute::TransformBuffers::bytes);
+        self.workspace = None;
+        self.lde_workspace = None;
+        if retire_tables { self.pq.retire_ntt_cache()?; }
+        let live = self.accounting.lock().map_err(|_| "GPU accounting poisoned")?.live;
+        eprintln!("apple_scratch_retired pid={} label={label:?} released_bytes={released_bytes} managed_live_bytes={live}", std::process::id());
+        crate::block_v2::apple_memory::checkpoint(label);
+        Ok(())
+    }
 }

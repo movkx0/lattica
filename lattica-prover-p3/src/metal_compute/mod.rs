@@ -28,6 +28,9 @@ unsafe extern "C" {}
 type Result<T> = std::result::Result<T, String>;
 type Object<T> = Retained<ProtocolObject<T>>;
 const TRANSFER_BYTES: usize = 8 << 20;
+// A single larger Metal blit fill was observed to leave bytes beyond 4 GiB
+// unchanged on Apple Silicon. Bound each command, not the buffer allocation.
+const MAX_FILL_BYTES: usize = 1 << 30;
 const MAX_PENDING_COMMANDS: usize = 256;
 pub(crate) mod backing;
 pub(crate) mod diagnostics;
@@ -231,7 +234,7 @@ impl Queue {
             .last
             .lock()
             .map_err(|_| "Metal queue poisoned")?
-            .clone();
+            .take();
         if let Some(command) = last {
             wait_command(&command)?;
         }
@@ -1093,11 +1096,14 @@ impl<'a> BufferCommand<'a> {
             if value != 0 {
                 return Err("Metal bounded engine only admits zero fill".into());
             }
-            encoder.fillBuffer_range_value(
-                &self.source.inner.raw,
-                NSRange::new(0, self.count * 8),
-                0,
-            );
+            let bytes = self.count * 8;
+            for offset in (0..bytes).step_by(MAX_FILL_BYTES) {
+                encoder.fillBuffer_range_value(
+                    &self.source.inner.raw,
+                    NSRange::new(offset, (bytes - offset).min(MAX_FILL_BYTES)),
+                    0,
+                );
+            }
         } else {
             let destination = self.destination.ok_or("missing Metal copy destination")?;
             destination.bounds(self.offset, self.count)?;

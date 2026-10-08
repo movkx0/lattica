@@ -164,6 +164,8 @@ impl Engine {
         log_blowup: usize,
     ) -> Result<Vec<Vec<Challenge>>, String> {
         let started = Instant::now();
+        #[cfg(feature = "gpu-metal")]
+        self.reclaim_transient_scratch("before compact opening", false)?;
         let plan = CompactPlan::new(inputs, log_blowup, self.limits.tile_bytes, self.max_alloc)?;
         let live = self
             .accounting

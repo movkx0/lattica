@@ -146,6 +146,14 @@ pub(super) struct Tables {
 }
 
 impl ProQue {
+    pub(crate) fn retire_ntt_cache(&self) -> Result<()> {
+        self.queue().finish()?;
+        let mut tables = self.tables.lock().map_err(|_| "Metal table cache poisoned")?;
+        tables.evictions += tables.entries.len() as u64;
+        tables.entries.clear();
+        tables.bytes = 0;
+        Ok(())
+    }
     /// Space for the current cache plus the tables this operation may create.
     /// Engine reservations account ordinary buffers and transfer staging; these
     /// backend-owned tables must also fit before choosing a maximal query tile.

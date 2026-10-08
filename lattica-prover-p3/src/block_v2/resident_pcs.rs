@@ -297,8 +297,11 @@ impl ResidentState {
                     .collect()
             })
         };
-        self.mmcs
-            .commit_resident(randomized, self.log_blowup, self.host_budget)
+        if preprocessing {
+            self.mmcs.commit_public_preprocessing(randomized, self.log_blowup, self.host_budget)
+        } else {
+            self.mmcs.commit_resident(randomized, self.log_blowup, self.host_budget)
+        }
     }
 
     pub(super) fn randomization(

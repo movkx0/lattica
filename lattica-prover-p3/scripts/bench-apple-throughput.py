@@ -66,6 +66,34 @@ def candidate_options(args):
     return {key: getattr(args, "candidate_" + key, default) for key, (_, default, _) in TUNING.items()}
 
 
+def validate_candidate_workers(workers, options):
+    if workers not in (1, 2, 3, 4, 5):
+        raise ValueError("workers must be one, two, three, four or five")
+    if workers >= 3 and options["pipeline"] != "reference":
+        raise ValueError("three through five workers require the compact reference pipeline")
+    if workers > 1 and options["pipeline"] == "reference":
+        required = {"compact_data": "1", "query_gather": "1", "quotient": "cpu"}
+        if any(options.get(key) != value for key, value in required.items()):
+            raise ValueError("concurrent reference-pipeline workers require compact data, query gathering and CPU quotient")
+
+
+def wait_for_preprocessing(owned, worker, log_path, samplers):
+    """Stagger startup at a real phase boundary while retaining resource checks."""
+    with log_path.open() as log:
+        partial = ""
+        while True:
+            owned.sample()
+            for sampler in samplers:
+                sampler.poll()
+            lines = (partial + log.read()).split("\n")
+            partial = lines.pop()
+            if any(line.startswith("proof_start ") for line in lines):
+                return
+            if worker.poll() is not None:
+                raise RuntimeError("preceding worker exited before preprocessing completed")
+            time.sleep(0.25)
+
+
 def verify_tuning(text, environment):
     resident = environment["LATTICA_V2_METAL_PIPELINE"] == "resident"
     tables = environment["LATTICA_V2_METAL_NTT_TABLES"]
@@ -84,8 +112,8 @@ def verify_tuning(text, environment):
 
 
 def policy(workers, candidate, scratch, variant, workgroup, diagnostic_profile=False, options=None):
-    if workers not in (1, 2):
-        raise ValueError("workers must be one or two")
+    if workers not in (1, 2, 3, 4, 5):
+        raise ValueError("workers must be one, two, three, four or five")
     selected = {key: default for key, (_, default, _) in TUNING.items()}
     for key, value in (options or {}).items():
         if key not in TUNING or str(value) not in TUNING[key][2]:
@@ -95,6 +123,8 @@ def policy(workers, candidate, scratch, variant, workgroup, diagnostic_profile=F
         selected.update(pipeline="reference", poseidon_diagonal="reference", ntt_tables="off",
                         ntt_tile_log2="12", quotient="cpu", prefix_store="separate",
                         direct_readback="0", denominator_cache="0", query_gather="0", compact_data="0")
+    if workers >= 3:
+        validate_candidate_workers(workers, selected)
     resident = selected["pipeline"] == "resident"
     # Preserve the resident pipeline's compact default unless explicitly
     # controlled; adding a tuning key must not restore full host matrices.
@@ -173,6 +203,7 @@ class OwnedProcesses:
         self.swap_peak = self.before["swap_used_bytes"]
         self.pressure_incident = self.before["pressure"] != 1
         self.last_heartbeat = time.monotonic()
+        self.last_vm_snapshot = 0.0
 
     def spawn(self, args, env, log, *, pass_fds=(), role="cpu", limit=None):
         process = subprocess.Popen(list(map(str, args)), env=env, stdout=log, stderr=subprocess.STDOUT,
@@ -201,6 +232,9 @@ class OwnedProcesses:
                 if limit is not None and size > limit:
                     raise RuntimeError(f"{role} RSS budget exceeded")
         obs = observations()
+        if os.environ.get("LATTICA_APPLE_MEMORY_RECLAIM") == "1" and (obs["pressure"] != 1 or time.monotonic() - self.last_vm_snapshot >= 10):
+            obs["vm_stat"] = subprocess.check_output(["/usr/bin/vm_stat"], text=True)
+            self.last_vm_snapshot = time.monotonic()
         self.swap_peak = max(self.swap_peak, obs["swap_used_bytes"])
         self.pressure_incident |= obs["pressure"] != 1
         self.resources.write(json.dumps({"monotonic": time.monotonic(), "rss": rss,
@@ -247,6 +281,11 @@ class OwnedProcesses:
 def run_window(args, out, binaries, external, candidate):
     count = args.workers if candidate else 1
     options = candidate_options(args)
+    if candidate:
+        validate_candidate_workers(count, options)
+    launch_phase = getattr(args, "worker_launch_phase", "immediate") if candidate else "immediate"
+    if launch_phase not in ("immediate", "after-preprocessing"):
+        raise ValueError("invalid worker launch phase")
     label = ("resident" if options["pipeline"] == "resident" else "candidate-reference") if candidate else "reference"
     directory = out / label
     directory.mkdir()
@@ -261,14 +300,18 @@ def run_window(args, out, binaries, external, candidate):
     started = time.monotonic()
     handles = []
     samplers = []
+    worker_processes = []
     sockets = []
     ready = selectors.DefaultSelector()
-    result = {"label": label, "workers": count, "threads_total": 18, "jobs": [],
-              "status": "RUNNING", "timing_boundary": "startup through independent CPU audit"}
+    result = {"label": label, "workers": count, "threads_total": count * (18 // count), "cpu_core_budget": 18, "jobs": [],
+              "status": "RUNNING", "timing_boundary": "startup through independent CPU audit",
+              "worker_launch_phase": launch_phase, "worker_launches": []}
     with (directory / "resources.jsonl").open("w") as resource_log:
         owned = OwnedProcesses(resource_log)
         try:
             for index, job in enumerate(jobs):
+                if index and launch_phase == "after-preprocessing":
+                    wait_for_preprocessing(owned, worker_processes[-1], jobs[index - 1] / "worker.log", samplers)
                 env = policy(count, candidate, job / "scratch", args.kernel_variant, args.workgroup,
                              getattr(args, "diagnostic_profile", False), options)
                 cpu_env = baseline.environment(baseline.arm("cpu", 18 // count), job / "scratch", False)
@@ -283,6 +326,13 @@ def run_window(args, out, binaries, external, candidate):
                 log = (job / "worker.log").open("w"); handles.append(log)
                 worker = owned.spawn([binaries["metal"], "--metal-worker"], env, log,
                                      pass_fds=(child.fileno(),), role="worker", limit=baseline.WORKER_RSS_LIMIT_BYTES)
+                worker_processes.append(worker)
+                launched = time.monotonic() - started
+                result["worker_launches"].append({"index": index, "pid": worker.pid, "seconds": launched,
+                    "threads": int(env["RAYON_NUM_THREADS"]),
+                    "managed_bytes": int(env["LATTICA_V2_GPU_MANAGED_BYTES"]) if "LATTICA_V2_GPU_MANAGED_BYTES" in env else None})
+                print(f"WORKER_START job={index} pid={worker.pid} elapsed={launched:.2f}s "
+                      f"threads={env['RAYON_NUM_THREADS']} launch_phase={launch_phase}", flush=True)
                 child.close()
                 if getattr(args, "diagnostic_profile", False):
                     samplers.append(StackSampler(owned, worker, job, handles))
@@ -447,6 +497,8 @@ def main():
     parser.add_argument("--screen", action="store_true", required=True)
     parser.add_argument("--diagnostic-profile", action="store_true",
                         help="record host/GPU timelines and two short CPU stack samples per job")
+    parser.add_argument("--worker-launch-phase", choices=("immediate", "after-preprocessing"), default="immediate",
+                        help="optionally start the second candidate after the first worker's initial preprocessing")
     parser.add_argument("--build", type=Path, required=True)
     parser.add_argument("--fixture", type=Path, required=True)
     parser.add_argument("--linux", type=Path, required=True)
@@ -463,8 +515,10 @@ def main():
         parser.error("requires Apple Silicon macOS")
     worker_plan = resident_worker_plan(args.workers)
     args.workers = worker_plan["selected_workers"]
-    if args.candidate_pipeline == "reference" and args.workers != 1:
-        parser.error("a reference-pipeline candidate requires --workers 1")
+    try:
+        validate_candidate_workers(args.workers, candidate_options(args))
+    except ValueError as error:
+        parser.error(str(error))
     out = args.output.resolve(); out.mkdir(parents=True, exist_ok=False)
     build = json.loads(args.build.read_text())
     for name, sha in build["source_hashes"].items():

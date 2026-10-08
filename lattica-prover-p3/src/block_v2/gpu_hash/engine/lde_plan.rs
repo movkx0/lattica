@@ -235,8 +235,17 @@ impl LdeCommitPlan {
             .checked_sub(fixed)
             .ok_or("resident LDE fixed allocations exceed managed budget")?;
         let per_column_bytes = bytes(output_height)?;
+        #[cfg(feature = "gpu-metal")]
+        let transform_allowance = match std::env::var("LATTICA_APPLE_LDE_SCRATCH_BYTES") {
+            Err(std::env::VarError::NotPresent) => usize::MAX,
+            Ok(v) => v.parse::<usize>().ok().filter(|&n| n >= 16 && n % 16 == 0)
+                .ok_or("invalid Apple LDE scratch allowance")?,
+            Err(_) => return Err("invalid Apple LDE scratch allowance".into()),
+        };
+        #[cfg(not(feature = "gpu-metal"))]
+        let transform_allowance = usize::MAX;
         let maximum = max_width
-            .min((remaining / 2) / per_column_bytes)
+            .min((remaining.min(transform_allowance) / 2) / per_column_bytes)
             .min(max_alloc / per_column_bytes)
             .min((u32::MAX as usize) / output_height);
         if maximum == 0 {

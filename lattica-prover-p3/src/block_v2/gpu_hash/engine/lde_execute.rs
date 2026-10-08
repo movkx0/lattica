@@ -255,7 +255,7 @@ impl Engine {
     fn lde_read_columns(
         &mut self,
         buffer: &Buffer<u64>,
-        output: &mut HostReadback,
+        output: &mut impl super::lde_readback::ColumnReadback,
         first: usize,
         columns: usize,
     ) -> Result<(), String> {
@@ -516,6 +516,13 @@ impl Engine {
         host_budget: usize,
         retention_bits: usize,
     ) -> Result<LdeCommitOutput, String> {
+        self.coset_lde_commit_public(inputs, masks, cap_height, host_budget, retention_bits, false)
+    }
+
+    fn coset_lde_commit_public(
+        &mut self, inputs: &[LdeInput<'_>], masks: Option<&[RowMajorMatrix<Val>]>,
+        cap_height: usize, host_budget: usize, retention_bits: usize, public_preprocessing: bool,
+    ) -> Result<LdeCommitOutput, String> {
         let parallel_readback = super::switch("LATTICA_V2_GPU_PARALLEL_READBACK")?;
         let started = Instant::now();
         if !self.retain_trees {
@@ -552,7 +559,7 @@ impl Engine {
         let old_workspace = self.workspace.as_ref().map_or(0, super::Workspace::bytes);
         // Tile workspace stays bounded independently of the resident worker's
         // estimated total footprint. Retained matrices may exceed that estimate.
-        let execution_limits = self.limits;
+        let execution_limits = self.lde_limits(&shapes)?;
         let plan = LdeCommitPlan::new_retained_with_layout(
             &shapes,
             cap_height,
@@ -653,7 +660,20 @@ impl Engine {
             };
             #[cfg(not(feature = "gpu-metal"))]
             let shared: Option<()> = None;
-            let mut readback = if shared.is_none() {
+            #[cfg(feature = "gpu-metal")]
+            let mut public_readback = if public_preprocessing && retention_bits > 0
+                && std::env::var_os("LATTICA_APPLE_SHARED_PREPROCESSING_DIR").is_some() {
+                if masks.is_some() || shared.is_some() || plan.readback_layout != super::lde_readback::ReadbackLayout::Direct {
+                    return Err("shared public preprocessing requires direct host readback without masks".into());
+                }
+                super::super::shared_preprocessing::SharedReadback::for_public_input(
+                    input, plan.retained_height(), plan.columns_per_tile())?
+            } else { None };
+            #[cfg(feature = "gpu-metal")]
+            let public_mapped = public_readback.is_some();
+            #[cfg(not(feature = "gpu-metal"))]
+            let public_mapped = { let _ = public_preprocessing; false };
+            let mut readback = if shared.is_none() && !public_mapped {
                 Some(
                     HostReadback::with_layout(
                         plan.retained_height(),
@@ -781,6 +801,10 @@ impl Engine {
                     self.lde_read_columns(transformed, readback, tile.first_column, tile.columns)?;
                 }
                 #[cfg(feature = "gpu-metal")]
+                if let Some(readback) = &mut public_readback {
+                    self.lde_read_columns(transformed, readback, tile.first_column, tile.columns)?;
+                }
+                #[cfg(feature = "gpu-metal")]
                 if let Some(shared) = shared.as_ref().filter(|_| !self.pq.prefix_fusion()) {
                     let kernel = self
                         .pq
@@ -815,6 +839,11 @@ impl Engine {
                 } else {
                     matrices.push(matrix);
                 }
+            }
+            #[cfg(feature = "gpu-metal")]
+            if let Some(readback) = public_readback {
+                prefixes.push(p3_matrix::dense::DenseMatrix::new(
+                    super::super::prefix_storage::PrefixStorage::Shared(readback.finish()?), shape.width));
             }
             #[cfg(feature = "gpu-metal")]
             if let Some(shared) = shared {
@@ -885,6 +914,10 @@ impl Engine {
         }
         self.stats.lde_wall_ns += started.elapsed().as_nanos();
         self.context_checkpoint("resident LDE complete")?;
+        #[cfg(feature = "gpu-metal")]
+        if crate::block_v2::apple_memory::reclaim_enabled() {
+            self.workspace = None;
+        }
         if buffers.bytes() <= self.lde_workspace_limit {
             // Scratch contains fresh attempt data. Scrub it before retaining
             // storage; no witness, salts, masks, or RNG state becomes a cache.
@@ -1374,6 +1407,44 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires GPU and retained trees; run serially"]
+    fn gpu_wide_lde_tiles_preserve_columns_caps_and_paths() {
+        let _shutdown = super::super::TestShutdownGuard;
+        // Match the 400-column preprocessing shape at a small row count. Vary
+        // only the allowance so the same data exercises 64/128/256-column tiles.
+        let evaluations = matrix(128, 400, 59);
+        let salts = matrix(2048, 4, 61);
+        let inputs = [LdeInput {
+            evaluations: &evaluations,
+            salts: &salts,
+            added_bits: 4,
+            shift: Val::GENERATOR,
+        }];
+        let mut reference_cap: Option<Vec<[Val; 4]>> = None;
+        for (managed_mib, columns) in [(3, 64), (6, 128), (12, 256)] {
+            super::super::initialize_mode(
+                super::super::Limits {
+                    managed_bytes: managed_mib * 1024 * 1024,
+                    tile_bytes: 64 * 1024,
+                    staging_bytes: 8 * 1024,
+                },
+                super::super::TransferMode::Serial,
+            )
+            .unwrap();
+            let output = check_cpu_reference(&inputs, 2);
+            assert_eq!(output.plan.columns_per_tile(), columns);
+            if let Some(cap) = &reference_cap {
+                assert_eq!(output.cap(), cap.as_slice());
+            } else {
+                reference_cap = Some(output.cap().to_vec());
+            }
+            println!("wide_lde_columns={columns} cpu_equivalence=PASS");
+            drop(output);
+            super::super::shutdown().unwrap();
+        }
+    }
+
+    #[test]
     #[ignore = "requires OpenCL GPU, LATTICA_V2_GPU_RETAIN_TREES=1; run serially in <=3 GiB service"]
     fn gpu_resident_lde_multigroup_ntt_and_unequal_input_heights_match_cpu() {
         let _shutdown = super::super::TestShutdownGuard;
@@ -1452,4 +1523,13 @@ pub(crate) fn retained_lde_commit(
     slot.as_mut()
         .ok_or("GPU shut down")?
         .coset_lde_commit_with_masks(inputs, masks, cap_height, host_budget, retention_bits)
+}
+
+/// Called only from the public preprocessing PCS entry point, never for traces.
+pub(crate) fn public_preprocessing_lde_commit(
+    inputs: &[LdeInput<'_>], cap_height: usize, host_budget: usize, retention_bits: usize,
+) -> Result<LdeCommitOutput, String> {
+    let mut slot = ENGINE.get().ok_or("GPU not initialized")?.lock().map_err(|_| "GPU engine poisoned")?;
+    slot.as_mut().ok_or("GPU shut down")?
+        .coset_lde_commit_public(inputs, None, cap_height, host_budget, retention_bits, true)
 }

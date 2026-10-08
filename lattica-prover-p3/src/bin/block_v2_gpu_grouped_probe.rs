@@ -314,10 +314,15 @@ fn require_worker_limits() -> Result<MetalWatchdog, Error> {
     let thread = std::thread::Builder::new().name("metal-memory-watchdog".into()).spawn(move || {
         let started = Instant::now();
         let (mut peak_rss, mut peak_footprint) = (rss, footprint);
+        let mut last_progress = Instant::now();
         loop {
             match process_memory() {
                 Ok((rss, footprint)) => {
                     peak_rss = peak_rss.max(rss); peak_footprint = peak_footprint.max(footprint);
+                    if last_progress.elapsed().as_secs() >= 5 {
+                        eprintln!("metal_worker_memory_progress pid={} elapsed_ms={} rss_bytes={rss} footprint_bytes={footprint} peak_rss_bytes={peak_rss} peak_footprint_bytes={peak_footprint} sample_ms=500", std::process::id(), started.elapsed().as_millis());
+                        last_progress = Instant::now();
+                    }
                     if rss_limit.is_some_and(|limit| rss > limit) || timeout.is_some_and(|limit| started.elapsed().as_secs() >= limit) {
                         eprintln!("FAILED: Metal watchdog limit exceeded rss_bytes={rss} footprint_bytes={footprint} elapsed_seconds={}", started.elapsed().as_secs());
                         std::process::exit(124);

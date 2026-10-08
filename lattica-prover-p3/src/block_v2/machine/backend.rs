@@ -107,6 +107,9 @@ impl RegisteredProgram {
         air: MachineAir,
         budget: u64,
     ) -> Result<Self, super::analysis::AdmissionError> {
+        #[cfg(feature = "gpu-metal")]
+        let _memory_phase = super::super::apple_memory::PhaseGuard::acquire("preprocessing")
+            .expect("Apple preprocessing phase admission");
         let _phase =
             tracing::info_span!(target: "lattica_block_v2_perf", "preprocessing setup").entered();
         let analysis = super::analysis::analyze(&air)?;
@@ -236,6 +239,12 @@ impl RegisteredProgram {
         public: &[Val],
         witness: &[Val],
     ) -> Result<BatchProof<Config>, ExecutionError> {
+        #[cfg(feature = "gpu-metal")]
+        let mut memory_phase = super::super::apple_memory::PhaseGuard::acquire("trace and quotient")
+            .expect("Apple proof phase admission");
+        // Declared before trace: unwind destroys trace before releasing the tail.
+        #[cfg(feature = "gpu-metal")]
+        let mut late_phase = None;
         let trace = tracing::info_span!(target: "lattica_block_v2_perf", "execution trace")
             .in_scope(|| self.air.trace(public, witness))?;
         let instance = StarkInstance {
@@ -245,7 +254,7 @@ impl RegisteredProgram {
         };
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         if super::super::quotient_pcs::gpu_quotient_enabled() {
-            return Ok(
+            let proof =
                 tracing::info_span!(target: "lattica_block_v2_perf", "native batch prove")
                     .in_scope(|| {
                         super::super::gpu_quotient_prover::prove_batch(
@@ -256,12 +265,35 @@ impl RegisteredProgram {
                                 super::super::gpu_hash::CandidateMmcs::release_quotient_prefix(data)
                             },
                             |pcs, groups| {
+                                #[cfg(feature = "gpu-metal")]
+                                {
+                                    // Both large trace prefixes have been retired
+                                    // before this callback. Drain/release scratch
+                                    // before admitting the next worker's peak.
+                                    super::super::gpu_hash::engine::reclaim_scratch()
+                                        .expect("Apple proof scratch retirement");
+                                    // Acquire in one direction only: heavy -> late.
+                                    // Waiting workers still hold an early slot and
+                                    // have not allocated quotient/opening buffers.
+                                    late_phase = super::super::apple_memory::PhaseGuard::acquire_late()
+                                        .expect("Apple late proof phase admission");
+                                    drop(memory_phase.take());
+                                }
                                 pcs.commit_quotient_evaluations(groups)
                                     .expect("GPU quotient commitment failed; no silent fallback")
                             },
                         )
-                    }),
-            );
+                    });
+            #[cfg(feature = "gpu-metal")]
+            {
+                drop(trace);
+                if late_phase.is_some() {
+                    super::super::gpu_hash::engine::reclaim_scratch()
+                        .expect("Apple late proof scratch retirement");
+                    drop(late_phase.take());
+                }
+            }
+            return Ok(proof);
         }
         Ok(
             tracing::info_span!(target: "lattica_block_v2_perf", "native batch prove")

@@ -17,6 +17,15 @@ __kernel void query_gather(
 }
 "#;
 
+#[cfg(any(feature = "gpu-metal", test))]
+fn query_scratch_allowance(value: Option<&str>) -> Result<usize, String> {
+    match value {
+        None => Ok(usize::MAX),
+        Some(value) => value.parse::<usize>().ok().filter(|n| *n >= 16 && *n % 16 == 0)
+            .ok_or_else(|| "Apple query scratch allowance must be a positive multiple of 16 bytes".into()),
+    }
+}
+
 fn tile_columns(
     height: usize,
     max_width: usize,
@@ -24,6 +33,7 @@ fn tile_columns(
     max_alloc: usize,
     queries: usize,
     gather: bool,
+    transform_allowance: usize,
 ) -> Result<usize, String> {
     let matrix_column = height.checked_mul(8).ok_or("query column size overflow")?;
     let query_column = queries.checked_mul(8).ok_or("query index size overflow")?;
@@ -34,15 +44,16 @@ fn tile_columns(
     if fixed > max_alloc {
         return Err("query index buffer exceeds device allocation limit".into());
     }
-    let per_column = matrix_column
-        .checked_mul(2)
-        .and_then(|n| n.checked_add(if gather { query_column } else { 0 }))
+    let transform_column = matrix_column.checked_mul(2).ok_or("query transform size overflow")?;
+    let per_column = transform_column
+        .checked_add(if gather { query_column } else { 0 })
         .ok_or("query workspace size overflow")?;
     let available = remaining
         .checked_sub(fixed)
         .ok_or("query index allowance")?;
     let mut columns = max_width
         .min(available / per_column)
+        .min(transform_allowance / transform_column)
         .min(max_alloc / matrix_column)
         .min(u32::MAX as usize / height);
     if gather {
@@ -73,6 +84,10 @@ pub(crate) fn reconstruct(
     if low == 0 || prefixes.iter().any(|p| p.width == 0 || p.height() < low) {
         return Err("query reconstruction missing degree prefix".into());
     }
+    // Acquire before ENGINE and allocations. Declared first, so a QueueFence,
+    // temporary buffers and the engine guard all retire before this permit.
+    #[cfg(feature = "gpu-metal")]
+    let _query_phase = crate::block_v2::apple_memory::PhaseGuard::acquire_query()?;
     let mut guard = ENGINE
         .get()
         .ok_or("GPU not initialized")?
@@ -81,6 +96,8 @@ pub(crate) fn reconstruct(
     let engine = guard.as_mut().ok_or("GPU shut down")?;
     engine.fence().finish()?;
     engine.workspace = None;
+    #[cfg(feature = "gpu-metal")]
+    engine.reclaim_transient_scratch("before query reconstruction", false)?;
     if indices.is_empty() {
         return Ok(Vec::new());
     }
@@ -103,6 +120,10 @@ pub(crate) fn reconstruct(
         .and_then(|bytes| bytes.checked_sub(backend_reserve))
         .ok_or("query workspace allowance")?;
     let max_width = prefixes.iter().map(|p| p.width).max().unwrap();
+    #[cfg(feature = "gpu-metal")]
+    let transform_allowance = query_scratch_allowance(std::env::var("LATTICA_APPLE_QUERY_SCRATCH_BYTES").ok().as_deref())?;
+    #[cfg(not(feature = "gpu-metal"))]
+    let transform_allowance = usize::MAX;
     let columns = tile_columns(
         height,
         max_width,
@@ -110,7 +131,13 @@ pub(crate) fn reconstruct(
         engine.max_alloc,
         indices.len(),
         gather,
+        transform_allowance,
     )?;
+    #[cfg(feature = "gpu-metal")]
+    if transform_allowance != usize::MAX {
+        eprintln!("apple_query_scratch pid={} height={height} columns={columns} transform_bytes={} allowance_bytes={transform_allowance}",
+            std::process::id(), 2 * height * columns * 8);
+    }
     let alloc = |n| {
         allocation(
             &engine.pq,
@@ -135,6 +162,10 @@ pub(crate) fn reconstruct(
     } else {
         None
     };
+    #[cfg(feature = "gpu-metal")]
+    if crate::block_v2::apple_memory::reclaim_enabled() {
+        crate::block_v2::apple_memory::checkpoint("query scratch allocated");
+    }
     let mut result: Vec<Vec<Vec<Val>>> = indices
         .iter()
         .map(|_| prefixes.iter().map(|p| vec![Val::ZERO; p.width]).collect())
@@ -269,12 +300,36 @@ pub(crate) fn reconstruct(
     fence.finish()?;
     engine.stats.query_reconstruction_calls += 1;
     engine.stats.query_reconstruction_wall_ns += started.elapsed().as_nanos();
+    drop(fence);
+    drop((a, b, forward, inverse, query_indices, query_output));
+    #[cfg(feature = "gpu-metal")]
+    if crate::block_v2::apple_memory::reclaim_enabled() {
+        crate::block_v2::apple_memory::checkpoint("query scratch released");
+    }
     Ok(result)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::tile_columns;
+    use super::{tile_columns, query_scratch_allowance};
+
+    #[test]
+    fn query_scratch_caps_transform_pair_without_spending_gather_reserve() {
+        let height = 1 << 20;
+        let allowance = 2usize << 30;
+        let columns = tile_columns(height, 197, 7usize << 30, 4usize << 30, 128, true, allowance).unwrap();
+        assert_eq!(columns, 128);
+        assert_eq!(2 * height * columns * 8, allowance);
+        assert_eq!((197usize).div_ceil(columns), 2); // final tile has 69 columns
+        assert!(tile_columns(height, 1, 7usize << 30, 4usize << 30, 128, true, 2 * height * 8 - 1).is_err());
+        // Gather metadata/output still consume the aggregate allowance.
+        assert_eq!(tile_columns(64, 3, 2 * 64 * 3 * 8, 4096, 17, true, 4096).unwrap(), 2);
+        assert_eq!(query_scratch_allowance(None).unwrap(), usize::MAX);
+        assert_eq!(query_scratch_allowance(Some("2147483648")).unwrap(), allowance);
+        for bad in ["", "0", "15", "17", "-16", "18446744073709551616", "2GiB"] {
+            assert!(query_scratch_allowance(Some(bad)).is_err());
+        }
+    }
 
     #[test]
     fn gather_reserves_both_transform_buffers_indices_and_output() {
@@ -283,7 +338,7 @@ mod tests {
                 for max_alloc in [4096usize, 1 << 20, 1 << 30] {
                     for remaining in [1usize << 16, 1 << 24, 7usize << 30] {
                         if let Ok(columns) =
-                            tile_columns(height, 200, remaining, max_alloc, queries, true)
+                            tile_columns(height, 200, remaining, max_alloc, queries, true, usize::MAX)
                         {
                             assert!(
                                 2 * height * columns * 8 + queries * (columns + 1) * 8 <= remaining
@@ -299,15 +354,15 @@ mod tests {
             }
         }
         let bytes = 2 * 64 * 3 * 8;
-        assert_eq!(tile_columns(64, 3, bytes, bytes, 17, false).unwrap(), 3);
-        assert_eq!(tile_columns(64, 3, bytes, bytes, 17, true).unwrap(), 2);
+        assert_eq!(tile_columns(64, 3, bytes, bytes, 17, false, usize::MAX).unwrap(), 3);
+        assert_eq!(tile_columns(64, 3, bytes, bytes, 17, true, usize::MAX).unwrap(), 2);
     }
 
     #[test]
     fn query_tile_rejects_unaffordable_and_overflowing_allocations() {
-        assert!(tile_columns(16, 1, 256, 256, 1, true).is_err());
-        assert!(tile_columns(16, 1, 4096, 128, 256, true).is_err());
-        assert!(tile_columns(16, 1, 4096, 4096, 0, true).is_err());
-        assert!(tile_columns(usize::MAX, 1, usize::MAX, usize::MAX, 1, true).is_err());
+        assert!(tile_columns(16, 1, 256, 256, 1, true, usize::MAX).is_err());
+        assert!(tile_columns(16, 1, 4096, 128, 256, true, usize::MAX).is_err());
+        assert!(tile_columns(16, 1, 4096, 4096, 0, true, usize::MAX).is_err());
+        assert!(tile_columns(usize::MAX, 1, usize::MAX, usize::MAX, 1, true, usize::MAX).is_err());
     }
 }

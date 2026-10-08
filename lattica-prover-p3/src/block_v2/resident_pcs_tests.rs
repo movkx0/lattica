@@ -629,7 +629,7 @@ fn compact_test_data(
             .map(super::prefix_storage::host)
             .collect(),
         height,
-        salts,
+        salts.into_iter().map(super::compact_salts::SaltMatrix::Dense).collect(),
         tree,
     ))
 }

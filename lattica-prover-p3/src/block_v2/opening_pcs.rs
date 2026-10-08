@@ -251,13 +251,22 @@ fn open(
     // For each unique opening point z, we will find the largest degree bound
     // for that point, and precompute 1/(z - X) for the largest subgroup (in bitrev order).
     let inv_denoms = compute_inverse_denominators(&mats_and_points, &coset);
+    #[cfg(feature = "gpu-metal")]
+    let reclaim = super::apple_memory::reclaim_enabled();
+    #[cfg(not(feature = "gpu-metal"))]
+    let reclaim = false;
+    if reclaim { drop(coset); }
 
     // Precompute adjusted barycentric weights once per opening point.
     // adjusted[i] = 1/(z - x_i) - 1/z, reused across all matrices opened at z.
-    let adjusted_weights: LinearMap<Challenge, Vec<Challenge>> = inv_denoms
-        .iter()
-        .map(|(point, denoms)| (*point, compute_adjusted_weights(*point, denoms)))
-        .collect();
+    let adjusted_weights = opening_weights(&inv_denoms, fri.log_blowup, reclaim);
+    #[cfg(feature = "gpu-metal")]
+    if reclaim {
+        eprintln!("apple_opening_workspace pid={} denominator_bytes={} adjusted_weight_bytes={}", std::process::id(),
+            inv_denoms.iter().map(|(_, d)| d.len() * 24).sum::<usize>(),
+            adjusted_weights.iter().map(|(_, d)| d.len() * 24).sum::<usize>());
+        super::apple_memory::checkpoint("opening weights allocated");
+    }
 
     // Evaluate coset representations and write openings to the challenger
     let all_opened_values = mats_and_points
@@ -309,6 +318,8 @@ fn open(
         })
         .collect::<Vec<_>>();
 
+    if reclaim { drop(adjusted_weights); }
+
     // Batch combination challenge
 
     // Soundness Error:
@@ -350,6 +361,14 @@ fn open(
     let fri_input = reduce_openings(&requests, alpha, fri.log_blowup)
         .expect("candidate GPU opening reduction failed; no silent fallback");
 
+    if reclaim {
+        drop(requests);
+        drop(inv_denoms);
+        drop(mats_and_points);
+        #[cfg(feature = "gpu-metal")]
+        super::apple_memory::checkpoint("opening host buffers released before FRI");
+    }
+
     let folding: TwoAdicFriFoldingForMmcs<Val, CandidateMmcs> = TwoAdicFriFolding(PhantomData);
 
     // Produce the FRI proof.
@@ -380,6 +399,17 @@ fn open(
     );
 
     (all_opened_values, fri_proof)
+}
+
+fn opening_weights(
+    inv_denoms: &LinearMap<Challenge, Vec<Challenge>>, log_blowup: usize, compact: bool,
+) -> LinearMap<Challenge, Vec<Challenge>> {
+    inv_denoms.iter().map(|(point, denoms)| {
+        // Denominators retain the full domain for GPU reduction. Interpolation
+        // consumes only the largest degree prefix for this opening point.
+        let used = if compact { denoms.len() >> log_blowup } else { denoms.len() };
+        (*point, compute_adjusted_weights(*point, &denoms[..used]))
+    }).collect()
 }
 
 fn compute_inverse_denominators<F: TwoAdicField, EF: ExtensionField<F>>(
@@ -424,6 +454,21 @@ fn compute_inverse_denominators<F: TwoAdicField, EF: ExtensionField<F>>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn opening_compact_weights_preserve_each_point_prefix() {
+        let inv: LinearMap<Challenge, Vec<Challenge>> = [
+            (Challenge::from_u64(7), (0..128).map(|i| Challenge::from_u64(i + 11)).collect()),
+            (Challenge::from_u64(13), (0..64).map(|i| Challenge::from_u64(i + 3)).collect()),
+        ].into_iter().collect();
+        let full = opening_weights(&inv, 4, false);
+        let compact = opening_weights(&inv, 4, true);
+        for (point, denoms) in inv.iter() {
+            assert_eq!(compact.get(point).unwrap(), &full.get(point).unwrap()[..denoms.len() / 16]);
+        }
+        assert_eq!(compact.iter().map(|(_, v)| v.len()).sum::<usize>(), 12);
+        assert_eq!(inv.iter().map(|(_, v)| v.len()).sum::<usize>(), 192);
+    }
+
     #[test]
     fn opening_host_budget_includes_opened_values_and_rejects_overflow() {
         let h = 1 << 25;

@@ -951,3 +951,17 @@ mod tests {
         );
     }
 }
+
+/// Common bounded readback sink; public shared mappings never expose a Vec.
+pub(crate) trait ColumnReadback {
+    fn height(&self) -> usize;
+    fn uses_parallel_decode(&self, elements: usize) -> bool;
+    fn append_rows(&mut self, first: usize, columns: usize, row0: usize, raw: &[u64]) -> Result<(), String>;
+}
+impl ColumnReadback for HostReadback {
+    fn height(&self) -> usize { self.height() }
+    fn uses_parallel_decode(&self, elements: usize) -> bool { self.uses_parallel_decode(elements) }
+    fn append_rows(&mut self, first: usize, columns: usize, row0: usize, raw: &[u64]) -> Result<(), String> {
+        self.append_rows(first, columns, row0, raw)
+    }
+}

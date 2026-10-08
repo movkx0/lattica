@@ -151,3 +151,53 @@ fn quotient_proof_equivalence(compact: bool) {
     )
     .is_err());
 }
+
+#[cfg(feature = "gpu-metal")]
+#[test]
+#[ignore = "Apple GPU memory coordination; isolated process"]
+fn gpu_apple_shared_preprocessing_preserves_proofs_and_private_randomness() {
+    use crate::block_v2::machine::{MachineAir, ProgramBuilder, backend::RegisteredProgram};
+    let mut builder = ProgramBuilder::new(1).unwrap();
+    let public_wire = builder.public(0).unwrap();
+    let input = builder.input();
+    let square = builder.mul(input, input);
+    builder.assert_equal(square, public_wire);
+    let air = MachineAir::new(builder.finish(Some(64)).unwrap());
+    let reference = RegisteredProgram::new(air.clone()).unwrap();
+    let verifier = reference.verifier();
+    let cap = reference.preprocessing_cap().clone();
+    drop(reference);
+    let dir = std::env::temp_dir().join(format!("lattica-apple-memory-proof-{}", std::process::id()));
+    crate::block_v2::apple_memory::private_directory(&dir).unwrap();
+    for (name, value) in [
+        ("LATTICA_V2_GPU_HASH", "1"), ("LATTICA_V2_GPU_MANAGED_BYTES", "268435456"),
+        ("LATTICA_V2_GPU_RESIDENT_LDE", "1"), ("LATTICA_V2_GPU_OPENINGS", "1"),
+        ("LATTICA_V2_GPU_QUOTIENT_LDE", "1"), ("LATTICA_V2_GPU_COMPACT_PROVER_DATA", "1"),
+        ("LATTICA_V2_GPU_OPENING_COMPACT", "1"), ("LATTICA_V2_GPU_DIRECT_READBACK", "1"),
+        ("LATTICA_APPLE_MEMORY_RECLAIM", "1"), ("LATTICA_APPLE_PHASE_SLOTS", "2"),
+        ("LATTICA_APPLE_LDE_SCRATCH_BYTES", "2097152"),
+        ("LATTICA_APPLE_QUERY_SCRATCH_BYTES", "65536"), ("LATTICA_APPLE_LATE_PHASE_SLOTS", "1"),
+        ("LATTICA_APPLE_COMPACT_SALTS", "1"), ("LATTICA_APPLE_QUERY_PHASE_SLOTS", "1"),
+    ] { std::env::set_var(name, value); }
+    std::env::set_var("LATTICA_APPLE_SHARED_PREPROCESSING_DIR", dir.join("shared"));
+    std::env::set_var("LATTICA_APPLE_PHASE_DIR", dir.join("phases"));
+    crate::block_v2::gpu_hash::initialize_from_env().unwrap();
+    crate::block_v2::resident_pcs::initialize_research_from_env().unwrap();
+    let _shutdown = engine::TestShutdownGuard;
+    let first = RegisteredProgram::new(air.clone()).unwrap();
+    let second = RegisteredProgram::new(air).unwrap();
+    assert_eq!(first.preprocessing_cap(), &cap);
+    assert_eq!(second.preprocessing_cap(), &cap);
+    let public = [Val::from_u64(9)];
+    let witness = [Val::from_u64(3)];
+    let a = first.prove(&public, &witness).unwrap();
+    let b = second.prove(&public, &witness).unwrap();
+    verifier.verify(&a, &public).unwrap();
+    verifier.verify(&b, &public).unwrap();
+    assert!(verifier.verify(&b, &[Val::from_u64(10)]).is_err());
+    assert_ne!(postcard::to_allocvec(&a.commitments).unwrap(), postcard::to_allocvec(&b.commitments).unwrap(),
+        "independent witness proofs must use fresh private randomness");
+    assert_eq!(std::fs::read_dir(dir.join("shared")).unwrap().filter(|p| p.as_ref().unwrap().path().extension().is_some_and(|x| x == "prefix")).count(), 1);
+    drop((first, second));
+    std::fs::remove_dir_all(dir).unwrap();
+}

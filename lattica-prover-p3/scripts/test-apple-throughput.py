@@ -14,7 +14,135 @@ from unittest.mock import Mock, patch
 spec = importlib.util.spec_from_file_location("throughput", Path(__file__).with_name("bench-apple-throughput.py"))
 T = importlib.util.module_from_spec(spec); spec.loader.exec_module(T)
 
+spec_c = importlib.util.spec_from_file_location("concurrency", Path(__file__).with_name("bench-apple-concurrency.py"))
+C = importlib.util.module_from_spec(spec_c); spec_c.loader.exec_module(C)
+
 class Throughput(unittest.TestCase):
+    def test_phase_pools_validate_independently_and_accept_historical_events(self):
+        def event(clock, admitted, pid, pool=None, slot=0):
+            fields = dict(pid=str(pid), slot=str(slot), waited_ms='3')
+            if pool is not None: fields['pool'] = pool
+            return clock, admitted, fields
+        rows = [event(1, True, 1), event(2, True, 2, 'late'), event(3, False, 1), event(4, False, 2, 'late')]
+        result = C.phase_evidence(rows, 2)
+        self.assertEqual(result['max_concurrent_heavy_phases'], 1)
+        self.assertEqual(result['max_concurrent_late_phases'], 1)
+        self.assertEqual(result['phase_wait_ms'], dict(heavy=3, late=3))
+        self.assertEqual(C.phase_evidence([rows[0], rows[2]])['max_concurrent_late_phases'], 0)
+        for invalid in [rows + [event(5, True, 3)], rows + [event(5, False, 99)],
+                        [event(1, True, 1), event(2, True, 2)], [event(1, True, 1, 'heavy', 2)]]:
+            with self.assertRaises(RuntimeError): C.phase_evidence(invalid, 2)
+        with self.assertRaises(RuntimeError): C.phase_evidence(rows)
+
+    def test_query_pool_independent_overlap_and_disabled_compatibility(self):
+        def event(t, admit, pool, pid):
+            return t, admit, dict(pool=pool, pid=str(pid), slot='0', waited_ms='1')
+        rows = [event(1, True, 'heavy', 1), event(2, True, 'late', 2), event(3, True, 'query', 2),
+                event(4, False, 'query', 2), event(5, False, 'late', 2), event(6, False, 'heavy', 1)]
+        evidence = C.phase_evidence(rows, 2, 1)
+        self.assertEqual(evidence['max_concurrent_query_phases'], 1)
+        self.assertEqual(evidence['phase_admissions'], dict(heavy=1, late=1, query=1))
+        with self.assertRaises(RuntimeError): C.phase_evidence(rows, 2)
+        with self.assertRaises(RuntimeError): C.phase_evidence(rows[:3]+[event(3.5, True, 'query', 3)]+rows[3:], 2, 1)
+
+    def test_headroom_options_reject_invalid_requests_before_reading_files(self):
+        script = str(Path(__file__).with_name('bench-apple-concurrency.py'))
+        for options in [('--query-scratch-mib', '0', '--memory-optimized'),
+                        ('--query-scratch-mib', '8192', '--memory-optimized'),
+                        ('--query-scratch-mib', '2048'), ('--late-phase-slots', '2'), ('--compact-salts',), ('--query-phase-slots', '1'), ('--query-phase-slots', '0', '--memory-optimized')]:
+            result = subprocess.run(['python3', script, '--build', '/missing', '--qualification', '/missing',
+                                     '--reference', '/missing', '--out', '/missing', *options], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn('error:', result.stderr)
+            self.assertNotIn('Traceback', result.stderr)
+
+    def test_concurrent_reference_workers_require_compact_cpu_pipeline(self):
+        options = dict(pipeline='reference', compact_data='1', query_gather='1', quotient='cpu')
+        for workers in (2, 3, 4, 5):
+            T.validate_candidate_workers(workers, options)
+            for key, value in [('compact_data', '0'), ('query_gather', '0'), ('quotient', 'gpu')]:
+                with self.subTest(workers=workers, key=key), self.assertRaises(ValueError):
+                    T.validate_candidate_workers(workers, {**options, key: value})
+        T.validate_candidate_workers(1, {**options, 'compact_data': '0'})
+        for workers in (3, 4, 5):
+            with self.assertRaises(ValueError):
+                T.validate_candidate_workers(workers, {**options, 'pipeline': 'resident'})
+
+    def test_three_workers_partition_threads_and_keep_gpu_allowance(self):
+        options = dict(pipeline='reference', compact_data='1', query_gather='1', quotient='cpu')
+        with patch.dict(os.environ, {'LATTICA_V2_GPU_MANAGED_BYTES': str(7*T.GIB)}):
+            env = T.policy(3, True, Path('/tmp/scratch'), 'reference', 256, options=options)
+        self.assertEqual(env['RAYON_NUM_THREADS'], '6')
+        self.assertEqual(env['LATTICA_V2_GPU_MANAGED_BYTES'], str(7*T.GIB))
+        self.assertEqual(env['LATTICA_V2_METAL_QUOTIENT'], 'cpu')
+        self.assertEqual(env['LATTICA_V2_GPU_COMPACT_PROVER_DATA'], '1')
+        self.assertNotIn('LATTICA_V2_METAL_RSS_LIMIT_BYTES', env)
+
+    def test_four_and_five_workers_partition_threads_and_keep_memory_controls(self):
+        options = dict(pipeline='reference', compact_data='1', query_gather='1', quotient='cpu')
+        controls = {'LATTICA_V2_GPU_MANAGED_BYTES': str(7*T.GIB),
+                    'LATTICA_APPLE_PHASE_SLOTS': '2', 'LATTICA_APPLE_MEMORY_RECLAIM': '1',
+                    'LATTICA_APPLE_LDE_SCRATCH_BYTES': str(2*T.GIB),
+                    'LATTICA_APPLE_QUERY_SCRATCH_BYTES': str(2*T.GIB), 'LATTICA_APPLE_LATE_PHASE_SLOTS': '2',
+                    'LATTICA_APPLE_COMPACT_SALTS': '1', 'LATTICA_APPLE_QUERY_PHASE_SLOTS': '1',
+                    'LATTICA_APPLE_PHASE_DIR': '/tmp/test-phases',
+                    'LATTICA_APPLE_SHARED_PREPROCESSING_DIR': '/tmp/test-public-prefixes'}
+        for workers, threads, total in ((4, 4, 16), (5, 3, 15)):
+            with self.subTest(workers=workers), patch.dict(os.environ, controls):
+                env = T.policy(workers, True, Path('/tmp/scratch'), 'reference', 256, options=options)
+                self.assertEqual(env['RAYON_NUM_THREADS'], str(threads))
+                self.assertEqual(workers * int(env['RAYON_NUM_THREADS']), total)
+                self.assertTrue(all(env[k] == v for k, v in controls.items()))
+                self.assertNotIn('LATTICA_V2_METAL_RSS_LIMIT_BYTES', env)
+                with self.assertRaises(ValueError):
+                    T.policy(workers, True, Path('/tmp/scratch'), 'reference', 256, options={**options, 'pipeline': 'resident'})
+
+    def test_five_worker_cli_requires_current_memory_profile_before_any_io(self):
+        base = ['--build', '/missing', '--qualification', '/missing', '--reference', '/missing',
+                '--out', '/missing', '--workers', '5']
+        controls = ['--memory-optimized', '--compact-salts', '--late-phase-slots', '1',
+                    '--query-phase-slots', '1', '--query-scratch-mib', '1024']
+        parsed = C.parse_args(base + controls)
+        self.assertEqual((parsed.workers, parsed.managed_gib), (5, 7))
+        for flag in ('--memory-optimized', '--compact-salts', '--late-phase-slots',
+                     '--query-phase-slots', '--query-scratch-mib'):
+            bad = controls.copy(); index = bad.index(flag)
+            del bad[index:index + (1 if flag in ('--memory-optimized', '--compact-salts') else 2)]
+            with self.subTest(missing=flag), patch('sys.stderr',new_callable=io.StringIO), self.assertRaises(SystemExit) as error:
+                C.parse_args(base + bad)
+            self.assertEqual(error.exception.code, 2)
+        for flag, value in (('--late-phase-slots','2'),('--query-phase-slots','2'),('--query-scratch-mib','2048')):
+            bad = controls.copy(); bad[bad.index(flag)+1] = value
+            with self.subTest(flag=flag), patch('sys.stderr',new_callable=io.StringIO), self.assertRaises(SystemExit):
+                C.parse_args(base + bad)
+
+    def test_stagger_waits_for_complete_marker_and_checks_resources(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'worker.log'
+            path.write_text('proof_sta')
+            owned = Mock()
+            worker = Mock()
+            worker.poll.return_value = None
+            sampler = Mock()
+            def append_marker(_):
+                with path.open('a') as f:
+                    f.write('rt mode=1 setup_ms=10\n')
+            with patch.object(T.time, 'sleep', side_effect=append_marker) as sleep:
+                T.wait_for_preprocessing(owned, worker, path, [sampler])
+            sleep.assert_called_once()
+            self.assertEqual(owned.sample.call_count, 2)
+            self.assertEqual(sampler.poll.call_count, 2)
+
+    def test_stagger_propagates_exit_and_memory_pressure(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'worker.log'; path.write_text('')
+            owned = Mock(); worker = Mock(); worker.poll.return_value = 1
+            with self.assertRaisesRegex(RuntimeError, 'exited before preprocessing'):
+                T.wait_for_preprocessing(owned, worker, path, [])
+            owned.sample.side_effect = RuntimeError('memory pressure invalidates screen')
+            with self.assertRaisesRegex(RuntimeError, 'memory pressure'):
+                T.wait_for_preprocessing(owned, worker, path, [])
+
     def test_candidate_controls_are_isolated_from_reference_and_environment(self):
         inherited = {v[0]: v[2][-1] for v in T.TUNING.values()}
         with patch.dict(os.environ, inherited):

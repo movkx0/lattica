@@ -1,6 +1,79 @@
 use super::*;
 
 #[test]
+#[ignore = "requires Apple GPU with >8 GiB buffer capacity; run serially"]
+fn large_buffer_shader_offsets_and_zero_fill_cover_full_ranges() {
+    let runtime = ProQue::new(0, 10usize << 30).unwrap();
+    let high_word = 1usize << 30;
+    let output = Buffer::builder()
+        .queue(runtime.queue().clone())
+        .len(high_word + 8)
+        .build()
+        .unwrap();
+    let input = Buffer::builder()
+        .queue(runtime.queue().clone())
+        .len(1)
+        .build()
+        .unwrap();
+    input.write(&[0x1234_5678_9abc_def0]).enq().unwrap();
+    // Only touch the tested pages: buffer size must not change addressing or
+    // require a multi-gigabyte host-side reference allocation.
+    for word in [0, (1usize << 29) - 1, 1usize << 29, high_word] {
+        output.write(&[0]).offset(word).enq().unwrap();
+    }
+    for word in [(1usize << 29) - 1, 1usize << 29, high_word] {
+        unsafe {
+            runtime
+                .kernel_builder("prefix_scatter")
+                .arg(&input)
+                .arg(&output)
+                .arg((high_word + 1) as u32)
+                .arg(word as u32)
+                .arg(1u32)
+                .global_work_size(1)
+                .build()
+                .unwrap()
+                .cmd()
+                .enq()
+                .unwrap();
+        }
+        let mut actual = [0];
+        output.read(&mut actual).offset(word).enq().unwrap();
+        assert_eq!(actual, [0x1234_5678_9abc_def0], "word offset {word}");
+    }
+    let mut low = [1];
+    output.read(&mut low).enq().unwrap();
+    assert_eq!(low, [0], "large offsets must not wrap into the first page");
+    let probes = [
+        0,
+        (1usize << 28) - 1,
+        1usize << 28,
+        (1usize << 29) - 1,
+        1usize << 29,
+        high_word - 1,
+        high_word,
+        high_word + 7,
+    ];
+    for word in probes {
+        output.write(&[u64::MAX]).offset(word).enq().unwrap();
+    }
+    output.cmd().fill(0, None).enq().unwrap();
+    for word in probes {
+        let mut actual = [u64::MAX];
+        output.read(&mut actual).offset(word).enq().unwrap();
+        assert_eq!(actual, [0], "zero fill at byte offset {}", word * 8);
+    }
+    // A partial fill must clear its entire requested range without touching
+    // the adjacent word, including when the boundary is beyond 4 GiB.
+    let count = (1usize << 29) + 3;
+    output.write(&[17, 29]).offset(count - 1).enq().unwrap();
+    output.cmd().fill(0, Some(count)).enq().unwrap();
+    let mut boundary = [0, 0];
+    output.read(&mut boundary).offset(count - 1).enq().unwrap();
+    assert_eq!(boundary, [0, 29]);
+}
+
+#[test]
 #[ignore = "requires Apple GPU; run serially"]
 fn diagonal_and_poseidon_match_cpu_for_redundant_representatives() {
     use p3_field::{PrimeCharacteristicRing, PrimeField64};
@@ -290,6 +363,7 @@ fn pending_command_retention_is_bounded_and_fully_accounted() {
     }
     pq.queue().finish().unwrap();
     assert!(pq.queue.0.pending.lock().unwrap().is_empty());
+    assert!(pq.queue.0.last.lock().unwrap().is_none(), "completed command must not retain its last resources");
     assert_eq!(
         pq.queue.0.budget.counters.lock().unwrap().blits,
         (MAX_PENDING_COMMANDS * 3 + 1) as u64

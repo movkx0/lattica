@@ -1,22 +1,26 @@
 //! Explicit prefixes of bit-reversed LDEs. Geometry describes the original
 //! commitment; prefixes are never returned by the MMCS full-matrix accessor.
 use super::prefix_storage::PrefixMatrix;
+use super::compact_salts::SaltMatrix;
 use super::*;
 use p3_matrix::dense::RowMajorMatrixView;
 use std::collections::{BTreeMap, BTreeSet};
 
+#[derive(Clone)]
+struct PreparedQuery { values: Vec<Vec<Val>>, salts: Vec<Vec<Val>> }
+
 pub struct CompactData {
     pub(super) prefixes: Vec<PrefixMatrix>,
     pub(super) height: usize,
-    salts: Vec<RowMajorMatrix<Val>>,
+    salts: Vec<SaltMatrix>,
     tree: engine::RetainedTree,
-    queries: Mutex<BTreeMap<usize, Vec<Vec<Val>>>>,
+    queries: Mutex<BTreeMap<usize, PreparedQuery>>,
 }
 impl CompactData {
     pub(super) fn new(
         prefixes: Vec<PrefixMatrix>,
         height: usize,
-        salts: Vec<RowMajorMatrix<Val>>,
+        salts: Vec<SaltMatrix>,
         tree: engine::RetainedTree,
     ) -> Self {
         assert!(height.is_power_of_two());
@@ -39,23 +43,19 @@ impl CompactData {
     }
     pub(super) fn open(&self, index: usize, cap: usize) -> BatchOpening<Val, CandidateMmcs> {
         assert!(index < self.height);
-        let values = self
+        let query = self
             .queries
             .lock()
             .expect("query cache poisoned")
             .get(&index)
             .expect("compact MMCS query was not prepared")
             .clone();
-        let salts = self
-            .salts
-            .iter()
-            .map(|s| s.values[index * 4..index * 4 + 4].to_vec())
-            .collect();
+
         let path = self
             .tree
             .open(index, cap)
             .expect("compact retained tree opening failed");
-        BatchOpening::new(values, (salts, path))
+        BatchOpening::new(query.values, (query.salts, path))
     }
 }
 impl CandidateMmcs {
@@ -110,8 +110,11 @@ impl CandidateMmcs {
                 return Err("compact query outside commitment".into());
             }
             let rows = engine::query_reconstruct::reconstruct(&d.prefixes, d.height, &indices)?;
-            *d.queries.lock().map_err(|_| "query cache poisoned")? =
-                indices.into_iter().zip(rows).collect();
+            let salts = d.salts.iter().map(|s| s.rows(&indices)).collect::<Result<Vec<_>, _>>()?;
+            *d.queries.lock().map_err(|_| "query cache poisoned")? = indices.into_iter().zip(rows).enumerate()
+                .map(|(q, (index, values))| (index, PreparedQuery {
+                    values, salts: salts.iter().map(|matrix| matrix[q].clone()).collect(),
+                })).collect();
         }
         Ok(())
     }

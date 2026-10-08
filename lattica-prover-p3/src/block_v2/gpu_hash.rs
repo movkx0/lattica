@@ -2,6 +2,9 @@
 //! No parameter, salt distribution, serialized proof, or production ABI change.
 //! Only equal-height, power-of-two batches are admitted by the selected GPU path.
 mod compact_data;
+mod compact_salts;
+#[cfg(feature = "gpu-metal")]
+mod shared_preprocessing;
 pub(crate) mod engine;
 mod prefix_storage;
 pub(crate) use engine::fri_fold::fold as fold_fri;
@@ -179,6 +182,22 @@ impl CandidateMmcs {
         ),
         String,
     > {
+        self.commit_resident_impl(inputs, added_bits, host_output_budget_bytes, masks, retention_bits, false)
+    }
+
+    pub(crate) fn commit_public_preprocessing(
+        &self, inputs: Vec<(p3_field::coset::TwoAdicMultiplicativeCoset<Val>, RowMajorMatrix<Val>)>,
+        added_bits: usize, host_output_budget_bytes: usize,
+    ) -> Result<(<Self as Mmcs<Val>>::Commitment, ProverData<RowMajorMatrix<Val>>), String> {
+        self.commit_resident_impl(inputs, added_bits, host_output_budget_bytes, None,
+            usize::from(super::resident_pcs::compact_prover_data()), true)
+    }
+
+    fn commit_resident_impl(
+        &self, inputs: Vec<(p3_field::coset::TwoAdicMultiplicativeCoset<Val>, RowMajorMatrix<Val>)>,
+        added_bits: usize, host_output_budget_bytes: usize,
+        masks: Option<&[RowMajorMatrix<Val>]>, retention_bits: usize, public_preprocessing: bool,
+    ) -> Result<(<Self as Mmcs<Val>>::Commitment, ProverData<RowMajorMatrix<Val>>), String> {
         use p3_field::Field;
         let mut shapes = Vec::with_capacity(inputs.len());
         for (domain, matrix) in &inputs {
@@ -205,15 +224,10 @@ impl CandidateMmcs {
         if masks.is_some() {
             plan.validate_quotient_storage()?;
         }
-        let salts: Vec<_> = {
-            let mut rng = self
-                .rng
-                .lock()
-                .map_err(|_| "resident salt stream poisoned")?;
-            inputs
-                .iter()
-                .map(|_| RowMajorMatrix::rand(&mut *rng, plan.output_height(), 4))
-                .collect()
+        let replay_salts = retention_bits != 0 && compact_salts::enabled()?;
+        let (salts, salt_checkpoints) = {
+            let mut rng = self.rng.lock().map_err(|_| "resident salt stream poisoned")?;
+            compact_salts::generate(&mut rng, plan.output_height(), inputs.len(), replay_salts)?
         };
         let requests: Vec<_> = inputs
             .iter()
@@ -225,13 +239,13 @@ impl CandidateMmcs {
                 shift: Val::GENERATOR / domain.shift(),
             })
             .collect();
-        let output = engine::lde_execute::retained_lde_commit(
-            &requests,
-            masks,
-            self.cap_height,
-            host_output_budget_bytes,
-            retention_bits,
-        )?;
+        let output = if public_preprocessing {
+            engine::lde_execute::public_preprocessing_lde_commit(
+                &requests, self.cap_height, host_output_budget_bytes, retention_bits)?
+        } else {
+            engine::lde_execute::retained_lde_commit(
+                &requests, masks, self.cap_height, host_output_budget_bytes, retention_bits)?
+        };
         let cap = <Self as Mmcs<Val>>::Commitment::new(output.cap().to_vec());
         let data = if retention_bits == 0 {
             ProverData::GpuRetained {
@@ -243,7 +257,7 @@ impl CandidateMmcs {
             ProverData::Compact(compact_data::CompactData::new(
                 output.prefixes,
                 plan.output_height(),
-                salts,
+                compact_salts::retain(salts, salt_checkpoints),
                 output.tree,
             ))
         };

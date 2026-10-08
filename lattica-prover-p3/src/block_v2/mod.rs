@@ -7,6 +7,8 @@
 
 pub mod codec;
 #[cfg(all(feature = "gpu-metal", target_os = "macos"))]
+pub(crate) mod apple_memory;
+#[cfg(all(feature = "gpu-metal", target_os = "macos"))]
 pub(crate) use crate::metal_compute as compute;
 #[cfg(feature = "gpu")]
 pub(crate) use ocl as compute;
