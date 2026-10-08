@@ -2,6 +2,7 @@
 //! two_adic_pcs.rs (MIT OR Apache-2.0). Evaluation/challenger order and the
 //! upstream FRI prover are preserved; only matrix quotient reduction changes.
 //! Not production-qualified. The CPU verifier and serialized proof are unchanged.
+use crate::block_v2::worker_memory::MEMORY_BACKEND;
 use super::batched_fri as prover;
 use super::gpu_hash::{reduce_openings, CandidateMmcs, OpeningMatrix, OpeningTerm};
 use super::profile::{Challenge, ChallengeMmcs};
@@ -251,21 +252,17 @@ fn open(
     // For each unique opening point z, we will find the largest degree bound
     // for that point, and precompute 1/(z - X) for the largest subgroup (in bitrev order).
     let inv_denoms = compute_inverse_denominators(&mats_and_points, &coset);
-    #[cfg(feature = "gpu-metal")]
-    let reclaim = super::apple_memory::reclaim_enabled();
-    #[cfg(not(feature = "gpu-metal"))]
-    let reclaim = false;
+    let reclaim = super::worker_memory::reclaim_enabled();
     if reclaim { drop(coset); }
 
     // Precompute adjusted barycentric weights once per opening point.
     // adjusted[i] = 1/(z - x_i) - 1/z, reused across all matrices opened at z.
     let adjusted_weights = opening_weights(&inv_denoms, fri.log_blowup, reclaim);
-    #[cfg(feature = "gpu-metal")]
     if reclaim {
-        eprintln!("apple_opening_workspace pid={} denominator_bytes={} adjusted_weight_bytes={}", std::process::id(),
+        eprintln!("{MEMORY_BACKEND}_opening_workspace pid={} denominator_bytes={} adjusted_weight_bytes={}", std::process::id(),
             inv_denoms.iter().map(|(_, d)| d.len() * 24).sum::<usize>(),
             adjusted_weights.iter().map(|(_, d)| d.len() * 24).sum::<usize>());
-        super::apple_memory::checkpoint("opening weights allocated");
+        super::worker_memory::checkpoint("opening weights allocated");
     }
 
     // Evaluate coset representations and write openings to the challenger
@@ -365,8 +362,7 @@ fn open(
         drop(requests);
         drop(inv_denoms);
         drop(mats_and_points);
-        #[cfg(feature = "gpu-metal")]
-        super::apple_memory::checkpoint("opening host buffers released before FRI");
+            super::worker_memory::checkpoint("opening host buffers released before FRI");
     }
 
     let folding: TwoAdicFriFoldingForMmcs<Val, CandidateMmcs> = TwoAdicFriFolding(PhantomData);

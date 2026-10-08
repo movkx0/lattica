@@ -1,4 +1,5 @@
-//! Opt-in coordination for Apple workers sharing one physical memory pool.
+//! Opt-in phase coordination for workers sharing one host memory pool.
+//! Backend-specific environment names keep Apple and Linux experiments isolated.
 //! File locks are released by the OS on worker exit, including SIGKILL. Permits
 //! cover allocations, not paused processes which already hold large scratch.
 use std::{
@@ -11,6 +12,34 @@ use std::{
     time::{Duration, Instant},
 };
 
+/// Linux deliberately ignores every LATTICA_APPLE_* setting and vice versa.
+pub(crate) fn env_name(suffix: &str) -> String {
+    format!("LATTICA_{}_{suffix}", if cfg!(feature = "gpu-metal") { "APPLE" } else { "V2" })
+}
+pub(crate) const MEMORY_BACKEND: &str = if cfg!(feature = "gpu-metal") { "apple" } else { "linux" };
+
+pub(crate) fn clock_ns() -> u64 {
+    #[cfg(feature = "gpu-metal")]
+    { crate::metal_compute::diagnostics::clock_ns() }
+    #[cfg(not(feature = "gpu-metal"))]
+    {
+        let mut time = std::mem::MaybeUninit::<libc::timespec>::uninit();
+        // CLOCK_MONOTONIC is shared by all processes, allowing phase timelines to be merged.
+        assert_eq!(unsafe { libc::clock_gettime(libc::CLOCK_MONOTONIC, time.as_mut_ptr()) }, 0);
+        let time = unsafe { time.assume_init() };
+        time.tv_sec as u64 * 1_000_000_000 + time.tv_nsec as u64
+    }
+}
+
+#[cfg(not(feature = "gpu-metal"))]
+pub(crate) fn checkpoint(label: &str) {
+    let rss = std::fs::read_to_string("/proc/self/statm").ok()
+        .and_then(|v| v.split_whitespace().nth(1)?.parse::<u64>().ok())
+        .unwrap_or(0) * unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as u64;
+    eprintln!("{MEMORY_BACKEND}_memory_phase pid={} label={label:?} clock_ns={} rss_bytes={rss}",
+        std::process::id(), clock_ns());
+}
+
 pub(crate) fn private_directory(path: &Path) -> Result<(), String> {
     match std::fs::DirBuilder::new().mode(0o700).create(path) {
         Ok(()) => (),
@@ -20,7 +49,7 @@ pub(crate) fn private_directory(path: &Path) -> Result<(), String> {
     let m = std::fs::symlink_metadata(path).map_err(|e| e.to_string())?;
     if !m.is_dir() || m.uid() != unsafe { libc::geteuid() } || m.mode() & 0o777 != 0o700 {
         return Err(
-            "Apple worker coordination directory must be private and owned by this user".into(),
+            "worker coordination directory must be private and owned by this user".into(),
         );
     }
     Ok(())
@@ -42,7 +71,7 @@ pub(crate) fn lock_file(path: &Path) -> Result<File, String> {
         || m.mode() & 0o777 != 0o600
         || m.nlink() != 1
     {
-        return Err("invalid Apple worker lock file".into());
+        return Err("invalid worker lock file".into());
     }
     Ok(f)
 }
@@ -70,9 +99,10 @@ pub(crate) fn lock(f: &File, nonblocking: bool) -> Result<bool, String> {
 }
 
 pub(crate) fn reclaim_enabled() -> bool {
-    std::env::var("LATTICA_APPLE_MEMORY_RECLAIM").as_deref() == Ok("1")
+    std::env::var(env_name("MEMORY_RECLAIM")).as_deref() == Ok("1")
 }
 
+#[cfg(feature = "gpu-metal")]
 pub(crate) fn checkpoint(label: &str) {
     let mut usage = std::mem::MaybeUninit::<libc::rusage_info_v2>::zeroed();
     if unsafe {
@@ -85,9 +115,9 @@ pub(crate) fn checkpoint(label: &str) {
     {
         let u = unsafe { usage.assume_init() };
         eprintln!(
-            "apple_memory_phase pid={} label={label:?} clock_ns={} rss_bytes={} footprint_bytes={}",
+            "{MEMORY_BACKEND}_memory_phase pid={} label={label:?} clock_ns={} rss_bytes={} footprint_bytes={}",
             std::process::id(),
-            crate::metal_compute::diagnostics::clock_ns(),
+            clock_ns(),
             u.ri_resident_size,
             u.ri_phys_footprint
         );
@@ -103,37 +133,37 @@ pub(crate) struct PhaseGuard {
 }
 impl PhaseGuard {
     pub(crate) fn acquire(label: &'static str) -> Result<Option<Self>, String> {
-        let Some(dir) = std::env::var_os("LATTICA_APPLE_PHASE_DIR") else {
+        let Some(dir) = std::env::var_os(env_name("PHASE_DIR")) else {
             return Ok(None);
         };
-        let slots: usize = std::env::var("LATTICA_APPLE_PHASE_SLOTS")
-            .unwrap_or_else(|_| "2".into())
+        let slots: usize = std::env::var(env_name("PHASE_SLOTS"))
+            .unwrap_or_else(|_| if cfg!(feature = "gpu-metal") { "2" } else { "1" }.into())
             .parse()
-            .map_err(|_| "invalid Apple memory phase slot count")?;
+            .map_err(|_| "invalid worker memory phase slot count")?;
         Self::acquire_in(&PathBuf::from(dir), slots, label).map(Some)
     }
 
     pub(crate) fn acquire_late() -> Result<Option<Self>, String> {
-        let slots = match std::env::var("LATTICA_APPLE_LATE_PHASE_SLOTS") {
+        let slots = match std::env::var(env_name("LATE_PHASE_SLOTS")) {
             Err(std::env::VarError::NotPresent) => return Ok(None),
-            Ok(value) => value.parse::<usize>().map_err(|_| "invalid Apple late phase slot count")?,
-            Err(_) => return Err("invalid Apple late phase environment".into()),
+            Ok(value) => value.parse::<usize>().map_err(|_| "invalid worker late phase slot count")?,
+            Err(_) => return Err("invalid worker late phase environment".into()),
         };
-        let dir = std::env::var_os("LATTICA_APPLE_PHASE_DIR")
-            .ok_or("Apple late phase coordination requires a phase directory")?;
+        let dir = std::env::var_os(env_name("PHASE_DIR"))
+            .ok_or("worker late phase coordination requires a phase directory")?;
         let dir = PathBuf::from(dir);
         private_directory(&dir)?;
         Self::acquire_pool(&dir.join("late"), slots, "quotient commitment through queries", "late").map(Some)
     }
 
     pub(crate) fn acquire_query() -> Result<Option<Self>, String> {
-        let slots = match std::env::var("LATTICA_APPLE_QUERY_PHASE_SLOTS") {
+        let slots = match std::env::var(env_name("QUERY_PHASE_SLOTS")) {
             Err(std::env::VarError::NotPresent) => return Ok(None),
-            Ok(value) => value.parse::<usize>().map_err(|_| "invalid Apple query phase slot count")?,
-            Err(_) => return Err("invalid Apple query phase environment".into()),
+            Ok(value) => value.parse::<usize>().map_err(|_| "invalid worker query phase slot count")?,
+            Err(_) => return Err("invalid worker query phase environment".into()),
         };
-        let dir = std::env::var_os("LATTICA_APPLE_PHASE_DIR")
-            .ok_or("Apple query phase coordination requires phase directory")?;
+        let dir = std::env::var_os(env_name("PHASE_DIR"))
+            .ok_or("worker query phase coordination requires phase directory")?;
         let dir = PathBuf::from(dir);
         private_directory(&dir)?;
         Self::acquire_pool(&dir.join("query"), slots, "query reconstruction", "query").map(Some)
@@ -145,7 +175,7 @@ impl PhaseGuard {
 
     fn acquire_pool(dir: &Path, slots: usize, label: &'static str, pool: &'static str) -> Result<Self, String> {
         if !(1..=3).contains(&slots) {
-            return Err("Apple memory phase slots must be 1..3".into());
+            return Err("worker memory phase slots must be 1..3".into());
         }
         private_directory(dir)?;
         let start = Instant::now();
@@ -159,8 +189,8 @@ impl PhaseGuard {
         loop {
             for (slot, f) in permits.iter().enumerate() {
                 if lock(f, true)? {
-                    eprintln!("apple_memory_admit pid={} phase={label:?} pool={pool} slot={slot} waited_ms={} clock_ns={}",
-                        std::process::id(), start.elapsed().as_millis(), crate::metal_compute::diagnostics::clock_ns());
+                    eprintln!("{MEMORY_BACKEND}_memory_admit pid={} phase={label:?} pool={pool} slot={slot} waited_ms={} clock_ns={}",
+                        std::process::id(), start.elapsed().as_millis(), clock_ns());
                     checkpoint(label);
                     let permit = permits.into_iter().nth(slot).unwrap();
                     return Ok(Self {
@@ -180,13 +210,13 @@ impl Drop for PhaseGuard {
     fn drop(&mut self) {
         checkpoint("before phase release");
         eprintln!(
-            "apple_memory_release pid={} phase={:?} pool={} slot={} elapsed_ms={} clock_ns={}",
+            "{MEMORY_BACKEND}_memory_release pid={} phase={:?} pool={} slot={} elapsed_ms={} clock_ns={}",
             std::process::id(),
             self.label,
             self.pool,
             self.slot,
             self.started.elapsed().as_millis(),
-            crate::metal_compute::diagnostics::clock_ns()
+            clock_ns()
         );
     }
 }
@@ -268,7 +298,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("lattica-phase-death-{}", std::process::id()));
         private_directory(&dir).unwrap();
         let mut child = Child(Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", "block_v2::apple_memory::tests::apple_phase_permits_subprocess_holder", "--test-threads=1"])
+            .args(["--exact", "block_v2::worker_memory::tests::apple_phase_permits_subprocess_holder", "--test-threads=1"])
             .env("LATTICA_TEST_PHASE_DIR", &dir).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null())
             .spawn().unwrap());
         let start = Instant::now();
@@ -304,7 +334,7 @@ mod tests {
         let mut children = Children(Vec::new());
         for i in 0..4 {
             children.0.push(Command::new(std::env::current_exe().unwrap())
-                .args(["--exact", "block_v2::apple_memory::tests::apple_phase_permits_pipeline_subprocess", "--test-threads=1"])
+                .args(["--exact", "block_v2::worker_memory::tests::apple_phase_permits_pipeline_subprocess", "--test-threads=1"])
                 .env("LATTICA_TEST_PIPELINE_DIR", &dir).env("LATTICA_TEST_PIPELINE_WORKER", i.to_string())
                 .stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null()).spawn().unwrap());
         }

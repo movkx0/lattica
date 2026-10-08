@@ -6,8 +6,8 @@
 //! calculations and leaf proofs do not satisfy that gate. Historical v1 is unchanged.
 
 pub mod codec;
-#[cfg(all(feature = "gpu-metal", target_os = "macos"))]
-pub(crate) mod apple_memory;
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+pub(crate) mod worker_memory;
 #[cfg(all(feature = "gpu-metal", target_os = "macos"))]
 pub(crate) use crate::metal_compute as compute;
 #[cfg(feature = "gpu")]

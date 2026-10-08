@@ -168,7 +168,7 @@ fn gpu_apple_shared_preprocessing_preserves_proofs_and_private_randomness() {
     let cap = reference.preprocessing_cap().clone();
     drop(reference);
     let dir = std::env::temp_dir().join(format!("lattica-apple-memory-proof-{}", std::process::id()));
-    crate::block_v2::apple_memory::private_directory(&dir).unwrap();
+    crate::block_v2::worker_memory::private_directory(&dir).unwrap();
     for (name, value) in [
         ("LATTICA_V2_GPU_HASH", "1"), ("LATTICA_V2_GPU_MANAGED_BYTES", "268435456"),
         ("LATTICA_V2_GPU_RESIDENT_LDE", "1"), ("LATTICA_V2_GPU_OPENINGS", "1"),

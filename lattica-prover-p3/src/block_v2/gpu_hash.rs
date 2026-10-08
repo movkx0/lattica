@@ -3,8 +3,9 @@
 //! Only equal-height, power-of-two batches are admitted by the selected GPU path.
 mod compact_data;
 mod compact_salts;
-#[cfg(feature = "gpu-metal")]
 mod shared_preprocessing;
+#[cfg(feature = "gpu")]
+mod device_slots;
 pub(crate) mod engine;
 mod prefix_storage;
 pub(crate) use engine::fri_fold::fold as fold_fri;

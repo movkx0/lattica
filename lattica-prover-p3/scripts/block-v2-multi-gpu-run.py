@@ -215,7 +215,7 @@ def environment(budget, directory):
         raise ValueError('assigned GPU FRI folding selection must be boolean')
     if type(denominator_cache) is not bool:
         raise ValueError('assigned opening denominator cache selection must be boolean')
-    return {
+    result = {
         'RAYON_NUM_THREADS': str(cpu['rayon_threads']), 'LATTICA_GPU_DEVICE_UUID': gpu['uuid'],
         'LATTICA_V2_ACCOUNTING_UNIT': budget['unit'], 'LATTICA_V2_WORKER_BUDGET': str(directory / 'budget.json'),
         'LATTICA_V2_GPU_MANAGED_BYTES': str(gpu['managed_bytes']),
@@ -231,6 +231,11 @@ def environment(budget, directory):
         'LATTICA_V2_GPU_OPENING_DENOMINATOR_CACHE': '1' if denominator_cache else '0',
         'LATTICA_FFT_TRACE': '1', 'LATTICA_PROFILE': '1', 'LATTICA_PROFILE_TIMELINE': '0',
     }
+
+    if "memory_schedule" in budget:
+        from block_v2_phase_memory import environment as phase_environment
+        result.update(phase_environment(budget["memory_schedule"]))
+    return result
 
 
 def launch(config, job, budget, directory, worker_script=None):

@@ -6,7 +6,6 @@ use std::{borrow::Borrow, ops::Deref};
 pub(crate) type PrefixMatrix = DenseMatrix<Val, PrefixStorage>;
 pub(crate) enum PrefixStorage {
     Host(Vec<Val>),
-    #[cfg(feature = "gpu-metal")]
     Shared(super::shared_preprocessing::SharedPrefix),
     #[cfg(feature = "gpu-metal")]
     Metal(crate::metal_compute::resident::FrozenWords),
@@ -16,7 +15,6 @@ impl Deref for PrefixStorage {
     fn deref(&self) -> &[Val] {
         match self {
             Self::Host(values) => values,
-            #[cfg(feature = "gpu-metal")]
             Self::Shared(values) => values.values(),
             #[cfg(feature = "gpu-metal")]
             Self::Metal(values) => {
@@ -56,7 +54,6 @@ impl PrefixStorage {
                 values.truncate(len);
                 values.shrink_to_fit();
             }
-            #[cfg(feature = "gpu-metal")]
             Self::Shared(_) => return Err("public preprocessing prefix cannot be truncated".into()),
             #[cfg(feature = "gpu-metal")]
             Self::Metal(values) => {

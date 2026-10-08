@@ -660,19 +660,15 @@ impl Engine {
             };
             #[cfg(not(feature = "gpu-metal"))]
             let shared: Option<()> = None;
-            #[cfg(feature = "gpu-metal")]
-            let mut public_readback = if public_preprocessing && retention_bits > 0
-                && std::env::var_os("LATTICA_APPLE_SHARED_PREPROCESSING_DIR").is_some() {
+                        let mut public_readback = if public_preprocessing && retention_bits > 0
+                && std::env::var_os(crate::block_v2::worker_memory::env_name("SHARED_PREPROCESSING_DIR")).is_some() {
                 if masks.is_some() || shared.is_some() || plan.readback_layout != super::lde_readback::ReadbackLayout::Direct {
                     return Err("shared public preprocessing requires direct host readback without masks".into());
                 }
                 super::super::shared_preprocessing::SharedReadback::for_public_input(
                     input, plan.retained_height(), plan.columns_per_tile())?
             } else { None };
-            #[cfg(feature = "gpu-metal")]
-            let public_mapped = public_readback.is_some();
-            #[cfg(not(feature = "gpu-metal"))]
-            let public_mapped = { let _ = public_preprocessing; false };
+                        let public_mapped = public_readback.is_some();
             let mut readback = if shared.is_none() && !public_mapped {
                 Some(
                     HostReadback::with_layout(
@@ -800,8 +796,7 @@ impl Engine {
                 if let Some(readback) = &mut readback {
                     self.lde_read_columns(transformed, readback, tile.first_column, tile.columns)?;
                 }
-                #[cfg(feature = "gpu-metal")]
-                if let Some(readback) = &mut public_readback {
+                                if let Some(readback) = &mut public_readback {
                     self.lde_read_columns(transformed, readback, tile.first_column, tile.columns)?;
                 }
                 #[cfg(feature = "gpu-metal")]
@@ -840,8 +835,7 @@ impl Engine {
                     matrices.push(matrix);
                 }
             }
-            #[cfg(feature = "gpu-metal")]
-            if let Some(readback) = public_readback {
+                        if let Some(readback) = public_readback {
                 prefixes.push(p3_matrix::dense::DenseMatrix::new(
                     super::super::prefix_storage::PrefixStorage::Shared(readback.finish()?), shape.width));
             }
@@ -914,8 +908,7 @@ impl Engine {
         }
         self.stats.lde_wall_ns += started.elapsed().as_nanos();
         self.context_checkpoint("resident LDE complete")?;
-        #[cfg(feature = "gpu-metal")]
-        if crate::block_v2::apple_memory::reclaim_enabled() {
+                if crate::block_v2::worker_memory::reclaim_enabled() {
             self.workspace = None;
         }
         if buffers.bytes() <= self.lde_workspace_limit {

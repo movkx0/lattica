@@ -1,5 +1,6 @@
 //! Private replay checkpoints for compact MMCS salts. Nothing here is serialized
 //! or shared between workers. Checkpoints preserve rejection sampling exactly.
+use crate::block_v2::worker_memory::MEMORY_BACKEND;
 use crate::config::Val;
 use p3_matrix::dense::RowMajorMatrix;
 use rand::{distr::{Distribution, StandardUniform}, Rng};
@@ -10,15 +11,12 @@ const ROWS: usize = 1024;
 const WIDTH: usize = 4;
 
 pub(super) fn enabled() -> Result<bool, String> {
-    #[cfg(feature = "gpu-metal")]
-    return match std::env::var("LATTICA_APPLE_COMPACT_SALTS") {
+    return match std::env::var(crate::block_v2::worker_memory::env_name("COMPACT_SALTS")) {
         Err(std::env::VarError::NotPresent) => Ok(false),
         Ok(v) if v == "0" => Ok(false),
         Ok(v) if v == "1" => Ok(true),
-        _ => Err("Apple compact salts must be 0 or 1".into()),
+        _ => Err("compact salts must be 0 or 1".into()),
     };
-    #[cfg(not(feature = "gpu-metal"))]
-    Ok(false)
 }
 
 // Deliberately no Debug, serde, seed accessor, or mutable replay API.
@@ -85,7 +83,7 @@ impl SaltMatrix {
             Self::Dense(m) => Ok(indices.iter().map(|&i| m.values[i*WIDTH..(i+1)*WIDTH].to_vec()).collect()),
             Self::Replay(c) => {
                 let (rows, regenerated) = c.rows(indices)?;
-                eprintln!("apple_salt_queries pid={} height={} queries={} regenerated_rows={} checkpoint_bytes={}",
+                eprintln!("{MEMORY_BACKEND}_salt_queries pid={} height={} queries={} regenerated_rows={} checkpoint_bytes={}",
                     std::process::id(), c.height, indices.len(), regenerated, c.bytes());
                 Ok(rows)
             }
@@ -119,7 +117,7 @@ pub(super) fn retain(dense: Vec<RowMajorMatrix<Val>>, replay: Vec<Checkpoints>) 
         assert_eq!(matrix.values.len()/WIDTH, saved.height);
     }
     drop(dense);
-    eprintln!("apple_salt_storage pid={} matrices={} dense_bytes={} checkpoint_bytes={} released_bytes={}",
+    eprintln!("{MEMORY_BACKEND}_salt_storage pid={} matrices={} dense_bytes={} checkpoint_bytes={} released_bytes={}",
         std::process::id(), replay.len(), dense_bytes, checkpoint_bytes, dense_bytes.saturating_sub(checkpoint_bytes));
     replay.into_iter().map(SaltMatrix::Replay).collect()
 }
