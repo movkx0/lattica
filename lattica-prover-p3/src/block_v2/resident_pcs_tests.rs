@@ -1,14 +1,15 @@
 //! Exact CPU-oracle checks for the research hiding-PCS integration. All seeds
 //! below are deterministic test fixtures, never production proving interfaces.
-use super::{CandidateMmcs, Limits, ProverData, engine};
+use super::{engine, CandidateMmcs, Limits, ProverData};
+use crate::block_v2::profile::Challenger;
 use crate::block_v2::{profile, quotient_pcs::CandidatePcs};
-use crate::config::{Challenger, MyCompress, MyHash, Val, ValMmcs};
+use crate::config::{MyCompress, MyHash, Val, ValMmcs};
 use p3_commit::{BatchOpeningRef, ExtensionMmcs, Mmcs, Pcs, PolynomialSpace};
 use p3_field::coset::TwoAdicMultiplicativeCoset;
 use p3_field::{Field, PrimeCharacteristicRing};
 use p3_fri::HidingFriPcs;
 use p3_goldilocks::default_goldilocks_poseidon2_8;
-use p3_matrix::{Matrix, dense::RowMajorMatrix};
+use p3_matrix::{dense::RowMajorMatrix, Matrix};
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 
@@ -45,11 +46,22 @@ fn reference() -> (CpuPcs, ValMmcs) {
 }
 
 fn candidate(fusion: bool) -> (CandidatePcs, CandidateMmcs) {
+    candidate_field::<Challenge>(fusion)
+}
+
+fn candidate_field<E: crate::block_v2::pcs_field::PcsField>(
+    fusion: bool,
+) -> (CandidatePcs<E>, CandidateMmcs) {
     let mmcs = mmcs(true);
+    let mut fri = profile::fri(crate::block_v2::gpu_hash::FriExtensionMmcs::<E>::new(
+        mmcs.clone(),
+    ));
+    fri.max_log_arity = E::MAX_LOG_ARITY;
+    fri.num_queries = E::NUM_QUERIES;
     let pcs = CandidatePcs::new_resident(
         Default::default(),
         mmcs.clone(),
-        profile::fri(profile::ChallengeMmcs::new(mmcs.clone())),
+        fri,
         profile::NUM_RANDOM_CODEWORDS,
         ChaCha20Rng::from_seed([43; 32]),
         64 << 20,
@@ -91,6 +103,18 @@ fn matrix(height: usize, width: usize, offset: usize) -> RowMajorMatrix<Val> {
 #[path = "quotient_pipeline_tests.rs"]
 mod quotient_pipeline_tests;
 
+#[path = "device_pcs_tests.rs"]
+mod device_pcs_tests;
+
+#[path = "random_integration_tests.rs"]
+mod random_integration_tests;
+#[path = "random_pipeline_tests.rs"]
+mod random_pipeline_tests;
+#[path = "random_storage_tests.rs"]
+mod random_storage_tests;
+#[path = "witness_pipeline_tests.rs"]
+mod witness_pipeline_tests;
+
 fn compare(
     cpu: &ValMmcs,
     gpu: &CandidateMmcs,
@@ -124,26 +148,38 @@ fn compare(
 
 #[test]
 fn resident_constructor_rejects_unavailable_backend_and_changed_parameters() {
+    resident_field_constructor::<Challenge>();
+    resident_field_constructor::<crate::config::Challenge>();
+}
+
+fn field_params<E: crate::block_v2::pcs_field::PcsField>(
+    mmcs: CandidateMmcs,
+) -> p3_fri::FriParameters<crate::block_v2::gpu_hash::FriExtensionMmcs<E>> {
+    let mut fri = profile::fri(crate::block_v2::gpu_hash::FriExtensionMmcs::<E>::new(mmcs));
+    fri.max_log_arity = E::MAX_LOG_ARITY;
+    fri.num_queries = E::NUM_QUERIES;
+    fri
+}
+
+fn resident_field_constructor<E: crate::block_v2::pcs_field::PcsField>() {
     let cpu_mmcs = mmcs(false);
-    assert!(
-        CandidatePcs::new_resident(
-            Default::default(),
-            cpu_mmcs.clone(),
-            profile::fri(profile::ChallengeMmcs::new(cpu_mmcs.clone())),
-            profile::NUM_RANDOM_CODEWORDS,
-            ChaCha20Rng::from_seed([43; 32]),
-            64 << 20,
-        )
-        .is_err()
-    );
+    assert!(CandidatePcs::<E>::new_resident(
+        Default::default(),
+        cpu_mmcs.clone(),
+        field_params::<E>(cpu_mmcs.clone()),
+        profile::NUM_RANDOM_CODEWORDS,
+        ChaCha20Rng::from_seed([43; 32]),
+        64 << 20,
+    )
+    .is_err());
     for which in 0..9 {
-        let mut fri = profile::fri(profile::ChallengeMmcs::new(cpu_mmcs.clone()));
+        let mut fri = field_params::<E>(cpu_mmcs.clone());
         let mut columns = profile::NUM_RANDOM_CODEWORDS;
         let mut budget = 64 << 20;
         match which {
             0 => fri.log_blowup -= 1,
             1 => fri.log_final_poly_len = 1,
-            2 => fri.max_log_arity = 2,
+            2 => fri.max_log_arity = if E::MAX_LOG_ARITY == 1 { 4 } else { 1 },
             3 => fri.num_queries -= 1,
             4 => fri.commit_proof_of_work_bits = 1,
             5 => fri.query_proof_of_work_bits -= 1,
@@ -151,7 +187,7 @@ fn resident_constructor_rejects_unavailable_backend_and_changed_parameters() {
             7 => budget = 0,
             _ => budget = (32 << 30) + 1,
         }
-        let error = CandidatePcs::new_resident(
+        let error = CandidatePcs::<E>::new_resident(
             Default::default(),
             cpu_mmcs.clone(),
             fri,
@@ -161,7 +197,7 @@ fn resident_constructor_rejects_unavailable_backend_and_changed_parameters() {
         )
         .err()
         .expect("unsupported parameters must fail before GPU access");
-        assert!(error.contains("unchanged candidate parameters"), "{error}");
+        assert!(error.contains("pinned field parameters"), "{error}");
     }
 }
 
@@ -234,18 +270,32 @@ fn gpu_resident_matches_all_cpu_commitment_streams_across_active_clones() {
             gpu.commit_ldes(actual),
         );
 
-        compare(
-            &cpu_mmcs,
-            &gpu_mmcs,
+        let expected =
             <CpuPcs as Pcs<Challenge, Challenger>>::get_opt_randomization_poly_commitment(
                 &cpu,
                 [domain, domain],
             )
-            .unwrap(),
-            clone
-                .get_opt_randomization_poly_commitment([domain, domain])
-                .unwrap(),
-        );
+            .unwrap();
+        let actual = clone
+            .get_opt_randomization_poly_commitment([domain, domain])
+            .unwrap();
+        if crate::block_v2::quotient_pcs::gpu_opening_eval_enabled() {
+            use p3_field::PrimeField64;
+            let session = clone.quotient_session().unwrap();
+            for (index, lde) in cpu_mmcs.get_matrices(&expected.1).iter().enumerate() {
+                let captured = actual.1.owned_matrix(&session, index).unwrap();
+                assert_eq!(captured.spec().rows(), domain.size());
+                assert_eq!(captured.spec().columns(), 7);
+                assert_eq!(
+                    session.read(&captured, captured.spec().bytes()).unwrap(),
+                    lde.values[..domain.size() * 7]
+                        .iter()
+                        .map(|v| v.as_canonical_u64())
+                        .collect::<Vec<_>>()
+                );
+            }
+        }
+        compare(&cpu_mmcs, &gpu_mmcs, expected, actual);
     }
     let stats = super::report("resident PCS commitment equivalence").unwrap();
     assert_eq!(stats.upload_device_ns > 0, engine::test_device_transfers());
@@ -254,6 +304,22 @@ fn gpu_resident_matches_all_cpu_commitment_streams_across_active_clones() {
         engine::test_device_transfers()
     );
     assert!(stats.upload_wall_ns > 0 && stats.download_wall_ns > 0);
+}
+
+#[test]
+#[ignore = "requires OpenCL GPU, GPU_OPENING_EVAL=1 and a <=3 GiB zero-swap service"]
+fn gpu_owned_opening_randomization_prefixes_preserve_rng_across_clones() {
+    crate::block_v2::quotient_pcs::initialize_gpu_quotient_from_env(true, true).unwrap();
+    assert!(crate::block_v2::quotient_pcs::gpu_opening_eval_enabled());
+    gpu_resident_matches_all_cpu_commitment_streams_across_active_clones();
+}
+
+#[test]
+#[ignore = "requires OpenCL GPU, GPU_OPENING_EVAL=1 and a <=3 GiB zero-swap service"]
+fn gpu_owned_opening_admission_preserves_masks_and_salts() {
+    crate::block_v2::quotient_pcs::initialize_gpu_quotient_from_env(true, true).unwrap();
+    assert!(crate::block_v2::quotient_pcs::gpu_opening_eval_enabled());
+    gpu_resident_admission_errors_do_not_consume_masks_or_salts();
 }
 
 #[test]
@@ -281,14 +347,12 @@ fn gpu_resident_admission_errors_do_not_consume_masks_or_salts() {
     assert!(state.commit([(domain, malformed)], false).is_err());
     // These shapes individually match the hiding convention but cannot share
     // the equal-output-height GPU MMCS. Admission must precede all RNG draws.
-    assert!(
-        state
-            .commit(
-                [(domain, matrix(8, 3, 2)), (taller, matrix(16, 3, 2)),],
-                false
-            )
-            .is_err()
-    );
+    assert!(state
+        .commit(
+            [(domain, matrix(8, 3, 2)), (taller, matrix(16, 3, 2)),],
+            false
+        )
+        .is_err());
     assert!(state.randomization([domain, taller]).is_err());
     let input = [(domain, matrix(8, 3, 2))];
     compare(
@@ -340,16 +404,12 @@ fn gpu_resident_research_switch_only_selects_explicit_proving_configs() {
     super::initialize_from_env().unwrap();
     assert!(super::initialize_resident_from_env().unwrap());
     assert!(super::initialize_resident_from_env().unwrap());
-    assert!(
-        profile::make_proving_config()
-            .pcs()
-            .uses_resident_commitments()
-    );
-    assert!(
-        profile::preprocessing_config()
-            .pcs()
-            .uses_resident_commitments()
-    );
+    assert!(profile::make_proving_config()
+        .pcs()
+        .uses_resident_commitments());
+    assert!(profile::preprocessing_config()
+        .pcs()
+        .uses_resident_commitments());
     assert!(
         !profile::make_config().pcs().uses_resident_commitments(),
         "wallet/default/verification configuration must not select resident commitments"
@@ -614,6 +674,7 @@ fn compact_test_data(
         mut matrices,
         salts,
         tree,
+        owned,
     } = data
     else {
         panic!("retained test data")
@@ -623,9 +684,9 @@ fn compact_test_data(
         matrix.values.truncate((height >> bits) * matrix.width);
         matrix.values.shrink_to_fit();
     }
-    ProverData::Compact(super::compact_data::CompactData::new(
-        matrices, height, salts, tree,
-    ))
+    let mut data = super::compact_data::CompactData::new(matrices, height, salts, tree);
+    data.owned = owned;
+    ProverData::Compact(data)
 }
 
 #[test]

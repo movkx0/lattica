@@ -31,17 +31,20 @@ pub(super) const MAX_TOKEN_BYTES: usize = TOKEN_BYTES + 32;
 const OWNER: &str = ".owner.lock";
 const INTENT_DOMAIN: u64 = 0x4c42563275;
 const REQUEST_DOMAIN: u64 = 0x4c42563276;
+
+#[path = "launch_storage.rs"]
+mod storage;
+pub use storage::LaunchStorage;
 pub const MAX_REQUEST_BYTES: usize = 4 * (1 << 20) + 65536;
 
 pub(super) fn digest(domain: u64, bytes: &[u8]) -> Result<[u8; 32], Error> {
-    let mut fields = vec![1, bytes.len() as u64];
-    for part in bytes.chunks(4) {
-        let mut word = [0; 4];
-        word[..part.len()].copy_from_slice(part);
-        fields.push(u64::from(u32::from_le_bytes(word)));
-    }
-    Ok(commitment::digest_bytes(commitment::hash_fields(
-        domain, &fields,
+    let fields = [1, bytes.len() as u64]
+        .into_iter()
+        .chain(commitment::stream::words(bytes));
+    Ok(commitment::digest_bytes(commitment::stream::hash_fields(
+        domain,
+        2 + bytes.len().div_ceil(4),
+        fields,
     )?)?)
 }
 pub(super) fn request_digest(bytes: &[u8]) -> Result<[u8; 32], Error> {
@@ -289,6 +292,7 @@ pub struct LaunchStore {
 impl LaunchStore {
     pub fn create(path: &Path, limits: LaunchLimits) -> Result<Self, Error> {
         limits.validate()?;
+        super::io_storage::check_named_path(path)?;
         if !path.is_absolute() || path.file_name().is_none() {
             return Err("launch store requires absolute named directory".into());
         }
@@ -347,6 +351,7 @@ impl LaunchStore {
                 .file_name()
                 .into_string()
                 .map_err(|_| "launch non-UTF8 filename")?;
+            super::io_storage::check_name(&value)?;
             if value == OWNER {
                 continue;
             }

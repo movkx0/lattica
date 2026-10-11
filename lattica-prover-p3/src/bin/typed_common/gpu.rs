@@ -12,7 +12,7 @@ use lattica_prover_p3::{
     spill_alloc,
 };
 use serde_json::Value;
-use std::{fs, path::Path, time::Instant};
+use std::{path::Path, time::Instant};
 
 #[path = "../grouped_common/adaptive.rs"]
 mod adaptive;
@@ -97,44 +97,32 @@ fn fri_workspace(assignment: &Value) -> Result<u64, Error> {
 }
 
 fn require_limits(budget: u64) -> Result<bool, Error> {
-    let assignment: Value = read_json(Path::new(&std::env::var("LATTICA_V2_WORKER_BUDGET")?))?;
-    let compact = validate_assignment(&assignment, budget)?;
-    let fri = fri_workspace(&assignment)? != 0;
-    if std::env::var("LATTICA_V2_GPU_FRI_FOLD").unwrap_or_else(|_| "0".into())
-        != if fri { "1" } else { "0" }
-    {
-        return Err("GPU FRI folding differs from resource assignment".into());
-    }
-    let workspace = match assignment.get("lde_workspace_bytes") {
-        Some(value) => value.as_u64().ok_or("invalid LDE workspace reservation")?,
-        None => 0,
-    };
-    if std::env::var("LATTICA_V2_GPU_LDE_WORKSPACE_BYTES")
-        .unwrap_or_else(|_| "0".into())
-        .parse::<u64>()?
-        != workspace
-        || workspace
-            > assignment["gpu"]["managed_bytes"]
-                .as_u64()
-                .ok_or("missing GPU managed budget")?
-                / 4
-    {
-        return Err("GPU workspace cache differs from resource assignment".into());
-    }
-    let membership = fs::read_to_string("/proc/self/cgroup")?;
-    let groups: Vec<_> = membership
-        .lines()
-        .filter_map(|line| line.strip_prefix("0::"))
-        .collect();
-    if groups.len() != 1 {
-        return Err("typed GPU bootstrap requires cgroup v2".into());
-    }
-    let group = Path::new("/sys/fs/cgroup").join(groups[0].trim_start_matches('/'));
-    let parent = group.parent().ok_or("missing typed GPU resource slice")?;
-    // This checks the actual CPU quota/cpuset, memory/swap caps, selected GPU,
-    // readback mode, scratch filesystem, and spill allowance, then starts Rayon.
-    adaptive::validate(&group, parent)?;
-    Ok(compact)
+    adaptive::validate(|assignment| {
+        let compact = validate_assignment(assignment, budget)?;
+        let fri = fri_workspace(assignment)? != 0;
+        if std::env::var("LATTICA_V2_GPU_FRI_FOLD").unwrap_or_else(|_| "0".into())
+            != if fri { "1" } else { "0" }
+        {
+            return Err("GPU FRI folding differs from resource assignment".into());
+        }
+        let workspace = match assignment.get("lde_workspace_bytes") {
+            Some(value) => value.as_u64().ok_or("invalid LDE workspace reservation")?,
+            None => 0,
+        };
+        if std::env::var("LATTICA_V2_GPU_LDE_WORKSPACE_BYTES")
+            .unwrap_or_else(|_| "0".into())
+            .parse::<u64>()?
+            != workspace
+            || workspace
+                > assignment["gpu"]["managed_bytes"]
+                    .as_u64()
+                    .ok_or("missing GPU managed budget")?
+                    / 4
+        {
+            return Err("GPU workspace cache differs from resource assignment".into());
+        }
+        Ok(compact)
+    })
 }
 
 fn require_backend() -> Result<(), Error> {

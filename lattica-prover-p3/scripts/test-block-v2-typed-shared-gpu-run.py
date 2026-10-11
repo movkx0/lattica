@@ -323,14 +323,39 @@ class SharedOwnerReceipts(unittest.TestCase):
             with self.subTest(key=key), self.assertRaises(ValueError):
                 validate(result | {key: value}, recover_cached_only=True)
 
+    def test_coordinator_partition_preserves_recovery_shared_and_physical_limits(self):
+        floor, shared = S.R.COORDINATOR_JOB_HOST_BYTES, S.R.COORDINATOR_SHARED_HOST_BYTES
+        total = shared + 2 * floor + 1
+        self.assertEqual(S.coordinator_partition(total, 2), (shared, [floor + 1, floor]))
+        previous = dict(schema_version=2, coordinator_shared_bytes=2*shared,
+                        coordinator_ram_bytes=2*shared + 2*floor + 1, workers=[{}, {}])
+        recovery = dict(previous_plan=previous)
+        before = copy.deepcopy(recovery)
+        self.assertEqual(S.coordinator_partition(previous['coordinator_ram_bytes'], 2, recovery),
+                         (2*shared, [floor + 1, floor]))
+        self.assertEqual(recovery, before)
+        for changes in (dict(schema_version=1), dict(coordinator_shared_bytes=None),
+                        dict(coordinator_shared_bytes=shared-1),
+                        dict(coordinator_shared_bytes=previous['coordinator_ram_bytes']),
+                        dict(coordinator_ram_bytes=previous['coordinator_ram_bytes']+1),
+                        dict(workers=[{}])):
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                S.coordinator_partition(previous['coordinator_ram_bytes'], 2,
+                                        dict(previous_plan={**previous, **changes}))
+        for field in ('schema_version', 'coordinator_shared_bytes'):
+            missing = dict(previous)
+            del missing[field]
+            with self.subTest(missing=field), self.assertRaises(ValueError):
+                S.coordinator_partition(previous['coordinator_ram_bytes'], 2, dict(previous_plan=missing))
+
     def test_cached_admission_reserves_only_the_current_cpu_coordinator(self):
         gib = 2**30
         host = dict(physical_bytes=64*gib, available_bytes=10*gib,
                     cgroup_memory_headroom=2*gib, cpu_capacity='1')
         assignment = dict(gpu={'uuid': 'GPU-a'}, detected_gpu={'uuid': 'GPU-a'},
             host={'worker_bytes': 21*gib, 'coordinator_bytes': gib,
-                  'coordinator_job_bytes': gib//2}, cpu={'rayon_threads': 12})
-        recovery = dict(gpu_uuids=['GPU-a'], previous_plan=dict(coordinator_ram_bytes=gib,
+                  'coordinator_job_bytes': gib//2, 'coordinator_shared_bytes': gib//2}, cpu={'rayon_threads': 12})
+        recovery = dict(gpu_uuids=['GPU-a'], previous_plan=dict(schema_version=2, coordinator_shared_bytes=gib//2, coordinator_ram_bytes=gib,
             coordinator_threads=1, workers=[{'assignment': assignment}]))
         before = copy.deepcopy(recovery)
         with mock.patch.object(S.R, 'detect_gpus', side_effect=AssertionError('GPU inventory called')):
@@ -339,6 +364,7 @@ class SharedOwnerReceipts(unittest.TestCase):
         self.assertEqual(devices, [{'uuid': 'GPU-a'}])
         self.assertEqual(budgets['GPU-a']['host']['worker_bytes'], 21*gib)
         self.assertNotIn('coordinator_job_bytes', budgets['GPU-a']['host'])
+        self.assertNotIn('coordinator_shared_bytes', budgets['GPU-a']['host'])
         self.assertEqual(recovery, before)
         for changed in [host | {'available_bytes': 7*gib},
                         host | {'cgroup_memory_headroom': gib//2},

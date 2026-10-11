@@ -24,6 +24,8 @@ pub enum LeafError {
     InvalidEncoding,
     InvalidShape,
     VerificationFailed,
+    ProvingPolicy,
+    GpuFailure,
 }
 
 /// v1's spend constraints, plus mint=0. Issuance requires its own typed leaf and
@@ -79,16 +81,70 @@ pub fn prove_joinsplit_research(
     witness: &Witness,
     context: &Context,
 ) -> Result<Vec<u8>, LeafError> {
+    prove_joinsplit_with_request(
+        witness,
+        context,
+        crate::proving::Request::from_env().map_err(|_| LeafError::ProvingPolicy)?,
+    )
+}
+
+pub fn prove_joinsplit_with_request(
+    witness: &Witness,
+    context: &Context,
+    request: crate::proving::Request,
+) -> Result<Vec<u8>, LeafError> {
+    #[cfg(feature = "gpu")]
+    if gpu_wallet_selected() {
+        return prove_joinsplit_on_gpu(witness, context, request);
+    }
+    use crate::proving::{Backend, Run, Stage};
+    let capabilities = profile::proving_capabilities(false);
+    let backend = if capabilities
+        .stages()
+        .iter()
+        .all(|s| s.backend == Backend::Cpu)
+    {
+        Backend::Cpu
+    } else {
+        Backend::Mixed
+    };
+    let run = Run::new("block_v2_joinsplit", request, capabilities)
+        .map_err(|_| LeafError::ProvingPolicy)?;
     if witness.mint != 0 {
         return Err(LeafError::IssuanceNotSupported);
     }
-    let pis = public_values(context, &js::public_values(witness))?;
-    let proof = prove(
-        &profile::make_config(),
-        &ContextJoinSplitAir,
-        js::build_trace(witness),
-        &pis,
-    );
+    let pis = run
+        .measure(Stage::PublicValues, Backend::Cpu, || {
+            public_values(context, &js::public_values(witness))
+        })
+        .map_err(|_| LeafError::ProvingPolicy)??;
+    let trace = run
+        .measure(Stage::WitnessTrace, Backend::Cpu, || {
+            js::build_trace(witness)
+        })
+        .map_err(|_| LeafError::ProvingPolicy)?;
+    finish_joinsplit_trace(context, pis, trace, run, backend)
+}
+
+fn finish_joinsplit_trace(
+    context: &Context,
+    pis: Vec<Val>,
+    trace: p3_matrix::dense::RowMajorMatrix<Val>,
+    run: crate::proving::Run,
+    backend: crate::proving::Backend,
+) -> Result<Vec<u8>, LeafError> {
+    use crate::proving::Stage;
+    let proof = run
+        .measure(Stage::UpstreamProver, backend, || {
+            prove(&profile::make_config(), &ContextJoinSplitAir, trace, &pis)
+        })
+        .map_err(|_| LeafError::ProvingPolicy)?;
+    let bytes = encode_proof(context, &proof)?;
+    run.finish(true).map_err(|_| LeafError::ProvingPolicy)?;
+    Ok(bytes)
+}
+
+fn encode_proof(context: &Context, proof: &Proof<Config>) -> Result<Vec<u8>, LeafError> {
     let payload = postcard::to_allocvec(&proof).map_err(|_| LeafError::InvalidEncoding)?;
     if payload.len() > profile::MAX_PROOF_BYTES - HEADER_BYTES {
         return Err(LeafError::SizeLimit);
@@ -98,6 +154,155 @@ pub fn prove_joinsplit_research(
     bytes.extend_from_slice(&context.profile_id);
     bytes.extend_from_slice(&context.chain_id);
     bytes.extend_from_slice(&payload);
+    Ok(bytes)
+}
+
+/// Opt-in device witness/public-value arithmetic with an explicit readback into
+/// the existing single-AIR prover. Initialize the bounded OpenCL engine first.
+/// `host_trace_bytes` reserves both raw readback and decoded field buffers;
+/// the CPU prover still has its separate memory requirement. GPU-required whole proofs still reject
+/// before work because the downstream proving stages are not yet GPU-owned.
+#[cfg(feature = "gpu")]
+pub fn prove_joinsplit_with_gpu_witness(
+    witness: &Witness,
+    context: &Context,
+    request: crate::proving::Request,
+    host_trace_bytes: usize,
+) -> Result<Vec<u8>, LeafError> {
+    use crate::proving::{Backend, Run, Stage};
+    let mut capabilities = profile::proving_capabilities(false);
+    capabilities.set(Stage::PublicValues, Backend::OpenCl);
+    capabilities.set(Stage::WitnessTrace, Backend::OpenCl);
+    let run = Run::new("block_v2_joinsplit_gpu_witness", request, capabilities)
+        .map_err(|_| LeafError::ProvingPolicy)?;
+    if witness.mint != 0 {
+        return Err(LeafError::IssuanceNotSupported);
+    }
+    if context.profile_id != profile::CANDIDATE_PROFILE_ID {
+        return Err(LeafError::WrongProfile);
+    }
+    // Pool assignments authorize public recursive jobs, not private wallet
+    // inputs or this CPU readback/proving allocation. Keep that boundary explicit.
+    if std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_some() || super::wallet_worker::is_assigned()
+    {
+        return Err(LeafError::GpuFailure);
+    }
+    let required = 2 * (js::HEIGHT * js::WIDTH + js::N_PUBLIC) * core::mem::size_of::<u64>();
+    if host_trace_bytes < required {
+        return Err(LeafError::GpuFailure);
+    }
+    let session =
+        super::gpu_hash::device::DeviceSession::new().map_err(|_| LeafError::GpuFailure)?;
+    let frame = session
+        .joinsplit_witness(witness, host_trace_bytes, &run)
+        .map_err(|_| LeafError::GpuFailure)?;
+    let (trace, statement) = frame
+        .readback(&session, host_trace_bytes)
+        .map_err(|_| LeafError::GpuFailure)?;
+    drop(frame);
+    drop(session);
+    // These are canonical byte decoding and the existing injective context
+    // encoding; all wallet field arithmetic above was executed on the device.
+    let trace = p3_matrix::dense::RowMajorMatrix::new(
+        trace.into_iter().map(Val::from_u64).collect(),
+        js::WIDTH,
+    );
+    let statement: Vec<_> = statement.into_iter().map(Val::from_u64).collect();
+    let pis = public_values(context, &statement)?;
+    eprintln!("wallet_gpu_trace_bridge trace_readback_bytes={} public_readback_bytes={} downstream_prover=host", js::HEIGHT * js::WIDTH * 8, js::N_PUBLIC * 8);
+    finish_joinsplit_trace(context, pis, trace, run, Backend::Mixed)
+}
+
+#[cfg(feature = "gpu")]
+pub(crate) fn gpu_wallet_selected() -> bool {
+    use super::{gpu_hash, quotient_pcs};
+    gpu_hash::is_enabled()
+        && quotient_pcs::gpu_pcs_device_only_enabled()
+        && quotient_pcs::gpu_quotient_resident_enabled()
+        && quotient_pcs::gpu_randomness_enabled()
+        && quotient_pcs::gpu_transcript_enabled()
+}
+
+#[cfg(feature = "gpu")]
+pub(crate) fn gpu_wallet_run(
+    entry_point: &'static str,
+    request: crate::proving::Request,
+) -> Result<crate::proving::Run, LeafError> {
+    use super::resident_pcs;
+    use crate::proving::{Backend, Capabilities, Profile, Run, Stage};
+    if !gpu_wallet_selected() {
+        return Err(LeafError::GpuFailure);
+    }
+    // Selection persists after shutdown. Reject a missing engine before the
+    // infallible profile constructor can attempt to create a resident PCS.
+    super::gpu_hash::require_resident_backend().map_err(|_| LeafError::GpuFailure)?;
+    // The wallet AIRs have periodic columns but no lookup argument. Every
+    // actual arithmetic stage still requires its own completed device receipt.
+    let mut capabilities = Capabilities::cpu(Profile::BlockV2Cubic, true, false);
+    for stage in Stage::ARITHMETIC
+        .into_iter()
+        .filter(|s| *s != Stage::Lookup)
+    {
+        capabilities.set(stage, Backend::OpenCl);
+    }
+    #[cfg(debug_assertions)]
+    let capabilities = capabilities.with_constraint_audit();
+    let run = Run::new(entry_point, request, capabilities).map_err(|_| LeafError::ProvingPolicy)?;
+    // Existing pool assignments are for public recursive work. Private wallet
+    // transport and whole-proof resource admission require their own contract.
+    if std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_some()
+        || resident_pcs::host_output_budget() < super::machine::symbolic::HOST_BYTES as usize
+    {
+        return Err(LeafError::GpuFailure);
+    }
+    super::wallet_worker::admit(request).map_err(|_| LeafError::GpuFailure)?;
+    Ok(run)
+}
+
+/// Opt-in owned OpenCL proving of the existing cubic wallet leaf. Initialize
+/// the complete owned PCS/randomness/transcript path and its memory limits
+/// first. The private trace stays on GPU; public/proof output is serialized on
+/// the host. Debug builds retain a reported CPU constraint audit and therefore
+/// reject GPU-required requests before private work.
+#[cfg(feature = "gpu")]
+pub fn prove_joinsplit_on_gpu(
+    witness: &Witness,
+    context: &Context,
+    request: crate::proving::Request,
+) -> Result<Vec<u8>, LeafError> {
+    use super::resident_pcs;
+    use p3_uni_stark::StarkGenericConfig;
+    let run = gpu_wallet_run("block_v2_joinsplit_gpu", request)?;
+    if witness.mint != 0 {
+        return Err(LeafError::IssuanceNotSupported);
+    }
+    if context.profile_id != profile::CANDIDATE_PROFILE_ID {
+        return Err(LeafError::WrongProfile);
+    }
+    let config = profile::make_proving_config();
+    let session = config
+        .pcs()
+        .quotient_session()
+        .map_err(|_| LeafError::GpuFailure)?;
+    let frame = session
+        .joinsplit_witness(witness, resident_pcs::host_output_budget(), &run)
+        .map_err(|_| LeafError::GpuFailure)?;
+    let before = session.stats();
+    let (trace, statement) = frame
+        .into_proving_parts(&session, resident_pcs::host_output_budget())
+        .map_err(|_| LeafError::GpuFailure)?;
+    let readback = session.stats().downloaded_bytes - before.downloaded_bytes;
+    if readback != (js::N_PUBLIC * 8) as u64 {
+        return Err(LeafError::GpuFailure);
+    }
+    let statement: Vec<_> = statement.into_iter().map(Val::from_u64).collect();
+    let pis = public_values(context, &statement)?;
+    eprintln!("wallet_gpu_owned_handoff trace_readback_bytes=0 public_readback_bytes={readback}");
+    let proof =
+        super::gpu_quotient_prover::uni::prove(&config, &ContextJoinSplitAir, trace, &pis, &run)
+            .map_err(|_| LeafError::GpuFailure)?;
+    let bytes = encode_proof(context, &proof)?;
+    run.finish(true).map_err(|_| LeafError::ProvingPolicy)?;
     Ok(bytes)
 }
 

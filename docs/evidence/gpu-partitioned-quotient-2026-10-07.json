@@ -1,0 +1,433 @@
+{
+  "schema": "lattica-partitioned-device-quotient-v1",
+  "date": "2026-10-07",
+  "source_head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "source_state": "uncommitted main working tree",
+  "complete_gpu_prover": false,
+  "enabled_by_default": false,
+  "throughput_qualification": false,
+  "previous_checkpoint": "gpu-owned-prover-2026-10-07.json",
+  "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-owned-prover-20261007/run-08",
+  "features": [
+    "default",
+    "block-v2-wide-lanes"
+  ],
+  "build_profile": "release",
+  "gpu": {
+    "opencl_index": 1,
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "pci": "0000:02:00.0",
+    "global_bytes": 16697327616,
+    "max_allocation_bytes": 4174331904,
+    "driver": "615.71.09"
+  },
+  "binary_sha256": "4a2de8ade6a3dc9093a1352da74fbad4ddeea78c203aa5647e6ef6f0ac1eb311",
+  "source_archive_sha256": "d1c73236d4a6bfe674f1ceca699adc6027b0035113077d06de24b7c647224444",
+  "runner_sha256": "747a3f24f453fd37e047439119ccf58bb52a6c8d88ccaba4ae0b00cf93338373",
+  "manifest_sha256": "d957cef92eaa96738ce6a8e66d2ee6bea98dc0c3e40f570b99c2553e6fd09797",
+  "limits": {
+    "memory_max_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "runtime_max_seconds_per_service": 180,
+    "arithmetic_test_engine_managed_bytes": 12582912,
+    "arithmetic_test_tile_bytes": 4194304
+  },
+  "selection": {
+    "flag": "LATTICA_V2_GPU_QUOTIENT_RESIDENT=1",
+    "dependencies": [
+      "OpenCL",
+      "resident PCS",
+      "retained commitments",
+      "quotient fusion",
+      "GPU quotient LDE",
+      "GPU quotient evaluation"
+    ],
+    "strict_gpu_proving_admitted": false
+  },
+  "checks": [
+    {
+      "name": "proof-bytes",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.9175614770028915,
+      "log_sha256": "06791f549ea72cfab59910c9ad40f45fb3d451903c5af6c7ca3cc3fdaec243f7"
+    },
+    {
+      "name": "compact-proof",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.0171197550007491,
+      "log_sha256": "7d648df18797bd563b56488f6e25ba81ce7d3897f845011164bf9d4a678d8456"
+    },
+    {
+      "name": "registered",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.9175615739986824,
+      "log_sha256": "3f056614616a0e0875395bb36988eebf5b3d585ef266ea1de963a9e0e89032af"
+    },
+    {
+      "name": "reuse",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.0675701749969448,
+      "log_sha256": "561cadaeb63edb5150fffb0b490b8172729b72fbd25154ee6d956727246ff2a7"
+    },
+    {
+      "name": "adapter-regression",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.9164818350000132,
+      "log_sha256": "fc043f5ec57e9d3cefaae961fb31016c59971010613bc564f960ee396f2318c2"
+    },
+    {
+      "name": "lde-regression",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8157474129984621,
+      "log_sha256": "a21e26ac38b897f6c0c8bf9f9dffc8c29f61386e8cbb658c610ec368bbe8b6e3"
+    },
+    {
+      "name": "rng-regression",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.6656221789999108,
+      "log_sha256": "4ef66b16c8cf4fda494ad9dc7ff3b3a47b622b1748fcda130035e4c4d22abf2c"
+    },
+    {
+      "name": "compact-regression",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8655926349965739,
+      "log_sha256": "e36157656dcf75d070d4b84d630350e8ead0f1b09539f6341225fb7a53f19c5e"
+    },
+    {
+      "name": "partition-arithmetic",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8656544609984849,
+      "log_sha256": "6fcedb086daac045be4afae04483a6fea7261c12f4991f7a5f8efca4e67234a4"
+    },
+    {
+      "name": "unpartitioned-arithmetic",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.7660729780000111,
+      "log_sha256": "bd6dd88fd5010f18f7826668270e9206fa1cc821d8617ab66617142a93c8b62d"
+    },
+    {
+      "name": "partition-unit",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.03180389200133504,
+      "log_sha256": "d74f43f22c18b8ee45bff3f8d834df8b46ccc443704c16bd9f6ec9a69e460d11"
+    },
+    {
+      "name": "storage-unit",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.0319935629995598,
+      "log_sha256": "4ffe4120609a48d9adedf2f89d2f280bf19a12d4e9ea0ff6897133d5a30be838"
+    },
+    {
+      "name": "device-unit",
+      "passed": true,
+      "passed_count": 4,
+      "wall_seconds": 0.03186733799884678,
+      "log_sha256": "ce0d66d54b52fc97327bb386c9abe6ffc73f6f6067fc2fe9390cfe36adc1b5d6"
+    },
+    {
+      "name": "transform-unit",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.03193190299862181,
+      "log_sha256": "efc37fee494dc8f4084f21cf2751829faeb880d0595adebe8f49c289a60adc04"
+    },
+    {
+      "name": "plan-unit",
+      "passed": true,
+      "passed_count": 10,
+      "wall_seconds": 0.03189660199859645,
+      "log_sha256": "12cbaabbf684641511f8a6837a908b03113504a074b23ee2dd2c2b573e810fb7"
+    },
+    {
+      "name": "lde-unit",
+      "passed": true,
+      "passed_count": 2,
+      "wall_seconds": 0.03181758000209811,
+      "log_sha256": "3c2eafb0ca9c09c2b815087c21bc6c056088d2ef407c220b1df7f789183941e8"
+    },
+    {
+      "name": "pcs-unit",
+      "passed": true,
+      "passed_count": 12,
+      "wall_seconds": 0.21430128399879322,
+      "log_sha256": "e6f2c354c8d0889aeaf93ca4015bdd771af42c82d99d98c5c54d2034d059f908"
+    },
+    {
+      "name": "policy-unit",
+      "passed": true,
+      "passed_count": 9,
+      "wall_seconds": 0.06402636000348139,
+      "log_sha256": "db617d046c17856e132d0a5b63bce30639127856b320eb7f1d14f5150267cb72"
+    }
+  ],
+  "additional_validation": {
+    "python_resource_tests_passed": 28,
+    "cpu_stream_build_passed": true,
+    "gpu_stream_build_passed": true,
+    "log_sha256": {
+      "release-build": "f5d5108188ce075b3ddd90bc4d7146ba3aa577886b3c63fec9ef8b73d72e2181",
+      "cpu-stream-build": "dab6802eb5a0c3b8d0b1e376ec8f9b1b413f773b5fd84ec47810ecbb7044d535",
+      "gpu-stream-build": "956491d8842fc01b9e6f2f31052e22e5f2d71a95f4a1f5df998950416773cddc",
+      "python-resources": "822c5bfdaab1ca9871ab2b281516fe3027106a241f86b5b19eeeda28937c66b9"
+    }
+  },
+  "arithmetic_conformance": {
+    "geometries": [
+      {
+        "prefix_rows": 1,
+        "quotient_rows": 8,
+        "cosets": 8
+      },
+      {
+        "prefix_rows": 8,
+        "quotient_rows": 32,
+        "cosets": 4
+      },
+      {
+        "prefix_rows": 16,
+        "quotient_rows": 256,
+        "cosets": 16
+      },
+      {
+        "prefix_rows": 1024,
+        "quotient_rows": 4096,
+        "cosets": 4
+      }
+    ],
+    "alphas": [
+      "zero",
+      "nontrivial cubic"
+    ],
+    "constraints": "Nonzero native AIR plus interleaved base/extension assertions and local/next main/preprocessing reads.",
+    "comparisons": [
+      "CPU quotient vectors",
+      "salted commitment caps",
+      "authentication paths"
+    ],
+    "max_allowed_cosets": 256,
+    "no_intermediate_matrix_transfers": true,
+    "exact_transfer_bounds_checked": true,
+    "control_download_bytes_per_coset": 8,
+    "full_expansion_rejected_at_12_mib_while_partitioned_succeeds": true,
+    "failed_expansion_releases_allocations": true
+  },
+  "full_proof_conformance": {
+    "full_and_compact_proof_bytes_equal_reference": true,
+    "independent_gpu_preprocessing_caps_equal_cpu": true,
+    "unchanged_cpu_verifier_acceptance_and_altered_public_rejection": true,
+    "public_slots": 64,
+    "fresh_registered_proofs_reusing_public_buffers": 3,
+    "private_buffers_return_to_baseline_each_proof": true,
+    "public_buffers_released_when_registered_prover_dropped": true,
+    "standalone_cpu_verifier_works_after_gpu_shutdown": true
+  },
+  "stage_observations": [
+    {
+      "test": "proof-bytes",
+      "kind": "bounded_device_quotient_partition",
+      "rows": 1024,
+      "coset_rows": 128,
+      "cosets": 8,
+      "input_matrix_upload_bytes": 0
+    },
+    {
+      "test": "proof-bytes",
+      "kind": "bounded_owned_quotient_adapter",
+      "rows": 1024,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 24576,
+      "program_parameter_and_root_upload_bytes": 199832,
+      "control_download_bytes": 64
+    },
+    {
+      "test": "compact-proof",
+      "kind": "bounded_device_quotient_partition",
+      "rows": 1024,
+      "coset_rows": 128,
+      "cosets": 8,
+      "input_matrix_upload_bytes": 0
+    },
+    {
+      "test": "compact-proof",
+      "kind": "bounded_owned_quotient_adapter",
+      "rows": 1024,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 24576,
+      "program_parameter_and_root_upload_bytes": 199832,
+      "control_download_bytes": 64
+    },
+    {
+      "test": "registered",
+      "kind": "bounded_device_quotient_partition",
+      "rows": 128,
+      "coset_rows": 16,
+      "cosets": 8,
+      "input_matrix_upload_bytes": 0
+    },
+    {
+      "test": "registered",
+      "kind": "bounded_owned_quotient_adapter",
+      "rows": 128,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 3072,
+      "program_parameter_and_root_upload_bytes": 233016,
+      "control_download_bytes": 64
+    },
+    {
+      "test": "reuse",
+      "kind": "bounded_device_quotient_partition",
+      "rows": 128,
+      "coset_rows": 16,
+      "cosets": 8,
+      "input_matrix_upload_bytes": 0
+    },
+    {
+      "test": "reuse",
+      "kind": "bounded_owned_quotient_adapter",
+      "rows": 128,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 3072,
+      "program_parameter_and_root_upload_bytes": 233016,
+      "control_download_bytes": 64
+    },
+    {
+      "test": "reuse",
+      "kind": "bounded_device_quotient_partition",
+      "rows": 128,
+      "coset_rows": 16,
+      "cosets": 8,
+      "input_matrix_upload_bytes": 0
+    },
+    {
+      "test": "reuse",
+      "kind": "bounded_owned_quotient_adapter",
+      "rows": 128,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 3072,
+      "program_parameter_and_root_upload_bytes": 233016,
+      "control_download_bytes": 64
+    },
+    {
+      "test": "reuse",
+      "kind": "bounded_device_quotient_partition",
+      "rows": 128,
+      "coset_rows": 16,
+      "cosets": 8,
+      "input_matrix_upload_bytes": 0
+    },
+    {
+      "test": "reuse",
+      "kind": "bounded_owned_quotient_adapter",
+      "rows": 128,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 3072,
+      "program_parameter_and_root_upload_bytes": 233016,
+      "control_download_bytes": 64
+    },
+    {
+      "test": "partition-arithmetic",
+      "kind": "bounded_device_quotient_partition",
+      "rows": 8,
+      "coset_rows": 1,
+      "cosets": 8,
+      "input_matrix_upload_bytes": 0
+    },
+    {
+      "test": "partition-arithmetic",
+      "kind": "bounded_device_quotient_partition",
+      "rows": 8,
+      "coset_rows": 1,
+      "cosets": 8,
+      "input_matrix_upload_bytes": 0
+    },
+    {
+      "test": "partition-arithmetic",
+      "kind": "bounded_device_quotient_partition",
+      "rows": 32,
+      "coset_rows": 8,
+      "cosets": 4,
+      "input_matrix_upload_bytes": 0
+    },
+    {
+      "test": "partition-arithmetic",
+      "kind": "bounded_device_quotient_partition",
+      "rows": 32,
+      "coset_rows": 8,
+      "cosets": 4,
+      "input_matrix_upload_bytes": 0
+    },
+    {
+      "test": "partition-arithmetic",
+      "kind": "bounded_device_quotient_partition",
+      "rows": 256,
+      "coset_rows": 16,
+      "cosets": 16,
+      "input_matrix_upload_bytes": 0
+    },
+    {
+      "test": "partition-arithmetic",
+      "kind": "bounded_device_quotient_partition",
+      "rows": 256,
+      "coset_rows": 16,
+      "cosets": 16,
+      "input_matrix_upload_bytes": 0
+    },
+    {
+      "test": "partition-arithmetic",
+      "kind": "bounded_device_quotient_partition",
+      "rows": 4096,
+      "coset_rows": 1024,
+      "cosets": 4,
+      "input_matrix_upload_bytes": 0
+    },
+    {
+      "test": "partition-arithmetic",
+      "kind": "bounded_device_quotient_partition",
+      "rows": 4096,
+      "coset_rows": 1024,
+      "cosets": 4,
+      "input_matrix_upload_bytes": 0
+    }
+  ],
+  "full_workload_capacity_model": {
+    "prefix_rows": 524288,
+    "quotient_rows": 4194304,
+    "preprocessing_columns": 200,
+    "former_contiguous_input_bytes": 6710886400,
+    "new_largest_input_allocation_bytes": 838860800,
+    "full_cubic_output_bytes": 100663296,
+    "extra_managed_reservation_bytes": 5460983808,
+    "existing_phase_allowance_bytes": 4294967296,
+    "combined_reservation_bytes": 9755951104,
+    "resource_test_assignment_managed_bytes": 7516192768,
+    "admitted": false,
+    "reason": "Conservative aggregate reservation still exceeds the 16 GiB fixture assignment. Existing budgets are preserved.",
+    "native_full_workload_run": false
+  },
+  "limitations": [
+    "Quotient output is still read back for CPU chunk processing and existing hiding PCS interfaces; host PCS copies remain for openings.",
+    "Public domain partition descriptors, witness traces, lookups, transcript/randomness and other proving work remain on CPU.",
+    "Static AIR code is reused across cosets within a proof but not yet cached across registered proofs.",
+    "Repeated interpolation and queue fences may add overhead. Correctness/low-memory test times are not delivered throughput measurements.",
+    "Only NVIDIA OpenCL qualified for this milestone; AMD and Apple Metal remain unqualified."
+  ],
+  "next_work": [
+    "Measured simultaneous-live-memory admission for large workloads without increasing existing budgets.",
+    "GPU quotient chunk splitting/hiding commitment inputs.",
+    "GPU lookup witness generation, then remaining stages in docs/dag-gpu-implementation.md section 9.4."
+  ]
+}

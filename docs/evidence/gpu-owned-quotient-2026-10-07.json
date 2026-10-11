@@ -1,0 +1,189 @@
+{
+  "schema": "lattica-owned-device-quotient-v1",
+  "date": "2026-10-07",
+  "source_head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "source_state": "uncommitted main working tree",
+  "complete_gpu_prover": false,
+  "main_prover_uses_owned_route": false,
+  "throughput_qualification": false,
+  "features": [
+    "default",
+    "block-v2-wide-lanes"
+  ],
+  "build_profile": "release",
+  "gpu": {
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "driver": "615.71.09"
+  },
+  "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-device-quotient-20261007/run-02",
+  "binary_sha256": "50e6db58e24cc1ed7f1257a4644c0b2d9086a61d0cc170508976646e48a84172",
+  "source_archive_sha256": "4dd3f953bdd9fef5f61f6efee1b31224ffbb74bfb336d671711914e32d3b9bf4",
+  "runner_sha256": "4319d85828161fad62c635bffdd9e0e49100a3fab6804a393ac2fb72d087b723",
+  "limits": {
+    "memory_max_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "runtime_max_seconds_per_service": 180
+  },
+  "checks": [
+    {
+      "name": "transform",
+      "passed": true,
+      "wall_seconds": 0.7167301929985115,
+      "log_sha256": "1eb95a405b91cf8a60486360c1c2c0dbede78587ef6a6075bfda5e50e5ae51c0"
+    },
+    {
+      "name": "pipeline",
+      "passed": true,
+      "wall_seconds": 0.7660353520004719,
+      "log_sha256": "baa9a5d4e05078dd86d4a63d28a2b895408b0d4803e28ccd850302abab72a5a7"
+    },
+    {
+      "name": "arithmetic",
+      "passed": true,
+      "wall_seconds": 0.8664716960010992,
+      "log_sha256": "c5683be862404cccdb91f2ea4941d3e36a61420111996a15b4c1d160d7aa2a91"
+    },
+    {
+      "name": "proof-bytes",
+      "passed": true,
+      "wall_seconds": 0.8674332890004735,
+      "log_sha256": "a79a83ceaea7da06ff86a0b7e7d4c527398921de01c4e107c6620f8c6a14d4b3"
+    },
+    {
+      "name": "registered",
+      "passed": true,
+      "wall_seconds": 0.8172317249991465,
+      "log_sha256": "e1e27df4624d607c9d7a7412c2231fc601b2fef98fd7a74c8d409b9bb232612d"
+    }
+  ],
+  "other_check_logs": {
+    "device-unit-tests": {
+      "log_sha256": "b609be5b716a0858849768de94494f992a61bbb692634e2020dbca409ef6ab6c"
+    },
+    "quotient-plan-unit-tests": {
+      "log_sha256": "bc76b94a18478559573c70cfac5c0c424d076cb79f83c95d25e170711066ead5"
+    },
+    "gpu-stream-build": {
+      "log_sha256": "3134796cfc63c242a1359a8a5e8213d2860945ed42d0b6d91be814bc1687d9b3"
+    },
+    "cpu-stream-build": {
+      "log_sha256": "1b72adc0bf1291c5b228e752167a84946b31ab5a7345a027d5caee6608ffafca"
+    },
+    "release-build": {
+      "log_sha256": "e88b1aaf5bc63d4a8c48e8fedd54c89622308897de520b9d7d4f808af8f651e4"
+    }
+  },
+  "other_checks": {
+    "device_unit_tests_passed": 5,
+    "quotient_plan_tests_passed": 3,
+    "gpu_stream_cargo_check": true,
+    "cpu_stream_cargo_check": true
+  },
+  "conformance": {
+    "transform_combinations": 20,
+    "input_shifts": [
+      11
+    ],
+    "output_shifts": [
+      7
+    ],
+    "extension_degrees": [
+      1,
+      2,
+      3
+    ],
+    "physical_orders": [
+      "natural",
+      "bit-reversed"
+    ],
+    "pipeline_geometries": [
+      {
+        "trace_rows": 1,
+        "quotient_rows": 8
+      },
+      {
+        "trace_rows": 8,
+        "quotient_rows": 32
+      },
+      {
+        "trace_rows": 16,
+        "quotient_rows": 4096
+      }
+    ],
+    "quotient_calls_per_geometry": 2,
+    "static_program_reused_across_fresh_sessions": true,
+    "private_matrices_rejected_across_sessions": true,
+    "zero_intermediate_matrix_transfers": true,
+    "gpu_domain_status_bytes_per_quotient_call": 8,
+    "per_call_parameter_upload_bytes": 800,
+    "independent_cpu_quotient_caps_and_paths_match": true,
+    "unchanged_complete_proof_bytes": true,
+    "unchanged_cpu_verifier_acceptance_and_altered_public_rejection": true
+  },
+  "stage_observations": [
+    {
+      "rows": 8,
+      "tile_rows": 8,
+      "managed_peak_plan_bytes": 385320,
+      "parameter_upload_bytes": 800,
+      "control_download_bytes": 8,
+      "device_ns": 1638752,
+      "wall_ns": 1981242
+    },
+    {
+      "rows": 8,
+      "tile_rows": 8,
+      "managed_peak_plan_bytes": 387176,
+      "parameter_upload_bytes": 800,
+      "control_download_bytes": 8,
+      "device_ns": 1633440,
+      "wall_ns": 1999760
+    },
+    {
+      "rows": 32,
+      "tile_rows": 32,
+      "managed_peak_plan_bytes": 734504,
+      "parameter_upload_bytes": 800,
+      "control_download_bytes": 8,
+      "device_ns": 1656544,
+      "wall_ns": 2157036
+    },
+    {
+      "rows": 32,
+      "tile_rows": 32,
+      "managed_peak_plan_bytes": 737000,
+      "parameter_upload_bytes": 800,
+      "control_download_bytes": 8,
+      "device_ns": 1659584,
+      "wall_ns": 2151752
+    },
+    {
+      "rows": 4096,
+      "tile_rows": 1024,
+      "managed_peak_plan_bytes": 23645672,
+      "parameter_upload_bytes": 800,
+      "control_download_bytes": 8,
+      "device_ns": 8180832,
+      "wall_ns": 8818923
+    },
+    {
+      "rows": 4096,
+      "tile_rows": 1024,
+      "managed_peak_plan_bytes": 24068328,
+      "parameter_upload_bytes": 800,
+      "control_download_bytes": 8,
+      "device_ns": 8192032,
+      "wall_ns": 12860707
+    }
+  ],
+  "limitations": [
+    "The owned transform/quotient/commitment chain is an experimental device API, not the main PCS proof path.",
+    "Prepared code is public and context-owned; real preprocessing sharing and per-attempt main/permutation ownership still need explicit prover integration.",
+    "Lookup generation, quotient chunk splitting/hiding, openings and other CPU arithmetic remain to be connected or ported.",
+    "Witness randomness and transcript are still supplied by the host; temporary-buffer scrubbing remains part of the later strict GPU milestone.",
+    "Only NVIDIA OpenCL tested. Metal rejects these operations; AMD unqualified.",
+    "Synthetic correctness/stage observations are not matched delivered transaction throughput; no transaction/hour speedup claim."
+  ]
+}

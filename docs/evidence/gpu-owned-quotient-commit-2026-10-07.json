@@ -1,0 +1,424 @@
+{
+  "schema": "lattica-owned-quotient-commit-v1",
+  "date": "2026-10-07",
+  "source_head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "source_state": "uncommitted main working tree",
+  "complete_gpu_prover": false,
+  "enabled_by_default": false,
+  "throughput_qualification": false,
+  "previous_checkpoint": "gpu-partitioned-quotient-2026-10-07.json",
+  "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-owned-prover-20261007/run-11",
+  "features": [
+    "default",
+    "block-v2-wide-lanes"
+  ],
+  "build_profile": "release",
+  "gpu": {
+    "opencl_index": 1,
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "pci": "0000:02:00.0",
+    "global_bytes": 16697327616,
+    "max_allocation_bytes": 4174331904,
+    "driver": "615.71.09"
+  },
+  "binary_sha256": "8c9c263c1b451b88e0efd7791d73fbcf7799e70c324b0b207f51afd7269b096a",
+  "source_archive_sha256": "d0e54bc182bb8a59999ced8b9796419dc1c0ea58ea73264276c13d65692cf070",
+  "runner_sha256": "2accc724fb1bf6b1cc449551f18717a69ec10ac5b66e237a5950b5075eaf4595",
+  "manifest_sha256": "4c984a1a509a5f4c2441f95c4b5e6b07d1538db263261c5c16f2e19dbeb8d511",
+  "limits": {
+    "memory_max_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "runtime_max_seconds_per_service": 180
+  },
+  "selection": {
+    "flag": "LATTICA_V2_GPU_QUOTIENT_RESIDENT=1",
+    "dependencies": [
+      "OpenCL",
+      "resident PCS",
+      "retained commitments",
+      "quotient fusion",
+      "GPU quotient LDE",
+      "GPU quotient evaluation"
+    ],
+    "strict_gpu_proving_admitted": false
+  },
+  "checks": [
+    {
+      "name": "proof-bytes",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.9661062339982891,
+      "log_sha256": "678d7831f8effa646741668cee1d31dc2b0178616ede4a200cad6dea1cf1176b"
+    },
+    {
+      "name": "compact-proof",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.9161196950008161,
+      "log_sha256": "6aee55c155ec76b7a3e8844dcbb5f40251d3cc5cd22abf3389eb347a28f96b33"
+    },
+    {
+      "name": "registered",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8663390090005123,
+      "log_sha256": "6617afd775de81cf047f4878fc4c466abbb91cb7f09af6deb1faa6784d985754"
+    },
+    {
+      "name": "reuse",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.2171645700000226,
+      "log_sha256": "888c681ffe518c579abd67892af889e889574b35b2f10553d099733d19a8cf12"
+    },
+    {
+      "name": "adapter-regression",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8157317700024578,
+      "log_sha256": "fdfed53caf67b062fbceb2a90a92d58a7699f662d4b4ef4d8fcfe1c991d87c0a"
+    },
+    {
+      "name": "lde-regression",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.6651633379988198,
+      "log_sha256": "7273fb4d6383bb1751f629548cc26fd7f147cb92050af2c208cb613d334ffce3"
+    },
+    {
+      "name": "rng-regression",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.6148978349992831,
+      "log_sha256": "f013a1e47c470a62e710cc8872bde3ea7f52cd3b45a90802560db59a4287349c"
+    },
+    {
+      "name": "compact-regression",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8164767300004314,
+      "log_sha256": "4f1eebaddc33040557249f1da14ed517d75e205d463d30d47b71a03dec3aaa90"
+    },
+    {
+      "name": "partition-arithmetic",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.0170998520006833,
+      "log_sha256": "a0fdfe6d30a5d042888192b7f90796ccbef189396bddff2e52bfbabba20256f7"
+    },
+    {
+      "name": "unpartitioned-arithmetic",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8173117000005732,
+      "log_sha256": "086aa27076b31fa5716d68082863f7a45f3493934b810175e70ea953577c1e8b"
+    },
+    {
+      "name": "partition-unit",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.03235410499837599,
+      "log_sha256": "592bf29c949a4e411b1c67d353826b95bfdcc026045da577953d8a81cb23e1bd"
+    },
+    {
+      "name": "owned-commit",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.0157230449985946,
+      "log_sha256": "1f614cc688ee4fe138250c98f5b397d333967f03ed89fbf960ae2314ce10db5d"
+    },
+    {
+      "name": "admission-regression",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.5648107359993446,
+      "log_sha256": "ae368b57b538d673f05397a3a7fe2c872032513605439ca89b44cc268c1620f4"
+    },
+    {
+      "name": "commit-unit",
+      "passed": true,
+      "passed_count": 2,
+      "wall_seconds": 0.03176083899961668,
+      "log_sha256": "2eab0774ce095d2daf0c4a79bafe780d4c54808d0aa06bdc6e772d734209a450"
+    },
+    {
+      "name": "storage-unit",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.031920818000799045,
+      "log_sha256": "8cd25e9c74d26fa99530308303fa988e3513fd483d32f1ab4d24e283f503e9c8"
+    },
+    {
+      "name": "device-unit",
+      "passed": true,
+      "passed_count": 4,
+      "wall_seconds": 0.03185226800269447,
+      "log_sha256": "50a6c403385bcd30750ba73d767698392eb7726272b2e6a63ba5c1e30168a883"
+    },
+    {
+      "name": "transform-unit",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.031961217002390185,
+      "log_sha256": "8c5e0281810b2997b85b7329327455b31ea6f7c5901bc418133362797c97aa0b"
+    },
+    {
+      "name": "plan-unit",
+      "passed": true,
+      "passed_count": 10,
+      "wall_seconds": 0.03191332999995211,
+      "log_sha256": "a2f604466e2c1cf479c335ac433b17e8b738f845af9d5f320446956d4d33c6b5"
+    },
+    {
+      "name": "lde-unit",
+      "passed": true,
+      "passed_count": 2,
+      "wall_seconds": 0.031806725997739704,
+      "log_sha256": "e0f38d96dbdedcad3798f0bca8ca6100cf7074a4ece030d5604664de71cf4eab"
+    },
+    {
+      "name": "pcs-unit",
+      "passed": true,
+      "passed_count": 12,
+      "wall_seconds": 0.2141904819982301,
+      "log_sha256": "a72c0c188a93c39c7fb6bb6845dbabf17071966e19550ee06f0f9153ed62aabf"
+    },
+    {
+      "name": "policy-unit",
+      "passed": true,
+      "passed_count": 9,
+      "wall_seconds": 0.06391027900099289,
+      "log_sha256": "3673e01688a9659020deada506cac281f071d2025c4d9fd35d0542e3226dabf3"
+    }
+  ],
+  "additional_validation": {
+    "python_resource_tests_passed": 29,
+    "cpu_stream_build_passed": true,
+    "gpu_stream_build_passed": true,
+    "log_sha256": {
+      "release-build": "14ff0b935436484339f3f04680ab09680fe9edb3c7aaba2d7557ee1fb21a53e7",
+      "cpu-stream-build": "96e1cbf66aee751bcbe3bbc7859295968bf072dd36ca305845861f61ee4ec6f4",
+      "gpu-stream-build": "a3f0b512c11236a385c17fe7d88580278cd03c64610efef74c338f86f9c984f2",
+      "python-resources": "d982b054c00baf2e7763749a8bb21eaa9fcfeb36530d898943ee1514115e1d0f"
+    }
+  },
+  "device_work": [
+    "Uniform quotient chunk gathering",
+    "Final hiding-mask balance",
+    "Inverse-transform normalization and coset scaling",
+    "Balanced hiding polynomial application",
+    "Forward LDE and joint salted commitment"
+  ],
+  "component_conformance": {
+    "geometries": [
+      {
+        "chunk_rows": 8,
+        "chunks": 2,
+        "shift": 7
+      },
+      {
+        "chunk_rows": 32,
+        "chunks": 4,
+        "shift": 11
+      },
+      {
+        "chunk_rows": 64,
+        "chunks": 16,
+        "shift": 7
+      },
+      {
+        "chunk_rows": 8192,
+        "chunks": 2,
+        "shift": 11
+      }
+    ],
+    "comparisons": [
+      "All reference LDE entries",
+      "Commitment caps",
+      "Opened values",
+      "Authentication paths"
+    ],
+    "invalid_chunks_foreign_sessions_and_domain_mismatch_rejected_before_rng_draws": true,
+    "normalized_vanishing_weights_checked_against_reference": true,
+    "uniform_partition_weight_denominator": "-chunks",
+    "last_mask": "negative sum of independent masks",
+    "profile_random_columns": 4,
+    "cubic_coefficients": 3
+  },
+  "full_proof_conformance": {
+    "full_and_compact_proof_bytes_equal_reference": true,
+    "unchanged_cpu_verifier_acceptance_and_altered_public_rejection": true,
+    "public_preprocessing_reused_across_three_fresh_proofs": true,
+    "private_allocations_return_to_baseline": true,
+    "public_buffers_released_with_registered_prover": true,
+    "independent_verifier_works_after_gpu_shutdown": true
+  },
+  "stage_observations": [
+    {
+      "test": "proof-bytes",
+      "kind": "bounded_owned_quotient_adapter",
+      "rows": 1024,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 0,
+      "program_parameter_and_root_upload_bytes": 199832,
+      "control_download_bytes": 64
+    },
+    {
+      "test": "proof-bytes",
+      "kind": "bounded_owned_quotient_commit",
+      "rows": 1024,
+      "chunks": 16,
+      "quotient_matrix_upload_bytes": 0,
+      "quotient_matrix_readback_bytes": 0,
+      "random_sample_upload_bytes": 86528
+    },
+    {
+      "test": "compact-proof",
+      "kind": "bounded_owned_quotient_adapter",
+      "rows": 1024,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 0,
+      "program_parameter_and_root_upload_bytes": 199832,
+      "control_download_bytes": 64
+    },
+    {
+      "test": "compact-proof",
+      "kind": "bounded_owned_quotient_commit",
+      "rows": 1024,
+      "chunks": 16,
+      "quotient_matrix_upload_bytes": 0,
+      "quotient_matrix_readback_bytes": 0,
+      "random_sample_upload_bytes": 86528
+    },
+    {
+      "test": "registered",
+      "kind": "bounded_owned_quotient_adapter",
+      "rows": 128,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 0,
+      "program_parameter_and_root_upload_bytes": 233016,
+      "control_download_bytes": 64
+    },
+    {
+      "test": "registered",
+      "kind": "bounded_owned_quotient_commit",
+      "rows": 128,
+      "chunks": 16,
+      "quotient_matrix_upload_bytes": 0,
+      "quotient_matrix_readback_bytes": 0,
+      "random_sample_upload_bytes": 10816
+    },
+    {
+      "test": "reuse",
+      "kind": "bounded_owned_quotient_adapter",
+      "rows": 128,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 0,
+      "program_parameter_and_root_upload_bytes": 233016,
+      "control_download_bytes": 64
+    },
+    {
+      "test": "reuse",
+      "kind": "bounded_owned_quotient_commit",
+      "rows": 128,
+      "chunks": 16,
+      "quotient_matrix_upload_bytes": 0,
+      "quotient_matrix_readback_bytes": 0,
+      "random_sample_upload_bytes": 10816
+    },
+    {
+      "test": "reuse",
+      "kind": "bounded_owned_quotient_adapter",
+      "rows": 128,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 0,
+      "program_parameter_and_root_upload_bytes": 233016,
+      "control_download_bytes": 64
+    },
+    {
+      "test": "reuse",
+      "kind": "bounded_owned_quotient_commit",
+      "rows": 128,
+      "chunks": 16,
+      "quotient_matrix_upload_bytes": 0,
+      "quotient_matrix_readback_bytes": 0,
+      "random_sample_upload_bytes": 10816
+    },
+    {
+      "test": "reuse",
+      "kind": "bounded_owned_quotient_adapter",
+      "rows": 128,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 0,
+      "program_parameter_and_root_upload_bytes": 233016,
+      "control_download_bytes": 64
+    },
+    {
+      "test": "reuse",
+      "kind": "bounded_owned_quotient_commit",
+      "rows": 128,
+      "chunks": 16,
+      "quotient_matrix_upload_bytes": 0,
+      "quotient_matrix_readback_bytes": 0,
+      "random_sample_upload_bytes": 10816
+    },
+    {
+      "test": "owned-commit",
+      "kind": "bounded_owned_quotient_commit",
+      "rows": 16,
+      "chunks": 2,
+      "quotient_matrix_upload_bytes": 0,
+      "quotient_matrix_readback_bytes": 0,
+      "random_sample_upload_bytes": 960
+    },
+    {
+      "test": "owned-commit",
+      "kind": "bounded_owned_quotient_commit",
+      "rows": 128,
+      "chunks": 4,
+      "quotient_matrix_upload_bytes": 0,
+      "quotient_matrix_readback_bytes": 0,
+      "random_sample_upload_bytes": 9472
+    },
+    {
+      "test": "owned-commit",
+      "kind": "bounded_owned_quotient_commit",
+      "rows": 1024,
+      "chunks": 16,
+      "quotient_matrix_upload_bytes": 0,
+      "quotient_matrix_readback_bytes": 0,
+      "random_sample_upload_bytes": 86528
+    },
+    {
+      "test": "owned-commit",
+      "kind": "bounded_owned_quotient_commit",
+      "rows": 16384,
+      "chunks": 2,
+      "quotient_matrix_upload_bytes": 0,
+      "quotient_matrix_readback_bytes": 0,
+      "random_sample_upload_bytes": 983040
+    }
+  ],
+  "resource_model": {
+    "sample_buffers_and_parameters_checked_before_rng_draws": true,
+    "largest_auxiliary_allocation_checked": true,
+    "commit_stage_sample_reservation_included": true,
+    "full_workload_admitted": false,
+    "full_workload_failure": "Conservative aggregate reservation still exceeds the current 16 GiB resource fixture assignment. No full-workload native qualification or budget increase."
+  },
+  "limitations": [
+    "PCS host LDE/prefix copies remain for openings; this milestone removes the quotient-value host boundary only.",
+    "Random samples are drawn on CPU in the reference order; random expansion and transcript remain CPU work.",
+    "Public domain descriptors, AIR compilation, witness/trace construction and lookup witness generation still use CPU.",
+    "Strict gpu-required mode still rejects complete hybrid proofs.",
+    "NVIDIA OpenCL only; AMD and Apple Metal remain unqualified.",
+    "Conformance wall times and transfer observations do not measure delivered transaction throughput."
+  ],
+  "next_work": [
+    "GPU LogUp tuple/multiplicity evaluation, denominator inversion, prefix sums and terminals.",
+    "Keep generated permutation traces on device through commitment.",
+    "Complete remaining proving stages and whole-workload qualification in docs/dag-gpu-implementation.md section 9.4."
+  ]
+}

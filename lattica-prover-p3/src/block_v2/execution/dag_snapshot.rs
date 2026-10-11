@@ -47,33 +47,50 @@ pub(crate) struct Restored {
     pub workspaces: Vec<WorkspaceLease>,
 }
 
-fn byte(out: &mut Vec<u8>, value: u8) {
-    out.push(value);
+#[path = "dag_snapshot_buffer.rs"]
+mod buffer;
+use buffer::Buffer;
+
+#[path = "dag_snapshot_sizing.rs"]
+pub(super) mod sizing;
+
+#[cfg(test)]
+#[path = "dag_snapshot_reference.rs"]
+mod reference;
+#[cfg(all(test, feature = "stream"))]
+#[path = "recovery_registry_tests.rs"]
+mod registry_tests;
+#[cfg(test)]
+#[path = "dag_snapshot_storage_tests.rs"]
+mod storage_tests;
+
+fn byte(out: &mut Buffer, value: u8) -> Result<(), Error> {
+    out.extend([value])
 }
-fn u32le(out: &mut Vec<u8>, value: usize) -> Result<(), Error> {
-    out.extend(u32::try_from(value)?.to_le_bytes());
-    Ok(())
+fn u32le(out: &mut Buffer, value: usize) -> Result<(), Error> {
+    out.extend(u32::try_from(value)?.to_le_bytes())
 }
-fn u64le(out: &mut Vec<u8>, value: u64) {
-    out.extend(value.to_le_bytes());
+fn u64le(out: &mut Buffer, value: u64) -> Result<(), Error> {
+    out.extend(value.to_le_bytes())
 }
-fn resources(out: &mut Vec<u8>, value: Resources) {
-    u64le(out, value.ram_bytes);
-    u64le(out, value.vram_bytes);
-    u64le(out, value.scratch_bytes);
-    out.extend(value.threads.to_le_bytes());
+fn resources(out: &mut Buffer, value: Resources) -> Result<(), Error> {
+    u64le(out, value.ram_bytes)?;
+    u64le(out, value.vram_bytes)?;
+    u64le(out, value.scratch_bytes)?;
+    out.extend(value.threads.to_le_bytes())
 }
-fn artifact(out: &mut Vec<u8>, value: ArtifactRef) {
+fn artifact(out: &mut Buffer, value: ArtifactRef) -> Result<(), Error> {
     byte(
         out,
         match value.kind() {
             ArtifactKind::Wallet => 1,
             ArtifactKind::Node => 2,
         },
-    );
-    out.extend(value.byte_len().to_le_bytes());
-    out.extend(value.digest_bytes());
+    )?;
+    out.extend(value.byte_len().to_le_bytes())?;
+    out.extend(value.digest_bytes())
 }
+
 fn construction(value: RegistryPin) -> u8 {
     value.code() as u8
 }
@@ -94,24 +111,42 @@ fn attempt_status(value: AttemptStatus) -> Result<u8, Error> {
 }
 
 pub(super) fn encode(dag: &Dag) -> Result<Vec<u8>, Error> {
-    let base = encode_base(dag)?;
-    if dag.workspaces.is_empty() {
-        return Ok(base);
+    encode_limited(dag, MAX_SNAPSHOT_BYTES)
+}
+
+pub(super) fn encode_limited(dag: &Dag, limit: usize) -> Result<Vec<u8>, Error> {
+    if limit > MAX_SNAPSHOT_BYTES {
+        return Err("checkpoint snapshot limit".into());
     }
+    // Count and validate before admitting payload backing. Metadata indexes and
+    // the workspace-owner set are separate, bounded by the graph's limits.
+    let index = sizing::Index::new(dag)?;
+    let mut count = Buffer::count(limit);
+    encode_base(dag, &index, &mut count)?;
+    let base_len = count.len();
+    if !dag.workspaces.is_empty() {
+        count.extend(WORKSPACE_MAGIC)?;
+        u32le(&mut count, base_len)?;
+        encode_workspaces(dag, &mut count)?;
+    }
+    let mut out = Buffer::allocate(count.len(), limit)?;
+    if !dag.workspaces.is_empty() {
+        out.extend(WORKSPACE_MAGIC)?;
+        u32le(&mut out, base_len)?;
+    }
+    encode_base(dag, &index, &mut out)?;
+    if !dag.workspaces.is_empty() {
+        encode_workspaces(dag, &mut out)?;
+    }
+    out.finish()
+}
+
+fn encode_workspaces(dag: &Dag, mut out: &mut Buffer) -> Result<(), Error> {
     if dag.workspaces.len() > dag.limits.attempts {
-        return Err("checkpoint workspace count bound".into());
+        return Err("checkpoint workspace bound".into());
     }
-    let mut out = WORKSPACE_MAGIC.to_vec();
-    u32le(&mut out, base.len())?;
-    out.extend(base);
-    u64le(&mut out, dag.workspace_sequence);
+    u64le(&mut out, dag.workspace_sequence)?;
     u32le(&mut out, dag.workspaces.len())?;
-    let mut workers: BTreeSet<_> = dag
-        .attempts
-        .values()
-        .filter(|a| !a.released)
-        .map(|a| a.lease.worker)
-        .collect();
     for (id, lease) in &dag.workspaces {
         lease.resources.validate_workspace()?;
         if *id != lease.id
@@ -120,21 +155,17 @@ pub(super) fn encode(dag: &Dag) -> Result<Vec<u8>, Error> {
             || id.sequence == 0
             || id.sequence > dag.workspace_sequence
             || lease.worker.0 == 0
-            || !workers.insert(lease.worker)
         {
             return Err("checkpoint workspace identity".into());
         }
-        u64le(&mut out, id.sequence);
-        u64le(&mut out, lease.worker.0);
-        resources(&mut out, lease.resources);
+        u64le(&mut out, id.sequence)?;
+        u64le(&mut out, lease.worker.0)?;
+        resources(&mut out, lease.resources)?;
     }
-    if out.len() > MAX_SNAPSHOT_BYTES {
-        return Err("checkpoint workspace byte bound".into());
-    }
-    Ok(out)
+    Ok(())
 }
 
-fn encode_base(dag: &Dag) -> Result<Vec<u8>, Error> {
+fn encode_base(dag: &Dag, index: &sizing::Index<'_>, mut out: &mut Buffer) -> Result<(), Error> {
     dag.limits.validate()?;
     let unassigned_store = dag.launch_root.is_some_and(|root| root.store == [0; 2]);
     let staged = unassigned_store
@@ -145,55 +176,52 @@ fn encode_base(dag: &Dag) -> Result<Vec<u8>, Error> {
     if staged && dag.launch_root.is_none() {
         return Err("staged checkpoint requires pinned journal".into());
     }
-    let mut out = if staged {
+    out.extend(if staged {
         STAGED_MAGIC
     } else if dag.launch_root.is_some() {
         BOUND_MAGIC
     } else {
         MAGIC
-    }
-    .to_vec();
-    out.extend(dag.pin.profile());
-    byte(&mut out, construction(dag.pin));
-    out.extend(dag.chain);
-    out.extend(dag.session);
-    u64le(&mut out, dag.epoch);
-    u64le(&mut out, dag.now_ms);
-    u64le(&mut out, dag.candidate_sequence);
-    u64le(&mut out, dag.attempt_sequence);
+    })?;
+    out.extend(dag.pin.profile())?;
+    byte(&mut out, construction(dag.pin))?;
+    out.extend(dag.chain)?;
+    out.extend(dag.session)?;
+    u64le(&mut out, dag.epoch)?;
+    u64le(&mut out, dag.now_ms)?;
+    u64le(&mut out, dag.candidate_sequence)?;
+    u64le(&mut out, dag.attempt_sequence)?;
     u32le(&mut out, dag.limits.jobs)?;
     u32le(&mut out, dag.limits.candidates)?;
     u32le(&mut out, dag.limits.attempts)?;
-    u64le(&mut out, dag.limits.artifact_bytes as u64);
-    u64le(&mut out, dag.limits.recovery_window_ms);
-    resources(&mut out, dag.limits.workers);
-    let mut jobs: Vec<_> = dag.jobs.values().collect();
-    jobs.sort_by_key(|r| (r.job.expected().level, r.job.start(), r.job.id()));
-    u32le(&mut out, jobs.len())?;
+    u64le(&mut out, dag.limits.artifact_bytes as u64)?;
+    u64le(&mut out, dag.limits.recovery_window_ms)?;
+    resources(&mut out, dag.limits.workers)?;
+    u32le(&mut out, index.jobs.len())?;
     let mut logical = 0usize;
-    for record in jobs {
+    for record in &index.jobs {
         let job = &record.job;
-        out.extend(job.id().to_bytes());
-        byte(&mut out, operation(job.operation()));
-        byte(&mut out, job.start());
-        byte(&mut out, job.expected().level);
-        byte(&mut out, job.wallet_inputs().len() as u8);
+        out.extend(job.id().to_bytes())?;
+        byte(&mut out, operation(job.operation()))?;
+        byte(&mut out, job.start())?;
+        byte(&mut out, job.expected().level)?;
+        byte(&mut out, job.wallet_inputs().len() as u8)?;
         for identity in job.wallet_inputs() {
-            artifact(&mut out, *identity);
+            artifact(&mut out, *identity)?;
             logical = logical
                 .checked_add(identity.byte_len() as usize)
                 .ok_or("checkpoint artifact overflow")?;
         }
-        byte(&mut out, job.dependencies().len() as u8);
+        byte(&mut out, job.dependencies().len() as u8)?;
         for id in job.dependencies() {
-            out.extend(id.to_bytes());
+            out.extend(id.to_bytes())?;
         }
-        byte(&mut out, u8::from(record.output.is_some()));
+        byte(&mut out, u8::from(record.output.is_some()))?;
         if let Some((identity, bytes)) = &record.output {
             if bytes.len() != identity.byte_len() as usize {
                 return Err("checkpoint output length invariant".into());
             }
-            artifact(&mut out, *identity);
+            artifact(&mut out, *identity)?;
             logical = logical
                 .checked_add(bytes.len())
                 .ok_or("checkpoint artifact overflow")?;
@@ -207,15 +235,15 @@ fn encode_base(dag: &Dag) -> Result<Vec<u8>, Error> {
         if id.session != dag.session {
             return Err("checkpoint candidate session".into());
         }
-        u64le(&mut out, id.sequence);
-        out.extend(c.root.to_bytes());
-        out.extend(c.eligibility);
-        u64le(&mut out, c.deadline_ms);
-        byte(&mut out, u8::from(c.sealed));
-        byte(&mut out, u8::from(c.cancelled));
+        u64le(&mut out, id.sequence)?;
+        out.extend(c.root.to_bytes())?;
+        out.extend(c.eligibility)?;
+        u64le(&mut out, c.deadline_ms)?;
+        byte(&mut out, u8::from(c.sealed))?;
+        byte(&mut out, u8::from(c.cancelled))?;
     }
-    let attempts: Vec<_> = dag.attempts.values().filter(|a| !a.released).collect();
-    u32le(&mut out, attempts.len())?;
+    let attempts = dag.attempts.values().filter(|a| !a.released);
+    u32le(&mut out, attempts.clone().count())?;
     let mut used = Resources::default();
     let mut reserved = 0usize;
     for a in attempts {
@@ -226,17 +254,17 @@ fn encode_base(dag: &Dag) -> Result<Vec<u8>, Error> {
         {
             return Err("checkpoint attempt invariant".into());
         }
-        u64le(&mut out, a.lease.id.sequence);
-        out.extend(a.lease.job.to_bytes());
-        u64le(&mut out, a.lease.worker.0);
-        u64le(&mut out, a.lease.deadline_ms);
-        resources(&mut out, a.resources);
-        byte(&mut out, attempt_status(a.status)?);
-        byte(&mut out, u8::from(a.worker_stopped));
-        byte(&mut out, u8::from(a.verification_active));
-        byte(&mut out, a.manifest.len() as u8);
+        u64le(&mut out, a.lease.id.sequence)?;
+        out.extend(a.lease.job.to_bytes())?;
+        u64le(&mut out, a.lease.worker.0)?;
+        u64le(&mut out, a.lease.deadline_ms)?;
+        resources(&mut out, a.resources)?;
+        byte(&mut out, attempt_status(a.status)?)?;
+        byte(&mut out, u8::from(a.worker_stopped))?;
+        byte(&mut out, u8::from(a.verification_active))?;
+        byte(&mut out, a.manifest.len() as u8)?;
         for identity in &a.manifest {
-            artifact(&mut out, *identity);
+            artifact(&mut out, *identity)?;
         }
         used = used
             .add(a.resources)
@@ -246,44 +274,43 @@ fn encode_base(dag: &Dag) -> Result<Vec<u8>, Error> {
             .ok_or("checkpoint output reservation overflow")?;
     }
     if staged {
-        byte(&mut out, 1);
+        byte(&mut out, 1)?;
     }
     if let Some(root) = dag.launch_root {
         root.validate()?;
         for value in root.journal.into_iter().chain(root.store) {
-            u64le(&mut out, value);
+            u64le(&mut out, value)?;
         }
     }
     if staged || dag.launch_root.is_some() {
-        let bindings: Vec<_> = dag
+        let bindings = dag
             .attempts
             .values()
-            .filter(|a| !a.released && a.launch_binding.is_some())
-            .collect();
-        u32le(&mut out, bindings.len())?;
+            .filter(|a| !a.released && a.launch_binding.is_some());
+        u32le(&mut out, bindings.clone().count())?;
         for a in bindings {
-            u64le(&mut out, a.lease.id.sequence);
+            u64le(&mut out, a.lease.id.sequence)?;
             let binding = a.launch_binding.unwrap();
             binding.validate()?;
             if unassigned_store && binding != LaunchBinding::Unissued {
                 return Err("attempt launch binding without assigned store".into());
             }
             match binding {
-                LaunchBinding::Direct => byte(&mut out, 1),
+                LaunchBinding::Direct => byte(&mut out, 1)?,
                 LaunchBinding::Supervised(path) => {
-                    byte(&mut out, 2);
-                    out.extend(path);
+                    byte(&mut out, 2)?;
+                    out.extend(path)?;
                 }
-                LaunchBinding::Unissued => byte(&mut out, 3),
+                LaunchBinding::Unissued => byte(&mut out, 3)?,
                 LaunchBinding::Preparing(path) => {
-                    byte(&mut out, 4);
-                    out.extend(path);
+                    byte(&mut out, 4)?;
+                    out.extend(path)?;
                 }
                 LaunchBinding::Authorized { path, directory } => {
-                    byte(&mut out, 5);
-                    out.extend(path);
+                    byte(&mut out, 5)?;
+                    out.extend(path)?;
                     for value in directory {
-                        u64le(&mut out, value);
+                        u64le(&mut out, value)?;
                     }
                 }
             }
@@ -299,7 +326,7 @@ fn encode_base(dag: &Dag) -> Result<Vec<u8>, Error> {
     {
         return Err("checkpoint aggregate invariant or size".into());
     }
-    Ok(out)
+    Ok(())
 }
 
 struct Reader<'a> {
@@ -369,7 +396,11 @@ impl<'a> Reader<'a> {
         if n > 2 {
             return Err("checkpoint input count".into());
         }
-        (0..n).map(|_| self.artifact()).collect()
+        let mut artifacts = Vec::with_capacity(n);
+        for _ in 0..n {
+            artifacts.push(self.artifact()?);
+        }
+        Ok(artifacts)
     }
 }
 
@@ -414,15 +445,15 @@ pub(crate) fn restore_typed(
     store: &ArtifactStore,
     mut policy: impl FnMut(ArtifactRef) -> Result<crate::block_v2::typed_recursive::Policy, Error>,
 ) -> Result<Restored, Error> {
-    pin.check_typed(registry)?;
+    let registry = super::super::job::TypedRegistryContext::for_pin(registry, pin)?;
     restore_with(
         bytes,
         pin,
         chain,
         epoch,
         limits,
-        |identity| store.load_typed_wallet(identity, pin, registry, chain, policy(identity)?),
-        |job, identity| store.load_typed_node(identity, job, registry),
+        |identity| store.load_typed_wallet_approved(identity, &registry, chain, policy(identity)?),
+        |job, identity| store.load_typed_node_approved(identity, job, &registry),
     )
 }
 
@@ -540,9 +571,9 @@ fn restore_base_with(
     if old_epoch == 0 || epoch <= old_epoch || recorded_limits != limits {
         return Err("checkpoint epoch/configuration mismatch".into());
     }
-    let workspaces: Vec<_> = raw_workspaces
-        .into_iter()
-        .map(|(sequence, worker, resources)| WorkspaceLease {
+    let mut workspaces = Vec::with_capacity(raw_workspaces.len());
+    for (sequence, worker, resources) in raw_workspaces {
+        workspaces.push(WorkspaceLease {
             id: WorkspaceId {
                 session,
                 epoch: old_epoch,
@@ -550,8 +581,8 @@ fn restore_base_with(
             },
             worker,
             resources,
-        })
-        .collect();
+        });
+    }
     let count = r.count(limits.jobs)?;
     let mut raw: Vec<RawJob> = Vec::with_capacity(count);
     let mut seen = BTreeMap::new();
@@ -572,7 +603,10 @@ fn restore_base_with(
         if n > 2 {
             return Err("checkpoint dependency count".into());
         }
-        let dependencies: Vec<_> = (0..n).map(|_| r.job()).collect::<Result<_, _>>()?;
+        let mut dependencies = Vec::with_capacity(n);
+        for _ in 0..n {
+            dependencies.push(r.job()?);
+        }
         if dependencies.iter().any(|id| !seen.contains_key(id)) {
             return Err("checkpoint forward/missing dependency".into());
         }
@@ -687,7 +721,11 @@ fn restore_base_with(
     let count = r.count(limits.attempts)?;
     let mut attempts = Vec::with_capacity(count);
     let mut attempt_ids = BTreeSet::new();
-    let mut workers: BTreeSet<_> = workspaces.iter().map(|w| w.worker).collect();
+    // Explicit insertion avoids BTreeSet::from_iter's temporary sorted Vec.
+    let mut workers = BTreeSet::new();
+    for workspace in &workspaces {
+        workers.insert(workspace.worker);
+    }
     let mut active = BTreeSet::new();
     let mut used = workspaces
         .iter()
@@ -777,11 +815,10 @@ fn restore_base_with(
     };
     if bound || staged {
         let n = r.count(attempts.len())?;
-        let indices: BTreeMap<_, _> = attempts
-            .iter()
-            .enumerate()
-            .map(|(i, a)| (a.lease.id.sequence, i))
-            .collect();
+        let mut indices = BTreeMap::new();
+        for (i, attempt) in attempts.iter().enumerate() {
+            indices.insert(attempt.lease.id.sequence, i);
+        }
         let mut previous = 0;
         let mut saw_staged = false;
         for _ in 0..n {
@@ -843,18 +880,24 @@ fn restore_base_with(
             let mut closure = BTreeSet::new();
             while let Some(id) = stack.pop() {
                 if closure.insert(id) {
+                    if closure.len() > 127 {
+                        return Err("checkpoint candidate graph bound".into());
+                    }
                     stack.extend(&raw[seen[&id]].dependencies);
                 }
             }
             if closure.len() > 127 {
                 return Err("checkpoint candidate graph bound".into());
             }
-            owned.extend(closure);
+            for id in closure {
+                owned.insert(id);
+            }
         }
     }
     for a in &attempts {
         let job = &raw[seen[&a.lease.job]];
-        let mut expected = job.wallets.clone();
+        let mut expected = Vec::with_capacity(job.wallets.len() + job.dependencies.len());
+        expected.extend_from_slice(&job.wallets);
         for id in &job.dependencies {
             expected.push(
                 raw[seen[id]]
@@ -868,11 +911,33 @@ fn restore_base_with(
             return Err("checkpoint attempt input/candidate binding".into());
         }
     }
+    let mut census = sizing::Census::default();
+    census.vector(&raw)?;
+    for job in &raw {
+        census.vector(&job.wallets)?;
+        census.vector(&job.dependencies)?;
+    }
+    census.vector(&workspaces)?;
+    census.vector(&candidates)?;
+    census.vector(&attempts)?;
+    for attempt in &attempts {
+        census.vector(&attempt.input_manifest)?;
+    }
+    census.map(&seen)?;
+    census.set(&candidate_ids)?;
+    census.set(&attempt_ids)?;
+    census.set(&workers)?;
+    census.set(&active)?;
+    census.set(&owned)?;
+    census.admit(limits)?;
+    // These validation indexes are no longer needed. Release them before the
+    // decoded proof and independent CPU verifier start using their allowances.
+    drop((seen, candidate_ids, attempt_ids, workers, active, owned));
     let mut dag = Dag::new(pin, chain, epoch, limits)?;
     dag.launch_root = launch_root;
     for entry in raw {
-        let mut tickets = Vec::new();
-        let mut wallet_bytes = Vec::new();
+        let mut tickets = Vec::with_capacity(entry.wallets.len());
+        let mut wallet_bytes = Vec::with_capacity(entry.wallets.len());
         for identity in entry.wallets {
             let (ticket, bytes) = wallet(identity)?;
             if ticket.artifact() != identity {

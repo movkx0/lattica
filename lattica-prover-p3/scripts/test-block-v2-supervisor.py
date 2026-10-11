@@ -24,6 +24,22 @@ def write(path, value):
 
 
 class SupervisorTests(unittest.TestCase):
+    def test_service_launch_uses_saved_proving_policy_after_environment_changes(self):
+        required = {'LATTICA_PROVING_POLICY': 'gpu-required', 'LATTICA_PROVING_REPORT': '1'}
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.dict(os.environ, required):
+                script, path, value, _ = self.fixture(Path(directory))
+            self.assertEqual(value['proving_environment'], required)
+            write(path.parent/'result.json', {'status': 'succeeded', 'retries': 0})
+            with patch.dict(os.environ, {'LATTICA_PROVING_POLICY': 'compatible', 'LATTICA_PROVING_REPORT': '0'}), \
+                    patch.object(S, 'create', return_value=(path, value)), \
+                    patch.object(S.subprocess, 'run', return_value=SimpleNamespace(returncode=0)) as launch, \
+                    patch.object(S, 'observe', return_value={}), patch.object(S, 'terminal', return_value=True):
+                S.launch(None, script, {})
+            command = launch.call_args.args[0]
+            for name, setting in required.items():
+                self.assertLess(command.index(f'--setenv={name}={setting}'), command.index(value['executable']))
+
     def fixture(self, root, restarts=2):
         script = root/'fake-controller.py'
         script.write_text("import pathlib,sys\np=pathlib.Path(sys.argv[sys.argv.index('--evidence')+1]);p.mkdir()\n(p/'child.txt').write_text('started')\nraise SystemExit(1)\n")

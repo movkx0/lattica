@@ -5,9 +5,11 @@
 //! and production acceptance paths do not dispatch to this compiler. Compiler
 //! checks and proof counts do not establish a proving-time improvement.
 
+use super::compiler_constants::Constants;
 use p3_batch_stark::BatchProof;
 use p3_field::PrimeCharacteristicRing;
 
+use super::program::ScopedProgramBuilder as ProgramBuilder;
 use super::program::{Val, Wire};
 use super::programs::{
     self, assert_constant, finish, parent_root, public, registry, selectors, Compiled, COUNT,
@@ -15,7 +17,6 @@ use super::programs::{
 };
 use super::typed_programs;
 use super::verifier::{self, CompileError, ProofInputs};
-use super::ProgramBuilder;
 use crate::block_v2::{commitment, profile, recursive::WalletProof};
 
 pub type Caps = programs::Caps<6>;
@@ -57,8 +58,18 @@ pub fn proof_plan(count: u8) -> Result<ProofPlan, CompileError> {
 
 /// Constrain padding for an authenticated child. The inner registered program
 /// establishes the child's count, root and canonical left-packed subtree.
-pub(super) fn padded_root(b: &mut ProgramBuilder, child: &[Wire]) -> [Wire; 4] {
-    let masks = selectors(b, child[LEVEL], 0, u64::from(commitment::DEPTH - 1));
+pub(super) fn padded_root(
+    b: &mut ProgramBuilder,
+    child: &[Wire],
+    constants: Constants<'_>,
+) -> Result<[Wire; 4], CompileError> {
+    let masks = selectors::<{ commitment::DEPTH as usize }>(
+        b,
+        child[LEVEL],
+        0,
+        u64::from(commitment::DEPTH - 1),
+        constants,
+    )?;
     let zero = b.constant(Val::ZERO);
     let mut empty = b.hash_fields(commitment::EMPTY, &child[..16]);
     let mut root: [Wire; 4] = child[ROOT..ROOT + 4].try_into().unwrap();
@@ -78,7 +89,7 @@ pub(super) fn padded_root(b: &mut ProgramBuilder, child: &[Wire]) -> [Wire; 4] {
             empty = parent_root(b, parent_level, zero, zero, &empty, &empty);
         }
     }
-    root
+    Ok(root)
 }
 
 pub fn compile(
@@ -87,26 +98,38 @@ pub fn compile(
     child: &[Val; PUBLIC_VALUES],
     proof: &BatchProof<profile::Config>,
 ) -> Result<Compiled, CompileError> {
+    compile_with_registry(height, caps, child, proof, None)
+}
+
+pub(crate) fn compile_with_registry(
+    height: usize,
+    caps: &Caps,
+    child: &[Val; PUBLIC_VALUES],
+    proof: &BatchProof<profile::Config>,
+    prefix: Option<&programs::RegistryPrefix>,
+) -> Result<Compiled, CompileError> {
+    let constants = programs::compiler_constants(prefix);
     let child_air = programs::shape(height)?;
-    let mut b = ProgramBuilder::new(PUBLIC_VALUES).unwrap();
+    let mut b = ProgramBuilder::with_constants(PUBLIC_VALUES, constants).unwrap();
     let public = public(&b);
     let mut inputs = ProofInputs::default();
-    let keys = registry(&mut b, &mut inputs, &public, height, caps)?;
+    let keys = registry(&mut b, &mut inputs, &public, height, caps, prefix)?;
     assert_constant(&mut b, public[MODE], FINALIZE);
     assert_constant(&mut b, public[LEVEL], u64::from(commitment::DEPTH));
 
-    let child = inputs.bases(&mut b, child);
+    let child = inputs.bases(&mut b, child)?;
     for i in 0..16 {
         b.assert_equal(child[i], public[i]);
     }
     b.assert_equal(child[COUNT], public[COUNT]);
     // A finalizer is terminal. Only the five subtree modes can be its child.
-    let masks = selectors(
+    let masks = selectors::<5>(
         &mut b,
         child[MODE],
         programs::WRAPPER,
         typed_programs::ISSUANCE,
-    );
+        constants,
+    )?;
     let zero = b.constant(Val::ZERO);
     let mut key = vec![[zero; 4]; 1 << profile::CAP_HEIGHT];
     for (i, selected) in key.iter_mut().enumerate() {
@@ -117,8 +140,16 @@ pub fn compile(
             }
         }
     }
-    verifier::batch::verify(&mut b, &mut inputs, &child_air, &child, &key, proof)?;
-    let root = padded_root(&mut b, &child);
+    verifier::batch::verify_with_constants(
+        &mut b,
+        &mut inputs,
+        &child_air,
+        &child,
+        &key,
+        proof,
+        constants,
+    )?;
+    let root = padded_root(&mut b, &child, constants)?;
     for i in 0..4 {
         b.assert_equal(root[i], public[ROOT + i]);
     }
@@ -132,20 +163,45 @@ pub fn compile_registration(
     mode: u64,
     wallet: Option<&WalletProof>,
 ) -> Result<Compiled, CompileError> {
+    compile_registration_with_registry(height, mode, wallet, None)
+}
+
+pub(crate) fn compile_registration_with_registry(
+    height: usize,
+    mode: u64,
+    wallet: Option<&WalletProof>,
+    prefix: Option<&programs::RegistryPrefix>,
+) -> Result<Compiled, CompileError> {
     let caps: Caps = core::array::from_fn(|_| vec![[Val::ZERO; 4]; 1 << profile::CAP_HEIGHT]);
     match mode {
         programs::WRAPPER | typed_programs::HTLC | typed_programs::ISSUANCE => {
             let wallet = wallet.ok_or(CompileError::Shape("typed wrapper template"))?;
-            typed_programs::wrapper(height, &caps, mode, &wallet.public, &wallet.proof)
+            typed_programs::wrapper_with_registry(
+                height,
+                &caps,
+                mode,
+                &wallet.public,
+                &wallet.proof,
+                prefix,
+            )
         }
-        programs::EMPTY => programs::empty(height, &caps),
+        programs::EMPTY => programs::empty_with_registry(height, &caps, prefix),
         programs::MERGE | FINALIZE => {
-            let proof = verifier::template::batch(&programs::shape(height)?)?;
+            let proof = verifier::template::batch_with_constants(
+                &programs::shape(height)?,
+                programs::compiler_constants(prefix),
+            )?;
             let public = [Val::ZERO; PUBLIC_VALUES];
             if mode == FINALIZE {
-                compile(height, &caps, &public, &proof)
+                compile_with_registry(height, &caps, &public, &proof, prefix)
             } else {
-                programs::merge(height, &caps, [&public, &public], [&proof, &proof])
+                programs::merge_with_registry(
+                    height,
+                    &caps,
+                    [&public, &public],
+                    [&proof, &proof],
+                    prefix,
+                )
             }
         }
         _ => Err(CompileError::Shape("typed finalizer registry mode")),
@@ -213,7 +269,7 @@ mod tests {
     fn padding_constraints_match_ordered_commitments_for_every_small_count() {
         let mut b = ProgramBuilder::new(PUBLIC_VALUES + 4).unwrap();
         let child = public(&b);
-        let root = padded_root(&mut b, &child);
+        let root = padded_root(&mut b, &child, Constants::cpu()).unwrap();
         for (i, value) in root.into_iter().enumerate() {
             b.assert_equal(value, b.public(PUBLIC_VALUES + i).unwrap());
         }

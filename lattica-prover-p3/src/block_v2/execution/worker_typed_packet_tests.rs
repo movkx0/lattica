@@ -57,6 +57,12 @@ fn all_typed_pairs_round_trip_and_reject_legacy_family_or_mode_substitution() {
         let encoded = request(&job, &[], vec![vec![1], vec![2]]).encode().unwrap();
         assert_eq!(&encoded[..8], TYPED_REQUEST_MAGIC);
         let decoded = Request::decode(&encoded, typed_pin(), [9; 32]).unwrap();
+        assert_eq!(encoded.capacity(), encoded.len());
+        assert_eq!(decoded.inputs.capacity(), 2);
+        assert_eq!(decoded.manifest.capacity(), 2);
+        assert_eq!(decoded.children.capacity(), 0);
+        assert_eq!(decoded.inputs[0].as_ptr(), encoded[240..].as_ptr());
+        assert_eq!(decoded.inputs[1].as_ptr(), encoded[278..].as_ptr());
         assert_eq!(decoded.job, job.id());
         assert_eq!(decoded.encode().unwrap(), encoded);
         assert!(Request::decode(&encoded, pin(), [9; 32]).is_err());

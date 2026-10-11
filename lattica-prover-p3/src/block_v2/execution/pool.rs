@@ -14,7 +14,47 @@ use super::{
     scheduler::{CostModel, WorkerCapabilities},
     selection::Selection,
 };
-use crate::block_v2::{recursive::Error, typed_recursive::Registry};
+use crate::block_v2::{
+    recursive::Error,
+    typed_recursive::{CheckedRegistry, Registry},
+};
+
+const MAX_WORKERS: usize = 16;
+const MAX_CANDIDATES: usize = 8;
+const MAX_JOBS: usize = 4096;
+const MAX_FAILURES: usize = 64;
+const MAX_FAILURE_CHARS: usize = 2048;
+const MAX_SELECTION_JOBS: usize = 2 * crate::block_v2::commitment::CAPACITY - 1;
+
+mod storage;
+pub use storage::{PoolBookkeepingStorage, PoolStorage};
+mod result_storage;
+pub use result_storage::PoolOutputStorage;
+
+// Preserve the first 2,048 Unicode characters without first allocating an
+// unbounded error.to_string(). Endpoint-owned formatting work is separate.
+fn failure_message(error: &dyn std::fmt::Display) -> String {
+    use std::fmt::Write;
+    struct Message {
+        bytes: String,
+        remaining: usize,
+    }
+    impl Write for Message {
+        fn write_str(&mut self, value: &str) -> std::fmt::Result {
+            for ch in value.chars().take(self.remaining) {
+                self.bytes.push(ch);
+                self.remaining -= 1;
+            }
+            Ok(())
+        }
+    }
+    let mut message = Message {
+        bytes: String::with_capacity(4 * MAX_FAILURE_CHARS),
+        remaining: MAX_FAILURE_CHARS,
+    };
+    write!(message, "{error}").expect("format pool worker failure");
+    message.bytes
+}
 
 pub mod local;
 #[cfg(test)]
@@ -77,7 +117,7 @@ struct Candidate {
 /// happen outside this object and remain mandatory at each candidate boundary.
 pub struct PoolCoordinator {
     owner: DurableDag,
-    registry: Registry<12>,
+    registry: CheckedRegistry,
     jobs: BTreeMap<JobId, Job>,
     candidates: BTreeMap<CandidateId, Candidate>,
     slots: Vec<Slot>,
@@ -109,7 +149,7 @@ impl PoolCoordinator {
         let endpoint = build(&mut self.owner)?;
         let cap = endpoint.capabilities();
         cap.resources.validate_request()?;
-        if cap.worker != worker || cap.profile != self.registry.id()? {
+        if cap.worker != worker || cap.profile != self.registry.profile() {
             return Err("pool replacement identity/profile".into());
         }
         slot.endpoint = endpoint;
@@ -131,10 +171,11 @@ impl PoolCoordinator {
         workers: Vec<Box<dyn WorkerEndpoint>>,
         bootstrap_ms: u64,
     ) -> Result<Self, Error> {
-        if workers.is_empty() || workers.len() > 16 {
+        if workers.is_empty() || workers.len() > MAX_WORKERS {
             return Err("pool worker count".into());
         }
-        let profile = registry.id()?;
+        let registry = CheckedRegistry::new(registry)?;
+        let profile = registry.profile();
         let mut ids = std::collections::BTreeSet::new();
         for worker in &workers {
             let cap = worker.capabilities();
@@ -143,19 +184,18 @@ impl PoolCoordinator {
                 return Err("pool worker identity/registry mismatch".into());
             }
         }
+        let mut slots = Vec::with_capacity(workers.len());
+        slots.extend(workers.into_iter().map(|endpoint| Slot {
+            endpoint,
+            active: None,
+            closed: false,
+        }));
         Ok(Self {
             owner,
             registry,
             jobs: BTreeMap::new(),
             candidates: BTreeMap::new(),
-            slots: workers
-                .into_iter()
-                .map(|endpoint| Slot {
-                    endpoint,
-                    active: None,
-                    closed: false,
-                })
-                .collect(),
+            slots,
             costs: CostModel::new(bootstrap_ms)?,
             failures: Vec::new(),
         })
@@ -169,20 +209,23 @@ impl PoolCoordinator {
         deadline_ms: u64,
         now_ms: u64,
     ) -> Result<CandidateId, Error> {
-        if self.candidates.len() >= 8 || deadline_ms <= now_ms {
+        if self.candidates.len() >= MAX_CANDIDATES || deadline_ms <= now_ms {
             return Err("pool candidate admission".into());
         }
-        let incoming: Vec<_> = selection.jobs().cloned().collect();
-        if self
-            .jobs
-            .len()
-            .checked_add(incoming.len())
-            .is_none_or(|n| n > 4096)
+        let count = selection.jobs().len();
+        if count > MAX_SELECTION_JOBS
+            || self
+                .jobs
+                .len()
+                .checked_add(count)
+                .is_none_or(|n| n > MAX_JOBS)
         {
             return Err("pool job admission".into());
         }
+        let mut incoming = Vec::with_capacity(count);
+        incoming.extend(selection.jobs().cloned());
         for job in &incoming {
-            if job.pin().profile() != self.registry.id()? {
+            if job.pin().profile() != self.registry.profile() {
                 return Err("pool candidate registry mismatch".into());
             }
             for artifact in job.wallet_inputs() {
@@ -197,7 +240,8 @@ impl PoolCoordinator {
             }
         }
         let candidate = selection.attach(&mut self.owner, eligibility, deadline_ms, now_ms)?;
-        let ids = incoming.iter().map(Job::id).collect();
+        let mut ids = Vec::with_capacity(incoming.len());
+        ids.extend(incoming.iter().map(Job::id));
         for job in incoming {
             self.jobs.entry(job.id()).or_insert(job);
         }
@@ -230,10 +274,16 @@ impl PoolCoordinator {
         eligibility: [u8; 32],
         now_ms: u64,
     ) -> Result<Option<Vec<u8>>, Error> {
-        Ok(self
+        let Some(bytes) = self
             .owner
             .candidate_result(candidate, eligibility, now_ms)?
-            .map(<[u8]>::to_vec))
+        else {
+            return Ok(None);
+        };
+        if bytes.len() > PoolOutputStorage::ROOT_LIMIT {
+            return Err("pool returned root storage limit".into());
+        }
+        Ok(Some(bytes.to_vec()))
     }
 
     /// Poll once; the caller controls I/O waiting and its monotonic clock. No
@@ -250,7 +300,7 @@ impl PoolCoordinator {
         if self.slots.iter().all(|s| s.closed) {
             return Err("pool has no surviving workers".into());
         }
-        let mut accepted = Vec::new();
+        let mut accepted = Vec::with_capacity(self.slots.len());
         for slot in &mut self.slots {
             if slot.closed || slot.active.is_none() {
                 continue;
@@ -265,13 +315,11 @@ impl PoolCoordinator {
                     slot.endpoint.cancel(&mut self.owner, lease, clock()?)?;
                     slot.active = None;
                     slot.closed = true;
-                    if self.failures.len() >= 64 {
+                    if self.failures.len() >= MAX_FAILURES {
                         return Err("pool failure report bound".into());
                     }
-                    self.failures.push((
-                        slot.endpoint.capabilities().worker,
-                        error.to_string().chars().take(2048).collect(),
-                    ));
+                    self.failures
+                        .push((slot.endpoint.capabilities().worker, failure_message(&error)));
                     continue;
                 }
             };
@@ -280,7 +328,8 @@ impl PoolCoordinator {
                 return Err("pool substituted worker attempt".into());
             }
             let expected = self.owner.begin_verification(result.lease, clock()?)?;
-            let checked = VerifiedNode::verify_typed(&expected, &self.registry, &result.proof);
+            let checked =
+                VerifiedNode::verify_typed_checked(&expected, &self.registry, &result.proof);
             let ticket = match checked {
                 Ok(ticket) => ticket,
                 Err(error) => {
@@ -312,28 +361,25 @@ impl PoolCoordinator {
             slot.active = None;
         }
         loop {
-            let workers: Vec<_> = self
-                .slots
-                .iter()
-                .filter(|s| !s.closed && s.active.is_none())
-                .map(|s| s.endpoint.capabilities())
-                .collect();
+            let mut workers = Vec::with_capacity(self.slots.len());
+            workers.extend(
+                self.slots
+                    .iter()
+                    .filter(|s| !s.closed && s.active.is_none())
+                    .map(|s| s.endpoint.capabilities()),
+            );
             if workers.is_empty() {
                 break;
             }
-            let ready: Vec<_> = self
-                .owner
-                .ready()?
-                .into_iter()
-                .filter(|id| self.jobs.contains_key(id))
-                .collect();
+            let mut ready = self.owner.ready()?;
+            ready.retain(|id| self.jobs.contains_key(id));
             if ready.is_empty() {
                 break;
             }
-            let deadlines = ready
-                .iter()
-                .map(|id| Ok((*id, self.owner.job_deadline(*id)?)))
-                .collect::<Result<BTreeMap<_, _>, Error>>()?;
+            let mut deadlines = BTreeMap::new();
+            for id in &ready {
+                deadlines.insert(*id, self.owner.job_deadline(*id)?);
+            }
             let Some(choice) =
                 self.costs
                     .select(&self.jobs, &ready, &workers, &deadlines, clock()?)?

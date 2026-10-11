@@ -1,0 +1,495 @@
+{
+  "schema": "lattica-device-pcs-v1",
+  "date": "2026-10-07",
+  "source_head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "source_state": "uncommitted main working tree",
+  "previous_checkpoint": "gpu-owned-pcs-queries-2026-10-07.json",
+  "complete_gpu_prover": false,
+  "integrated_into_real_prover": true,
+  "enabled_by_default": false,
+  "throughput_qualification": false,
+  "selection": {
+    "flag": "LATTICA_V2_GPU_PCS_DEVICE_ONLY=1",
+    "requires": [
+      "OpenCL resident LDE/retained commitments and fixed binary cubic block-v2 profile",
+      "owned GPU quotient and lookup",
+      "owned GPU opening evaluation and resident FRI",
+      "opening consumer selected before private proving begins"
+    ],
+    "gpu_required_policy_admitted": false,
+    "compact_selection": "Both full and compact selections produce DeviceOnly data; neither allocates a host polynomial matrix",
+    "host_interfaces": "Host PCS quotient LDE construction/commitment, domain evaluations and CPU opening selection reject; explicit independent CPU reference configurations remain available"
+  },
+  "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-device-pcs-20261007/run-01",
+  "features": [
+    "default",
+    "block-v2-wide-lanes"
+  ],
+  "build_profile": "release",
+  "gpu": {
+    "opencl_index": 1,
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "pci": "0000:02:00.0",
+    "global_bytes": 16697327616,
+    "max_allocation_bytes": 4174331904,
+    "driver": "615.71.09"
+  },
+  "binary_sha256": "f0eaa62151fa1612fd58b306a2f6f2868e43d917e7959d162cc62d7634407292",
+  "source_archive_sha256": "037b235650e69f397182336dd7e7b0f3a4faa7bdb81029e5e242490022ffd0e3",
+  "runner_sha256": "c8531bf92eda7b3b52f29654662ad41a3d3532680cbb06e4691614b7c5dca435",
+  "manifest_sha256": "a88c40338445676077cc43ad8f171597dfb731892281f882cdd85aa3db2f091d",
+  "verified_current_source_files": 225,
+  "limits": {
+    "memory_max_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "runtime_max_seconds_per_check": 180,
+    "native_managed_bytes": 268435456,
+    "production_reservations_relaxed": false
+  },
+  "reference": "Plonky3 0.6.1; cubic Goldilocks X^3 = X + 1, fixed block-v2 parameters and original CPU PCS/extension-MMCS verifier",
+  "operations": [
+    "Typed HostPrefix/DeviceOnly retention in the planner and executor",
+    "Skip host LDE allocation, readback, decode and reordering in DeviceOnly mode",
+    "Retain owned degree prefixes, independent dimensions, original host salts and GPU trees",
+    "Admit capture geometry, GPU buffers and remaining host random/salt staging before RNG draws",
+    "Preserve public preprocessing imports and private session ownership",
+    "Pin device-only mode and prerequisite consumers in worker assignments"
+  ],
+  "conformance": {
+    "commitment_oracle": "12 combinations: 2/32/4096 source rows, widths [1]/[3,7,33]/[65], both legacy retention choices and public/private ownership; CPU caps, rows, salts and paths match; commitment downloads exactly cap bytes",
+    "host_access": "DeviceOnly has no host polynomial matrices; get_matrices, legacy queries and generic commit reject",
+    "full_proofs": "Full and compact selection match independently configured CPU reference proof bytes and decode/verify through the original upstream CPU PCS and extension adapter",
+    "preprocessing_reuse": "Three fresh registered proof sessions under each full/compact selection; no host LDE outputs, stable public allocation baseline, private cleanup and verification after GPU shutdown",
+    "negative_cases": [
+      "missing owned consumers/capture",
+      "invalid capture blowup or hiding-mask geometry",
+      "unequal output heights and malformed trace inputs",
+      "insufficient host random/salt staging",
+      "aggregate GPU admission",
+      "legacy host quotient entry points",
+      "foreign private sessions and invalid queries"
+    ],
+    "rng": "Rejected admission and host-interface calls perform no new transfers or allocations; subsequent hiding/randomization commitments and queried salts match untouched CPU streams",
+    "lifecycle": "All 39 native checks log zero managed bytes and released lease on shutdown"
+  },
+  "64_row_fixture": {
+    "including_preprocessing": {
+      "commits": 5,
+      "device_only_commits": 5,
+      "host_output_bytes": 0,
+      "host_reordered_bytes": 0
+    },
+    "private_proof_delta": {
+      "commits": 4,
+      "device_only_commits": 4,
+      "host_output_bytes": 0,
+      "host_reordered_bytes": 0
+    },
+    "compact_selection_including_preprocessing": {
+      "commits": 5,
+      "device_only_commits": 5,
+      "host_output_bytes": 0,
+      "host_reordered_bytes": 0
+    },
+    "same_binary_host_backed_control_private_delta": {
+      "commits": 4,
+      "device_only_commits": 0,
+      "host_output_bytes": 4456448,
+      "host_reordered_bytes": 4456448
+    },
+    "same_binary_compact_control_private_delta": {
+      "commits": 4,
+      "device_only_commits": 0,
+      "host_output_bytes": 980992,
+      "host_reordered_bytes": 980992
+    },
+    "opening": {
+      "matrices": 20,
+      "evaluations": 20,
+      "reductions": 20,
+      "claimed_value_readback_bytes": 12648,
+      "fri_vector_readback_bytes": 0,
+      "prefix_upload_bytes": 0,
+      "prefix_readback_bytes": 0,
+      "host_peak_plan_bytes": 1073872
+    },
+    "fri_and_initial_queries": {
+      "rounds": 7,
+      "folds": 7,
+      "mixes": 0,
+      "gathered_value_bytes": 71704,
+      "final_coefficient_bytes": 24,
+      "layer_upload_bytes": 0,
+      "layer_readback_bytes": 0,
+      "pcs_query_matrices": 20,
+      "pcs_query_tiles": 20,
+      "pcs_query_value_bytes": 483328,
+      "pcs_query_prefix_upload_bytes": 0,
+      "pcs_query_prefix_readback_bytes": 0,
+      "pcs_query_host_peak_bytes": 6578176
+    },
+    "other_transfers": "Caps, paths, scalar control checks and final proof material still cross the host boundary; random samples and salts are still generated on CPU"
+  },
+  "full_workload_reservation": {
+    "managed_bytes": 5460983808,
+    "max_allocation_bytes": 838860800,
+    "query_host_extra_bytes": 31129600,
+    "fri_host_extra_bytes": 300613632,
+    "all_selected_host_extra_bytes": 1105596416,
+    "admission": "Rejected by the existing full-size phase allowance model",
+    "admission_error": "workload does not fit assigned resources on GPU-a: preprocessing_commit: managed VRAM requires 9755951104 bytes; budget 7516192768 bytes; main_commit: managed VRAM requires 9755951104 bytes; budget 7516192768 bytes; permutation_commit: managed VRAM requires 9755951104 bytes; budget 7516192768 bytes; quotient_commit: managed VRAM requires 9755951104 bytes; budget 7516192768 bytes; openings: managed VRAM requires 9755951104 bytes; budget 7516192768 bytes"
+  },
+  "checks": [
+    {
+      "name": "device-oracle",
+      "passed_count": 1,
+      "wall_seconds": 1.9706839009959367,
+      "log_sha256": "e536a308ddaf92cadf836ee2872ad31f4fd51cda005e39804fde7bfc34db4dbe"
+    },
+    {
+      "name": "device-admission",
+      "passed_count": 1,
+      "wall_seconds": 0.6661124620004557,
+      "log_sha256": "b865f9594946457ff4fd84911ad8fa99f75a6f1ad26fe59d01eaff7a5f8d679b"
+    },
+    {
+      "name": "device-full",
+      "passed_count": 1,
+      "wall_seconds": 0.9660338999965461,
+      "log_sha256": "d262ef2e375ac06a5410cecbc5b0563aaf605dd15e9eaa321b5a30339034ad39"
+    },
+    {
+      "name": "device-compact",
+      "passed_count": 1,
+      "wall_seconds": 0.9655112469990854,
+      "log_sha256": "032d127efd2a108231c8f944e11c6df2b53182f4a2e7c01e41ae9c958f474ecc"
+    },
+    {
+      "name": "device-reuse",
+      "passed_count": 1,
+      "wall_seconds": 1.1666825770007563,
+      "log_sha256": "457092953f0fe37c9cd27eccb21f21c8abf369bc3d847592dc9491225fe05ad9"
+    },
+    {
+      "name": "device-reuse-compact",
+      "passed_count": 1,
+      "wall_seconds": 1.1662949959936668,
+      "log_sha256": "1eb5405163a378c69aea99d394f9233555a5c474338a78973c69aea541a8ea8f"
+    },
+    {
+      "name": "query-tiles",
+      "passed_count": 1,
+      "wall_seconds": 0.8671689350012457,
+      "log_sha256": "eca8aed4208ab049f8714fb76f42b636c3c3069036fb326bf368bb070b02e108"
+    },
+    {
+      "name": "query-oracle",
+      "passed_count": 1,
+      "wall_seconds": 1.6189431969978614,
+      "log_sha256": "15e158b42b2b9c30231a3b01abe16ddb988a9608ee70ed1243edf47df4355a0e"
+    },
+    {
+      "name": "query-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.0320853859957424,
+      "log_sha256": "0e5b87f6a532c68c416c54ac9fcbc376120bf3176a06bf6950f9e0144e91c224"
+    },
+    {
+      "name": "fri-conformance",
+      "passed_count": 1,
+      "wall_seconds": 1.2683619429953978,
+      "log_sha256": "9e79fdecc817cb703fc05a4d8d7bc90d9bc20634d0c6c51e0bafc6248ab015ef"
+    },
+    {
+      "name": "fri-full",
+      "passed_count": 1,
+      "wall_seconds": 0.9157877520046895,
+      "log_sha256": "5586f4a10ad04770bfed276b9e2ee55b4d25cc1304630a2e5c1591e17addc552"
+    },
+    {
+      "name": "fri-compact",
+      "passed_count": 1,
+      "wall_seconds": 0.9159679049989791,
+      "log_sha256": "8da87dafeaf51fe9f790eaea623b5c032e772e23a1e970a63f0fa50a48e96d17"
+    },
+    {
+      "name": "fri-lookup-full",
+      "passed_count": 1,
+      "wall_seconds": 0.9158268530009082,
+      "log_sha256": "7a3cbab045b99e352a178037193ffdeabd339eda0925ca07c11c85d0e7cb6adb"
+    },
+    {
+      "name": "fri-lookup-compact",
+      "passed_count": 1,
+      "wall_seconds": 0.9663056270001107,
+      "log_sha256": "18886df97e08be323a77f5623d2a2fd22627375b90cde83b11877295ba34d3fe"
+    },
+    {
+      "name": "fri-reuse",
+      "passed_count": 1,
+      "wall_seconds": 1.4170788029950927,
+      "log_sha256": "a54134c180d62057de07b0c00d7eb562855f06cb7f813fde10edfa217cffb1df"
+    },
+    {
+      "name": "extension-adapter",
+      "passed_count": 1,
+      "wall_seconds": 0.03189136999571929,
+      "log_sha256": "1b8f8d41e71be81faf6935325fb9c5c2f49e0fbc0fd40915029108b6946605fd"
+    },
+    {
+      "name": "opening-full",
+      "passed_count": 1,
+      "wall_seconds": 0.8658045859992853,
+      "log_sha256": "608408c3d3846f1238af98105545e3084825340b04db16955bd59e44c2cf3a7c"
+    },
+    {
+      "name": "opening-compact",
+      "passed_count": 1,
+      "wall_seconds": 0.9168899159994908,
+      "log_sha256": "330d2d4a6568f32c16de710333ece2ffb95d399be8e959312e61b28765856de2"
+    },
+    {
+      "name": "opening-lookup-full",
+      "passed_count": 1,
+      "wall_seconds": 0.9152778829957242,
+      "log_sha256": "e50a83de5ddd9f43cdd87b6cda585694a9f9f3a764f7178a12efff4695054b85"
+    },
+    {
+      "name": "opening-lookup-compact",
+      "passed_count": 1,
+      "wall_seconds": 0.8667902579982183,
+      "log_sha256": "fbc936976182dd83ad4f4482e62122c76ed89e5bc87a3068d371dbadaee8ef20"
+    },
+    {
+      "name": "opening-rng",
+      "passed_count": 1,
+      "wall_seconds": 0.6646965039981296,
+      "log_sha256": "bcd018f7e53284f4121143d4ce9eaa28e7fb36e03772534309a2076c07ba48d6"
+    },
+    {
+      "name": "opening-admission",
+      "passed_count": 1,
+      "wall_seconds": 0.6149590540007921,
+      "log_sha256": "56ec94f6dffd8e23e558798cd0a9f8980a5f714eb77bde2ee13242604b93265a"
+    },
+    {
+      "name": "opening-capture",
+      "passed_count": 1,
+      "wall_seconds": 1.0655473589940812,
+      "log_sha256": "2739e38db3a583945a5f6ea5a275e190c55f2b7579adb6c4a4cd1a82d60ab19b"
+    },
+    {
+      "name": "opening-reuse",
+      "passed_count": 1,
+      "wall_seconds": 1.2175775960058672,
+      "log_sha256": "a7b1a0f85af0833e30a821bca8256cb4ac2525261304db26f70b2afb1f74dacc"
+    },
+    {
+      "name": "opening-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 1.4188884329996654,
+      "log_sha256": "a781e339a8f22282c86e6e29d2c651175a22844b82b91c2bd0fe2f27c9fc9fee"
+    },
+    {
+      "name": "opening-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.03221822899649851,
+      "log_sha256": "c91573aebc1a99e990cce0ccc0d6b5ab6098fc96b613f0bf84190606adeb32ab"
+    },
+    {
+      "name": "lookup-commit",
+      "passed_count": 1,
+      "wall_seconds": 1.317006212004344,
+      "log_sha256": "2eb02023f7b1fc34a54a0aae818240d39f453708e0c2241a6e1e7193a16d183a"
+    },
+    {
+      "name": "lookup-proof",
+      "passed_count": 1,
+      "wall_seconds": 0.9155127640042338,
+      "log_sha256": "bfeab605631e27e63d1e4e4a2bfdc806f215e77121f4c8da3010194645fbfcc0"
+    },
+    {
+      "name": "lookup-compact",
+      "passed_count": 1,
+      "wall_seconds": 0.9669720759993652,
+      "log_sha256": "94621e5cc8426f727d80dd1cc78339fef3af051889e7aca8acd240f382b005d0"
+    },
+    {
+      "name": "trace-commit-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.0319863440017798,
+      "log_sha256": "b24e3b16bb8f10b5eacaaa9542383d76d8f728cc9febae5a795908f4a5110b44"
+    },
+    {
+      "name": "lookup-conformance",
+      "passed_count": 1,
+      "wall_seconds": 0.7653224160021637,
+      "log_sha256": "4a6ff6b46cb4323d54afbba5a4f986541a782a6344eaed89898b2db9ebf9e912"
+    },
+    {
+      "name": "lookup-compiler",
+      "passed_count": 1,
+      "wall_seconds": 0.031951436001691036,
+      "log_sha256": "aea7d2fc0c505e86acb840dea2c30c8198dede803d357a05b933bd7e6f3cda3e"
+    },
+    {
+      "name": "lookup-plan",
+      "passed_count": 1,
+      "wall_seconds": 0.031858441994700115,
+      "log_sha256": "c1b3755d9b853d8cf8a85a08086616af4d8de474661b07e4481096fd36769a76"
+    },
+    {
+      "name": "quotient-compiler",
+      "passed_count": 1,
+      "wall_seconds": 0.03179449099843623,
+      "log_sha256": "4da0ee8b5445947de5117862e09a08605739e47390622ce1fadcbe5fdf0c4bfe"
+    },
+    {
+      "name": "proof-bytes",
+      "passed_count": 1,
+      "wall_seconds": 0.9666932430045563,
+      "log_sha256": "427b84e44707d9447101afd35c4faed2f572c4edb8efb7037d803f8ef570697e"
+    },
+    {
+      "name": "compact-proof",
+      "passed_count": 1,
+      "wall_seconds": 0.9672416649991646,
+      "log_sha256": "5891199fc933e93935e4a1e5524be44557fe22451415fcbf02d05a104b8146db"
+    },
+    {
+      "name": "registered",
+      "passed_count": 1,
+      "wall_seconds": 0.9184851710015209,
+      "log_sha256": "7d16d9da05c03d3aa6beb4d78c5eb291c4f148ce12f6d3cb5403eb61e65674e9"
+    },
+    {
+      "name": "reuse",
+      "passed_count": 1,
+      "wall_seconds": 1.1699548779943143,
+      "log_sha256": "6a7964ab751163cf65c36fb9d8d5864912b057e4a7a60b3805d1027fb158ed7e"
+    },
+    {
+      "name": "adapter-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.9191265679983189,
+      "log_sha256": "d5a864e0a7f2a749c5237779126dd3c59b1bffc4d0ffca0806ed3b7c0c09d52a"
+    },
+    {
+      "name": "lde-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.7669705880034599,
+      "log_sha256": "4977393796ac76c1d79b0930a9f83ec756ad3a457c41665303c6012037c4d98f"
+    },
+    {
+      "name": "rng-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.6673274909990141,
+      "log_sha256": "019c224c97fa60b48c077ad78549f1e18097f17b6d507a0a5870d822b3156c0f"
+    },
+    {
+      "name": "compact-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.9163321390005876,
+      "log_sha256": "3191e183b6b9bdac2231588f6bbf615039b80bbc8bcf45c9f919d3a0b1f4ca6f"
+    },
+    {
+      "name": "partition-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 0.9164902119955514,
+      "log_sha256": "53d5baa561b15cdc76e5d1aa768e0325814a829371b58fde0e66cf8d944fae0d"
+    },
+    {
+      "name": "unpartitioned-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 0.814879370998824,
+      "log_sha256": "a8498dcd995df81467bc4628a7c8da103a64bbebd99bc653376e4f9b4023c555"
+    },
+    {
+      "name": "partition-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.03169679299753625,
+      "log_sha256": "0c7d0478feee3dda25f4c59b997367e6c305615d5ee9771e5c8a802a645fbd18"
+    },
+    {
+      "name": "owned-commit",
+      "passed_count": 1,
+      "wall_seconds": 1.1171228859966504,
+      "log_sha256": "76e05bab5b7c56bc1a8cad23edf1c65f3fc56c51c9b82fd0c7015085b8d5d9ab"
+    },
+    {
+      "name": "admission-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.6660423350040219,
+      "log_sha256": "7608819595ec7c4b03a429c574c8f61cffe6a3af44e21a84962c53a259fd4132"
+    },
+    {
+      "name": "commit-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.03186328000447247,
+      "log_sha256": "f89f9a98d1d367da933af848e31405704fb0ebc321d8249b7a757194911df06e"
+    },
+    {
+      "name": "storage-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.03180072599934647,
+      "log_sha256": "394ea7bddaf07253817e6e15c08d5cd9e0b87ae11735eab6777f4fc17606b25f"
+    },
+    {
+      "name": "device-unit",
+      "passed_count": 4,
+      "wall_seconds": 0.03184879400214413,
+      "log_sha256": "98310d73bffd92c7e7fdfd11dd31341f57136f34d3a824c5724b7beee2388e89"
+    },
+    {
+      "name": "transform-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.015634873998351395,
+      "log_sha256": "5ab65ae1e067912cf79287f7b95354f4da841a25884a2a34e41d02945cb2660e"
+    },
+    {
+      "name": "plan-unit",
+      "passed_count": 11,
+      "wall_seconds": 0.03168310500041116,
+      "log_sha256": "930cbc8c35590eebece4dc07f8d80247c55531bedd63e7657d68a78464e7304e"
+    },
+    {
+      "name": "lde-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.03176603600149974,
+      "log_sha256": "40d2d68f44f30ea14066efb8e410e0c97b4e43a2b7b2ff4789cba22d36919aca"
+    },
+    {
+      "name": "pcs-unit",
+      "passed_count": 13,
+      "wall_seconds": 0.21423162700375542,
+      "log_sha256": "2f4823e5e2e66e924a0fd94843b6d7ee356c9653be9c05a9c4b5ff39c69b85ea"
+    },
+    {
+      "name": "policy-unit",
+      "passed_count": 9,
+      "wall_seconds": 0.06445693300338462,
+      "log_sha256": "03fda3b4853e099aed6103b4f49bd2c8bf364edce5e22a6fc4e5b0dbbdae286e"
+    }
+  ],
+  "bounded_checks_passed": 55,
+  "native_checks_passed": 39,
+  "rust_test_cases_passed": 93,
+  "python_resource_tests_passed": 36,
+  "build_and_resource_logs": {
+    "release-build": "902073596988b22c5991cb9a2d80853159e4c243f295dd14b5b83909c5d3793e",
+    "cpu-stream-build": "23ed513cb98ddea5df8752251cbfb62e0275ff8acaf30e19462c3d2f8e0b4231",
+    "gpu-stream-build": "aae0dab6d19c7c39123e868989ef03b56c819d88608c01b02398fa2ec6eae08e",
+    "python-resources": "23aeb94bbcd8531c8a4f752b4fd5221526b6852c9248c311ecfe1f482169b799"
+  },
+  "full_workload_reservation_sha256": "7d80f8a789e1565aefec8120ab946baade31c00c71549edba3757bd1b76971a8",
+  "remaining": [
+    "CPU witness/trace/preprocessing and public-value arithmetic",
+    "CPU transcript/challenge sampling/grinding",
+    "CPU salt/hiding-randomness expansion and host salt storage",
+    "Periodic AIR inputs, legacy quadratic wallet/C-ABI and nonbinary/final-polynomial coverage",
+    "AMD and Metal conformance",
+    "Full-size simultaneous memory planning and sustained transaction-throughput qualification"
+  ]
+}

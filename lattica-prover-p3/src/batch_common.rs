@@ -26,6 +26,21 @@ const DIGEST: usize = 4;
 /// `sel · (cur[DIGEST+k] − 0)` — the Debug-rendered constraint fnv distinguishes them.
 pub(crate) type FoldChunk = [Option<usize>; DIGEST];
 
+/// Shared AIR layout for device-owned batch trace assembly. Chunk entries are
+/// the same staged columns constrained by `eval_txroot_fold`.
+#[cfg(all(feature = "block-v2", feature = "gpu"))]
+pub(crate) struct DeviceBatchGeometry {
+    pub height: usize,
+    pub wallet_width: usize,
+    pub public_width: usize,
+    pub batch_width: usize,
+    pub fold_base: usize,
+    pub root_block: usize,
+    pub root_column: usize,
+    pub root_output_row: usize,
+    pub chunks: Vec<FoldChunk>,
+}
+
 /// The largest batch (in tiles) that holds the ≥100-bit proven-soundness floor: measured 100 bits at
 /// n=64 (height 2^18), 99 at n=128. A block needing more transactions emits **multiple** batch proofs
 /// of ≤ `MAX_BATCH_TILES` tiles each (or a future config raises `num_queries`). Enforced by both

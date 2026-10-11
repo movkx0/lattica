@@ -5,6 +5,7 @@
 //! must first prove and verify at full strength through depth six. Native commitment
 //! calculations and leaf proofs do not satisfy that gate. Historical v1 is unchanged.
 
+mod challenger;
 pub mod codec;
 #[cfg(all(feature = "gpu-metal", target_os = "macos"))]
 pub(crate) use crate::metal_compute as compute;
@@ -19,25 +20,40 @@ pub mod feasibility;
 pub mod gpu_hash;
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 mod gpu_quotient_prover;
+#[cfg(feature = "gpu")]
+mod gpu_startup;
 #[cfg(feature = "stream")]
 pub mod heap_dft;
-pub mod leaf;
-pub mod typed_leaf;
-pub mod typed_recursive;
 #[cfg(feature = "block-v2-host")]
 pub mod host;
-pub mod typed_fixture;
+pub mod leaf;
+#[cfg(feature = "gpu")]
+pub(crate) mod legacy_wallet;
 pub mod machine;
+#[cfg(feature = "gpu")]
+pub(crate) mod native_gpu;
+#[cfg(all(feature = "gpu", feature = "stream", target_os = "linux"))]
+pub(crate) mod native_public_gpu;
 #[cfg(feature = "stream")]
 pub mod normalization_workspace;
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 mod opening_pcs;
+pub mod pcs_field;
 pub mod perf;
 pub mod profile;
 pub mod quotient_pcs;
+mod randomness;
 pub mod recursive;
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 mod resident_pcs;
+mod statements;
+pub mod typed_fixture;
+pub mod typed_leaf;
+pub mod typed_recursive;
+#[cfg(feature = "gpu")]
+pub(crate) mod wallet_worker;
 
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 mod batched_fri;
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+mod extension_mmcs;

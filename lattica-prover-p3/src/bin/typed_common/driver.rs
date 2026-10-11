@@ -3,6 +3,11 @@
 #[cfg(all(target_os = "linux", feature = "stream"))]
 #[path = "execution.rs"]
 mod execution;
+
+#[cfg(all(target_os = "linux", feature = "stream"))]
+pub fn coordinator_storage_probe() -> Result<(), Error> {
+    execution::coordinator_storage_probe()
+}
 #[cfg(feature = "gpu")]
 #[path = "gpu.rs"]
 mod typed_gpu;
@@ -29,6 +34,12 @@ use std::{
 };
 
 use super::{FINALIZER, PAIRED};
+
+#[path = "input.rs"]
+mod input;
+#[cfg(test)]
+#[path = "input_tests.rs"]
+mod input_tests;
 const KEY_COUNT: usize = if PAIRED {
     12
 } else if FINALIZER {
@@ -92,6 +103,7 @@ impl TransactionType {
 #[serde(deny_unknown_fields)]
 struct Transaction {
     kind: TransactionType,
+    #[serde(deserialize_with = "input::statement")]
     statement: Vec<u64>,
 }
 
@@ -100,6 +112,7 @@ struct Transaction {
 struct Body {
     schema_version: u32,
     chain: [u8; 32],
+    #[serde(deserialize_with = "input::transactions")]
     transactions: Vec<Transaction>,
 }
 
@@ -114,6 +127,7 @@ struct Expected {
     root: [u64; 4],
     count: u8,
     block_height: u64,
+    #[serde(deserialize_with = "input::authorizations")]
     authorized_issuance: BTreeMap<usize, u64>,
 }
 
@@ -159,23 +173,7 @@ impl Expected {
 }
 
 fn read_bytes(path: &Path, limit: usize) -> Result<Vec<u8>, Error> {
-    if !fs::symlink_metadata(path)?.file_type().is_file() {
-        return Err("artifact must be a regular nonsymlink file".into());
-    }
-    let file = fs::OpenOptions::new()
-        .read(true)
-        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
-        .open(path)?;
-    let metadata = file.metadata()?;
-    if !metadata.is_file() || metadata.len() > limit as u64 {
-        return Err("artifact size/type".into());
-    }
-    let mut bytes = Vec::new();
-    file.take(limit as u64 + 1).read_to_end(&mut bytes)?;
-    if bytes.len() > limit {
-        return Err("artifact grew beyond bound".into());
-    }
-    Ok(bytes)
+    input::read_file(path, limit)
 }
 
 fn write_bytes(path: &Path, bytes: &[u8], limit: usize) -> Result<(), Error> {
@@ -253,10 +251,7 @@ fn registry(dir: &Path) -> Result<Registry, Error> {
     }
     let mut caps = core::array::from_fn(|_| Vec::new());
     for mode in 1..=KEY_COUNT {
-        caps[mode - 1] = read_artifact(&dir.join(format!("key.{mode}")), KEY_MAGIC)?;
-        if caps[mode - 1].len() != 1 << profile::CAP_HEIGHT {
-            return Err("typed key shape".into());
-        }
+        caps[mode - 1] = input::key(&dir.join(format!("key.{mode}")))?;
     }
     Ok(Registry { height, caps })
 }
@@ -359,20 +354,17 @@ fn tasks(body: &Body, expected: &Expected) -> Result<Vec<Task>, Error> {
     if body.chain != expected.chain || body.transactions.len() < expected.count as usize {
         return Err("body differs from expected chain/count".into());
     }
-    let entries = body.transactions[..expected.count as usize]
+    let mut entries = input::exact(commitment::CAPACITY)?;
+    for (i, tx) in body.transactions[..expected.count as usize]
         .iter()
         .enumerate()
-        .map(|(i, tx)| {
-            policy(tx, i, expected)?;
-            Ok(Entry {
-                kind: tx.kind.kind(),
-                statement_digest: commitment::statement_digest(
-                    tx.kind.kind() as u8,
-                    &tx.statement,
-                )?,
-            })
-        })
-        .collect::<Result<Vec<_>, Error>>()?;
+    {
+        policy(tx, i, expected)?;
+        entries.push(Entry {
+            kind: tx.kind.kind(),
+            statement_digest: commitment::statement_digest(tx.kind.kind() as u8, &tx.statement)?,
+        });
+    }
     if commitment::root(expected.context(), &entries)? != expected.root {
         return Err("body differs from independently supplied ordered root".into());
     }
@@ -420,7 +412,7 @@ fn tasks(body: &Body, expected: &Expected) -> Result<Vec<Task>, Error> {
         });
         Ok(summary)
     }
-    let mut tasks = Vec::new();
+    let mut tasks = input::exact(input::MAX_TASKS)?;
     let subtree_level = if PAIRED {
         typed_pairs::proof_plan(expected.count)?.subtree_level
     } else if FINALIZER {
@@ -450,7 +442,7 @@ fn tasks(body: &Body, expected: &Expected) -> Result<Vec<Task>, Error> {
     }
     // Session holds one preprocessing program. Keep each wrapper type together,
     // then padding, then merges in increasing level, preserving tree positions.
-    tasks.sort_by_key(|task| task_priority(task.mode, task.level, task.index));
+    tasks.sort_unstable_by_key(|task| task_priority(task.mode, task.level, task.index));
     Ok(tasks)
 }
 
@@ -877,7 +869,7 @@ mod tests {
     use p3_field::PrimeCharacteristicRing;
     use std::collections::BTreeSet;
 
-    fn candidate(count: u8) -> (Body, Expected) {
+    pub(super) fn candidate(count: u8) -> (Body, Expected) {
         let kinds = [
             TransactionType::Joinsplit,
             TransactionType::HtlcRedeem,

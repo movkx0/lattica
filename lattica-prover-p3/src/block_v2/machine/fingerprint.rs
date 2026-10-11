@@ -142,3 +142,5 @@ pub(super) fn encode(
     }
     fields
 }
+
+pub(super) mod bounded;

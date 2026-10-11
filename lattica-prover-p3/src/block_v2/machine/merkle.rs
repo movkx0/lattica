@@ -1,20 +1,33 @@
 //! Fixed-shape salted MMCS authentication. This gadget handles the equal-height
 //! matrices used by a single-instance candidate proof, not arbitrary MMCS trees.
 use super::circuit::Extension;
+use super::program::ScopedProgramBuilder as ProgramBuilder;
 use super::program::Val;
-use super::{ExecutionError, ProgramBuilder, Wire};
-use p3_field::{PrimeCharacteristicRing, TwoAdicField};
+use super::{ExecutionError, Wire};
+use p3_field::PrimeCharacteristicRing;
 
 pub type Digest = [Wire; 4];
 
-impl ProgramBuilder {
+impl ProgramBuilder<'_> {
     /// Upstream PaddingFreeSponge: partial final blocks retain the previous
     /// state in untouched rate slots. Length MUST be fixed by the program.
     pub fn mmcs_leaf_hash(&mut self, fields: &[Wire]) -> Digest {
+        self.mmcs_leaf_hash_iter(fields.iter().copied())
+    }
+
+    fn mmcs_leaf_hash_iter(&mut self, fields: impl IntoIterator<Item = Wire>) -> Digest {
         let zero = self.constant(Val::ZERO);
         let mut state = [zero; 8];
-        for chunk in fields.chunks(4) {
-            state[..chunk.len()].copy_from_slice(chunk);
+        let mut filled = 0;
+        for field in fields {
+            state[filled] = field;
+            filled += 1;
+            if filled == 4 {
+                state = self.poseidon(state);
+                filled = 0;
+            }
+        }
+        if filled != 0 {
             state = self.poseidon(state);
         }
         state[..4].try_into().unwrap()
@@ -33,11 +46,11 @@ impl ProgramBuilder {
     pub fn select_digest(&mut self, bit: Wire, a: Digest, b: Digest) -> Digest {
         core::array::from_fn(|i| self.select(bit, a[i], b[i]))
     }
-    pub fn authenticate_equal_height_mmcs(
+    pub fn authenticate_equal_height_mmcs<R: AsRef<[Wire]>>(
         &mut self,
         cap: &[Digest],
         index_bits: &[Wire],
-        rows: &[Vec<Wire>],
+        rows: &[R],
         salts: &[[Wire; 4]],
         siblings: &[Digest],
     ) -> Result<(), ExecutionError> {
@@ -45,7 +58,7 @@ impl ProgramBuilder {
             || !cap.len().is_power_of_two()
             || rows.is_empty()
             || rows.len() != salts.len()
-            || rows.iter().any(Vec::is_empty)
+            || rows.iter().any(|row| row.as_ref().is_empty())
             || index_bits.len() > 32
             || siblings.len() + cap.len().ilog2() as usize != index_bits.len()
         {
@@ -54,12 +67,11 @@ impl ProgramBuilder {
         for &bit in index_bits {
             self.assert_bool(bit);
         }
-        let mut fields = Vec::new();
-        for (row, salt) in rows.iter().zip(salts) {
-            fields.extend_from_slice(row);
-            fields.extend_from_slice(salt);
-        }
-        let mut digest = self.mmcs_leaf_hash(&fields);
+        let fields = rows
+            .iter()
+            .zip(salts)
+            .flat_map(|(row, salt)| row.as_ref().iter().chain(salt).copied());
+        let mut digest = self.mmcs_leaf_hash_iter(fields);
         for (depth, &sibling) in siblings.iter().enumerate() {
             let left = self.select_digest(index_bits[depth], digest, sibling);
             let right = self.select_digest(index_bits[depth], sibling, digest);
@@ -72,22 +84,28 @@ impl ProgramBuilder {
         // checked by the compression chain ending at that constrained cap root.
         // This uses the same Merkle collision-resistance assumption as MMCS.
         let cap_bits = &index_bits[siblings.len()..];
-        let mut entries = cap.to_vec();
-        for (depth, &bit) in cap_bits.iter().enumerate() {
-            let sibling: Digest = core::array::from_fn(|column| {
-                let swapped = (0..entries.len()).map(|i| entries[i ^ 1][column]).collect();
-                self.select_hint(swapped, &cap_bits[depth..])
-            });
-            let left = self.select_digest(bit, digest, sibling);
-            let right = self.select_digest(bit, sibling, digest);
-            digest = self.compress(left, right);
-            entries = entries
-                .chunks_exact(2)
-                .map(|pair| self.compress(pair[0], pair[1]))
-                .collect();
-        }
-        self.assert_digest(digest, entries[0]);
-        Ok(())
+        self.with_digest_scratch(cap, |builder, entries| {
+            let mut count = entries.len();
+            for (depth, &bit) in cap_bits.iter().enumerate() {
+                let sibling: Digest = core::array::from_fn(|column| {
+                    builder.select_hint_with(count, &cap_bits[depth..], |i| entries[i ^ 1][column])
+                });
+                let left = builder.select_digest(bit, digest, sibling);
+                let right = builder.select_digest(bit, sibling, digest);
+                digest = builder.compress(left, right);
+                // Each source pair is read before its earlier destination is
+                // overwritten. Keep one admitted buffer for every cap level.
+                for index in 0..count / 2 {
+                    entries[index] = builder.compress(entries[2 * index], entries[2 * index + 1]);
+                }
+                count /= 2;
+                if let Some(error) = builder.resource_failure() {
+                    return Err(error);
+                }
+            }
+            builder.assert_digest(digest, entries[0]);
+            Ok(())
+        })
     }
     /// g^reverse_bits(index), with bit zero first. Used by binary FRI.
     pub fn subgroup_point(
@@ -98,11 +116,11 @@ impl ProgramBuilder {
         if log_order > 32 || index_bits.len() > log_order {
             return Err(ExecutionError::InvalidHeight);
         }
-        let generator = Val::two_adic_generator(log_order);
         let one = self.constant(Val::ONE);
         let mut point = one;
         for (i, &bit) in index_bits.iter().enumerate() {
-            let factor = self.constant(generator.exp_u64(1 << (index_bits.len() - 1 - i)));
+            let factor =
+                self.constant(Val::TWO_ADIC_GENERATORS[log_order - (index_bits.len() - 1 - i)]);
             let selected = self.select(bit, one, factor);
             point = self.mul(point, selected);
         }
@@ -116,7 +134,8 @@ impl ProgramBuilder {
         beta: Extension,
         x: Wire,
     ) -> Extension {
-        let half = self.constant(Val::ONE.halve());
+        // The fixed Goldilocks constant (p + 1) / 2, without runtime division.
+        let half = self.constant(Val::new(0x7fff_ffff_8000_0001));
         let sum = self.ext_add(even, odd);
         let average = self.ext_scale(sum, half);
         let difference = self.ext_sub(even, odd);
@@ -158,77 +177,79 @@ mod tests {
 
     #[test]
     fn salted_multi_matrix_merkle_matches_native() {
-        let perm = default_goldilocks_poseidon2_8();
-        let mmcs = ValMmcs::new(
-            MyHash::new(perm.clone()),
-            MyCompress::new(perm),
-            3,
-            ChaCha20Rng::from_seed([5; 32]),
-        );
-        let matrices = [3, 5].map(|width| {
-            RowMajorMatrix::new(
-                (0..128 * width)
-                    .map(|i| Val::from_usize(i + width))
-                    .collect(),
-                width,
-            )
-        });
-        let (commit, data) = mmcs.commit(matrices.to_vec());
-        for index in [0, 1, 31, 64, 127] {
-            let opening = mmcs.open_batch(index, &data);
-            let mut b = ProgramBuilder::new(0).unwrap();
-            let mut witness = Vec::new();
-            let cap: Vec<_> = commit
-                .roots()
-                .iter()
-                .map(|d| d.map(|v| b.constant(v)))
-                .collect();
-            let bits: Vec<_> = (0..7)
-                .map(|i| b.constant(Val::from_usize((index >> i) & 1)))
-                .collect();
-            let rows: Vec<Vec<_>> = opening
-                .opened_values
-                .iter()
-                .map(|row| {
-                    row.iter()
-                        .map(|&v| {
+        for cap_height in [0, 1, 3, 6, 7] {
+            let perm = default_goldilocks_poseidon2_8();
+            let mmcs = ValMmcs::new(
+                MyHash::new(perm.clone()),
+                MyCompress::new(perm),
+                cap_height,
+                ChaCha20Rng::from_seed([5; 32]),
+            );
+            let matrices = [3, 5].map(|width| {
+                RowMajorMatrix::new(
+                    (0..128 * width)
+                        .map(|i| Val::from_usize(i + width))
+                        .collect(),
+                    width,
+                )
+            });
+            let (commit, data) = mmcs.commit(matrices.to_vec());
+            for index in [0, 1, 31, 64, 127] {
+                let opening = mmcs.open_batch(index, &data);
+                let mut b = ProgramBuilder::new(0).unwrap();
+                let mut witness = Vec::new();
+                let cap: Vec<_> = commit
+                    .roots()
+                    .iter()
+                    .map(|d| d.map(|v| b.constant(v)))
+                    .collect();
+                let bits: Vec<_> = (0..7)
+                    .map(|i| b.constant(Val::from_usize((index >> i) & 1)))
+                    .collect();
+                let rows: Vec<Vec<_>> = opening
+                    .opened_values
+                    .iter()
+                    .map(|row| {
+                        row.iter()
+                            .map(|&v| {
+                                witness.push(v);
+                                b.input()
+                            })
+                            .collect()
+                    })
+                    .collect();
+                let salts: Vec<[Wire; 4]> = opening
+                    .opening_proof
+                    .0
+                    .iter()
+                    .map(|salt| {
+                        core::array::from_fn(|i| {
+                            witness.push(salt[i]);
+                            b.input()
+                        })
+                    })
+                    .collect();
+                let siblings: Vec<_> = opening
+                    .opening_proof
+                    .1
+                    .iter()
+                    .map(|digest| {
+                        digest.map(|v| {
                             witness.push(v);
                             b.input()
                         })
-                        .collect()
-                })
-                .collect();
-            let salts: Vec<[Wire; 4]> = opening
-                .opening_proof
-                .0
-                .iter()
-                .map(|salt| {
-                    core::array::from_fn(|i| {
-                        witness.push(salt[i]);
-                        b.input()
                     })
-                })
-                .collect();
-            let siblings: Vec<_> = opening
-                .opening_proof
-                .1
-                .iter()
-                .map(|digest| {
-                    digest.map(|v| {
-                        witness.push(v);
-                        b.input()
-                    })
-                })
-                .collect();
-            b.authenticate_equal_height_mmcs(&cap, &bits, &rows, &salts, &siblings)
-                .unwrap();
-            let program = b.finish(None).unwrap();
-            program.evaluate(&[], &witness).unwrap();
-            witness[0] += Val::ONE;
-            assert_eq!(
-                program.evaluate(&[], &witness).unwrap_err(),
-                ExecutionError::Unsatisfied
-            );
+                    .collect();
+                b.authenticate_equal_height_mmcs(&cap, &bits, &rows, &salts, &siblings)
+                    .unwrap();
+                let program = b.finish(None).unwrap();
+                program.evaluate(&[], &witness).unwrap();
+                witness[0] += Val::ONE;
+                assert_eq!(
+                    program.evaluate(&[], &witness).unwrap_err(),
+                    ExecutionError::Unsatisfied
+                );
+            }
         }
     }
 }

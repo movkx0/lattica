@@ -35,6 +35,83 @@
 extern "C" {
 #endif
 
+/* Process-local OpenCL prover lifecycle (requires Rust features block-v2,gpu).
+ * Returns LATTICA_GPU_OK, LATTICA_GPU_REJECTED, or LATTICA_GPU_UNAVAILABLE.
+ * These status codes are separate from the proving buffer-size return codes.
+ *
+ * Configure the environment once, before starting Rust/native proof work:
+ * - LATTICA_GPU_DEVICE_UUID: explicit GPU UUID; no default-device selection.
+ * - LATTICA_V2_GPU_MANAGED_BYTES: explicit positive decimal byte allowance.
+ * - Set LATTICA_V2_QUOTIENT_FUSION and all of the following GPU switches to 1:
+ *   LATTICA_V2_GPU_{HASH,RETAIN_TREES,RESIDENT_LDE,OPENINGS,QUOTIENT_LDE,
+ *   QUOTIENT_EVAL,QUOTIENT_RESIDENT,LOOKUP,OPENING_EVAL,FRI_RESIDENT,
+ *   PCS_DEVICE_ONLY,WITNESS,RANDOMNESS,TRANSCRIPT}.
+ * - Set LATTICA_PROVING_POLICY=gpu-required to enforce device completion.
+ *   This policy rejects debug CPU constraint audits; use a release library.
+ * - Existing host, storage and engine budgets still apply. Public recursive
+ *   worker assignments cannot admit private inputs. Wallet-owned local services
+ *   may use LATTICA_WALLET_WORKER_BUDGET with matching cgroup/device budgets.
+ * - The legacy LJSTREE1 container uses GPU leaf proofs and root binding when
+ *   this backend is selected. Its format and CPU verifier remain unchanged;
+ *   it is not a recursive proof or a network-format activation.
+ *
+ * Initialization never chooses a partial proving path or CPU fallback. Repeated
+ * initialization with the same settings is allowed; changing a live engine's
+ * UUID or OpenCL index selector is rejected. Backend modes are immutable
+ * for the process, including after shutdown. Do not race initialization with
+ * Rust lifecycle setup or proof admission; never mutate the environment while
+ * calls are active. Native lifecycle calls serialize with one another.
+ *
+ * drain finishes submitted work and rejects a missing engine. shutdown refuses
+ * live retained commitments/device sessions, is idempotent after cleanup, and
+ * does not switch the prover back to CPU. Verification never initializes a GPU.
+ * The existing proof/public-input bytes and proving entrypoints are unchanged.
+ */
+enum {
+    LATTICA_GPU_OK = 0,
+    LATTICA_GPU_REJECTED = 1,
+    LATTICA_GPU_UNAVAILABLE = 2
+};
+int32_t lattica_gpu_initialize_from_env(void);
+/* Fresh Linux public recursive worker startup (block-v2 + gpu + stream).
+ * Requires gpu-required and the complete owned switches above, plus the
+ * existing LATTICA_V2_WORKER_BUDGET assignment matching this process's capped,
+ * zero-swap worker/fleet cgroups, CPU/GPU configuration and scratch filesystem.
+ * Fleet slices may use lattica-v2-multi.slice or lattica-v2-multi-*.slice;
+ * the actual parent must exactly match the assigned slice. Wallet assignments,
+ * an existing GPU engine or an existing global Rayon pool reject.
+ *
+ * This initializes the backend only: it neither approves a registry, installs
+ * a verifier, serves proof packets nor authorizes private wallet inputs. Use
+ * the existing pinned public worker protocol and independent CPU verification.
+ * After a failure that starts Rayon, discard the worker process. Failed startup
+ * releases a newly created GPU engine. The normal drain/shutdown API applies.
+ */
+int32_t lattica_gpu_public_worker_initialize_from_env(void);
+/* Blocking startup + typed public-worker service + teardown, once in a fresh
+ * Linux process. Do not call initialize first. Uses the same release/features,
+ * owned GPU switches and independently enforced assignment as public startup.
+ * bootstrap is the bounded local execution::native_worker::Bootstrap encoding
+ * (1..65536 bytes), supplied by a trusted host independently of worker packets.
+ * Its registry, profile, executable, policy context and launch directory are
+ * pinned through the existing typed HELLO/JOB/CONTEXT/STOP protocol. This grants
+ * no registry approval, verifier activation or private wallet access.
+ * socket_fd must be a connected AF_UNIX SOCK_STREAM. It is duplicated; the
+ * caller retains ownership and must not perform concurrent I/O on that stream.
+ * bootstrap must remain readable and completed_out aligned/writable for this
+ * entire call, without overlap or concurrent mutation. Null/invalid lengths
+ * reject. Non-null pointers must be valid. completed_out is zero on failure;
+ * GPU_OK writes the completed job count only after clean STOP and GPU shutdown.
+ * Disconnects/protocol errors reject and attempt GPU cleanup. Exit the worker
+ * process after any return; coordinator reservations require observed exit.
+ * No call unwinds across this boundary. Uses GPU_* lifecycle statuses above.
+ */
+int32_t lattica_gpu_public_worker_serve(int32_t socket_fd,
+                                      const uint8_t *bootstrap, size_t bootstrap_len,
+                                      uint64_t *completed_out);
+int32_t lattica_gpu_drain(void);
+int32_t lattica_gpu_shutdown(void);
+
 /* --- single-transaction join-split ------------------------------------------------------------ */
 int32_t lattica_joinsplit_verify(const uint8_t *proof_ptr, size_t proof_len,
                                  const uint8_t *pi_ptr, size_t pi_len);

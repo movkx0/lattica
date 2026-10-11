@@ -126,17 +126,113 @@ fn decode(
 
 /// Research prover for trusted local witnesses. Witness construction can panic.
 pub fn prove_htlc_research(witness: &htlc::Witness, context: &Context) -> Result<Vec<u8>, Error> {
+    prove_htlc_with_request(
+        witness,
+        context,
+        crate::proving::Request::from_env().map_err(|_| LeafError::ProvingPolicy)?,
+    )
+}
+
+pub fn prove_htlc_with_request(
+    witness: &htlc::Witness,
+    context: &Context,
+    request: crate::proving::Request,
+) -> Result<Vec<u8>, Error> {
+    #[cfg(feature = "gpu")]
+    if super::leaf::gpu_wallet_selected() {
+        return prove_htlc_on_gpu(witness, context, request);
+    }
+    use crate::proving::{Backend, Run, Stage};
+    let capabilities = profile::proving_capabilities(false);
+    let backend = if capabilities
+        .stages()
+        .iter()
+        .all(|s| s.backend == Backend::Cpu)
+    {
+        Backend::Cpu
+    } else {
+        Backend::Mixed
+    };
+    let run =
+        Run::new("block_v2_htlc", request, capabilities).map_err(|_| LeafError::ProvingPolicy)?;
     if witness.mint != 0 {
         return Err(Error::UnauthorizedIssuance);
     }
-    let values = public(context, &htlc::public_values(witness), htlc::N_PUBLIC)?;
-    let proof = prove(
-        &profile::make_config(),
+    let values = run
+        .measure(Stage::PublicValues, Backend::Cpu, || {
+            public(context, &htlc::public_values(witness), htlc::N_PUBLIC)
+        })
+        .map_err(|_| LeafError::ProvingPolicy)??;
+    let trace = run
+        .measure(Stage::WitnessTrace, Backend::Cpu, || {
+            htlc::build_trace(witness)
+        })
+        .map_err(|_| LeafError::ProvingPolicy)?;
+    let proof = run
+        .measure(Stage::UpstreamProver, backend, || {
+            prove(
+                &profile::make_config(),
+                &ContextAir(htlc::HtlcAir),
+                trace,
+                &values,
+            )
+        })
+        .map_err(|_| LeafError::ProvingPolicy)?;
+    let encoded = encode(&proof, HTLC_MAGIC, context);
+    run.finish(encoded.is_ok())
+        .map_err(|_| LeafError::ProvingPolicy)?;
+    encoded
+}
+
+/// Owned OpenCL HTLC proving with the existing typed leaf encoding. This
+/// requires the initialized owned PCS/randomness/transcript path. The caller
+/// still supplies independently expected height and preimage checks to its
+/// verification/acceptance path; proving the AIR does not authorize issuance.
+#[cfg(feature = "gpu")]
+pub fn prove_htlc_on_gpu(
+    witness: &htlc::Witness,
+    context: &Context,
+    request: crate::proving::Request,
+) -> Result<Vec<u8>, Error> {
+    use super::resident_pcs;
+    use p3_uni_stark::StarkGenericConfig;
+    let run = super::leaf::gpu_wallet_run("block_v2_htlc_gpu", request)?;
+    if witness.mint != 0 {
+        return Err(Error::UnauthorizedIssuance);
+    }
+    if context.profile_id != profile::CANDIDATE_PROFILE_ID {
+        return Err(LeafError::WrongProfile.into());
+    }
+    let config = profile::make_proving_config();
+    let session = config
+        .pcs()
+        .quotient_session()
+        .map_err(|_| LeafError::GpuFailure)?;
+    let frame = session
+        .htlc_witness(witness, resident_pcs::host_output_budget(), &run)
+        .map_err(|_| LeafError::GpuFailure)?;
+    let before = session.stats();
+    let (trace, statement) = frame
+        .into_proving_parts(&session, resident_pcs::host_output_budget())
+        .map_err(|_| LeafError::GpuFailure)?;
+    let readback = session.stats().downloaded_bytes - before.downloaded_bytes;
+    if readback != (htlc::N_PUBLIC * 8) as u64 {
+        return Err(LeafError::GpuFailure.into());
+    }
+    let statement: Vec<_> = statement.into_iter().map(Val::from_u64).collect();
+    let values = public(context, &statement, htlc::N_PUBLIC)?;
+    eprintln!("htlc_gpu_owned_handoff trace_readback_bytes=0 public_readback_bytes={readback}");
+    let proof = super::gpu_quotient_prover::uni::prove(
+        &config,
         &ContextAir(htlc::HtlcAir),
-        htlc::build_trace(witness),
+        trace,
         &values,
-    );
-    encode(&proof, HTLC_MAGIC, context)
+        &run,
+    )
+    .map_err(|_| LeafError::GpuFailure)?;
+    let encoded = encode(&proof, HTLC_MAGIC, context)?;
+    run.finish(true).map_err(|_| LeafError::ProvingPolicy)?;
+    Ok(encoded)
 }
 
 pub fn verify_htlc_research(
@@ -180,20 +276,122 @@ pub fn prove_issuance_research(
     context: &Context,
     authorized_mint: u64,
 ) -> Result<Vec<u8>, Error> {
+    prove_issuance_with_request(
+        witness,
+        context,
+        authorized_mint,
+        crate::proving::Request::from_env().map_err(|_| LeafError::ProvingPolicy)?,
+    )
+}
+
+pub fn prove_issuance_with_request(
+    witness: &js::Witness,
+    context: &Context,
+    authorized_mint: u64,
+    request: crate::proving::Request,
+) -> Result<Vec<u8>, Error> {
+    #[cfg(feature = "gpu")]
+    if super::leaf::gpu_wallet_selected() {
+        return prove_issuance_on_gpu(witness, context, authorized_mint, request);
+    }
+    use crate::proving::{Backend, Run, Stage};
+    let capabilities = profile::proving_capabilities(false);
+    let backend = if capabilities
+        .stages()
+        .iter()
+        .all(|s| s.backend == Backend::Cpu)
+    {
+        Backend::Cpu
+    } else {
+        Backend::Mixed
+    };
+    let run = Run::new("block_v2_issuance", request, capabilities)
+        .map_err(|_| LeafError::ProvingPolicy)?;
     if witness.mint != authorized_mint
         || authorized_mint == 0
         || authorized_mint >= 1u64 << js::BITS
     {
         return Err(Error::UnauthorizedIssuance);
     }
-    let values = public(context, &js::public_values(witness), js::N_PUBLIC)?;
-    let proof = prove(
-        &profile::make_config(),
+    let values = run
+        .measure(Stage::PublicValues, Backend::Cpu, || {
+            public(context, &js::public_values(witness), js::N_PUBLIC)
+        })
+        .map_err(|_| LeafError::ProvingPolicy)??;
+    let trace = run
+        .measure(Stage::WitnessTrace, Backend::Cpu, || {
+            js::build_trace(witness)
+        })
+        .map_err(|_| LeafError::ProvingPolicy)?;
+    let proof = run
+        .measure(Stage::UpstreamProver, backend, || {
+            prove(
+                &profile::make_config(),
+                &ContextAir(js::JoinSplitAir),
+                trace,
+                &values,
+            )
+        })
+        .map_err(|_| LeafError::ProvingPolicy)?;
+    let encoded = encode(&proof, ISSUANCE_MAGIC, context);
+    run.finish(encoded.is_ok())
+        .map_err(|_| LeafError::ProvingPolicy)?;
+    encoded
+}
+
+/// Owned OpenCL issuance proving with the existing typed encoding. The external
+/// host must determine `authorized_mint` and enforce issuance count; GPU proving
+/// does not grant mint authority. Requires the complete initialized owned path.
+#[cfg(feature = "gpu")]
+pub fn prove_issuance_on_gpu(
+    witness: &js::Witness,
+    context: &Context,
+    authorized_mint: u64,
+    request: crate::proving::Request,
+) -> Result<Vec<u8>, Error> {
+    use super::resident_pcs;
+    use p3_uni_stark::StarkGenericConfig;
+    let run = super::leaf::gpu_wallet_run("block_v2_issuance_gpu", request)?;
+    if witness.mint != authorized_mint
+        || authorized_mint == 0
+        || authorized_mint >= 1u64 << js::BITS
+    {
+        return Err(Error::UnauthorizedIssuance);
+    }
+    if context.profile_id != profile::CANDIDATE_PROFILE_ID {
+        return Err(LeafError::WrongProfile.into());
+    }
+    let config = profile::make_proving_config();
+    let session = config
+        .pcs()
+        .quotient_session()
+        .map_err(|_| LeafError::GpuFailure)?;
+    let frame = session
+        .joinsplit_witness(witness, resident_pcs::host_output_budget(), &run)
+        .map_err(|_| LeafError::GpuFailure)?;
+    let before = session.stats();
+    let (trace, statement) = frame
+        .into_proving_parts(&session, resident_pcs::host_output_budget())
+        .map_err(|_| LeafError::GpuFailure)?;
+    let readback = session.stats().downloaded_bytes - before.downloaded_bytes;
+    if readback != (js::N_PUBLIC * 8) as u64 {
+        return Err(LeafError::GpuFailure.into());
+    }
+    let statement: Vec<_> = statement.into_iter().map(Val::from_u64).collect();
+    authorized(&statement, authorized_mint)?;
+    let values = public(context, &statement, js::N_PUBLIC)?;
+    eprintln!("issuance_gpu_owned_handoff trace_readback_bytes=0 public_readback_bytes={readback}");
+    let proof = super::gpu_quotient_prover::uni::prove(
+        &config,
         &ContextAir(js::JoinSplitAir),
-        js::build_trace(witness),
+        trace,
         &values,
-    );
-    encode(&proof, ISSUANCE_MAGIC, context)
+        &run,
+    )
+    .map_err(|_| LeafError::GpuFailure)?;
+    let encoded = encode(&proof, ISSUANCE_MAGIC, context)?;
+    run.finish(true).map_err(|_| LeafError::ProvingPolicy)?;
+    Ok(encoded)
 }
 
 pub fn verify_issuance_research(
@@ -213,6 +411,9 @@ pub fn verify_issuance_research(
     )
     .map_err(|_| LeafError::VerificationFailed.into())
 }
+
+#[cfg(all(test, feature = "gpu"))]
+mod gpu_tests;
 
 #[cfg(test)]
 mod tests {

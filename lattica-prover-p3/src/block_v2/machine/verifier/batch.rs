@@ -2,18 +2,20 @@
 //! The preprocessing cap is supplied by the enclosing registered-program logic,
 //! NOT accepted from a child proof as an arbitrary verification key.
 use super::super::circuit::Extension;
+use super::super::compiler_constants::Constants;
 use super::super::merkle::Digest;
+use super::super::program::ScopedProgramBuilder as ProgramBuilder;
 use super::super::program::Val;
 use super::super::transcript::Transcript;
-use super::super::{MachineAir, ProgramBuilder, Wire};
-use super::expressions::{self, Evaluation, Lowerer};
-use super::pcs::{Point, Round};
+use super::super::{MachineAir, Wire};
+use super::expressions::{self, Evaluation, Lowerer, Values};
+use super::pcs::{Point, Round, MAX_MATRICES};
 use super::{ext_base, observe_cap, CompileError, ProofInputs};
 use crate::block_v2::profile::{self, Config};
-use p3_air::{symbolic::AirLayout, BaseAir};
-use p3_batch_stark::{symbolic, BatchProof};
-use p3_field::{PrimeCharacteristicRing, TwoAdicField};
-use p3_lookup::{Kind, LogUpGadget, Lookups};
+use p3_air::BaseAir;
+use p3_batch_stark::BatchProof;
+use p3_field::PrimeCharacteristicRing;
+use p3_lookup::Kind;
 
 fn observe_usize(t: &mut Transcript, b: &mut ProgramBuilder, value: usize) {
     // BatchTranscript pads structural values to extension-field coefficients.
@@ -22,22 +24,31 @@ fn observe_usize(t: &mut Transcript, b: &mut ProgramBuilder, value: usize) {
     t.observe_slice(b, &value);
 }
 
-fn recompose(b: &mut ProgramBuilder, flat: &[Extension]) -> Vec<Extension> {
+fn recompose_into(
+    b: &mut ProgramBuilder,
+    flat: &[Extension],
+    output: &mut [Extension],
+) -> Result<(), CompileError> {
+    if flat.len() % 3 != 0 || output.len() != flat.len() / 3 {
+        return Err(CompileError::Shape("permutation recomposition"));
+    }
     let basis = [
         b.ext_constant([Val::ONE, Val::ZERO, Val::ZERO]),
         b.ext_constant([Val::ZERO, Val::ONE, Val::ZERO]),
         b.ext_constant([Val::ZERO, Val::ZERO, Val::ONE]),
     ];
-    flat.chunks_exact(3)
-        .map(|coefficients| {
-            let mut value = b.ext_constant([Val::ZERO; 3]);
-            for i in 0..3 {
-                let term = b.ext_mul(coefficients[i], basis[i]);
-                value = b.ext_add(value, term);
-            }
-            value
-        })
-        .collect()
+    for (coefficients, out) in flat.chunks_exact(3).zip(output) {
+        let mut value = b.ext_constant([Val::ZERO; 3]);
+        for i in 0..3 {
+            let term = b.ext_mul(coefficients[i], basis[i]);
+            value = b.ext_add(value, term);
+        }
+        *out = value;
+        if b.resource_failure().is_some() {
+            return Err(CompileError::Shape("permutation compiler allowance"));
+        }
+    }
+    Ok(())
 }
 
 pub fn verify(
@@ -48,19 +59,35 @@ pub fn verify(
     preprocessing_cap: &[Digest],
     proof: &BatchProof<Config>,
 ) -> Result<(), CompileError> {
+    verify_with_constants(
+        b,
+        inputs,
+        air,
+        public,
+        preprocessing_cap,
+        proof,
+        Constants::cpu(),
+    )
+}
+
+pub(crate) fn verify_with_constants(
+    b: &mut ProgramBuilder,
+    inputs: &mut ProofInputs,
+    air: &MachineAir,
+    public: &[Wire],
+    preprocessing_cap: &[Digest],
+    proof: &BatchProof<Config>,
+    constants: Constants<'_>,
+) -> Result<(), CompileError> {
     let height = air.program().height();
     let log_height = height.ilog2() as usize;
     let ext_db = log_height + 1;
-    let layout = AirLayout::from_air::<Val>(air);
-    let gadget = LogUpGadget::new();
-    let unpacked = Lookups::<Val>::from_air::<profile::Challenge, _>(air);
-    let log_chunks = symbolic::get_log_num_quotient_chunks::<Val, profile::Challenge, _, _>(
-        air, layout, &unpacked, 1, &gadget,
-    );
+    let prepared = super::super::symbolic::prepare_machine(air, constants)?;
+    let log_chunks = prepared.log_chunks;
     if log_chunks > profile::LOG_BLOWUP {
-        return Err(CompileError::Shape("batch quotient degree"));
+        return Err(CompileError::Shape("quotient degree"));
     }
-    let lookups = unpacked.pack_same_bus(&gadget, 1 << log_chunks);
+    let lookups = prepared.lookups;
     let expected_bus = match lookups.first().map(|x| &x.kind) {
         Some(Kind::Global(name)) => name,
         _ => return Err(CompileError::Unsupported("single global bus required")),
@@ -114,16 +141,16 @@ pub fn verify(
     let terminal = inputs.extension(b, proof.lookup_terminals[0].as_ref().unwrap().0);
     let zero = b.ext_constant([Val::ZERO; 3]);
     b.ext_assert_equal(terminal, zero);
-    let local = inputs.extensions(b, &opened.trace_local);
-    let pre = inputs.extensions(b, opened.preprocessed_local.as_ref().unwrap());
-    let random = inputs.extensions(b, opened.random.as_ref().unwrap());
+    let local = inputs.extensions(b, &opened.trace_local)?;
+    let pre = inputs.extensions(b, opened.preprocessed_local.as_ref().unwrap())?;
+    let random = inputs.extensions(b, opened.random.as_ref().unwrap())?;
     let quotient_chunks: Vec<_> = opened
         .quotient_chunks
         .iter()
         .map(|v| inputs.extensions(b, v))
-        .collect();
-    let perm_local = inputs.extensions(b, &inst.permutation_local);
-    let perm_next = inputs.extensions(b, &inst.permutation_next);
+        .collect::<Result<_, _>>()?;
+    let perm_local = inputs.extensions(b, &inst.permutation_local)?;
+    let perm_next = inputs.extensions(b, &inst.permutation_next)?;
     let mut transcript = Transcript::new(b);
     for value in [1, ext_db, log_height, air.width(), chunks] {
         observe_usize(&mut transcript, b, value);
@@ -136,116 +163,147 @@ pub fn verify(
     let lookup_beta = transcript.sample_ext(b);
     let gamma = b.ext_mul(lookup_beta, lookup_beta);
     let prefix = b.ext_add(lookup_alpha, gamma);
-    let challenges: Vec<_> = (0..lookups.len())
-        .flat_map(|_| [prefix, lookup_beta])
-        .collect();
+    let challenge_pattern = [prefix, lookup_beta];
+    let challenges = Values::repeat(&challenge_pattern, lookups.len())?;
     observe_cap(&mut transcript, b, &perm_cap);
     transcript.observe_slice(b, &terminal);
     let alpha = transcript.sample_ext(b);
     observe_cap(&mut transcript, b, &quotient_cap);
     observe_cap(&mut transcript, b, &random_cap);
     let zeta = transcript.sample_ext(b);
-    let rotation = b.constant(Val::two_adic_generator(log_height));
+    let rotation = b.constant(Val::TWO_ADIC_GENERATORS[log_height]);
     let zeta_next = b.ext_scale(zeta, rotation);
-    let rounds = vec![
+    let quotient_points: [[Point<'_>; 1]; MAX_MATRICES] = core::array::from_fn(|i| {
+        [Point {
+            point: zeta,
+            values: quotient_chunks.get(i).map_or(&[], Vec::as_slice),
+        }]
+    });
+    let quotient_matrices: [&[Point<'_>]; MAX_MATRICES] =
+        core::array::from_fn(|i| quotient_points[i].as_slice());
+    let rounds = [
         Round {
-            commitment: random_cap,
+            commitment: &random_cap,
             log_domain: ext_db,
-            matrices: vec![vec![Point {
+            matrices: &[&[Point {
                 point: zeta,
-                values: random,
+                values: &random,
             }]],
             preprocessing: false,
         },
         Round {
-            commitment: main_cap,
+            commitment: &main_cap,
             log_domain: ext_db,
-            matrices: vec![vec![Point {
+            matrices: &[&[Point {
                 point: zeta,
-                values: local.clone(),
+                values: &local,
             }]],
             preprocessing: false,
         },
         Round {
-            commitment: quotient_cap,
+            commitment: &quotient_cap,
             log_domain: ext_db,
-            matrices: quotient_chunks
-                .iter()
-                .map(|v| {
-                    vec![Point {
-                        point: zeta,
-                        values: v.clone(),
-                    }]
-                })
-                .collect(),
+            matrices: &quotient_matrices[..quotient_chunks.len()],
             preprocessing: false,
         },
         Round {
-            commitment: preprocessing_cap.to_vec(),
+            commitment: preprocessing_cap,
             log_domain: ext_db,
-            matrices: vec![vec![Point {
+            matrices: &[&[Point {
                 point: zeta,
-                values: pre.clone(),
+                values: &pre,
             }]],
             preprocessing: true,
         },
         Round {
-            commitment: perm_cap,
+            commitment: &perm_cap,
             log_domain: ext_db,
-            matrices: vec![vec![
+            matrices: &[&[
                 Point {
                     point: zeta,
-                    values: perm_local.clone(),
+                    values: &perm_local,
                 },
                 Point {
                     point: zeta_next,
-                    values: perm_next.clone(),
+                    values: &perm_next,
                 },
             ]],
             preprocessing: false,
         },
     ];
-    super::pcs::verify(b, inputs, &mut transcript, rounds, &proof.opening_proof)?;
-    let (first, last, transition, inv_vanishing) = expressions::selectors(b, zeta, log_height);
-    let periodic = expressions::periodic_values(b, &air.periodic_columns(), zeta, log_height)?;
-    let quotient = expressions::quotient(b, &quotient_chunks, zeta, log_height)?;
-    let perm_local = recompose(b, &perm_local);
-    let perm_next = recompose(b, &perm_next);
-    let values = Evaluation {
-        main: [local, vec![zero; air.width()]],
-        preprocessed: [pre, vec![zero; air.preprocessed_width()]],
-        periodic,
-        public: public.to_vec(),
-        permutation: [perm_local, perm_next],
-        challenges,
-        terminals: vec![terminal],
-        first,
-        last,
-        transition,
-    };
-    let (base, extension) = symbolic::get_symbolic_constraints::<Val, profile::Challenge, _, _>(
-        air, layout, &lookups, &gadget,
-    );
-    let order = symbolic::get_constraint_layout::<Val, profile::Challenge, _, _>(
-        air, layout, &lookups, &gadget,
-    );
-    let mut lowerer = Lowerer::new(b, values);
-    let mut constraints = vec![None; order.total_constraints()];
-    for (e, &index) in base.iter().zip(&order.base_indices) {
-        constraints[index] = Some(lowerer.base(e)?);
-    }
-    for (e, &index) in extension.iter().zip(&order.ext_indices) {
-        constraints[index] = Some(lowerer.extension(e)?);
-    }
-    let mut folded = zero;
-    for value in constraints {
-        let value = value.ok_or(CompileError::Shape("constraint emission order"))?;
-        folded = lowerer.b.ext_mul(folded, alpha);
-        folded = lowerer.b.ext_add(folded, value);
-    }
-    let lhs = lowerer.b.ext_mul(folded, inv_vanishing);
-    lowerer.b.ext_assert_equal(lhs, quotient);
-    Ok(())
+    super::pcs::verify(b, inputs, &mut transcript, &rounds, &proof.opening_proof)?;
+    let (first, last, transition, inv_vanishing) =
+        expressions::selectors_with_constants(b, zeta, log_height, constants)?;
+    let periodic_count = air.num_periodic_columns();
+    let scratch_count = periodic_count
+        .checked_add(perm_local.len() / 3)
+        .and_then(|n| n.checked_add(perm_next.len() / 3))
+        .ok_or(CompileError::Shape("evaluation storage size"))?;
+    b.with_compiler_scratch("evaluation", scratch_count, [Wire(0); 3], |b, scratch| {
+        let (periodic, permutations) = scratch.split_at_mut(periodic_count);
+        let (recomposed_local, recomposed_next) = permutations.split_at_mut(perm_local.len() / 3);
+        super::periodic::values_into(b, air, zeta, log_height, constants, periodic)?;
+        let quotient =
+            expressions::quotient_with_constants(b, &quotient_chunks, zeta, log_height, constants)?;
+        recompose_into(b, &perm_local, recomposed_local)?;
+        recompose_into(b, &perm_next, recomposed_next)?;
+        let zeros = [zero];
+        let terminals = [terminal];
+        let values = Evaluation {
+            main: [Values::Slice(&local), Values::repeat(&zeros, air.width())?],
+            preprocessed: [
+                Values::Slice(&pre),
+                Values::repeat(&zeros, air.preprocessed_width())?,
+            ],
+            periodic,
+            public,
+            permutation: [recomposed_local, recomposed_next],
+            challenges,
+            terminals: &terminals,
+            first,
+            last,
+            transition,
+        };
+        let super::super::symbolic::Constraints {
+            base,
+            extension,
+            order,
+        } = prepared.constraints;
+        let count = order
+            .base_indices
+            .len()
+            .checked_add(order.ext_indices.len())
+            .ok_or(CompileError::Shape("constraint emission count"))?;
+        if base.len() != order.base_indices.len() || extension.len() != order.ext_indices.len() {
+            return Err(CompileError::Shape("constraint emission count"));
+        }
+        b.with_compiler_scratch("constraints", count, None, |b, constraints| {
+            let mut lowerer = Lowerer::new(b, values);
+            for (e, &index) in base.iter().zip(&order.base_indices) {
+                let slot = constraints
+                    .get_mut(index)
+                    .filter(|slot| slot.is_none())
+                    .ok_or(CompileError::Shape("constraint emission order"))?;
+                *slot = Some(lowerer.base(e)?);
+            }
+            for (e, &index) in extension.iter().zip(&order.ext_indices) {
+                let slot = constraints
+                    .get_mut(index)
+                    .filter(|slot| slot.is_none())
+                    .ok_or(CompileError::Shape("constraint emission order"))?;
+                *slot = Some(lowerer.extension(e)?);
+            }
+            let mut folded = zero;
+            for &value in constraints.iter() {
+                let value = value.ok_or(CompileError::Shape("constraint emission order"))?;
+                folded = lowerer.b.ext_mul(folded, alpha);
+                folded = lowerer.b.ext_add(folded, value);
+            }
+            let lhs = lowerer.b.ext_mul(folded, inv_vanishing);
+            lowerer.b.ext_assert_equal(lhs, quotient);
+            Ok(())
+        })
+    })
 }
 
 #[cfg(test)]

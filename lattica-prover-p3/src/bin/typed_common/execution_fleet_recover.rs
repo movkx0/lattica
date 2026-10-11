@@ -156,6 +156,7 @@ fn compatible(previous: &Plan, current: &Plan) -> Result<(), Error> {
         || previous.coordinator_unit == current.coordinator_unit
         || previous.coordinator_threads != current.coordinator_threads
         || previous.coordinator_ram_bytes != current.coordinator_ram_bytes
+        || previous.coordinator_shared_bytes != current.coordinator_shared_bytes
         || previous.fleet_bytes != current.fleet_bytes
         || validate_plan(previous)? != validate_plan(current)?
         || previous
@@ -190,6 +191,11 @@ pub(super) fn restore(
     if !source.is_absolute() || source == out {
         return Err("recovery requires a distinct absolute prior owner proofs directory".into());
     }
+    TypedRegistryContext::admit_recovery_storage(
+        plan.coordinator_ram_bytes
+            .checked_sub(plan.coordinator_shared_bytes)
+            .ok_or("recovery shared RAM exceeds coordinator assignment")?,
+    )?;
     let origin = admission::trace(source, plan, &prepared.expected)?;
     let previous = &origin.plan;
     let state = &origin.state;
@@ -398,10 +404,11 @@ pub(super) fn export(
     state: &State,
     out: &Path,
 ) -> Result<Vec<serde_json::Value>, Error> {
+    let registry = TypedRegistryContext::new(&prepared.registry, prepared.pin.profile())?;
     let mut reused = Vec::new();
     for job in prepared.selection.jobs() {
         if let Some(proof) = owner.verified_node_bytes(job.id())? {
-            VerifiedNode::verify_typed(job, &prepared.registry, proof)?;
+            registry.verify_node(job, proof)?;
             write_bytes(
                 &out.join(preseal::name(job)),
                 proof,
@@ -521,6 +528,13 @@ mod tests {
         compatible(&old, &new).unwrap();
         let mut changed = new.clone();
         changed.workers[0].assignment["gpu"]["uuid"] = json!("GPU-other");
+        assert!(compatible(&old, &changed).is_err());
+        let mut changed = new.clone();
+        changed.coordinator_shared_bytes += 1;
+        for worker in &mut changed.workers {
+            let host = &mut worker.assignment["host"];
+            host["coordinator_shared_bytes"] = json!(changed.coordinator_shared_bytes);
+        }
         assert!(compatible(&old, &changed).is_err());
         let mut changed = new.clone();
         changed.workers[0].assignment["gpu"]["context_bytes"] = json!(1u64 << 29);

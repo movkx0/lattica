@@ -1,0 +1,285 @@
+{
+  "schema": "lattica-owned-quotient-prover-v1",
+  "date": "2026-10-07",
+  "source_head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "source_state": "uncommitted main working tree",
+  "complete_gpu_prover": false,
+  "main_registered_prover_uses_owned_route_when_enabled": true,
+  "enabled_by_default": false,
+  "throughput_qualification": false,
+  "features": [
+    "default",
+    "block-v2-wide-lanes"
+  ],
+  "build_profile": "release",
+  "gpu": {
+    "opencl_index": 1,
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "pci": "0000:02:00.0",
+    "global_bytes": 16697327616,
+    "max_allocation_bytes": 4174331904,
+    "driver": "615.71.09"
+  },
+  "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-owned-prover-20261007/run-04",
+  "binary_sha256": "30d0ae05a3a2b808a9a182fbb2f4a27995cefc5e159cda1a56ef2effa8e8b9bd",
+  "source_archive_sha256": "be14c15de97b9c49b1d682aad32a99d3e1e62f0507eaa03d29099bddeca08b70",
+  "runner_sha256": "0d3b85019fab0d097742da0f934cef1cbbdf472d3d9ef5fe1478f69be388ff19",
+  "manifest_sha256": "28335787ab2c95ba2b62dfa729e6e7a402fef462a30a2dc15f3ceb03027cbd62",
+  "limits": {
+    "memory_max_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "runtime_max_seconds_per_service": 180
+  },
+  "selection": {
+    "flag": "LATTICA_V2_GPU_QUOTIENT_RESIDENT=1",
+    "dependencies": [
+      "OpenCL",
+      "resident PCS",
+      "retained commitments",
+      "quotient fusion",
+      "GPU quotient LDE",
+      "GPU quotient evaluation"
+    ],
+    "strict_gpu_proving_admitted": false
+  },
+  "checks": [
+    {
+      "name": "proof-bytes",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.9667199660034385,
+      "log_sha256": "8eceb5f355d9c39c82fd89e16a2ab39679d375564d064c75f8cc17292b0eaa0a"
+    },
+    {
+      "name": "compact-proof",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.0163269190015853,
+      "log_sha256": "e2fd38b65b530e6cf66d3dd7991dabfb976b1fb474bc81e7c0e32f855deaacc2"
+    },
+    {
+      "name": "registered",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8663847290008562,
+      "log_sha256": "95736a2547e5a36e2a40912de1998630ba445f847cf9c33ae8873dfe5b290a0f"
+    },
+    {
+      "name": "reuse",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.1166726560004463,
+      "log_sha256": "a384860ea682859ab87ce968ea54627fbfaabb93f2cb945de6a708cc3771e1bd"
+    },
+    {
+      "name": "adapter-regression",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.9161177560017677,
+      "log_sha256": "f71e3469fbe78c9fedf393e89c8a18ba32731188b26a0d19f9248eb2c7a410d8"
+    },
+    {
+      "name": "lde-regression",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8160230399989814,
+      "log_sha256": "3456c0b08208cbe659011556d3c2482058c96fc228edebe3ae26209f0f37725b"
+    },
+    {
+      "name": "rng-regression",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.6654225710008177,
+      "log_sha256": "f58b10e204aa5a9897300d27f1ce203e07db4f7265343ccffe961ac1f2d0b1f5"
+    },
+    {
+      "name": "compact-regression",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.965770793001866,
+      "log_sha256": "047fa178c66292170878ca5df872b001da62f238b6ce285a48a0d046b61a049e"
+    },
+    {
+      "name": "storage-unit",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.031844094999541994,
+      "log_sha256": "d2a7f7257281d4ec48434fce35c08dcf0899598b0a1c9c5f93f8dc7fcf81ffc3"
+    },
+    {
+      "name": "device-unit",
+      "passed": true,
+      "passed_count": 4,
+      "wall_seconds": 0.03182552900034352,
+      "log_sha256": "ccbabd532c16a4c2ae05821acde261071c99d018668744bee7d0ff55a6d7e6a2"
+    },
+    {
+      "name": "transform-unit",
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.03183295700000599,
+      "log_sha256": "c0eea84e1c1208f429aefe93138839ff05782eb48c3d428fa2c405b37a3a29ca"
+    },
+    {
+      "name": "plan-unit",
+      "passed": true,
+      "passed_count": 10,
+      "wall_seconds": 0.03180256499763345,
+      "log_sha256": "09c3d8f545c5f9657d8a7f66d1e4066cad197e347612eb8f8f6642c2797b99b8"
+    },
+    {
+      "name": "lde-unit",
+      "passed": true,
+      "passed_count": 2,
+      "wall_seconds": 0.0318043379993469,
+      "log_sha256": "00dd427aca26c88a7a4b7ee1f1f4c63746bf4ec32b64f489fe9ab0a4c666e6c3"
+    },
+    {
+      "name": "pcs-unit",
+      "passed": true,
+      "passed_count": 12,
+      "wall_seconds": 0.21424817699880805,
+      "log_sha256": "06abc55ddf945a511f6f4554825416f562c39d1a4d0904ce56f93435e27595ef"
+    },
+    {
+      "name": "policy-unit",
+      "passed": true,
+      "passed_count": 9,
+      "wall_seconds": 0.06390137299968046,
+      "log_sha256": "d593b8110888c9c5c92d8fb5186d59bb684d0410ad7f19ddbe990e2cb531c244"
+    }
+  ],
+  "additional_validation": {
+    "python_resource_tests_passed": 28,
+    "cpu_stream_build_passed": true,
+    "gpu_stream_build_passed": true,
+    "log_sha256": {
+      "release-build": "d38361aa6c89ec2a0a9552fce63460c5cb7d1619879c00aee70abb75041de9bc",
+      "cpu-stream-build": "4188a776dfc6c7794f3302f9b24e3aea41a77470bdc064340f329ea992975900",
+      "gpu-stream-build": "f023f3a6c81421d0d591b802dbb6b6493bb41d5507a26b70402d464674e9d89c",
+      "python-resources": "dca4de4665f3bb51719819f69ce884c4c400ba573b81bd4322a8bbd5684f8278"
+    }
+  },
+  "conformance": {
+    "full_and_compact_reference_proof_bytes_equal": true,
+    "preprocessing_caps_equal_cpu_reference": true,
+    "registered_public_slots": 64,
+    "repeated_proofs_with_different_witnesses": 3,
+    "public_preprocessing_reused_across_fresh_sessions": true,
+    "private_device_allocations_return_to_public_baseline_after_each_proof": true,
+    "dropping_registered_prover_frees_public_device_matrices": true,
+    "standalone_cpu_verifier_works_after_gpu_shutdown": true,
+    "altered_public_statements_rejected": true,
+    "default_off_regressions": [
+      "host-input quotient adapter",
+      "compact quotient proofs",
+      "salt/mask streams across PCS clones",
+      "multigroup NTT and unequal input heights"
+    ]
+  },
+  "owned_quotient_stage_transfers": [
+    {
+      "test": "proof-bytes",
+      "rows": 1024,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 24576,
+      "program_parameter_upload_bytes": 191880,
+      "control_download_bytes": 8
+    },
+    {
+      "test": "compact-proof",
+      "rows": 1024,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 24576,
+      "program_parameter_upload_bytes": 191880,
+      "control_download_bytes": 8
+    },
+    {
+      "test": "registered",
+      "rows": 128,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 3072,
+      "program_parameter_upload_bytes": 222544,
+      "control_download_bytes": 8
+    },
+    {
+      "test": "reuse",
+      "rows": 128,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 3072,
+      "program_parameter_upload_bytes": 222544,
+      "control_download_bytes": 8
+    },
+    {
+      "test": "reuse",
+      "rows": 128,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 3072,
+      "program_parameter_upload_bytes": 222544,
+      "control_download_bytes": 8
+    },
+    {
+      "test": "reuse",
+      "rows": 128,
+      "input_matrix_upload_bytes": 0,
+      "output_readback_bytes": 3072,
+      "program_parameter_upload_bytes": 222544,
+      "control_download_bytes": 8
+    }
+  ],
+  "capacity": {
+    "prefix_rows": 524288,
+    "quotient_rows": 4194304,
+    "preprocessing_columns": 200,
+    "contiguous_preprocessing_bytes": 6710886400,
+    "max_gpu_allocation_bytes": 4174331904,
+    "full_workload_admitted": false,
+    "required_followup": "Bounded large-matrix consumption; increasing the managed budget cannot remove the hardware single-allocation limit."
+  },
+  "preserved_failed_runs": [
+    {
+      "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-owned-prover-20261007/run-01",
+      "binary_sha256": "5e00fb6f4ca33ee3075668e76b910de718c99db769758964cca18f745e465986",
+      "source_archive_sha256": "dcde29f8ec25b39630c4b9b94531f95aad8fe37c5478807e07b7495f56fb2f43",
+      "tests": [
+        {
+          "name": "proof-bytes",
+          "passed": false,
+          "returncode": 101,
+          "log_sha256": "23bc92aecb5eae4274bf60abb61c7bab2ee3baef6934ffdbc596a80ab0e3eafc"
+        }
+      ],
+      "resolution": "Test supplied CPU-only preprocessing with no owned GPU matrices; refusal to fall back was expected. Fixture now prepares GPU preprocessing independently and compares caps."
+    },
+    {
+      "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-owned-prover-20261007/run-02",
+      "binary_sha256": "32647a2624d522bfd3911e7a4e6dd83990540b6fc1c09938c4f6d89237dc0481",
+      "source_archive_sha256": "774fa04f04c0ec1338e7e75c3fe3c738f9190ea0e0237f783a82e6aa76875c85",
+      "tests": [
+        {
+          "name": "proof-bytes",
+          "passed": true,
+          "returncode": 0,
+          "log_sha256": "a0545c773f0a303f7a663c617004a739f8120422838df69058ba6443427785af"
+        },
+        {
+          "name": "compact-proof",
+          "passed": false,
+          "returncode": 101,
+          "log_sha256": "69a030dd5d168218aed6e350a71ac0f438f852dc38ac858bd8a878c74043d406"
+        }
+      ],
+      "resolution": "Compact-proof service omitted LATTICA_V2_GPU_OPENING_COMPACT=1. Corrected runner explicitly selects compact opening reduction; test now checks this prerequisite."
+    }
+  ],
+  "limitations": [
+    "Only quotient input matrices stay on GPU in this integration. Existing PCS host readback remains for openings.",
+    "Quotient output is read back for CPU chunk splitting and existing hiding PCS interfaces.",
+    "Static AIR programs are recompiled/prepared per proof; this adapter does not yet cache code across registered proofs.",
+    "CPU witness/trace construction, lookup witness generation, transcript/randomness and other proving arithmetic remain.",
+    "OpenCL NVIDIA only; AMD and Apple Metal remain unqualified.",
+    "Native test wall times are conformance timings, not transactions/hour or matched throughput benchmarks."
+  ]
+}

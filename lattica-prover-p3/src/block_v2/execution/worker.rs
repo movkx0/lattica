@@ -208,7 +208,9 @@ impl CpuWorker {
         if pin.is_typed() {
             return Err("legacy CPU worker rejects typed registry".into());
         }
-        RegistryPin::new(&registry, pin.profile(), pin.construction())?;
+        if registry.bounded_id()? != pin.profile() {
+            return Err("unapproved execution registry pin".into());
+        }
         Ok(Self { registry, pin })
     }
 
@@ -273,6 +275,7 @@ impl CpuWorker {
     ) -> Result<Output, Error> {
         let packet = packet::encode_request(&assignment)?;
         self.check_assignment_gate(gate, &packet, assignment.job.expected().context.chain_id)?;
+        crate::block_v2::recursive::storage::admit_startup(assignment.resources.ram_bytes)?;
         let started = Instant::now();
         let inputs = self.prepare(&assignment)?;
         let input_verification_ms = started.elapsed().as_millis();
@@ -280,6 +283,7 @@ impl CpuWorker {
             inputs,
             assignment.job.expected(),
             assignment.job.operation(),
+            assignment.resources.ram_bytes,
         )?;
         Ok(Output {
             lease: assignment.lease,
@@ -299,15 +303,18 @@ impl CpuWorker {
         inputs: Inputs,
         expected: NodeSummary,
         operation: Operation,
+        worker_memory_bytes: u64,
     ) -> Result<(Vec<u8>, u128, u128, CacheStats), Error> {
         require_cpu_backend()?;
+        crate::block_v2::recursive::storage::admit_startup(worker_memory_bytes)?;
         let started = Instant::now();
         // A local session ensures both success and unwinding release its workspace.
         // ProverSession uses fresh CSPRNG material for every proof; no RNG is cached.
-        let mut session = ConstructionSession::new(
+        let mut session = ConstructionSession::new_with_memory_budget(
             self.pin.construction(),
             self.registry.clone(),
             self.pin.profile(),
+            worker_memory_bytes,
         )?;
         let proof = prove_inputs(&mut session, inputs, expected);
         let stats = session.stats();
@@ -341,3 +348,11 @@ pub mod typed;
 #[cfg(test)]
 #[path = "worker_tests.rs"]
 mod tests;
+
+#[cfg(all(
+    test,
+    feature = "stream",
+    not(any(feature = "gpu", feature = "gpu-metal"))
+))]
+#[path = "worker_legacy_budget_tests.rs"]
+mod legacy_budget_tests;

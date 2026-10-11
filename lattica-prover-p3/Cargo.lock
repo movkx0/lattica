@@ -582,8 +582,6 @@ dependencies = [
 [[package]]
 name = "p3-field"
 version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab37408c6c964e7e18c2305a15e31bc784aa20eb82eb513b4850aaa13ee445d3"
 dependencies = [
  "itertools",
  "num-bigint",
@@ -639,8 +637,6 @@ dependencies = [
 [[package]]
 name = "p3-lookup"
 version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0ccc1d2199fe8057d384b8e85f64432158dc4530a55c473d413b0128daa3e86"
 dependencies = [
  "hashbrown",
  "num-bigint",
@@ -794,8 +790,6 @@ dependencies = [
 [[package]]
 name = "p3-symmetric"
 version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "284db1f284c4007eeb65cef4656426c93192af9bd9703b7f3afbf7faab274500"
 dependencies = [
  "itertools",
  "p3-field",

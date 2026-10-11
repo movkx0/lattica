@@ -311,6 +311,7 @@ def pin_recovery(directory, count, gpu, cpu, native_binding, _seen=None):
     for worker in plan['workers']:
         assignment = copy.deepcopy(worker['assignment'])
         assignment['host'].pop('coordinator_job_bytes', None)
+        assignment['host'].pop('coordinator_shared_bytes', None)
         uuid = assignment['gpu']['uuid']
         if uuid in signatures:
             raise ValueError('recovery GPU UUID is duplicated')
@@ -388,10 +389,24 @@ def configure_recovery(owner_directory, recovery, config, fleet, report):
     return launches
 
 
+def coordinator_partition(total, workers, recovery=None):
+    shared = R.COORDINATOR_SHARED_HOST_BYTES
+    if recovery is not None:
+        previous = recovery['previous_plan']
+        if previous.get('schema_version') != 2:
+            raise ValueError('coordinator recovery requires shared plan schema 2')
+        if (previous.get('coordinator_ram_bytes') != total or
+                len(previous.get('workers', [])) != workers):
+            raise ValueError('coordinator recovery partition changed physical assignment')
+        shared = previous.get('coordinator_shared_bytes')
+    return shared, R.coordinator_job_budgets(total, workers, shared)
+
+
 def admit_cached_recovery(host, recovery):
     """Admit only the CPU coordinator; retained GPU budgets are identity metadata."""
     plan = recovery['previous_plan']
     ram, threads = plan['coordinator_ram_bytes'], plan['coordinator_threads']
+    shared, _ = coordinator_partition(ram, len(plan['workers']), recovery)
     reserve = max(2 * R.GIB, (host['physical_bytes'] + 9) // 10)
     available = max(0, host['available_bytes'] - reserve)
     if host['cgroup_memory_headroom'] is not None:
@@ -402,7 +417,10 @@ def admit_cached_recovery(host, recovery):
     budgets, devices = {}, []
     for worker in plan['workers']:
         budget = copy.deepcopy(worker['assignment'])
+        if budget['host'].get('coordinator_shared_bytes') != shared:
+            raise ValueError('retained coordinator shared assignment differs')
         budget['host'].pop('coordinator_job_bytes', None)
+        budget['host'].pop('coordinator_shared_bytes', None)
         if budget['host']['coordinator_bytes'] != ram:
             raise ValueError('retained coordinator memory assignment differs')
         budgets[budget['gpu']['uuid']] = budget
@@ -755,6 +773,8 @@ def run(args, control=None):
                 getattr(args, 'recovery_admission_timeout', 120), assignment=fixed, calibrations=calibrations)
         first = next(iter(budgets.values()))
         coordinator_bytes = first["host"]["coordinator_bytes"]
+        coordinator_shared_bytes, job_budgets = coordinator_partition(
+            coordinator_bytes, len(devices), recovery)
         coordinator_threads = int(first["cpu"]["coordinator_capacity"])
         if coordinator_threads < 1 or str(coordinator_threads) != first["cpu"]["coordinator_capacity"]:
             raise ValueError("shared coordinator requires an integral admitted CPU capacity")
@@ -766,7 +786,8 @@ def run(args, control=None):
                   "coordinator_threads": coordinator_threads, "fleet_plan": str(out / "fleet-plan.json"), "workers": [],
                   "preseal_only": preseal, "reuse_preseal": reuse, "allow_worker_failover": failover}
         config['context_calibrations'] = calibrations
-        fleet = {"schema_version": 1, "recover_from": None, "coordinator_unit": owner_unit, "coordinator_ram_bytes": coordinator_bytes,
+        fleet = {"schema_version": 2, "recover_from": None, "coordinator_unit": owner_unit, "coordinator_ram_bytes": coordinator_bytes,
+                 "coordinator_shared_bytes": coordinator_shared_bytes,
                  "coordinator_threads": coordinator_threads, "fleet_bytes": first["host"]["fleet_bytes"], "workers": [],
                  "preseal_only": preseal, "reuse_preseal": reuse, "allow_worker_failover": failover}
         guard = str(owner_dir / 'coordinator-startup')
@@ -798,13 +819,14 @@ def run(args, control=None):
         if pool_requests:
             config['pool_requests'] = fleet['pool_requests'] = str(pool_requests)
             report['pool_service'] = True
-        packet_share, remainder = divmod(coordinator_bytes, len(devices))
         for index, device in enumerate(devices):
             uuid = device["uuid"]
             budget = budgets[uuid]
+            budget['proving_environment'] = G.proving_environment(budget.get('proving_environment'))
             if native is not None:
                 budget["native_host"] = native.binding
-            budget["host"]["coordinator_job_bytes"] = packet_share + (index < remainder)
+            budget["host"]["coordinator_job_bytes"] = job_budgets[index]
+            budget["host"]["coordinator_shared_bytes"] = coordinator_shared_bytes
             budget["unit"] = "lattica-v2-multi-persistent-" + secrets.token_hex(32) + ".service"
             budget['startup_guard'] = str(owner_dir / f'proofs/execution/worker-{index}-startup')
             directory = out / "workers" / f"gpu-{index + 1:02d}"

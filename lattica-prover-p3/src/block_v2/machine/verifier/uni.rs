@@ -1,17 +1,16 @@
 //! Full constrained verifier for candidate hiding uni-STARK transaction proofs.
+use super::super::compiler_constants::Constants;
+use super::super::program::ScopedProgramBuilder as ProgramBuilder;
 use super::super::program::Val;
 use super::super::transcript::Transcript;
-use super::super::{ProgramBuilder, Wire};
-use super::expressions::{self, Evaluation, Lowerer};
-use super::pcs::{Point, Round};
+use super::super::Wire;
+use super::expressions::{self, Evaluation, Lowerer, Values};
+use super::pcs::{Point, Round, MAX_MATRICES};
 use super::{observe_cap, CompileError, ProofInputs};
 use crate::block_v2::profile::{self, Config};
-use p3_air::{
-    symbolic::{AirLayout, SymbolicAirBuilder},
-    Air, BaseAir,
-};
-use p3_field::{PrimeCharacteristicRing, TwoAdicField};
-use p3_uni_stark::{get_log_num_quotient_chunks, Proof};
+use p3_air::{symbolic::SymbolicAirBuilder, Air, BaseAir};
+use p3_field::PrimeCharacteristicRing;
+use p3_uni_stark::Proof;
 
 pub fn verify<A>(
     b: &mut ProgramBuilder,
@@ -24,6 +23,44 @@ pub fn verify<A>(
 where
     A: BaseAir<Val> + Air<SymbolicAirBuilder<Val>>,
 {
+    validate_geometry(air, height)?;
+    let columns = air.periodic_columns();
+    verify_prepared(
+        b,
+        inputs,
+        air,
+        height,
+        public,
+        proof,
+        Constants::cpu(),
+        super::super::symbolic::native_uni(air),
+        &super::periodic::Borrowed(&columns),
+    )
+}
+
+pub(crate) fn verify_with_constants<A>(
+    b: &mut ProgramBuilder,
+    inputs: &mut ProofInputs,
+    air: &A,
+    height: usize,
+    public: &[Wire],
+    proof: &Proof<Config>,
+    constants: Constants<'_>,
+) -> Result<(), CompileError>
+where
+    A: BaseAir<Val>
+        + Air<SymbolicAirBuilder<Val>>
+        + Air<super::super::symbolic::Builder>
+        + super::periodic::Source,
+{
+    validate_geometry(air, height)?;
+    let prepared = super::super::symbolic::prepare_uni(air, constants)?;
+    verify_prepared(
+        b, inputs, air, height, public, proof, constants, prepared, air,
+    )
+}
+
+fn validate_geometry<A: BaseAir<Val>>(air: &A, height: usize) -> Result<(), CompileError> {
     if !height.is_power_of_two()
         || height < 8
         || height.ilog2() as usize + 1 + profile::LOG_BLOWUP > 32
@@ -33,10 +70,27 @@ where
     if air.preprocessed_width() != 0 {
         return Err(CompileError::Unsupported("uni preprocessing"));
     }
+    Ok(())
+}
+
+fn verify_prepared<A: BaseAir<Val>>(
+    b: &mut ProgramBuilder,
+    inputs: &mut ProofInputs,
+    air: &A,
+    height: usize,
+    public: &[Wire],
+    proof: &Proof<Config>,
+    constants: Constants<'_>,
+    prepared: (Vec<p3_air::symbolic::SymbolicExpression<Val>>, usize),
+    periodic_source: &dyn super::periodic::Source,
+) -> Result<(), CompileError> {
+    validate_geometry(air, height)?;
+    if periodic_source.count() != air.num_periodic_columns() {
+        return Err(CompileError::Shape("periodic source count"));
+    }
     let log_height = height.ilog2() as usize;
     let ext_db = log_height + 1;
-    let layout = AirLayout::from_air::<Val>(air);
-    let log_chunks = get_log_num_quotient_chunks::<Val, A>(air, layout, 1);
+    let (constraints, log_chunks) = prepared;
     if log_chunks > profile::LOG_BLOWUP {
         return Err(CompileError::Shape("quotient degree"));
     }
@@ -64,14 +118,18 @@ where
     let trace_cap = inputs.cap(b, &proof.commitments.trace, log_lde)?;
     let quotient_cap = inputs.cap(b, &proof.commitments.quotient_chunks, log_lde)?;
     let random_cap = inputs.cap(b, proof.commitments.random.as_ref().unwrap(), log_lde)?;
-    let local = inputs.extensions(b, &opened.trace_local);
-    let next = opened.trace_next.as_ref().map(|v| inputs.extensions(b, v));
-    let random = inputs.extensions(b, opened.random.as_ref().unwrap());
+    let local = inputs.extensions(b, &opened.trace_local)?;
+    let next = opened
+        .trace_next
+        .as_ref()
+        .map(|v| inputs.extensions(b, v))
+        .transpose()?;
+    let random = inputs.extensions(b, opened.random.as_ref().unwrap())?;
     let quotient_chunks: Vec<_> = opened
         .quotient_chunks
         .iter()
         .map(|v| inputs.extensions(b, v))
-        .collect();
+        .collect::<Result<_, _>>()?;
     let mut transcript = Transcript::new(b);
     for n in [ext_db, log_height, 0] {
         let v = b.constant(Val::from_usize(n));
@@ -83,77 +141,102 @@ where
     observe_cap(&mut transcript, b, &quotient_cap);
     observe_cap(&mut transcript, b, &random_cap);
     let zeta = transcript.sample_ext(b);
-    let rotation = b.constant(Val::two_adic_generator(log_height));
+    let rotation = b.constant(Val::TWO_ADIC_GENERATORS[log_height]);
     let zeta_next = b.ext_scale(zeta, rotation);
-    let mut trace_points = vec![Point {
-        point: zeta,
-        values: local.clone(),
-    }];
-    if let Some(next) = &next {
-        trace_points.push(Point {
+    let trace_points = [
+        Point {
+            point: zeta,
+            values: &local,
+        },
+        Point {
             point: zeta_next,
-            values: next.clone(),
-        });
-    }
-    let rounds = vec![
+            values: next.as_deref().unwrap_or(&[]),
+        },
+    ];
+    let quotient_points: [[Point<'_>; 1]; MAX_MATRICES] = core::array::from_fn(|i| {
+        [Point {
+            point: zeta,
+            values: quotient_chunks.get(i).map_or(&[], Vec::as_slice),
+        }]
+    });
+    let quotient_matrices: [&[Point<'_>]; MAX_MATRICES] =
+        core::array::from_fn(|i| quotient_points[i].as_slice());
+    let rounds = [
         Round {
-            commitment: random_cap,
+            commitment: &random_cap,
             log_domain: ext_db,
-            matrices: vec![vec![Point {
+            matrices: &[&[Point {
                 point: zeta,
-                values: random,
+                values: &random,
             }]],
             preprocessing: false,
         },
         Round {
-            commitment: trace_cap,
+            commitment: &trace_cap,
             log_domain: ext_db,
-            matrices: vec![trace_points],
+            matrices: &[&trace_points[..1 + usize::from(next.is_some())]],
             preprocessing: false,
         },
         Round {
-            commitment: quotient_cap,
+            commitment: &quotient_cap,
             log_domain: ext_db,
-            matrices: quotient_chunks
-                .iter()
-                .map(|v| {
-                    vec![Point {
-                        point: zeta,
-                        values: v.clone(),
-                    }]
-                })
-                .collect(),
+            matrices: &quotient_matrices[..quotient_chunks.len()],
             preprocessing: false,
         },
     ];
-    super::pcs::verify(b, inputs, &mut transcript, rounds, &proof.opening_proof)?;
-    let (first, last, transition, inv_vanishing) = expressions::selectors(b, zeta, log_height);
-    let periodic = expressions::periodic_values(b, &air.periodic_columns(), zeta, log_height)?;
-    let quotient = expressions::quotient(b, &quotient_chunks, zeta, log_height)?;
-    let zero = b.ext_constant([Val::ZERO; 3]);
-    let values = Evaluation {
-        main: [local, next.unwrap_or_else(|| vec![zero; air.width()])],
-        preprocessed: [vec![], vec![]],
-        periodic,
-        public: public.to_vec(),
-        permutation: [vec![], vec![]],
-        challenges: vec![],
-        terminals: vec![],
-        first,
-        last,
-        transition,
-    };
-    let constraints = p3_air::symbolic::get_symbolic_constraints::<Val, A>(air, layout);
-    let mut lowerer = Lowerer::new(b, values);
-    let mut folded = zero;
-    for constraint in &constraints {
-        let value = lowerer.base(constraint)?;
-        folded = lowerer.b.ext_mul(folded, alpha);
-        folded = lowerer.b.ext_add(folded, value);
-    }
-    let lhs = lowerer.b.ext_mul(folded, inv_vanishing);
-    lowerer.b.ext_assert_equal(lhs, quotient);
-    Ok(())
+    super::pcs::verify(b, inputs, &mut transcript, &rounds, &proof.opening_proof)?;
+    let (first, last, transition, inv_vanishing) =
+        expressions::selectors_with_constants(b, zeta, log_height, constants)?;
+    b.with_compiler_scratch(
+        "evaluation",
+        periodic_source.count(),
+        [Wire(0); 3],
+        |b, periodic| {
+            super::periodic::values_into(
+                b,
+                periodic_source,
+                zeta,
+                log_height,
+                constants,
+                periodic,
+            )?;
+            let quotient = expressions::quotient_with_constants(
+                b,
+                &quotient_chunks,
+                zeta,
+                log_height,
+                constants,
+            )?;
+            let zero = b.ext_constant([Val::ZERO; 3]);
+            let zeros = [zero];
+            let next = match &next {
+                Some(values) => Values::Slice(values),
+                None => Values::repeat(&zeros, air.width())?,
+            };
+            let values = Evaluation {
+                main: [Values::Slice(&local), next],
+                preprocessed: [Values::Slice(&[]); 2],
+                periodic,
+                public,
+                permutation: [&[]; 2],
+                challenges: Values::Slice(&[]),
+                terminals: &[],
+                first,
+                last,
+                transition,
+            };
+            let mut lowerer = Lowerer::new(b, values);
+            let mut folded = zero;
+            for constraint in &constraints {
+                let value = lowerer.base(constraint)?;
+                folded = lowerer.b.ext_mul(folded, alpha);
+                folded = lowerer.b.ext_add(folded, value);
+            }
+            let lhs = lowerer.b.ext_mul(folded, inv_vanishing);
+            lowerer.b.ext_assert_equal(lhs, quotient);
+            Ok(())
+        },
+    )
 }
 
 #[cfg(test)]

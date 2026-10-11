@@ -2,15 +2,14 @@
 //! Keys are supplied as witness parameters, hashed into the public context, and selected
 //! by constrained child mode. A root verifier MUST pin a registry built from these exact
 //! programs; a prover-supplied registry/profile is never an authorization source.
-use p3_air::{symbolic::AirLayout, BaseAir};
-use p3_batch_stark::{symbolic, BatchProof};
-use p3_field::{Field, PrimeCharacteristicRing, PrimeField64};
-use p3_lookup::{LogUpGadget, Lookups};
+use p3_air::BaseAir;
+use p3_batch_stark::BatchProof;
+use p3_field::{PrimeCharacteristicRing, PrimeField64};
 use p3_uni_stark::Proof;
 
-use super::program::Val;
+use super::program::{ScopedProgramBuilder as ProgramBuilder, Val};
 use super::verifier::{self, CompileError, ProofInputs};
-use super::{analysis, fingerprint, MachineAir, Program, ProgramBuilder, Wire};
+use super::{analysis, compiler_constants::Constants, fingerprint, MachineAir, Program, Wire};
 use crate::block_v2::{
     commitment::{self, Context, NodeSummary},
     leaf::ContextJoinSplitAir,
@@ -28,6 +27,8 @@ pub const EMPTY: u64 = 2;
 pub const MERGE: u64 = 3;
 const REGISTRY_DOMAIN: u64 = 0x4c42563211;
 const AIR_DOMAIN: u64 = 0x4c42563212;
+
+pub(crate) mod registry_setup;
 
 /// Public key material only. Not evidence that these keys belong to approved programs.
 pub type Caps<const N: usize = 3> = [Vec<[Val; 4]>; N];
@@ -56,24 +57,49 @@ pub fn shape(height: usize) -> Result<MachineAir, CompileError> {
 }
 
 fn registry_prefix(height: usize) -> Result<Vec<u64>, CompileError> {
+    registry_prefix_with_hash(height, &mut |domain, fields| {
+        commitment::hash_fields(domain, fields)
+            .map_err(|_| CompileError::Shape("registry fingerprint hash"))
+    })
+}
+
+fn registry_prefix_with_hash<E: From<CompileError>>(
+    height: usize,
+    hash: &mut impl FnMut(u64, &[u64]) -> Result<commitment::Digest, E>,
+) -> Result<Vec<u64>, E> {
+    registry_prefix_with_constants(height, hash, Constants::cpu())
+}
+
+fn registry_prefix_with_constants<E: From<CompileError>>(
+    height: usize,
+    hash: &mut impl FnMut(u64, &[u64]) -> Result<commitment::Digest, E>,
+    constants: Constants<'_>,
+) -> Result<Vec<u64>, E> {
     let air = shape(height)?;
-    let a = analysis::analyze(&air).map_err(|_| CompileError::Shape("registered AIR geometry"))?;
-    let layout = AirLayout::from_air::<Val>(&air);
-    let gadget = LogUpGadget::new();
-    let lookups = Lookups::<Val>::from_air::<profile::Challenge, _>(&air)
-        .pack_same_bus(&gadget, a.quotient_chunks / 2);
-    let constraints = symbolic::get_symbolic_constraints::<Val, profile::Challenge, _, _>(
-        &air, layout, &lookups, &gadget,
-    );
-    let order = symbolic::get_constraint_layout::<Val, profile::Challenge, _, _>(
-        &air, layout, &lookups, &gadget,
-    );
-    let air_id = commitment::hash_fields(
+    let prepared = super::symbolic::prepare_machine(&air, constants)?;
+    let a = analysis::analyze_prepared(&air, &prepared)
+        .map_err(|_| CompileError::Shape("registered AIR geometry"))?;
+    let constraints = prepared.constraints;
+    let air_id = hash(
         AIR_DOMAIN,
-        &fingerprint::encode(&constraints.0, &constraints.1, &order),
-    )
-    .unwrap();
-    let mut fields = vec![
+        &fingerprint::encode(
+            &constraints.base,
+            &constraints.extension,
+            &constraints.order,
+        ),
+    )?;
+    Ok(registry_fields(height, &air, &a, air_id))
+}
+
+/// Shared field order for reference and bounded verifier registry identities.
+/// The 64-word allocation also fits the optional codec and registry-kind tags.
+fn registry_fields(
+    height: usize,
+    air: &MachineAir,
+    a: &analysis::MachineAnalysis,
+    air_id: commitment::Digest,
+) -> Vec<u64> {
+    let fixed = [
         1,
         height as u64,
         PUBLIC_VALUES as u64,
@@ -101,6 +127,10 @@ fn registry_prefix(height: usize) -> Result<Vec<u64>, CompileError> {
         0,
         1, // X^3-X-1
     ];
+    // AIR digest, candidate context, optional codec tag and registry-kind tag.
+    assert!(fixed.len() + 4 + 16 + 2 + 2 <= registry_setup::PREFIX_WORDS);
+    let mut fields = Vec::with_capacity(registry_setup::PREFIX_WORDS);
+    fields.extend(fixed);
     fields.extend(air_id);
     // Separate the opt-in fixed-u64 node format from every legacy registry.
     // The default registry prefix, identity and historical bytes are unchanged.
@@ -115,7 +145,7 @@ fn registry_prefix(height: usize) -> Result<Vec<u64>, CompileError> {
         .to_fields()[..8]
             .iter(),
     );
-    Ok(fields)
+    fields
 }
 
 fn check_caps<const N: usize>(caps: &Caps<N>) -> Result<(), CompileError> {
@@ -128,18 +158,72 @@ fn check_caps<const N: usize>(caps: &Caps<N>) -> Result<(), CompileError> {
 
 fn registry_prefix_for<const N: usize>(height: usize) -> Result<Vec<u64>, CompileError> {
     let mut fields = registry_prefix(height)?;
-    if N == 5 {
+    extend_registry_kind(&mut fields, N);
+    Ok(fields)
+}
+
+fn extend_registry_kind(fields: &mut Vec<u64>, key_count: usize) {
+    if key_count == 5 {
         // Separate research registry for JoinSplit, empty, merge, HTLC and issuance.
         // Legacy three-key profile identities remain byte-for-byte unchanged.
         fields.extend([0x5459_5045_445f_5631, 5]); // TYPED_V1
-    } else if N == 6 {
+    } else if key_count == 6 {
         // Separate research identity for the typed depth-six finalizer.
         fields.extend([0x5459_5045_445f_4631, 6]); // TYPED_F1
-    } else if N == 12 {
+    } else if key_count == 12 {
         // Separate research identity for ordered typed pairs and a finalizer.
         fields.extend([0x5459_5045_445f_5031, 12]); // TYPED_P1
     }
-    Ok(fields)
+}
+
+/// Prepared registry fields and borrowed compiler arithmetic, scoped to one
+/// compilation. This is not a registry approval or a proof identity. Height and
+/// key count are checked at every use; fields cannot arrive from a worker packet.
+pub(crate) struct RegistryPrefix<'a> {
+    height: usize,
+    key_count: usize,
+    fields: Vec<u64>,
+    constants: Constants<'a>,
+}
+
+impl<'a> RegistryPrefix<'a> {
+    pub(crate) fn with_hash<E: From<CompileError>>(
+        height: usize,
+        key_count: usize,
+        hash: &mut impl FnMut(u64, &[u64]) -> Result<commitment::Digest, E>,
+    ) -> Result<Self, E> {
+        Self::with_backend(height, key_count, hash, Constants::cpu())
+    }
+
+    pub(crate) fn with_backend<E: From<CompileError>>(
+        height: usize,
+        key_count: usize,
+        hash: &mut impl FnMut(u64, &[u64]) -> Result<commitment::Digest, E>,
+        constants: Constants<'a>,
+    ) -> Result<Self, E> {
+        if !matches!(key_count, 3 | 5 | 6 | 12) {
+            return Err(CompileError::Shape("registry key count").into());
+        }
+        let mut fields = registry_prefix_with_constants(height, hash, constants)?;
+        extend_registry_kind(&mut fields, key_count);
+        Ok(Self {
+            height,
+            key_count,
+            fields,
+            constants,
+        })
+    }
+
+    fn fields(&self, height: usize, key_count: usize) -> Result<&[u64], CompileError> {
+        if self.height != height || self.key_count != key_count {
+            return Err(CompileError::Shape("registry prefix height/key count"));
+        }
+        Ok(&self.fields)
+    }
+}
+
+pub(super) fn compiler_constants<'a>(prefix: Option<&RegistryPrefix<'a>>) -> Constants<'a> {
+    prefix.map_or(Constants::cpu(), |p| p.constants)
 }
 
 pub fn profile_id<const N: usize>(height: usize, caps: &Caps<N>) -> Result<[u8; 32], CompileError> {
@@ -184,11 +268,19 @@ pub(super) fn registry<const N: usize>(
     public: &[Wire],
     height: usize,
     caps: &Caps<N>,
+    prefix: Option<&RegistryPrefix>,
 ) -> Result<[Vec<[Wire; 4]>; N], CompileError> {
     check_caps(caps)?;
-    let mut fields: Vec<_> = registry_prefix_for::<N>(height)?
-        .into_iter()
-        .map(|v| b.constant(Val::from_u64(v)))
+    let cpu_prefix;
+    let prefix = if let Some(prefix) = prefix {
+        prefix.fields(height, N)?
+    } else {
+        cpu_prefix = registry_prefix_for::<N>(height)?;
+        &cpu_prefix
+    };
+    let mut fields: Vec<_> = prefix
+        .iter()
+        .map(|&v| b.constant(Val::from_u64(v)))
         .collect();
     let keys: [Vec<_>; N] =
         core::array::from_fn(|i| caps[i].iter().map(|d| inputs.digest(b, d)).collect());
@@ -208,7 +300,11 @@ pub(super) fn registry<const N: usize>(
     Ok(keys)
 }
 
-pub(super) fn finish(b: ProgramBuilder, inputs: ProofInputs) -> Result<Compiled, CompileError> {
+pub(crate) fn finish(b: ProgramBuilder, inputs: ProofInputs) -> Result<Compiled, CompileError> {
+    if let Some(error) = b.folding_failure() {
+        return Err(error.clone());
+    }
+    inputs.report(&b);
     Ok(Compiled {
         program: b
             .finish(None)
@@ -227,33 +323,45 @@ pub(super) fn assert_constant(b: &mut ProgramBuilder, wire: Wire, value: u64) {
 }
 
 /// Range constraint with public, fixed Lagrange selectors. No unconstrained mode hints.
-pub(super) fn selectors(b: &mut ProgramBuilder, value: Wire, first: u64, last: u64) -> Vec<Wire> {
-    let one = b.constant(Val::ONE);
-    let diffs: Vec<_> = (first..=last)
-        .map(|v| {
-            let c = b.constant(Val::from_u64(v));
-            b.sub(value, c)
-        })
-        .collect();
-    let mut polynomial = one;
-    for &d in &diffs {
-        polynomial = b.mul(polynomial, d);
+pub(super) fn selectors<const N: usize>(
+    b: &mut ProgramBuilder,
+    value: Wire,
+    first: u64,
+    last: u64,
+    constants: Constants<'_>,
+) -> Result<[Wire; N], CompileError> {
+    // Callers retain only a statically bounded stack array. Both temporary
+    // heap arrays share the builder allowance before any backend work.
+    if N > 64 || super::compiler_constants::selector_count(first, last)? != N {
+        return Err(CompileError::Shape("compiler selector output"));
     }
-    b.assert_zero(polynomial);
-    (first..=last)
-        .map(|i| {
-            let mut numerator = one;
-            let mut denominator = Val::ONE;
-            for j in first..=last {
-                if i != j {
-                    numerator = b.mul(numerator, diffs[(j - first) as usize]);
-                    denominator *= Val::from_u64(i) - Val::from_u64(j);
-                }
+    b.with_compiler_scratch("selector-inverses", N, Val::ZERO, |b, inverses| {
+        b.with_compiler_scratch("selector-differences", N, Wire(0), |b, diffs| {
+            constants.selectors_into(first, last, inverses)?;
+            let one = b.constant(Val::ONE);
+            for (v, out) in (first..=last).zip(diffs.iter_mut()) {
+                let c = b.constant(Val::from_u64(v));
+                *out = b.sub(value, c);
             }
-            let inverse = b.constant(denominator.inverse());
-            b.mul(numerator, inverse)
+            let mut polynomial = one;
+            for &d in diffs.iter() {
+                polynomial = b.mul(polynomial, d);
+            }
+            b.assert_zero(polynomial);
+            let mut selectors = [Wire(0); N];
+            for (i, out) in (first..=last).zip(&mut selectors) {
+                let mut numerator = one;
+                for j in first..=last {
+                    if i != j {
+                        numerator = b.mul(numerator, diffs[(j - first) as usize]);
+                    }
+                }
+                let inverse = b.constant(inverses[(i - first) as usize]);
+                *out = b.mul(numerator, inverse);
+            }
+            Ok(selectors)
         })
-        .collect()
+    })
 }
 
 pub(super) fn parent_root(
@@ -276,17 +384,28 @@ pub fn wrapper<const N: usize>(
     wallet_public: &[Val],
     proof: &Proof<Config>,
 ) -> Result<Compiled, CompileError> {
+    wrapper_with_registry(height, caps, wallet_public, proof, None)
+}
+
+pub(crate) fn wrapper_with_registry<const N: usize>(
+    height: usize,
+    caps: &Caps<N>,
+    wallet_public: &[Val],
+    proof: &Proof<Config>,
+    prefix: Option<&RegistryPrefix>,
+) -> Result<Compiled, CompileError> {
+    let constants = compiler_constants(prefix);
     if wallet_public.len() != js::N_PUBLIC {
         return Err(CompileError::Shape("wallet statement"));
     }
-    let mut b = ProgramBuilder::new(PUBLIC_VALUES).unwrap();
+    let mut b = ProgramBuilder::with_constants(PUBLIC_VALUES, constants).unwrap();
     let public = public(&b);
     let mut inputs = ProofInputs::default();
-    registry(&mut b, &mut inputs, &public, height, caps)?;
+    registry(&mut b, &mut inputs, &public, height, caps, prefix)?;
     assert_constant(&mut b, public[MODE], WRAPPER);
     assert_constant(&mut b, public[LEVEL], 0);
     assert_constant(&mut b, public[COUNT], 1);
-    let wallet = inputs.bases(&mut b, wallet_public);
+    let wallet = inputs.bases(&mut b, wallet_public)?;
     let mut inner = wallet.clone();
     let context = Context {
         profile_id: profile::CANDIDATE_PROFILE_ID,
@@ -295,13 +414,14 @@ pub fn wrapper<const N: usize>(
     .to_fields();
     inner.extend(context[..8].iter().map(|&v| b.constant(Val::from_u64(v))));
     inner.extend_from_slice(&public[8..16]);
-    verifier::uni::verify(
+    verifier::uni::verify_with_constants(
         &mut b,
         &mut inputs,
         &ContextJoinSplitAir,
         js::HEIGHT,
         &inner,
         proof,
+        constants,
     )?;
     let digest = b.hash_fields(commitment::STATEMENT + 1, &wallet);
     let mut fields = public[..16].to_vec();
@@ -329,21 +449,32 @@ pub fn wrapper_pair(
     wallet_public: [&[Val]; 2],
     proofs: [&Proof<Config>; 2],
 ) -> Result<Compiled, CompileError> {
+    wrapper_pair_with_registry(height, caps, wallet_public, proofs, None)
+}
+
+pub(crate) fn wrapper_pair_with_registry(
+    height: usize,
+    caps: &Caps,
+    wallet_public: [&[Val]; 2],
+    proofs: [&Proof<Config>; 2],
+    prefix: Option<&RegistryPrefix>,
+) -> Result<Compiled, CompileError> {
+    let constants = compiler_constants(prefix);
     if wallet_public
         .iter()
         .any(|values| values.len() != js::N_PUBLIC)
     {
         return Err(CompileError::Shape("paired wallet statements"));
     }
-    let mut b = ProgramBuilder::new(PUBLIC_VALUES).unwrap();
+    let mut b = ProgramBuilder::with_constants(PUBLIC_VALUES, constants).unwrap();
     let public = public(&b);
     let mut inputs = ProofInputs::default();
-    registry(&mut b, &mut inputs, &public, height, caps)?;
+    registry(&mut b, &mut inputs, &public, height, caps, prefix)?;
     assert_constant(&mut b, public[MODE], WRAPPER);
     assert_constant(&mut b, public[LEVEL], 1);
     // Constrain COUNT before using COUNT-1 as a selector. Neither verifier is
     // conditional on this selector; it only selects the public committed root.
-    let _count_masks = selectors(&mut b, public[COUNT], 1, 2);
+    let _count_masks = selectors::<2>(&mut b, public[COUNT], 1, 2, constants)?;
     let one = b.constant(Val::ONE);
     let right_count = b.sub(public[COUNT], one);
     let inner_context = Context {
@@ -353,7 +484,7 @@ pub fn wrapper_pair(
     .to_fields();
     let mut roots = Vec::with_capacity(2);
     for slot in 0..2 {
-        let wallet = inputs.bases(&mut b, wallet_public[slot]);
+        let wallet = inputs.bases(&mut b, wallet_public[slot])?;
         let mut inner = wallet.clone();
         inner.extend(
             inner_context[..8]
@@ -361,13 +492,14 @@ pub fn wrapper_pair(
                 .map(|&value| b.constant(Val::from_u64(value))),
         );
         inner.extend_from_slice(&public[8..16]);
-        verifier::uni::verify(
+        verifier::uni::verify_with_constants(
             &mut b,
             &mut inputs,
             &ContextJoinSplitAir,
             js::HEIGHT,
             &inner,
             proofs[slot],
+            constants,
         )?;
         let digest = b.hash_fields(commitment::STATEMENT + 1, &wallet);
         let mut fields = public[..16].to_vec();
@@ -398,19 +530,20 @@ pub fn wrapper_four(
     wallet_public: [&[Val]; 4],
     proofs: [&Proof<Config>; 4],
 ) -> Result<Compiled, CompileError> {
+    let constants = Constants::cpu();
     if wallet_public
         .iter()
         .any(|values| values.len() != js::N_PUBLIC)
     {
         return Err(CompileError::Shape("four-wallet statements"));
     }
-    let mut b = ProgramBuilder::new(PUBLIC_VALUES).unwrap();
+    let mut b = ProgramBuilder::with_constants(PUBLIC_VALUES, constants).unwrap();
     let public = public(&b);
     let mut inputs = ProofInputs::default();
-    registry(&mut b, &mut inputs, &public, height, caps)?;
+    registry(&mut b, &mut inputs, &public, height, caps, None)?;
     assert_constant(&mut b, public[MODE], WRAPPER);
     assert_constant(&mut b, public[LEVEL], 2);
-    let masks = selectors(&mut b, public[COUNT], 1, 4);
+    let masks = selectors::<4>(&mut b, public[COUNT], 1, 4, constants)?;
     let zero = b.constant(Val::ZERO);
     let one = b.constant(Val::ONE);
     let two = b.constant(Val::TWO);
@@ -423,7 +556,7 @@ pub fn wrapper_four(
     let mut roots = Vec::with_capacity(4);
     let mut counts = Vec::with_capacity(4);
     for slot in 0..4 {
-        let wallet = inputs.bases(&mut b, wallet_public[slot]);
+        let wallet = inputs.bases(&mut b, wallet_public[slot])?;
         let mut inner = wallet.clone();
         inner.extend(
             inner_context[..8]
@@ -431,13 +564,14 @@ pub fn wrapper_four(
                 .map(|&v| b.constant(Val::from_u64(v))),
         );
         inner.extend_from_slice(&public[8..16]);
-        verifier::uni::verify(
+        verifier::uni::verify_with_constants(
             &mut b,
             &mut inputs,
             &ContextJoinSplitAir,
             js::HEIGHT,
             &inner,
             proofs[slot],
+            constants,
         )?;
         let digest = b.hash_fields(commitment::STATEMENT + 1, &wallet);
         let mut fields = public[..16].to_vec();
@@ -539,13 +673,22 @@ pub fn check_four_wallet_template(
 }
 
 pub fn empty<const N: usize>(height: usize, caps: &Caps<N>) -> Result<Compiled, CompileError> {
-    let mut b = ProgramBuilder::new(PUBLIC_VALUES).unwrap();
+    empty_with_registry(height, caps, None)
+}
+
+pub(crate) fn empty_with_registry<const N: usize>(
+    height: usize,
+    caps: &Caps<N>,
+    prefix: Option<&RegistryPrefix>,
+) -> Result<Compiled, CompileError> {
+    let constants = compiler_constants(prefix);
+    let mut b = ProgramBuilder::with_constants(PUBLIC_VALUES, constants).unwrap();
     let public = public(&b);
     let mut inputs = ProofInputs::default();
-    registry(&mut b, &mut inputs, &public, height, caps)?;
+    registry(&mut b, &mut inputs, &public, height, caps, prefix)?;
     assert_constant(&mut b, public[MODE], EMPTY);
     assert_constant(&mut b, public[COUNT], 0);
-    let masks = selectors(&mut b, public[LEVEL], 0, 6);
+    let masks = selectors::<7>(&mut b, public[LEVEL], 0, 6, constants)?;
     let mut root = b.hash_fields(commitment::EMPTY, &public[..16]);
     let zero = b.constant(Val::ZERO);
     let mut selected = [zero; 4];
@@ -571,19 +714,30 @@ pub fn merge<const N: usize>(
     children: [&[Val; PUBLIC_VALUES]; 2],
     proofs: [&BatchProof<Config>; 2],
 ) -> Result<Compiled, CompileError> {
+    merge_with_registry(height, caps, children, proofs, None)
+}
+
+pub(crate) fn merge_with_registry<const N: usize>(
+    height: usize,
+    caps: &Caps<N>,
+    children: [&[Val; PUBLIC_VALUES]; 2],
+    proofs: [&BatchProof<Config>; 2],
+    prefix: Option<&RegistryPrefix>,
+) -> Result<Compiled, CompileError> {
+    let constants = compiler_constants(prefix);
     let child_air = shape(height)?;
-    let mut b = ProgramBuilder::new(PUBLIC_VALUES).unwrap();
+    let mut b = ProgramBuilder::with_constants(PUBLIC_VALUES, constants).unwrap();
     let public = public(&b);
     let mut inputs = ProofInputs::default();
-    let keys = registry(&mut b, &mut inputs, &public, height, caps)?;
+    let keys = registry(&mut b, &mut inputs, &public, height, caps, prefix)?;
     assert_constant(&mut b, public[MODE], MERGE);
     let mut child = Vec::new();
     for c in 0..2 {
-        let fields = inputs.bases(&mut b, children[c]);
+        let fields = inputs.bases(&mut b, children[c])?;
         for i in 0..16 {
             b.assert_equal(fields[i], public[i]);
         }
-        let masks = selectors(&mut b, fields[MODE], WRAPPER, N as u64);
+        let masks = selectors::<N>(&mut b, fields[MODE], WRAPPER, N as u64, constants)?;
         let mut key = vec![[b.constant(Val::ZERO); 4]; 1 << profile::CAP_HEIGHT];
         for (i, selected) in key.iter_mut().enumerate() {
             for j in 0..4 {
@@ -593,13 +747,21 @@ pub fn merge<const N: usize>(
                 }
             }
         }
-        verifier::batch::verify(&mut b, &mut inputs, &child_air, &fields, &key, proofs[c])?;
+        verifier::batch::verify_with_constants(
+            &mut b,
+            &mut inputs,
+            &child_air,
+            &fields,
+            &key,
+            proofs[c],
+            constants,
+        )?;
         child.push(fields);
     }
     let left = &child[0];
     let right = &child[1];
     b.assert_equal(left[LEVEL], right[LEVEL]);
-    let levels = selectors(&mut b, left[LEVEL], 0, 5);
+    let levels = selectors::<6>(&mut b, left[LEVEL], 0, 5, constants)?;
     let one = b.constant(Val::ONE);
     let level = b.add(left[LEVEL], one);
     b.assert_equal(level, public[LEVEL]);

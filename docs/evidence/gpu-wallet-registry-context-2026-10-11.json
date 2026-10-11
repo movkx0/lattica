@@ -1,0 +1,2629 @@
+{
+  "date": "2026-10-11",
+  "checkpoint": "9.120",
+  "status": "qualification-only",
+  "branch": "main",
+  "head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "parent_evidence": "docs/evidence/gpu-wallet-verifier-scratch-2026-10-11.json",
+  "parent_evidence_sha256": "e9fd63d7cd3e2ff25ed0896042e4ded08c734d147d051f6d9c05063e20752c20",
+  "source_files": {
+    "build.zig": "393a4923a3d1267f798b3ce5e73bf042d86030cb4e85d418e1b0ac0f8e51e862",
+    "lattica-prover-p3/.cargo/config.toml": "3e53c2589d496b9e70431c6a097f5221051128f646009694eb35e487e0518ab4",
+    "lattica-prover-p3/Cargo.lock": "856c6de4172223b10011963f34c545d6df1389d67ba8d2c7ba3442fdf786214a",
+    "lattica-prover-p3/Cargo.toml": "d9746ce45bb9c9c664444e1a2fa2515b1f0c48b49b106a2690aea2a7aa49ad37",
+    "lattica-prover-p3/build.rs": "51bda6326566e5a4643dcdd07b90381cdf727ce125c2a9fb9d4d01f190b356bb",
+    "lattica-prover-p3/examples/caller_storage.rs": "903cb6b2a648c8b1b1e2665dc992ac8536a656fc5a5d42baca47a761acdc02ce",
+    "lattica-prover-p3/examples/coordinator_storage.rs": "012382fc13e80bb3c730835a66b57fd85d30e983a2da8a2fca1c65fc930dc337",
+    "lattica-prover-p3/examples/local_pool_storage.rs": "76b4207fcac080587f432bf5054ae5cf8fe389bc12f30771fd72c46097b9b7e9",
+    "lattica-prover-p3/examples/pool_storage.rs": "b24858d2436c880ffff424384db1b11757585a96e4faeb1a688e8941472b43a2",
+    "lattica-prover-p3/examples/shared_coordinator_storage.rs": "9286eccc2a879ed5d5b9ed38580fbde4d09a8ae35da94b6f5189649679ad8582",
+    "lattica-prover-p3/include/lattica_prover_p3.h": "b6ecf30a94166637564c12ae81147ef7edd0747048a2e048d91228873a4eb48b",
+    "lattica-prover-p3/scripts/block-v2-multi-gpu-run.py": "ed949770e7c952053407834a901e3bd3960706d94755d71836adbf88ef18dae1",
+    "lattica-prover-p3/scripts/block-v2-typed-shared-gpu-run.py": "8dd054bfc2a12c1552464a745c1d7cf2a71be364de4f4032cc46f75ef8126533",
+    "lattica-prover-p3/scripts/block_v2_resources.py": "026278e264434ebb3727372c58e6f395f1f5e77d0cc93aae996044be2a5cef9d",
+    "lattica-prover-p3/scripts/test-block-v2-multi-gpu.py": "1613a277862d76db004afbcb1502d0376b2045cd5575f144e2807dfc15cbc783",
+    "lattica-prover-p3/src/batch_common.rs": "fc57325007237d683f92f277840f8bc7e198ceba72b614665dc218fc6a2d149f",
+    "lattica-prover-p3/src/batch_htlc_air.rs": "367ac98e88ba71befa8c3369c2a6a52e8fb562bf69dedb18ad0c3126cf03cc95",
+    "lattica-prover-p3/src/batch_joinsplit_air.rs": "eca74d857a46a9ab9fca2d9ea292f42733bea84004b2c10ce72d8d044baff796",
+    "lattica-prover-p3/src/bin/apple_benchmark_memory.json": "423a039e752737bbf42fcc9c139cfb3a76aa1ea73f7d68e1b82bae5061c0da9d",
+    "lattica-prover-p3/src/bin/apple_field_bench.rs": "13b9188e461947020fb67290e9cdd3fc86aa4a8b3492b5fdc3e2a21320e3d817",
+    "lattica-prover-p3/src/bin/block_v2_artifact_audit.rs": "9ee7cfeaec0c6b6967bb2682d0b3c4e75c6196310d07043e18df404d244ee0a5",
+    "lattica-prover-p3/src/bin/block_v2_cpu_worker.rs": "2db37bbbf197e507c79e670ccb9429f4c7bbab293bf86f47067f7ee2a390a3f9",
+    "lattica-prover-p3/src/bin/block_v2_execution_probe.rs": "545d1cfc09f541aeaf01e646e0f0bd6fc035c5a1393d31e96c81ef1d33c76f37",
+    "lattica-prover-p3/src/bin/block_v2_feasibility.rs": "15e8d5df03e5efe3d21c9f6d5c581ecd9dc3ec9399d8972dae264d787c1c6d03",
+    "lattica-prover-p3/src/bin/block_v2_finalized_probe.rs": "24ef74c2166c06719f41ecb5d05178747be6513236211ecc021fbff8f8056664",
+    "lattica-prover-p3/src/bin/block_v2_four_wallet_geometry.rs": "b2bcd1ea23d223e272ea9916b5717ec585eaa792c7d8eac018ca82fb9c313f90",
+    "lattica-prover-p3/src/bin/block_v2_gpu_grouped_probe.rs": "05f578b11c9b3377b62d376cd7b1fe8b128b95944d63218868d1150ce29a0e65",
+    "lattica-prover-p3/src/bin/block_v2_grouped_artifact_audit.rs": "eb0cd9bdc7795d3847a957b67c407275690532889ce230fd82fa3c29ce82a2f1",
+    "lattica-prover-p3/src/bin/block_v2_grouped_probe.rs": "966d17b42719e6c446e2076f92667df97c3ff71c98c28035e9d0f7cde7fb0203",
+    "lattica-prover-p3/src/bin/block_v2_grouped_publics.rs": "9957c2af93af20ab9caa4f31d4510743eb1091f7ac87cdd3b6f4f6e2962e72e9",
+    "lattica-prover-p3/src/bin/block_v2_metal_grouped_probe.rs": "178c1ae26ad84681eadbdb14903132a57f2142fd5ba0597593b4ba53010c14a8",
+    "lattica-prover-p3/src/bin/block_v2_padding_probe.rs": "2a07fa3ab1222a5eb64686d2f5d728917064af22ada88fa72dd67101b3c54aee",
+    "lattica-prover-p3/src/bin/block_v2_paired_probe.rs": "08ae0dbc241eeb9885abca731b8c3ab08814cd11312c50033eb5e4ab3537ad65",
+    "lattica-prover-p3/src/bin/block_v2_recursion_probe.rs": "82e2a15af1f57ce96504524f94941dd4a60b8163341f134f6e77f11321468448",
+    "lattica-prover-p3/src/bin/block_v2_single_eight_probe.rs": "6d0ed0509373207bb85fd38176d2fe333b1e46138d9d2afb256598dd2beb8ed7",
+    "lattica-prover-p3/src/bin/block_v2_typed_probe.rs": "d995a0a87790372375461952297ab5293eadec63040b3730e7b4a451a473fbbf",
+    "lattica-prover-p3/src/bin/dump_p2.rs": "25e17f5672ebaa13ef17025a36ba6bf64df21a77a84c3eaac203b7da492e6049",
+    "lattica-prover-p3/src/bin/field_compare.rs": "67ebaae50231039fb736c75754c2d590d91bf4cec3700188d9e383f67e95dce9",
+    "lattica-prover-p3/src/bin/grouped_common/adaptive.rs": "46ada534697e762a348a9812e0b19e006200a3aedbcf2a6209fb2ea80d0a6cb7",
+    "lattica-prover-p3/src/bin/grouped_common/mod.rs": "39bbcadd79109fe34d3e0f1789488ef3895fb8e93450f2df4ac7835cc7e4ba1f",
+    "lattica-prover-p3/src/bin/typed_common/driver.rs": "7f501506f224e321a954cec95f84552c8d9fa895f55be7693cf8991bf5dbd4ea",
+    "lattica-prover-p3/src/bin/typed_common/execution.rs": "ed366029e367567a713b2bc938d808446a3d6be78597127be3246804aa0df8be",
+    "lattica-prover-p3/src/bin/typed_common/execution_bootstrap.rs": "ec0039c19d4dc65d08e9a45b99c8f23df3282c100918c25d073c8ce33f950312",
+    "lattica-prover-p3/src/bin/typed_common/execution_budget.rs": "138f4d10c8c579a81e4c2ca170f39258e18c19b82ed3f884873fda93655e4b76",
+    "lattica-prover-p3/src/bin/typed_common/execution_fleet.rs": "ab1d726bc055c2169bf70a4d4359192493d37440e453e3a195be7ee53c6b8b0a",
+    "lattica-prover-p3/src/bin/typed_common/execution_fleet_recover.rs": "13c368bd8d7c1f7e5996dcfe6b5a51ae9763a206b853103c4069a454a8c2b63d",
+    "lattica-prover-p3/src/bin/typed_common/execution_fleet_storage.rs": "be54b8d73f921ef7f350e0b67e1f98417657a3c65658b247a18b24b8e6096a73",
+    "lattica-prover-p3/src/bin/typed_common/execution_native.rs": "81efb857f94f886c6c9c463cb5c05c5f447c8edcbfd1f42a37cb7e79a887af93",
+    "lattica-prover-p3/src/bin/typed_common/execution_pool_report.rs": "bc500beb9909b04fa98d8c3d1c6cbe270d59c7b1355ed206e58d9229bf721bba",
+    "lattica-prover-p3/src/bin/typed_common/execution_pool_service.rs": "dee2604b0ed1d02e0c7e68940c7f242bd2e9ef95a95ba9281daf1010dcfcc8f4",
+    "lattica-prover-p3/src/bin/typed_common/execution_preparation.rs": "3cda5399c7cf850a701f4154580c3d4936e16b7350ddaaaef77dc5de5139509e",
+    "lattica-prover-p3/src/bin/typed_common/execution_preseal.rs": "e999b698de55d64f4b94870f3069aae0b9667adfd47f96a94b1ffa62cead898c",
+    "lattica-prover-p3/src/bin/typed_common/execution_process.rs": "5e51981642840d2ad1befa8849cd53fded542d2809b81f87a4cd2271836a8999",
+    "lattica-prover-p3/src/bin/typed_common/execution_prove.rs": "3edfcc6855f02e40eae25a7c01dd851b4de93bc3b948e1eb3c24042c64a40e42",
+    "lattica-prover-p3/src/bin/typed_common/execution_recover.rs": "a9b069f98edfbb643192bfdbd7310903b3fe3e06b2492a9259b35f0ba0544c00",
+    "lattica-prover-p3/src/bin/typed_common/execution_recovery_admission.rs": "7676913a47c4ab8af7f62677a8ca738195e4cfe2fd94a25067e557491321c066",
+    "lattica-prover-p3/src/bin/typed_common/gpu.rs": "59aee9e5d50b5619760a3172300377366986897d299814049fc6f494324bb6ea",
+    "lattica-prover-p3/src/bin/typed_common/input.rs": "80efba5b60fd84375be1954437c7080c5eb886328a587e2c1bfb544aad064181",
+    "lattica-prover-p3/src/bin/typed_common/input_tests.rs": "5d068a25c66457c7ea6add6dc40eb8ecd2cc5bf357978dc15ce06752408aca93",
+    "lattica-prover-p3/src/block_v2/batched_fri.rs": "18c9cfc9be3f206b96879b0d089221a9ea747417be4486fcc90d6032f14e05ae",
+    "lattica-prover-p3/src/block_v2/challenger.rs": "e9a196552d76dffff964bd6acee0637b0fbe5b8babd6afb3d5c1e6088750e176",
+    "lattica-prover-p3/src/block_v2/challenger/observation.rs": "97adc76a3e8be2d275a20fb7b1d9e961e930b38380fc7b59aba2484a8a670bdd",
+    "lattica-prover-p3/src/block_v2/challenger/resources.rs": "71e9a364176b8692032cb70bdd74a52d829a39f7bb7979f365591d9fe155dd16",
+    "lattica-prover-p3/src/block_v2/challenger/resources/tests.rs": "dd70587ec6df2c9b49a57aacb8698c86d0150fbf959f5172b3718f8b0a855b04",
+    "lattica-prover-p3/src/block_v2/challenger/scalars.rs": "c81c38db522c3f261f167fe4417b021737b05ce5199e490eb9f34df1ced5b550",
+    "lattica-prover-p3/src/block_v2/challenger/scalars/tests.rs": "b845685a68c806917f3beb284b026da4c882e7881c3a7cd5b60c80eb9389c943",
+    "lattica-prover-p3/src/block_v2/challenger/tests.rs": "4d62f0d19edde1f98c5ca1de84c225ec0413c5ff6572723b2623997e75e2cef4",
+    "lattica-prover-p3/src/block_v2/codec.rs": "0f19c4ae2161066a6edab7dc25f7571efd3fed2f7d646da66f905a1eae100062",
+    "lattica-prover-p3/src/block_v2/codec/fixed_u64.rs": "a052e4f8a0e8753ba2e7c3ff76bb0367e7f90937c633f03fcf5d5871ada7bf83",
+    "lattica-prover-p3/src/block_v2/codec/proofs.rs": "f17e5364a8091abe8e20efed19c8675bf00a853402852c0c8edc84aebbe3458c",
+    "lattica-prover-p3/src/block_v2/codec/proofs/schema.rs": "0c87ec0b97cdabb0b09f495a55b7c19832835362fd3f4462d6dd011cd0b2748b",
+    "lattica-prover-p3/src/block_v2/codec/proofs/tests.rs": "16fed2c269bf50a36701f7e6f760a30e13ba87ac0f440ef06edae29a3ba4e049",
+    "lattica-prover-p3/src/block_v2/commitment.rs": "f9c7fba59d622b18fc733cb72d25805c913f30b4e8b7bc51363ee574a720013e",
+    "lattica-prover-p3/src/block_v2/commitment/stream.rs": "d0c730c69afc741df73a0c7da74ade7d1066c55fd44ba1537054240e773d5a0f",
+    "lattica-prover-p3/src/block_v2/coset_workspace.rs": "c24635d9d8adb3317128d5ff312df33983cab0af623620b54250dfd25ce8cf2e",
+    "lattica-prover-p3/src/block_v2/device_pcs_tests.rs": "8dbff1a61f0c1191d91460a086a26503327b21e272f0df4645e63ab3e76ff8e7",
+    "lattica-prover-p3/src/block_v2/execution/arrival_process_tests.rs": "7dee9285cafee8de7a857d7ebe43cfda9cc5e456aadd7bc0fd01a223a1c19a80",
+    "lattica-prover-p3/src/block_v2/execution/artifact_store.rs": "b5196cc9e44d988a85f2ffa27a0140e1bfdc5b897e0ac56a61074a9efc09c209",
+    "lattica-prover-p3/src/block_v2/execution/artifact_store_storage.rs": "b5b090eb6e7b7e349f31f985165883ffd55ed2f6b6522829d69af77bbb8f952f",
+    "lattica-prover-p3/src/block_v2/execution/artifact_store_tests.rs": "b6772e3ae9df4e3881abbe619ec338550d021d78097883303cf7a08d44459318",
+    "lattica-prover-p3/src/block_v2/execution/bounded_io.rs": "3c07f728a53bb6a583fef67e884003259d748e3213ff1166532dce91bdfdff62",
+    "lattica-prover-p3/src/block_v2/execution/dag.rs": "79578b7b27762e43f24ce76d828be66ee431079c1463be5fc8f71ec82050451d",
+    "lattica-prover-p3/src/block_v2/execution/dag_snapshot.rs": "7b8e67ab6e7732339edde9a64c34a7274c11782a1aa897c05ea1510bb18e2b1b",
+    "lattica-prover-p3/src/block_v2/execution/dag_snapshot_buffer.rs": "578773f4e03c357440531356dc0b5ea4b9b6ab3deb84a62cc75616c6c8d4bfbf",
+    "lattica-prover-p3/src/block_v2/execution/dag_snapshot_reference.rs": "d228d82b3e27271442240ecab764775ca4d64afbaa2b62f47c933521dafd6257",
+    "lattica-prover-p3/src/block_v2/execution/dag_snapshot_sizing.rs": "59dd759933f2389d6c7dda4d3fe04de5c3cc67d5a61f6573e26f1518b4720786",
+    "lattica-prover-p3/src/block_v2/execution/dag_snapshot_storage_tests.rs": "4185faba00b8b55620fc171c722d4c861029533aefc6500669dae12cfed6b55e",
+    "lattica-prover-p3/src/block_v2/execution/dag_storage.rs": "e6f6875a542d822c3809e430bee368a2c5c6502fc9bac054d63a344731f62251",
+    "lattica-prover-p3/src/block_v2/execution/dag_storage_tests.rs": "b3a20aa22a5ca701e6e90a9e19a538053636dead21b9ffe3666693dcc94f7682",
+    "lattica-prover-p3/src/block_v2/execution/dag_tests.rs": "6f88ecd41b22e8bc9a87d2b0837896e836fcc4bf8cdf2ba9e8fce2f4d016616b",
+    "lattica-prover-p3/src/block_v2/execution/dag_transition_storage.rs": "fd03bf3f3ce515578115f9f9e178c17f49dbb15a38653066edaa75c44f777900",
+    "lattica-prover-p3/src/block_v2/execution/durable_storage_tests.rs": "3c82bd0e0eff8c2ff6052953a54c3d41750e54e28c338cb79c00b65b721dca13",
+    "lattica-prover-p3/src/block_v2/execution/gpu_admission.rs": "2e75074a2856e2000a3f75e621169ac038043028cefa2dc0887fe2a334e6c9dd",
+    "lattica-prover-p3/src/block_v2/execution/gpu_admission_tests.rs": "b505946566b9a41264137d9ba32ba1d191f56d40bd4e3a317bd415fb14503788",
+    "lattica-prover-p3/src/block_v2/execution/io_storage.rs": "8b87efcb21d83a417d3b5d26e467b9801f1223a9e43f5c5fdae4bf3c5527ae4f",
+    "lattica-prover-p3/src/block_v2/execution/job.rs": "afaf43cfcab080571eced2f9a2a636fa21a0d385bf837b067dffb6f60060ca2a",
+    "lattica-prover-p3/src/block_v2/execution/job/typed_registry.rs": "8683b828401e72fb8c881868e65ff5f15b0d19624053042b0dfa2afdfc7b932d",
+    "lattica-prover-p3/src/block_v2/execution/job/typed_registry/tests.rs": "3eff1048f386bf42a287c4429032b79751ff9cc56d4e9df40cc027430bbccdd8",
+    "lattica-prover-p3/src/block_v2/execution/journal.rs": "0490eab35e89b9ea9916c71e1635808e5ac026962a9983b7e1be210ef04f0708",
+    "lattica-prover-p3/src/block_v2/execution/journal_storage.rs": "10ae3e43417b6ce29923a2cd4032ae06fa36df08f087f58945efabba23b7576b",
+    "lattica-prover-p3/src/block_v2/execution/journal_tests.rs": "f9998f122d03fa40d4e60b81982cc812b9ffbf811426e249539e085ea3e37a5f",
+    "lattica-prover-p3/src/block_v2/execution/journal_workspace.rs": "88b99963fee811d9b9bebc6ab4554baba9d298d9c6d7dc83e181e311fc3a3e28",
+    "lattica-prover-p3/src/block_v2/execution/launch.rs": "0d76606cdb769ab613b2c408d95b9b9b0f1e8bdd2ac8e2ae7387237d3033b07d",
+    "lattica-prover-p3/src/block_v2/execution/launch_storage.rs": "398fbadff9a1f82fffd0989514e9e6cc2f9abca17b27fbd68babf333a5387a20",
+    "lattica-prover-p3/src/block_v2/execution/launch_storage_tests.rs": "332d1eb919574c06e63041c75452207de04f36a1af8591e6bf0f3d065050bdad",
+    "lattica-prover-p3/src/block_v2/execution/launch_tests.rs": "c9461c61faf0c25da00894ccfc5893f8e52490b8e1ecdcffc93e7d47101ab7a3",
+    "lattica-prover-p3/src/block_v2/execution/mod.rs": "2f21925d6e9b944ebccb960fea0da24b6b807ae0975c963615c0137cfcb92136",
+    "lattica-prover-p3/src/block_v2/execution/native_worker.rs": "513de609805b1fe150763940eb957242651d1ce68c553e70faa1a6fd09195bdd",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_tests.rs": "6871befc103c39b48e83f8634fc3a0ca56dc262c13aa6815ddfa8b188472e66e",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_tests.rs": "80b329c56f6673a5a0bb261167070ac55e70d3741eca2a8b0f4c0728f1036182",
+    "lattica-prover-p3/src/block_v2/execution/os_worker.rs": "bd7899d2880eaf79c9eb79721b1968eb8677295a1d43c738fb2afdf99654a911",
+    "lattica-prover-p3/src/block_v2/execution/os_worker_storage.rs": "4f09fe33d7077ce0bb2ed3c1d4d0733e07c9ffe1f8aa7c89d3c20c0f360e93c5",
+    "lattica-prover-p3/src/block_v2/execution/os_worker_tests.rs": "b4b4e60f1bfdfab93556f77f69b50df76c4271d18ba20735c878c723e5781b24",
+    "lattica-prover-p3/src/block_v2/execution/policy_context.rs": "fb53e607177fb3a88fbcc7ded3bb2595f6ba7ca3e9604c44385a9144c9ae5a4e",
+    "lattica-prover-p3/src/block_v2/execution/pool.rs": "e0170fc85dae0216d402bbe074ca060fd705ae6eed1320b8819d02cd4ea7e643",
+    "lattica-prover-p3/src/block_v2/execution/pool/local.rs": "e951f41f8d00b0aec81c2e44238d6fdc76ff74674199aa82795a5fdda69de979",
+    "lattica-prover-p3/src/block_v2/execution/pool/local_storage.rs": "64cfffc716451264e36b1f2e60c5373fb6f2486c9dd2579e0dd91c0773dc753b",
+    "lattica-prover-p3/src/block_v2/execution/pool/result_storage.rs": "6b4abf0d45a919943284d998b31711910e6f2451a9e7957e38d61ce0538d7871",
+    "lattica-prover-p3/src/block_v2/execution/pool/storage.rs": "c356c36003078ec5443c217dc1500a74b0af9d664032a4add3212f1e66ff3c63",
+    "lattica-prover-p3/src/block_v2/execution/pool/storage_tests.rs": "4df7045faa6c891c747e6615cb26ea9306df74b9ba856e88e529a5c9a5a585a5",
+    "lattica-prover-p3/src/block_v2/execution/pool/tests.rs": "da8be62f0de930360a6f22c6412051ee68fd4426648c51fb40485b22bbedfb9e",
+    "lattica-prover-p3/src/block_v2/execution/preparation_storage.rs": "603ab8b9b088cd953d52e710881531cd6fb2f261d7df1a727958356646e42766",
+    "lattica-prover-p3/src/block_v2/execution/process.rs": "133923cedbcb51adc4b70a99250f1cc34a48c5458297ce93ecf0c3fff672b1ae",
+    "lattica-prover-p3/src/block_v2/execution/process_tests.rs": "ea2094fba9d2b8bd2271b4cb57cbcbad25b4f5bfa00ed8dc80ae830bbee4a99a",
+    "lattica-prover-p3/src/block_v2/execution/resources.rs": "3e0ef5d875bba4fa47a641c57fb32402c43130c3edeadaf7bf5b0901f22bd0c2",
+    "lattica-prover-p3/src/block_v2/execution/scheduler.rs": "1427ee081bfee5185224df9419ed63ccb6d1b3519248e435dbca5d20e891dca8",
+    "lattica-prover-p3/src/block_v2/execution/scheduler/tests.rs": "8ea4d309b7e77d71510a783b8a9bedfec1410e802cebe9915b1212f2a7bdcb98",
+    "lattica-prover-p3/src/block_v2/execution/scheduler_storage.rs": "2f63ba986491512d18b9df4534f36ff8e540cdafb9f4ca2e3ed4c86928b890f6",
+    "lattica-prover-p3/src/block_v2/execution/scheduler_storage_tests.rs": "48ba9611d8760077598c61f36bbe924653a26dd1753a2af16eb8b6ebad8b3321",
+    "lattica-prover-p3/src/block_v2/execution/selection.rs": "85c18534057a053ece926c3af3c66554b5a3bb2921a3a41100a3a78f278ad91f",
+    "lattica-prover-p3/src/block_v2/execution/selection_storage.rs": "df02f9fa5446733ab68a2687361f8d477a6daeaf3656ac59e0ac602fd16111fb",
+    "lattica-prover-p3/src/block_v2/execution/selection_storage_tests.rs": "69805dc1d68145d1b04f9c94c8b7ba50dd3dbadf91f1e57bb65003f8155874ef",
+    "lattica-prover-p3/src/block_v2/execution/selection_tests.rs": "b9f98e43d00204e6cc0c7444112c2d1e1f45a041da1f349db79d7d8b0651ea6c",
+    "lattica-prover-p3/src/block_v2/execution/startup.rs": "a11283977754de4f45478fb1b99b5ebbf82840a2687812f08d4eb0e07453b2ae",
+    "lattica-prover-p3/src/block_v2/execution/storage_bound.rs": "1c0df03320069404b6e3e8fe02eeb356de8d24efaa3a12f75b813e4cd31e5bcb",
+    "lattica-prover-p3/src/block_v2/execution/supervisor.rs": "755ab143fb05d91be0832ead2390df5a5e8f078785f0a4efceb06764179657c9",
+    "lattica-prover-p3/src/block_v2/execution/supervisor_process_tests.rs": "1810dd35ce52c992058e4a25792885c83c425e5938178e7825a070bfe3692303",
+    "lattica-prover-p3/src/block_v2/execution/supervisor_tests.rs": "a2142ccd259f2759c99a575e71d553d12f06b5ec4f29fb8ef1cd6decb5840d7a",
+    "lattica-prover-p3/src/block_v2/execution/test_fixture.rs": "f2d2d3920ca6928a6211958a0bb3d09e80d1331d8e990237bb435ae94e8f62cd",
+    "lattica-prover-p3/src/block_v2/execution/transport.rs": "175e9024fb6010c6415868e12cca23562cfc3ab1b37209970b7f820ae4dd7a1a",
+    "lattica-prover-p3/src/block_v2/execution/transport_tests.rs": "f383ac7ff0acc36984585e9696e8407cfaa26c57878e60cc69fd7858f103b75c",
+    "lattica-prover-p3/src/block_v2/execution/typed_selection_tests.rs": "04f1e6598cd803a33d5b0ac6d9e1cfc6d070d25e0cbe8d67ef6d3199df950921",
+    "lattica-prover-p3/src/block_v2/execution/verification_process_tests.rs": "17a34207ec731e4b3c11a0145f02a166f804d039cbce583fc92206e3b402e751",
+    "lattica-prover-p3/src/block_v2/execution/verification_tests.rs": "72ba6bf04f0b7fd63f2bd2e53d5de920bccc52995cda9d4abde2f843ed98a72a",
+    "lattica-prover-p3/src/block_v2/execution/worker.rs": "791f98ab4f7bcbfb418bfa401320d7c177ba43b5ba28e19914a4cb88815d0130",
+    "lattica-prover-p3/src/block_v2/execution/worker_budget.rs": "dfba15cd709e0c7f2c54ab962527753d001232e03956dc46d0c03d57cd8fe602",
+    "lattica-prover-p3/src/block_v2/execution/worker_cached.rs": "65bcbbdea1f6fa27a06dc2dc446d09f029d8ab1299b18fdf4694388d333748c7",
+    "lattica-prover-p3/src/block_v2/execution/worker_cached_bench_tests.rs": "40ea77471252248d474ebec32bd5c9db8d1d18256820f051db172a2e5c561bae",
+    "lattica-prover-p3/src/block_v2/execution/worker_cached_tests.rs": "b3e828e45bced5388cdfc58cf289889144c855dceea463af71dafc2178474469",
+    "lattica-prover-p3/src/block_v2/execution/worker_packet.rs": "20c10edc572d487ea766d1f859d3c7ec3cbe2301581d7595deae5b354f3e828e",
+    "lattica-prover-p3/src/block_v2/execution/worker_packet_tests.rs": "a56f7f014d477673e0594440b7aee5e0b248dfc27eeda34f2c653949d989e673",
+    "lattica-prover-p3/src/block_v2/execution/worker_tests.rs": "2a783cbda48bd12befe472cdf47d06ac17c8f06a79f5818e381fcaab805d6c2d",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed.rs": "2fbd9076c31914d3fe859d5307a27f990a4218c577cfeeee7a8f41a0e5f8e171",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_cached.rs": "c05e09414039a72e3f6c95322eaa5bfd0411ba7e3ed5f379d5ca2681bdd2add7",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_cached_tests.rs": "b28c53c7090f31de42d3dc3f203455605f98b8f77dcd5ecb4e6bbd9d93982c6b",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_coordinator.rs": "455636e53285321220c566c1778cc67605cefc4c849828e36cc74ebdb4dd18bc",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_packet_tests.rs": "c41a242feb55515961207241233755085873f2b3d2b48ab0af5a7ff27e86bcc2",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_process.rs": "671318b2ee070a0bee44159f0ac7c966549c60ba309ceb9a3afe50e3184fc9b5",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_process_service.rs": "c6bcc158f8034b624570a584f5655a034e50e982c4c3cf8faec4e55d095886dc",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_process_storage.rs": "17299ef0d77beae994546d0cc2b82dd051bdac478a57b2b69df981f02802d0ec",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_process_tests.rs": "c9609db64d0759cb60fbe87ee511d697a0c784aa830136753d9bfb12d0f1dead",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_storage.rs": "65c968eea332cfef6fdf60b262808a83bdc467c83f722e7c03406c4035a8092c",
+    "lattica-prover-p3/src/block_v2/execution/workspace.rs": "c0488d18c1c823e93794c1749a5114ae4f85a4abc199683605d2a656e5c0fad6",
+    "lattica-prover-p3/src/block_v2/execution/workspace_tests.rs": "91b7ea80999e25af9b2f851ac4d7bd54b7208f3a4eab60034028ab743f4ab705",
+    "lattica-prover-p3/src/block_v2/extension_mmcs.rs": "042b11983e56ec00db1b354896ae021c9c76750b838763eb876eb84f1325c20c",
+    "lattica-prover-p3/src/block_v2/feasibility.rs": "02809c8f1ac49b7eabdaaa70edd9a016600e214d88eae5062902b9daaf37c5b8",
+    "lattica-prover-p3/src/block_v2/gpu_hash.rs": "f341506d25885a0303b4890ad9fda8d50aadfe80d69f7b6ab92e60039094b204",
+    "lattica-prover-p3/src/block_v2/gpu_hash/cache_metadata.rs": "ac6a70b89b44eac41a821cea3e112712d013e9358e628972e71ed17d39f7e416",
+    "lattica-prover-p3/src/block_v2/gpu_hash/compact_data.rs": "fec38b4671b03688e63d5273a47db585be11f61e7de1a435071adc9e18bf6dc1",
+    "lattica-prover-p3/src/block_v2/gpu_hash/device_data.rs": "36fde425a0058120602ea016228c4b67632ca3785a2cdf6a10295d7289324fc1",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine.rs": "648fdac995ee7a91c128d92ce88e4d7648c3294c2ee3fb116b0a6dfa1d3d163b",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/allocation_limit.rs": "d3b828620bf1075be5571d824ddb1bff80e224856186c85d6d87ba5b9357dd17",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device.rs": "89c35c1af3a3c1ee5c1efa6a5da1eaacae01d42c3692cdac75a45314bf3a1e25",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/compiler_constants.rs": "ec80cdba19ea57831b4ed86c0f15a08eac306d5f8349f3a096c0af9471facf52",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/compiler_folding.rs": "6965114e82a06c1d900405a46da92ab12ee232ce9462b6e67a2f37affd4eb0f1",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/evaluations.rs": "5f43977d27789b30d05b2eace962f4e03c9aa9e5f054a972bfae98cdb3c0ed50",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/fri.rs": "8a68716dba3c6a1dd1ee785797953351e75d687cd2486190795e55009c877e35",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/fri/general.rs": "a442bb76bab588ffbef661207c5e8c10306dc0b910bee3b73fa6a286ee0088c9",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/fri/general/tests.rs": "cd1dfd8c2ec7debe4c24d46b2d5d966977b4392296ed0bc9d87ab75ae0228ec5",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/htlc_kernels.rs": "90f36080911618aba73d151f724b95f4c7a32b704f47304ad59f6d6516e0db4d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/lookup.rs": "9f3b06aa609f9419f818e5a224e053fb19ccac2f66ee18e49dba67bf9022449d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/lookup_kernels.rs": "054674b1b8bc9b1705d68a54ed85cb586dcea14446469069eee343675c620244",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/observation.rs": "167380c679f2e44b6715dace16783cc99b843f7448212767261f609949e79fb8",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/opening.rs": "9857420b96f590ec44c955ec25e95a457f1136ca03e6a7b4f78aecd26e356685",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/opening/tests.rs": "0ea057899f0c56c685631c08257be0ea6494730a9f14de8d6e0c6ce776cbf398",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/opening_kernels.rs": "1ce06a13c7b3de5f2416fad2a5982334e06b8b833c17d97cb3f2ccf22e8025a0",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/opening_quadratic_kernels.rs": "c0e6f84335874c6f08717a71424591ee925f28973418414a80466702d35e725d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/periodic.rs": "09dabe6644de9008167a442e6a0e3fd9d064482c7b27aa62f383120ae7fdfda2",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/public_hash.rs": "7f25cc3665f8af64926d453c5ff9e98c990eec0f3eef43d3eca4702bcb87fcd7",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/public_hash/tests.rs": "4c41bf04394ff6da84c415a8f8b9e8a1597a68cfd993c2e620595046af538385",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/query.rs": "631f430a8d4d10494443e1346c7a0579f73b6dfce64857177b1a1e2dc24c3621",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/query/tests.rs": "98b0e12d379df0bc10bf99413382b5c39b58ecaa5b6e853fadd342b7eefb08be",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/quotient.rs": "5e172895bebc7666898fc8dc291a252a16cf6d4a6229e5d3e297d8cbda6bfc4d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/quotient_commit.rs": "27ea3ca715caa89916c60d9f1991fc647d10221866f026b32a7c8abe520b5c54",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random.rs": "c2c478b48ea8834235cda442b22304a0fbc281ddecc1a874f943de1105cc04f3",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random/public_salts.rs": "b2c4b39d119ae60fc7e8890f1e0c65f4fe94b3937aa08c0f707caa71d947dc62",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random/replay.rs": "1eb17ef4e91936ec7c68405614098aa524cf05ab9b2d47eed17450292a2e7325",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random/replay/tests.rs": "f43af3ce61c3ad82d2baa8f0d7af64500bb04b5d39eca8f9d9834017f29a7567",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random/tests.rs": "da5d830aff6a101861ddbedea7cebdc929a17d762061d1588b1a79acab02ee63",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random_kernels.rs": "6ef07c135ae945fe8150bebec0845dd2e7e8f4777faa98e710673347d6bbf2b3",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/scalars.rs": "464ee89591da7d51b8c2874ee88e3e327c322e113cda5b9eceaeb5aa103ad651",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/scalars/tests.rs": "de35f8db0edd82b98871fd6ffe99b8e7008bad8669015675073dda1cf8b30870",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/storage.rs": "7ec4659224c5e9064bd94a542b5e5b54580fa512e53f71231041a29f4862da66",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/tests.rs": "2ceb798a1947c35740a0f46aa7842e6f0b0b9975396fe5d4ad6065eeb9d6edb3",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/trace_commit.rs": "d84998b00f842d7f8f9f5dab01bac2b0ae3188a84a863a0a88832a73cf079504",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transcript.rs": "eb82b912b8561045f4b52c09f8e517480721c39f3681ac646b8096bbaa15a978",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transcript/tests.rs": "44c8f3317cbe0f8df807ed2a7e683b2f6e205dde10006dd3452d1524ab6c8c8a",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transcript_kernels.rs": "c6acc9fd29ac5297b20859d33b8aa194bd4e2283f6384270edd5ca39ad48144d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transform.rs": "f5f1b3c31b869ae351e8ea71cb4a5a057dbaa3ab654abc982f4c77e38f63af77",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet.rs": "815bf9191719b7829d60ddf8100cd022dcd6a0d06acff325d67fa7b93b5a48e6",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/batch.rs": "e20d4f1afc4c6f6dd159271121720854d63f30b8c7678567c2467a07f55574b7",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/batch/tests.rs": "fe9c9cd09cc6b8a21862ce3d034a14cc8294d3b2c8b0db163693ac9d04ab090c",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/htlc.rs": "840d0f96f98e700e4c0cdd315197f22bd74feac15b31fa63959e9bd016c3b76c",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/htlc/tests.rs": "64eb957ccb25b27fd43578ccf544321d7741dbaa07c063965578ec104af997c1",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/tests.rs": "161e0513b314ebb9b155816ff5404155ca21d53ab5d7b82e0cd9f12d7225022d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/tree.rs": "d94aceeabd3bcffb661c9cf664d1b76fa07d02a462ac527c70da49d9a1409601",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/tree/tests.rs": "f3285a38f9f63b1dc0212da9d382985c9961a848701fe51f32643362eb2ddefa",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet_batch_kernels.rs": "72ecd3d58162b9763e3188db4583929ff6902ea60d9a46af845d64f3216fc175",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet_kernels.rs": "9c852660676df98ad0d3733fdc86e903cc3ba10ecd76bfde0a3df6eb18ce8aa8",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/witness.rs": "80b088435539a07cb33f65527e633d87ddf0b8580bd2ef72ecfcb4d58e921745",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/witness/tests.rs": "c87b893ed9a0cb0d7111b3a5d351943eca6cc76ce695e9121e5407e63eeeb0d0",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/witness_kernels.rs": "e815ea110483d8cf605330aada19db3e33a92da689a5bf604a2bb7d6524a3334",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/fri_fold.rs": "028552417541c8ce7ee2ef9fdfc84a63e67d40f788707ea632e9b7f76e844bd3",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/host_storage.rs": "6627561df8b0fe0f75cbe001ca784a7a5b8e004163295a12eb135b94b9762fae",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_execute.rs": "dc30135270441616bec7aa5db9247df9c8b0dbbc8bfcfddf4850012fdcf77721",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_plan.rs": "e83e5ac7982d35b29ca841feeb93d55423521857d25e0e65f7c764e62f5dab53",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_readback.rs": "c3064ba30f2ec15ac68c2beaeddb3d3ce9ccc713124d84fe903bba9dc7851ac8",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/memory.rs": "96a8f17920594c6149b72f74e52ebbc2902e9ba70d507dfa6b16adde3e3b1774",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce.rs": "2b82c8bdc8fa084056c82e5338714cf5f50606f8f5a74c3b9ee7f5ebfcdb831c",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce/compact.rs": "fa62a180e317a2e52124b671a97073d8c6a57400038dfafb69a85c72a5d9cdbb",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce/compact/denominator_cache.rs": "f89c7d4e6897c1bcfc21058305b2a64c84440ea441dcfd3a396fb83507e9d665",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce/compact/tests.rs": "3ec07087d08f8faee4f4bd5944350b6e8e27a7d8fc72a70521005c901c1a67e6",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/query_reconstruct.rs": "0eb57d6e38eb91b0acdef3089c0fda5b405750dd0d9df74707db2f08ff01e095",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/quotient.rs": "5cdd8e6f84b70b3480d5f37449c897fd54bef93cf53dfe2bda2ba72d214a1682",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/quotient_kernels.cl": "c0d4dfb9248de57f0e2da354dd73d2aadcb9365fd16c48e3e8b4ab393dbfa968",
+    "lattica-prover-p3/src/block_v2/gpu_hash/fri_data.rs": "2289b5a4c706ea53736f3d6325b5ec836494f12a7be74dbb21cd23b9f656016f",
+    "lattica-prover-p3/src/block_v2/gpu_hash/owned_data.rs": "09eb3f3d9e348fd394a4490a619f263a5e4bb0bd04854ee62ee6721e2fb4520c",
+    "lattica-prover-p3/src/block_v2/gpu_hash/owned_queries.rs": "8f558171bfa330fa563f69c1d943cc3f2071b37b53ea7a31f49190ed4385fb5d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/owned_queries/tests.rs": "ea1ec4dc7836361fb099eb042f52fb4eb0277209730f1a3e07483a906c426e7c",
+    "lattica-prover-p3/src/block_v2/gpu_hash/salt_data.rs": "17a79de3ee391b3adfa6786db37f497ba7ce09b107811bbe448f870cc8f183f2",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/LICENSE-APACHE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/check_constraints.rs": "62a0e1fd55cfa37649662f4b93979d38c13faa098e39be7c800caa880776539f",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/compile.rs": "c0330d78eaf64cebf71a4bd2a0261a11f38cb1b6655211221a5fbead03aff0d0",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/domain.rs": "d9e250713542069ce3bf1a0b2f77dd4918cac0c79f1c8253455c84e883505592",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/evaluate.rs": "a1a12807e272fd0f83404948f7f408a93a39ec41a7bec151b51c17833411f05d",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/input.rs": "207e6e0512344328eebf596f79910c34ffa311c372e16b4233fcd9ee11fe8748",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/lookup_program.rs": "d2dc067b15def80963f670c68ff954f359a31bae05a0a9d22db3abdab41d11ac",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/mod.rs": "3fd3e24f51f014db14f546abd22823952b0cfbbf81283a88b8c0c881f36b9b08",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/opened_values.rs": "a2df613f88ef51c83123895caf1e648ede14ab0848b13dd56bc6e062a0021fe0",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/opened_values/tests.rs": "5ea25f568e8a0a5e6d26c101aaa3bb8b70ab3d7480f1c58d9209825559487b40",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/program.rs": "f7313131babc9d573b3640979c19c76dafd50a8c08977296f6766d0db297797b",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/tests.rs": "f1dcfa123a602cc5764f16cc00e903546da19e03213b6658e81d7e8e62209fac",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/tests/device_pipeline.rs": "052e0744d4d2949bd81033f9d9146ffc0836c5da2345ef247f4e02a2deec9bd8",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/tests/extensions.rs": "7219229771560b1d79d4f25eb2961fc4bc0c492546425ae1c0bc28ad2b74d1a2",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/tests/lookup.rs": "20ab4adc15759655e5bf07624e37386bf2fd30c2b7c6c57568eda7ef4a160a56",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/uni.rs": "4ab1a4cc667d5111c8726ab7221e751cd3f10ebf8922e245c4b5f7c941c1df31",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/uni/tests.rs": "b9f14db0f24d99c779777c87ad89541738f286271a5b6d127a43333fb73247a7",
+    "lattica-prover-p3/src/block_v2/gpu_startup.rs": "6c1c1277241c1a116b0aeb539ff7fbdc3c6b2097326cb0f0a617f31cdd473b85",
+    "lattica-prover-p3/src/block_v2/heap_dft.rs": "f3819ce543ee0c4c1f7bad1adafbd9963f92b1772397abeeab578074c1664b21",
+    "lattica-prover-p3/src/block_v2/host.rs": "2cc35d71c2599f1a90558a583d9c300cc6bdaefff30b454629d3be2e410c3a0c",
+    "lattica-prover-p3/src/block_v2/host_wallet.rs": "64d1d442a29f68a6934e5f97dce149cbf9d67b36b2bab94b7e4b64746083df0e",
+    "lattica-prover-p3/src/block_v2/leaf.rs": "4245ca7665d7ae0151bf4c6f82d684d63c05f8b1c021e9be7625398d63905b46",
+    "lattica-prover-p3/src/block_v2/legacy_wallet.rs": "8672e8fd79b267f5486d877ff7d133f896a15c2901ebb5ee12906fb13b2d4494",
+    "lattica-prover-p3/src/block_v2/legacy_wallet/tests.rs": "83eaee1262e2a7857a5857802131f0051f46bb255fe8b801e15802262bab01d1",
+    "lattica-prover-p3/src/block_v2/legacy_wallet/tests/batch.rs": "941bd560ef6afd0f74a47c4b534110b630060754995763dd03f2deb1f78913cf",
+    "lattica-prover-p3/src/block_v2/legacy_wallet/tree.rs": "af6f85ed5f5c87c496736b2dfb854f34b963ebb4e686ed3b8950977bd1f20195",
+    "lattica-prover-p3/src/block_v2/legacy_wallet/tree/tests.rs": "0bc63201ca559f91e79635724e02b632f65bddaa2a6f7d0fbd721b98da29448c",
+    "lattica-prover-p3/src/block_v2/machine/air.rs": "403254f72b04593f22e373f4bc5eeab593fffabaa73f990c03d5c125a9c60117",
+    "lattica-prover-p3/src/block_v2/machine/air/degree_tests.rs": "b8643c69985f53c2761bdff13b6bb3c7fcb118a6691502a551e8a60dca9d141f",
+    "lattica-prover-p3/src/block_v2/machine/analysis.rs": "c47316ff701ccfa214b8a860c6e0764ba5bcc254b6261ceb9bd6b6e487398740",
+    "lattica-prover-p3/src/block_v2/machine/backend.rs": "550bed7e1f05013cbb8029e989b6b4df86513d5c62b21904403cce13abf832fe",
+    "lattica-prover-p3/src/block_v2/machine/backend/cache_storage.rs": "27c1aba97354bc809423128ebda149fe3c5a13fc9ef3bf75cb81ecca1d8f27d8",
+    "lattica-prover-p3/src/block_v2/machine/backend/inverse_tests.rs": "f425b81ad29f0e4e9e11e8bf1be16e8763f8941ece96f6689064dac1ddee0ec6",
+    "lattica-prover-p3/src/block_v2/machine/backend/metadata_tests.rs": "4988bb2236026b424d9ca2fe19f7c260926c70766e440f0681de8edfe6e9a824",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_call.rs": "03ee06d59d8f8baf6fae5903e2e08991fc0c97aee8249c71c920ee7b65ff9251",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_call/storage.rs": "b251f84728b3039c7a896721bfa463c00065562f0fa4f40edfa8216053da48f5",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_call/tests.rs": "5e695aa8e06b9126872cf492aebf0fe5fa7064758ca476f1f0fa0cb0ee7181e8",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_envelope.rs": "3170cbfbb3c8d39235c8ca8473d5e3c66eb009ab9caffa430c66dd8642ea2fa4",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_envelope/tests.rs": "0bd3569c06768493e63bd691fb6005530ed3eb6d9e55ccf5fa1111c062c617f4",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_lifetimes.rs": "7f54a0fe7d43164645c691730f4f994f063ae43b3b97181e7dcb1a814b602eff",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_lifetimes/tests.rs": "0b8a4b79005c4ccf3fc81d77882388035c3d4ad07945db51f7e958b362f63c6f",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_scratch.rs": "fef0df6c6f4a1b8404a749deee47a373a850fa2a5ad44c5241441a00eee7c8bb",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_scratch/tests.rs": "5f502297812a6d3bce6029eb289caf9054eb7bf68ad02d7b22b8e83b7d132c09",
+    "lattica-prover-p3/src/block_v2/machine/backend/verifier_tests.rs": "74f14d1eb492cfc6ae9fdf8628faade506cf21773331f2f0f819809a684fa09f",
+    "lattica-prover-p3/src/block_v2/machine/circuit.rs": "12c08fbd671ac6b79a296d8f47cd5aee29c6d1fdb36b78066a6dbcf0055bda5e",
+    "lattica-prover-p3/src/block_v2/machine/compiler_constants.rs": "fcdccfae866c517e3b20c797d07b63cf279c5dc822d14b04ff9e72d060509228",
+    "lattica-prover-p3/src/block_v2/machine/compiler_constants/folding.rs": "b749cd6ab17d09cb5726e1f7c23c5911972f5576086b37a14868ba5b72438014",
+    "lattica-prover-p3/src/block_v2/machine/fingerprint.rs": "14c488a89597920a5cf4befd5e7b5f40252b51a2b98183bd21c5055963c1d537",
+    "lattica-prover-p3/src/block_v2/machine/fingerprint/bounded.rs": "2cb4765ac61c9e454e5d041311a21de7d46e48076f41663ba3250174fb7c73c8",
+    "lattica-prover-p3/src/block_v2/machine/fingerprint/bounded/tests.rs": "818a4a7e0a012863d6d019aeac4a14f0e7bc47bb426cd78851d47378f7e46067",
+    "lattica-prover-p3/src/block_v2/machine/gpu_backend.rs": "698609d611d2e0be07e93ac06410d48311422f1f25401b0783ac72a489ff950f",
+    "lattica-prover-p3/src/block_v2/machine/gpu_backend/resources.rs": "1749bb56374d46778fe3e91cf9ed20bc0c50e483519900d26187103dcde72aef",
+    "lattica-prover-p3/src/block_v2/machine/gpu_backend/resources/lookup_tests.rs": "c7d3106ebd24a0daf0e1af41fe401db6dafe4e611788aecb2b0d9f56527aff0a",
+    "lattica-prover-p3/src/block_v2/machine/gpu_backend/resources/retained_tests.rs": "99955eff9e3186a20f1b20a9abfbf9c89d3fbd2038567effa0c56c76a7bdbc42",
+    "lattica-prover-p3/src/block_v2/machine/gpu_program.rs": "9611223683166ad186e27738a16aea44ac4b2121fb41f3c0e7a5a601038900b1",
+    "lattica-prover-p3/src/block_v2/machine/gpu_program/schedule.rs": "8e8ee2c05e37e0dd588b8fcac755f2bc2ca12220d321eded1b30346a3a62f37b",
+    "lattica-prover-p3/src/block_v2/machine/gpu_program/schedule/tests.rs": "9df16804cd1d603ecc056a4ccebf284aacec75bf2d55cd8d1a46631fb43690f0",
+    "lattica-prover-p3/src/block_v2/machine/gpu_program/tests.rs": "0ea729f289875694d7825f64ff955036d2e61ae49adf7cb69eb8792639fd93fd",
+    "lattica-prover-p3/src/block_v2/machine/gpu_registered_tests.rs": "d46878cadeab0a2d436579501d9be894e348787b6483f55cb9d2697280009a92",
+    "lattica-prover-p3/src/block_v2/machine/merkle.rs": "81bdc7094c2c22b33c3873086019199f36a0674603780e45abce524400e52d08",
+    "lattica-prover-p3/src/block_v2/machine/mod.rs": "79bbc94d0b7c68e0e9bca82b4e25d5ba83368d395902b19b2710c6741b9f6c2f",
+    "lattica-prover-p3/src/block_v2/machine/program.rs": "1d4121aaae6544316b20cdb265c08a86f9c411533e25c20c0938b08e0501b3b8",
+    "lattica-prover-p3/src/block_v2/machine/program/compiler_memo.rs": "7b0157e446b4ca20ca326c6558324b7b642c9bd8c880e8f20309485dd0a451c6",
+    "lattica-prover-p3/src/block_v2/machine/program/compiler_memo/tests.rs": "b5c8540dfe5fdbc67bc3fe347678c16e5835a523231206a37c30718705e882c7",
+    "lattica-prover-p3/src/block_v2/machine/program/compiler_scratch.rs": "e5481b4933f741dbdd808068fa8ef26e1c1603efd48722ab149a92d4df2e4e35",
+    "lattica-prover-p3/src/block_v2/machine/program/compiler_scratch/tests.rs": "62743fea6d67a437dd1c47069f6a25fdb8a1138224c704aee5760520f575d608",
+    "lattica-prover-p3/src/block_v2/machine/program/construction.rs": "ab75c1c287edf9fa948dd781f150a0b74fd3104098bb8c538d6e1ffd4c0b72c3",
+    "lattica-prover-p3/src/block_v2/machine/program/construction/tests.rs": "819e0b453ae3834d7870d97572abc35d5a347d1dfb209f704303aeaeb296debd",
+    "lattica-prover-p3/src/block_v2/machine/program/manifest.rs": "e207932db1711b3911ce45a6745474020b90ada74a62c6b462eeb8f0a8bed4ec",
+    "lattica-prover-p3/src/block_v2/machine/program/manifest/tests.rs": "092107ec69f8d64e3a5ba4116445fdf4d5f6447931badbe4cf0fe03106f82b83",
+    "lattica-prover-p3/src/block_v2/machine/program/packing_tests.rs": "1d01b2a82f0dedb4ad0cb4ebb7ecb9357b41cecc6663a97306900ce8b8a1c211",
+    "lattica-prover-p3/src/block_v2/machine/program/proof_inputs.rs": "0128749fb93a5058471418f12cc19f3c56be623cae8be0ebc5ce3fdf81c4f2bf",
+    "lattica-prover-p3/src/block_v2/machine/program/proof_inputs/tests.rs": "c590e95e1c0269c173930018508e26b097176f5ee420edbb2b4e4f1b33d91a6e",
+    "lattica-prover-p3/src/block_v2/machine/programs.rs": "e8b46c9b678584a1ceee11bf035d07503f3bdb74e129b397d833e35ea5d3e37c",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/builder.rs": "ff6da98207f5e294345687b660537d71550d242f0059ba43aaf11bd365877fef",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/expression.rs": "6af1616eeebf1834367b04d3dbb1082f4f48e7a47004aaa3bd13ecd575eb55c2",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/lookup.rs": "53f5b805f68817597be0ac22aed32bbbeb73c916cf74c5bc1578e7bcd1e932ad",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/lookup/tests.rs": "8f11baea721733749f2fce73392cc2206e96175c8fc38e1d0a6c9e2544cc2977",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/mod.rs": "5d1b7f01a2ac686f4dbed6d7c47d86ddc2f1fb26157f51647afb060003fc95b0",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/normalize.rs": "0a1bb44a4e24396039511a7d8d5d7cea0a402b7efdf0dc2f191775a2169319f5",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/normalize/storage.rs": "b71c641d02c8a2bfea30a452b79801af67aefeb085d9cdb3f197c3a131a9f8e1",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/normalize/storage/tests.rs": "f4442f042ea08961b558697c15fc03c865fdddcc4204b10479463fb99e1f310f",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/normalize/tests.rs": "6709f1c58bcb892c1af78ee19521f0b3fd9c165ecd28a5af56adec8db50c37e4",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/recording.rs": "dc6dab042592494c6a3f171758d896c35eb067e77cd52a133dc779483da9cf14",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/recording/tests.rs": "ed994ec1251fa16234086c03de089f4f98828793ff4023e416470d79eaabcc55",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/tests.rs": "a8e40f820f80ae88ac9fa7c29a470e003f393d2796b1df5a9efcaf8a7b3b2863",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/verifier.rs": "7a9cf89bc48b5aafe87a60fff43be70f916afba57af14fc5c6ba912248fec001",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/verifier/tests.rs": "ef05f8142580c721f9cf000d9591a9b24170c8f1a62399ea8c334e639ea1d271",
+    "lattica-prover-p3/src/block_v2/machine/transcript.rs": "cdd344ae87f75f76aca0f1749e9cea35606b3a4b299eea861037abc37eeaabc3",
+    "lattica-prover-p3/src/block_v2/machine/typed_finalizer.rs": "0dfecf6f6c964e5bbc6ba412519d9a9d7ccb8c5f724790bf925477c4d2b86532",
+    "lattica-prover-p3/src/block_v2/machine/typed_pairs.rs": "cab656030f4d628938a440a03ffe3a3990c6a76cf7c90109d78ffb64b01679b9",
+    "lattica-prover-p3/src/block_v2/machine/typed_programs.rs": "1c300570f08826b4eeb92442cbca547b9b84c11c00e5a531eeec6187b62a9725",
+    "lattica-prover-p3/src/block_v2/machine/usage.rs": "5b8b0609788108ae14ee3445c93deb09ec616a37f2284dd2453167709db6746f",
+    "lattica-prover-p3/src/block_v2/machine/verifier/batch.rs": "a62d8d37bf5868227dc05f5e2f5054d27281b3ecb1b1ee03aeaa1eaf33e3e44f",
+    "lattica-prover-p3/src/block_v2/machine/verifier/expressions.rs": "f70f2e55dcdfc7e2fd02ad819ad2c155378d445d354027faf21f22d613542459",
+    "lattica-prover-p3/src/block_v2/machine/verifier/expressions/tests.rs": "f0ac80fe41305d1837bb0f5147affc823a7946ec5f4281a7cb59f69f139ddb95",
+    "lattica-prover-p3/src/block_v2/machine/verifier/mod.rs": "ce66450463dbbf0b3a588d44e08443078a4df48610c2b600301c8d31acc1d7a4",
+    "lattica-prover-p3/src/block_v2/machine/verifier/pcs.rs": "d070751ba1ff5834b2459c45774641b671683c9ed47e1c879de4cd6ff6067817",
+    "lattica-prover-p3/src/block_v2/machine/verifier/pcs/tests.rs": "4ce5862efc6a7c4a65f2b0809afda6990e8bdbaf36f685643adc2085634462df",
+    "lattica-prover-p3/src/block_v2/machine/verifier/pcs/tests/reference.rs": "5951d8a1a964081078a01abf1fa567cfa958788dcefbc3bb3ef6b7b2a700c51c",
+    "lattica-prover-p3/src/block_v2/machine/verifier/periodic.rs": "2147d72d95008e135502c719ac08447802cb1e4028958aa0f228085c0f530f08",
+    "lattica-prover-p3/src/block_v2/machine/verifier/periodic/tests.rs": "9a4bcaf54aa9dca385ac4e464296ea46c37b43d104cb1cda14a2239fd11208bd",
+    "lattica-prover-p3/src/block_v2/machine/verifier/template.rs": "2164e42b0f1bd2665533996f9b90c5fe6b366d5c231432b4b87df7400dc19ff7",
+    "lattica-prover-p3/src/block_v2/machine/verifier/uni.rs": "24732449dbb61f79cb4d8e5d00066a81b89a233917a53f2c1288e728c87f651f",
+    "lattica-prover-p3/src/block_v2/mod.rs": "aeef0889a15ae3e6ba85a0d052d302575cc5f6b698d7a62982ed3a13843afbec",
+    "lattica-prover-p3/src/block_v2/multi_air_pipeline_tests.rs": "be1dba692d2062f95e5f9352e655a1f54ebb2f7677ccb298f8530e5cce3a917b",
+    "lattica-prover-p3/src/block_v2/native_gpu.rs": "11d8b6f4d4acb872c10bf00a6a5147f59cfb9b1808654764b1fe74d83cb2b47b",
+    "lattica-prover-p3/src/block_v2/native_public_gpu.rs": "8f744e970ba8ee338258e91078a6d5090e64b4dd10454d58de9a3c53322bf276",
+    "lattica-prover-p3/src/block_v2/normalization_workspace.rs": "be32cb3d3a7b5500f06728786a95d71212808d3d59d6db1e4f5ee93a1a181341",
+    "lattica-prover-p3/src/block_v2/opening_pcs.rs": "984b14195275a9397f4f83dc5cf80897f63247df1b4b237fabcd7f239ee421f9",
+    "lattica-prover-p3/src/block_v2/opening_pcs/field.rs": "4abe9ad279bdcf7daee38ebeadb3852ecd56718071f9cb02df3c3ca90b0f6df8",
+    "lattica-prover-p3/src/block_v2/opening_pcs/field/tests.rs": "53702818668fdfda1b9e14351420ed25fa9e27af8617e76ed0134107b92127f7",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned.rs": "95ec63ec236748bf85f5a009c0b1a52a53f3a8b8b62552ea2dc48f0e85fbf52d",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned/tests.rs": "b70dce9502c0cd72016bd74d5088a45aaddda7102b80da83d8b04cb4202ef5fc",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri.rs": "a96bb4b0997d18d73f71fbd25e256e700acb87bb34171efb3ed5e4ee9c710453",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri/general.rs": "72fa09e2c1cec09cc37d15fe64c160cdf26e6e227593527edc712892b25066ec",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri/general/storage.rs": "c684638e6bbe11c33ae248d38e69657ee47245e7dc6319d8c044838304cde5f2",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri/general/storage/tests.rs": "066c6c86b1ee072261174e1542731efe26b46bd3a9649b0736362de53a4bf637",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri/general/tests.rs": "37bafb68fb1cfa6e787982d486f2db9bb44b9c148c94c7124717639a305bf867",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri/tests.rs": "efb9d650c357f4d6f7a56b0142d393cbecd6aca3a7bfe88aa09c9005b9f3b42e",
+    "lattica-prover-p3/src/block_v2/opening_pcs/test_support.rs": "feecada55054fddbd380821aadc211ab5ff4028effdc0044815709fcd82fd3fa",
+    "lattica-prover-p3/src/block_v2/pcs_field.rs": "04097bc9b95188408503eedee44d435340f8b5c156d46ba6aedab086d3f8ac9d",
+    "lattica-prover-p3/src/block_v2/perf.rs": "05673d7ced6d292d15a0c59e151664d496a8e5d57f51618d3e7141fc5383bf98",
+    "lattica-prover-p3/src/block_v2/perf/timeline.rs": "0b14c986f5725b9d2a62b56d3b0f4c14d72d52fef2eae7e5e0421d5df89d07cd",
+    "lattica-prover-p3/src/block_v2/profile.rs": "40989ccbd82b69d27938847121622223d5941bc9966594cbfbed41c5fef174ec",
+    "lattica-prover-p3/src/block_v2/profile/verification.rs": "be21c7805c4eeaf6d06ee60e3e2173d11996a776a5d37974ad4899898d991b24",
+    "lattica-prover-p3/src/block_v2/quotient_pcs.rs": "dbd3fd76f0dd21ccfcc6b6a7eff614fd28321d53513fd7bfb6e9f1189d1f0b59",
+    "lattica-prover-p3/src/block_v2/quotient_pipeline_tests.rs": "ee3aa120450a024939eb3bb8f7bc3cc40618ccb73d03e15a1eec7e57467e1668",
+    "lattica-prover-p3/src/block_v2/random_integration_tests.rs": "839c86e4c61a5058c396599df288b707df64971c1d1c0d2c9d8f6a141eabc3f0",
+    "lattica-prover-p3/src/block_v2/random_pipeline_tests.rs": "cee9b117b41baa7e9d3e86be34cc03ecfa04ffdf9a0cda0c7ec1ab7c103cf7e6",
+    "lattica-prover-p3/src/block_v2/random_storage_tests.rs": "f0269f818b733be8035ac8229c3841315699e60ef3118042e8ebc44fa33477bf",
+    "lattica-prover-p3/src/block_v2/randomness.rs": "850d40948279560877996c1e9772d90e5e7dbca92aed534f14fc495e6a4d0925",
+    "lattica-prover-p3/src/block_v2/randomness/resources.rs": "150536e5a6bdf681a643f2b6bfbfe0318cee3122c74a872a6162f9b800d609ba",
+    "lattica-prover-p3/src/block_v2/recursive.rs": "6f1ad12fa5f19976be2e995d4b79052e19240579885e46c94a1faa29bd52ed5a",
+    "lattica-prover-p3/src/block_v2/resident_pcs.rs": "6d613a9dd59343f474c51fd7d792c595e352b7626e3ae823421e12de9fe35d3a",
+    "lattica-prover-p3/src/block_v2/resident_pcs_tests.rs": "1a1382e01b4f4434ab8c07a033af5ec54618e16ec2fd7aded7a4733886b5f283",
+    "lattica-prover-p3/src/block_v2/statements.rs": "9ce5867929cb2fdc17360c544acc1b4f621808245a9a03a7bf73b22345f27023",
+    "lattica-prover-p3/src/block_v2/statements/compiler_tests.rs": "71b8ea4b6f7f0b913010cc26ed34f1060606aad50bbb12ac437f8daf55c8db77",
+    "lattica-prover-p3/src/block_v2/statements/folding_tests.rs": "ff38ae9a693f3c31cdbd81fc565605803251960198bb47de9958987ff01447a3",
+    "lattica-prover-p3/src/block_v2/statements/native_public_tests.rs": "78070230f93f1bd6023288d6c5b5ac541543c2330c93105d7b8f68845bf9d4e8",
+    "lattica-prover-p3/src/block_v2/statements/registry_tests.rs": "f84bad0305a98f0774a1b81db3db0259f446e5562f24f111782b493e3729c191",
+    "lattica-prover-p3/src/block_v2/statements/symbolic_tests.rs": "5e82bec99891a197efbc48a3aaf69049747aeab302dc265e8987da565495e321",
+    "lattica-prover-p3/src/block_v2/statements/tests.rs": "719b15c570f8bb520eb8dbc0d67ce0d5e9c5c6c54babc2c42ae4828a60f8af68",
+    "lattica-prover-p3/src/block_v2/typed_fixture.rs": "12b37c952f67f0c73e1dba7aad8438a018c79fcbfb7efe1e8a8d5140771c8df1",
+    "lattica-prover-p3/src/block_v2/typed_leaf.rs": "8178748216089d5a6e3b4297c38ea12850bac2d01c417725c412dc040449a587",
+    "lattica-prover-p3/src/block_v2/typed_leaf/gpu_tests.rs": "e2b2c6fb8a05b2807e338f0ddeeaf6873ca37c4e729f03a8d0ffb124e8d555a4",
+    "lattica-prover-p3/src/block_v2/typed_recursive.rs": "938832aa6095d008b144573fdfbd9f1c078e1ea5b2e055834fa794bcb654c6fa",
+    "lattica-prover-p3/src/block_v2/typed_recursive/storage.rs": "87230a12eb065b116507e4dc5854703dfea4f521b48bc0b8ca0eb109a30a1539",
+    "lattica-prover-p3/src/block_v2/typed_recursive_full_size_tests.rs": "2e2dcc9fb02d5988820a7b5bce80e82661978a0f3e80abc86db1c41df79aec36",
+    "lattica-prover-p3/src/block_v2/wallet_verification.rs": "2131d9b0653411b2da5105ccdae6d02c8057dd2b5b0b86d522be6e0f3940cc32",
+    "lattica-prover-p3/src/block_v2/wallet_verification/air.rs": "4be495e45ef1bb35e34050f57fa6f9c714a01a5ce7138e2b3b1d4df18411ee6d",
+    "lattica-prover-p3/src/block_v2/wallet_verification/air/tests.rs": "78917735deed01cf7b344c495ee381d1d6166c2fe6b25aebf332594e7a2f0b6c",
+    "lattica-prover-p3/src/block_v2/wallet_verification/scratch.rs": "e9b3fbae493429f4f2fb231817c82950e1812fe41fbc16dc7647a8b8a9b9f624",
+    "lattica-prover-p3/src/block_v2/wallet_verification/scratch/ledger.rs": "4a6dc22158f51e73bd62620d0f9accc04488e8eb9321a725dc1cbefe57a030ba",
+    "lattica-prover-p3/src/block_v2/wallet_verification/scratch/periodic.rs": "cc8a223d89e32725beeb9ebf50289789e90ae136a0c3c815c8e35d2167a1d30c",
+    "lattica-prover-p3/src/block_v2/wallet_verification/scratch/tests.rs": "8f1c7c277574ded327221cb3d0e3f97f7faadcf5f7afb67dfb388f491605400e",
+    "lattica-prover-p3/src/block_v2/wallet_verification/storage.rs": "88ed8c1cdc022d1f24c2f0bb3bc7a39ee1708de928d8d556a6f9df3cda09cb10",
+    "lattica-prover-p3/src/block_v2/wallet_verification/tests.rs": "e3873a5faa6934d0cf0dfce8db5140b4bed4a7251146484f24ac422953c01d9d",
+    "lattica-prover-p3/src/block_v2/wallet_worker.rs": "8889500dc3d94239ec8fcc5a70ce6bfa758bcbbd0490512156fc32267f705461",
+    "lattica-prover-p3/src/block_v2/wallet_worker/tests.rs": "e9b67e679175ca7358f857381e5c3345d24d6f2dc4fc3351e1af5ebeefaf239a",
+    "lattica-prover-p3/src/block_v2/witness_pipeline_tests.rs": "aa6581b2db90b9c435e2119684b44b9835996d96dc9daac369a25f376620b67e",
+    "lattica-prover-p3/src/config.rs": "7524e18273049419734b2278918993eadbccebd492b78df4fc564fef03811fc4",
+    "lattica-prover-p3/src/constraint_fingerprint.rs": "41f695147adea83dfa24be61c0250f9960be53301b5ea7f79381e99b4f2b6f19",
+    "lattica-prover-p3/src/cpu_sme2.rs": "ebb97906ceba2c5f02b3ec6bdc7338115b0f1363145269867d735f702dd6a848",
+    "lattica-prover-p3/src/cpu_sme2/goldilocks.c": "fba50e43a64ce8e3b8b0a946bfd455d9896cbcae0d87394f15aeebd021f2c865",
+    "lattica-prover-p3/src/domains.rs": "4b47186d6a0c94c4b7c6f4fe838c7ace7d429415f96aa7b3190465fab0aa640d",
+    "lattica-prover-p3/src/gpu.rs": "8743ba17a51833f2967cbaf6b712503523e044ccbdd2b7248ae315b49ee0350a",
+    "lattica-prover-p3/src/gpu_constants.rs": "b588ad5cffe13371379daf3e75962034b97714bd8563bf2d107e82bba9448a53",
+    "lattica-prover-p3/src/gpu_device.rs": "801f7ea3749c1114455b7f243b686b50b69b83e80ac7424fa7f46493690dc1b9",
+    "lattica-prover-p3/src/gpu_pcs.rs": "98304ed27c73d4ab6425c4a8306959e55d7dbb5d74f1e8f91d681a0aa7fe7ada",
+    "lattica-prover-p3/src/htlc_air.rs": "1477df2593dae95897e2a77c0db9fc3e3fa545ef47f9fcbdd3f32a5776897ef8",
+    "lattica-prover-p3/src/htlc_air/periodic_source.rs": "f21098a278d644ffae91a2d25fb3f846f8cd50a390c1d98f390b37a27092611e",
+    "lattica-prover-p3/src/joinsplit_air.rs": "3a0af51d70927531590259832074c3026bbd46e8ded4715d12933bbd3a547bfa",
+    "lattica-prover-p3/src/joinsplit_air/periodic_source.rs": "473c67402a3bdda50cc88e39df81eb0a03c614dfb9638bbd81a0305d98e4d685",
+    "lattica-prover-p3/src/lib.rs": "341871d46d0353b2162292d4027f0d06acfdc768d3abd98cb8b849143d6e061c",
+    "lattica-prover-p3/src/main.rs": "63364c6611fcde59f6f3eb21ba185f2372992b483cdf866b07659f59011da1db",
+    "lattica-prover-p3/src/metal_compute/kernels.metal": "4366d80236c563010040ea8b5526fe692c9b631436acc74d1d672ab02d55a6d3",
+    "lattica-prover-p3/src/metal_compute/mod.rs": "f908c3c419a5781b5598034f950101c48afc5ee76b624a5f803bfb89083a22bd",
+    "lattica-prover-p3/src/metal_compute/tests.rs": "611d2c44c4c5a9287c4e7888b85692227a69412e928acae2a7e00515e89dbac2",
+    "lattica-prover-p3/src/native_gpu.rs": "39c1941d075a15f5d3018d374082b89d8084d1aa89672dec7ca7790dda2bfd13",
+    "lattica-prover-p3/src/native_gpu/tests.rs": "63c018bf7e5f82d93b591853b8fcd51d24a1fb632de884baa8ff71a3afc9f57e",
+    "lattica-prover-p3/src/poseidon2_air.rs": "aa82a175884c53fbe72dce819ac625be3d6db2932d0d244e469155e71b6c82a3",
+    "lattica-prover-p3/src/poseidon2_air/periodic_source.rs": "33dd45360b055d7aa0349e9cda4ea1e55897f1a6ea290e207b11aea933158481",
+    "lattica-prover-p3/src/proving.rs": "2fba1612511ef79aaa1f47937274d777858c6ff0385e876ce319c6d251141aad",
+    "lattica-prover-p3/src/proving/composition.rs": "0efbd0bc884acae67f8cf7ca1f11ae9aba1b79bf729ee8c41a60d3e6a226e6e4",
+    "lattica-prover-p3/src/proving/composition/tests.rs": "d847cd05b04bd0493acb6bb70e1c35dd31a801a8b49cbb3acfb81cc695efe34e",
+    "lattica-prover-p3/src/proving/tests.rs": "249499550f92b42feba19ed7a4cfbc8238085112c37e114376ab59e8b3386619",
+    "lattica-prover-p3/src/quotient_gpu.rs": "10c625f9ca2c058d42b639d8f426786113c637a375499b244b6c2f17c687d9ce",
+    "lattica-prover-p3/src/recursion/aggregation.rs": "ffb07547f4b08e6097f09469d93840b6a1a6c6a8283f8e104a64fa72ba592c44",
+    "lattica-prover-p3/src/recursion/fri_fold.rs": "0b55d8b20e58c00dc1aa04c9adc42fa7fa5475f4238e65542ede41df67fcd88d",
+    "lattica-prover-p3/src/recursion/fri_merkle.rs": "48aaaedc8871bd62b299e965c322931e85c3e935da0cbd27958833f4a56b1e9e",
+    "lattica-prover-p3/src/recursion/mod.rs": "5febfe3bd2b9a513e3c60c0f66e62b32f43d286fa9be5db900fab05a11766e7a",
+    "lattica-prover-p3/src/recursion/monolith/air.rs": "a1f525193276c71089bb47ab79d01845701e87e2e71f4833cf5a43adfcb8e3e6",
+    "lattica-prover-p3/src/recursion/monolith/build.rs": "30e9c8b7cde3b23bc1db5873d5c9b7443318c22fad1fcf4a54febc0c08e08609",
+    "lattica-prover-p3/src/recursion/monolith/gadgets.rs": "d01d746040b31db34109089e27cc9a3351ba013bce9dde2063d684810910179f",
+    "lattica-prover-p3/src/recursion/monolith/lineage.rs": "5a9836d306f9a8635c7414440e79c7c63202b019c8183e02356061fa33a3f4b1",
+    "lattica-prover-p3/src/recursion/monolith/mod.rs": "70ca19e141fd77e61ef3a4b25dce2e20aaba89ccb1fdeb114875f54c19749980",
+    "lattica-prover-p3/src/recursion/monolith/tests.rs": "ca0d65d1a48e4c21d51cfbb8950f5bb97d3a9de8ece7aa24b0ea91a09e70f444",
+    "lattica-prover-p3/src/recursion/native_fri.rs": "8dd2915baa1a0392328864dcac219b10c0f0095c0739f8bd83c05e96b060e107",
+    "lattica-prover-p3/src/recursion/native_verify.rs": "3867e488f4eb24a3226e81858e9db7d7d15c346aa53bda24c9b8cb2ebf40651c",
+    "lattica-prover-p3/src/recursion/transcript.rs": "9d4847eb383c6f45715c05ecc934f33879d343f388ac24f29ab95e0efe459b7e",
+    "lattica-prover-p3/src/recursion/verifier_air.rs": "0a077470773ecb0f21783283371026675a9adb0f203e443c6a7e771ee69b61d1",
+    "lattica-prover-p3/src/spend_common.rs": "3979dca0b6266d5bd768d31313f02f115aea5e220ca174401188f85cf595e3b3",
+    "lattica-prover-p3/src/spill_alloc.rs": "c7fc01541a662237ec0687c15ad7b728f3be3e21a18ffbbc696abdfab63a9a3e",
+    "lattica-prover-p3/src/spill_alloc/allocation_requests.rs": "ea1f8d96e96c275159d70a5fa1d62b38132d0f83228a888071bdc10b959f9f75",
+    "lattica-prover-p3/src/stream_prove.rs": "a7553d195879258313b5a3745cdb3dec2ab23c39c53dfd85978805a45999758c",
+    "lattica-prover-p3/tests/gpu_lifecycle.c": "e6b0e8453a995c4c6f18b1fe88a4916581febc1d86e54607f779d608f91b1b1d",
+    "lattica-prover-p3/tests/gpu_public_service.c": "c2094babf900ee073d599d299a9c9e1b5a1a37281288c4362e013ae8819a780b",
+    "lattica-prover-p3/tests/gpu_public_service.zig": "fcaeb209950afd5b77957478d8deaa3a19b6efc3ff994b29c6b10aeb2fefa29e",
+    "lattica-prover-p3/tests/gpu_public_worker.c": "52bca00adba59792ca2028ccf15bb3b46d85e00a134b16f18eb1639433453b41",
+    "lattica-prover-p3/tests/gpu_public_worker.zig": "6fa9380b36c783d43ddc5601a2aca2f676f13da26d9a8ab24e61d680a0d61f4a",
+    "lattica-prover-p3/tests/gpu_tree.c": "e95cf6ad2e7199c17f254aee6b2057cb1d37f9070671f52f6db5388da99f99c6",
+    "lattica-prover-p3/tests/gpu_wallet_worker.c": "5d0b2af1dd29cff588507a4194c8278a8b384773482f22abea0317956812d29f",
+    "lattica-prover-p3/vendor/p3-field/.cargo_vcs_info.json": "f944ba4c9a8d2ffd36bed154071d3122d72c342a4445a3680e40bac67669d059",
+    "lattica-prover-p3/vendor/p3-field/CHANGELOG.md": "2f2cf3f5a13ebf1397a375ecda120b47e79ed8f4d41cb8c6003fa876a6f3214f",
+    "lattica-prover-p3/vendor/p3-field/Cargo.lock": "2c2b8504472c7368ad0d87b9d521486dd4476b6a1dfea5ce775f666e4bbd82a0",
+    "lattica-prover-p3/vendor/p3-field/Cargo.toml": "4cccba01a8c6bd35a7e12514d9e59a02974a3ec2e07ae222d125c006197fd330",
+    "lattica-prover-p3/vendor/p3-field/Cargo.toml.orig": "1745f996977840bbdb0d307d819bd4696901d847d06f4ea5e27a57132ccba38d",
+    "lattica-prover-p3/vendor/p3-field/LICENSE-APACHE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "lattica-prover-p3/vendor/p3-field/README.md": "7a955916822600090791297cfda5669348b59fdfb1594a0ec1723c7194cccbf1",
+    "lattica-prover-p3/vendor/p3-field/UPSTREAM.json": "2a655da637cceffc49c9c36e3ae09482d058e4ca5c66c5590fc47dc0a4cb3af2",
+    "lattica-prover-p3/vendor/p3-field/benches/batch_inverse.rs": "e6315de0a67ccb72b0137bb9068ec5d2a41293cd464a3a87990f741467d2d20c",
+    "lattica-prover-p3/vendor/p3-field/src/array.rs": "fd84eab3769c2cc2dde86bc549a368d0adeca838c482bc29b765b67998b462a1",
+    "lattica-prover-p3/vendor/p3-field/src/batch_inverse.rs": "44598c9bb6991f48e2a238e4afbd45639710b2d930569e7740e5dbffb2958181",
+    "lattica-prover-p3/vendor/p3-field/src/coset.rs": "540d5ea209fefde0cff5b466f78b22c4f460e589efb55d1b97783bb2f964775c",
+    "lattica-prover-p3/vendor/p3-field/src/dup.rs": "866a17cc58ff96affe9cd88afc02dbc608d7636e679dcb4a0efd169db4baa070",
+    "lattica-prover-p3/vendor/p3-field/src/exponentiation.rs": "2449631f8b995abb62b66c0b8442629b739921dd0b522bf5b04502608693db43",
+    "lattica-prover-p3/vendor/p3-field/src/extension/binomial_extension.rs": "121de37700922b14733abf2f762c16691cf699d2731ed6ada14ae800d4280823",
+    "lattica-prover-p3/vendor/p3-field/src/extension/complex.rs": "a8e0fb533819e13e4f1c267ac0da04a1ea64c8d53fabde6a67a501dcf3b4edee",
+    "lattica-prover-p3/vendor/p3-field/src/extension/cubic_extension.rs": "5c38d406e2e0e92475bac7debb5488302520867d99967c159b42c872abdcea45",
+    "lattica-prover-p3/vendor/p3-field/src/extension/mod.rs": "aac05a6fdcc6f309792680d356c00ee491b4ad79790f746a04119523fe68ec38",
+    "lattica-prover-p3/vendor/p3-field/src/extension/packed_binomial_extension.rs": "40d2a44e158e9bce141226708b56d193b7cb34f5dec10c7ea1fc684e05ce9ede",
+    "lattica-prover-p3/vendor/p3-field/src/extension/packed_cubic_extension.rs": "ddef8b64059c5a8668a92d8cdbe261e3bd67210fb8ed38c0758c5cb881da1e80",
+    "lattica-prover-p3/vendor/p3-field/src/extension/packed_quintic_extension.rs": "26558de174cbc97864af6b98fdcbfb5d128620f633a86c4cb0434bcfd211783f",
+    "lattica-prover-p3/vendor/p3-field/src/extension/quintic_extension.rs": "47dda94a12d861afd41e85658e30cb0c132b83dc77455f32dddf721ac220e889",
+    "lattica-prover-p3/vendor/p3-field/src/field.rs": "e3989fb870feedac023c984cf240216020abb6f44cf67b57fb38d4ff3d02b069",
+    "lattica-prover-p3/vendor/p3-field/src/helpers.rs": "4c139cb8a38ae2a335638988d751934daf8e05d9d764e563fe0709775bcbdc64",
+    "lattica-prover-p3/vendor/p3-field/src/integers.rs": "052cb3b093c72b22c1ccee95a07d9543cf2e5e11b1ea97ed99268cd7e7d4ff95",
+    "lattica-prover-p3/vendor/p3-field/src/lib.rs": "348e633ff2c34ecf1ffe88f2b55002dace5714fc244eef49899df3152beb25e6",
+    "lattica-prover-p3/vendor/p3-field/src/op_assign_macros.rs": "3a1fb5eeef1b8a414dd0f9712e5ef9d877ce966407bcb8553b5edf9d1b07965f",
+    "lattica-prover-p3/vendor/p3-field/src/packed/aarch64_neon.rs": "de0660bdf76ce67f88b5b2c285e6dbc2f8bec87293f44ff0cbb88dac5c86d1bd",
+    "lattica-prover-p3/vendor/p3-field/src/packed/interleaves.rs": "4f0af347a2cd4add88f15f5ca4ed1fd3095d33a64399accdbd0cd556ead16578",
+    "lattica-prover-p3/vendor/p3-field/src/packed/mod.rs": "101493582dde370a4dcfd141fda49dfe1be94a8bfc3ac4b966b14cd80c0c370d",
+    "lattica-prover-p3/vendor/p3-field/src/packed/no_packing.rs": "9a43309de14da4ddb751426032bb91c2e2f68e4cef02f3554fc1231f5cbabfde",
+    "lattica-prover-p3/vendor/p3-field/src/packed/packed_traits.rs": "0c585e4e3151d70a0bc2c0e9524bcda15fbf540da82c2390aa1348b9dc9ff18b",
+    "lattica-prover-p3/vendor/p3-field/src/packed/tests_packed_mod.rs": "bae8ff80c291a3d7970585466cdce36f279424f12193fa81b612d8b45d251be0",
+    "lattica-prover-p3/vendor/p3-field/src/packed/x86_64_avx.rs": "d1b6d17cad16e3b7b6a613b89dd6743a019e2fbd9cc348c81078acd2b3320100",
+    "lattica-prover-p3/vendor/p3-field/tests/coset_tests.rs": "36bf4284afb766660d2eccb8e24ca71a06dfe97293780924d3aededce8924723",
+    "lattica-prover-p3/vendor/p3-field/tests/helpers_test.rs": "5abac2203825d4121bbb1d03d9750bb8563276454f508d37b7c660cc46b5b528",
+    "lattica-prover-p3/vendor/p3-lookup/.cargo_vcs_info.json": "052915b22c2e0eed606b899b77f2570bb944d77875f34c2b4fb71489cbf04126",
+    "lattica-prover-p3/vendor/p3-lookup/CHANGELOG.md": "ec5f0da8533bc593c725ae4282647bf8e54304966da1f9688438634ddc649b9f",
+    "lattica-prover-p3/vendor/p3-lookup/Cargo.toml": "88aaa0167d7c7c2e6cda98e4d21b6bd09c4f87ec8fc7c3c68b3877ad3f9029bd",
+    "lattica-prover-p3/vendor/p3-lookup/Cargo.toml.orig": "0142171fc38fe3490b33ad302ba23815b724c2aa4e66461ded136f1f8e8721c9",
+    "lattica-prover-p3/vendor/p3-lookup/LICENSE-APACHE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "lattica-prover-p3/vendor/p3-lookup/README.md": "967a8394031ea9acf8c0654acb98296adda50b8d88ceb244895272551f4fbd99",
+    "lattica-prover-p3/vendor/p3-lookup/UPSTREAM.json": "016ca9de617ea79649f010dc60afd570dfc9b143149359a4563b042f78643612",
+    "lattica-prover-p3/vendor/p3-lookup/benches/logup.rs": "6360bcf4a4cfd1633a87c04d9264a6e85c8ef2fb442dc66b105d336248100f5b",
+    "lattica-prover-p3/vendor/p3-lookup/src/builder.rs": "2c2e6e1a0736d889a73032f0949f17dfdca5eaa4d2c067453a4fb5f6f13441ec",
+    "lattica-prover-p3/vendor/p3-lookup/src/bus.rs": "011e6719e01cba6b017385622bb7e4485a4f88da3a0bf43761635d4e390d4c13",
+    "lattica-prover-p3/vendor/p3-lookup/src/challenges.rs": "e945e87b02878a93f79afc70dedc5999563e07cdc8d83f8eb543c45c57f384f3",
+    "lattica-prover-p3/vendor/p3-lookup/src/count.rs": "943038f6051d447766df9b95cb7704f87461586ab88c42ee956c8c08d1c4e84f",
+    "lattica-prover-p3/vendor/p3-lookup/src/debug_util.rs": "b77cc6e23d7a8eaecbc873db0db4f91d94dfd6e94d738e7cb4a317a62e5d7bd8",
+    "lattica-prover-p3/vendor/p3-lookup/src/folder.rs": "685bf8c518282b206da7548280a3682e6f35d2aa2ee3c289fbe4b7c5748f263a",
+    "lattica-prover-p3/vendor/p3-lookup/src/lib.rs": "207337945241fff7ecfd2de927bafe21703edc2d985aec5d6cfa81d5cbba65d4",
+    "lattica-prover-p3/vendor/p3-lookup/src/logup.rs": "2be0968bc048d18d7ac35623552fb49991d174dc4b9995d94d78bdde211f0f49",
+    "lattica-prover-p3/vendor/p3-lookup/src/protocol.rs": "14dfbe05848f5ea40b243d3f25a3bcffa7d05851a562ca32db46706e3bc21993",
+    "lattica-prover-p3/vendor/p3-lookup/src/symbolic.rs": "ccc5481c92158dfc22b773611e9178012bf93a1a64ff7eb701faa2b6ad607b07",
+    "lattica-prover-p3/vendor/p3-lookup/src/tests.rs": "902e0b9c8ede281ef2f39148254b4e85985de185ae8753ba2b924a32ab9e968c",
+    "lattica-prover-p3/vendor/p3-lookup/src/traits.rs": "466cce3a75ca3ffea91f8e1f5b9142c916568cee62aa7b8219957c4caff85e98",
+    "lattica-prover-p3/vendor/p3-lookup/src/types.rs": "d4417b64c1416072215b1cd6cf0fc19e536269592c887fbc0986106d7c4ecf35",
+    "lattica-prover-p3/vendor/p3-symmetric/.cargo_vcs_info.json": "d5bc751a0f10e2cdfe20061284ff290445606110880d0ba446c644a977761475",
+    "lattica-prover-p3/vendor/p3-symmetric/CHANGELOG.md": "b36cf566c213b203c7ad9774925ca514c64a985f4538d3e7662b3cf8e70e8bb6",
+    "lattica-prover-p3/vendor/p3-symmetric/Cargo.lock": "f8524945b5770f8ed4382d998ca0b7ab89c34855f88a06392ff12b5b2137b883",
+    "lattica-prover-p3/vendor/p3-symmetric/Cargo.toml": "5da7c68255de1831d70944161c606f96f71cdc72a7255ecec12cdbdbad6b55e7",
+    "lattica-prover-p3/vendor/p3-symmetric/Cargo.toml.orig": "39c155d00dfc598c1f3d61d93bd3f27a59295cc84a3559011a18cfeccf0c7eef",
+    "lattica-prover-p3/vendor/p3-symmetric/LICENSE-APACHE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "lattica-prover-p3/vendor/p3-symmetric/UPSTREAM.json": "308748ba32e245ab779dfa2b44d87df0405dcb180c24821cc2568b2c163b1a63",
+    "lattica-prover-p3/vendor/p3-symmetric/src/compression.rs": "7f5e98be7552bf5b858cbd3533c33e4156da12b59789effffe83ea76eec457ec",
+    "lattica-prover-p3/vendor/p3-symmetric/src/hash.rs": "44a5f9249064b218043619d182c91ca225da51688b4b58283bd537a1bf86eeff",
+    "lattica-prover-p3/vendor/p3-symmetric/src/hasher.rs": "392bc75948500ed991e85f6a26d8f4980b989f34305c431ae8c946a4d0430bb9",
+    "lattica-prover-p3/vendor/p3-symmetric/src/lib.rs": "edc00482e07ac0420b01144d9b8b45ca94a271c7d24a3ecdb5a48ddb3dafcf2e",
+    "lattica-prover-p3/vendor/p3-symmetric/src/permutation.rs": "151be9178a58631c5f68d14ac6214824b310bd2d4467c70373bdf4912313047a",
+    "lattica-prover-p3/vendor/p3-symmetric/src/serializing_hasher.rs": "82d65e117682b77818e0d66085d4e95442bd256d61ab3ebce0895584462179bf",
+    "lattica-prover-p3/vendor/p3-symmetric/src/sponge.rs": "02ca475d0b42fe979eb17ca08b3ceb599a9913a423fa276816092a52f2c7cac7",
+    "scripts/run-wallet-gpu-worker.py": "8fd2fac3d65fa2f10436eb3aea649f0b393f794721a886a4b90ebd616efee0d6",
+    "scripts/with-toolchain.sh": "e4d34f1ce7ac5c7d1124f4a1347c87a4bb2b2284b256943bf5a7fd0ccf97073e",
+    "src/block_v2.zig": "222db2a95be66f70779b54e245aef6092f24db5f6a078434162e4431217c86aa",
+    "src/block_v2_expected_root.zig": "238c1572da4bf5b0b102a3c7a1bc9cd3eb0dd9ab2da717f38fe31d483c970d29",
+    "src/block_v2_host_body.zig": "9ec695b970646197e60cd30ef8a8e057edc766f13635649fe536c79daafadc11",
+    "src/block_v2_host_bridge.zig": "13bbe05407af4cc0b2c43dc4320006e9e2bd6be41056fc472359f14332663df4",
+    "src/block_v2_host_fixture.zig": "24d827efa8c01e85a949cff378b03951c8f24abf95a60bb226ce295ab98e7724",
+    "src/block_v2_host_tests.zig": "1030945b3aebecf02a528979aa86961f744f0abb0c0b05e23ad58f872b9c5a33",
+    "src/codec.zig": "c097cac73a8b3332e959fc2c6f44c01884869a2c7abbbc9e4b08fd16eb92585c",
+    "src/ffi.zig": "85cb27d1604f003302c19c5a5fd656c36cf64012254c18f391bda9dbc7b49f33",
+    "src/ffi_integration.zig": "071c71839ad6265a377ecd368c56e180976ab94c21987c2abc7ce30935d2455e",
+    "src/field.zig": "ee6e77d75b06495baa14459ac6dec0a63e7247d725f548b6fcd27f8a235c7970",
+    "src/integration_node.zig": "1ed17a405f829a646334bc9c10ae7f4b78f58a6e194ec6fc7a2859b6f2e2e23e",
+    "src/kat.zig": "3b8a887de21091b738d2a2329d08754009f01d2bceca7b3f471f90997019ef7d",
+    "src/node.zig": "536a6a140d61ddcad91f80e2f7df8a52e243aba9206de653e7728e4837b991fb",
+    "src/poseidon2.zig": "031340e80e6183661420b86d9ffb02b0a88b58c1c2481a939b643b96b5313668",
+    "src/primitives.zig": "4ae14d8ed14b5ea3c826b79491c94c31ead21c1cce94eb2f5a58fe780dc1a19d",
+    "src/production_probe.zig": "6857e2b19e6805bb284659da0d07033f7b86570f35725bc497e8fc0ea52c6c18",
+    "src/protocol.zig": "679869437618a162132d963cfd6a6e319570291acdbb4f874a03e1e6d34a8c9c",
+    "src/prover_abi.zig": "8c765844ecb915ba8425b0ae2f892fe5c6c61c34c53f8413d343789b08cb8ef8",
+    "src/prover_runtime.zig": "e23634177047e783ebfcd84a71a8734c82e7a6574b72324407d25dc3390dfe46",
+    "src/tests.zig": "196e6690aa8e55c3fc52a3a02f25f7126a41fe06e2777fad098b209b8758bee0",
+    "src/tree.zig": "427e9dc164968c8399a2126069f66edaab2567bf82cd70a71ad4ace8172f0b15",
+    "src/tx.zig": "89a0f9cc0311f582714420e4f7563936fedb9586cb7e5575c6bae8e77369c3c2",
+    "src/wallet.zig": "3e423f480958bb12de20bbcea0683b407c6ec96997ee1b27caa483e4dc8abf2c"
+  },
+  "changed_sources_since_9_119": [
+    "lattica-prover-p3/src/bin/typed_common/execution.rs",
+    "lattica-prover-p3/src/block_v2/execution/job.rs",
+    "lattica-prover-p3/src/block_v2/execution/job/typed_registry.rs",
+    "lattica-prover-p3/src/block_v2/execution/job/typed_registry/tests.rs",
+    "lattica-prover-p3/src/block_v2/wallet_verification/tests.rs"
+  ],
+  "source_archive": "lattica-prover-p3/benchmark-results/gpu-wallet-registry-context-20261011/cpu-context-03/source.tar.gz",
+  "source_archive_sha256": "88e2c28bd7d96f45238ac08f9d630614266fc136fbd8c71c37a7f8018c39fd6b",
+  "artifacts_root": "lattica-prover-p3/benchmark-results/gpu-wallet-registry-context-20261011",
+  "artifacts": {
+    "control/audit.py": "3f5b10b8e8b92b6ac9021e07ab58afc15878424ec1752125de7400d58aef6869",
+    "control/before.json": "879f3005a4cd36c0adc86f60f1c6cdc10676c2963c7c37151ced00c122911888",
+    "control/behavior-artifacts.json": "0af9b28c5d33b3f8b73e68b5714a358927217c0ad31b73e02393f0551bacb516",
+    "control/bin.py": "9753fa0d08efab7054872a71915f2985a96372f3da20f182d0417292ec59321c",
+    "control/changed.json": "a49088ed797bc6e3beb519d7abbb79cd484b8979c6241662ab13ae8a242a3117",
+    "control/cleanup-01.json": "7d87fc79f5a1daf5456c779f7678963798eafdf54049632791275d7e565cbcd7",
+    "control/cleanup.py": "acc0e16300545068e31a535215db4bf5672d8e320d20b562f75d3fdcc7a42682",
+    "control/cpu-check-01.log": "fa820655fb026d641b617b4636a9767149048665490d84b72b06b9a329621e98",
+    "control/cpu-codec-01.log": "ded1a26ea1f49d29adf2fcda4fc93d4b46598c3bdb22de56196461b5aeeb26b1",
+    "control/cpu-context-03.log": "6adf23def8b7ad217f660056a020985fd8d4cb5f41c8f1c4f43598233a5ecd80",
+    "control/cpu-driver-01.log": "21597102925aa48cba98bb7811e6c2848700d3acaa2a0fee576392db01309531",
+    "control/cpu-execution-01.log": "d24a5c5e9514ca126b76b6e6408fdd79762c8400ce84369057aa13edbae4d1f8",
+    "control/cpu-execution-02.log": "c173cd76852c33514c6e99c67f8b540236f27835ad453072a605279b5f560c8d",
+    "control/cpu-wallet-01.log": "c791db18dd7d0aac31248fdb824f45a0f246a6af083475c7b5ec0428e4a2d3bb",
+    "control/default-check-01.log": "037d515a73a9ae856b4a388915f5c5f3372959d26f198cf7a4e74e43c753bc3e",
+    "control/documentation.py": "7c4a596c376f6c112da89749542769781ec0b3c47e6cb05729e45303fedc0956",
+    "control/feature_guards.py": "87652a02aaa485e33dd0465e755b4d4292f9cff9bbeb91e19afc3553dca84ee7",
+    "control/native.py": "ad8015d29f8a3c80eabe9f9fc9ddb92d70c3d02e51c5b8f5f000c0be97397f3f",
+    "control/no-stream-check-01.log": "1345275b6697bf90741bf103993e44b11d25f427cfde1f24b55244a08c0482ba",
+    "control/no-stream-check-02.log": "3463fcbaf8ac1ff38dd36e5bbc13d7d7140ed25d4328009368efe3f73e0aa4ec",
+    "control/prepare.py": "2e251f4ccf4cacd08f369b901d316f5eb1d7dd6a0188a72baed9410cec6114b9",
+    "control/qualifications-v2.py": "4923747b37616acc1fecab6c19a0d9ab341965128f395a9840dda375b6c32997",
+    "control/qualifications.py": "dc7242b7de420c5393f58f81b4255301c171aa38acbbbc2255e39fa45b9c9332",
+    "control/report.py": "a576ff63202083c872ba26d7083087e53fda287ed5006e4087d11a99aaa5652c",
+    "control/research-context-01.log": "346b45be3d8fe0809811a8d5204bdde3b5994061169bd7aa5eeb46ab0abde503",
+    "control/research-driver-01.log": "ec2853d923aabe0aff0d37dc9e7943a74e2dff24d9309989d1fd949aa75d1584",
+    "control/research-wallet-01.log": "6a6865fcff3bce970ca831b8f2598dbbc298287528ce33451d28469ddf2e8de9",
+    "control/src_bin_typed_common_execution.rs-before": "be899ffabc4ab60fa7bdb371878dc5476327256f3d63284d9501077893211a51",
+    "control/src_block_v2_execution_job.rs-before": "9477d3f06a9d19b7c1b37cb278962f466794b3bf176f93a4fe75d02161e3c692",
+    "control/src_block_v2_wallet_verification_tests.rs-before": "561be46b3d4bbe3a06416ad865d5da77f62762270bb2b90b4cdca673236b0477",
+    "control/standard-context-01.log": "1ab36a5f0e642a5cc7feb61d844ad0efc6067364746af04ae3362cee731e9dc3",
+    "control/standard-driver-01.log": "5234937172be4d29ecb0f0681422152db193c9c09e612cb5c0214683486d89a8",
+    "control/standard-wallet-01.log": "c4bd8d7eabe7b40d3758fe42373f7e7375c99b0f69dc14bb2ce648770517236e",
+    "control/wallet-htlc-redeem-01.log": "616d306aadaabf15f1d32024b70765ceedf61e62dbd7b790c9da440e4b33a7db",
+    "control/wallet-htlc-refund-01.log": "292bd438755350d6e878dd065ebf0cd0fec025a2df87cb2133b1996630d11f53",
+    "control/wallet-issuance-01.log": "e6f66c2de385479fbfba04ff8ba2d44b11ee5636865c3f91868cb03373271477",
+    "control/wallet-join-split-01.log": "bf5f06f1d0494c159b1729c7d90474f5312a5c36448eb0c2de63a5d396179c11",
+    "control/wide-cpu-check-01.log": "057fa0c3cbd9e48846d6ec53c7634b10b11ae3d541b27d29b94e7d3b262b53e2",
+    "cpu-check-01/command.json": "cfb3cda4bf894f72003879ae6bdbc21cbe2909d853e585e0c98b601eab2048e6",
+    "cpu-check-01/source-files.json": "ed0c6327a704f7fd223d26b6873e57d093d40b3ca79d3acabb97948800102a45",
+    "cpu-check-01/source.tar.gz": "c38b256bf373917b34f949b48af6e482e5efdcd45ad0bfbe5e042051f7f29343",
+    "cpu-codec-01/command.json": "2ad27ef5266f507f52ffece6c41aabd6479aa9001a3b96f02a5130f8be9ddf88",
+    "cpu-codec-01/source-files.json": "ed0c6327a704f7fd223d26b6873e57d093d40b3ca79d3acabb97948800102a45",
+    "cpu-codec-01/source.tar.gz": "586e5cecbbd3ae7700a0e7d8819667ea34bd97309db6cb52ec69faae840abcbd",
+    "cpu-context-03/command.json": "7b6e8e3518f5c975621d4b4251446044e2446a9745f127a76ecb0a31ff5e7873",
+    "cpu-context-03/source-files.json": "2614d4efa4ad47b143271e1013aa6c27f4c994b6fa349afb199f56ca47aad2d3",
+    "cpu-context-03/source.tar.gz": "88e2c28bd7d96f45238ac08f9d630614266fc136fbd8c71c37a7f8018c39fd6b",
+    "cpu-driver-01/command.json": "5a72fcde8eb32c552642955d344b4e4574adbe09168e7eeb742086582c197515",
+    "cpu-driver-01/source-files.json": "ed0c6327a704f7fd223d26b6873e57d093d40b3ca79d3acabb97948800102a45",
+    "cpu-driver-01/source.tar.gz": "6b6c7ad5edb81ee19ae9bbcbdf9b8dcf4034bef5e0f01c3deb1ce2fdf4ca0f60",
+    "cpu-execution-01/command.json": "d9d1e2fc1b9b613c160a1a8883bb32718fc1d1e4463780a95d4e3770e222fe82",
+    "cpu-execution-01/source-files.json": "9aaaeb38313498c4cfe3ea48ecde7a6b4aece1a7f869990e5052cee82f00a097",
+    "cpu-execution-01/source.tar.gz": "6cf86170be36d4b6e67dd8cbaa5a71d0e4f3ae6e8b27d887d3b449792ebd66e9",
+    "cpu-execution-02/command.json": "a1a2210638aa822e62eab34f1fceaa3a6ccab520b050540bee0cc4605a54bb45",
+    "cpu-execution-02/source-files.json": "ed0c6327a704f7fd223d26b6873e57d093d40b3ca79d3acabb97948800102a45",
+    "cpu-execution-02/source.tar.gz": "dc2eb53947cef49021e323f1d730d477d396fa1e7bcfb1d4a4dd45124d030d5f",
+    "cpu-wallet-01/command.json": "0ffc5aaf26a9a4314eb07968c5a2a4235e39cfc412f358c58f842bd4150155f8",
+    "cpu-wallet-01/source-files.json": "ed0c6327a704f7fd223d26b6873e57d093d40b3ca79d3acabb97948800102a45",
+    "cpu-wallet-01/source.tar.gz": "c38b256bf373917b34f949b48af6e482e5efdcd45ad0bfbe5e042051f7f29343",
+    "default-check-01/command.json": "1de78ec776ebe6c4518e5ee7209c859a579225c29f772ee761ce709ad40ed0b4",
+    "default-check-01/source-files.json": "2614d4efa4ad47b143271e1013aa6c27f4c994b6fa349afb199f56ca47aad2d3",
+    "default-check-01/source.tar.gz": "09d371e0a111601627a82da93b43241aa3cde50b855ef74a188ac9e00cd3b19f",
+    "no-stream-check-01/command.json": "2e00be15070cbadac7af15b92288dbbb7d4e419e6106060233c9fc1f64ff9614",
+    "no-stream-check-01/source-files.json": "ed0c6327a704f7fd223d26b6873e57d093d40b3ca79d3acabb97948800102a45",
+    "no-stream-check-01/source.tar.gz": "bba732d605f5ae5ae0c658137976ce8d7a35f4be4cce844f629c700bd16062e5",
+    "no-stream-check-02/command.json": "842eba4fb4bd5411581fefaf8726e0ffbbadc2fb9c786a964d2ce8830c9c8622",
+    "no-stream-check-02/source-files.json": "2614d4efa4ad47b143271e1013aa6c27f4c994b6fa349afb199f56ca47aad2d3",
+    "no-stream-check-02/source.tar.gz": "c361e390e1e39398547988512cc7f553f59db64279bbfa555c6f4390bdc2820a",
+    "research-context-01/command.json": "e10677b837573d7f4be0a289a4cc9f1c0ceec775cbfa1788b3e33d7e7c1aeb72",
+    "research-context-01/source-files.json": "2614d4efa4ad47b143271e1013aa6c27f4c994b6fa349afb199f56ca47aad2d3",
+    "research-context-01/source.tar.gz": "09d371e0a111601627a82da93b43241aa3cde50b855ef74a188ac9e00cd3b19f",
+    "research-driver-01/command.json": "1ebae8a2b4ce42bf8d39dc42f03f602787dacc68b69cd833de47f260206bbb00",
+    "research-driver-01/source-files.json": "2614d4efa4ad47b143271e1013aa6c27f4c994b6fa349afb199f56ca47aad2d3",
+    "research-driver-01/source.tar.gz": "b9f3c67d51026cd84f0e09b0a979ad87fdb2f22f54f861482c46e983a2bd7b56",
+    "research-wallet-01/command.json": "c5d6d7cda03d23b7ddd29639aa1adaca26e1d1d008ecd0b1fc905ac49b247175",
+    "research-wallet-01/source-files.json": "2614d4efa4ad47b143271e1013aa6c27f4c994b6fa349afb199f56ca47aad2d3",
+    "research-wallet-01/source.tar.gz": "1792538512ba7d749c477a87c96ff54b8b113f94c124c7aecdea356d3410ca60",
+    "standard-context-01/command.json": "f3852b2265f8abf328fcb322d4ff8ca60541638c065ed91ebf028f7cb65d9d75",
+    "standard-context-01/source-files.json": "2614d4efa4ad47b143271e1013aa6c27f4c994b6fa349afb199f56ca47aad2d3",
+    "standard-context-01/source.tar.gz": "4e7a2ad6657e8b22d77c1fe4605b59cfddbce82021d7cd434dcfb2dc1917fc9b",
+    "standard-driver-01/command.json": "09cc8759b69ccbb687af89f3d24982319cf64e94a56ec18733a705feb83380b6",
+    "standard-driver-01/source-files.json": "2614d4efa4ad47b143271e1013aa6c27f4c994b6fa349afb199f56ca47aad2d3",
+    "standard-driver-01/source.tar.gz": "94595fe722c80f5b3b546eee2b6f86651d796ba323325d9814264499bc767a47",
+    "standard-wallet-01/command.json": "7c02726cef539cdb431e50d08d4570d83ed9d77c7f152addf4bdadaa318d7eb3",
+    "standard-wallet-01/source-files.json": "2614d4efa4ad47b143271e1013aa6c27f4c994b6fa349afb199f56ca47aad2d3",
+    "standard-wallet-01/source.tar.gz": "94595fe722c80f5b3b546eee2b6f86651d796ba323325d9814264499bc767a47",
+    "wallet-htlc-redeem-01/command.json": "e3717af358df24df9133cb78f4f287fd9d4b8e56c996ceadb7e3feb9d15f36fd",
+    "wallet-htlc-redeem-01/source-files.json": "ed0c6327a704f7fd223d26b6873e57d093d40b3ca79d3acabb97948800102a45",
+    "wallet-htlc-redeem-01/source.tar.gz": "499f3f89d4723f398523c7e86c8f52c0ba803f667cefcecee727c709412e3e39",
+    "wallet-htlc-refund-01/command.json": "3fa7a55d9f87b487916f610e6e72272e8d7f7aacab07b630fdc38b572eb07d4a",
+    "wallet-htlc-refund-01/source-files.json": "ed0c6327a704f7fd223d26b6873e57d093d40b3ca79d3acabb97948800102a45",
+    "wallet-htlc-refund-01/source.tar.gz": "def9665dac593a149498490a5b69a565a98bf685265a2faad86f15fa680613bc",
+    "wallet-issuance-01/command.json": "f92b3d5429cf1e1a53dcd2d4925bf056362a0d57663b285c223d5b19601c9576",
+    "wallet-issuance-01/source-files.json": "ed0c6327a704f7fd223d26b6873e57d093d40b3ca79d3acabb97948800102a45",
+    "wallet-issuance-01/source.tar.gz": "233cd83abbda28a03686e703bd7f3327d238075e6ca1c3c5e7988eaf05247371",
+    "wallet-join-split-01/command.json": "9783f3a91e61d7699e4bed1a68099b4d09b827e35a63e7fa81e9cc93706128c8",
+    "wallet-join-split-01/source-files.json": "ed0c6327a704f7fd223d26b6873e57d093d40b3ca79d3acabb97948800102a45",
+    "wallet-join-split-01/source.tar.gz": "a2c83066967ff187a12f31566c6139d23d9f9d9d3e073226772c287f6b164b5a",
+    "wide-cpu-check-01/command.json": "0de235fd8a27df988103d8501a1ea314397ca53452a9123dbaa9f7dd5a922eae",
+    "wide-cpu-check-01/source-files.json": "ed0c6327a704f7fd223d26b6873e57d093d40b3ca79d3acabb97948800102a45",
+    "wide-cpu-check-01/source.tar.gz": "5b097ec3e9eb9eca6b3f7e49a2310374ccaf29e77471f435c7bb52c1c00e3aa6",
+    "control/audit-01.json": "2dd7cf2653fd917a294414b244afe24cb7dc1252cb841578b33ecc81f6917182"
+  },
+  "audit": "lattica-prover-p3/benchmark-results/gpu-wallet-registry-context-20261011/control/audit-01.json",
+  "audit_sha256": "2dd7cf2653fd917a294414b244afe24cb7dc1252cb841578b33ecc81f6917182",
+  "python_validation_source_files": {
+    "lattica-prover-p3/scripts/apple_benchmark_export.py": "6b99e19455b9283568c9c3f270f8276908dea01d0ae173cac4ec755d8c7fb5bc",
+    "lattica-prover-p3/scripts/bench-apple-metal.py": "7343b084e817fba812d08145d7878df2892ed698c47f539d96b6baa86f43f330",
+    "lattica-prover-p3/scripts/benchmark_report/__init__.py": "2439075037e8f11deac0b8215ead675541204ba706b48805014776fb886760dd",
+    "lattica-prover-p3/scripts/benchmark_report/campaign.py": "a140924e76b0adc0d3bb0b0f627dc3647a6c84711d699d462e86326a0b205945",
+    "lattica-prover-p3/scripts/benchmark_report/history.py": "b2014bfb10345ec4f6f57ea0ae572d6be7795376481781d20d47c45ec4c710fd",
+    "lattica-prover-p3/scripts/benchmark_report/measurements.py": "b749d8b430eb4176bcf2efc0597d9839e1bdd11ea370c8a05fc2b19eb425cd9e",
+    "lattica-prover-p3/scripts/benchmark_report/model.py": "bcc909e5c7393f50778e693f4b15c7f4736c153212a7040c50d46012740e2a64",
+    "lattica-prover-p3/scripts/benchmark_report/query.py": "0cb160d60fe73488749c1cef5c6a543bf8e94767203ac8df5d53599ef50dc23b",
+    "lattica-prover-p3/scripts/benchmark_report/report.py": "38121f670fc2fee1847ef529235f240537860858462d28ca72acff143105ac31",
+    "lattica-prover-p3/scripts/benchmark_report/typed.py": "c25d1cad0ddc0747ec7a74bc6052ddbfa4e2fc6311560ebde7668222c00ec69c",
+    "lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+    "lattica-prover-p3/scripts/block-v2-benchmark-report.py": "dfc2ef3965bbcac9b675d1d1bb8a7c1438ca1aa4b017c86d25ee85fb63f2e1f7",
+    "lattica-prover-p3/scripts/block-v2-count-phase-analysis.py": "29b6d103572b6c10acb59431a811b64f86849c22a6b3bc1b5ca7e6b833f4d3ed",
+    "lattica-prover-p3/scripts/block-v2-eight-series.py": "31d6f084965ad61ae8ae6faca2f249db01353894c6c5f06c71a40cee6ea16ea1",
+    "lattica-prover-p3/scripts/block-v2-fusion-prune.py": "81e7b9b4d700b7dacfc3cd858cf54bf6a436b9b81a4712395ef7d2c14db5a06c",
+    "lattica-prover-p3/scripts/block-v2-fusion-trial.py": "cb36fd551f3442a4eaa534536691cca8a0bda01c1b7dbe7bf7cfccfb87ec8e2c",
+    "lattica-prover-p3/scripts/block-v2-gpu-compact-trial.py": "f294ce1abda041306bf3b6f4d74df8843495c7cfec571fdb9a5361b6bace7953",
+    "lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614",
+    "lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+    "lattica-prover-p3/scripts/block-v2-lookup-mask-model.py": "fb4410f6c83037209d736d0f40165113cbad426ccc9c91fa9dadfff308354d80",
+    "lattica-prover-p3/scripts/block-v2-multi-gpu-compare.py": "d3373d87bd0abc0c44a408f70394ca727343ee21782094876efaba29b515ee12",
+    "lattica-prover-p3/scripts/block-v2-multi-gpu-run.py": "ed949770e7c952053407834a901e3bd3960706d94755d71836adbf88ef18dae1",
+    "lattica-prover-p3/scripts/block-v2-native-arrivals.py": "962e53d3527f362a9b16ea85f17adc4987b503e9235df93e4395de6fa1e14ad9",
+    "lattica-prover-p3/scripts/block-v2-native-fixture.py": "b357fa7430d8eb8a2a0eceb7f928bc00c55c926839705c1c0c8f353b7033a4a2",
+    "lattica-prover-p3/scripts/block-v2-padding-trial.py": "7035b25465251f2e486ab21431671cf9e96f0b06fe9400a8bf80f607977fe9bf",
+    "lattica-prover-p3/scripts/block-v2-pool-campaign.py": "fcad7197de74650461217a8af68face041ae7f4046ed8f01b8c915e7e51acfe6",
+    "lattica-prover-p3/scripts/block-v2-pool-research.py": "cd029a476a1dd015d2e52df365e824212e1c638130392be2fc6d3871982bb987",
+    "lattica-prover-p3/scripts/block-v2-query-compare.py": "1dadef9a587d1eed3e355ddec6a73b07da4617ec3489bc656203724a9a1abada",
+    "lattica-prover-p3/scripts/block-v2-readback-compare.py": "9ad3da456c33c7ef4763218c54f70162969abb4d4d1849d2f9bc2674d09a6ac6",
+    "lattica-prover-p3/scripts/block-v2-retention-model.py": "799ad4fe2693a37ec2acd6c7f2b48d276b7d35319ab4ff1a12f7fe78139198d3",
+    "lattica-prover-p3/scripts/block-v2-scalability.py": "57d8cf346c5de468cc125c130e075fbc9ab696374236102aa6e8098faa551de9",
+    "lattica-prover-p3/scripts/block-v2-scratch-bench.py": "8f57c624b4193e00561a19928728295e07e6758ba66178a0b6e8f642bbccccf0",
+    "lattica-prover-p3/scripts/block-v2-single-eight-trial.py": "919c120d597cb9197b0531949fd5327a9e3a1ff67564b51e3223d022991db302",
+    "lattica-prover-p3/scripts/block-v2-throughput-pilot.py": "83c07ca43d7985bdc6caa5470a6a33fa240ebdf347e0f260895b10d6dd84477d",
+    "lattica-prover-p3/scripts/block-v2-typed-compare.py": "d303f3c816a43b66472150072e694e63d60a4989b044d9d61f9264d517490238",
+    "lattica-prover-p3/scripts/block-v2-typed-count-analysis.py": "4423899c470bac59bcbae0b0db4dc64afb55c43e03f3f573d6c318ff684a2788",
+    "lattica-prover-p3/scripts/block-v2-typed-count-matrix.py": "c4ef6cb8d9602f138e654ffc2b95aa754c7d1ac9cf42b71e9a26074413123b7a",
+    "lattica-prover-p3/scripts/block-v2-typed-cpu-prepare.py": "5c01955aa29cedbd69cd87fd7edc1ab3bff0e34dce33e2b626fdd5567f5b8ff7",
+    "lattica-prover-p3/scripts/block-v2-typed-fleet-compare.py": "be8eb38d57c9609b0c3ee5cc523e81f4a094da7ffe70c4e51f68b81c91ceba49",
+    "lattica-prover-p3/scripts/block-v2-typed-gpu-run.py": "a108c9a0bc43ce9b67b74ec6c70c8ffc837305bc8a060ba381969ccbce8e4e9a",
+    "lattica-prover-p3/scripts/block-v2-typed-interop.py": "791724074085bb733b8359c68ce304bb09eb33984bd07ebb0561d5e667f9ee2f",
+    "lattica-prover-p3/scripts/block-v2-typed-multi-gpu-run.py": "68bd8f0b311769e5a8db235fe050eb036d71e30baeaf6722d27fa80ec00da6ac",
+    "lattica-prover-p3/scripts/block-v2-typed-negative-audit.py": "8e70f7da4fbdb0bb1dc6ba952f83c129fa25bcb293b3f36f3c428f86231f8f8b",
+    "lattica-prover-p3/scripts/block-v2-typed-shared-gpu-run.py": "8dd054bfc2a12c1552464a745c1d7cf2a71be364de4f4032cc46f75ef8126533",
+    "lattica-prover-p3/scripts/block_v2_controller_bootstrap.py": "9270779ca7c015467e3a3eeeb252077c9e1d38df91c7dc2c322319dd839e2c22",
+    "lattica-prover-p3/scripts/block_v2_coordinator_bootstrap.py": "4aae4d950b3e62cbf096d2b6301f51c72db5b785e2ed9815fb5689145062014d",
+    "lattica-prover-p3/scripts/block_v2_host_store.py": "adb475775b6834aa8b4ddbc14da14725e1534df34ad874002109dd70f67aba60",
+    "lattica-prover-p3/scripts/block_v2_native_arrivals.py": "2f34afb8f600eb6586ad0629b8bbcffc7497130aa3abb2da5343264db40fc418",
+    "lattica-prover-p3/scripts/block_v2_native_delivery.py": "5c182140dacb9b564b62c82aff0b78b18d3af3f4b2cc293002bf860c9017176c",
+    "lattica-prover-p3/scripts/block_v2_native_head_guard.py": "0c645264a8477b7edb4ddad6c355af4f24923e968ce6d0c0cf4c5b4f728557a7",
+    "lattica-prover-p3/scripts/block_v2_native_session.py": "825e5137d8949f280448b7fedd3b8f511ab3f65e6d7e08c3bba3c3e2d606b5e2",
+    "lattica-prover-p3/scripts/block_v2_native_shared.py": "e858fc5376b32a85ea0f817a5884ae420e5bf0076e4183c6e82d5cb478f092d1",
+    "lattica-prover-p3/scripts/block_v2_pending_candidate.py": "e38e153d1db12fa60caf452e485888361f15e78bb32f425e95707234030cd9f3",
+    "lattica-prover-p3/scripts/block_v2_pool_qualification.py": "8829f355c8479d7cd47b18b2acfc35f99f8cbe7eaeda4c4e11c4bb14253800d3",
+    "lattica-prover-p3/scripts/block_v2_report_export.py": "f378382cf1a54bbc05a4dc15528cbadb4a146ae3488fabe72048ecfc7d5c7018",
+    "lattica-prover-p3/scripts/block_v2_resources.py": "026278e264434ebb3727372c58e6f395f1f5e77d0cc93aae996044be2a5cef9d",
+    "lattica-prover-p3/scripts/block_v2_shared_calibration.py": "d6dbb307dde0107d6d040297048d2d5cdb5fac637278d8f2ac97aacc4977f843",
+    "lattica-prover-p3/scripts/block_v2_supervisor.py": "fa3086d231b793493fa0bbde90c1fd3382999a68ea9040bbf7a1629ae98e5f30",
+    "lattica-prover-p3/scripts/block_v2_throughput.py": "0be9d7008ee64810ebb56769f029bddc43ee38dc08d966def1bacdbbbd2e4d0e",
+    "lattica-prover-p3/scripts/build-apple-metal.py": "6f0cabe07fe870427795bc8f2529bf1677ab17198529311e3803f85bf5f6486c",
+    "lattica-prover-p3/scripts/build-block-v2-host.py": "f85b0303ebe9de49dc187e3785dac234e0df1b91a5e028f84041719f25396c67",
+    "lattica-prover-p3/scripts/check-apple-source-commit.py": "9716fb41ee2bbb2b036a06cae8b87bcc126fc571caf263de9ec403932429409c",
+    "lattica-prover-p3/scripts/check-block-v2-native-session.py": "f97c6d919ba068a8c2a22f05a82ec1d9748e9819c9b51fdfaf846b9c9eb85cef",
+    "lattica-prover-p3/scripts/export-apple-benchmarks.py": "0f87abe3e5649d8f28ba521ccc85d60fee4f153105ce8ddf1a87fa4ea6e33842",
+    "lattica-prover-p3/scripts/generate-metal-kernels.py": "1056db237802414d8a78533d509c73946b3bb0d2f896fbcfeb96c6c12b5c24c8",
+    "lattica-prover-p3/scripts/prepare-apple-benchmark-package.py": "7ed35bff22cd99c920fe6db971495194918d3d7ad4f460f8666c0f7cb435619b",
+    "lattica-prover-p3/scripts/prepare-block-v2-gpu-default-bench.py": "84b056864519c7aa14a795314b68d83d005cf83ae0291b108a0390f83a528d1f",
+    "lattica-prover-p3/scripts/prepare-block-v2-max-threads.py": "80dc876ff27b844f67b78d3ada6868adec3bfbf82253f90bbac085696ac47078",
+    "lattica-prover-p3/scripts/prepare-block-v2-pipeline-bench.py": "d43936a71a87fbe83b469c31f7ac4de90f0c3947b43a4f7687c98a22731b0b55",
+    "lattica-prover-p3/scripts/qualify-block-v2-native-delivery.py": "bd4c51f65f2e3cc5268b2b5dee658234999bf17a4805bffc44db5e3c8238c772",
+    "lattica-prover-p3/scripts/qualify-block-v2-native-host.py": "f663e781a8f25baeef64cad3e40575032fe4ba9c8200d7782a10c48e5746a0e6",
+    "lattica-prover-p3/scripts/qualify-block-v2-typed-execution.py": "6b661c02b0e16e3f506a39a07a88f09ba4ce69384b26ecdf0a246a666e3efc61",
+    "lattica-prover-p3/scripts/qualify-block-v2-typed-recovery.py": "e4ce4ee76b73de422616e5bd4b84f549afe3c5821246b5262cf9f62a9e99a2cb",
+    "lattica-prover-p3/scripts/qualify-vram16-capacity.py": "25f1e9c5a32c26d8dd0ffa5decbf0fb814c637eba289c9b358815e09fc9c28da",
+    "lattica-prover-p3/scripts/report-apple-metal.py": "54799ec1aad4c8df59b73308dcc5d1cadbf55e4f25bc1cc0153028ca944419bb",
+    "lattica-prover-p3/scripts/report-block-v2-fusion.py": "07a8a626880ddf41e64e1936070ca8d5cd4be059c566a20200ac041bf65ade7e",
+    "lattica-prover-p3/scripts/report-block-v2-gpu-default-bench.py": "3baf3bf7c8218c6a4e065a8a3e9f91b43a168916f604f9925439511fb9d47922",
+    "lattica-prover-p3/scripts/report-retained-pilot.py": "c0e4d314bb2ce9aaed8b7d8ed2834e2db1377917c83158b5713ef756e58bfb11",
+    "lattica-prover-p3/scripts/run-apple-benchmark-package.py": "2571145dcf1ab51de1cc0b13a6a126be4d43ccb215c270c90067715e7a49c5d0",
+    "lattica-prover-p3/scripts/test-apple-benchmark-export.py": "e9355ac244a706aa73ea60fad6e08c25705a7a029b3288251d7da412592809bd",
+    "lattica-prover-p3/scripts/test-apple-benchmark-package.py": "6685f0b622ffea1e236cd25dc00275cf6ad030b4f61f4fb6b58b648e2dd85dcc",
+    "lattica-prover-p3/scripts/test-apple-source-commit.py": "6539c476b2aa9b3cefab17f899a795ff33f24d18ff06473d3b6025a29efae70d",
+    "lattica-prover-p3/scripts/test-bench-apple-metal.py": "d85a8ded5315c27a047d9f405923a1929015f4198511b6a90c3948218ac4b564",
+    "lattica-prover-p3/scripts/test-block-v2-benchmark-report.py": "559b9a765d782fe41dae0f350178def7f62b629be771a4ec653bc5fe89a2d740",
+    "lattica-prover-p3/scripts/test-block-v2-controller-bootstrap.py": "a62ee3f058bdd28b36810ce1c3dc45df2502331a7f1f3a90de29ce4b7c8bb83f",
+    "lattica-prover-p3/scripts/test-block-v2-coordinator-bootstrap.py": "daf17675de2a15565994ee4e57912db98c78193d32ad0a40557f423e0592c9ae",
+    "lattica-prover-p3/scripts/test-block-v2-count-phase-analysis.py": "c0e0b9df253c0c6d1822fb442f6a1bec8812e8dfd325c551f23673df6dd04627",
+    "lattica-prover-p3/scripts/test-block-v2-eight-series-lifecycle-harness.py": "cdcaea7b1f6cacebe60e3111bb3ca160f0a10e493a7dd0807d13b5844e47e239",
+    "lattica-prover-p3/scripts/test-block-v2-eight-series-lifecycle.py": "d58864bdcd7d7ad23ebeedb261318229066ba5a74aa4b7b611dfa4075a7709d3",
+    "lattica-prover-p3/scripts/test-block-v2-eight-series.py": "7cb7429b5b7456dd2e83368188c69358557b289f0d955c933dc12d1b3bd0ad71",
+    "lattica-prover-p3/scripts/test-block-v2-fusion-prune.py": "3a65d15216eabe4439ba3f768e14bb33204261894f2cd308256e26dbd5f52b09",
+    "lattica-prover-p3/scripts/test-block-v2-fusion-trial.py": "9731157ec1c710906274b0864c66a6de553c368b6312b868aeada34472adee54",
+    "lattica-prover-p3/scripts/test-block-v2-gpu-compact-entrypoints.py": "24d8b08e48786317745c9dcb4ab28ecbfd3a1a8007317c86b8616945f39bb054",
+    "lattica-prover-p3/scripts/test-block-v2-gpu-compact-lifecycle.py": "c2527109e6a8cbc4c0557509ebb99dcfbd5fb6178a29cb906586c9f05b79671d",
+    "lattica-prover-p3/scripts/test-block-v2-gpu-compact-trial.py": "9a4d9aea241b78652fa66373bcd5c1de7e7c94ca452487ca3a73fe4ebc4c86b6",
+    "lattica-prover-p3/scripts/test-block-v2-gpu-grouped-entrypoints.py": "173e91ce661ce518eee5551910f89f0f59c32e02d5d8af5c813dc7df90bb06bf",
+    "lattica-prover-p3/scripts/test-block-v2-gpu-grouped-lifecycle.py": "acb76c504fc8ddf5bd2166c38aaa682502a8c962ed68dfc19f5c60d2a1d8781f",
+    "lattica-prover-p3/scripts/test-block-v2-gpu-grouped-trial.py": "fa4925581af4093acaed5d97d9e02e62144919185ae449c2271ff6bfd25b9827",
+    "lattica-prover-p3/scripts/test-block-v2-grouped-lifecycle.py": "9fd78f199a40c09f153ae216e7d024b49006235e782e1e40c0d218b847c2ad6e",
+    "lattica-prover-p3/scripts/test-block-v2-grouped-trial.py": "c958089527d5a7becc3bd83a07cb10fd82960dbcabd44a313a27e89e3e2be52c",
+    "lattica-prover-p3/scripts/test-block-v2-host-store.py": "f322faf9db154efcd115df32dd60c140644c0789db1373e1531405a247c02323",
+    "lattica-prover-p3/scripts/test-block-v2-lookup-mask-model.py": "88b6591b51995ecec2dc6497d845ff504276e75644d60ce9eabb7f89c3c32521",
+    "lattica-prover-p3/scripts/test-block-v2-multi-gpu.py": "1613a277862d76db004afbcb1502d0376b2045cd5575f144e2807dfc15cbc783",
+    "lattica-prover-p3/scripts/test-block-v2-native-arrivals.py": "cef46e6a8d42aa2e69109ebfd63ce3e9e0ad7cc42f96dc3092827a32590d2d63",
+    "lattica-prover-p3/scripts/test-block-v2-native-head-guard.py": "fa733158d1a179a9aa8eb77a262cf34c76bfe1af061cfcea19341eb7c46ef49a",
+    "lattica-prover-p3/scripts/test-block-v2-native-host.py": "871d0a0c82918abf76c6d5fe917470c95db737e1e0f00fe1be7f00e31882485d",
+    "lattica-prover-p3/scripts/test-block-v2-native-preflight.py": "299ebddf37673b6b1a3078eac24405197ae33e14c053f6f2dd8323a99c714c38",
+    "lattica-prover-p3/scripts/test-block-v2-native-session.py": "3701137abfe52e45df1ac580d8812374aabb8a33e9546744ea281393e9a1f8cb",
+    "lattica-prover-p3/scripts/test-block-v2-native-shared.py": "700622ee781e4e6c98c5892b88b9b96fc9c3e5d16ce276bb20c0c49c52b1fffb",
+    "lattica-prover-p3/scripts/test-block-v2-padding-trial.py": "8ce6e10681525ea8c30d84f16fe504c5cfc573ee5151212ff70dd3e6548a82ae",
+    "lattica-prover-p3/scripts/test-block-v2-pending-candidate.py": "537a7cd9795db9300d4a6ca0836abb40c7ffa15e1bf5d204f76d67325cfe66f3",
+    "lattica-prover-p3/scripts/test-block-v2-pipeline-bench.py": "8a87ffd3b0b0a273cbe93e2fb890a49a471a8fafb6c77f66cdf45b11188d096c",
+    "lattica-prover-p3/scripts/test-block-v2-pool.py": "91d78e50b8a9b1a7d18958ae811aaff9ddddcd29fcd173e4d5ce5460064ca038",
+    "lattica-prover-p3/scripts/test-block-v2-query-compare.py": "8ee1ffa3f4e3ce1c6e72138b189237e1bf7f06ec7a45e9c553b8f7d2354582ec",
+    "lattica-prover-p3/scripts/test-block-v2-query-report.py": "4fd14e84a651f5d4841df329179242a7105bbe32a8f30b49b66728fbee35ffc1",
+    "lattica-prover-p3/scripts/test-block-v2-readback-compare.py": "ec8e8784cf539dd178a2205542eab9ac73caefd338f7007ba8ec35319b43b8f9",
+    "lattica-prover-p3/scripts/test-block-v2-retention-model.py": "8d1c75fd82889b7fdec720a5d640500f8e589f058c246e24829e396f0b232789",
+    "lattica-prover-p3/scripts/test-block-v2-scalability.py": "c2aca406d4ec307c9b83951338d736ae504acda3969ab835aca6a4f69e7ce486",
+    "lattica-prover-p3/scripts/test-block-v2-scratch-bench.py": "c7ce37cd76c9d4e94233d799ad0b4e93373e12e0d1f2edda5d3aa240ad587235",
+    "lattica-prover-p3/scripts/test-block-v2-shared-calibration.py": "61e55286d3935568d129168034c8fa188a332473c4a55875b6c1016450ef2893",
+    "lattica-prover-p3/scripts/test-block-v2-single-eight-lifecycle.py": "85f33a352794e9462e9996d32d9c1659b6f86bd688373fa9ac64d7445feefe6b",
+    "lattica-prover-p3/scripts/test-block-v2-single-eight-trial.py": "c9ec6ee26e6dd268e3416e386a46e5a7fc79aa822dde109512ff55260e9ce26f",
+    "lattica-prover-p3/scripts/test-block-v2-supervisor.py": "37d51a740c589dcf560c3167a25d0b8886a08292f910e5dbbb27f9eca587640b",
+    "lattica-prover-p3/scripts/test-block-v2-throughput.py": "e3831558e47e5b0f818c2a283b6447dddbca682c64cf25d99fa713071b84e4a2",
+    "lattica-prover-p3/scripts/test-block-v2-typed-compare.py": "8d79570e251373888c1aa33d73a321df13ca5fd9bf1b32e6969e4a9b9c7425f3",
+    "lattica-prover-p3/scripts/test-block-v2-typed-comparison-report.py": "35d5f027511e55de4e9c099a0eb703c3315b955e076ddb7207fcef20db9810be",
+    "lattica-prover-p3/scripts/test-block-v2-typed-count-analysis.py": "1322e6152443f278d946bbff1b56ccd24e09cf943de627b0ad17d1a1fe078156",
+    "lattica-prover-p3/scripts/test-block-v2-typed-count-matrix.py": "13466b20761effd4804be39c2eb28fb3f775622a3d974a1469c950dd97ca9a4c",
+    "lattica-prover-p3/scripts/test-block-v2-typed-cpu-prepare.py": "ee3b33937377686d95df14a671e4651ae8f222519c4571b6a9eade24b034d51c",
+    "lattica-prover-p3/scripts/test-block-v2-typed-fleet-compare.py": "3d238008d5e131f261e460abc2ced9a4d0514f4277ba2a0bba4930f5a25d61f1",
+    "lattica-prover-p3/scripts/test-block-v2-typed-fleet-report.py": "b9190ec0b1a738bef46cc286d738f6502750f02afeea24a33f538486fa478dec",
+    "lattica-prover-p3/scripts/test-block-v2-typed-gpu-run.py": "4fd9a3c263b08a6d679c8399a0d0b89a53852296e942ab1579e9fa26cea528a7",
+    "lattica-prover-p3/scripts/test-block-v2-typed-multi-gpu-run.py": "5619fd7e2b4dc5d0edaaeb17d03afac390cbbbf7dd54be442ec82315e23f43a8",
+    "lattica-prover-p3/scripts/test-block-v2-typed-recovery.py": "b736e65f5a9d9b5fe9c9188fd2115f7e3aeee68a039b640773fd8b59d4050f08",
+    "lattica-prover-p3/scripts/test-block-v2-typed-report.py": "0f8d486d2a92a83bc457ac9786e759405e03b905348edcf9211830ae0ca75f32",
+    "lattica-prover-p3/scripts/test-block-v2-typed-shared-gpu-run.py": "445991175d584b5b83d833c0b6c629d27bed40ee463b9cdabac8306e52867535",
+    "lattica-prover-p3/scripts/test-metal-backend.py": "b01d8b32f02822c579b2c8e17b456e98202dc43d088238d6b98a7e3ebed72b1a",
+    "lattica-prover-p3/scripts/test-report-block-v2-fusion.py": "f095d638775588279592e28e1cdd0087d015b708b99a5ce5fe490db754178e56",
+    "lattica-prover-p3/scripts/test-vram16-capacity.py": "470bcb4bceced8076c001bda8dc08e43318bd9b1318b9348ca5f10a25ad602f4"
+  },
+  "python_validation": {
+    "status": "inherited-source-unchanged",
+    "checkpoint": "9.114",
+    "test_cases": 135,
+    "rerun": false,
+    "suites": {
+      "resource-final-01": 66,
+      "shared-runner-final-01": 40,
+      "shared-calibration-final-01": 18,
+      "native-shared-final-01": 11
+    },
+    "source_archive": "lattica-prover-p3/benchmark-results/gpu-coordinator-partition-20261011/control/python-source.tar.gz",
+    "source_archive_sha256": "8dddbcdc89074a2cc40c8ebb38ac3cedbe855be80ea80e1dce5b63ff4d1f2a3b"
+  },
+  "gpu_validation": {
+    "status": "inherited-proving-arithmetic-unchanged",
+    "checkpoint": "9.106",
+    "rerun": false,
+    "evidence": "docs/evidence/gpu-coordinator-retained-storage-2026-10-10.json",
+    "full_size_proofs": 4,
+    "arithmetic_stages_opencl_per_proof": 16,
+    "altered_statements_rejected": 4,
+    "registry_change": "Only an accessor and visibility of the existing storage limit changed; identity and verification implementations match the parent byte-for-byte.",
+    "local_endpoint_change": "Only execution sources and a layout example changed since 9.110; proving arithmetic remains inherited from 9.106.",
+    "pool_result_change": "Only execution metadata/serialization and a layout example changed since 9.111; proving arithmetic remains inherited from 9.106.",
+    "preparation_handoff_change": "Only execution ownership/metadata and a layout example changed since 9.112; proving arithmetic remains inherited from 9.106.",
+    "coordinator_partition_change": "Shared/job admission, recovery metadata and layout diagnostics changed since 9.113. Proving arithmetic remains inherited from 9.106.",
+    "preparation_ingress_change": "Bounded CLI deserialization, artifact reads, key caps and task metadata changed since 9.114; proving arithmetic remains inherited from 9.106.",
+    "wallet_verification_input_change": "Only CPU wallet verification admission, public argument ownership, diagnostics and tests changed since 9.115. Proving arithmetic remains inherited from 9.106.",
+    "wallet_verifier_degree_change": "Only CPU verifier AIR adapters and their call sites/tests changed since 9.116. GPU proving arithmetic remains inherited from 9.106; no fresh GPU proof was run.",
+    "registered_cap_invariant_change": "Only registered CPU verification cap admission, tests, a wallet comment and an unused import changed since 9.117. No fresh GPU proof was run.",
+    "wallet_verifier_scratch_change": "CPU wallet verification now uses fresh SysRng configuration and allocation-free release x86_64 component admission. Proving functions, original AIRs and proof parameters are unchanged. No fresh GPU proof was run.",
+    "wallet_registry_context_change": "Candidate preparation approves an immutable borrowed registry once, reusing that identity across CPU wallet verification. Proof generation and numerical verification are unchanged; no fresh GPU proof was run."
+  },
+  "research_host_test_features": [
+    "block-v2-wide-lanes",
+    "gpu",
+    "stream"
+  ],
+  "standard_gpu_host_test_features": [
+    "block-v2",
+    "gpu",
+    "stream"
+  ],
+  "cpu_compatibility_features": [
+    [
+      "block-v2",
+      "stream"
+    ],
+    [
+      "block-v2-wide-lanes",
+      "stream"
+    ],
+    [
+      "block-v2"
+    ],
+    []
+  ],
+  "implementation": [
+    "Introduce a private-field TypedRegistryContext borrowing the approved Registry<12> immutably. Construction validates the exact expected profile, shape, cap layout and backing using the existing RegistryPin constructor.",
+    "Candidate preparation constructs one context and reuses it across the sequential wallet intake loop. The borrow prevents registry mutation and escape beyond the registry lifetime; no serialized authority or global identity cache is introduced.",
+    "Factor existing typed wallet verification into a framing guard and one private admitted implementation. The original public and worker-owned entry points keep their per-call registry check; the context skips only that already-established identity check.",
+    "Decode and independently verify every wallet chain, host policy, numerical proof, statement summary and artifact identity as before. Proof generation, numerical verifier, parameters, formats and physical floors are unchanged."
+  ],
+  "wallet_registry_context": {
+    "registry_height_in_fresh_tests": 64,
+    "avoided_requested_bytes_per_reused_verification": 2996953,
+    "avoided_allocation_requests_per_reused_verification": 18480,
+    "measurement": "Calling-thread cumulative requests for independently measured registry checking; matched chain-rejected calls isolate this difference before Rayon/numerical verification.",
+    "observations": [
+      {
+        "kind": "join-split",
+        "run": "wallet-join-split-01",
+        "context": {
+          "mode": 1,
+          "verified": 3,
+          "chain_rejections": 2,
+          "altered_public_rejected": "true",
+          "identity_bytes": 2996953,
+          "identity_calls": 18480,
+          "direct_rejected_bytes": 4877155,
+          "reused_rejected_bytes": 1880202,
+          "direct_rejected_calls": 30853,
+          "reused_rejected_calls": 12373
+        },
+        "scratch": [
+          {
+            "air": "join_split",
+            "mutation": "none",
+            "valid": "true",
+            "requested_bytes": 11394064,
+            "calls": 40362,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "join_split",
+            "mutation": "chain",
+            "valid": "false",
+            "requested_bytes": 9453086,
+            "calls": 7761,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "join_split",
+            "mutation": "public",
+            "valid": "false",
+            "requested_bytes": 9485518,
+            "calls": 8084,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "join_split",
+            "mutation": "opening",
+            "valid": "false",
+            "requested_bytes": 9416798,
+            "calls": 7383,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "join_split",
+            "mutation": "last_fri",
+            "valid": "false",
+            "requested_bytes": 11371358,
+            "calls": 40153,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "join_split",
+            "mutation": "restored",
+            "valid": "true",
+            "requested_bytes": 11382752,
+            "calls": 40259,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          }
+        ],
+        "input_validation": {
+          "index": 0,
+          "proof_backing_bytes": 1026368,
+          "cpu_proofs": 1,
+          "upstream_verified": "true",
+          "altered_chain_rejected": "true",
+          "altered_public_rejected": "true",
+          "altered_opening_rejected": "true"
+        }
+      },
+      {
+        "kind": "htlc-redeem",
+        "run": "wallet-htlc-redeem-01",
+        "context": {
+          "mode": 4,
+          "verified": 3,
+          "chain_rejections": 2,
+          "altered_public_rejected": "true",
+          "identity_bytes": 2996953,
+          "identity_calls": 18480,
+          "direct_rejected_bytes": 4916976,
+          "reused_rejected_bytes": 1920023,
+          "direct_rejected_calls": 30853,
+          "reused_rejected_calls": 12373
+        },
+        "scratch": [
+          {
+            "air": "htlc",
+            "mutation": "none",
+            "valid": "true",
+            "requested_bytes": 15621712,
+            "calls": 43216,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "chain",
+            "valid": "false",
+            "requested_bytes": 13691124,
+            "calls": 10902,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "public",
+            "valid": "false",
+            "requested_bytes": 13645604,
+            "calls": 10413,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "opening",
+            "valid": "false",
+            "requested_bytes": 13625652,
+            "calls": 10220,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "last_fri",
+            "valid": "false",
+            "requested_bytes": 15625476,
+            "calls": 43295,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "restored",
+            "valid": "true",
+            "requested_bytes": 15559696,
+            "calls": 42570,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          }
+        ],
+        "input_validation": {
+          "index": 1,
+          "proof_backing_bytes": 1044632,
+          "cpu_proofs": 1,
+          "upstream_verified": "true",
+          "altered_chain_rejected": "true",
+          "altered_public_rejected": "true",
+          "altered_opening_rejected": "true"
+        }
+      },
+      {
+        "kind": "htlc-refund",
+        "run": "wallet-htlc-refund-01",
+        "context": {
+          "mode": 4,
+          "verified": 3,
+          "chain_rejections": 2,
+          "altered_public_rejected": "true",
+          "identity_bytes": 2996953,
+          "identity_calls": 18480,
+          "direct_rejected_bytes": 4917217,
+          "reused_rejected_bytes": 1920264,
+          "direct_rejected_calls": 30853,
+          "reused_rejected_calls": 12373
+        },
+        "scratch": [
+          {
+            "air": "htlc",
+            "mutation": "none",
+            "valid": "true",
+            "requested_bytes": 15539920,
+            "calls": 42364,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "chain",
+            "valid": "false",
+            "requested_bytes": 13586292,
+            "calls": 9810,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "public",
+            "valid": "false",
+            "requested_bytes": 13641380,
+            "calls": 10369,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "opening",
+            "valid": "false",
+            "requested_bytes": 13622004,
+            "calls": 10182,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "last_fri",
+            "valid": "false",
+            "requested_bytes": 15487428,
+            "calls": 41857,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "restored",
+            "valid": "true",
+            "requested_bytes": 15522064,
+            "calls": 42178,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          }
+        ],
+        "input_validation": {
+          "index": 2,
+          "proof_backing_bytes": 1044632,
+          "cpu_proofs": 1,
+          "upstream_verified": "true",
+          "altered_chain_rejected": "true",
+          "altered_public_rejected": "true",
+          "altered_opening_rejected": "true"
+        }
+      },
+      {
+        "kind": "issuance",
+        "run": "wallet-issuance-01",
+        "context": {
+          "mode": 5,
+          "verified": 3,
+          "chain_rejections": 2,
+          "altered_public_rejected": "true",
+          "identity_bytes": 2996953,
+          "identity_calls": 18480,
+          "direct_rejected_bytes": 4877004,
+          "reused_rejected_bytes": 1880051,
+          "direct_rejected_calls": 30853,
+          "reused_rejected_calls": 12373
+        },
+        "scratch": [
+          {
+            "air": "issuance",
+            "mutation": "none",
+            "valid": "true",
+            "requested_bytes": 11356432,
+            "calls": 39970,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "issuance",
+            "mutation": "chain",
+            "valid": "false",
+            "requested_bytes": 9384352,
+            "calls": 7045,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "issuance",
+            "mutation": "public",
+            "valid": "false",
+            "requested_bytes": 9360144,
+            "calls": 6778,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "issuance",
+            "mutation": "opening",
+            "valid": "false",
+            "requested_bytes": 9460768,
+            "calls": 7841,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "issuance",
+            "mutation": "last_fri",
+            "valid": "false",
+            "requested_bytes": 11340064,
+            "calls": 39827,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "issuance",
+            "mutation": "restored",
+            "valid": "true",
+            "requested_bytes": 11348192,
+            "calls": 39899,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          }
+        ],
+        "input_validation": {
+          "index": 3,
+          "proof_backing_bytes": 1026368,
+          "cpu_proofs": 1,
+          "upstream_verified": "true",
+          "altered_chain_rejected": "true",
+          "altered_public_rejected": "true",
+          "altered_opening_rejected": "true"
+        }
+      }
+    ],
+    "substituted_registry_cases_per_feature_suite": 4,
+    "invalid_framing_cases_per_feature_suite": 3,
+    "production_preparation_registry_approvals": "one per candidate, reused across all wallet inputs",
+    "numerical_verification_per_wallet": true,
+    "throughput_measured": false
+  },
+  "wallet_verifier_scratch": {
+    "target": "release x86_64, pinned Rust 1.96 and dependency sources",
+    "temporary_payload_limit_bytes": 67108864,
+    "caller_owned_proof_backing_limit_bytes": 67108864,
+    "exact_quotient_chunks": 16,
+    "rounds": 3,
+    "matrices_per_round": [
+      1,
+      1,
+      16
+    ],
+    "points_per_matrix": [
+      1,
+      2,
+      1
+    ],
+    "periodic_path": "p3-commit TwoAdicMultiplicativeCoset::evaluate_periodic_column_at -> p3-matrix interpolate_coset",
+    "fold_reduce_accumulator_count_bound": "at most twice the nonempty indexed row count",
+    "peak_formula": "persistent + max(periodic_construction, periodic_retained + max(one_interpolation, FRI))",
+    "cumulative_formula": "persistent + periodic_construction + all_interpolations + FRI",
+    "persistent_formula": "configuration + Uni-STARK rounds/domains + transcript + AIR + diagnostic",
+    "observations_measure": "cumulative allocator-request bytes, not live peak or RSS",
+    "metrics": {
+      "cpu": {
+        "shapes": {
+          "cases": 56,
+          "largest_peak_bytes": 28704800,
+          "largest_cumulative_bytes": 68718544,
+          "limit_bytes": 67108864,
+          "allocations": 0
+        },
+        "air": [
+          {
+            "air": "join_split",
+            "requested_bytes": 2904,
+            "calls": 5,
+            "source_bound": 11616
+          },
+          {
+            "air": "htlc",
+            "requested_bytes": 4080,
+            "calls": 5,
+            "source_bound": 16320
+          },
+          {
+            "air": "issuance",
+            "requested_bytes": 2904,
+            "calls": 5,
+            "source_bound": 11616
+          }
+        ],
+        "interpolation": [
+          {
+            "htlc": "false",
+            "period": 32,
+            "on_coset": "true",
+            "requested_bytes": 1304,
+            "calls": 4,
+            "source_bound": 10496
+          },
+          {
+            "htlc": "false",
+            "period": 32,
+            "on_coset": "false",
+            "requested_bytes": 9056,
+            "calls": 70,
+            "source_bound": 10496
+          },
+          {
+            "htlc": "false",
+            "period": 4096,
+            "on_coset": "true",
+            "requested_bytes": 163864,
+            "calls": 4,
+            "source_bound": 1245952
+          },
+          {
+            "htlc": "false",
+            "period": 4096,
+            "on_coset": "false",
+            "requested_bytes": 383968,
+            "calls": 250,
+            "source_bound": 1245952
+          },
+          {
+            "htlc": "true",
+            "period": 32,
+            "on_coset": "true",
+            "requested_bytes": 1304,
+            "calls": 4,
+            "source_bound": 10496
+          },
+          {
+            "htlc": "true",
+            "period": 32,
+            "on_coset": "false",
+            "requested_bytes": 9056,
+            "calls": 70,
+            "source_bound": 10496
+          },
+          {
+            "htlc": "true",
+            "period": 4096,
+            "on_coset": "true",
+            "requested_bytes": 163864,
+            "calls": 4,
+            "source_bound": 1245952
+          },
+          {
+            "htlc": "true",
+            "period": 4096,
+            "on_coset": "false",
+            "requested_bytes": 394720,
+            "calls": 362,
+            "source_bound": 1245952
+          }
+        ],
+        "periodic": [
+          {
+            "htlc": "false",
+            "columns": 33,
+            "height": 4096,
+            "construction_bytes": 733568,
+            "construction_bound": 741920,
+            "retained_bytes": 724768,
+            "retained_bound": 725296,
+            "evaluation_peak_bound": 1245952,
+            "evaluation_cumulative_bound": 27526400
+          },
+          {
+            "htlc": "true",
+            "columns": 43,
+            "height": 4096,
+            "construction_bytes": 1068256,
+            "construction_bound": 1081280,
+            "retained_bytes": 1052448,
+            "retained_bound": 1053456,
+            "evaluation_peak_bound": 1245952,
+            "evaluation_cumulative_bound": 39985920
+          }
+        ],
+        "configuration": {
+          "cases": 3,
+          "requested_bound": 3728
+        },
+        "all_thread_observer": {
+          "workers": 4,
+          "worker_bytes": 10485760,
+          "observed_bytes": 10485952,
+          "calls": 5
+        }
+      },
+      "research": {
+        "shapes": {
+          "cases": 56,
+          "largest_peak_bytes": 28706496,
+          "largest_cumulative_bytes": 68720240,
+          "limit_bytes": 67108864,
+          "allocations": 0
+        },
+        "air": [
+          {
+            "air": "join_split",
+            "requested_bytes": 2904,
+            "calls": 5,
+            "source_bound": 11616
+          },
+          {
+            "air": "htlc",
+            "requested_bytes": 4080,
+            "calls": 5,
+            "source_bound": 16320
+          },
+          {
+            "air": "issuance",
+            "requested_bytes": 2904,
+            "calls": 5,
+            "source_bound": 11616
+          }
+        ],
+        "interpolation": [
+          {
+            "htlc": "false",
+            "period": 32,
+            "on_coset": "true",
+            "requested_bytes": 1304,
+            "calls": 4,
+            "source_bound": 10496
+          },
+          {
+            "htlc": "false",
+            "period": 32,
+            "on_coset": "false",
+            "requested_bytes": 9056,
+            "calls": 70,
+            "source_bound": 10496
+          },
+          {
+            "htlc": "false",
+            "period": 4096,
+            "on_coset": "true",
+            "requested_bytes": 163864,
+            "calls": 4,
+            "source_bound": 1245952
+          },
+          {
+            "htlc": "false",
+            "period": 4096,
+            "on_coset": "false",
+            "requested_bytes": 391456,
+            "calls": 328,
+            "source_bound": 1245952
+          },
+          {
+            "htlc": "true",
+            "period": 32,
+            "on_coset": "true",
+            "requested_bytes": 1304,
+            "calls": 4,
+            "source_bound": 10496
+          },
+          {
+            "htlc": "true",
+            "period": 32,
+            "on_coset": "false",
+            "requested_bytes": 9056,
+            "calls": 70,
+            "source_bound": 10496
+          },
+          {
+            "htlc": "true",
+            "period": 4096,
+            "on_coset": "true",
+            "requested_bytes": 163864,
+            "calls": 4,
+            "source_bound": 1245952
+          },
+          {
+            "htlc": "true",
+            "period": 4096,
+            "on_coset": "false",
+            "requested_bytes": 390304,
+            "calls": 316,
+            "source_bound": 1245952
+          }
+        ],
+        "periodic": [
+          {
+            "htlc": "false",
+            "columns": 33,
+            "height": 4096,
+            "construction_bytes": 733568,
+            "construction_bound": 741920,
+            "retained_bytes": 724768,
+            "retained_bound": 725296,
+            "evaluation_peak_bound": 1245952,
+            "evaluation_cumulative_bound": 27526400
+          },
+          {
+            "htlc": "true",
+            "columns": 43,
+            "height": 4096,
+            "construction_bytes": 1068256,
+            "construction_bound": 1081280,
+            "retained_bytes": 1052448,
+            "retained_bound": 1053456,
+            "evaluation_peak_bound": 1245952,
+            "evaluation_cumulative_bound": 39985920
+          }
+        ],
+        "configuration": {
+          "cases": 3,
+          "requested_bound": 5424
+        },
+        "all_thread_observer": {
+          "workers": 4,
+          "worker_bytes": 10485760,
+          "observed_bytes": 10485952,
+          "calls": 5
+        }
+      },
+      "standard": {
+        "shapes": {
+          "cases": 56,
+          "largest_peak_bytes": 28706496,
+          "largest_cumulative_bytes": 68720240,
+          "limit_bytes": 67108864,
+          "allocations": 0
+        },
+        "air": [
+          {
+            "air": "join_split",
+            "requested_bytes": 2904,
+            "calls": 5,
+            "source_bound": 11616
+          },
+          {
+            "air": "htlc",
+            "requested_bytes": 4080,
+            "calls": 5,
+            "source_bound": 16320
+          },
+          {
+            "air": "issuance",
+            "requested_bytes": 2904,
+            "calls": 5,
+            "source_bound": 11616
+          }
+        ],
+        "interpolation": [
+          {
+            "htlc": "false",
+            "period": 32,
+            "on_coset": "true",
+            "requested_bytes": 1304,
+            "calls": 4,
+            "source_bound": 10496
+          },
+          {
+            "htlc": "false",
+            "period": 32,
+            "on_coset": "false",
+            "requested_bytes": 9056,
+            "calls": 70,
+            "source_bound": 10496
+          },
+          {
+            "htlc": "false",
+            "period": 4096,
+            "on_coset": "true",
+            "requested_bytes": 163864,
+            "calls": 4,
+            "source_bound": 1245952
+          },
+          {
+            "htlc": "false",
+            "period": 4096,
+            "on_coset": "false",
+            "requested_bytes": 396640,
+            "calls": 382,
+            "source_bound": 1245952
+          },
+          {
+            "htlc": "true",
+            "period": 32,
+            "on_coset": "true",
+            "requested_bytes": 1304,
+            "calls": 4,
+            "source_bound": 10496
+          },
+          {
+            "htlc": "true",
+            "period": 32,
+            "on_coset": "false",
+            "requested_bytes": 9056,
+            "calls": 70,
+            "source_bound": 10496
+          },
+          {
+            "htlc": "true",
+            "period": 4096,
+            "on_coset": "true",
+            "requested_bytes": 163864,
+            "calls": 4,
+            "source_bound": 1245952
+          },
+          {
+            "htlc": "true",
+            "period": 4096,
+            "on_coset": "false",
+            "requested_bytes": 386848,
+            "calls": 280,
+            "source_bound": 1245952
+          }
+        ],
+        "periodic": [
+          {
+            "htlc": "false",
+            "columns": 33,
+            "height": 4096,
+            "construction_bytes": 733568,
+            "construction_bound": 741920,
+            "retained_bytes": 724768,
+            "retained_bound": 725296,
+            "evaluation_peak_bound": 1245952,
+            "evaluation_cumulative_bound": 27526400
+          },
+          {
+            "htlc": "true",
+            "columns": 43,
+            "height": 4096,
+            "construction_bytes": 1068256,
+            "construction_bound": 1081280,
+            "retained_bytes": 1052448,
+            "retained_bound": 1053456,
+            "evaluation_peak_bound": 1245952,
+            "evaluation_cumulative_bound": 39985920
+          }
+        ],
+        "configuration": {
+          "cases": 3,
+          "requested_bound": 5424
+        },
+        "all_thread_observer": {
+          "workers": 4,
+          "worker_bytes": 10485760,
+          "observed_bytes": 10485952,
+          "calls": 5
+        }
+      }
+    },
+    "fresh_cpu_proofs": [
+      {
+        "kind": "join-split",
+        "run": "wallet-join-split-01",
+        "observations": [
+          {
+            "air": "join_split",
+            "mutation": "none",
+            "valid": "true",
+            "requested_bytes": 11394064,
+            "calls": 40362,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "join_split",
+            "mutation": "chain",
+            "valid": "false",
+            "requested_bytes": 9453086,
+            "calls": 7761,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "join_split",
+            "mutation": "public",
+            "valid": "false",
+            "requested_bytes": 9485518,
+            "calls": 8084,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "join_split",
+            "mutation": "opening",
+            "valid": "false",
+            "requested_bytes": 9416798,
+            "calls": 7383,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "join_split",
+            "mutation": "last_fri",
+            "valid": "false",
+            "requested_bytes": 11371358,
+            "calls": 40153,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "join_split",
+            "mutation": "restored",
+            "valid": "true",
+            "requested_bytes": 11382752,
+            "calls": 40259,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          }
+        ],
+        "input_validation": {
+          "index": 0,
+          "proof_backing_bytes": 1026368,
+          "cpu_proofs": 1,
+          "upstream_verified": "true",
+          "altered_chain_rejected": "true",
+          "altered_public_rejected": "true",
+          "altered_opening_rejected": "true"
+        }
+      },
+      {
+        "kind": "htlc-redeem",
+        "run": "wallet-htlc-redeem-01",
+        "observations": [
+          {
+            "air": "htlc",
+            "mutation": "none",
+            "valid": "true",
+            "requested_bytes": 15621712,
+            "calls": 43216,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "chain",
+            "valid": "false",
+            "requested_bytes": 13691124,
+            "calls": 10902,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "public",
+            "valid": "false",
+            "requested_bytes": 13645604,
+            "calls": 10413,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "opening",
+            "valid": "false",
+            "requested_bytes": 13625652,
+            "calls": 10220,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "last_fri",
+            "valid": "false",
+            "requested_bytes": 15625476,
+            "calls": 43295,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "restored",
+            "valid": "true",
+            "requested_bytes": 15559696,
+            "calls": 42570,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          }
+        ],
+        "input_validation": {
+          "index": 1,
+          "proof_backing_bytes": 1044632,
+          "cpu_proofs": 1,
+          "upstream_verified": "true",
+          "altered_chain_rejected": "true",
+          "altered_public_rejected": "true",
+          "altered_opening_rejected": "true"
+        }
+      },
+      {
+        "kind": "htlc-refund",
+        "run": "wallet-htlc-refund-01",
+        "observations": [
+          {
+            "air": "htlc",
+            "mutation": "none",
+            "valid": "true",
+            "requested_bytes": 15539920,
+            "calls": 42364,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "chain",
+            "valid": "false",
+            "requested_bytes": 13586292,
+            "calls": 9810,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "public",
+            "valid": "false",
+            "requested_bytes": 13641380,
+            "calls": 10369,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "opening",
+            "valid": "false",
+            "requested_bytes": 13622004,
+            "calls": 10182,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "last_fri",
+            "valid": "false",
+            "requested_bytes": 15487428,
+            "calls": 41857,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          },
+          {
+            "air": "htlc",
+            "mutation": "restored",
+            "valid": "true",
+            "requested_bytes": 15522064,
+            "calls": 42178,
+            "cumulative_bound": 55108144,
+            "peak_payload_bound": 15094400
+          }
+        ],
+        "input_validation": {
+          "index": 2,
+          "proof_backing_bytes": 1044632,
+          "cpu_proofs": 1,
+          "upstream_verified": "true",
+          "altered_chain_rejected": "true",
+          "altered_public_rejected": "true",
+          "altered_opening_rejected": "true"
+        }
+      },
+      {
+        "kind": "issuance",
+        "run": "wallet-issuance-01",
+        "observations": [
+          {
+            "air": "issuance",
+            "mutation": "none",
+            "valid": "true",
+            "requested_bytes": 11356432,
+            "calls": 39970,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "issuance",
+            "mutation": "chain",
+            "valid": "false",
+            "requested_bytes": 9384352,
+            "calls": 7045,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "issuance",
+            "mutation": "public",
+            "valid": "false",
+            "requested_bytes": 9360144,
+            "calls": 6778,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "issuance",
+            "mutation": "opening",
+            "valid": "false",
+            "requested_bytes": 9460768,
+            "calls": 7841,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "issuance",
+            "mutation": "last_fri",
+            "valid": "false",
+            "requested_bytes": 11340064,
+            "calls": 39827,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          },
+          {
+            "air": "issuance",
+            "mutation": "restored",
+            "valid": "true",
+            "requested_bytes": 11348192,
+            "calls": 39899,
+            "cumulative_bound": 42230976,
+            "peak_payload_bound": 14687952
+          }
+        ],
+        "input_validation": {
+          "index": 3,
+          "proof_backing_bytes": 1026368,
+          "cpu_proofs": 1,
+          "upstream_verified": "true",
+          "altered_chain_rejected": "true",
+          "altered_public_rejected": "true",
+          "altered_opening_rejected": "true"
+        }
+      }
+    ]
+  },
+  "wallet_verifier_degree": {
+    "constraint_degree": 8,
+    "log_num_quotient_chunks": 3,
+    "metrics": [
+      {
+        "air": "join_split",
+        "zk": 0,
+        "constraints": 82,
+        "degree": 8,
+        "extension_degree": 8,
+        "log_chunks": 3,
+        "reference_bytes": 56904,
+        "reference_allocations": 814,
+        "hinted_bytes": 0,
+        "hinted_allocations": 0,
+        "debug_assertions": "false"
+      },
+      {
+        "air": "join_split",
+        "zk": 1,
+        "constraints": 82,
+        "degree": 8,
+        "extension_degree": 8,
+        "log_chunks": 3,
+        "reference_bytes": 56904,
+        "reference_allocations": 814,
+        "hinted_bytes": 0,
+        "hinted_allocations": 0,
+        "debug_assertions": "false"
+      },
+      {
+        "air": "htlc",
+        "zk": 0,
+        "constraints": 145,
+        "degree": 8,
+        "extension_degree": 8,
+        "log_chunks": 3,
+        "reference_bytes": 89864,
+        "reference_allocations": 1202,
+        "hinted_bytes": 0,
+        "hinted_allocations": 0,
+        "debug_assertions": "false"
+      },
+      {
+        "air": "htlc",
+        "zk": 1,
+        "constraints": 145,
+        "degree": 8,
+        "extension_degree": 8,
+        "log_chunks": 3,
+        "reference_bytes": 89864,
+        "reference_allocations": 1202,
+        "hinted_bytes": 0,
+        "hinted_allocations": 0,
+        "debug_assertions": "false"
+      },
+      {
+        "air": "issuance",
+        "zk": 0,
+        "constraints": 81,
+        "degree": 8,
+        "extension_degree": 8,
+        "log_chunks": 3,
+        "reference_bytes": 56872,
+        "reference_allocations": 814,
+        "hinted_bytes": 0,
+        "hinted_allocations": 0,
+        "debug_assertions": "false"
+      },
+      {
+        "air": "issuance",
+        "zk": 1,
+        "constraints": 81,
+        "degree": 8,
+        "extension_degree": 8,
+        "log_chunks": 3,
+        "reference_bytes": 56872,
+        "reference_allocations": 814,
+        "hinted_bytes": 0,
+        "hinted_allocations": 0,
+        "debug_assertions": "false"
+      }
+    ],
+    "release_symbolic_inference_eliminated": true,
+    "debug_symbolic_inference_eliminated": false,
+    "changed_numerical_constraints": false,
+    "changed_proof_parameters": false,
+    "end_to_end_throughput_measured": false
+  },
+  "wallet_verification_inputs": {
+    "proof_backing_limit_bytes": 67108864,
+    "public_array_bytes": 376,
+    "diagnostic_output_limit_bytes": 1024,
+    "diagnostic_heap_limit_bytes": 1048,
+    "degree_bits_min": 1,
+    "degree_bits_max": 28,
+    "max_quotient_chunks": 32,
+    "rounds": 3,
+    "fri_max_log_arity": 1,
+    "max_queries": 128,
+    "metrics": {
+      "shapes": {
+        "cases": 56,
+        "maximum_backing_bytes": 2955640,
+        "backing_limit_bytes": 67108864,
+        "public_stack_bytes": 376,
+        "allocations": 0
+      },
+      "capacity": {
+        "cases": 31,
+        "final_backing_bytes": 1238808,
+        "allocations": 0
+      },
+      "rejections": {
+        "shapes": 46,
+        "oversized_spare": "true",
+        "overflow": "true",
+        "allocations": 0
+      },
+      "diagnostics": {
+        "heap_limit_bytes": 1048,
+        "output_limit_bytes": 1024
+      }
+    },
+    "fresh_cpu_proofs": [
+      {
+        "kind": "join-split",
+        "run": "wallet-join-split-01",
+        "log": "control/wallet-join-split-01.log",
+        "index": 0,
+        "proof_backing_bytes": 1026368,
+        "cpu_proofs": 1,
+        "upstream_verified": "true",
+        "altered_chain_rejected": "true",
+        "altered_public_rejected": "true",
+        "altered_opening_rejected": "true"
+      },
+      {
+        "kind": "htlc-redeem",
+        "run": "wallet-htlc-redeem-01",
+        "log": "control/wallet-htlc-redeem-01.log",
+        "index": 1,
+        "proof_backing_bytes": 1044632,
+        "cpu_proofs": 1,
+        "upstream_verified": "true",
+        "altered_chain_rejected": "true",
+        "altered_public_rejected": "true",
+        "altered_opening_rejected": "true"
+      },
+      {
+        "kind": "htlc-refund",
+        "run": "wallet-htlc-refund-01",
+        "log": "control/wallet-htlc-refund-01.log",
+        "index": 2,
+        "proof_backing_bytes": 1044632,
+        "cpu_proofs": 1,
+        "upstream_verified": "true",
+        "altered_chain_rejected": "true",
+        "altered_public_rejected": "true",
+        "altered_opening_rejected": "true"
+      },
+      {
+        "kind": "issuance",
+        "run": "wallet-issuance-01",
+        "log": "control/wallet-issuance-01.log",
+        "index": 3,
+        "proof_backing_bytes": 1026368,
+        "cpu_proofs": 1,
+        "upstream_verified": "true",
+        "altered_chain_rejected": "true",
+        "altered_public_rejected": "true",
+        "altered_opening_rejected": "true"
+      }
+    ],
+    "numerical_scratch_included": false,
+    "symbolic_inference_included": false,
+    "complete_lifetime_admission": false
+  },
+  "coordinator_partition": {
+    "schema_version": 2,
+    "shared_floor_bytes": 536870912,
+    "per_job_floor_bytes": 353370112,
+    "formula": "sum(coordinator_job_bytes) + coordinator_shared_bytes == coordinator_ram_bytes",
+    "physical_caps_increased": false,
+    "profiles": [
+      {
+        "workers": 1,
+        "pool_bytes": 312920540,
+        "selection_bytes": 148969664,
+        "endpoint_bytes": 17312012,
+        "preparation_bytes": 82856,
+        "ingress_bytes": 2156002,
+        "report_bytes": 2773000,
+        "known_bytes": 484214074,
+        "minimum_shared_bytes": 536870912
+      },
+      {
+        "workers": 16,
+        "pool_bytes": 312920540,
+        "selection_bytes": 148969664,
+        "endpoint_bytes": 18362552,
+        "preparation_bytes": 82856,
+        "ingress_bytes": 2156002,
+        "report_bytes": 2896360,
+        "known_bytes": 485387974,
+        "minimum_shared_bytes": 536870912
+      }
+    ],
+    "known_components_only": true,
+    "complete_lifetime_admission": false
+  },
+  "ingress_storage": {
+    "body_bytes": 17984,
+    "expected_bytes": 19376,
+    "entry_bytes": 2584,
+    "task_bytes": 16280,
+    "read_bytes": 2097176,
+    "key_canonical_bytes": 2602,
+    "total_bytes": 2156002,
+    "transaction_limit": 64,
+    "authorization_limit": 64,
+    "task_capacity": 127,
+    "key_roots": 64,
+    "key_envelope_limit_bytes": 2578,
+    "parser_and_runtime_included": false,
+    "wallet_verifier_included": false
+  },
+  "validation": {
+    "native_test_case_executions": 334,
+    "cases": {
+      "cpu-execution-02": 257,
+      "cpu-context-03": 2,
+      "cpu-driver-01": 40,
+      "cpu-codec-01": 6,
+      "cpu-wallet-01": 7,
+      "research-context-01": 2,
+      "research-wallet-01": 7,
+      "standard-context-01": 2,
+      "standard-wallet-01": 7,
+      "wallet-join-split-01": 1,
+      "wallet-htlc-redeem-01": 1,
+      "wallet-htlc-refund-01": 1,
+      "wallet-issuance-01": 1
+    },
+    "targeted_fresh_cpu_wallet_proofs": 4,
+    "additional_codec_cpu_wallet_proof": 1,
+    "cpu_compatibility_builds": 4,
+    "gpu_feature_driver_builds": 2,
+    "source_archives_verified": 19,
+    "initial_stream_source_archives": 10,
+    "final_source_archives": 9,
+    "preliminary_source_archives_verified": 2,
+    "preserved_behavior_artifacts": 60,
+    "dependency_packages_verified": 29,
+    "dependency_files_verified": 1223,
+    "rust_library_files_verified": 124,
+    "inherited_python_test_cases": 135,
+    "fresh_python_test_cases": 0,
+    "fresh_gpu_proofs": 0,
+    "inherited_gpu_proofs": 4,
+    "ordinary_incomplete_phase_admission_closed": true,
+    "zero_native_service_swap": true
+  },
+  "test_feature_guard_revision": {
+    "files": [
+      "lattica-prover-p3/src/block_v2/execution/job.rs",
+      "lattica-prover-p3/src/block_v2/execution/job/typed_registry.rs"
+    ],
+    "added_stream_guards": 2,
+    "production_code_and_stream_test_bodies_unchanged": true
+  },
+  "cleanup": {
+    "time": "2026-10-11T08:56:06.461873+00:00",
+    "running_lattica_services": [],
+    "held_gpu_leases": [],
+    "empty_parent_slices": [
+      {
+        "unit": "lattica-v2-multi-allocation-limit.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-allocation.slice/lattica-v2-multi-allocation-limit.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-allocation.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-allocation.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-cached-lookup-lifetimes.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-cached.slice/lattica-v2-multi-cached-lookup.slice/lattica-v2-multi-cached-lookup-lifetimes.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-cached-lookup.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-cached.slice/lattica-v2-multi-cached-lookup.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-cached-pcs-lifetimes.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-cached.slice/lattica-v2-multi-cached-pcs.slice/lattica-v2-multi-cached-pcs-lifetimes.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-cached-pcs.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-cached.slice/lattica-v2-multi-cached-pcs.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-cached.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-cached.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-compiler-constant-storage.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-compiler.slice/lattica-v2-multi-compiler-constant.slice/lattica-v2-multi-compiler-constant-storage.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-compiler-constant.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-compiler.slice/lattica-v2-multi-compiler-constant.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-compiler-lifetimes.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-compiler.slice/lattica-v2-multi-compiler-lifetimes.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-compiler.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-compiler.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-coordinator-journal.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-coordinator.slice/lattica-v2-multi-coordinator-journal.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-coordinator-retained.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-coordinator.slice/lattica-v2-multi-coordinator-retained.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-coordinator-storage.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-coordinator.slice/lattica-v2-multi-coordinator-storage.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-coordinator.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-coordinator.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-decoded-input-storage.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-decoded.slice/lattica-v2-multi-decoded-input.slice/lattica-v2-multi-decoded-input-storage.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-decoded-input.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-decoded.slice/lattica-v2-multi-decoded-input.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-decoded.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-decoded.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-engine-retained-storage.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-engine.slice/lattica-v2-multi-engine-retained.slice/lattica-v2-multi-engine-retained-storage.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-engine-retained.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-engine.slice/lattica-v2-multi-engine-retained.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-engine.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-engine.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-evaluation-lifetimes.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-evaluation.slice/lattica-v2-multi-evaluation-lifetimes.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-evaluation.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-evaluation.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-expression-lifetimes.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-expression.slice/lattica-v2-multi-expression-lifetimes.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-expression.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-expression.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-fri-pair.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-fri.slice/lattica-v2-multi-fri-pair.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-fri-proof-storage.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-fri.slice/lattica-v2-multi-fri-proof.slice/lattica-v2-multi-fri-proof-storage.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-fri-proof.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-fri.slice/lattica-v2-multi-fri-proof.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-fri.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-fri.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-full-cached.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-full.slice/lattica-v2-multi-full-cached.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-full.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-full.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-input-lifetimes.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-input.slice/lattica-v2-multi-input-lifetimes.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-input.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-input.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-lde-phase.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-lde.slice/lattica-v2-multi-lde-phase.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-lde.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-lde.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-lookup-ownership.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-lookup.slice/lattica-v2-multi-lookup-ownership.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-lookup-packing.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-lookup.slice/lattica-v2-multi-lookup-packing.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-lookup.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-lookup.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-machine-degree.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-machine.slice/lattica-v2-multi-machine-degree.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-machine.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-machine.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-manifest-lifetimes.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-manifest.slice/lattica-v2-multi-manifest-lifetimes.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-manifest.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-manifest.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-memory-windows.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-memory.slice/lattica-v2-multi-memory-windows.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-memory.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-memory.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-opening-handoff.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-opening.slice/lattica-v2-multi-opening-handoff.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-opening.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-opening.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-pcs-scratch.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-pcs.slice/lattica-v2-multi-pcs-scratch.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-pcs.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-pcs.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-periodic-source-storage.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-periodic.slice/lattica-v2-multi-periodic-source.slice/lattica-v2-multi-periodic-source-storage.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-periodic-source.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-periodic.slice/lattica-v2-multi-periodic-source.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-periodic.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-periodic.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-program-cache-lifetimes.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-program.slice/lattica-v2-multi-program-cache.slice/lattica-v2-multi-program-cache-lifetimes.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-program-cache.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-program.slice/lattica-v2-multi-program-cache.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-program-construction.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-program.slice/lattica-v2-multi-program-construction.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-program-packing.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-program.slice/lattica-v2-multi-program-packing.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-program.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-program.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-recursion.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-recursion.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-request-storage.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-request.slice/lattica-v2-multi-request-storage.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-request.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-request.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-result-storage.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-result.slice/lattica-v2-multi-result-storage.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-result.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-result.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-schedule-lifetimes.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-schedule.slice/lattica-v2-multi-schedule-lifetimes.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-schedule.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-schedule.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-session-storage.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-session.slice/lattica-v2-multi-session-storage.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-session.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-session.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-symbolic-normalization.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-symbolic.slice/lattica-v2-multi-symbolic-normalization.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-symbolic-recording.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-symbolic.slice/lattica-v2-multi-symbolic-recording.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-symbolic.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-symbolic.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-trace-geometry.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-trace.slice/lattica-v2-multi-trace-geometry.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-trace.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-trace.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-verifier-call.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-verifier.slice/lattica-v2-multi-verifier-call.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-verifier-envelope.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-verifier.slice/lattica-v2-multi-verifier-envelope.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-verifier-inversions.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-verifier.slice/lattica-v2-multi-verifier-inversions.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-verifier-lifetimes.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-verifier.slice/lattica-v2-multi-verifier-lifetimes.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-verifier-metadata.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-verifier.slice/lattica-v2-multi-verifier-metadata.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-verifier-scratch.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-verifier.slice/lattica-v2-multi-verifier-scratch.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-verifier.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-verifier.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-witness-host.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-witness.slice/lattica-v2-multi-witness-host.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-witness.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-witness.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-worker-protocol-storage.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-worker.slice/lattica-v2-multi-worker-protocol.slice/lattica-v2-multi-worker-protocol-storage.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-worker-protocol.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-worker.slice/lattica-v2-multi-worker-protocol.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi-worker.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-worker.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2-multi.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica-v2.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice",
+        "events": "populated 0\nfrozen 0\n"
+      },
+      {
+        "unit": "lattica.slice",
+        "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice",
+        "events": "populated 0\nfrozen 0\n"
+      }
+    ]
+  },
+  "preliminary_revisions": [
+    {
+      "run": "cpu-execution-01",
+      "reason": "Rust required an explicit path for the nested test module; build exited 101 before tests. The source archive and log are preserved."
+    },
+    {
+      "run": "no-stream-check-01",
+      "reason": "The new tests imported the stream-only allocation observer without a stream feature guard. Build exited 101; fixed with two test-only feature guards and rerun in no-stream-check-02."
+    }
+  ],
+  "limitations": [
+    "The measured 2,996,953 avoided request bytes and 18,480 calls describe the qualified height-64 registry fixture. They are cumulative requests, not peak RSS or an end-to-end throughput result.",
+    "Initial registry approval still performs CPU symbolic fingerprinting and needs its own enclosing lifetime bound. This change removes repetition inside candidate wallet intake; it does not remove registry approval or bound complete preparation.",
+    "Ten earlier successful archives and nine final archives differ only by two test-only stream guards and formatting. The audit proves production and stream test bodies unchanged and preserves 60 earlier artifacts. Two failed preliminary builds and their source archives are retained.",
+    "Four targeted fresh CPU wallet proofs and one existing codec proof were exercised. Other execution tests also run CPU proof paths; no exhaustive proof-generation total is claimed. Four full-size desktop RTX 5080 proofs remain inherited from 9.106.",
+    "Complete allocator/runtime lifetime composition, wallet decoding/numerical phase composition, broader workloads/live caches, nonempty-child full-size merges, paired throughput, 24 hours AND 150 completed roots, multiple GPUs and AMD/Metal remain open.",
+    "Shared/job floors remain 512 MiB/337 MiB. Ordinary incomplete lifetime profiles continue to be rejected; no physical cap increase or production activation is claimed."
+  ]
+}

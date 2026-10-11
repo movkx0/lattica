@@ -7,6 +7,7 @@ test {
     _ = @import("codec.zig");
     _ = @import("protocol.zig");
     _ = @import("ffi.zig");
+    _ = @import("prover_runtime.zig");
     _ = @import("tree.zig");
     _ = @import("tx.zig");
     _ = @import("node.zig");

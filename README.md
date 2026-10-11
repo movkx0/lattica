@@ -66,9 +66,15 @@ zig build run -- demo
 
 The integration script exercises the real Zig-to-Rust boundary: proof generation, verification, state application, transaction-root agreement, tamper rejection, and double-spend rejection.
 
+For real GPU proving in the wallet demo, build with `-Dgpu-prover=true` and configure
+`gpu-required`; see [native GPU wallet startup](docs/gpu-acceleration.md#native-gpu-wallet-startup).
+The default CLI uses mocks and rejects strict proving requests. The integration
+script selects its GPU lifecycle and node path under the same strict policy.
+
+
 ## Status and security boundary
 
-The default CPU implementation at `v3-batch-audit` is the frozen ten-symbol audit target and includes the join-split, HTLC, batch join-split, and batch HTLC paths. The current development tree adds two join-split proof-tree container symbols, bringing its default ABI to twelve; that post-tag seam is not covered by the frozen audit. The documented soundness budget for the underlying production proof family is approximately 103 bits proven and 127 bits conjectured.
+The default CPU implementation at `v3-batch-audit` is the frozen ten-symbol audit target and includes the join-split, HTLC, batch join-split, and batch HTLC paths. The current development tree adds two join-split proof-tree container symbols and three process-lifecycle symbols; these post-tag additions are not covered by the frozen audit. The documented soundness budget for the underlying production proof family is approximately 103 bits proven and 127 bits conjectured.
 
 GPU acceleration, streaming/out-of-core proving, and recursion are opt-in research features. They do not alter the underlying production verifier or leaf-proof format. Recursion remains excluded from the default static library; the development proof-tree container is a non-recursive aggregation seam and must not be mistaken for audited recursive aggregation.
 

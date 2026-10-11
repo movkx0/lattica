@@ -1,12 +1,14 @@
-//! Candidate-only resident commitment adapter around the pinned upstream PCS.
+//! Resident commitment adapter for the two pinned upstream PCS fields.
 //! One shared CSPRNG stream feeds both this adapter and upstream quotient masks.
 //! Cloning an active adapter shares its whole attempt; it never replays RNG state.
 //! Fresh entropy still belongs to profile::make_proving_config, not this module.
 #[cfg(feature = "stream")]
 use super::normalization_workspace::HeapNormalizedDft as Dft;
 use super::{
+    gpu_hash::FriExtensionMmcs,
     gpu_hash::{CandidateMmcs, LdeInputShape},
-    profile::{self, Challenge, ChallengeMmcs},
+    pcs_field::PcsField,
+    profile::{self, Challenge},
 };
 #[cfg(not(feature = "stream"))]
 use crate::config::Dft;
@@ -16,23 +18,22 @@ use p3_field::coset::TwoAdicMultiplicativeCoset;
 use p3_field::BasedVectorSpace;
 use p3_fri::{FriParameters, HidingFriPcs};
 use p3_matrix::dense::RowMajorMatrix;
-use rand::{Rng, TryCryptoRng, TryRng};
+#[cfg(test)]
+use rand::{Rng, TryRng};
 use rand_chacha::ChaCha20Rng;
-use std::{
-    convert::Infallible,
-    sync::{Arc, Mutex, OnceLock},
-};
+use std::sync::{Mutex, OnceLock};
 
 type Domain = TwoAdicMultiplicativeCoset<Val>;
 type Commitment = <CandidateMmcs as Mmcs<Val>>::Commitment;
 type ProverData = <CandidateMmcs as Mmcs<Val>>::ProverData<RowMajorMatrix<Val>>;
-pub(super) type ResidentInner =
-    HidingFriPcs<Val, Dft, CandidateMmcs, ChallengeMmcs, SharedProofRng>;
+pub(super) type ResidentInner<E = Challenge> =
+    HidingFriPcs<Val, Dft, CandidateMmcs, FriExtensionMmcs<E>, SharedProofRng>;
 const MAX_MATRICES: usize = 256;
 pub(super) const HOST_OUTPUT_BUDGET: usize = 32 << 30;
 
 static RESEARCH_RESIDENT: OnceLock<bool> = OnceLock::new();
 static RESEARCH_OPENINGS: OnceLock<bool> = OnceLock::new();
+static RESEARCH_INITIALIZE: Mutex<()> = Mutex::new(());
 
 fn parse_research_mode(value: Option<&str>) -> Result<bool, &'static str> {
     match value {
@@ -54,20 +55,15 @@ fn record_research_mode(mode: &OnceLock<bool>, enabled: bool) -> Result<(), &'st
         .map_err(|_| "resident PCS mode initialized concurrently")
 }
 
-/// Explicit research-runner selection only, after GPU initialization. Merely
-/// setting this environment variable does not select a library backend.
-pub fn initialize_research_from_env() -> Result<bool, String> {
+fn research_selection_from_env() -> Result<(bool, bool, bool), String> {
     let value = match std::env::var("LATTICA_V2_GPU_RESIDENT_LDE") {
         Ok(value) => Some(value),
         Err(std::env::VarError::NotPresent) => None,
         Err(std::env::VarError::NotUnicode(_)) => {
-            return Err("LATTICA_V2_GPU_RESIDENT_LDE must be ASCII 0 or 1".into())
+            return Err("LATTICA_V2_GPU_RESIDENT_LDE must be ASCII 0 or 1".into());
         }
     };
     let enabled = parse_research_mode(value.as_deref()).map_err(str::to_owned)?;
-    if enabled {
-        super::gpu_hash::require_resident_backend()?;
-    }
     let openings = match std::env::var("LATTICA_V2_GPU_OPENINGS") {
         Err(std::env::VarError::NotPresent) => false,
         Ok(value) if value == "0" => false,
@@ -93,6 +89,39 @@ pub fn initialize_research_from_env() -> Result<bool, String> {
                 .into(),
         );
     }
+    Ok((enabled, openings, compact))
+}
+
+fn validate_research_selection(selection: (bool, bool, bool)) -> Result<(), String> {
+    for (cell, value) in [
+        (&RESEARCH_RESIDENT, selection.0),
+        (&RESEARCH_OPENINGS, selection.1),
+        (&RESEARCH_COMPACT_DATA, selection.2),
+    ] {
+        if cell.get().is_some_and(|previous| *previous != value) {
+            return Err("resident PCS mode cannot change during a research process".into());
+        }
+    }
+    Ok(())
+}
+
+/// Validate native startup without committing a mode or allocating a GPU context.
+pub(super) fn preflight_research_from_env() -> Result<(), String> {
+    validate_research_selection(research_selection_from_env()?)
+}
+
+/// Explicit Rust/native selection after GPU initialization. Merely setting
+/// environment variables does not select a library backend.
+pub fn initialize_research_from_env() -> Result<bool, String> {
+    let _guard = RESEARCH_INITIALIZE
+        .lock()
+        .map_err(|_| "resident PCS initialization poisoned")?;
+    let (enabled, openings, compact) = research_selection_from_env()?;
+    validate_research_selection((enabled, openings, compact))?;
+    if enabled {
+        super::gpu_hash::require_resident_backend()?;
+    }
+    // Check all immutable settings before recording any of them.
     record_research_mode(&RESEARCH_COMPACT_DATA, compact).map_err(str::to_owned)?;
     record_research_mode(&RESEARCH_OPENINGS, openings).map_err(str::to_owned)?;
     record_research_mode(&RESEARCH_RESIDENT, enabled).map_err(str::to_owned)?;
@@ -107,47 +136,21 @@ pub(super) fn research_openings_enabled() -> bool {
     RESEARCH_OPENINGS.get().copied().unwrap_or(false)
 }
 
-/// The RNG itself is moved exactly once; Clone only clones this ownership handle.
-#[derive(Clone)]
-pub(super) struct SharedProofRng(Arc<Mutex<ChaCha20Rng>>);
-impl core::fmt::Debug for SharedProofRng {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_str("SharedProofRng(<redacted>)")
-    }
-}
-impl SharedProofRng {
-    fn new(rng: ChaCha20Rng) -> Self {
-        Self(Arc::new(Mutex::new(rng)))
-    }
-    fn with<T>(&self, f: impl FnOnce(&mut ChaCha20Rng) -> T) -> T {
-        f(&mut self.0.lock().expect("resident hiding stream poisoned"))
-    }
-}
-impl TryRng for SharedProofRng {
-    type Error = Infallible;
-    fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
-        Ok(self.with(|rng| rng.next_u32()))
-    }
-    fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
-        Ok(self.with(|rng| rng.next_u64()))
-    }
-    fn try_fill_bytes(&mut self, output: &mut [u8]) -> Result<(), Self::Error> {
-        self.with(|rng| rng.fill_bytes(output));
-        Ok(())
-    }
-}
-impl TryCryptoRng for SharedProofRng {}
+type SharedProofRng = super::randomness::ProofRng;
 
-pub(super) struct ResidentState {
-    pub(super) inner: ResidentInner,
+pub(super) struct ResidentState<E: PcsField = Challenge> {
+    pub(super) device_randomness: Option<super::randomness::Failure>,
+    pub(super) preprocessing_salts: Option<Mutex<super::gpu_hash::device::PublicSaltStream>>,
+    pub(super) device_session: Option<super::gpu_hash::device::DeviceSession>,
+    pub(super) inner: ResidentInner<E>,
     // Only one opening backend may consume FRI randomness. This saved initial
     // stream is used exclusively when GPU openings are selected at construction;
     // active clones share this entire state rather than cloning either stream.
-    opening_fri: FriParameters<ChallengeMmcs>,
+    opening_fri: FriParameters<FriExtensionMmcs<E>>,
     pub(super) gpu_openings: bool,
     opening_mode_locked: std::sync::atomic::AtomicBool,
     pub(super) mmcs: CandidateMmcs,
-    rng: SharedProofRng,
+    pub(super) rng: SharedProofRng,
     random_columns: usize,
     log_blowup: usize,
     pub(super) host_budget: usize,
@@ -161,7 +164,41 @@ fn collect<T>(values: impl IntoIterator<Item = T>) -> Result<Vec<T>, String> {
     Ok(values)
 }
 
-impl ResidentState {
+impl<E: PcsField> ResidentState<E> {
+    pub(super) fn require_device_proving(&self) -> Result<(), String> {
+        if let Some(failure) = &self.device_randomness {
+            failure.check()?;
+        }
+        if self.preprocessing_salts.is_some() {
+            return Err(
+                "public preprocessing salt configuration cannot prove private statements".into(),
+            );
+        }
+        if self.mmcs.uses_device_storage()
+            && (!self.gpu_openings
+                || !super::quotient_pcs::gpu_fri_resident_enabled()
+                || !super::quotient_pcs::gpu_opening_eval_enabled()
+                || !super::quotient_pcs::gpu_lookup_enabled()
+                || !super::quotient_pcs::gpu_quotient_resident_enabled())
+        {
+            return Err(
+                "device-only PCS requires owned GPU consumers selected before proof work".into(),
+            );
+        }
+        Ok(())
+    }
+    pub(super) fn trace_random_words(&self, count: usize) -> Result<Vec<u64>, String> {
+        use p3_field::PrimeField64;
+        use rand::RngExt;
+        let mut samples = Vec::new();
+        samples
+            .try_reserve_exact(count)
+            .map_err(|e| e.to_string())?;
+        self.rng
+            .with(|rng| samples.extend((0..count).map(|_| rng.random::<Val>().as_canonical_u64())));
+        Ok(samples)
+    }
+
     pub(super) fn lock_opening_mode(&self) {
         self.opening_mode_locked
             .store(true, std::sync::atomic::Ordering::Release);
@@ -177,26 +214,80 @@ impl ResidentState {
         self.gpu_openings = true;
         Ok(())
     }
+    pub(super) fn enable_gpu_randomness(
+        &mut self,
+        quotient: &super::randomness::ProofRng,
+    ) -> Result<(), String> {
+        if self
+            .opening_mode_locked
+            .load(std::sync::atomic::Ordering::Acquire)
+        {
+            return Err("GPU randomness must be selected before proof work begins".into());
+        }
+        if self.device_randomness.is_some() {
+            return self.require_device_proving();
+        }
+        self.require_device_proving()?;
+        if !self.mmcs.uses_device_storage() {
+            return Err("GPU randomness requires device-only PCS storage".into());
+        }
+        let session = self
+            .device_session
+            .as_ref()
+            .ok_or("GPU randomness requires a device session")?;
+        let failure = super::randomness::Failure::default();
+        let activation = failure.begin()?;
+        self.mmcs.activate_private_randomness(session, &failure)?;
+        self.opening_fri
+            .mmcs
+            .inner()
+            .activate_private_randomness(session, &failure)?;
+        self.rng.activate(session, &failure)?;
+        quotient.activate(session, &failure)?;
+        self.device_randomness = Some(failure);
+        activation.complete();
+        Ok(())
+    }
+
+    pub(super) fn enable_gpu_preprocessing_salts(&mut self) -> Result<(), String> {
+        if self
+            .opening_mode_locked
+            .load(std::sync::atomic::Ordering::Acquire)
+        {
+            return Err("public salt backend cannot change after preprocessing work begins".into());
+        }
+        if self.preprocessing_salts.is_some() {
+            return Ok(());
+        }
+        self.require_device_proving()?;
+        self.mmcs.require_fresh_public_preprocessing()?;
+        let session = self
+            .device_session
+            .as_ref()
+            .ok_or("public salts require a device session")?;
+        self.preprocessing_salts = Some(Mutex::new(session.public_preprocessing_salt_stream()?));
+        Ok(())
+    }
+
     pub(super) fn new(
         dft: Dft,
         mmcs: CandidateMmcs,
-        fri: FriParameters<ChallengeMmcs>,
+        fri: FriParameters<FriExtensionMmcs<E>>,
         random_columns: usize,
         rng: ChaCha20Rng,
         host_budget: usize,
     ) -> Result<Self, String> {
         if fri.log_blowup != profile::LOG_BLOWUP
             || fri.log_final_poly_len != 0
-            || fri.max_log_arity != 1
-            || fri.num_queries != profile::NUM_QUERIES
+            || fri.max_log_arity != E::MAX_LOG_ARITY
+            || fri.num_queries != E::NUM_QUERIES
             || fri.commit_proof_of_work_bits != 0
             || fri.query_proof_of_work_bits != profile::QUERY_POW_BITS
             || random_columns != profile::NUM_RANDOM_CODEWORDS
             || host_budget == 0
+            || host_budget > HOST_OUTPUT_BUDGET
         {
-            return Err(
-                "resident PCS requires unchanged candidate parameters and host allowance".into(),
-            );
+            return Err("resident PCS requires pinned field parameters and host allowance".into());
         }
         let committer = mmcs.share_for_resident()?;
         let log_blowup = fri.log_blowup;
@@ -204,6 +295,13 @@ impl ResidentState {
         let opening_fri = fri.clone();
         let inner = ResidentInner::new(dft, mmcs, fri, random_columns, rng.clone());
         Ok(Self {
+            device_randomness: None,
+            preprocessing_salts: None,
+            device_session: if super::quotient_pcs::gpu_quotient_resident_enabled() {
+                Some(super::gpu_hash::device::DeviceSession::new()?)
+            } else {
+                None
+            },
             inner,
             opening_fri,
             gpu_openings: false,
@@ -218,23 +316,40 @@ impl ResidentState {
 
     pub(super) fn open(
         &self,
-        rounds: Vec<(&ProverData, Vec<Vec<profile::Challenge>>)>,
-        challenger: &mut crate::config::Challenger,
+        rounds: Vec<(&ProverData, Vec<Vec<E>>)>,
+        challenger: &mut profile::Challenger,
         is_preprocessing: bool,
     ) -> (
-        p3_commit::OpenedValues<profile::Challenge>,
-        <ResidentInner as p3_commit::Pcs<profile::Challenge, crate::config::Challenger>>::Proof,
+        p3_commit::OpenedValues<E>,
+        <ResidentInner<E> as p3_commit::Pcs<E, profile::Challenger>>::Proof,
     ) {
         self.lock_opening_mode();
         assert!(self.gpu_openings, "GPU opening backend not selected");
-        super::opening_pcs::open_hiding(
+        assert!(
+            self.preprocessing_salts.is_none(),
+            "public salt setup cannot open a private proof"
+        );
+        let guard = self
+            .device_randomness
+            .as_ref()
+            .map(|f| f.begin().expect("GPU randomness attempt failed"));
+        let result = super::opening_pcs::open_hiding(
             &self.mmcs,
             &self.opening_fri,
             rounds,
             challenger,
             is_preprocessing,
             self.random_columns,
-        )
+            if super::quotient_pcs::gpu_opening_eval_enabled() {
+                Some(self.device_session.as_ref().expect("owned opening session"))
+            } else {
+                None
+            },
+        );
+        if let Some(guard) = guard {
+            guard.complete();
+        }
+        result
     }
 
     pub(super) fn commit(
@@ -243,6 +358,12 @@ impl ResidentState {
         preprocessing: bool,
     ) -> Result<(Commitment, ProverData), String> {
         self.lock_opening_mode();
+        if self.preprocessing_salts.is_some() || self.device_randomness.is_some() {
+            return Err("GPU randomness requires device trace interfaces".into());
+        }
+        if !preprocessing {
+            self.require_device_proving()?;
+        }
         let evaluations = collect(evaluations)?;
         let mut shapes = Vec::with_capacity(evaluations.len());
         for (domain, matrix) in &evaluations {
@@ -266,10 +387,11 @@ impl ResidentState {
                 added_bits: self.log_blowup,
             });
         }
-        let _admission = self.mmcs.preflight_retained(
+        let _admission = self.mmcs.preflight_retained_owned(
             &shapes,
             self.host_budget,
             usize::from(compact_prover_data()),
+            self.device_session.is_some(),
         )?;
         // Same row-major draw order and reshape as p3-fri 0.6.1 HidingFriPcs.
         // This lock is released before entering MMCS or upstream methods.
@@ -297,17 +419,24 @@ impl ResidentState {
                     .collect()
             })
         };
-        self.mmcs
-            .commit_resident(randomized, self.log_blowup, self.host_budget)
+        self.mmcs.commit_resident_retained_owned(
+            randomized,
+            self.log_blowup,
+            self.host_budget,
+            None,
+            usize::from(compact_prover_data()),
+            self.device_session.as_ref().map(|s| (s, preprocessing)),
+        )
     }
 
-    pub(super) fn randomization(
+    pub(super) fn randomization_device(
         &self,
-        domains: impl IntoIterator<Item = Domain>,
+        domains: impl IntoIterator<Item = super::gpu_hash::device::DomainSpec>,
     ) -> Result<(Commitment, ProverData), String> {
         self.lock_opening_mode();
+        self.require_device_proving()?;
         let domains = collect(domains)?;
-        let width = self.random_columns + <Challenge as BasedVectorSpace<Val>>::DIMENSION;
+        let width = self.random_columns + <E as BasedVectorSpace<Val>>::DIMENSION;
         let shapes: Vec<_> = domains
             .iter()
             .map(|domain| LdeInputShape {
@@ -316,7 +445,89 @@ impl ResidentState {
                 added_bits: self.log_blowup,
             })
             .collect();
-        let _admission = self.mmcs.preflight_retained(
+        if let Some(failure) = &self.device_randomness {
+            use super::gpu_hash::device::{Extension, MatrixSpec, RowOrder};
+            use p3_field::PrimeField64;
+            let session = self
+                .device_session
+                .as_ref()
+                .ok_or("GPU randomness requires a device session")?;
+            let specs: Vec<_> = domains
+                .iter()
+                .map(|domain| {
+                    if !(1..=25).contains(&domain.log_size()) {
+                        return Err(
+                            "GPU randomization domain exceeds its supported height".to_owned()
+                        );
+                    }
+                    MatrixSpec::new(
+                        domain.log_size() as u32,
+                        width,
+                        Extension::Base,
+                        RowOrder::Natural,
+                        domain.shift().as_canonical_u64(),
+                    )
+                })
+                .collect::<Result<_, _>>()?;
+            let pending: Vec<_> = specs.iter().flat_map(|s| [s.bytes(), 16]).collect();
+            let plan = self
+                .mmcs
+                .preflight_private_salts(&shapes, self.host_budget, 0, &pending)?;
+            self.rng.with_device(|rng| {
+                rng.preflight_fields(
+                    &specs.iter().map(|s| s.words()).collect::<Vec<_>>(),
+                    &vec![16; specs.len()],
+                )
+            })?;
+            let guard = failure.begin()?;
+            let inputs = self.rng.with_device(|rng| {
+                specs
+                    .iter()
+                    .map(|&spec| {
+                        let samples = rng.sample_matrix(spec)?;
+                        session.prepare_evaluations(&samples)
+                    })
+                    .collect::<Result<Vec<_>, _>>()
+            })?;
+            let salts = self
+                .mmcs
+                .private_device_salts(plan.output_height(), inputs.len())?;
+            let result = self.mmcs.commit_evaluations_with_device_salts(
+                &inputs,
+                self.log_blowup,
+                salts,
+                session,
+                self.host_budget,
+            )?;
+            guard.complete();
+            eprintln!("bounded_gpu_random_stage stage=randomization sample_upload_bytes=0 sample_readback_bytes=0");
+            return Ok(result);
+        }
+        Err("owned randomization requires private GPU randomness".into())
+    }
+
+    pub(super) fn randomization(
+        &self,
+        domains: impl IntoIterator<Item = Domain>,
+    ) -> Result<(Commitment, ProverData), String> {
+        self.lock_opening_mode();
+        self.require_device_proving()?;
+        let domains = collect(domains)?;
+        if self.device_randomness.is_some() {
+            return self.randomization_device(domains.into_iter().map(Into::into));
+        }
+        let width = self.random_columns + <E as BasedVectorSpace<Val>>::DIMENSION;
+        let shapes: Vec<_> = domains
+            .iter()
+            .map(|domain| LdeInputShape {
+                height: domain.size(),
+                width,
+                added_bits: self.log_blowup,
+            })
+            .collect();
+        let capture = super::quotient_pcs::gpu_opening_eval_enabled()
+            .then(|| self.device_session.as_ref().expect("owned opening session"));
+        let _admission = self.mmcs.preflight_retained_owned(
             &shapes,
             self.host_budget,
             if compact_prover_data() {
@@ -324,6 +535,7 @@ impl ResidentState {
             } else {
                 0
             },
+            capture.is_some(),
         )?;
         // Already-random evaluations: upstream does NOT interleave another
         // random trace or append additional codewords on this path.
@@ -336,7 +548,7 @@ impl ResidentState {
                 })
                 .collect()
         });
-        self.mmcs.commit_resident_retained(
+        self.mmcs.commit_resident_retained_owned(
             randomized,
             self.log_blowup,
             self.host_budget,
@@ -346,6 +558,7 @@ impl ResidentState {
             } else {
                 0
             },
+            capture.map(|session| (session, false)),
         )
     }
 }

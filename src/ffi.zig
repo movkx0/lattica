@@ -186,8 +186,13 @@ fn BackendSlot(comptime seam: @TypeOf(.enum_literal), comptime Fn: type) type {
         /// `BatchProveFn`-shaped prove: `n_tx` concatenated witnesses → allocator-owned proof bytes
         /// + the 32-byte block tx-root the verifier checks against.
         fn proveBatch(allocator: std.mem.Allocator, witness: []const u8, n_tx: usize) !struct { proof: []u8, root: Hash32 } {
+            const result = try proveBatchWithLimit(allocator, witness, n_tx, MAX_PROOF_LEN);
+            return .{ .proof = result.proof, .root = result.root };
+        }
+
+        fn proveBatchWithLimit(allocator: std.mem.Allocator, witness: []const u8, n_tx: usize, proof_cap: usize) !struct { proof: []u8, root: Hash32 } {
             const f = backend orelse return error.NoProveBackend;
-            const buf = try allocator.alloc(u8, MAX_PROOF_LEN);
+            const buf = try allocator.alloc(u8, proof_cap);
             defer allocator.free(buf);
             var root: Hash32 = undefined;
             var proof_len: usize = 0;
@@ -314,6 +319,7 @@ pub const MAX_PROOF_LEN: usize = 1 << 21;
 /// Maximum join-split tree proof container size. The current Rust tree seam carries all leaf proofs;
 /// a future recursive wrap can reduce this without changing the verifier call shape.
 pub const MAX_TREE_PROOF_LEN: usize = 1 << 29;
+pub const MAX_TREE_TX: usize = 1024;
 
 /// Prove a join-split from a serialized witness via the installed prover backend (the Rust
 /// `lattica_joinsplit_prove` in production). Returns the proof bytes (allocator-owned).
@@ -390,6 +396,28 @@ pub fn proveBatch(allocator: std.mem.Allocator, witness: []const u8, n_tx: usize
 }
 
 // --- join-split tree seam (proof container over validated join-split leaves) --------------------
+
+pub const TreeProveFn = BatchProveFn;
+const joinsplit_tree_prove_slot = BackendSlot(.joinsplit_tree_prove, TreeProveFn);
+
+pub fn setJoinSplitTreeProveBackend(f: TreeProveFn) void {
+    joinsplit_tree_prove_slot.set(f);
+}
+pub fn clearJoinSplitTreeProveBackend() void {
+    joinsplit_tree_prove_slot.clear();
+}
+pub fn hasJoinSplitTreeProveBackend() bool {
+    return joinsplit_tree_prove_slot.has();
+}
+
+/// Produce the existing legacy container, with independent leaf proofs. This
+/// does not select a network proof format or register a tree verifier.
+pub fn proveJoinSplitTree(allocator: std.mem.Allocator, witness: []const u8, n_tx: usize) !struct { proof: []u8, root: Hash32 } {
+    if (n_tx == 0 or n_tx > MAX_TREE_TX) return error.InvalidTxCount;
+    const bound = @min(MAX_TREE_PROOF_LEN, 44 + n_tx * (JoinSplitPublicInputs.ENCODED_LEN + 4 + MAX_PROOF_LEN));
+    const result = try joinsplit_tree_prove_slot.proveBatchWithLimit(allocator, witness, n_tx, bound);
+    return .{ .proof = result.proof, .root = result.root };
+}
 
 const joinsplit_tree_slot = struct {
     var backend: ?TreeVerifyFn = null;

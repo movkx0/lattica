@@ -19,6 +19,7 @@ const poseidon2 = @import("poseidon2.zig");
 // The production C ABI implemented by lattica-prover-p3 (extern declarations centralized in
 // prover_abi.zig, mirroring lattica-prover-p3/include/lattica_prover_p3.h).
 const prover_abi = @import("prover_abi.zig");
+const prover_runtime = @import("prover_runtime.zig");
 const lattica_joinsplit_prove = prover_abi.lattica_joinsplit_prove;
 const lattica_joinsplit_verify = prover_abi.lattica_joinsplit_verify;
 const lattica_htlc_prove = prover_abi.lattica_htlc_prove;
@@ -29,11 +30,23 @@ const lattica_htlc_batch_prove = prover_abi.lattica_htlc_batch_prove;
 const lattica_htlc_batch_verify = prover_abi.lattica_htlc_batch_verify;
 
 export fn main() callconv(.c) c_int {
-    run() catch |e| {
+    runWithLifecycle() catch |e| {
         std.debug.print("FAIL: {s}\n", .{@errorName(e)});
         return 1;
     };
     return 0;
+}
+
+fn runWithLifecycle() !void {
+    const use_gpu = prover_runtime.gpuRequiredFromEnv();
+    if (use_gpu) try prover_runtime.Gpu.initialize();
+    errdefer if (use_gpu) prover_runtime.Gpu.shutdown() catch {};
+    try run();
+    if (use_gpu) {
+        try prover_runtime.Gpu.drain();
+        try prover_runtime.Gpu.shutdown();
+        std.debug.print("native_zig_lifecycle_complete policy=gpu-required\n", .{});
+    }
 }
 
 const Err = error{ BobDidNotReceive, DoubleSpendAccepted, TamperAccepted, WrongError, BatchRootMismatch, BatchRejected };

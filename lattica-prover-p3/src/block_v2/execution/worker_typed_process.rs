@@ -27,6 +27,8 @@ use std::{
 
 const DOMAIN: u64 = 0x4c54545053455331;
 const MAGIC: &[u8; 8] = b"LTTYIPC1";
+pub(super) const CONFIG_BYTES: usize = MAGIC.len() + 5 * 32 + 2 * 4 * 8 + 2 * 8;
+pub(super) const SESSION_BYTES: usize = CONFIG_BYTES + 64;
 const HELLO: u8 = 1;
 const READY: u8 = 2;
 const JOB: u8 = 3;
@@ -39,6 +41,7 @@ const PING: u8 = 9;
 const PONG: u8 = 10;
 const MAX_FRAME: usize = MAX_REQUEST_BYTES + MAX_TOKEN_BYTES + 512;
 const TIMEOUT: Duration = Duration::from_secs(600);
+pub(crate) const CONFIGURATION_IDENTITY_MAX_BYTES: usize = 1 << 20;
 
 #[cfg(test)]
 #[path = "worker_typed_process_tests.rs"]
@@ -47,9 +50,13 @@ mod tests;
 #[path = "worker_typed_process_service.rs"]
 mod service;
 
+#[path = "worker_typed_process_storage.rs"]
+mod persistent_storage;
+pub use persistent_storage::ProcessStorage;
+
 /// Identity for independently supplied public policy and hardware assignment.
 pub fn configuration_digest(bytes: &[u8]) -> Result<[u8; 32], Error> {
-    if bytes.is_empty() || bytes.len() > 1 << 20 {
+    if bytes.is_empty() || bytes.len() > CONFIGURATION_IDENTITY_MAX_BYTES {
         return Err("typed process configuration size".into());
     }
     launch::digest(DOMAIN, bytes)
@@ -57,7 +64,7 @@ pub fn configuration_digest(bytes: &[u8]) -> Result<[u8; 32], Error> {
 
 #[derive(Clone)]
 pub struct Config {
-    registry: TypedRegistry<12>,
+    registry: crate::block_v2::typed_recursive::CheckedRegistry,
     pin: RegistryPin,
     chain: [u8; 32],
     peak: Resources,
@@ -69,6 +76,31 @@ pub struct Config {
 }
 
 impl Config {
+    /// Interpret the existing independently pinned worker assignment. This
+    /// builds protocol identity; it does not enforce OS or GPU resources.
+    pub fn from_assignment(
+        registry: TypedRegistry<12>,
+        pin: RegistryPin,
+        chain: [u8; 32],
+        executable: [u8; 32],
+        policy_assignment: [u8; 32],
+        assignment: &serde_json::Value,
+    ) -> Result<Self, Error> {
+        use crate::block_v2::execution::worker_budget;
+        let (peak, jobs) = worker_budget::resources(assignment)?;
+        let (entries, reserve) = worker_budget::preprocessing_cache(assignment)?;
+        Self::new(
+            registry,
+            pin,
+            chain,
+            peak,
+            jobs,
+            executable,
+            policy_assignment,
+        )?
+        .with_preprocessing_cache(entries, reserve)
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         registry: TypedRegistry<12>,
@@ -79,9 +111,58 @@ impl Config {
         executable: [u8; 32],
         policy_assignment: [u8; 32],
     ) -> Result<Self, Error> {
-        pin.check_typed(&registry)?;
         peak.validate_capacity()?;
+        storage::admit_startup(peak.ram_bytes)?;
+        let registry = crate::block_v2::typed_recursive::CheckedRegistry::new(registry)?;
+        Self::from_checked(
+            registry,
+            pin,
+            chain,
+            peak,
+            jobs,
+            executable,
+            policy_assignment,
+        )
+    }
+
+    pub(crate) fn from_checked_assignment(
+        registry: crate::block_v2::typed_recursive::CheckedRegistry,
+        pin: RegistryPin,
+        chain: [u8; 32],
+        executable: [u8; 32],
+        policy_assignment: [u8; 32],
+        assignment: &serde_json::Value,
+    ) -> Result<Self, Error> {
+        let (peak, jobs) = crate::block_v2::execution::worker_budget::resources(assignment)?;
+        let (entries, reserve_bytes) =
+            crate::block_v2::execution::worker_budget::preprocessing_cache(assignment)?;
+        Self::from_checked(
+            registry,
+            pin,
+            chain,
+            peak,
+            jobs,
+            executable,
+            policy_assignment,
+        )?
+        .with_preprocessing_cache(entries, reserve_bytes)
+    }
+
+    fn from_checked(
+        registry: crate::block_v2::typed_recursive::CheckedRegistry,
+        pin: RegistryPin,
+        chain: [u8; 32],
+        peak: Resources,
+        jobs: Resources,
+        executable: [u8; 32],
+        policy_assignment: [u8; 32],
+    ) -> Result<Self, Error> {
+        pin.check_typed_approved(&registry.as_ref())?;
+        peak.validate_capacity()?;
+        storage::admit_startup(peak.ram_bytes)?;
+        storage::session_memory_bytes(peak.ram_bytes)?;
         jobs.validate_request()?;
+        coordinator::admit_budget(jobs.ram_bytes)?;
         if jobs.threads != peak.threads || jobs.vram_bytes != 0 || jobs.scratch_bytes != 0 {
             return Err(
                 "typed process job must reserve assigned CPU and host packet memory".into(),
@@ -108,7 +189,11 @@ impl Config {
         if entries == 0
             || entries > 12
             || (entries == 1) != (reserve_bytes == 0)
-            || reserve_bytes >= self.peak.ram_bytes
+            || crate::block_v2::typed_recursive::storage::active_memory_bytes(
+                storage::session_memory_bytes(self.peak.ram_bytes)?,
+                reserve_bytes,
+            )
+            .is_err()
         {
             return Err("typed worker preprocessing cache admission".into());
         }
@@ -117,16 +202,72 @@ impl Config {
         Ok(self)
     }
 
-    fn bytes(&self) -> Result<Vec<u8>, Error> {
-        let mut bytes = MAGIC.to_vec();
+    fn descriptor(&self) -> Result<Descriptor, Error> {
+        Ok(Descriptor {
+            registry_id: self.registry.profile(),
+            pin: self.pin,
+            chain: self.chain,
+            peak: self.peak,
+            jobs: self.jobs,
+            executable: self.executable,
+            policy_assignment: self.policy_assignment,
+            cache_entries: self.cache_entries,
+            cache_reserve_bytes: self.cache_reserve_bytes,
+        })
+    }
+
+    fn into_parts(
+        self,
+    ) -> Result<
+        (
+            crate::block_v2::typed_recursive::CheckedRegistry,
+            Descriptor,
+        ),
+        Error,
+    > {
+        let descriptor = self.descriptor()?;
+        Ok((self.registry, descriptor))
+    }
+
+    #[cfg(test)]
+    pub(crate) fn bytes(&self) -> Result<[u8; CONFIG_BYTES], Error> {
+        Ok(self.descriptor()?.bytes())
+    }
+}
+
+/// Validated protocol identity owns no registry or heap storage. The child
+/// moves its registry into the typed session; the coordinator retains only
+/// this descriptor after preparing its process reservation.
+#[derive(Clone, Copy)]
+pub(super) struct Descriptor {
+    registry_id: [u8; 32],
+    pin: RegistryPin,
+    chain: [u8; 32],
+    peak: Resources,
+    jobs: Resources,
+    executable: [u8; 32],
+    policy_assignment: [u8; 32],
+    cache_entries: usize,
+    cache_reserve_bytes: u64,
+}
+
+impl Descriptor {
+    fn bytes(&self) -> [u8; CONFIG_BYTES] {
+        let mut bytes = [0; CONFIG_BYTES];
+        let mut offset = 0;
+        let mut write = |value: &[u8]| {
+            bytes[offset..offset + value.len()].copy_from_slice(value);
+            offset += value.len();
+        };
+        write(MAGIC);
         for digest in [
-            self.registry.id()?,
+            self.registry_id,
             self.pin.profile(),
             self.chain,
             self.executable,
             self.policy_assignment,
         ] {
-            bytes.extend(digest);
+            write(&digest);
         }
         for resources in [self.peak, self.jobs] {
             for value in [
@@ -135,22 +276,33 @@ impl Config {
                 resources.scratch_bytes,
                 u64::from(resources.threads),
             ] {
-                bytes.extend(value.to_le_bytes());
+                write(&value.to_le_bytes());
             }
         }
-        bytes.extend((self.cache_entries as u64).to_le_bytes());
-        bytes.extend(self.cache_reserve_bytes.to_le_bytes());
-        Ok(bytes)
+        write(&(self.cache_entries as u64).to_le_bytes());
+        write(&self.cache_reserve_bytes.to_le_bytes());
+        debug_assert_eq!(offset, CONFIG_BYTES);
+        bytes
     }
 }
 
 fn send(socket: &mut UnixStream, kind: u8, bytes: &[u8]) -> Result<(), Error> {
-    if bytes.len() > MAX_FRAME {
+    send_parts(socket, kind, &[bytes])
+}
+
+fn send_parts(socket: &mut UnixStream, kind: u8, parts: &[&[u8]]) -> Result<(), Error> {
+    let size = parts
+        .iter()
+        .try_fold(0usize, |total, part| total.checked_add(part.len()))
+        .ok_or("typed process frame size overflow")?;
+    if size > MAX_FRAME {
         return Err("typed process frame exceeds bound".into());
     }
     socket.write_all(&[kind])?;
-    socket.write_all(&(bytes.len() as u64).to_le_bytes())?;
-    socket.write_all(bytes)?;
+    socket.write_all(&(size as u64).to_le_bytes())?;
+    for part in parts {
+        socket.write_all(part)?;
+    }
     Ok(())
 }
 
@@ -161,7 +313,12 @@ fn receive(socket: &mut UnixStream, expected: u8, bound: usize) -> Result<Vec<u8
     if header[0] != expected || size > bound.min(MAX_FRAME) as u64 {
         return Err("typed process frame kind or size".into());
     }
-    let mut bytes = vec![0; usize::try_from(size)?];
+    receive_body(socket, usize::try_from(size)?, bound.min(MAX_FRAME))
+}
+
+fn receive_body(socket: &mut UnixStream, size: usize, bound: usize) -> Result<Vec<u8>, Error> {
+    let mut bytes = super::packet::storage_vec(size, bound.min(MAX_FRAME))?;
+    bytes.resize(size, 0);
     socket.read_exact(&mut bytes)?;
     Ok(bytes)
 }
@@ -212,17 +369,16 @@ fn receive_command(socket: &mut UnixStream) -> Result<(u8, Vec<u8>), Error> {
     if size > bound as u64 {
         return Err("typed process command size".into());
     }
-    let mut bytes = vec![0; usize::try_from(size)?];
-    socket.read_exact(&mut bytes)?;
+    let bytes = receive_body(socket, usize::try_from(size)?, bound)?;
     Ok((header[0], bytes))
 }
 
 /// Only this object owns the child and its issuing workspace reservation.
 pub struct ProcessWorker {
-    config: Config,
+    config: Descriptor,
     reservation: WorkspaceReservation,
     job_worker: WorkerId,
-    spec: Vec<u8>,
+    spec: [u8; SESSION_BYTES],
     child: Option<Child>,
     service: Option<service::OwnedService>,
     socket: Option<UnixStream>,
@@ -246,7 +402,9 @@ impl ProcessWorker {
         if worker.0 == 0 || job_worker.0 == 0 || worker == job_worker {
             return Err("typed process needs distinct workspace and job worker identities".into());
         }
-        let mut spec = config.bytes()?;
+        let (_, config) = config.into_parts()?;
+        let mut spec = [0; SESSION_BYTES];
+        spec[..CONFIG_BYTES].copy_from_slice(&config.bytes());
         let reservation = owner.reserve_workspace(
             worker,
             Resources {
@@ -256,14 +414,14 @@ impl ProcessWorker {
             now_ms,
         )?;
         let lease = reservation.lease()?;
-        spec.extend(lease.id().session);
-        for value in [
+        spec[CONFIG_BYTES..CONFIG_BYTES + 32].copy_from_slice(&lease.id().session);
+        for (bytes, value) in spec[CONFIG_BYTES + 32..].chunks_exact_mut(8).zip([
             lease.id().epoch,
             lease.id().sequence,
             worker.0,
             job_worker.0,
-        ] {
-            spec.extend(value.to_le_bytes());
+        ]) {
+            bytes.copy_from_slice(&value.to_le_bytes());
         }
         Ok(Self {
             config,
@@ -371,13 +529,15 @@ impl ProcessWorker {
         token.check_execution(self.execution_digest()?)?;
         token.check_request(&request)?;
         let token_bytes = token.encode()?;
-        let mut packet = (token_bytes.len() as u64).to_le_bytes().to_vec();
-        packet.extend(token_bytes);
-        packet.extend(&request);
+        let token_len = (token_bytes.len() as u64).to_le_bytes();
         self.poisoned = true;
         self.pending = Some((task, request));
         let socket = self.socket.as_mut().ok_or("typed process is not running")?;
-        send(socket, JOB, &packet)
+        send_parts(
+            socket,
+            JOB,
+            &[&token_len, &token_bytes, &self.pending.as_ref().unwrap().1],
+        )
     }
 
     pub fn has_pending(&self) -> bool {
@@ -405,14 +565,10 @@ impl ProcessWorker {
             return Err("typed process context change while active".into());
         }
         let packet = context.encode();
-        let prefix_len = self.config.bytes()?.len();
-        if self.spec.len() != prefix_len + 64 {
-            return Err("typed process session specification size".into());
-        }
-        let mut config = self.config.clone();
+        let mut config = self.config;
         config.policy_assignment = configuration_digest(&packet)?;
-        let mut spec = config.bytes()?;
-        spec.extend_from_slice(&self.spec[prefix_len..]);
+        let mut spec = self.spec;
+        spec[..CONFIG_BYTES].copy_from_slice(&config.bytes());
         let digest = launch::digest(DOMAIN, &spec)?;
         let socket = self.socket.as_mut().ok_or("typed process is not running")?;
         self.poisoned = true;
@@ -479,7 +635,7 @@ impl ProcessWorker {
             .ok_or("typed process has no pending job")?;
         let socket = self.socket.as_mut().ok_or("typed process is not running")?;
         let response = receive(socket, RESULT, packet::MAX_RESULT_BYTES)?;
-        let result = packet::decode_result(&task.assignment, request, &response)?;
+        let result = packet::decode_result_owned(&task.assignment, request, response)?;
         let stats = result.stats();
         let next = self
             .completed
@@ -564,7 +720,7 @@ impl Drop for ProcessWorker {
 /// The inherited socket is the only dispatcher; stdout remains a normal log.
 pub fn serve(
     mut socket: UnixStream,
-    mut config: Config,
+    config: Config,
     launches: &Path,
     mut policy: impl FnMut(ArtifactRef) -> Result<Policy, Error>,
     mut shutdown: impl FnMut() -> Result<(), Error>,
@@ -573,23 +729,25 @@ pub fn serve(
     if running_image_fingerprint()? != config.executable {
         return Err("typed process running image changed".into());
     }
-    let prefix = config.bytes()?;
-    let mut spec = receive(&mut socket, HELLO, prefix.len() + 64)?;
-    if spec.len() != prefix.len() + 64 || !spec.starts_with(&prefix) {
+    let (registry, mut config) = config.into_parts()?;
+    let prefix = config.bytes();
+    let mut spec: [u8; SESSION_BYTES] = receive(&mut socket, HELLO, SESSION_BYTES)?
+        .try_into()
+        .map_err(|_| "typed process independent configuration mismatch")?;
+    if !spec.starts_with(&prefix) {
         return Err("typed process independent configuration mismatch".into());
     }
-    let tail = &spec[prefix.len() + 32..];
-    let words: Vec<_> = tail
-        .chunks_exact(8)
-        .map(|b| u64::from_le_bytes(b.try_into().unwrap()))
-        .collect();
+    let tail = &spec[CONFIG_BYTES + 32..];
+    let words: [u64; 4] =
+        std::array::from_fn(|i| u64::from_le_bytes(tail[i * 8..(i + 1) * 8].try_into().unwrap()));
     if words.iter().any(|v| *v == 0) || words[2] == words[3] {
         return Err("typed process session reservation identity".into());
     }
     let mut digest = launch::digest(DOMAIN, &spec)?;
-    let mut ready = std::process::id().to_le_bytes().to_vec();
-    ready.extend(digest);
-    let mut worker = TypedWorker::new(config.registry.clone(), config.pin, config.peak)?;
+    let mut ready = [0; 36];
+    ready[..4].copy_from_slice(&std::process::id().to_le_bytes());
+    ready[4..].copy_from_slice(&digest);
+    let mut worker = TypedWorker::from_checked(registry, config.pin, config.peak)?;
     worker
         .session
         .as_mut()
@@ -601,6 +759,7 @@ pub fn serve(
     let mut public_context: Option<PolicyContext> = None;
     loop {
         let (kind, packet) = receive_command(&mut socket)?;
+        storage::check_buffers(packet.capacity(), packet::MAX_RESULT_BYTES)?;
         if kind == PING {
             send(&mut socket, PONG, &digest)?;
             continue;
@@ -609,8 +768,8 @@ pub fn serve(
             let context = PolicyContext::decode(&packet)?;
             worker.drain()?;
             config.policy_assignment = configuration_digest(&packet)?;
-            let mut next = config.bytes()?;
-            next.extend_from_slice(&spec[prefix.len()..]);
+            let mut next = spec;
+            next[..CONFIG_BYTES].copy_from_slice(&config.bytes());
             digest = launch::digest(DOMAIN, &next)?;
             spec = next;
             public_context = Some(context);
@@ -620,8 +779,20 @@ pub fn serve(
         if kind == STOP {
             let stats = worker.stats()?;
             worker.drain()?;
+            #[cfg(feature = "gpu")]
+            let memory = crate::block_v2::gpu_hash::begin_memory_window()?;
             worker.close();
             shutdown()?;
+            #[cfg(feature = "gpu")]
+            if let Some(memory) = memory {
+                eprintln!(
+                    "typed_gpu_memory {}",
+                    serde_json::json!({
+                        "version": 1, "boundary": "shutdown", "completed_jobs": completed,
+                        "pid": std::process::id(), "managed": memory.finish()?,
+                    })
+                );
+            }
             let receipt: Vec<_> = [stats.setups, stats.hits, completed]
                 .into_iter()
                 .flat_map(u64::to_le_bytes)
@@ -640,6 +811,8 @@ pub fn serve(
         let request = &packet[8 + token_len..];
         token.check_execution(digest)?;
         let gate = WorkerGate::enter(launches, &token, request)?;
+        #[cfg(feature = "gpu")]
+        let memory = crate::block_v2::gpu_hash::begin_memory_window()?;
         let result =
             worker.execute_packet(
                 &gate,
@@ -651,7 +824,18 @@ pub fn serve(
                 },
             )?;
         worker.drain()?;
+        #[cfg(feature = "gpu")]
+        if let Some(memory) = memory {
+            eprintln!(
+                "typed_gpu_memory {}",
+                serde_json::json!({
+                    "version": 1, "boundary": "job_drained", "job_index": completed,
+                    "pid": std::process::id(), "managed": memory.finish()?,
+                })
+            );
+        }
         drop(gate);
+        storage::check_buffers(packet.capacity(), result.capacity())?;
         send(&mut socket, RESULT, &result)?;
         completed = completed
             .checked_add(1)

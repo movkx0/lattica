@@ -30,9 +30,11 @@ pub(in super::super) fn recover(
     let prepared = prepare(fixture, expected)?;
     let assignment: serde_json::Value = read_json(assignment)?;
     let (peak, jobs) = budget::resources(&assignment)?;
+    TypedRegistryContext::admit_recovery_storage(jobs.ram_bytes)?;
     let limits = budget::limits(peak, jobs)?;
+    let registry = TypedRegistryContext::new(&prepared.registry, prepared.pin.profile())?;
     let root = bytes(root_file)?;
-    VerifiedNode::verify_typed(prepared.selection.root(), &prepared.registry, &root)?;
+    registry.verify_node(prepared.selection.root(), &root)?;
     std::fs::DirBuilder::new().mode(0o700).create(out)?;
     let store = ArtifactStore::open(
         &runtime.join("artifacts"),

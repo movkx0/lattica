@@ -165,6 +165,9 @@ fn validate_worker_limits(
 
 #[cfg(feature = "gpu")]
 fn require_worker_limits() -> Result<(), Error> {
+    if std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_some() {
+        return adaptive::validate(|_| Ok(()));
+    }
     let membership = fs::read_to_string("/proc/self/cgroup")?;
     let groups: Vec<_> = membership
         .lines()
@@ -175,9 +178,6 @@ fn require_worker_limits() -> Result<(), Error> {
     }
     let group = Path::new("/sys/fs/cgroup").join(groups[0].trim_start_matches('/'));
     let parent = group.parent().ok_or("missing worker resource slice")?;
-    if std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_some() {
-        return adaptive::validate(&group, parent);
-    }
     let text = |path| fs::read_to_string(path).map(|s| s.trim().to_owned());
     validate_worker_limits(
         group

@@ -37,6 +37,8 @@
 //! builds; the production staticlib and the 10 frozen externs never see it.
 
 use std::alloc::{GlobalAlloc, Layout, System};
+#[cfg(test)]
+pub(crate) mod allocation_requests;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::OnceLock;
 
@@ -315,6 +317,8 @@ impl SpillAlloc {
 unsafe impl GlobalAlloc for SpillAlloc {
     #[inline]
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        #[cfg(test)]
+        allocation_requests::observe(layout.size());
         if layout.size() < THRESHOLD || layout.align() > PAGE {
             return System.alloc(layout); // hot path: no cfg(), no atomics
         }
@@ -350,6 +354,8 @@ unsafe impl GlobalAlloc for SpillAlloc {
 
     #[inline]
     unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
+        #[cfg(test)]
+        allocation_requests::observe(layout.size());
         if layout.size() < THRESHOLD || layout.align() > PAGE {
             return System.alloc_zeroed(layout); // calloc for small allocs
         }

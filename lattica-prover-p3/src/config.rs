@@ -186,13 +186,41 @@ where
         + for<'a> Air<ProverConstraintFolder<'a, MyConfig>>
         + for<'a> Air<DebugConstraintBuilder<'a, Val>>,
 {
+    let run = crate::proving::Run::new(
+        "legacy_generic",
+        crate::proving::Request::from_env().expect("proving request"),
+        crate::proving::legacy_cpu(),
+    )
+    .expect("CPU proving backend policy");
+    let bytes = proof_to_bytes_observed(air, trace, pis, &run).expect("CPU proving backend policy");
+    run.finish(true).expect("proving completion policy");
+    bytes
+}
+
+/// Continue an already admitted request without rereading process-global policy.
+pub(crate) fn proof_to_bytes_observed<A>(
+    air: &A,
+    trace: RowMajorMatrix<Val>,
+    pis: &[Val],
+    run: &crate::proving::Run,
+) -> Result<Vec<u8>, crate::proving::Error>
+where
+    A: Air<SymbolicAirBuilder<Val>>
+        + for<'a> Air<ProverConstraintFolder<'a, MyConfig>>
+        + for<'a> Air<DebugConstraintBuilder<'a, Val>>,
+{
+    use crate::proving::{Backend, Stage};
     // Streaming builds (`--features stream`) spill the LDE/quotient/Merkle buffers to an mmap'd file for
     // the duration of this prove — bounding peak RSS. No-op (and zero cost) in the default build. Prove
     // is the only path armed; the verifier + the 10 frozen externs never spill. Byte-transparent.
     #[cfg(feature = "stream")]
     let _spill = crate::spill_alloc::SpillScope::arm();
-    let proof = prove(&make_config(), air, trace, pis);
-    postcard::to_allocvec(&proof).expect("proof serialization is infallible")
+    let proof = run.measure(Stage::UpstreamProver, Backend::Cpu, || {
+        prove(&make_config(), air, trace, pis)
+    })?;
+    run.measure(Stage::Serialization, Backend::Cpu, || {
+        postcard::to_allocvec(&proof).expect("proof serialization is infallible")
+    })
 }
 
 /// Deserialize a `postcard(Proof<MyConfig>)` and verify it against `pis` under the production config.
@@ -278,8 +306,25 @@ pub mod gpu {
             + for<'a> Air<ProverConstraintFolder<'a, MyConfigGpu>>
             + for<'a> Air<DebugConstraintBuilder<'a, Val>>,
     {
-        let proof = prove(&make_config(), air, trace, pis);
-        postcard::to_allocvec(&proof).expect("proof serialization is infallible")
+        use crate::proving::{Backend, Run, Stage};
+        let run = Run::new(
+            "legacy_opencl_lde",
+            crate::proving::Request::from_env().expect("proving request"),
+            crate::proving::legacy_opencl(false),
+        )
+        .expect("OpenCL proving backend policy");
+        let proof = run
+            .measure(Stage::UpstreamProver, Backend::Mixed, || {
+                prove(&make_config(), air, trace, pis)
+            })
+            .expect("OpenCL proving backend policy");
+        let bytes = run
+            .measure(Stage::Serialization, Backend::Cpu, || {
+                postcard::to_allocvec(&proof).expect("proof serialization is infallible")
+            })
+            .expect("serialization policy");
+        run.finish(true).expect("proving completion policy");
+        bytes
     }
 
     // --- GPU HIDING config: production-identical, with BOTH heavy steps on the GPU -------------------
@@ -336,8 +381,25 @@ pub mod gpu {
             + for<'a> Air<ProverConstraintFolder<'a, MyConfigGpuHiding>>
             + for<'a> Air<DebugConstraintBuilder<'a, Val>>,
     {
-        let proof = prove(&make_config_hiding(), air, trace, pis);
-        postcard::to_allocvec(&proof).expect("proof serialization is infallible")
+        use crate::proving::{Backend, Run, Stage};
+        let run = Run::new(
+            "legacy_opencl_hiding",
+            crate::proving::Request::from_env().expect("proving request"),
+            crate::proving::legacy_opencl(true),
+        )
+        .expect("OpenCL hiding proving backend policy");
+        let proof = run
+            .measure(Stage::UpstreamProver, Backend::Mixed, || {
+                prove(&make_config_hiding(), air, trace, pis)
+            })
+            .expect("OpenCL hiding proving backend policy");
+        let bytes = run
+            .measure(Stage::Serialization, Backend::Cpu, || {
+                postcard::to_allocvec(&proof).expect("proof serialization is infallible")
+            })
+            .expect("serialization policy");
+        run.finish(true).expect("proving completion policy");
+        bytes
     }
 
     // --- Non-hiding BENCHMARK configs (NOT production): isolate the GPU LDE + Merkle speedup against an

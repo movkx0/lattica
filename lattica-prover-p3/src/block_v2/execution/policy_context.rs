@@ -10,10 +10,11 @@ const MAGIC: &[u8; 8] = b"LVPCX001";
 const ENTRY_BYTES: usize = 32 + 4 + 1 + 8;
 pub const MAX_BYTES: usize = 8 + 32 + 4 + 64 * ENTRY_BYTES;
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct PolicyContext {
     binding: [u8; 32],
-    policies: Vec<(ArtifactRef, Policy)>,
+    policies: [Option<(ArtifactRef, Policy)>; 64],
+    len: usize,
 }
 
 impl PolicyContext {
@@ -39,7 +40,16 @@ impl PolicyContext {
                 _ => {}
             }
         }
-        Ok(Self { binding, policies })
+        let len = policies.len();
+        let mut slots = [None; 64];
+        for (slot, policy) in slots.iter_mut().zip(policies) {
+            *slot = Some(policy);
+        }
+        Ok(Self {
+            binding,
+            policies: slots,
+            len,
+        })
     }
 
     pub fn binding(&self) -> [u8; 32] {
@@ -47,18 +57,20 @@ impl PolicyContext {
     }
 
     pub fn policy(&self, artifact: ArtifactRef) -> Result<Policy, Error> {
-        self.policies
+        self.policies[..self.len]
             .iter()
+            .flatten()
             .find(|(a, _)| *a == artifact)
             .map(|(_, p)| *p)
             .ok_or_else(|| "wallet artifact absent from current host policy".into())
     }
 
     pub fn encode(&self) -> Vec<u8> {
-        let mut bytes = MAGIC.to_vec();
+        let mut bytes = Vec::with_capacity(44 + self.len * ENTRY_BYTES);
+        bytes.extend_from_slice(MAGIC);
         bytes.extend(self.binding);
-        bytes.extend((self.policies.len() as u32).to_le_bytes());
-        for (artifact, policy) in &self.policies {
+        bytes.extend((self.len as u32).to_le_bytes());
+        for (artifact, policy) in self.policies[..self.len].iter().flatten() {
             bytes.extend(artifact.digest_bytes());
             bytes.extend(artifact.byte_len().to_le_bytes());
             let (kind, value) = match policy {
@@ -103,6 +115,36 @@ impl PolicyContext {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn fixed_policy_slots_discard_spare_capacity_and_bound_wire_storage() {
+        let mut policies = Vec::with_capacity(4096);
+        for i in 0..64u8 {
+            policies.push((
+                ArtifactRef::from_bytes(ArtifactKind::Wallet, &[i]).unwrap(),
+                Policy::Issuance {
+                    authorized_mint: u64::from(i) + 1,
+                },
+            ));
+        }
+        let context = PolicyContext::new([7; 32], policies).unwrap();
+        assert!(!std::mem::needs_drop::<PolicyContext>());
+        let copy = context;
+        let encoded = context.encode();
+        assert_eq!(encoded.len(), MAX_BYTES);
+        assert_eq!(encoded.capacity(), MAX_BYTES);
+        assert_eq!(copy.encode(), encoded);
+        let decoded = PolicyContext::decode(&encoded).unwrap();
+        for i in 0..64u8 {
+            let artifact = ArtifactRef::from_bytes(ArtifactKind::Wallet, &[i]).unwrap();
+            assert!(
+                matches!(decoded.policy(artifact).unwrap(), Policy::Issuance { authorized_mint } if authorized_mint == u64::from(i) + 1)
+            );
+        }
+        let empty = PolicyContext::new([8; 32], Vec::new()).unwrap().encode();
+        assert_eq!((empty.len(), empty.capacity()), (44, 44));
+        eprintln!("typed_policy_context_storage bytes={} entries=64 wire_bytes={MAX_BYTES} retained_heap_owners=0", std::mem::size_of::<PolicyContext>());
+    }
+
     #[test]
     fn context_roundtrip_rejects_stale_artifacts_and_mutated_lengths() {
         let wallet = ArtifactRef::from_bytes(ArtifactKind::Wallet, b"public proof").unwrap();

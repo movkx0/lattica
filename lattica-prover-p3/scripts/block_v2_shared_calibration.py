@@ -7,6 +7,7 @@ from pathlib import Path
 def normalized_limits(shared, budget):
     limits = shared.T.resource_signature(budget)
     limits['host'].pop('coordinator_job_bytes', None)
+    limits['host'].pop('coordinator_shared_bytes', None)
     return limits
 
 

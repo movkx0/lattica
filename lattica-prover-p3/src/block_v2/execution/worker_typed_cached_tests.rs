@@ -70,7 +70,7 @@ fn fixture(temp: &Temp) -> (DurableDag, TypedRegistry<12>, RegistryPin, Selectio
             artifact_bytes: 32 << 20,
             recovery_window_ms: 1000,
             workers: Resources {
-                ram_bytes: 1100,
+                ram_bytes: storage::STARTUP_HOST_BYTES + coordinator::HOST_BYTES + 1100,
                 vram_bytes: 0,
                 scratch_bytes: 500,
                 threads: 2,
@@ -85,13 +85,13 @@ fn fixture(temp: &Temp) -> (DurableDag, TypedRegistry<12>, RegistryPin, Selectio
 fn budgets() -> (Resources, Resources) {
     (
         Resources {
-            ram_bytes: 1000,
+            ram_bytes: storage::STARTUP_HOST_BYTES + 1000,
             vram_bytes: 0,
             scratch_bytes: 500,
             threads: 2,
         },
         Resources {
-            ram_bytes: 100,
+            ram_bytes: coordinator::HOST_BYTES + 100,
             vram_bytes: 0,
             scratch_bytes: 0,
             threads: 2,
@@ -100,6 +100,77 @@ fn budgets() -> (Resources, Resources) {
 }
 
 #[test]
+fn typed_task_admission_covers_spare_capacity_and_input_backing() {
+    let temp = Temp::new();
+    let (mut owner, registry, pin, selection) = fixture(&temp);
+    let (peak, jobs) = budgets();
+    assert!(CachedTypedWorker::new(
+        &mut owner,
+        registry.clone(),
+        pin,
+        WorkerId(1),
+        WorkerId(2),
+        peak,
+        Resources {
+            ram_bytes: coordinator::HOST_BYTES - 1,
+            ..jobs
+        },
+        0,
+    )
+    .is_err());
+    assert_eq!(owner.resource_use().unwrap(), Resources::default());
+    let worker = CachedTypedWorker::new(
+        &mut owner,
+        registry,
+        pin,
+        WorkerId(1),
+        WorkerId(2),
+        peak,
+        jobs,
+        0,
+    )
+    .unwrap();
+    let lease = owner
+        .lease(
+            selection.jobs().next().unwrap().id(),
+            WorkerId(2),
+            jobs,
+            1,
+            1000,
+            0,
+        )
+        .unwrap();
+    let mut task = worker.task(&mut owner, lease, 0).unwrap();
+    task.request().unwrap();
+    task.assignment.resources.ram_bytes = coordinator::HOST_BYTES - 1;
+    assert!(task
+        .request()
+        .unwrap_err()
+        .to_string()
+        .contains("coordinator job"));
+    task.assignment.resources = jobs;
+    task.assignment.dependencies.reserve(4096);
+    assert!(task
+        .request()
+        .unwrap_err()
+        .to_string()
+        .contains("metadata allowance"));
+    task.assignment.dependencies.shrink_to_fit();
+    task.request().unwrap();
+    task.assignment.inputs[0] = Arc::from(vec![0; crate::block_v2::profile::MAX_PROOF_BYTES + 1]);
+    assert!(task
+        .request()
+        .unwrap_err()
+        .to_string()
+        .contains("proof input bound"));
+    assert_eq!(
+        owner.resource_use().unwrap().ram_bytes,
+        peak.ram_bytes + jobs.ram_bytes
+    );
+}
+
+#[test]
+#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
 fn typed_workspace_reserves_idle_memory_and_releases_only_after_drained_error() {
     let temp = Temp::new();
     let (mut owner, registry, pin, selection) = fixture(&temp);

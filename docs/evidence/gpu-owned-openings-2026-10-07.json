@@ -1,0 +1,323 @@
+{
+  "schema": "lattica-owned-opening-arithmetic-v1",
+  "date": "2026-10-07",
+  "source_head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "source_state": "uncommitted main working tree",
+  "previous_checkpoint": "gpu-lookup-integration-2026-10-07.json",
+  "complete_gpu_prover": false,
+  "integrated_into_real_prover": false,
+  "enabled_by_default": false,
+  "throughput_qualification": false,
+  "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-owned-openings-20261007/run-01",
+  "features": [
+    "default",
+    "block-v2-wide-lanes"
+  ],
+  "build_profile": "release",
+  "gpu": {
+    "opencl_index": 1,
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "pci": "0000:02:00.0",
+    "global_bytes": 16697327616,
+    "max_allocation_bytes": 4174331904,
+    "driver": "615.71.09"
+  },
+  "binary_sha256": "60580b71059b04de796d794616caaba163332491be66f444c05f2eb849b63651",
+  "source_archive_sha256": "2513591d205f75fdb4aae139ed007d21e440f65040158d585c9319473cfcb9d5",
+  "runner_sha256": "9d5db69f61266204b50908a9fbe9a87909390ef34d7140a5e46d4d8f69acded5",
+  "manifest_sha256": "531ac4e34194723735fdf79647c9e0bc2c41eaade5dc1af8dab323f79cc34c3e",
+  "verified_current_source_files": 213,
+  "limits": {
+    "memory_max_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "runtime_max_seconds_per_check": 180,
+    "arithmetic_managed_bytes": 67108864,
+    "arithmetic_tile_bytes": 131072,
+    "staging_bytes": 65536
+  },
+  "reference": "Plonky3 0.6.1; cubic Goldilocks X^3 = X + 1; existing block-v2 opening order and blowup",
+  "operations": [
+    "GPU point parameters and barycentric scaling factors",
+    "GPU bit-reversed coset generation and batch denominator inversion",
+    "Tiled GPU column interpolation and claimed-value storage",
+    "Explicit bounded readback of claimed values for transcript observation",
+    "GPU alpha powers, per-height offsets and compressed opened values",
+    "GPU degree-prefix compression, cubic LDE and opening reduction",
+    "Owned FRI input vector directly accepted by existing binary cubic fold API"
+  ],
+  "bounds": {
+    "prefix_columns": 4096,
+    "points_per_matrix": 32,
+    "matrices_per_height_accumulator": 256,
+    "max_log_fri_rows": 25,
+    "evaluation_tile_rows": 4096,
+    "reduction_tile_rows": 65536,
+    "tile_cap_bytes": 67108864
+  },
+  "ownership": "Prepared openings retain private session-owned prefixes, points and values. Append consumes the accumulator; errors drop partial output, preventing reuse.",
+  "tests": {
+    "prefix_rows": [
+      1,
+      8,
+      128,
+      1024,
+      8192
+    ],
+    "fri_rows": [
+      16,
+      128,
+      2048,
+      16384,
+      131072
+    ],
+    "widths": [
+      1,
+      3,
+      9,
+      17
+    ],
+    "coset_shifts": [
+      7,
+      11
+    ],
+    "point_counts": [
+      2,
+      3,
+      32
+    ],
+    "cases": [
+      "claimed values equal direct coefficient Horner evaluation",
+      "every FRI-input entry equals direct CPU opening combination in reference matrix/point/column order",
+      "multiple matrices share alpha offsets; prepared values reused with zero and nontrivial alpha",
+      "Goldilocks boundary values and repeated points",
+      "partial inversion groups and multiple row tiles",
+      "prefix ownership retained after original handle drops",
+      "foreign sessions and insufficient claimed-value host allowances rejected",
+      "prefix-coset and expanded-coset denominator zeros reject and restore allocation baselines",
+      "empty accumulators cannot finish",
+      "output feeds a cubic fold with no upload or download"
+    ],
+    "fold_scope": "The test verifies direct device handoff and output shape; it does not claim a complete resident FRI proof."
+  },
+  "transfers": {
+    "per_evaluation_point_upload_bytes": "24 * point_count",
+    "per_evaluation_control_download_bytes": 8,
+    "claimed_value_download_bytes": "24 * point_count * width, only via explicit opening_values()",
+    "per_accumulator_alpha_upload_bytes": 24,
+    "per_append_control_download_bytes": 8,
+    "transform_roots": "Pinned transform constants still upload through the existing device LDE operation",
+    "intermediate_matrix_downloads": 0,
+    "note": "Conformance tests explicitly read final vectors for comparison; real proving still uses the previous opening adapter."
+  },
+  "successful_evaluation_calls": 11,
+  "successful_reduction_calls": 20,
+  "maximum_evaluation_plan_bytes": 958712,
+  "maximum_reduction_plan_bytes": 10586088,
+  "checks": [
+    {
+      "name": "opening-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 3.275298044001829,
+      "log_sha256": "ed7f2cffec67cae588f53b5ade1b226d662b73c9b7ba2837f1242a3424b480a4"
+    },
+    {
+      "name": "opening-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.031800233002286404,
+      "log_sha256": "800e81d7d610c6d1ef48a026d50f0349ae1ee05ac732f28f93ab0266abf17d75"
+    },
+    {
+      "name": "lookup-commit",
+      "passed_count": 1,
+      "wall_seconds": 1.36732352800027,
+      "log_sha256": "71438891d8c184d3974abc8414e8a8f53bda7f0deb4f6a069fe61d4181fa0e52"
+    },
+    {
+      "name": "lookup-proof",
+      "passed_count": 1,
+      "wall_seconds": 0.9168606880011794,
+      "log_sha256": "3ccc73dce187229a7babca6242334b37c8e6475aa5697f79be5005d20998172d"
+    },
+    {
+      "name": "lookup-compact",
+      "passed_count": 1,
+      "wall_seconds": 0.9160873190012353,
+      "log_sha256": "f7530cd1aa8a5fdf6938a9c2f5303ec4630aa462c3a80a6e6d24008add9c49d1"
+    },
+    {
+      "name": "trace-commit-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.03186652200020035,
+      "log_sha256": "f13757edf21dc804c750fd6e7d2ae2f78948decd563ea33df4a84d839db20738"
+    },
+    {
+      "name": "lookup-conformance",
+      "passed_count": 1,
+      "wall_seconds": 0.6655866340006469,
+      "log_sha256": "3e11b6e5baa7d3baa68fc4375200de33e1c48b9dff81472b48919501d5e4f715"
+    },
+    {
+      "name": "lookup-compiler",
+      "passed_count": 1,
+      "wall_seconds": 0.03175560100135044,
+      "log_sha256": "bb2cfa2b90cbe79a62b6f39f55c4100d72b331f6d2495cf69f11a8444fa2dc23"
+    },
+    {
+      "name": "lookup-plan",
+      "passed_count": 1,
+      "wall_seconds": 0.031732199000543915,
+      "log_sha256": "34e6490c173a542b8f8c2572845dd5028e4055342a4283f67001ae8ea1cb55e2"
+    },
+    {
+      "name": "quotient-compiler",
+      "passed_count": 1,
+      "wall_seconds": 0.03168909599844483,
+      "log_sha256": "ea29120bd906c9086f8e761c73eb14f975c5ac5d4c0fd3fbe38dbc810a7f9b9d"
+    },
+    {
+      "name": "proof-bytes",
+      "passed_count": 1,
+      "wall_seconds": 0.8658460519982327,
+      "log_sha256": "dea4357acb88ed7e1c822750a74cff0446fecd87a7b4571619ad71b3684252a3"
+    },
+    {
+      "name": "compact-proof",
+      "passed_count": 1,
+      "wall_seconds": 0.8671633550002298,
+      "log_sha256": "cb9ac4c37acfcc6c7350fc39ba5b76ccd4f547a0a769fdc17bf48c0852eae2ba"
+    },
+    {
+      "name": "registered",
+      "passed_count": 1,
+      "wall_seconds": 0.7673685680019844,
+      "log_sha256": "df0e49e0ff4bf3601f86cd0bac1bf7314efcab98b155c978638220f566d483e7"
+    },
+    {
+      "name": "reuse",
+      "passed_count": 1,
+      "wall_seconds": 1.1669448470020143,
+      "log_sha256": "d9b7af39ece3fbd564aa5b5b07a3498477c88d142f82bf90e228d99ccc98baf8"
+    },
+    {
+      "name": "adapter-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.91668815599769,
+      "log_sha256": "ae24f36d903fb4f14678590157831d314a451b25745372693c4c1a541e030ed0"
+    },
+    {
+      "name": "lde-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.7661918329977198,
+      "log_sha256": "4b92d347d1d390c07f0ac9c50974241d78f3344aeec52e9754acc2fd86b9cb68"
+    },
+    {
+      "name": "rng-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.6650426119995245,
+      "log_sha256": "4fea6695d2a466b7f44e6bbb21efd1074b302c5c360e8185b91b118b3ca54bc9"
+    },
+    {
+      "name": "compact-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.8654084970003169,
+      "log_sha256": "f3c934f2fc7b5cbd0c8a54e1d8f12cbeed03b6cf8663bffdb51db108cc78fbc8"
+    },
+    {
+      "name": "partition-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 0.8655244059991674,
+      "log_sha256": "4ace7348271e3d3107ebe0cea99e4f640a5a1c8808c3557978b8ab37334f525d"
+    },
+    {
+      "name": "unpartitioned-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 0.765475067000807,
+      "log_sha256": "fd0d4a8f4699a79483381d17500a676194ffc8a9db0ae9e348671dd77229bbec"
+    },
+    {
+      "name": "partition-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.03199075200245716,
+      "log_sha256": "00666be4962612e3e4e6c2a12073ec7f08e079d24d1eb47c5c25c4924e900436"
+    },
+    {
+      "name": "owned-commit",
+      "passed_count": 1,
+      "wall_seconds": 1.0167502969998168,
+      "log_sha256": "cd831327e40ddbaa9f85d3b877117ea529734da62dd9c0acea987accd6065045"
+    },
+    {
+      "name": "admission-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.6647850420013128,
+      "log_sha256": "62aff03b7beb789f9a79d86e05335f386ddb595d60fbb8009698c5c210d77cb3"
+    },
+    {
+      "name": "commit-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.031926638999721035,
+      "log_sha256": "bc462373324fded9ca7127b8a6969ed8e0cf0797213fde9613693a4b48bc9fdc"
+    },
+    {
+      "name": "storage-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.03182412500245846,
+      "log_sha256": "a368658520d07a522807c4b6f630292188dac2d7b1b9fc49a94b51f246be1b5c"
+    },
+    {
+      "name": "device-unit",
+      "passed_count": 4,
+      "wall_seconds": 0.03179362999799196,
+      "log_sha256": "e582eb56d0aa1de57ce582b66a7c4404986c51f612f3aaaa415e9260d6694911"
+    },
+    {
+      "name": "transform-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.03177223700186005,
+      "log_sha256": "d59c0134efa680ac8ab50b212ce1b6094217ace58d09f1d5923eed2a051ba5df"
+    },
+    {
+      "name": "plan-unit",
+      "passed_count": 10,
+      "wall_seconds": 0.031796844999917084,
+      "log_sha256": "35fccb4147cf775c56e5723d87ff77e4192eafeb3af170da138034100f2c8b9b"
+    },
+    {
+      "name": "lde-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.03172879799967632,
+      "log_sha256": "1432af26537eef7083277f3b221f5bce7e845c5acf193963da63bcd378db9d67"
+    },
+    {
+      "name": "pcs-unit",
+      "passed_count": 12,
+      "wall_seconds": 0.16411266599970986,
+      "log_sha256": "e7f455b864b794f781b8344e498a1ce828aac926a67a620d9e779ac6c9aa64b6"
+    },
+    {
+      "name": "policy-unit",
+      "passed_count": 9,
+      "wall_seconds": 0.06424162900293595,
+      "log_sha256": "91b11f32e7603f10507964013881397236c927d182564b87968d303543091df6"
+    }
+  ],
+  "rust_tests_passed": 65,
+  "python_resource_tests_passed": 30,
+  "build_logs": {
+    "release-build": "1ce238e6386a5fdfd0aae2bada1c19111c8fa83103cdc9edaf815b9e79a59efa",
+    "cpu-stream-build": "2ed2363cc67016ff812f48ae2f0de00d76e37875a63a5c7270b554964963115f",
+    "gpu-stream-build": "18cf170509652eecaaa7818aef938083e908d8b933a76d904aa5886abae34edd",
+    "python-resources": "5c28d6eb86c7936b42d7849df1e5b137f9c12861bad5ac3fdda72c8bc3734378"
+  },
+  "regressions": "Existing full/compact proof-byte, CPU verifier, lookup integration, public preprocessing reuse, private cleanup, default quotient and commitment paths passed. These use the previous opening adapter.",
+  "next_steps": [
+    "Capture owned prefixes for quotient and random-codeword commitments, using the doubled quotient hiding degree",
+    "Retain private main/permutation prefixes through opening and account for their simultaneous lifetime",
+    "Integrate GPU claimed-value observation and opening reduction with unchanged transcript order and full-proof checks",
+    "Keep FRI inputs/layers on device through commitments, folding, input mixing, final coefficients and query assembly",
+    "Continue remaining witness/transcript/randomness, legacy/API/backend and complete-workload qualification gates"
+  ],
+  "qualification": "NVIDIA OpenCL only. Metal rejects the new operations; AMD and complete-workload throughput remain unqualified."
+}

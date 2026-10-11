@@ -1,0 +1,655 @@
+{
+  "schema": "lattica-gpu-witness-v1",
+  "date": "2026-10-07",
+  "source_head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "source_state": "uncommitted main working tree",
+  "previous_checkpoint": "gpu-device-pcs-2026-10-07.json",
+  "complete_gpu_prover": false,
+  "integrated_into_real_prover": false,
+  "enabled_by_default": false,
+  "throughput_qualification": false,
+  "selection": {
+    "new_flag": null,
+    "gpu_required_policy_admitted": false,
+    "scope": "Crate-internal primitives only; registered proving still calls CPU MachineAir::trace and CPU preprocessed_trace"
+  },
+  "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-witness-20261007/run-01",
+  "features": [
+    "default",
+    "block-v2-wide-lanes"
+  ],
+  "build_profile": "release",
+  "gpu": {
+    "opencl_index": 1,
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "pci": "0000:02:00.0",
+    "global_bytes": 16697327616,
+    "max_allocation_bytes": 4174331904,
+    "driver": "615.71.09"
+  },
+  "limits": {
+    "memory_max_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "runtime_max_seconds_per_check": 180,
+    "native_managed_bytes": 268435456,
+    "production_reservations_relaxed": false
+  },
+  "binary_sha256": "4e6097f8dd4c7b96458e14d9277bd2a9491c020c1fbb9c627af8710ffae18535",
+  "source_archive_sha256": "575288ff5306d53fabef57860749727bb788abc9d47c5461027ce362d426ff8c",
+  "runner_sha256": "be8259476a0f5102594017f8bf4f0db58206bce18972eb58fe4ea683d069f1ed",
+  "manifest_sha256": "3bd1cc205aca56a43769b7f3a3cfada1fcbbd3e4b424ec7fbe84b5e6cf04b465",
+  "verified_current_source_files": 230,
+  "operations": [
+    "Compile immutable SSA metadata into dependency waves, including Bit and SelectHint execution inputs omitted from AIR lookup reads",
+    "GPU execution of every existing opcode: input, constant, add, multiply, equal, boolean, inverse, select, cubic multiply/inverse, Poseidon, bit hint and selection hint",
+    "GPU construction of unchanged packed witness and deterministic preprocessing columns",
+    "Reusable public program metadata across fresh private sessions; zeroed private input/wire/status scratch on release",
+    "Checked compiler, host and GPU peak plans before allocation or private input upload"
+  ],
+  "conformance": {
+    "layouts": [
+      "23-lane wide layout",
+      "8-lane original layout"
+    ],
+    "programs": "Empty, public-only padded, all opcodes, large field inputs, high-bit hints, computed selection tables, dependent hash chains, partial rows and 33/64 public values",
+    "repetitions": "Six shapes in three fresh sessions per layout; exact canonical CPU trace and preprocessing equality",
+    "wide_rows": [
+      8,
+      256,
+      8,
+      16,
+      64,
+      512
+    ],
+    "narrow_rows": [
+      8,
+      256,
+      16,
+      64,
+      128,
+      2048
+    ],
+    "waves": [
+      0,
+      0,
+      7,
+      7,
+      11,
+      67
+    ],
+    "input_bytes": [
+      0,
+      512,
+      128,
+      672,
+      1688,
+      12920
+    ],
+    "per_successful_evaluation": {
+      "program_reupload_bytes": 0,
+      "status_readback_bytes": 8,
+      "trace_upload_bytes": 0,
+      "trace_readback_bytes": 0
+    },
+    "preprocessing": "No transfers during GPU construction; explicit trusted public preprocessing import tested",
+    "negative_cases": [
+      "CPU-equivalent Unsatisfied for invalid equality, boolean, base inverse, cubic inverse and selection hint",
+      "Incorrect input count, noncanonical field elements and insufficient host allowance rejected before transfers",
+      "Oversized trace/preprocessing rejected before allocations",
+      "Foreign private session rejection; successful reuse after failure and restored allocation baselines"
+    ],
+    "lifecycle": "All 43 native checks drain to zero managed bytes and release their GPU lease"
+  },
+  "checks": [
+    {
+      "name": "witness-conformance",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 3.226697657999466,
+      "log_sha256": "c80915ad92f33438e6a02589f7e78241d737cb3df140abfd717587737d8154dd"
+    },
+    {
+      "name": "witness-rejection",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.6660254269954748,
+      "log_sha256": "7d6f6960925f9e4db5713c298f0bcc6566c2e44337d61156129e87e49e1f95d0"
+    },
+    {
+      "name": "witness-compiler",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 2,
+      "wall_seconds": 0.032413654000265524,
+      "log_sha256": "817820c320fbeedf6e02ec1859219314ccef2d13e063de6e597b148a01ea9de9"
+    },
+    {
+      "name": "witness-memory",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.03196853299596114,
+      "log_sha256": "3329d900defac84e0c3c278fcc7addca2f54199c272c5b1e7dd8d2b22f328d2d"
+    },
+    {
+      "name": "device-oracle",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.5184068149974337,
+      "log_sha256": "56f6204672a7351fd71c1c94b6f77e7e49154ed32df4ac8af359e69874df2c88"
+    },
+    {
+      "name": "device-admission",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.6671011639991775,
+      "log_sha256": "5b93361c37b2d29bba5ec5109cfff7d7c7e03f01f770ca190579253cfe209fc1"
+    },
+    {
+      "name": "device-full",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.9695008280032198,
+      "log_sha256": "c72a2f9b7a142abd0c3f769851e790c79847f12b86a317beb7f2b7324a328170"
+    },
+    {
+      "name": "device-compact",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.9664109380028094,
+      "log_sha256": "4c991a000793542c579bdd617949e318909b923b2db02c78cae03c41e48e9bad"
+    },
+    {
+      "name": "device-reuse",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.1684897340019234,
+      "log_sha256": "389ff0e4bc83d0c6db371abe17ce36c1410483282fd39e39c317d20d3b889b82"
+    },
+    {
+      "name": "device-reuse-compact",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.2690411879957537,
+      "log_sha256": "20b423a21183173db87a74c1f709d96b26acdf3e57273987d517d5c7f348fde5"
+    },
+    {
+      "name": "query-tiles",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8662491659997613,
+      "log_sha256": "f9d9244a38d566ababb946989b750e2be4a6aadd125bb3bf38341f71682c39eb"
+    },
+    {
+      "name": "query-oracle",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.5679708590032533,
+      "log_sha256": "a686b3d433e77d9428cadf2e596a0d8c4b278dc6b6f42e5775cec21fbbdaa0b1"
+    },
+    {
+      "name": "query-unit",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 2,
+      "wall_seconds": 0.015881225001066923,
+      "log_sha256": "900ca75040107654c6dd31d9ee63c0a2645ea2f03e92ac0e99f5f247949d74f1"
+    },
+    {
+      "name": "fri-conformance",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.2174896639990038,
+      "log_sha256": "27e5faf12d525ef036b799b988275832afb03e221e9dee8848d9e09eafe92080"
+    },
+    {
+      "name": "fri-full",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8663279999964288,
+      "log_sha256": "ac1d80d80e7ffba4995620a6d7b626bff7bce6bb4ebe1d81c5a40141c02f7211"
+    },
+    {
+      "name": "fri-compact",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8654615940031363,
+      "log_sha256": "52e37f7a035824602aac2f862c73f2789d12cc1f437eb2186242c3b5d560890c"
+    },
+    {
+      "name": "fri-lookup-full",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8163553010017495,
+      "log_sha256": "a7e08241c9c4603061e19329575ad730d5e262a66f8838ee41f6602378481aae"
+    },
+    {
+      "name": "fri-lookup-compact",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.9167075359946466,
+      "log_sha256": "f4052c86d8bc8c35a2bf6cada2f083632536dd1a7194b9ecccb70f8d44959eab"
+    },
+    {
+      "name": "fri-reuse",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.0170622440055013,
+      "log_sha256": "cbfd30b9fd9f3ee16c5028a4972a9059f28ce3c597924b3c243366ee218760ab"
+    },
+    {
+      "name": "extension-adapter",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.03194161799910944,
+      "log_sha256": "930eecaef6e2c286b1af592370b8309e0e0021a5222129a676020266ae7ece06"
+    },
+    {
+      "name": "opening-full",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8664852810034063,
+      "log_sha256": "18703193c67c100c9280d2809a25c16d686c3aed873c0f791f4e0d42e2d32162"
+    },
+    {
+      "name": "opening-compact",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8653957139977138,
+      "log_sha256": "329b1fa986d6cb6db147611011f20ecbd5bfdbde03389b640f7880a0108c0713"
+    },
+    {
+      "name": "opening-lookup-full",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.0163003279958502,
+      "log_sha256": "20a278124ce2ddd5e4e38d1bfa8a8c7d8e42bbf9a2d5aaec772dc3c6a87c9af8"
+    },
+    {
+      "name": "opening-lookup-compact",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.9154330800010939,
+      "log_sha256": "aaa0355bdb94d1de879a604a7bf3a42dbb66e71d6288b67247ad2e59d1d2a334"
+    },
+    {
+      "name": "opening-rng",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.7655390509971767,
+      "log_sha256": "6f6213833851589a5310236a86e727aadf7198b7643751fa602da2bc02fffa4c"
+    },
+    {
+      "name": "opening-admission",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.6647419719956815,
+      "log_sha256": "1379905d62349791236933f83904a20a00b250a25ffe2a6fdb03c99655e63709"
+    },
+    {
+      "name": "opening-capture",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.0665536000014981,
+      "log_sha256": "99a30f14a6bdecbe95d95a4d4cfe19ad17940ec04a0e2162ab51500df6477f25"
+    },
+    {
+      "name": "opening-reuse",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.2674255550009548,
+      "log_sha256": "ee88ea1b517f3ff220af432bba2c1fa72c9aa4e37735499ce22f150615242057"
+    },
+    {
+      "name": "opening-arithmetic",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.41814292500203,
+      "log_sha256": "23cb8d9a432f93e445e12049658a019a2423599060855729060ef061beceef37"
+    },
+    {
+      "name": "opening-unit",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 2,
+      "wall_seconds": 0.03211258199735312,
+      "log_sha256": "dad5966ca58d0b3fc2d20fcd3e5a3b33bef4efabdfb60ed05feaedf6cf560b52"
+    },
+    {
+      "name": "lookup-commit",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.3692657889987458,
+      "log_sha256": "a57cb0a18aa56b44cd30077232301102adf40e6ee7eefa71a82f46c6d0b0c2d5"
+    },
+    {
+      "name": "lookup-proof",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8671109100032481,
+      "log_sha256": "bcd64df24ea2e5ebccd9df3a5942063c3bde3a7fca0af722e4e5879960bfbfab"
+    },
+    {
+      "name": "lookup-compact",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.9161131029977696,
+      "log_sha256": "d8a7d2046b8c2f487f42d6265b631c48a1f88cf725e1f188d3746e5223d5a2fb"
+    },
+    {
+      "name": "trace-commit-unit",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.03207154900155729,
+      "log_sha256": "6448122b5e27645fef73c443cfd317556ed9543638f01366769c1eb593989a63"
+    },
+    {
+      "name": "lookup-conformance",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.7149872459995095,
+      "log_sha256": "24c9f0c739805087e2ab9e6ce87ad37fcd87f9534c744c1ba81046fb7576e573"
+    },
+    {
+      "name": "lookup-compiler",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.031840536998061,
+      "log_sha256": "19a11ec3fcdb5259fb21da546b26d5766c7e3532ef11e493d4624782390b0a84"
+    },
+    {
+      "name": "lookup-plan",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.03173038899694802,
+      "log_sha256": "29149b9de1b256d90d651d69cde3815d51124162d1b020e951d2d2e7e6b1662c"
+    },
+    {
+      "name": "quotient-compiler",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.03184490300191101,
+      "log_sha256": "d7269ebfae526b4283c55a9a8d344771c9f44cb7a78fa962d91756d420976317"
+    },
+    {
+      "name": "proof-bytes",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8660896369983675,
+      "log_sha256": "10f4fab0d97bba7b658fe56a59e75838e3c06ad6221f9c7d561fdae97132aa14"
+    },
+    {
+      "name": "compact-proof",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.9158992800003034,
+      "log_sha256": "523612f762f7cc55985ef546d3a3b46d459793fee5cba14f82ebaf45ecbd616b"
+    },
+    {
+      "name": "registered",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8160761749968515,
+      "log_sha256": "da410953fbe7cc6c043b8f9cb574123d1110f7202d17d5e4b8fb5fbea0962f58"
+    },
+    {
+      "name": "reuse",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.0674560659972485,
+      "log_sha256": "058d7d2d94d3a032f062db28a267414c9fcd7c6c41ca7061e3dbbb252900ef04"
+    },
+    {
+      "name": "adapter-regression",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.815623461996438,
+      "log_sha256": "46a34b879ccaf5e54ea87052ee61cb71dd88254de5ea0721a162020d45133948"
+    },
+    {
+      "name": "lde-regression",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.715303942997707,
+      "log_sha256": "ce6b8a6ddc86d79f1224eb87811c35d3c3f93050d0ce5c181df34b4a767cadac"
+    },
+    {
+      "name": "rng-regression",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.6661355770047521,
+      "log_sha256": "e960142ecdf340d823981b0c98ef170536639e73c0a50e6196606b1f24ae116d"
+    },
+    {
+      "name": "compact-regression",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.8669455479976023,
+      "log_sha256": "8d698bb14d98dc9f944fe2902fd8fe295bbd1f8dd14e858ba23541972e9a63a1"
+    },
+    {
+      "name": "partition-arithmetic",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.9160201920021791,
+      "log_sha256": "6d3e276e9303e60f8022e6679915bcc0d0149e7a2b71d51fd9e17974c5ba6a47"
+    },
+    {
+      "name": "unpartitioned-arithmetic",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.7664147209943621,
+      "log_sha256": "16eaac7975fc9027b0ee38e7ea4f21237dee7285437af7529af802a561c6500b"
+    },
+    {
+      "name": "partition-unit",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.032253883000521455,
+      "log_sha256": "daf807d57df65e65aca6f73d45283b7f3a089e9753995c474d3c280f6d9c79a6"
+    },
+    {
+      "name": "owned-commit",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 1.1172864570035017,
+      "log_sha256": "e8495d633110fa0a48299a91a5056e28ef7d194ec792444b4460d1b8b082cb41"
+    },
+    {
+      "name": "admission-regression",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.665969141999085,
+      "log_sha256": "0b5a4a5e7ec08a6535b554912eaf4dd666b831c7afa363f4a5abed30911d3d6a"
+    },
+    {
+      "name": "commit-unit",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 2,
+      "wall_seconds": 0.03195028300251579,
+      "log_sha256": "87de7171347c2f05196a89b6ecafc73053cfc742dd565383a88f78eba12b990c"
+    },
+    {
+      "name": "storage-unit",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 2,
+      "wall_seconds": 0.015743326999654528,
+      "log_sha256": "7fed0b768a78276e7802bc2e48cd2342b5eb391d8a5c39ec05cb55002e8b8256"
+    },
+    {
+      "name": "device-unit",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 4,
+      "wall_seconds": 0.03177094699640293,
+      "log_sha256": "96811380efe169fc46019da58b3783350abc4b357ce3e543069943d4e86b290f"
+    },
+    {
+      "name": "transform-unit",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 1,
+      "wall_seconds": 0.03175831299449783,
+      "log_sha256": "a4267b2bcb6d013d485ece62f5d95f141942aef4ae7a17f15c569989a476791d"
+    },
+    {
+      "name": "plan-unit",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 11,
+      "wall_seconds": 0.031730738999613095,
+      "log_sha256": "f551110d83080bdd2fefd8c32dbdd00fc65e5c9b3167164c8011648d23334ee7"
+    },
+    {
+      "name": "lde-unit",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 2,
+      "wall_seconds": 0.015617918994394131,
+      "log_sha256": "9812bb31f3ea4b05c15938e95ef1e6051f7ad682249f6d319a5ccf12aa4bca18"
+    },
+    {
+      "name": "pcs-unit",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 13,
+      "wall_seconds": 0.21420721300091827,
+      "log_sha256": "3ca8bd5e12365942e3175b4a17e1a5a51865f9af33bc13b643fa4f6cd10b6b78"
+    },
+    {
+      "name": "policy-unit",
+      "returncode": 0,
+      "passed": true,
+      "passed_count": 9,
+      "wall_seconds": 0.0641661789995851,
+      "log_sha256": "78652dc0455d8f4025bc7d1bc4dbdd0c315642858af15c36899a5a586a622c9a"
+    }
+  ],
+  "narrow": {
+    "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-witness-20261007/run-01/narrow-02",
+    "features": [
+      "default",
+      "block-v2"
+    ],
+    "binary_sha256": "25c6e930682c21577b7d538ce43c1df14b46d43be88e13ac08746fbad6e4b392",
+    "runner_sha256": "586ca8bdb5acc3b9cb2400d0fcdce56a9afa166519676339ff99f2d5277815cb",
+    "build_log_sha256": "b043330448bbfb2b9ca2f4182e005cbc6f796dbd136caa98de045801f910b8c8",
+    "manifest_sha256": "4fd7338b175f9e7a627cc5d769a9a4a652f1a4753e4dcc230ee1f86ac89eaa46",
+    "checks": [
+      {
+        "name": "conformance",
+        "passed": true,
+        "passed_count": 1,
+        "returncode": 0,
+        "wall_seconds": 0.7673061349996715,
+        "log_sha256": "ad8c9f7501bb3fef5a5916c0a265efc8deeb27c2efff6856df971ca76209b191"
+      },
+      {
+        "name": "rejection",
+        "passed": true,
+        "passed_count": 1,
+        "returncode": 0,
+        "wall_seconds": 0.6661631739989389,
+        "log_sha256": "307209c393bcf61be29908a4103eb40f3fdab764d29c4a2d301440eff24b8a1d"
+      },
+      {
+        "name": "compiler",
+        "passed": true,
+        "passed_count": 2,
+        "returncode": 0,
+        "wall_seconds": 0.03182647599896882,
+        "log_sha256": "27a2beb59312278987034a13dfe01271be35c91daa580760ab7ed77273785634"
+      },
+      {
+        "name": "memory",
+        "passed": true,
+        "passed_count": 1,
+        "returncode": 0,
+        "wall_seconds": 0.031870088998402935,
+        "log_sha256": "b3edbaedcd47beede013a22c49bf10800b64e68481d2de903c2c521fe316c931"
+      }
+    ]
+  },
+  "preserved_failed_attempt": {
+    "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-witness-20261007/run-01/narrow",
+    "manifest_sha256": "e635150c39e417a1083b6e318b0eb80c1bf76a338aa4b5298148d209b88894f4",
+    "reason": "Initial default-feature build omitted block-v2; exact test filter selected zero tests. Runner rejected and stopped. No GPU arithmetic executed. Corrected narrow-02 includes block-v2."
+  },
+  "bounded_checks_passed": 63,
+  "native_checks_passed": 43,
+  "rust_test_cases_passed": 103,
+  "resource_evidence": {
+    "tests_passed": 36,
+    "rerun_this_checkpoint": false,
+    "source": "gpu-device-pcs-2026-10-07.json",
+    "reason": "Resource scripts unchanged and hashes match previous checkpoint",
+    "log_sha256": "23aeb94bbcd8531c8a4f752b4fd5221526b6852c9248c311ecfe1f482169b799",
+    "resource_profile_changed": false
+  },
+  "build_and_resource_logs": {
+    "release-build": "33a2a7b5f3ff58cbf905d333a7b207a4821ced0c28dfb18435e316bf46976393",
+    "cpu-stream-build": "0d26c45e9d67aab9308e58fb6f7b4b626a0d8e2b649ec542848566f2f2cb736c",
+    "gpu-stream-build": "92fa4e2b833d2229a3832395a7fdfbf2d2c02b546a0a17600cb0d24f680c45d0",
+    "python-resources": "23aeb94bbcd8531c8a4f752b4fd5221526b6852c9248c311ecfe1f482169b799"
+  },
+  "remaining": [
+    "Connect device witness traces directly to main hiding commitments and the adapted batch prover",
+    "Construct deterministic device preprocessing commitments and CommonData without dense host preprocessing",
+    "Immutable selection, stage/capability reporting and simultaneous worker memory reservations before activation",
+    "Wallet/batch/public-value arithmetic",
+    "Exact random expansion, salts, transcript and grinding",
+    "Periodic, legacy quadratic/nonbinary/final-polynomial support and wallet/C-ABI wiring",
+    "AMD/Metal conformance and full-size memory/sustained throughput qualification"
+  ]
+}

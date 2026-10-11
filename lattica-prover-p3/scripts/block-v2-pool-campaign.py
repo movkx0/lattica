@@ -25,6 +25,7 @@ import block_v2_native_shared as N
 from benchmark_report.campaign import analyze
 
 ROOT = Path(__file__).resolve().parent
+G = importlib.import_module('block-v2-multi-gpu-run')
 KINDS = ('joinsplit', 'htlc_redeem', 'htlc_refund', 'issuance')
 _wallet_store = None
 _wallet_identity = None
@@ -261,7 +262,8 @@ def run(config_path, output):
                        '--property=MemoryMax=' + str(config['wallet']['ram_bytes']),
                        '--property=CPUQuota=' + str(config['wallet']['threads'] * 100) + '%',
                        '--property=RuntimeMaxSec=' + str(config['candidate_timeout_seconds']),
-                       '--property=KillMode=control-group', '--property=OOMPolicy=kill',
+                        '--property=KillMode=control-group', '--property=OOMPolicy=kill',
+                        *[f'--setenv={name}={value}' for name, value in G.proving_environment().items()],
                        sys.executable, str(Path(__file__).resolve()), 'prepare', '--config', str(config_path),
                        '--request', str(request)]
             with (output / f'wallet-{sequence:06}.log').open('xb') as log:

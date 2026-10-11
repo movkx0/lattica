@@ -1,0 +1,29 @@
+{
+  "package": "p3-lookup",
+  "version": "0.6.1",
+  "upstream_files_sha256": {
+    ".cargo_vcs_info.json": "052915b22c2e0eed606b899b77f2570bb944d77875f34c2b4fb71489cbf04126",
+    "CHANGELOG.md": "ec5f0da8533bc593c725ae4282647bf8e54304966da1f9688438634ddc649b9f",
+    "Cargo.toml": "88aaa0167d7c7c2e6cda98e4d21b6bd09c4f87ec8fc7c3c68b3877ad3f9029bd",
+    "Cargo.toml.orig": "0142171fc38fe3490b33ad302ba23815b724c2aa4e66461ded136f1f8e8721c9",
+    "README.md": "967a8394031ea9acf8c0654acb98296adda50b8d88ceb244895272551f4fbd99",
+    "benches/logup.rs": "6360bcf4a4cfd1633a87c04d9264a6e85c8ef2fb442dc66b105d336248100f5b",
+    "src/builder.rs": "2c2e6e1a0736d889a73032f0949f17dfdca5eaa4d2c067453a4fb5f6f13441ec",
+    "src/bus.rs": "011e6719e01cba6b017385622bb7e4485a4f88da3a0bf43761635d4e390d4c13",
+    "src/challenges.rs": "e945e87b02878a93f79afc70dedc5999563e07cdc8d83f8eb543c45c57f384f3",
+    "src/count.rs": "943038f6051d447766df9b95cb7704f87461586ab88c42ee956c8c08d1c4e84f",
+    "src/debug_util.rs": "b77cc6e23d7a8eaecbc873db0db4f91d94dfd6e94d738e7cb4a317a62e5d7bd8",
+    "src/folder.rs": "685bf8c518282b206da7548280a3682e6f35d2aa2ee3c289fbe4b7c5748f263a",
+    "src/lib.rs": "207337945241fff7ecfd2de927bafe21703edc2d985aec5d6cfa81d5cbba65d4",
+    "src/logup.rs": "2be0968bc048d18d7ac35623552fb49991d174dc4b9995d94d78bdde211f0f49",
+    "src/protocol.rs": "14dfbe05848f5ea40b243d3f25a3bcffa7d05851a562ca32db46706e3bc21993",
+    "src/symbolic.rs": "ccc5481c92158dfc22b773611e9178012bf93a1a64ff7eb701faa2b6ad607b07",
+    "src/tests.rs": "902e0b9c8ede281ef2f39148254b4e85985de185ae8753ba2b924a32ab9e968c",
+    "src/traits.rs": "466cce3a75ca3ffea91f8e1f5b9142c916568cee62aa7b8219957c4caff85e98",
+    "src/types.rs": "6453a91d735deca4bd981985b339d7aa906a043c86d8568cf2ab1a5738c5cb07"
+  },
+  "local_changes": [
+    "src/types.rs: allocation-free ownership-taking constructor"
+  ],
+  "license": "MIT OR Apache-2.0; Apache-2.0 text included"
+}

@@ -1,0 +1,342 @@
+{
+  "schema": "lattica-gpu-opening-integration-v1",
+  "date": "2026-10-07",
+  "source_head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "source_state": "uncommitted main working tree",
+  "previous_checkpoint": "gpu-owned-openings-2026-10-07.json",
+  "complete_gpu_prover": false,
+  "integrated_into_real_prover": true,
+  "enabled_by_default": false,
+  "throughput_qualification": false,
+  "selection": {
+    "flag": "LATTICA_V2_GPU_OPENING_EVAL=1",
+    "requires": [
+      "LATTICA_V2_GPU_OPENINGS=1",
+      "owned OpenCL quotient route"
+    ],
+    "immutable": true,
+    "gpu_required_policy_admitted": false
+  },
+  "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-openings-integrated-20261007/run-01",
+  "features": [
+    "default",
+    "block-v2-wide-lanes"
+  ],
+  "build_profile": "release",
+  "gpu": {
+    "opencl_index": 1,
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "pci": "0000:02:00.0",
+    "global_bytes": 16697327616,
+    "max_allocation_bytes": 4174331904,
+    "driver": "615.71.09"
+  },
+  "binary_sha256": "0ea052ebb52167c483312ebd1c0635f4da61f4d7f2a5d9f4e0760463fda307c0",
+  "source_archive_sha256": "fb1278aa15cb253c0d59b39d3b49433c8030e957ea33702410b61690656c8c81",
+  "runner_sha256": "2ce1bd6b96fa69104939cafedb343980bd0e26810aaa2fd7cc0c80908acaa9a0",
+  "manifest_sha256": "d57f77e434a57aa17bf1f7129c65c33f6c07f1ad54bd0ded2cb04afb5f674e1b",
+  "verified_current_source_files": 214,
+  "limits": {
+    "memory_max_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "runtime_max_seconds_per_check": 180,
+    "host_opening_boundary_bytes": 4294967296,
+    "proof_managed_bytes": 268435456,
+    "points_per_matrix": 32,
+    "matrices": 256,
+    "columns_per_matrix": 4096,
+    "max_log_fri_rows": 25
+  },
+  "reference": "Plonky3 0.6.1; cubic Goldilocks X^3 = X + 1; fixed block-v2 profile and proof encoding",
+  "implementation": [
+    "Private main/permutation degree prefixes retained through opening",
+    "Quotient hiding captures twice the original chunk height with pre-RNG admission",
+    "Random-codeword commitment captures its original degree with unchanged random and salt streams",
+    "Private session ownership checked; public preprocessing imported across proof sessions",
+    "GPU claimed-value evaluation followed by reference transcript observation order and alpha sampling",
+    "GPU per-height reduction in original matrix/point/column order",
+    "One reduced height at a time with explicit host FRI-vector readback",
+    "Pool assignments pin selection and reserve extended prefix and opening lifetimes"
+  ],
+  "transfers_in_64_row_proof_fixture": {
+    "matrices": 20,
+    "claimed_values_readback_bytes": 12648,
+    "fri_vector_readback_bytes": 49152,
+    "opening_prefix_upload_bytes": 0,
+    "opening_prefix_readback_bytes": 0,
+    "host_opening_peak_plan_bytes": 1172176,
+    "note": "Counters apply to opening itself. Commitment host PCS copies, control/status and small parameter transfers remain."
+  },
+  "full_workload_reservation": {
+    "managed_extra_bytes": 5460983808,
+    "max_allocation_bytes": 838860800,
+    "opening_host_extra_bytes": 404426752,
+    "all_selected_host_extra_bytes": 804982784,
+    "admission": "Rejected when combined with existing phase allowances; no full-size performance run"
+  },
+  "checks": [
+    {
+      "name": "opening-full",
+      "passed_count": 1,
+      "wall_seconds": 0.9676820829990902,
+      "log_sha256": "4ac97acfc52eb4137d3bff5509e5f2fdbd2d683773bc716b58d98c66d22e3c9b"
+    },
+    {
+      "name": "opening-compact",
+      "passed_count": 1,
+      "wall_seconds": 0.9175930980018165,
+      "log_sha256": "6f61c2b652cc4d4461e537724eb7a9caa99f0bc9da975be363192fadc7b88dbe"
+    },
+    {
+      "name": "opening-lookup-full",
+      "passed_count": 1,
+      "wall_seconds": 0.8681194339987996,
+      "log_sha256": "75466727ca04352c0c89eb61a5b9e54b46e448c6b4ea2e425f82205e994eddb7"
+    },
+    {
+      "name": "opening-lookup-compact",
+      "passed_count": 1,
+      "wall_seconds": 0.9169288320008491,
+      "log_sha256": "e352915761b8800a7f7362c2e50f12db96ae37dd03d5a2403a8ffbd251c1dc0a"
+    },
+    {
+      "name": "opening-rng",
+      "passed_count": 1,
+      "wall_seconds": 0.6164760100000422,
+      "log_sha256": "87d0029d7bf903ab2ba527350b4b93479fa86b864c9aff51de136a8cf40471be"
+    },
+    {
+      "name": "opening-admission",
+      "passed_count": 1,
+      "wall_seconds": 0.616155133000575,
+      "log_sha256": "2330562dc5b10c0e419eaf0ea1675e1acaffe8a45e6dd5b71645bc0cfd8ad749"
+    },
+    {
+      "name": "opening-capture",
+      "passed_count": 1,
+      "wall_seconds": 1.067715553999733,
+      "log_sha256": "3b0288398222b40e40ebc91927ca997c92c47bcbf4b49a9ce941a1566d7242f1"
+    },
+    {
+      "name": "opening-reuse",
+      "passed_count": 1,
+      "wall_seconds": 1.2167171920009423,
+      "log_sha256": "03ce7f4591ebc3d2deee575257ec588bf6661fe02001037270fb57ccb0e2d9d0"
+    },
+    {
+      "name": "opening-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 1.3676294890028657,
+      "log_sha256": "54717f85028908f68413469b899ed2d680109daa95dee96bf2c7d2ee962c5ec2"
+    },
+    {
+      "name": "opening-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.03175483499944676,
+      "log_sha256": "4bb4cdf08e83b563a5082d28fc9aefe783a67c1ac4e17d832a38a00149ce0976"
+    },
+    {
+      "name": "lookup-commit",
+      "passed_count": 1,
+      "wall_seconds": 1.3173335380015487,
+      "log_sha256": "0b2ae1967a0ce3b87d8f366379e02d3a2adf81cbf6b65c598748b21fab8e1553"
+    },
+    {
+      "name": "lookup-proof",
+      "passed_count": 1,
+      "wall_seconds": 0.9165006359980907,
+      "log_sha256": "9ec3163c450896aeb89351b9943806bf512b6c64cd32ac80fc197fe7c01d62d6"
+    },
+    {
+      "name": "lookup-compact",
+      "passed_count": 1,
+      "wall_seconds": 0.9173680879976018,
+      "log_sha256": "fea509df03440458e286d2d6907bbc495d4445e296095114c3645797f4097a7f"
+    },
+    {
+      "name": "trace-commit-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.015838815001188777,
+      "log_sha256": "29a3e76ac3a92f4ed32bebe1bc2ab98c859c9fb41881d029357854f8c27356b6"
+    },
+    {
+      "name": "lookup-conformance",
+      "passed_count": 1,
+      "wall_seconds": 0.7165712980022363,
+      "log_sha256": "07b8945fda41fa44ac5d6fb13f75187e2e9824a55eb6242657f112a1de89c03c"
+    },
+    {
+      "name": "lookup-compiler",
+      "passed_count": 1,
+      "wall_seconds": 0.03239124200263177,
+      "log_sha256": "52370fcc9f42ca0ccc456592f17e04999d7fa2a911450b7a592b1ae01772b632"
+    },
+    {
+      "name": "lookup-plan",
+      "passed_count": 1,
+      "wall_seconds": 0.03232206800021231,
+      "log_sha256": "c7304c28401214943d4937c062040e2c39b2b3e60c61346c9a5603cdf81ca0b7"
+    },
+    {
+      "name": "quotient-compiler",
+      "passed_count": 1,
+      "wall_seconds": 0.032622194001305616,
+      "log_sha256": "3e13eaa9f7f55d61f09aa0be27170180eb3cff57d26ffc94c0a155ad627343c6"
+    },
+    {
+      "name": "proof-bytes",
+      "passed_count": 1,
+      "wall_seconds": 0.8678243459980877,
+      "log_sha256": "3b1f2aaad1a1378c6c16ad1b13368782578b3330ccad7ae64cce3ac1c9e4b5ab"
+    },
+    {
+      "name": "compact-proof",
+      "passed_count": 1,
+      "wall_seconds": 0.9668039579992183,
+      "log_sha256": "3cd65c3b60df983b1aefa076de0c7c06b9bbe8c419faec5c7dec3083fb2ab4d2"
+    },
+    {
+      "name": "registered",
+      "passed_count": 1,
+      "wall_seconds": 0.9185756209990359,
+      "log_sha256": "9cc4f617eb1769d741bfc7a3b0cb3cf730eb46e211ccc68c67f1e2b15a72325d"
+    },
+    {
+      "name": "reuse",
+      "passed_count": 1,
+      "wall_seconds": 1.068177012999513,
+      "log_sha256": "9f09285e5433341220ad828bcd1d058ca4284e0d2084ed9cb8f40771af644464"
+    },
+    {
+      "name": "adapter-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.8170702339994023,
+      "log_sha256": "e917b6c40351640eb146696b883d3611946caff85907caa4316fe641a80f69b7"
+    },
+    {
+      "name": "lde-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.7663443849996838,
+      "log_sha256": "00d9ce64bea2b7a00c6ba5b32d23084f307f5cc5c12d899f51a982b8e05491a1"
+    },
+    {
+      "name": "rng-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.7163772240019171,
+      "log_sha256": "a008091eac0ab98a1ab512101ee31db47c36402bbf0f03f5f066f53046109030"
+    },
+    {
+      "name": "compact-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.8662896980022197,
+      "log_sha256": "e415c5b89fbbdc41062173daa6d4eb8db3d3fdcdcbbe0a1cbbc1f62fb98da52d"
+    },
+    {
+      "name": "partition-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 0.9171429429989075,
+      "log_sha256": "a2adf7cbb22bb8c4e5ededf79f89b5fce37ada12efdceb27a2c8775822dbaf91"
+    },
+    {
+      "name": "unpartitioned-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 0.7676592349998828,
+      "log_sha256": "4da305d47f5a26e0ed33568590f1f6cc5929cdf7811adf6f86927e74405fb7a3"
+    },
+    {
+      "name": "partition-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.0322194069995021,
+      "log_sha256": "8b3e045da4bcb7bdeccb29050b43cdc48f9120e8a157452eb4cea327cf8c845c"
+    },
+    {
+      "name": "owned-commit",
+      "passed_count": 1,
+      "wall_seconds": 0.9671420550002949,
+      "log_sha256": "9eff82c5c966337c60beba6cd039de855e156f49e3c018131e5ca198c5efe82b"
+    },
+    {
+      "name": "admission-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.6158764350002457,
+      "log_sha256": "5d24263f3a5f8d90a7ea5eeac035c24c27ab135c15fc563147157d395a0cc0dd"
+    },
+    {
+      "name": "commit-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.03220477099966956,
+      "log_sha256": "6bdfe132e929d34b29b02a6b527006282056eeea50b4df5de8003abacad3ddd9"
+    },
+    {
+      "name": "storage-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.03211693500270485,
+      "log_sha256": "5d7f5e858beafbf5fef014bba549dd59e6e3743bac70352b28ea539401025d29"
+    },
+    {
+      "name": "device-unit",
+      "passed_count": 4,
+      "wall_seconds": 0.03183509799782769,
+      "log_sha256": "b69c04662aa8245494b6639ba46f13cd88b8115977bf9d427987a95cede2bab9"
+    },
+    {
+      "name": "transform-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.03172814000208746,
+      "log_sha256": "a6f446d677cd8212bad375d0633bae4ecfa846e0a2e45e74d60d44e1d1261d34"
+    },
+    {
+      "name": "plan-unit",
+      "passed_count": 10,
+      "wall_seconds": 0.03182311699856655,
+      "log_sha256": "244742d1a650f8bcbf935ca8a9ad4543f15f9e419a0508043e4f9d33f04078d5"
+    },
+    {
+      "name": "lde-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.03171297200242407,
+      "log_sha256": "0fde53e702170fa7838bbe4f7ec157ad8484f173e72c6b9505c84d485a78eeab"
+    },
+    {
+      "name": "pcs-unit",
+      "passed_count": 12,
+      "wall_seconds": 0.21449765100260265,
+      "log_sha256": "07fe52d7c73583711a91fd6f6e6e3e03c2673b9a792c2ee5b8295996acce0165"
+    },
+    {
+      "name": "policy-unit",
+      "passed_count": 9,
+      "wall_seconds": 0.06403335000140942,
+      "log_sha256": "7398b706fa86f5ff34efb6947e00f177262ed4f6692bb585bc1b5d817f4d264d"
+    }
+  ],
+  "rust_test_cases_passed": 74,
+  "python_resource_tests_passed": 32,
+  "build_logs": {
+    "release-build": "8982dcd344d0bab32ad18c404e01a6c2d6e73135428bc257a013fa3074f2e121",
+    "cpu-stream-build": "c055aa98f008eec167c419e5bfe742c80785b496b60483b746aca66811a38c9c",
+    "gpu-stream-build": "084a52e6da4b384b91daebab5332f28ba08fbd0f5726eda771f794230667d904",
+    "python-resources": "82d357ca72263b4c333080d40acc2acde62bfdb901026b1dfa07a71c987e1fd2"
+  },
+  "proof_checks": "Full/compact reference-byte equality and unchanged CPU verification with GPU lookup off and on; incorrect public values rejected",
+  "lifecycle_checks": "Direct quotient/random prefix LDE equality, foreign-session rejection, RNG preservation after rejected inputs and across clones, three fresh registered proofs reuse public preprocessing and restore private allocation baselines, verification after GPU teardown",
+  "remaining_host_work": [
+    "FRI input/layer storage and mixing",
+    "FRI commitments and query interfaces",
+    "final polynomial IDFT",
+    "witness and preprocessing construction",
+    "transcript and grinding",
+    "random sampling/expansion"
+  ],
+  "next_steps": [
+    "Device FRI commitment/fold/mixing/final-coefficient/query pipeline",
+    "Witness and preprocessing construction",
+    "Transcript and random-stream expansion",
+    "Legacy wallet and C-ABI coverage",
+    "AMD and Metal conformance",
+    "Full-size memory and throughput qualification"
+  ],
+  "qualification": "NVIDIA OpenCL correctness only; AMD unqualified and Metal rejects new operations; full GPU proving remains incomplete"
+}

@@ -8,39 +8,7 @@ pub(super) const SNAPSHOT_BYTES: usize = 1 << 20;
 pub(super) const RECOVERY_WINDOW_MS: u64 = 3_600_000;
 
 pub(super) fn resources(assignment: &serde_json::Value) -> Result<(Resources, Resources), Error> {
-    let number = |group: &str, key: &str| -> Result<u64, Error> {
-        assignment[group][key]
-            .as_u64()
-            .ok_or_else(|| format!("missing typed worker budget {group}.{key}").into())
-    };
-    let threads = u32::try_from(number("cpu", "rayon_threads")?)?;
-    let peak = Resources {
-        ram_bytes: number("host", "worker_bytes")?,
-        vram_bytes: number("gpu", "managed_bytes")?,
-        scratch_bytes: number("host", "spill_bytes")?,
-        threads,
-    };
-    let coordinator_bytes = number("host", "coordinator_bytes")?;
-    let packet_bytes = match assignment["host"].get("coordinator_job_bytes") {
-        Some(value) => value.as_u64().ok_or("invalid coordinator job RAM")?,
-        None => coordinator_bytes,
-    };
-    if packet_bytes == 0 || packet_bytes > coordinator_bytes {
-        return Err("coordinator job RAM exceeds its physical assignment".into());
-    }
-    let jobs = Resources {
-        ram_bytes: packet_bytes,
-        vram_bytes: 0,
-        scratch_bytes: 0,
-        threads,
-    };
-    peak.validate_capacity()?;
-    jobs.validate_capacity()?;
-    if peak.vram_bytes == 0 || peak.scratch_bytes == 0 {
-        return Err("typed GPU runtime requires admitted VRAM and spill".into());
-    }
-    limits(peak, jobs)?.workers.validate_capacity()?;
-    Ok((peak, jobs))
+    lattica_prover_p3::block_v2::execution::worker_budget::resources(assignment)
 }
 
 pub(super) fn limits(peak: Resources, jobs: Resources) -> Result<Limits, Error> {

@@ -201,6 +201,18 @@ def reconcile(ledger, lookup=None):
     return ledger
 
 
+def proving_environment(source=None):
+    """Validate and freeze proving choices across fresh systemd environments."""
+    source = os.environ if source is None else source
+    policy = source.get('LATTICA_PROVING_POLICY', 'compatible')
+    report = source.get('LATTICA_PROVING_REPORT', '0')
+    if policy not in ('compatible', 'cpu-required', 'gpu-required'):
+        raise ValueError('LATTICA_PROVING_POLICY must be compatible, cpu-required or gpu-required')
+    if report not in ('0', '1'):
+        raise ValueError('LATTICA_PROVING_REPORT must be 0 or 1')
+    return {'LATTICA_PROVING_POLICY': policy, 'LATTICA_PROVING_REPORT': report}
+
+
 def environment(budget, directory):
     gpu, cpu, host = (budget[k] for k in ('gpu', 'cpu', 'host'))
     layout = budget.get('readback_layout', 'banded')
@@ -211,16 +223,67 @@ def environment(budget, directory):
         raise ValueError('unsupported assigned query readback layout')
     denominator_cache = budget.get('opening_denominator_cache', False)
     fri_fold = budget.get('gpu_fri_fold', False)
+    quotient_eval = budget.get('gpu_quotient_eval', False)
+    quotient_resident = budget.get('gpu_quotient_resident', False)
+    lookup = budget.get('gpu_lookup', False)
+    opening_eval = budget.get('gpu_opening_eval', False)
+    fri_resident = budget.get('gpu_fri_resident', False)
+    pcs_device_only = budget.get('gpu_pcs_device_only', False)
+    witness = budget.get('gpu_witness', False)
+    randomness = budget.get('gpu_randomness', False)
+    R.validate_randomness_assignment(budget, randomness)
+    transcript = budget.get('gpu_transcript', False)
+    R.validate_transcript_assignment(budget, transcript)
+    if type(witness) is not bool or (witness and not pcs_device_only):
+        raise ValueError('assigned GPU witness construction requires a boolean and device-only PCS')
+    if type(pcs_device_only) is not bool or (pcs_device_only and (not fri_resident or not lookup)):
+        raise ValueError('assigned device-only GPU PCS requires boolean resident FRI and GPU lookup')
+    if type(fri_resident) is not bool or (fri_resident and not opening_eval):
+        raise ValueError('assigned resident GPU FRI requires boolean owned opening evaluation')
+    if type(opening_eval) is not bool or (opening_eval and not quotient_resident):
+        raise ValueError('assigned GPU opening evaluation requires boolean owned quotient inputs')
+    if type(lookup) is not bool or (lookup and not quotient_resident):
+        raise ValueError('assigned GPU lookup requires boolean owned quotient evaluation')
+    if type(quotient_eval) is not bool:
+        raise ValueError('assigned GPU quotient evaluation selection must be boolean')
+    if type(quotient_resident) is not bool or (quotient_resident and not quotient_eval):
+        raise ValueError('assigned GPU quotient residency requires a boolean and GPU evaluation')
+    if quotient_resident:
+        reservation = budget.get('owned_quotient_reservation')
+        if (not isinstance(reservation, dict)
+                or set(reservation) != {'managed_bytes', 'max_allocation_bytes'}
+                or any(type(n) is not int or n <= 0 for n in reservation.values())
+                or reservation['managed_bytes'] > gpu['managed_bytes']
+                or reservation['max_allocation_bytes'] > gpu['max_allocation_bytes']):
+            raise ValueError('owned quotient buffers lack a valid GPU reservation')
     if type(fri_fold) is not bool:
         raise ValueError('assigned GPU FRI folding selection must be boolean')
     if type(denominator_cache) is not bool:
         raise ValueError('assigned opening denominator cache selection must be boolean')
+    if witness:
+        expected = R.witness_reservation_for_bounds(budget.get('witness_bounds'),
+                    budget.get('preprocessing_cache', {}).get('entries', 1))
+        if (budget.get('witness_reservation') != expected
+                or expected['managed_bytes'] + budget['owned_quotient_reservation']['managed_bytes'] > gpu['managed_bytes']
+                or expected['max_allocation_bytes'] > gpu['max_allocation_bytes']
+                or expected['host_bytes'] > host['worker_bytes']):
+            raise ValueError('GPU witness buffers lack a valid worker reservation')
     return {
+        **proving_environment(budget.get('proving_environment')),
         'RAYON_NUM_THREADS': str(cpu['rayon_threads']), 'LATTICA_GPU_DEVICE_UUID': gpu['uuid'],
         'LATTICA_V2_ACCOUNTING_UNIT': budget['unit'], 'LATTICA_V2_WORKER_BUDGET': str(directory / 'budget.json'),
         'LATTICA_V2_GPU_MANAGED_BYTES': str(gpu['managed_bytes']),
             'LATTICA_V2_GPU_LDE_WORKSPACE_BYTES': str(budget.get('lde_workspace_bytes', 0)), 'LATTICA_V2_GPU_CONTEXT_BYTES': str(gpu['context_bytes']),
-            'LATTICA_V2_GPU_FRI_FOLD': '1' if fri_fold else '0',
+        'LATTICA_V2_GPU_FRI_FOLD': '1' if fri_fold else '0',
+        'LATTICA_V2_GPU_QUOTIENT_EVAL': '1' if quotient_eval else '0',
+        'LATTICA_V2_GPU_QUOTIENT_RESIDENT': '1' if quotient_resident else '0',
+        'LATTICA_V2_GPU_LOOKUP': '1' if lookup else '0',
+        'LATTICA_V2_GPU_OPENING_EVAL': '1' if opening_eval else '0',
+        'LATTICA_V2_GPU_FRI_RESIDENT': '1' if fri_resident else '0',
+        'LATTICA_V2_GPU_PCS_DEVICE_ONLY': '1' if pcs_device_only else '0',
+        'LATTICA_V2_GPU_WITNESS': '1' if witness else '0',
+        'LATTICA_V2_GPU_RANDOMNESS': '1' if randomness else '0',
+        'LATTICA_V2_GPU_TRANSCRIPT': '1' if transcript else '0',
         'LATTICA_V2_HOST_OUTPUT_BYTES': str(host['worker_bytes']), 'LATTICA_SPILL_MAX_BYTES': str(host['spill_bytes']), 'LATTICA_SPILL_DIR': str(directory / 'scratch'),
         'LATTICA_V2_GPU_HASH': '1', 'LATTICA_V2_GPU_RETAIN_TREES': '1', 'LATTICA_V2_GPU_PIPELINE': '0',
         'LATTICA_V2_GPU_RESIDENT_LDE': '1', 'LATTICA_V2_GPU_OPENINGS': '1', 'LATTICA_V2_GPU_OPENING_COMPACT': '1',
@@ -234,6 +297,7 @@ def environment(budget, directory):
 
 
 def launch(config, job, budget, directory, worker_script=None):
+    budget = {**budget, 'proving_environment': proving_environment(budget.get('proving_environment'))}
     worker_script = Path(worker_script or __file__).resolve()
     if worker_script != Path(__file__).resolve() and config['pins'].get(str(worker_script)) != digest(worker_script):
         raise ValueError('alternate worker controller must be pinned before launch')
@@ -484,6 +548,7 @@ def run(config, evidence):
                         unit = f'lattica-v2-multi-{os.getpid()}-{sequence}.service'
                         directory = evidence / f'{sequence:03d}-{job["id"]}'
                         budget = {**budget, 'unit': unit, 'slice': SLICE,
+                                  'proving_environment': proving_environment(),
                                   'admission_recheck': {'host': host, 'gpu': devices[uuid]}}
                         attempt = {'job': job['id'], 'uuid': uuid, 'unit': unit, 'directory': str(directory), 'status': 'running', 'reservation_released': False}
                         ledger['attempts'].append(attempt)

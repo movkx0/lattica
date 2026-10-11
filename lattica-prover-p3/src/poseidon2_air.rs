@@ -101,6 +101,9 @@ pub fn native_permute(input: [Val; W]) -> [Val; W] {
 
 const N_PERIODIC: usize = 3 + W; // 11
 
+#[cfg(feature = "block-v2")]
+pub(crate) mod periodic_source;
+
 pub(crate) fn periodic_table() -> Vec<Vec<Val>> {
     let mut is_init = vec![Val::ZERO; BLOCK];
     let mut is_full = vec![Val::ZERO; BLOCK];

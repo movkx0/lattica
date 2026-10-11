@@ -1,0 +1,423 @@
+{
+  "schema": "lattica-resident-fri-integration-v1",
+  "date": "2026-10-07",
+  "source_head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "source_state": "uncommitted main working tree",
+  "previous_checkpoint": "gpu-opening-integration-2026-10-07.json",
+  "complete_gpu_prover": false,
+  "integrated_into_real_prover": true,
+  "enabled_by_default": false,
+  "throughput_qualification": false,
+  "selection": {
+    "flag": "LATTICA_V2_GPU_FRI_RESIDENT=1",
+    "requires": [
+      "owned OpenCL opening evaluation",
+      "fixed binary cubic block-v2 profile"
+    ],
+    "immutable": true,
+    "gpu_required_policy_admitted": false,
+    "older_gpu_fri_fold_flag": "Independent; resident selection folds every round on GPU"
+  },
+  "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-resident-fri-20261007/run-02",
+  "previous_run_retained": "gpu-resident-fri-20261007/run-01",
+  "features": [
+    "default",
+    "block-v2-wide-lanes"
+  ],
+  "build_profile": "release",
+  "gpu": {
+    "opencl_index": 1,
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "pci": "0000:02:00.0",
+    "global_bytes": 16697327616,
+    "max_allocation_bytes": 4174331904,
+    "driver": "615.71.09"
+  },
+  "binary_sha256": "e812b7ff4f398fa3aa6b576a2cb843de31020c0a475ede4644f9b6eb497eb9b5",
+  "source_archive_sha256": "eaff3f2541015402cc4c697567cbf7f1bb7e0e31b275a90ee00bfd19ad69e3a4",
+  "runner_sha256": "e8bee0fbadf31f3109a815a0ec27cb97ceb1a91d5e5b3e618d412bad4d986ac9",
+  "manifest_sha256": "99b527dcc6b8ecaea3ccd38e3bb78bdca6831bfb3ebca12d70eb389d3f086192",
+  "verified_current_source_files": 219,
+  "limits": {
+    "memory_max_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "runtime_max_seconds_per_check": 180,
+    "proof_managed_bytes": 268435456,
+    "host_salt_staging_bytes": 1073741824,
+    "max_log_fri_rows": 25,
+    "query_count": 128,
+    "final_polynomial_coefficients": 1
+  },
+  "reference": "Plonky3 0.6.1 binary FRI and extension MMCS; cubic Goldilocks X^3 = X + 1; fixed block-v2 parameters and proof encoding",
+  "operations": [
+    "Direct owned opening-to-FRI vector handoff",
+    "Immutable no-copy binary row pairing",
+    "GPU salted commitments with retained trees and the original MMCS salt stream",
+    "GPU binary cubic folding in every round",
+    "GPU beta-squared multiplication and input mixing across unequal heights",
+    "Only the single final polynomial coefficient is read; its IDFT is the identity",
+    "GPU gathers queried cubic values and salts in reference order, including duplicates",
+    "Merkle authentication paths are read from retained device trees",
+    "Host salt staging and hashing peaks are both admitted before RNG draws, including still-live transform cache"
+  ],
+  "proof_checks": "Full and compact proof bytes match reference with GPU lookup both off and on. Serialized proofs decode and verify with the original upstream CPU PCS and extension MMCS. Incorrect public values remain rejected.",
+  "conformance": {
+    "input_heights": [
+      [
+        16
+      ],
+      [
+        32,
+        16
+      ],
+      [
+        2048,
+        128,
+        16
+      ],
+      [
+        65536,
+        4096,
+        256
+      ]
+    ],
+    "full_fri_proof_bytes_match_upstream": true,
+    "next_transcript_challenge_matches": true,
+    "exact_upload_accounting": "Salts plus gather indices; vector ingress happens before the measured FRI interval",
+    "exact_download_accounting": "Caps, authentication paths, queried field values/salts and one final coefficient; no FRI input/layer vector",
+    "negative_cases": [
+      "foreign session",
+      "empty, oversized or out-of-range row queries",
+      "insufficient query host allowance",
+      "insufficient salt staging allowance",
+      "aggregate GPU admission with a live filler allocation"
+    ],
+    "failed_admission_preserves_salt_stream": true,
+    "private_buffers_restore_baseline": true,
+    "extension_adapter": "Mixed matrix heights and repeated commitments match the original adapter caps, rows, proof bytes and cross-verification"
+  },
+  "transfers_in_64_row_proof_fixture": {
+    "opening_matrices": 20,
+    "claimed_value_readback_bytes": 12648,
+    "opening_fri_vector_readback_bytes": 0,
+    "fri_rounds": 7,
+    "device_folds": 7,
+    "layer_upload_bytes": 0,
+    "layer_readback_bytes": 0,
+    "gathered_query_values_and_salts_plus_final_coefficient_bytes": 71704,
+    "final_coefficient_bytes": 24,
+    "note": "Caps and authentication paths are additional final-proof transfers. Initial PCS host copies/queries and CPU random expansion remain."
+  },
+  "full_workload_reservation": {
+    "managed_extra_bytes": 5460983808,
+    "max_allocation_bytes": 838860800,
+    "fri_host_extra_bytes": 269484032,
+    "all_selected_host_extra_bytes": 1074466816,
+    "admission": "Full-size workload remains rejected against conservative aggregate phase allowances"
+  },
+  "checks": [
+    {
+      "name": "fri-conformance",
+      "passed_count": 1,
+      "wall_seconds": 1.3175776619973476,
+      "log_sha256": "8dd41cd373c05fed7c7ada6e320c5d61145e6d2af2364a40a0b0ee63f1955121"
+    },
+    {
+      "name": "fri-full",
+      "passed_count": 1,
+      "wall_seconds": 0.9674224629998207,
+      "log_sha256": "6a1b199f8004151b5bd7fda25438c39d92ce9717a0fdbb8a21c257fbfdc122dd"
+    },
+    {
+      "name": "fri-compact",
+      "passed_count": 1,
+      "wall_seconds": 1.0179341789989849,
+      "log_sha256": "edeef8c2546c5d0de0d42f88a5cc2e037155a0d1ffcc6d4b748a52e31b5ecc53"
+    },
+    {
+      "name": "fri-lookup-full",
+      "passed_count": 1,
+      "wall_seconds": 0.9165307110015419,
+      "log_sha256": "cb990fc03ae1c0b00af351251a83689dd54b24fbfd456cf77b1c2133d1f81e1b"
+    },
+    {
+      "name": "fri-lookup-compact",
+      "passed_count": 1,
+      "wall_seconds": 1.0171010970007046,
+      "log_sha256": "75843e62fc85de7f1de426f32fee5daeb004cb01ebddb4e9ab700441ab31ad67"
+    },
+    {
+      "name": "fri-reuse",
+      "passed_count": 1,
+      "wall_seconds": 1.1666282470032456,
+      "log_sha256": "4773e5f5744b2978c06bdc3818fbf78ab30743953889f6fd974d710f0f292039"
+    },
+    {
+      "name": "extension-adapter",
+      "passed_count": 1,
+      "wall_seconds": 0.03244288800487993,
+      "log_sha256": "74f1cf9e8f7ddeb6f2dea117120a87853e73880b3d07df6346cb498ea5c4c64c"
+    },
+    {
+      "name": "opening-full",
+      "passed_count": 1,
+      "wall_seconds": 0.9680809909987147,
+      "log_sha256": "a6d2fe6ee022f4f313fad5d5157f39d34e3ec8c98a858922ab1066b1cc47e590"
+    },
+    {
+      "name": "opening-compact",
+      "passed_count": 1,
+      "wall_seconds": 0.9670889370026998,
+      "log_sha256": "fdcb32841377eb358c0fe42b66bcea6c0fb1a3de451f3089f6b837ab6c292457"
+    },
+    {
+      "name": "opening-lookup-full",
+      "passed_count": 1,
+      "wall_seconds": 0.8664062390016625,
+      "log_sha256": "83b5fa4914eebc5288c331e91cde936ae1546eac252c05d59a61a47fa5ab37d4"
+    },
+    {
+      "name": "opening-lookup-compact",
+      "passed_count": 1,
+      "wall_seconds": 0.9169511860018247,
+      "log_sha256": "1381521093f3a4189c136ebc9bb8a15403a116931b8cea1c0ed624af22623005"
+    },
+    {
+      "name": "opening-rng",
+      "passed_count": 1,
+      "wall_seconds": 0.6655383610050194,
+      "log_sha256": "f620231b82e56d91979fea5fca861643fd593c747ebcaa286ae91bed5fe47eb0"
+    },
+    {
+      "name": "opening-admission",
+      "passed_count": 1,
+      "wall_seconds": 0.6649681959970621,
+      "log_sha256": "f932fe41e32fc1f5bda938537bb6c54c7e3a6d3549af41f0db055b2d26168798"
+    },
+    {
+      "name": "opening-capture",
+      "passed_count": 1,
+      "wall_seconds": 1.0165925139954197,
+      "log_sha256": "b282186bd35cdcdb60e2ef618eab04be841c0b6417919987dcbf2242bd71c8f3"
+    },
+    {
+      "name": "opening-reuse",
+      "passed_count": 1,
+      "wall_seconds": 1.267134427005658,
+      "log_sha256": "74bc2fb78673a27ceebff0a27ed9bacb9a4882524587645928e052dfe3461496"
+    },
+    {
+      "name": "opening-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 1.467010072003177,
+      "log_sha256": "953a7b97e55b31ee88eb785cdb2ca8a240ecf5823a9997a48107e0e53d12f0c7"
+    },
+    {
+      "name": "opening-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.0318900880010915,
+      "log_sha256": "1e13d911d9612c7203bb448afd8c1f7e786761765922f2448830856fea38aea1"
+    },
+    {
+      "name": "lookup-commit",
+      "passed_count": 1,
+      "wall_seconds": 1.317281236006238,
+      "log_sha256": "60117e21fbf783c322a042baca7dcf0ccc6503e50fc572faf5687b8acb97fcc6"
+    },
+    {
+      "name": "lookup-proof",
+      "passed_count": 1,
+      "wall_seconds": 0.9155709750048118,
+      "log_sha256": "2feb796cde53ef5a363874e7e88d8cabf81d03081aeb25048732ccd8d1967342"
+    },
+    {
+      "name": "lookup-compact",
+      "passed_count": 1,
+      "wall_seconds": 0.9171267100027762,
+      "log_sha256": "3a7ff2cef38da8524f73fff3912f7ff70b242593d1399ea754b7b947776ad226"
+    },
+    {
+      "name": "trace-commit-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.03176791500300169,
+      "log_sha256": "d93cee23a9b837c766ad2e9eac76345b5cecfb05b63cf9d9f666a86982c1ab06"
+    },
+    {
+      "name": "lookup-conformance",
+      "passed_count": 1,
+      "wall_seconds": 0.6651335209971876,
+      "log_sha256": "e8bdaa48e8545cdb7d7aab5a2f4c75246b4038ac5d629ef8a7dbd1467da23030"
+    },
+    {
+      "name": "lookup-compiler",
+      "passed_count": 1,
+      "wall_seconds": 0.01571919600246474,
+      "log_sha256": "7a669a0a626c71fafc7f03189aff705e7bcac74cd5117d20739e71716f7df9da"
+    },
+    {
+      "name": "lookup-plan",
+      "passed_count": 1,
+      "wall_seconds": 0.03178049199777888,
+      "log_sha256": "865f07b957bfb815fefd00375a53c347c54137636b44b6be7ec66490419fbab5"
+    },
+    {
+      "name": "quotient-compiler",
+      "passed_count": 1,
+      "wall_seconds": 0.03180647599947406,
+      "log_sha256": "e529f9a83c9db9f070484bf59d67407ca23b82c8cd2a45e9c2be7e154417e48b"
+    },
+    {
+      "name": "proof-bytes",
+      "passed_count": 1,
+      "wall_seconds": 0.8158125650006696,
+      "log_sha256": "5e4a458fb3581fc48aea8a44a08c31d2be2bb31fa20a7f381ab9c826d4e90ccd"
+    },
+    {
+      "name": "compact-proof",
+      "passed_count": 1,
+      "wall_seconds": 0.9165407699983916,
+      "log_sha256": "e8dcaeaaf097b64a0ad7954a0405db34910344098ad818f8bac6f3036da6e700"
+    },
+    {
+      "name": "registered",
+      "passed_count": 1,
+      "wall_seconds": 0.8660446660069283,
+      "log_sha256": "3cda23288e8c22f29634b068a91de2a7678ec705f116bea07b1224ae9e474e9c"
+    },
+    {
+      "name": "reuse",
+      "passed_count": 1,
+      "wall_seconds": 1.116700917002163,
+      "log_sha256": "2d3dfff3e2c8c0b1cc56ecb62da3757a3360f6d2daa7748de86a0e30b95bcc60"
+    },
+    {
+      "name": "adapter-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.9166266030006227,
+      "log_sha256": "3df60685ab7dca7cfc073ec22da7d2f96ed640ab227fd8e760bcc83b4e550c8b"
+    },
+    {
+      "name": "lde-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.7664912090040161,
+      "log_sha256": "398e040e84976fdfc9e530133f055ed752bf2e70fbe3b4018db2ce4a29f9d4d8"
+    },
+    {
+      "name": "rng-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.6157602469975245,
+      "log_sha256": "1cca440559089fd570307e26a1b880562776e5266977620d3c0b59575ed4256e"
+    },
+    {
+      "name": "compact-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.8668407060031313,
+      "log_sha256": "ad89f6d517f4298100e8b81c6d6bd691fde74e56122b47c4350530644b407361"
+    },
+    {
+      "name": "partition-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 0.8663948780013015,
+      "log_sha256": "afd22d21bc951650ae05ccada6889093afe9e007d0f998d11e1c400577d7cf3f"
+    },
+    {
+      "name": "unpartitioned-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 0.7163918899968849,
+      "log_sha256": "11aa65fb7183d586f56fd869561d8a11d3cd1a1c98daee865a4e5b4a65a4a6aa"
+    },
+    {
+      "name": "partition-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.032118959999934305,
+      "log_sha256": "5e37f23f8e8ae164ca8ea9cc4cb73f1916e83cfb790a8d562e1e3d383a845e8f"
+    },
+    {
+      "name": "owned-commit",
+      "passed_count": 1,
+      "wall_seconds": 1.1175137979953433,
+      "log_sha256": "e367c5716c0cde8fc210b8d7eba7d6185fc51a5878e18ac7007b4ac3fd5e3328"
+    },
+    {
+      "name": "admission-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.6157472709965077,
+      "log_sha256": "4ac029a72426ca07835c68f743cf4f21a224d6c870e4491dad7b7eb7bbca23ef"
+    },
+    {
+      "name": "commit-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.01643349700316321,
+      "log_sha256": "742259a010118e9048d940dd5f71b44f32169c27eca8b79f1a35cfd7ab8e891d"
+    },
+    {
+      "name": "storage-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.016207802000280935,
+      "log_sha256": "93b642cff03d15e6c8bbaaa35a8e2f62356220f29494d6e83d0d668ff01051cb"
+    },
+    {
+      "name": "device-unit",
+      "passed_count": 4,
+      "wall_seconds": 0.01585720900038723,
+      "log_sha256": "d16237accf6ca3bc365b8b5528f1b2f293a24ddbcae3455f6e134a14ebeb3314"
+    },
+    {
+      "name": "transform-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.015728459002275486,
+      "log_sha256": "531769a4e157d6b11a8b29451e7720066c59e7c8e14a04f475c722014f6b15e0"
+    },
+    {
+      "name": "plan-unit",
+      "passed_count": 10,
+      "wall_seconds": 0.015853956996579655,
+      "log_sha256": "f8afa87b31dfcbd8333b6f09ded1a89a9adfcb3bb8a5a309b770412386172a22"
+    },
+    {
+      "name": "lde-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.031877084998996,
+      "log_sha256": "a4429273fa50f011135f48e20176732dd0f63486f5ca5947cdc6f6bcec68c8f8"
+    },
+    {
+      "name": "pcs-unit",
+      "passed_count": 12,
+      "wall_seconds": 0.2149216410034569,
+      "log_sha256": "fec5ad6b4b134e14776f273856f872c51386337fe1d4d89e7cdb4eb3a80a7fb4"
+    },
+    {
+      "name": "policy-unit",
+      "passed_count": 9,
+      "wall_seconds": 0.06406330299796537,
+      "log_sha256": "3b5722e7e06d25decf2584540d5703acc69fa6060a3c502b746a67b5bdabb5ce"
+    }
+  ],
+  "rust_test_cases_passed": 81,
+  "python_resource_tests_passed": 33,
+  "build_logs": {
+    "release-build": "6f040bf3326268d704e53031bc17a6c4c27d76095d0e453416f5fa55d23c657e",
+    "cpu-stream-build": "1b72adc0bf1291c5b228e752167a84946b31ab5a7345a027d5caee6608ffafca",
+    "gpu-stream-build": "7436befdb2b41d41e711afd9acac9c4e6e6d9ebcc37dba9fd8c1f322b5f5ff29",
+    "python-resources": "0bbc4b9df4ca1f217badaafe2b6b5751926507fe112b0257642680d2cec29b9f"
+  },
+  "lifecycle": "Three fresh registered proofs reuse public preprocessing and restore private allocation baselines; proofs verify after GPU teardown; native FRI checks confirm zero managed bytes at shutdown",
+  "remaining_host_work": [
+    "Initial PCS matrix/salt storage and query interface",
+    "Witness and preprocessing construction",
+    "Transcript and challenge sampling",
+    "Grinding",
+    "Random stream expansion"
+  ],
+  "next_steps": [
+    "Remove initial PCS host storage/query dependencies",
+    "GPU witness and preprocessing construction",
+    "GPU transcript, grinding and random expansion",
+    "Legacy wallet/API and nonbinary FRI coverage",
+    "AMD and Metal conformance",
+    "Complete-workload memory and throughput qualification"
+  ],
+  "qualification": "NVIDIA OpenCL correctness only. AMD unqualified; Metal rejects the new operations. Full GPU proving and throughput remain incomplete."
+}

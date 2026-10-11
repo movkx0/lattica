@@ -18,6 +18,12 @@ now controls implementation sequencing: local DAG and GPU pipeline work begin
 together after baseline measurement, with remote pool expansion following their
 qualification. This prioritizes reducing proof latency before scaling the fleet.
 
+The [proving pool architecture guide](proving-pool-architecture.md) explains the
+complete proof flow, individual jobs versus subtree assignments, continuous
+scheduling, hostile participants and reuse across competing pools. It separates
+the implemented local service and dated evidence from proposed remote services,
+cross-pool coordination and cadence changes.
+
 ## 1. Decision and scope
 
 Distribute independent recursive proof jobs across CPU/GPU workers. Schedule
@@ -50,6 +56,12 @@ data needed to bind them. Intermediate proofs stay off-chain; historical block
 verification needs the public block body, one final proof and an approved
 verifier/profile. No direct witness batches, in-block proof containers, multiple
 final roots, curve/SNARK wraps or reduced-security fallback are introduced.
+
+The [wallet-owned local GPU service](gpu-acceleration.md#wallet-owned-local-gpu-workers-linuxopencl)
+is an implementation option inside that wallet privacy boundary. Its resource
+assignment contains public metadata, while the wallet application retains its
+private inputs locally. This separate admission contract does not add private
+witness jobs to the distributed recursive pool.
 
 ## 2. Current implementation and evidence
 

@@ -7,20 +7,30 @@
 //! lifecycle integration remain separate requirements, not implied by the adapter.
 
 pub mod dag;
+#[cfg(target_os = "linux")]
+pub mod gpu_admission;
 pub mod job;
+#[cfg(all(target_os = "linux", feature = "stream"))]
+pub mod native_worker;
 pub mod policy_context;
 #[cfg(all(target_os = "linux", feature = "stream"))]
 pub mod pool;
 pub mod resources;
 pub mod scheduler;
 pub mod selection;
+mod storage_bound;
 pub mod worker;
+pub mod worker_budget;
 pub mod workspace;
 
 // The bounded local filesystem implementation uses Linux directory descriptors.
 // Other platforms retain the in-memory contracts, not an unqualified fallback.
 #[cfg(target_os = "linux")]
 pub mod artifact_store;
+#[cfg(target_os = "linux")]
+mod bounded_io;
+#[cfg(target_os = "linux")]
+mod io_storage;
 
 #[cfg(target_os = "linux")]
 pub mod journal;

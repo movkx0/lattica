@@ -1,6 +1,9 @@
 //! Version-separated, UNFROZEN candidate parameters. No reduced-security fallback.
 
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+use super::extension_mmcs::CandidateExtensionMmcs as ExtensionMmcs;
 use p3_air::{symbolic::SymbolicAirBuilder, Air};
+#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
 use p3_commit::ExtensionMmcs;
 use p3_field::extension::CubicTrinomialExtensionField;
 use p3_fri::FriParameters;
@@ -9,6 +12,7 @@ use p3_uni_stark::{AirLayout, ProvenSecurity, StarkConfig, StarkSecurityParams};
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 
+pub use super::challenger::CandidateChallenger as Challenger;
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 use super::gpu_hash::CandidateMmcs as ValMmcs;
 #[cfg(feature = "stream")]
@@ -17,7 +21,7 @@ use super::normalization_workspace::HeapNormalizedDft as Dft;
 use crate::config::Dft;
 #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
 use crate::config::ValMmcs;
-use crate::config::{Challenger, MyCompress, MyHash, Val};
+use crate::config::{MyCompress, MyHash, Val};
 
 /// Research namespace, NOT a reviewed verifier/program identity or activation ID.
 /// Freeze a new identity after the recursive program and complete profile are reviewed.
@@ -33,6 +37,9 @@ pub const NODE_CODEC_REVISION: u64 = 1;
 #[cfg(feature = "block-v2-wide-lanes")]
 pub const NODE_CODEC_REVISION: u64 = 2;
 pub const LOG_BLOWUP: usize = 4;
+/// Canonical quotient partitions supported by the GPU compiler and PCS. This
+/// bound is independent of the per-chunk LDE blowup; batch AIRs need 32 chunks.
+pub(crate) const MAX_QUOTIENT_CHUNKS: usize = 32;
 pub const NUM_QUERIES: usize = 128;
 pub const CAP_HEIGHT: usize = 6;
 pub const NUM_RANDOM_CODEWORDS: usize = 4;
@@ -50,6 +57,167 @@ pub type Challenge = CubicTrinomialExtensionField<Val>;
 pub type ChallengeMmcs = ExtensionMmcs<Val, Challenge, ValMmcs>;
 pub type Pcs = super::quotient_pcs::CandidatePcs;
 pub type Config = StarkConfig<Pcs, Challenge, Challenger>;
+
+pub(crate) mod verification;
+
+/// Inventory the selected path, not the features compiled into this binary.
+/// Existing GPU stages still perform host arithmetic/materialization around
+/// their kernels, so Mixed is intentional and cannot admit GpuRequired.
+pub(crate) fn proving_capabilities(recursive: bool) -> crate::proving::Capabilities {
+    use crate::proving::{Capabilities, Profile};
+    let capabilities = Capabilities::cpu(Profile::BlockV2Cubic, recursive, recursive);
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    {
+        use crate::proving::{Backend, Stage};
+        let mut capabilities = capabilities;
+        if super::gpu_hash::is_enabled() {
+            capabilities.set(Stage::Commitment, Backend::Mixed);
+            capabilities.set(Stage::FriQuery, Backend::Mixed);
+            if recursive {
+                capabilities.set(Stage::Preprocessing, Backend::Mixed);
+            }
+            if recursive && resident_research_enabled() {
+                capabilities.set(Stage::Transform, Backend::Mixed);
+                if super::resident_pcs::research_openings_enabled() {
+                    capabilities.set(Stage::Opening, Backend::Mixed);
+                    capabilities.set(Stage::FriFold, Backend::Unknown);
+                    if super::quotient_pcs::gpu_fri_resident_enabled() {
+                        capabilities.set(Stage::FriFold, Backend::OpenCl);
+                        capabilities.set(Stage::FinalPolynomial, Backend::OpenCl);
+                    }
+                }
+            }
+            if recursive && super::quotient_pcs::gpu_quotient_eval_enabled() {
+                capabilities.set(Stage::Quotient, Backend::OpenCl);
+            }
+            if recursive && super::quotient_pcs::gpu_lookup_enabled() {
+                capabilities.set(Stage::Lookup, Backend::OpenCl);
+            }
+            if recursive && super::quotient_pcs::gpu_witness_enabled() {
+                // Registered statement hashes, constant folding and symbolic AIR
+                // construction have GPU implementations. Keep this capability
+                // mixed until every public-value path has measured coverage.
+                capabilities.set(Stage::PublicValues, Backend::Mixed);
+                capabilities.set(Stage::WitnessTrace, Backend::OpenCl);
+                // Registered construction, public salts and transforms use GPU
+                // arithmetic. Keep admission conservative until operation-level
+                // coverage and fallback rejection cover every entry point.
+                capabilities.set(Stage::Preprocessing, Backend::Mixed);
+            }
+            if recursive && super::quotient_pcs::gpu_randomness_enabled() {
+                capabilities.set(Stage::Randomness, Backend::OpenCl);
+                capabilities.set(Stage::Hiding, Backend::OpenCl);
+            }
+            if recursive && super::quotient_pcs::gpu_quotient_resident_enabled() {
+                capabilities.set(Stage::Scalar, Backend::Mixed);
+            }
+            if recursive && super::quotient_pcs::gpu_transcript_enabled() {
+                capabilities.set(Stage::Transcript, Backend::OpenCl);
+                capabilities.set(Stage::Grinding, Backend::OpenCl);
+                capabilities.set(Stage::Scalar, Backend::OpenCl);
+            }
+        }
+        capabilities
+    }
+    #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+    capabilities
+}
+
+/// A public derivation or compilation scope, not an entire recursive request.
+pub(crate) fn public_scope_capabilities(
+    stage: crate::proving::Stage,
+) -> crate::proving::Capabilities {
+    use crate::proving::{CoverageScope, Stage};
+    let scope = match stage {
+        Stage::PublicValues => CoverageScope::Statement,
+        Stage::Preprocessing => CoverageScope::RegistryCompilation,
+        _ => panic!("invalid public arithmetic scope"),
+    };
+    let capabilities =
+        crate::proving::Capabilities::cpu(crate::proving::Profile::BlockV2Cubic, true, true)
+            .scoped(scope, &[stage]);
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    let capabilities = {
+        let mut capabilities = capabilities;
+        if super::quotient_pcs::gpu_witness_enabled() {
+            capabilities.set(stage, crate::proving::Backend::OpenCl);
+        }
+        capabilities
+    };
+    capabilities
+}
+
+pub(crate) fn recursive_request_capabilities() -> crate::proving::Capabilities {
+    use crate::proving::{Capabilities, Profile, Stage};
+    let capabilities = Capabilities::cpu(Profile::BlockV2Cubic, true, true);
+    #[cfg(debug_assertions)]
+    let capabilities = capabilities.with_constraint_audit();
+    let mut capabilities = capabilities;
+    for stage in registered_proof_capabilities().stages() {
+        capabilities.set(stage.stage, stage.backend);
+    }
+    let public = public_scope_capabilities(Stage::PublicValues);
+    capabilities.set(Stage::PublicValues, public.stages()[0].backend);
+    capabilities
+}
+
+pub(crate) fn preprocessing_capabilities() -> crate::proving::Capabilities {
+    use crate::proving::{CoverageScope, Stage};
+    let stages = [
+        Stage::Preprocessing,
+        Stage::Randomness,
+        Stage::Transform,
+        Stage::Commitment,
+    ];
+    let capabilities = proving_capabilities(true).scoped(CoverageScope::Preprocessing, &stages);
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    let capabilities = {
+        let mut capabilities = capabilities;
+        // Witness selection owns public trace construction and commitment.
+        // Public salts follow the randomness switch in preprocessing_config;
+        // retain that inherited backend so partial selection cannot be admitted.
+        if super::quotient_pcs::gpu_witness_enabled() {
+            for stage in [Stage::Preprocessing, Stage::Transform, Stage::Commitment] {
+                capabilities.set(stage, crate::proving::Backend::OpenCl);
+            }
+        }
+        capabilities
+    };
+    capabilities
+}
+
+/// Public values and the registered circuit are already inputs to this API.
+/// Cached preprocessing must still belong to the selected witness backend.
+pub(crate) fn registered_proof_capabilities() -> crate::proving::Capabilities {
+    use crate::proving::{CoverageScope, Stage};
+    let stages: Vec<_> = Stage::ARITHMETIC
+        .into_iter()
+        .filter(|s| *s != Stage::PublicValues)
+        .collect();
+    let capabilities = proving_capabilities(true).scoped(CoverageScope::RegisteredProof, &stages);
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    let capabilities = {
+        let mut capabilities = capabilities;
+        if super::quotient_pcs::gpu_witness_enabled() {
+            // Witness admission requires the owned PCS interface. Its transforms,
+            // commitments, opening reductions and query reconstruction have no
+            // host matrix facade or small-input CPU fallback.
+            for stage in [
+                Stage::Preprocessing,
+                Stage::Transform,
+                Stage::Commitment,
+                Stage::Opening,
+                Stage::FriQuery,
+            ] {
+                capabilities.set(stage, crate::proving::Backend::OpenCl);
+            }
+        }
+        capabilities
+    };
+    #[cfg(debug_assertions)]
+    let capabilities = capabilities.with_constraint_audit();
+    capabilities
+}
 
 pub fn fri<M>(mmcs: M) -> FriParameters<M> {
     FriParameters {
@@ -71,6 +239,7 @@ pub fn make_config() -> Config {
         ChaCha20Rng::from_rng(&mut rand::rng()),
         None,
         false,
+        false,
     )
 }
 
@@ -89,6 +258,7 @@ pub(crate) fn make_proving_config() -> Config {
         ChaCha20Rng::from_rng(&mut rand::rng()),
         fusion.then(|| ChaCha20Rng::from_rng(&mut rand::rng())),
         resident,
+        false,
     )
 }
 
@@ -100,7 +270,24 @@ pub(crate) fn preprocessing_config() -> Config {
         ChaCha20Rng::from_seed([0; 32]),
         None,
         resident_research_enabled(),
+        true,
     )
+}
+
+/// Fresh per-proof entropy for an explicitly selected owned GPU wallet path.
+#[cfg(feature = "gpu")]
+pub(crate) fn make_gpu_proving_config<E: super::pcs_field::PcsField>(
+) -> Result<super::pcs_field::ProvingConfig<E>, crate::proving::Error> {
+    if !resident_research_enabled() || !super::quotient_pcs::research_enabled() {
+        return Err(crate::proving::Error::ComponentRejected);
+    }
+    Ok(config_with_rngs(
+        ChaCha20Rng::from_rng(&mut rand::rng()),
+        ChaCha20Rng::from_rng(&mut rand::rng()),
+        Some(ChaCha20Rng::from_rng(&mut rand::rng())),
+        true,
+        false,
+    ))
 }
 
 fn resident_research_enabled() -> bool {
@@ -114,30 +301,83 @@ fn resident_research_enabled() -> bool {
     }
 }
 
-fn config_with_rngs(
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+#[path = "profile_host_budget.rs"]
+mod host_budget;
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+pub(crate) use host_budget::{
+    make_proving_config_with_host_budget, preprocessing_config_with_host_budget,
+};
+
+fn config_with_rngs<E: super::pcs_field::PcsField>(
     salt_rng: ChaCha20Rng,
     hiding_rng: ChaCha20Rng,
     quotient_rng: Option<ChaCha20Rng>,
     resident: bool,
-) -> Config {
+    public_preprocessing: bool,
+) -> super::pcs_field::ProvingConfig<E> {
+    config_with_rngs_and_host_budget(
+        salt_rng,
+        hiding_rng,
+        quotient_rng,
+        resident,
+        public_preprocessing,
+        None,
+    )
+}
+
+fn config_with_rngs_and_host_budget<E: super::pcs_field::PcsField>(
+    salt_rng: ChaCha20Rng,
+    hiding_rng: ChaCha20Rng,
+    quotient_rng: Option<ChaCha20Rng>,
+    resident: bool,
+    public_preprocessing: bool,
+    _host_budget: Option<usize>,
+) -> super::pcs_field::ProvingConfig<E> {
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    if resident {
+        super::challenger::resources::check_worker(super::quotient_pcs::gpu_transcript_enabled())
+            .expect("GPU transcript worker admission failed before configuration");
+    }
     let perm = default_goldilocks_poseidon2_8();
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    let val_mmcs = if public_preprocessing {
+        ValMmcs::new_public_preprocessing(
+            MyHash::new(perm.clone()),
+            MyCompress::new(perm.clone()),
+            CAP_HEIGHT,
+        )
+    } else {
+        ValMmcs::new(
+            MyHash::new(perm.clone()),
+            MyCompress::new(perm.clone()),
+            CAP_HEIGHT,
+            salt_rng,
+        )
+    };
+    #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+    let _ = public_preprocessing;
+    #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
     let val_mmcs = ValMmcs::new(
         MyHash::new(perm.clone()),
         MyCompress::new(perm.clone()),
         CAP_HEIGHT,
         salt_rng,
     );
-    let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
+    let challenge_mmcs = ExtensionMmcs::<Val, E, ValMmcs>::new(val_mmcs.clone());
+    let mut parameters = fri(challenge_mmcs);
+    parameters.max_log_arity = E::MAX_LOG_ARITY;
+    parameters.num_queries = E::NUM_QUERIES;
     let pcs = if resident {
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         {
-            Pcs::new_resident(
+            super::quotient_pcs::CandidatePcs::<E>::new_resident(
                 Dft::default(),
                 val_mmcs,
-                fri(challenge_mmcs),
+                parameters,
                 NUM_RANDOM_CODEWORDS,
                 hiding_rng,
-                super::resident_pcs::host_output_budget(),
+                _host_budget.unwrap_or_else(super::resident_pcs::host_output_budget),
             )
             .expect("resident PCS configuration failed; no silent fallback")
         }
@@ -146,10 +386,10 @@ fn config_with_rngs(
             panic!("resident PCS requires the gpu feature")
         }
     } else {
-        Pcs::new(
+        super::quotient_pcs::CandidatePcs::<E>::new(
             Dft::default(),
             val_mmcs,
-            fri(challenge_mmcs),
+            parameters,
             NUM_RANDOM_CODEWORDS,
             hiding_rng,
         )
@@ -165,7 +405,26 @@ fn config_with_rngs(
         Some(rng) => pcs.with_fused_quotients(rng),
         None => pcs,
     };
-    Config::new(pcs, Challenger::new(perm))
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    let pcs = if resident && super::quotient_pcs::gpu_randomness_enabled() {
+        if public_preprocessing {
+            pcs.with_gpu_preprocessing_salts()
+                .expect("GPU public randomness selection failed; no silent fallback")
+        } else {
+            pcs.with_gpu_randomness()
+                .expect("GPU private randomness selection failed; no silent fallback")
+        }
+    } else {
+        pcs
+    };
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    if resident && !public_preprocessing && super::quotient_pcs::gpu_transcript_enabled() {
+        let challenger = pcs
+            .registered_gpu_challenger()
+            .expect("registered GPU transcript selection failed; no fallback");
+        return super::pcs_field::ProvingConfig::<E>::new(pcs, challenger);
+    }
+    super::pcs_field::ProvingConfig::<E>::new(pcs, Challenger::new(perm))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

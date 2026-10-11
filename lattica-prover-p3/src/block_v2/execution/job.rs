@@ -14,6 +14,22 @@ use crate::block_v2::{
     recursive::{self, Error, Registry, WalletProof, WrapperConstruction},
 };
 
+#[path = "job/typed_registry.rs"]
+mod typed_registry;
+#[cfg(all(
+    test,
+    feature = "stream",
+    not(any(feature = "gpu", feature = "gpu-metal"))
+))]
+pub(crate) use typed_registry::tests::fresh_check as typed_registry_fresh_check;
+pub use typed_registry::TypedRegistryContext;
+#[cfg(all(test, feature = "stream"))]
+#[path = "job/node_approval_tests.rs"]
+mod node_approval_tests;
+#[cfg(all(test, feature = "stream"))]
+#[path = "job/registry_pin_tests.rs"]
+mod registry_pin_tests;
+
 const SCHEMA: u64 = 1;
 // Distinct from commitment, registry, AIR and statement hash domains.
 const JOB_DOMAIN: u64 = 0x4c42563271;
@@ -104,22 +120,22 @@ impl ArtifactRef {
         })
     }
 
-    /// Length is admitted before allocating the hash input. Encoding and proof
+    /// Length is admitted before streaming the hash input. Encoding and proof
     /// verification are performed by the typed admission functions below.
     pub fn from_bytes(kind: ArtifactKind, bytes: &[u8]) -> Result<Self, Error> {
         if bytes.is_empty() || bytes.len() > profile::MAX_PROOF_BYTES {
             return Err("execution artifact length".into());
         }
-        let mut fields = Vec::with_capacity(3 + bytes.len().div_ceil(4));
-        fields.extend([SCHEMA, kind.code(), bytes.len() as u64]);
-        for chunk in bytes.chunks(4) {
-            let mut word = [0; 4];
-            word[..chunk.len()].copy_from_slice(chunk);
-            fields.push(u32::from_le_bytes(word) as u64);
-        }
+        let fields = [SCHEMA, kind.code(), bytes.len() as u64]
+            .into_iter()
+            .chain(commitment::stream::words(bytes));
         Ok(Self {
             kind,
-            digest: commitment::hash_fields(ARTIFACT_DOMAIN, &fields)?,
+            digest: commitment::stream::hash_fields(
+                ARTIFACT_DOMAIN,
+                3 + bytes.len().div_ceil(4),
+                fields,
+            )?,
             byte_len: bytes.len() as u32,
         })
     }
@@ -169,7 +185,7 @@ impl RegistryPin {
         construction: WrapperConstruction,
     ) -> Result<Self, Error> {
         Self::validate_shape(registry)?;
-        if registry.id()? != expected_profile {
+        if registry.bounded_id()? != expected_profile {
             return Err("execution registry pin".into());
         }
         Ok(Self {
@@ -183,13 +199,23 @@ impl RegistryPin {
         registry: &crate::block_v2::typed_recursive::Registry<12>,
         profile: [u8; 32],
     ) -> Result<Self, Error> {
+        Self::new_typed_with_id(registry, profile, || {
+            Ok(crate::block_v2::typed_recursive::CheckedRegistryRef::new(registry)?.profile())
+        })
+    }
+
+    fn new_typed_with_id(
+        registry: &crate::block_v2::typed_recursive::Registry<12>,
+        profile: [u8; 32],
+        identity: impl FnOnce() -> Result<[u8; 32], Error>,
+    ) -> Result<Self, Error> {
         if !registry.height.is_power_of_two()
             || !(8..=1 << 21).contains(&registry.height)
             || registry
                 .caps
                 .iter()
                 .any(|cap| cap.len() != 1 << profile::CAP_HEIGHT)
-            || registry.id()? != profile
+            || identity()? != profile
         {
             return Err("typed execution registry shape/profile".into());
         }
@@ -214,6 +240,22 @@ impl RegistryPin {
         Ok(())
     }
 
+    pub(crate) fn check_typed_approved(
+        self,
+        registry: &crate::block_v2::typed_recursive::CheckedRegistryRef<'_>,
+    ) -> Result<(), Error> {
+        if self
+            != (Self {
+                profile: registry.profile(),
+                construction: WrapperConstruction::GroupedPair,
+                typed: true,
+            })
+        {
+            return Err("typed execution registry substitution".into());
+        }
+        Ok(())
+    }
+
     pub fn profile(self) -> [u8; 32] {
         self.profile
     }
@@ -223,11 +265,24 @@ impl RegistryPin {
     }
 
     pub(super) fn check(self, registry: &Registry) -> Result<(), Error> {
+        self.approve(registry).map(|_| ())
+    }
+
+    pub(super) fn approve(
+        self,
+        registry: &Registry,
+    ) -> Result<recursive::CheckedRegistryRef<'_>, Error> {
         if self.typed {
             return Err("typed execution requires its twelve-key registry".into());
         }
         Self::validate_shape(registry)?;
-        if registry.id()? != self.profile {
+        let approved = recursive::CheckedRegistryRef::new(registry)?;
+        self.check_approved(&approved)?;
+        Ok(approved)
+    }
+
+    fn check_approved(self, registry: &recursive::CheckedRegistryRef<'_>) -> Result<(), Error> {
+        if self.typed || registry.profile() != self.profile {
             return Err("execution registry substitution".into());
         }
         Ok(())
@@ -281,8 +336,25 @@ impl VerifiedWallet {
         {
             return Err("execution wallet length".into());
         }
-        pin.check(registry)?;
-        let wallet: WalletProof = codec::decode(&bytes[WALLET_MAGIC.len()..])?;
+        let approved = pin.approve(registry)?;
+        Self::verify_approved(pin, &approved, expected_chain, bytes)
+    }
+
+    fn verify_approved(
+        pin: RegistryPin,
+        registry: &recursive::CheckedRegistryRef<'_>,
+        expected_chain: [u8; 32],
+        bytes: &[u8],
+    ) -> Result<Self, Error> {
+        if bytes.len() <= WALLET_MAGIC.len()
+            || bytes.len() > profile::MAX_PROOF_BYTES
+            || !bytes.starts_with(WALLET_MAGIC)
+        {
+            return Err("execution wallet length".into());
+        }
+        pin.check_approved(registry)?;
+        let storage = codec::proofs::Storage::new(codec::proofs::INPUT_STORAGE_LIMIT);
+        let wallet = storage.wallet(&bytes[WALLET_MAGIC.len()..])?;
         if wallet.chain != expected_chain {
             return Err("execution wallet chain".into());
         }
@@ -290,7 +362,7 @@ impl VerifiedWallet {
         Ok(Self {
             pin,
             mode: programs::WRAPPER as u8,
-            summary: recursive::wallet_summary(registry, &wallet)?,
+            summary: registry.wallet_summary(&wallet)?,
             artifact: ArtifactRef::from_bytes(ArtifactKind::Wallet, bytes)?,
         })
     }
@@ -303,19 +375,74 @@ impl VerifiedWallet {
         policy: crate::block_v2::typed_recursive::Policy,
         bytes: &[u8],
     ) -> Result<Self, Error> {
-        use crate::block_v2::typed_recursive::{self, Policy};
+        let storage = codec::proofs::Storage::new(codec::proofs::INPUT_STORAGE_LIMIT);
+        Self::verify_typed_owned(pin, registry, expected_chain, policy, bytes, &storage)
+            .map(|(ticket, _)| ticket)
+    }
+
+    /// Keep the exact decoded proof that established the ticket. The worker
+    /// retains the shared storage allowance until these inputs are dropped.
+    pub(super) fn verify_typed_owned(
+        pin: RegistryPin,
+        registry: &crate::block_v2::typed_recursive::Registry<12>,
+        expected_chain: [u8; 32],
+        policy: crate::block_v2::typed_recursive::Policy,
+        bytes: &[u8],
+        storage: &codec::proofs::Storage,
+    ) -> Result<(Self, WalletProof), Error> {
+        Self::check_typed_encoding(bytes)?;
+        pin.check_typed(registry)?;
+        Self::verify_typed_admitted(pin, expected_chain, policy, bytes, storage)
+    }
+
+    pub(super) fn verify_typed_owned_approved(
+        pin: RegistryPin,
+        registry: &crate::block_v2::typed_recursive::CheckedRegistryRef<'_>,
+        expected_chain: [u8; 32],
+        policy: crate::block_v2::typed_recursive::Policy,
+        bytes: &[u8],
+        storage: &codec::proofs::Storage,
+    ) -> Result<(Self, WalletProof), Error> {
+        Self::check_typed_encoding(bytes)?;
+        pin.check_typed_approved(registry)?;
+        Self::verify_typed_admitted(pin, expected_chain, policy, bytes, storage)
+    }
+    fn check_typed_encoding(bytes: &[u8]) -> Result<(), Error> {
         if bytes.len() <= TYPED_WALLET_MAGIC.len()
             || bytes.len() > profile::MAX_PROOF_BYTES
             || !bytes.starts_with(TYPED_WALLET_MAGIC)
         {
             return Err("typed execution wallet length/version".into());
         }
-        pin.check_typed(registry)?;
-        let wallet: WalletProof = codec::decode(&bytes[TYPED_WALLET_MAGIC.len()..])?;
+        Ok(())
+    }
+    // Callers first check the framing and approve the immutable registry.
+    // Numerical verification and summary/artifact derivation share one path.
+    fn verify_typed_admitted(
+        pin: RegistryPin,
+        expected_chain: [u8; 32],
+        policy: crate::block_v2::typed_recursive::Policy,
+        bytes: &[u8],
+        storage: &codec::proofs::Storage,
+    ) -> Result<(Self, WalletProof), Error> {
+        use crate::block_v2::typed_recursive;
+        let wallet = storage.wallet(&bytes[TYPED_WALLET_MAGIC.len()..])?;
         if wallet.chain != expected_chain {
             return Err("typed execution wallet chain".into());
         }
         typed_recursive::verify_wallet(&wallet, policy)?;
+        let ticket = Self::typed_ticket(pin, expected_chain, policy, &wallet, bytes)?;
+        Ok((ticket, wallet))
+    }
+    // Only called after verification, except by private conformance tests.
+    fn typed_ticket(
+        pin: RegistryPin,
+        expected_chain: [u8; 32],
+        policy: crate::block_v2::typed_recursive::Policy,
+        wallet: &WalletProof,
+        bytes: &[u8],
+    ) -> Result<Self, Error> {
+        use crate::block_v2::typed_recursive::Policy;
         let kind = match policy {
             Policy::JoinSplit => commitment::Kind::JoinSplit,
             Policy::Htlc { .. } => commitment::Kind::Htlc,
@@ -436,6 +563,20 @@ pub struct Job {
 }
 
 impl Job {
+    /// Retained Vec backing, including spare capacity, for coordinator admission.
+    pub(super) fn owned_heap_bytes(&self) -> Result<usize, Error> {
+        self.dependencies
+            .capacity()
+            .checked_mul(core::mem::size_of::<JobId>())
+            .and_then(|bytes| {
+                self.wallet_inputs
+                    .capacity()
+                    .checked_mul(core::mem::size_of::<ArtifactRef>())
+                    .and_then(|wallets| bytes.checked_add(wallets))
+            })
+            .ok_or_else(|| "execution job backing overflow".into())
+    }
+
     fn derive(
         pin: RegistryPin,
         operation: Operation,
@@ -638,13 +779,20 @@ impl VerifiedNode {
         if bytes.is_empty() || bytes.len() > profile::MAX_PROOF_BYTES {
             return Err("execution node length".into());
         }
-        job.pin.check(registry)?;
-        let node = codec::decode_node(bytes)?;
-        registry.verify(job.pin.profile, &node, &job.expected_public())?;
-        Ok(Self {
-            job: job.id,
-            artifact: ArtifactRef::from_bytes(ArtifactKind::Node, bytes)?,
-        })
+        let approved = job.pin.approve(registry)?;
+        Self::verify_approved(job, &approved, bytes)
+    }
+
+    fn verify_approved(
+        job: &Job,
+        registry: &recursive::CheckedRegistryRef<'_>,
+        bytes: &[u8],
+    ) -> Result<Self, Error> {
+        if bytes.is_empty() || bytes.len() > profile::MAX_PROOF_BYTES {
+            return Err("execution node length".into());
+        }
+        job.pin.check_approved(registry)?;
+        Self::verify_admitted(job, bytes, |node, expected| registry.verify(node, expected))
     }
 
     pub fn verify_typed(
@@ -655,9 +803,40 @@ impl VerifiedNode {
         if bytes.is_empty() || bytes.len() > profile::MAX_PROOF_BYTES {
             return Err("typed execution node length".into());
         }
-        job.pin.check_typed(registry)?;
-        let node = codec::decode_node(bytes)?;
-        registry.verify(job.pin.profile, &node, &job.expected_public())?;
+        TypedRegistryContext::for_pin(registry, job.pin)?.verify_node(job, bytes)
+    }
+
+    pub(crate) fn verify_typed_checked(
+        job: &Job,
+        registry: &crate::block_v2::typed_recursive::CheckedRegistry,
+        bytes: &[u8],
+    ) -> Result<Self, Error> {
+        Self::verify_typed_approved(job, &registry.as_ref(), bytes)
+    }
+
+    fn verify_typed_approved(
+        job: &Job,
+        registry: &crate::block_v2::typed_recursive::CheckedRegistryRef<'_>,
+        bytes: &[u8],
+    ) -> Result<Self, Error> {
+        if bytes.is_empty() || bytes.len() > profile::MAX_PROOF_BYTES {
+            return Err("typed execution node length".into());
+        }
+        job.pin.check_typed_approved(registry)?;
+        Self::verify_admitted(job, bytes, |node, expected| registry.verify(node, expected))
+    }
+
+    fn verify_admitted(
+        job: &Job,
+        bytes: &[u8],
+        verify: impl FnOnce(
+            &crate::block_v2::recursive::NodeProof,
+            &[Val; programs::PUBLIC_VALUES],
+        ) -> Result<(), Error>,
+    ) -> Result<Self, Error> {
+        let storage = codec::proofs::Storage::new(codec::proofs::INPUT_STORAGE_LIMIT);
+        let node = storage.node(bytes)?;
+        verify(&node, &job.expected_public())?;
         Ok(Self {
             job: job.id,
             artifact: ArtifactRef::from_bytes(ArtifactKind::Node, bytes)?,
@@ -770,6 +949,33 @@ pub(super) mod test_support {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn streamed_artifact_digest_matches_original_framing_at_proof_bounds() {
+        use super::*;
+        for kind in [ArtifactKind::Wallet, ArtifactKind::Node] {
+            for size in (1..=17).chain([
+                4095,
+                4096,
+                profile::MAX_PROOF_BYTES - 1,
+                profile::MAX_PROOF_BYTES,
+            ]) {
+                let bytes: Vec<_> = (0..size).map(|i| (i * 37) as u8).collect();
+                let mut fields = vec![SCHEMA, kind.code(), size as u64];
+                for part in bytes.chunks(4) {
+                    let mut word = [0; 4];
+                    word[..part.len()].copy_from_slice(part);
+                    fields.push(u32::from_le_bytes(word) as u64);
+                }
+                let reference = commitment::hash_fields(ARTIFACT_DOMAIN, &fields).unwrap();
+                let actual = ArtifactRef::from_bytes(kind, &bytes).unwrap();
+                assert_eq!(actual.digest, reference);
+                assert_eq!(actual.byte_len as usize, size);
+            }
+            assert!(ArtifactRef::from_bytes(kind, &[]).is_err());
+            assert!(ArtifactRef::from_bytes(kind, &vec![0; profile::MAX_PROOF_BYTES + 1]).is_err());
+        }
+    }
+
     use super::*;
     use commitment::{Entry, Kind};
 

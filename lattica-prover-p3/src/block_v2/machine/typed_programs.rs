@@ -3,13 +3,13 @@
 use p3_field::PrimeCharacteristicRing;
 use p3_uni_stark::Proof;
 
+use super::program::ScopedProgramBuilder as ProgramBuilder;
 use super::program::Val;
 use super::programs::{
     self, assert_constant, finish, public, registry, Compiled, COUNT, LEVEL, MODE, PUBLIC_VALUES,
     ROOT,
 };
 use super::verifier::{self, CompileError, ProofInputs};
-use super::ProgramBuilder;
 use crate::block_v2::{
     commitment::{self, Context, Kind},
     profile::{self, Config},
@@ -30,11 +30,23 @@ pub fn wrapper<const N: usize>(
     wallet_public: &[Val],
     proof: &Proof<Config>,
 ) -> Result<Compiled, CompileError> {
+    wrapper_with_registry(height, caps, mode, wallet_public, proof, None)
+}
+
+pub(crate) fn wrapper_with_registry<const N: usize>(
+    height: usize,
+    caps: &programs::Caps<N>,
+    mode: u64,
+    wallet_public: &[Val],
+    proof: &Proof<Config>,
+    prefix: Option<&programs::RegistryPrefix>,
+) -> Result<Compiled, CompileError> {
+    let constants = programs::compiler_constants(prefix);
     if !matches!(N, 5 | 6) {
         return Err(CompileError::Shape("typed registry key count"));
     }
     if mode == programs::WRAPPER {
-        return programs::wrapper(height, caps, wallet_public, proof);
+        return programs::wrapper_with_registry(height, caps, wallet_public, proof, prefix);
     }
     let (count, kind) = match mode {
         HTLC => (htlc::N_PUBLIC, Kind::Htlc),
@@ -44,14 +56,14 @@ pub fn wrapper<const N: usize>(
     if wallet_public.len() != count {
         return Err(CompileError::Shape("typed wallet statement"));
     }
-    let mut b = ProgramBuilder::new(PUBLIC_VALUES).unwrap();
+    let mut b = ProgramBuilder::with_constants(PUBLIC_VALUES, constants).unwrap();
     let public = public(&b);
     let mut inputs = ProofInputs::default();
-    registry(&mut b, &mut inputs, &public, height, caps)?;
+    registry(&mut b, &mut inputs, &public, height, caps, prefix)?;
     assert_constant(&mut b, public[MODE], mode);
     assert_constant(&mut b, public[LEVEL], 0);
     assert_constant(&mut b, public[COUNT], 1);
-    let wallet = inputs.bases(&mut b, wallet_public);
+    let wallet = inputs.bases(&mut b, wallet_public)?;
     let mut inner = wallet.clone();
     let context = Context {
         profile_id: profile::CANDIDATE_PROFILE_ID,
@@ -62,25 +74,27 @@ pub fn wrapper<const N: usize>(
     inner.extend_from_slice(&public[8..16]);
     if mode == HTLC {
         b.assert_zero(wallet[htlc::PI_MINT]);
-        verifier::uni::verify(
+        verifier::uni::verify_with_constants(
             &mut b,
             &mut inputs,
             &ContextAir(htlc::HtlcAir),
             htlc::HEIGHT,
             &inner,
             proof,
+            constants,
         )?;
     } else {
         let inverse = b.inverse(wallet[js::PI_MINT]);
         let product = b.mul(wallet[js::PI_MINT], inverse);
         assert_constant(&mut b, product, 1);
-        verifier::uni::verify(
+        verifier::uni::verify_with_constants(
             &mut b,
             &mut inputs,
             &ContextAir(js::JoinSplitAir),
             js::HEIGHT,
             &inner,
             proof,
+            constants,
         )?;
     }
     let tag = kind as u64;

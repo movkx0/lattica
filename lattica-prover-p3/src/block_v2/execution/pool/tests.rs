@@ -1,4 +1,9 @@
 use super::*;
+
+#[path = "registry_tests.rs"]
+mod registry_tests;
+#[path = "storage_tests.rs"]
+mod storage;
 use crate::block_v2::execution::{
     artifact_store::{ArtifactStore, StoreLimits},
     dag::Limits,

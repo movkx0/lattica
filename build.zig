@@ -9,6 +9,11 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    const gpu_prover = b.option(bool, "gpu-prover", "Use the native GPU prover for wallet demos and FFI tests (requires configured gpu-required policy)") orelse false;
+    const prover_library = b.option([]const u8, "prover-library", "Path to the prebuilt Rust prover static library") orelse
+        "lattica-prover-p3/target/release/liblattica_prover_p3.a";
+    const prover_options = b.addOptions();
+    prover_options.addOption(bool, "gpu_prover", gpu_prover);
 
     const exe = b.addExecutable(.{
         .name = "lattica-wallet",
@@ -18,6 +23,16 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
         }),
     });
+    exe.root_module.addOptions("prover_options", prover_options);
+    if (gpu_prover) {
+        exe.root_module.link_libc = true;
+        exe.root_module.addObjectFile(.{ .cwd_relative = prover_library });
+        exe.root_module.linkSystemLibrary("OpenCL", .{});
+        if (target.result.os.tag == .linux) {
+            exe.root_module.linkSystemLibrary("unwind", .{});
+            exe.use_lld = true;
+        }
+    }
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
@@ -85,15 +100,23 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .link_libc = true,
     });
-    ffi_it_mod.addObjectFile(b.path("lattica-prover-p3/target/release/liblattica_prover_p3.a"));
-    const ffi_it = b.addTest(.{ .root_module = ffi_it_mod });
+    ffi_it_mod.addOptions("prover_options", prover_options);
+    ffi_it_mod.addObjectFile(.{ .cwd_relative = prover_library });
+    if (gpu_prover) ffi_it_mod.linkSystemLibrary("OpenCL", .{});
+    const ffi_it = b.addTest(.{ .name = "lattica-ffi-tests", .root_module = ffi_it_mod });
     if (target.result.os.tag == .linux) {
         ffi_it_mod.linkSystemLibrary("unwind", .{});
         // The self-hosted ELF linker can't handle crt1.o's .sframe (gcc 16).
         // Zig's LLD mode does not support Mach-O; keep macOS on its default linker.
         ffi_it.use_lld = true;
     }
-    const run_ffi_it = b.addRunArtifact(ffi_it);
+    // Foreign libraries write directly to process stdio. Run the FFI tests as a
+    // standalone process; the server-protocol runner stalled on the GPU path.
+    const run_ffi_it = std.Build.Step.Run.create(b, "run native FFI tests");
+    run_ffi_it.addArtifactArg(ffi_it);
+    run_ffi_it.stdio = .inherit;
     const ffi_step = b.step("test-ffi", "FFI integration test (run cargo build --release in lattica-prover-p3 first)");
     ffi_step.dependOn(&run_ffi_it.step);
+    const install_ffi = b.addInstallFileWithDir(ffi_it.getEmittedBin(), .bin, "lattica-ffi-tests");
+    ffi_step.dependOn(&install_ffi.step);
 }

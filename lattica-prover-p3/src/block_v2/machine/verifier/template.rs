@@ -9,13 +9,24 @@ use p3_fri::{CommitPhaseProofStep, FriProof, QueryProof};
 use p3_lookup::LookupTerminal;
 use p3_symmetric::MerkleCap;
 
-use super::super::program::Val;
 use super::super::{analysis, MachineAir};
+use super::super::{compiler_constants::Constants, program::Val};
 use super::CompileError;
 use crate::block_v2::profile::{self, Challenge, Config};
 
 pub fn batch(air: &MachineAir) -> Result<BatchProof<Config>, CompileError> {
-    let a = analysis::analyze(air).map_err(|_| CompileError::Shape("template AIR geometry"))?;
+    batch_with_constants(air, Constants::cpu())
+}
+
+pub(crate) fn batch_with_constants(
+    air: &MachineAir,
+    constants: Constants<'_>,
+) -> Result<BatchProof<Config>, CompileError> {
+    let a = {
+        let prepared = super::super::symbolic::prepare_machine(air, constants)?;
+        analysis::analyze_prepared(air, &prepared)
+            .map_err(|_| CompileError::Shape("template AIR geometry"))?
+    };
     let degree = air.program().height().ilog2() as usize + 1;
     let log_lde = degree + profile::LOG_BLOWUP;
     let cap = |log: usize| MerkleCap::new(vec![[Val::ZERO; 4]; 1 << log.min(profile::CAP_HEIGHT)]);

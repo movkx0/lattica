@@ -70,6 +70,39 @@ fn owner_for_pin(path: &Path, pin: super::super::RegistryPin) -> Result<DurableD
     )
 }
 
+#[test]
+#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+fn cached_constructor_uses_its_reserved_workspace_memory() -> Result<(), Error> {
+    let registry = Registry {
+        height: 1024,
+        caps: core::array::from_fn(|_| {
+            vec![Default::default(); 1 << crate::block_v2::profile::CAP_HEIGHT]
+        }),
+    };
+    let pin = RegistryPin::new(
+        &registry,
+        registry.id()?,
+        crate::block_v2::recursive::WrapperConstruction::SingleWallet,
+    )?;
+    let temp = Temp::new();
+    let mut owner = owner_for_pin(&temp.0, pin)?;
+    let mut cached = CachedCpuWorker::new(&mut owner, registry, pin, WorkerId(100), 0)?;
+    assert_eq!(owner.resource_use()?, WORKSPACE_RESOURCES);
+    assert_eq!(
+        cached.session.as_ref().unwrap().memory_budget_bytes(),
+        WORKSPACE_RESOURCES.ram_bytes
+    );
+    assert!(WORKSPACE_RESOURCES.ram_bytes < crate::block_v2::feasibility::RAM_BUDGET_BYTES);
+    cached.close(&mut owner, 1)?;
+    assert_eq!(owner.resource_use()?, Resources::default());
+    eprintln!(
+        "legacy_cached_budget assigned_bytes={} legacy_default_bytes={} reservation_released=true",
+        WORKSPACE_RESOURCES.ram_bytes,
+        crate::block_v2::feasibility::RAM_BUDGET_BYTES
+    );
+    Ok(())
+}
+
 fn admit(owner: &mut DurableDag, f: &Fixture) -> Result<Vec<Job>, Error> {
     let inputs = f.wallets[..4]
         .iter()

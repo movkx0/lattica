@@ -25,6 +25,10 @@ use std::{
 const MAX_CONTROL_BYTES: usize = 64 * 1024;
 const CONTROL_TIMEOUT: Duration = Duration::from_secs(5);
 
+#[path = "os_worker_storage.rs"]
+mod storage;
+pub use storage::{observation_storage, ObservationStorage};
+
 /// Exact observed process birth and cgroup instance. Local recovery metadata,
 /// not a proof-validity ticket or permission to launch/stop arbitrary services.
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -63,6 +67,7 @@ impl Identity {
         self.inode
     }
     pub(super) fn validate(&self, name: &str) -> Result<(), Error> {
+        self.storage_heap_bytes()?;
         group_path(&self.group, name)?;
         if self.boot == [0; 16]
             || self.invocation == [0; 16]
@@ -150,7 +155,6 @@ fn parse_boot_id(value: &str) -> Result<[u8; 16], Error> {
     hex16(&value.replace('-', ""))
 }
 
-#[cfg(feature = "stream")]
 pub(super) fn current_controller() -> Result<String, Error> {
     let value = text_file(Path::new("/proc/self/cgroup"), 8192)?;
     let path = value
@@ -492,15 +496,16 @@ pub(super) fn observe_persistent(
 
 fn check_arguments(args: &[u8], expected: &[std::ffi::OsString]) -> Result<(), Error> {
     use std::os::unix::ffi::OsStrExt;
-    let words: Vec<_> = args.split(|byte| *byte == 0).collect();
-    if words.len() != expected.len() + 2
-        || words[0].is_empty()
-        || !words.last().unwrap().is_empty()
-        || expected
-            .iter()
-            .zip(&words[1..])
-            .any(|(a, b)| a.as_bytes() != *b)
-    {
+    let mut words = args.split(|byte| *byte == 0);
+    if args.len() > 16384 || words.next().is_none_or(|word| word.is_empty()) {
+        return Err("observed worker command substitution".into());
+    }
+    for argument in expected {
+        if words.next() != Some(argument.as_bytes()) {
+            return Err("observed worker command substitution".into());
+        }
+    }
+    if words.next() != Some(&[][..]) || words.next().is_some() {
         return Err("observed worker command substitution".into());
     }
     Ok(())

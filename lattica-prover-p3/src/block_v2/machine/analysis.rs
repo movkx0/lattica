@@ -15,6 +15,8 @@ pub enum AdmissionError {
     Overflow,
     MultiplicityBound,
     QuotientDegree,
+    ProvingPolicy(crate::proving::Error),
+    Gpu(String),
     RamLowerBound { required: u64, budget: u64 },
 }
 
@@ -51,12 +53,50 @@ pub fn analyze(air: &MachineAir) -> Result<MachineAnalysis, AdmissionError> {
             .total_constraints();
     let degree =
         get_max_constraint_degree::<Val, profile::Challenge, _, _>(air, layout, &lookups, &gadget);
+    analyze_geometry(
+        air,
+        lookups.len(),
+        log_chunks,
+        constraints,
+        degree,
+        lookups.total_count_weight(),
+    )
+}
+
+pub(crate) fn analyze_prepared(
+    air: &MachineAir,
+    prepared: &super::symbolic::Prepared,
+) -> Result<MachineAnalysis, AdmissionError> {
+    analyze_geometry(
+        air,
+        prepared.lookups.len(),
+        prepared.log_chunks,
+        prepared.constraints.order.total_constraints(),
+        prepared.constraints.max_degree(),
+        prepared
+            .lookups
+            .iter()
+            .map(|l| u64::from(l.count_weight))
+            .sum(),
+    )
+}
+
+fn analyze_geometry(
+    air: &MachineAir,
+    lookup_count: usize,
+    log_chunks: usize,
+    constraints: usize,
+    degree: usize,
+    count_weight: u64,
+) -> Result<MachineAnalysis, AdmissionError> {
+    if log_chunks > profile::LOG_BLOWUP {
+        return Err(AdmissionError::QuotientDegree);
+    }
     let height = air.program().height();
     let preprocessed_width = air.preprocessed_width();
-    let permutation_width_base = (lookups.len() + 1) * 3;
+    let permutation_width_base = (lookup_count + 1) * 3;
     let quotient_chunks = 1usize << (log_chunks + 1);
-    let query_multiplicity_bound = lookups
-        .total_count_weight()
+    let query_multiplicity_bound = count_weight
         .checked_mul(height as u64)
         .ok_or(AdmissionError::Overflow)?;
     if query_multiplicity_bound >= crate::block_v2::commitment::MODULUS {

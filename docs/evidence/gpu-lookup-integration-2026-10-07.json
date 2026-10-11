@@ -1,0 +1,305 @@
+{
+  "schema": "lattica-gpu-lookup-integration-v1",
+  "date": "2026-10-07",
+  "source_head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "source_state": "uncommitted main working tree",
+  "previous_checkpoint": "gpu-lookup-2026-10-07.json",
+  "complete_gpu_prover": false,
+  "integrated_into_real_prover": true,
+  "enabled_by_default": false,
+  "throughput_qualification": false,
+  "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-lookup-integrated-20261007/run-01",
+  "features": [
+    "default",
+    "block-v2-wide-lanes"
+  ],
+  "build_profile": "release",
+  "gpu": {
+    "opencl_index": 1,
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "pci": "0000:02:00.0",
+    "global_bytes": 16697327616,
+    "max_allocation_bytes": 4174331904,
+    "driver": "615.71.09"
+  },
+  "binary_sha256": "7684dd6e9b613727f6f224120e5152f3abc791fa00be31547c92911c335dedca",
+  "source_archive_sha256": "941ffa2154ac3ea130f2cb66f5b2dd0efde48a846d3aa6335c471bb172b7bb01",
+  "runner_sha256": "ec23930334947dca66a904efbb37fc543fd35615d28bf48714903d11296d073d",
+  "manifest_sha256": "d541a93236b2cf90b3ee6b6bacc7e2a220291a123d573009d7eee935d2316817",
+  "verified_current_source_files": 210,
+  "limits": {
+    "memory_max_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "runtime_max_seconds_per_check": 180
+  },
+  "selection": {
+    "flag": "LATTICA_V2_GPU_LOOKUP=1",
+    "immutable": true,
+    "default": false,
+    "dependencies": [
+      "OpenCL",
+      "GPU hashing",
+      "retained trees",
+      "resident PCS",
+      "quotient fusion",
+      "GPU quotient LDE",
+      "GPU quotient evaluation",
+      "owned quotient inputs"
+    ],
+    "fallback": "unsupported dependencies, geometry or memory reject; the default compatible route remains available when the flag is off"
+  },
+  "changes": [
+    "Recover original trace and public preprocessing rows on GPU from doubled hiding-domain captures",
+    "Generate cubic LogUp permutation traces on GPU in the real batch prover",
+    "Commit device permutation traces with reference-order hiding samples, GPU interleaving/normalization/scaling and owned prefix capture",
+    "Pass captured permutation prefixes into existing GPU quotient evaluation and commitment",
+    "Pin lookup selection and conservative simultaneous-memory reservations in pool assignments",
+    "Report actual lookup backend; expose debug-only CPU constraint-audit readback"
+  ],
+  "checks": [
+    {
+      "name": "lookup-commit",
+      "passed_count": 1,
+      "wall_seconds": 3.124102996000147,
+      "log_sha256": "a31c40b245dc871869bdd2455e1a182f3b9f7704d634c08be1c8663a25c05bcb"
+    },
+    {
+      "name": "lookup-proof",
+      "passed_count": 1,
+      "wall_seconds": 0.9163915229983104,
+      "log_sha256": "fe0975926a43f2c4c47cd03fd05e60c27be23407c772e0c9da913de3143ef4ff"
+    },
+    {
+      "name": "lookup-compact",
+      "passed_count": 1,
+      "wall_seconds": 1.068648591000965,
+      "log_sha256": "765e99335ce9b277bdd3462c7cb44324404ada268f81cb2b56c03afae4f8b304"
+    },
+    {
+      "name": "trace-commit-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.03210300399950938,
+      "log_sha256": "ad1f350321adb3a9b574517c91c469bce36ce23aab6e315634f31883dd3f5f9e"
+    },
+    {
+      "name": "lookup-conformance",
+      "passed_count": 1,
+      "wall_seconds": 0.7168724379989726,
+      "log_sha256": "343880b667656b02182c3970c293859beff65309ea36611a79c380b8102e932c"
+    },
+    {
+      "name": "lookup-compiler",
+      "passed_count": 1,
+      "wall_seconds": 0.03226658600033261,
+      "log_sha256": "1839f5dfdf1f4305e6c9a88b349eb5eae184d443024f7f7173abdcb6f348472e"
+    },
+    {
+      "name": "lookup-plan",
+      "passed_count": 1,
+      "wall_seconds": 0.032017187997553265,
+      "log_sha256": "702019577b62908b6dc5e4c754aeb39dde5bc065d6a4802d8a33ea5526901657"
+    },
+    {
+      "name": "quotient-compiler",
+      "passed_count": 1,
+      "wall_seconds": 0.03212470799917355,
+      "log_sha256": "c82db4263314bf5412637294df062d9dab1b0b6aef93b49e37f39d0083d5870a"
+    },
+    {
+      "name": "proof-bytes",
+      "passed_count": 1,
+      "wall_seconds": 0.9166364409975358,
+      "log_sha256": "7fbffc1340bdeae25d9af9046b214f0274b03712ce84dc61a2f453b539d78199"
+    },
+    {
+      "name": "compact-proof",
+      "passed_count": 1,
+      "wall_seconds": 0.96571112699894,
+      "log_sha256": "4815f3160f75c6ece82b6c411101472cbbe2cebf974b4985e1faac7af49fc44d"
+    },
+    {
+      "name": "registered",
+      "passed_count": 1,
+      "wall_seconds": 0.8152935430007346,
+      "log_sha256": "9d9baa4a57cfb2a787bcac3106f41293a81d6bf17ae9ba437efcd370fbc28a98"
+    },
+    {
+      "name": "reuse",
+      "passed_count": 1,
+      "wall_seconds": 1.0162424109985295,
+      "log_sha256": "8b2de4551572e3948ab42ef1207c460b2bf4d03aad34d7226aa217b9eeff1a08"
+    },
+    {
+      "name": "adapter-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.8154444319989125,
+      "log_sha256": "dd20f72d3a99abd3fdda9aece0ebe76a4870ec42ed590681f064af2c9ce8adf6"
+    },
+    {
+      "name": "lde-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.7164533689974633,
+      "log_sha256": "3f9c6d8b471beaec183e4790d7352b41ad5ae84dac8fe222e0dcc6d9111e3004"
+    },
+    {
+      "name": "rng-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.6158663970018097,
+      "log_sha256": "53a6300059885a4577b40e5bd8344a8a8b993c76214a077c3b52649b4268b63c"
+    },
+    {
+      "name": "compact-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.8164551669979119,
+      "log_sha256": "9846a8fe81e246e917a566772c2b91c7932c8c83beb304140ca2fa186daec9b3"
+    },
+    {
+      "name": "partition-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 0.9170735070001683,
+      "log_sha256": "3ab26264b7ee41c5c54077000ada36cebe36360b7a7ff548dc1044396c2a05f0"
+    },
+    {
+      "name": "unpartitioned-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 0.8162652190003428,
+      "log_sha256": "ec324af9861ac2cb21517ab95c4111cc05a2cbb2934b5b47b9f67944e9112d3f"
+    },
+    {
+      "name": "partition-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.03183456599799683,
+      "log_sha256": "6de9e30ab19fb0d12e383653838005b03fade8ed366c4651c052cdb92b92709e"
+    },
+    {
+      "name": "owned-commit",
+      "passed_count": 1,
+      "wall_seconds": 1.067120039002475,
+      "log_sha256": "1ba3cdeaa98199b09f2661c6c5ccd78bd5f3f7bc1ee30814390b10c93a0cc209"
+    },
+    {
+      "name": "admission-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.6165888619980251,
+      "log_sha256": "48319638b446ff9fc6f44025a663587229821284e8d2b09b1d697f16fabef9c6"
+    },
+    {
+      "name": "commit-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.031794721999176545,
+      "log_sha256": "890e92dd8fa581d712b772b9a78d52f891f024965dd8d1a8dd1599b47d5716d7"
+    },
+    {
+      "name": "storage-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.03178485900207306,
+      "log_sha256": "13aec2e055ac5b0c1c14d2601253ca72e96ae7010153b19b5eb3bf10d01a8465"
+    },
+    {
+      "name": "device-unit",
+      "passed_count": 4,
+      "wall_seconds": 0.03172720699876663,
+      "log_sha256": "05413f43488f7effcb9fb5669de1a733cc30baaff7b2f25decd3c79de3486ea2"
+    },
+    {
+      "name": "transform-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.0318460859998595,
+      "log_sha256": "b55317e2fd5eff2a02cb49cc6e6df75847cbfb2cbcdaa13115594822a8e1b465"
+    },
+    {
+      "name": "plan-unit",
+      "passed_count": 10,
+      "wall_seconds": 0.032343911996576935,
+      "log_sha256": "2ad8efe3826ee3a4cb7f830d43aa05eac514e49a9160554cd3c6aedfa73739cc"
+    },
+    {
+      "name": "lde-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.03216453200002434,
+      "log_sha256": "116b6f17e8cacf4a9e9c381cd4b9233226152945bdce795104b06d65100b377b"
+    },
+    {
+      "name": "pcs-unit",
+      "passed_count": 12,
+      "wall_seconds": 0.2142043290004949,
+      "log_sha256": "64f50d5dc3cd3830025f321ba24b9782a86e1fb76d49eb5075471e8446b0b633"
+    },
+    {
+      "name": "policy-unit",
+      "passed_count": 9,
+      "wall_seconds": 0.06405599000208895,
+      "log_sha256": "959307b973063678b563c53f150a044ba9910b32110c7ab8e52ada8cef03fcfb"
+    }
+  ],
+  "rust_tests_passed": 62,
+  "python_resource_tests_passed": 30,
+  "build_logs": {
+    "release-build": "bbc488ec1f5eaf5b4389924396569062eb71952fbee852c8b326e4e4f13ba553",
+    "cpu-stream-build": "275bead49ba5100dddc6aeaade9980578b3b59eb0239eb0ea7dcfaa2dc72c4eb",
+    "gpu-stream-build": "1761685fc1870ed5ff6e2f9f170ed84b1f53d30b1d64c449ed47f95a9ca6647e",
+    "python-resources": "15237638d7cbdbbc88e961e99c76e8a6a579f110ad73dacc2034edffe75cfd79"
+  },
+  "proof_validation": {
+    "full_and_compact_bytes": "equal to pinned CPU lookup/reference path with controlled randomness",
+    "verifier": "unchanged CPU verifier accepts proofs and rejects altered public statements",
+    "registered_reuse": "three fresh proofs reuse public preprocessing and release private buffers; verifier remains usable after GPU shutdown",
+    "direct_commit": "caps, every LDE entry, openings and paths match CPU; recovered original rows match through height 8192, including single-row and multiple-width batches",
+    "rejections": "foreign private sessions, non-subgroup domains, bit-reversed source traces, empty batches and wrong recovery height rejected; hiding/salt streams match reference afterward",
+    "default_paths": "existing owned quotient, host-adapter, compact, LDE and commitment randomness regressions passed with GPU_LOOKUP=0"
+  },
+  "full_proof_lookup_metrics": [
+    {
+      "rows": 64,
+      "lookups": 16,
+      "tuples": 93,
+      "tile_rows": 64,
+      "managed_peak_plan_bytes": 3225240,
+      "parameter_upload_bytes": 776,
+      "control_download_bytes": 32,
+      "matrix_readback_bytes": 0,
+      "device_ns": 380928,
+      "wall_ns": 764050
+    }
+  ],
+  "full_proof_lookup_commit_metrics": [
+    {
+      "matrices": 1,
+      "permutation_matrix_upload_bytes": 0,
+      "permutation_matrix_readback_bytes": 0,
+      "random_sample_upload_bytes": 30208
+    }
+  ],
+  "registered_lookup_observations": [
+    {
+      "stage": "lookup",
+      "backend": "open_cl",
+      "calls": 1,
+      "completed_calls": 1,
+      "inclusive_ns": 1584365
+    }
+  ],
+  "stage_coverage_complete": false,
+  "pool_full_profile": {
+    "additional_managed_bytes": 5460983808,
+    "max_allocation_bytes": 838860800,
+    "additional_lookup_host_sample_bytes": 132120576,
+    "admission": "still exceeds the managed GPU budget when combined with the existing 4 GiB phase allowance"
+  },
+  "remaining": [
+    "CPU witness/main-trace/preprocessing construction and main-trace hiding",
+    "CPU entropy expansion and transcripts/grinding",
+    "Host PCS matrices and unfinished device openings/FRI/query consumers",
+    "Complete stage accounting and wallet/legacy entry-point coverage",
+    "Periodic lookup inputs and native Metal/AMD qualification",
+    "Full-workload memory/throughput and persistent-pool qualification"
+  ],
+  "notes": [
+    "Native checks ran only on the designated RTX 5080 Laptop GPU.",
+    "Lookup arithmetic and permutation matrix commitment avoid host matrix transfer; PCS LDE readback for host openings still exists.",
+    "Host RNG sampling preserves the reference stream and is not GPU randomness expansion.",
+    "This checkpoint records correctness and lifetime evidence, not delivered transactions per hour."
+  ]
+}

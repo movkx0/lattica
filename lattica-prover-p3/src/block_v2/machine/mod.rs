@@ -7,10 +7,16 @@ mod air;
 pub mod analysis;
 pub mod backend;
 pub mod circuit;
+pub(crate) mod compiler_constants;
 mod fingerprint;
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+pub(crate) mod gpu_backend;
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+pub(crate) mod gpu_program;
 pub mod merkle;
 pub mod program;
 pub mod programs;
+pub(crate) mod symbolic;
 pub mod transcript;
 pub mod typed_finalizer;
 pub mod typed_pairs;

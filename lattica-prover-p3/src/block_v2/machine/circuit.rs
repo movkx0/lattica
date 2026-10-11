@@ -1,10 +1,10 @@
 //! Circuit-building helpers. All equalities are emitted as AIR operations.
-use super::program::{ProgramBuilder, Val, Wire};
+use super::program::{ScopedProgramBuilder as ProgramBuilder, Val, Wire};
 use p3_field::PrimeCharacteristicRing;
 
 pub type Extension = [Wire; 3];
 
-impl ProgramBuilder {
+impl ProgramBuilder<'_> {
     /// Canonical 64-bit decomposition, including the Goldilocks < p check.
     /// Reconstruction alone would allow the alias x + p.
     pub fn bits(&mut self, value: Wire) -> [Wire; 64] {
@@ -62,7 +62,7 @@ impl ProgramBuilder {
         out
     }
     pub fn sub(&mut self, a: Wire, b: Wire) -> Wire {
-        let minus_one = self.constant(-Val::ONE);
+        let minus_one = self.constant(Val::NEG_ONE);
         let negative = self.mul(b, minus_one);
         self.add(a, negative)
     }

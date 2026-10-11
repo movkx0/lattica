@@ -45,11 +45,26 @@ const HEADER: usize = 52;
 const HASH_DOMAIN: u64 = 0x4c42563273;
 const MAX_PENDING: usize = 16;
 
+#[path = "journal_storage.rs"]
+mod storage;
+pub use storage::{DurableStorage, GraphStorage};
+
 #[derive(Clone, Copy, Debug)]
 pub struct JournalLimits {
     pub snapshot_bytes: usize,
 }
 impl JournalLimits {
+    /// Maximum payload backing during DurableDag persistence: one bounded
+    /// snapshot and one exact journal frame. Graph/index metadata, paths, store
+    /// reads, verification, allocator/OS storage and caller buffers are separate.
+    pub fn payload_storage_bytes(self) -> Result<usize, Error> {
+        self.validate()?;
+        self.snapshot_bytes
+            .checked_mul(2)
+            .and_then(|bytes| bytes.checked_add(HEADER))
+            .ok_or_else(|| "journal payload storage overflow".into())
+    }
+
     fn validate(self) -> Result<(), Error> {
         if !(256..=dag::snapshot::MAX_SNAPSHOT_BYTES).contains(&self.snapshot_bytes) {
             return Err("journal snapshot byte limit".into());
@@ -77,6 +92,7 @@ pub(super) struct SnapshotLog {
 impl SnapshotLog {
     pub(super) fn create(path: &Path, limits: JournalLimits) -> Result<Self, Error> {
         limits.validate()?;
+        super::io_storage::check_named_path(path)?;
         if !path.is_absolute() || path.file_name().is_none() {
             return Err("journal requires an absolute named directory".into());
         }
@@ -114,10 +130,9 @@ impl SnapshotLog {
         directory.sync_all()?;
         let mut pending = Vec::new();
         for entry in fs::read_dir(&path)? {
-            let name = entry?
-                .file_name()
-                .into_string()
-                .map_err(|_| "journal non-UTF8 filename")?;
+            let filename = entry?.file_name();
+            let name = filename.to_str().ok_or("journal non-UTF8 filename")?;
+            super::io_storage::check_name(name)?;
             if name == LOCK {
                 continue;
             }
@@ -132,9 +147,9 @@ impl SnapshotLog {
             if !artifact_store::is_pending(&name) || pending.len() >= MAX_PENDING {
                 return Err("journal unexpected entry or pending count".into());
             }
-            pending.push(name);
+            pending.push(name.to_owned());
         }
-        pending.sort();
+        pending.sort_unstable();
         Ok(Self {
             directory,
             lock,
@@ -165,14 +180,19 @@ impl SnapshotLog {
         {
             return Err("journal frame length".into());
         }
-        let mut bytes = Vec::with_capacity(metadata.len() as usize);
-        file.take((limits.snapshot_bytes + HEADER + 1) as u64)
-            .read_to_end(&mut bytes)?;
+        let mut bytes = super::bounded_io::read_file(
+            &mut { file },
+            metadata.len() as usize,
+            limits.snapshot_bytes + HEADER,
+        )?;
         let (generation, payload) = decode_frame(&bytes, limits)?;
         log.generation = generation;
         log.head = Some((metadata.dev(), metadata.ino(), metadata.len()));
         log.check_current()?;
-        Ok((log, payload.to_vec()))
+        let payload_len = payload.len();
+        bytes.copy_within(HEADER.., 0);
+        bytes.truncate(payload_len);
+        Ok((log, bytes))
     }
 
     pub(super) fn check_current(&self) -> Result<(), Error> {
@@ -283,21 +303,17 @@ impl SnapshotLog {
 }
 
 fn checksum(generation: u64, payload: &[u8]) -> Result<[u8; 32], Error> {
-    let mut fields = Vec::with_capacity(4 + payload.len().div_ceil(4));
-    fields.extend([
+    let prefix = [
         1,
         u64::from(generation as u32),
         generation >> 32,
         payload.len() as u64,
-    ]);
-    for part in payload.chunks(4) {
-        let mut word = [0; 4];
-        word[..part.len()].copy_from_slice(part);
-        fields.push(u64::from(u32::from_le_bytes(word)));
-    }
-    Ok(commitment::digest_bytes(commitment::hash_fields(
+    ];
+    let fields = prefix.into_iter().chain(commitment::stream::words(payload));
+    Ok(commitment::digest_bytes(commitment::stream::hash_fields(
         HASH_DOMAIN,
-        &fields,
+        4 + payload.len().div_ceil(4),
+        fields,
     )?)?)
 }
 fn encode_frame(generation: u64, payload: &[u8], limits: JournalLimits) -> Result<Vec<u8>, Error> {
@@ -305,7 +321,9 @@ fn encode_frame(generation: u64, payload: &[u8], limits: JournalLimits) -> Resul
     if generation == 0 || payload.is_empty() || payload.len() > limits.snapshot_bytes {
         return Err("journal payload bound".into());
     }
-    let mut out = MAGIC.to_vec();
+    let mut out =
+        super::bounded_io::byte_capacity(HEADER + payload.len(), HEADER + limits.snapshot_bytes)?;
+    out.extend(MAGIC);
     out.extend(generation.to_le_bytes());
     out.extend(u32::try_from(payload.len())?.to_le_bytes());
     out.extend(checksum(generation, payload)?);
@@ -514,7 +532,11 @@ impl Recovery {
             .pin_launch_journal(self.journal.identity()?)?;
         let initialized = initialize(&mut self.restored.dag, now)?;
         self.journal.cleanup_pending()?;
-        self.journal.commit(&self.restored.dag.snapshot()?)?;
+        let snapshot = self
+            .restored
+            .dag
+            .snapshot_limited(self.journal.limits.snapshot_bytes)?;
+        self.journal.commit(&snapshot)?;
         Ok((
             DurableDag {
                 core: self.restored.dag,
@@ -549,7 +571,7 @@ impl DurableDag {
         let mut core = Dag::new(pin, chain, epoch, limits)?;
         let mut journal = SnapshotLog::create(path, journal_limits)?;
         core.pin_launch_journal(journal.identity()?)?;
-        journal.commit(&core.snapshot()?)?;
+        journal.commit(&core.snapshot_limited(journal_limits.snapshot_bytes)?)?;
         Ok(Self {
             core,
             journal,
@@ -627,7 +649,7 @@ impl DurableDag {
     fn persist<T>(&mut self, outcome: Result<T, Error>) -> Result<T, Error> {
         let written = self
             .core
-            .snapshot()
+            .snapshot_limited(self.journal.limits.snapshot_bytes)
             .and_then(|bytes| self.journal.commit(&bytes));
         if let Err(error) = written {
             self.poisoned = true;

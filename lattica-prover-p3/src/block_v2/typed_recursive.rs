@@ -5,7 +5,9 @@ use p3_goldilocks::Goldilocks as Val;
 use p3_symmetric::MerkleCap;
 use serde::{Deserialize, Serialize};
 
-use super::commitment::{self, Context, Entry, Kind, NodeSummary};
+#[cfg(test)]
+use super::commitment;
+use super::commitment::{Context, Kind};
 use super::machine::{
     backend::{RegisteredProgram, RegisteredVerifier},
     programs::{self, Compiled, PUBLIC_VALUES},
@@ -16,8 +18,19 @@ use super::machine::{
 };
 use super::profile;
 use super::recursive::{self, Error, NodeProof, WalletProof};
-use super::typed_leaf::ContextAir;
+
+mod checked_registry;
+#[cfg(all(test, feature = "stream"))]
+mod constructor_tests;
+#[cfg(all(
+    test,
+    feature = "stream",
+    not(any(feature = "gpu", feature = "gpu-metal"))
+))]
+mod session_registry_tests;
+pub(crate) mod storage;
 use crate::{htlc_air as htlc, joinsplit_air as js};
+pub(crate) use checked_registry::{CheckedRegistry, CheckedRegistryRef};
 
 /// Supplied independently from the host's expected transaction/height/policy.
 #[derive(Clone, Copy)]
@@ -49,15 +62,6 @@ pub fn verify_wallet(wallet: &WalletProof, policy: Policy) -> Result<(), Error> 
     if matches!(policy, Policy::JoinSplit) {
         return recursive::verify_wallet(wallet);
     }
-    let mut inner = wallet.public.clone();
-    inner.extend(
-        Context {
-            profile_id: profile::CANDIDATE_PROFILE_ID,
-            chain_id: wallet.chain,
-        }
-        .to_fields()
-        .map(Val::from_u64),
-    );
     match policy {
         Policy::Htlc { expected_height } => {
             if wallet.public.len() != htlc::N_PUBLIC
@@ -67,13 +71,15 @@ pub fn verify_wallet(wallet: &WalletProof, policy: Policy) -> Result<(), Error> 
             {
                 return Err("HTLC statement/policy".into());
             }
+            let inputs = recursive::verification::inputs(wallet, true)?;
+            let config = profile::verification::make_config()?;
             p3_uni_stark::verify(
-                &profile::make_config(),
-                &ContextAir(htlc::HtlcAir),
+                &config,
+                &recursive::verification::air::htlc(),
                 &wallet.proof,
-                &inner,
+                inputs.public(),
             )
-            .map_err(|e| format!("HTLC verification: {e:?}").into())
+            .map_err(|e| recursive::verification::error("HTLC verification", &e))
         }
         Policy::Issuance { authorized_mint } => {
             if wallet.public.len() != js::N_PUBLIC
@@ -83,13 +89,15 @@ pub fn verify_wallet(wallet: &WalletProof, policy: Policy) -> Result<(), Error> 
             {
                 return Err("issuance statement/policy".into());
             }
+            let inputs = recursive::verification::inputs(wallet, false)?;
+            let config = profile::verification::make_config()?;
             p3_uni_stark::verify(
-                &profile::make_config(),
-                &ContextAir(js::JoinSplitAir),
+                &config,
+                &recursive::verification::air::issuance(),
                 &wallet.proof,
-                &inner,
+                inputs.public(),
             )
-            .map_err(|e| format!("issuance verification: {e:?}").into())
+            .map_err(|e| recursive::verification::error("issuance verification", &e))
         }
         Policy::JoinSplit => unreachable!(),
     }
@@ -106,10 +114,16 @@ pub struct Registry<const N: usize = 5> {
 }
 
 impl<const N: usize> Registry<N> {
+    /// Existing admission ceiling, including this value and owned cap backing.
+    pub const STORAGE_LIMIT_BYTES: usize = storage::REGISTRY_HOST_BYTES;
+
+    /// Requested backing, including spare cap capacity; no identity changes.
+    pub fn storage_bytes(&self) -> Result<usize, Error> {
+        storage::registry_backing(self)
+    }
+
     pub fn id(&self) -> Result<[u8; 32], Error> {
-        if !matches!(N, 5 | 6 | 12) {
-            return Err("unsupported typed registry size".into());
-        }
+        storage::registry_backing(self)?;
         Ok(programs::profile_id(self.height, &self.caps)?)
     }
 
@@ -128,7 +142,19 @@ impl<const N: usize> Registry<N> {
         {
             return Err("unapproved typed registry or unexpected statement".into());
         }
+        self.verify_statement(node, expected)
+    }
+
+    // Callers must establish registry identity and exact expected public values
+    // first. The immutable CheckedRegistry child module retains that authority.
+    fn verify_statement(
+        &self,
+        node: &NodeProof,
+        expected: &[Val; PUBLIC_VALUES],
+    ) -> Result<(), Error> {
         let mode = expected[programs::MODE].as_canonical_u64();
+        #[cfg(all(not(debug_assertions), target_arch = "x86_64"))]
+        RegisteredVerifier::admit_proof_storage(&node.proof)?;
         RegisteredVerifier::from_trusted_cap(
             PUBLIC_VALUES,
             self.height,
@@ -145,17 +171,39 @@ pub fn compile_registration(
     mode: u64,
     wallet: Option<&WalletProof>,
 ) -> Result<Compiled, Error> {
+    compile_registration_with_registry(height, mode, wallet, None)
+}
+
+fn compile_registration_with_registry(
+    height: usize,
+    mode: u64,
+    wallet: Option<&WalletProof>,
+    prefix: Option<&programs::RegistryPrefix>,
+) -> Result<Compiled, Error> {
     let caps: Caps = core::array::from_fn(|_| vec![[Val::ZERO; 4]; 1 << profile::CAP_HEIGHT]);
     Ok(match mode {
         programs::WRAPPER | HTLC | ISSUANCE => {
             let wallet = wallet.ok_or("typed wrapper registration needs a leaf proof template")?;
-            typed_programs::wrapper(height, &caps, mode, &wallet.public, &wallet.proof)?
+            typed_programs::wrapper_with_registry(
+                height,
+                &caps,
+                mode,
+                &wallet.public,
+                &wallet.proof,
+                prefix,
+            )?
         }
-        programs::EMPTY => programs::empty(height, &caps)?,
+        programs::EMPTY => programs::empty_with_registry(height, &caps, prefix)?,
         programs::MERGE => {
             let proof = template::batch(&programs::shape(height)?)?;
             let public = [Val::ZERO; PUBLIC_VALUES];
-            programs::merge(height, &caps, [&public, &public], [&proof, &proof])?
+            programs::merge_with_registry(
+                height,
+                &caps,
+                [&public, &public],
+                [&proof, &proof],
+                prefix,
+            )?
         }
         _ => return Err("unknown typed program mode".into()),
     })
@@ -167,7 +215,9 @@ pub fn register(
     wallet: Option<&WalletProof>,
     worker_memory_bytes: u64,
 ) -> Result<Vec<[Val; 4]>, Error> {
-    let compiled = compile_registration(height, mode, wallet)?;
+    let compiled = super::statements::compile(height, 5, |prefix| {
+        compile_registration_with_registry(height, mode, wallet, Some(prefix))
+    })?;
     register_compiled(height, compiled, worker_memory_bytes)
 }
 
@@ -177,7 +227,14 @@ pub fn register_finalized(
     wallet: Option<&WalletProof>,
     worker_memory_bytes: u64,
 ) -> Result<Vec<[Val; 4]>, Error> {
-    let compiled = typed_finalizer::compile_registration(height, mode, wallet)?;
+    let compiled = super::statements::compile(height, 6, |prefix| {
+        Ok(typed_finalizer::compile_registration_with_registry(
+            height,
+            mode,
+            wallet,
+            Some(prefix),
+        )?)
+    })?;
     register_compiled(height, compiled, worker_memory_bytes)
 }
 
@@ -198,8 +255,14 @@ pub fn register_paired(
     wallets: [&WalletProof; 3],
     worker_memory_bytes: u64,
 ) -> Result<Vec<[Val; 4]>, Error> {
-    let compiled =
-        typed_pairs::compile_registration(height, mode, paired_templates(mode, wallets))?;
+    let compiled = super::statements::compile(height, 12, |prefix| {
+        Ok(typed_pairs::compile_registration_with_registry(
+            height,
+            mode,
+            paired_templates(mode, wallets),
+            Some(prefix),
+        )?)
+    })?;
     register_compiled(height, compiled, worker_memory_bytes)
 }
 
@@ -281,7 +344,7 @@ pub struct Session<const N: usize = 5> {
     registry: Registry<N>,
     expected_profile: [u8; 32],
     worker_memory_bytes: u64,
-    cached: Vec<(u64, RegisteredProgram)>,
+    cached: storage::Cache<(u64, RegisteredProgram), N>,
     cache_entries: usize,
     cache_reserve_bytes: u64,
     stats: recursive::CacheStats,
@@ -293,22 +356,57 @@ impl<const N: usize> Session<N> {
         expected_profile: [u8; 32],
         worker_memory_bytes: u64,
     ) -> Result<Self, Error> {
-        if registry.id()? != expected_profile || worker_memory_bytes == 0 {
+        storage::admit_session(&registry)?;
+        storage::admit_startup(worker_memory_bytes)?;
+        storage::active_memory_bytes(worker_memory_bytes, 0)?;
+        if programs::registry_setup::profile_id(registry.height, &registry.caps)?
+            != expected_profile
+        {
             return Err("unapproved typed registry or missing worker budget".into());
         }
-        Ok(Self {
+        Ok(Self::from_admitted(
             registry,
             expected_profile,
             worker_memory_bytes,
-            cached: Vec::new(),
+        ))
+    }
+
+    fn from_admitted(
+        registry: Registry<N>,
+        expected_profile: [u8; 32],
+        worker_memory_bytes: u64,
+    ) -> Self {
+        Self {
+            registry,
+            expected_profile,
+            worker_memory_bytes,
+            cached: storage::Cache::new(),
             cache_entries: 1,
             cache_reserve_bytes: 0,
             stats: recursive::CacheStats::default(),
-        })
+        }
     }
 
     pub fn stats(&self) -> recursive::CacheStats {
         self.stats
+    }
+
+    pub(crate) fn registry(&self) -> &Registry<N> {
+        &self.registry
+    }
+
+    // Construction binds this private, immutable registry to expected_profile.
+    // Reuse only that identity; every statement still runs the numerical verifier.
+    fn verify_registered(
+        &self,
+        node: &NodeProof,
+        expected: &[Val; PUBLIC_VALUES],
+    ) -> Result<(), Error> {
+        let summary = recursive::summary_with_modes(expected, N as u64)?;
+        if summary.context.profile_id != self.expected_profile || &node.public != expected {
+            return Err("unapproved typed registry or unexpected statement".into());
+        }
+        self.registry.verify_statement(node, expected)
     }
 
     pub fn clear(&mut self) {
@@ -323,7 +421,7 @@ impl<const N: usize> Session<N> {
         if entries == 0
             || entries > N
             || (entries == 1) != (reserve_bytes == 0)
-            || reserve_bytes >= self.worker_memory_bytes
+            || storage::active_memory_bytes(self.worker_memory_bytes, reserve_bytes).is_err()
         {
             return Err("typed preprocessing cache admission".into());
         }
@@ -335,14 +433,17 @@ impl<const N: usize> Session<N> {
 
     fn prove(
         &mut self,
+        run: &crate::proving::Run,
         mode: u64,
         compiled: Compiled,
         public: [Val; PUBLIC_VALUES],
     ) -> Result<NodeProof, Error> {
         if public[programs::MODE] != Val::from_u64(mode)
-            || recursive::summary_with_modes(&public, N as u64)?
-                .context
-                .profile_id
+            || super::statements::derive_in(run, "statement_check", |hash| {
+                hash.summary(&public, N as u64)
+            })?
+            .context
+            .profile_id
                 != self.expected_profile
         {
             return Err("typed session mode/profile".into());
@@ -351,13 +452,15 @@ impl<const N: usize> Session<N> {
             .program
             .pad_to(self.registry.height)
             .map_err(|e| format!("{e:?}"))?;
-        if let Some(index) = self.cached.iter().position(|(m, _)| *m == mode) {
+        let cached_index = self.cached.iter().position(|(m, _)| *m == mode);
+        if let Some(index) = cached_index {
             if self.cached[index].1.air().program() != &program {
                 return Err("typed cached program changed".into());
             }
+            self.cached[index].1.reuse_preprocessing(run)?;
             drop(program);
             let entry = self.cached.remove(index);
-            self.cached.push(entry);
+            self.cached.push(entry)?;
             self.stats.hits = self
                 .stats
                 .hits
@@ -369,15 +472,20 @@ impl<const N: usize> Session<N> {
             while self.cached.len() >= self.cache_entries {
                 self.cached.remove(0);
             }
-            let registered = RegisteredProgram::new_with_memory_budget(
+            let registered = RegisteredProgram::new_in_run(
                 MachineAir::new(program),
-                self.worker_memory_bytes - self.cache_reserve_bytes,
+                storage::active_memory_bytes(self.worker_memory_bytes, self.cache_reserve_bytes)?,
+                run.child(
+                    "preprocessing",
+                    "block_v2_preprocessing",
+                    profile::preprocessing_capabilities(),
+                )?,
             )
             .map_err(|e| format!("{e:?}"))?;
             if registered.preprocessing_cap().roots() != self.registry.caps[(mode - 1) as usize] {
                 return Err("typed program differs from registered key".into());
             }
-            self.cached.push((mode, registered));
+            self.cached.push((mode, registered))?;
             self.stats.setups = self
                 .stats
                 .setups
@@ -389,43 +497,54 @@ impl<const N: usize> Session<N> {
             .last()
             .unwrap()
             .1
-            .prove(&public, &compiled.witness)
+            .prove_in_run(
+                &public,
+                &compiled.witness,
+                run.child(
+                    "proof",
+                    "block_v2_registered_program",
+                    profile::registered_proof_capabilities(),
+                )?,
+            )
             .map_err(|e| format!("{e:?}"))?;
         let node = NodeProof { public, proof };
-        self.registry
-            .verify(self.expected_profile, &node, &node.public)?;
+        self.verify_registered(&node, &node.public)?;
         Ok(node)
     }
 
     pub fn wrap(&mut self, wallet: &WalletProof, policy: Policy) -> Result<NodeProof, Error> {
-        if N == typed_pairs::KEY_COUNT {
-            return Err("paired registry requires wrap_pair".into());
-        }
-        verify_wallet(wallet, policy)?;
-        let fields: Vec<_> = wallet.public.iter().map(|v| v.as_canonical_u64()).collect();
-        let entry = Entry {
-            kind: policy.kind(),
-            statement_digest: commitment::statement_digest(policy.kind() as u8, &fields)?,
-        };
-        let node = commitment::leaf(
-            Context {
-                profile_id: self.expected_profile,
-                chain_id: wallet.chain,
-            },
-            entry,
-        )?;
-        let compiled = typed_programs::wrapper(
-            self.registry.height,
-            &self.registry.caps,
-            policy.mode(),
-            &wallet.public,
-            &wallet.proof,
-        )?;
-        self.prove(
-            policy.mode(),
-            compiled,
-            programs::statement(node, policy.mode()),
-        )
+        crate::block_v2::statements::request("block_v2_typed_wrap", |run| {
+            if N == typed_pairs::KEY_COUNT {
+                return Err("paired registry requires wrap_pair".into());
+            }
+            verify_wallet(wallet, policy)?;
+            let node = super::statements::derive_in(run, "statement", |hash| {
+                hash.leaf(
+                    Context {
+                        profile_id: self.expected_profile,
+                        chain_id: wallet.chain,
+                    },
+                    policy.kind(),
+                    &wallet.public,
+                )
+            })?;
+            let compiled = super::statements::compile_in(run, self.registry.height, N, |prefix| {
+                Ok(typed_programs::wrapper_with_registry(
+                    self.registry.height,
+                    &self.registry.caps,
+                    policy.mode(),
+                    &wallet.public,
+                    &wallet.proof,
+                    Some(prefix),
+                )?)
+            })?;
+            self.prove(
+                run,
+                policy.mode(),
+                compiled,
+                programs::statement(node, policy.mode()),
+            )
+        })
     }
 
     /// Verify both slots, including the unused right slot when count is one.
@@ -435,116 +554,148 @@ impl<const N: usize> Session<N> {
         policies: [Policy; 2],
         count: u8,
     ) -> Result<NodeProof, Error> {
-        if N != typed_pairs::KEY_COUNT || !matches!(count, 1 | 2) {
-            return Err("paired wrapper requires twelve keys and one or two inputs".into());
-        }
-        if wallets[0].chain != wallets[1].chain {
-            return Err("paired wallets use different chains".into());
-        }
-        for (wallet, policy) in wallets.iter().zip(policies) {
-            verify_wallet(wallet, policy)?;
-        }
-        let context = Context {
-            profile_id: self.expected_profile,
-            chain_id: wallets[0].chain,
-        };
-        let leaf = |slot: usize| -> Result<NodeSummary, Error> {
-            let fields: Vec<_> = wallets[slot]
-                .public
-                .iter()
-                .map(|v| v.as_canonical_u64())
-                .collect();
-            let kind = policies[slot].kind();
-            Ok(commitment::leaf(
-                context,
-                Entry {
-                    kind,
-                    statement_digest: commitment::statement_digest(kind as u8, &fields)?,
-                },
-            )?)
-        };
-        let right = if count == 2 {
-            leaf(1)?
-        } else {
-            commitment::empty_subtree(context, 0)?
-        };
-        let node = commitment::merge_nodes(leaf(0)?, right)?;
-        let mode = typed_pairs::mode_for(policies.map(Policy::mode))?;
-        let caps: &typed_pairs::Caps = self.registry.caps.as_slice().try_into()?;
-        let compiled = typed_pairs::wrapper_pair(
-            self.registry.height,
-            caps,
-            mode,
-            [&wallets[0].public, &wallets[1].public],
-            [&wallets[0].proof, &wallets[1].proof],
-        )?;
-        self.prove(mode, compiled, programs::statement(node, mode))
+        crate::block_v2::statements::request("block_v2_typed_wrap_pair", |run| {
+            if N != typed_pairs::KEY_COUNT || !matches!(count, 1 | 2) {
+                return Err("paired wrapper requires twelve keys and one or two inputs".into());
+            }
+            if wallets[0].chain != wallets[1].chain {
+                return Err("paired wallets use different chains".into());
+            }
+            for (wallet, policy) in wallets.iter().zip(policies) {
+                verify_wallet(wallet, policy)?;
+            }
+            let context = Context {
+                profile_id: self.expected_profile,
+                chain_id: wallets[0].chain,
+            };
+            let node = super::statements::derive_in(run, "statement", |hash| {
+                let right = if count == 2 {
+                    hash.leaf(context, policies[1].kind(), &wallets[1].public)?
+                } else {
+                    hash.empty(context, 0)?
+                };
+                let left = hash.leaf(context, policies[0].kind(), &wallets[0].public)?;
+                hash.merge(left, right)
+            })?;
+            let mode = typed_pairs::mode_for(policies.map(Policy::mode))?;
+            let caps: &typed_pairs::Caps = self.registry.caps.as_slice().try_into()?;
+            let compiled = super::statements::compile_in(run, self.registry.height, N, |prefix| {
+                Ok(typed_pairs::wrapper_pair_with_registry(
+                    self.registry.height,
+                    caps,
+                    mode,
+                    [&wallets[0].public, &wallets[1].public],
+                    [&wallets[0].proof, &wallets[1].proof],
+                    Some(prefix),
+                )?)
+            })?;
+            self.prove(run, mode, compiled, programs::statement(node, mode))
+        })
     }
 
     pub fn empty(&mut self, chain: [u8; 32], level: u8) -> Result<NodeProof, Error> {
-        let node = commitment::empty_subtree(
-            Context {
-                profile_id: self.expected_profile,
-                chain_id: chain,
-            },
-            level,
-        )?;
-        self.prove(
-            programs::EMPTY,
-            programs::empty(self.registry.height, &self.registry.caps)?,
-            programs::statement(node, programs::EMPTY),
-        )
+        crate::block_v2::statements::request("block_v2_typed_empty", |run| {
+            let node = super::statements::derive_in(run, "statement", |hash| {
+                hash.empty(
+                    Context {
+                        profile_id: self.expected_profile,
+                        chain_id: chain,
+                    },
+                    level,
+                )
+            })?;
+            self.prove(
+                run,
+                programs::EMPTY,
+                super::statements::compile_in(run, self.registry.height, N, |prefix| {
+                    Ok(programs::empty_with_registry(
+                        self.registry.height,
+                        &self.registry.caps,
+                        Some(prefix),
+                    )?)
+                })?,
+                programs::statement(node, programs::EMPTY),
+            )
+        })
     }
 
     pub fn merge(&mut self, left: &NodeProof, right: &NodeProof) -> Result<NodeProof, Error> {
-        self.registry
-            .verify(self.expected_profile, left, &left.public)?;
-        self.registry
-            .verify(self.expected_profile, right, &right.public)?;
-        let node: NodeSummary = commitment::merge_nodes(
-            recursive::summary_with_modes(&left.public, N as u64)?,
-            recursive::summary_with_modes(&right.public, N as u64)?,
-        )?;
-        let compiled = programs::merge(
-            self.registry.height,
-            &self.registry.caps,
-            [&left.public, &right.public],
-            [&left.proof, &right.proof],
-        )?;
-        self.prove(
-            programs::MERGE,
-            compiled,
-            programs::statement(node, programs::MERGE),
-        )
+        crate::block_v2::statements::request("block_v2_typed_merge", |run| {
+            self.verify_registered(left, &left.public)?;
+            self.verify_registered(right, &right.public)?;
+            let node = super::statements::derive_in(run, "statement", |hash| {
+                let left = hash.summary(&left.public, N as u64)?;
+                let right = hash.summary(&right.public, N as u64)?;
+                hash.merge(left, right)
+            })?;
+            let compiled = super::statements::compile_in(run, self.registry.height, N, |prefix| {
+                Ok(programs::merge_with_registry(
+                    self.registry.height,
+                    &self.registry.caps,
+                    [&left.public, &right.public],
+                    [&left.proof, &right.proof],
+                    Some(prefix),
+                )?)
+            })?;
+            self.prove(
+                run,
+                programs::MERGE,
+                compiled,
+                programs::statement(node, programs::MERGE),
+            )
+        })
     }
 
     /// Terminal proof for a separately registered finalizer construction.
     pub fn finalize(&mut self, child: &NodeProof) -> Result<NodeProof, Error> {
-        let mode = match N {
-            6 => typed_finalizer::FINALIZE,
-            12 => typed_pairs::FINALIZE,
-            _ => return Err("finalization requires six- or twelve-key research registry".into()),
-        };
-        self.registry
-            .verify(self.expected_profile, child, &child.public)?;
-        let mut node = recursive::summary_with_modes(&child.public, N as u64)?;
-        if node.level >= commitment::DEPTH || child.public[programs::MODE] == Val::from_u64(mode) {
-            return Err("finalizer child must be an unfinished subtree".into());
-        }
-        while node.level < commitment::DEPTH {
-            let empty = commitment::empty_subtree(node.context, node.level)?;
-            node = commitment::merge_nodes(node, empty)?;
-        }
-        let compiled = if N == typed_pairs::KEY_COUNT {
-            let caps: &typed_pairs::Caps = self.registry.caps.as_slice().try_into()?;
-            typed_pairs::finalize(self.registry.height, caps, &child.public, &child.proof)?
-        } else {
-            let caps: &typed_finalizer::Caps = self.registry.caps.as_slice().try_into()?;
-            typed_finalizer::compile(self.registry.height, caps, &child.public, &child.proof)?
-        };
-        self.prove(mode, compiled, programs::statement(node, mode))
+        crate::block_v2::statements::request("block_v2_typed_finalize", |run| {
+            let mode = match N {
+                6 => typed_finalizer::FINALIZE,
+                12 => typed_pairs::FINALIZE,
+                _ => {
+                    return Err("finalization requires six- or twelve-key research registry".into())
+                }
+            };
+            self.verify_registered(child, &child.public)?;
+            let node = super::statements::derive_in(run, "statement", |hash| {
+                hash.finalize(&child.public, N as u64, mode)
+            })?;
+            let compiled = if N == typed_pairs::KEY_COUNT {
+                let caps: &typed_pairs::Caps = self.registry.caps.as_slice().try_into()?;
+                super::statements::compile_in(run, self.registry.height, N, |prefix| {
+                    Ok(typed_pairs::finalize_with_registry(
+                        self.registry.height,
+                        caps,
+                        &child.public,
+                        &child.proof,
+                        Some(prefix),
+                    )?)
+                })?
+            } else {
+                let caps: &typed_finalizer::Caps = self.registry.caps.as_slice().try_into()?;
+                super::statements::compile_in(run, self.registry.height, N, |prefix| {
+                    Ok(typed_finalizer::compile_with_registry(
+                        self.registry.height,
+                        caps,
+                        &child.public,
+                        &child.proof,
+                        Some(prefix),
+                    )?)
+                })?
+            };
+            self.prove(run, mode, compiled, programs::statement(node, mode))
+        })
     }
 }
+
+#[cfg(all(
+    test,
+    feature = "gpu",
+    feature = "stream",
+    feature = "block-v2-wide-lanes"
+))]
+#[path = "typed_recursive_full_size_tests.rs"]
+mod full_size_tests;
 
 #[cfg(test)]
 mod tests {

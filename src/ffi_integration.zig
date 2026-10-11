@@ -19,10 +19,47 @@ const testing = std.testing;
 // The production C ABI implemented by the prover crate (extern declarations centralized in
 // prover_abi.zig, mirroring lattica-prover-p3/include/lattica_prover_p3.h).
 const prover_abi = @import("prover_abi.zig");
+const prover_options = @import("prover_options");
+const prover_runtime = @import("prover_runtime.zig");
 const lattica_joinsplit_prove_demo = prover_abi.lattica_joinsplit_prove_demo;
 const lattica_joinsplit_verify = prover_abi.lattica_joinsplit_verify;
 const lattica_htlc_prove_demo = prover_abi.lattica_htlc_prove_demo;
 const lattica_htlc_verify = prover_abi.lattica_htlc_verify;
+
+fn finishGpu() !void {
+    if (!prover_options.gpu_prover) return;
+    try prover_runtime.Gpu.drain();
+    try prover_runtime.Gpu.shutdown();
+    try testing.expectError(error.NoProveBackend, ffi.proveJoinSplit(testing.allocator, &.{}));
+    try testing.expectError(error.NoProveBackend, ffi.proveHtlc(testing.allocator, &.{}));
+    try testing.expectError(error.NoProveBackend, ffi.proveBatch(testing.allocator, &.{}, 0));
+    try testing.expectError(error.NoProveBackend, ffi.proveHtlcBatch(testing.allocator, &.{}, 0));
+    try testing.expectError(error.NoProveBackend, ffi.proveJoinSplitTree(testing.allocator, &.{}, 1));
+    try testing.expect(ffi.hasJoinSplitBackend());
+    try testing.expect(ffi.hasHtlcBackend());
+    try testing.expect(ffi.hasBatchBackend());
+}
+
+test "ffi integration: GPU tree container verifies after shutdown without activating tree acceptance" {
+    if (!prover_options.gpu_prover) return error.SkipZigTest;
+    ffi.clearJoinSplitTreeBackend();
+    try prover_runtime.Gpu.initialize();
+    errdefer prover_runtime.Gpu.shutdown() catch {};
+    try testing.expect(!ffi.hasJoinSplitTreeBackend());
+    try testing.expect(ffi.hasJoinSplitTreeProveBackend());
+    const witnesses = [_]u8{0} ** (3 * 2464);
+    const result = try ffi.proveJoinSplitTree(testing.allocator, &witnesses, 3);
+    defer testing.allocator.free(result.proof);
+    try finishGpu();
+    try testing.expect(!ffi.hasJoinSplitTreeBackend());
+    ffi.setJoinSplitTreeBackend(&prover_abi.lattica_joinsplit_tree_verify);
+    defer ffi.clearJoinSplitTreeBackend();
+    try testing.expect(ffi.verifyJoinSplitTree(result.proof, result.root, 3));
+    try testing.expect(!ffi.verifyJoinSplitTree(result.proof, result.root, 2));
+    var changed = result.root;
+    changed[0] ^= 1;
+    try testing.expect(!ffi.verifyJoinSplitTree(result.proof, changed, 3));
+}
 
 const NullifierSet = std.AutoHashMap([32]u8, void);
 
@@ -36,6 +73,8 @@ fn applySpend(set: *NullifierSet, proof: []const u8, pi: []const u8, nfs: []cons
 }
 
 test "ffi integration: prove(rust) -> verify -> double-spend rejected" {
+    if (prover_options.gpu_prover) try prover_runtime.Gpu.initialize();
+    errdefer if (prover_options.gpu_prover) prover_runtime.Gpu.shutdown() catch {};
     const a = testing.allocator;
 
     // 1. Prove the demo join-split in Rust, across the ABI.
@@ -48,6 +87,7 @@ test "ffi integration: prove(rust) -> verify -> double-spend rejected" {
     try testing.expectEqual(ffi.JoinSplitPublicInputs.ENCODED_LEN, pi_len);
     const proof_bytes = proof[0..proof_len];
     const pi_bytes = pi[0..pi_len];
+    try finishGpu();
 
     // 2. The real Rust verifier accepts the real proof (the node's verify seam).
     ffi.setJoinSplitBackend(&lattica_joinsplit_verify); // node installs it at startup
@@ -76,6 +116,8 @@ test "ffi integration: prove(rust) -> verify -> double-spend rejected" {
 }
 
 test "ffi integration: real HTLC prove(rust) -> verify -> tamper rejected" {
+    if (prover_options.gpu_prover) try prover_runtime.Gpu.initialize();
+    errdefer if (prover_options.gpu_prover) prover_runtime.Gpu.shutdown() catch {};
     const a = testing.allocator;
 
     // 1. Prove the demo HTLC redeem in Rust, across the C ABI.
@@ -88,6 +130,7 @@ test "ffi integration: real HTLC prove(rust) -> verify -> tamper rejected" {
     try testing.expectEqual(ffi.HtlcPublicInputs.ENCODED_LEN, pi_len);
     const pb = proof[0..proof_len];
     const pib = pi[0..pi_len];
+    try finishGpu();
 
     // 2. The real Rust HTLC verifier accepts the real proof (the node's verifyHtlc seam).
     ffi.setHtlcBackend(&lattica_htlc_verify);

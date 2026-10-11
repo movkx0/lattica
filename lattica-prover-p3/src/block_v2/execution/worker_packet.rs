@@ -16,6 +16,7 @@ const RESULT_MAGIC: &[u8; 8] = b"LVCPUS01";
 const TYPED_REQUEST_MAGIC: &[u8; 8] = b"LVTYPR01";
 const TYPED_RESULT_MAGIC: &[u8; 8] = b"LVTYPS01";
 pub const MAX_RESULT_BYTES: usize = MAX_PROOF_BYTES + 256;
+const RESULT_HEADER_BYTES: usize = 181;
 
 #[derive(Clone)]
 pub(super) struct Child {
@@ -24,7 +25,7 @@ pub(super) struct Child {
     pub(super) start: u8,
     pub(super) expected: NodeSummary,
 }
-pub(super) struct Request {
+pub(super) struct Request<B = Arc<[u8]>> {
     pub(super) key: [u8; 32],
     pub(super) resources: Resources,
     pub(super) pin: RegistryPin,
@@ -34,7 +35,21 @@ pub(super) struct Request {
     pub(super) expected: NodeSummary,
     pub(super) children: Vec<Child>,
     pub(super) manifest: Vec<ArtifactRef>,
-    pub(super) inputs: Vec<Arc<[u8]>>,
+    pub(super) inputs: Vec<B>,
+}
+
+// Protocol-owned vectors are admitted before allocation. Capacity, including
+// any allocator rounding visible to Vec, must stay within the exact request.
+pub(super) fn storage_vec<T>(count: usize, limit: usize) -> Result<Vec<T>, Error> {
+    if count > limit {
+        return Err("packet storage element bound".into());
+    }
+    let mut values = Vec::new();
+    values.try_reserve_exact(count)?;
+    if std::mem::size_of::<T>() != 0 && values.capacity() != count {
+        return Err("packet storage capacity differs from admitted count".into());
+    }
+    Ok(values)
 }
 
 /// Observation of a CPU-checked request, not scheduler eligibility/authority.
@@ -189,7 +204,7 @@ fn shape(pin: RegistryPin, op: Operation, start: u8, expected: NodeSummary) -> R
     Ok(())
 }
 
-impl Request {
+impl<B: AsRef<[u8]>> Request<B> {
     pub(super) fn validate(&self) -> Result<(), Error> {
         if self.pin.is_typed() {
             self.resources.validate_capacity()?;
@@ -199,7 +214,9 @@ impl Request {
         commitment::digest_from_bytes(&self.key)?;
         shape(self.pin, self.operation, self.start, self.expected)?;
         let (wallets, children) = self.operation.arity();
-        if self.children.len() != children
+        if children > 2
+            || wallets + children > 2
+            || self.children.len() != children
             || self.manifest.len() != wallets + children
             || self.inputs.len() != self.manifest.len()
         {
@@ -214,7 +231,7 @@ impl Request {
             if identity.kind() != expected_kind {
                 return Err("CPU packet input kind".into());
             }
-            identity.check_bytes(bytes)?;
+            identity.check_bytes(bytes.as_ref())?;
         }
         for child in &self.children {
             shape(self.pin, child.operation, child.start, child.expected)?;
@@ -257,9 +274,17 @@ impl Request {
         {
             return Err("typed packet padding must repeat its verified wallet".into());
         }
-        let deps: Vec<_> = self.children.iter().map(|c| c.job).collect();
-        if JobId::for_summary(self.pin, self.operation, self.start, self.expected, &deps)?
-            != self.job
+        let mut deps = [self.job; 2];
+        for (slot, child) in deps.iter_mut().zip(&self.children) {
+            *slot = child.job;
+        }
+        if JobId::for_summary(
+            self.pin,
+            self.operation,
+            self.start,
+            self.expected,
+            &deps[..children],
+        )? != self.job
         {
             return Err("CPU packet semantic job identity".into());
         }
@@ -268,12 +293,20 @@ impl Request {
 
     fn encode(&self) -> Result<Vec<u8>, Error> {
         self.validate()?;
-        let mut out = if self.pin.is_typed() {
+        // Fixed header, child descriptors, artifact descriptors, then payloads.
+        // validate() bounded all metadata counts and each proof's byte length.
+        let mut size = 203 + 68 * self.children.len() + 37 * self.manifest.len();
+        for bytes in &self.inputs {
+            size = size
+                .checked_add(bytes.as_ref().len())
+                .ok_or("CPU packet size overflow")?;
+        }
+        let mut out = storage_vec(size, launch::MAX_REQUEST_BYTES)?;
+        out.extend_from_slice(if self.pin.is_typed() {
             TYPED_REQUEST_MAGIC
         } else {
             REQUEST_MAGIC
-        }
-        .to_vec();
+        });
         out.extend(self.key);
         put_resources(&mut out, self.resources);
         out.extend(self.pin.profile());
@@ -291,15 +324,29 @@ impl Request {
         out.push(self.manifest.len() as u8);
         for (identity, bytes) in self.manifest.iter().zip(&self.inputs) {
             put_artifact(&mut out, *identity);
-            out.extend_from_slice(bytes);
+            out.extend_from_slice(bytes.as_ref());
         }
-        if out.len() > launch::MAX_REQUEST_BYTES {
-            return Err("CPU packet size".into());
+        if out.len() != size || out.capacity() != size {
+            return Err("CPU packet encoded size differs from admission".into());
         }
         Ok(out)
     }
 
-    pub(super) fn decode(bytes: &[u8], pin: RegistryPin, chain: [u8; 32]) -> Result<Self, Error> {
+    pub(super) fn bind(&self, token: &Token, bytes: &[u8]) -> Result<(), Error> {
+        token.check_request(bytes)?;
+        if token.key() != self.key || token.resources() != self.resources {
+            return Err("CPU packet launch key/resources".into());
+        }
+        Ok(())
+    }
+}
+
+impl Request {
+    pub(super) fn decode<'a>(
+        bytes: &'a [u8],
+        pin: RegistryPin,
+        chain: [u8; 32],
+    ) -> Result<Request<&'a [u8]>, Error> {
         if bytes.len() > launch::MAX_REQUEST_BYTES {
             return Err("CPU packet size".into());
         }
@@ -330,7 +377,7 @@ impl Request {
         if count > 2 {
             return Err("CPU packet child count".into());
         }
-        let mut children = Vec::with_capacity(count);
+        let mut children = storage_vec(count, 2)?;
         for _ in 0..count {
             children.push(Child {
                 job: r.job()?,
@@ -343,18 +390,18 @@ impl Request {
         if count > 2 {
             return Err("CPU packet artifact count".into());
         }
-        let mut manifest = Vec::with_capacity(count);
-        let mut inputs = Vec::with_capacity(count);
+        let mut manifest = storage_vec(count, 2)?;
+        let mut inputs = storage_vec(count, 2)?;
         for _ in 0..count {
             let identity = r.artifact()?;
-            // Bounds and availability are checked before copying proof bytes.
+            // Proofs borrow the retained packet through validation/execution.
             let bytes = r.take(identity.byte_len() as usize)?;
             identity.check_bytes(bytes)?;
             manifest.push(identity);
-            inputs.push(Arc::from(bytes));
+            inputs.push(bytes);
         }
         r.done()?;
-        let request = Self {
+        let request = Request {
             key,
             resources,
             pin,
@@ -369,20 +416,25 @@ impl Request {
         request.validate()?;
         Ok(request)
     }
-
-    pub(super) fn bind(&self, token: &Token, bytes: &[u8]) -> Result<(), Error> {
-        token.check_request(bytes)?;
-        if token.key() != self.key || token.resources() != self.resources {
-            return Err("CPU packet launch key/resources".into());
-        }
-        Ok(())
-    }
 }
 
 /// Serialize a frozen scheduler assignment. Only public proof bytes are carried;
 /// preprocessing keys come from separately pinned worker configuration.
 pub fn encode_request(assignment: &Assignment) -> Result<Vec<u8>, Error> {
     assignment.validate()?;
+    let mut children = storage_vec(assignment.dependencies.len(), 2)?;
+    for child in &assignment.dependencies {
+        children.push(Child {
+            job: child.id(),
+            operation: child.operation(),
+            start: child.start(),
+            expected: child.expected(),
+        });
+    }
+    let mut manifest = storage_vec(assignment.manifest.len(), 2)?;
+    manifest.extend_from_slice(&assignment.manifest);
+    let mut inputs = storage_vec(assignment.inputs.len(), 2)?;
+    inputs.extend(assignment.inputs.iter().map(AsRef::as_ref));
     Request {
         key: assignment.lease.process_key()?,
         resources: assignment.resources,
@@ -391,24 +443,15 @@ pub fn encode_request(assignment: &Assignment) -> Result<Vec<u8>, Error> {
         operation: assignment.job.operation(),
         start: assignment.job.start(),
         expected: assignment.job.expected(),
-        children: assignment
-            .dependencies
-            .iter()
-            .map(|child| Child {
-                job: child.id(),
-                operation: child.operation(),
-                start: child.start(),
-                expected: child.expected(),
-            })
-            .collect(),
-        manifest: assignment.manifest.clone(),
-        inputs: assignment.inputs.clone(),
+        children,
+        manifest,
+        inputs,
     }
     .encode()
 }
 
 impl CpuWorker {
-    fn prepare_packet(&self, request: &Request) -> Result<Inputs, Error> {
+    fn prepare_packet<B: AsRef<[u8]>>(&self, request: &Request<B>) -> Result<Inputs, Error> {
         require_cpu_backend()?;
         request.validate()?;
         if request.pin != self.pin {
@@ -416,7 +459,7 @@ impl CpuWorker {
         }
         let chain = request.expected.context.chain_id;
         let wallet = |i: usize| -> Result<(VerifiedWallet, WalletProof), Error> {
-            let bytes = &request.inputs[i];
+            let bytes = request.inputs[i].as_ref();
             let ticket = VerifiedWallet::verify(self.pin, &self.registry, chain, bytes)?;
             Ok((ticket, codec::decode(&bytes[WALLET_MAGIC.len()..])?))
         };
@@ -448,7 +491,7 @@ impl CpuWorker {
             Operation::Merge => {
                 let mut proofs = Vec::with_capacity(2);
                 for (child, bytes) in request.children.iter().zip(&request.inputs) {
-                    let proof = codec::decode_node(bytes)?;
+                    let proof = codec::decode_node(bytes.as_ref())?;
                     self.registry.verify(
                         self.pin.profile(),
                         &proof,
@@ -475,12 +518,12 @@ impl CpuWorker {
         Ok(inputs)
     }
 
-    fn bound_packet(
+    fn bound_packet<'a>(
         &self,
         gate: &WorkerGate,
-        bytes: &[u8],
+        bytes: &'a [u8],
         chain: [u8; 32],
-    ) -> Result<Request, Error> {
+    ) -> Result<Request<&'a [u8]>, Error> {
         gate.token().check_request(bytes)?;
         let request = Request::decode(bytes, self.pin, chain)?;
         request.bind(gate.token(), bytes)?;
@@ -525,10 +568,15 @@ impl CpuWorker {
     ) -> Result<Vec<u8>, Error> {
         let started = Instant::now();
         let request = self.bound_packet(gate, bytes, chain)?;
+        crate::block_v2::recursive::storage::admit_startup(request.resources.ram_bytes)?;
         let inputs = self.prepare_packet(&request)?;
         let input_verification_ms = started.elapsed().as_millis();
-        let (proof, proving_ms, serialization_ms, stats) =
-            self.prove(inputs, request.expected, request.operation)?;
+        let (proof, proving_ms, serialization_ms, stats) = self.prove(
+            inputs,
+            request.expected,
+            request.operation,
+            request.resources.ram_bytes,
+        )?;
         encode_result(
             request.key,
             request.job,
@@ -586,31 +634,131 @@ pub(super) fn encode_result_for(
     timings: Timings,
     stats: CacheStats,
 ) -> Result<Vec<u8>, Error> {
-    let identity = ArtifactRef::from_bytes(ArtifactKind::Node, proof)?;
-    let mut out = if typed {
+    if proof.is_empty() || proof.len() > MAX_PROOF_BYTES {
+        return Err("CPU result proof size".into());
+    }
+    let size = RESULT_HEADER_BYTES + proof.len();
+    let mut bytes = storage_vec(size, MAX_RESULT_BYTES)?;
+    bytes.resize(RESULT_HEADER_BYTES, 0);
+    bytes.extend_from_slice(proof);
+    ResultPacket {
+        bytes,
+        direct_node: false,
+    }
+    .finish(typed, key, job, request, timings, stats)
+}
+
+// An unfinished packet cannot escape as bytes until its proof identity and
+// control header are filled. Node serialization writes directly into its tail.
+pub(super) struct ResultPacket {
+    bytes: Vec<u8>,
+    direct_node: bool,
+}
+
+impl ResultPacket {
+    pub(super) fn node(node: &NodeProof) -> Result<Self, Error> {
+        let size = RESULT_HEADER_BYTES + MAX_PROOF_BYTES;
+        let mut bytes = storage_vec(size, MAX_RESULT_BYTES)?;
+        bytes.resize(size, 0);
+        let proof_len = codec::encode_node_into(node, &mut bytes[RESULT_HEADER_BYTES..])?.len();
+        bytes.truncate(RESULT_HEADER_BYTES + proof_len);
+        Ok(Self {
+            bytes,
+            direct_node: true,
+        })
+    }
+
+    pub(super) fn finish(
+        mut self,
+        typed: bool,
+        key: [u8; 32],
+        job: JobId,
+        request: [u8; 32],
+        timings: Timings,
+        stats: CacheStats,
+    ) -> Result<Vec<u8>, Error> {
+        let proof = &self.bytes[RESULT_HEADER_BYTES..];
+        let identity = ArtifactRef::from_bytes(ArtifactKind::Node, proof)?;
+        let header = result_header(typed, key, job, request, identity, timings, stats)?;
+        self.bytes[..RESULT_HEADER_BYTES].copy_from_slice(&header);
+        eprintln!("bounded_result_packet proof_bytes={} packet_bytes={} capacity_bytes={} capacity_limit_bytes={} direct_node={}",
+            identity.byte_len(), self.bytes.len(), self.bytes.capacity(), MAX_RESULT_BYTES, self.direct_node);
+        Ok(self.bytes)
+    }
+}
+
+fn result_header(
+    typed: bool,
+    key: [u8; 32],
+    job: JobId,
+    request: [u8; 32],
+    identity: ArtifactRef,
+    timings: Timings,
+    stats: CacheStats,
+) -> Result<[u8; RESULT_HEADER_BYTES], Error> {
+    use std::io::Write;
+    let mut header = [0; RESULT_HEADER_BYTES];
+    let mut out = std::io::Cursor::new(&mut header[..]);
+    out.write_all(if typed {
         TYPED_RESULT_MAGIC
     } else {
         RESULT_MAGIC
-    }
-    .to_vec();
-    out.extend(key);
-    out.extend(job.to_bytes());
-    out.extend(request);
+    })?;
+    out.write_all(&key)?;
+    out.write_all(&job.to_bytes())?;
+    out.write_all(&request)?;
     for ms in [
         timings.input_verification_ms,
         timings.proving_ms,
         timings.serialization_ms,
     ] {
-        out.extend(u64::try_from(ms)?.to_le_bytes());
+        out.write_all(&u64::try_from(ms)?.to_le_bytes())?;
     }
-    out.extend(stats.setups.to_le_bytes());
-    out.extend(stats.hits.to_le_bytes());
-    put_artifact(&mut out, identity);
-    out.extend(proof);
-    if out.len() > MAX_RESULT_BYTES {
-        return Err("CPU result size".into());
+    out.write_all(&stats.setups.to_le_bytes())?;
+    out.write_all(&stats.hits.to_le_bytes())?;
+    out.write_all(&[2])?; // Node artifact.
+    out.write_all(&identity.byte_len().to_le_bytes())?;
+    out.write_all(&identity.digest_bytes())?;
+    if out.position() as usize != RESULT_HEADER_BYTES {
+        return Err("CPU result header size".into());
     }
-    Ok(out)
+    Ok(header)
+}
+
+fn check_assignment_request(assignment: &Assignment, bytes: &[u8]) -> Result<(), Error> {
+    assignment.validate()?;
+    let job = &assignment.job;
+    let request = Request::decode(bytes, job.pin(), job.expected().context.chain_id)?;
+    // Compare every canonical field and the exact proof bytes against the
+    // original assignment without materializing a second encoded request.
+    if request.key != assignment.lease.process_key()?
+        || request.resources != assignment.resources
+        || request.job != job.id()
+        || request.operation != job.operation()
+        || request.start != job.start()
+        || request.expected != job.expected()
+        || request.manifest != assignment.manifest
+        || request.children.len() != assignment.dependencies.len()
+        || request.inputs.len() != assignment.inputs.len()
+        || !request
+            .children
+            .iter()
+            .zip(&assignment.dependencies)
+            .all(|(child, job)| {
+                child.job == job.id()
+                    && child.operation == job.operation()
+                    && child.start == job.start()
+                    && child.expected == job.expected()
+            })
+        || !request
+            .inputs
+            .iter()
+            .zip(&assignment.inputs)
+            .all(|(a, b)| *a == b.as_ref())
+    {
+        return Err("CPU result original request binding".into());
+    }
+    Ok(())
 }
 
 /// Bind a report to the exact original assignment and packet, not worker-supplied
@@ -620,12 +768,48 @@ pub fn decode_result(
     request: &[u8],
     bytes: &[u8],
 ) -> Result<UnverifiedResult, Error> {
+    let (range, timings, stats) = parse_result(assignment, request, bytes)?;
+    let mut proof = storage_vec(range.len(), MAX_PROOF_BYTES)?;
+    proof.extend_from_slice(&bytes[range]);
+    Ok(UnverifiedResult {
+        bytes: proof,
+        timings,
+        stats,
+    })
+}
+
+/// Consume an admitted response buffer and compact its proof in place. The
+/// containing frame capacity stays charged while the returned proof is live.
+pub(super) fn decode_result_owned(
+    assignment: &Assignment,
+    request: &[u8],
+    mut bytes: Vec<u8>,
+) -> Result<UnverifiedResult, Error> {
+    if bytes.capacity() > MAX_RESULT_BYTES {
+        return Err("CPU result owned capacity".into());
+    }
+    let (range, timings, stats) = parse_result(assignment, request, &bytes)?;
+    let proof_len = range.len();
+    bytes.copy_within(range, 0);
+    bytes.truncate(proof_len);
+    eprintln!("reused_result_packet proof_bytes={} capacity_bytes={} capacity_limit_bytes={} new_allocations=0",
+        bytes.len(), bytes.capacity(), MAX_RESULT_BYTES);
+    Ok(UnverifiedResult {
+        bytes,
+        timings,
+        stats,
+    })
+}
+
+fn parse_result(
+    assignment: &Assignment,
+    request: &[u8],
+    bytes: &[u8],
+) -> Result<(std::ops::Range<usize>, Timings, CacheStats), Error> {
     if bytes.len() > MAX_RESULT_BYTES || request.len() > launch::MAX_REQUEST_BYTES {
         return Err("CPU result/request size".into());
     }
-    if encode_request(assignment)?.as_slice() != request {
-        return Err("CPU result original request binding".into());
-    }
+    check_assignment_request(assignment, request)?;
     let mut r = Reader { bytes, at: 0 };
     let magic = if assignment.job.pin().is_typed() {
         TYPED_RESULT_MAGIC
@@ -652,14 +836,11 @@ pub fn decode_result(
     if identity.kind() != ArtifactKind::Node {
         return Err("CPU result artifact kind".into());
     }
+    let start = r.at;
     let proof = r.take(identity.byte_len() as usize)?;
     identity.check_bytes(proof)?;
     r.done()?;
-    Ok(UnverifiedResult {
-        bytes: proof.to_vec(),
-        timings,
-        stats,
-    })
+    Ok((start..r.at, timings, stats))
 }
 
 #[cfg(test)]

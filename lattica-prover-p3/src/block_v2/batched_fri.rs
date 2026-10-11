@@ -386,7 +386,7 @@ where
 ///   of matrices and a list of points to open those matrices at.
 /// - `mmcs`: The mixed matrix commitment scheme used to produce the batch commitments.
 #[inline]
-fn open_input<Val, Challenge, InputMmcs>(
+pub(super) fn open_input<Val, Challenge, InputMmcs>(
     log_global_max_height: usize,
     index: usize,
     prover_data_with_opening_points: &[ProverDataWithOpeningPoints<

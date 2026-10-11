@@ -1,12 +1,14 @@
 //! Candidate-only opening adapter, derived from Plonky3 p3-fri 0.6.1
 //! two_adic_pcs.rs (MIT OR Apache-2.0). Evaluation/challenger order and the
-//! upstream FRI prover are preserved; only matrix quotient reduction changes.
+//! upstream FRI prover are preserved. An explicit owned path also evaluates
+//! claimed values on device, with an optional resident binary FRI consumer.
 //! Not production-qualified. The CPU verifier and serialized proof are unchanged.
 use super::batched_fri as prover;
 use super::gpu_hash::{reduce_openings, CandidateMmcs, OpeningMatrix, OpeningTerm};
+use super::profile::Challenger;
 use super::profile::{Challenge, ChallengeMmcs};
 use super::resident_pcs::ResidentInner;
-use crate::config::{Challenger, Val};
+use crate::config::Val;
 use p3_challenger::FieldChallenger;
 use p3_commit::{Mmcs, OpenedValues, Pcs};
 use p3_field::coset::TwoAdicMultiplicativeCoset;
@@ -24,10 +26,19 @@ use p3_util::{linear_map::LinearMap, log2_strict_usize, reverse_slice_index_bits
 use std::marker::PhantomData;
 use tracing::debug_span;
 
+mod field;
+use super::gpu_hash::FriExtensionMmcs;
+pub use field::OpeningField;
+mod owned;
+mod owned_fri;
+#[cfg(test)]
+mod test_support;
+
 type ProverData = <CandidateMmcs as Mmcs<Val>>::ProverData<RowMajorMatrix<Val>>;
-type HidingProof = <ResidentInner as Pcs<Challenge, Challenger>>::Proof;
-type InnerPcs = p3_fri::TwoAdicFriPcs<Val, crate::config::Dft, CandidateMmcs, ChallengeMmcs>;
-type InnerProof = <InnerPcs as Pcs<Challenge, Challenger>>::Proof;
+type HidingProof<E = Challenge> = <ResidentInner<E> as Pcs<E, Challenger>>::Proof;
+type InnerPcs<E = Challenge> =
+    p3_fri::TwoAdicFriPcs<Val, crate::config::Dft, CandidateMmcs, FriExtensionMmcs<E>>;
+type InnerProof<E = Challenge> = <InnerPcs<E> as Pcs<E, Challenger>>::Proof;
 
 /// A stored prefix and its independent committed height. This deliberately
 /// does not implement Matrix with a fictitious full row range.
@@ -51,15 +62,32 @@ impl<F> PrefixView<'_, F> {
 /// This FRI-MMCS belongs to one shared proof attempt. Never clone it per call:
 /// the salt stream must advance across active PCS clones.
 #[tracing::instrument(target = "lattica_block_v2_perf", name = "GPU opening proof", skip_all)]
-pub(super) fn open_hiding(
+pub(super) fn open_hiding<E: OpeningField>(
     mmcs: &CandidateMmcs,
-    fri: &FriParameters<ChallengeMmcs>,
-    rounds: Vec<(&ProverData, Vec<Vec<Challenge>>)>,
+    fri: &FriParameters<FriExtensionMmcs<E>>,
+    rounds: Vec<(&ProverData, Vec<Vec<E>>)>,
     challenger: &mut Challenger,
     is_preprocessing: bool,
     random_columns: usize,
-) -> (OpenedValues<Challenge>, HidingProof) {
-    let (mut values, proof) = open(mmcs, fri, rounds, challenger);
+    session: Option<&super::gpu_hash::device::DeviceSession>,
+) -> (OpenedValues<E>, HidingProof<E>) {
+    let (mut values, proof) = if let Some(session) = session {
+        let (values, input, max_height) =
+            owned::evaluate_and_reduce(session, mmcs, fri.log_blowup, &rounds, challenger)
+                .expect("owned GPU opening failed; no silent fallback");
+        let proof = match input {
+            owned::FriInputs::Host(input) => {
+                prove_fri_inputs(mmcs, fri, rounds, challenger, max_height, input)
+            }
+            owned::FriInputs::Device(input) => {
+                E::prove_owned(session, mmcs, fri, input, challenger, max_height, &rounds)
+                    .expect("resident GPU FRI failed; no silent fallback")
+            }
+        };
+        (values, proof)
+    } else {
+        E::open_host(mmcs, fri, rounds, challenger)
+    };
     let random_values = values
         .iter_mut()
         .enumerate()
@@ -71,7 +99,7 @@ pub(super) fn open_hiding(
                         .iter_mut()
                         .map(|values| {
                             let count = if is_preprocessing &&
-                    round == <ResidentInner as Pcs<Challenge, Challenger>>::PREPROCESSED_TRACE_IDX {
+                    round == <ResidentInner<E> as Pcs<E, Challenger>>::PREPROCESSED_TRACE_IDX {
                     0
                 } else { random_columns };
                             let split = values
@@ -353,10 +381,29 @@ fn open(
     let fri_input = reduce_openings(&requests, alpha, fri.log_blowup)
         .expect("candidate GPU opening reduction failed; no silent fallback");
 
+    let fri_proof = prove_fri_inputs(
+        mmcs,
+        fri,
+        commitment_data_with_opening_points,
+        challenger,
+        log_global_max_height,
+        fri_input,
+    );
+    (all_opened_values, fri_proof)
+}
+
+fn prove_fri_inputs<E: OpeningField>(
+    mmcs: &CandidateMmcs,
+    fri: &FriParameters<FriExtensionMmcs<E>>,
+    commitment_data_with_opening_points: Vec<(&ProverData, Vec<Vec<E>>)>,
+    challenger: &mut Challenger,
+    log_global_max_height: usize,
+    fri_input: Vec<Vec<E>>,
+) -> InnerProof<E> {
     let folding: TwoAdicFriFoldingForMmcs<Val, CandidateMmcs> = TwoAdicFriFolding(PhantomData);
 
     // Produce the FRI proof.
-    let fri_proof = prover::prove_fri(
+    prover::prove_fri(
         &folding,
         fri,
         fri_input,
@@ -372,17 +419,8 @@ fn open(
                     .expect("compact query reconstruction failed");
             }
         },
-        |beta, log_arity, leaves| {
-            if log_arity == 1 {
-                super::gpu_hash::fold_fri(beta, leaves.values)
-                    .expect("candidate GPU FRI folding failed; no silent fallback")
-            } else {
-                None
-            }
-        },
-    );
-
-    (all_opened_values, fri_proof)
+        E::fold_host,
+    )
 }
 
 fn compute_inverse_denominators<F: TwoAdicField, EF: ExtensionField<F>>(

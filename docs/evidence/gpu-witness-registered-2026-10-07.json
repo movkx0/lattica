@@ -1,0 +1,427 @@
+{
+  "schema": "lattica-gpu-witness-registered-v1",
+  "date": "2026-10-07",
+  "source_head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "source_state": "uncommitted main working tree",
+  "previous_checkpoint": "gpu-witness-handoff-2026-10-07.json",
+  "complete_gpu_prover": false,
+  "registered_program_selection": true,
+  "worker_selection": true,
+  "worker_campaign_qualified": false,
+  "enabled_by_default": false,
+  "throughput_qualification": false,
+  "selection": {
+    "new_flag": "LATTICA_V2_GPU_WITNESS=1",
+    "default": false,
+    "requires_explicit_research_initialization": true,
+    "immutable": true,
+    "requires": [
+      "OpenCL GPU hashing and resident LDE",
+      "Quotient fusion",
+      "Owned GPU quotient, lookup, opening evaluation and resident binary FRI",
+      "Device-only PCS",
+      "Assigned witness bounds and additive reservations when run as a worker"
+    ],
+    "gpu_required_policy_admitted": false,
+    "workload_profiles_enabled_or_relaxed": false
+  },
+  "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-witness-registered-20261007/run-01",
+  "gpu": {
+    "opencl_index": 1,
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "pci": "0000:02:00.0",
+    "global_bytes": 16697327616,
+    "max_allocation_bytes": 4174331904,
+    "driver": "615.71.09"
+  },
+  "limits": {
+    "memory_max_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "runtime_max_seconds_per_check": 180,
+    "native_managed_bytes": 268435456,
+    "production_reservations_relaxed": false
+  },
+  "verified_current_source_files": 235,
+  "source_archive_sha256": "b2ca2212389a8cb22c012cdd437e3ac89137a21ee8d29feae05161460146a957",
+  "implementations": [
+    "RegisteredProgram retains reusable PreparedWitness and GPU preprocessing under explicit immutable selection",
+    "Private proof configuration and session are created before device witness execution; counts reject before uploads",
+    "Registered device traces transfer directly into device hiding commitments and complete batch proving",
+    "Witness stages report OpenCL; preprocessing remains Mixed; strict CPU and strict GPU requests reject the hybrid path",
+    "Source vector capacities, compiler metadata, wire/input/trace/preprocessing buffers and hiding/debug staging receive additive reservations",
+    "Rust and Python use matching witness resource arithmetic; worker assignment rejection occurs before mode recording and before program uploads",
+    "Worker launcher pins witness selection to the assignment and validates exact declared reservations and prerequisites"
+  ],
+  "conformance": {
+    "registration": "Independent raw upstream CPU preprocessing matches the GPU cap and unchanged registered program identity",
+    "fresh_proofs": "Three fresh randomized registered proofs per full/compact selection in wide, narrow and debug builds; original CPU PCS verifies after GPU shutdown; altered public values reject",
+    "rejections": "CPU-required/GPU-required policy and wrong input counts reject without uploads; invalid witness returns Unsatisfied and restores private allocation baseline",
+    "workers": "Mode, reservation, metadata bounds and unknown fields reject without uploads or allocations; a mode mismatch before initialization leaves context and selection untouched; valid assignment registers successfully",
+    "resources": "Strict bound parsing, capacity and compiler coverage, cache counts, overflow, prerequisite flags, aggregate budgets and inherited environment pinning",
+    "regressions": "CPU/default registered proving, CPU trace on owned GPU path, exact CPU full/compact device-proof bytes, every-opcode fresh-session handoff and preprocessing rejection",
+    "debug": "Explicit CPU constraint/lookup audits pass for full and compact registered GPU proofs",
+    "lifecycle": "All native checks drain to zero managed bytes and release their lease"
+  },
+  "registered_64_row_wide_fixture": {
+    "public_values": 64,
+    "witness_values": 64,
+    "waves": 2,
+    "private_and_public_input_upload_bytes_per_proof": 1024,
+    "status_readback_bytes_per_proof": 8,
+    "program_reupload_bytes_per_proof": 0,
+    "trace_upload_bytes": 0,
+    "release_trace_readback_bytes": 0,
+    "commitment_host_lde_readback_bytes": 0,
+    "debug_main_trace_readback_bytes_per_proof": 48128,
+    "private_allocation_baseline_restored": true,
+    "additive_witness_reservation": {
+      "managed_bytes": 206024,
+      "max_allocation_bytes": 103616,
+      "host_bytes": 1407392
+    },
+    "reservation_note": "Additional witness reservation only; existing quotient, commitment, opening/FRI and worker phase reservations remain required"
+  },
+  "shared_resource_fixture": {
+    "bounds": {
+      "rows": 16,
+      "main_columns": 98,
+      "preprocessing_columns": 200,
+      "metadata_bytes": 65536,
+      "compiler_host_bytes": 262144,
+      "program_host_bytes": 1048576,
+      "wires": 4096,
+      "input_values": 64
+    },
+    "cached_programs": 1,
+    "reservation": {
+      "managed_bytes": 111368,
+      "max_allocation_bytes": 65536,
+      "host_bytes": 2646528
+    }
+  },
+  "runs": {
+    "wide": {
+      "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-witness-registered-20261007/run-01",
+      "features": [
+        "default",
+        "block-v2-wide-lanes"
+      ],
+      "build_profile": "release",
+      "binary_sha256": "91336acc792f43cbab528be6e0c03b4530c90b95a415051d390f8f3e32b2a9e3",
+      "runner_sha256": "704670588f876a1eabcd47e83dba1a5ef30a017d138e907bccc0c484553adb77",
+      "manifest_sha256": "54f1610c53120b395b9d1ea27fa76b70f1908fa0387f14f57999709edac593c5",
+      "build_log_sha256": "2f4ce968739ccf68ee2412bf73d1e34ef4aee688400759b343f0cfea82788d3b",
+      "checks": [
+        {
+          "name": "registered-witness-full",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 1.3683811459995923,
+          "log_sha256": "94184a0349821393424eadde457c8a5722300e310304eb22f3f5bf34c4a5724f"
+        },
+        {
+          "name": "registered-witness-compact",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 1.4185914219997358,
+          "log_sha256": "48e10d7871c68482b3b91aae9999e6be2acf53653f2a578a9b74e1eb97431fa0"
+        },
+        {
+          "name": "worker-admission",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.866610684999614,
+          "log_sha256": "b65b487c183f5622bb6800303c2292b584107cd0c65fe6c50fce2bd00aeeedc0"
+        },
+        {
+          "name": "witness-resources",
+          "native": false,
+          "passed": true,
+          "passed_count": 2,
+          "returncode": 0,
+          "wall_seconds": 0.03308911500062095,
+          "log_sha256": "f08f5a3bb81ad28d02ecb94bd9ffe6650833fcb778a1d04f70fc6cd253e0bcae"
+        },
+        {
+          "name": "pcs-unit",
+          "native": false,
+          "passed": true,
+          "passed_count": 14,
+          "returncode": 0,
+          "wall_seconds": 0.2146887639974011,
+          "log_sha256": "f4ac4a0efc672ec63f6a09c6752af2938c22ae3f4f523f91c0d21c4809d301c1"
+        },
+        {
+          "name": "policy-unit",
+          "native": false,
+          "passed": true,
+          "passed_count": 9,
+          "returncode": 0,
+          "wall_seconds": 0.06445787400298286,
+          "log_sha256": "ab595b85cea9856a4bb7400095de7e492963ed61abeb6f2c2b4095e00beca997"
+        },
+        {
+          "name": "registered-cpu",
+          "native": false,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.11492340700351633,
+          "log_sha256": "be813f687c99712d3d41e53044cbb1e413df9747dc3f5c651cc9758b75e38992"
+        },
+        {
+          "name": "device-main-full",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.967931603998295,
+          "log_sha256": "252498a9fcaf91077821505f5bbe803a0f8d5d76c37575cfbb8f35552081a382"
+        },
+        {
+          "name": "device-main-compact",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.9666380630005733,
+          "log_sha256": "1a3b55e6a73bb058586ec98c68441d1ed3f8eb0a6549b2991f2d879e61dd5931"
+        },
+        {
+          "name": "device-witness-reuse",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 1.2174730650003767,
+          "log_sha256": "aceca9809a829a01563a379e08e1309df7d2819a3e0107ca8edece06ff74b86e"
+        },
+        {
+          "name": "device-witness-reuse-compact",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 1.1668591069974354,
+          "log_sha256": "faf756844e4a51295029ce9beee13326da740bd199d2fa9677cec6b6010158c9"
+        },
+        {
+          "name": "device-reuse",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 1.1169337110040942,
+          "log_sha256": "2e2a77c9ad0b012a1face1b3fa22eac26aeb855743606b7c17db9b7229b40b75"
+        },
+        {
+          "name": "device-reuse-compact",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 1.2170995100022992,
+          "log_sha256": "583a74f8bfe6a8480b01dde4092567d12bfa390242a10c90a599c20c2e647355"
+        },
+        {
+          "name": "preprocessing-admission",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.6653445010015275,
+          "log_sha256": "d19d1263497cee7f047fcedf058b3616da2dc8cd9998320744e248a6b47fd36f"
+        },
+        {
+          "name": "witness-compiler",
+          "native": false,
+          "passed": true,
+          "passed_count": 2,
+          "returncode": 0,
+          "wall_seconds": 0.015663990001485217,
+          "log_sha256": "3f07250066f5d34930de3b926a9c75a22001c80e7ec40c7d3079dcab6b45e10b"
+        }
+      ]
+    },
+    "narrow": {
+      "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-witness-registered-20261007/run-01/narrow",
+      "features": [
+        "default",
+        "block-v2"
+      ],
+      "build_profile": "release",
+      "binary_sha256": "7958cee36a7211d1d9a5573aa693829108b638dfb7bcc166f7c34fdbdbf5bd04",
+      "runner_sha256": "704670588f876a1eabcd47e83dba1a5ef30a017d138e907bccc0c484553adb77",
+      "manifest_sha256": "9db15f776fc0c557945006dc14aa9e132844a133ba9b18ba2e86b7f3014c15c3",
+      "build_log_sha256": "dcbd08cf37d6ab4596422270307feb06dc32a3a90e0a193b90e3b18061b2863d",
+      "checks": [
+        {
+          "name": "registered-witness-full",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 1.4191159300025902,
+          "log_sha256": "b7d1c21070658435007741f85a8311f4cdf7e376d30a1ab42a936f160ca8ccc0"
+        },
+        {
+          "name": "registered-witness-compact",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 1.3691559779981617,
+          "log_sha256": "9021ce89011b96378641235992211fe6d4a95bdf719e680124466a375448e83d"
+        },
+        {
+          "name": "worker-admission",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.8170241709958646,
+          "log_sha256": "f7eae1ab18922803409c5acdd604b41ef1371a55a32be749dac7420c94196f5f"
+        },
+        {
+          "name": "witness-resources",
+          "native": false,
+          "passed": true,
+          "passed_count": 2,
+          "returncode": 0,
+          "wall_seconds": 0.03202869999950053,
+          "log_sha256": "8f5905034e3b9588534279696fb9f2e28ddd742b1a4ab1361d197c35ccd476b7"
+        },
+        {
+          "name": "pcs-unit",
+          "native": false,
+          "passed": true,
+          "passed_count": 14,
+          "returncode": 0,
+          "wall_seconds": 0.21445213600236457,
+          "log_sha256": "939cbaa84eaaa9648acd2c7280d15c0879e33459c8a16d78b7ed33386db7d752"
+        },
+        {
+          "name": "registered-cpu",
+          "native": false,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.16452990600373596,
+          "log_sha256": "27b644735e92c3480ba7d5d9fc89a10becd18f52c4904a458c0b703e9889cce8"
+        },
+        {
+          "name": "device-main-full",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.9160355549975066,
+          "log_sha256": "5d7b4206a1eb575acaff8dbc9c4f1860eb2ace27e660794c71261f372963cac0"
+        },
+        {
+          "name": "device-main-compact",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.8659739130016533,
+          "log_sha256": "f0a0f0ff961a48f0b3f5618e75c5fddf1e046206678642f2edf02327efe4f67a"
+        },
+        {
+          "name": "device-witness-reuse",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 1.417842048998864,
+          "log_sha256": "afc908a18c4f432fc2c19610de94e3f8d684d0183a2ee14cdfecc29acce9dbf7"
+        },
+        {
+          "name": "device-witness-reuse-compact",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 1.567773697002849,
+          "log_sha256": "7bc17dcd874f6ca3d5cabf68ecf498d6ba0d79720ba653d4e137a7364d3ff7e4"
+        }
+      ]
+    },
+    "debug": {
+      "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-witness-registered-20261007/run-01/debug",
+      "features": [
+        "default",
+        "block-v2-wide-lanes"
+      ],
+      "build_profile": "debug",
+      "binary_sha256": "68726f265ed7db9b9c87b59214bf779ba5d167fa47c6c0c82fd52606ca569ba4",
+      "runner_sha256": "704670588f876a1eabcd47e83dba1a5ef30a017d138e907bccc0c484553adb77",
+      "manifest_sha256": "83afe2af86a4f9e957bdfacca67a54c1537ce89e0a22949dd41e40e1cade9323",
+      "build_log_sha256": "9b7f85da53c5f4c605d2036b8710a679cce391eacc428cf71f37c0ec5ed4c995",
+      "checks": [
+        {
+          "name": "registered-witness-full",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 10.142807573000027,
+          "log_sha256": "effb490fa6ec16c3fa0f9e454b8c9dd0cd091723a7faf467b7c13e7245a63e05"
+        },
+        {
+          "name": "registered-witness-compact",
+          "native": true,
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 7.483599396997306,
+          "log_sha256": "0f722f3813f18066b8f981c94a8fdbc3e09bc7633c31bfafaf2b838da4c1b1fa"
+        }
+      ]
+    }
+  },
+  "bounded_checks_passed": 27,
+  "rust_test_cases_passed": 64,
+  "native_checks_passed": 19,
+  "python_resource_tests_passed": 40,
+  "build_and_resource_logs": {
+    "cpu-stream-build": {
+      "path": "lattica-prover-p3/benchmark-results/gpu-witness-registered-20261007/run-01/cpu-stream-build.log",
+      "sha256": "45edfed4a6b330670e0b0490d741e28231f6331260ceee083c07775c234cd1d2",
+      "passed": true
+    },
+    "gpu-stream-build": {
+      "path": "lattica-prover-p3/benchmark-results/gpu-witness-registered-20261007/run-01/gpu-stream-build.log",
+      "sha256": "e3301cfd33afcdc28b87b8c0b0a3423d2ca68f89a0d758485814197525cdc1b0",
+      "passed": true
+    },
+    "python-resources": {
+      "path": "lattica-prover-p3/benchmark-results/gpu-witness-registered-20261007/run-01/python-resources.log",
+      "sha256": "82aa9f49438486c7c4a1e2120fdf4e74e1d584ab6597cd6bccb8d20160c09ff4",
+      "passed": true
+    },
+    "python-resources-initial-failure": {
+      "path": "lattica-prover-p3/benchmark-results/gpu-witness-registered-20261007/run-01/python-resources-initial-failure.log",
+      "sha256": "8cdbdd58333c3a18591816f57fc08a3320475c10065ef7aa937c84a366fd6cf8",
+      "passed": false
+    }
+  },
+  "test_scope": "Targeted current-source validation; previous 9.19 broader checks remain historical and are not counted as reruns",
+  "initial_failure": "Python shared expected GPU reservation omitted the eight-byte status; only the test expectation changed from 111360 to 111368. The original failed log is preserved.",
+  "remaining": [
+    "Wallet, batch and proof-public-value arithmetic remains on CPU",
+    "ChaCha20 expansion, field sampling, salts/hiding streams, transcript transitions and grinding remain on CPU",
+    "Periodic inputs, legacy quadratic/nonbinary FRI and general final-polynomial coverage",
+    "Actual maintained wallet and C-ABI proving entry-point integration",
+    "AMD OpenCL qualification and native Metal implementation after the local Mac source checkpoint",
+    "Full-size memory admission, fault qualification and sustained delivered transactions per hour across pool workers"
+  ]
+}

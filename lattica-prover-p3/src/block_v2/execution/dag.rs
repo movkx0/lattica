@@ -19,6 +19,16 @@ use super::{
 };
 use crate::block_v2::{commitment::DEPTH, profile::MAX_PROOF_BYTES, recursive::Error};
 
+#[path = "dag_storage.rs"]
+mod storage;
+#[cfg(target_os = "linux")]
+pub use snapshot::sizing::SnapshotStorage;
+pub use storage::RetainedStorage;
+
+#[path = "dag_transition_storage.rs"]
+mod transition_storage;
+pub use transition_storage::TransitionStorage;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CandidateId {
     session: [u8; 32],
@@ -288,8 +298,17 @@ impl LaunchBinding {
 
 impl Dag {
     #[cfg(target_os = "linux")]
+    pub(super) fn storage_limits(&self) -> Limits {
+        self.limits
+    }
+    #[cfg(target_os = "linux")]
     pub(super) fn snapshot(&self) -> Result<Vec<u8>, Error> {
         snapshot::encode(self)
+    }
+
+    #[cfg(target_os = "linux")]
+    pub(super) fn snapshot_limited(&self, limit: usize) -> Result<Vec<u8>, Error> {
+        snapshot::encode_limited(self, limit)
     }
 
     #[cfg(target_os = "linux")]
@@ -311,16 +330,20 @@ impl Dag {
 
     #[cfg(target_os = "linux")]
     pub(super) fn retained_artifacts(&self) -> Vec<ArtifactRef> {
-        self.jobs
+        let count = self
+            .jobs
             .values()
-            .flat_map(|r| {
-                r.job
-                    .wallet_inputs()
-                    .iter()
-                    .copied()
-                    .chain(r.output.as_ref().map(|(id, _)| *id))
-            })
-            .collect()
+            .map(|r| r.job.wallet_inputs().len() + usize::from(r.output.is_some()))
+            .sum();
+        let mut artifacts = Vec::with_capacity(count);
+        artifacts.extend(self.jobs.values().flat_map(|r| {
+            r.job
+                .wallet_inputs()
+                .iter()
+                .copied()
+                .chain(r.output.as_ref().map(|(id, _)| *id))
+        }));
+        artifacts
     }
 
     /// Import an independently CPU-verified cached subtree, never a worker's
@@ -501,6 +524,9 @@ impl Dag {
     /// Equal semantic jobs retain the first exact wallet artifacts, including
     /// while a randomized alternate public proof for the same statement arrives.
     pub fn admit(&mut self, job: Job, wallets: Vec<Vec<u8>>, now_ms: u64) -> Result<JobId, Error> {
+        if job.owned_heap_bytes()? > storage::job_heap_limit()? {
+            return Err("execution job retained backing bound".into());
+        }
         self.advance(now_ms)?;
         if job.pin() != self.pin || job.expected().context.chain_id != self.chain {
             return Err("execution graph profile/chain mismatch".into());
@@ -557,12 +583,16 @@ impl Dag {
             .try_fold(0usize, |n, b| n.checked_add(b.len()))
             .ok_or("execution store arithmetic")?;
         self.store_admission(bytes)?;
+        // Do not let in-place collect retain the caller's arbitrary outer Vec
+        // capacity. Arc conversion already allocates only each payload's len.
+        let mut retained_wallets = Vec::with_capacity(wallets.len());
+        retained_wallets.extend(wallets.into_iter().map(Arc::from));
         let id = job.id();
         self.jobs.insert(
             id,
             Record {
                 job,
-                wallets: wallets.into_iter().map(Arc::from).collect(),
+                wallets: retained_wallets,
                 output: None,
                 candidates: BTreeSet::new(),
                 attempt: None,
@@ -731,7 +761,7 @@ impl Dag {
     /// Earliest candidate deadline first; prepared higher-level work is next.
     /// This deterministic order is scheduling policy, never transaction order.
     pub fn ready(&self) -> Vec<JobId> {
-        let mut ready: Vec<_> = self
+        let mut ready: Vec<transition_storage::ReadyKey> = self
             .jobs
             .iter()
             .filter(|(id, _)| matches!(self.status(**id), Ok(JobStatus::Ready)))
@@ -744,8 +774,11 @@ impl Dag {
                 )
             })
             .collect();
-        ready.sort();
-        ready.into_iter().map(|(_, _, _, id)| id).collect()
+        ready.sort_unstable();
+        // Avoid in-place collect carrying tuple capacity into the caller's IDs.
+        let mut ids = Vec::with_capacity(ready.len());
+        ids.extend(ready.into_iter().map(|(_, _, _, id)| id));
+        ids
     }
     /// Scheduling metadata only. The lease path independently rechecks the
     /// deadline and eligibility after the caller selects a worker.
@@ -810,8 +843,14 @@ impl Dag {
             .checked_add(lease_ms)
             .ok_or("execution lease overflow")?
             .min(final_deadline);
-        let mut manifest = record.job.wallet_inputs().to_vec();
-        let mut inputs = record.wallets.clone();
+        let input_count = record.job.wallet_inputs().len() + record.job.dependencies().len();
+        if input_count > 2 {
+            return Err("execution attempt input bound".into());
+        }
+        let mut manifest = Vec::with_capacity(input_count);
+        manifest.extend_from_slice(record.job.wallet_inputs());
+        let mut inputs = Vec::with_capacity(input_count);
+        inputs.extend(record.wallets.iter().cloned());
         for id in record.job.dependencies() {
             let (identity, bytes) = self.jobs[id]
                 .output
@@ -1203,11 +1242,13 @@ impl Dag {
     }
 
     pub fn pending_stops(&self) -> Vec<Lease> {
-        self.attempts
+        let pending = self
+            .attempts
             .values()
-            .filter(|a| a.status.terminal() && !a.worker_stopped)
-            .map(|a| a.lease)
-            .collect()
+            .filter(|a| a.status.terminal() && !a.worker_stopped);
+        let mut leases = Vec::with_capacity(pending.clone().count());
+        leases.extend(pending.map(|a| a.lease));
+        leases
     }
 
     /// Returned bytes are available only for the exact sealed selection and a
@@ -1247,20 +1288,23 @@ impl Dag {
             .retain(|_, c| !c.cancelled || now_ms - c.last_used_ms < window);
         self.attempts
             .retain(|_, a| now_ms - a.last_used_ms < window);
-        let removable: Vec<_> = self
-            .jobs
-            .iter()
-            .filter(|(_, r)| r.candidates.is_empty() && now_ms - r.last_used_ms >= window)
-            .map(|(id, _)| *id)
-            .collect();
+        let mut removable = BTreeSet::new();
+        for (id, record) in &self.jobs {
+            if record.candidates.is_empty() && now_ms - record.last_used_ms >= window {
+                removable.insert(*id);
+            }
+        }
         // Do not break a still-retained unreferenced parent's dependency graph.
         let mut keep = BTreeSet::new();
         for (id, r) in &self.jobs {
             if !removable.contains(id) {
-                keep.extend(r.job.dependencies().iter().copied());
+                for child in r.job.dependencies() {
+                    keep.insert(*child);
+                }
             }
         }
-        let mut stack: Vec<_> = keep.iter().copied().collect();
+        let mut stack = Vec::with_capacity(self.jobs.len());
+        stack.extend(keep.iter().copied());
         while let Some(id) = stack.pop() {
             for child in self.jobs[&id].job.dependencies() {
                 if keep.insert(*child) {

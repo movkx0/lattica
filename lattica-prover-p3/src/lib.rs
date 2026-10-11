@@ -9,9 +9,9 @@ pub mod batch_htlc_air; // batch aggregation for the v3 shielded-HTLC spend (mir
 pub mod batch_joinsplit_air; // batch aggregation: one proof per block (join-split tiling + tx-root fold)
 #[cfg(feature = "block-v2")]
 pub mod block_v2; // candidate only: ordered commitments, cubic leaf probe, feasibility accounting
+pub mod config; // crate-wide STARK config: the production (wire-pinned) + demo parameter families
 #[cfg(feature = "cpu-sme2")]
 pub mod cpu_sme2;
-pub mod config; // crate-wide STARK config: the production (wire-pinned) + demo parameter families
 pub mod domains; // consensus-frozen domain-separation tags (the normative table; mirrored by the Zig node)
 #[cfg(feature = "gpu")]
 pub mod gpu; // opt-in OpenCL LDE acceleration (additive, prove-only; --features gpu)
@@ -28,6 +28,7 @@ pub mod joinsplit_air;
 #[cfg(all(feature = "gpu-metal", target_os = "macos"))]
 pub(crate) mod metal_compute;
 pub mod poseidon2_air;
+pub mod proving;
 #[cfg(feature = "gpu")]
 pub mod quotient_gpu;
 #[cfg(feature = "recursion")]
@@ -45,6 +46,9 @@ pub mod stream_prove; // opt-in streaming (out-of-core) prove fork: frontier Mer
 static SPILL_ALLOC: spill_alloc::SpillAlloc = spill_alloc::SpillAlloc;
 #[cfg(test)]
 mod constraint_fingerprint; // refactor/audit oracle: pinned constraint-set fingerprints for every production AIR
+
+mod native_gpu;
+pub use native_gpu::{lattica_gpu_drain, lattica_gpu_initialize_from_env, lattica_gpu_shutdown};
 
 use core::slice;
 use p3_field::PrimeCharacteristicRing;
@@ -272,9 +276,95 @@ pub unsafe extern "C" fn lattica_joinsplit_verify(
     )
 }
 
+// Single-wallet ABI admission follows the explicitly selected prover. Batch
+// and recursive ABI admission remains tied to their independently qualified paths.
+fn wallet_abi_admission() -> bool {
+    std::panic::catch_unwind(|| {
+        #[cfg(all(feature = "block-v2", feature = "gpu"))]
+        if block_v2::legacy_wallet::is_selected() {
+            return block_v2::legacy_wallet::abi_admitted();
+        }
+        proving::legacy_abi_admission()
+    })
+    .unwrap_or(false)
+}
+
+fn tree_abi_admission(count: usize) -> bool {
+    std::panic::catch_unwind(|| {
+        #[cfg(all(feature = "block-v2", feature = "gpu"))]
+        if block_v2::legacy_wallet::is_selected() {
+            return block_v2::legacy_wallet::tree_abi_admitted(count);
+        }
+        let _ = count;
+        proving::legacy_abi_admission()
+    })
+    .unwrap_or(false)
+}
+
+fn build_joinsplit_proof(witness: &joinsplit_air::Witness) -> Option<(Vec<u8>, Vec<u8>)> {
+    #[cfg(all(feature = "block-v2", feature = "gpu"))]
+    if block_v2::legacy_wallet::is_selected() {
+        let output = block_v2::legacy_wallet::prove_joinsplit_with_public(
+            witness,
+            proving::Request::from_env().ok()?,
+        )
+        .ok()?;
+        let public = encode_joinsplit_public_inputs(&output.public)?;
+        return Some((output.proof, public));
+    }
+    let public = encode_joinsplit_public_inputs(&joinsplit_air::public_values(witness))?;
+    Some((joinsplit_air::prove_to_bytes(witness), public))
+}
+
+fn build_htlc_proof(witness: &htlc_air::Witness) -> Option<(Vec<u8>, Vec<u8>)> {
+    #[cfg(all(feature = "block-v2", feature = "gpu"))]
+    if block_v2::legacy_wallet::is_selected() {
+        let output = block_v2::legacy_wallet::prove_htlc_with_public(
+            witness,
+            proving::Request::from_env().ok()?,
+        )
+        .ok()?;
+        let public = encode_htlc_public_inputs(&output.public)?;
+        return Some((output.proof, public));
+    }
+    let public = encode_htlc_public_inputs(&htlc_air::public_values(witness))?;
+    Some((htlc_air::prove_to_bytes(witness), public))
+}
+
+fn build_joinsplit_batch_proof(
+    witnesses: &[joinsplit_air::Witness],
+) -> Option<(Vec<u8>, [Goldilocks; 4])> {
+    #[cfg(all(feature = "block-v2", feature = "gpu"))]
+    if block_v2::legacy_wallet::is_selected() {
+        let output = block_v2::legacy_wallet::prove_joinsplit_batch_with_public(
+            witnesses,
+            proving::Request::from_env().ok()?,
+        )
+        .ok()?;
+        return Some((output.proof, output.public.try_into().ok()?));
+    }
+    let root = batch_joinsplit_air::batch_root(witnesses);
+    Some((batch_joinsplit_air::prove_batch_to_bytes(witnesses), root))
+}
+
+fn build_htlc_batch_proof(witnesses: &[htlc_air::Witness]) -> Option<(Vec<u8>, [Goldilocks; 4])> {
+    #[cfg(all(feature = "block-v2", feature = "gpu"))]
+    if block_v2::legacy_wallet::is_selected() {
+        let output = block_v2::legacy_wallet::prove_htlc_batch_with_public(
+            witnesses,
+            proving::Request::from_env().ok()?,
+        )
+        .ok()?;
+        return Some((output.proof, output.public.try_into().ok()?));
+    }
+    let root = batch_htlc_air::batch_root(witnesses);
+    Some((batch_htlc_air::prove_batch_to_bytes(witnesses), root))
+}
+
 /// C ABI: prove the fixed demo join-split witness and write the proof + the `JoinSplitPublicInputs`
 /// bytes into the caller's buffers. For the end-to-end FFI integration test (prove in Rust, verify
-/// across the ABI). Returns 0 on success, 1 on encode failure, 2 if a buffer is too small.
+/// across the ABI). Returns 0 on success, 1 on admission/proving/encoding failure,
+/// 2 if a buffer is too small.
 ///
 /// # Safety
 /// The four pointers must be valid; `*_out` must point to `*_cap` writable bytes; the `len` pointers
@@ -291,11 +381,16 @@ pub unsafe extern "C" fn lattica_joinsplit_prove_demo(
     if proof_out.is_null() || pi_out.is_null() || proof_len.is_null() || pi_len.is_null() {
         return 1; // fail-closed on any null pointer (audit M-01)
     }
-    let w = joinsplit_air::demo_witness();
-    let proof = joinsplit_air::prove_to_bytes(&w);
-    let pib = match encode_joinsplit_public_inputs(&joinsplit_air::public_values(&w)) {
-        Some(b) => b,
-        None => return 1,
+    if !wallet_abi_admission() {
+        return 1;
+    }
+    let built = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let witness = joinsplit_air::demo_witness();
+        build_joinsplit_proof(&witness)
+    }));
+    let (proof, pib) = match built {
+        Ok(Some(value)) => value,
+        _ => return 1,
     };
     write_out2(
         &proof, proof_out, proof_cap, proof_len, &pib, pi_out, pi_cap, pi_len,
@@ -378,7 +473,8 @@ pub unsafe extern "C" fn lattica_htlc_verify(
 }
 
 /// C ABI: prove the fixed demo HTLC-redeem witness, writing the proof + `HtlcPublicInputs` bytes.
-/// For the end-to-end FFI integration test. Returns 0 ok, 1 encode failure, 2 if a buffer is too small.
+/// For the end-to-end FFI integration test. Returns 0 on success, 1 on admission/proving/encoding
+/// failure, 2 if a buffer is too small.
 ///
 /// # Safety
 /// The four pointers must be valid; `*_out` to `*_cap` writable bytes; the `len` pointers writable.
@@ -394,11 +490,16 @@ pub unsafe extern "C" fn lattica_htlc_prove_demo(
     if proof_out.is_null() || pi_out.is_null() || proof_len.is_null() || pi_len.is_null() {
         return 1;
     }
-    let w = htlc_air::demo_htlc_witness();
-    let proof = htlc_air::prove_to_bytes(&w);
-    let pib = match encode_htlc_public_inputs(&htlc_air::public_values(&w)) {
-        Some(b) => b,
-        None => return 1,
+    if !wallet_abi_admission() {
+        return 1;
+    }
+    let built = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let witness = htlc_air::demo_htlc_witness();
+        build_htlc_proof(&witness)
+    }));
+    let (proof, pib) = match built {
+        Ok(Some(value)) => value,
+        _ => return 1,
     };
     write_out2(
         &proof, proof_out, proof_cap, proof_len, &pib, pi_out, pi_cap, pi_len,
@@ -599,6 +700,9 @@ pub unsafe extern "C" fn lattica_joinsplit_prove(
     {
         return 1; // fail-closed on any null pointer, incl. the output length pointers (audit M-01)
     }
+    if !wallet_abi_admission() {
+        return 1;
+    }
     let wb = slice::from_raw_parts(witness_ptr, witness_len);
     let w = match parse_joinsplit_witness(wb) {
         Some(w) => w,
@@ -606,11 +710,8 @@ pub unsafe extern "C" fn lattica_joinsplit_prove(
     };
     // public_values / trace-building assert the witness satisfies the relation; catch any panic so an
     // invalid witness returns an error instead of unwinding across the C boundary (UB).
-    let built = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let pib = encode_joinsplit_public_inputs(&joinsplit_air::public_values(&w))?;
-        let proof = joinsplit_air::prove_to_bytes(&w);
-        Some((proof, pib))
-    }));
+    let built =
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| build_joinsplit_proof(&w)));
     let (proof, pib) = match built {
         Ok(Some(x)) => x,
         _ => return 1,
@@ -691,6 +792,9 @@ pub unsafe extern "C" fn lattica_batch_prove(
     if witness_len != n_tx.checked_mul(JS_WITNESS_LEN).unwrap_or(usize::MAX) {
         return 1; // exactly n_tx concatenated join-split witness records
     }
+    if !wallet_abi_admission() {
+        return 1;
+    }
     let wb = slice::from_raw_parts(witness_ptr, witness_len);
     let mut ws = Vec::with_capacity(n_tx);
     for i in 0..n_tx {
@@ -701,13 +805,11 @@ pub unsafe extern "C" fn lattica_batch_prove(
     }
     // build_trace / public_values assert the relation per tile; isolate any panic as a clean error.
     let built = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let root = batch_joinsplit_air::batch_root(&ws);
-        let proof = batch_joinsplit_air::prove_batch_to_bytes(&ws);
-        (proof, root)
+        build_joinsplit_batch_proof(&ws)
     }));
     let (proof, root) = match built {
-        Ok(x) => x,
-        Err(_) => return 1,
+        Ok(Some(value)) => value,
+        _ => return 1,
     };
     let rb = encode_digest(&root);
     write_out2(
@@ -722,6 +824,15 @@ fn append_tree_leaf(out: &mut Vec<u8>, pi: &[u8], proof: &[u8]) -> Option<()> {
         return None;
     }
     let proof_len = u32::try_from(proof.len()).ok()?;
+    if out
+        .len()
+        .checked_add(pi.len())?
+        .checked_add(4)?
+        .checked_add(proof.len())?
+        > MAX_TREE_PROOF_LEN
+    {
+        return None;
+    }
     out.extend_from_slice(pi);
     out.extend_from_slice(&proof_len.to_le_bytes());
     out.extend_from_slice(proof);
@@ -741,6 +852,13 @@ fn prove_joinsplit_tree_to_bytes(
 ) -> Option<(Vec<u8>, [Goldilocks; DIGEST])> {
     if ws.is_empty() || ws.len() > MAX_TREE_TX {
         return None;
+    }
+    #[cfg(all(feature = "block-v2", feature = "gpu"))]
+    if block_v2::legacy_wallet::is_selected() {
+        let output =
+            block_v2::legacy_wallet::prove_joinsplit_tree(ws, proving::Request::from_env().ok()?)
+                .ok()?;
+        return Some((output.proof, output.root));
     }
     let mut out = Vec::new();
     out.extend_from_slice(TREE_MAGIC);
@@ -899,6 +1017,9 @@ pub unsafe extern "C" fn lattica_joinsplit_tree_prove(
     if witness_len != n_tx.checked_mul(JS_WITNESS_LEN).unwrap_or(usize::MAX) {
         return 1;
     }
+    if !tree_abi_admission(n_tx) {
+        return 1;
+    }
     let wb = slice::from_raw_parts(witness_ptr, witness_len);
     let mut ws = Vec::with_capacity(n_tx);
     for i in 0..n_tx {
@@ -977,6 +1098,9 @@ pub unsafe extern "C" fn lattica_htlc_batch_prove(
     if witness_len != n_tx.checked_mul(HTLC_WITNESS_LEN).unwrap_or(usize::MAX) {
         return 1;
     }
+    if !wallet_abi_admission() {
+        return 1;
+    }
     let wb = slice::from_raw_parts(witness_ptr, witness_len);
     let mut ws = Vec::with_capacity(n_tx);
     for i in 0..n_tx {
@@ -985,14 +1109,11 @@ pub unsafe extern "C" fn lattica_htlc_batch_prove(
             None => return 1,
         }
     }
-    let built = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let root = batch_htlc_air::batch_root(&ws);
-        let proof = batch_htlc_air::prove_batch_to_bytes(&ws);
-        (proof, root)
-    }));
+    let built =
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| build_htlc_batch_proof(&ws)));
     let (proof, root) = match built {
-        Ok(x) => x,
-        Err(_) => return 1,
+        Ok(Some(value)) => value,
+        _ => return 1,
     };
     let rb = encode_digest(&root);
     write_out2(
@@ -1157,16 +1278,15 @@ pub unsafe extern "C" fn lattica_htlc_prove(
     {
         return 1;
     }
+    if !wallet_abi_admission() {
+        return 1;
+    }
     let wb = slice::from_raw_parts(witness_ptr, witness_len);
     let w = match parse_htlc_witness(wb) {
         Some(w) => w,
         None => return 1,
     };
-    let built = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let pib = encode_htlc_public_inputs(&htlc_air::public_values(&w))?;
-        let proof = htlc_air::prove_to_bytes(&w);
-        Some((proof, pib))
-    }));
+    let built = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| build_htlc_proof(&w)));
     let (proof, pib) = match built {
         Ok(Some(x)) => x,
         _ => return 1,

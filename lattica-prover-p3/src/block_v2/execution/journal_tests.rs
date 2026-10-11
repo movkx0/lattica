@@ -6,6 +6,9 @@ mod verification;
 
 #[path = "workspace_tests.rs"]
 mod workspace;
+
+#[path = "durable_storage_tests.rs"]
+mod durable_storage;
 use crate::block_v2::{
     commitment::DEPTH,
     execution::{
@@ -1277,4 +1280,74 @@ fn empty_new_journal_retains_birth_identity_through_recovery() {
         .unwrap();
     assert_eq!(d.core.launch_root(), Some(root));
     assert_eq!(d.resource_use().unwrap(), Resources::default());
+}
+
+#[test]
+fn streaming_journal_checksum_matches_independent_framing_reference() {
+    for length in (0..=33).chain([4095, 4096, 65537]) {
+        let payload: Vec<_> = (0..length).map(|i| (i * 37 + 11) as u8).collect();
+        for generation in [0, 1, u64::from(u32::MAX), u64::from(u32::MAX) + 1, u64::MAX] {
+            let mut fields = vec![
+                1,
+                u64::from(generation as u32),
+                generation >> 32,
+                length as u64,
+            ];
+            for part in payload.chunks(4) {
+                let mut word = [0; 4];
+                word[..part.len()].copy_from_slice(part);
+                fields.push(u64::from(u32::from_le_bytes(word)));
+            }
+            let digest =
+                commitment::digest_bytes(commitment::hash_fields(HASH_DOMAIN, &fields).unwrap())
+                    .unwrap();
+            assert_eq!(checksum(generation, &payload).unwrap(), digest);
+            if generation != 0 && length != 0 {
+                let actual = encode_frame(generation, &payload, journal_limits()).unwrap();
+                let mut expected = MAGIC.to_vec();
+                expected.extend(generation.to_le_bytes());
+                expected.extend((length as u32).to_le_bytes());
+                expected.extend(digest);
+                expected.extend(&payload);
+                assert_eq!(actual, expected);
+                assert_eq!(actual.capacity(), HEADER + length);
+            }
+        }
+    }
+}
+
+#[test]
+fn reopening_journal_compacts_payload_in_the_exact_frame_allocation() {
+    for length in [1, 255, 4096, journal_limits().snapshot_bytes] {
+        let temp = Temp::new();
+        let mut log = SnapshotLog::create(&temp.journal(), journal_limits()).unwrap();
+        let expected = vec![0x6a; length];
+        log.commit(&expected).unwrap();
+        drop(log);
+        let (log, actual) = SnapshotLog::open(&temp.journal(), journal_limits()).unwrap();
+        assert_eq!(actual, expected);
+        assert_eq!(actual.capacity(), HEADER + length);
+        log.check_current().unwrap();
+    }
+}
+
+#[test]
+fn snapshot_and_frame_buffer_peak_matches_the_configured_limit() {
+    for limit in [256, 1 << 20, dag::snapshot::MAX_SNAPSHOT_BYTES] {
+        let limits = JournalLimits {
+            snapshot_bytes: limit,
+        };
+        assert_eq!(limits.payload_storage_bytes().unwrap(), 2 * limit + HEADER);
+    }
+    for limit in [0, 255, dag::snapshot::MAX_SNAPSHOT_BYTES + 1, usize::MAX] {
+        assert!(JournalLimits {
+            snapshot_bytes: limit
+        }
+        .payload_storage_bytes()
+        .is_err());
+    }
+    eprintln!("bounded_journal_payload_storage cli_snapshot_bytes={} cli_buffer_peak_bytes={} maximum_snapshot_bytes={} maximum_buffer_peak_bytes={} checksum_payload_heap_bytes=0",
+        1 << 20, JournalLimits { snapshot_bytes: 1 << 20 }.payload_storage_bytes().unwrap(),
+        dag::snapshot::MAX_SNAPSHOT_BYTES,
+        JournalLimits { snapshot_bytes: dag::snapshot::MAX_SNAPSHOT_BYTES }.payload_storage_bytes().unwrap());
 }

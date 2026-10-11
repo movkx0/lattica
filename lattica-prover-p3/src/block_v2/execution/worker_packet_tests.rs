@@ -205,10 +205,62 @@ fn canonical_packets_roundtrip_all_operation_shapes() {
     ] {
         let bytes = request.encode().unwrap();
         let decoded = Request::decode(&bytes, request.pin, CHAIN).unwrap();
+        assert_eq!(bytes.capacity(), bytes.len());
+        assert_eq!(decoded.children.capacity(), decoded.children.len());
+        assert_eq!(decoded.manifest.capacity(), decoded.manifest.len());
+        assert_eq!(decoded.inputs.capacity(), decoded.inputs.len());
+        for proof in &decoded.inputs {
+            let offset = proof.as_ptr() as usize - bytes.as_ptr() as usize;
+            assert!(offset + proof.len() <= bytes.len());
+            assert_eq!(*proof, &bytes[offset..offset + proof.len()]);
+        }
         assert_eq!(decoded.encode().unwrap(), bytes);
         assert_eq!(decoded.job, request.job);
         assert_eq!(decoded.manifest, request.manifest);
     }
+}
+
+#[test]
+fn request_storage_admits_exact_capacity_and_maximum_proofs() {
+    for count in [0, 1, 2] {
+        assert_eq!(storage_vec::<Child>(count, 2).unwrap().capacity(), count);
+        assert_eq!(
+            storage_vec::<ArtifactRef>(count, 2).unwrap().capacity(),
+            count
+        );
+        assert_eq!(storage_vec::<&[u8]>(count, 2).unwrap().capacity(), count);
+    }
+    assert!(storage_vec::<Child>(3, 2).is_err());
+    assert!(storage_vec::<u8>(usize::MAX, launch::MAX_REQUEST_BYTES).is_err());
+    assert!(storage_vec::<u64>(usize::MAX, usize::MAX).is_err());
+    for count in [0, launch::MAX_REQUEST_BYTES - 1, launch::MAX_REQUEST_BYTES] {
+        assert_eq!(
+            storage_vec::<u8>(count, launch::MAX_REQUEST_BYTES)
+                .unwrap()
+                .capacity(),
+            count
+        );
+    }
+    // A pair contains the largest possible admitted proof payload. Its
+    // statement/job identity deliberately remains independent of proof bytes.
+    let mut request = pair_request();
+    for i in 0..2 {
+        request.inputs[i] = Arc::from(vec![i as u8 + 1; MAX_PROOF_BYTES]);
+        request.manifest[i] =
+            ArtifactRef::from_bytes(ArtifactKind::Wallet, &request.inputs[i]).unwrap();
+    }
+    let encoded = request.encode().unwrap();
+    assert_eq!(encoded.len(), 203 + 2 * (37 + MAX_PROOF_BYTES));
+    assert_eq!(encoded.capacity(), encoded.len());
+    let decoded = Request::decode(&encoded, request.pin, CHAIN).unwrap();
+    assert_eq!(decoded.inputs[0].as_ptr(), encoded[240..].as_ptr());
+    assert_eq!(
+        decoded.inputs[1].as_ptr(),
+        encoded[277 + MAX_PROOF_BYTES..].as_ptr()
+    );
+    assert_eq!(decoded.encode().unwrap(), encoded);
+    request.inputs[0] = Arc::from(vec![1; MAX_PROOF_BYTES + 1]);
+    assert!(request.encode().is_err());
 }
 
 #[test]
@@ -348,6 +400,138 @@ fn stats() -> CacheStats {
     CacheStats { setups: 1, hits: 0 }
 }
 
+// Frozen result layout from before direct serialization; no new header helper.
+fn reference_result(
+    typed: bool,
+    key: [u8; 32],
+    job: JobId,
+    request: [u8; 32],
+    proof: &[u8],
+) -> Vec<u8> {
+    let mut bytes = if typed {
+        TYPED_RESULT_MAGIC
+    } else {
+        RESULT_MAGIC
+    }
+    .to_vec();
+    bytes.extend(key);
+    bytes.extend(job.to_bytes());
+    bytes.extend(request);
+    for value in [
+        timings().input_verification_ms,
+        timings().proving_ms,
+        timings().serialization_ms,
+    ] {
+        bytes.extend(u64::try_from(value).unwrap().to_le_bytes());
+    }
+    bytes.extend(stats().setups.to_le_bytes());
+    bytes.extend(stats().hits.to_le_bytes());
+    put_artifact(
+        &mut bytes,
+        ArtifactRef::from_bytes(ArtifactKind::Node, proof).unwrap(),
+    );
+    bytes.extend(proof);
+    bytes
+}
+
+#[test]
+fn direct_node_result_preserves_both_packet_families_and_capacity() {
+    use crate::block_v2::machine::{programs, verifier::template};
+    use p3_field::PrimeCharacteristicRing;
+    let node = NodeProof {
+        public: [p3_goldilocks::Goldilocks::ZERO; programs::PUBLIC_VALUES],
+        proof: template::batch(&programs::shape(1 << 19).unwrap()).unwrap(),
+    };
+    let proof = codec::encode_node(&node).unwrap();
+    let job = leaf(0).id();
+    for typed in [false, true] {
+        let packet = ResultPacket::node(&node).unwrap();
+        let pointer = packet.bytes.as_ptr();
+        assert_eq!(
+            packet.bytes.capacity(),
+            MAX_PROOF_BYTES + RESULT_HEADER_BYTES
+        );
+        let bytes = packet
+            .finish(typed, [1; 32], job, [2; 32], timings(), stats())
+            .unwrap();
+        assert_eq!(bytes.as_ptr(), pointer);
+        assert_eq!(
+            bytes,
+            reference_result(typed, [1; 32], job, [2; 32], &proof)
+        );
+        let copied =
+            encode_result_for(typed, [1; 32], job, [2; 32], &proof, timings(), stats()).unwrap();
+        assert_eq!(bytes, copied);
+        assert_eq!(copied.capacity(), copied.len());
+    }
+    let packet = ResultPacket::node(&node).unwrap();
+    let mut excessive = timings();
+    excessive.serialization_ms = u128::MAX;
+    assert!(packet
+        .finish(true, [1; 32], job, [2; 32], excessive, stats())
+        .is_err());
+}
+
+#[test]
+fn owned_result_reuses_buffer_and_binds_every_original_request_byte() {
+    let temp = Temp::new();
+    let (_, assignment) = synthetic_assignment(&temp);
+    let request = encode_request(&assignment).unwrap();
+    let key = assignment.lease.process_key().unwrap();
+    let digest = launch::request_digest(&request).unwrap();
+    for size in [1, MAX_PROOF_BYTES - 1, MAX_PROOF_BYTES] {
+        let proof = vec![0x35; size];
+        let packet = encode_result(
+            key,
+            assignment.job().id(),
+            digest,
+            &proof,
+            timings(),
+            stats(),
+        )
+        .unwrap();
+        assert_eq!(
+            packet,
+            reference_result(false, key, assignment.job().id(), digest, &proof)
+        );
+        let pointer = packet.as_ptr();
+        let capacity = packet.capacity();
+        let result = decode_result_owned(&assignment, &request, packet).unwrap();
+        assert_eq!(result.bytes().as_ptr(), pointer);
+        assert_eq!(result.bytes(), proof);
+        assert_eq!(result.bytes.capacity(), capacity);
+        assert!(capacity <= MAX_RESULT_BYTES);
+    }
+    let packet =
+        encode_result(key, assignment.job().id(), digest, &[1], timings(), stats()).unwrap();
+    for offset in 0..request.len() {
+        let mut changed = request.clone();
+        changed[offset] ^= 1;
+        assert!(
+            decode_result_owned(&assignment, &changed, packet.clone()).is_err(),
+            "request byte {offset}"
+        );
+    }
+    for offset in 0..packet.len() {
+        // Timing/cache counters are deliberately untrusted telemetry, not bindings.
+        if (104..144).contains(&offset) {
+            continue;
+        }
+        let mut changed = packet.clone();
+        changed[offset] ^= 1;
+        assert!(
+            decode_result_owned(&assignment, &request, changed).is_err(),
+            "result byte {offset}"
+        );
+    }
+    for end in 0..packet.len() {
+        assert!(decode_result_owned(&assignment, &request, packet[..end].to_vec()).is_err());
+    }
+    let mut oversized_capacity = Vec::with_capacity(MAX_RESULT_BYTES + 1);
+    oversized_capacity.extend_from_slice(&packet);
+    assert!(decode_result_owned(&assignment, &request, oversized_capacity).is_err());
+}
+
 #[test]
 fn results_bind_original_assignment_packet_and_exact_artifact_but_are_not_tickets() {
     let temp = Temp::new();
@@ -446,7 +630,7 @@ fn cpu_packet_verifies_real_pair_empty_and_rejects_substituted_inputs() -> Resul
     decoded.manifest.swap(0, 1);
     assert!(worker.prepare_packet(&decoded).is_err());
     let mut decoded = Request::decode(&bytes, f.pin, [0x5a; 32])?;
-    decoded.inputs[0] = Arc::from(f.root_bytes.clone());
+    decoded.inputs[0] = &f.root_bytes;
     decoded.manifest[0] = ArtifactRef::from_bytes(ArtifactKind::Wallet, &f.root_bytes)?;
     assert!(worker.prepare_packet(&decoded).is_err());
     let job = Job::empty(f.pin, [0x5a; 32], 0, 3)?;
@@ -523,7 +707,7 @@ fn cpu_packet_verifies_both_real_merge_children_without_inner_archives() -> Resu
     let mut corrupt = decoded.inputs[0].to_vec();
     *corrupt.last_mut().unwrap() ^= 1;
     decoded.manifest[0] = ArtifactRef::from_bytes(ArtifactKind::Node, &corrupt)?;
-    decoded.inputs[0] = Arc::from(corrupt);
+    decoded.inputs[0] = &corrupt;
     assert!(worker.prepare_packet(&decoded).is_err());
     Ok(())
 }

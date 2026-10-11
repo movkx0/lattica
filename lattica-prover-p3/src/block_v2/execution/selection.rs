@@ -11,6 +11,13 @@ use crate::block_v2::{
 };
 use std::sync::Arc;
 
+#[path = "selection_storage.rs"]
+mod storage;
+pub use storage::SelectionStorage;
+#[path = "preparation_storage.rs"]
+mod preparation;
+pub use preparation::PreparationStorage;
+
 /// Exact public proof bytes bound to an existing verification ticket.
 #[derive(Clone)]
 pub struct PublicInput {
@@ -19,7 +26,14 @@ pub struct PublicInput {
 }
 
 impl PublicInput {
+    /// Bounds ownership transfer into Arc even when the proof Vec has spare
+    /// backing. The unchanged encoded proof limit is smaller than this ceiling.
+    pub const INPUT_CAPACITY_BYTES: usize = 4 * crate::block_v2::profile::MAX_PROOF_BYTES;
+
     pub fn new(wallet: VerifiedWallet, bytes: Vec<u8>) -> Result<Self, Error> {
+        if bytes.capacity() > Self::INPUT_CAPACITY_BYTES {
+            return Err("selection input backing exceeds conversion allowance".into());
+        }
         wallet.artifact().check_bytes(&bytes)?;
         Ok(Self {
             wallet,
@@ -31,6 +45,14 @@ impl PublicInput {
 struct Entry {
     job: Job,
     inputs: Vec<PublicInput>,
+}
+
+impl Entry {
+    fn wallet_bytes(&self) -> Vec<Vec<u8>> {
+        let mut copies = Vec::with_capacity(self.inputs.len());
+        copies.extend(self.inputs.iter().map(|input| input.bytes.to_vec()));
+        copies
+    }
 }
 
 /// Complete depth-six dense-prefix graph, in dependency-first admission order.
@@ -162,15 +184,7 @@ impl Selection {
         now_ms: u64,
     ) -> Result<JobId, Error> {
         for entry in &self.entries {
-            owner.admit(
-                entry.job.clone(),
-                entry
-                    .inputs
-                    .iter()
-                    .map(|input| input.bytes.to_vec())
-                    .collect(),
-                now_ms,
-            )?;
+            owner.admit(entry.job.clone(), entry.wallet_bytes(), now_ms)?;
         }
         Ok(self.root().id())
     }

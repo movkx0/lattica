@@ -2,6 +2,9 @@
 //! Subprocess boundaries exercise the same private persistence primitives used
 //! after public lease validation. A lock-only check is never an OS-stop claim.
 use super::*;
+
+#[path = "launch_storage_tests.rs"]
+mod storage;
 use crate::block_v2::{
     commitment::DEPTH,
     execution::{
@@ -22,6 +25,28 @@ use std::{
 };
 
 const REQUEST: &[u8] = b"bounded immutable public CPU assignment";
+
+#[test]
+fn streamed_request_digest_matches_original_framing_at_protocol_bounds() {
+    for size in (0..=17).chain([4095, 4096, MAX_REQUEST_BYTES - 1, MAX_REQUEST_BYTES]) {
+        let bytes: Vec<_> = (0..size).map(|i| (i * 31) as u8).collect();
+        let mut fields = vec![1, size as u64];
+        for part in bytes.chunks(4) {
+            let mut word = [0; 4];
+            word[..part.len()].copy_from_slice(part);
+            fields.push(u32::from_le_bytes(word) as u64);
+        }
+        let reference =
+            commitment::digest_bytes(commitment::hash_fields(REQUEST_DOMAIN, &fields).unwrap())
+                .unwrap();
+        assert_eq!(digest(REQUEST_DOMAIN, &bytes).unwrap(), reference);
+        if size != 0 {
+            assert_eq!(request_digest(&bytes).unwrap(), reference);
+        }
+    }
+    assert!(request_digest(&[]).is_err());
+    assert!(request_digest(&vec![0; MAX_REQUEST_BYTES + 1]).is_err());
+}
 const CHILD_TEST: &str = "block_v2::execution::launch::tests::subprocess_helper";
 const FAULTS: [Fault; 8] = [
     Fault::WorkerLockDurable,

@@ -1,0 +1,23 @@
+{
+  "name": "p3-symmetric",
+  "version": "0.6.1",
+  "registry_package_checksum": "284db1f284c4007eeb65cef4656426c93192af9bd9703b7f3afbf7faab274500",
+  "upstream_files_sha256": {
+    ".cargo_vcs_info.json": "d5bc751a0f10e2cdfe20061284ff290445606110880d0ba446c644a977761475",
+    "CHANGELOG.md": "b36cf566c213b203c7ad9774925ca514c64a985f4538d3e7662b3cf8e70e8bb6",
+    "Cargo.lock": "f8524945b5770f8ed4382d998ca0b7ab89c34855f88a06392ff12b5b2137b883",
+    "Cargo.toml": "5da7c68255de1831d70944161c606f96f71cdc72a7255ecec12cdbdbad6b55e7",
+    "Cargo.toml.orig": "39c155d00dfc598c1f3d61d93bd3f27a59295cc84a3559011a18cfeccf0c7eef",
+    "src/compression.rs": "7f5e98be7552bf5b858cbd3533c33e4156da12b59789effffe83ea76eec457ec",
+    "src/hash.rs": "173c5efb5a3c7667a05044bffbdf7f29cf19cc9adb14a6511d42adc5f3e555d5",
+    "src/hasher.rs": "392bc75948500ed991e85f6a26d8f4980b989f34305c431ae8c946a4d0430bb9",
+    "src/lib.rs": "edc00482e07ac0420b01144d9b8b45ca94a271c7d24a3ecdb5a48ddb3dafcf2e",
+    "src/permutation.rs": "151be9178a58631c5f68d14ac6214824b310bd2d4467c70373bdf4912313047a",
+    "src/serializing_hasher.rs": "82d65e117682b77818e0d66085d4e95442bd256d61ab3ebce0895584462179bf",
+    "src/sponge.rs": "02ca475d0b42fe979eb17ca08b3ceb599a9913a423fa276816092a52f2c7cac7"
+  },
+  "authored_changes": [
+    "src/hash.rs"
+  ],
+  "purpose": "Expose read-only Merkle cap backing capacity for native proof storage admission; no proof, hash, serialization or arithmetic changes."
+}

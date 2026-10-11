@@ -364,6 +364,55 @@ pub const PI_HEIGHT: usize = PI_TXBIND + DIGEST; // current block height (HTLC t
 pub const PI_HASHLOCK: usize = PI_HEIGHT + 1; // SHA256(preimage) = the redeemed note's committed hashlock
 pub const N_PUBLIC: usize = PI_HASHLOCK + DIGEST;
 
+/// Shared layout for the owned GPU witness writer; the AIR remains authoritative.
+#[cfg(all(feature = "block-v2", any(feature = "gpu", feature = "gpu-metal")))]
+pub(crate) fn device_trace_geometry() -> [u64; 41] {
+    [
+        HEIGHT,
+        WIDTH,
+        N_IN,
+        M_OUT,
+        DEPTH,
+        BITS,
+        BLOCK,
+        SPAN_BLOCKS,
+        OUT_BLOCKS,
+        FEE_BLOCKS,
+        MINT_BLOCKS,
+        USED_BLOCKS,
+        NUM_BLOCKS,
+        BIT,
+        NK,
+        NK1,
+        RHO,
+        RHO1,
+        VAL,
+        POSACC,
+        VALACC,
+        REM,
+        RBIT,
+        ASSET,
+        DOM_OWN as usize,
+        DOM_CM as usize,
+        DOM_NF as usize,
+        N_PUBLIC,
+        OWNER0,
+        NT,
+        CLAIM0,
+        MODE,
+        TIMEOUT,
+        DIFF,
+        HLINV0,
+        HLPROD,
+        DOM_HTLC as usize,
+        DOM_NF_HTLC as usize,
+        HTLC_BLOCKS,
+        NOTE_HTLC as usize,
+        height_seed_row(),
+    ]
+    .map(|value| value as u64)
+}
+
 const fn input_base(i: usize) -> usize {
     i * SPAN_BLOCKS
 }
@@ -555,6 +604,9 @@ pub fn periodic() -> Vec<Vec<Val>> {
     }
     cols
 }
+
+#[cfg(feature = "block-v2")]
+pub(crate) mod periodic_source;
 
 pub struct HtlcAir;
 
@@ -1212,6 +1264,7 @@ pub fn public_values(w: &Witness) -> Vec<Val> {
 }
 
 pub fn prove_verify_with(w: &Witness, pis: &[Val]) -> Result<(), String> {
+    crate::proving::legacy_cpu_admission().map_err(|e| e.to_string())?;
     let config = make_config();
     let air = HtlcAir;
     let trace = build_trace(w);
@@ -1226,12 +1279,34 @@ pub fn prove_verify_with(w: &Witness, pis: &[Val]) -> Result<(), String> {
 }
 
 pub fn prove_verify(w: &Witness) -> Result<(), String> {
+    crate::proving::legacy_cpu_admission().map_err(|e| e.to_string())?;
     prove_verify_with(w, &public_values(w))
 }
 
 /// Prove an HTLC spend and return canonical (postcard) proof bytes.
 pub fn prove_to_bytes(w: &Witness) -> Vec<u8> {
-    crate::config::proof_to_bytes(&HtlcAir, build_trace(w), &public_values(w))
+    prove_to_bytes_with_request(
+        w,
+        crate::proving::Request::from_env().expect("proving request"),
+    )
+    .expect("HTLC proving backend policy")
+    .0
+}
+
+pub fn prove_to_bytes_with_request(
+    w: &Witness,
+    request: crate::proving::Request,
+) -> Result<(Vec<u8>, crate::proving::Report), crate::proving::Error> {
+    #[cfg(all(feature = "block-v2", feature = "gpu"))]
+    if crate::block_v2::legacy_wallet::is_selected() {
+        return crate::block_v2::legacy_wallet::prove_htlc(w, request);
+    }
+    use crate::proving::{Backend, Run, Stage};
+    let run = Run::new("legacy_htlc", request, crate::proving::legacy_cpu())?;
+    let public = run.measure(Stage::PublicValues, Backend::Cpu, || public_values(w))?;
+    let trace = run.measure(Stage::WitnessTrace, Backend::Cpu, || build_trace(w))?;
+    let bytes = crate::config::proof_to_bytes_observed(&HtlcAir, trace, &public, &run)?;
+    Ok((bytes, run.finish(true)?))
 }
 
 /// Verify canonical proof bytes against public inputs. **Fail-closed** on any error.
@@ -1423,6 +1498,7 @@ pub fn proven_security_bits() -> usize {
 /// Prove with the witness's real public inputs, verify against `verify_pis` (tests FS binding).
 #[allow(dead_code)]
 pub fn prove_real_verify_with(w: &Witness, verify_pis: &[Val]) -> Result<(), String> {
+    crate::proving::legacy_cpu_admission().map_err(|e| e.to_string())?;
     let config = make_config();
     let air = HtlcAir;
     let trace = build_trace(w);
@@ -1431,7 +1507,7 @@ pub fn prove_real_verify_with(w: &Witness, verify_pis: &[Val]) -> Result<(), Str
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     /// A valid 2-in/2-out witness whose two input commitments sit at positions 0 and 1 of a shared

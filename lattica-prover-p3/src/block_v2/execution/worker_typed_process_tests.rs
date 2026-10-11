@@ -45,13 +45,13 @@ fn config() -> Config {
         pin,
         [9; 32],
         Resources {
-            ram_bytes: 1000,
+            ram_bytes: storage::STARTUP_HOST_BYTES + 1000,
             vram_bytes: 0,
             scratch_bytes: 500,
             threads: 2,
         },
         Resources {
-            ram_bytes: 100,
+            ram_bytes: coordinator::HOST_BYTES + 100,
             vram_bytes: 0,
             scratch_bytes: 0,
             threads: 2,
@@ -64,6 +64,93 @@ fn config() -> Config {
 
 fn fixture(temp: &Temp) -> (DurableDag, ProcessWorker) {
     fixture_capacity(temp, 1)
+}
+
+#[test]
+fn process_configuration_rejects_coordinator_shortfall_before_launch() {
+    let cfg = config();
+    for bytes in [
+        0,
+        coordinator::PACKET_HOST_BYTES,
+        coordinator::HOST_BYTES - 1,
+    ] {
+        let jobs = Resources {
+            ram_bytes: bytes,
+            ..cfg.jobs
+        };
+        assert!(Config::new(
+            cfg.registry.as_registry().clone(),
+            cfg.pin,
+            cfg.chain,
+            cfg.peak,
+            jobs,
+            cfg.executable,
+            cfg.policy_assignment,
+        )
+        .is_err());
+    }
+    Config::new(
+        cfg.registry.as_registry().clone(),
+        cfg.pin,
+        cfg.chain,
+        cfg.peak,
+        Resources {
+            ram_bytes: coordinator::HOST_BYTES,
+            ..cfg.jobs
+        },
+        cfg.executable,
+        cfg.policy_assignment,
+    )
+    .unwrap();
+}
+
+#[test]
+fn process_configuration_reserves_session_storage_before_launch() {
+    use crate::block_v2::typed_recursive::storage::SESSION_HOST_BYTES;
+    let cfg = config();
+    for bytes in [
+        0,
+        storage::HOST_BYTES - 1,
+        storage::HOST_BYTES,
+        storage::HOST_BYTES + SESSION_HOST_BYTES - 1,
+        storage::HOST_BYTES + SESSION_HOST_BYTES,
+        storage::STARTUP_HOST_BYTES - 1,
+    ] {
+        let peak = Resources {
+            ram_bytes: bytes,
+            ..cfg.peak
+        };
+        assert!(Config::new(
+            cfg.registry.as_registry().clone(),
+            cfg.pin,
+            cfg.chain,
+            peak,
+            cfg.jobs,
+            cfg.executable,
+            cfg.policy_assignment,
+        )
+        .is_err());
+    }
+    let active =
+        cfg.peak.ram_bytes - storage::HOST_BYTES - storage::INPUT_HOST_BYTES - SESSION_HOST_BYTES;
+    assert!(cfg.clone().with_preprocessing_cache(2, active).is_err());
+    assert!(cfg.clone().with_preprocessing_cache(2, u64::MAX).is_err());
+    let admitted = cfg.with_preprocessing_cache(2, active - 1).unwrap();
+    assert_eq!(admitted.cache_reserve_bytes, active - 1);
+    assert!(admitted.with_preprocessing_cache(1, 0).is_ok());
+}
+
+#[test]
+fn process_descriptor_reuses_immutable_approval_without_allocating() {
+    let cfg = config();
+    let expected = cfg.bytes().unwrap();
+    let (_, requested) = crate::spill_alloc::allocation_requests::measure(|| {
+        for _ in 0..128 {
+            assert_eq!(cfg.bytes().unwrap(), expected);
+        }
+    });
+    assert!(!requested.overflow && requested.bytes == 0 && requested.calls == 0);
+    eprintln!("typed_descriptor_approval records=128 allocations=0 config_bytes={CONFIG_BYTES} session_bytes={SESSION_BYTES}");
 }
 
 fn fixture_capacity(temp: &Temp, workers: u32) -> (DurableDag, ProcessWorker) {
@@ -92,7 +179,8 @@ fn fixture_capacity(temp: &Temp, workers: u32) -> (DurableDag, ProcessWorker) {
             artifact_bytes: 32 << 20,
             recovery_window_ms: 1000,
             workers: Resources {
-                ram_bytes: 1100 * u64::from(workers),
+                ram_bytes: (storage::STARTUP_HOST_BYTES + coordinator::HOST_BYTES + 1100)
+                    * u64::from(workers),
                 vram_bytes: 0,
                 scratch_bytes: 500 * u64::from(workers),
                 threads: 2 * workers,
@@ -197,17 +285,27 @@ fn child() {
 }
 
 #[test]
+#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
 fn idle_context_switch_preserves_process_and_reservation_but_fences_old_identity() {
     let temp = Temp::new();
     let (mut owner, mut worker) = fixture(&temp);
     worker.start(command("idle")).unwrap();
+    let storage = ProcessWorker::storage_plan().unwrap();
+    let idle_bytes = worker.persistent_storage_bytes().unwrap();
+    assert!(idle_bytes <= storage.retained_bytes);
     let pid = worker.pid();
     let initial = worker.execution_digest().unwrap();
+    let initial_frame = worker.session_bytes().to_vec();
     let reserved = owner.resource_use().unwrap();
     let context = PolicyContext::new([42; 32], vec![]).unwrap();
     worker.replace_context(&context).unwrap();
     worker.heartbeat().unwrap();
     assert_ne!(worker.execution_digest().unwrap(), initial);
+    // The v1 policy digest alone changes; the registry, assignment and
+    // reservation suffix retain their established byte positions.
+    assert_eq!(&worker.session_bytes()[..136], &initial_frame[..136]);
+    assert_ne!(&worker.session_bytes()[136..168], &initial_frame[136..168]);
+    assert_eq!(&worker.session_bytes()[168..], &initial_frame[168..]);
     assert_eq!(worker.pid(), pid);
     assert_eq!(owner.resource_use().unwrap(), reserved);
     let next = worker.execution_digest().unwrap();
@@ -219,10 +317,15 @@ fn idle_context_switch_preserves_process_and_reservation_but_fences_old_identity
     assert_ne!(worker.execution_digest().unwrap(), next);
     assert_eq!(worker.stats().unwrap(), CacheStats { setups: 0, hits: 0 });
     worker.close(&mut owner, 1).unwrap();
+    let closed_bytes = worker.persistent_storage_bytes().unwrap();
+    assert!(closed_bytes <= storage.retained_bytes);
+    eprintln!("bounded_persistent_process retained_bytes={} control_bytes={} idle_bytes={idle_bytes} closed_bytes={closed_bytes}",
+        storage.retained_bytes, storage.control_bytes);
     assert_eq!(owner.resource_use().unwrap(), Resources::default());
 }
 
 #[test]
+#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
 fn pending_dispatch_keeps_reservations_while_another_worker_shuts_down() {
     use crate::block_v2::execution::{
         dag::Completion,
@@ -301,9 +404,19 @@ fn pending_dispatch_keeps_reservations_while_another_worker_shuts_down() {
     let revoked = launches.revoke(lease).unwrap();
     assert!(launches.try_idle(&revoked).unwrap().is_some());
     let output = completed.reconcile(&mut owner, 2).unwrap();
+    assert_eq!(
+        owner.resource_use().unwrap().ram_bytes,
+        cfg.peak.ram_bytes + cfg.jobs.ram_bytes
+    );
     let expected = owner.begin_verification(lease, 2).unwrap();
+    assert_eq!(
+        owner.resource_use().unwrap().ram_bytes,
+        cfg.peak.ram_bytes + cfg.jobs.ram_bytes
+    );
     // A correctly bound IPC result still cannot qualify this synthetic proof.
-    assert!(VerifiedNode::verify_typed(&expected, &cfg.registry, output.bytes()).is_err());
+    assert!(
+        VerifiedNode::verify_typed(&expected, cfg.registry.as_registry(), output.bytes()).is_err()
+    );
     assert_eq!(
         owner.finish_verification(lease, None, 2).unwrap(),
         Completion::Rejected
@@ -337,6 +450,7 @@ fn supervised_proxy_exit_requires_exact_worker_and_cgroup_quiescence() {
             "--service-type=exec",
             "--property=MemoryMax=134217728",
             "--property=MemorySwapMax=0",
+            "--property=LimitCORE=0",
             "--property=CPUQuota=100%",
             "--property=KillMode=control-group",
             "--property=RuntimeMaxSec=60",
@@ -352,6 +466,16 @@ fn supervised_proxy_exit_requires_exact_worker_and_cgroup_quiescence() {
         .start_supervised(launcher, &unit, &arguments)
         .unwrap();
     assert_ne!(worker.pid().unwrap(), worker.child.as_ref().unwrap().id());
+    let owned = worker.persistent_storage_bytes().unwrap();
+    assert!(owned <= ProcessWorker::storage_plan().unwrap().retained_bytes);
+    eprintln!(
+        "bounded_supervised_storage persistent_bytes={owned} identity_heap_bytes={}",
+        worker
+            .service_identity()
+            .unwrap()
+            .storage_heap_bytes()
+            .unwrap()
+    );
     assert_eq!(
         worker.service_identity().unwrap().pid(),
         worker.pid().unwrap()
@@ -385,6 +509,85 @@ fn bounded_protocol_rejects_oversized_truncated_and_unexpected_frames() {
     let (mut a, mut b) = UnixStream::pair().unwrap();
     send(&mut a, STOP, &[1]).unwrap();
     assert!(receive_command(&mut b).is_err());
+}
+
+#[test]
+fn frame_storage_is_exact_and_each_command_bound_precedes_body_read() {
+    for (kind, bound) in [
+        (STOP, 0),
+        (PING, 0),
+        (CONTEXT, MAX_CONTEXT_BYTES),
+        (JOB, MAX_REQUEST_BYTES + MAX_TOKEN_BYTES + 8),
+    ] {
+        let (mut a, mut b) = UnixStream::pair().unwrap();
+        // Only a header is available: an over-bound frame must return without
+        // trying to read its body while the peer is still connected.
+        b.set_read_timeout(Some(Duration::from_millis(100)))
+            .unwrap();
+        a.write_all(&[kind]).unwrap();
+        a.write_all(&(bound as u64 + 1).to_le_bytes()).unwrap();
+        assert_eq!(
+            receive_command(&mut b).unwrap_err().to_string(),
+            "typed process command size"
+        );
+        drop(a);
+        let (mut a, mut b) = UnixStream::pair().unwrap();
+        let writer = std::thread::spawn(move || send(&mut a, kind, &vec![0x5a; bound]).unwrap());
+        let (received_kind, bytes) = receive_command(&mut b).unwrap();
+        writer.join().unwrap();
+        assert_eq!(received_kind, kind);
+        assert_eq!(bytes.len(), bound);
+        assert_eq!(bytes.capacity(), bound);
+        assert!(bytes.iter().all(|value| *value == 0x5a));
+    }
+    let (mut a, mut b) = UnixStream::pair().unwrap();
+    let writer = std::thread::spawn(move || send(&mut a, RESULT, &vec![7; MAX_FRAME]).unwrap());
+    let bytes = receive(&mut b, RESULT, usize::MAX).unwrap();
+    writer.join().unwrap();
+    assert_eq!(bytes.len(), MAX_FRAME);
+    assert_eq!(bytes.capacity(), MAX_FRAME);
+    assert!(bytes.iter().all(|value| *value == 7));
+    let (mut a, mut b) = UnixStream::pair().unwrap();
+    a.write_all(&[RESULT]).unwrap();
+    a.write_all(&(MAX_FRAME as u64 + 1).to_le_bytes()).unwrap();
+    b.set_read_timeout(Some(Duration::from_millis(100)))
+        .unwrap();
+    assert_eq!(
+        receive(&mut b, RESULT, usize::MAX).unwrap_err().to_string(),
+        "typed process frame kind or size"
+    );
+}
+
+#[test]
+fn multipart_send_preserves_frame_bytes_and_admits_before_any_write() {
+    for size in [0, 1, 4096, MAX_FRAME] {
+        let expected = vec![0x6a; size];
+        let sent = expected.clone();
+        let (mut a, mut b) = UnixStream::pair().unwrap();
+        let writer = std::thread::spawn(move || {
+            let split = sent.len() / 2;
+            send_parts(&mut a, JOB, &[&[], &sent[..split], &[], &sent[split..]]).unwrap();
+        });
+        let mut header = [0; 9];
+        b.read_exact(&mut header).unwrap();
+        assert_eq!(header[0], JOB);
+        assert_eq!(
+            u64::from_le_bytes(header[1..].try_into().unwrap()),
+            size as u64
+        );
+        let mut payload = vec![0; size];
+        b.read_exact(&mut payload).unwrap();
+        writer.join().unwrap();
+        assert_eq!(payload, expected);
+    }
+    let (mut a, mut b) = UnixStream::pair().unwrap();
+    let full = vec![0; MAX_FRAME];
+    assert!(send_parts(&mut a, JOB, &[&full, &[1]]).is_err());
+    b.set_nonblocking(true).unwrap();
+    assert_eq!(
+        b.read(&mut [0; 1]).unwrap_err().kind(),
+        std::io::ErrorKind::WouldBlock
+    );
 }
 
 #[test]
@@ -433,6 +636,7 @@ fn supervised_active_stop_revokes_launch_and_releases_only_after_exit() {
             "--property=CPUQuota=100%",
             "--property=KillMode=control-group",
             "--property=RuntimeMaxSec=60",
+            "--property=LimitCORE=0",
             "--setenv=LATTICA_TYPED_PROCESS_TEST_CASE=held-result",
         ])
         .arg(format!(
@@ -525,7 +729,7 @@ fn idle_child_retains_memory_until_clean_shutdown_and_observed_exit() {
     let (mut owner, mut worker) = fixture(&temp);
     let reserved = owner.resource_use().unwrap();
     assert_eq!(reserved.threads, 0);
-    assert_eq!(reserved.ram_bytes, 1000);
+    assert_eq!(reserved.ram_bytes, config().peak.ram_bytes);
     worker.start(command("idle")).unwrap();
     assert_ne!(worker.pid().unwrap(), std::process::id());
     assert_eq!(owner.resource_use().unwrap(), reserved);
@@ -600,4 +804,52 @@ fn independent_assignment_changes_session_identity_and_rejects_other_image() {
     assert!(worker.start(Command::new("/bin/true")).is_err());
     assert!(worker.pid().is_none());
     assert_eq!(owner.resource_use().unwrap(), reserved);
+}
+
+#[test]
+fn configuration_moves_registry_and_preserves_v1_wire_layout() {
+    let mut cfg = config();
+    cfg.chain = [0x22; 32];
+    cfg.executable = [0x33; 32];
+    cfg.policy_assignment = [0x44; 32];
+    let registry_id = cfg.registry.as_registry().id().unwrap();
+    let backing: [usize; 12] =
+        std::array::from_fn(|i| cfg.registry.as_registry().caps[i].as_ptr() as usize);
+    let ((registry, descriptor), requested) =
+        crate::spill_alloc::allocation_requests::measure(|| cfg.into_parts().unwrap());
+    assert!(!requested.overflow && requested.bytes == 0 && requested.calls == 0);
+    let moved_backing: [usize; 12] =
+        std::array::from_fn(|i| registry.as_registry().caps[i].as_ptr() as usize);
+    assert_eq!(backing, moved_backing);
+    assert!(!std::mem::needs_drop::<Descriptor>());
+    assert_eq!(CONFIG_BYTES, 248);
+    assert_eq!(SESSION_BYTES, 312);
+    let wire = descriptor.bytes();
+    assert_eq!(&wire[..8], b"LTTYIPC1");
+    assert_eq!(&wire[8..40], &registry_id);
+    assert_eq!(&wire[40..72], &registry_id);
+    assert_eq!(&wire[72..104], &[0x22; 32]);
+    assert_eq!(&wire[104..136], &[0x33; 32]);
+    assert_eq!(&wire[136..168], &[0x44; 32]);
+    // v1 fixture: peak RAM/VRAM/scratch/threads, job resources, then cache.
+    let expected_tail: Vec<u8> = [
+        storage::STARTUP_HOST_BYTES + 1000,
+        0,
+        500,
+        2,
+        coordinator::HOST_BYTES + 100,
+        0,
+        0,
+        2,
+        1,
+        0,
+    ]
+    .into_iter()
+    .flat_map(u64::to_le_bytes)
+    .collect();
+    assert_eq!(&wire[168..], expected_tail);
+    eprintln!(
+        "typed_process_descriptor_storage bytes={} config_bytes={CONFIG_BYTES} session_bytes={SESSION_BYTES} registry_moved=true heap_owners=0",
+        std::mem::size_of::<Descriptor>()
+    );
 }

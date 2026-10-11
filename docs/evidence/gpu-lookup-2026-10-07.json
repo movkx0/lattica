@@ -1,0 +1,279 @@
+{
+  "schema": "lattica-gpu-lookup-conformance-v1",
+  "date": "2026-10-07",
+  "source_head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "source_state": "uncommitted main working tree",
+  "complete_gpu_prover": false,
+  "integrated_into_real_prover": false,
+  "enabled_by_default": false,
+  "throughput_qualification": false,
+  "previous_checkpoint": "gpu-owned-quotient-commit-2026-10-07.json",
+  "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-lookup-20261007/run-03",
+  "features": [
+    "default",
+    "block-v2-wide-lanes"
+  ],
+  "build_profile": "release",
+  "gpu": {
+    "opencl_index": 1,
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "pci": "0000:02:00.0",
+    "global_bytes": 16697327616,
+    "max_allocation_bytes": 4174331904,
+    "driver": "615.71.09"
+  },
+  "binary_sha256": "37bee7a97ece8eb1bc7bafb9adb98d96b56055cf54fa2c6ec18ef4260565a9a1",
+  "source_archive_sha256": "76c890753eed6b7de71e7125a5463c7a5b1df53285867ad45001060f16304921",
+  "runner_sha256": "61927b8b84673e5bef8463096ee6a044c4a99b110dace14a2ada04ea94908290",
+  "manifest_sha256": "d1279866a20149c90eb5ce7c1084df5f2c10c81deec8dfb9711142adda0e7c0f",
+  "verified_current_source_files": 209,
+  "limits": {
+    "memory_max_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "runtime_max_seconds_per_check": 180,
+    "lookup_managed_bytes": 67108864,
+    "lookup_tile_bytes": 2097152,
+    "lookup_staging_bytes": 65536
+  },
+  "implementation": {
+    "reference": "p3-lookup 0.6.1 LogUpGadget::generate_permutation",
+    "field": "Goldilocks, cubic extension X^3 = X + 1",
+    "operations": [
+      "compiled base expressions including current/next main and preprocessing, public inputs and selectors",
+      "Horner tuple combinations with per-lookup alpha/beta",
+      "128-lane cubic batch inversion with zero-multiplicity bypass and active-zero rejection",
+      "fraction columns and hierarchical exclusive prefix scan with terminal",
+      "attempt-owned device output and context-owned immutable prepared code"
+    ],
+    "bounds": {
+      "lookups": 256,
+      "tuples": 4096,
+      "expression_words": 65536,
+      "nodes": 262144,
+      "expression_depth": 512,
+      "tile_rows": 1024
+    },
+    "unsupported": [
+      "periodic columns",
+      "lookup expressions reading permutation/challenge symbolic fields",
+      "Metal",
+      "legacy quadratic profile"
+    ],
+    "no_lookups": "caller must skip the operation; a nonempty lookup with zero tuples is supported"
+  },
+  "conformance": {
+    "rows": [
+      1,
+      2,
+      64,
+      128,
+      256,
+      1024,
+      2048,
+      32768
+    ],
+    "main_preprocessing_order_combinations": 4,
+    "successful_device_calls": 34,
+    "largest_planned_peak_bytes": 5710304,
+    "comparisons": "every permutation entry and terminal equal the pinned CPU generator",
+    "cases": [
+      "Goldilocks boundary values",
+      "nontrivial cubic challenges",
+      "zero and signed multiplicities",
+      "empty/single/multi-element tuples",
+      "nonempty lookup with zero tuples",
+      "shared expression lifetimes",
+      "first/last/transition selectors and next-row wraparound",
+      "row tiles and three scan levels",
+      "prepared program reuse across fresh sessions",
+      "foreign private inputs rejected",
+      "active zero denominator rejected and allocation baseline restored",
+      "zero multiplicity at the same zero denominator succeeds"
+    ],
+    "successful_call_control_download_bytes": 32,
+    "active_zero_error_control_download_bytes": 8,
+    "matrix_readback_before_explicit_test_read": false,
+    "fixture_parameter_upload_bytes": 160,
+    "empty_public_parameter_upload_bytes": 56,
+    "note": "Tests upload unblinded original traces. Real proving integration must recover them on GPU from captured commitment prefixes."
+  },
+  "checks": [
+    {
+      "name": "lookup-conformance",
+      "passed_count": 1,
+      "wall_seconds": 0.766072118000011,
+      "log_sha256": "af88311ba7b3a20edbe95e1217482f964ccace74ea6a71cef4f23aeef768a8ed"
+    },
+    {
+      "name": "lookup-compiler",
+      "passed_count": 1,
+      "wall_seconds": 0.03184532799787121,
+      "log_sha256": "c543537d86f1a994d8d382cf68465df7a6bba25c02df9f367549b30e67a3c826"
+    },
+    {
+      "name": "lookup-plan",
+      "passed_count": 1,
+      "wall_seconds": 0.03282774000035715,
+      "log_sha256": "cf18fee5ac07ea8e76ec90c6dbb53940143c13a7d761abce0e0b1d01d352a378"
+    },
+    {
+      "name": "quotient-compiler",
+      "passed_count": 1,
+      "wall_seconds": 0.031812510002055205,
+      "log_sha256": "2002fee2796e8b3733863233e4d39af1d10e583a7071d8b5a58c01dcd474766a"
+    },
+    {
+      "name": "proof-bytes",
+      "passed_count": 1,
+      "wall_seconds": 1.0181305299993255,
+      "log_sha256": "16348e99ca090712f873062447d6dfd4ce9c5f6dfb142a079b1c3d6494d68b03"
+    },
+    {
+      "name": "compact-proof",
+      "passed_count": 1,
+      "wall_seconds": 0.9165308460032975,
+      "log_sha256": "fe4c0627361f76d705b1746bb1d5128ee31765748e74b66a0eb91638246e33d8"
+    },
+    {
+      "name": "registered",
+      "passed_count": 1,
+      "wall_seconds": 0.8660930440019001,
+      "log_sha256": "87024558951a6434dbbdff05046a2e2ead4823cfa1a43b9adbe5b8bf7af34e5e"
+    },
+    {
+      "name": "reuse",
+      "passed_count": 1,
+      "wall_seconds": 1.06594213200151,
+      "log_sha256": "ae9c08bca4df45f7186899ab0b08bbafe8f79dddd601303495b47b9b1fd6c9b4"
+    },
+    {
+      "name": "adapter-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.8656992710020859,
+      "log_sha256": "4b18acd89f445fa2a10ac076ccea619ce14b17dc619357c45183489ab6567356"
+    },
+    {
+      "name": "lde-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.716163287001109,
+      "log_sha256": "4738ec88cee913aa33f19a1fd972f91e884aab3f377f5e3f9a66f0821d420cff"
+    },
+    {
+      "name": "rng-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.665432919999148,
+      "log_sha256": "6d6d7c74fcf683092d3b03c384d61d7ebe6f1433a49f2929e6cceac4a184d2fc"
+    },
+    {
+      "name": "compact-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.9658595309992961,
+      "log_sha256": "dbed2b39b5e33c2b73a6d014255b5fe563cb575786192ed1145f986b931218dc"
+    },
+    {
+      "name": "partition-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 0.9667464600024687,
+      "log_sha256": "9925e92b4ac3500b22c397e634f0b5545447a830b9d5b5505d43595bd2120397"
+    },
+    {
+      "name": "unpartitioned-arithmetic",
+      "passed_count": 1,
+      "wall_seconds": 0.8667009849996248,
+      "log_sha256": "c6eabd5513f1d1a3607e4cdb6576d1a25d6142130eaa5345651fd18dc06df3d8"
+    },
+    {
+      "name": "partition-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.03196029799801181,
+      "log_sha256": "1dbb5bf7104c348e248324ae9ae6460c72e4a4c8097bb08345321fc45729f71d"
+    },
+    {
+      "name": "owned-commit",
+      "passed_count": 1,
+      "wall_seconds": 1.0665976650016091,
+      "log_sha256": "b088c28ee6164a3630c4bbb7f1e67ebcdf2a421ef8a1b6f0aa08cc41421e8480"
+    },
+    {
+      "name": "admission-regression",
+      "passed_count": 1,
+      "wall_seconds": 0.6658704119981849,
+      "log_sha256": "b6911d46c1ae98320adcb5045099e96215ca9e8dd8aa55c4e905f5875fc5580f"
+    },
+    {
+      "name": "commit-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.031824355999560794,
+      "log_sha256": "ad3d817f9ccb10255da9f99f509f7322762072b45f8ce186f862e31b78b9b1eb"
+    },
+    {
+      "name": "storage-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.0318246110000473,
+      "log_sha256": "69979b9aad35fd1f18a5d10b5282f807953aef7804ccbad218dee87978b1e698"
+    },
+    {
+      "name": "device-unit",
+      "passed_count": 4,
+      "wall_seconds": 0.03187189100208343,
+      "log_sha256": "b938b8cb0aab8077bc3e079abf87086bc70c27c08c33ef7313100c8e9246f15f"
+    },
+    {
+      "name": "transform-unit",
+      "passed_count": 1,
+      "wall_seconds": 0.031940107997797895,
+      "log_sha256": "c4ee4b661309871ffa6a9270e0feaca493ba173e2b978f8f56147d17533fc5cc"
+    },
+    {
+      "name": "plan-unit",
+      "passed_count": 10,
+      "wall_seconds": 0.03175760299927788,
+      "log_sha256": "5d89c57ead7faf27e2d6a2319a0b612b547c27e673071b6bc9a787757768dae4"
+    },
+    {
+      "name": "lde-unit",
+      "passed_count": 2,
+      "wall_seconds": 0.015731437000795268,
+      "log_sha256": "95036707c94dd386147448c792457fc970e40221ef975d1d6ead1972baac0f43"
+    },
+    {
+      "name": "pcs-unit",
+      "passed_count": 12,
+      "wall_seconds": 0.21433742599765537,
+      "log_sha256": "600d5d835f17762eca863bca45a40868b11272243e1cf71217ac941eef98ca52"
+    },
+    {
+      "name": "policy-unit",
+      "passed_count": 9,
+      "wall_seconds": 0.06427114700272796,
+      "log_sha256": "90da06b98e2630ca4066b44e318845cc55d74284fc2d9a0f5c4e3c8e8b694806"
+    }
+  ],
+  "rust_tests_passed": 58,
+  "python_resource_tests_passed": 29,
+  "build_logs": {
+    "release-build": "38a6175d15e14ad14d32a127a1e49556f43da2ec0e1647f8cf1d760f81deb4dc",
+    "cpu-stream-build": "2ed2363cc67016ff812f48ae2f0de00d76e37875a63a5c7270b554964963115f",
+    "gpu-stream-build": "8477eab6a07b35531f605c5421a433a385310b5f15dae22cd69764b0a1ef24fc",
+    "python-resources": "2916104af4a0f8ae38f31ea8591736fde0068cadf30325d2f28c8c9d2c755a44"
+  },
+  "regressions": "Full and compact proof-byte equality, unchanged CPU verification, repeated preprocessing reuse, private cleanup and default quotient/commitment paths passed. Those complete proofs still generate lookup traces on CPU.",
+  "retained_unsuccessful_runs": [
+    {
+      "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-lookup-20261007/run-01",
+      "reason": "Test setup queried an empty allocation plan and failed before lookup arithmetic; fixed test baseline helper."
+    },
+    {
+      "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-lookup-20261007/run-02",
+      "reason": "Lookup conformance and new unit tests passed; suite stopped because the quotient compiler filter matched zero tests; corrected filter for run-03."
+    }
+  ],
+  "next_steps": [
+    "Recover original unblinded subgroup rows from owned prefixes on GPU",
+    "Extend shared commitment inputs for device-generated permutation traces and preserve reference hiding RNG order",
+    "Add immutable opt-in admission, pool reservations, stage accounting and real full/compact proof-byte/lifecycle checks",
+    "Continue device openings/FRI, trace/preprocessing, transcript/randomness, legacy/API/backend coverage and throughput qualification"
+  ]
+}

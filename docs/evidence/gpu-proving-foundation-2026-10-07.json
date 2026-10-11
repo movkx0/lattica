@@ -1,0 +1,57 @@
+{
+  "schema": "lattica-gpu-proving-foundation-v1",
+  "date": "2026-10-07",
+  "source_head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "source_state": "uncommitted main working tree",
+  "complete_gpu_prover": false,
+  "throughput_qualification": false,
+  "features": [
+    "default",
+    "block-v2-wide-lanes"
+  ],
+  "gpu": {
+    "opencl_index": 1,
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "pci": "0000:02:00.0",
+    "global_bytes": 16697327616,
+    "max_allocation_bytes": 4174331904,
+    "driver": "615.71.09"
+  },
+  "binary_sha256": "064865f38b89199fc4f7e0015a924816cae58473b76b6e68d246c6cb96f013ce",
+  "source_archive_sha256": "4d98aabe67ad829137ca70e4e4d5026c6f25108890610226840984f9ff4ed93f",
+  "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-proving-foundation-20261007/run-03",
+  "limits": {
+    "memory_max_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "runtime_max_seconds_per_service": 180
+  },
+  "checks": [
+    {
+      "name": "device",
+      "passed": true,
+      "tests": 2,
+      "log_sha256": "7b2c73462b63e2540796d5202d47d9002bae955f55bd7292811bf4ed1eca47b9"
+    },
+    {
+      "name": "hybrid-proof",
+      "passed": true,
+      "tests": 1,
+      "log_sha256": "684da806f121bd50833545d62461d37debde9da9f109d5d647574f7d97460709"
+    },
+    {
+      "name": "stage-ledger",
+      "passed": true,
+      "tests": 1,
+      "log_sha256": "ec3e6f75f5e2c75ece68c84849896892a58c19edea652a10a7cba25109f8074e"
+    }
+  ],
+  "limitations": [
+    "Device-owned fold/commit/fold is an experimental API; the main PCS still uses host matrices.",
+    "Lookup, quotient evaluation, trace construction, transcript and other proving arithmetic remain on CPU.",
+    "Stage observations are partial and explicitly report incomplete coverage.",
+    "No representative fresh delivered-throughput baseline or speedup measurement yet.",
+    "New operations have not been qualified on AMD OpenCL or Apple Metal."
+  ]
+}

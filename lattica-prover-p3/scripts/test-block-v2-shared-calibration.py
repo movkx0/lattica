@@ -110,6 +110,20 @@ class SharedCalibration(unittest.TestCase):
         kwargs.update(changes)
         return C.load(self.sources if sources is None else sources, **kwargs)
 
+    def test_partition_normalization_preserves_physical_coordinator_limit(self):
+        budget = S.read(self.sources[0]/'workers/gpu-01/budget.json')
+        physical = budget['host']['coordinator_bytes']
+        original = C.normalized_limits(S, budget)
+        budget['host'].update(coordinator_shared_bytes=128, coordinator_job_bytes=384)
+        normalized = C.normalized_limits(S, budget)
+        self.assertEqual(normalized, original)
+        self.assertEqual(normalized['host']['coordinator_bytes'], physical)
+        self.assertNotIn('coordinator_shared_bytes', normalized['host'])
+        self.assertNotIn('coordinator_job_bytes', normalized['host'])
+        self.assertEqual(budget['host']['coordinator_shared_bytes'], 128)
+        budget['host']['coordinator_bytes'] += 1
+        self.assertNotEqual(C.normalized_limits(S, budget), original)
+
     def test_complete_roots_supply_per_device_peaks_and_pins(self):
         calibrations, pins = self.load()
         self.assertEqual(set(calibrations), {'GPU-a', 'GPU-b'})

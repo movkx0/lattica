@@ -2,12 +2,14 @@
 //! process-lifetime lease compatible with legacy global-exclusive workers.
 use crate::block_v2::compute;
 use crate::config::Val;
+pub mod device;
 pub(crate) mod fri_fold;
 pub mod lde_execute;
 pub mod lde_plan;
 mod lde_readback;
 pub(crate) mod opening_reduce;
 pub(super) mod query_reconstruct;
+pub(crate) mod quotient;
 use compute::{Buffer, Event, ProQue, Queue};
 use p3_field::PrimeCharacteristicRing;
 use rayon::prelude::*;
@@ -232,6 +234,11 @@ fn plan_slots(
     })
 }
 
+mod memory;
+pub(crate) use memory::begin_memory_window;
+mod allocation_limit;
+pub(crate) mod host_storage;
+
 #[derive(Default, Debug, Clone, Copy)]
 struct Accounting {
     live: usize,
@@ -240,16 +247,21 @@ struct Accounting {
     retained_live: usize,
     retained_peak: usize,
     retained_trees: usize,
+    device_live: usize,
+    device_peak: usize,
+    device_buffers: usize,
+    memory_window: Option<memory::WindowState>,
 }
 
 struct Lease {
     bytes: usize,
     accounting: Arc<Mutex<Accounting>>,
     retained: bool,
+    device: bool,
 }
 impl Lease {
     fn mark_retained(&mut self) -> Result<(), String> {
-        if self.retained || self.bytes == 0 {
+        if self.retained || self.device || self.bytes == 0 {
             return Err("invalid retained allocation lease".into());
         }
         let mut a = self.accounting.lock().unwrap();
@@ -282,6 +294,10 @@ impl Drop for Lease {
             a.retained_live -= self.bytes;
             a.retained_trees -= 1;
         }
+        if self.device {
+            a.device_live -= self.bytes;
+            a.device_buffers -= 1;
+        }
     }
 }
 fn reserve(
@@ -297,10 +313,15 @@ fn reserve(
     a.live = next;
     a.peak = a.peak.max(next);
     a.allocations += 1;
+    if let Some(window) = &mut a.memory_window {
+        window.peak_bytes = window.peak_bytes.max(next);
+        window.max_new_allocation_bytes = window.max_new_allocation_bytes.max(bytes);
+    }
     Ok(Lease {
         bytes,
         accounting: accounting.clone(),
         retained: false,
+        device: false,
     })
 }
 // Drop the OpenCL handle before releasing its budget reservation. No public clones.
@@ -367,6 +388,9 @@ pub struct RetainedTree {
     _job_lease: Arc<JobLease>,
 }
 impl RetainedTree {
+    pub(crate) fn cached_host_backing(&self) -> Result<usize, String> {
+        super::cache_metadata::capacity::<[Val; 4]>(self.cap.capacity())
+    }
     pub(super) fn cap(&self) -> &[[Val; 4]] {
         &self.cap
     }
@@ -405,6 +429,9 @@ pub struct Snapshot {
     pub compress_kernel_ns: u128,
     pub hashing_wall_ns: u128,
     pub managed_live_bytes: usize,
+    pub device_matrix_live_bytes: usize,
+    pub device_matrix_peak_bytes: usize,
+    pub device_matrices: usize,
     pub managed_peak_bytes: usize,
     pub allocations: u64,
     pub staging_bytes: usize,
@@ -414,6 +441,8 @@ pub struct Snapshot {
     pub slot_wait_ns: u128,
     pub tiles: u64,
     pub lde_commits: u64,
+    pub lde_device_only_commits: u64,
+    pub lde_host_output_bytes: u64,
     pub lde_column_tiles: u64,
     pub lde_transform_ns: u128,
     pub lde_sponge_ns: u128,
@@ -563,6 +592,7 @@ impl DeviceTimeline {
         let duration = end.checked_sub(start).ok_or("nonmonotonic GPU timeline")?;
         if self.enabled {
             if self.events.len() < MAX_DEVICE_EVENTS {
+                host_storage::prepare_timeline(&mut self.events)?;
                 self.events.push(DeviceInterval { kind, start, end });
             } else {
                 self.dropped += 1;
@@ -603,9 +633,11 @@ struct Engine {
     pq: ProQue,
     copy_queue: Queue,
     mode: TransferMode,
+    device_selection: [Option<std::ffi::OsString>; 2],
     timeline: DeviceTimeline,
     limits: Limits,
     max_alloc: usize,
+    assigned_max_alloc: Option<usize>,
     constants: [Allocation; 4],
     // Each mapping is dropped before its allocation. ENGINE serializes all access.
     staging: Vec<Staging>,
@@ -697,6 +729,7 @@ fn job_lease() -> Result<JobLease, String> {
 fn job_lease() -> Result<JobLease, String> {
     if std::env::var_os("LATTICA_GPU_DEVICE_UUID").is_some()
         || std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_some()
+        || std::env::var_os("LATTICA_WALLET_WORKER_BUDGET").is_some()
     {
         return Err("adaptive multi-GPU budgets and UUID selection require Linux OpenCL".into());
     }
@@ -773,16 +806,32 @@ fn allocation(
     })
 }
 
-pub(super) fn initialize(limits: Limits) -> Result<(), String> {
+pub(super) fn initialize(limits: Limits) -> Result<bool, String> {
     let mode = if switch("LATTICA_V2_GPU_PIPELINE")? {
         TransferMode::Overlap
     } else {
         TransferMode::Serial
     };
-    initialize_mode(limits, mode)
+    initialize_mode_tracked(limits, mode)
 }
 
+#[cfg(test)]
 pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), String> {
+    initialize_mode_tracked(limits, mode).map(|_| ())
+}
+
+// True means this call created the engine; a failed later setup step may then
+// retire it without tearing down an engine borrowed from an earlier caller.
+fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, String> {
+    // An assignment can constrain tiling below the device's hardware limit.
+    // Read it before acquiring a lease or creating any context, and bind it
+    // to an existing engine just like its aggregate memory allowance.
+    let assigned_max_alloc = allocation_limit::from_env()?;
+    let device_selection = [
+        std::env::var_os("LATTICA_GPU_DEVICE_UUID"),
+        std::env::var_os("LATTICA_V2_GPU_DEVICE"),
+    ];
+    host_storage::check_selection(&device_selection)?;
     let retain_trees = switch("LATTICA_V2_GPU_RETAIN_TREES")?;
     let query_gather = switch("LATTICA_V2_GPU_QUERY_GATHER")?;
     let opening_denominator_cache = switch("LATTICA_V2_GPU_OPENING_DENOMINATOR_CACHE")?;
@@ -803,16 +852,18 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
             #[cfg(feature = "gpu-metal")]
             engine.pq.check_memory_mode()?;
             return if engine.limits == limits
+                && engine.assigned_max_alloc == assigned_max_alloc
                 && engine.mode == mode
+                && engine.device_selection == device_selection
                 && engine.retain_trees == retain_trees
                 && engine.query_gather == query_gather
                 && engine.opening_denominator_cache == opening_denominator_cache
                 && engine.lde_workspace_limit == lde_workspace_limit
                 && engine.fri_fold == fri_fold
             {
-                Ok(())
+                Ok(false)
             } else {
-                Err("GPU limits/mode cannot change after initialization".into())
+                Err("GPU device/limits/mode cannot change after initialization".into())
             };
         }
     }
@@ -836,6 +887,7 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
             }
             _ => return Err("GPU allocation limit unavailable".into()),
         };
+        let max_alloc = allocation_limit::effective(max_alloc, assigned_max_alloc);
         let global = match device
             .info(DeviceInfo::GlobalMemSize)
             .map_err(|e| e.to_string())?
@@ -861,15 +913,41 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
         let pq = ProQue::builder()
             .platform(platform)
             .device(device)
-            .src(format!(
-                "{}\n{}\n{}\n{}\n{}\n{}",
-                crate::gpu::KERNEL_SRC,
-                RETAINED_PATH_KERNEL,
-                lde_execute::KERNEL_SRC,
-                opening_reduce::KERNEL_SRC,
-                fri_fold::KERNEL_SRC,
-                query_reconstruct::KERNEL_SRC
-            ))
+            .src(
+                [
+                    crate::gpu::KERNEL_SRC,
+                    RETAINED_PATH_KERNEL,
+                    lde_execute::KERNEL_SRC,
+                    opening_reduce::KERNEL_SRC,
+                    fri_fold::KERNEL_SRC,
+                    query_reconstruct::KERNEL_SRC,
+                    device::TRANSFORM_KERNEL_SRC,
+                    device::QUOTIENT_KERNEL_SRC,
+                    device::QUOTIENT_COMMIT_KERNEL_SRC,
+                    device::LOOKUP_KERNEL_SRC,
+                    device::OPENING_KERNEL_SRC,
+                    device::QUADRATIC_OPENING_KERNEL_SRC,
+                    quotient::KERNEL_SRC,
+                    device::FRI_KERNEL_SRC,
+                    device::GENERAL_FRI_KERNEL_SRC,
+                    device::QUERY_KERNEL_SRC,
+                    device::TRACE_COMMIT_KERNEL_SRC,
+                    device::STORAGE_KERNEL_SRC,
+                    device::WITNESS_KERNEL_SRC,
+                    device::WALLET_KERNEL_SRC,
+                    device::WALLET_BATCH_KERNEL_SRC,
+                    device::PERIODIC_KERNEL_SRC,
+                    device::HTLC_KERNEL_SRC,
+                    device::RANDOM_KERNEL_SRC,
+                    device::TRANSCRIPT_KERNEL_SRC,
+                    device::SCALARS_KERNEL_SRC,
+                    device::COMPILER_CONSTANTS_KERNEL_SRC,
+                    device::COMPILER_FOLDING_KERNEL_SRC,
+                    device::PUBLIC_HASH_KERNEL_SRC,
+                    device::EVALUATIONS_KERNEL_SRC,
+                ]
+                .join("\n"),
+            )
             .queue_properties(compute::flags::QUEUE_PROFILING_ENABLE)
             .dims(1)
             .build()
@@ -890,7 +968,7 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
             return Err("Metal currently requires GPU_PIPELINE=0".into());
         }
         let pq = compute::ProQue::new(index, limits.managed_bytes)?;
-        let max_alloc = pq.max_buffer_length();
+        let max_alloc = allocation_limit::effective(pq.max_buffer_length(), assigned_max_alloc);
         let global = pq.recommended_working_set();
         if limits
             .managed_bytes
@@ -936,6 +1014,9 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
     let copy_queue = pq.queue().clone();
     let timeline_enabled = switch("LATTICA_PROFILE_TIMELINE")?;
     let mut staging = Vec::new();
+    staging
+        .try_reserve_exact(mode.slots())
+        .map_err(|_| "GPU staging metadata allocation failed")?;
     for _ in 0..mode.slots() {
         let a = allocation(
             &pq,
@@ -979,6 +1060,7 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
         pq,
         copy_queue,
         mode,
+        device_selection,
         timeline: DeviceTimeline {
             enabled: timeline_enabled,
             events: Vec::new(),
@@ -991,6 +1073,7 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
         },
         limits,
         max_alloc,
+        assigned_max_alloc,
         constants: constants.try_into().ok().unwrap(),
         staging,
         workspace: None,
@@ -1039,11 +1122,13 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
         injected_event: None,
         _job_lease: Arc::new(lease),
     };
+    #[cfg(feature = "gpu")]
+    host_storage::admit(&engine)?;
     *ENGINE
         .get_or_init(|| Mutex::new(None))
         .lock()
         .map_err(|_| "GPU engine poisoned")? = Some(engine);
-    Ok(())
+    Ok(true)
 }
 
 pub(super) fn preflight(height: usize, width: usize) -> Result<(), String> {
@@ -1075,6 +1160,59 @@ pub(crate) fn plan_retained_lde_commit(
     host_output_budget_bytes: usize,
     retention_bits: usize,
 ) -> Result<lde_plan::LdeCommitPlan, String> {
+    plan_retained_lde_commit_owned(
+        inputs,
+        cap_height,
+        host_output_budget_bytes,
+        retention_bits,
+        false,
+    )
+}
+
+pub(crate) fn plan_retained_lde_commit_owned(
+    inputs: &[lde_plan::InputShape],
+    cap_height: usize,
+    host_output_budget_bytes: usize,
+    retention_bits: usize,
+    capture: bool,
+) -> Result<lde_plan::LdeCommitPlan, String> {
+    plan_retained_lde_commit_extra(
+        inputs,
+        cap_height,
+        host_output_budget_bytes,
+        retention_bits,
+        capture.then_some(0),
+        &[],
+    )
+}
+
+pub(crate) fn plan_retained_lde_commit_extra(
+    inputs: &[lde_plan::InputShape],
+    cap_height: usize,
+    host_output_budget_bytes: usize,
+    retention_bits: usize,
+    capture: Option<usize>,
+    extra_allocations: &[usize],
+) -> Result<lde_plan::LdeCommitPlan, String> {
+    plan_lde_commit_storage(
+        inputs,
+        cap_height,
+        host_output_budget_bytes,
+        lde_plan::LdeRetention::HostPrefix(retention_bits),
+        capture,
+        extra_allocations,
+    )
+}
+
+pub(crate) fn plan_lde_commit_storage(
+    inputs: &[lde_plan::InputShape],
+    cap_height: usize,
+    host_output_budget_bytes: usize,
+    retention: lde_plan::LdeRetention,
+    capture: Option<usize>,
+    extra_allocations: &[usize],
+) -> Result<lde_plan::LdeCommitPlan, String> {
+    validate_device_retention(inputs, retention, capture)?;
     let guard = ENGINE
         .get()
         .ok_or("GPU hashing was not initialized")?
@@ -1090,18 +1228,101 @@ pub(crate) fn plan_retained_lde_commit(
         .map_err(|_| "GPU accounting poisoned")?
         .live;
     let old_workspace = engine.workspace.as_ref().map_or(0, Workspace::bytes);
-    lde_plan::LdeCommitPlan::new_retained_with_layout(
+    let capture_bytes = if let Some(degree_bits) = capture {
+        device_capture_bytes(
+            &device_capture_shapes(inputs, degree_bits)?,
+            engine.max_alloc,
+        )?
+    } else {
+        0
+    };
+    let additional = extra_allocations
+        .iter()
+        .try_fold(capture_bytes, |total, bytes| {
+            if *bytes > engine.max_alloc {
+                return Err("LDE auxiliary allocation exceeds device limit".to_owned());
+            }
+            total
+                .checked_add(*bytes)
+                .ok_or_else(|| "LDE auxiliary allocation overflow".to_owned())
+        })?;
+    let mut plan = lde_plan::LdeCommitPlan::new_with_retention(
         inputs,
         cap_height,
         engine.limits,
         engine.max_alloc,
         engine.mode.slots(),
-        live,
+        live.checked_add(additional)
+            .ok_or("owned LDE capture budget overflow")?,
         old_workspace,
         host_output_budget_bytes,
-        retention_bits,
+        retention,
         lde_readback::ReadbackLayout::from_env()?,
-    )
+    )?;
+    plan.device_output_bytes = capture_bytes;
+    Ok(plan)
+}
+
+fn validate_device_retention(
+    inputs: &[lde_plan::InputShape],
+    retention: lde_plan::LdeRetention,
+    capture: Option<usize>,
+) -> Result<(), String> {
+    if retention == lde_plan::LdeRetention::DeviceOnly {
+        let degree_bits = capture.ok_or("device-only PCS requires owned prefix capture")?;
+        if !cfg!(feature = "gpu")
+            || degree_bits > 1
+            || inputs
+                .iter()
+                .any(|s| s.added_bits != crate::block_v2::profile::LOG_BLOWUP + degree_bits)
+        {
+            return Err("device-only PCS requires the fixed OpenCL capture profile".into());
+        }
+    }
+    Ok(())
+}
+
+/// Hiding masks double the degree while preserving the full committed height.
+/// Capture geometry must describe that degree, not the pre-mask transform input.
+fn device_capture_shapes(
+    inputs: &[lde_plan::InputShape],
+    degree_bits: usize,
+) -> Result<Vec<lde_plan::InputShape>, String> {
+    if degree_bits > 1 {
+        return Err("unsupported device capture degree expansion".into());
+    }
+    inputs
+        .iter()
+        .map(|shape| {
+            Ok(lde_plan::InputShape {
+                height: shape
+                    .height
+                    .checked_mul(1 << degree_bits)
+                    .ok_or("device capture degree overflow")?,
+                width: shape.width,
+                added_bits: shape
+                    .added_bits
+                    .checked_sub(degree_bits)
+                    .ok_or("device capture degree exceeds commitment height")?,
+            })
+        })
+        .collect()
+}
+
+fn device_capture_bytes(
+    inputs: &[lde_plan::InputShape],
+    max_alloc: usize,
+) -> Result<usize, String> {
+    device::capture_specs(inputs)?
+        .iter()
+        .try_fold(0usize, |total, spec| {
+            if spec.bytes() > max_alloc {
+                return Err("owned LDE prefix exceeds the allocation limit".into());
+            }
+            total
+                .checked_add(spec.bytes())
+                .ok_or_else(|| "owned LDE prefix size overflow".into())
+        })
 }
 
 pub(super) fn retention_enabled() -> Result<bool, String> {
@@ -1466,17 +1687,23 @@ impl Engine {
                 compute::flags::MEM_READ_WRITE,
             )
         };
-        self.workspace = Some(Workspace {
+        let workspace = Workspace {
             input: (0..self.mode.slots())
                 .map(|_| alloc(p.input))
                 .collect::<Result<Vec<_>, _>>()?,
             a: alloc(p.leaves)?,
             b: alloc(p.parents)?,
-        });
+        };
+        #[cfg(feature = "gpu")]
+        host_storage::check_workspace(&workspace, self.mode.slots())?;
+        self.workspace = Some(workspace);
         let a = self.accounting.lock().unwrap();
         debug_assert_eq!(
             a.live,
-            p.bytes + a.retained_live + self.query.as_ref().map_or(0, |q| q.buffer.len() * 8)
+            p.bytes
+                + a.retained_live
+                + a.device_live
+                + self.query.as_ref().map_or(0, |q| q.buffer.len() * 8)
         );
         Ok(())
     }
@@ -1789,6 +2016,9 @@ impl Engine {
         let a = self.accounting.lock().unwrap();
         Snapshot {
             managed_live_bytes: a.live,
+            device_matrix_live_bytes: a.device_live,
+            device_matrix_peak_bytes: a.device_peak,
+            device_matrices: a.device_buffers,
             managed_peak_bytes: a.peak,
             allocations: a.allocations,
             staging_bytes: self.limits.staging_bytes,
@@ -1885,7 +2115,7 @@ pub fn report(label: &str) -> Option<Snapshot> {
         s.tiles
     );
     println!(
-        "bounded_gpu_lde_checkpoint label={label:?} counters=cumulative commits={} column_tiles={} transform_device_ns={} sponge_device_ns={} wall_ns={} host_reorder_ns={} host_reordered_bytes={} host_workspace_peak_bytes={}",
+        "bounded_gpu_lde_checkpoint label={label:?} counters=cumulative commits={} column_tiles={} transform_device_ns={} sponge_device_ns={} wall_ns={} host_reorder_ns={} host_reordered_bytes={} host_workspace_peak_bytes={} device_only_commits={} host_output_bytes={}",
         s.lde_commits,
         s.lde_column_tiles,
         s.lde_transform_ns,
@@ -1893,7 +2123,9 @@ pub fn report(label: &str) -> Option<Snapshot> {
         s.lde_wall_ns,
         s.lde_host_reorder_ns,
         s.lde_host_reordered_bytes,
-        s.lde_host_workspace_peak_bytes
+        s.lde_host_workspace_peak_bytes,
+        s.lde_device_only_commits,
+        s.lde_host_output_bytes
     );
     println!(
         "bounded_gpu_quotient_checkpoint label={label:?} counters=cumulative commits={} mask_ns={}",
@@ -1937,8 +2169,10 @@ pub fn report(label: &str) -> Option<Snapshot> {
     );
     println!(
         "bounded_gpu_opening_denominator_cache_checkpoint label={label:?} counters=cumulative enabled={} calls={} saved_upload_bytes={} peak_bytes={} skipped_groups={}",
-        e.opening_denominator_cache, s.opening_denominator_cache_calls,
-        s.opening_denominator_cache_saved_bytes, s.opening_denominator_cache_peak_bytes,
+        e.opening_denominator_cache,
+        s.opening_denominator_cache_calls,
+        s.opening_denominator_cache_saved_bytes,
+        s.opening_denominator_cache_peak_bytes,
         s.opening_denominator_cache_skipped_groups
     );
     println!(
@@ -1992,6 +2226,8 @@ pub fn drain() -> Result<(), String> {
     let engine = slot.as_mut().ok_or("GPU drain requires a live engine")?;
     engine.fence().finish()?;
     engine.resolve_timing()?;
+    #[cfg(feature = "gpu")]
+    host_storage::admit(engine)?;
     Ok(())
 }
 
@@ -2007,7 +2243,9 @@ pub fn shutdown() -> Result<(), String> {
     if let Some(engine) = slot.as_mut() {
         engine.resolve_timing()?;
         if Arc::strong_count(&engine._job_lease) != 1 {
-            return Err("GPU shutdown refused: retained Merkle trees are still live".into());
+            return Err(
+                "GPU shutdown refused: retained trees or device sessions are still live".into(),
+            );
         }
         engine.fence().finish()?;
     }
@@ -2045,7 +2283,7 @@ pub(super) fn test_transfer_modes() -> Vec<TransferMode> {
     }
 }
 #[cfg(test)]
-pub(super) struct TestShutdownGuard;
+pub(crate) struct TestShutdownGuard;
 #[cfg(test)]
 impl Drop for TestShutdownGuard {
     fn drop(&mut self) {
@@ -2958,7 +3196,9 @@ impl Engine {
     /// used to estimate context overhead.
     pub(super) fn context_checkpoint(&mut self, label: &str) -> Result<(), String> {
         self.resolve_timing()?;
-        if std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_none() {
+        if std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_none()
+            && std::env::var_os("LATTICA_WALLET_WORKER_BUDGET").is_none()
+        {
             return Ok(());
         }
         self.fence().finish()?;

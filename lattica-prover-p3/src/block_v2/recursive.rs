@@ -18,10 +18,24 @@ use super::{
     commitment::{self, Context, Entry, Kind, NodeSummary},
     leaf::ContextJoinSplitAir,
     profile::{self, Config},
+    statements,
 };
 use crate::joinsplit_air as js;
 
 pub type Error = Box<dyn std::error::Error>;
+#[path = "recursive_checked_registry.rs"]
+mod checked_registry;
+pub(crate) use checked_registry::CheckedRegistryRef;
+#[cfg(all(test, feature = "stream", feature = "gpu"))]
+#[path = "recursive_gpu_budget_tests.rs"]
+mod gpu_budget_tests;
+#[cfg(all(test, feature = "stream"))]
+#[path = "recursive_startup_tests.rs"]
+mod startup_tests;
+#[path = "recursive_storage.rs"]
+pub(crate) mod storage;
+#[path = "wallet_verification.rs"]
+pub(crate) mod verification;
 pub const DEMO_CHAIN: [u8; 32] = [0x5a; 32];
 
 #[derive(Serialize, Deserialize)]
@@ -36,24 +50,15 @@ pub fn verify_wallet(wallet: &WalletProof) -> Result<(), Error> {
     if wallet.public.len() != js::N_PUBLIC {
         return Err("wallet public shape".into());
     }
-    // The artifact stores the transaction statement and chain separately. The
-    // proved statement also includes the candidate profile and chain limbs.
-    let mut inner = wallet.public.clone();
-    inner.extend(
-        Context {
-            profile_id: profile::CANDIDATE_PROFILE_ID,
-            chain_id: wallet.chain,
-        }
-        .to_fields()
-        .map(Val::from_u64),
-    );
+    let inputs = verification::inputs(wallet, false)?;
+    let config = profile::verification::make_config()?;
     p3_uni_stark::verify(
-        &profile::make_config(),
-        &ContextJoinSplitAir,
+        &config,
+        &verification::air::join_split(),
         &wallet.proof,
-        &inner,
+        inputs.public(),
     )
-    .map_err(|e| format!("wallet verification: {e:?}").into())
+    .map_err(|e| verification::error("wallet verification", &e))
 }
 
 #[cfg(test)]
@@ -88,6 +93,21 @@ pub struct NodeProof {
 }
 
 impl Registry {
+    pub const STORAGE_LIMIT_BYTES: usize = storage::REGISTRY_HOST_BYTES;
+
+    /// Owned cap backing, including spare capacity; the ceiling includes self.
+    pub fn storage_bytes(&self) -> Result<usize, Error> {
+        storage::registry_backing(self)
+    }
+
+    pub(crate) fn bounded_id(&self) -> Result<[u8; 32], Error> {
+        self.storage_bytes()?;
+        Ok(programs::registry_setup::profile_id(
+            self.height,
+            &self.caps,
+        )?)
+    }
+
     pub fn id(&self) -> Result<[u8; 32], Error> {
         Ok(programs::profile_id(self.height, &self.caps)?)
     }
@@ -98,6 +118,13 @@ impl Registry {
         mode: u64,
     ) -> Result<RegisteredVerifier, Error> {
         if self.id()? != expected_profile || !(1..=3).contains(&mode) {
+            return Err("unapproved registry/mode".into());
+        }
+        self.verifier_from_cap(mode)
+    }
+
+    fn verifier_from_cap(&self, mode: u64) -> Result<RegisteredVerifier, Error> {
+        if !(1..=3).contains(&mode) {
             return Err("unapproved registry/mode".into());
         }
         Ok(RegisteredVerifier::from_trusted_cap(
@@ -114,20 +141,28 @@ impl Registry {
         node: &NodeProof,
         expected: &[Val; PUBLIC_VALUES],
     ) -> Result<(), Error> {
-        if &node.public != expected {
-            return Err("unexpected recursive statement".into());
-        }
-        let summary = summary(expected)?;
-        if summary.context.profile_id != expected_profile {
-            return Err("unexpected profile".into());
-        }
-        self.verifier(
-            expected_profile,
-            expected[programs::MODE].as_canonical_u64(),
-        )?
+        verify_with_verifier(expected_profile, node, expected, |mode| {
+            self.verifier(expected_profile, mode)
+        })
+    }
+}
+
+fn verify_with_verifier(
+    expected_profile: [u8; 32],
+    node: &NodeProof,
+    expected: &[Val; PUBLIC_VALUES],
+    verifier: impl FnOnce(u64) -> Result<RegisteredVerifier, Error>,
+) -> Result<(), Error> {
+    if &node.public != expected {
+        return Err("unexpected recursive statement".into());
+    }
+    let summary = summary(expected)?;
+    if summary.context.profile_id != expected_profile {
+        return Err("unexpected profile".into());
+    }
+    verifier(expected[programs::MODE].as_canonical_u64())?
         .verify(&node.proof, expected)
         .map_err(|e| e.into())
-    }
 }
 
 pub fn summary(public: &[Val; PUBLIC_VALUES]) -> Result<NodeSummary, Error> {
@@ -138,29 +173,46 @@ pub(crate) fn summary_with_modes(
     public: &[Val; PUBLIC_VALUES],
     modes: u64,
 ) -> Result<NodeSummary, Error> {
-    let mut context_bytes = [0; 64];
-    for (chunk, value) in context_bytes.chunks_exact_mut(4).zip(&public[..16]) {
-        let value =
-            u32::try_from(value.as_canonical_u64()).map_err(|_| "noncanonical context limb")?;
-        chunk.copy_from_slice(&value.to_le_bytes());
+    let node = decode_summary(public, modes)?;
+    commitment::validate_summary(node)?;
+    Ok(node)
+}
+
+/// Metadata decoding only. Callers must validate the canonical empty root using
+/// their explicitly selected hashing backend before relying on the summary.
+pub(crate) fn decode_summary(
+    public: &[Val; PUBLIC_VALUES],
+    modes: u64,
+) -> Result<NodeSummary, Error> {
+    let words = public.map(|value| value.as_canonical_u64());
+    if words[..16].iter().any(|&value| value > u32::MAX as u64) {
+        return Err("noncanonical context limb".into());
     }
-    let mode = public[programs::MODE].as_canonical_u64();
-    let level = public[programs::LEVEL].as_canonical_u64();
-    let count = public[programs::COUNT].as_canonical_u64();
-    if !(1..=modes).contains(&mode) || level > 6 || count > 1 << level {
+    let mode = words[programs::MODE];
+    let level = words[programs::LEVEL];
+    let count = words[programs::COUNT];
+    if !(1..=modes).contains(&mode) || level > u64::from(commitment::DEPTH) || count > 1 << level {
         return Err("node metadata range".into());
     }
-    let node = NodeSummary {
+    Ok(summary_from_validated_words(&words))
+}
+
+/// Byte encoding only. The caller must have validated the context limbs,
+/// mode, level, count and canonical root using the selected backend first.
+pub(super) fn summary_from_validated_words(words: &[u64; PUBLIC_VALUES]) -> NodeSummary {
+    let mut context_bytes = [0; 64];
+    for (chunk, &value) in context_bytes.chunks_exact_mut(4).zip(&words[..16]) {
+        chunk.copy_from_slice(&(value as u32).to_le_bytes());
+    }
+    NodeSummary {
         context: Context {
             profile_id: context_bytes[..32].try_into().unwrap(),
             chain_id: context_bytes[32..].try_into().unwrap(),
         },
-        level: level as u8,
-        count: count as u8,
-        root: core::array::from_fn(|i| public[programs::ROOT + i].as_canonical_u64()),
-    };
-    commitment::validate_summary(node)?;
-    Ok(node)
+        level: words[programs::LEVEL] as u8,
+        count: words[programs::COUNT] as u8,
+        root: core::array::from_fn(|i| words[programs::ROOT + i]),
+    }
 }
 
 fn blank_caps() -> Caps {
@@ -172,18 +224,33 @@ pub fn compile_registration(
     mode: u64,
     wallet: Option<&WalletProof>,
 ) -> Result<Compiled, Error> {
+    compile_registration_with_registry(height, mode, wallet, None)
+}
+
+fn compile_registration_with_registry(
+    height: usize,
+    mode: u64,
+    wallet: Option<&WalletProof>,
+    prefix: Option<&programs::RegistryPrefix>,
+) -> Result<Compiled, Error> {
     let caps = blank_caps();
     Ok(match mode {
         programs::WRAPPER => {
             let wallet = wallet.ok_or("wrapper template requires a wallet proof")?;
-            programs::wrapper(height, &caps, &wallet.public, &wallet.proof)?
+            programs::wrapper_with_registry(height, &caps, &wallet.public, &wallet.proof, prefix)?
         }
-        programs::EMPTY => programs::empty(height, &caps)?,
+        programs::EMPTY => programs::empty_with_registry(height, &caps, prefix)?,
         programs::MERGE => {
             let air = programs::shape(height)?;
             let proof = template::batch(&air)?;
             let public = [Val::ZERO; PUBLIC_VALUES];
-            programs::merge(height, &caps, [&public, &public], [&proof, &proof])?
+            programs::merge_with_registry(
+                height,
+                &caps,
+                [&public, &public],
+                [&proof, &proof],
+                prefix,
+            )?
         }
         _ => return Err("unknown program mode".into()),
     })
@@ -221,7 +288,9 @@ pub fn register(
     mode: u64,
     wallet: Option<&WalletProof>,
 ) -> Result<Vec<[Val; 4]>, Error> {
-    let compiled = compile_registration(height, mode, wallet)?;
+    let compiled = statements::compile(height, 3, |prefix| {
+        compile_registration_with_registry(height, mode, wallet, Some(prefix))
+    })?;
     let air = MachineAir::new(
         compiled
             .program
@@ -253,18 +322,34 @@ pub struct CacheStats {
 pub struct ProverSession {
     registry: Registry,
     expected_profile: [u8; 32],
+    worker_memory_bytes: u64,
     cached: Option<CachedProgram>,
     stats: CacheStats,
 }
 
 impl ProverSession {
     pub fn new(registry: Registry, expected_profile: [u8; 32]) -> Result<Self, Error> {
-        if registry.id()? != expected_profile {
+        Self::new_with_memory_budget(
+            registry,
+            expected_profile,
+            super::feasibility::RAM_BUDGET_BYTES,
+        )
+    }
+
+    pub fn new_with_memory_budget(
+        registry: Registry,
+        expected_profile: [u8; 32],
+        worker_memory_bytes: u64,
+    ) -> Result<Self, Error> {
+        storage::admit_session(&registry)?;
+        storage::admit_startup(worker_memory_bytes)?;
+        if registry.bounded_id()? != expected_profile {
             return Err("unapproved prover-session registry".into());
         }
         Ok(Self {
             registry,
             expected_profile,
+            worker_memory_bytes,
             cached: None,
             stats: CacheStats::default(),
         })
@@ -274,19 +359,27 @@ impl ProverSession {
         self.stats
     }
 
+    pub fn memory_budget_bytes(&self) -> u64 {
+        self.worker_memory_bytes
+    }
+
     pub fn clear(&mut self) {
         self.cached = None;
     }
 
     fn prove(
         &mut self,
+        run: &crate::proving::Run,
         mode: u64,
         compiled: Compiled,
         public: [Val; PUBLIC_VALUES],
     ) -> Result<NodeProof, Error> {
         if !(1..=3).contains(&mode)
             || public[programs::MODE] != Val::from_u64(mode)
-            || summary(&public)?.context.profile_id != self.expected_profile
+            || statements::derive_in(run, "statement_check", |hash| hash.summary(&public, 3))?
+                .context
+                .profile_id
+                != self.expected_profile
         {
             return Err("prover-session statement/profile/mode".into());
         }
@@ -307,6 +400,11 @@ impl ProverSession {
                 return Err("cached program differs from compiled program".into());
             }
             self.stats.hits += 1;
+            self.cached
+                .as_ref()
+                .unwrap()
+                .registered
+                .reuse_preprocessing(run)?;
             drop(program);
         } else {
             // Drop a previous mode BEFORE allocating a new preprocessing LDE.
@@ -316,8 +414,16 @@ impl ProverSession {
                 self.registry.height,
                 program.active_rows()
             );
-            let registered =
-                RegisteredProgram::new(MachineAir::new(program)).map_err(|e| format!("{e:?}"))?;
+            let registered = RegisteredProgram::new_in_run(
+                MachineAir::new(program),
+                storage::active_memory_bytes(self.worker_memory_bytes)?,
+                run.child(
+                    "preprocessing",
+                    "block_v2_preprocessing",
+                    profile::preprocessing_capabilities(),
+                )?,
+            )
+            .map_err(|e| format!("{e:?}"))?;
             if registered.preprocessing_cap().roots() != self.registry.caps[(mode - 1) as usize] {
                 return Err("compiled program differs from registered key".into());
             }
@@ -332,7 +438,15 @@ impl ProverSession {
         let registered = &self.cached.as_ref().unwrap().registered;
         // RegisteredProgram::prove constructs fresh salt/hiding RNGs per call.
         let proof = registered
-            .prove(&public, &witness)
+            .prove_in_run(
+                &public,
+                &witness,
+                run.child(
+                    "proof",
+                    "block_v2_registered_program",
+                    profile::registered_proof_capabilities(),
+                )?,
+            )
             .map_err(|e| format!("{e:?}"))?;
         tracing::info_span!(target: "lattica_block_v2_perf", "native verification")
             .in_scope(|| registered.verifier().verify(&proof, &public))?;
@@ -349,67 +463,122 @@ impl ProverSession {
     }
 
     pub fn wrap(&mut self, wallet: &WalletProof) -> Result<NodeProof, Error> {
-        let node = wallet_summary(&self.registry, wallet)?;
-        let compiled = tracing::info_span!(target: "lattica_block_v2_perf", "wrapper compilation")
-            .in_scope(|| {
-                programs::wrapper(
-                    self.registry.height,
-                    &self.registry.caps,
-                    &wallet.public,
-                    &wallet.proof,
-                )
+        crate::block_v2::statements::request("block_v2_recursive_wrap", |run| {
+            let node = statements::derive_in(run, "statement", |hash| {
+                proving_wallet_summary(hash, self.expected_profile, wallet)
             })?;
-        self.prove(
-            programs::WRAPPER,
-            compiled,
-            programs::statement(node, programs::WRAPPER),
-        )
+            let compiled =
+                tracing::info_span!(target: "lattica_block_v2_perf", "wrapper compilation")
+                    .in_scope(|| {
+                        statements::compile_in(run, self.registry.height, 3, |prefix| {
+                            Ok(programs::wrapper_with_registry(
+                                self.registry.height,
+                                &self.registry.caps,
+                                &wallet.public,
+                                &wallet.proof,
+                                Some(prefix),
+                            )?)
+                        })
+                    })?;
+            self.prove(
+                run,
+                programs::WRAPPER,
+                compiled,
+                programs::statement(node, programs::WRAPPER),
+            )
+        })
     }
 
     pub fn empty(&mut self, chain: [u8; 32], level: u8) -> Result<NodeProof, Error> {
-        let node = commitment::empty_subtree(
-            Context {
-                profile_id: self.expected_profile,
-                chain_id: chain,
-            },
-            level,
-        )?;
-        let compiled = programs::empty(self.registry.height, &self.registry.caps)?;
-        self.prove(
-            programs::EMPTY,
-            compiled,
-            programs::statement(node, programs::EMPTY),
-        )
+        crate::block_v2::statements::request("block_v2_recursive_empty", |run| {
+            let node = statements::derive_in(run, "statement", |hash| {
+                hash.empty(
+                    Context {
+                        profile_id: self.expected_profile,
+                        chain_id: chain,
+                    },
+                    level,
+                )
+            })?;
+            let compiled = statements::compile_in(run, self.registry.height, 3, |prefix| {
+                Ok(programs::empty_with_registry(
+                    self.registry.height,
+                    &self.registry.caps,
+                    Some(prefix),
+                )?)
+            })?;
+            self.prove(
+                run,
+                programs::EMPTY,
+                compiled,
+                programs::statement(node, programs::EMPTY),
+            )
+        })
     }
 
     pub fn merge(&mut self, left: &NodeProof, right: &NodeProof) -> Result<NodeProof, Error> {
-        tracing::info_span!(target: "lattica_block_v2_perf", "child verification").in_scope(
-            || {
-                self.registry
-                    .verify(self.expected_profile, left, &left.public)?;
-                self.registry
-                    .verify(self.expected_profile, right, &right.public)
-            },
-        )?;
-        let node = commitment::merge_nodes(summary(&left.public)?, summary(&right.public)?)?;
-        let compiled = tracing::info_span!(target: "lattica_block_v2_perf", "merge compilation")
-            .in_scope(|| {
-                programs::merge(
-                    self.registry.height,
-                    &self.registry.caps,
-                    [&left.public, &right.public],
-                    [&left.proof, &right.proof],
-                )
+        crate::block_v2::statements::request("block_v2_recursive_merge", |run| {
+            tracing::info_span!(target: "lattica_block_v2_perf", "child verification").in_scope(
+                || {
+                    let registry = self.registry_approval();
+                    registry.verify(left, &left.public)?;
+                    registry.verify(right, &right.public)
+                },
+            )?;
+            let node = statements::derive_in(run, "statement", |hash| {
+                let left = hash.summary(&left.public, 3)?;
+                let right = hash.summary(&right.public, 3)?;
+                hash.merge(left, right)
             })?;
-        self.prove(
-            programs::MERGE,
-            compiled,
-            programs::statement(node, programs::MERGE),
-        )
+            let compiled =
+                tracing::info_span!(target: "lattica_block_v2_perf", "merge compilation")
+                    .in_scope(|| {
+                        statements::compile_in(run, self.registry.height, 3, |prefix| {
+                            Ok(programs::merge_with_registry(
+                                self.registry.height,
+                                &self.registry.caps,
+                                [&left.public, &right.public],
+                                [&left.proof, &right.proof],
+                                Some(prefix),
+                            )?)
+                        })
+                    })?;
+            self.prove(
+                run,
+                programs::MERGE,
+                compiled,
+                programs::statement(node, programs::MERGE),
+            )
+        })
     }
 }
 
+fn proving_wallet_summary(
+    hash: &mut statements::Derivation<'_>,
+    expected_profile: [u8; 32],
+    wallet: &WalletProof,
+) -> Result<NodeSummary, Error> {
+    if wallet.public.len() != js::N_PUBLIC {
+        return Err("wallet public shape".into());
+    }
+    hash.leaf(
+        Context {
+            profile_id: expected_profile,
+            chain_id: wallet.chain,
+        },
+        Kind::JoinSplit,
+        &wallet.public,
+    )
+}
+
 pub fn wallet_summary(registry: &Registry, wallet: &WalletProof) -> Result<NodeSummary, Error> {
+    wallet_summary_with_profile(wallet, || registry.id())
+}
+
+fn wallet_summary_with_profile(
+    wallet: &WalletProof,
+    identity: impl FnOnce() -> Result<[u8; 32], Error>,
+) -> Result<NodeSummary, Error> {
     if wallet.public.len() != js::N_PUBLIC {
         return Err("wallet public shape".into());
     }
@@ -420,7 +589,7 @@ pub fn wallet_summary(registry: &Registry, wallet: &WalletProof) -> Result<NodeS
     };
     Ok(commitment::leaf(
         Context {
-            profile_id: registry.id()?,
+            profile_id: identity()?,
             chain_id: wallet.chain,
         },
         entry,
@@ -429,15 +598,18 @@ pub fn wallet_summary(registry: &Registry, wallet: &WalletProof) -> Result<NodeS
 
 pub fn wrap(registry: &Registry, wallet: &WalletProof) -> Result<NodeProof, Error> {
     // One-shot research helper: its caller already supplies a trusted registry.
-    ProverSession::new(registry.clone(), registry.id()?)?.wrap(wallet)
+    ProverSession::from_borrowed_registry(registry, super::feasibility::RAM_BUDGET_BYTES)?
+        .wrap(wallet)
 }
 
 pub fn empty(registry: &Registry, chain: [u8; 32], level: u8) -> Result<NodeProof, Error> {
-    ProverSession::new(registry.clone(), registry.id()?)?.empty(chain, level)
+    ProverSession::from_borrowed_registry(registry, super::feasibility::RAM_BUDGET_BYTES)?
+        .empty(chain, level)
 }
 
 pub fn merge(registry: &Registry, left: &NodeProof, right: &NodeProof) -> Result<NodeProof, Error> {
-    ProverSession::new(registry.clone(), registry.id()?)?.merge(left, right)
+    ProverSession::from_borrowed_registry(registry, super::feasibility::RAM_BUDGET_BYTES)?
+        .merge(left, right)
 }
 
 #[cfg(test)]
@@ -481,7 +653,15 @@ mod session_tests {
                 .unwrap(),
             witness: Vec::new(),
         };
-        assert!(session.prove(programs::EMPTY, wrong, first.public).is_err());
+        assert!(
+            statements::request("invalid_cached_program", |run| session.prove(
+                run,
+                programs::EMPTY,
+                wrong,
+                first.public
+            ))
+            .is_err()
+        );
         assert_eq!(session.stats(), CacheStats { setups: 1, hits: 1 });
         session.clear();
         assert!(session.cached.is_none());
@@ -523,7 +703,15 @@ mod session_tests {
         let compiled = programs::empty(registry.height, &registry.caps).unwrap();
         let mut public = empty.public;
         public[programs::MODE] = Val::from_u64(programs::WRAPPER);
-        assert!(session.prove(programs::WRAPPER, compiled, public).is_err());
+        assert!(
+            statements::request("invalid_cached_profile", |run| session.prove(
+                run,
+                programs::WRAPPER,
+                compiled,
+                public
+            ))
+            .is_err()
+        );
         assert!(session.cached.is_none());
         assert_eq!(session.stats(), CacheStats { setups: 1, hits: 0 });
         registry.verify(pin, &empty, &empty.public).unwrap();
@@ -634,19 +822,30 @@ impl WrapperConstruction {
         mode: u64,
         wallet: Option<&WalletProof>,
     ) -> Result<Compiled, Error> {
+        self.compile_registration_with_registry(height, mode, wallet, None)
+    }
+
+    fn compile_registration_with_registry(
+        self,
+        height: usize,
+        mode: u64,
+        wallet: Option<&WalletProof>,
+        prefix: Option<&programs::RegistryPrefix>,
+    ) -> Result<Compiled, Error> {
         match (self, mode) {
             (Self::GroupedPair, programs::WRAPPER) => {
                 let wallet = wallet.ok_or("paired wrapper template requires wallet proof")?;
-                Ok(programs::wrapper_pair(
+                Ok(programs::wrapper_pair_with_registry(
                     height,
                     &blank_caps(),
                     [&wallet.public, &wallet.public],
                     [&wallet.proof, &wallet.proof],
+                    prefix,
                 )?)
             }
             // EMPTY, MERGE, unknown-mode rejection, and every SingleWallet
             // request retain the exact legacy compiler implementation.
-            _ => compile_registration(height, mode, wallet),
+            _ => compile_registration_with_registry(height, mode, wallet, prefix),
         }
     }
 
@@ -702,7 +901,9 @@ impl WrapperConstruction {
         if self == Self::SingleWallet {
             return register(height, mode, wallet);
         }
-        let compiled = self.compile_registration(height, mode, wallet)?;
+        let compiled = statements::compile(height, 3, |prefix| {
+            self.compile_registration_with_registry(height, mode, wallet, Some(prefix))
+        })?;
         let air = MachineAir::new(
             compiled
                 .program
@@ -770,6 +971,26 @@ impl ConstructionSession {
         })
     }
 
+    pub fn new_with_memory_budget(
+        construction: WrapperConstruction,
+        registry: Registry,
+        expected_profile: [u8; 32],
+        worker_memory_bytes: u64,
+    ) -> Result<Self, Error> {
+        Ok(Self {
+            construction,
+            session: ProverSession::new_with_memory_budget(
+                registry,
+                expected_profile,
+                worker_memory_bytes,
+            )?,
+        })
+    }
+
+    pub fn memory_budget_bytes(&self) -> u64 {
+        self.session.memory_budget_bytes()
+    }
+
     pub fn construction(&self) -> WrapperConstruction {
         self.construction
     }
@@ -806,30 +1027,40 @@ impl ConstructionSession {
         left: &WalletProof,
         right: &WalletProof,
     ) -> Result<NodeProof, Error> {
-        self.require_wrapper(WrapperConstruction::GroupedPair)?;
-        let node = wallet_pair_summary(&self.session.registry, left, right)?;
-        if node.level != 1 || node.count != 2 {
-            return Err("paired wrapper statement derivation".into());
-        }
-        verify_wallet(left)?;
-        verify_wallet(right)?;
-        let compiled = tracing::info_span!(
-            target: "lattica_block_v2_perf",
-            "paired wrapper compilation"
-        )
-        .in_scope(|| {
-            programs::wrapper_pair(
-                self.session.registry.height,
-                &self.session.registry.caps,
-                [&left.public, &right.public],
-                [&left.proof, &right.proof],
+        crate::block_v2::statements::request("block_v2_recursive_wrap_pair", |run| {
+            self.require_wrapper(WrapperConstruction::GroupedPair)?;
+            let node = statements::derive_in(run, "statement", |hash| {
+                let left = proving_wallet_summary(hash, self.session.expected_profile, left)?;
+                let right = proving_wallet_summary(hash, self.session.expected_profile, right)?;
+                hash.merge(left, right)
+            })?;
+            if node.level != 1 || node.count != 2 {
+                return Err("paired wrapper statement derivation".into());
+            }
+            verify_wallet(left)?;
+            verify_wallet(right)?;
+            let compiled = tracing::info_span!(
+                target: "lattica_block_v2_perf",
+                "paired wrapper compilation"
             )
-        })?;
-        self.session.prove(
-            programs::WRAPPER,
-            compiled,
-            programs::statement(node, programs::WRAPPER),
-        )
+            .in_scope(|| {
+                statements::compile_in(run, self.session.registry.height, 3, |prefix| {
+                    Ok(programs::wrapper_pair_with_registry(
+                        self.session.registry.height,
+                        &self.session.registry.caps,
+                        [&left.public, &right.public],
+                        [&left.proof, &right.proof],
+                        Some(prefix),
+                    )?)
+                })
+            })?;
+            self.session.prove(
+                run,
+                programs::WRAPPER,
+                compiled,
+                programs::statement(node, programs::WRAPPER),
+            )
+        })
     }
 
     pub fn empty(&mut self, chain: [u8; 32], level: u8) -> Result<NodeProof, Error> {

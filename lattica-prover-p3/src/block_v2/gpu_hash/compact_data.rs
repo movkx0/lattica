@@ -4,10 +4,11 @@ use super::*;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub struct CompactData {
+    pub(super) owned: Option<OwnedInputs>,
     pub(super) prefixes: Vec<RowMajorMatrix<Val>>,
     pub(super) height: usize,
-    salts: Vec<RowMajorMatrix<Val>>,
-    tree: engine::RetainedTree,
+    pub(super) salts: Vec<RowMajorMatrix<Val>>,
+    pub(super) tree: engine::RetainedTree,
     queries: Mutex<BTreeMap<usize, Vec<Vec<Val>>>>,
 }
 impl CompactData {
@@ -28,6 +29,7 @@ impl CompactData {
             assert_eq!(s.height(), height);
         }
         Self {
+            owned: None,
             prefixes,
             height,
             salts,
@@ -63,10 +65,20 @@ impl CandidateMmcs {
         host: usize,
         bits: usize,
     ) -> Result<LdeCommitPlan, String> {
+        self.preflight_retained_owned(shapes, host, bits, false)
+    }
+
+    pub(crate) fn preflight_retained_owned(
+        &self,
+        shapes: &[LdeInputShape],
+        host: usize,
+        bits: usize,
+        capture: bool,
+    ) -> Result<LdeCommitPlan, String> {
         if !self.gpu {
             return Err("compact data requires GPU MMCS".into());
         }
-        engine::plan_retained_lde_commit(shapes, self.cap_height, host, bits)
+        self.plan_resident_storage(shapes, host, bits, capture.then_some(0), &[])
     }
     pub(crate) fn prefix_matrices<'a>(
         &self,
@@ -84,6 +96,11 @@ impl CandidateMmcs {
     /// Called after all quotient views have expired, before quotient commitment.
     /// Preprocessing data is shared between proofs and deliberately stays larger.
     pub(crate) fn release_quotient_prefix(data: &mut ProverData<RowMajorMatrix<Val>>) {
+        // Opening evaluation needs the original device degree prefixes until
+        // the PCS data drops. Host quotient-only rows can still be truncated.
+        if !super::super::quotient_pcs::gpu_opening_eval_enabled() {
+            data.release_private_owned();
+        }
         if let ProverData::Compact(d) = data {
             for p in &mut d.prefixes {
                 p.values

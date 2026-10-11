@@ -2,9 +2,14 @@
 //! The native controller publishes requests atomically, audits the root in an
 //! independent process, then rechecks and commits its native preparation.
 use super::*;
-use lattica_prover_p3::block_v2::execution::{
-    policy_context::PolicyContext,
-    pool::{local::LocalProcessEndpoint, PoolCoordinator, WorkerEndpoint},
+#[path = "execution_pool_report.rs"]
+mod report;
+
+pub(super) fn report_storage_bytes(workers: usize) -> Result<usize, Error> {
+    report::Report::storage_plan(2 * commitment::CAPACITY - 1, workers)?.total_bytes()
+}
+use lattica_prover_p3::block_v2::execution::pool::{
+    local::LocalProcessEndpoint, PoolCoordinator, WorkerEndpoint,
 };
 use std::{
     os::unix::fs::PermissionsExt,
@@ -14,7 +19,7 @@ use std::{
 
 fn publish_json(path: &Path, value: &impl serde::Serialize) -> Result<(), Error> {
     let temporary = path.with_extension("json.pending");
-    write_json(&temporary, value)?;
+    write_bytes(&temporary, &report::encode(value)?, JSON_LIMIT)?;
     if path.exists() {
         return Err("pool output already exists".into());
     }
@@ -64,8 +69,7 @@ pub(super) fn serve(
             launches.clone(),
         )?));
     }
-    let mut pool = PoolCoordinator::new(owner, initial.registry, endpoints, 300_000)?;
-    drop(initial.selection);
+    let mut pool = PoolCoordinator::new(owner, initial.into_pool_registry(), endpoints, 300_000)?;
     publish_json(
         &out.join("pool-ready.json"),
         &json!({"schema_version":1,
@@ -108,20 +112,17 @@ pub(super) fn serve(
         let started = now();
         let prepared = prepare_for_backend(&request.fixture, &request.expected, true)?;
         let head = request.native_host.head_for(&prepared.expected)?;
-        let context = PolicyContext::new(head, prepared.policies)?;
-        let candidate = pool.submit(
-            &prepared.selection,
-            context,
-            head,
-            request.deadline_ms,
-            now(),
-        )?;
+        let preparation::Submitted {
+            candidate,
+            expected,
+            jobs,
+        } = prepared.submit_to_pool(&mut pool, head, request.deadline_ms, now())?;
         pool.seal(candidate, head, now())?;
         let result_dir = out.join(format!("candidate-{sequence:06}"));
         std::fs::DirBuilder::new().mode(0o700).create(&result_dir)?;
-        publish_json(&result_dir.join("expected.json"), &prepared.expected)?;
-        let mut jobs = Vec::new();
-        let mut failures = Vec::new();
+        publish_json(&result_dir.join("expected.json"), &expected)?;
+        drop(expected);
+        let mut report = report::Report::new(jobs, plan.workers.len())?;
         let root = loop {
             if requests.join(format!("{sequence:06}.cancel")).exists() {
                 pool.retire(candidate, now())?;
@@ -131,13 +132,10 @@ pub(super) fn serve(
                 );
             }
             for accepted in pool.step(now())? {
-                jobs.push(
-                    json!({"job":hex(&accepted.job.to_bytes()),"worker":accepted.worker.0,
-                    "elapsed_ms":accepted.elapsed_ms,"proof_bytes":accepted.proof_bytes}),
-                );
+                report.accepted(accepted)?;
             }
             for (worker, reason) in pool.take_failures() {
-                failures.push(json!({"worker":worker.0,"reason":reason}));
+                report.failed(worker, reason)?;
             }
             if let Some(root) = pool.root(candidate, head, now())? {
                 break root;
@@ -153,15 +151,23 @@ pub(super) fn serve(
             &root,
             profile::MAX_PROOF_BYTES,
         )?;
-        publish_json(&result_dir.join("execution-jobs.json"), &jobs)?;
+        report.retained_storage_bytes()?;
+        publish_json(&result_dir.join("execution-jobs.json"), &report.jobs())?;
         // Publish completion last. It is proof availability, never delivery.
         publish_json(
             &result_dir.join("result.json"),
-            &json!({"schema_version":1,
-            "status":"proved_cpu_audit_pending","root_file":"node.6.0",
-            "fresh_proofs":jobs.len(),"reused_proofs":0,"started_ms":started,"completed_ms":now(),
-            "worker_failures":failures,
-            "native_host":request.native_host,"native_applied":false}),
+            &report::Completion {
+                schema_version: 1,
+                status: "proved_cpu_audit_pending",
+                root_file: "node.6.0",
+                fresh_proofs: report.jobs().len(),
+                reused_proofs: 0,
+                started_ms: started,
+                completed_ms: now(),
+                worker_failures: report.failures(),
+                native_host: &request.native_host,
+                native_applied: false,
+            },
         )?;
         pool.retire(candidate, now())?;
     }

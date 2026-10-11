@@ -11,6 +11,18 @@ pub(super) struct OwnedService {
     live: os_worker::LiveProcess,
 }
 
+impl OwnedService {
+    pub(super) fn retained_heap_bytes(&self) -> Result<usize, Error> {
+        if self.unit.capacity() > super::persistent_storage::UNIT_BYTES {
+            return Err("persistent service name backing".into());
+        }
+        self.unit
+            .capacity()
+            .checked_add(self.live.identity().storage_heap_bytes()?)
+            .ok_or_else(|| "persistent service backing overflow".into())
+    }
+}
+
 impl ProcessWorker {
     /// The launcher must pass stdin unchanged to the requested worker service,
     /// wait for its exit, and bind its lifetime to the coordinator service.

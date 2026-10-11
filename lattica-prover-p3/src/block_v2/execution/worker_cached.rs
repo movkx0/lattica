@@ -81,7 +81,12 @@ impl CachedCpuWorker {
         now_ms: u64,
     ) -> Result<Self, Error> {
         let reference = CpuWorker::new(registry.clone(), pin)?;
-        let session = ConstructionSession::new(pin.construction(), registry, pin.profile())?;
+        let session = ConstructionSession::new_with_memory_budget(
+            pin.construction(),
+            registry,
+            pin.profile(),
+            WORKSPACE_RESOURCES.ram_bytes,
+        )?;
         // ConstructionSession::new does not allocate/register preprocessing.
         // Reserve before its first proving call can allocate persistent data.
         let reservation = owner.reserve_workspace(worker, WORKSPACE_RESOURCES, now_ms)?;

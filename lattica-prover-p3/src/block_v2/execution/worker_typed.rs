@@ -8,10 +8,7 @@
 use super::packet::{Request, RequestInfo};
 use super::*;
 use crate::block_v2::{
-    execution::{
-        job::TYPED_WALLET_MAGIC,
-        launch::{self, WorkerGate},
-    },
+    execution::launch::{self, WorkerGate},
     typed_recursive::{Policy, Registry as TypedRegistry, Session},
 };
 
@@ -22,8 +19,29 @@ enum TypedInputs {
     Finalize(NodeProof),
 }
 
+struct PreparedInputs {
+    // Fields drop in declaration order: all proofs precede their allowance.
+    values: TypedInputs,
+    _storage: codec::proofs::Storage,
+}
+
+impl PreparedInputs {
+    fn with<T>(self, body: impl FnOnce(&TypedInputs) -> Result<T, Error>) -> Result<T, Error> {
+        body(&self.values)
+    }
+}
+
+#[path = "worker_typed_coordinator.rs"]
+pub(crate) mod coordinator;
+
+#[path = "worker_typed_storage.rs"]
+pub(crate) mod storage;
+
+#[cfg(test)]
+#[path = "worker_typed_registry_tests.rs"]
+mod registry_tests;
+
 pub struct TypedWorker {
-    registry: TypedRegistry<12>,
     pin: RegistryPin,
     resources: Resources,
     request_resources: Resources,
@@ -38,11 +56,25 @@ impl TypedWorker {
         pin: RegistryPin,
         resources: Resources,
     ) -> Result<Self, Error> {
-        pin.check_typed(&registry)?;
         resources.validate_capacity()?;
-        let session = Session::new(registry.clone(), pin.profile(), resources.ram_bytes)?;
-        Ok(Self {
+        storage::admit_startup(resources.ram_bytes)?;
+        let registry = crate::block_v2::typed_recursive::CheckedRegistry::new(registry)?;
+        Self::from_checked(registry, pin, resources)
+    }
+
+    fn from_checked(
+        registry: crate::block_v2::typed_recursive::CheckedRegistry,
+        pin: RegistryPin,
+        resources: Resources,
+    ) -> Result<Self, Error> {
+        resources.validate_capacity()?;
+        storage::admit_startup(resources.ram_bytes)?;
+        pin.check_typed_approved(&registry.as_ref())?;
+        let session = Session::from_checked(
             registry,
+            storage::session_memory_bytes(resources.ram_bytes)?,
+        )?;
+        Ok(Self {
             pin,
             resources,
             request_resources: resources,
@@ -62,42 +94,60 @@ impl TypedWorker {
         drain_backend(self.resources)
     }
 
-    fn bound_packet(
+    fn bound_packet<'a>(
         &self,
         gate: &WorkerGate,
-        bytes: &[u8],
+        bytes: &'a [u8],
         chain: [u8; 32],
-    ) -> Result<Request, Error> {
+    ) -> Result<Request<&'a [u8]>, Error> {
         self.stats()?;
+        storage::check_buffers(bytes.len(), packet::MAX_RESULT_BYTES)?;
         gate.token().check_request(bytes)?;
         let request = Request::decode(bytes, self.pin, chain)?;
         request.bind(gate.token(), bytes)?;
         if request.resources != self.request_resources {
             return Err("typed worker resource assignment changed".into());
         }
+        let metadata_bytes = request.children.capacity()
+            * std::mem::size_of::<super::packet::Child>()
+            + request.manifest.capacity() * std::mem::size_of::<ArtifactRef>()
+            + request.inputs.capacity() * std::mem::size_of::<&[u8]>();
+        let metadata_limit_bytes = 2
+            * (std::mem::size_of::<super::packet::Child>()
+                + std::mem::size_of::<ArtifactRef>()
+                + std::mem::size_of::<&[u8]>());
+        eprintln!("borrowed_request_packet packet_bytes={} borrowed_proof_bytes={} metadata_bytes={} metadata_limit_bytes={} proof_copies=0",
+            bytes.len(), request.inputs.iter().map(|proof| proof.len()).sum::<usize>(), metadata_bytes, metadata_limit_bytes);
         Ok(request)
     }
 
     fn prepare(
         &self,
-        request: &Request,
+        request: &Request<&[u8]>,
         policy: &mut impl FnMut(ArtifactRef) -> Result<Policy, Error>,
-    ) -> Result<TypedInputs, Error> {
+    ) -> Result<PreparedInputs, Error> {
         request.validate()?;
         if request.pin != self.pin || request.resources != self.request_resources {
             return Err("typed worker registry/resource mismatch".into());
         }
+        let storage = codec::proofs::Storage::new(
+            self.resources
+                .ram_bytes
+                .min(codec::proofs::INPUT_STORAGE_LIMIT as u64) as usize,
+        );
         let chain = request.expected.context.chain_id;
+        let registry = self
+            .session
+            .as_ref()
+            .ok_or("typed worker is poisoned")?
+            .registry_approval()?;
         let mut wallet = |index: usize| -> Result<(VerifiedWallet, WalletProof, Policy), Error> {
             let bytes = &request.inputs[index];
             let policy = policy(request.manifest[index])?;
-            let ticket =
-                VerifiedWallet::verify_typed(self.pin, &self.registry, chain, policy, bytes)?;
-            Ok((
-                ticket,
-                codec::decode(&bytes[TYPED_WALLET_MAGIC.len()..])?,
-                policy,
-            ))
+            let (ticket, proof) = VerifiedWallet::verify_typed_owned_approved(
+                self.pin, &registry, chain, policy, bytes, &storage,
+            )?;
+            Ok((ticket, proof, policy))
         };
         let (derived, inputs) = match request.operation {
             Operation::TypedPair { padded, .. } => {
@@ -124,22 +174,19 @@ impl TypedWorker {
                 TypedInputs::Empty,
             ),
             Operation::Merge | Operation::Finalize => {
-                let mut proofs = Vec::with_capacity(request.children.len());
-                for (child, bytes) in request.children.iter().zip(&request.inputs) {
-                    let proof = codec::decode_node(bytes)?;
-                    self.registry.verify(
-                        self.pin.profile(),
+                let child = |index: usize| -> Result<NodeProof, Error> {
+                    let child = &request.children[index];
+                    let proof = storage.node(&request.inputs[index])?;
+                    registry.verify(
                         &proof,
                         &programs::statement(child.expected, child.operation.proof_mode()),
                     )?;
-                    proofs.push(proof);
-                }
+                    Ok(proof)
+                };
                 let inputs = if request.operation == Operation::Finalize {
-                    TypedInputs::Finalize(proofs.pop().ok_or("missing finalizer child")?)
+                    TypedInputs::Finalize(child(0)?)
                 } else {
-                    let right = proofs.pop().ok_or("missing right child")?;
-                    let left = proofs.pop().ok_or("missing left child")?;
-                    TypedInputs::Merge([left, right])
+                    TypedInputs::Merge([child(0)?, child(1)?])
                 };
                 (None, inputs)
             }
@@ -154,7 +201,10 @@ impl TypedWorker {
                 return Err("typed packet differs from verified wallet/empty job".into());
             }
         }
-        Ok(inputs)
+        Ok(PreparedInputs {
+            values: inputs,
+            _storage: storage,
+        })
     }
 
     /// Reverify public inputs under the host's independently supplied policy.
@@ -198,27 +248,27 @@ impl TypedWorker {
         let before = session.stats();
         let _spill = crate::spill_alloc::SpillScope::arm();
         let started = Instant::now();
-        let proof = match inputs {
+        let proof = inputs.with(|inputs| match inputs {
             TypedInputs::Pair(wallets, policies, count) => {
-                session.wrap_pair([&wallets[0], &wallets[1]], policies, count)?
+                session.wrap_pair([&wallets[0], &wallets[1]], *policies, *count)
             }
-            TypedInputs::Empty => session.empty(chain, request.expected.level)?,
-            TypedInputs::Merge(children) => session.merge(&children[0], &children[1])?,
-            TypedInputs::Finalize(child) => session.finalize(&child)?,
-        };
+            TypedInputs::Empty => session.empty(chain, request.expected.level),
+            TypedInputs::Merge(children) => session.merge(&children[0], &children[1]),
+            TypedInputs::Finalize(child) => session.finalize(child),
+        })?;
         let proving_ms = started.elapsed().as_millis();
         if proof.public != programs::statement(request.expected, request.operation.proof_mode()) {
             return Err("typed worker generated unexpected statement".into());
         }
         let serialized = Instant::now();
-        let proof = codec::encode_node(&proof)?;
+        let result = packet::ResultPacket::node(&proof)?;
+        drop(proof);
         let after = session.stats();
-        let result = packet::encode_result_for(
+        let result = result.finish(
             true,
             request.key,
             request.job,
             launch::request_digest(bytes)?,
-            &proof,
             Timings {
                 input_verification_ms,
                 proving_ms,
@@ -229,6 +279,7 @@ impl TypedWorker {
                 hits: after.hits - before.hits,
             },
         )?;
+        storage::check_buffers(bytes.len(), result.capacity())?;
         self.session = Some(session);
         Ok(result)
     }

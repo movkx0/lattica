@@ -187,6 +187,21 @@ fn fold_chunks() -> Vec<crate::batch_common::FoldChunk> {
 #[cfg(test)]
 use crate::config::make_config;
 
+#[cfg(all(feature = "block-v2", feature = "gpu"))]
+pub(crate) fn device_batch_geometry() -> crate::batch_common::DeviceBatchGeometry {
+    crate::batch_common::DeviceBatchGeometry {
+        height: TILE_HEIGHT,
+        wallet_width: WIDTH,
+        public_width: crate::htlc_air::N_PUBLIC,
+        batch_width: BATCH_WIDTH,
+        fold_base: FOLD_BASE,
+        root_block: ROOT_BLOCK,
+        root_column: ROOT,
+        root_output_row: root_out_row(),
+        chunks: fold_chunks(),
+    }
+}
+
 fn batch_periodic() -> Vec<Vec<Val>> {
     let mut cols = periodic();
     // Same shared selectors as batch_joinsplit (geometry as data); the HTLC delta is only that
@@ -358,11 +373,33 @@ pub fn build_batch_trace(ws: &[Witness]) -> RowMajorMatrix<Val> {
 
 /// Prove a batch of HTLC transactions as one proof; the block tx-root is `batch_root(ws)`.
 pub fn prove_batch_to_bytes(ws: &[Witness]) -> Vec<u8> {
+    prove_batch_to_bytes_with_request(
+        ws,
+        crate::proving::Request::from_env().expect("proving request"),
+    )
+    .expect("HTLC batch proving backend policy")
+    .0
+}
+
+pub fn prove_batch_to_bytes_with_request(
+    ws: &[Witness],
+    request: crate::proving::Request,
+) -> Result<(Vec<u8>, crate::proving::Report), crate::proving::Error> {
+    #[cfg(all(feature = "block-v2", feature = "gpu"))]
+    if crate::block_v2::legacy_wallet::is_selected() {
+        let output = crate::block_v2::legacy_wallet::prove_htlc_batch_with_public(ws, request)?;
+        return Ok((output.proof, output.report));
+    }
+    use crate::proving::{Backend, Run, Stage};
+    let run = Run::new("legacy_htlc_batch", request, crate::proving::legacy_cpu())?;
     assert!(
         padded_tiles(ws.len()) <= crate::batch_common::MAX_BATCH_TILES,
         "batch exceeds MAX_BATCH_TILES; split the block into multiple batch proofs"
     );
-    crate::config::proof_to_bytes(&HtlcBatchAir, build_batch_trace(ws), &batch_root(ws))
+    let public = run.measure(Stage::PublicValues, Backend::Cpu, || batch_root(ws))?;
+    let trace = run.measure(Stage::WitnessTrace, Backend::Cpu, || build_batch_trace(ws))?;
+    let bytes = crate::config::proof_to_bytes_observed(&HtlcBatchAir, trace, &public, &run)?;
+    Ok((bytes, run.finish(true)?))
 }
 
 /// Proven (UDR) security bits at an HTLC batch of `n` transactions (same height as join-split, so the

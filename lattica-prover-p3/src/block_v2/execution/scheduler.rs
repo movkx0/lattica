@@ -18,6 +18,10 @@ const MAX_CLASSES: usize = 4096;
 const MAX_SAMPLES: usize = 64;
 const MAX_JOBS: usize = 4096;
 
+#[path = "scheduler_storage.rs"]
+mod storage;
+pub use storage::SchedulerStorage;
+
 #[derive(Clone, Debug)]
 pub struct WorkerCapabilities {
     pub worker: WorkerId,
@@ -130,7 +134,11 @@ impl CostModel {
         let Some(samples) = self.samples.get(&key) else {
             return Ok((self.bootstrap_ms, false));
         };
-        let mut ordered: Vec<_> = samples.iter().copied().collect();
+        let mut ordered = [0; MAX_SAMPLES];
+        for (out, sample) in ordered.iter_mut().zip(samples) {
+            *out = *sample;
+        }
+        let ordered = &mut ordered[..samples.len()];
         ordered.sort_unstable();
         let rank = (ordered.len() * 95).div_ceil(100) - 1;
         // Include a 10% execution/verification margin. This is not a p95
@@ -160,6 +168,9 @@ impl CostModel {
             if *id != job.id() {
                 return Err("scheduler job identity mismatch".into());
             }
+            if job.dependencies().len() > 2 {
+                return Err("scheduler dependency bound".into());
+            }
             for child in job.dependencies() {
                 if !jobs.contains_key(child) {
                     return Err("scheduler missing dependency".into());
@@ -176,8 +187,11 @@ impl CostModel {
                 }
             }
         }
-        let mut order: Vec<_> = jobs.keys().copied().collect();
-        order.sort_by_key(|id| std::cmp::Reverse(jobs[id].expected().level));
+        let mut order = Vec::with_capacity(jobs.len());
+        order.extend(jobs.keys().copied());
+        // The previous stable sort began in JobId order. Include that tie-break
+        // explicitly so in-place sorting preserves the same traversal.
+        order.sort_unstable_by_key(|id| (std::cmp::Reverse(jobs[id].expected().level), *id));
         let mut downstream: BTreeMap<JobId, u64> = BTreeMap::new();
         for id in order {
             let mut longest = 0;

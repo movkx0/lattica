@@ -23,6 +23,7 @@ impl Task {
         self.assignment.lease()
     }
     pub fn request(&self) -> Result<Vec<u8>, Error> {
+        coordinator::admit_assignment(&self.assignment)?;
         packet::encode_request(&self.assignment)
     }
 }
@@ -36,8 +37,9 @@ impl CompletedJob {
     pub fn lease(&self) -> Lease {
         self.task.lease()
     }
-    /// Releases only this job's reservation. The workspace remains owned and
-    /// the untrusted proof still requires independent owner-side verification.
+    /// Acknowledge stopped job execution while retaining the nonterminal job's
+    /// reservation through independent owner-side verification. The workspace
+    /// remains owned as well.
     pub fn reconcile(self, owner: &mut DurableDag, now_ms: u64) -> Result<Output, Error> {
         owner.acknowledge_workspace_job(&self.task.workspace, self.task.lease(), now_ms)?;
         self.report.map_err(Into::into)
@@ -70,6 +72,7 @@ impl CachedTypedWorker {
     ) -> Result<Self, Error> {
         peak.validate_capacity()?;
         job_resources.validate_request()?;
+        coordinator::admit_budget(job_resources.ram_bytes)?;
         if job_worker.0 == 0 || job_worker == worker_id {
             return Err("typed workspace requires a distinct assigned job worker".into());
         }
@@ -145,7 +148,7 @@ impl CachedTypedWorker {
                 policy,
             )
             .and_then(|bytes| {
-                let decoded = packet::decode_result(&task.assignment, &request, &bytes)?;
+                let decoded = packet::decode_result_owned(&task.assignment, &request, bytes)?;
                 Ok(Output {
                     lease: task.lease(),
                     job: task.assignment.job().id(),

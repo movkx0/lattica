@@ -1,13 +1,28 @@
 //! Snapshot planning for the experimental resident coset-LDE/commitment pipeline.
 //! No kernels or reservations: execution must replan under the engine mutex.
 //! Column tiles preserve whole transforms; arbitrary row chunks do not.
-//! Host readback is counted until quotient/opening consumers move to the GPU.
+//! Host output is explicit; device-only plans retain prefixes without readback.
 use super::{plan_slots, retained_layout, Limits, CONSTANT_BYTES, QUERY_ELEMENTS};
 
 const MAX_MATRICES: usize = 256;
 const SALT_COLUMNS: usize = 4;
 const SPONGE_COLUMNS: usize = 8;
 const RATE: usize = 4;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum LdeRetention {
+    HostPrefix(usize),
+    DeviceOnly,
+}
+
+impl LdeRetention {
+    fn host_rows(self, height: usize) -> usize {
+        match self {
+            Self::HostPrefix(bits) => height >> bits,
+            Self::DeviceOnly => 0,
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct InputShape {
@@ -32,6 +47,7 @@ pub struct LdeCommitPlan {
     prefixes: Vec<usize>,
     output_height: usize,
     retained_height: usize,
+    pub(crate) retention: LdeRetention,
     pub(super) readback_layout: super::lde_readback::ReadbackLayout,
     columns_per_tile: usize,
     pub transform_buffer_bytes: usize,
@@ -41,6 +57,8 @@ pub struct LdeCommitPlan {
     pub twiddle_bytes: usize,
     pub query_reserve_bytes: usize,
     pub predicted_managed_peak_bytes: usize,
+    /// Additional owned device prefixes, already included in the peak.
+    pub device_output_bytes: usize,
     pub host_output_bytes: usize,
     /// Only one matrix is reordered at a time; all other admitted outputs stay live.
     pub host_reorder_workspace_bytes: usize,
@@ -66,9 +84,23 @@ impl LdeCommitPlan {
     /// includes all outputs and reorder workspace; cgroups also account for
     /// matrices retained by earlier commitments and other worker allocations.
     pub(crate) fn validate_quotient_storage(&self) -> Result<(), String> {
-        let max_matrices = 1usize << crate::block_v2::profile::LOG_BLOWUP;
+        self.validate_quotient_batch_storage(crate::block_v2::profile::MAX_QUOTIENT_CHUNKS)
+    }
+
+    /// The caller validates the partition of each AIR before flattening its
+    /// chunks. A batch shares the original aggregate host-output allowance.
+    pub(crate) fn validate_quotient_batch_storage(
+        &self,
+        max_matrices: usize,
+    ) -> Result<(), String> {
+        if max_matrices == 0 || max_matrices > 256 {
+            return Err("quotient batch matrix count exceeded".into());
+        }
         let per_matrix = super::lde_readback::MAX_QUOTIENT_OUTPUT_BYTES;
-        if self.inputs.len() > max_matrices || self.host_output_bytes > max_matrices * per_matrix {
+        // Matrix count follows the quotient partition, not the LDE blowup.
+        // Keep the existing aggregate heap allowance independent of that count.
+        let max_heap_bytes = (1usize << crate::block_v2::profile::LOG_BLOWUP) * per_matrix;
+        if self.inputs.len() > max_matrices || self.host_output_bytes > max_heap_bytes {
             return Err("quotient heap aggregate allowance exceeded".into());
         }
         for input in &self.inputs {
@@ -146,11 +178,38 @@ impl LdeCommitPlan {
         retention_bits: usize,
         readback_layout: super::lde_readback::ReadbackLayout,
     ) -> Result<Self, String> {
+        Self::new_with_retention(
+            inputs,
+            cap_height,
+            limits,
+            max_alloc,
+            slots,
+            live_bytes,
+            old_workspace_bytes,
+            host_output_budget_bytes,
+            LdeRetention::HostPrefix(retention_bits),
+            readback_layout,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn new_with_retention(
+        inputs: &[InputShape],
+        cap_height: usize,
+        limits: Limits,
+        max_alloc: usize,
+        slots: usize,
+        live_bytes: usize,
+        old_workspace_bytes: usize,
+        host_output_budget_bytes: usize,
+        retention: LdeRetention,
+        readback_layout: super::lde_readback::ReadbackLayout,
+    ) -> Result<Self, String> {
         limits.validate()?;
         if inputs.is_empty() || inputs.len() > MAX_MATRICES {
             return Err("LDE plan matrix count".into());
         }
-        if host_output_budget_bytes == 0 {
+        if host_output_budget_bytes == 0 && retention != LdeRetention::DeviceOnly {
             return Err("LDE plan host-output allowance".into());
         }
         let persistent_minimum = add(CONSTANT_BYTES, limits.staging_bytes)?;
@@ -160,7 +219,8 @@ impl LdeCommitPlan {
         if base_live < persistent_minimum || live_bytes > limits.managed_bytes {
             return Err("LDE plan inconsistent live-allocation snapshot".into());
         }
-        if retention_bits > crate::block_v2::profile::LOG_BLOWUP {
+        if matches!(retention, LdeRetention::HostPrefix(bits) if bits > crate::block_v2::profile::LOG_BLOWUP)
+        {
             return Err("invalid LDE retention bound".into());
         }
         let mut output_height = 0;
@@ -197,7 +257,7 @@ impl LdeCommitPlan {
             input_upload = add(input_upload, bytes(mul(input.height, input.width)?)?)?;
             host_output = add(
                 host_output,
-                bytes(mul(height >> retention_bits, input.width)?)?,
+                bytes(mul(retention.host_rows(height), input.width)?)?,
             )?;
         }
         if host_output > host_output_budget_bytes {
@@ -246,10 +306,13 @@ impl LdeCommitPlan {
         let mut host_reorder_workspace_bytes = 0;
         for input in inputs {
             if readback_layout == super::lde_readback::ReadbackLayout::Banded
+                && retention != LdeRetention::DeviceOnly
                 && input.width > columns_per_tile
             {
-                host_reorder_workspace_bytes = host_reorder_workspace_bytes
-                    .max(bytes(mul(output_height >> retention_bits, input.width)?)?);
+                host_reorder_workspace_bytes = host_reorder_workspace_bytes.max(bytes(mul(
+                    retention.host_rows(output_height),
+                    input.width,
+                )?)?);
             }
         }
         let predicted_host_peak_bytes = add(host_output, host_reorder_workspace_bytes)?;
@@ -267,7 +330,8 @@ impl LdeCommitPlan {
             inputs: inputs.to_vec(),
             prefixes,
             output_height,
-            retained_height: output_height >> retention_bits,
+            retained_height: retention.host_rows(output_height),
+            retention,
             readback_layout,
             columns_per_tile,
             transform_buffer_bytes,
@@ -277,6 +341,7 @@ impl LdeCommitPlan {
             twiddle_bytes,
             query_reserve_bytes,
             predicted_managed_peak_bytes,
+            device_output_bytes: 0,
             host_output_bytes: host_output,
             host_reorder_workspace_bytes,
             predicted_host_peak_bytes,
@@ -288,6 +353,7 @@ impl LdeCommitPlan {
     pub fn output_height(&self) -> usize {
         self.output_height
     }
+    /// Host output rows; zero only for the explicit DeviceOnly retention mode.
     pub fn retained_height(&self) -> usize {
         self.retained_height
     }
@@ -392,6 +458,63 @@ mod tests {
     }
 
     #[test]
+    fn device_only_output_removes_host_allowance_without_relaxing_device_limits() {
+        use super::super::lde_readback::ReadbackLayout;
+        let limits = Limits::default();
+        let make = |max_alloc, extra_live, retention, host, layout| {
+            LdeCommitPlan::new_with_retention(
+                &wide(),
+                6,
+                limits,
+                max_alloc,
+                1,
+                CONSTANT_BYTES + limits.staging_bytes + extra_live,
+                0,
+                host,
+                retention,
+                layout,
+            )
+        };
+        let host = make(
+            4 * GIB,
+            0,
+            LdeRetention::HostPrefix(0),
+            48 * GIB,
+            ReadbackLayout::Banded,
+        )
+        .unwrap();
+        assert!(host.host_reorder_workspace_bytes > 0);
+        for layout in [ReadbackLayout::Banded, ReadbackLayout::Direct] {
+            let device = make(4 * GIB, 0, LdeRetention::DeviceOnly, 0, layout).unwrap();
+            assert_eq!(device.retained_height(), 0);
+            assert_eq!(device.host_output_bytes, 0);
+            assert_eq!(device.host_reorder_workspace_bytes, 0);
+            assert_eq!(device.predicted_host_peak_bytes, 0);
+            assert_eq!(device.projected_host_readback_bytes, 0);
+            assert_eq!(device.output_height(), host.output_height());
+            assert_eq!(
+                device.tiles().collect::<Vec<_>>(),
+                host.tiles().collect::<Vec<_>>()
+            );
+            assert_eq!(
+                device.predicted_managed_peak_bytes,
+                host.predicted_managed_peak_bytes
+            );
+            assert_eq!(
+                device.projected_input_upload_bytes,
+                host.projected_input_upload_bytes
+            );
+            assert_eq!(
+                device.projected_salt_upload_bytes,
+                host.projected_salt_upload_bytes
+            );
+            assert!(make(256 * MIB, 0, LdeRetention::DeviceOnly, 0, layout).is_err());
+            assert!(make(4 * GIB, 7 * GIB, LdeRetention::DeviceOnly, 0, layout).is_err());
+            assert!(make(4 * GIB, 0, LdeRetention::HostPrefix(0), 0, layout).is_err());
+        }
+    }
+
+    #[test]
     fn direct_layout_admits_only_final_outputs_and_preserves_gpu_geometry() {
         use super::super::lde_readback::ReadbackLayout;
         let limits = Limits::default();
@@ -443,7 +566,15 @@ mod tests {
         let production = plan(&[shape; 16], 4 * GIB, 0, 32 * GIB).unwrap();
         assert_eq!(production.host_output_bytes, 7 * GIB);
         production.validate_quotient_storage().unwrap();
-        let too_many = plan(&[shape; 17], 4 * GIB, 0, 32 * GIB).unwrap();
+        let small = InputShape {
+            height: 1 << 10,
+            ..shape
+        };
+        plan(&[small; 32], 4 * GIB, 0, 32 * GIB)
+            .unwrap()
+            .validate_quotient_storage()
+            .unwrap();
+        let too_many = plan(&[small; 33], 4 * GIB, 0, 32 * GIB).unwrap();
         assert!(too_many.validate_quotient_storage().is_err());
         let too_wide = plan(&[InputShape { width: 33, ..shape }], 4 * GIB, 0, 32 * GIB).unwrap();
         assert!(too_wide.validate_quotient_storage().is_err());

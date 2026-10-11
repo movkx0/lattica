@@ -190,11 +190,22 @@ pub fn hash_fields(domain: u64, fields: &[u64]) -> Result<Digest, CommitmentErro
     Ok(state.map(|value| value.as_canonical_u64()))
 }
 
+pub(crate) mod stream;
+
 /// Digest the complete canonical public statement, without accepting a caller's
 /// claimed digest. This does not verify the statement's proof or its type schema.
 pub fn statement_digest(kind: u8, public_fields: &[u64]) -> Result<Digest, CommitmentError> {
+    statement_digest_with_hash(kind, public_fields, &mut hash_fields)
+}
+
+pub(crate) fn statement_digest_with_hash<E: From<CommitmentError>>(
+    kind: u8,
+    public_fields: &[u64],
+    hash: &mut impl FnMut(u64, &[u64]) -> Result<Digest, E>,
+) -> Result<Digest, E> {
     let kind = Kind::from_code(kind)?;
-    hash_fields(STATEMENT + kind as u64, public_fields)
+    validate_fields(public_fields)?;
+    hash(STATEMENT + kind as u64, public_fields)
 }
 
 #[test]
@@ -228,6 +239,14 @@ pub struct NodeSummary {
 }
 
 pub fn leaf(context: Context, entry: Entry) -> Result<NodeSummary, CommitmentError> {
+    leaf_with_hash(context, entry, &mut hash_fields)
+}
+
+pub(crate) fn leaf_with_hash<E: From<CommitmentError>>(
+    context: Context,
+    entry: Entry,
+    hash: &mut impl FnMut(u64, &[u64]) -> Result<Digest, E>,
+) -> Result<NodeSummary, E> {
     validate_fields(&entry.statement_digest)?;
     let mut fields = [0; 21];
     fields[..16].copy_from_slice(&context.to_fields());
@@ -237,7 +256,7 @@ pub fn leaf(context: Context, entry: Entry) -> Result<NodeSummary, CommitmentErr
         context,
         level: 0,
         count: 1,
-        root: hash_fields(LEAF, &fields)?,
+        root: hash(LEAF, &fields)?,
     })
 }
 
@@ -249,7 +268,11 @@ fn level_capacity(level: u8) -> Result<u8, CommitmentError> {
 }
 
 /// Only called for locally constructed or validated compatible children.
-fn parent(left: NodeSummary, right: NodeSummary) -> Result<NodeSummary, CommitmentError> {
+fn parent_with_hash<E: From<CommitmentError>>(
+    left: NodeSummary,
+    right: NodeSummary,
+    hash: &mut impl FnMut(u64, &[u64]) -> Result<Digest, E>,
+) -> Result<NodeSummary, E> {
     let level = left.level + 1;
     let fields = [
         level as u64,
@@ -268,21 +291,29 @@ fn parent(left: NodeSummary, right: NodeSummary) -> Result<NodeSummary, Commitme
         context: left.context,
         level,
         count: left.count + right.count,
-        root: hash_fields(NODE, &fields)?,
+        root: hash(NODE, &fields)?,
     })
 }
 
 /// Canonical padding ONLY. Even level 6 is not an accepted transaction block.
 pub fn empty_subtree(context: Context, level: u8) -> Result<NodeSummary, CommitmentError> {
+    empty_subtree_with_hash(context, level, &mut hash_fields)
+}
+
+pub(crate) fn empty_subtree_with_hash<E: From<CommitmentError>>(
+    context: Context,
+    level: u8,
+    hash: &mut impl FnMut(u64, &[u64]) -> Result<Digest, E>,
+) -> Result<NodeSummary, E> {
     level_capacity(level)?;
     let mut node = NodeSummary {
         context,
         level: 0,
         count: 0,
-        root: hash_fields(EMPTY, &context.to_fields())?,
+        root: hash(EMPTY, &context.to_fields())?,
     };
     for _ in 0..level {
-        node = parent(node, node)?;
+        node = parent_with_hash(node, node, hash)?;
     }
     Ok(node)
 }
@@ -290,13 +321,21 @@ pub fn empty_subtree(context: Context, level: u8) -> Result<NodeSummary, Commitm
 /// Structural validation, not proof verification. Also authenticates the
 /// canonical empty root when count == 0; no arbitrary padding is accepted.
 pub fn validate_summary(node: NodeSummary) -> Result<(), CommitmentError> {
+    validate_summary_with_hash(node, &mut hash_fields)
+}
+
+pub(crate) fn validate_summary_with_hash<E: From<CommitmentError>>(
+    node: NodeSummary,
+    hash: &mut impl FnMut(u64, &[u64]) -> Result<Digest, E>,
+) -> Result<(), E> {
     let capacity = level_capacity(node.level)?;
     if node.count > capacity {
-        return Err(CommitmentError::InvalidCount);
+        return Err(CommitmentError::InvalidCount.into());
     }
     validate_fields(&node.root)?;
-    if node.count == 0 && node.root != empty_subtree(node.context, node.level)?.root {
-        return Err(CommitmentError::InvalidEmptyRoot);
+    if node.count == 0 && node.root != empty_subtree_with_hash(node.context, node.level, hash)?.root
+    {
+        return Err(CommitmentError::InvalidEmptyRoot.into());
     }
     Ok(())
 }
@@ -305,41 +344,57 @@ pub fn validate_summary(node: NodeSummary) -> Result<(), CommitmentError> {
 /// parent count. A nonempty right child requires a completely full left child.
 /// This native helper MUST NOT be used as recursive proof authority.
 pub fn merge_nodes(left: NodeSummary, right: NodeSummary) -> Result<NodeSummary, CommitmentError> {
-    validate_summary(left)?;
-    validate_summary(right)?;
+    merge_nodes_with_hash(left, right, &mut hash_fields)
+}
+
+pub(crate) fn merge_nodes_with_hash<E: From<CommitmentError>>(
+    left: NodeSummary,
+    right: NodeSummary,
+    hash: &mut impl FnMut(u64, &[u64]) -> Result<Digest, E>,
+) -> Result<NodeSummary, E> {
+    validate_summary_with_hash(left, hash)?;
+    validate_summary_with_hash(right, hash)?;
     if left.context != right.context {
-        return Err(CommitmentError::ContextMismatch);
+        return Err(CommitmentError::ContextMismatch.into());
     }
     if left.level != right.level {
-        return Err(CommitmentError::LevelMismatch);
+        return Err(CommitmentError::LevelMismatch.into());
     }
     if left.level == DEPTH {
-        return Err(CommitmentError::InvalidLevel);
+        return Err(CommitmentError::InvalidLevel.into());
     }
     if right.count > 0 && left.count != level_capacity(left.level)? {
-        return Err(CommitmentError::NonDensePrefix);
+        return Err(CommitmentError::NonDensePrefix.into());
     }
-    parent(left, right)
+    parent_with_hash(left, right, hash)
 }
 
 /// Pure fixed-depth ordered root, derived solely from 1..64 actual entries.
 /// Entries occupy a dense left prefix; all remaining leaves are canonical empty
 /// padding. Does not validate the transactions represented by the statements.
 pub fn root(context: Context, entries: &[Entry]) -> Result<Digest, CommitmentError> {
+    root_with_hash(context, entries, &mut hash_fields)
+}
+
+pub(crate) fn root_with_hash<E: From<CommitmentError>>(
+    context: Context,
+    entries: &[Entry],
+    hash: &mut impl FnMut(u64, &[u64]) -> Result<Digest, E>,
+) -> Result<Digest, E> {
     if entries.is_empty() {
-        return Err(CommitmentError::EmptyBlock);
+        return Err(CommitmentError::EmptyBlock.into());
     }
     if entries.len() > CAPACITY {
-        return Err(CommitmentError::TooManyEntries);
+        return Err(CommitmentError::TooManyEntries.into());
     }
-    let mut nodes = [empty_subtree(context, 0)?; CAPACITY];
+    let mut nodes = [empty_subtree_with_hash(context, 0, hash)?; CAPACITY];
     for (i, &entry) in entries.iter().enumerate() {
-        nodes[i] = leaf(context, entry)?;
+        nodes[i] = leaf_with_hash(context, entry, hash)?;
     }
     let mut width = CAPACITY;
     while width > 1 {
         for i in 0..width / 2 {
-            nodes[i] = merge_nodes(nodes[2 * i], nodes[2 * i + 1])?;
+            nodes[i] = merge_nodes_with_hash(nodes[2 * i], nodes[2 * i + 1], hash)?;
         }
         width /= 2;
     }

@@ -1,0 +1,2086 @@
+{
+  "date": "2026-10-10",
+  "checkpoint": "9.86",
+  "status": "research_checkpoint_passed_goal_incomplete",
+  "branch": "main",
+  "head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "build_features": [
+    "block-v2-wide-lanes",
+    "gpu",
+    "stream"
+  ],
+  "cpu_compatibility_features": [
+    "block-v2",
+    "stream"
+  ],
+  "parent_evidence": "docs/evidence/gpu-request-storage-2026-10-10.json",
+  "parent_evidence_sha256": "c57e04a5413a1707a0a0ca0c004a0fd07d1656d8669e2be851ebe3055f447195",
+  "changed_sources_since_9_85": [
+    "lattica-prover-p3/src/block_v2/codec.rs",
+    "lattica-prover-p3/src/block_v2/execution/worker_packet.rs",
+    "lattica-prover-p3/src/block_v2/execution/worker_packet_tests.rs",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed.rs",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_cached.rs",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_process.rs",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_process_tests.rs"
+  ],
+  "source_files": {
+    "lattica-prover-p3/src/block_v2/machine/fingerprint.rs": "14c488a89597920a5cf4befd5e7b5f40252b51a2b98183bd21c5055963c1d537",
+    "lattica-prover-p3/src/recursion/native_fri.rs": "8dd2915baa1a0392328864dcac219b10c0f0095c0739f8bd83c05e96b060e107",
+    "lattica-prover-p3/src/bin/typed_common/execution_pool_service.rs": "484c4b062e52c70867846b523ebf3e37094c85b64f719d8e0862e2dfcf2c6504",
+    "lattica-prover-p3/vendor/p3-lookup/CHANGELOG.md": "ec5f0da8533bc593c725ae4282647bf8e54304966da1f9688438634ddc649b9f",
+    "src/block_v2_host_fixture.zig": "24d827efa8c01e85a949cff378b03951c8f24abf95a60bb226ce295ab98e7724",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/trace_commit.rs": "d84998b00f842d7f8f9f5dab01bac2b0ae3188a84a863a0a88832a73cf079504",
+    "lattica-prover-p3/src/block_v2/execution/worker_cached.rs": "65bcbbdea1f6fa27a06dc2dc446d09f029d8ab1299b18fdf4694388d333748c7",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/scalars/tests.rs": "de35f8db0edd82b98871fd6ffe99b8e7008bad8669015675073dda1cf8b30870",
+    "src/tx.zig": "89a0f9cc0311f582714420e4f7563936fedb9586cb7e5575c6bae8e77369c3c2",
+    "lattica-prover-p3/src/bin/block_v2_feasibility.rs": "15e8d5df03e5efe3d21c9f6d5c581ecd9dc3ec9399d8972dae264d787c1c6d03",
+    "lattica-prover-p3/src/htlc_air.rs": "1477df2593dae95897e2a77c0db9fc3e3fa545ef47f9fcbdd3f32a5776897ef8",
+    "lattica-prover-p3/src/block_v2/random_integration_tests.rs": "839c86e4c61a5058c396599df288b707df64971c1d1c0d2c9d8f6a141eabc3f0",
+    "lattica-prover-p3/vendor/p3-lookup/src/logup.rs": "2be0968bc048d18d7ac35623552fb49991d174dc4b9995d94d78bdde211f0f49",
+    "lattica-prover-p3/src/bin/block_v2_recursion_probe.rs": "82e2a15af1f57ce96504524f94941dd4a60b8163341f134f6e77f11321468448",
+    "lattica-prover-p3/src/bin/block_v2_execution_probe.rs": "545d1cfc09f541aeaf01e646e0f0bd6fc035c5a1393d31e96c81ef1d33c76f37",
+    "lattica-prover-p3/src/block_v2/mod.rs": "aeef0889a15ae3e6ba85a0d052d302575cc5f6b698d7a62982ed3a13843afbec",
+    "lattica-prover-p3/src/block_v2/random_pipeline_tests.rs": "cee9b117b41baa7e9d3e86be34cc03ecfa04ffdf9a0cda0c7ec1ab7c103cf7e6",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_plan.rs": "e83e5ac7982d35b29ca841feeb93d55423521857d25e0e65f7c764e62f5dab53",
+    "lattica-prover-p3/src/block_v2/execution/os_worker_tests.rs": "b4b4e60f1bfdfab93556f77f69b50df76c4271d18ba20735c878c723e5781b24",
+    "lattica-prover-p3/src/block_v2/pcs_field.rs": "04097bc9b95188408503eedee44d435340f8b5c156d46ba6aedab086d3f8ac9d",
+    "lattica-prover-p3/src/config.rs": "7524e18273049419734b2278918993eadbccebd492b78df4fc564fef03811fc4",
+    "lattica-prover-p3/src/block_v2/opening_pcs/field.rs": "4abe9ad279bdcf7daee38ebeadb3852ecd56718071f9cb02df3c3ca90b0f6df8",
+    "lattica-prover-p3/src/block_v2/execution/job.rs": "283655831dcfa5928a86d0cff5c46e5b0af3cdfbe445a7d36c59a8e5abd5a8b7",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_packet_tests.rs": "c41a242feb55515961207241233755085873f2b3d2b48ab0af5a7ff27e86bcc2",
+    "src/poseidon2.zig": "031340e80e6183661420b86d9ffb02b0a88b58c1c2481a939b643b96b5313668",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/tests.rs": "a8e40f820f80ae88ac9fa7c29a470e003f393d2796b1df5a9efcaf8a7b3b2863",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/quotient_kernels.cl": "c0d4dfb9248de57f0e2da354dd73d2aadcb9365fd16c48e3e8b4ab393dbfa968",
+    "lattica-prover-p3/src/block_v2/native_public_gpu.rs": "8f744e970ba8ee338258e91078a6d5090e64b4dd10454d58de9a3c53322bf276",
+    "lattica-prover-p3/src/block_v2/machine/programs.rs": "e8b46c9b678584a1ceee11bf035d07503f3bdb74e129b397d833e35ea5d3e37c",
+    "lattica-prover-p3/src/block_v2/machine/verifier/mod.rs": "ce66450463dbbf0b3a588d44e08443078a4df48610c2b600301c8d31acc1d7a4",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/lookup.rs": "9f3b06aa609f9419f818e5a224e053fb19ccac2f66ee18e49dba67bf9022449d",
+    "lattica-prover-p3/src/block_v2/execution/supervisor_process_tests.rs": "1810dd35ce52c992058e4a25792885c83c425e5938178e7825a070bfe3692303",
+    "lattica-prover-p3/tests/gpu_public_worker.zig": "6fa9380b36c783d43ddc5601a2aca2f676f13da26d9a8ab24e61d680a0d61f4a",
+    "lattica-prover-p3/src/block_v2/machine/gpu_backend/resources.rs": "732acfb6006a3602938de045492022400034659620c38174ddc11d36087b5123",
+    "lattica-prover-p3/src/poseidon2_air.rs": "aa82a175884c53fbe72dce819ac625be3d6db2932d0d244e469155e71b6c82a3",
+    "lattica-prover-p3/tests/gpu_lifecycle.c": "e6b0e8453a995c4c6f18b1fe88a4916581febc1d86e54607f779d608f91b1b1d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce/compact.rs": "fa62a180e317a2e52124b671a97073d8c6a57400038dfafb69a85c72a5d9cdbb",
+    "lattica-prover-p3/Cargo.lock": "c48b50f88cbe6e8083c360c6935ae6c20a202ec17ef3b59730ef25b5fcc8d5c7",
+    "lattica-prover-p3/src/gpu_pcs.rs": "98304ed27c73d4ab6425c4a8306959e55d7dbb5d74f1e8f91d681a0aa7fe7ada",
+    "lattica-prover-p3/src/block_v2/challenger/scalars/tests.rs": "b845685a68c806917f3beb284b026da4c882e7881c3a7cd5b60c80eb9389c943",
+    "lattica-prover-p3/tests/gpu_public_service.c": "c2094babf900ee073d599d299a9c9e1b5a1a37281288c4362e013ae8819a780b",
+    "lattica-prover-p3/src/block_v2/statements/folding_tests.rs": "ff38ae9a693f3c31cdbd81fc565605803251960198bb47de9958987ff01447a3",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/compiler_constants.rs": "ec80cdba19ea57831b4ed86c0f15a08eac306d5f8349f3a096c0af9471facf52",
+    "lattica-prover-p3/vendor/p3-lookup/benches/logup.rs": "6360bcf4a4cfd1633a87c04d9264a6e85c8ef2fb442dc66b105d336248100f5b",
+    "lattica-prover-p3/src/block_v2/execution/pool.rs": "7b4bec38c29753668457c94c7d024cfb6ab740383462a582e4d9961091220502",
+    "lattica-prover-p3/src/spill_alloc.rs": "91a714362b1e150ef89c5af1c765add9b7ef67ed547ebeec5c91e815c40e5a42",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine.rs": "86a3064fcf20f653576979bea5af36aea003dbb57f444635dd992535a8ee1cb8",
+    "lattica-prover-p3/src/block_v2/execution/dag_snapshot.rs": "db83380d172e68256454ef1d8445ab2d189d0730a2d7022b4f66f7c648ba2d80",
+    "lattica-prover-p3/vendor/p3-lookup/.cargo_vcs_info.json": "052915b22c2e0eed606b899b77f2570bb944d77875f34c2b4fb71489cbf04126",
+    "lattica-prover-p3/src/block_v2/execution/worker_budget.rs": "497d0fe9ed29c36ce236197f83a6ad361b825e96168190b7f11090c2321b454d",
+    "lattica-prover-p3/src/bin/typed_common/driver.rs": "423abe3eadf0e381e5b5fe12bdd0d2043682f660737fbd4a5a393d3bad8de69a",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device.rs": "89c35c1af3a3c1ee5c1efa6a5da1eaacae01d42c3692cdac75a45314bf3a1e25",
+    "lattica-prover-p3/src/block_v2/perf.rs": "05673d7ced6d292d15a0c59e151664d496a8e5d57f51618d3e7141fc5383bf98",
+    "lattica-prover-p3/src/block_v2/execution/artifact_store_tests.rs": "d3b45ffeb7a96f736ea58288c30c93b018092f3d19f9e538d79a3e04af2a39e9",
+    "lattica-prover-p3/src/block_v2/legacy_wallet/tree/tests.rs": "0bc63201ca559f91e79635724e02b632f65bddaa2a6f7d0fbd721b98da29448c",
+    "lattica-prover-p3/vendor/p3-lookup/src/types.rs": "d4417b64c1416072215b1cd6cf0fc19e536269592c887fbc0986106d7c4ecf35",
+    "lattica-prover-p3/src/bin/typed_common/execution_budget.rs": "138f4d10c8c579a81e4c2ca170f39258e18c19b82ed3f884873fda93655e4b76",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/tree.rs": "d94aceeabd3bcffb661c9cf664d1b76fa07d02a462ac527c70da49d9a1409601",
+    "src/block_v2_host_body.zig": "9ec695b970646197e60cd30ef8a8e057edc766f13635649fe536c79daafadc11",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned.rs": "95ec63ec236748bf85f5a009c0b1a52a53f3a8b8b62552ea2dc48f0e85fbf52d",
+    "lattica-prover-p3/src/native_gpu/tests.rs": "63c018bf7e5f82d93b591853b8fcd51d24a1fb632de884baa8ff71a3afc9f57e",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/quotient.rs": "5e172895bebc7666898fc8dc291a252a16cf6d4a6229e5d3e297d8cbda6bfc4d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/witness_kernels.rs": "e815ea110483d8cf605330aada19db3e33a92da689a5bf604a2bb7d6524a3334",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/tree/tests.rs": "f3285a38f9f63b1dc0212da9d382985c9961a848701fe51f32643362eb2ddefa",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/storage.rs": "e2176c18b36b7622b6fb4b10d2631ab503f674c9be073244fe2b2e3ff1714925",
+    "lattica-prover-p3/src/block_v2/execution/workspace.rs": "c0488d18c1c823e93794c1749a5114ae4f85a4abc199683605d2a656e5c0fad6",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet_batch_kernels.rs": "72ecd3d58162b9763e3188db4583929ff6902ea60d9a46af845d64f3216fc175",
+    "lattica-prover-p3/vendor/p3-lookup/README.md": "967a8394031ea9acf8c0654acb98296adda50b8d88ceb244895272551f4fbd99",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/witness.rs": "ec37fcf87b361956aa0c27fddeaf57ba1c9cbc205fa374b5d30dbf3faf0fe7b0",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_process_service.rs": "afb59f89374abb3fa15a1dbbf5c65501ba8819fe751949ea20ee5646511fcf02",
+    "lattica-prover-p3/src/block_v2/quotient_pipeline_tests.rs": "0628503021fa1b288d63ae2a66cb6d062c91bd22492f0f33cf5452c17336c4d6",
+    "lattica-prover-p3/src/block_v2/execution/selection.rs": "0cba3cd092fd84b609b9871f3f16f178507e6a5ba0620bbf0aea35e46a60e030",
+    "lattica-prover-p3/vendor/p3-lookup/src/challenges.rs": "e945e87b02878a93f79afc70dedc5999563e07cdc8d83f8eb543c45c57f384f3",
+    "lattica-prover-p3/src/block_v2/execution/policy_context.rs": "fa63aedd778214c8c174539c0ad571a57a1d130299a18d3642d441601c2852f1",
+    "lattica-prover-p3/src/block_v2/execution/gpu_admission.rs": "2e75074a2856e2000a3f75e621169ac038043028cefa2dc0887fe2a334e6c9dd",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/normalize.rs": "0a1bb44a4e24396039511a7d8d5d7cea0a402b7efdf0dc2f191775a2169319f5",
+    "lattica-prover-p3/src/spend_common.rs": "3979dca0b6266d5bd768d31313f02f115aea5e220ca174401188f85cf595e3b3",
+    "lattica-prover-p3/src/block_v2/profile.rs": "95fb07b5a76c36ff30fc51a00550183e89235a5644ecdf54dd3a85357f8c1b91",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/htlc.rs": "840d0f96f98e700e4c0cdd315197f22bd74feac15b31fa63959e9bd016c3b76c",
+    "lattica-prover-p3/vendor/p3-lookup/Cargo.toml": "88aaa0167d7c7c2e6cda98e4d21b6bd09c4f87ec8fc7c3c68b3877ad3f9029bd",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/check_constraints.rs": "62a0e1fd55cfa37649662f4b93979d38c13faa098e39be7c800caa880776539f",
+    "lattica-prover-p3/src/block_v2/coset_workspace.rs": "c24635d9d8adb3317128d5ff312df33983cab0af623620b54250dfd25ce8cf2e",
+    "lattica-prover-p3/src/block_v2/machine/verifier/expressions.rs": "f70f2e55dcdfc7e2fd02ad819ad2c155378d445d354027faf21f22d613542459",
+    "lattica-prover-p3/src/recursion/fri_fold.rs": "0b55d8b20e58c00dc1aa04c9adc42fa7fa5475f4238e65542ede41df67fcd88d",
+    "lattica-prover-p3/src/block_v2/machine/program/proof_inputs/tests.rs": "c590e95e1c0269c173930018508e26b097176f5ee420edbb2b4e4f1b33d91a6e",
+    "lattica-prover-p3/src/block_v2/execution/startup.rs": "a11283977754de4f45478fb1b99b5ebbf82840a2687812f08d4eb0e07453b2ae",
+    "lattica-prover-p3/src/proving/composition/tests.rs": "d847cd05b04bd0493acb6bb70e1c35dd31a801a8b49cbb3acfb81cc695efe34e",
+    "lattica-prover-p3/src/proving/composition.rs": "0bf530b2c1f4edf479d6ddd4f3ecba8e2152da30eae2aac65e8ed7107c8280a3",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_execute.rs": "dc30135270441616bec7aa5db9247df9c8b0dbbc8bfcfddf4850012fdcf77721",
+    "lattica-prover-p3/src/block_v2/machine/typed_programs.rs": "1c300570f08826b4eeb92442cbca547b9b84c11c00e5a531eeec6187b62a9725",
+    "src/tree.zig": "427e9dc164968c8399a2126069f66edaab2567bf82cd70a71ad4ace8172f0b15",
+    "lattica-prover-p3/src/block_v2/machine/program/compiler_memo/tests.rs": "b5c8540dfe5fdbc67bc3fe347678c16e5835a523231206a37c30718705e882c7",
+    "lattica-prover-p3/src/recursion/monolith/build.rs": "30e9c8b7cde3b23bc1db5873d5c9b7443318c22fad1fcf4a54febc0c08e08609",
+    "lattica-prover-p3/src/recursion/monolith/gadgets.rs": "d01d746040b31db34109089e27cc9a3351ba013bce9dde2063d684810910179f",
+    "lattica-prover-p3/src/domains.rs": "4b47186d6a0c94c4b7c6f4fe838c7ace7d429415f96aa7b3190465fab0aa640d",
+    "lattica-prover-p3/src/block_v2/gpu_hash.rs": "4d43e64989689bd3b78241973bbcb387f175f3611fdf81c58c657eedc0fc5fd7",
+    "lattica-prover-p3/src/cpu_sme2/goldilocks.c": "fba50e43a64ce8e3b8b0a946bfd455d9896cbcae0d87394f15aeebd021f2c865",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/batch.rs": "e20d4f1afc4c6f6dd159271121720854d63f30b8c7678567c2467a07f55574b7",
+    "lattica-prover-p3/vendor/p3-lookup/src/bus.rs": "011e6719e01cba6b017385622bb7e4485a4f88da3a0bf43761635d4e390d4c13",
+    "lattica-prover-p3/src/bin/block_v2_grouped_artifact_audit.rs": "eb0cd9bdc7795d3847a957b67c407275690532889ce230fd82fa3c29ce82a2f1",
+    "lattica-prover-p3/src/block_v2/challenger/resources.rs": "71e9a364176b8692032cb70bdd74a52d829a39f7bb7979f365591d9fe155dd16",
+    "lattica-prover-p3/src/block_v2/execution/worker_packet.rs": "20c10edc572d487ea766d1f859d3c7ec3cbe2301581d7595deae5b354f3e828e",
+    "lattica-prover-p3/src/block_v2/execution/journal.rs": "2317ef69b501a8f29e10fb3aabb240b658a125bf6b9fe848d999409bf2a53a39",
+    "lattica-prover-p3/src/block_v2/statements.rs": "9ce5867929cb2fdc17360c544acc1b4f621808245a9a03a7bf73b22345f27023",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri/general.rs": "19cc707b7b5e7693cab85bc9527d9fe3e151cd8787b9713bfcde9c6cf78f5000",
+    "lattica-prover-p3/src/block_v2/execution/supervisor_tests.rs": "a2142ccd259f2759c99a575e71d553d12f06b5ec4f29fb8ef1cd6decb5840d7a",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri.rs": "a96bb4b0997d18d73f71fbd25e256e700acb87bb34171efb3ed5e4ee9c710453",
+    "lattica-prover-p3/tests/gpu_public_worker.c": "52bca00adba59792ca2028ccf15bb3b46d85e00a134b16f18eb1639433453b41",
+    "lattica-prover-p3/src/block_v2/gpu_hash/owned_queries/tests.rs": "ea1ec4dc7836361fb099eb042f52fb4eb0277209730f1a3e07483a906c426e7c",
+    "lattica-prover-p3/src/poseidon2_air/periodic_source.rs": "33dd45360b055d7aa0349e9cda4ea1e55897f1a6ea290e207b11aea933158481",
+    "lattica-prover-p3/src/block_v2/machine/gpu_program.rs": "86d139c20acce7b9ba69bb277bf1e3c99bf0c619c0c348d7d44ba2aea8b18359",
+    "lattica-prover-p3/src/block_v2/machine/merkle.rs": "81bdc7094c2c22b33c3873086019199f36a0674603780e45abce524400e52d08",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_tests.rs": "6871befc103c39b48e83f8634fc3a0ca56dc262c13aa6815ddfa8b188472e66e",
+    "lattica-prover-p3/src/metal_compute/mod.rs": "f908c3c419a5781b5598034f950101c48afc5ee76b624a5f803bfb89083a22bd",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/quotient_commit.rs": "27ea3ca715caa89916c60d9f1991fc647d10221866f026b32a7c8abe520b5c54",
+    "lattica-prover-p3/src/bin/block_v2_artifact_audit.rs": "9ee7cfeaec0c6b6967bb2682d0b3c4e75c6196310d07043e18df404d244ee0a5",
+    "lattica-prover-p3/vendor/p3-lookup/src/tests.rs": "902e0b9c8ede281ef2f39148254b4e85985de185ae8753ba2b924a32ab9e968c",
+    "src/field.zig": "ee6e77d75b06495baa14459ac6dec0a63e7247d725f548b6fcd27f8a235c7970",
+    "lattica-prover-p3/src/recursion/mod.rs": "5febfe3bd2b9a513e3c60c0f66e62b32f43d286fa9be5db900fab05a11766e7a",
+    "lattica-prover-p3/src/metal_compute/kernels.metal": "4366d80236c563010040ea8b5526fe692c9b631436acc74d1d672ab02d55a6d3",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/mod.rs": "2fdc4af24659951d3efc7e5bcf5365deb035f9693ac7bef3778a96546904edfe",
+    "lattica-prover-p3/src/block_v2/execution/pool/tests.rs": "d57dd9632282f1a31adfdd30de7d8edf9c47d8146638f8080997dbf27c8e3790",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/lookup_kernels.rs": "054674b1b8bc9b1705d68a54ed85cb586dcea14446469069eee343675c620244",
+    "lattica-prover-p3/src/block_v2/statements/symbolic_tests.rs": "5e82bec99891a197efbc48a3aaf69049747aeab302dc265e8987da565495e321",
+    "lattica-prover-p3/src/block_v2/device_pcs_tests.rs": "8dbff1a61f0c1191d91460a086a26503327b21e272f0df4645e63ab3e76ff8e7",
+    "lattica-prover-p3/src/block_v2/execution/artifact_store.rs": "59260854a0ecba409a42dc0712fd2a53416ff28b2c3f86d3fb295a12ae0dfb56",
+    "lattica-prover-p3/src/block_v2/execution/journal_tests.rs": "573373a469d18e964c6f549b10a08468c3fc18cc0100823630878c3e129cff32",
+    "lattica-prover-p3/src/block_v2/machine/program/packing_tests.rs": "1d01b2a82f0dedb4ad0cb4ebb7ecb9357b41cecc6663a97306900ce8b8a1c211",
+    "lattica-prover-p3/src/block_v2/machine/program/manifest.rs": "e207932db1711b3911ce45a6745474020b90ada74a62c6b462eeb8f0a8bed4ec",
+    "lattica-prover-p3/src/block_v2/execution/verification_tests.rs": "72ba6bf04f0b7fd63f2bd2e53d5de920bccc52995cda9d4abde2f843ed98a72a",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/tests/extensions.rs": "7219229771560b1d79d4f25eb2961fc4bc0c492546425ae1c0bc28ad2b74d1a2",
+    "lattica-prover-p3/src/recursion/fri_merkle.rs": "48aaaedc8871bd62b299e965c322931e85c3e935da0cbd27958833f4a56b1e9e",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce/compact/denominator_cache.rs": "f89c7d4e6897c1bcfc21058305b2a64c84440ea441dcfd3a396fb83507e9d665",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/fri_fold.rs": "028552417541c8ce7ee2ef9fdfc84a63e67d40f788707ea632e9b7f76e844bd3",
+    "lattica-prover-p3/vendor/p3-lookup/src/symbolic.rs": "ccc5481c92158dfc22b773611e9178012bf93a1a64ff7eb701faa2b6ad607b07",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet.rs": "815bf9191719b7829d60ddf8100cd022dcd6a0d06acff325d67fa7b93b5a48e6",
+    "lattica-prover-p3/src/block_v2/execution/arrival_process_tests.rs": "7dee9285cafee8de7a857d7ebe43cfda9cc5e456aadd7bc0fd01a223a1c19a80",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random/replay.rs": "1eb17ef4e91936ec7c68405614098aa524cf05ab9b2d47eed17450292a2e7325",
+    "lattica-prover-p3/src/block_v2/machine/program.rs": "1d4121aaae6544316b20cdb265c08a86f9c411533e25c20c0938b08e0501b3b8",
+    "lattica-prover-p3/src/block_v2/heap_dft.rs": "f3819ce543ee0c4c1f7bad1adafbd9963f92b1772397abeeab578074c1664b21",
+    "lattica-prover-p3/src/block_v2/extension_mmcs.rs": "042b11983e56ec00db1b354896ae021c9c76750b838763eb876eb84f1325c20c",
+    "lattica-prover-p3/src/block_v2/execution/dag_tests.rs": "6f88ecd41b22e8bc9a87d2b0837896e836fcc4bf8cdf2ba9e8fce2f4d016616b",
+    "lattica-prover-p3/src/block_v2/execution/scheduler.rs": "bfc77358d244ecfd9fcf80445c31328eb90ddc2ad61ec5f50d7391ce46e77c69",
+    "src/ffi_integration.zig": "071c71839ad6265a377ecd368c56e180976ab94c21987c2abc7ce30935d2455e",
+    "lattica-prover-p3/src/block_v2/codec/fixed_u64.rs": "a052e4f8a0e8753ba2e7c3ff76bb0367e7f90937c633f03fcf5d5871ada7bf83",
+    "lattica-prover-p3/src/constraint_fingerprint.rs": "41f695147adea83dfa24be61c0250f9960be53301b5ea7f79381e99b4f2b6f19",
+    "lattica-prover-p3/src/block_v2/execution/transport_tests.rs": "f383ac7ff0acc36984585e9696e8407cfaa26c57878e60cc69fd7858f103b75c",
+    "lattica-prover-p3/src/block_v2/machine/usage.rs": "5b8b0609788108ae14ee3445c93deb09ec616a37f2284dd2453167709db6746f",
+    "lattica-prover-p3/src/recursion/verifier_air.rs": "0a077470773ecb0f21783283371026675a9adb0f203e443c6a7e771ee69b61d1",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/allocation_limit.rs": "d3b828620bf1075be5571d824ddb1bff80e224856186c85d6d87ba5b9357dd17",
+    "lattica-prover-p3/src/block_v2/typed_recursive_full_size_tests.rs": "2e2dcc9fb02d5988820a7b5bce80e82661978a0f3e80abc86db1c41df79aec36",
+    "lattica-prover-p3/src/block_v2/execution/supervisor.rs": "755ab143fb05d91be0832ead2390df5a5e8f078785f0a4efceb06764179657c9",
+    "lattica-prover-p3/src/block_v2/gpu_hash/compact_data.rs": "fec38b4671b03688e63d5273a47db585be11f61e7de1a435071adc9e18bf6dc1",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/builder.rs": "ff6da98207f5e294345687b660537d71550d242f0059ba43aaf11bd365877fef",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random.rs": "c2c478b48ea8834235cda442b22304a0fbc281ddecc1a874f943de1105cc04f3",
+    "lattica-prover-p3/src/block_v2/perf/timeline.rs": "0b14c986f5725b9d2a62b56d3b0f4c14d72d52fef2eae7e5e0421d5df89d07cd",
+    "lattica-prover-p3/src/block_v2/execution/resources.rs": "3e0ef5d875bba4fa47a641c57fb32402c43130c3edeadaf7bf5b0901f22bd0c2",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/evaluations.rs": "5f43977d27789b30d05b2eace962f4e03c9aa9e5f054a972bfae98cdb3c0ed50",
+    "lattica-prover-p3/src/block_v2/machine/gpu_program/tests.rs": "0ea729f289875694d7825f64ff955036d2e61ae49adf7cb69eb8792639fd93fd",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/tests.rs": "2ceb798a1947c35740a0f46aa7842e6f0b0b9975396fe5d4ad6065eeb9d6edb3",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/fri/general.rs": "a442bb76bab588ffbef661207c5e8c10306dc0b910bee3b73fa6a286ee0088c9",
+    "lattica-prover-p3/src/block_v2/machine/verifier/pcs/tests/reference.rs": "5951d8a1a964081078a01abf1fa567cfa958788dcefbc3bb3ef6b7b2a700c51c",
+    "lattica-prover-p3/src/recursion/monolith/air.rs": "a1f525193276c71089bb47ab79d01845701e87e2e71f4833cf5a43adfcb8e3e6",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/htlc/tests.rs": "64eb957ccb25b27fd43578ccf544321d7741dbaa07c063965578ec104af997c1",
+    "lattica-prover-p3/src/bin/block_v2_single_eight_probe.rs": "6d0ed0509373207bb85fd38176d2fe333b1e46138d9d2afb256598dd2beb8ed7",
+    "lattica-prover-p3/src/block_v2/machine/fingerprint/bounded.rs": "2cb4765ac61c9e454e5d041311a21de7d46e48076f41663ba3250174fb7c73c8",
+    "lattica-prover-p3/src/block_v2/recursive.rs": "79590e12d28bb82616be27110fdd6f5ebc4a35d2e346429dfc683774467d8cf6",
+    "lattica-prover-p3/src/bin/block_v2_grouped_probe.rs": "966d17b42719e6c446e2076f92667df97c3ff71c98c28035e9d0f7cde7fb0203",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri/tests.rs": "efb9d650c357f4d6f7a56b0142d393cbecd6aca3a7bfe88aa09c9005b9f3b42e",
+    "lattica-prover-p3/src/bin/typed_common/execution_prove.rs": "3edfcc6855f02e40eae25a7c01dd851b4de93bc3b948e1eb3c24042c64a40e42",
+    "lattica-prover-p3/tests/gpu_public_service.zig": "fcaeb209950afd5b77957478d8deaa3a19b6efc3ff994b29c6b10aeb2fefa29e",
+    "lattica-prover-p3/src/block_v2/execution/launch.rs": "a1aff737ee0e9b78b9ce4452c1ce687ca4dececc1f16bc2353eb202c2b768571",
+    "lattica-prover-p3/src/quotient_gpu.rs": "10c625f9ca2c058d42b639d8f426786113c637a375499b244b6c2f17c687d9ce",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/lookup_program.rs": "d2dc067b15def80963f670c68ff954f359a31bae05a0a9d22db3abdab41d11ac",
+    "lattica-prover-p3/src/block_v2/machine/compiler_constants.rs": "fcdccfae866c517e3b20c797d07b63cf279c5dc822d14b04ff9e72d060509228",
+    "lattica-prover-p3/src/block_v2/machine/mod.rs": "79bbc94d0b7c68e0e9bca82b4e25d5ba83368d395902b19b2710c6741b9f6c2f",
+    "lattica-prover-p3/src/block_v2/execution/process_tests.rs": "ea2094fba9d2b8bd2271b4cb57cbcbad25b4f5bfa00ed8dc80ae830bbee4a99a",
+    "lattica-prover-p3/src/block_v2/machine/analysis.rs": "c47316ff701ccfa214b8a860c6e0764ba5bcc254b6261ceb9bd6b6e487398740",
+    "lattica-prover-p3/src/block_v2/machine/compiler_constants/folding.rs": "b749cd6ab17d09cb5726e1f7c23c5911972f5576086b37a14868ba5b72438014",
+    "lattica-prover-p3/src/block_v2/machine/program/compiler_memo.rs": "7b0157e446b4ca20ca326c6558324b7b642c9bd8c880e8f20309485dd0a451c6",
+    "src/block_v2_expected_root.zig": "238c1572da4bf5b0b102a3c7a1bc9cd3eb0dd9ab2da717f38fe31d483c970d29",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/witness/tests.rs": "8ea11b651ce770c7768abeaac673e273ffae71a4cb1a683ddcbced963083ec7b",
+    "lattica-prover-p3/src/block_v2/gpu_hash/owned_data.rs": "2b654c3bdeef0cf3bc99af8c701aa15e8ad3dc4dfcf7dce28ddd68d80b363d05",
+    "lattica-prover-p3/src/block_v2/statements/tests.rs": "620cd7065bff7eecc274ecc22f1d2eb41ee914cb58495dcad4bbcea5dc749d2b",
+    "lattica-prover-p3/src/block_v2/commitment/stream.rs": "d0c730c69afc741df73a0c7da74ade7d1066c55fd44ba1537054240e773d5a0f",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/query/tests.rs": "98b0e12d379df0bc10bf99413382b5c39b58ecaa5b6e853fadd342b7eefb08be",
+    "lattica-prover-p3/src/block_v2/machine/verifier/pcs/tests.rs": "4ce5862efc6a7c4a65f2b0809afda6990e8bdbaf36f685643adc2085634462df",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/memory.rs": "96a8f17920594c6149b72f74e52ebbc2902e9ba70d507dfa6b16adde3e3b1774",
+    "src/node.zig": "536a6a140d61ddcad91f80e2f7df8a52e243aba9206de653e7728e4837b991fb",
+    "lattica-prover-p3/src/bin/typed_common/execution_preseal.rs": "e999b698de55d64f4b94870f3069aae0b9667adfd47f96a94b1ffa62cead898c",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/recording.rs": "3d09021ff5cf619ed829a592345f7a36ab7b2d04157613a42ac81cc17c602f1a",
+    "scripts/with-toolchain.sh": "e4d34f1ce7ac5c7d1124f4a1347c87a4bb2b2284b256943bf5a7fd0ccf97073e",
+    "lattica-prover-p3/src/block_v2/machine/program/compiler_scratch.rs": "e5481b4933f741dbdd808068fa8ef26e1c1603efd48722ab149a92d4df2e4e35",
+    "lattica-prover-p3/src/block_v2/randomness.rs": "bb5c158b38d68569afcf23033a1fc79ae3f7cb750c1d38d419112735de0cdf51",
+    "lattica-prover-p3/src/metal_compute/tests.rs": "611d2c44c4c5a9287c4e7888b85692227a69412e928acae2a7e00515e89dbac2",
+    "lattica-prover-p3/src/bin/grouped_common/adaptive.rs": "46ada534697e762a348a9812e0b19e006200a3aedbcf2a6209fb2ea80d0a6cb7",
+    "src/integration_node.zig": "1ed17a405f829a646334bc9c10ae7f4b78f58a6e194ec6fc7a2859b6f2e2e23e",
+    "lattica-prover-p3/src/block_v2/leaf.rs": "4245ca7665d7ae0151bf4c6f82d684d63c05f8b1c021e9be7625398d63905b46",
+    "lattica-prover-p3/src/block_v2/wallet_worker.rs": "8889500dc3d94239ec8fcc5a70ce6bfa758bcbbd0490512156fc32267f705461",
+    "lattica-prover-p3/src/joinsplit_air.rs": "3a0af51d70927531590259832074c3026bbd46e8ded4715d12933bbd3a547bfa",
+    "lattica-prover-p3/src/bin/dump_p2.rs": "25e17f5672ebaa13ef17025a36ba6bf64df21a77a84c3eaac203b7da492e6049",
+    "lattica-prover-p3/src/lib.rs": "341871d46d0353b2162292d4027f0d06acfdc768d3abd98cb8b849143d6e061c",
+    "lattica-prover-p3/src/block_v2/execution/dag.rs": "585674b51e285da47df6dd6c6ea64bad7496ac83a37bd3c9a290ffda5089a2a1",
+    "lattica-prover-p3/include/lattica_prover_p3.h": "b6ecf30a94166637564c12ae81147ef7edd0747048a2e048d91228873a4eb48b",
+    "lattica-prover-p3/src/main.rs": "63364c6611fcde59f6f3eb21ba185f2372992b483cdf866b07659f59011da1db",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transcript_kernels.rs": "c6acc9fd29ac5297b20859d33b8aa194bd4e2283f6384270edd5ca39ad48144d",
+    "lattica-prover-p3/src/block_v2/machine/verifier/pcs.rs": "d070751ba1ff5834b2459c45774641b671683c9ed47e1c879de4cd6ff6067817",
+    "lattica-prover-p3/src/block_v2/challenger/observation.rs": "97adc76a3e8be2d275a20fb7b1d9e961e930b38380fc7b59aba2484a8a670bdd",
+    "lattica-prover-p3/src/recursion/aggregation.rs": "ffb07547f4b08e6097f09469d93840b6a1a6c6a8283f8e104a64fa72ba592c44",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/compile.rs": "c0330d78eaf64cebf71a4bd2a0261a11f38cb1b6655211221a5fbead03aff0d0",
+    "lattica-prover-p3/src/block_v2/execution/workspace_tests.rs": "91b7ea80999e25af9b2f851ac4d7bd54b7208f3a4eab60034028ab743f4ab705",
+    "lattica-prover-p3/src/htlc_air/periodic_source.rs": "f21098a278d644ffae91a2d25fb3f846f8cd50a390c1d98f390b37a27092611e",
+    "lattica-prover-p3/src/block_v2/typed_leaf/gpu_tests.rs": "e2b2c6fb8a05b2807e338f0ddeeaf6873ca37c4e729f03a8d0ffb124e8d555a4",
+    "src/tests.zig": "196e6690aa8e55c3fc52a3a02f25f7126a41fe06e2777fad098b209b8758bee0",
+    "lattica-prover-p3/src/block_v2/legacy_wallet/tests/batch.rs": "941bd560ef6afd0f74a47c4b534110b630060754995763dd03f2deb1f78913cf",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/opening_kernels.rs": "1ce06a13c7b3de5f2416fad2a5982334e06b8b833c17d97cb3f2ccf22e8025a0",
+    "lattica-prover-p3/src/block_v2/host.rs": "2cc35d71c2599f1a90558a583d9c300cc6bdaefff30b454629d3be2e410c3a0c",
+    "lattica-prover-p3/src/block_v2/execution/gpu_admission_tests.rs": "b505946566b9a41264137d9ba32ba1d191f56d40bd4e3a317bd415fb14503788",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce.rs": "2b82c8bdc8fa084056c82e5338714cf5f50606f8f5a74c3b9ee7f5ebfcdb831c",
+    "lattica-prover-p3/src/bin/block_v2_gpu_grouped_probe.rs": "05f578b11c9b3377b62d376cd7b1fe8b128b95944d63218868d1150ce29a0e65",
+    "lattica-prover-p3/scripts/test-block-v2-multi-gpu.py": "f8c78f24866adb44bcd1cd8a6b6fd79f1858df0efc999e4e3f684da7de6aba05",
+    "lattica-prover-p3/src/block_v2/batched_fri.rs": "18c9cfc9be3f206b96879b0d089221a9ea747417be4486fcc90d6032f14e05ae",
+    "lattica-prover-p3/src/block_v2/execution/pool/local.rs": "29e7ca3a8d2457fb37a31e5ad5c3ba282af303d6eda66327d68d8d247415d86e",
+    "lattica-prover-p3/src/block_v2/gpu_hash/device_data.rs": "36fde425a0058120602ea016228c4b67632ca3785a2cdf6a10295d7289324fc1",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/opening/tests.rs": "0ea057899f0c56c685631c08257be0ea6494730a9f14de8d6e0c6ce776cbf398",
+    "lattica-prover-p3/src/block_v2/machine/verifier/template.rs": "2164e42b0f1bd2665533996f9b90c5fe6b366d5c231432b4b87df7400dc19ff7",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random/tests.rs": "da5d830aff6a101861ddbedea7cebdc929a17d762061d1588b1a79acab02ee63",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/batch/tests.rs": "fe9c9cd09cc6b8a21862ce3d034a14cc8294d3b2c8b0db163693ac9d04ab090c",
+    "lattica-prover-p3/src/block_v2/machine/program/construction/tests.rs": "819e0b453ae3834d7870d97572abc35d5a347d1dfb209f704303aeaeb296debd",
+    "lattica-prover-p3/src/batch_common.rs": "fc57325007237d683f92f277840f8bc7e198ceba72b614665dc218fc6a2d149f",
+    "lattica-prover-p3/src/block_v2/machine/program/construction.rs": "ab75c1c287edf9fa948dd781f150a0b74fd3104098bb8c538d6e1ffd4c0b72c3",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/expression.rs": "6af1616eeebf1834367b04d3dbb1082f4f48e7a47004aaa3bd13ecd575eb55c2",
+    "lattica-prover-p3/src/block_v2/machine/backend/metadata_tests.rs": "265dabfce3c9e4489e44ce77719b2b64a6355a134ad704864af21972f377765e",
+    "lattica-prover-p3/vendor/p3-lookup/src/protocol.rs": "14dfbe05848f5ea40b243d3f25a3bcffa7d05851a562ca32db46706e3bc21993",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/normalize/storage.rs": "b22675bddf3608a4fbc41cee3127aecfd5865c79c5685b12d167f1beb68c0f84",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_readback.rs": "c3064ba30f2ec15ac68c2beaeddb3d3ce9ccc713124d84fe903bba9dc7851ac8",
+    "lattica-prover-p3/src/bin/block_v2_metal_grouped_probe.rs": "178c1ae26ad84681eadbdb14903132a57f2142fd5ba0597593b4ba53010c14a8",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/tests.rs": "f1dcfa123a602cc5764f16cc00e903546da19e03213b6658e81d7e8e62209fac",
+    "lattica-prover-p3/src/block_v2/machine/backend.rs": "b9da5173492570d66852abd90761ce39ae4af4a2bfe78fb345dae8fe2b6b0c3c",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random_kernels.rs": "6ef07c135ae945fe8150bebec0845dd2e7e8f4777faa98e710673347d6bbf2b3",
+    "lattica-prover-p3/src/bin/apple_benchmark_memory.json": "423a039e752737bbf42fcc9c139cfb3a76aa1ea73f7d68e1b82bae5061c0da9d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/fri/general/tests.rs": "cd1dfd8c2ec7debe4c24d46b2d5d966977b4392296ed0bc9d87ab75ae0228ec5",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/query.rs": "631f430a8d4d10494443e1346c7a0579f73b6dfce64857177b1a1e2dc24c3621",
+    "lattica-prover-p3/src/block_v2/execution/test_fixture.rs": "f2d2d3920ca6928a6211958a0bb3d09e80d1331d8e990237bb435ae94e8f62cd",
+    "lattica-prover-p3/src/block_v2/machine/verifier/uni.rs": "24732449dbb61f79cb4d8e5d00066a81b89a233917a53f2c1288e728c87f651f",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_cached.rs": "c7da1ade693a2dd42113235ecee2279a13deb9eb3736a72e58d61c52c7cd8f95",
+    "lattica-prover-p3/src/block_v2/resident_pcs_tests.rs": "1a1382e01b4f4434ab8c07a033af5ec54618e16ec2fd7aded7a4733886b5f283",
+    "lattica-prover-p3/src/block_v2/machine/verifier/batch.rs": "a62d8d37bf5868227dc05f5e2f5054d27281b3ecb1b1ee03aeaa1eaf33e3e44f",
+    "lattica-prover-p3/src/block_v2/challenger/scalars.rs": "c81c38db522c3f261f167fe4417b021737b05ce5199e490eb9f34df1ced5b550",
+    "lattica-prover-p3/src/block_v2/execution/journal_workspace.rs": "88b99963fee811d9b9bebc6ab4554baba9d298d9c6d7dc83e181e311fc3a3e28",
+    "lattica-prover-p3/src/batch_joinsplit_air.rs": "eca74d857a46a9ab9fca2d9ea292f42733bea84004b2c10ce72d8d044baff796",
+    "lattica-prover-p3/src/bin/block_v2_four_wallet_geometry.rs": "b2bcd1ea23d223e272ea9916b5717ec585eaa792c7d8eac018ca82fb9c313f90",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/compiler_folding.rs": "6965114e82a06c1d900405a46da92ab12ee232ce9462b6e67a2f37affd4eb0f1",
+    "lattica-prover-p3/vendor/p3-lookup/Cargo.toml.orig": "0142171fc38fe3490b33ad302ba23815b724c2aa4e66461ded136f1f8e8721c9",
+    "lattica-prover-p3/src/bin/typed_common/execution_recovery_admission.rs": "7676913a47c4ab8af7f62677a8ca738195e4cfe2fd94a25067e557491321c066",
+    "lattica-prover-p3/src/block_v2/execution/worker.rs": "791f98ab4f7bcbfb418bfa401320d7c177ba43b5ba28e19914a4cb88815d0130",
+    "src/prover_abi.zig": "8c765844ecb915ba8425b0ae2f892fe5c6c61c34c53f8413d343789b08cb8ef8",
+    "lattica-prover-p3/src/bin/typed_common/execution_process.rs": "5e51981642840d2ad1befa8849cd53fded542d2809b81f87a4cd2271836a8999",
+    "lattica-prover-p3/src/block_v2/multi_air_pipeline_tests.rs": "be1dba692d2062f95e5f9352e655a1f54ebb2f7677ccb298f8530e5cce3a917b",
+    "src/ffi.zig": "85cb27d1604f003302c19c5a5fd656c36cf64012254c18f391bda9dbc7b49f33",
+    "lattica-prover-p3/src/gpu_constants.rs": "b588ad5cffe13371379daf3e75962034b97714bd8563bf2d107e82bba9448a53",
+    "lattica-prover-p3/src/bin/apple_field_bench.rs": "13b9188e461947020fb67290e9cdd3fc86aa4a8b3492b5fdc3e2a21320e3d817",
+    "lattica-prover-p3/src/block_v2/legacy_wallet.rs": "8672e8fd79b267f5486d877ff7d133f896a15c2901ebb5ee12906fb13b2d4494",
+    "src/kat.zig": "3b8a887de21091b738d2a2329d08754009f01d2bceca7b3f471f90997019ef7d",
+    "lattica-prover-p3/src/block_v2/randomness/resources.rs": "150536e5a6bdf681a643f2b6bfbfe0318cee3122c74a872a6162f9b800d609ba",
+    "lattica-prover-p3/src/bin/block_v2_padding_probe.rs": "2a07fa3ab1222a5eb64686d2f5d728917064af22ada88fa72dd67101b3c54aee",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/opening.rs": "9857420b96f590ec44c955ec25e95a457f1136ca03e6a7b4f78aecd26e356685",
+    "lattica-prover-p3/src/batch_htlc_air.rs": "367ac98e88ba71befa8c3369c2a6a52e8fb562bf69dedb18ad0c3126cf03cc95",
+    "lattica-prover-p3/src/block_v2/quotient_pcs.rs": "bc4205e185a9298cc6477ab6dd05932cbb819ab7bf01a8ffa674143e6d85562e",
+    "lattica-prover-p3/src/recursion/monolith/mod.rs": "70ca19e141fd77e61ef3a4b25dce2e20aaba89ccb1fdeb114875f54c19749980",
+    "lattica-prover-p3/src/block_v2/machine/air.rs": "c3d5f0e6be3ccc9c76137f00f7ddb7fcdce6eec71ba994983b1198beb0dc6f53",
+    "lattica-prover-p3/src/block_v2/opening_pcs/test_support.rs": "feecada55054fddbd380821aadc211ab5ff4028effdc0044815709fcd82fd3fa",
+    "lattica-prover-p3/src/block_v2/machine/typed_finalizer.rs": "0dfecf6f6c964e5bbc6ba412519d9a9d7ccb8c5f724790bf925477c4d2b86532",
+    "lattica-prover-p3/src/recursion/native_verify.rs": "3867e488f4eb24a3226e81858e9db7d7d15c346aa53bda24c9b8cb2ebf40651c",
+    "lattica-prover-p3/src/block_v2/resident_pcs.rs": "6d613a9dd59343f474c51fd7d792c595e352b7626e3ae823421e12de9fe35d3a",
+    "lattica-prover-p3/src/block_v2/machine/program/manifest/tests.rs": "092107ec69f8d64e3a5ba4116445fdf4d5f6447931badbe4cf0fe03106f82b83",
+    "lattica-prover-p3/src/block_v2/execution/worker_tests.rs": "2a783cbda48bd12befe472cdf47d06ac17c8f06a79f5818e381fcaab805d6c2d",
+    "src/block_v2.zig": "222db2a95be66f70779b54e245aef6092f24db5f6a078434162e4431217c86aa",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/public_hash.rs": "7f25cc3665f8af64926d453c5ff9e98c990eec0f3eef43d3eca4702bcb87fcd7",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/recording/tests.rs": "ed994ec1251fa16234086c03de089f4f98828793ff4023e416470d79eaabcc55",
+    "lattica-prover-p3/src/bin/block_v2_finalized_probe.rs": "24ef74c2166c06719f41ecb5d05178747be6513236211ecc021fbff8f8056664",
+    "lattica-prover-p3/Cargo.toml": "8d48ebaf8b13f48ac31277de577391c3bf585a87a4b0e67688876b3bd424ee80",
+    "lattica-prover-p3/src/bin/block_v2_typed_probe.rs": "d995a0a87790372375461952297ab5293eadec63040b3730e7b4a451a473fbbf",
+    "lattica-prover-p3/src/block_v2/execution/typed_selection_tests.rs": "04f1e6598cd803a33d5b0ac6d9e1cfc6d070d25e0cbe8d67ef6d3199df950921",
+    "lattica-prover-p3/vendor/p3-lookup/UPSTREAM.json": "016ca9de617ea79649f010dc60afd570dfc9b143149359a4563b042f78643612",
+    "lattica-prover-p3/vendor/p3-lookup/src/debug_util.rs": "b77cc6e23d7a8eaecbc873db0db4f91d94dfd6e94d738e7cb4a317a62e5d7bd8",
+    "lattica-prover-p3/src/block_v2/legacy_wallet/tree.rs": "af6f85ed5f5c87c496736b2dfb854f34b963ebb4e686ed3b8950977bd1f20195",
+    "lattica-prover-p3/src/bin/field_compare.rs": "67ebaae50231039fb736c75754c2d590d91bf4cec3700188d9e383f67e95dce9",
+    "lattica-prover-p3/src/bin/block_v2_paired_probe.rs": "08ae0dbc241eeb9885abca731b8c3ab08814cd11312c50033eb5e4ab3537ad65",
+    "lattica-prover-p3/src/block_v2/execution/process.rs": "133923cedbcb51adc4b70a99250f1cc34a48c5458297ce93ecf0c3fff672b1ae",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/quotient.rs": "5cdd8e6f84b70b3480d5f37449c897fd54bef93cf53dfe2bda2ba72d214a1682",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/uni.rs": "e96d6cb90b33d44dc3fef73d09e9eb74ebef96c61d888c93fe982a8a07da358a",
+    "lattica-prover-p3/src/block_v2/execution/mod.rs": "f4fdb8a032df4c1aa66ef11a9b2fe0f586aa24fb211184a9c6d24f5c1d0e2767",
+    "lattica-prover-p3/src/block_v2/gpu_hash/fri_data.rs": "1b1076a218f8d9600f6bbe2a5ec3315943b34f87d0f800c47a181c852d0bbf4b",
+    "lattica-prover-p3/src/block_v2/execution/scheduler/tests.rs": "8ea4d309b7e77d71510a783b8a9bedfec1410e802cebe9915b1212f2a7bdcb98",
+    "lattica-prover-p3/src/block_v2/feasibility.rs": "02809c8f1ac49b7eabdaaa70edd9a016600e214d88eae5062902b9daaf37c5b8",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/program.rs": "f7313131babc9d573b3640979c19c76dafd50a8c08977296f6766d0db297797b",
+    "src/prover_runtime.zig": "e23634177047e783ebfcd84a71a8734c82e7a6574b72324407d25dc3390dfe46",
+    "lattica-prover-p3/src/bin/typed_common/execution_native.rs": "81efb857f94f886c6c9c463cb5c05c5f447c8edcbfd1f42a37cb7e79a887af93",
+    "lattica-prover-p3/src/block_v2/challenger.rs": "e9a196552d76dffff964bd6acee0637b0fbe5b8babd6afb3d5c1e6088750e176",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transform.rs": "f5f1b3c31b869ae351e8ea71cb4a5a057dbaa3ab654abc982f4c77e38f63af77",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/input.rs": "207e6e0512344328eebf596f79910c34ffa311c372e16b4233fcd9ee11fe8748",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/query_reconstruct.rs": "0eb57d6e38eb91b0acdef3089c0fda5b405750dd0d9df74707db2f08ff01e095",
+    "lattica-prover-p3/src/block_v2/typed_fixture.rs": "12b37c952f67f0c73e1dba7aad8438a018c79fcbfb7efe1e8a8d5140771c8df1",
+    "lattica-prover-p3/vendor/p3-lookup/LICENSE-APACHE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "lattica-prover-p3/src/block_v2/legacy_wallet/tests.rs": "83eaee1262e2a7857a5857802131f0051f46bb255fe8b801e15802262bab01d1",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/lookup.rs": "254080832d51b3aa3c6a492d626e74a78d9627f9b496d7c50b27a7c324a58e43",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/tests/lookup.rs": "20ab4adc15759655e5bf07624e37386bf2fd30c2b7c6c57568eda7ef4a160a56",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_process.rs": "58896b6955905b7be31d0aac093f52a5e2f87683734689cff22610b6a3f81150",
+    "lattica-prover-p3/src/block_v2/challenger/resources/tests.rs": "dd70587ec6df2c9b49a57aacb8698c86d0150fbf959f5172b3718f8b0a855b04",
+    "lattica-prover-p3/src/block_v2/machine/verifier/expressions/tests.rs": "f0ac80fe41305d1837bb0f5147affc823a7946ec5f4281a7cb59f69f139ddb95",
+    "lattica-prover-p3/src/block_v2/statements/native_public_tests.rs": "78070230f93f1bd6023288d6c5b5ac541543c2330c93105d7b8f68845bf9d4e8",
+    "lattica-prover-p3/src/block_v2/gpu_startup.rs": "6c1c1277241c1a116b0aeb539ff7fbdc3c6b2097326cb0f0a617f31cdd473b85",
+    "lattica-prover-p3/src/block_v2/opening_pcs/field/tests.rs": "53702818668fdfda1b9e14351420ed25fa9e27af8617e76ed0134107b92127f7",
+    "lattica-prover-p3/src/block_v2/opening_pcs.rs": "984b14195275a9397f4f83dc5cf80897f63247df1b4b237fabcd7f239ee421f9",
+    "lattica-prover-p3/src/block_v2/typed_recursive.rs": "8a798fc383a75c1e30825820abc827427218399db84804b4a8226719cdbef169",
+    "lattica-prover-p3/src/native_gpu.rs": "39c1941d075a15f5d3018d374082b89d8084d1aa89672dec7ca7790dda2bfd13",
+    "lattica-prover-p3/src/bin/typed_common/execution_fleet.rs": "e734b73194efebb2301a16a0832c86bba9486a004dc8e1123ef05d0e93966aab",
+    "lattica-prover-p3/scripts/block-v2-multi-gpu-run.py": "ed949770e7c952053407834a901e3bd3960706d94755d71836adbf88ef18dae1",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/evaluate.rs": "a1a12807e272fd0f83404948f7f408a93a39ec41a7bec151b51c17833411f05d",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed.rs": "25940c7ccccba033fbacf111065811436c415ae0b1bb3698b6fff012a02f5a9a",
+    "lattica-prover-p3/src/block_v2/execution/verification_process_tests.rs": "17a34207ec731e4b3c11a0145f02a166f804d039cbce583fc92206e3b402e751",
+    "lattica-prover-p3/src/bin/typed_common/execution_fleet_recover.rs": "0006b257ba2175276a4c28fd375fbd95e8245c1bee6cc4b7ce1e69128f94ab91",
+    "src/production_probe.zig": "6857e2b19e6805bb284659da0d07033f7b86570f35725bc497e8fc0ea52c6c18",
+    "lattica-prover-p3/src/block_v2/machine/fingerprint/bounded/tests.rs": "818a4a7e0a012863d6d019aeac4a14f0e7bc47bb426cd78851d47378f7e46067",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/uni/tests.rs": "b9f14db0f24d99c779777c87ad89541738f286271a5b6d127a43333fb73247a7",
+    "lattica-prover-p3/src/block_v2/execution/selection_tests.rs": "b9f98e43d00204e6cc0c7444112c2d1e1f45a041da1f349db79d7d8b0651ea6c",
+    "lattica-prover-p3/tests/gpu_tree.c": "e95cf6ad2e7199c17f254aee6b2057cb1d37f9070671f52f6db5388da99f99c6",
+    "lattica-prover-p3/src/bin/typed_common/execution_recover.rs": "a9b069f98edfbb643192bfdbd7310903b3fe3e06b2492a9259b35f0ba0544c00",
+    "lattica-prover-p3/src/block_v2/machine/transcript.rs": "cdd344ae87f75f76aca0f1749e9cea35606b3a4b299eea861037abc37eeaabc3",
+    "lattica-prover-p3/src/block_v2/execution/launch_tests.rs": "356ea3bcb05a3851f79826b18e9ceaf8f6cf745c95dc01aeb500654fc5c4cb83",
+    "lattica-prover-p3/src/block_v2/execution/transport.rs": "175e9024fb6010c6415868e12cca23562cfc3ab1b37209970b7f820ae4dd7a1a",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_process_tests.rs": "93c3a7debfe7ed2f82939dead30df04929e8480ee232b56b751f1e0792ea8cf0",
+    "src/protocol.zig": "679869437618a162132d963cfd6a6e319570291acdbb4f874a03e1e6d34a8c9c",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/lookup/tests.rs": "2c6e5949b6e9cee0c88e49e86d071fbe99e50a14e03de801532c7de492724f4f",
+    "lattica-prover-p3/src/block_v2/execution/worker_cached_tests.rs": "b3e828e45bced5388cdfc58cf289889144c855dceea463af71dafc2178474469",
+    "lattica-prover-p3/src/block_v2/statements/registry_tests.rs": "f84bad0305a98f0774a1b81db3db0259f446e5562f24f111782b493e3729c191",
+    "src/primitives.zig": "4ae14d8ed14b5ea3c826b79491c94c31ead21c1cce94eb2f5a58fe780dc1a19d",
+    "lattica-prover-p3/vendor/p3-lookup/src/builder.rs": "2c2e6e1a0736d889a73032f0949f17dfdca5eaa4d2c067453a4fb5f6f13441ec",
+    "lattica-prover-p3/src/proving.rs": "2fba1612511ef79aaa1f47937274d777858c6ff0385e876ce319c6d251141aad",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/periodic.rs": "09dabe6644de9008167a442e6a0e3fd9d064482c7b27aa62f383120ae7fdfda2",
+    "lattica-prover-p3/src/cpu_sme2.rs": "ebb97906ceba2c5f02b3ec6bdc7338115b0f1363145269867d735f702dd6a848",
+    "lattica-prover-p3/src/recursion/monolith/lineage.rs": "5a9836d306f9a8635c7414440e79c7c63202b019c8183e02356061fa33a3f4b1",
+    "lattica-prover-p3/vendor/p3-lookup/src/lib.rs": "207337945241fff7ecfd2de927bafe21703edc2d985aec5d6cfa81d5cbba65d4",
+    "build.zig": "393a4923a3d1267f798b3ce5e73bf042d86030cb4e85d418e1b0ac0f8e51e862",
+    "lattica-prover-p3/vendor/p3-lookup/src/count.rs": "943038f6051d447766df9b95cb7704f87461586ab88c42ee956c8c08d1c4e84f",
+    "lattica-prover-p3/src/stream_prove.rs": "a7553d195879258313b5a3745cdb3dec2ab23c39c53dfd85978805a45999758c",
+    "lattica-prover-p3/src/block_v2/wallet_worker/tests.rs": "e9b67e679175ca7358f857381e5c3345d24d6f2dc4fc3351e1af5ebeefaf239a",
+    "lattica-prover-p3/src/block_v2/gpu_hash/salt_data.rs": "3416fc1c13c8034d808d3248ae60ea21c00c13db0cc4af9b95f443b0693e95c9",
+    "lattica-prover-p3/src/block_v2/machine/gpu_registered_tests.rs": "2a831f2200f9d411f972961309ddc16afd72fd7d2446560f501f51175e3147ee",
+    "lattica-prover-p3/src/block_v2/normalization_workspace.rs": "be32cb3d3a7b5500f06728786a95d71212808d3d59d6db1e4f5ee93a1a181341",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random/replay/tests.rs": "f43af3ce61c3ad82d2baa8f0d7af64500bb04b5d39eca8f9d9834017f29a7567",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/fri.rs": "8a68716dba3c6a1dd1ee785797953351e75d687cd2486190795e55009c877e35",
+    "lattica-prover-p3/.cargo/config.toml": "3e53c2589d496b9e70431c6a097f5221051128f646009694eb35e487e0518ab4",
+    "lattica-prover-p3/src/block_v2/codec/proofs/tests.rs": "16fed2c269bf50a36701f7e6f760a30e13ba87ac0f440ef06edae29a3ba4e049",
+    "lattica-prover-p3/src/block_v2/native_gpu.rs": "11d8b6f4d4acb872c10bf00a6a5147f59cfb9b1808654764b1fe74d83cb2b47b",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/domain.rs": "d9e250713542069ce3bf1a0b2f77dd4918cac0c79f1c8253455c84e883505592",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transcript/tests.rs": "44c8f3317cbe0f8df807ed2a7e683b2f6e205dde10006dd3452d1524ab6c8c8a",
+    "lattica-prover-p3/src/block_v2/machine/verifier/periodic.rs": "2147d72d95008e135502c719ac08447802cb1e4028958aa0f228085c0f530f08",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce/compact/tests.rs": "3ec07087d08f8faee4f4bd5944350b6e8e27a7d8fc72a70521005c901c1a67e6",
+    "lattica-prover-p3/src/block_v2/machine/program/proof_inputs.rs": "0128749fb93a5058471418f12cc19f3c56be623cae8be0ebc5ce3fdf81c4f2bf",
+    "lattica-prover-p3/src/block_v2/execution/worker_cached_bench_tests.rs": "40ea77471252248d474ebec32bd5c9db8d1d18256820f051db172a2e5c561bae",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet_kernels.rs": "9c852660676df98ad0d3733fdc86e903cc3ba10ecd76bfde0a3df6eb18ce8aa8",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/normalize/tests.rs": "6709f1c58bcb892c1af78ee19521f0b3fd9c165ecd28a5af56adec8db50c37e4",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/normalize/storage/tests.rs": "f4442f042ea08961b558697c15fc03c865fdddcc4204b10479463fb99e1f310f",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri/general/tests.rs": "18af7ce93b8c9c299481494f71832d08a35c4f14b544a897e3059c8abad9f4fa",
+    "lattica-prover-p3/src/block_v2/host_wallet.rs": "64d1d442a29f68a6934e5f97dce149cbf9d67b36b2bab94b7e4b64746083df0e",
+    "lattica-prover-p3/src/block_v2/machine/program/compiler_scratch/tests.rs": "62743fea6d67a437dd1c47069f6a25fdb8a1138224c704aee5760520f575d608",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/htlc_kernels.rs": "90f36080911618aba73d151f724b95f4c7a32b704f47304ad59f6d6516e0db4d",
+    "lattica-prover-p3/src/bin/block_v2_cpu_worker.rs": "2db37bbbf197e507c79e670ccb9429f4c7bbab293bf86f47067f7ee2a390a3f9",
+    "lattica-prover-p3/src/bin/block_v2_grouped_publics.rs": "9957c2af93af20ab9caa4f31d4510743eb1091f7ac87cdd3b6f4f6e2962e72e9",
+    "lattica-prover-p3/src/bin/typed_common/gpu.rs": "59aee9e5d50b5619760a3172300377366986897d299814049fc6f494324bb6ea",
+    "lattica-prover-p3/src/block_v2/machine/gpu_backend.rs": "fa3c10dd4394fb3a3187d6406ca64c9f7ab3897da4dd14cad71b993d97eae459",
+    "src/wallet.zig": "3e423f480958bb12de20bbcea0683b407c6ec96997ee1b27caa483e4dc8abf2c",
+    "src/block_v2_host_tests.zig": "1030945b3aebecf02a528979aa86961f744f0abb0c0b05e23ad58f872b9c5a33",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random/public_salts.rs": "bd1cf507db51c69bc55aaaa7d233681f2bfbe4ebd096741ef9eb87d5dd52a5dc",
+    "lattica-prover-p3/src/block_v2/typed_leaf.rs": "8178748216089d5a6e3b4297c38ea12850bac2d01c417725c412dc040449a587",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned/tests.rs": "b70dce9502c0cd72016bd74d5088a45aaddda7102b80da83d8b04cb4202ef5fc",
+    "scripts/run-wallet-gpu-worker.py": "8fd2fac3d65fa2f10436eb3aea649f0b393f794721a886a4b90ebd616efee0d6",
+    "lattica-prover-p3/src/block_v2/machine/verifier/periodic/tests.rs": "9a4bcaf54aa9dca385ac4e464296ea46c37b43d104cb1cda14a2239fd11208bd",
+    "lattica-prover-p3/vendor/p3-lookup/src/folder.rs": "685bf8c518282b206da7548280a3682e6f35d2aa2ee3c289fbe4b7c5748f263a",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_cached_tests.rs": "3aea9f3458f8578deed01f50d90605ea0520e9d71c0fb113dfdbba433c26dcfd",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/observation.rs": "167380c679f2e44b6715dace16783cc99b843f7448212767261f609949e79fb8",
+    "lattica-prover-p3/src/block_v2/execution/os_worker.rs": "e86cd3e9101c752d9eaa0f212b67b56ecb2e9e318b95238c1f43613d4f6aa451",
+    "lattica-prover-p3/src/block_v2/gpu_hash/owned_queries.rs": "8f558171bfa330fa563f69c1d943cc3f2071b37b53ea7a31f49190ed4385fb5d",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/mod.rs": "3b44317b31b98bb14e40b5fe5bcd93653bdf2a446478e242e8bccc5a878f5548",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/LICENSE-APACHE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "lattica-prover-p3/src/block_v2/machine/circuit.rs": "12c08fbd671ac6b79a296d8f47cd5aee29c6d1fdb36b78066a6dbcf0055bda5e",
+    "lattica-prover-p3/scripts/block_v2_resources.py": "8d5b4159094838c7faf46d385f5d4f4747f272d2f727ad22b9e24802b367e172",
+    "lattica-prover-p3/src/block_v2/execution/native_worker.rs": "513de609805b1fe150763940eb957242651d1ce68c553e70faa1a6fd09195bdd",
+    "lattica-prover-p3/src/joinsplit_air/periodic_source.rs": "473c67402a3bdda50cc88e39df81eb0a03c614dfb9638bbd81a0305d98e4d685",
+    "src/block_v2_host_bridge.zig": "13bbe05407af4cc0b2c43dc4320006e9e2bd6be41056fc472359f14332663df4",
+    "lattica-prover-p3/src/proving/tests.rs": "249499550f92b42feba19ed7a4cfbc8238085112c37e114376ab59e8b3386619",
+    "lattica-prover-p3/src/block_v2/witness_pipeline_tests.rs": "baf863ca01ad18ff0feac21de4d4fb10bac99af3635c92ca21b35dd26304bb3c",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/public_hash/tests.rs": "4c41bf04394ff6da84c415a8f8b9e8a1597a68cfd993c2e620595046af538385",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/tests/device_pipeline.rs": "052e0744d4d2949bd81033f9d9146ffc0836c5da2345ef247f4e02a2deec9bd8",
+    "lattica-prover-p3/src/bin/grouped_common/mod.rs": "39bbcadd79109fe34d3e0f1789488ef3895fb8e93450f2df4ac7835cc7e4ba1f",
+    "lattica-prover-p3/src/block_v2/codec.rs": "0f19c4ae2161066a6edab7dc25f7571efd3fed2f7d646da66f905a1eae100062",
+    "lattica-prover-p3/src/block_v2/random_storage_tests.rs": "f0269f818b733be8035ac8229c3841315699e60ef3118042e8ebc44fa33477bf",
+    "lattica-prover-p3/vendor/p3-lookup/src/traits.rs": "466cce3a75ca3ffea91f8e1f5b9142c916568cee62aa7b8219957c4caff85e98",
+    "lattica-prover-p3/src/block_v2/codec/proofs/schema.rs": "0c87ec0b97cdabb0b09f495a55b7c19832835362fd3f4462d6dd011cd0b2748b",
+    "lattica-prover-p3/src/bin/typed_common/execution_bootstrap.rs": "ec0039c19d4dc65d08e9a45b99c8f23df3282c100918c25d073c8ce33f950312",
+    "lattica-prover-p3/src/block_v2/commitment.rs": "f9c7fba59d622b18fc733cb72d25805c913f30b4e8b7bc51363ee574a720013e",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/scalars.rs": "464ee89591da7d51b8c2874ee88e3e327c322e113cda5b9eceaeb5aa103ad651",
+    "lattica-prover-p3/src/gpu_device.rs": "801f7ea3749c1114455b7f243b686b50b69b83e80ac7424fa7f46493690dc1b9",
+    "lattica-prover-p3/src/gpu.rs": "8743ba17a51833f2967cbaf6b712503523e044ccbdd2b7248ae315b49ee0350a",
+    "lattica-prover-p3/src/block_v2/codec/proofs.rs": "f17e5364a8091abe8e20efed19c8675bf00a853402852c0c8edc84aebbe3458c",
+    "lattica-prover-p3/src/bin/typed_common/execution.rs": "b655a91babb96d028cfe3c11eeb73f55d2e0dbcc78534f221a4c7004f0f113de",
+    "lattica-prover-p3/src/block_v2/execution/worker_packet_tests.rs": "a56f7f014d477673e0594440b7aee5e0b248dfc27eeda34f2c653949d989e673",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/opening_quadratic_kernels.rs": "c0e6f84335874c6f08717a71424591ee925f28973418414a80466702d35e725d",
+    "lattica-prover-p3/src/block_v2/challenger/tests.rs": "4d62f0d19edde1f98c5ca1de84c225ec0413c5ff6572723b2623997e75e2cef4",
+    "lattica-prover-p3/src/recursion/transcript.rs": "9d4847eb383c6f45715c05ecc934f33879d343f388ac24f29ab95e0efe459b7e",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transcript.rs": "eb82b912b8561045f4b52c09f8e517480721c39f3681ac646b8096bbaa15a978",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_tests.rs": "f3f674d5529f9d65df2657b04ec543dfbb0f14ce78a842cfdf820d2d5fd3ce45",
+    "src/codec.zig": "c097cac73a8b3332e959fc2c6f44c01884869a2c7abbbc9e4b08fd16eb92585c",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/tests.rs": "161e0513b314ebb9b155816ff5404155ca21d53ab5d7b82e0cd9f12d7225022d",
+    "lattica-prover-p3/src/recursion/monolith/tests.rs": "ca0d65d1a48e4c21d51cfbb8950f5bb97d3a9de8ece7aa24b0ea91a09e70f444",
+    "lattica-prover-p3/build.rs": "51bda6326566e5a4643dcdd07b90381cdf727ce125c2a9fb9d4d01f190b356bb",
+    "lattica-prover-p3/src/block_v2/machine/typed_pairs.rs": "cab656030f4d628938a440a03ffe3a3990c6a76cf7c90109d78ffb64b01679b9",
+    "lattica-prover-p3/src/block_v2/statements/compiler_tests.rs": "71b8ea4b6f7f0b913010cc26ed34f1060606aad50bbb12ac437f8daf55c8db77",
+    "lattica-prover-p3/tests/gpu_wallet_worker.c": "5d0b2af1dd29cff588507a4194c8278a8b384773482f22abea0317956812d29f"
+  },
+  "source_archive": "lattica-prover-p3/benchmark-results/gpu-result-storage-20261010/run-01/source.tar.gz",
+  "source_archive_sha256": "00fa417fcf100098d3061b866d295307f248275719ba1c8bf652361489253e23",
+  "artifacts_root": "lattica-prover-p3/benchmark-results/gpu-result-storage-20261010",
+  "audit": "lattica-prover-p3/benchmark-results/gpu-result-storage-20261010/control/audit-01.json",
+  "audit_sha256": "edbe85bba03b0509504f3bf3bb07414b423080a7ff90a7d8ad690fde5f8aabc3",
+  "artifacts": {
+    "before/lattica-prover-p3/src/block_v2/codec.rs": "4d8b65f9ebb790b3da3c98a66650194b7e93a9e695b92076f4fdfc13e060f160",
+    "before/lattica-prover-p3/src/block_v2/execution/worker_packet.rs": "f211497e362d263fcf28487096b05ae3e706a95bf21a83856fa332a3021279ef",
+    "before/lattica-prover-p3/src/block_v2/execution/worker_packet_tests.rs": "0a901dc352cf20ce917fc3fd5a662e584b8c601966ddc9696a27fc8d7935b6c3",
+    "before/lattica-prover-p3/src/block_v2/execution/worker_typed.rs": "9056dc996a3ccfce97da70b3a71a9d6b264a6e762dd6578176f1f8810361c53e",
+    "before/lattica-prover-p3/src/block_v2/execution/worker_typed_cached.rs": "e543f4caea8255f4cebc5b89518e76ab34233c0c7b7c85eb67d299f7e7632a22",
+    "before/lattica-prover-p3/src/block_v2/execution/worker_typed_process.rs": "5ca5fc93b1025f0cd191ffc64eb607de88276ff1cfdad20c0ce16e5bf442c08c",
+    "before/lattica-prover-p3/src/block_v2/execution/worker_typed_process_tests.rs": "42e66c2bbc790381c5eeb2f7bbd081891b843ed74555475a10328928250def4b",
+    "check-01/source-files.json": "9d275bb7860b37cf6d4097315662e61d128bf031c5a878fd5efb9aef3e722b6e",
+    "check-01/source.tar.gz": "bae6428277e52c7ab5a1160b7d384162bb8a8eabd7e4964fbac23ade9981326e",
+    "control/audit-01.json": "edbe85bba03b0509504f3bf3bb07414b423080a7ff90a7d8ad690fde5f8aabc3",
+    "control/audit.py": "88db6b5fd0695d1e83e683b813cceea6bfe777b5b928ad5e4ad488bdb5c5d618",
+    "control/before.json": "096d31dc175c9e9bc11330956d82c1c8219cc195ddc390d02ac9f18a0215da6c",
+    "control/build-01.log": "7ddd6dac468dc2c1e0a90779229f92a62c130feaf940481eec7cd0ec55adabe4",
+    "control/build.py": "318d65e57335f2cc6172929e021eb3121bf011dd3d60a843dcf1a806ece4f5de",
+    "control/changed.json": "f94e468c34a7cb09daddd94bdb3157a56859af7781174af89abe4f396856549e",
+    "control/check-01.log": "e8f263968575435dec50aba2c387bbce01bfd42a47bfcc703392807969ff891a",
+    "control/cleanup-01.json": "f24d0d35134bcdfc985d68ed59279b95408315be32d309d51c70cef6243f06c9",
+    "control/cleanup.py": "acc0e16300545068e31a535215db4bf5672d8e320d20b562f75d3fdcc7a42682",
+    "control/cpu-batch-01.log": "94445da155b79846098b13adecebc39a4dc96c0a8f740d0012600a3be5ed62c8",
+    "control/cpu-commitment-01.log": "1c4b3fa7e57612082296598a92886020e4f504815bb63ed18d2678c9bb4c994d",
+    "control/cpu-compiler-01.log": "c9ef892db59571753c82872a11900e9faf0fee9efd15d8cb8e28b51bd12084c7",
+    "control/cpu-decoded-codec-01.log": "3910414a2b171a6ef734ec87696e831fb253e3bc05df4f4803537adf84ebfed1",
+    "control/cpu-evaluation-01.log": "a1ac8edb3b9fa65b78226deb68fcc46138e18cac461f8d2e9067045e598dfc90",
+    "control/cpu-job-01.log": "9afc310c7864849df6477b3e7d578abea41bfa6796904ba817003e97648b2172",
+    "control/cpu-launch-01.log": "69fa36f476136552c0a26c8c963609d0d378ee6adb7ad2caed17f58b41c9671c",
+    "control/cpu-legacy-packet-01.log": "658c5a3ab11928fcdf3c29738495e3e7767ad1aad07659ffb6fb6e0b361dc261",
+    "control/cpu-lookup-ownership-01.log": "c605a75d7a6eaf8690978216514ea11607e445c45f18aa6842bc307b34257b82",
+    "control/cpu-merkle-01.log": "127f429064d499be9acaaf192e3b2ee11af5e37c774bd93240395a8ad8799b20",
+    "control/cpu-native-worker-01.log": "e09498779994c290a60da48ec857cb685c707d8f1b3da5c1d4cc70c7fb516a03",
+    "control/cpu-pcs-01.log": "9f9b790a5133b50c506da99d08d0c9ba3f199f2b7b3aaa93c98a78b17d378c02",
+    "control/cpu-periodic-source-01.log": "e66f3f204c7c1744bdf3533834f5477700a8314130951d74ed40fe916270be67",
+    "control/cpu-program-01.log": "3b533326970c8fa1e86faf5497b3e16384dcdb5f0a1e782d776a82e0985153ff",
+    "control/cpu-symbolic-01.log": "abd3f87dceccf3a6adb5661b3459264689399f040ea13d61e5ec9f889573777e",
+    "control/cpu-typed-cache-01.log": "604ec1ac732e38524dff2f7c5ba896ba2f897e2be4f9e363a2c03ec90e602137",
+    "control/cpu-typed-packet-01.log": "f31c6ce8dffebeff23608a16cf9866162b04e6dcc05dbe3a914f7b018ccfea32",
+    "control/cpu-typed-process-01.log": "76007639025bbac518c3456c702dddbd322a861cecb3a1637610140031b1b74d",
+    "control/cpu-uni-01.log": "e807b01e70271a022bc195c77008d220bf9433086e10c7d00b1ba3373b88dc4f",
+    "control/cpu.py": "56f228ba76de835603e7d7deaaec9d0a0d39057fad905dc4a36f1408a70d886d",
+    "control/extra-tests.json": "4511df74332cf806de0c447d8af850e7439c4522f9848348db2735248c9e62f7",
+    "control/parent.json": "9fdd297e9c41a033f4378aae7d901c801a42272fad7732b638e501c1ba543671",
+    "control/qualify.py": "e2ad8a389115598f415d7885d1afe3256fc8163f825cba029504d6b6544d7f70",
+    "control/record.py": "dae9c6033e058031a4c62bb97a7513a00f7706b92dbe2ace8c1c828f4e8a981a",
+    "control/staticlib-01.log": "8177baacefa8b737751490ab343e25e99f255b4e42f32c272a11e41e97214fd5",
+    "run-01/batch-verifier-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/batch-verifier.log": "085da41c342fca3619a8797b76e6e359314d3922ff59e470cfe06794ded2260c",
+    "run-01/build-01.log": "7ddd6dac468dc2c1e0a90779229f92a62c130feaf940481eec7cd0ec55adabe4",
+    "run-01/c-link-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/c-link.log": "c3c58fa2fb6ac357239e91f9722c390525500d4a8d657c6030e9e084f4b68104",
+    "run-01/c-service": "99270ca5412bf67d314e209878ce42179f6fcca5c032a00ac77e0614afba7500",
+    "run-01/commitment-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/commitment-unit.log": "8ad03a27844a553b14b16b2d050d50a85b82a1356afc2b5e6848b9a9941b0333",
+    "run-01/compiler-gpu-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/compiler-gpu.log": "ecb59e7c47ecbd797025d6d7846914abcd84ab0e2b779cb4b38313020d90892f",
+    "run-01/compiler-storage-gpu-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/compiler-storage-gpu.log": "21307f400cd26fad5010136b54a2803c8bff24314a14ee9977522ef57c52a0a2",
+    "run-01/compiler-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/compiler-unit.log": "73dab0b4ce681ce13db72018fef06af5e98a861952fe31d6c4b29d79e7dfe00b",
+    "run-01/construction-limit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/construction-limit.log": "aca1f5d2423c9b0cd2e9eb689c06ab7ac2269d3f288648713efa26d96030b700",
+    "run-01/decoded-codec-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/decoded-codec-unit.log": "39ae9762cd6f4d4a1304935d4dd14b7d61f109607a83650e5ecab467969112a1",
+    "run-01/evaluation-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/evaluation-unit.log": "ad0e339190453cad3c1ca3edcd10b329d2f423a0cfdb5071fb4941c19c0637c6",
+    "run-01/full-size-telemetry.json": "77a7f88ad19899cb9fcf90b8c3a5eb8d067be58bdf85a554cc40aa23ab44e17d",
+    "run-01/full-size.log": "9aa992b5009ae7934fba77286d122b18641fbec462309140c25c3977ee881eb8",
+    "run-01/inputs.pins.json": "0a1d620101b9335617f0515eb5a8c516a123ae3fb8617066dec771acdfd3e086",
+    "run-01/job-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/job-unit.log": "a0a166f4e0b304479d98969287b862400730e059d9094d9d9ab91b17111b2744",
+    "run-01/launch-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/launch-unit.log": "830a1ed92a92cd066f418c3372e63bfdb6c873661659e68e9ab7c7a20164ca2a",
+    "run-01/legacy-packet-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/legacy-packet-unit.log": "79c44922feac25de3122bbc3ba149fb04b0f697cd4c45bf71e0eb777db8f8b2b",
+    "run-01/liblattica_prover_p3.a": "494bdcfcdd3cc33a5b39ecd6286a591787d46324f75c684f757500b44fa4ade1",
+    "run-01/lookup-ownership-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/lookup-ownership-unit.log": "dd4ac064c9a10a8165262c0a11692c566cb45ea3434504edaf12f29b18630d49",
+    "run-01/manifest.json": "8cda89958ec4622bc83f33e6c646c9d0034f361513fcf494bcf6b98f3fb64d6f",
+    "run-01/merkle-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/merkle-unit.log": "18813b5bba8b7472cfe1814c1a35b47e5baec25068ba4d71fb1ff8e8c6f034c7",
+    "run-01/metadata-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/metadata-unit.log": "adc4833c7d4b9bd4fba8d5ed1436e9ee7abce666c0ac8c2a42fbd66dbda9f69a",
+    "run-01/native-worker-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/native-worker-unit.log": "21627a9ece5c46bb4d96ae6daa4c32b41db5a220fb8372dc30637ea30939801d",
+    "run-01/pcs-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/pcs-unit.log": "6bceb21150b5c96b5316545d9b42156aadd7f54a91750b199e02220e101a5133",
+    "run-01/periodic-source-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/periodic-source-unit.log": "3c054c0f82f1209460f0ff16f7d7c60286c9097bd1fc707332c8778229ac6fb5",
+    "run-01/program-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/program-unit.log": "5f6efe5e1ff68e3356cbad35f453eca60564e54b0b36739bc01e4243e009d3b4",
+    "run-01/public/budget.json": "893acde58662dedd2af4f5402cb5a94d1dc5b07b72451a70556947b1f313da7a",
+    "run-01/public/construction-limit/artifacts/.owner.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/construction-limit/artifacts/w-7be0f58daafbfb3ce97d30b5d1911dd640c1cd764285a75448520ea4d36ac7ab.proof": "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+    "run-01/public/construction-limit/bootstrap.json": "04db43f310e4f21cee49b45b2a45c665f4757fd89e3fef4cfaf8be5f5ac22f51",
+    "run-01/public/construction-limit/budget.json": "aac44af5d439a2f5c818f3b6a2fd39f81e292e9d30267d6cf235102c970ef4b2",
+    "run-01/public/construction-limit/journal/.owner.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/construction-limit/journal/state": "2fad65fa111c458a5894e3e82bf91f8a41ca51fd540adc4613289e4c5c96ec69",
+    "run-01/public/construction-limit/launches/.owner.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/construction-limit/launches/84db9f29e9780f90d0d96642f08649dbf8e35cb9dd1101e57b6a6ea2c500f432.intent": "8e0fd1d1a6fd303d9848936f95d7d81d271188eb37934b55aa2dc515dad29677",
+    "run-01/public/construction-limit/launches/84db9f29e9780f90d0d96642f08649dbf8e35cb9dd1101e57b6a6ea2c500f432.permit": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/construction-limit/launches/84db9f29e9780f90d0d96642f08649dbf8e35cb9dd1101e57b6a6ea2c500f432.reserved": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/construction-limit/launches/84db9f29e9780f90d0d96642f08649dbf8e35cb9dd1101e57b6a6ea2c500f432.started": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/construction-limit/launches/84db9f29e9780f90d0d96642f08649dbf8e35cb9dd1101e57b6a6ea2c500f432.worker": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/construction-limit/worker.log": "2fdaea0964cb4d1bc2712903359c1fbdacafb9ace73cdf4ce99f58a5f9d04aab",
+    "run-01/public/environment.json": "e7bc50ecd5a7d7af07c7f79fb33669e556cc1bfd3d2b5d46979b56e31e5b8088",
+    "run-01/public/fixture/body.json": "439bfdd59b1711eeb06970235c2dd987c33af81ca78c4020810cb7f3c01cc87b",
+    "run-01/public/fixture/height.json": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8",
+    "run-01/public/fixture/key.1": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0",
+    "run-01/public/fixture/key.10": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675",
+    "run-01/public/fixture/key.11": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1",
+    "run-01/public/fixture/key.12": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f",
+    "run-01/public/fixture/key.2": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd",
+    "run-01/public/fixture/key.3": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269",
+    "run-01/public/fixture/key.4": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764",
+    "run-01/public/fixture/key.5": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef",
+    "run-01/public/fixture/key.6": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630",
+    "run-01/public/fixture/key.7": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507",
+    "run-01/public/fixture/key.8": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c",
+    "run-01/public/fixture/key.9": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf",
+    "run-01/public/fixture/wallet.0": "a13779aa339ded5c4b317904bd84e164e9a2e8cedb00114ac6f392227fb1fcc0",
+    "run-01/public/fixture/wallet.1": "47aad055455d5723788b6b68e489fa3f7ab55316a67aa99956c1d70997b5762c",
+    "run-01/public/fixture/wallet.3": "710d66931d1eb49fc91f69e3d59b5afd5ae535b88aaac7d76e73b525d4a0d15d",
+    "run-01/public/fixture/wallet.4": "32f2c75034838a4af9d533ec06631e4043ed9f627261eace1e73f47ce0f6feb8",
+    "run-01/public/fixture.json": "e835a403ee12911a8379f3efde4f7c05ac1b808dfd0cf4b64c5d7ecbd8cdef5b",
+    "run-01/public/full-size/artifacts/.owner.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/full-size/artifacts/n-47890bf707c1d513049efe103dbbe9b26c6b8115da458d14c0d8fdc5658c09fb.proof": "56fd40d44c98d8e5e5652a0a01163d74b2d1693af74ae0ce0228cabe3548fc08",
+    "run-01/public/full-size/artifacts/n-9f75dc5c61f81d1eca0de5cfc892644b0e8842dc60ad968576a998f71167b5bf.proof": "ff3491e5bd2c0708a84cef856333c6bfd90a090937d881d240c734498817fbdb",
+    "run-01/public/full-size/artifacts/n-cd2728c6ccf6d461dbf3662a6cec65d578d1cc518b9d3bb30ca36ec6ee4b03bb.proof": "952663d068b78672b23fb50cd38d58eb571a4b7355c4be00c9b73293fee27af3",
+    "run-01/public/full-size/artifacts/n-f01dc017888c75748ecbd8f472bd6ad4fe60bf79eb36953c234bff26090e338f.proof": "d806845bd405d8fb50aa791e5505fad6593403c021e069328e5e98504fd47f67",
+    "run-01/public/full-size/artifacts/n-fc22bbabc2f4fc3903bf9adb67a8bc04989e1e309f3379e90eadb1914996c29c.proof": "8cff3cea5d956e6fd4d98426e07d597abffb7f24ed17410c06285162fa40af74",
+    "run-01/public/full-size/artifacts/w-369c0f720b20414dd5dfddfa981b54d30404213461f64143f705d80b08663101.proof": "a13779aa339ded5c4b317904bd84e164e9a2e8cedb00114ac6f392227fb1fcc0",
+    "run-01/public/full-size/artifacts/w-b5343af5afee4ff0ae8a67a944f887e58c0fa725f4d6a7283bad80b713a538a9.proof": "32f2c75034838a4af9d533ec06631e4043ed9f627261eace1e73f47ce0f6feb8",
+    "run-01/public/full-size/bootstrap.json": "3f0bc17924770d86f8695ff0924625faadfb429e41a38da0bb4959b25ce4fa5b",
+    "run-01/public/full-size/budget.json": "16b34f3e0d81860cceb2f38e4774457001d8778bb170d77bc808737c05a50761",
+    "run-01/public/full-size/gpu-memory.json": "15ca668870783a51bae8efab8246d09fa412987d0bcb3a1819eee8a7185abb63",
+    "run-01/public/full-size/journal/.owner.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/full-size/journal/state": "4c2968c7db09442b4ed906143e58f08109bc7897374fb3ad5ac1a4ce35f6cc36",
+    "run-01/public/full-size/launches/.owner.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/full-size/launches/2da01355264ebb1e08938614ad75f7ba3be33a1d93dd6bd1284c43cd8b637d2f.intent": "518af94652d9679bde86a73ffb239656a23bed291275f8075446e401c0046206",
+    "run-01/public/full-size/launches/2da01355264ebb1e08938614ad75f7ba3be33a1d93dd6bd1284c43cd8b637d2f.reserved": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/full-size/launches/2da01355264ebb1e08938614ad75f7ba3be33a1d93dd6bd1284c43cd8b637d2f.revoked": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/full-size/launches/2da01355264ebb1e08938614ad75f7ba3be33a1d93dd6bd1284c43cd8b637d2f.started": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/full-size/launches/2da01355264ebb1e08938614ad75f7ba3be33a1d93dd6bd1284c43cd8b637d2f.worker": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/full-size/launches/497a7531d3de624bfd9d74034b8e1767569f3c6dc56557ee0bd1781470faa690.intent": "b1557558e50356a6e1aae9856016147e0e8b1438a1460d6f1b3541994389bf17",
+    "run-01/public/full-size/launches/497a7531d3de624bfd9d74034b8e1767569f3c6dc56557ee0bd1781470faa690.reserved": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/full-size/launches/497a7531d3de624bfd9d74034b8e1767569f3c6dc56557ee0bd1781470faa690.revoked": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/full-size/launches/497a7531d3de624bfd9d74034b8e1767569f3c6dc56557ee0bd1781470faa690.started": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/full-size/launches/497a7531d3de624bfd9d74034b8e1767569f3c6dc56557ee0bd1781470faa690.worker": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run-01/public/full-size/proof-0.bin": "8cff3cea5d956e6fd4d98426e07d597abffb7f24ed17410c06285162fa40af74",
+    "run-01/public/full-size/proof-1.bin": "d806845bd405d8fb50aa791e5505fad6593403c021e069328e5e98504fd47f67",
+    "run-01/public/full-size/service-identity.json": "9692a073cb0c54c55779861a60f84125c401646e52b7e3e4828f12d72984afaa",
+    "run-01/public/full-size/timings.json": "04bb7586746f467efea63e14aba1762d3d7bcfd2b14acebacadb1a6b6719058f",
+    "run-01/public/full-size/worker.log": "2f953082b6c419353f41363aa5f5940ecc913d14a8bb11d1d1eab85a6cc9d057",
+    "run-01/public/inputs/empty.bin": "952663d068b78672b23fb50cd38d58eb571a4b7355c4be00c9b73293fee27af3",
+    "run-01/public/inputs/merge.bin": "ff3491e5bd2c0708a84cef856333c6bfd90a090937d881d240c734498817fbdb",
+    "run-01/public/inputs/pair.bin": "56fd40d44c98d8e5e5652a0a01163d74b2d1693af74ae0ce0228cabe3548fc08",
+    "run-01/public/profile.json": "7834e14c9db430e4d6ff4d928ce770c66b4c50b09061a90dc53c716a830e0af4",
+    "run-01/runner.py": "e2ad8a389115598f415d7885d1afe3256fc8163f825cba029504d6b6544d7f70",
+    "run-01/rust-tests": "c706616d1cb0d9c594c511ce5263eb8e3fa313abe370395b0bdd4b72935e8142",
+    "run-01/source.tar.gz": "00fa417fcf100098d3061b866d295307f248275719ba1c8bf652361489253e23",
+    "run-01/staticlib-01.log": "8177baacefa8b737751490ab343e25e99f255b4e42f32c272a11e41e97214fd5",
+    "run-01/symbolic-gpu-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/symbolic-gpu.log": "17fa5d4b6a5b3b9029032c3e04134cf696a41529f38270f4eb8ad8cc0d2aa240",
+    "run-01/symbolic-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/symbolic-unit.log": "15b4cfc747a2d8011ca487cf13f82f42cbac88985d5f0a0854aa426fa83babfe",
+    "run-01/typed-packet-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/typed-packet-unit.log": "d0d7e20c79c4ddb83f0242d6eca3ea5f4a11306a76fcf5564fb9c43c552ecf2b",
+    "run-01/typed-process-unit-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/typed-process-unit.log": "6cc3d91ccd4cecad028360b295b2e5b0c7886b8730f8459cf8460d67868e4fa1",
+    "run-01/uni-verifier-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/uni-verifier.log": "38e7a645ebc3f5694d28a7ad4c9d503aea76a1703077dfb0e49b7ce63e7282d2",
+    "run-01/witness-gpu-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/witness-gpu.log": "57b528810e0da6eab9f8ee7380f4c9a62cce354d554394f5b56b6ecb1ebcf4df",
+    "run-01/witness-resources-telemetry.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "run-01/witness-resources.log": "bc8e992bc4d7d9882154bb4381d702f1faef6578e5baf817b2eed59214232114"
+  },
+  "changes": [
+    "Typed workers serialize node proofs directly into the final result packet, using one fallibly allocated buffer capped at the proof limit plus the fixed result header. Native node values are released before packet completion.",
+    "The coordinator consumes and compacts an admitted response buffer in place, retaining its original bounded capacity through proof use. It allocates no second proof byte buffer; metadata and validation allocations remain separately bounded.",
+    "Exact assignment/request binding compares every decoded canonical field, dependency and original proof byte instead of re-encoding the complete request.",
+    "Typed dispatch sends the token-length prefix, token and retained request as separate slices under the same frame header. It checks the combined bound before any write and retains existing pending/poisoned state on transport errors.",
+    "Both wire families match the frozen serializer reference. Pointer/capacity, oversized storage, malformed requests/results, truncation, control-field substitution and multipart framing checks pass in both lane configurations.",
+    "Two full-size finalizers preserve the archived registry and every arithmetic-stage operation count while exercising direct serialization and coordinator buffer reuse."
+  ],
+  "result_storage": {
+    "worker_packets": [
+      {
+        "proof_bytes": 1683948,
+        "packet_bytes": 1684129,
+        "capacity_bytes": 2097333,
+        "capacity_limit_bytes": 2097408,
+        "direct_node": true
+      },
+      {
+        "proof_bytes": 1683948,
+        "packet_bytes": 1684129,
+        "capacity_bytes": 2097333,
+        "capacity_limit_bytes": 2097408,
+        "direct_node": true
+      }
+    ],
+    "coordinator_results": [
+      {
+        "proof_bytes": 1683948,
+        "capacity_bytes": 1684129,
+        "capacity_limit_bytes": 2097408,
+        "new_result_buffer_allocations": 0
+      },
+      {
+        "proof_bytes": 1683948,
+        "capacity_bytes": 1684129,
+        "capacity_limit_bytes": 2097408,
+        "new_result_buffer_allocations": 0
+      }
+    ],
+    "proof_limit_bytes": 2097152,
+    "result_header_bytes": 181,
+    "result_packet_limit_bytes": 2097408,
+    "worker_serialization_capacity_bytes": 2097333,
+    "direct_node_serialization": true,
+    "independent_wire_reference_parity": true,
+    "exact_proof_and_frame_capacity_tests": true,
+    "coordinator_response_buffer_reused": true,
+    "returned_proof_retains_original_frame_capacity": true,
+    "request_binding_checks_canonical_fields_and_exact_original_bytes": true,
+    "request_reencoding_removed": true,
+    "multipart_dispatch_without_combined_payload_buffer": true,
+    "zero_copy_serialized_proof_claim": false,
+    "complete_worker_rss_bound": false
+  },
+  "request_storage": {
+    "scopes": [
+      {
+        "packet_bytes": 1684256,
+        "borrowed_proof_bytes": 1683948,
+        "metadata_bytes": 200,
+        "metadata_limit_bytes": 400,
+        "proof_copies": 0
+      },
+      {
+        "packet_bytes": 1684256,
+        "borrowed_proof_bytes": 1683948,
+        "metadata_bytes": 200,
+        "metadata_limit_bytes": 400,
+        "proof_copies": 0
+      }
+    ],
+    "request_limit_bytes": 4259840,
+    "frame_limit_bytes": 4260532,
+    "command_job_limit_bytes": 4260028,
+    "metadata_element_limit": 2,
+    "packet_proof_copies": 0,
+    "fallible_exact_metadata_and_frame_allocations": true,
+    "packet_capacity_precomputed": true,
+    "lifetime_bound_to_retained_packet": true,
+    "payload_hash_working_storage_constant": true,
+    "digest_parity_against_unchanged_slice_reference": true,
+    "maximum_size_parity_tested": true,
+    "packet_formats_and_digest_domains_unchanged": true,
+    "complete_worker_rss_bound": false
+  },
+  "qualification": {
+    "device": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "gpu": "desktop RTX 5080",
+    "managed_gpu_cap_bytes": 7516192768,
+    "max_allocation_bytes": 1073741824,
+    "host_worker_cap_bytes": 3221225472,
+    "aggregate_host_cap_bytes": 4294967296,
+    "rayon_threads": 4,
+    "service_runtime_limit_seconds": 180,
+    "registry_rows": 262144,
+    "registry_keys": 12,
+    "worker_api": "lattica_gpu_public_worker_serve",
+    "arithmetic_stages_opencl_per_proof": 16,
+    "lifetime_profile_complete": false,
+    "worker_binary_sha256": "c706616d1cb0d9c594c511ce5263eb8e3fa313abe370395b0bdd4b72935e8142",
+    "native_service_executable_sha256": "99270ca5412bf67d314e209878ce42179f6fcca5c032a00ac77e0614afba7500",
+    "static_library_sha256": "494bdcfcdd3cc33a5b39ecd6286a591787d46324f75c684f757500b44fa4ade1"
+  },
+  "results": {
+    "full_size_proofs": 2,
+    "successful_receipts": 11,
+    "job_seconds": {
+      "cold": 68.117416082,
+      "warm": 17.754927721
+    },
+    "worker_memory_peak_bytes": 1098244096,
+    "telemetry_samples": 175,
+    "memory_reports": {
+      "full-size": [
+        {
+          "boundary": "job_drained",
+          "job_index": 0,
+          "managed": {
+            "allocation_limit_bytes": 1073741824,
+            "allocations": 1997,
+            "cumulative_peak_bytes": 7467246016,
+            "device_matrices": 3,
+            "device_matrix_bytes": 1418938416,
+            "end_live_bytes": 2022919936,
+            "managed_limit_bytes": 7516192768,
+            "max_new_allocation_bytes": 1073741824,
+            "peak_bytes": 7467246016,
+            "retained_tree_bytes": 536870880,
+            "retained_trees": 1,
+            "start_live_bytes": 67109616
+          },
+          "pid": 140862,
+          "version": 1
+        },
+        {
+          "boundary": "job_drained",
+          "job_index": 1,
+          "managed": {
+            "allocation_limit_bytes": 1073741824,
+            "allocations": 1867,
+            "cumulative_peak_bytes": 7467247040,
+            "device_matrices": 3,
+            "device_matrix_bytes": 1418938416,
+            "end_live_bytes": 2022919936,
+            "managed_limit_bytes": 7516192768,
+            "max_new_allocation_bytes": 1073741824,
+            "peak_bytes": 7467247040,
+            "retained_tree_bytes": 536870880,
+            "retained_trees": 1,
+            "start_live_bytes": 2022919936
+          },
+          "pid": 140862,
+          "version": 1
+        },
+        {
+          "boundary": "shutdown",
+          "completed_jobs": 2,
+          "managed": {
+            "allocation_limit_bytes": 1073741824,
+            "allocations": 0,
+            "cumulative_peak_bytes": 7467247040,
+            "device_matrices": 0,
+            "device_matrix_bytes": 0,
+            "end_live_bytes": 0,
+            "managed_limit_bytes": 7516192768,
+            "max_new_allocation_bytes": 0,
+            "peak_bytes": 2022919936,
+            "retained_tree_bytes": 0,
+            "retained_trees": 0,
+            "start_live_bytes": 2022919936
+          },
+          "pid": 140862,
+          "version": 1
+        }
+      ]
+    },
+    "zero_swap": true,
+    "oom_events": 0,
+    "independent_cpu_verification": true,
+    "altered_statements_rejected": 2,
+    "fresh_proof_bytes": true,
+    "worker_exited_and_reservations_released": true,
+    "operation_counts_match_parent": true
+  },
+  "pcs_scratch": {
+    "max_rounds": 5,
+    "max_matrices": 32,
+    "max_points": 2,
+    "max_log_domain_with_blowup": 32,
+    "random_suffix_capacity_bytes": 30720,
+    "opening_values_borrowed": true,
+    "commitments_borrowed": true,
+    "fixed_descriptor_headers": true,
+    "fixed_query_reductions": true,
+    "complete_compiler_lifetime_bound": false
+  },
+  "validation": {
+    "native_test_cases": 365,
+    "research_test_cases": 190,
+    "cpu_test_cases": 175,
+    "control_protocol_cases_research": 58,
+    "control_protocol_cases_cpu": 61,
+    "commitment_cases": 9,
+    "job_cases": 6,
+    "launch_cases": 25,
+    "legacy_packet_cases": 11,
+    "typed_process_cases_research": 7,
+    "typed_process_cases_cpu": 10,
+    "codec_cases_research": 22,
+    "codec_cases_cpu": 21,
+    "typed_packet_cases_per_configuration": 3,
+    "typed_cache_cases_cpu_only": 2,
+    "native_worker_cases_research": 4,
+    "native_worker_cases_cpu": 3,
+    "research_executable_build": true,
+    "static_library_build": true,
+    "c_service_link": true,
+    "cpu_compatibility": true,
+    "source_files_verified": 421,
+    "source_archives_verified": 2,
+    "compile_checks": [
+      {
+        "name": "check-01",
+        "succeeded": true,
+        "source_archive_verified": true,
+        "log_preserved": true,
+        "native_tests_or_proofs_executed": false
+      }
+    ],
+    "run_artifacts_verified": 129,
+    "parent_artifacts_verified": 194,
+    "root_artifacts_verified": 173,
+    "lde_plans_audited": 9,
+    "formatting": true,
+    "whitespace": true,
+    "cleanup": {
+      "time": "2026-10-10T14:45:52.763995+00:00",
+      "running_lattica_services": [],
+      "held_gpu_leases": [],
+      "empty_parent_slices": [
+        {
+          "unit": "lattica-v2-multi-allocation-limit.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-allocation.slice/lattica-v2-multi-allocation-limit.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-allocation.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-allocation.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-compiler-constant-storage.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-compiler.slice/lattica-v2-multi-compiler-constant.slice/lattica-v2-multi-compiler-constant-storage.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-compiler-constant.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-compiler.slice/lattica-v2-multi-compiler-constant.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-compiler-lifetimes.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-compiler.slice/lattica-v2-multi-compiler-lifetimes.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-compiler.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-compiler.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-decoded-input-storage.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-decoded.slice/lattica-v2-multi-decoded-input.slice/lattica-v2-multi-decoded-input-storage.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-decoded-input.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-decoded.slice/lattica-v2-multi-decoded-input.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-decoded.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-decoded.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-evaluation-lifetimes.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-evaluation.slice/lattica-v2-multi-evaluation-lifetimes.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-evaluation.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-evaluation.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-expression-lifetimes.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-expression.slice/lattica-v2-multi-expression-lifetimes.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-expression.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-expression.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-fri-pair.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-fri.slice/lattica-v2-multi-fri-pair.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-fri.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-fri.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-full-cached.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-full.slice/lattica-v2-multi-full-cached.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-full.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-full.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-input-lifetimes.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-input.slice/lattica-v2-multi-input-lifetimes.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-input.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-input.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-lde-phase.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-lde.slice/lattica-v2-multi-lde-phase.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-lde.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-lde.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-lookup-ownership.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-lookup.slice/lattica-v2-multi-lookup-ownership.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-lookup-packing.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-lookup.slice/lattica-v2-multi-lookup-packing.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-lookup.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-lookup.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-manifest-lifetimes.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-manifest.slice/lattica-v2-multi-manifest-lifetimes.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-manifest.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-manifest.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-memory-windows.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-memory.slice/lattica-v2-multi-memory-windows.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-memory.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-memory.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-pcs-scratch.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-pcs.slice/lattica-v2-multi-pcs-scratch.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-pcs.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-pcs.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-periodic-source-storage.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-periodic.slice/lattica-v2-multi-periodic-source.slice/lattica-v2-multi-periodic-source-storage.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-periodic-source.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-periodic.slice/lattica-v2-multi-periodic-source.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-periodic.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-periodic.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-program-construction.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-program.slice/lattica-v2-multi-program-construction.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-program-packing.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-program.slice/lattica-v2-multi-program-packing.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-program.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-program.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-recursion.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-recursion.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-request-storage.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-request.slice/lattica-v2-multi-request-storage.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-request.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-request.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-result-storage.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-result.slice/lattica-v2-multi-result-storage.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-result.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-result.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-symbolic-normalization.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-symbolic.slice/lattica-v2-multi-symbolic-normalization.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-symbolic-recording.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-symbolic.slice/lattica-v2-multi-symbolic-recording.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-symbolic.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-symbolic.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-trace-geometry.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-trace.slice/lattica-v2-multi-trace-geometry.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-trace.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-trace.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-witness-host.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-witness.slice/lattica-v2-multi-witness-host.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi-witness.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice/lattica-v2-multi-witness.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2-multi.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice/lattica-v2-multi.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica-v2.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice/lattica-v2.slice",
+          "events": "populated 0\nfrozen 0\n"
+        },
+        {
+          "unit": "lattica.slice",
+          "control_group": "/user.slice/user-1000.slice/user@1000.service/lattica.slice",
+          "events": "populated 0\nfrozen 0\n"
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "Protocol limits describe backing-vector capacity, not complete physical RSS or scheduler phases. Node proof containers, verifier scratch, allocator/driver overhead and complete cache/callback overlaps still require enclosing lifetime reservations.",
+    "Coordinator compaction copies bytes within the same buffer. Compatibility APIs that accept borrowed serialized proofs or responses still allocate bounded owned output buffers; this is not a universal zero-copy claim.",
+    "The retained frame capacity remains charged to the returned proof, including unused header/storage space. Limits must use capacity rather than serialized length.",
+    "Other bounded storage scopes retain their previous limits. No scheduler allowance was reduced from observed peaks. Ordinary pool admission rejects this qualification profile without complete lifetime phases.",
+    "The 3 GiB worker, 4 GiB aggregate host, 7 GiB managed GPU and 1 GiB allocation caps remain enforced. These isolated finalizer timings do not establish sustained transaction throughput or a performance gain.",
+    "Broader transaction workloads, nonempty-child full-size merges, larger blocks, sustained pool throughput, multiple GPUs and AMD/Metal qualification remain open."
+  ],
+  "periodic_source_storage": {
+    "leaf_shapes": [
+      {
+        "columns": 33,
+        "total_source_bytes": 723712,
+        "largest_column_bytes": 32768
+      },
+      {
+        "columns": 33,
+        "total_source_bytes": 723712,
+        "largest_column_bytes": 32768
+      },
+      {
+        "columns": 43,
+        "total_source_bytes": 1051392,
+        "largest_column_bytes": 32768
+      }
+    ],
+    "authoritative_air_tables_and_constraints_unchanged": true,
+    "registered_sources_generated_into_borrowed_storage": true,
+    "shared_construction_allowance": true,
+    "source_and_coefficients_coexistence_admitted": true,
+    "no_full_table_or_intermediate_index_vectors": true,
+    "one_source_column_at_a_time": true,
+    "invalid_buffers_preserve_sentinels": true,
+    "all_geometry_checked_before_callbacks": true,
+    "source_and_coefficient_quota_rejection_before_cpu_and_gpu_arithmetic": true,
+    "source_error_and_unwind_release_before_quota_reuse": true,
+    "cpu_registered_compiler_does_not_call_air_table_builder": true,
+    "real_uni_proof_and_altered_input_rejection": true,
+    "unchanged_compiled_program_identity": true,
+    "gpu_quota_rejection_source_releases": 1,
+    "unit_cases_per_configuration": 4,
+    "cpu_compatibility_caller_owned_tables_outside_allowance": true,
+    "complete_enclosing_compiler_lifetime_bound": false
+  },
+  "decoded_input_storage": {
+    "scopes": [
+      {
+        "vector_bytes": 2094232,
+        "canonical_bytes": 1683940,
+        "admitted_bytes": 3778172,
+        "allocations": 16739,
+        "limit_bytes": 67108864
+      },
+      {
+        "vector_bytes": 2094232,
+        "canonical_bytes": 1683940,
+        "admitted_bytes": 3778172,
+        "allocations": 16739,
+        "limit_bytes": 67108864
+      }
+    ],
+    "cumulative_limit_bytes": 67108864,
+    "scope_covers_all_request_inputs": true,
+    "exact_capacity_before_element_decoding": true,
+    "canonical_reencoding_storage_in_same_quota": true,
+    "failure_latched": true,
+    "partial_values_drop_on_error_and_unwind": true,
+    "named_native_schema_construction": true,
+    "extension_coefficients_use_stack_storage": true,
+    "duplicate_wallet_decoding_removed": true,
+    "owner_holds_allowance_through_input_use": true,
+    "proof_values_drop_before_allowance": true,
+    "original_item_depth_encoding_and_canonicality_guards_retained": true,
+    "malformed_caps_reject_without_constructor_panic": true,
+    "unit_cases_per_lane_configuration": 6,
+    "existing_codec_cases_research": 15,
+    "existing_codec_cases_cpu": 14,
+    "complete_packet_verifier_allocator_and_driver_lifetime_bound": false
+  },
+  "compiler_constant_storage": {
+    "releases": [
+      {
+        "kind": "selector-differences",
+        "released_bytes": 88,
+        "live_before": 1358000,
+        "live_after": 1357912,
+        "peak_bytes": 1823744,
+        "limit_bytes": 571816240
+      },
+      {
+        "kind": "selector-inverses",
+        "released_bytes": 88,
+        "live_before": 1357912,
+        "live_after": 1357824,
+        "peak_bytes": 1823744,
+        "limit_bytes": 571816240
+      },
+      {
+        "kind": "quotient-constants",
+        "released_bytes": 2176,
+        "live_before": 381397936,
+        "live_after": 381395760,
+        "peak_bytes": 499427392,
+        "limit_bytes": 571816240
+      },
+      {
+        "kind": "selector-differences",
+        "released_bytes": 48,
+        "live_before": 381407328,
+        "live_after": 381407280,
+        "peak_bytes": 499427392,
+        "limit_bytes": 571816240
+      },
+      {
+        "kind": "selector-inverses",
+        "released_bytes": 48,
+        "live_before": 381407280,
+        "live_after": 381407232,
+        "peak_bytes": 499427392,
+        "limit_bytes": 571816240
+      },
+      {
+        "kind": "selector-differences",
+        "released_bytes": 88,
+        "live_before": 1358000,
+        "live_after": 1357912,
+        "peak_bytes": 1823744,
+        "limit_bytes": 571816240
+      },
+      {
+        "kind": "selector-inverses",
+        "released_bytes": 88,
+        "live_before": 1357912,
+        "live_after": 1357824,
+        "peak_bytes": 1823744,
+        "limit_bytes": 571816240
+      },
+      {
+        "kind": "quotient-constants",
+        "released_bytes": 2176,
+        "live_before": 381397936,
+        "live_after": 381395760,
+        "peak_bytes": 499427392,
+        "limit_bytes": 571816240
+      },
+      {
+        "kind": "selector-differences",
+        "released_bytes": 48,
+        "live_before": 381407328,
+        "live_after": 381407280,
+        "peak_bytes": 499427392,
+        "limit_bytes": 571816240
+      },
+      {
+        "kind": "selector-inverses",
+        "released_bytes": 48,
+        "live_before": 381407280,
+        "live_after": 381407232,
+        "peak_bytes": 499427392,
+        "limit_bytes": 571816240
+      }
+    ],
+    "releases_per_construction": [
+      [
+        "selector-differences",
+        "selector-inverses",
+        "quotient-constants",
+        "selector-differences",
+        "selector-inverses"
+      ],
+      [
+        "selector-differences",
+        "selector-inverses",
+        "quotient-constants",
+        "selector-differences",
+        "selector-inverses"
+      ]
+    ],
+    "borrowed_output": true,
+    "shared_construction_allowance": true,
+    "output_admitted_before_allocation": true,
+    "selector_difference_storage_admitted": true,
+    "selector_output_stack_max_bytes": 512,
+    "periodic_coefficient_max_bytes": 524288,
+    "quotient_constant_max_bytes": 8448,
+    "device_periodic_staging_bytes": 16384,
+    "device_constant_staging_bytes": 8448,
+    "folding_cache_coexistence_bytes": 8192,
+    "public_hash_host_bytes": 65536,
+    "staging_and_cache_coexistence_checked": true,
+    "intermediate_owned_output_vectors": false,
+    "kernel_source_unchanged": true,
+    "malformed_lengths_preserve_sentinels": true,
+    "cpu_and_gpu_quota_rejection_before_backend_work": true,
+    "cpu_identity_cases_per_configuration": 3,
+    "gpu_constant_conformance_cases": 3,
+    "gpu_quota_rejection_cases": 1,
+    "complete_compiler_lifetime_bound": false
+  },
+  "symbolic_lookup_packing": {
+    "scopes": [
+      {
+        "admitted_bytes": 200477,
+        "allocations": 209,
+        "arc_admissions": 0,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 200477,
+        "allocations": 209,
+        "arc_admissions": 0,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 200477,
+        "allocations": 209,
+        "arc_admissions": 0,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 200477,
+        "allocations": 209,
+        "arc_admissions": 0,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 200477,
+        "allocations": 209,
+        "arc_admissions": 0,
+        "limit_bytes": 67108864
+      }
+    ],
+    "layouts": [
+      {
+        "unpacked": 115,
+        "packed": 16,
+        "max_degree": 8,
+        "retained_bytes": 121176,
+        "retained_limit_bytes": 67108864
+      },
+      {
+        "unpacked": 115,
+        "packed": 16,
+        "max_degree": 8,
+        "retained_bytes": 121176,
+        "retained_limit_bytes": 67108864
+      },
+      {
+        "unpacked": 115,
+        "packed": 16,
+        "max_degree": 8,
+        "retained_bytes": 121176,
+        "retained_limit_bytes": 67108864
+      },
+      {
+        "unpacked": 115,
+        "packed": 16,
+        "max_degree": 8,
+        "retained_bytes": 121176,
+        "retained_limit_bytes": 67108864
+      },
+      {
+        "unpacked": 115,
+        "packed": 16,
+        "max_degree": 8,
+        "retained_bytes": 121176,
+        "retained_limit_bytes": 67108864
+      }
+    ],
+    "cumulative_limit_bytes": 67108864,
+    "retained_limit_bytes": 67108864,
+    "cumulative_requested_storage": true,
+    "old_and_new_growth_accounted": true,
+    "discarded_trials_accounted": true,
+    "no_new_expression_arcs": true,
+    "no_replay_or_private_container_growth": true,
+    "checked_allocation_free_degree": true,
+    "retained_backing_capacities_and_unique_child_arcs_counted": true,
+    "census_scratch_uses_packing_quota": true,
+    "checked_owned_container": true,
+    "ordering_degree_and_weights_match_frozen_reference": true,
+    "gpu_rejected_scopes": 1,
+    "unit_cases_per_lane_configuration": 8,
+    "complete_enclosing_symbolic_lifetime_bound": false
+  },
+  "lookup_ownership": {
+    "unit_cases_per_lane_configuration": 3,
+    "owned_layout_separate_from_constraint_graph": true,
+    "cached_lookup_arrays_names_and_child_arcs_moved_without_cloning": true,
+    "nested_buffer_addresses_and_spare_capacities_preserved": true,
+    "constraint_roots_preserved_for_fingerprinting": true,
+    "unused_batch_setup_constraint_graphs_released_per_air": true,
+    "registered_constraint_graph_released_after_fingerprinting": true,
+    "metadata_matches_trusted_cap_reference": true,
+    "owned_lookup_graphs_released_on_metadata_rejection": true,
+    "complete_enclosing_symbolic_lifetime_bound": false
+  },
+  "dependency": {
+    "package": "p3-lookup",
+    "version": "0.6.1",
+    "archive_sha256": "f0ccc1d2199fe8057d384b8e85f64432158dc4530a55c473d413b0128daa3e86",
+    "original_files_verified": 19,
+    "modified_files": [
+      "src/types.rs"
+    ],
+    "only_checked_owned_constructor_added": true,
+    "upstream_packer_unchanged": true,
+    "other_lockfile_packages_unchanged": true,
+    "archive_matches_previous_registry_checksum": true
+  },
+  "symbolic_normalization": {
+    "scopes": [
+      {
+        "admitted_bytes": 1894679,
+        "allocations": 2289,
+        "arc_admissions": 1798,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 4154832,
+        "allocations": 12701,
+        "arc_admissions": 12644,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 4125528,
+        "allocations": 12305,
+        "arc_admissions": 12248,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 1894679,
+        "allocations": 2289,
+        "arc_admissions": 1798,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 4154832,
+        "allocations": 12701,
+        "arc_admissions": 12644,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 4125528,
+        "allocations": 12305,
+        "arc_admissions": 12248,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 1894679,
+        "allocations": 2289,
+        "arc_admissions": 1798,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 4154832,
+        "allocations": 12701,
+        "arc_admissions": 12644,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 4125528,
+        "allocations": 12305,
+        "arc_admissions": 12248,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 4125528,
+        "allocations": 12305,
+        "arc_admissions": 12248,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 1894679,
+        "allocations": 2289,
+        "arc_admissions": 1798,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 4154832,
+        "allocations": 12701,
+        "arc_admissions": 12644,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 4125528,
+        "allocations": 12305,
+        "arc_admissions": 12248,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 1894679,
+        "allocations": 2289,
+        "arc_admissions": 1798,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 4154832,
+        "allocations": 12701,
+        "arc_admissions": 12644,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 4125528,
+        "allocations": 12305,
+        "arc_admissions": 12248,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 4125528,
+        "allocations": 12305,
+        "arc_admissions": 12248,
+        "limit_bytes": 67108864
+      }
+    ],
+    "limit_bytes": 67108864,
+    "cumulative_requested_storage": true,
+    "explicit_pointer_identity_maps": true,
+    "structural_interning": false,
+    "old_and_new_growth_accounted": true,
+    "traversal_memo_arc_and_output_storage_admitted": true,
+    "exact_output_capacity": true,
+    "output_and_memos_share_quota": true,
+    "callbacks_skipped_on_allocation_rejection": true,
+    "quota_failure_latched": true,
+    "partial_array_drop_on_error_and_unwind": true,
+    "gpu_rejected_scopes": 2,
+    "complete_enclosing_symbolic_lifetime_bound": false
+  },
+  "symbolic_recording": {
+    "scopes": [
+      {
+        "admitted_bytes": 588919,
+        "allocations": 7962,
+        "arc_nodes": 7704,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 946879,
+        "allocations": 13239,
+        "arc_nodes": 12966,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 891679,
+        "allocations": 12641,
+        "arc_nodes": 12372,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 588919,
+        "allocations": 7962,
+        "arc_nodes": 7704,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 946879,
+        "allocations": 13239,
+        "arc_nodes": 12966,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 891679,
+        "allocations": 12641,
+        "arc_nodes": 12372,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 588919,
+        "allocations": 7962,
+        "arc_nodes": 7704,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 946879,
+        "allocations": 13239,
+        "arc_nodes": 12966,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 891679,
+        "allocations": 12641,
+        "arc_nodes": 12372,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 891679,
+        "allocations": 12641,
+        "arc_nodes": 12372,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 588919,
+        "allocations": 7962,
+        "arc_nodes": 7704,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 946879,
+        "allocations": 13239,
+        "arc_nodes": 12966,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 891679,
+        "allocations": 12641,
+        "arc_nodes": 12372,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 588919,
+        "allocations": 7962,
+        "arc_nodes": 7704,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 946879,
+        "allocations": 13239,
+        "arc_nodes": 12966,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 891679,
+        "allocations": 12641,
+        "arc_nodes": 12372,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      },
+      {
+        "admitted_bytes": 891679,
+        "allocations": 12641,
+        "arc_nodes": 12372,
+        "max_depth": 189,
+        "limit_bytes": 67108864
+      }
+    ],
+    "limit_bytes": 67108864,
+    "max_depth": 512,
+    "cumulative_requested_storage": true,
+    "discarded_intermediates_accounted": true,
+    "old_and_new_growth_accounted": true,
+    "preallocation_admission": true,
+    "shared_row_windows": true,
+    "failure_latched_before_normalization": true,
+    "thread_local_scope_restored_on_success_error_and_unwind": true,
+    "gpu_rejected_scopes": 3,
+    "gpu_symbolic_conformance_cases": 2,
+    "complete_symbolic_lifetime_bound": false
+  },
+  "evaluation_scratch": {
+    "releases": [
+      {
+        "kind": "constraints",
+        "released_bytes": 13664,
+        "live_before": 381421712,
+        "live_after": 381408048,
+        "peak_bytes": 499427392,
+        "limit_bytes": 571816240
+      },
+      {
+        "kind": "evaluation",
+        "released_bytes": 816,
+        "live_before": 381408048,
+        "live_after": 381407232,
+        "peak_bytes": 499427392,
+        "limit_bytes": 571816240
+      },
+      {
+        "kind": "constraints",
+        "released_bytes": 13664,
+        "live_before": 381421712,
+        "live_after": 381408048,
+        "peak_bytes": 499427392,
+        "limit_bytes": 571816240
+      },
+      {
+        "kind": "evaluation",
+        "released_bytes": 816,
+        "live_before": 381408048,
+        "live_after": 381407232,
+        "peak_bytes": 499427392,
+        "limit_bytes": 571816240
+      }
+    ],
+    "releases_per_construction": [
+      [
+        "constraints",
+        "evaluation"
+      ],
+      [
+        "constraints",
+        "evaluation"
+      ]
+    ],
+    "shared_construction_allowance": true,
+    "admitted_before_allocation": true,
+    "exact_capacity": true,
+    "borrowed_evaluation_inputs": true,
+    "repeated_values_without_allocation": true,
+    "scope_release_on_success_error_and_unwind": true,
+    "released_before_packing": true,
+    "complete_compiler_lifetime_bound": false
+  },
+  "proof_inputs": {
+    "windows": [
+      {
+        "values": 211083,
+        "capacity_values": 211083,
+        "capacity_bytes": 1688664,
+        "input_limit": 211083,
+        "growth": [
+          {
+            "old_values": 0,
+            "new_values": 4,
+            "live_bytes": 32,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 4,
+            "new_values": 8,
+            "live_bytes": 96,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 8,
+            "new_values": 16,
+            "live_bytes": 192,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 16,
+            "new_values": 32,
+            "live_bytes": 384,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 32,
+            "new_values": 64,
+            "live_bytes": 768,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 64,
+            "new_values": 128,
+            "live_bytes": 1536,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 128,
+            "new_values": 256,
+            "live_bytes": 3072,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 256,
+            "new_values": 512,
+            "live_bytes": 6144,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 512,
+            "new_values": 1024,
+            "live_bytes": 12288,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 1024,
+            "new_values": 2048,
+            "live_bytes": 24576,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 2048,
+            "new_values": 4096,
+            "live_bytes": 49152,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 4096,
+            "new_values": 8192,
+            "live_bytes": 98304,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 8192,
+            "new_values": 16384,
+            "live_bytes": 196608,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 16384,
+            "new_values": 32768,
+            "live_bytes": 393216,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 32768,
+            "new_values": 65536,
+            "live_bytes": 786432,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 65536,
+            "new_values": 131072,
+            "live_bytes": 1572864,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 131072,
+            "new_values": 211083,
+            "live_bytes": 2737240,
+            "value_limit": 211083
+          }
+        ],
+        "max_growth_live_bytes": 2737240
+      },
+      {
+        "values": 211083,
+        "capacity_values": 211083,
+        "capacity_bytes": 1688664,
+        "input_limit": 211083,
+        "growth": [
+          {
+            "old_values": 0,
+            "new_values": 4,
+            "live_bytes": 32,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 4,
+            "new_values": 8,
+            "live_bytes": 96,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 8,
+            "new_values": 16,
+            "live_bytes": 192,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 16,
+            "new_values": 32,
+            "live_bytes": 384,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 32,
+            "new_values": 64,
+            "live_bytes": 768,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 64,
+            "new_values": 128,
+            "live_bytes": 1536,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 128,
+            "new_values": 256,
+            "live_bytes": 3072,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 256,
+            "new_values": 512,
+            "live_bytes": 6144,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 512,
+            "new_values": 1024,
+            "live_bytes": 12288,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 1024,
+            "new_values": 2048,
+            "live_bytes": 24576,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 2048,
+            "new_values": 4096,
+            "live_bytes": 49152,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 4096,
+            "new_values": 8192,
+            "live_bytes": 98304,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 8192,
+            "new_values": 16384,
+            "live_bytes": 196608,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 16384,
+            "new_values": 32768,
+            "live_bytes": 393216,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 32768,
+            "new_values": 65536,
+            "live_bytes": 786432,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 65536,
+            "new_values": 131072,
+            "live_bytes": 1572864,
+            "value_limit": 211083
+          },
+          {
+            "old_values": 131072,
+            "new_values": 211083,
+            "live_bytes": 2737240,
+            "value_limit": 211083
+          }
+        ],
+        "max_growth_live_bytes": 2737240
+      }
+    ],
+    "returned_wire_arrays_admitted_before_allocation": true,
+    "whole_group_callbacks_skipped_on_rejection": true,
+    "capacity_never_exceeds_input_limit": true,
+    "growth_old_and_new_arrays_bounded": true,
+    "errors_propagated_by_compilers": true,
+    "canonical_input_order_matches_frozen_reference": true,
+    "complete_compiler_input_lifetime_bound": false
+  },
+  "expression_memos": {
+    "releases": [
+      {
+        "kind": "base",
+        "released_bytes": 655360,
+        "live_before": 382158992,
+        "live_after": 381503632,
+        "peak_bytes": 499427392,
+        "limit_bytes": 571816240
+      },
+      {
+        "kind": "extension",
+        "released_bytes": 81920,
+        "live_before": 381503632,
+        "live_after": 381421712,
+        "peak_bytes": 499427392,
+        "limit_bytes": 571816240
+      },
+      {
+        "kind": "base",
+        "released_bytes": 655360,
+        "live_before": 382158992,
+        "live_after": 381503632,
+        "peak_bytes": 499427392,
+        "limit_bytes": 571816240
+      },
+      {
+        "kind": "extension",
+        "released_bytes": 81920,
+        "live_before": 381503632,
+        "live_after": 381421712,
+        "peak_bytes": 499427392,
+        "limit_bytes": 571816240
+      }
+    ],
+    "releases_per_construction": [
+      2,
+      2
+    ],
+    "shared_construction_allowance": true,
+    "old_and_new_growth_accounted": true,
+    "released_before_packing": true,
+    "scope_release_on_success_error_and_unwind": true,
+    "quota_failure_latched": true,
+    "canonical_program_matches_frozen_reference": true
+  },
+  "manifest_encoding": {
+    "host_batch_bytes": 32768,
+    "fingerprint_capacity_bytes": 5249768,
+    "fingerprint_allowance_bytes": 33554432,
+    "fields": 13263913,
+    "batches": 3239,
+    "uploaded_bytes": 106111304,
+    "downloaded_bytes": 32,
+    "device_ns": 50152868896,
+    "previous_manifest_fields": 13263913,
+    "canonical_registry_unchanged": true,
+    "materialized_full_manifest": false,
+    "program_row_clones": false,
+    "assigned_limits_unchanged": true
+  },
+  "construction": {
+    "actual_admission_bounds": {
+      "rows": 262144,
+      "main_columns": 94,
+      "preprocessing_columns": 200,
+      "metadata_bytes": 311642160,
+      "compiler_host_bytes": 368417296,
+      "program_host_bytes": 508066252,
+      "wires": 1840284,
+      "input_values": 211106
+    },
+    "previous_admission_bounds": {
+      "rows": 262144,
+      "main_columns": 94,
+      "preprocessing_columns": 200,
+      "metadata_bytes": 311642160,
+      "compiler_host_bytes": 368417296,
+      "program_host_bytes": 508066252,
+      "wires": 1840284,
+      "input_values": 211106
+    },
+    "construction_requirement_in_profile": true,
+    "merkle_scratch_and_hint_storage_admitted": true,
+    "reported_windows": [
+      {
+        "phase": "packed",
+        "limit_bytes": 571816240,
+        "admitted_peak_bytes": 508066252,
+        "live_bytes": 508066252,
+        "rejected": "false"
+      },
+      {
+        "phase": "packed",
+        "limit_bytes": 571816240,
+        "admitted_peak_bytes": 508066252,
+        "live_bytes": 508066252,
+        "rejected": "false"
+      }
+    ],
+    "assigned_witness_bounds_unchanged": true,
+    "undersized_allowance_rejected_before_witness_setup": true,
+    "rejected_admitted_peak_bytes": 0,
+    "rejection_retains_scheduler_reservations": true,
+    "rejection_retires_gpu": true,
+    "complete_host_compiler_lifetime_bound": false
+  }
+}

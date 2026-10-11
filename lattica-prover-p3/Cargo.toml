@@ -8,6 +8,15 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace]
+exclude = ["vendor/p3-lookup", "vendor/p3-field", "vendor/p3-symmetric"]
+
+[patch.crates-io]
+# Pinned 0.6.1 with an allocation-free, checked owned-container constructor.
+p3-lookup = { path = "vendor/p3-lookup" }
+# Same arithmetic; single-chunk inversions do not dispatch to Rayon.
+p3-field = { path = "vendor/p3-field" }
+# Read-only backing-capacity access for native proof storage admission.
+p3-symmetric = { path = "vendor/p3-symmetric" }
 
 [lib]
 name = "lattica_prover_p3"

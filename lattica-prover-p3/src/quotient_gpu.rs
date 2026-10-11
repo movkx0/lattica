@@ -381,6 +381,16 @@ where
     #[cfg(debug_assertions)]
     p3_air::check_constraints(air, &trace, public_values);
 
+    // This generic research adapter cannot infer the selected PCS backend from
+    // SC. Strict policies must not infer coverage from its name or feature flag.
+    let mut capabilities = crate::proving::legacy_opencl(true);
+    capabilities.set(
+        crate::proving::Stage::Quotient,
+        crate::proving::Backend::Unknown,
+    );
+    crate::proving::Request::from_env()
+        .and_then(|request| request.admit(&capabilities))
+        .expect("research quotient proving backend policy");
     let degree = trace.height();
     let log_degree = degree.trailing_zeros() as usize; // degree is a power of two
     let log_ext_degree = log_degree + config.is_zk();

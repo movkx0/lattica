@@ -1,0 +1,793 @@
+{
+  "schema": "lattica-gpu-witness-handoff-v1",
+  "date": "2026-10-07",
+  "source_head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "source_state": "uncommitted main working tree",
+  "previous_checkpoint": "gpu-witness-2026-10-07.json",
+  "complete_gpu_prover": false,
+  "integrated_into_real_batch_prover": true,
+  "registered_program_selection": false,
+  "worker_selection": false,
+  "enabled_by_default": false,
+  "throughput_qualification": false,
+  "selection": {
+    "new_flag": null,
+    "interface": "Explicit internal ProvingInstance::from_device and machine::gpu_backend::prepare; existing callers still use CPU traces",
+    "requires": [
+      "OpenCL owned resident PCS",
+      "Single AIR and fixed cubic hiding profile",
+      "Owned GPU lookup and quotient consumers"
+    ],
+    "gpu_required_policy_admitted": false,
+    "resource_profile_changed": false
+  },
+  "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-witness-handoff-20261007/run-01",
+  "gpu": {
+    "opencl_index": 1,
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "pci": "0000:02:00.0",
+    "global_bytes": 16697327616,
+    "max_allocation_bytes": 4174331904,
+    "driver": "615.71.09"
+  },
+  "limits": {
+    "memory_max_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "runtime_max_seconds_per_check": 180,
+    "native_managed_bytes": 268435456,
+    "production_reservations_relaxed": false
+  },
+  "verified_current_source_files": 233,
+  "source_archive_sha256": "a213f056464403b289f363cc94f99c7488e9cde627780ad49825657dc61155ed",
+  "implementations": [
+    "Base-field main-trace hiding commitments using the existing exact random stream and GPU transforms",
+    "Separate typed main/lookup commitment entry points reject the wrong field layout before draws",
+    "Opaque PreprocessingTrace can only be constructed from immutable witness-program metadata",
+    "GPU zero-row interleaving for deterministic preprocessing; no hiding samples or private-to-public promotion",
+    "Shared batch-prover interface consumes device traces after main commitment and retains CPU trace support",
+    "Narrow machine setup adapter builds GPU preprocessing and unchanged CommonData without a dense host matrix",
+    "Explicit bounded host trace readback for debug constraint audits; release device proving has no host trace copy"
+  ],
+  "conformance": {
+    "main_commit_oracle": "1/8/256/8192 original rows, widths [1]/[1,7,33]/[2,65]/[5], repeated commits, CPU matrices/caps/paths/salts and recovery of original rows",
+    "preprocessing": "GPU caps match upstream key generation; lookups and metadata match; public prefixes import into fresh sessions; private commitment prefixes reject foreign sessions",
+    "rng": "Wrong domains, empty inputs, foreign sessions, field mismatches and invalid row order reject before new draws; subsequent private commitments match CPU hiding and salt streams",
+    "complete_proofs": "64-row full/compact DeviceOnly fixtures produce identical CPU-reference proof bytes and verify with the original upstream CPU PCS/extension adapter",
+    "all_opcode_reuse": "Every opcode, dependent Poseidon and hint inputs, cubic inverses and 33 public values; three fresh sessions per full/compact selection in each layout; independent CPU proof bytes match and original CPU verification passes after GPU shutdown",
+    "debug": "Both the 64-row proof and all-opcode fresh-session fixture pass with explicit main trace and lookup readback for CPU constraint/lookup audits",
+    "lifecycle": "All 57 native checks drain to zero managed bytes and release the GPU lease"
+  },
+  "64_row_wide_fixture": {
+    "witness_waves": 3,
+    "private_and_public_input_upload_bytes": 16,
+    "program_reupload_bytes": 0,
+    "witness_status_readback_bytes": 8,
+    "trace_upload_bytes": 0,
+    "trace_readback_bytes": 0,
+    "preprocessing_matrix_upload_bytes": 0,
+    "preprocessing_matrix_readback_bytes": 0,
+    "main_hiding_sample_upload_bytes": 52224,
+    "commitment_host_lde_readback_bytes": 0,
+    "note": "CPU salt and random expansion, transcript/grinding and final proof material remain; no throughput measurement"
+  },
+  "all_opcode_fixture": {
+    "public_values": 33,
+    "witness_values": 1,
+    "waves": 9,
+    "rows": {
+      "wide": 8,
+      "narrow": 16
+    },
+    "input_upload_bytes_per_proof": 272,
+    "status_readback_bytes_per_proof": 8,
+    "metadata_reupload_bytes_per_proof": 0,
+    "main_hiding_sample_upload_bytes": {
+      "wide": 6528,
+      "narrow": 13056
+    },
+    "debug_main_trace_readback_bytes_wide": 6016,
+    "private_allocation_baseline_restored": true
+  },
+  "runs": {
+    "wide": {
+      "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-witness-handoff-20261007/run-01",
+      "features": [
+        "default",
+        "block-v2-wide-lanes"
+      ],
+      "build_profile": "release",
+      "binary_sha256": "51e1781c404c78a5d0a454ba0f01f417d0751a3cafb8a37cc4df7aeac4f004db",
+      "runner_sha256": "ad61a2bbed94e2d748ae052ac71225debf26460c03a9c8504a55a6981eca17db",
+      "manifest_sha256": "61f71bd38f846d5a96fa5585bee4f7831071637941331d788e55bf24c2478d9a",
+      "build_log_sha256": "aa4ec009bfc28e1a6742a8d43134382f1d7e27fbbcc6cc9cbeafd48f37e5e913",
+      "checks": [
+        {
+          "name": "main-commit",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 3.9271678649965907,
+          "log_sha256": "d7690eb400ccfc5013b7c8bb9b0a06f5f44bbdeebb54dcf28d5769b516a7b8cd"
+        },
+        {
+          "name": "preprocessing-admission",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.6663642280036584,
+          "log_sha256": "bd37b14fd180a904aaca3b6942b14e56c2a413ae853aa6eae47cc5c4f13bd296"
+        },
+        {
+          "name": "device-main-full",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 1.0181345460005105,
+          "log_sha256": "ae66fcbeb0aa747a730df37221939a003828158d53714406d0733d2e284068d8"
+        },
+        {
+          "name": "device-main-compact",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.9664141850007582,
+          "log_sha256": "1b8f68afe1844ca4c23268415ce2e1744baf5267d5a0a020f2152057b869ae7c"
+        },
+        {
+          "name": "device-witness-reuse",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 1.1163928050009417,
+          "log_sha256": "0f70d15cfd7b4569c625a4cc9db6ef2d7772c63ddce20cc45703cf73c07f8be5"
+        },
+        {
+          "name": "device-witness-reuse-compact",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 1.1672783849935513,
+          "log_sha256": "de082e4716188d289ea951652c407ff88513679dbfe149a3c5d1383e89a8f2aa"
+        },
+        {
+          "name": "registered-cpu",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.11498901599406963,
+          "log_sha256": "d2b46d54973b5b3878c0c1d67a766f053dc43e47db66ee3de0a8032908996ff0"
+        },
+        {
+          "name": "witness-conformance",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.6662000689975685,
+          "log_sha256": "a82e07f82334e3b685535775c8ab2f950ef7cdadf8ae5bcb53d25ada10d81092"
+        },
+        {
+          "name": "witness-rejection",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.6664189439979964,
+          "log_sha256": "41acb427e006d1da039df816c939a9c305a43b8026b67893b1834e93a50f2140"
+        },
+        {
+          "name": "witness-compiler",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 2,
+          "wall_seconds": 0.032019997997849714,
+          "log_sha256": "ce318b051ab85c4f76379277321ab06adf2e44df4ff1819b28b02ba7136ccb5f"
+        },
+        {
+          "name": "witness-memory",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.0319244880010956,
+          "log_sha256": "8ef36b3e0c81c94634471f8dab6d8fe21200c2e03e09d98ba4f863f2a11996fe"
+        },
+        {
+          "name": "device-oracle",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 1.5178269610041752,
+          "log_sha256": "358fe2dc756dd99a17b3f112412b5aa1c5f0243a208230c1339b0eef51b3aa1a"
+        },
+        {
+          "name": "device-admission",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.6154659079984413,
+          "log_sha256": "c4d58d76834ec3e4e9aee827a0ae5719abf40f284c75b9ea695609d2baeb3911"
+        },
+        {
+          "name": "device-full",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.9660965180009953,
+          "log_sha256": "4fea4e4eafb5984fcf3582705144a7cfe97751dc5df56b7b3b3923646db3aa3a"
+        },
+        {
+          "name": "device-compact",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.9161589450013707,
+          "log_sha256": "b126b311265489fcfc410442543668f8f96693cc69d18f29c85545479291e07e"
+        },
+        {
+          "name": "device-reuse",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 1.1673729039976024,
+          "log_sha256": "0fe373efb54c8333910218c3f4cec9e921a382820e9fc3c263a04c26355af382"
+        },
+        {
+          "name": "device-reuse-compact",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 1.2166982639973867,
+          "log_sha256": "7d04e27b2aac416347fbbaaeb16b3dc8764aa2af9e3887df59932484fad655ab"
+        },
+        {
+          "name": "query-tiles",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.9186634670040803,
+          "log_sha256": "f90b8c4745992c42c6c178ff1f9a1c1a442ff1fb9683187ff2af5ae8da46ebf9"
+        },
+        {
+          "name": "query-oracle",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 1.4699825560019235,
+          "log_sha256": "2b29c7268bb4267954a8fd2c7ac9d89c599aa93a8b5b5040f05c9de90212534a"
+        },
+        {
+          "name": "query-unit",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 2,
+          "wall_seconds": 0.031902419999823906,
+          "log_sha256": "e9f92a4448d33dfedc0995bce8fffbfc0fcbdb9be99405e62556893394117b54"
+        },
+        {
+          "name": "fri-conformance",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 1.2168004189952626,
+          "log_sha256": "f885e6662f0067db4097ca3cd521510d194cd15c4c45c99a152575b1cc273563"
+        },
+        {
+          "name": "fri-full",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.8662456720048795,
+          "log_sha256": "41da49d09a1b31589125083cf65f169688c8fd4009843ef3937ff8ac02d157d0"
+        },
+        {
+          "name": "fri-compact",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.9158747589972336,
+          "log_sha256": "2948d82375a5b8f298f2b80837e5231d830dc10c136efb691ce6f378d3089fbe"
+        },
+        {
+          "name": "fri-lookup-full",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.9164375010004733,
+          "log_sha256": "457044efdbf6d56e58daa167bd3086687aa7dc3e84ee987fa001a03ed7c93342"
+        },
+        {
+          "name": "fri-lookup-compact",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.9167700040052296,
+          "log_sha256": "c0dd959bbad4ac8d6270a74478311159074d52ebea84e25ce439fdd2ef1cea80"
+        },
+        {
+          "name": "fri-reuse",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 1.2676319220045116,
+          "log_sha256": "0842119b0380b6212c1c735186f435b8e27a10676d20e98fa31cb61b661b8d9e"
+        },
+        {
+          "name": "extension-adapter",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.03257456299616024,
+          "log_sha256": "e2f85b45121c933617e152be82c30f46a20b805000716aa93025c227421f1ba7"
+        },
+        {
+          "name": "opening-full",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.8658382610010449,
+          "log_sha256": "e8b8a93f32ebab923241480c820ffc126e3a0c8e5a6a2d89b030191971afd365"
+        },
+        {
+          "name": "opening-compact",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.9170556880053482,
+          "log_sha256": "6008caab17403cb6d994db8e205431ba390325b4f2ff02896acfce38a170385c"
+        },
+        {
+          "name": "opening-lookup-full",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.9161723310025991,
+          "log_sha256": "0e5cc360ff02d9e48c2a30cad1fb43b66531779862ea7cdd92776cf0ae1cd8c8"
+        },
+        {
+          "name": "opening-lookup-compact",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.9661351529939566,
+          "log_sha256": "f177638450ab34b57b2fe3c78353c9bee3eff7d126fe2afd0ff1fda9e5155518"
+        },
+        {
+          "name": "opening-rng",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.6150635629965109,
+          "log_sha256": "517979761001ca39b36ab07e39ece4f78f5ed11ac2aa43e110c1381a76d17b39"
+        },
+        {
+          "name": "opening-admission",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.6158572450003703,
+          "log_sha256": "a909b43444a88d6482af1fc9de163bd4ffd2bff90191ff06034d7932175eacf0"
+        },
+        {
+          "name": "opening-capture",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 1.017257375002373,
+          "log_sha256": "b6a82fdd1c26217481b1fb6998e78278925fba714e6f6902ecfd4ea646ef96da"
+        },
+        {
+          "name": "opening-reuse",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 1.1663647480017971,
+          "log_sha256": "2442b50ac1f7073360791685c34af09ef77f488990e3a5cf12f8b6eecba3ca19"
+        },
+        {
+          "name": "opening-arithmetic",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 1.3687250660004793,
+          "log_sha256": "354452649edd365ef657579ff1231c1774574db69cd7b91dc6feedd30b14f9ec"
+        },
+        {
+          "name": "opening-unit",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 2,
+          "wall_seconds": 0.03178948399727233,
+          "log_sha256": "c32e1ecb15089a1cb18493d66b9a9cb6e9af1969677e512ddaa98d10cd319494"
+        },
+        {
+          "name": "lookup-commit",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 1.3669694999989588,
+          "log_sha256": "6107e7e83ad56589d68ae8b97a107dcf88a1db11d8559a3d75c6ea7a038c84d1"
+        },
+        {
+          "name": "lookup-proof",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.8166594340000302,
+          "log_sha256": "7dfb94dccecce60805118e1f53a4670fceb715ee633cbbe7d81cc2dd85d4acd1"
+        },
+        {
+          "name": "lookup-compact",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.9174698839997291,
+          "log_sha256": "3528343b3b02ee7b0a004b352ade3ec3ac39b2dfdfecb2c7d30da9abf450ce23"
+        },
+        {
+          "name": "trace-commit-unit",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.01580519699928118,
+          "log_sha256": "590d27655d296f442690e1aa369017a46c6507792205456a21a512ede8f13cc5"
+        },
+        {
+          "name": "lookup-conformance",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.6656023649993585,
+          "log_sha256": "3aefd5a22b6d1cf0cb642b93453e05b1165435e6d495e8d643029727779df61f"
+        },
+        {
+          "name": "lookup-compiler",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.032126376005180646,
+          "log_sha256": "c2405dae2cba268707d4b311d39d080dff95a7e4c1a3ebb5856b0e79c42faa7e"
+        },
+        {
+          "name": "lookup-plan",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.031749813999340404,
+          "log_sha256": "45c5bb91f4d085bf711b5e588c8ef349f8e21c90cd21024e809291a10f1ad65b"
+        },
+        {
+          "name": "quotient-compiler",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.03180023499589879,
+          "log_sha256": "539997376bff713e137261e59237e4f3db09a0fa23078ec2448ff6001ce129f8"
+        },
+        {
+          "name": "proof-bytes",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.8654589979996672,
+          "log_sha256": "b124e85a3a2d4e88b95aa35f6bd7cd600dd09617bac2531e7a4233dc15648f3d"
+        },
+        {
+          "name": "compact-proof",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.9176081350015011,
+          "log_sha256": "c3212adea4ad458268ddc49a97d1decf85973fc70a66413c21b42879feaf7f5c"
+        },
+        {
+          "name": "registered",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.766250544002105,
+          "log_sha256": "5f941c741ac71c70b8e963f834e9f04028f2f35547c89a833926334568e2ebb6"
+        },
+        {
+          "name": "reuse",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 1.1195994160007103,
+          "log_sha256": "d56168719ae9d3bb23f937845e4e26c2f38e9585a6b2ec0cbfb54bc875895afa"
+        },
+        {
+          "name": "adapter-regression",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.868792510998901,
+          "log_sha256": "ecf4782a32266a2b0e67623f1fcf8f803bb5e0cf9420dbc7dfb9254abfa6f3bf"
+        },
+        {
+          "name": "lde-regression",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.7669121900034952,
+          "log_sha256": "c0ecf4dafd11dc4c5159031ee6b46e2cdb7d398b8ff9704222b6e0d4a1062cf0"
+        },
+        {
+          "name": "rng-regression",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.7157094850044814,
+          "log_sha256": "1e0841c578fc9ebe526bb4a20baf9c05df0a206e3e4c58c64eac2040e2d67b5d"
+        },
+        {
+          "name": "compact-regression",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.9155813109973678,
+          "log_sha256": "05363a8865959546aea39ba750a362936586772ddb1a038894675788ff706033"
+        },
+        {
+          "name": "partition-arithmetic",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.9164921980045619,
+          "log_sha256": "da1b55a1f2d91acf68c4ceae62a371d97d9a42313d67da25f23f39b5f2679f4c"
+        },
+        {
+          "name": "unpartitioned-arithmetic",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.7663992230009171,
+          "log_sha256": "5f4374fe4f2d4a5d31df4183f8046ce4b32407cf4f556483ddf6b575f845bffb"
+        },
+        {
+          "name": "partition-unit",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.015693331995862536,
+          "log_sha256": "a0cc453d0a4bec62551c182e8c6ca30aa212b38008f9b264dd012915cdef69f2"
+        },
+        {
+          "name": "owned-commit",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 1.0670833460026188,
+          "log_sha256": "54bcdc353be3fd3f1f04706dab72fb99cf805e1432433918d2b45e84a3e7370a"
+        },
+        {
+          "name": "admission-regression",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.6646345569970435,
+          "log_sha256": "8294a4690b4ec9b41ef2bc6371936362c9f14c04902f1bad785f6320e034a6a4"
+        },
+        {
+          "name": "commit-unit",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 2,
+          "wall_seconds": 0.031804402999114245,
+          "log_sha256": "4b2002f0a7170826f679dc5f97a1f3b071ee23a0fa2724dc2a82120c877ffc9a"
+        },
+        {
+          "name": "storage-unit",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 2,
+          "wall_seconds": 0.03175018799811369,
+          "log_sha256": "f34fbb8389a51b0384a8bae425528d4367e4448d70ecd3b901ea2148b5a716a1"
+        },
+        {
+          "name": "device-unit",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 4,
+          "wall_seconds": 0.0318046590036829,
+          "log_sha256": "76838e90809eab64a2291ceb1d8fa6f9936b738b6349fa89701c969970eefb51"
+        },
+        {
+          "name": "transform-unit",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 1,
+          "wall_seconds": 0.031752706003317144,
+          "log_sha256": "8fdec419408de7125cc11da834f6c5d60f8e1598751087ba3f7d846d9d7904b9"
+        },
+        {
+          "name": "plan-unit",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 11,
+          "wall_seconds": 0.031716435005364474,
+          "log_sha256": "6831d77b65aa56c5ad70795550aab20e584479730f781c1a988cd40ac5fafa4a"
+        },
+        {
+          "name": "lde-unit",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 2,
+          "wall_seconds": 0.01569511299749138,
+          "log_sha256": "15dc29791341a5175b45132dc5a3a660153c4b6c9ac2862b179a5bf05ee5da6d"
+        },
+        {
+          "name": "pcs-unit",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 13,
+          "wall_seconds": 0.1639707569993334,
+          "log_sha256": "0209ea86c541510506d36975ba655a9e6f42aa3dd4ff00e153078e19bf35533b"
+        },
+        {
+          "name": "policy-unit",
+          "returncode": 0,
+          "passed": true,
+          "passed_count": 9,
+          "wall_seconds": 0.06388364500162425,
+          "log_sha256": "c7f3ad34f36328fbeef079f3574a1851993f159c1b6f8803e3404c2556005f92"
+        }
+      ]
+    },
+    "narrow": {
+      "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-witness-handoff-20261007/run-01/narrow",
+      "features": [
+        "default",
+        "block-v2"
+      ],
+      "build_profile": "release",
+      "binary_sha256": "8b49ea945d10075145870e6e517a59b9fac61ee643a189167aa784c773f6dd39",
+      "runner_sha256": "61d48dc181c4ea397b4b88e4f43165e80ad3deb2d0fdc5965f5e015473421b1f",
+      "manifest_sha256": "84625baf3155899d6cfbaa78ba1cc9a289d078e26c21c2083445d076a882fdd0",
+      "build_log_sha256": "26bcb4a52bb85e79e62756271fa50f697adcbf6d258db74aed7b951a519dad07",
+      "checks": [
+        {
+          "name": "main-commit",
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 1.6182532669990906,
+          "log_sha256": "548c2e84fd4e6427e248683060c3e22696527b4a901751046a9673566659a553"
+        },
+        {
+          "name": "preprocessing-admission",
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.6156023939984152,
+          "log_sha256": "7b2a1e5e01ebcdb0c5881e7b4dd66ec553101b137e4a32d205e30a4b97f89736"
+        },
+        {
+          "name": "device-main-full",
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.9669544819989824,
+          "log_sha256": "9fb1b1268bbfd1655d282da2ee0b6890bc0528d6af0edbf32d59922f7e4414d6"
+        },
+        {
+          "name": "device-main-compact",
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.9680039189988747,
+          "log_sha256": "7d9e060201ccb11eef6baeca1b5dd2fa80ca990235c18ec2fb3e1033eb503e8c"
+        },
+        {
+          "name": "device-witness-reuse",
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 1.5211021580034867,
+          "log_sha256": "1ded8387a6dcfa5f279645109fe85e9789eb995de32f0f5a41641e407f95f587"
+        },
+        {
+          "name": "device-witness-reuse-compact",
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 1.418545748005272,
+          "log_sha256": "998fbe552d99d69479671287e892f4338d84e0dce50842ee77de41524e79a055"
+        },
+        {
+          "name": "registered-cpu",
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.16463934200146468,
+          "log_sha256": "a52e02f933553b2e6024c62720db6632ebd8b45c798a32383a428c9a76a1971e"
+        },
+        {
+          "name": "witness-conformance",
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.666387475997908,
+          "log_sha256": "e964e596de5b1b3f8a0bc2e7724f18c213a2e3823c0b2cbf1825f765455cbeaa"
+        },
+        {
+          "name": "witness-rejection",
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.616242318006698,
+          "log_sha256": "e797c79e5486d5d68a196b22da86cf7aeeb343ad420f2343e9ca2517fdac0ca6"
+        },
+        {
+          "name": "witness-compiler",
+          "passed": true,
+          "passed_count": 2,
+          "returncode": 0,
+          "wall_seconds": 0.03175461499631638,
+          "log_sha256": "9885a6917fe92287d8dc9eb5a869fd03b12f207e57e1be6a3ff34fe6d9844560"
+        },
+        {
+          "name": "witness-memory",
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 0.03180466300545959,
+          "log_sha256": "458e811428b7ae8242ad532488683a6a41a409e75c9e9940029b82b25de79029"
+        }
+      ]
+    },
+    "debug": {
+      "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-witness-handoff-20261007/run-01/debug",
+      "features": [
+        "default",
+        "block-v2-wide-lanes"
+      ],
+      "build_profile": "debug",
+      "binary_sha256": "139e9f8b072474d7f0b4694bcb6285b56c093b76bdd69a910062a264436ee8d7",
+      "runner_sha256": "17712187476dc2394e69334cba13bda6b81cae98e8345acf98e4265103ef0d18",
+      "manifest_sha256": "5ebcfaef408d691f2ea2b74483aaf04e4993ca7136cae002c3fc078f2b1b155c",
+      "build_log_sha256": "5b4bd5e75b78c27ee784b12863912b9c0b0d3584a3f66bca44b7a9813e2f9c76",
+      "checks": [
+        {
+          "name": "device-main-full",
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 17.607823920996452,
+          "log_sha256": "62cf7dec73a758f3f4aef332f9b5e5128458934f758287d64b19897e6bcbaf5d"
+        },
+        {
+          "name": "device-witness-reuse",
+          "passed": true,
+          "passed_count": 1,
+          "returncode": 0,
+          "wall_seconds": 21.693109764994006,
+          "log_sha256": "c29691c3b6334f1494f2f90af21ae3c793f2fabe92722560990fe8e1876fd818"
+        }
+      ]
+    }
+  },
+  "bounded_checks_passed": 79,
+  "rust_test_cases_passed": 119,
+  "native_checks_passed": 57,
+  "build_and_resource_logs": {
+    "release-build": "aa4ec009bfc28e1a6742a8d43134382f1d7e27fbbcc6cc9cbeafd48f37e5e913",
+    "cpu-stream-build": "68eee6aa91aa6ff776f891f4cf8b428a9921a60f9c89e453136974c662d5ffe2",
+    "gpu-stream-build": "b768d89363282c5911af0cd08e302ae24fd39a8e550dc8f9333a7be3b170b23a",
+    "python-resources": "23aeb94bbcd8531c8a4f752b4fd5221526b6852c9248c311ecfe1f482169b799"
+  },
+  "resource_evidence": {
+    "tests_passed": 36,
+    "rerun_this_checkpoint": false,
+    "source": "gpu-device-pcs-2026-10-07.json",
+    "reason": "Resource scripts and log hashes match the unchanged previous checkpoint; no new worker mode enabled"
+  },
+  "remaining": [
+    "Bind the prepared witness and GPU preprocessing state to RegisteredProgram with immutable explicit selection",
+    "Create the proving configuration/session before witness construction; report actual witness/preprocessing backends",
+    "Extend worker manifests and simultaneous host/GPU reservations for metadata, private inputs/wires/traces and commitments before activation",
+    "GPU wallet/batch trace and public-value arithmetic",
+    "Exact randomness expansion, salts, transcript and grinding",
+    "Legacy quadratic/nonbinary/periodic/final-polynomial support and wallet/C-ABI wiring",
+    "AMD/Metal conformance, full-size memory qualification and sustained delivered transaction throughput"
+  ]
+}

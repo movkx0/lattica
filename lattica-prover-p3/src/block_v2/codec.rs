@@ -8,6 +8,7 @@ use serde::{
 use std::cell::Cell;
 
 mod fixed_u64;
+pub(crate) mod proofs;
 
 const LEGACY_NODE_MAGIC: &[u8; 8] = b"LBV2RC01";
 const FIXED_NODE_MAGIC: &[u8; 8] = b"LBV2RC02";
@@ -449,11 +450,33 @@ fn decode_node_with_encoding(
 /// Encode the selected research node format into a fixed-capacity buffer.
 /// The 2 MiB cap includes the header; it is enforced while serializing.
 pub fn encode_node(node: &NodeProof) -> Result<Vec<u8>, postcard::Error> {
-    let mut bytes = vec![0; profile::MAX_PROOF_BYTES];
-    bytes[..8].copy_from_slice(NODE_MAGIC);
-    let payload_len = encode_payload(node, NODE_ENCODING, &mut bytes[8..])?.len();
-    bytes.truncate(8 + payload_len);
+    let mut bytes = Vec::new();
+    bytes
+        .try_reserve_exact(profile::MAX_PROOF_BYTES)
+        .map_err(|_| postcard::Error::SerializeBufferFull)?;
+    if bytes.capacity() != profile::MAX_PROOF_BYTES {
+        return Err(postcard::Error::SerializeBufferFull);
+    }
+    bytes.resize(profile::MAX_PROOF_BYTES, 0);
+    let len = encode_node_into(node, &mut bytes)?.len();
+    bytes.truncate(len);
     Ok(bytes)
+}
+
+/// Serialize into caller-owned storage. The proof cap includes its envelope,
+/// even when the caller supplies a larger containing packet buffer.
+pub(crate) fn encode_node_into<'a>(
+    node: &NodeProof,
+    output: &'a mut [u8],
+) -> Result<&'a mut [u8], postcard::Error> {
+    let limit = output.len().min(profile::MAX_PROOF_BYTES);
+    if limit < NODE_MAGIC.len() {
+        return Err(postcard::Error::SerializeBufferFull);
+    }
+    let output = &mut output[..limit];
+    output[..8].copy_from_slice(NODE_MAGIC);
+    let payload_len = encode_payload(node, NODE_ENCODING, &mut output[8..])?.len();
+    Ok(&mut output[..8 + payload_len])
 }
 
 pub fn decode_node(bytes: &[u8]) -> Result<NodeProof, postcard::Error> {
@@ -466,6 +489,38 @@ mod tests {
     use crate::block_v2::machine::{programs, verifier::template};
     use p3_field::PrimeCharacteristicRing;
     use p3_goldilocks::Goldilocks as Val;
+
+    #[test]
+    fn node_serialization_uses_borrowed_capacity_and_preserves_original_bytes() {
+        let node = NodeProof {
+            public: [Val::ZERO; programs::PUBLIC_VALUES],
+            proof: template::batch(&programs::shape(1 << 19).unwrap()).unwrap(),
+        };
+        // The previous encoder's independent envelope/payload construction.
+        let mut reference = vec![0; profile::MAX_PROOF_BYTES];
+        reference[..8].copy_from_slice(NODE_MAGIC);
+        let length = encode_payload(&node, NODE_ENCODING, &mut reference[8..])
+            .unwrap()
+            .len()
+            + 8;
+        reference.truncate(length);
+        let mut output = vec![0x5a; profile::MAX_PROOF_BYTES + 16];
+        let pointer = output.as_ptr();
+        let encoded = encode_node_into(&node, &mut output).unwrap();
+        assert_eq!(encoded.as_ptr(), pointer);
+        assert_eq!(encoded, reference);
+        assert!(output[profile::MAX_PROOF_BYTES..]
+            .iter()
+            .all(|b| *b == 0x5a));
+        assert_eq!(encode_node(&node).unwrap(), reference);
+        let mut exact = vec![0; length];
+        assert_eq!(encode_node_into(&node, &mut exact).unwrap(), reference);
+        let mut short = vec![0; length - 1];
+        assert!(encode_node_into(&node, &mut short).is_err());
+        let mut short_header = [0x5a; 7];
+        assert!(encode_node_into(&node, &mut short_header).is_err());
+        assert_eq!(short_header, [0x5a; 7]);
+    }
 
     #[test]
     fn full_recursive_shape_round_trips_but_malformed_encodings_fail() {
@@ -569,7 +624,7 @@ mod tests {
         assert_eq!(postcard::to_allocvec(&decoded).unwrap(), bytes);
     }
 
-    fn maximum_value_node(height: usize) -> NodeProof {
+    pub(super) fn maximum_value_node(height: usize) -> NodeProof {
         use p3_field::BasedVectorSpace;
         use p3_symmetric::MerkleCap;
         let v = Val::from_u64(crate::block_v2::commitment::MODULUS - 1);
@@ -837,6 +892,11 @@ mod tests {
         // output capacity, without materializing an unbounded serialization.
         node.proof.opening_proof.1.final_poly = vec![profile::Challenge::ONE; 100_000];
         assert!(encode_node(&node).is_err());
+        let mut output = vec![0x5a; profile::MAX_PROOF_BYTES + 32];
+        assert!(encode_node_into(&node, &mut output).is_err());
+        assert!(output[profile::MAX_PROOF_BYTES..]
+            .iter()
+            .all(|byte| *byte == 0x5a));
     }
 
     #[test]

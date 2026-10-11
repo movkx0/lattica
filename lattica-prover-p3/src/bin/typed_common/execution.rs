@@ -4,12 +4,18 @@ use super::*;
 use lattica_prover_p3::block_v2::execution::{
     artifact_store::{ArtifactStore, StoreLimits},
     dag::Limits,
-    job::{ArtifactRef, RegistryPin, VerifiedNode, VerifiedWallet},
+    job::{ArtifactRef, RegistryPin, TypedRegistryContext, VerifiedNode},
     journal::{DurableDag, JournalLimits},
     resources::Resources,
     selection::{PublicInput, Selection},
 };
 use std::os::unix::fs::DirBuilderExt;
+#[path = "execution_preparation.rs"]
+mod preparation;
+
+pub(super) fn coordinator_storage_probe() -> Result<(), Error> {
+    fleet::coordinator_storage_probe()
+}
 
 struct Prepared {
     registry: typed_recursive::Registry<12>,
@@ -47,26 +53,31 @@ fn prepare_for_backend(dir: &Path, pinned: &Path, gpu: bool) -> Result<Prepared,
     let body = body(dir)?;
     let baseline = tasks(&body, &expected)?;
     let registered = registry(dir)?;
+    let caps = registered.caps.into_iter().collect::<Vec<_>>();
+    if caps.capacity() > 12 {
+        return Err("typed preparation registry conversion capacity".into());
+    }
     let registry = typed_recursive::Registry::<12> {
         height: registered.height,
-        caps: registered
-            .caps
-            .into_iter()
-            .collect::<Vec<_>>()
+        caps: caps
             .try_into()
             .map_err(|_| "typed execution registry size")?,
     };
-    let pin = RegistryPin::new_typed(&registry, expected.profile)?;
-    let mut inputs = Vec::new();
-    let mut policies = Vec::new();
+    let context = TypedRegistryContext::new(&registry, expected.profile)?;
+    let pin = context.pin();
+    registry.storage_bytes()?;
+    let mut inputs = preparation::list(expected.count as usize)?;
+    let mut policies = preparation::list(expected.count as usize)?;
     for index in 0..expected.count as usize {
         let policy = policy(&body.transactions[index], index, &expected)?;
         let proof = bytes(&dir.join(format!("wallet.{index}")))?;
-        let ticket = VerifiedWallet::verify_typed(pin, &registry, expected.chain, policy, &proof)?;
+        let ticket = context.verify_wallet(expected.chain, policy, &proof)?;
         policies.push((ticket.artifact(), policy));
         inputs.push(PublicInput::new(ticket, proof)?);
     }
+    preparation::check_lists(&inputs, &policies)?;
     let selection = Selection::new(pin, expected.chain, &inputs)?;
+    drop(inputs);
     if selection.root().expected_public() != expected.public()
         || selection.jobs().len() != baseline.len()
     {
@@ -185,6 +196,8 @@ pub(super) fn audit(
         },
     };
     let now = || started.elapsed().as_millis() as u64;
+    TypedRegistryContext::admit_recovery_storage(limits.workers.ram_bytes)?;
+    let registry = TypedRegistryContext::new(&prepared.registry, prepared.pin.profile())?;
     let store = ArtifactStore::create(&out.join("artifacts"), store_limits)?;
     let mut owner = DurableDag::create(
         &out.join("journal"),
@@ -210,7 +223,7 @@ pub(super) fn audit(
             job.start() as usize >> job.expected().level
         );
         let proof = bytes(&nodes.join(name))?;
-        let ticket = VerifiedNode::verify_typed(job, &prepared.registry, &proof)?;
+        let ticket = registry.verify_node(job, &proof)?;
         // Importing a previously proved node starts no worker and creates no
         // stop receipt. Actual dispatch and worker recovery are separate gates.
         owner.cache_node(ticket, proof, now())?;

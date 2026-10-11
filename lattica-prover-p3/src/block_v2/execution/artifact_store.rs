@@ -14,16 +14,15 @@ use std::{
     collections::BTreeMap,
     fs::{self, DirBuilder, File, Metadata, OpenOptions},
     io::{Read, Write},
-    os::{
-        fd::AsRawFd,
-        unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt},
-    },
+    os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt},
     path::{Path, PathBuf},
 };
 
 use rand::TryRng;
 
-use super::job::{ArtifactKind, ArtifactRef, Job, RegistryPin, VerifiedNode, VerifiedWallet};
+use super::job::{
+    ArtifactKind, ArtifactRef, Job, RegistryPin, TypedRegistryContext, VerifiedNode, VerifiedWallet,
+};
 use crate::block_v2::{
     profile::MAX_PROOF_BYTES,
     recursive::{Error, Registry},
@@ -33,6 +32,10 @@ const LOCK: &str = ".owner.lock";
 const PENDING: &str = ".pending-";
 const MAX_STORE_BYTES: u64 = 512 * (1 << 20);
 const MAX_ENTRIES: usize = 16384;
+
+#[path = "artifact_store_storage.rs"]
+mod storage;
+pub use storage::{ArtifactStorage, InventoryStorage};
 
 #[derive(Clone, Copy, Debug)]
 pub struct StoreLimits {
@@ -145,6 +148,7 @@ impl ArtifactStore {
     /// Create one new directory; never repurpose or clear an existing path.
     pub fn create(path: &Path, limits: StoreLimits) -> Result<Self, Error> {
         limits.validate()?;
+        super::io_storage::check_named_path(path)?;
         if !path.is_absolute() || path.file_name().is_none() {
             return Err("artifact store requires an absolute named directory".into());
         }
@@ -327,6 +331,41 @@ impl ArtifactStore {
         Ok((ticket, bytes))
     }
 
+    pub(crate) fn load_typed_wallet_approved(
+        &self,
+        identity: ArtifactRef,
+        registry: &TypedRegistryContext<'_>,
+        chain: [u8; 32],
+        policy: crate::block_v2::typed_recursive::Policy,
+    ) -> Result<(VerifiedWallet, Vec<u8>), Error> {
+        if identity.kind() != ArtifactKind::Wallet {
+            return Err("artifact is not a typed wallet proof".into());
+        }
+        let bytes = self.read_exact(identity)?;
+        let ticket = registry.verify_stored_wallet(chain, policy, &bytes)?;
+        if ticket.artifact() != identity {
+            return Err("recovered typed wallet identity".into());
+        }
+        Ok((ticket, bytes))
+    }
+
+    pub(crate) fn load_typed_node_approved(
+        &self,
+        identity: ArtifactRef,
+        job: &Job,
+        registry: &TypedRegistryContext<'_>,
+    ) -> Result<(VerifiedNode, Vec<u8>), Error> {
+        if identity.kind() != ArtifactKind::Node {
+            return Err("artifact is not a typed recursive node".into());
+        }
+        let bytes = self.read_exact(identity)?;
+        let ticket = registry.verify_node(job, &bytes)?;
+        if ticket.artifact() != identity {
+            return Err("recovered typed recursive identity".into());
+        }
+        Ok((ticket, bytes))
+    }
+
     fn check_owner(&self) -> Result<(), Error> {
         if self.poisoned {
             return Err("artifact store poisoned; reopen and recover".into());
@@ -366,42 +405,41 @@ impl ArtifactStore {
             pending: Vec::new(),
             usage: StoreUsage::default(),
         };
-        let mut links = Vec::new();
+        let mut unexpected_links = false;
         for entry in fs::read_dir(&self.anchored)? {
             let entry = entry?;
-            let name = entry
-                .file_name()
-                .into_string()
-                .map_err(|_| "non-UTF8 artifact filename")?;
+            let filename = entry.file_name();
+            let name = filename.to_str().ok_or("non-UTF8 artifact filename")?;
+            super::io_storage::check_name(name)?;
             if name == LOCK {
                 continue;
             }
             if inventory.usage.artifacts + inventory.usage.pending_files >= self.limits.entries {
                 return Err("artifact directory entry limit".into());
             }
-            let metadata = fs::symlink_metadata(self.anchored.join(&name))?;
+            let metadata = fs::symlink_metadata(self.anchored.join(name))?;
             check_file(&metadata, self.uid, true)?;
             if metadata.len() > MAX_PROOF_BYTES as u64 {
                 return Err("oversized artifact file".into());
             }
-            if is_pending(&name) {
+            if is_pending(name) {
                 inventory.usage.pending_files += 1;
                 inventory.usage.pending_bytes = inventory
                     .usage
                     .pending_bytes
                     .checked_add(metadata.len())
                     .ok_or("artifact byte overflow")?;
-                inventory.pending.push(name);
+                inventory.pending.push(name.to_owned());
             } else {
-                let identity = parse_name(&name, metadata.len())?;
+                let identity = parse_name(name, metadata.len())?;
                 inventory.usage.artifacts += 1;
                 inventory.usage.artifact_bytes = inventory
                     .usage
                     .artifact_bytes
                     .checked_add(metadata.len())
                     .ok_or("artifact byte overflow")?;
-                links.push(metadata.nlink());
-                inventory.artifacts.insert(name, identity);
+                unexpected_links |= metadata.nlink() != 1;
+                inventory.artifacts.insert(name.to_owned(), identity);
             }
             if inventory
                 .usage
@@ -414,10 +452,10 @@ impl ArtifactStore {
         }
         // Atomic publication briefly gives the pending and final names one inode.
         // With no pending files, every final name must have exactly one link.
-        if inventory.pending.is_empty() && links.iter().any(|n| *n != 1) {
+        if inventory.pending.is_empty() && unexpected_links {
             return Err("artifact has an unexpected hard link".into());
         }
-        inventory.pending.sort();
+        inventory.pending.sort_unstable();
         self.inventory = inventory;
         Ok(())
     }
@@ -434,9 +472,11 @@ impl ArtifactStore {
         if metadata.len() != u64::from(identity.byte_len()) {
             return Err("artifact file length changed".into());
         }
-        let mut bytes = Vec::with_capacity(identity.byte_len() as usize);
-        file.take(u64::from(identity.byte_len()) + 1)
-            .read_to_end(&mut bytes)?;
+        let bytes = super::bounded_io::read_file(
+            &mut { file },
+            identity.byte_len() as usize,
+            MAX_PROOF_BYTES,
+        )?;
         identity.check_bytes(&bytes)?;
         Ok(bytes)
     }
@@ -515,10 +555,11 @@ impl ArtifactStore {
 }
 
 pub(super) fn fd_path(file: &File) -> PathBuf {
-    PathBuf::from(format!("/proc/self/fd/{}", file.as_raw_fd()))
+    super::io_storage::fd_path(file)
 }
 
 pub(super) fn open_directory(path: &Path) -> Result<File, Error> {
+    super::io_storage::check_path(path)?;
     Ok(OpenOptions::new()
         .read(true)
         .custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC)
@@ -560,7 +601,16 @@ fn artifact_name(identity: ArtifactRef) -> String {
         ArtifactKind::Wallet => 'w',
         ArtifactKind::Node => 'n',
     };
-    format!("{prefix}-{}.proof", hex(&identity.digest_bytes()))
+    const DIGITS: &[u8; 16] = b"0123456789abcdef";
+    let mut name = String::with_capacity(storage::ARTIFACT_NAME_BYTES);
+    name.push(prefix);
+    name.push('-');
+    for byte in identity.digest_bytes() {
+        name.push(DIGITS[(byte >> 4) as usize] as char);
+        name.push(DIGITS[(byte & 15) as usize] as char);
+    }
+    name.push_str(".proof");
+    name
 }
 
 pub(super) fn is_pending(name: &str) -> bool {

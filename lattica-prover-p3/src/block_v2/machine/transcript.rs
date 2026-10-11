@@ -1,7 +1,8 @@
 //! Exact p3-challenger 0.6.1 duplex schedule (including prefix-free absorbs).
 use super::circuit::Extension;
+use super::program::ScopedProgramBuilder as ProgramBuilder;
 use super::program::Val;
-use super::{ProgramBuilder, Wire};
+use super::Wire;
 use p3_field::PrimeCharacteristicRing;
 
 pub struct Transcript {

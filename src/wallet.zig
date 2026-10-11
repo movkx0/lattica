@@ -11,6 +11,8 @@ const tx = @import("tx.zig");
 const poseidon2 = @import("poseidon2.zig");
 const tree = @import("tree.zig");
 const node = @import("node.zig");
+const prover_options = @import("prover_options");
+const prover_runtime = @import("prover_runtime.zig");
 
 /// First 6 bytes of `bytes` as 12 lowercase hex characters.
 fn hex6(bytes: []const u8) [12]u8 {
@@ -30,6 +32,10 @@ pub fn main(init: std.process.Init) !void {
     const args = try init.minimal.args.toSlice(a);
     const cmd: []const u8 = if (args.len >= 2) args[1] else "demo";
 
+    const use_gpu = try prover_runtime.gpuForCommand(prover_options.gpu_prover, cmd, init.environ_map.get("LATTICA_PROVING_POLICY"));
+    if (prover_options.gpu_prover and use_gpu) try prover_runtime.Gpu.initialize();
+    errdefer if (prover_options.gpu_prover and use_gpu) prover_runtime.Gpu.shutdown() catch {};
+
     if (std.mem.eql(u8, cmd, "demo")) {
         try demo(a);
     } else if (std.mem.eql(u8, cmd, "exchange")) {
@@ -41,6 +47,10 @@ pub fn main(init: std.process.Init) !void {
     } else {
         std.debug.print("unknown command: {s}\nusage: lattica-wallet [demo|exchange|keygen|bench]\n", .{cmd});
         std.process.exit(2);
+    }
+    if (prover_options.gpu_prover and use_gpu) {
+        try prover_runtime.Gpu.drain();
+        try prover_runtime.Gpu.shutdown();
     }
 }
 
@@ -124,11 +134,10 @@ fn bench(io: std.Io) !void {
 fn demo(a: std.mem.Allocator) !void {
     std.debug.print("=== Lattica: post-quantum shielded join-split demo ===\n\n", .{});
 
-    // Install the mock prover/verifier backends. In production these are the Rust
-    // lattica_joinsplit_prove / lattica_joinsplit_verify (joinsplit_air); the mocks model the
-    // proof's tx-binding so the flow runs without linking the staticlib.
-    node.mock.install();
-    defer node.mock.uninstall();
+    // The default demo uses mocks. A GPU build installs the real Rust backends
+    // during startup, before entering this flow.
+    if (!prover_options.gpu_prover) node.mock.install();
+    defer if (!prover_options.gpu_prover) node.mock.uninstall();
 
     var chain = try node.Chain.init(a);
     const alice = try tx.FullKey.fromSeed([_]u8{1} ** 32);
@@ -153,7 +162,8 @@ fn demo(a: std.mem.Allocator) !void {
     const t = try node.buildTransfer(a, alice, &inputs, &outs, 100, 0, anchor);
     std.debug.print("[build]  Alice spends 2 notes → 900 to Bob + 0 dummy, 100 fee (values hidden).\n", .{});
     std.debug.print("         nullifiers   {s}…, {s}… (revealed; unlinkable to the notes)\n", .{ hex6(&t.nullifiers[0]), hex6(&t.nullifiers[1]) });
-    std.debug.print("         join-split proof {d} bytes (mock backend; the real proof is ~0.5 MB)\n\n", .{t.proof.len});
+    const proof_backend = if (prover_options.gpu_prover) "GPU prover" else "mock backend";
+    std.debug.print("         join-split proof {d} bytes ({s})\n\n", .{ t.proof.len, proof_backend });
 
     // 3. The node validates and applies it (proof verify + anchor + nullifier-unseen).
     if (chain.verifyAndApply(t)) |_| {
@@ -190,9 +200,6 @@ fn demo(a: std.mem.Allocator) !void {
 
 fn exchangeDemo(a: std.mem.Allocator) !void {
     std.debug.print("=== Lattica: exchange deposit-address demo (shared-KEM, O(1) detection) ===\n\n", .{});
-
-    node.mock.install();
-    defer node.mock.uninstall();
 
     var chain = try node.Chain.init(a);
     const exch = try tx.FullKey.fromSeed([_]u8{42} ** 32);

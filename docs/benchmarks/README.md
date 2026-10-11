@@ -16,6 +16,80 @@ the [P0–P5 engineering roadmap](../high-throughput-proving-plan.md#8-engineeri
 Apple silicon and Linux/OpenCL are development tracks. There is no hardware
 leaderboard.
 
+## Matched CPU/GPU diagnostic comparison — 2026-10-08
+
+A [fresh matched comparison](../evidence/cpu-gpu-progress-comparison-2026-10-08.json)
+uses the same frozen proving implementation as the GPU diagnostic below. Two
+measurement helpers were added only to an isolated source copy. All three arms
+use the same executable, circuits, public statements, proof parameters, four
+Rayon threads and 3 GiB service limit. CPU runs enforce `cpu-required` policy;
+GPU runs select the supported prototype path under `compatible` policy.
+
+| Diagnostic fixture | CPU median per proof | GPU full storage | GPU compact storage | Observed result |
+| --- | ---: | ---: | ---: | --- |
+| Equality circuit, 128 rows | 89.789 ms | 214.652 ms | 226.636 ms | CPU 2.39–2.52× faster |
+| Empty recursion, 2,048 rows | 1,300.897 ms | 405.029 ms | 407.727 ms | GPU 3.19–3.21× faster |
+
+Each arm has one warm-up and five measured process runs, with rotating backend
+order. All **90 proofs** passed CPU verification; the **60 GPU proofs** were
+verified again after GPU shutdown. The measured sample contains 75 proofs,
+excluding 15 warm-ups. Program/registry identities and public statements match
+across CPU and both GPU storage variants. No proof parameters were reduced.
+
+For the complete two-proof empty-fixture process, including registration,
+initialization and CPU checks, median time was **4.223 s CPU**, **3.274 s GPU full**
+and **3.222 s GPU compact**: about **22.5–23.7% shorter** with GPU acceleration.
+The three-proof equality process took **0.566 s CPU** and **1.869 s** with either
+GPU variant. These process timings include correctness-test overhead and are
+not a production cold-start benchmark.
+
+The results show a workload-dependent benefit. The GPU storage variants have
+similar empty-proof medians in this comparison; the earlier small difference
+below does not justify a default change. Both fixtures contain zero user
+transactions, so neither result establishes full-size transaction proving,
+64-input solving time or delivered throughput. Strict GPU-only stage coverage
+remains incomplete.
+
+The [source and evidence archive](../evidence/cpu-gpu-progress-comparison-20261008-r1.tar.gz)
+retains the measurement-only patch, source hashes, commands, logs, per-proof
+stage reports and build records. An unsuitable cached executable was detected
+before measurements and replaced by a fresh build in a dedicated directory.
+All 36 benchmark services exited; GPU leases were released.
+
+## In-progress GPU path diagnostic — 2026-10-08
+
+The [recorded results](../evidence/gpu-progress-benchmark-2026-10-08.json)
+measure a frozen snapshot of the current uncommitted GPU work on the
+RTX 5080 Laptop GPU. Witness construction, private randomness, transcripts,
+lookup/quotient arithmetic, commitments, openings and resident FRI were selected
+on GPU. Strict GPU-only admission and complete stage coverage remain unfinished.
+
+| Diagnostic fixture | Rows | Full storage median per proof | Compact storage median per proof |
+| --- | ---: | ---: | ---: |
+| Registered public/witness equality circuit | 128 | 214.455 ms | 217.866 ms |
+| Twelve-key recursive empty proof | 2,048 | 425.408 ms | 378.226 ms |
+
+Each variant has one warm-up process and three measured processes. The equality
+fixture produced nine measured proofs per variant; empty recursion produced six.
+All **40 fresh proofs**, including ten warm-ups, passed the original CPU verifier
+after GPU shutdown. Altered public statements were also rejected. Services used
+four Rayon threads, a 400% CPU quota, 3 GiB RAM and zero swap. Maximum test-process
+RSS was **405.5 MiB**; physical VRAM peaks were not sampled.
+
+Proof timers include witness generation and the prover call. They exclude
+registration, launch, verification and the test's CPU reference checks.
+Whole-process medians were **1.668 / 1.771 seconds** for full/compact equality
+checks and **3.071 / 3.075 seconds** for full/compact empty recursion. The lower
+compact empty-proof median therefore did not reduce the observed whole-process
+median. This small diagnostic does not establish transaction throughput,
+64-input solving time or a CPU/GPU speedup.
+
+The [evidence archive](../evidence/gpu-progress-benchmark-20261008-r2.tar.gz)
+retains the source snapshot, build records, all commands, logs and stage reports.
+The initial launch failed before proving because `/usr/bin/time` was unavailable;
+it is preserved alongside the successful rerun using Python process accounting.
+All benchmark services exited and released their GPU leases.
+
 ## Optimized 16 GB GPU capacity — 2026-10-06
 
 **64 ordered inputs is the largest validated optimized job size within the

@@ -4,6 +4,10 @@ use super::*;
 use crate::block_v2::execution::{launch::LaunchStore, worker::typed::process::ProcessWorker};
 use std::sync::{Arc, Mutex};
 
+#[path = "local_storage.rs"]
+mod storage;
+pub use storage::LocalPoolStorage;
+
 pub struct LocalProcessEndpoint {
     worker: ProcessWorker,
     launches: Arc<Mutex<LaunchStore>>,
@@ -14,6 +18,7 @@ pub struct LocalProcessEndpoint {
 
 impl LocalProcessEndpoint {
     pub fn new(worker: ProcessWorker, launches: Arc<Mutex<LaunchStore>>) -> Result<Self, Error> {
+        worker.persistent_storage_bytes()?;
         if worker.service_identity().is_none() {
             return Err("pool requires an observed supervised local process".into());
         }

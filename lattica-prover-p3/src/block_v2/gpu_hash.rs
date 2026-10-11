@@ -1,12 +1,22 @@
 //! Candidate-only GPU commitments; verification always uses the upstream CPU MMCS.
 //! No parameter, salt distribution, serialized proof, or production ABI change.
 //! Only equal-height, power-of-two batches are admitted by the selected GPU path.
+pub(crate) mod cache_metadata;
 mod compact_data;
+mod device_data;
+mod fri_data;
+mod owned_data;
+mod owned_queries;
+pub(crate) use fri_data::{FriData, FriExtension, FriExtensionMmcs};
+pub use owned_data::OwnedInputs;
 mod engine;
+pub(crate) use engine::begin_memory_window;
 pub(crate) use engine::fri_fold::fold as fold_fri;
+pub(crate) use engine::host_storage::RETAINED_HOST_BYTES as ENGINE_RETAINED_HOST_BYTES;
 pub(crate) use engine::opening_reduce::{
     reduce_lde as reduce_openings, OpeningMatrix, OpeningTerm,
 };
+pub(crate) use engine::quotient::evaluate as evaluate_cubic_quotient;
 #[cfg(test)]
 #[path = "resident_pcs_tests.rs"]
 mod resident_pcs_tests;
@@ -23,12 +33,24 @@ use std::sync::{
 
 pub use super::resident_pcs::initialize_research_from_env as initialize_resident_from_env;
 pub use engine::{
-    drain,
+    device, drain,
     lde_execute::{coset_lde_commit, LdeCommitOutput, LdeInput},
     lde_plan::{ColumnTile as LdeColumnTile, InputShape as LdeInputShape, LdeCommitPlan},
     plan_coset_lde_commit, report, shutdown, Limits, Snapshot,
 };
 static ENABLED: AtomicBool = AtomicBool::new(false);
+
+pub(crate) fn is_enabled() -> bool {
+    ENABLED.load(Ordering::Acquire)
+}
+
+#[cfg(test)]
+pub(crate) use engine::TestShutdownGuard;
+
+#[cfg(test)]
+pub(crate) fn initialize_quotient_test_engine(limits: Limits) -> Result<(), String> {
+    engine::initialize_mode(limits, engine::TransferMode::Serial)
+}
 
 pub(super) fn require_resident_backend() -> Result<(), String> {
     if !ENABLED.load(Ordering::Acquire) || !engine::retention_enabled()? {
@@ -37,19 +59,23 @@ pub(super) fn require_resident_backend() -> Result<(), String> {
     Ok(())
 }
 
-/// Called only by the research runner, before proving. Merely compiling `gpu`
+/// Called by explicit Rust or native startup, before proving. Merely compiling `gpu`
 /// never selects this path, and verification never initializes a GPU context.
 pub fn initialize_from_env() -> Result<(), String> {
+    initialize_tracked_from_env().map(|_| ())
+}
+
+pub(crate) fn initialize_tracked_from_env() -> Result<bool, String> {
     match std::env::var("LATTICA_V2_GPU_HASH") {
-        Err(std::env::VarError::NotPresent) => Ok(()),
-        Ok(v) if v == "0" => Ok(()),
+        Err(std::env::VarError::NotPresent) => Ok(false),
+        Ok(v) if v == "0" => Ok(false),
         Ok(v) if v == "1" => {
             let mut limits = Limits::default();
             limits.managed_bytes =
                 engine::env_bytes("LATTICA_V2_GPU_MANAGED_BYTES", limits.managed_bytes)?;
-            engine::initialize(limits)?;
+            let created = engine::initialize(limits)?;
             ENABLED.store(true, Ordering::Release);
-            Ok(())
+            Ok(created)
         }
         _ => Err("LATTICA_V2_GPU_HASH must be 0 or 1".into()),
     }
@@ -57,18 +83,25 @@ pub fn initialize_from_env() -> Result<(), String> {
 
 pub struct CandidateMmcs {
     cpu: Arc<ValMmcs>,
-    rng: Arc<Mutex<ChaCha20Rng>>,
+    rng: super::randomness::ProofRng,
     cap_height: usize,
     gpu: bool,
+    device_only: bool,
+    public_preprocessing: bool,
 }
+
+mod salt_data;
+pub use salt_data::SaltStore;
 
 impl CandidateMmcs {
     pub fn new(hash: MyHash, compress: MyCompress, cap_height: usize, rng: ChaCha20Rng) -> Self {
         Self {
             cpu: Arc::new(ValMmcs::new(hash, compress, cap_height, rng.clone())),
-            rng: Arc::new(Mutex::new(rng)),
+            rng: super::randomness::ProofRng::new(rng),
             cap_height,
             gpu: ENABLED.load(Ordering::Acquire),
+            device_only: false,
+            public_preprocessing: false,
         }
     }
 }
@@ -76,6 +109,34 @@ impl CandidateMmcs {
 // Explicitly share only the input-MMCS state used by one resident PCS attempt.
 // Ordinary Clone above/below retains the prior independent-clone semantics.
 impl CandidateMmcs {
+    /// Only this constructor grants the fixed public seed capability.
+    pub(crate) fn new_public_preprocessing(
+        hash: MyHash,
+        compress: MyCompress,
+        cap_height: usize,
+    ) -> Self {
+        use rand::SeedableRng;
+        let mut result = Self::new(hash, compress, cap_height, ChaCha20Rng::from_seed([0; 32]));
+        result.public_preprocessing = true;
+        result
+    }
+
+    pub(crate) fn require_fresh_public_preprocessing(&self) -> Result<(), String> {
+        if !self.public_preprocessing || !self.device_only {
+            return Err(
+                "GPU public salts require a trusted device-only preprocessing configuration".into(),
+            );
+        }
+        let rng = self
+            .rng
+            .lock()
+            .map_err(|_| "public preprocessing RNG poisoned")?;
+        if rng.get_seed() != [0; 32] || rng.get_stream() != 0 || rng.get_word_pos() != 0 {
+            return Err("GPU public salts must be selected before preprocessing draws".into());
+        }
+        Ok(())
+    }
+
     pub(crate) fn share_for_resident(&self) -> Result<Self, String> {
         if !self.gpu || !engine::retention_enabled()? {
             return Err("resident PCS requires initialized GPU hashing and retained trees".into());
@@ -85,9 +146,11 @@ impl CandidateMmcs {
         }
         Ok(Self {
             cpu: Arc::clone(&self.cpu),
-            rng: Arc::clone(&self.rng),
+            rng: self.rng.clone(),
             cap_height: self.cap_height,
             gpu: self.gpu,
+            device_only: super::quotient_pcs::gpu_pcs_device_only_enabled(),
+            public_preprocessing: self.public_preprocessing,
         })
     }
 
@@ -155,6 +218,216 @@ impl CandidateMmcs {
         )
     }
 
+    pub(crate) fn preflight_owned_traces(
+        &self,
+        shapes: &[device::TraceCommitShape],
+        host_budget: usize,
+        samples_pending: bool,
+    ) -> Result<LdeCommitPlan, String> {
+        let bits = if super::resident_pcs::compact_prover_data() {
+            super::profile::LOG_BLOWUP
+        } else {
+            0
+        };
+        let extra: Vec<_> = if samples_pending {
+            shapes
+                .iter()
+                .flat_map(|shape| shape.allocation_bytes())
+                .collect()
+        } else {
+            vec![]
+        };
+        self.plan_resident_storage(
+            &shapes
+                .iter()
+                .map(|shape| shape.lde_shape())
+                .collect::<Vec<_>>(),
+            host_budget,
+            bits,
+            Some(0),
+            &extra,
+        )
+    }
+
+    pub(crate) fn commit_owned_traces(
+        &self,
+        inputs: &[device::TraceCommitInput],
+        session: &device::DeviceSession,
+        host_budget: usize,
+    ) -> Result<
+        (
+            <Self as Mmcs<Val>>::Commitment,
+            ProverData<RowMajorMatrix<Val>>,
+        ),
+        String,
+    > {
+        let preprocessing = inputs
+            .first()
+            .ok_or("empty device trace batch")?
+            .is_preprocessing();
+        if inputs
+            .iter()
+            .any(|input| input.is_preprocessing() != preprocessing)
+        {
+            return Err("cannot mix private traces with public preprocessing".into());
+        }
+        for input in inputs {
+            input.check_session(session)?;
+        }
+        let bits = if super::resident_pcs::compact_prover_data() {
+            super::profile::LOG_BLOWUP
+        } else {
+            0
+        };
+        let plan = self.preflight_owned_traces(
+            &inputs.iter().map(|input| input.shape).collect::<Vec<_>>(),
+            host_budget,
+            false,
+        )?;
+        let salts: Vec<_> = {
+            let mut rng = self
+                .rng
+                .lock()
+                .map_err(|_| "resident salt stream poisoned")?;
+            inputs
+                .iter()
+                .map(|_| RowMajorMatrix::rand(&mut *rng, plan.output_height(), 4))
+                .collect()
+        };
+        let output = engine::lde_execute::commit_owned_traces(
+            inputs,
+            &salts,
+            session,
+            self.cap_height,
+            host_budget,
+            self.lde_retention(bits),
+        )?;
+        self.finish_lde_commit(output, salts, preprocessing)
+    }
+
+    pub(crate) fn preflight_owned_quotient(
+        &self,
+        shape: device::QuotientCommitShape,
+        host_budget: usize,
+        capture: bool,
+    ) -> Result<LdeCommitPlan, String> {
+        self.preflight_owned_quotients(&[shape], host_budget, capture)
+    }
+
+    pub(crate) fn quotient_batch_shapes(
+        &self,
+        shapes: &[device::QuotientCommitShape],
+    ) -> Result<Vec<LdeInputShape>, String> {
+        let chunks = shapes.iter().try_fold(0usize, |count, shape| {
+            if shape.chunks == 0 || shape.chunks > super::profile::MAX_QUOTIENT_CHUNKS {
+                return Err("quotient AIR chunk bound exceeded");
+            }
+            count
+                .checked_add(shape.chunks)
+                .ok_or("quotient batch count overflow")
+        })?;
+        if shapes.is_empty() || chunks > 256 {
+            return Err("quotient batch matrix count exceeded".into());
+        }
+        Ok(shapes
+            .iter()
+            .flat_map(|shape| {
+                std::iter::repeat_n(
+                    LdeInputShape {
+                        height: shape.height,
+                        width: shape.width,
+                        added_bits: super::profile::LOG_BLOWUP + 1,
+                    },
+                    shape.chunks,
+                )
+            })
+            .collect())
+    }
+
+    pub(crate) fn preflight_owned_quotients(
+        &self,
+        shapes: &[device::QuotientCommitShape],
+        host_budget: usize,
+        capture: bool,
+    ) -> Result<LdeCommitPlan, String> {
+        let bits = if super::resident_pcs::compact_prover_data() {
+            super::profile::LOG_BLOWUP
+        } else {
+            0
+        };
+        let inputs = self.quotient_batch_shapes(shapes)?;
+        let pending: Vec<_> = shapes
+            .iter()
+            .flat_map(|shape| shape.allocation_words().map(|words| words * 8))
+            .collect();
+        let plan =
+            self.plan_resident_storage(&inputs, host_budget, bits, capture.then_some(1), &pending)?;
+        plan.validate_quotient_batch_storage(inputs.len())?;
+        Ok(plan)
+    }
+
+    pub(crate) fn commit_owned_quotient(
+        &self,
+        input: &device::QuotientCommitInput,
+        host_budget: usize,
+        capture: Option<&device::DeviceSession>,
+    ) -> Result<
+        (
+            <Self as Mmcs<Val>>::Commitment,
+            ProverData<RowMajorMatrix<Val>>,
+        ),
+        String,
+    > {
+        self.commit_owned_quotients(&[input], host_budget, capture)
+    }
+
+    pub(crate) fn commit_owned_quotients(
+        &self,
+        inputs: &[&device::QuotientCommitInput],
+        host_budget: usize,
+        capture: Option<&device::DeviceSession>,
+    ) -> Result<
+        (
+            <Self as Mmcs<Val>>::Commitment,
+            ProverData<RowMajorMatrix<Val>>,
+        ),
+        String,
+    > {
+        let bits = if super::resident_pcs::compact_prover_data() {
+            super::profile::LOG_BLOWUP
+        } else {
+            0
+        };
+        if let Some(session) = capture {
+            for input in inputs {
+                input.check_session(session)?;
+            }
+        }
+        let shapes: Vec<_> = inputs.iter().map(|input| input.shape).collect();
+        let lde_shapes = self.quotient_batch_shapes(&shapes)?;
+        let plan =
+            self.plan_resident_storage(&lde_shapes, host_budget, bits, capture.map(|_| 1), &[])?;
+        plan.validate_quotient_batch_storage(lde_shapes.len())?;
+        let salts: Vec<_> = {
+            let mut rng = self
+                .rng
+                .lock()
+                .map_err(|_| "resident salt stream poisoned")?;
+            (0..lde_shapes.len())
+                .map(|_| RowMajorMatrix::rand(&mut *rng, plan.output_height(), 4))
+                .collect()
+        };
+        let output = engine::lde_execute::commit_owned_quotients(
+            inputs,
+            &salts,
+            self.cap_height,
+            host_budget,
+            self.lde_retention(bits),
+            capture,
+        )?;
+        self.finish_lde_commit(output, salts, false)
+    }
+
     pub(crate) fn commit_resident_retained(
         &self,
         inputs: Vec<(
@@ -165,6 +438,35 @@ impl CandidateMmcs {
         host_output_budget_bytes: usize,
         masks: Option<&[RowMajorMatrix<Val>]>,
         retention_bits: usize,
+    ) -> Result<
+        (
+            <Self as Mmcs<Val>>::Commitment,
+            ProverData<RowMajorMatrix<Val>>,
+        ),
+        String,
+    > {
+        self.commit_resident_retained_owned(
+            inputs,
+            added_bits,
+            host_output_budget_bytes,
+            masks,
+            retention_bits,
+            None,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn commit_resident_retained_owned(
+        &self,
+        inputs: Vec<(
+            p3_field::coset::TwoAdicMultiplicativeCoset<Val>,
+            RowMajorMatrix<Val>,
+        )>,
+        added_bits: usize,
+        host_output_budget_bytes: usize,
+        masks: Option<&[RowMajorMatrix<Val>]>,
+        retention_bits: usize,
+        capture: Option<(&device::DeviceSession, bool)>,
     ) -> Result<
         (
             <Self as Mmcs<Val>>::Commitment,
@@ -187,13 +489,26 @@ impl CandidateMmcs {
                 added_bits,
             });
         }
+        // The executor repeats this validation, but malformed masks must also
+        // reject here before the commitment salt stream advances.
+        if let Some(masks) = masks {
+            if masks.len() != inputs.len()
+                || added_bits != super::profile::LOG_BLOWUP + 1
+                || masks.iter().zip(&inputs).any(|(mask, (_, matrix))| {
+                    mask.width != matrix.width || mask.values.len() != matrix.values.len()
+                })
+            {
+                return Err("quotient mask dimensions or hiding blowup mismatch".into());
+            }
+        }
         // First check precedes salt draws/allocations; the executor then replans
         // and reserves atomically under the same engine lock.
-        let plan = engine::plan_retained_lde_commit(
+        let plan = self.plan_resident_storage(
             &shapes,
-            self.cap_height,
             host_output_budget_bytes,
             retention_bits,
+            capture.map(|_| usize::from(masks.is_some())),
+            &[],
         )?;
         if masks.is_some() {
             plan.validate_quotient_storage()?;
@@ -218,29 +533,19 @@ impl CandidateMmcs {
                 shift: Val::GENERATOR / domain.shift(),
             })
             .collect();
-        let output = engine::lde_execute::retained_lde_commit(
+        let output = engine::lde_execute::retained_lde_commit_storage(
             &requests,
             masks,
             self.cap_height,
             host_output_budget_bytes,
-            retention_bits,
+            self.lde_retention(retention_bits),
+            capture.map(|(session, _)| session),
         )?;
-        let cap = <Self as Mmcs<Val>>::Commitment::new(output.cap().to_vec());
-        let data = if retention_bits == 0 {
-            ProverData::GpuRetained {
-                matrices: output.matrices,
-                salts,
-                tree: output.tree,
-            }
-        } else {
-            ProverData::Compact(compact_data::CompactData::new(
-                output.matrices,
-                plan.output_height(),
-                salts,
-                output.tree,
-            ))
-        };
-        Ok((cap, data))
+        self.finish_lde_commit(
+            output,
+            salts,
+            capture.is_some_and(|(_, preprocessing)| preprocessing),
+        )
     }
 }
 
@@ -248,9 +553,14 @@ impl Clone for CandidateMmcs {
     fn clone(&self) -> Self {
         Self {
             cpu: Arc::new((*self.cpu).clone()),
-            rng: Arc::new(Mutex::new(self.rng.lock().unwrap().clone())),
+            rng: self
+                .rng
+                .snapshot()
+                .expect("MMCS construction snapshot failed"),
             cap_height: self.cap_height,
             gpu: self.gpu,
+            device_only: self.device_only,
+            public_preprocessing: self.public_preprocessing,
         }
     }
 }
@@ -263,10 +573,17 @@ pub enum ProverData<M> {
         layers: Vec<Vec<[Val; 4]>>,
     },
     Compact(compact_data::CompactData),
+    /// No host LDE or prefix exists. Queries require an owning device session.
+    DeviceOnly {
+        owned: OwnedInputs,
+        salts: SaltStore,
+        tree: engine::RetainedTree,
+    },
     GpuRetained {
         matrices: Vec<M>,
         salts: Vec<RowMajorMatrix<Val>>,
         tree: engine::RetainedTree,
+        owned: Option<OwnedInputs>,
     },
 }
 
@@ -277,6 +594,10 @@ impl Mmcs<Val> for CandidateMmcs {
     type Error = <ValMmcs as Mmcs<Val>>::Error;
 
     fn commit<M: Matrix<Val>>(&self, inputs: Vec<M>) -> (Self::Commitment, Self::ProverData<M>) {
+        assert!(
+            !self.device_only,
+            "device-only PCS requires the explicit owned commitment interface"
+        );
         if !self.gpu {
             let (cap, data) = self.cpu.commit(inputs);
             return (cap, ProverData::Cpu(data));
@@ -326,6 +647,7 @@ impl Mmcs<Val> for CandidateMmcs {
                     matrices: inputs,
                     salts,
                     tree,
+                    owned: None,
                 },
             );
         }
@@ -349,6 +671,9 @@ impl Mmcs<Val> for CandidateMmcs {
         data: &Self::ProverData<M>,
     ) -> BatchOpening<Val, Self> {
         match data {
+            ProverData::DeviceOnly { .. } => {
+                panic!("device-only PCS queries require the owned query interface")
+            }
             ProverData::Compact(data) => data.open(index, self.cap_height),
             ProverData::Cpu(data) => {
                 let (values, proof) = self.cpu.open_batch(index, data).unpack();
@@ -358,6 +683,7 @@ impl Mmcs<Val> for CandidateMmcs {
                 matrices,
                 salts,
                 tree,
+                ..
             } => {
                 assert!(
                     index < matrices[0].height(),
@@ -414,6 +740,7 @@ impl Mmcs<Val> for CandidateMmcs {
             ProverData::Compact(_) => {
                 panic!("compact data requires explicit prefix/logical geometry access")
             }
+            ProverData::DeviceOnly { .. } => panic!("device-only PCS has no host matrices"),
             ProverData::Gpu { matrices, .. } | ProverData::GpuRetained { matrices, .. } => {
                 matrices.iter().collect()
             }
@@ -422,6 +749,12 @@ impl Mmcs<Val> for CandidateMmcs {
 
     fn get_matrix_heights<M: Matrix<Val>>(&self, data: &Self::ProverData<M>) -> Vec<usize> {
         match data {
+            ProverData::DeviceOnly { .. } => data
+                .owned_dimensions()
+                .expect("device-only dimensions")
+                .iter()
+                .map(|d| d.height)
+                .collect(),
             ProverData::Compact(data) => vec![data.height; data.prefixes.len()],
             _ => self.get_matrices(data).iter().map(|m| m.height()).collect(),
         }

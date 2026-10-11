@@ -4,10 +4,12 @@
 //! callers can repeat the first valid wallet in the unused slot. The public count
 //! and ordered commitment describe actual entries, never the verifier invocation count.
 
+use super::compiler_constants::Constants;
 use p3_batch_stark::BatchProof;
 use p3_field::PrimeCharacteristicRing;
 use p3_uni_stark::Proof;
 
+use super::program::ScopedProgramBuilder as ProgramBuilder;
 use super::program::{Val, Wire};
 use super::programs::{
     self, assert_constant, finish, parent_root, public, registry, selectors, Compiled, COUNT,
@@ -16,7 +18,6 @@ use super::programs::{
 use super::typed_finalizer;
 use super::typed_programs::{HTLC, ISSUANCE};
 use super::verifier::{self, CompileError, ProofInputs};
-use super::ProgramBuilder;
 use crate::block_v2::{
     commitment::{self, Context, Kind},
     leaf::ContextJoinSplitAir,
@@ -95,6 +96,7 @@ fn wallet_leaf(
     mode: u64,
     values: &[Val],
     proof: &Proof<Config>,
+    constants: Constants<'_>,
 ) -> Result<[Wire; 4], CompileError> {
     let (count, kind) = match mode {
         programs::WRAPPER => (js::N_PUBLIC, Kind::JoinSplit),
@@ -105,7 +107,7 @@ fn wallet_leaf(
     if values.len() != count {
         return Err(CompileError::Shape("typed pair wallet statement"));
     }
-    let wallet = inputs.bases(b, values);
+    let wallet = inputs.bases(b, values)?;
     let mut inner = wallet.clone();
     let context = Context {
         profile_id: profile::CANDIDATE_PROFILE_ID,
@@ -117,30 +119,40 @@ fn wallet_leaf(
     match mode {
         programs::WRAPPER => {
             b.assert_zero(wallet[js::PI_MINT]);
-            verifier::uni::verify(b, inputs, &ContextJoinSplitAir, js::HEIGHT, &inner, proof)?;
+            verifier::uni::verify_with_constants(
+                b,
+                inputs,
+                &ContextJoinSplitAir,
+                js::HEIGHT,
+                &inner,
+                proof,
+                constants,
+            )?;
         }
         HTLC => {
             b.assert_zero(wallet[htlc::PI_MINT]);
-            verifier::uni::verify(
+            verifier::uni::verify_with_constants(
                 b,
                 inputs,
                 &ContextAir(htlc::HtlcAir),
                 htlc::HEIGHT,
                 &inner,
                 proof,
+                constants,
             )?;
         }
         ISSUANCE => {
             let inverse = b.inverse(wallet[js::PI_MINT]);
             let product = b.mul(wallet[js::PI_MINT], inverse);
             assert_constant(b, product, 1);
-            verifier::uni::verify(
+            verifier::uni::verify_with_constants(
                 b,
                 inputs,
                 &ContextAir(js::JoinSplitAir),
                 js::HEIGHT,
                 &inner,
                 proof,
+                constants,
             )?;
         }
         _ => unreachable!(),
@@ -160,14 +172,26 @@ pub fn wrapper_pair(
     wallet_public: [&[Val]; 2],
     proofs: [&Proof<Config>; 2],
 ) -> Result<Compiled, CompileError> {
+    wrapper_pair_with_registry(height, caps, mode, wallet_public, proofs, None)
+}
+
+pub(crate) fn wrapper_pair_with_registry(
+    height: usize,
+    caps: &Caps,
+    mode: u64,
+    wallet_public: [&[Val]; 2],
+    proofs: [&Proof<Config>; 2],
+    prefix: Option<&programs::RegistryPrefix>,
+) -> Result<Compiled, CompileError> {
+    let constants = programs::compiler_constants(prefix);
     let kinds = leaf_modes(mode)?;
-    let mut b = ProgramBuilder::new(PUBLIC_VALUES).unwrap();
+    let mut b = ProgramBuilder::with_constants(PUBLIC_VALUES, constants).unwrap();
     let public = public(&b);
     let mut inputs = ProofInputs::default();
-    registry(&mut b, &mut inputs, &public, height, caps)?;
+    registry(&mut b, &mut inputs, &public, height, caps, prefix)?;
     assert_constant(&mut b, public[MODE], mode);
     assert_constant(&mut b, public[LEVEL], 1);
-    let _counts = selectors(&mut b, public[COUNT], 1, 2);
+    let _counts = selectors::<2>(&mut b, public[COUNT], 1, 2, constants)?;
     let one = b.constant(Val::ONE);
     let right_count = b.sub(public[COUNT], one);
     let left = wallet_leaf(
@@ -177,6 +201,7 @@ pub fn wrapper_pair(
         kinds[0],
         wallet_public[0],
         proofs[0],
+        constants,
     )?;
     let right = wallet_leaf(
         &mut b,
@@ -185,6 +210,7 @@ pub fn wrapper_pair(
         kinds[1],
         wallet_public[1],
         proofs[1],
+        constants,
     )?;
     let empty = b.hash_fields(commitment::EMPTY, &public[..16]);
     let right: [Wire; 4] = core::array::from_fn(|i| {
@@ -205,19 +231,36 @@ pub fn finalize(
     child: &[Val; PUBLIC_VALUES],
     proof: &BatchProof<Config>,
 ) -> Result<Compiled, CompileError> {
+    finalize_with_registry(height, caps, child, proof, None)
+}
+
+pub(crate) fn finalize_with_registry(
+    height: usize,
+    caps: &Caps,
+    child: &[Val; PUBLIC_VALUES],
+    proof: &BatchProof<Config>,
+    prefix: Option<&programs::RegistryPrefix>,
+) -> Result<Compiled, CompileError> {
+    let constants = programs::compiler_constants(prefix);
     let child_air = programs::shape(height)?;
-    let mut b = ProgramBuilder::new(PUBLIC_VALUES).unwrap();
+    let mut b = ProgramBuilder::with_constants(PUBLIC_VALUES, constants).unwrap();
     let public = public(&b);
     let mut inputs = ProofInputs::default();
-    let keys = registry(&mut b, &mut inputs, &public, height, caps)?;
+    let keys = registry(&mut b, &mut inputs, &public, height, caps, prefix)?;
     assert_constant(&mut b, public[MODE], FINALIZE);
     assert_constant(&mut b, public[LEVEL], u64::from(commitment::DEPTH));
-    let child = inputs.bases(&mut b, child);
+    let child = inputs.bases(&mut b, child)?;
     for i in 0..16 {
         b.assert_equal(child[i], public[i]);
     }
     b.assert_equal(child[COUNT], public[COUNT]);
-    let masks = selectors(&mut b, child[MODE], programs::WRAPPER, FINALIZE - 1);
+    let masks = selectors::<{ KEY_COUNT - 1 }>(
+        &mut b,
+        child[MODE],
+        programs::WRAPPER,
+        FINALIZE - 1,
+        constants,
+    )?;
     let zero = b.constant(Val::ZERO);
     let mut key = vec![[zero; 4]; 1 << profile::CAP_HEIGHT];
     for (i, selected) in key.iter_mut().enumerate() {
@@ -228,8 +271,16 @@ pub fn finalize(
             }
         }
     }
-    verifier::batch::verify(&mut b, &mut inputs, &child_air, &child, &key, proof)?;
-    let root = typed_finalizer::padded_root(&mut b, &child);
+    verifier::batch::verify_with_constants(
+        &mut b,
+        &mut inputs,
+        &child_air,
+        &child,
+        &key,
+        proof,
+        constants,
+    )?;
+    let root = typed_finalizer::padded_root(&mut b, &child, constants)?;
     for i in 0..4 {
         b.assert_equal(root[i], public[ROOT + i]);
     }
@@ -241,26 +292,45 @@ pub fn compile_registration(
     mode: u64,
     wallets: Option<[&WalletProof; 2]>,
 ) -> Result<Compiled, CompileError> {
+    compile_registration_with_registry(height, mode, wallets, None)
+}
+
+pub(crate) fn compile_registration_with_registry(
+    height: usize,
+    mode: u64,
+    wallets: Option<[&WalletProof; 2]>,
+    prefix: Option<&programs::RegistryPrefix>,
+) -> Result<Compiled, CompileError> {
     let caps: Caps = core::array::from_fn(|_| vec![[Val::ZERO; 4]; 1 << profile::CAP_HEIGHT]);
     if leaf_modes(mode).is_ok() {
         let wallets = wallets.ok_or(CompileError::Shape("typed pair registration templates"))?;
-        return wrapper_pair(
+        return wrapper_pair_with_registry(
             height,
             &caps,
             mode,
             [&wallets[0].public, &wallets[1].public],
             [&wallets[0].proof, &wallets[1].proof],
+            prefix,
         );
     }
     match mode {
-        programs::EMPTY => programs::empty(height, &caps),
+        programs::EMPTY => programs::empty_with_registry(height, &caps, prefix),
         programs::MERGE | FINALIZE => {
-            let proof = verifier::template::batch(&programs::shape(height)?)?;
+            let proof = verifier::template::batch_with_constants(
+                &programs::shape(height)?,
+                programs::compiler_constants(prefix),
+            )?;
             let public = [Val::ZERO; PUBLIC_VALUES];
             if mode == FINALIZE {
-                finalize(height, &caps, &public, &proof)
+                finalize_with_registry(height, &caps, &public, &proof, prefix)
             } else {
-                programs::merge(height, &caps, [&public, &public], [&proof, &proof])
+                programs::merge_with_registry(
+                    height,
+                    &caps,
+                    [&public, &public],
+                    [&proof, &proof],
+                    prefix,
+                )
             }
         }
         _ => Err(CompileError::Shape("typed pair registration mode")),

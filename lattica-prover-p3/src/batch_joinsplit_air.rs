@@ -205,6 +205,21 @@ use crate::config::make_config;
 
 /// The tile-periodic columns: joinsplit's `periodic()` (each length `HEIGHT` ⇒ repeated per tile by
 /// Plonky3) plus `P_TILE_LAST` = a one-hot at the tile's last row (also repeated per tile).
+#[cfg(all(feature = "block-v2", feature = "gpu"))]
+pub(crate) fn device_batch_geometry() -> crate::batch_common::DeviceBatchGeometry {
+    crate::batch_common::DeviceBatchGeometry {
+        height: TILE_HEIGHT,
+        wallet_width: WIDTH,
+        public_width: crate::joinsplit_air::N_PUBLIC,
+        batch_width: BATCH_WIDTH,
+        fold_base: FOLD_BASE,
+        root_block: ROOT_BLOCK,
+        root_column: ROOT,
+        root_output_row: root_out_row(),
+        chunks: fold_chunks(),
+    }
+}
+
 fn batch_periodic() -> Vec<Vec<Val>> {
     let mut cols = periodic();
     // P_TILE_LAST, the FOLD_SK_BLOCKS chunk-injection one-hots, then s_k-link / s_k→root / root-in /
@@ -388,11 +403,38 @@ pub fn build_batch_trace(ws: &[Witness]) -> RowMajorMatrix<Val> {
 /// Prove a batch of transactions as one proof. Returns the proof bytes; the block tx-root (the single
 /// public input) is `batch_root(ws)`, which the verifier recomputes from the block's statements.
 pub fn prove_batch_to_bytes(ws: &[Witness]) -> Vec<u8> {
+    prove_batch_to_bytes_with_request(
+        ws,
+        crate::proving::Request::from_env().expect("proving request"),
+    )
+    .expect("join-split batch proving backend policy")
+    .0
+}
+
+pub fn prove_batch_to_bytes_with_request(
+    ws: &[Witness],
+    request: crate::proving::Request,
+) -> Result<(Vec<u8>, crate::proving::Report), crate::proving::Error> {
+    #[cfg(all(feature = "block-v2", feature = "gpu"))]
+    if crate::block_v2::legacy_wallet::is_selected() {
+        let output =
+            crate::block_v2::legacy_wallet::prove_joinsplit_batch_with_public(ws, request)?;
+        return Ok((output.proof, output.report));
+    }
+    use crate::proving::{Backend, Run, Stage};
+    let run = Run::new(
+        "legacy_joinsplit_batch",
+        request,
+        crate::proving::legacy_cpu(),
+    )?;
     assert!(
         padded_tiles(ws.len()) <= MAX_BATCH_TILES,
         "batch exceeds MAX_BATCH_TILES ({MAX_BATCH_TILES}); split the block into multiple batch proofs"
     );
-    crate::config::proof_to_bytes(&JoinSplitBatchAir, build_batch_trace(ws), &batch_root(ws))
+    let public = run.measure(Stage::PublicValues, Backend::Cpu, || batch_root(ws))?;
+    let trace = run.measure(Stage::WitnessTrace, Backend::Cpu, || build_batch_trace(ws))?;
+    let bytes = crate::config::proof_to_bytes_observed(&JoinSplitBatchAir, trace, &public, &run)?;
+    Ok((bytes, run.finish(true)?))
 }
 
 /// The batch tile cap — shared batch machinery (re-exported so existing paths keep working); the

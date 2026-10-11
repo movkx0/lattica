@@ -1,12 +1,13 @@
 //! Experimental, prove-only fusion of quotient interpolation and hiding masks.
 //!
-//! Candidate-only and opt-in, not production-qualified. The proof types and
-//! verifier delegate to the existing cubic PCS; the default remains disabled.
+//! Opt-in research adapter for the pinned quadratic and cubic profiles. Proof
+//! types and verification delegate to upstream PCS; fusion is disabled by default.
 //! A separate full-entropy quotient RNG is required; NEVER clone the inner
 //! witness-randomization seed to initialize it. Deterministic seeds are tests
 //! only. Component equivalence is not a complete-tree zero-knowledge review.
 
-use crate::config::{Challenger, Val};
+use super::profile::Challenger;
+use crate::config::Val;
 use p3_commit::{BuildPeriodicLdeTableFast, OpenedValues, Pcs, PeriodicLdeTable, PolynomialSpace};
 use p3_dft::TwoAdicSubgroupDft;
 use p3_field::coset::TwoAdicMultiplicativeCoset;
@@ -16,30 +17,62 @@ use p3_matrix::bitrev::BitReversibleMatrix;
 use p3_matrix::dense::RowMajorMatrix;
 use rand::RngExt;
 use rand_chacha::ChaCha20Rng;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, OnceLock};
 
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+use super::extension_mmcs::CandidateExtensionMmcs as ExtensionMmcs;
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 use super::gpu_hash::CandidateMmcs as ValMmcs;
 #[cfg(feature = "stream")]
 use super::normalization_workspace::HeapNormalizedDft as Dft;
-use super::profile::{self, Challenge, ChallengeMmcs};
+use super::pcs_field::PcsField;
+use super::profile::{self, Challenge};
+#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+use p3_commit::ExtensionMmcs;
+type ChallengeMmcs<E = Challenge> = ExtensionMmcs<Val, E, ValMmcs>;
 #[cfg(not(feature = "stream"))]
 use crate::config::Dft;
 #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
 use crate::config::ValMmcs;
 
 type Domain = TwoAdicMultiplicativeCoset<Val>;
-type Inner = HidingFriPcs<Val, Dft, ValMmcs, ChallengeMmcs, ChaCha20Rng>;
+type Inner<E = Challenge> = HidingFriPcs<Val, Dft, ValMmcs, ChallengeMmcs<E>, ChaCha20Rng>;
 
 // This component admits at most the existing bounded-heap DFT workspace size.
 // It does not substitute for the worker/slice RAM and scratch limits, or account
 // for all other matrices retained by the enclosing proof.
 const MAX_CHUNK_LDE_BYTES: usize = 2 << 30;
-const MAX_CHUNKS: usize = 1 << profile::LOG_BLOWUP;
+const MAX_CHUNKS: usize = profile::MAX_QUOTIENT_CHUNKS;
 
 static RESEARCH_FUSION: OnceLock<bool> = OnceLock::new();
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
-static RESEARCH_GPU_QUOTIENT: OnceLock<bool> = OnceLock::new();
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct GpuSelection {
+    quotient: bool,
+    quotient_eval: bool,
+    quotient_resident: bool,
+    lookup: bool,
+    opening_eval: bool,
+    fri_resident: bool,
+    device_only: bool,
+    witness: bool,
+    randomness: bool,
+    transcript: bool,
+}
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+static GPU_SELECTION: OnceLock<GpuSelection> = OnceLock::new();
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+fn record_gpu_selection(
+    cell: &OnceLock<GpuSelection>,
+    selection: GpuSelection,
+) -> Result<(), String> {
+    match cell.set(selection) {
+        Ok(()) => Ok(()),
+        Err(requested) if cell.get() == Some(&requested) => Ok(()),
+        Err(_) => Err("GPU proving selection is immutable after initialization".into()),
+    }
+}
 
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 fn parse_gpu_quotient(value: Option<&str>, resident: bool, fusion: bool) -> Result<bool, String> {
@@ -53,6 +86,21 @@ fn parse_gpu_quotient(value: Option<&str>, resident: bool, fusion: bool) -> Resu
 }
 
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+fn parse_gpu_quotient_eval(
+    value: Option<&str>,
+    quotient_lde: bool,
+    opencl: bool,
+) -> Result<bool, String> {
+    match value {
+        None | Some("0") => Ok(false),
+        Some("1") if quotient_lde && opencl => Ok(true),
+        _ => {
+            Err("GPU quotient evaluation requires ASCII 0 or 1, OpenCL and GPU quotient LDE".into())
+        }
+    }
+}
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 pub fn initialize_gpu_quotient_from_env(resident: bool, fusion: bool) -> Result<bool, String> {
     let value = match std::env::var("LATTICA_V2_GPU_QUOTIENT_LDE") {
         Ok(value) => Some(value),
@@ -60,13 +108,202 @@ pub fn initialize_gpu_quotient_from_env(resident: bool, fusion: bool) -> Result<
         Err(error) => return Err(error.to_string()),
     };
     let enabled = parse_gpu_quotient(value.as_deref(), resident, fusion)?;
-    record_research_mode(&RESEARCH_GPU_QUOTIENT, enabled).map_err(str::to_owned)?;
+    let value = match std::env::var("LATTICA_V2_GPU_QUOTIENT_EVAL") {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(error) => return Err(error.to_string()),
+    };
+    let evaluate = parse_gpu_quotient_eval(value.as_deref(), enabled, cfg!(feature = "gpu"))?;
+    let value = match std::env::var("LATTICA_V2_GPU_QUOTIENT_RESIDENT") {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(error) => return Err(error.to_string()),
+    };
+    let resident_inputs =
+        parse_gpu_quotient_eval(value.as_deref(), evaluate, cfg!(feature = "gpu")).map_err(
+            |_| {
+                "GPU quotient residency requires ASCII 0 or 1, OpenCL and GPU quotient evaluation"
+                    .to_owned()
+            },
+        )?;
+    let value = match std::env::var("LATTICA_V2_GPU_LOOKUP") {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(error) => return Err(error.to_string()),
+    };
+    let lookup = parse_gpu_quotient_eval(value.as_deref(), resident_inputs, cfg!(feature = "gpu"))
+        .map_err(|_| "GPU lookup requires ASCII 0 or 1 and owned OpenCL GPU quotient evaluation")?;
+    let value = match std::env::var("LATTICA_V2_GPU_OPENING_EVAL") {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(error) => return Err(error.to_string()),
+    };
+    let opening_eval = parse_gpu_quotient_eval(
+        value.as_deref(),
+        resident_inputs && std::env::var("LATTICA_V2_GPU_OPENINGS").as_deref() == Ok("1"),
+        cfg!(feature = "gpu"),
+    ).map_err(|_| "GPU opening evaluation requires ASCII 0 or 1, owned OpenCL quotient inputs and GPU openings")?;
+    let value = match std::env::var("LATTICA_V2_GPU_FRI_RESIDENT") {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(error) => return Err(error.to_string()),
+    };
+    let fri_resident =
+        parse_gpu_quotient_eval(value.as_deref(), opening_eval, cfg!(feature = "gpu")).map_err(
+            |_| "resident GPU FRI requires ASCII 0 or 1 and owned OpenCL opening evaluation",
+        )?;
+    let value = match std::env::var("LATTICA_V2_GPU_PCS_DEVICE_ONLY") {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(error) => return Err(error.to_string()),
+    };
+    let device_only = parse_gpu_pcs_device_only(
+        value.as_deref(),
+        fri_resident,
+        lookup,
+        cfg!(feature = "gpu"),
+    )?;
+    let value = match std::env::var("LATTICA_V2_GPU_WITNESS") {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(error) => return Err(error.to_string()),
+    };
+    let witness = parse_gpu_witness(value.as_deref(), device_only, cfg!(feature = "gpu"))?;
+    let value = match std::env::var("LATTICA_V2_GPU_RANDOMNESS") {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(error) => return Err(error.to_string()),
+    };
+    let randomness = parse_gpu_randomness(value.as_deref(), witness, cfg!(feature = "gpu"))?;
+    let value = match std::env::var("LATTICA_V2_GPU_TRANSCRIPT") {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(error) => return Err(error.to_string()),
+    };
+    let transcript = parse_gpu_transcript(value.as_deref(), randomness, cfg!(feature = "gpu"))?;
+    super::machine::gpu_backend::resources::check_worker(witness, None)?;
+    super::randomness::resources::check_worker(randomness, None)?;
+    super::challenger::resources::check_worker(transcript)?;
+    let selection = GpuSelection {
+        quotient: enabled,
+        quotient_eval: evaluate,
+        quotient_resident: resident_inputs,
+        lookup,
+        opening_eval,
+        fri_resident,
+        device_only,
+        witness,
+        randomness,
+        transcript,
+    };
+    record_gpu_selection(&GPU_SELECTION, selection)?;
     Ok(enabled)
 }
 
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 pub(crate) fn gpu_quotient_enabled() -> bool {
-    RESEARCH_GPU_QUOTIENT.get().copied().unwrap_or(false)
+    GPU_SELECTION
+        .get()
+        .is_some_and(|selection| selection.quotient)
+}
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+pub(crate) fn gpu_quotient_eval_enabled() -> bool {
+    GPU_SELECTION
+        .get()
+        .is_some_and(|selection| selection.quotient_eval)
+}
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+pub(crate) fn gpu_quotient_resident_enabled() -> bool {
+    GPU_SELECTION
+        .get()
+        .is_some_and(|selection| selection.quotient_resident)
+}
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+pub(crate) fn gpu_lookup_enabled() -> bool {
+    GPU_SELECTION
+        .get()
+        .is_some_and(|selection| selection.lookup)
+}
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+pub(crate) fn gpu_opening_eval_enabled() -> bool {
+    GPU_SELECTION
+        .get()
+        .is_some_and(|selection| selection.opening_eval)
+}
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+pub(crate) fn gpu_fri_resident_enabled() -> bool {
+    GPU_SELECTION
+        .get()
+        .is_some_and(|selection| selection.fri_resident)
+}
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+fn parse_gpu_pcs_device_only(
+    value: Option<&str>,
+    fri: bool,
+    lookup: bool,
+    opencl: bool,
+) -> Result<bool, String> {
+    parse_gpu_quotient_eval(value, fri && lookup, opencl)
+        .map_err(|_| "device-only GPU PCS requires ASCII 0 or 1, owned OpenCL lookup, openings and resident FRI".into())
+}
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+pub(crate) fn gpu_pcs_device_only_enabled() -> bool {
+    GPU_SELECTION
+        .get()
+        .is_some_and(|selection| selection.device_only)
+}
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+fn parse_gpu_witness(value: Option<&str>, device_only: bool, opencl: bool) -> Result<bool, String> {
+    parse_gpu_quotient_eval(value, device_only, opencl).map_err(|_| {
+        "GPU witness construction requires ASCII 0 or 1 and device-only OpenCL PCS".into()
+    })
+}
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+pub(crate) fn gpu_witness_enabled() -> bool {
+    GPU_SELECTION
+        .get()
+        .is_some_and(|selection| selection.witness)
+}
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+fn parse_gpu_randomness(value: Option<&str>, witness: bool, opencl: bool) -> Result<bool, String> {
+    parse_gpu_quotient_eval(value, witness, opencl).map_err(|_| {
+        "GPU randomness requires ASCII 0 or 1 and registered device-only OpenCL witnesses".into()
+    })
+}
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+pub(crate) fn gpu_randomness_enabled() -> bool {
+    GPU_SELECTION
+        .get()
+        .is_some_and(|selection| selection.randomness)
+}
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+fn parse_gpu_transcript(
+    value: Option<&str>,
+    randomness: bool,
+    opencl: bool,
+) -> Result<bool, String> {
+    parse_gpu_quotient_eval(value, randomness, opencl).map_err(|_| {
+        "GPU transcript requires ASCII 0 or 1 and registered private OpenCL randomness".into()
+    })
+}
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+pub(crate) fn gpu_transcript_enabled() -> bool {
+    GPU_SELECTION
+        .get()
+        .is_some_and(|selection| selection.transcript)
 }
 
 fn parse_research_mode(value: Option<&str>) -> Result<bool, &'static str> {
@@ -268,7 +505,7 @@ fn randomized_quotients(
     geometry: Geometry,
     weights: &[Val],
     random_columns: usize,
-    rng: &Mutex<ChaCha20Rng>,
+    rng: &super::randomness::ProofRng,
 ) -> (Vec<(Domain, RowMajorMatrix<Val>)>, Vec<Val>) {
     let chunks = evaluations.len();
     let (randomized, mut masks) = {
@@ -307,7 +544,7 @@ fn fused_ldes<D: TwoAdicSubgroupDft<Val>>(
     chunks: usize,
     log_blowup: usize,
     random_columns: usize,
-    rng: &Mutex<ChaCha20Rng>,
+    rng: &super::randomness::ProofRng,
 ) -> Result<Vec<RowMajorMatrix<Val>>, FusionError>
 where
     D::Evaluations: BitReversibleMatrix<Val, BitRev = RowMajorMatrix<Val>>,
@@ -372,10 +609,10 @@ where
 // clones must instead share the *whole* attempt, including the upstream PCS's
 // input/FRI MMCSs; cloning just its RNG handle would still replay MMCS salts.
 #[derive(Clone)]
-enum Backend {
-    Reference(Inner),
+enum Backend<E: PcsField = Challenge> {
+    Reference(Inner<E>),
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
-    Resident(Arc<super::resident_pcs::ResidentState>),
+    Resident(Arc<super::resident_pcs::ResidentState<E>>),
 }
 
 // The RNG type is not part of any PCS proof or prover-data type. Keep the
@@ -385,11 +622,11 @@ macro_rules! delegate_pcs {
     ($pcs:expr, $method:ident $(, $arg:expr)* $(,)?) => {
         match &$pcs.inner {
             Backend::Reference(inner) =>
-                <Inner as Pcs<Challenge, Challenger>>::$method(inner $(, $arg)*),
+                <Inner<E> as Pcs<E, Challenger>>::$method(inner $(, $arg)*),
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Backend::Resident(state) => {
                 state.lock_opening_mode();
-                <super::resident_pcs::ResidentInner as Pcs<Challenge, Challenger>>::$method(
+                <super::resident_pcs::ResidentInner<E> as Pcs<E, Challenger>>::$method(
                     &state.inner $(, $arg)*
                 )
             },
@@ -397,19 +634,537 @@ macro_rules! delegate_pcs {
     };
 }
 
-/// Candidate-only wrapper. Disabled construction delegates all PCS work too.
+/// Hiding PCS adapter with the candidate cubic field as its default.
 #[derive(Clone)]
-pub struct CandidatePcs {
-    inner: Backend,
+pub struct CandidatePcs<E: PcsField = Challenge> {
+    inner: Backend<E>,
     dft: Dft,
     log_blowup: usize,
     random_columns: usize,
     // Clones share the stream, so a wrapper clone cannot replay quotient masks.
     // Production still constructs a fresh complete config for every proof.
-    quotient_rng: Option<Arc<Mutex<ChaCha20Rng>>>,
+    quotient_rng: Option<super::randomness::ProofRng>,
 }
 
-impl CandidatePcs {
+impl<E: PcsField> CandidatePcs<E> {
+    /// Resident clones share the immutable allowance of their original attempt.
+    /// Reference configurations retain their existing process-wide limit.
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn host_output_budget(&self) -> usize {
+        match &self.inner {
+            Backend::Resident(state) => state.host_budget,
+            Backend::Reference(_) => super::resident_pcs::host_output_budget(),
+        }
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn device_preprocessing_salts(&self) -> Result<bool, String> {
+        match &self.inner {
+            Backend::Resident(state) if state.device_randomness.is_none() => {
+                Ok(state.preprocessing_salts.is_some())
+            }
+            _ => Err("cached preprocessing requires its public resident PCS".into()),
+        }
+    }
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn randomization_device(
+        &self,
+        domains: impl IntoIterator<Item = super::gpu_hash::device::DomainSpec>,
+    ) -> Result<
+        (
+            <Self as Pcs<E, Challenger>>::Commitment,
+            <Self as Pcs<E, Challenger>>::ProverData,
+        ),
+        String,
+    > {
+        match &self.inner {
+            Backend::Resident(state) => state.randomization_device(domains),
+            _ => Err("owned randomization requires resident PCS".into()),
+        }
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    fn require_host_storage(&self) -> Result<(), String> {
+        if let Backend::Resident(state) = &self.inner {
+            if state.mmcs.uses_device_storage() {
+                return Err("device-only PCS requires the owned GPU interface; host PCS arithmetic is unavailable".into());
+            }
+        }
+        Ok(())
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn quotient_session(
+        &self,
+    ) -> Result<super::gpu_hash::device::DeviceSession, String> {
+        match &self.inner {
+            Backend::Resident(state) => state
+                .device_session
+                .clone()
+                .ok_or_else(|| "PCS has no owned quotient session".into()),
+            _ => Err("owned quotient evaluation requires resident PCS".into()),
+        }
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn quotient_device_prefix(
+        &self,
+        data: &<Self as Pcs<E, Challenger>>::ProverData,
+        index: usize,
+        domain: impl Into<super::gpu_hash::device::DomainSpec>,
+        columns: usize,
+        extension: super::gpu_hash::device::Extension,
+    ) -> Result<super::gpu_hash::device::DeviceMatrix, String> {
+        use p3_field::PrimeField64;
+        let domain = domain.into();
+        let session = self.quotient_session()?;
+        let input = data.owned_matrix(&session, index)?;
+        session.quotient_input(
+            &input,
+            (domain.log_size() as u32).min(input.spec().rows().trailing_zeros()),
+            domain.shift().as_canonical_u64(),
+            columns,
+            extension,
+        )
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn lookup_original_trace(
+        &self,
+        data: &<Self as Pcs<E, Challenger>>::ProverData,
+        index: usize,
+        log_rows: u32,
+        columns: usize,
+    ) -> Result<super::gpu_hash::device::DeviceMatrix, String> {
+        let session = self.quotient_session()?;
+        let prefix = data.owned_matrix(&session, index)?;
+        session.original_trace(&prefix, log_rows, columns)
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn commit_lookup_device(
+        &self,
+        inputs: Vec<(
+            impl Into<super::gpu_hash::device::DomainSpec>,
+            super::gpu_hash::device::DeviceMatrix,
+        )>,
+    ) -> Result<
+        (
+            <Self as Pcs<E, Challenger>>::Commitment,
+            <Self as Pcs<E, Challenger>>::ProverData,
+        ),
+        String,
+    > {
+        self.commit_trace_device(inputs, E::DEVICE_EXTENSION)
+    }
+
+    /// Commit a natural-order base-field witness without a host trace copy.
+    /// Lookup and main inputs have separate typed entry points so accepting
+    /// base fields here does not weaken the existing lookup contract.
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn commit_main_device(
+        &self,
+        inputs: Vec<(
+            impl Into<super::gpu_hash::device::DomainSpec>,
+            super::gpu_hash::device::DeviceMatrix,
+        )>,
+    ) -> Result<
+        (
+            <Self as Pcs<E, Challenger>>::Commitment,
+            <Self as Pcs<E, Challenger>>::ProverData,
+        ),
+        String,
+    > {
+        self.commit_trace_device(inputs, super::gpu_hash::device::Extension::Base)
+    }
+
+    /// Only compiler-generated deterministic columns can enter this path.
+    /// The committed prefixes become public; salts keep their existing
+    /// separate host storage and no private matrix is promoted.
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn commit_preprocessing_device(
+        &self,
+        inputs: Vec<(
+            super::gpu_hash::device::DomainSpec,
+            super::gpu_hash::device::PreprocessingTrace,
+        )>,
+    ) -> Result<
+        (
+            <Self as Pcs<E, Challenger>>::Commitment,
+            <Self as Pcs<E, Challenger>>::ProverData,
+        ),
+        String,
+    > {
+        use super::gpu_hash::device::TraceCommitShape;
+        let Backend::Resident(state) = &self.inner else {
+            return Err("device preprocessing requires resident PCS".into());
+        };
+        if state.device_randomness.is_some() {
+            return Err("private GPU randomness cannot create reusable preprocessing; use trusted public setup".into());
+        }
+        state.lock_opening_mode();
+        let session = self.quotient_session()?;
+        let mut shapes = Vec::with_capacity(inputs.len());
+        for (domain, trace) in &inputs {
+            trace.check_session(&session)?;
+            let shape = TraceCommitShape::preprocessing(trace.spec())?;
+            if domain.size() != shape.height || domain.shift() != Val::ONE {
+                return Err(
+                    "device preprocessing does not match its doubled subgroup domain".into(),
+                );
+            }
+            shapes.push(shape);
+        }
+        if let Some(stream) = &state.preprocessing_salts {
+            let stream = stream.lock().map_err(|_| "public salt stream poisoned")?;
+            let plan = state
+                .mmcs
+                .preflight_public_preprocessing_salts(&shapes, state.host_budget)?;
+            let pending: Vec<_> = shapes.iter().flat_map(|s| s.allocation_bytes()).collect();
+            stream.preflight(plan.output_height(), shapes.len(), &pending)?;
+            let prepared = inputs
+                .iter()
+                .map(|(_, trace)| session.prepare_preprocessing_commit(trace))
+                .collect::<Result<Vec<_>, _>>()?;
+            let salts = stream.generate(plan.output_height(), shapes.len())?;
+            let result = match state.mmcs.commit_preprocessing_with_public_salts(
+                &prepared,
+                salts,
+                &session,
+                state.host_budget,
+            ) {
+                Ok(result) => result,
+                Err(error) => {
+                    stream.retire()?;
+                    return Err(error);
+                }
+            };
+            eprintln!("bounded_gpu_public_salts matrices={} salt_upload_bytes=0 salt_matrix_readback_bytes=0", shapes.len());
+            return Ok(result);
+        }
+        state
+            .mmcs
+            .preflight_owned_traces(&shapes, state.host_budget, true)?;
+        let prepared = inputs
+            .iter()
+            .map(|(_, trace)| session.prepare_preprocessing_commit(trace))
+            .collect::<Result<Vec<_>, _>>()?;
+        let result = state
+            .mmcs
+            .commit_owned_traces(&prepared, &session, state.host_budget)?;
+        eprintln!(
+            "bounded_owned_preprocessing_commit matrices={} preprocessing_upload_bytes=0 preprocessing_readback_bytes=0 random_sample_upload_bytes=0",
+            inputs.len()
+        );
+        Ok(result)
+    }
+
+    #[cfg(debug_assertions)]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn audit_main_device(
+        &self,
+        trace: &super::gpu_hash::device::DeviceMatrix,
+    ) -> Result<RowMajorMatrix<Val>, String> {
+        let Backend::Resident(state) = &self.inner else {
+            return Err("device trace audit requires resident PCS".into());
+        };
+        if trace.spec().extension() != super::gpu_hash::device::Extension::Base {
+            return Err("device main trace audit requires base fields".into());
+        }
+        if trace
+            .spec()
+            .bytes()
+            .checked_mul(2)
+            .is_none_or(|n| n > state.host_budget)
+        {
+            return Err("device main trace audit exceeds host allowance".into());
+        }
+        let words = self.quotient_session()?.read(trace, state.host_budget)?;
+        eprintln!(
+            "bounded_gpu_main_trace_debug_audit readback_bytes={}",
+            trace.spec().bytes()
+        );
+        Ok(RowMajorMatrix::new(
+            words.into_iter().map(Val::from_u64).collect(),
+            trace.spec().columns(),
+        ))
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    fn commit_trace_device(
+        &self,
+        inputs: Vec<(
+            impl Into<super::gpu_hash::device::DomainSpec>,
+            super::gpu_hash::device::DeviceMatrix,
+        )>,
+        extension: super::gpu_hash::device::Extension,
+    ) -> Result<
+        (
+            <Self as Pcs<E, Challenger>>::Commitment,
+            <Self as Pcs<E, Challenger>>::ProverData,
+        ),
+        String,
+    > {
+        use super::gpu_hash::device::{DomainSpec, TraceCommitShape};
+        let inputs: Vec<(DomainSpec, _)> = inputs
+            .into_iter()
+            .map(|(domain, matrix)| (domain.into(), matrix))
+            .collect();
+        let Backend::Resident(state) = &self.inner else {
+            return Err("device trace commitment requires resident PCS".into());
+        };
+        state.require_device_proving()?;
+        state.lock_opening_mode();
+        let session = self.quotient_session()?;
+        // All ownership, shape and memory checks precede the hiding RNG draws.
+        let mut shapes = Vec::with_capacity(inputs.len());
+        for (domain, matrix) in &inputs {
+            if matrix.spec().extension() != extension {
+                return Err("device trace field does not match its commitment interface".into());
+            }
+            let owned = session.alias_private(matrix)?;
+            let shape = TraceCommitShape::new(owned.spec(), self.random_columns)?;
+            if domain.size() != shape.height || domain.shift() != Val::ONE {
+                return Err("device trace does not match its doubled subgroup domain".into());
+            }
+            shapes.push(shape);
+        }
+        if let Some(failure) = &state.device_randomness {
+            let pending: Vec<_> = shapes.iter().flat_map(|s| s.allocation_bytes()).collect();
+            let lde_shapes: Vec<_> = shapes.iter().map(|s| s.lde_shape()).collect();
+            let plan =
+                state
+                    .mmcs
+                    .preflight_private_salts(&lde_shapes, state.host_budget, 0, &pending)?;
+            state.rng.with_device(|rng| {
+                rng.preflight_fields(
+                    &shapes.iter().map(|s| s.random_words).collect::<Vec<_>>(),
+                    &vec![8; shapes.len()],
+                )
+            })?;
+            let guard = failure.begin()?;
+            let prepared = state.rng.with_device(|rng| {
+                inputs
+                    .iter()
+                    .zip(&shapes)
+                    .map(|((_, trace), shape)| {
+                        session.prepare_trace_commit_with_random(
+                            trace,
+                            self.random_columns,
+                            rng.sample_fields(shape.random_words)?,
+                        )
+                    })
+                    .collect::<Result<Vec<_>, _>>()
+            })?;
+            let salts = state
+                .mmcs
+                .private_device_salts(plan.output_height(), prepared.len())?;
+            let result = state.mmcs.commit_traces_with_device_salts(
+                &prepared,
+                salts,
+                &session,
+                state.host_budget,
+            )?;
+            guard.complete();
+            eprintln!("bounded_gpu_random_stage stage=trace extension={extension:?} sample_upload_bytes=0 sample_readback_bytes=0");
+            return Ok(result);
+        }
+        let _plan = state
+            .mmcs
+            .preflight_owned_traces(&shapes, state.host_budget, true)?;
+        let mut prepared = Vec::with_capacity(inputs.len());
+        let mut sample_bytes = 0usize;
+        for ((_, trace), shape) in inputs.iter().zip(shapes) {
+            let random = state.trace_random_words(shape.random_words)?;
+            prepared.push(session.prepare_trace_commit(trace, self.random_columns, &random)?);
+            sample_bytes += random.len() * 8;
+        }
+        let result = state
+            .mmcs
+            .commit_owned_traces(&prepared, &session, state.host_budget)?;
+        if extension == E::DEVICE_EXTENSION {
+            eprintln!(
+                "bounded_owned_lookup_commit matrices={} permutation_matrix_upload_bytes=0 permutation_matrix_readback_bytes=0 random_sample_upload_bytes={sample_bytes}",
+                inputs.len()
+            );
+        } else {
+            eprintln!(
+                "bounded_owned_main_commit matrices={} main_matrix_upload_bytes=0 main_matrix_readback_bytes=0 random_sample_upload_bytes={sample_bytes}",
+                inputs.len()
+            );
+        }
+        Ok(result)
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn commit_quotient_device(
+        &self,
+        domain: impl Into<super::gpu_hash::device::DomainSpec>,
+        quotient: &super::gpu_hash::device::DeviceMatrix,
+        chunks: usize,
+    ) -> Result<
+        (
+            <Self as Pcs<E, Challenger>>::Commitment,
+            <Self as Pcs<E, Challenger>>::ProverData,
+        ),
+        String,
+    > {
+        self.commit_quotients_device(vec![(domain.into(), quotient, chunks)])
+    }
+
+    /// Commit all AIR quotient partitions in one MMCS batch, preserving AIR and
+    /// chunk order. Every input and the combined allocation plan are admitted
+    /// before any private randomness is consumed.
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn commit_quotients_device(
+        &self,
+        groups: Vec<(
+            super::gpu_hash::device::DomainSpec,
+            &super::gpu_hash::device::DeviceMatrix,
+            usize,
+        )>,
+    ) -> Result<
+        (
+            <Self as Pcs<E, Challenger>>::Commitment,
+            <Self as Pcs<E, Challenger>>::ProverData,
+        ),
+        String,
+    > {
+        use super::gpu_hash::device::QuotientCommitShape;
+        use p3_field::PrimeField64;
+        if groups.is_empty() || groups.len() > 256 {
+            return Err("owned quotient AIR count exceeded".into());
+        }
+        let Backend::Resident(state) = &self.inner else {
+            return Err("owned quotient commitment requires resident PCS".into());
+        };
+        state.require_device_proving()?;
+        state.lock_opening_mode();
+        let session = self.quotient_session()?;
+        let mut quotients = Vec::with_capacity(groups.len());
+        let mut shapes = Vec::with_capacity(groups.len());
+        for (domain, quotient, chunks) in &groups {
+            let quotient = session.alias_private(quotient)?;
+            if quotient.spec().extension() != E::DEVICE_EXTENSION
+                || quotient.spec().rows() != domain.size()
+                || quotient.spec().shift() != domain.shift().as_canonical_u64()
+            {
+                return Err("owned quotient output does not match its domain".into());
+            }
+            let shape = QuotientCommitShape::new(quotient.spec(), *chunks, self.random_columns)?;
+            Geometry::new(
+                shape.height.ilog2() as usize,
+                shape.degree,
+                *chunks,
+                self.log_blowup,
+                self.random_columns,
+            )
+            .map_err(|e| format!("owned quotient geometry: {e:?}"))?;
+            shapes.push(shape);
+            quotients.push(quotient);
+        }
+        let lde_shapes = state.mmcs.quotient_batch_shapes(&shapes)?;
+        let rng = self
+            .quotient_rng
+            .as_ref()
+            .ok_or("owned quotient requires independent fusion RNG")?;
+        if let Some(failure) = &state.device_randomness {
+            let pending: Vec<_> = shapes
+                .iter()
+                .flat_map(|shape| shape.allocation_words().map(|words| words * 8))
+                .collect();
+            let plan =
+                state
+                    .mmcs
+                    .preflight_private_salts(&lde_shapes, state.host_budget, 1, &pending)?;
+            plan.validate_quotient_batch_storage(lde_shapes.len())?;
+            let samples: Vec<_> = shapes
+                .iter()
+                .flat_map(|shape| [shape.random_words, shape.mask_words])
+                .collect();
+            let parameters: Vec<_> = shapes
+                .iter()
+                .map(|shape| shape.allocation_words()[2] * 8)
+                .collect();
+            rng.with_device(|rng| rng.preflight_fields(&samples, &parameters))?;
+            let guard = failure.begin()?;
+            let prepared = rng.with_device(|rng| {
+                quotients
+                    .iter()
+                    .zip(&shapes)
+                    .map(|(quotient, shape)| {
+                        session.prepare_quotient_commit_with_random(
+                            quotient,
+                            shape.chunks,
+                            self.random_columns,
+                            rng.sample_fields(shape.random_words)?,
+                            rng.sample_fields(shape.mask_words)?,
+                        )
+                    })
+                    .collect::<Result<Vec<_>, String>>()
+            })?;
+            let inputs: Vec<_> = prepared.iter().collect();
+            let salts = state
+                .mmcs
+                .private_device_salts(plan.output_height(), lde_shapes.len())?;
+            let result = state.mmcs.commit_quotients_with_device_salts(
+                &inputs,
+                salts,
+                &session,
+                state.host_budget,
+            )?;
+            guard.complete();
+            eprintln!("bounded_gpu_random_stage stage=quotient airs={} chunks={} sample_upload_bytes=0 sample_readback_bytes=0",
+                      groups.len(), lde_shapes.len());
+            return Ok(result);
+        }
+        let _admission = state.mmcs.preflight_owned_quotients(
+            &shapes,
+            state.host_budget,
+            gpu_opening_eval_enabled(),
+        )?;
+        let mut prepared = Vec::with_capacity(groups.len());
+        let mut sample_bytes = 0usize;
+        for (quotient, shape) in quotients.iter().zip(&shapes) {
+            let mut random = Vec::new();
+            let mut masks = Vec::new();
+            random
+                .try_reserve_exact(shape.random_words)
+                .map_err(|e| e.to_string())?;
+            masks
+                .try_reserve_exact(shape.mask_words)
+                .map_err(|e| e.to_string())?;
+            {
+                let mut rng = rng.lock().map_err(|_| "quotient RNG poisoned")?;
+                // Upstream samples each AIR's chunk/row/column random columns,
+                // then its masks, before advancing to the next AIR.
+                random.extend(
+                    (0..shape.random_words).map(|_| rng.random::<Val>().as_canonical_u64()),
+                );
+                masks.extend((0..shape.mask_words).map(|_| rng.random::<Val>().as_canonical_u64()));
+            }
+            prepared.push(session.prepare_quotient_commit(
+                quotient,
+                shape.chunks,
+                self.random_columns,
+                &random,
+                &masks,
+            )?);
+            sample_bytes = sample_bytes
+                .checked_add((random.len() + masks.len()) * 8)
+                .ok_or("quotient sample accounting overflow")?;
+        }
+        let inputs: Vec<_> = prepared.iter().collect();
+        let result = state.mmcs.commit_owned_quotients(
+            &inputs,
+            state.host_budget,
+            gpu_opening_eval_enabled().then_some(&session),
+        )?;
+        eprintln!("bounded_owned_quotient_commit airs={} chunks={} quotient_matrix_upload_bytes=0 quotient_matrix_readback_bytes=0 random_sample_upload_bytes={sample_bytes}",
+                  groups.len(), lde_shapes.len());
+        Ok(result)
+    }
+
     /// Single-table research hook; keeps small quotient evaluations until the
     /// masked GPU transform and commitment. No expanded LDE upload or fallback.
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
@@ -418,11 +1173,12 @@ impl CandidatePcs {
         groups: Vec<(Vec<Domain>, Vec<RowMajorMatrix<Val>>)>,
     ) -> Result<
         (
-            <Self as Pcs<Challenge, Challenger>>::Commitment,
-            <Self as Pcs<Challenge, Challenger>>::ProverData,
+            <Self as Pcs<E, Challenger>>::Commitment,
+            <Self as Pcs<E, Challenger>>::ProverData,
         ),
         String,
     > {
+        self.require_host_storage()?;
         if groups.len() != 1 {
             return Err("GPU quotient commitment currently admits exactly one AIR".into());
         }
@@ -472,6 +1228,131 @@ impl CandidatePcs {
     /// Select before sharing/using a newly constructed resident proof attempt.
     /// There is no per-call switching or fallback after randomness is consumed.
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn with_gpu_randomness(mut self) -> Result<Self, String> {
+        super::randomness::resources::check_worker(true, None)?;
+        let quotient = self
+            .quotient_rng
+            .as_ref()
+            .ok_or("GPU randomness requires independent quotient fusion")?;
+        match &mut self.inner {
+            Backend::Resident(state) => Arc::get_mut(state)
+                .ok_or("GPU randomness must be selected before PCS cloning")?
+                .enable_gpu_randomness(quotient)?,
+            Backend::Reference(_) => {
+                return Err("GPU randomness requires resident commitments".into())
+            }
+        }
+        Ok(self)
+    }
+
+    /// A full proof attempt retires every selected stream on any failure,
+    /// including admission failures between randomness-consuming stages.
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn begin_randomness_attempt(
+        &self,
+    ) -> Result<Option<super::randomness::FailureGuard>, String> {
+        match &self.inner {
+            Backend::Resident(state) => state
+                .device_randomness
+                .as_ref()
+                .map(super::randomness::Failure::begin)
+                .transpose(),
+            Backend::Reference(_) => Ok(None),
+        }
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn uses_gpu_randomness(&self) -> bool {
+        matches!(&self.inner, Backend::Resident(state) if state.device_randomness.is_some())
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    fn transcript_session(&self) -> Result<super::gpu_hash::device::DeviceSession, String> {
+        if !cfg!(feature = "gpu")
+            || !self.uses_gpu_randomness()
+            || !gpu_pcs_device_only_enabled()
+            || !gpu_lookup_enabled()
+            || !gpu_opening_eval_enabled()
+            || !gpu_fri_resident_enabled()
+            || !matches!(&self.inner, Backend::Resident(state) if state.gpu_openings)
+        {
+            return Err("GPU transcript requires the owned OpenCL witness/PCS path with private GPU randomness".into());
+        }
+        self.quotient_session()
+    }
+
+    /// Internal conformance selection before the first observation.
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn gpu_challenger(&self) -> Result<Challenger, String> {
+        Challenger::new_gpu(&self.transcript_session()?)
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn registered_gpu_challenger(&self) -> Result<Challenger, String> {
+        Challenger::new_gpu_registered(&self.transcript_session()?)
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn check_gpu_challenger(&self, challenger: &Challenger) -> Result<(), String> {
+        if gpu_transcript_enabled() && !challenger.is_gpu() {
+            return Err("registered GPU transcript cannot use a CPU challenger".into());
+        }
+        if challenger.is_gpu() {
+            challenger.check_session(&self.transcript_session()?)?;
+        }
+        Ok(())
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn observe_execution<'a>(
+        &self,
+        run: &'a crate::proving::Run,
+    ) -> Result<Option<super::gpu_hash::device::ExecutionObservation<'a>>, String> {
+        match &self.inner {
+            Backend::Resident(state) => state
+                .device_session
+                .as_ref()
+                .map(|session| session.observe_execution(run))
+                .transpose(),
+            _ => Ok(None),
+        }
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn observe_randomness<'a>(
+        &self,
+        run: &'a crate::proving::Run,
+    ) -> Result<Option<super::randomness::RandomnessObservation<'a>>, String> {
+        match &self.inner {
+            Backend::Resident(state)
+                if state.device_randomness.is_some() || state.preprocessing_salts.is_some() =>
+            {
+                let session = state
+                    .device_session
+                    .as_ref()
+                    .ok_or("missing random session")?
+                    .clone();
+                super::randomness::RandomnessObservation::new(run, session).map(Some)
+            }
+            _ => Ok(None),
+        }
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn with_gpu_preprocessing_salts(mut self) -> Result<Self, String> {
+        super::randomness::resources::check_worker(true, None)?;
+        match &mut self.inner {
+            Backend::Resident(state) => Arc::get_mut(state)
+                .ok_or("GPU public salts must be selected before PCS cloning")?
+                .enable_gpu_preprocessing_salts()?,
+            Backend::Reference(_) => {
+                return Err("GPU public salts require resident commitments".into())
+            }
+        }
+        Ok(self)
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     pub(crate) fn with_gpu_openings(mut self) -> Result<Self, String> {
         match &mut self.inner {
             Backend::Resident(state) => {
@@ -491,7 +1372,7 @@ impl CandidatePcs {
     pub fn new(
         dft: Dft,
         mmcs: ValMmcs,
-        fri: FriParameters<ChallengeMmcs>,
+        fri: FriParameters<ChallengeMmcs<E>>,
         random_columns: usize,
         inner_rng: ChaCha20Rng,
     ) -> Self {
@@ -512,12 +1393,12 @@ impl CandidatePcs {
     }
 
     /// Explicit research construction, requiring the initialized retained GPU
-    /// backend and unchanged candidate parameters. This is never a fallback.
+    /// backend and the pinned parameters for its field. This is never a fallback.
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     pub(crate) fn new_resident(
         dft: Dft,
         mmcs: ValMmcs,
-        fri: FriParameters<ChallengeMmcs>,
+        fri: FriParameters<ChallengeMmcs<E>>,
         random_columns: usize,
         inner_rng: ChaCha20Rng,
         host_output_budget: usize,
@@ -543,12 +1424,12 @@ impl CandidatePcs {
     /// Caller must supply a fresh independent full-entropy seed in real proving.
     /// This explicit method is intentionally not an environment-variable switch.
     pub(crate) fn with_fused_quotients(mut self, independent_rng: ChaCha20Rng) -> Self {
-        self.quotient_rng = Some(Arc::new(Mutex::new(independent_rng)));
+        self.quotient_rng = Some(super::randomness::ProofRng::new(independent_rng));
         self
     }
 }
 
-impl BuildPeriodicLdeTableFast for CandidatePcs {
+impl<E: PcsField> BuildPeriodicLdeTableFast for CandidatePcs<E> {
     type PeriodicDomain = Domain;
 
     fn maybe_build_periodic_lde_table_fast(
@@ -573,15 +1454,15 @@ impl BuildPeriodicLdeTableFast for CandidatePcs {
     }
 }
 
-impl Pcs<Challenge, Challenger> for CandidatePcs {
-    type Domain = <Inner as Pcs<Challenge, Challenger>>::Domain;
-    type Commitment = <Inner as Pcs<Challenge, Challenger>>::Commitment;
-    type ProverData = <Inner as Pcs<Challenge, Challenger>>::ProverData;
-    type EvaluationsOnDomain<'a> = <Inner as Pcs<Challenge, Challenger>>::EvaluationsOnDomain<'a>;
-    type Proof = <Inner as Pcs<Challenge, Challenger>>::Proof;
-    type Error = <Inner as Pcs<Challenge, Challenger>>::Error;
+impl<E: PcsField> Pcs<E, Challenger> for CandidatePcs<E> {
+    type Domain = <Inner<E> as Pcs<E, Challenger>>::Domain;
+    type Commitment = <Inner<E> as Pcs<E, Challenger>>::Commitment;
+    type ProverData = <Inner<E> as Pcs<E, Challenger>>::ProverData;
+    type EvaluationsOnDomain<'a> = <Inner<E> as Pcs<E, Challenger>>::EvaluationsOnDomain<'a>;
+    type Proof = <Inner<E> as Pcs<E, Challenger>>::Proof;
+    type Error = <Inner<E> as Pcs<E, Challenger>>::Error;
 
-    const ZK: bool = <Inner as Pcs<Challenge, Challenger>>::ZK;
+    const ZK: bool = <Inner<E> as Pcs<E, Challenger>>::ZK;
 
     fn natural_domain_for_degree(&self, degree: usize) -> Self::Domain {
         delegate_pcs!(self, natural_domain_for_degree, degree)
@@ -597,7 +1478,7 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
     ) -> (Self::Commitment, Self::ProverData) {
         match &self.inner {
             Backend::Reference(inner) => {
-                <Inner as Pcs<Challenge, Challenger>>::commit(inner, evaluations)
+                <Inner<E> as Pcs<E, Challenger>>::commit(inner, evaluations)
             }
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Backend::Resident(state) => state
@@ -612,7 +1493,7 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
     ) -> (Self::Commitment, Self::ProverData) {
         match &self.inner {
             Backend::Reference(inner) => {
-                <Inner as Pcs<Challenge, Challenger>>::commit_preprocessing(inner, evaluations)
+                <Inner<E> as Pcs<E, Challenger>>::commit_preprocessing(inner, evaluations)
             }
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Backend::Resident(state) => state
@@ -626,6 +1507,9 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
         evaluations: impl IntoIterator<Item = (Domain, RowMajorMatrix<Val>)>,
         num_chunks: usize,
     ) -> Vec<RowMajorMatrix<Val>> {
+        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+        self.require_host_storage()
+            .expect("device-only PCS cannot materialize quotient LDEs");
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         if let Backend::Resident(state) = &self.inner {
             state.lock_opening_mode();
@@ -646,6 +1530,9 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
     }
 
     fn commit_ldes(&self, ldes: Vec<RowMajorMatrix<Val>>) -> (Self::Commitment, Self::ProverData) {
+        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+        self.require_host_storage()
+            .expect("device-only PCS cannot commit host LDEs");
         delegate_pcs!(self, commit_ldes, ldes)
     }
 
@@ -655,6 +1542,9 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
         idx: usize,
         domain: Domain,
     ) -> Self::EvaluationsOnDomain<'a> {
+        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+        self.require_host_storage()
+            .expect("device-only PCS has no host domain evaluations");
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         if let super::gpu_hash::ProverData::Compact(_) = prover_data {
             return self.compact_evaluations(prover_data, idx, domain, self.random_columns);
@@ -668,6 +1558,9 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
         idx: usize,
         domain: Domain,
     ) -> Self::EvaluationsOnDomain<'a> {
+        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+        self.require_host_storage()
+            .expect("device-only PCS has no host domain evaluations");
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         if let super::gpu_hash::ProverData::Compact(_) = prover_data {
             return self.compact_evaluations(prover_data, idx, domain, 0);
@@ -683,11 +1576,14 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
 
     fn open(
         &self,
-        rounds: Vec<(&Self::ProverData, Vec<Vec<Challenge>>)>,
+        rounds: Vec<(&Self::ProverData, Vec<Vec<E>>)>,
         challenger: &mut Challenger,
-    ) -> (OpenedValues<Challenge>, Self::Proof) {
+    ) -> (OpenedValues<E>, Self::Proof) {
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         if let Backend::Resident(state) = &self.inner {
+            state
+                .require_device_proving()
+                .expect("device-only PCS cannot use CPU openings");
             if state.gpu_openings {
                 return state.open(rounds, challenger, false);
             }
@@ -697,12 +1593,15 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
 
     fn open_with_preprocessing(
         &self,
-        rounds: Vec<(&Self::ProverData, Vec<Vec<Challenge>>)>,
+        rounds: Vec<(&Self::ProverData, Vec<Vec<E>>)>,
         challenger: &mut Challenger,
         is_preprocessing: bool,
-    ) -> (OpenedValues<Challenge>, Self::Proof) {
+    ) -> (OpenedValues<E>, Self::Proof) {
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         if let Backend::Resident(state) = &self.inner {
+            state
+                .require_device_proving()
+                .expect("device-only PCS cannot use CPU openings");
             if state.gpu_openings {
                 return state.open(rounds, challenger, is_preprocessing);
             }
@@ -719,10 +1618,7 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
     #[allow(clippy::type_complexity)]
     fn verify(
         &self,
-        rounds: Vec<(
-            Self::Commitment,
-            Vec<(Domain, Vec<(Challenge, Vec<Challenge>)>)>,
-        )>,
+        rounds: Vec<(Self::Commitment, Vec<(Domain, Vec<(E, Vec<E>)>)>)>,
         proof: &Self::Proof,
         challenger: &mut Challenger,
     ) -> Result<(), Self::Error> {
@@ -735,7 +1631,7 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
     ) -> Option<(Self::Commitment, Self::ProverData)> {
         match &self.inner {
             Backend::Reference(inner) => {
-                <Inner as Pcs<Challenge, Challenger>>::get_opt_randomization_poly_commitment(
+                <Inner<E> as Pcs<E, Challenger>>::get_opt_randomization_poly_commitment(
                     inner, domain,
                 )
             }
@@ -751,7 +1647,140 @@ impl Pcs<Challenge, Challenger> for CandidatePcs {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    #[test]
+    fn gpu_transcript_selection_requires_randomness_and_is_immutable() {
+        for randomness in [false, true] {
+            for opencl in [false, true] {
+                assert_eq!(
+                    super::parse_gpu_transcript(None, randomness, opencl),
+                    Ok(false)
+                );
+                assert_eq!(
+                    super::parse_gpu_transcript(Some("0"), randomness, opencl),
+                    Ok(false)
+                );
+                assert_eq!(
+                    super::parse_gpu_transcript(Some("1"), randomness, opencl).is_ok(),
+                    randomness && opencl
+                );
+                for value in ["true", " 1", "01", "", "2"] {
+                    assert!(super::parse_gpu_transcript(Some(value), randomness, opencl).is_err());
+                }
+            }
+        }
+        let cell = std::sync::OnceLock::new();
+        let initial = super::GpuSelection {
+            transcript: true,
+            ..Default::default()
+        };
+        super::record_gpu_selection(&cell, initial).unwrap();
+        super::record_gpu_selection(&cell, initial).unwrap();
+        assert!(super::record_gpu_selection(&cell, super::GpuSelection::default()).is_err());
+        assert_eq!(cell.get(), Some(&initial));
+    }
     use super::*;
+
+    #[test]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    fn gpu_randomness_selection_is_strict_and_atomic() {
+        for witness in [false, true] {
+            for opencl in [false, true] {
+                assert_eq!(parse_gpu_randomness(None, witness, opencl), Ok(false));
+                assert_eq!(parse_gpu_randomness(Some("0"), witness, opencl), Ok(false));
+                assert_eq!(
+                    parse_gpu_randomness(Some("1"), witness, opencl).is_ok(),
+                    witness && opencl
+                );
+                for invalid in ["", "true", "01", " 1", "2", "１"] {
+                    assert!(parse_gpu_randomness(Some(invalid), witness, opencl).is_err());
+                }
+            }
+        }
+        let cell = OnceLock::new();
+        let initial = GpuSelection::default();
+        record_gpu_selection(&cell, initial).unwrap();
+        record_gpu_selection(&cell, initial).unwrap();
+        let changed = GpuSelection {
+            witness: true,
+            randomness: true,
+            ..initial
+        };
+        assert!(record_gpu_selection(&cell, changed).is_err());
+        assert_eq!(cell.get(), Some(&initial));
+    }
+
+    #[test]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    fn gpu_witness_selection_requires_device_only_opencl_and_is_immutable() {
+        for device_only in [false, true] {
+            for opencl in [false, true] {
+                assert_eq!(parse_gpu_witness(None, device_only, opencl), Ok(false));
+                assert_eq!(parse_gpu_witness(Some("0"), device_only, opencl), Ok(false));
+                assert_eq!(
+                    parse_gpu_witness(Some("1"), device_only, opencl).is_ok(),
+                    device_only && opencl
+                );
+                for value in ["", "true", "2", " 1", "1 ", "01", "１"] {
+                    assert!(parse_gpu_witness(Some(value), device_only, opencl).is_err());
+                }
+            }
+        }
+        for value in ["0", "1"] {
+            let selected = parse_gpu_witness(Some(value), true, true).unwrap();
+            let mode = OnceLock::new();
+            record_research_mode(&mode, selected).unwrap();
+            record_research_mode(&mode, selected).unwrap();
+            assert!(record_research_mode(&mode, !selected).is_err());
+            assert_eq!(mode.get(), Some(&selected));
+        }
+    }
+
+    #[test]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    fn device_only_pcs_requires_all_owned_consumers() {
+        for fri in [false, true] {
+            for lookup in [false, true] {
+                for opencl in [false, true] {
+                    assert_eq!(
+                        parse_gpu_pcs_device_only(None, fri, lookup, opencl),
+                        Ok(false)
+                    );
+                    assert_eq!(
+                        parse_gpu_pcs_device_only(Some("0"), fri, lookup, opencl),
+                        Ok(false)
+                    );
+                    assert_eq!(
+                        parse_gpu_pcs_device_only(Some("1"), fri, lookup, opencl).is_ok(),
+                        fri && lookup && opencl
+                    );
+                    for value in ["", "true", "2", " 1", "1 ", "01", "１"] {
+                        assert!(
+                            parse_gpu_pcs_device_only(Some(value), fri, lookup, opencl).is_err()
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    fn gpu_quotient_eval_requires_opencl_and_lde_without_implicit_fallback() {
+        for lde in [false, true] {
+            for opencl in [false, true] {
+                assert_eq!(parse_gpu_quotient_eval(None, lde, opencl), Ok(false));
+                assert_eq!(parse_gpu_quotient_eval(Some("0"), lde, opencl), Ok(false));
+                assert_eq!(
+                    parse_gpu_quotient_eval(Some("1"), lde, opencl).is_ok(),
+                    lde && opencl
+                );
+                for value in ["", "true", "2", " 1", "1 ", "01", "１"] {
+                    assert!(parse_gpu_quotient_eval(Some(value), lde, opencl).is_err());
+                }
+            }
+        }
+    }
 
     #[test]
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
@@ -965,7 +1994,8 @@ mod tests {
     fn geometry_arithmetic_parameters_and_workspace_fail_closed() {
         assert_eq!(Geometry::new(4, 3, 1, 4, 4), Err(FusionError::ChunkCount));
         assert_eq!(Geometry::new(4, 3, 3, 4, 4), Err(FusionError::ChunkCount));
-        assert_eq!(Geometry::new(4, 3, 32, 4, 4), Err(FusionError::ChunkCount));
+        assert!(Geometry::new(4, 3, 32, 4, 4).is_ok());
+        assert_eq!(Geometry::new(4, 3, 64, 4, 4), Err(FusionError::ChunkCount));
         assert_eq!(Geometry::new(4, 0, 4, 4, 4), Err(FusionError::EmptyWidth));
         assert_eq!(Geometry::new(28, 3, 4, 4, 4), Err(FusionError::DomainSize));
         assert_eq!(
@@ -1012,7 +2042,7 @@ mod tests {
         bad[1].0 = Domain::new(Val::GENERATOR, 4).unwrap();
         cases.push(bad);
         for bad in cases {
-            let rng = Mutex::new(ChaCha20Rng::from_seed([71; 32]));
+            let rng = super::super::randomness::ProofRng::new(ChaCha20Rng::from_seed([71; 32]));
             let mut expected_rng = ChaCha20Rng::from_seed([71; 32]);
             assert!(fused_ldes(&Dft::default(), bad, 4, 4, 4, &rng).is_err());
             assert_eq!(
@@ -1026,10 +2056,11 @@ mod tests {
     fn quotient_rng_is_shared_not_replayed_by_clone() {
         let candidate = candidate(true);
         let clone = candidate.clone();
-        assert!(Arc::ptr_eq(
-            candidate.quotient_rng.as_ref().unwrap(),
-            clone.quotient_rng.as_ref().unwrap(),
-        ));
+        assert!(candidate
+            .quotient_rng
+            .as_ref()
+            .unwrap()
+            .shares_with(clone.quotient_rng.as_ref().unwrap()));
         let input = input(2, 3, 4);
         let first = candidate.get_quotient_ldes(input.clone(), 4);
         let second = clone.get_quotient_ldes(input, 4);
@@ -1149,14 +2180,14 @@ mod tests {
 }
 
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
-impl CandidatePcs {
+impl<E: PcsField> CandidatePcs<E> {
     fn compact_evaluations<'a>(
         &self,
-        data: &'a <Self as Pcs<Challenge, Challenger>>::ProverData,
+        data: &'a <Self as Pcs<E, Challenger>>::ProverData,
         idx: usize,
         domain: Domain,
         random_columns: usize,
-    ) -> <Self as Pcs<Challenge, Challenger>>::EvaluationsOnDomain<'a> {
+    ) -> <Self as Pcs<E, Challenger>>::EvaluationsOnDomain<'a> {
         use p3_matrix::{horizontally_truncated::HorizontallyTruncated, Matrix};
         let Backend::Resident(state) = &self.inner else {
             panic!("compact data requires resident PCS")

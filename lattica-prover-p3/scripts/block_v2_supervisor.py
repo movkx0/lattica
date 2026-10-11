@@ -86,6 +86,7 @@ def request(path, script):
 
 
 def create(args, script, pins):
+    proving = G.proving_environment()
     validate_options(args)
     directory = args.evidence.resolve()
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
@@ -97,7 +98,8 @@ def create(args, script, pins):
     script = str(Path(script).resolve(strict=True))
     executable = str(Path(sys.executable).resolve(strict=True))
     path = directory/'supervisor-request.json'
-    value = dict(schema_version=1, directory=str(directory), script=script, executable=executable,
+    value = dict(schema_version=1, proving_environment=proving,
+        directory=str(directory), script=script, executable=executable,
         executable_sha256=G.digest(Path(executable)), cwd=str(Path.cwd().resolve()),
         unit='lattica-v2-supervisor-'+secrets.token_hex(32)+'.service',
         arguments=Controller.arguments(args), pins=pins,
@@ -349,7 +351,9 @@ def launch(args, script, pins):
         '--property=UMask=0077', '--property=Restart=on-failure', '--property=RestartSec=2',
         '--property=StartLimitIntervalSec=7200', '--property=StartLimitBurst='+str(value['max_restarts']+2),
         '--property=ExecStopPost='+stop,
-        '--setenv=RAYON_NUM_THREADS=1', *value['command']]
+        '--setenv=RAYON_NUM_THREADS=1',
+        *[f'--setenv={name}={setting}' for name, setting in value['proving_environment'].items()],
+        *value['command']]
     publish(directory/'service-command.json', dict(command=command))
     result = subprocess.run(command)
     state = observe(value['unit'])

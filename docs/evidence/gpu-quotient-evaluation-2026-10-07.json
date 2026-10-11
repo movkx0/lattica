@@ -1,0 +1,141 @@
+{
+  "schema": "lattica-gpu-quotient-evaluation-v1",
+  "date": "2026-10-07",
+  "source_head": "e9e35067fc3b419a54d790a71663071455f203f1",
+  "source_state": "uncommitted main working tree",
+  "complete_gpu_prover": false,
+  "throughput_qualification": false,
+  "features": [
+    "default",
+    "block-v2-wide-lanes"
+  ],
+  "build_profile": "release",
+  "gpu": {
+    "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "driver": "615.71.09"
+  },
+  "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-quotient-eval-20261007/run-04",
+  "binary_sha256": "bef6c830982e8254052f3680f6be9878baf5a0f89c6c59807aa622f95e3c0b6a",
+  "source_archive_sha256": "4f65fcb985980bbf18f5de360bd2dbda2557a386aed56240484ac27e7d1b8498",
+  "runner_sha256": "d1bb5b45ad71dd41474e60cdf9b14c23bd76e2a3c76cfe9d6b9ee8155cd3bb44",
+  "limits": {
+    "memory_max_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "runtime_max_seconds_per_service": 180
+  },
+  "checks": [
+    {
+      "name": "arithmetic",
+      "passed": true,
+      "wall_seconds": 0.9175426059991878,
+      "log_sha256": "ce4dbd383fa26610428376b904d3e9b8a48e5f72c28ab31d1979cf085a298d25"
+    },
+    {
+      "name": "proof-bytes",
+      "passed": true,
+      "wall_seconds": 0.9171262489999208,
+      "log_sha256": "669b99caf879bdbc1756f1ff4974cbceef988532b23b7cd3b8902cb1ec43343a"
+    },
+    {
+      "name": "registered",
+      "passed": true,
+      "wall_seconds": 0.8162010229989392,
+      "log_sha256": "049f30f206749289f7bf4ea93a5e4272ba3a077cb724fcec474fdd57a1569cc0"
+    },
+    {
+      "name": "arithmetic-repeat2",
+      "passed": true,
+      "wall_seconds": 0.7665704030005145,
+      "log_sha256": "4f44e2ca6ff7371d8b1cb4dccf74ce92665f98760bdc401ef0f478347939db5b"
+    },
+    {
+      "name": "arithmetic-repeat3",
+      "passed": true,
+      "wall_seconds": 0.8155752959992242,
+      "log_sha256": "8ba2f6d49c9b581049ee41c38c64ab887d15e40012adc2cf55c4f6d5150c3e85"
+    }
+  ],
+  "other_checks": {
+    "debug_quotient_tests_passed": 18,
+    "debug_hardware_tests_ignored": 9,
+    "gpu_stream_cargo_check": true,
+    "cpu_stream_cargo_check": true,
+    "multi_gpu_resource_python_tests_passed": 27
+  },
+  "exploratory_stage_timings": {
+    "description": "Exact same synthetic AIR and matrices; CPU reference first, then GPU adapter including program compilation and transfers. Three fresh-process runs, alpha=[31,32,33]. Not transaction throughput or a representative recursive workload.",
+    "samples": [
+      {
+        "quotient_rows": 8,
+        "repetitions": 3,
+        "cpu_ns": [
+          688568,
+          902445,
+          930800
+        ],
+        "gpu_adapter_ns": [
+          7112861,
+          4679022,
+          4389768
+        ],
+        "median_cpu_ns": 902445,
+        "median_gpu_adapter_ns": 4679022
+      },
+      {
+        "quotient_rows": 32,
+        "repetitions": 3,
+        "cpu_ns": [
+          719300,
+          1043460,
+          1259985
+        ],
+        "gpu_adapter_ns": [
+          4419472,
+          4312372,
+          4556071
+        ],
+        "median_cpu_ns": 1043460,
+        "median_gpu_adapter_ns": 4419472
+      },
+      {
+        "quotient_rows": 4096,
+        "repetitions": 3,
+        "cpu_ns": [
+          19587010,
+          20396493,
+          19137320
+        ],
+        "gpu_adapter_ns": [
+          20565478,
+          19557353,
+          18859045
+        ],
+        "median_cpu_ns": 19587010,
+        "median_gpu_adapter_ns": 19557353
+      }
+    ]
+  },
+  "limitations": [
+    "Main/preprocessed/permutation inputs and quotient output still cross host memory.",
+    "Lookup witness generation, traces, transcript, hiding and other arithmetic remain CPU; gpu-required still rejects complete proving.",
+    "Periodic columns explicitly unsupported; no silent fallback.",
+    "Only NVIDIA OpenCL tested; AMD and Apple Metal unqualified.",
+    "Stage ledger remains incomplete.",
+    "Release adapter is slower than CPU on tiny geometries and roughly equal at 4096 rows; no delivered-throughput improvement established."
+  ],
+  "superseded_attempts": [
+    {
+      "artifact_directory": "lattica-prover-p3/benchmark-results/gpu-quotient-eval-20261007/run-03",
+      "result": "Harness failed before test launch because /usr/bin/time was unavailable. Preserved; corrected in run-04."
+    }
+  ],
+  "other_check_logs_sha256": {
+    "quotient-unit-tests.log": "671097e3110c16944f27594864d783e0eeed028bc953d404e1f4664b8a8db87e",
+    "gpu-stream-build.log": "0b89c479fd6763df5ea44da21c126f8b3e37a6f1439f373714f95c41c2a2ca9d",
+    "cpu-stream-build.log": "e9a0f6ecfe9cab358043e7d35e60f7bc1af3bd8dd6a24fbeb74a8061e736eec1",
+    "release-build.log": "955154845693925fe84a6b181e6a68f2e0ac6cadf8f65210f95f8b2b5456803d",
+    "pool-resource-tests.log": "32123c06afaa22405df0ae455b2a9957a73a7a30732623e89bdb1eee75d7e097"
+  }
+}

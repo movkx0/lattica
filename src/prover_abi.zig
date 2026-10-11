@@ -8,6 +8,17 @@
 //! prove → 0 = ok, 1 = malformed/invalid input or internal failure, 2 = an output buffer was too
 //! small (`*_len` outputs written only on rc = 0). No call unwinds across the boundary.
 
+// Lifecycle statuses are separate from proving buffer-size statuses.
+pub const GPU_OK: i32 = 0;
+pub const GPU_REJECTED: i32 = 1;
+pub const GPU_UNAVAILABLE: i32 = 2;
+
+pub extern fn lattica_gpu_initialize_from_env() callconv(.c) i32;
+pub extern fn lattica_gpu_public_worker_initialize_from_env() callconv(.c) i32;
+pub extern fn lattica_gpu_public_worker_serve(socket_fd: i32, bootstrap: [*]const u8, bootstrap_len: usize, completed_out: *u64) callconv(.c) i32;
+pub extern fn lattica_gpu_drain() callconv(.c) i32;
+pub extern fn lattica_gpu_shutdown() callconv(.c) i32;
+
 // --- single-transaction join-split ------------------------------------------------------------
 
 pub extern fn lattica_joinsplit_verify(

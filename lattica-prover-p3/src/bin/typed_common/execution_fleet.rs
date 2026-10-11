@@ -10,6 +10,12 @@ mod pool_service;
 mod preseal;
 #[path = "execution_fleet_recover.rs"]
 mod recovery;
+#[path = "execution_fleet_storage.rs"]
+mod storage;
+
+pub(super) fn coordinator_storage_probe() -> Result<(), Error> {
+    storage::probe()
+}
 use lattica_prover_p3::block_v2::execution::{
     dag::{Completion, Lease, WorkerId},
     job::JobId,
@@ -49,6 +55,7 @@ struct Plan {
     schema_version: u32,
     coordinator_unit: String,
     coordinator_ram_bytes: u64,
+    coordinator_shared_bytes: u64,
     coordinator_threads: u32,
     fleet_bytes: u64,
     workers: Vec<Worker>,
@@ -131,9 +138,10 @@ fn validate_plan(plan: &Plan) -> Result<Vec<(Resources, Resources)>, Error> {
     if let Some(binding) = &plan.native_host {
         binding.check_scope(plan.preseal_only)?;
     }
-    if plan.schema_version != 1 || plan.coordinator_threads == 0 {
+    if plan.schema_version != 2 || plan.coordinator_threads == 0 {
         return Err("shared typed coordinator plan version or CPU assignment".into());
     }
+    storage::KnownShared::new(plan.workers.len())?.admit(plan.coordinator_shared_bytes)?;
     let mut devices = BTreeSet::new();
     let mut services = BTreeSet::new();
     let mut resources = Vec::new();
@@ -153,6 +161,7 @@ fn validate_plan(plan: &Plan) -> Result<Vec<(Resources, Resources)>, Error> {
         if !devices.insert(uuid)
             || !services.insert(unit)
             || a["host"]["coordinator_bytes"].as_u64() != Some(plan.coordinator_ram_bytes)
+            || a["host"]["coordinator_shared_bytes"].as_u64() != Some(plan.coordinator_shared_bytes)
             || a["host"]["fleet_bytes"].as_u64() != Some(plan.fleet_bytes)
             || worker.launcher.is_empty()
             || !Path::new(&worker.launcher[0]).is_absolute()
@@ -167,7 +176,16 @@ fn validate_plan(plan: &Plan) -> Result<Vec<(Resources, Resources)>, Error> {
         sum.checked_add(jobs.ram_bytes)
             .ok_or("shared packet RAM overflow")
     })?;
-    if limits.workers.ram_bytes > plan.fleet_bytes || packet_bytes != plan.coordinator_ram_bytes {
+    let total_fleet_bytes = limits
+        .workers
+        .ram_bytes
+        .checked_add(plan.coordinator_shared_bytes)
+        .ok_or("shared fleet RAM overflow")?;
+    let total_coordinator_bytes = packet_bytes
+        .checked_add(plan.coordinator_shared_bytes)
+        .ok_or("shared coordinator RAM overflow")?;
+    if total_fleet_bytes > plan.fleet_bytes || total_coordinator_bytes != plan.coordinator_ram_bytes
+    {
         return Err("shared typed packet/workspace reservations differ from physical fleet".into());
     }
     Ok(resources)
@@ -758,13 +776,18 @@ mod tests {
     use super::*;
 
     pub(super) fn plan() -> Plan {
-        let workers = (0..2).map(|index| Worker {
-            assignment: json!({"gpu":{"uuid":format!("GPU-{index}"),"managed_bytes":1u64 << 30},
+        let workers = (0..2)
+            .map(|index| Worker {
+                assignment: json!({"gpu":{"uuid":format!("GPU-{index}"),"managed_bytes":1u64 << 30},
                 "host":{"worker_bytes":4u64 << 30,"spill_bytes":2u64 << 30,
-                    "coordinator_bytes":1u64 << 30,"coordinator_job_bytes":1u64 << 29,"fleet_bytes":9u64 << 30},
+                "coordinator_bytes":2u64 << 30,"coordinator_job_bytes":768u64 << 20,
+                "coordinator_shared_bytes":512u64 << 20,"fleet_bytes":10u64 << 30},
                 "cpu":{"rayon_threads":4-index},"unit":format!("worker-{index}")}),
-            launcher: vec!["/usr/bin/python3".into()], arguments: vec![], log: format!("/tmp/worker-{index}.log").into(),
-        }).collect();
+                launcher: vec!["/usr/bin/python3".into()],
+                arguments: vec![],
+                log: format!("/tmp/worker-{index}.log").into(),
+            })
+            .collect();
         Plan {
             pool_requests: None,
             coordinator_bootstrap_guard: None,
@@ -772,11 +795,12 @@ mod tests {
             allow_worker_failover: false,
             recover_from: None,
             recover_cached_only: false,
-            schema_version: 1,
+            schema_version: 2,
             coordinator_unit: "lattica-v2-multi-owner-test.service".into(),
-            coordinator_ram_bytes: 1 << 30,
+            coordinator_ram_bytes: 2 << 30,
+            coordinator_shared_bytes: 512 << 20,
             coordinator_threads: 1,
-            fleet_bytes: 9 << 30,
+            fleet_bytes: 10 << 30,
             workers,
             native_host: None,
             preseal_only: false,
@@ -791,8 +815,83 @@ mod tests {
         assert_eq!(assignments[0].1.threads, 4);
         assert_eq!(assignments[1].1.threads, 3);
         let limits = budget::fleet_limits(&assignments).unwrap();
-        assert_eq!(limits.workers.ram_bytes, plan.fleet_bytes);
+        assert_eq!(
+            limits.workers.ram_bytes + plan.coordinator_shared_bytes,
+            plan.fleet_bytes
+        );
         assert_eq!(limits.workers.threads, 7);
+    }
+
+    #[test]
+    fn coordinator_shared_partition_is_required_and_cannot_overlap_jobs() {
+        let base = plan();
+        let mut bad = base.clone();
+        bad.schema_version = 1;
+        assert!(validate_plan(&bad).is_err());
+        let mut missing = serde_json::to_value(&base).unwrap();
+        missing
+            .as_object_mut()
+            .unwrap()
+            .remove("coordinator_shared_bytes");
+        assert!(serde_json::from_value::<Plan>(missing).is_err());
+
+        for shared in [0, (512 << 20) - 1, u64::MAX] {
+            let mut bad = base.clone();
+            bad.coordinator_shared_bytes = shared;
+            for worker in &mut bad.workers {
+                worker.assignment["host"]["coordinator_shared_bytes"] = json!(shared);
+            }
+            assert!(validate_plan(&bad).is_err());
+        }
+        for shared in [
+            serde_json::Value::Null,
+            json!(true),
+            json!(-1),
+            json!("536870912"),
+            json!(768u64 << 20),
+        ] {
+            let mut bad = base.clone();
+            bad.workers[0].assignment["host"]["coordinator_shared_bytes"] = shared;
+            assert!(validate_plan(&bad).is_err());
+        }
+        let mut bad = base.clone();
+        bad.workers[0].assignment["host"]
+            .as_object_mut()
+            .unwrap()
+            .remove("coordinator_shared_bytes");
+        assert!(validate_plan(&bad).is_err());
+
+        let mut bad = base;
+        for worker in &mut bad.workers {
+            worker.assignment["host"]["coordinator_job_bytes"] = json!(1u64 << 30);
+        }
+        assert!(validate_plan(&bad).is_err());
+    }
+
+    #[test]
+    fn fleet_cap_includes_shared_storage_once_and_rejects_overflow() {
+        let mut short = plan();
+        short.fleet_bytes -= short.coordinator_shared_bytes;
+        for worker in &mut short.workers {
+            worker.assignment["host"]["fleet_bytes"] = json!(short.fleet_bytes);
+        }
+        assert!(validate_plan(&short).is_err());
+
+        let mut overflow = plan();
+        overflow.fleet_bytes = u64::MAX;
+        let job_bytes = overflow.workers[0].assignment["host"]["coordinator_job_bytes"]
+            .as_u64()
+            .unwrap();
+        let other_worker_bytes = overflow.workers[1].assignment["host"]["worker_bytes"]
+            .as_u64()
+            .unwrap();
+        // Worker and job reservations fit in u64; adding the shared owner does not.
+        overflow.workers[0].assignment["host"]["worker_bytes"] =
+            json!(u64::MAX - other_worker_bytes - 2 * job_bytes);
+        for worker in &mut overflow.workers {
+            worker.assignment["host"]["fleet_bytes"] = json!(u64::MAX);
+        }
+        assert!(validate_plan(&overflow).is_err());
     }
 
     #[test]

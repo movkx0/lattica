@@ -13,6 +13,12 @@ use p3_poseidon2::GenericPoseidon2LinearLayers;
 use std::sync::Arc;
 
 const ARITHMETIC_COLUMNS: usize = 4 * LANES;
+// Poseidon checkpoints reset each round to trace variables: a seventh-power
+// check times IS_HASH has degree 8. Opcode gates have degree OPCODE_BITS + 2,
+// cubic gates degree 3, and public-bank gates degree 3. Lookup constraints are
+// added separately by Plonky3's degree calculation, using the packed lookups.
+const MAX_CONSTRAINT_DEGREE: usize = 8;
+const _: () = assert!(OPCODE_BITS + 2 <= MAX_CONSTRAINT_DEGREE);
 // Keep the original eight arithmetic ports at their hash-compatible positions.
 // Extra arithmetic lanes reuse hash checkpoints, which are inactive on ALU rows.
 const HASH_A: usize = 0;
@@ -48,17 +54,17 @@ pub(super) const fn d_column(lane: usize) -> usize {
 }
 
 const SEL: usize = 0;
-const ADDR_A: usize = OPCODE_BITS * LANES;
-const ADDR_B: usize = ADDR_A + LANES;
-const ADDR_C: usize = ADDR_B + LANES;
-const ADDR_D: usize = ADDR_C + LANES;
-const MULT_C: usize = ADDR_D + LANES;
+pub(super) const ADDR_A: usize = OPCODE_BITS * LANES;
+pub(super) const ADDR_B: usize = ADDR_A + LANES;
+pub(super) const ADDR_C: usize = ADDR_B + LANES;
+pub(super) const ADDR_D: usize = ADDR_C + LANES;
+pub(super) const MULT_C: usize = ADDR_D + LANES;
 const CONSTANT: usize = ADDR_B; // Constant instructions have no B read.
-const IS_HASH: usize = MULT_C + LANES;
-const EXT_MUL: usize = IS_HASH + 1;
-const EXT_INV: usize = EXT_MUL + EXT_LANES;
-const PUBLIC_BANK: usize = EXT_INV + EXT_LANES;
-const PREPROCESSED_WIDTH: usize = PUBLIC_BANK + 1;
+pub(super) const IS_HASH: usize = MULT_C + LANES;
+pub(super) const EXT_MUL: usize = IS_HASH + 1;
+pub(super) const EXT_INV: usize = EXT_MUL + EXT_LANES;
+pub(super) const PUBLIC_BANK: usize = EXT_INV + EXT_LANES;
+pub(super) const PREPROCESSED_WIDTH: usize = PUBLIC_BANK + 1;
 #[cfg(not(feature = "block-v2-wide-lanes"))]
 const BUS: LookupBus<'static> = LookupBus::new("lattica-v2-ssa-wire-v3");
 #[cfg(feature = "block-v2-wide-lanes")]
@@ -197,6 +203,13 @@ impl BaseAir<Val> for MachineAir {
     fn width(&self) -> usize {
         WIDTH
     }
+    fn max_constraint_degree(&self) -> Option<usize> {
+        // Avoid rebuilding an unbounded symbolic graph in upstream release
+        // verification. Tests retain the original no-hint inference and check
+        // every supported public count in both machine layouts. The upstream
+        // debug assertion still independently checks this bound.
+        Some(MAX_CONSTRAINT_DEGREE)
+    }
     fn num_public_values(&self) -> usize {
         self.program.publics
     }
@@ -318,12 +331,13 @@ where
         let h: AB::Expr = p[IS_HASH].into();
         let bank: AB::Expr = p[PUBLIC_BANK].into();
         let bank_zero = bank.clone() * (AB::Expr::TWO - bank.clone());
-        let bank_one = bank.clone() * (bank.clone() - AB::Expr::ONE) * Val::ONE.halve();
+        let bank_one =
+            bank.clone() * (bank.clone() - AB::Expr::ONE) * Val::new(0x7fff_ffff_8000_0001);
         let public_row = bank_zero.clone() + bank_one.clone();
         for lane in 0..LANES {
             // Preprocessed opcode bits are authenticated constants at trace rows.
             // Evaluating the decoding polynomials raises degree, so lookup packing
-            // and quotient geometry are recomputed from the full symbolic AIR.
+            // and quotient geometry must include the lookup constraint degree.
             let bits: [AB::Expr; OPCODE_BITS] =
                 core::array::from_fn(|bit| p[SEL + lane * OPCODE_BITS + bit].into());
             let s: [AB::Expr; OPS] = core::array::from_fn(|op| {
@@ -475,6 +489,9 @@ fn hash_column(index: usize) -> usize {
         _ => HASH + index - 16,
     }
 }
+
+#[cfg(test)]
+mod degree_tests;
 
 #[cfg(test)]
 mod layout_tests {

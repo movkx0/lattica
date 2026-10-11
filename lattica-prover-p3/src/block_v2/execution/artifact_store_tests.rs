@@ -35,6 +35,102 @@ fn limits() -> StoreLimits {
     }
 }
 
+#[test]
+fn inventory_bounds_cover_full_published_pending_and_pruned_states() {
+    let temp = Temp::new();
+    let limits = StoreLimits {
+        bytes: 4096,
+        entries: 64,
+    };
+    let mut store = ArtifactStore::create(&temp.store(), limits).unwrap();
+    let bound = limits.inventory_storage().unwrap();
+    let check = |store: &ArtifactStore| {
+        assert!(store.inventory_storage_bytes().unwrap() <= bound.retained_bytes);
+        assert!(store
+            .inventory
+            .artifacts
+            .keys()
+            .all(|n| n.capacity() == n.len()));
+        assert!(store
+            .inventory
+            .pending
+            .iter()
+            .all(|n| n.capacity() == n.len()));
+    };
+    check(&store);
+    let mut retained = Vec::new();
+    for i in 0..64u8 {
+        let identity = wallet(u64::from(i) + 1, &[i + 1]).artifact();
+        let name = artifact_name(identity);
+        assert_eq!(name.len(), storage::ARTIFACT_NAME_BYTES);
+        assert_eq!(name.capacity(), name.len());
+        assert_eq!(name, format!("w-{}.proof", hex(&identity.digest_bytes())));
+        private_file(&temp.store().join(name), &[i + 1]);
+        retained.push(identity);
+    }
+    store.refresh().unwrap();
+    assert_eq!(store.usage().artifacts, 64);
+    check(&store);
+    // A caller can repeat identities; the keep-map still has at most the
+    // inventory entry count, and refreshed inventory coexists with it.
+    retained.extend_from_within(..);
+    assert_eq!(store.prune_to(&retained).unwrap(), 0);
+    check(&store);
+    assert_eq!(store.prune_to(&retained[..16]).unwrap(), 48);
+    check(&store);
+    assert_eq!(store.prune_to(&[]).unwrap(), 16);
+    check(&store);
+    for i in 0..64u64 {
+        private_file(&temp.store().join(format!("{PENDING}{i:032x}")), &[1]);
+    }
+    store.refresh().unwrap();
+    assert_eq!(store.usage().pending_files, 64);
+    check(&store);
+    assert_eq!(store.recover_pending().unwrap(), 64);
+    check(&store);
+}
+
+#[test]
+fn inventory_component_admission_validates_limits_and_exact_threshold() {
+    for (name, limits) in [
+        (
+            "cli",
+            StoreLimits {
+                bytes: 256 << 20,
+                entries: 512,
+            },
+        ),
+        (
+            "hard",
+            StoreLimits {
+                bytes: MAX_STORE_BYTES,
+                entries: MAX_ENTRIES,
+            },
+        ),
+    ] {
+        let bound = limits.inventory_storage().unwrap();
+        assert!(bound.refresh_prune_bytes > 2 * bound.retained_bytes);
+        bound.admit(bound.refresh_prune_bytes).unwrap();
+        assert!(bound.admit(bound.refresh_prune_bytes - 1).is_err());
+        println!(
+            "coordinator_inventory_storage profile={name} retained_bytes={} refresh_prune_bytes={}",
+            bound.retained_bytes, bound.refresh_prune_bytes
+        );
+    }
+    for limits in [
+        StoreLimits {
+            bytes: 1,
+            entries: 2,
+        },
+        StoreLimits {
+            bytes: MAX_STORE_BYTES,
+            entries: MAX_ENTRIES + 1,
+        },
+    ] {
+        assert!(limits.inventory_storage().is_err());
+    }
+}
+
 fn private_file(path: &Path, bytes: &[u8]) {
     let mut file = OpenOptions::new()
         .write(true)

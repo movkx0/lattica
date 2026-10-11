@@ -14,6 +14,21 @@ S = importlib.import_module('block-v2-typed-shared-gpu-run')
 
 
 class ControllerBootstrap(unittest.TestCase):
+    def test_recovery_and_launch_keep_the_recorded_proving_policy(self):
+        required = {'LATTICA_PROVING_POLICY': 'gpu-required', 'LATTICA_PROVING_REPORT': '1'}
+        self.args.evidence = self.root / 'recovered'
+        with mock.patch.dict(os.environ, {'LATTICA_PROVING_POLICY': 'compatible', 'LATTICA_PROVING_REPORT': '0'}):
+            path, value = C.create(self.args, self.script, {str(self.script): C.G.digest(self.script)},
+                                   recovered={'intent': {'proving_environment': required}})
+            self.assertEqual(value['proving_environment'], required)
+            with mock.patch.object(C, 'create', return_value=(path, value)), \
+                    mock.patch.object(C.subprocess, 'run', return_value=mock.Mock(returncode=0)) as launch, \
+                    mock.patch.object(C.B, 'quiescent'):
+                C.launch(self.args, self.script, {}, lambda directory: '--property=LimitCORE=0')
+        command = launch.call_args.args[0]
+        for name, setting in required.items():
+            self.assertLess(command.index(f'--setenv={name}={setting}'), command.index(value['executable']))
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)

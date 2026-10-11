@@ -125,6 +125,7 @@ def intent(path):
 
 
 def create(args, script, pins, recovered=None):
+    proving = G.proving_environment(recovered['intent'].get('proving_environment', {})) if recovered else G.proving_environment()
     directory = args.evidence.resolve()
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
     gate = directory / 'controller-startup'
@@ -145,7 +146,8 @@ def create(args, script, pins, recovered=None):
     path = gate / 'intent.json'
     executable = str(Path(sys.executable).resolve(strict=True))
     script = str(Path(script).resolve(strict=True))
-    value = dict(schema_version=1, unit='lattica-v2-controller-' + secrets.token_hex(32) + '.service',
+    value = dict(schema_version=1, proving_environment=proving,
+        unit='lattica-v2-controller-' + secrets.token_hex(32) + '.service',
         evidence=str(directory), cwd=str(Path.cwd().resolve()), executable=executable,
         executable_sha256=G.digest(Path(executable)), script=script, arguments=arguments(args),
         command=[executable, script, '--controller-request', str(path)], pins=pins,
@@ -305,7 +307,9 @@ def launch(args, script, pins, accounting, recovered=None):
         '--property=TasksMax=256', '--property=KillMode=control-group', '--property=OOMPolicy=kill',
         '--property=TimeoutStopSec=30', '--property=LimitCORE=0', '--property=UMask=0077',
         '--setenv=RAYON_NUM_THREADS=1',
-        accounting(gate.parent), *value['command']]
+        accounting(gate.parent),
+        *[f'--setenv={name}={setting}' for name, setting in value['proving_environment'].items()],
+        *value['command']]
     started = time.monotonic()
     if (gate / 'revoked.json').exists():
         raise ValueError('controller admission revoked before service launch')
