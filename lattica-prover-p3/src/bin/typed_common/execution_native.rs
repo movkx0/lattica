@@ -34,6 +34,30 @@ pub(super) struct Binding {
 }
 
 impl Binding {
+    /// A trusted host may seal only an extension under the same native head.
+    /// Ordered wallet identity is checked separately by the verified DAG.
+    pub(super) fn check_prefix_extension(&self, next: &Self) -> Result<(), Error> {
+        next.check_scope(false)?;
+        self.check_cache_session(next)?;
+        if self.expected.count > next.expected.count {
+            return Err("sealed native selection shrank its prefix".into());
+        }
+        Ok(())
+    }
+
+    pub(super) fn check_candidate(&self, next: &Self) -> Result<(), Error> {
+        self.check_phase(next, false)
+    }
+
+    pub(super) fn check_phase(&self, next: &Self, prefix: bool) -> Result<(), Error> {
+        self.check_scope(prefix)?;
+        next.check_scope(prefix)?;
+        if serde_json::to_value(self)? != serde_json::to_value(next)? {
+            return Err("bounded pool phase changed its native candidate".into());
+        }
+        Ok(())
+    }
+
     pub(super) fn check_pool_session(&self, next: &Self) -> Result<(), Error> {
         self.check_scope(false)?;
         next.check_scope(false)?;
@@ -135,6 +159,36 @@ mod tests {
     }
 
     #[test]
+    fn live_extension_requires_sealing_the_same_head_and_all_prefix_grants() {
+        let mut prefix = binding(); prefix.scope = Scope::Prefix;
+        let mut final_binding = binding();
+        final_binding.expected.count = 16;
+        final_binding.expected.root = [8; 4];
+        final_binding.complete_body_sha256 = [9; 32];
+        final_binding.preparation_sha256 = [10; 32];
+        final_binding.expected.authorized_issuance.insert(15, 7);
+        prefix.check_prefix_extension(&final_binding).unwrap();
+        assert!(prefix.check_prefix_extension(&prefix).is_err());
+        assert!(final_binding.check_prefix_extension(&final_binding).is_err());
+        for field in ["head", "generation", "configuration", "profile", "chain", "height", "count", "grant", "removed_grant"] {
+            let mut changed = final_binding.clone();
+            match field {
+                "head" => changed.head_token[0] ^= 1,
+                "generation" => changed.generation += 1,
+                "configuration" => changed.configuration_sha256[0] ^= 1,
+                "profile" => changed.expected.profile[0] ^= 1,
+                "chain" => changed.expected.chain[0] ^= 1,
+                "height" => changed.expected.block_height += 1,
+                "count" => changed.expected.count = 4,
+                "grant" => { changed.expected.authorized_issuance.insert(7, 8); },
+                "removed_grant" => { changed.expected.authorized_issuance.remove(&7); },
+                _ => unreachable!(),
+            }
+            assert!(prefix.check_prefix_extension(&changed).is_err(), "{field}");
+        }
+    }
+
+    #[test]
     fn prefix_scope_cannot_be_used_for_sealed_dispatch() {
         let mut source = binding();
         assert!(source.check_scope(false).is_ok());
@@ -147,6 +201,51 @@ mod tests {
             .unwrap()
             .get("scope")
             .is_none());
+    }
+
+    #[test]
+    fn bounded_phase_requires_the_entire_original_candidate_binding() {
+        let original = binding();
+        original.check_candidate(&original).unwrap();
+        for field in 0..7 {
+            let mut changed = original.clone();
+            match field {
+                0 => changed.head_token[0] ^= 1,
+                1 => changed.generation += 1,
+                2 => changed.configuration_sha256[0] ^= 1,
+                3 => changed.complete_body_sha256[0] ^= 1,
+                4 => changed.preparation_sha256[0] ^= 1,
+                5 => changed.expected.block_height += 1,
+                _ => changed.expected.count += 1,
+            }
+            assert!(original.check_candidate(&changed).is_err(), "field {field}");
+        }
+    }
+
+    #[test]
+    fn bounded_prefix_phase_preserves_scope_and_every_native_pin() {
+        let mut prefix = binding();
+        prefix.scope = Scope::Prefix;
+        prefix.check_phase(&prefix, true).unwrap();
+        assert!(prefix.check_candidate(&prefix).is_err());
+        assert!(prefix.check_pool_session(&prefix).is_err());
+        for field in 0..8 {
+            let mut changed = prefix.clone();
+            match field {
+                0 => changed.scope = Scope::Candidate,
+                1 => changed.head_token[0] ^= 1,
+                2 => changed.generation += 1,
+                3 => changed.configuration_sha256[0] ^= 1,
+                4 => changed.complete_body_sha256[0] ^= 1,
+                5 => changed.preparation_sha256[0] ^= 1,
+                6 => changed.expected.count += 1,
+                _ => {
+                    changed.expected.authorized_issuance.insert(3, 8);
+                }
+            }
+            assert!(prefix.check_phase(&changed, true).is_err(), "field {field}");
+        }
+        assert!(binding().check_phase(&binding(), true).is_err());
     }
 
     #[test]

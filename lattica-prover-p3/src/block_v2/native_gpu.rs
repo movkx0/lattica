@@ -16,6 +16,7 @@ fn initialize_with(complete: impl FnOnce() -> Result<(), String>) -> Result<(), 
         .and_then(|request| request.admit(&legacy_wallet::capabilities()))
         .map_err(|e| e.to_string())?;
     gpu_startup::preflight()?;
+    worker.initialize_runtime()?;
     gpu_startup::select()?;
     let mut created = gpu_startup::Startup::begin()?;
     let result = complete().and_then(|_| wallet_worker::finish(worker));

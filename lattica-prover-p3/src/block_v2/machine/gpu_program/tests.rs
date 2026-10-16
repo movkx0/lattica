@@ -153,14 +153,43 @@ fn witness_compiler_rejects_bad_sources_outputs_hints_and_shapes() {
             }),
             6 => program.height = 3,
             7 => program.rows.push(Row::Public(2)),
-            _ => program
-                .rows
-                .push(Row::Alu(vec![program.operations[0].clone(); LANES + 1])),
+            _ => program.rows.push(Row::Alu(vec![0; LANES + 1])),
         }
         assert!(
             WitnessProgram::compile(&program, 8 << 20).is_err(),
             "case {malformed}"
         );
+    }
+}
+
+#[test]
+#[cfg(feature = "stream")]
+fn row_indices_and_families_reject_before_compiler_allocation() {
+    let valid = fixture(1, 1, 1);
+    let input = valid
+        .operations
+        .iter()
+        .position(|op| matches!(op, Op::Input { .. }))
+        .unwrap() as u32;
+    let hash = valid
+        .operations
+        .iter()
+        .position(|op| matches!(op, Op::Poseidon { .. }))
+        .unwrap() as u32;
+    for row in [
+        Row::Alu(vec![u32::MAX]),
+        Row::Cubic(vec![u32::MAX]),
+        Row::Poseidon(u32::MAX),
+        Row::Cubic(vec![input]),
+        Row::Alu(vec![hash]),
+        Row::Poseidon(input),
+    ] {
+        let mut bad = valid.clone();
+        bad.rows[0] = row;
+        let (result, allocation) =
+            crate::spill_alloc::allocation_requests::measure(|| Layout::new(&bad));
+        assert!(result.is_err());
+        assert_eq!(allocation.calls, 0);
     }
 }
 

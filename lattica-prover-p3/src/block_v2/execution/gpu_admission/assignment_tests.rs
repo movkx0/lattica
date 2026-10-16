@@ -1,5 +1,7 @@
 use super::*;
+#[cfg(feature = "stream")]
 use crate::spill_alloc::allocation_requests::measure;
+#[cfg(feature = "stream")]
 use std::io::Cursor;
 
 #[test]
@@ -66,6 +68,7 @@ fn assignment_decoder_matches_json_values_and_rejections() {
 }
 
 #[test]
+#[cfg(feature = "stream")]
 fn decoded_quota_covers_arrays_map_nodes_strings_and_replacements() {
     let mut cases = 0;
     for length in [
@@ -126,6 +129,7 @@ fn decoded_quota_covers_arrays_map_nodes_strings_and_replacements() {
 }
 
 #[test]
+#[cfg(feature = "stream")]
 fn escaped_input_keeps_parser_scratch_inside_its_envelope() {
     for length in [1, 4096, 131072] {
         let input = format!(r#"{{"escaped":"{}"}}"#, "\\u0000".repeat(length));
@@ -139,6 +143,7 @@ fn escaped_input_keeps_parser_scratch_inside_its_envelope() {
 }
 
 #[test]
+#[cfg(feature = "stream")]
 fn input_read_uses_one_exact_buffer_and_a_bounded_growth_probe() {
     for length in [0, 1, 31, 65536, MAX_ASSIGNMENT_BYTES as usize] {
         let input = vec![b' '; length];
@@ -178,8 +183,11 @@ fn startup_assignment_floor_fits_before_typed_input_decoding() {
     }
     admit_host(HOST_BYTES).unwrap();
     admit_host(u64::MAX).unwrap();
-    assert!(HOST_BYTES <= crate::block_v2::execution::worker::typed::storage::INPUT_HOST_BYTES);
     assert!(DECODED_BYTES as u64 + MAX_ASSIGNMENT_BYTES + 1 + PARSER_BYTES as u64 <= HOST_BYTES);
     layout().unwrap();
-    eprintln!("gpu_assignment_startup_floor host_bytes={HOST_BYTES} decoded_bytes={DECODED_BYTES} parser_bytes={PARSER_BYTES} typed_input_reservation_bytes={}", crate::block_v2::execution::worker::typed::storage::INPUT_HOST_BYTES);
+    #[cfg(all(target_os = "linux", feature = "stream"))]
+    {
+        assert!(HOST_BYTES <= crate::block_v2::execution::worker::typed::storage::INPUT_HOST_BYTES);
+        eprintln!("gpu_assignment_startup_floor host_bytes={HOST_BYTES} decoded_bytes={DECODED_BYTES} parser_bytes={PARSER_BYTES} typed_input_reservation_bytes={}", crate::block_v2::execution::worker::typed::storage::INPUT_HOST_BYTES);
+    }
 }

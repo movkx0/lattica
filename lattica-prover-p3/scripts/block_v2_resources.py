@@ -18,6 +18,24 @@ WORKER_PROTOCOL_HOST_BYTES = 8 * MIB
 # Decoded children survive the prover call. This shared decoder allowance stays
 # outside cached session budgets, including on Empty jobs before reuse.
 WORKER_INPUT_HOST_BYTES = 64 * MIB
+# Warm workers may keep this much System backing after a drained job. Reserve
+# it beside fresh proving allocations; explicit extra caches are charged below.
+# This is the reuse baseline, not a complete allocator/driver lifetime bound.
+RETAINED_SYSTEM_HOST_BYTES = 512 * MIB
+RAYON_STACK_BYTES = 2 * MIB
+RAYON_STACK_AUX_BYTES = 64 * 1024
+RAYON_THREAD_HOST_BYTES = RAYON_STACK_BYTES + 3 * RAYON_STACK_AUX_BYTES
+CALLER_STACK_BYTES = 8 * MIB
+CALLER_STACK_HOST_BYTES = CALLER_STACK_BYTES + 3 * RAYON_STACK_AUX_BYTES
+
+
+def worker_stack_reserve(budget):
+    """Stacks/guards/signal stacks; allocator, main and driver owners are separate."""
+    threads = budget['cpu']['rayon_threads']
+    if type(threads) is not int or not 1 <= threads <= (1 << 32) - 1:
+        raise ValueError('Rayon stack reservation requires a positive u32 thread count')
+    return threads * RAYON_THREAD_HOST_BYTES
+
 # Per active typed job: packets/publication + bounded decode + CPU verifier.
 # The verifier conservatively counts the decoded proof a second time. Global
 # coordinator/DAG/allocator/OS storage still needs its enclosing lifetime plan.
@@ -381,6 +399,7 @@ def extra_host_reserve(profile):
             + lookup_random_host_reserve(profile) + opening_host_reserve(profile)
             + fri_resident_host_reserve(profile) + WORKER_PROTOCOL_HOST_BYTES
             + WORKER_INPUT_HOST_BYTES
+            + RETAINED_SYSTEM_HOST_BYTES
             + witness_reservation(profile)['host_bytes']
             + randomness_reservation(profile)['host_bytes'] + transcript_reservation(profile)['host_bytes'])
 
@@ -890,7 +909,7 @@ def workload_failures(budget, profile):
     readback_layout(profile)
     query_readback_layout(profile)
     cache_metadata_bytes = 64 * 1024 if opening_denominator_cache(profile) else 0
-    extra_reserve = extra_host_reserve(profile)
+    extra_reserve = extra_host_reserve(profile) + worker_stack_reserve(budget) + CALLER_STACK_HOST_BYTES
     owned = owned_quotient_reservation(profile)
     witness = witness_reservation(profile)
     randomness = randomness_reservation(profile)

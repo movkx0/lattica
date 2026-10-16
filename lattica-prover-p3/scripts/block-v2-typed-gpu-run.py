@@ -18,12 +18,13 @@ import sys
 import time
 
 import block_v2_resources as R
+import block_v2_capacity as Capacity
 
 SPEC = importlib.util.spec_from_file_location("grouped_runner", Path(__file__).with_name("block-v2-multi-gpu-run.py"))
 G = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(G)
 WORKLOAD = "typed-depth-six-bootstrap-v1"
-COUNTS = (1, 2, 3, 4, 8, 16, 32, 63, 64)
+COUNTS = tuple(range(1, Capacity.MAX_TRANSACTIONS + 1))
 PUBLIC_NAMES = ("body.json", "height.json", *(f"key.{mode}" for mode in range(1, 6)))
 CONSTRUCTIONS = {
     "reference": {"keys": 5, "workload": WORKLOAD,
@@ -35,10 +36,15 @@ CONSTRUCTIONS = {
 }
 
 
-def construction_spec(name="reference"):
+def construction_spec(name="reference", block_capacity=64):
+    Capacity.validate(block_capacity)
     if name not in CONSTRUCTIONS:
         raise ValueError("unknown typed construction")
-    return CONSTRUCTIONS[name]
+    spec = dict(CONSTRUCTIONS[name])
+    if block_capacity != 64:
+        for key in ("workload", "compact_workload"):
+            spec[key] = spec[key].replace("depth-six", "depth-seven")
+    return spec
 
 
 def public_names(construction="reference"):
@@ -46,8 +52,14 @@ def public_names(construction="reference"):
     return ("body.json", "height.json", *(f"key.{mode}" for mode in range(1, keys + 1)))
 
 
-def validate_plan(plan, construction):
-    spec = construction_spec(construction)
+def validate_plan(plan, construction, block_capacity=None):
+    observed_capacity = Capacity.validate(plan.get("block_capacity", 64))
+    if block_capacity is not None and observed_capacity != Capacity.validate(block_capacity):
+        raise ValueError("typed plan does not match requested block capacity")
+    block_capacity = observed_capacity
+    if plan.get("depth", 6) != Capacity.depth(block_capacity):
+        raise ValueError("typed plan uses a different block capacity")
+    spec = construction_spec(construction, block_capacity)
     if (plan.get("construction", "typed-reference-v1") != spec["driver"]
             or plan.get("registry_keys", 5) != spec["keys"]):
         raise ValueError("typed plan differs from the selected construction")
@@ -81,7 +93,12 @@ def fixture_files(source, count, construction="reference"):
     return paths
 
 
-def resource_profile(path, construction="reference", ram_admission="full"):
+def resource_profile(path, construction="reference", ram_admission="full", block_capacity=64):
+    Capacity.validate(block_capacity)
+    if ram_admission == 'owned':
+        if construction != 'paired':
+            raise ValueError('owned CLI qualification requires paired construction')
+        return importlib.import_module('block_v2_owned_cli').resource_profile(path, block_capacity=block_capacity)
     if ram_admission not in ("full", "compact"):
         raise ValueError("unknown typed RAM admission model")
     profile = json.loads(path.read_text())
@@ -104,10 +121,12 @@ def resource_profile(path, construction="reference", ram_admission="full"):
     if profile.get("height") != 262144 or geometry != expected:
         raise ValueError("unsupported typed bootstrap resource geometry")
     profile = copy.deepcopy(profile)
-    profile["name"] = construction_spec(construction)["compact_workload" if ram_admission == "compact" else "workload"]
+    profile["name"] = construction_spec(construction, block_capacity)["compact_workload" if ram_admission == "compact" else "workload"]
     profile["typed_ram_admission"] = ram_admission
     profile["geometry"]["registry_programs"] = construction_spec(construction)["keys"]
-    profile["geometry"]["tree_depth"] = 6
+    profile["geometry"]["tree_depth"] = Capacity.depth(block_capacity)
+    if block_capacity != 64:
+        profile["block_capacity"] = block_capacity
     return profile
 
 
@@ -325,7 +344,7 @@ def worker(attempt_file):
     config, budget = packet["config"], packet["budget"]
     command = execution_command(config)
     construction = config.get("construction", "reference")
-    spec = construction_spec(construction)
+    spec = construction_spec(construction, Capacity.configured(config))
     ram_admission = config.get("ram_admission", "full")
     if (ram_admission not in ("full", "compact")
             or budget.get("typed_ram_admission", "full") != ram_admission
@@ -347,7 +366,7 @@ def worker(attempt_file):
             raise ValueError("copied typed input differs from its pin")
     expected = Path(config["expected"])
     plan = json.loads(Path(config["plan"]).read_text())
-    validate_plan(plan, construction)
+    validate_plan(plan, construction, Capacity.configured(config))
     proof_dir = directory / "proofs"
     gpu_env = {**clean_environment(), **G.environment(budget, directory)}
     prove_started = time.monotonic()
@@ -355,7 +374,7 @@ def worker(attempt_file):
                     budget["host"]["worker_bytes"]], directory / "prove.log", gpu_env)
     proving_seconds = time.monotonic() - prove_started
     validate_fresh_nodes(plan, directory / "prove.log", directory / "prove.log")
-    root = proof_dir / "node.6.0"
+    root = proof_dir / Capacity.root_file(config)
     execution_result = json.loads((proof_dir / "result.json").read_text())
     validate_execution_result(config, execution_result)
     if not 0 < root.stat().st_size <= 2 * R.MIB:
@@ -367,10 +386,10 @@ def worker(attempt_file):
     for name in public_names(construction):
         shutil.copyfile(fixture / name, audit / name)
     shutil.copyfile(expected, audit / "expected.json")
-    shutil.copyfile(root, audit / "node.6.0")
+    shutil.copyfile(root, audit / Capacity.root_file(config))
     audit_started = time.monotonic()
     execute_logged([config["cpu_binary"], "audit-root", audit, audit / "expected.json",
-                    audit / "body.json", audit / "node.6.0"], directory / "audit.log",
+                    audit / "body.json", audit / Capacity.root_file(config)], directory / "audit.log",
                    {**clean_environment(), "RAYON_NUM_THREADS": str(budget["cpu"]["rayon_threads"])})
     audit_seconds = time.monotonic() - audit_started
     audits = public_events(directory / "audit.log", "independent_cpu_root_audit")
@@ -386,7 +405,7 @@ def worker(attempt_file):
         "count": config["count"], "fresh_proofs": plan["fresh_proofs"], "budget": budget,
         "proving_seconds": proving_seconds, "cpu_audit_seconds": audit_seconds,
         "elapsed_seconds": time.monotonic() - started, "root_bytes": root.stat().st_size,
-        "artifacts": {name: G.digest(audit / name) for name in (*public_names(construction), "expected.json", "node.6.0")},
+        "artifacts": {name: G.digest(audit / name) for name in (*public_names(construction), "expected.json", Capacity.root_file(config))},
         "binary_sha256": config["pins"][config["gpu_binary"]],
         "resource_assignment_sha256": config.get("resource_assignment_sha256"),
         "profile_sha256": G.profile_digest(config), "production_ready": False,
@@ -404,6 +423,7 @@ def main():
     parser.add_argument("--fixture", type=Path)
     parser.add_argument("--gpu-uuid")
     parser.add_argument("--count", type=int, choices=COUNTS)
+    parser.add_argument("--block-capacity", type=int, choices=Capacity.SUPPORTED_CAPACITIES)
     parser.add_argument("--scratch", type=Path, default=Path("/tmp"))
     parser.add_argument("--expected", type=Path,
                         help="Independent host expectation, including height and issuance grants; otherwise use the fixed research fixture policy")
@@ -420,17 +440,21 @@ def main():
         parser.error("typed-dag execution requires --construction paired")
     if any(getattr(args, name) is None for name in ("gpu_binary", "cpu_binary", "fixture", "gpu_uuid", "count", "evidence")):
         parser.error("gpu-binary, cpu-binary, fixture, gpu-uuid, count and evidence are required")
+    block_capacity = Capacity.select(args.count, args.block_capacity)
+    if args.evidence.exists():
+        raise FileExistsError(args.evidence)
+    Capacity.require_binaries(block_capacity, args.gpu_binary, args.cpu_binary)
     os.umask(0o077)
     source = args.fixture.resolve(strict=True)
     paths = fixture_files(source, args.count, args.construction)
-    profile = resource_profile(args.workload, args.construction, args.ram_admission)
+    profile = resource_profile(args.workload, args.construction, args.ram_admission, block_capacity)
     config = {"gpu_binary": str(args.gpu_binary.resolve(strict=True)),
               "cpu_binary": str(args.cpu_binary.resolve(strict=True)),
-              "fixture": str(source), "count": args.count, "workload": profile,
+              "fixture": str(source), "count": args.count, "block_capacity": block_capacity, "workload": profile,
               "construction": args.construction, "ram_admission": args.ram_admission,
               "execution_backend": args.execution_backend}
     sources = [*paths, args.gpu_binary, args.cpu_binary, Path(__file__), Path(G.__file__),
-               Path(R.__file__), args.workload]
+               Path(R.__file__), Path(Capacity.__file__), args.workload]
     if args.expected:
         args.expected = args.expected.resolve(strict=True)
         sources.append(args.expected)
@@ -447,7 +471,7 @@ def main():
     unit = f"lattica-v2-multi-{os.getpid()}-typed.service"
     attempt = {"unit": unit, "uuid": args.gpu_uuid, "directory": str(out / "001-typed"), "status": "preparing"}
     report = {"schema": "lattica-typed-gpu-bootstrap-v1", "status": "preparing",
-              "count": args.count, "attempt": attempt, "production_ready": False, "construction": args.construction,
+              "count": args.count, "block_capacity": block_capacity, "attempt": attempt, "production_ready": False, "construction": args.construction,
               "timing_boundary": "worker fixture copy, recursive proving, and independent CPU root audit; registry preparation excluded",
               "cold_full64_qualified": False, "durable_host_applied": False}
     launched = created = False
@@ -465,7 +489,7 @@ def main():
         else:
             execute_logged([config["cpu_binary"], "expected", source, args.count, expected], out / "expected.log", clean_environment())
         execute_logged([config["cpu_binary"], "plan", source, expected], plan_file, clean_environment())
-        validate_plan(json.loads(plan_file.read_text()), args.construction)
+        validate_plan(json.loads(plan_file.read_text()), args.construction, block_capacity)
         if json.loads(plan_file.read_text()).get('count') != args.count:
             raise ValueError('independent host expectation count differs from requested geometry')
         config.update(expected=str(expected), plan=str(plan_file))

@@ -4,6 +4,7 @@ use crate::proving::Policy;
 use crate::{htlc_air as htlc, joinsplit_air as js};
 
 mod batch;
+mod helpers;
 
 struct Env(&'static str, Option<std::ffi::OsString>);
 impl Env {
@@ -277,6 +278,7 @@ fn gpu_legacy_c_abi_returns_gpu_publics_and_cpu_verifies_after_shutdown() {
     assert_eq!(after.allocations, before.allocations);
     assert_eq!(after.uploaded_bytes, before.uploaded_bytes);
     let mut artifacts = Vec::new();
+    let probe = crate::block_v2::wallet_worker::admission_tests::PrivateInputProbe::start();
     for i in 0..2 {
         for demo in [false, true] {
             let (mut proof_len, mut public_len) = (0, 0);
@@ -313,6 +315,7 @@ fn gpu_legacy_c_abi_returns_gpu_publics_and_cpu_verifies_after_shutdown() {
             ));
         }
     }
+    probe.finish(2);
     gpu_hash::shutdown().unwrap();
     {
         let _compatible = Env::set("LATTICA_PROVING_POLICY", "compatible");

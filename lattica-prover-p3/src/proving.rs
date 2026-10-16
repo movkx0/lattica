@@ -675,3 +675,21 @@ impl Drop for Timer<'_> {
 
 #[cfg(test)]
 mod tests;
+
+// Request-boundary regressions must see CPU witness-oracle calls even when
+// they happen outside an inner prover's stage-report scope. Test only: no
+// production counter, environment switch or additional proving work is added.
+#[cfg(test)]
+thread_local! {
+    static CPU_WITNESS_ORACLE_CALLS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
+pub(crate) fn record_cpu_witness_oracle() {
+    CPU_WITNESS_ORACLE_CALLS.with(|calls| calls.set(calls.get() + 1));
+}
+
+#[cfg(test)]
+pub(crate) fn cpu_witness_oracle_calls() -> u64 {
+    CPU_WITNESS_ORACLE_CALLS.with(std::cell::Cell::get)
+}

@@ -5,6 +5,7 @@ import importlib
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 from unittest import mock
@@ -13,6 +14,14 @@ S = importlib.import_module("block-v2-typed-shared-gpu-run")
 
 
 class SharedOwnerReceipts(unittest.TestCase):
+    def test_native_cache_release_supports_stateless_verifiers_and_preserves_close_failures(self):
+        self.assertFalse(S.release_native_cache(None))
+        native = SimpleNamespace(store=SimpleNamespace(verifier=SimpleNamespace()))
+        self.assertFalse(S.release_native_cache(native))
+        native.store.verifier.close = mock.Mock(side_effect=RuntimeError('native close failed'))
+        with self.assertRaisesRegex(RuntimeError, 'native close failed'):
+            S.release_native_cache(native)
+
     def test_recovery_rejects_changed_workload_options_before_admission(self):
         profile = {'geometry': {'opening_denominator_cache': True}}
         recovery = {'resource_assignment': {}, 'workload_profile': profile}
@@ -324,7 +333,7 @@ class SharedOwnerReceipts(unittest.TestCase):
                 validate(result | {key: value}, recover_cached_only=True)
 
     def test_coordinator_partition_preserves_recovery_shared_and_physical_limits(self):
-        floor, shared = S.R.COORDINATOR_JOB_HOST_BYTES, S.R.COORDINATOR_SHARED_HOST_BYTES
+        floor, shared = S.R.COORDINATOR_JOB_HOST_BYTES, S.PoolTiming.SHARED_BYTES
         total = shared + 2 * floor + 1
         self.assertEqual(S.coordinator_partition(total, 2), (shared, [floor + 1, floor]))
         previous = dict(schema_version=2, coordinator_shared_bytes=2*shared,
@@ -348,14 +357,43 @@ class SharedOwnerReceipts(unittest.TestCase):
             with self.subTest(missing=field), self.assertRaises(ValueError):
                 S.coordinator_partition(previous['coordinator_ram_bytes'], 2, dict(previous_plan=missing))
 
+    def test_native_partition_fits_one_gib_without_raising_the_physical_limit(self):
+        shared, jobs = S.coordinator_partition(1 << 30, 1)
+        self.assertEqual((shared, jobs), (576 << 20, [448 << 20]))
+        self.assertEqual(shared + sum(jobs), 1 << 30)
+        self.assertGreaterEqual(jobs[0], S.R.COORDINATOR_JOB_HOST_BYTES)
+        with self.assertRaises(ValueError):
+            S.coordinator_partition(shared + S.R.COORDINATOR_JOB_HOST_BYTES - 1, 1)
+        old = dict(schema_version=2, coordinator_shared_bytes=512 << 20,
+                   coordinator_ram_bytes=1 << 30, workers=[{}])
+        with self.assertRaises(ValueError):
+            S.coordinator_partition(1 << 30, 1, dict(previous_plan=old))
+
+    def test_128_partition_preserves_physical_limit_and_verifier_floor(self):
+        shared, jobs = S.coordinator_partition(1 << 30, 1, block_capacity=128)
+        self.assertEqual((shared, jobs), (687 << 20, [337 << 20]))
+        self.assertEqual(shared + sum(jobs), 1 << 30)
+        self.assertEqual(jobs[0], S.R.COORDINATOR_JOB_HOST_BYTES)
+        for workers in range(1, 17):
+            shared, jobs = S.coordinator_partition(workers << 30, workers, block_capacity=128)
+            self.assertEqual(shared, (686 + workers) << 20)
+            self.assertEqual(shared + sum(jobs), workers << 30)
+            self.assertTrue(all(job >= S.R.COORDINATOR_JOB_HOST_BYTES for job in jobs))
+        with self.assertRaises(ValueError):
+            S.coordinator_partition((1 << 30) - 1, 1, block_capacity=128)
+        old = dict(schema_version=2, coordinator_shared_bytes=576 << 20,
+                   coordinator_ram_bytes=1 << 30, workers=[{}])
+        with self.assertRaises(ValueError):
+            S.coordinator_partition(1 << 30, 1, dict(previous_plan=old), block_capacity=128)
+
     def test_cached_admission_reserves_only_the_current_cpu_coordinator(self):
         gib = 2**30
         host = dict(physical_bytes=64*gib, available_bytes=10*gib,
                     cgroup_memory_headroom=2*gib, cpu_capacity='1')
         assignment = dict(gpu={'uuid': 'GPU-a'}, detected_gpu={'uuid': 'GPU-a'},
             host={'worker_bytes': 21*gib, 'coordinator_bytes': gib,
-                  'coordinator_job_bytes': gib//2, 'coordinator_shared_bytes': gib//2}, cpu={'rayon_threads': 12})
-        recovery = dict(gpu_uuids=['GPU-a'], previous_plan=dict(schema_version=2, coordinator_shared_bytes=gib//2, coordinator_ram_bytes=gib,
+                  'coordinator_job_bytes': 448 << 20, 'coordinator_shared_bytes': 576 << 20}, cpu={'rayon_threads': 12})
+        recovery = dict(gpu_uuids=['GPU-a'], previous_plan=dict(schema_version=2, coordinator_shared_bytes=576 << 20, coordinator_ram_bytes=gib,
             coordinator_threads=1, workers=[{'assignment': assignment}]))
         before = copy.deepcopy(recovery)
         with mock.patch.object(S.R, 'detect_gpus', side_effect=AssertionError('GPU inventory called')):
@@ -414,7 +452,8 @@ class SharedOwnerReceipts(unittest.TestCase):
             plan = {'workers': [{'assignment': assignment}], 'recover_from': None}
             plan_path = root / 'fleet-plan.json'
             plan_path.write_text(json.dumps(plan))
-            (proofs / 'fleet-plan.json').write_text(json.dumps(plan))
+            retained = plan | {'pool_calibration': None}
+            (proofs / 'fleet-plan.json').write_text(json.dumps(retained))
             for filename in ['coordinator.json', 'expected.json', 'execution/worker-0-start.json']:
                 (proofs / filename).write_text('{}')
             (proofs / 'recovery-state.json').write_text(json.dumps({'durable_runtime': str(proofs / 'execution')}))
@@ -436,6 +475,14 @@ class SharedOwnerReceipts(unittest.TestCase):
             self.assertNotIn('coordinator_job_bytes', limits['host'])
             self.assertNotIn('available_bytes', limits['gpu'])
             self.assertEqual(limits['gpu']['context_bytes'], 3)
+            for changed in [retained | {'pool_calibration': {}},
+                            retained | {'pool_calibration': False},
+                            retained | {'unexpected_field': None},
+                            retained | {'recover_from': '/substituted/journal'}]:
+                (proofs / 'fleet-plan.json').write_text(json.dumps(changed))
+                with self.assertRaisesRegex(ValueError, 'retained coordinator plan differs'):
+                    S.pin_recovery(owner, 4, gpu, cpu, binding)
+            (proofs / 'fleet-plan.json').write_text(json.dumps(retained))
             for count, current in [(8, binding), (4, {'head_token': [8] * 32})]:
                 with self.assertRaises(ValueError):
                     S.pin_recovery(owner, count, gpu, cpu, current)
@@ -558,6 +605,19 @@ class SharedOwnerReceipts(unittest.TestCase):
             manifest.write_text(json.dumps(cache | {'stable_nodes': [node, node]}))
             with self.assertRaises(ValueError):
                 S.pin_preseal([directory])
+
+    def test_depth_six_prefix_is_reusable_only_in_the_128_profile(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            proof = directory / 'node.6.0'
+            proof.write_bytes(b'proof')
+            cache = {'schema_version': 1, 'status': 'preseal_verified', 'preseal_only': True,
+                     'stable_nodes': [{'level': 6, 'index': 0, 'bytes': 5}]}
+            (directory / 'result.json').write_text(json.dumps(cache))
+            paths, pins = S.pin_preseal([directory], 128)
+            self.assertEqual(paths, [str(directory)])
+            self.assertIn(str(proof), pins)
+            with self.assertRaises(ValueError): S.pin_preseal([directory], 64)
 
     def test_arrival_options_require_a_native_candidate_and_complete_pair(self):
         self.assertIsNone(S.open_intake(None, None, None))

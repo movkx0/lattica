@@ -18,19 +18,75 @@ use std::{path::Path, time::Instant};
 mod adaptive;
 
 pub(crate) const WORKLOAD: &str = if PAIRED {
-    "typed-paired-depth-six-bootstrap-v1"
+    if cfg!(feature = "block-v2-capacity-128") {
+        "typed-paired-depth-seven-bootstrap-v1"
+    } else {
+        "typed-paired-depth-six-bootstrap-v1"
+    }
 } else if FINALIZER {
-    "typed-finalizer-depth-six-bootstrap-v1"
+    if cfg!(feature = "block-v2-capacity-128") {
+        "typed-finalizer-depth-seven-bootstrap-v1"
+    } else {
+        "typed-finalizer-depth-six-bootstrap-v1"
+    }
 } else {
-    "typed-depth-six-bootstrap-v1"
+    if cfg!(feature = "block-v2-capacity-128") {
+        "typed-depth-seven-bootstrap-v1"
+    } else {
+        "typed-depth-six-bootstrap-v1"
+    }
 };
 const COMPACT_WORKLOAD: &str = if PAIRED {
-    "typed-paired-compact-depth-six-bootstrap-v1"
+    if cfg!(feature = "block-v2-capacity-128") {
+        "typed-paired-compact-depth-seven-bootstrap-v1"
+    } else {
+        "typed-paired-compact-depth-six-bootstrap-v1"
+    }
 } else if FINALIZER {
-    "typed-finalizer-compact-depth-six-bootstrap-v1"
+    if cfg!(feature = "block-v2-capacity-128") {
+        "typed-finalizer-compact-depth-seven-bootstrap-v1"
+    } else {
+        "typed-finalizer-compact-depth-six-bootstrap-v1"
+    }
 } else {
-    "typed-compact-depth-six-bootstrap-v1"
+    if cfg!(feature = "block-v2-capacity-128") {
+        "typed-compact-depth-seven-bootstrap-v1"
+    } else {
+        "typed-compact-depth-six-bootstrap-v1"
+    }
 };
+const OWNED_WORKLOAD: &str = if cfg!(feature = "block-v2-capacity-128") {
+    "typed-paired-owned-depth-seven-bootstrap-v1"
+} else {
+    "typed-paired-owned-depth-six-bootstrap-v1"
+};
+
+fn owned_mode(assignment: &Value) -> Result<bool, Error> {
+    let model = assignment["typed_ram_admission"].as_str() == Some("owned");
+    let workload = assignment["workload_kind"].as_str() == Some(OWNED_WORKLOAD);
+    if model != workload {
+        return Err("owned typed workload and admission model differ".into());
+    }
+    Ok(model)
+}
+
+pub(super) fn validate_owned_assignment(assignment: &Value, budget: u64) -> Result<(), Error> {
+    if !PAIRED
+        || !owned_mode(assignment)?
+        || assignment["qualification_capacity_test"].as_bool() != Some(true)
+        || assignment["host"]["worker_bytes"].as_u64() != Some(budget)
+        || assignment["pool_job_limit"].as_u64().is_none()
+        || assignment["startup_guard"]
+            .as_str()
+            .is_none_or(|path| !Path::new(path).is_absolute())
+    {
+        return Err(
+            "owned typed service requires its explicit paired assignment and job bound".into(),
+        );
+    }
+    shared_job_limit(assignment, 0)?;
+    Ok(())
+}
 
 fn command(args: &[String]) -> Result<(Vec<String>, u64), Error> {
     let values: Vec<_> = args.iter().skip(1).map(String::as_str).collect();
@@ -151,6 +207,17 @@ fn require_geometry(directory: &Path, budget: u64, compact: bool) -> Result<(), 
     let budget = budget
         .checked_sub(fri_workspace(&assignment)?)
         .ok_or("GPU FRI host workspace exceeds worker budget")?;
+    let measured = compiled_geometry(directory)?;
+    if compact {
+        measured.check_compact_ram_lower_bound_with_budget(budget)
+    } else {
+        measured.check_ram_lower_bound_with_budget(budget)
+    }
+    .map_err(|e| format!("{e:?}"))?;
+    Ok(())
+}
+
+fn compiled_geometry(directory: &Path) -> Result<analysis::MachineAnalysis, Error> {
     let height: usize = read_json(&directory.join("height.json"))?;
     if height != 262144 {
         return Err("typed GPU bootstrap model requires height 262144".into());
@@ -165,13 +232,11 @@ fn require_geometry(directory: &Path, budget: u64, compact: bool) -> Result<(), 
     {
         return Err("compiled typed GPU geometry differs from the bootstrap model".into());
     }
-    if compact {
-        measured.check_compact_ram_lower_bound_with_budget(budget)
-    } else {
-        measured.check_ram_lower_bound_with_budget(budget)
-    }
-    .map_err(|e| format!("{e:?}"))?;
-    Ok(())
+    Ok(measured)
+}
+
+pub(super) fn require_owned_geometry(directory: &Path) -> Result<(), Error> {
+    compiled_geometry(directory).map(|_| ())
 }
 
 struct GpuGuard(bool);
@@ -206,9 +271,13 @@ pub(crate) fn run(args: &[String]) -> Result<(), Error> {
     }
     let started = Instant::now();
     let (normalized, budget) = command(args)?;
+    let assignment: Value = read_json(Path::new(&std::env::var("LATTICA_V2_WORKER_BUDGET")?))?;
+    let owned = owned_mode(&assignment)?;
+    if owned && normalized[1] != "serve-shared-process" {
+        return Err("owned typed admission requires the persistent shared service".into());
+    }
     #[cfg(all(target_os = "linux", feature = "stream"))]
     if normalized[1] == "serve-shared-process" {
-        let assignment: Value = read_json(Path::new(&std::env::var("LATTICA_V2_WORKER_BUDGET")?))?;
         if let Some(path) = assignment.get("startup_guard") {
             lattica_prover_p3::block_v2::execution::startup::enter_until_process_exit(
                 Path::new(
@@ -219,6 +288,30 @@ pub(crate) fn run(args: &[String]) -> Result<(), Error> {
                 &assignment,
             )?;
         }
+    }
+    #[cfg(all(target_os = "linux", feature = "stream"))]
+    if owned {
+        validate_owned_assignment(&assignment, budget)?;
+        let limit = shared_job_limit(&assignment, 0)?;
+        drop(assignment);
+        let (count, stats) = super::execution::serve_owned_process(
+            Path::new(&normalized[2]),
+            Path::new(&normalized[3]),
+            Path::new(&normalized[4]),
+            budget,
+        )?;
+        validate_owned_work(&stats, count, limit)?;
+        println!(
+            "{}",
+            serde_json::json!({"event":"typed_gpu_work_complete",
+            "seconds":started.elapsed().as_secs_f64(), "recursive_proofs":count,
+            "spill_peak_bytes":spill_alloc::spill_peak_bytes(), "cpu_only":false,
+            "owned_public_worker":true, "qualification_bootstrap":true, "production_ready":false})
+        );
+        return Ok(());
+    }
+    if owned {
+        return Err("owned typed admission requires Linux and stream".into());
     }
     require_backend()?;
     let compact = require_limits(budget)?;
@@ -334,6 +427,26 @@ pub(crate) fn run(args: &[String]) -> Result<(), Error> {
     Ok(())
 }
 
+fn validate_owned_work(stats: &gpu_hash::Snapshot, count: u64, limit: u64) -> Result<(), Error> {
+    if count > limit
+        || stats.quotient_lde_commits != count
+        || stats.lde_commits != stats.lde_device_only_commits
+        || stats.lde_host_output_bytes != 0
+        || stats.lde_parallel_decode_bytes != 0
+        || stats.opening_uploaded_bytes != 0
+        || stats.opening_pinned_uploaded_bytes != 0
+        || stats.opening_calls != 0
+        || (count > 0
+            && (stats.commits == 0
+                || stats.lde_device_only_commits == 0
+                || stats.query_reconstruction_calls == 0
+                || stats.query_readbacks == 0))
+    {
+        return Err("owned typed GPU telemetry differs from its work/retention assignment".into());
+    }
+    Ok(())
+}
+
 fn validate_completed_work(
     stats: &gpu_hash::Snapshot,
     shared_worker: bool,
@@ -359,6 +472,79 @@ fn validate_completed_work(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn owned_admission_is_explicit_paired_and_requires_a_fenced_bounded_service() {
+        let assignment = serde_json::json!({"workload_kind": OWNED_WORKLOAD,
+            "typed_ram_admission":"owned", "qualification_capacity_test":true,
+            "host":{"worker_bytes":3u64 << 30}, "pool_job_limit":256,
+            "startup_guard":"/tmp/owned-worker-startup"});
+        assert!(owned_mode(&assignment).unwrap());
+        assert_eq!(
+            validate_owned_assignment(&assignment, 3 << 30).is_ok(),
+            PAIRED
+        );
+        assert!(validate_assignment(&assignment, 3 << 30).is_err());
+        assert!(validate_owned_assignment(&assignment, 4 << 30).is_err());
+        for (key, value) in [
+            ("pool_job_limit", Value::Null),
+            ("pool_job_limit", serde_json::json!(0)),
+            ("pool_job_limit", serde_json::json!(16385)),
+            ("startup_guard", Value::Null),
+            ("startup_guard", serde_json::json!("relative")),
+            ("typed_ram_admission", serde_json::json!("compact")),
+            ("workload_kind", serde_json::json!(COMPACT_WORKLOAD)),
+            ("qualification_capacity_test", serde_json::json!(false)),
+        ] {
+            let mut bad = assignment.clone();
+            bad[key] = value;
+            assert!(validate_owned_assignment(&bad, 3 << 30).is_err(), "{key}");
+        }
+        let legacy = serde_json::json!({"workload_kind":COMPACT_WORKLOAD,
+            "typed_ram_admission":"compact"});
+        assert!(!owned_mode(&legacy).unwrap());
+    }
+
+    #[test]
+    fn owned_completion_rejects_host_matrix_fallback_and_extra_work() {
+        validate_owned_work(&gpu_hash::Snapshot::default(), 0, 16).unwrap();
+        let stats = gpu_hash::Snapshot {
+            commits: 3,
+            lde_commits: 3,
+            lde_device_only_commits: 3,
+            quotient_lde_commits: 1,
+            query_reconstruction_calls: 20,
+            query_readbacks: 1,
+            ..Default::default()
+        };
+        validate_owned_work(&stats, 1, 16).unwrap();
+        assert!(validate_owned_work(&stats, 1, 0).is_err());
+        assert!(validate_owned_work(&stats, 2, 16).is_err());
+        for bad in [
+            gpu_hash::Snapshot {
+                lde_host_output_bytes: 8,
+                ..stats
+            },
+            gpu_hash::Snapshot {
+                lde_device_only_commits: 2,
+                ..stats
+            },
+            gpu_hash::Snapshot {
+                opening_calls: 1,
+                ..stats
+            },
+            gpu_hash::Snapshot {
+                opening_uploaded_bytes: 8,
+                ..stats
+            },
+            gpu_hash::Snapshot {
+                query_readbacks: 0,
+                ..stats
+            },
+        ] {
+            assert!(validate_owned_work(&bad, 1, 16).is_err());
+        }
+    }
 
     #[test]
     fn persistent_job_and_fri_workspace_admission_is_explicit_and_bounded() {
@@ -494,9 +680,17 @@ mod tests {
         validate_assignment(&valid, 4096).unwrap();
         assert!(validate_assignment(&valid, 8192).is_err());
         let other = if FINALIZER {
-            "typed-depth-six-bootstrap-v1"
+            if cfg!(feature = "block-v2-capacity-128") {
+                "typed-depth-seven-bootstrap-v1"
+            } else {
+                "typed-depth-six-bootstrap-v1"
+            }
         } else {
-            "typed-finalizer-depth-six-bootstrap-v1"
+            if cfg!(feature = "block-v2-capacity-128") {
+                "typed-finalizer-depth-seven-bootstrap-v1"
+            } else {
+                "typed-finalizer-depth-six-bootstrap-v1"
+            }
         };
         let mut wrong_registry = valid.clone();
         wrong_registry["workload_kind"] = serde_json::json!(other);
@@ -537,9 +731,17 @@ mod tests {
         assert!(validate_assignment(&wrong, 4096).is_err());
         wrong["typed_ram_admission"] = serde_json::json!("compact");
         wrong["workload_kind"] = serde_json::json!(if FINALIZER {
-            "typed-compact-depth-six-bootstrap-v1"
+            if cfg!(feature = "block-v2-capacity-128") {
+                "typed-compact-depth-seven-bootstrap-v1"
+            } else {
+                "typed-compact-depth-six-bootstrap-v1"
+            }
         } else {
-            "typed-finalizer-compact-depth-six-bootstrap-v1"
+            if cfg!(feature = "block-v2-capacity-128") {
+                "typed-finalizer-compact-depth-seven-bootstrap-v1"
+            } else {
+                "typed-finalizer-compact-depth-six-bootstrap-v1"
+            }
         });
         assert!(validate_assignment(&wrong, 4096).is_err());
     }

@@ -11,7 +11,7 @@ fn admit(assigned: usize, configured: usize) -> Result<usize, crate::proving::Er
     Ok(assigned.min(configured))
 }
 
-fn selected_budget(assigned: usize) -> Result<usize, crate::proving::Error> {
+pub(super) fn selected_budget(assigned: usize) -> Result<usize, crate::proving::Error> {
     let budget = admit(assigned, super::super::resident_pcs::host_output_budget())?;
     if !resident_research_enabled() {
         return Err(crate::proving::Error::ComponentRejected);

@@ -90,8 +90,16 @@ fn gpu_generated_quotient_samples_match_cpu_masks_caps_and_paths() {
         let values = matrix(height * chunks, 3, 31);
         let domains = domain.split_domains(chunks);
         let matrices = domain.split_evals(chunks, values.clone());
-        let (cpu, _) = candidate(true);
         let cpu_mmcs = (*mmcs(false).cpu).clone();
+        // Use the upstream CPU oracle explicitly. CandidatePcs follows strict
+        // device-only policy and must refuse this host-matrix reference call.
+        let cpu = CpuPcs::new(
+            Default::default(),
+            cpu_mmcs.clone(),
+            profile::fri(CpuExtensionMmcs::new(cpu_mmcs.clone())),
+            profile::NUM_RANDOM_CODEWORDS,
+            ChaCha20Rng::from_seed([47; 32]),
+        );
         let gpu_mmcs = mmcs(true);
         let session = DeviceSession::new().unwrap();
         let rng = session
@@ -132,8 +140,11 @@ fn gpu_generated_quotient_samples_match_cpu_masks_caps_and_paths() {
                 after.downloaded_bytes - before.downloaded_bytes,
                 after.random_status_bytes - before.random_status_bytes
             );
-            let ldes =
-                cpu.get_quotient_ldes(domains.clone().into_iter().zip(matrices.clone()), chunks);
+            let ldes = <CpuPcs as Pcs<Challenge, Challenger>>::get_quotient_ldes(
+                &cpu,
+                domains.clone().into_iter().zip(matrices.clone()),
+                chunks,
+            );
             let actual = gpu_mmcs
                 .commit_owned_quotient(&prepared, 64 << 20, Some(&session))
                 .unwrap();

@@ -33,6 +33,20 @@ class IntakeCommitIndeterminate(IntakeError):
     """Publication may have happened; reopen and inspect before retrying."""
 
 
+@dataclass(frozen=True, slots=True)
+class InputReference:
+    """Pending receipt only; each payload read rechecks its bytes and claim."""
+    store: 'Store'
+    receipt_bytes: bytes
+
+    def __getitem__(self, name):
+        if name == 'receipt':
+            return H._json(self.receipt_bytes)
+        if name not in ('body', 'wallet'):
+            raise KeyError(name)
+        return self.store._reference_payload(self.receipt_bytes, name)
+
+
 @dataclass(frozen=True)
 class Limits:
     arrivals: int
@@ -157,16 +171,66 @@ class Store:
                            (kind, subject, str(time.time_ns()), H.canonical(document)))
 
     @staticmethod
+    def _receipt_metadata(row):
+        return {'request_id': row['request_id'], 'transaction_sha256': row['transaction_sha256'],
+                'wallet_sha256': row['wallet_sha256'], 'head_token': row['head_token'],
+                'received_unix_ns': row['received_unix_ns'], 'metadata': H._json(row['metadata']),
+                'validation': 'pending_native_candidate_and_proof', 'durability_confirmed': True}
+
+    @staticmethod
     def _arrival(row):
         if row is None:
             raise IntakeError('unknown arrival request')
         if (H.sha(row['body']) != row['transaction_sha256'] or H.sha(row['wallet']) != row['wallet_sha256']
                 or row['payload_bytes'] != len(row['body']) + len(row['wallet']) + len(row['metadata'])):
             raise IntakeError('retained arrival bytes are corrupt')
-        return {'request_id': row['request_id'], 'transaction_sha256': row['transaction_sha256'],
-                'wallet_sha256': row['wallet_sha256'], 'head_token': row['head_token'],
-                'received_unix_ns': row['received_unix_ns'], 'metadata': H._json(row['metadata']),
-                'validation': 'pending_native_candidate_and_proof', 'durability_confirmed': True}
+        return Store._receipt_metadata(row)
+
+    @staticmethod
+    def _reference_metadata(connection, request):
+        # Check lengths in SQLite before returning any variable-length column.
+        # No body or wallet blob is materialized by this bounded metadata query.
+        row = connection.execute('''
+            SELECT request_id, transaction_sha256, wallet_sha256, head_token,
+                   received_unix_ns, metadata, payload_bytes,
+                   length(body) AS body_bytes, length(wallet) AS wallet_bytes,
+                   length(metadata) AS metadata_bytes
+            FROM arrivals WHERE request_id=?
+              AND typeof(body)='blob' AND length(body) BETWEEN 12 AND ?
+              AND typeof(wallet)='blob' AND length(wallet) BETWEEN 1 AND ?
+              AND typeof(metadata)='blob' AND length(metadata)<=4096
+              AND length(request_id) BETWEEN 1 AND 128
+              AND length(transaction_sha256)=64 AND length(wallet_sha256)=64
+              AND length(head_token)=64 AND length(received_unix_ns) BETWEEN 1 AND 32
+            ''', (request, H.MAX_BODY_BYTES, H.MAX_PROOF_BYTES)).fetchone()
+        if row is None:
+            raise IntakeError('unknown or oversized arrival reference')
+        if (not REQUEST_ID.fullmatch(row['request_id'])
+                or row['payload_bytes'] != row['body_bytes'] + row['wallet_bytes'] + row['metadata_bytes']):
+            raise IntakeError('retained arrival reference is corrupt')
+        for name in ('transaction_sha256', 'wallet_sha256', 'head_token'):
+            H._digest(row[name])
+        return row
+
+    def _reference_payload(self, receipt_bytes, name):
+        if name not in ('body', 'wallet'):
+            raise ValueError('unknown arrival payload')
+        receipt = H._json(receipt_bytes)
+        with self._connect() as connection:
+            connection.execute('BEGIN')
+            row = self._reference_metadata(connection, receipt['request_id'])
+            if H.canonical(self._receipt_metadata(row)) != receipt_bytes:
+                raise IntakeError('arrival receipt changed after input snapshot')
+            if connection.execute('SELECT 1 FROM claims WHERE request_id=?', (receipt['request_id'],)).fetchone():
+                raise IntakeError('referenced arrival is already sealed or applied')
+            # The metadata and payload reads share one SQLite snapshot. The
+            # column name is one of the two fixed values checked above.
+            payload = connection.execute('SELECT ' + name + ' FROM arrivals WHERE request_id=?',
+                                         (receipt['request_id'],)).fetchone()[0]
+            digest = receipt['transaction_sha256' if name == 'body' else 'wallet_sha256']
+            if H.sha(payload) != digest:
+                raise IntakeError('referenced arrival payload changed')
+            return payload
 
     def submit(self, request_id, *, expected_head, body, wallet, metadata=None):
         if not isinstance(request_id, str) or not REQUEST_ID.fullmatch(request_id):
@@ -227,12 +291,17 @@ class Store:
         return self._input_snapshot(expected_head=expected_head, request_ids=request_ids,
                                     limit=limit, include_stale=True)
 
-    def _input_snapshot(self, *, expected_head, request_ids, limit, include_stale):
+    def candidate_input_refs(self, *, expected_head, request_ids=None, limit=256):
+        """Bounded pending receipts; payloads are authenticated only when read."""
+        return self._input_snapshot(expected_head=expected_head, request_ids=request_ids,
+                                    limit=limit, include_stale=True, references=True)
+
+    def _input_snapshot(self, *, expected_head, request_ids, limit, include_stale, references=False):
         """Copy an ordered unclaimed snapshot; sealing rechecks all bytes/head."""
         H._digest(expected_head)
-        maximum = 4096 if include_stale else 64
+        maximum = 4096 if include_stale else getattr(self.host.verifier, 'capacity', 64)
         if type(limit) is not int or not 1 <= limit <= maximum:
-            raise ValueError('candidate limit must be in 1..64')
+            raise ValueError('candidate limit exceeds the native block capacity')
         if request_ids is not None and (type(request_ids) is not list or not 1 <= len(request_ids) <= limit
                 or any(not isinstance(r, str) or not REQUEST_ID.fullmatch(r) for r in request_ids)
                 or len(set(request_ids)) != len(request_ids)):
@@ -253,13 +322,18 @@ class Store:
                 raise IntakeError('no pending arrivals for the current native head')
             selected = []
             for request in request_ids:
-                row = connection.execute('SELECT * FROM arrivals WHERE request_id=?', (request,)).fetchone()
-                receipt = self._arrival(row)
+                if references:
+                    row = self._reference_metadata(connection, request)
+                    receipt = self._receipt_metadata(row)
+                else:
+                    row = connection.execute('SELECT * FROM arrivals WHERE request_id=?', (request,)).fetchone()
+                    receipt = self._arrival(row)
                 if not include_stale and row['head_token'] != expected_head:
                     raise H.StaleHead('pending arrival requires revalidation against the current head')
                 if connection.execute('SELECT 1 FROM claims WHERE request_id=?', (request,)).fetchone():
                     raise IntakeError('pending arrival is already sealed or applied')
-                selected.append({'receipt': receipt, 'body': row['body'], 'wallet': row['wallet']})
+                selected.append(InputReference(self, H.canonical(receipt)) if references else
+                                {'receipt': receipt, 'body': row['body'], 'wallet': row['wallet']})
             return selected
 
     def _revalidation_receipts(self, candidate):
@@ -302,7 +376,7 @@ class Store:
         return (row['head_token'] == head or
                 H.canonical(revalidated.get(row['request_id'])) == H.canonical(self._arrival(row)))
 
-    def seal(self, candidate, request_ids):
+    def seal(self, candidate, request_ids, *, pool_workflow=None):
         if getattr(candidate, 'prefix', False):
             raise IntakeError('an unsealed prefix cannot claim or seal arrival inputs')
         if (type(request_ids) is not list or len(request_ids) != candidate.count
@@ -314,6 +388,12 @@ class Store:
         document = {'schema': SCHEMA, 'host_configuration_sha256': self.configuration,
                     'native_host_binding': candidate.binding, 'request_ids': request_ids,
                     'fixture': str(candidate.fixture), 'manifest_sha256': candidate.manifest_pin['sha256']}
+        if pool_workflow is not None:
+            import block_v2_pool_seal as pool_seal
+            # Include the clock in the immutable selection identity and the
+            # same transaction as its claims. A repeated call cannot refresh
+            # it: a different clock has a different identity and finds claims.
+            document['pool_seal'] = pool_seal.issue(pool_workflow)
         revalidated = self._revalidation_receipts(candidate)
         encoded = H.canonical(document)
         selection_id = H.sha(encoded)
@@ -334,6 +414,8 @@ class Store:
                     raise IntakeError('ordered arrival bytes differ from the native preparation')
                 if connection.execute('SELECT 1 FROM claims WHERE request_id=?', (request_id,)).fetchone():
                     raise IntakeError('arrival is already claimed by a sealed or applied selection')
+            if pool_workflow is not None:
+                pool_seal.check(document['pool_seal'], pool_workflow)
             connection.execute('INSERT INTO selections VALUES (?,?,?,NULL)', (selection_id, encoded, 'sealed'))
             connection.executemany('INSERT INTO claims VALUES (?,?)', [(r, selection_id) for r in request_ids])
             event = {'request_ids': request_ids, 'native_head': candidate.head.token}

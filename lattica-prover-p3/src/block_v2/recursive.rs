@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use super::machine::{
     analysis,
-    backend::{RegisteredProgram, RegisteredVerifier},
+    backend::{RegisteredProgram, RegisteredVerifier, RegistryProgram},
     programs::{self, Caps, Compiled, PUBLIC_VALUES},
     verifier::template,
     MachineAir,
@@ -307,7 +307,7 @@ pub fn register(
 
 struct CachedProgram {
     mode: u64,
-    registered: RegisteredProgram,
+    registered: RegistryProgram,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -414,7 +414,7 @@ impl ProverSession {
                 self.registry.height,
                 program.active_rows()
             );
-            let registered = RegisteredProgram::new_in_run(
+            let registered = RegistryProgram::new_in_run(
                 MachineAir::new(program),
                 storage::active_memory_bytes(self.worker_memory_bytes)?,
                 run.child(
@@ -422,6 +422,7 @@ impl ProverSession {
                     "block_v2_preprocessing",
                     profile::preprocessing_capabilities(),
                 )?,
+                &self.registry.caps[(mode - 1) as usize],
             )
             .map_err(|e| format!("{e:?}"))?;
             if registered.preprocessing_cap().roots() != self.registry.caps[(mode - 1) as usize] {
@@ -721,6 +722,7 @@ mod session_tests {
 /// Local demo only: four distinct spends under one shared anchor. Private witness
 /// construction lives here in the wallet fixture, never in wrap/merge APIs.
 pub fn demo_wallet(index: usize) -> Result<WalletProof, Error> {
+    crate::proving::legacy_cpu_admission()?;
     if index >= 4 {
         return Err("demo wallet index".into());
     }
@@ -1131,6 +1133,7 @@ fn demo_witnesses_eight() -> Vec<js::Witness> {
 /// returns only the public wallet artifact; its private fixture witness does not
 /// cross into registration/session/aggregation.
 pub fn demo_wallet_eight(index: usize) -> Result<WalletProof, Error> {
+    crate::proving::legacy_cpu_admission()?;
     if index >= EIGHT_WALLET_DEMO_SIZE {
         return Err("eight-wallet demo index".into());
     }

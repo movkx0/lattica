@@ -26,6 +26,7 @@ pub(super) fn prove(
     challenger: &mut Challenger,
     max_height: usize,
     rounds: &[(&ProverData, Vec<Vec<Challenge>>)],
+    host_allowance: usize,
 ) -> Result<InnerProof, String> {
     if params.log_blowup != profile::LOG_BLOWUP
         || params.log_final_poly_len != 0
@@ -48,6 +49,8 @@ pub(super) fn prove(
             "resident FRI requires the fixed binary cubic profile and descending inputs".into(),
         );
     }
+    let mut data = crate::block_v2::gpu_hash::FriData::proof_vector(rounds.len())?;
+    data.extend(rounds.iter().map(|(data, _)| *data));
     general::prove(
         session,
         mmcs,
@@ -55,6 +58,7 @@ pub(super) fn prove(
         inputs,
         challenger,
         max_height,
-        &rounds.iter().map(|(data, _)| *data).collect::<Vec<_>>(),
+        &data,
+        host_allowance,
     )
 }

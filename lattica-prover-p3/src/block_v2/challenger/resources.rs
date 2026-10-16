@@ -11,6 +11,7 @@ pub(crate) const GRIND_BATCH: usize = 1 << 16;
 pub(crate) const GRIND_TILE: usize = 256;
 pub(crate) const GRIND_BITS: usize = 20;
 pub(crate) const GRIND_CANDIDATES: usize = 1 << 26;
+pub(crate) const HOST_BYTES: usize = 1 << 20;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -49,7 +50,7 @@ pub(crate) fn reservation() -> Reservation {
     Reservation {
         managed_bytes: (states + transcript_io + scalar_io + grinding) as u64,
         max_allocation_bytes: (GRIND_BATCH * 8) as u64,
-        host_bytes: 1 << 20,
+        host_bytes: HOST_BYTES as u64,
     }
 }
 

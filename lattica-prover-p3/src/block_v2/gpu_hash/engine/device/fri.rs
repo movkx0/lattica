@@ -2,6 +2,7 @@
 use super::*;
 
 mod general;
+pub(crate) mod storage;
 pub(crate) use general::KERNEL_SRC as GENERAL_KERNEL_SRC;
 
 pub(crate) const KERNEL_SRC: &str = r#"
@@ -43,16 +44,12 @@ impl DeviceSession {
     pub(crate) fn fri_leaves(&self, input: &DeviceMatrix) -> Result<DeviceMatrix, String> {
         self.check_owner(input)?;
         vector(input.spec)?;
-        let log_rows = input
-            .spec
-            .log_rows
-            .checked_sub(1)
-            .ok_or("FRI commitment needs two rows")?;
+        let spec = storage::leaves(input.spec, 1)?;
         Ok(DeviceMatrix {
             storage: input.storage.clone(),
             private_random: input.private_random.clone(),
             session: self.session.clone(),
-            spec: MatrixSpec::new(log_rows, 2, Extension::Cubic, RowOrder::BitReversed, 1)?,
+            spec,
         })
     }
 
@@ -74,6 +71,12 @@ impl DeviceSession {
         }
         #[cfg(feature = "gpu")]
         self.with_engine(|engine| {
+            storage::vector_output(
+                folded.spec,
+                engine.accounting.lock().unwrap().live,
+                engine.limits.managed_bytes,
+                engine.max_alloc,
+            )?;
             let output = self.allocate(engine, folded.spec)?;
             let fence = engine.fence();
             let mut event = compute::Event::empty();
@@ -154,22 +157,12 @@ impl DeviceSession {
         stage: crate::proving::Stage,
     ) -> Result<Vec<u64>, String> {
         self.check_owner(input)?;
-        let width = input
-            .spec
-            .columns
-            .checked_mul(input.spec.extension.degree())
-            .filter(|width| *width <= 16384)
-            .ok_or("device gather width exceeds bound")?;
-        if indices.is_empty()
-            || indices.len() > 4096
-            || indices.iter().any(|i| *i >= input.spec.rows())
-        {
+        let shape = storage::GatherShape::new(input.spec, indices.len(), host_allowance)?;
+        let width = shape.width;
+        if indices.iter().any(|i| *i >= input.spec.rows()) {
             return Err("device gather index count or row exceeds bound".into());
         }
-        let words = indices.len() * width;
-        if words * 8 > host_allowance {
-            return Err("device gather exceeds host allowance".into());
-        }
+        let words = shape.words;
         #[cfg(not(feature = "gpu"))]
         {
             Err("device row gathering is not implemented on Metal".into())
@@ -177,14 +170,7 @@ impl DeviceSession {
         #[cfg(feature = "gpu")]
         self.with_engine(|engine| {
             let live = engine.accounting.lock().unwrap().live;
-            if words * 8 > engine.max_alloc
-                || indices.len() * 8 > engine.max_alloc
-                || live
-                    .checked_add((words + indices.len()) * 8)
-                    .is_none_or(|peak| peak > engine.limits.managed_bytes)
-            {
-                return Err("device gather exceeds GPU allowance".into());
-            }
+            shape.plan(live, engine.limits.managed_bytes, engine.max_alloc)?;
             let alloc = |words| {
                 allocation(
                     &engine.pq,

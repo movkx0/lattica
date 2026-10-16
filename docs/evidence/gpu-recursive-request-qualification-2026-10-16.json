@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "status": "partial",
+  "goal_status": "active",
+  "source_files": 745,
+  "source_changes": 0,
+  "current_validation": "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/control/current-validation-01.json",
+  "parent_source_metadata": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/control/current-source-validation-04.json",
+  "parent_source_metadata_sha256": "f62df38e24b77cc9e986a15bf0c15bc886f9caee038c34341cf05d07096e19cc",
+  "gpu_test_executions": 4,
+  "fresh_recursive_proofs": 8,
+  "strict_request_stages": 16,
+  "inherited_source_archives": [
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-recording-tests-05/source.tar.gz",
+      "sha256": "5c1d7b28f11e9dc8af96e417c9eab094842c7835df90c7b75522512af03a9c97"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-program-tests-04/source.tar.gz",
+      "sha256": "5c1d7b28f11e9dc8af96e417c9eab094842c7835df90c7b75522512af03a9c97"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-fingerprint-tests-04/source.tar.gz",
+      "sha256": "27168474ba77b65fa2e9dc2b89b04c157be1a4b2e64366e199f5a8fd482d6ac5"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-phase-tests-04/source.tar.gz",
+      "sha256": "27168474ba77b65fa2e9dc2b89b04c157be1a4b2e64366e199f5a8fd482d6ac5"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-policy-tests-04/source.tar.gz",
+      "sha256": "d5594915262348d7d9d480d2bd6804190b1da77dfce7dee91ffcf9db83bfd50c"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-fold-layout-tests-04/source.tar.gz",
+      "sha256": "d5594915262348d7d9d480d2bd6804190b1da77dfce7dee91ffcf9db83bfd50c"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-profile-budget-tests-04/source.tar.gz",
+      "sha256": "2171528d1883b804f33d3e8da66f6a5c9848a07d70540ca04b561345eed053d9"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-output-tests-04/source.tar.gz",
+      "sha256": "2171528d1883b804f33d3e8da66f6a5c9848a07d70540ca04b561345eed053d9"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-opening-storage-tests-04/source.tar.gz",
+      "sha256": "2171528d1883b804f33d3e8da66f6a5c9848a07d70540ca04b561345eed053d9"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-fri-storage-tests-04/source.tar.gz",
+      "sha256": "b72cf787ce488a24d9cf2b9c68456b91328e0e517ec9df22c03e63dc0a521290"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-opening-construction-tests-04/source.tar.gz",
+      "sha256": "b72cf787ce488a24d9cf2b9c68456b91328e0e517ec9df22c03e63dc0a521290"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-retained-commitment-tests-04/source.tar.gz",
+      "sha256": "c4831c74e3893ae586a999db6bf84af88f596f71d9b5c35b8c3fa8020bd9508f"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-runtime-storage-tests-04/source.tar.gz",
+      "sha256": "c4831c74e3893ae586a999db6bf84af88f596f71d9b5c35b8c3fa8020bd9508f"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-transient-storage-tests-04/source.tar.gz",
+      "sha256": "2c6be8919e046899d880ffaaac3d555945c5daa6e4e20895d35eaba780a6da4e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-transcript-ownership-tests-04/source.tar.gz",
+      "sha256": "2c6be8919e046899d880ffaaac3d555945c5daa6e4e20895d35eaba780a6da4e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/cpu-check-04/source.tar.gz",
+      "sha256": "1612486a0fa5da66bad643a6e61c1556124d3fafaf8a2c88163129e3a60b2017"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/gpu-check-04/source.tar.gz",
+      "sha256": "42c6ef6aec2bd0e1051a4cb89bd9a4bc1ea611c424eb07f710412e03a16afb48"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-transcript-host-ownership-20261016/isolation-preparation-04/source.tar.gz",
+      "sha256": "8439d8780865f74ca4f05264f6d93460988dde7cc2bf0e70ecda80f9c8e5355e"
+    }
+  ],
+  "artifacts": {
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/audit-01/candidate-index.json": "05e16f8df919f84cdc13d74329b0affc25500544f3adc59d03300c385a10a39b",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/audit-01/cgroup-after.json": "521e844949ba996c9d432f2884ab1e08b5c6c9219e449d23cd681263b2b13309",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/audit-01/cgroup-before.json": "0ac3b842a0d6789cc507d2688fadc82795261270d9376b2bcc119149057842e9",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/audit-01/command.json": "a244a9eccf6eac99e1d6274f5a0a9051c617cabfc6e89a0e8b63db4f0ed344b6",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/audit-01/interference.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/audit-01/output.log": "0cbe80809890c26f795f32b307c1d8eb573d128249e61b4114e44333e808e5af",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/audit-01/provenance.json": "a2f49c178e0fdb880217bc7381529b7904a1dac7be81825153700cfe1b6335e1",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/audit-01/recursive-focus.json": "943af572fbbae872cd654283aa239df24749288570df2ca8b3f70c0a95ac98c7",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/audit-01/result.json": "c287ddf97bca4bfa9b271bf289b2a50ce1482d2bd3dd90cee7fcb757ab75a730",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/audit-01/service-result.json": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/control/audit-01.py": "6a6407fa9f7166896b71856c5fafe747ebaeb59ad57cbbeefce02b42d20bb5b9",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/control/continuation-01.json": "8ba6f706e7c4dff133aaa71b3e307f6d4d6e494925eefab30dc151b12f9f53f8",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/control/current-validation-01.json": "8bd0b39e7843820f1fb4e54800baae35b5ea8dd830e0793dc00c172496806791",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/control/qualify-01.py": "51aac5ef51425b0a5d0f0930f0a737e7f6976e23aca8f6503d2a601058809eae",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/control/request-campaign-01.log": "b45c4f7c95ed72af3300f5c1ff343961e7b5d8bf3968990d8e005d4f84c7fe51",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/control/request-campaign-01.py": "c5128f4862d4a81af49b48dc0a7e1163d1dfd036c7e64fee1812cb3620be0acd",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/control/request-tests-01.py": "a94146db097cac9e7b748c6aae81e006ee7f80aa73dd834db2ea7cc482776171",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/control/source-review-01.json": "e187e512c01b723aa6542eac19ba23bedc4fd71687fbda9d9087d5e98259708a",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-five-key-01/cgroup-after.json": "db07c2ba06460f0f9379c13d46fb94076b7e4efcd5c0966f6c0c481cb09533c2",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-five-key-01/cgroup-before.json": "1677f7edf75eddf04d4b42257bcdf4c9e583b22923d5472cf2d147990b2d548a",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-five-key-01/cleanup.json": "38c96a55ecbce6c441e16c94d0e580789a275a1e03af2c1884d4e0ea3ab57839",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-five-key-01/command.json": "62859660cfc6a579bfa3935ac832bc8df39ce91de230019953d8a9f871586086",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-five-key-01/environment.json": "8017feff1566e9d16f6400c2fd9e2cfda3b4cdc3aa1c27da1c2b8c6122dbf6ae",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-five-key-01/input-pins.json": "b16c95d45f212d990b41e647ba914a9cf44063b9a3b04c3c2c58097420d58676",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-five-key-01/interference.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-five-key-01/native-command.json": "edaf0b66e55d42a63bfbb9897196f068254a713e5df30e2db6741e128e7972e4",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-five-key-01/native-result.json": "d4f71c9c370ef0c0df2c51118a3400908f1721c63a0d9bc83e6322e65b962b90",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-five-key-01/output.log": "75e6a4e662b46e7eccbf89eb73fedb70f10ac6cffc91730143f22942ca15ac84",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-five-key-01/preflight.json": "37c4e0dca7367fafe891f761844832af099a99f9066ce054ba975750cc7a36cf",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-five-key-01/proof-reports.json": "5782a1e7020973ac6fe1726381ca2bfecba7cddc43b596ba17dc2b63b2458c40",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-five-key-01/request-reports.json": "29b1e2bd3906caea9a9cbe64025cfb640091ddc4568b057b62737e81faa61641",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-five-key-01/result.json": "0acbe8d98ff8d3505ce9ad67469c161344c553d0a02874c33ac6d36215b18727",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-five-key-01/service-result.json": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-six-key-01/cgroup-after.json": "d8dc48b2bbef71b706fa974827a9c3e4f74a0068056e99ea174164be4306dff7",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-six-key-01/cgroup-before.json": "15cfef6c6f8e7314132ca31d5fc582f18f1834c469210a248c8a2f5a8df89260",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-six-key-01/cleanup.json": "38c96a55ecbce6c441e16c94d0e580789a275a1e03af2c1884d4e0ea3ab57839",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-six-key-01/command.json": "f7ecbd80e4e113693e7962bd700544375312e5536f48918e28ab6b8a2950ebaf",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-six-key-01/environment.json": "8017feff1566e9d16f6400c2fd9e2cfda3b4cdc3aa1c27da1c2b8c6122dbf6ae",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-six-key-01/input-pins.json": "b16c95d45f212d990b41e647ba914a9cf44063b9a3b04c3c2c58097420d58676",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-six-key-01/interference.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-six-key-01/native-command.json": "981c8c583115a8b3d6d8b51f3cee144355d4d8d6cbf58c1836a585edef069a32",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-six-key-01/native-result.json": "03c4777d2d2a741a638ad0091a8065e7bfee46f2943fa691a63e282bbc4c2db2",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-six-key-01/output.log": "5520b19766fe8ca274317c692ff9302c3376eb387099d13b3bdaf75e432d8e4d",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-six-key-01/preflight.json": "37c4e0dca7367fafe891f761844832af099a99f9066ce054ba975750cc7a36cf",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-six-key-01/proof-reports.json": "23c4a194422cf07b81a019846540f9ff0e026cdce3634f79987b03b7c4b1a57e",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-six-key-01/request-reports.json": "b4cec0cd8ded629f6976659ac6a53504ebcf15542003f9971acc4ce779e6b765",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-six-key-01/result.json": "6991c43d34579af899c6d779612f26cc6e60e1d376a97104537b676c6bb39a19",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-six-key-01/service-result.json": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-twelve-key-01/cgroup-after.json": "79fffb4c13b1bb530a6609899801659c455929f578437f2645f37ab68576a12d",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-twelve-key-01/cgroup-before.json": "6d72be6d216ca8485fd3a8daca956ffcdbb902ff411b69d3375ff632752055e1",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-twelve-key-01/cleanup.json": "38c96a55ecbce6c441e16c94d0e580789a275a1e03af2c1884d4e0ea3ab57839",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-twelve-key-01/command.json": "fa350aad8485e0e597acf31c180be7733b3301947bc1461c1a606e78a9405954",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-twelve-key-01/environment.json": "8017feff1566e9d16f6400c2fd9e2cfda3b4cdc3aa1c27da1c2b8c6122dbf6ae",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-twelve-key-01/input-pins.json": "b16c95d45f212d990b41e647ba914a9cf44063b9a3b04c3c2c58097420d58676",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-twelve-key-01/interference.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-twelve-key-01/native-command.json": "0a3104181eadc6306cf49717271f441a0b0967e5e6fcb5361f0251fd5c788374",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-twelve-key-01/native-result.json": "1a5bad6a5713d934b4ea8fe934efc2ae22e238b322d4903a42a39325ba1d4379",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-twelve-key-01/output.log": "600d25e881413f0a73a8b377360fb4325656f3b6c6552a598d406b9c2732b6e6",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-twelve-key-01/preflight.json": "37c4e0dca7367fafe891f761844832af099a99f9066ce054ba975750cc7a36cf",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-twelve-key-01/proof-reports.json": "fbf75bcb1695318b8825d94958fbccdbaa83b267aaa3e10b316b552d532aeba4",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-twelve-key-01/request-reports.json": "e8284213028f5951c8a1289e4492b072da7dd4f79995a99ee566aaa4ac37e45a",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-twelve-key-01/result.json": "cecc05ac049fe5e24f8dcfcbc748aea60eecc336051a8e61403c01cc27c9df2f",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-twelve-key-01/service-result.json": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-untyped-01/cgroup-after.json": "683d9e86d2b5b1f8baf5f80ddad79c7c7c6c39933e69c88999997803e31320a0",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-untyped-01/cgroup-before.json": "8138fa44eeee357fb4c851c3c907e21a5c4dd70054462fab73e139a4bc21b681",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-untyped-01/cleanup.json": "38c96a55ecbce6c441e16c94d0e580789a275a1e03af2c1884d4e0ea3ab57839",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-untyped-01/command.json": "14ebd738fa38dc08a4e346ccb324d1b2ed74daa16e61ea8843fb434d5acc8940",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-untyped-01/environment.json": "8017feff1566e9d16f6400c2fd9e2cfda3b4cdc3aa1c27da1c2b8c6122dbf6ae",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-untyped-01/input-pins.json": "b16c95d45f212d990b41e647ba914a9cf44063b9a3b04c3c2c58097420d58676",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-untyped-01/interference.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-untyped-01/native-command.json": "9431641379620d8eb3af5e5ca0012114f24ce7d84d91271cb087e0b31b944ba9",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-untyped-01/native-result.json": "ad52e0b52f3d501b95770b9b2e40432d1b2cf4aab47105371bd85edd74f61711",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-untyped-01/output.log": "49ac5a088d16da775479861a42520c3be9c0583e65126831c79fb5f5ddce9276",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-untyped-01/preflight.json": "0a214e461ccc1719ccb8fab3531f6fdfdddd576bf288912c53fc5bb0af4336bb",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-untyped-01/proof-reports.json": "5e9e72c16f29f5a2fc0cfd3dd90762b826ad4d8df26f65a908542bf68d466af5",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-untyped-01/request-reports.json": "a34ec3ea833c62329781825eb926b51fcfbfaf1468153af61a0f2b4eadfb104f",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-untyped-01/result.json": "c0b828ab8d66d5a194e740547f928bd5ee09329443a04b5d871e74e61313c5c1",
+    "lattica-prover-p3/benchmark-results/gpu-recursive-entrypoint-inventory-20261016/request-untyped-01/service-result.json": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2"
+  },
+  "shared_checkout_qualified": false,
+  "production_ready": false,
+  "native_blocks_applied": 0,
+  "funded_slots_consumed": 0
+}

@@ -4,6 +4,8 @@
 use super::super::lde_plan::InputShape;
 use super::*;
 use p3_field::{Field, PrimeField64};
+mod projection;
+pub(crate) use projection::ProjectionShape;
 
 #[cfg(test)]
 mod tests {
@@ -432,26 +434,16 @@ impl DeviceSession {
         extension: Extension,
     ) -> Result<DeviceMatrix, String> {
         self.check_owner(input)?;
-        let width = columns
-            .checked_mul(extension.degree())
-            .ok_or("quotient input width overflow")?;
-        if input.spec.extension != Extension::Base
-            || input.spec.order != RowOrder::BitReversed
-            || input.spec.shift != shift
-            || width == 0
-            || width > input.spec.columns
-            || log_rows > 31
-        {
-            return Err("device quotient projection has unsupported geometry".into());
-        }
-        let spec = MatrixSpec::new(
-            input.spec.log_rows.min(log_rows),
-            columns,
-            extension,
-            RowOrder::BitReversed,
-            shift,
-        )?;
-        if spec == input.spec && log_rows == spec.log_rows {
+        let shape = ProjectionShape::new(input.spec, log_rows, shift, columns, extension)?;
+        self.with_engine(|engine| {
+            let live = engine.accounting.lock().unwrap().live;
+            let cache = engine.lde_workspace.as_ref().map_or(0, |w| w.bytes());
+            shape.storage_plan(live, cache, engine.limits, engine.max_alloc)?;
+            Ok(())
+        })?;
+        let spec = shape.projected;
+        let width = columns * extension.degree();
+        if shape.alias {
             return self.alias_private(input);
         }
         let projected = self.with_engine(|engine| {

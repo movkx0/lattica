@@ -9,7 +9,7 @@ use std::mem::size_of;
 pub(super) fn packing_bytes(
     operations: &Vec<Op>,
     rows: usize,
-    cloned: usize,
+    indexed: usize,
     wires: usize,
 ) -> Result<usize, ExecutionError> {
     let bytes = |n: usize, width: usize| n.checked_mul(width).ok_or(ExecutionError::TooLarge);
@@ -17,20 +17,15 @@ pub(super) fn packing_bytes(
     for amount in [
         bytes(operations.capacity(), size_of::<Op>())?,
         bytes(rows, size_of::<Row>())?,
-        bytes(cloned, size_of::<Op>())?,
+        bytes(indexed, size_of::<u32>())?,
         bytes(wires, size_of::<u32>() + size_of::<bool>())?,
     ] {
         total = total.checked_add(amount).ok_or(ExecutionError::TooLarge)?;
     }
     for op in operations {
         if let Op::SelectHint { entries, bits, .. } = op {
-            // Source vectors stay live; packing clones only their lengths.
-            for n in [
-                entries.capacity(),
-                bits.capacity(),
-                entries.len(),
-                bits.len(),
-            ] {
+            // Packed rows reference these source vectors without cloning them.
+            for n in [entries.capacity(), bits.capacity()] {
                 total = total
                     .checked_add(bytes(n, size_of::<Wire>())?)
                     .ok_or(ExecutionError::TooLarge)?;
@@ -38,6 +33,35 @@ pub(super) fn packing_bytes(
         }
     }
     Ok(total)
+}
+
+/// Release geometric growth slack before allocating packed rows. Charge the
+/// entire old/new operation-array overlap before reserving or moving anything.
+/// Hint buffers move with their operations and are never cloned here.
+pub(super) fn compact_operations(
+    operations: &mut Vec<Op>,
+    memory: &mut Budget,
+) -> Result<(), ExecutionError> {
+    if operations.len() == operations.capacity() {
+        return Ok(());
+    }
+    let next_bytes = operations
+        .len()
+        .checked_mul(size_of::<Op>())
+        .ok_or(ExecutionError::TooLarge)?;
+    let peak = packing_bytes(operations, 0, 0, 0)?
+        .checked_add(next_bytes)
+        .ok_or(ExecutionError::TooLarge)?;
+    if !memory.packing(peak) {
+        memory.report("compaction_rejected");
+        return Err(ExecutionError::TooLarge);
+    }
+    let mut next = Vec::new();
+    next.try_reserve_exact(operations.len())
+        .map_err(|_| ExecutionError::TooLarge)?;
+    next.append(operations);
+    *operations = next;
+    Ok(())
 }
 
 #[derive(Clone, Copy)]
@@ -114,7 +138,7 @@ impl Budget {
 
     pub(super) fn packing(&mut self, bytes: usize) -> bool {
         // All interning tables have been dropped. `bytes` covers remaining
-        // source operations/hints, exact packed rows and reference scratch.
+        // source operations/hints, exact indexed rows and reference scratch.
         self.live = 0;
         self.reserve(bytes)
     }

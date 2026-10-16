@@ -5,19 +5,47 @@ use super::*;
 use crate::batch_common::{DeviceBatchGeometry, MAX_BATCH_TILES};
 use crate::proving::{Backend, Run, Stage};
 
-struct BatchPlan {
+struct BatchPlan<'a> {
     trace: MatrixSpec,
     public: MatrixSpec,
     geometry: MatrixSpec,
-    words: Vec<u64>,
-    peak: Vec<MatrixSpec>,
+    layout: DeviceBatchGeometry<'a>,
+    peak: [MatrixSpec; 8],
     tiles: usize,
     height: usize,
 }
 
-impl BatchPlan {
+pub(super) fn admission_extra(host_allowance: usize) -> Result<(usize, usize), String> {
+    let mut bytes = 0;
+    let mut largest = 0;
+    for (layout, single) in [
+        (
+            crate::batch_joinsplit_air::device_batch_geometry(),
+            Plan::new(host_allowance)?,
+        ),
+        (
+            crate::batch_htlc_air::device_batch_geometry(),
+            super::htlc::plan(host_allowance)?,
+        ),
+    ] {
+        // Shape admission owns no geometry or private-input heap buffers.
+        let plan = BatchPlan::new(layout, 0, single, host_allowance)?;
+        // peak[0] is the batch trace, supplied by the request's own geometry.
+        // Remaining entries also conservatively cover a non-batch wallet.
+        let extra = &plan.peak[1..];
+        let total = extra.iter().try_fold(0usize, |n, s| {
+            n.checked_add(s.bytes())
+                .ok_or("batch witness storage overflow")
+        })?;
+        bytes = bytes.max(total);
+        largest = largest.max(extra.iter().map(|s| s.bytes()).max().unwrap_or(0));
+    }
+    Ok((bytes, largest))
+}
+
+impl<'a> BatchPlan<'a> {
     fn new(
-        layout: DeviceBatchGeometry,
+        layout: DeviceBatchGeometry<'a>,
         count: usize,
         single: Plan,
         host_allowance: usize,
@@ -78,8 +106,39 @@ impl BatchPlan {
             1,
         )?;
         let public = MatrixSpec::new(0, 4, Extension::Base, RowOrder::Natural, 1)?;
-        let mut words = vec![
-            height as u64,
+        let geometry_words = layout
+            .chunks
+            .len()
+            .checked_mul(4)
+            .and_then(|n| n.checked_add(11))
+            .ok_or("batch geometry size overflow")?;
+        let single_bytes = single.staging_bytes()?;
+        let host_bytes = geometry_words
+            .checked_mul(8)
+            .and_then(|n| n.checked_add(single_bytes))
+            .ok_or("batch host staging overflow")?;
+        if host_bytes > host_allowance {
+            return Err("batch input staging exceeds host allowance".into());
+        }
+        let geometry = MatrixSpec::new(0, geometry_words, Extension::Base, RowOrder::Natural, 1)?;
+        let [a, b, c, d, e] = single.specs()?;
+        Ok(Self {
+            trace,
+            public,
+            geometry,
+            layout,
+            peak: [trace, public, geometry, a, b, c, d, e],
+            tiles,
+            height,
+        })
+    }
+
+    // Materialize only after host staging and aggregate device storage pass.
+    fn words(&self) -> Result<Vec<u64>, String> {
+        let layout = self.layout;
+        let mut words = staging_words(self.geometry.words())?;
+        words.extend([
+            self.height as u64,
             layout.batch_width as u64,
             layout.wallet_width as u64,
             layout.public_width as u64,
@@ -87,10 +146,10 @@ impl BatchPlan {
             layout.root_block as u64,
             layout.root_column as u64,
             layout.root_output_row as u64,
-            tiles as u64,
+            self.tiles as u64,
             layout.chunks.len() as u64,
             crate::domains::DOM_TXROOT,
-        ];
+        ]);
         words.extend(
             layout
                 .chunks
@@ -98,27 +157,8 @@ impl BatchPlan {
                 .flatten()
                 .map(|col| col.map_or(u64::MAX, |c| c as u64)),
         );
-        let host_words = words
-            .len()
-            .checked_add(single.input_words)
-            .and_then(|n| n.checked_add(single.geometry_words + 1))
-            .and_then(|n| n.checked_mul(8))
-            .ok_or("batch host staging overflow")?;
-        if host_words > host_allowance {
-            return Err("batch input staging exceeds host allowance".into());
-        }
-        let geometry = MatrixSpec::new(0, words.len(), Extension::Base, RowOrder::Natural, 1)?;
-        let mut peak = vec![trace, public, geometry];
-        peak.extend(single.specs()?);
-        Ok(Self {
-            trace,
-            public,
-            geometry,
-            words,
-            peak,
-            tiles,
-            height,
-        })
+        debug_assert_eq!(words.len(), self.geometry.words());
+        Ok(words)
     }
 }
 
@@ -185,7 +225,7 @@ impl DeviceSession {
 
     fn generate_batch<W>(
         &self,
-        plan: BatchPlan,
+        plan: BatchPlan<'_>,
         witnesses: &[W],
         dummy: impl FnOnce() -> W,
         generate: impl Fn(&Self, &W) -> Result<WalletTrace, String>,
@@ -199,6 +239,7 @@ impl DeviceSession {
         // peak (including one wallet generator) is admitted by the live engine.
         let (trace, public, geometry) = self.with_engine(|engine| {
             let _plan = Self::plan(engine, &plan.peak)?;
+            let words = plan.words()?;
             let trace = self.allocate(engine, plan.trace)?;
             let public = self.allocate(engine, plan.public)?;
             let geometry = self.allocate(engine, plan.geometry)?;
@@ -206,7 +247,7 @@ impl DeviceSession {
             geometry
                 .storage
                 .buffer
-                .write(&plan.words[..])
+                .write(&words[..])
                 .enq()
                 .map_err(|e| e.to_string())?;
             trace
@@ -217,7 +258,7 @@ impl DeviceSession {
                 .enq()
                 .map_err(|e| e.to_string())?;
             fence.finish()?;
-            let uploaded = (plan.words.len() * 8) as u64;
+            let uploaded = (words.len() * 8) as u64;
             engine.stats.uploaded_bytes += uploaded;
             self.session.stats.lock().unwrap().uploaded_bytes += uploaded;
             Ok((trace, public, geometry))

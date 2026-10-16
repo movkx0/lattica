@@ -28,6 +28,7 @@ pub trait OpeningField: FriExtension + TwoAdicField {
         challenger: &mut Challenger,
         max_height: usize,
         rounds: &[(&ProverData, Vec<Vec<Self>>)],
+        host_allowance: usize,
     ) -> Result<InnerProof<Self>, String>;
 }
 
@@ -62,8 +63,18 @@ impl OpeningField for Challenge {
         challenger: &mut Challenger,
         max_height: usize,
         rounds: &[(&ProverData, Vec<Vec<Self>>)],
+        host_allowance: usize,
     ) -> Result<InnerProof<Self>, String> {
-        owned_fri::prove(session, mmcs, fri, input, challenger, max_height, rounds)
+        owned_fri::prove(
+            session,
+            mmcs,
+            fri,
+            input,
+            challenger,
+            max_height,
+            rounds,
+            host_allowance,
+        )
     }
 }
 
@@ -121,8 +132,19 @@ impl OpeningField for crate::config::Challenge {
         challenger: &mut Challenger,
         max_height: usize,
         rounds: &[(&ProverData, Vec<Vec<Self>>)],
+        host_allowance: usize,
     ) -> Result<InnerProof<Self>, String> {
-        let data: Vec<_> = rounds.iter().map(|(data, _)| *data).collect();
-        owned_fri::general::prove(session, mmcs, fri, input, challenger, max_height, &data)
+        let mut data = crate::block_v2::gpu_hash::FriData::proof_vector(rounds.len())?;
+        data.extend(rounds.iter().map(|(data, _)| *data));
+        owned_fri::general::prove(
+            session,
+            mmcs,
+            fri,
+            input,
+            challenger,
+            max_height,
+            &data,
+            host_allowance,
+        )
     }
 }

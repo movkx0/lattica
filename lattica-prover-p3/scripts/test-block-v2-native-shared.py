@@ -101,11 +101,12 @@ class NativeShared(unittest.TestCase):
         journal.mkdir()
         context = bytes([5] * 32 + [6] * 32)
         registry, genesis = b"stub-registry", b"stub-genesis"
-        self.store = StubStore(SimpleNamespace(
+        self.store = StubStore(SimpleNamespace(capacity=64,
             configuration={"verifier": "explicit-non-cryptographic-stub"},
             identity={"kind": "explicit-non-cryptographic-stub"},
             _context=context, _registry=registry, _genesis=genesis,
             _policy=N.H.IssuancePolicy({10: {3: 7}})))
+        self.store.directory = journal
         native = b"LBV2EX01" + context + struct.pack("<QQQQQ", 7, 7, 7, 7, 4)
         self.expected = {"schema_version": 1, "profile": list(context[:32]),
             "chain": list(context[32:]), "root": [7] * 4, "count": 4, "block_height": 10,
@@ -168,6 +169,51 @@ class NativeShared(unittest.TestCase):
         self.store.view = N.H.View("33" * 32, None, self.store.view.state, 1)
         with self.assertRaises(N.H.StaleHead):
             N.Candidate(*self.args)
+
+    def test_cached_store_preserves_binding_and_is_used_for_validation(self):
+        fresh = N.Candidate(*self.args)
+        cached = copy.deepcopy(self.store)
+        candidate = N.Candidate(*self.args, store=cached)
+        self.assertIs(candidate.store, cached)
+        self.assertEqual(candidate.binding, fresh.binding)
+        candidate.check(candidate.binding)
+
+    def test_cached_store_cannot_bypass_failure_to_open_pinned_configuration(self):
+        cached = copy.deepcopy(self.store)
+        with patch.object(N, 'open_host', side_effect=N.H.RejectedBlock('pinned inputs changed')):
+            with self.assertRaisesRegex(N.H.RejectedBlock, 'pinned inputs changed'):
+                N.checked_host(self.config, self.args[1], store=cached)
+            with self.assertRaisesRegex(N.H.RejectedBlock, 'pinned inputs changed'):
+                N.Candidate(*self.args, store=cached)
+
+    def test_cached_store_must_match_independently_opened_configuration_and_journal(self):
+        for field in ('journal', 'configuration'):
+            with self.subTest(field=field):
+                cached = copy.deepcopy(self.store)
+                if field == 'journal':
+                    cached.directory = self.fixture
+                else:
+                    cached.verifier.configuration['verifier'] = 'substituted-configuration'
+                with self.assertRaisesRegex(N.H.RejectedBlock, 'cached native store differs'):
+                    N.Candidate(*self.args, store=cached)
+
+    def test_cached_store_rechecks_current_head_before_dispatch(self):
+        cached = copy.deepcopy(self.store)
+        candidate = N.Candidate(*self.args, store=cached)
+        cached.view = N.H.View('33' * 32, None, cached.view.state, 1)
+        with self.assertRaises(N.H.StaleHead):
+            candidate.check(candidate.binding)
+        with self.assertRaises(N.H.StaleHead):
+            N.Candidate(*self.args, store=cached)
+
+    def test_cached_store_does_not_bypass_wallet_pins(self):
+        cached = copy.deepcopy(self.store)
+        candidate = N.Candidate(*self.args, store=cached)
+        (self.fixture / 'wallet.0').write_bytes(b'substituted')
+        with self.assertRaises(N.H.RejectedBlock):
+            candidate.check(candidate.binding)
+        with self.assertRaises(N.H.RejectedBlock):
+            N.Candidate(*self.args, store=cached)
 
     def test_repinning_worker_expectation_cannot_replace_native_height_or_issuance(self):
         for changed in ({"block_height": 11}, {"authorized_issuance": {"3": 8}}, {"root": [8] * 4}):

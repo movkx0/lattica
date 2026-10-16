@@ -446,7 +446,7 @@ pub(crate) fn restore_typed(
     mut policy: impl FnMut(ArtifactRef) -> Result<crate::block_v2::typed_recursive::Policy, Error>,
 ) -> Result<Restored, Error> {
     let registry = super::super::job::TypedRegistryContext::for_pin(registry, pin)?;
-    restore_with(
+    restore_payloads_with(
         bytes,
         pin,
         chain,
@@ -465,8 +465,34 @@ pub(crate) fn restore_with(
     chain: [u8; 32],
     epoch: u64,
     limits: Limits,
-    wallet: impl FnMut(ArtifactRef) -> Result<(VerifiedWallet, Vec<u8>), Error>,
-    node: impl FnMut(&Job, ArtifactRef) -> Result<(VerifiedNode, Vec<u8>), Error>,
+    mut wallet: impl FnMut(ArtifactRef) -> Result<(VerifiedWallet, Vec<u8>), Error>,
+    mut node: impl FnMut(&Job, ArtifactRef) -> Result<(VerifiedNode, Vec<u8>), Error>,
+) -> Result<Restored, Error> {
+    restore_payloads_with(
+        bytes,
+        pin,
+        chain,
+        epoch,
+        limits,
+        |identity| {
+            let (ticket, bytes) = wallet(identity)?;
+            VerifiedWalletPayload::new(ticket, bytes)
+        },
+        |job, identity| {
+            let (ticket, bytes) = node(job, identity)?;
+            VerifiedNodePayload::bind(ticket, bytes)
+        },
+    )
+}
+
+fn restore_payloads_with(
+    bytes: &[u8],
+    pin: RegistryPin,
+    chain: [u8; 32],
+    epoch: u64,
+    limits: Limits,
+    wallet: impl FnMut(ArtifactRef) -> Result<VerifiedWalletPayload, Error>,
+    node: impl FnMut(&Job, ArtifactRef) -> Result<VerifiedNodePayload, Error>,
 ) -> Result<Restored, Error> {
     limits.validate()?;
     let (base, workspaces) = split_workspaces(bytes, limits)?;
@@ -537,8 +563,8 @@ fn restore_base_with(
     epoch: u64,
     limits: Limits,
     raw_workspaces: Vec<RawWorkspace>,
-    mut wallet: impl FnMut(ArtifactRef) -> Result<(VerifiedWallet, Vec<u8>), Error>,
-    mut node: impl FnMut(&Job, ArtifactRef) -> Result<(VerifiedNode, Vec<u8>), Error>,
+    mut wallet: impl FnMut(ArtifactRef) -> Result<VerifiedWalletPayload, Error>,
+    mut node: impl FnMut(&Job, ArtifactRef) -> Result<VerifiedNodePayload, Error>,
 ) -> Result<Restored, Error> {
     limits.validate()?;
     if bytes.len() > MAX_SNAPSHOT_BYTES {
@@ -880,13 +906,13 @@ fn restore_base_with(
             let mut closure = BTreeSet::new();
             while let Some(id) = stack.pop() {
                 if closure.insert(id) {
-                    if closure.len() > 127 {
+                    if closure.len() > crate::block_v2::profile::MAX_DAG_NODES {
                         return Err("checkpoint candidate graph bound".into());
                     }
                     stack.extend(&raw[seen[&id]].dependencies);
                 }
             }
-            if closure.len() > 127 {
+            if closure.len() > crate::block_v2::profile::MAX_DAG_NODES {
                 return Err("checkpoint candidate graph bound".into());
             }
             for id in closure {
@@ -936,24 +962,27 @@ fn restore_base_with(
     let mut dag = Dag::new(pin, chain, epoch, limits)?;
     dag.launch_root = launch_root;
     for entry in raw {
-        let mut tickets = Vec::with_capacity(entry.wallets.len());
-        let mut wallet_bytes = Vec::with_capacity(entry.wallets.len());
+        let mut wallets = Vec::with_capacity(entry.wallets.len());
         for identity in entry.wallets {
-            let (ticket, bytes) = wallet(identity)?;
-            if ticket.artifact() != identity {
+            let payload = wallet(identity)?;
+            if payload.ticket().artifact() != identity {
                 return Err("checkpoint wallet ticket binding".into());
             }
-            identity.check_bytes(&bytes)?;
-            tickets.push(ticket);
-            wallet_bytes.push(bytes);
+            wallets.push(payload);
         }
         let job = match entry.op {
-            Operation::Wrap => Job::wrap(entry.start, tickets[0])?,
-            Operation::WrapPair => Job::wrap_pair(entry.start, tickets[0], tickets[1])?,
+            Operation::Wrap => Job::wrap(entry.start, wallets[0].ticket())?,
+            Operation::WrapPair => {
+                Job::wrap_pair(entry.start, wallets[0].ticket(), wallets[1].ticket())?
+            }
             Operation::TypedPair { padded, .. } => Job::typed_pair(
                 entry.start,
-                tickets[0],
-                if padded { None } else { Some(tickets[1]) },
+                wallets[0].ticket(),
+                if padded {
+                    None
+                } else {
+                    Some(wallets[1].ticket())
+                },
             )?,
             Operation::Finalize => Job::finalize(&dag.jobs[&entry.dependencies[0]].job)?,
             Operation::Empty => Job::empty(pin, chain, entry.start, entry.level)?,
@@ -969,13 +998,16 @@ fn restore_base_with(
         {
             return Err("checkpoint derived job mismatch".into());
         }
-        dag.admit(job.clone(), wallet_bytes, 0)?;
+        // Both recovery callbacks now own the exact checked bytes. Reconstructed
+        // jobs still bind the original ordered identities and host context.
+        dag.admit_verified_wallets(job.clone(), &wallets, 0)?;
         if let Some(identity) = entry.output {
-            let (ticket, bytes) = node(&job, identity)?;
+            let payload = node(&job, identity)?;
+            let ticket = payload.ticket();
             if ticket.job() != job.id() || ticket.artifact() != identity {
                 return Err("checkpoint node ticket binding".into());
             }
-            dag.cache_node(ticket, bytes, 0)?;
+            dag.cache_verified_node(payload, 0)?;
         }
     }
     for c in &candidates {
@@ -991,3 +1023,7 @@ fn restore_base_with(
         workspaces,
     })
 }
+
+#[cfg(test)]
+#[path = "recovery_wallet_ownership_tests.rs"]
+mod wallet_ownership_tests;

@@ -26,6 +26,12 @@ Bootstrap = importlib.import_module('block_v2_coordinator_bootstrap')
 Controller = importlib.import_module('block_v2_controller_bootstrap')
 HeadGuard = importlib.import_module('block_v2_native_head_guard')
 Calibration = importlib.import_module('block_v2_shared_calibration')
+PoolTiming = importlib.import_module('block_v2_pool_timing')
+PoolSeal = importlib.import_module('block_v2_pool_seal')
+PoolHandoff = importlib.import_module('block_v2_pool_handoff')
+PoolCalibration = importlib.import_module('block_v2_pool_calibration')
+Owned = importlib.import_module('block_v2_owned_cli')
+PublicCache = importlib.import_module('block_v2_public_artifact_cache')
 
 
 def read(path):
@@ -45,6 +51,14 @@ def quiescent_fleet(owner_unit, attempts):
         for key in ('MainPID', 'ControlPID'):
             state[key] = int(state[key])
         Bootstrap.quiescent(state, unit, None)
+
+
+def retire_public_artifacts(owner_unit, attempts, directory, deadline_ms):
+    """Release only closed public-file cache hints after exact service reconciliation."""
+    quiescent_fleet(owner_unit, attempts)
+    receipt = PublicCache.release(directory, deadline_ms)
+    quiescent_fleet(owner_unit, attempts)
+    return receipt
 
 
 def owner_succeeded(directory, state, *, prefix=False):
@@ -95,7 +109,7 @@ def launch_worker(path):
     raise SystemExit(result.returncode)
 
 
-def validate_execution(result, count, expected_workers, native_binding=None, *, preseal_only=False,
+def validate_execution(result, count, expected_workers, native_binding=None, *, block_capacity=64, preseal_only=False,
                        allow_worker_failover=False, recovery_source=None, recover_cached_only=False):
     if (result.get('cached_native_continuation', False) is not recover_cached_only
             or (recover_cached_only and (recovery_source is None or preseal_only or native_binding is None))):
@@ -129,7 +143,7 @@ def validate_execution(result, count, expected_workers, native_binding=None, *, 
             or any(not isinstance(n, dict) or n.get('cpu_reverified') is not True for n in reused_nodes)):
         raise ValueError('shared pre-seal scope or reuse accounting differs')
     if (result.get('status') != ('preseal_verified' if preseal_only else 'proved_cpu_audit_pending')
-            or result.get('root_file') != (None if preseal_only else 'node.6.0')):
+            or result.get('root_file') != (None if preseal_only else T.Capacity.root_file(capacity=block_capacity))):
         raise ValueError('shared proof status or root scope differs')
     if (result.get("native_host_bound", False) is not (native_binding is not None)
             or result.get("native_host") != native_binding):
@@ -280,7 +294,8 @@ def admit_recovery(host, devices, profile, recovery, directory, timeout, *, assi
             devices = [inventory[uuid] for uuid in uuids]
 
 
-def pin_recovery(directory, count, gpu, cpu, native_binding, _seen=None):
+def pin_recovery(directory, count, gpu, cpu, native_binding, _seen=None, *, prefix=False, reuse=(),
+                 arrival_store=None, arrival_selection=None):
     """Pin the prior run and retain the journal of interrupted recoveries."""
     directory = Path(directory).resolve(strict=True)
     seen = set() if _seen is None else set(_seen)
@@ -290,13 +305,17 @@ def pin_recovery(directory, count, gpu, cpu, native_binding, _seen=None):
     config_path = directory.parent / 'config.json'
     config = read(config_path)
     T.check_pins(config['pins'])
+    effective = PoolHandoff.effective_config(config)
     has_workload = (config.get('workload_path') is not None or config.get('workload_profile') is not None
                     or any(Path(path).name == 'block-v2-multi-gpu-direct-readback-workload.json'
                            for path in config['pins']))
     original_profile = Calibration.source_profile(config, sys.modules[__name__]) if has_workload else None
-    if (Path(config['owner_directory']).resolve() != directory or config['count'] != count
-            or config.get('preseal_only') or config.get('reuse_preseal')
-            or config.get('native_host') != native_binding or native_binding is None
+    if (Path(config['owner_directory']).resolve() != directory or effective['count'] != count
+            or effective.get('preseal_only', False) is not prefix
+            or config.get('reuse_preseal', []) != list(reuse)
+            or config.get('arrival_store') != (str(Path(arrival_store).resolve()) if arrival_store else None)
+            or effective.get('arrival_selection') != arrival_selection
+            or effective.get('native_host') != native_binding or native_binding is None
             or config['pins'][config['gpu_binary']] != G.digest(gpu)
             or config['pins'][config['cpu_binary']] != G.digest(cpu)):
         raise ValueError('recovery requires the same native candidate and frozen binaries')
@@ -305,7 +324,15 @@ def pin_recovery(directory, count, gpu, cpu, native_binding, _seen=None):
     unfinished = bootstrap is not None and bootstrap['abandoned_incomplete_new_candidate']
     interrupted = bootstrap is not None and bootstrap.get('interrupted_existing_journal', False)
     plan = read(config['fleet_plan']) if unfinished or interrupted else read(proofs / 'fleet-plan.json')
-    if plan != read(config['fleet_plan']):
+    pinned_plan, retained_plan = read(config['fleet_plan']), dict(plan)
+    # Rust serializes this optional request as null even when older controllers
+    # omitted it. Normalize only that known empty default, without rewriting
+    # either retained file or accepting a substituted calibration request.
+    pinned_plan.setdefault('pool_calibration', None)
+    retained_plan.setdefault('pool_calibration', None)
+    pinned_plan.setdefault('pool_prefix_handoff', False)
+    retained_plan.setdefault('pool_prefix_handoff', False)
+    if retained_plan != pinned_plan:
         raise ValueError('retained coordinator plan differs from pinned controller plan')
     signatures = {}
     for worker in plan['workers']:
@@ -319,7 +346,9 @@ def pin_recovery(directory, count, gpu, cpu, native_binding, _seen=None):
     if interrupted and bootstrap['recovery_admission'] is None:
         # No mutation was allowed before the atomic recovery admission. Retain
         # partial metadata, then retry the exact previously admitted journal.
-        prior = pin_recovery(Path(bootstrap['retry_source']).parent, count, gpu, cpu, native_binding, seen)
+        prior = pin_recovery(Path(bootstrap['retry_source']).parent, count, gpu, cpu, native_binding,
+                             seen, prefix=prefix, reuse=reuse, arrival_store=arrival_store,
+                             arrival_selection=arrival_selection)
         if signatures != prior['resource_assignment']['limits_by_gpu']:
             raise ValueError('interrupted recovery changed original resource assignments')
         check_recovery_profile(original_profile, prior)
@@ -359,7 +388,11 @@ def pin_recovery(directory, count, gpu, cpu, native_binding, _seen=None):
         gate = Path(bootstrap['guard'])
         files += [gate / name for name in ('intent.json', 'started.json', 'initialized.json', 'revoked.json')
                   if (gate / name).exists()]
+    if effective is not config:
+        files += [proofs / name for name in ['prefix-transition-intent.json', 'prefix-transition.json']]
     return {'source': str(proofs), 'gpu_binary': str(gpu), 'previous_plan': plan,
+            'block_capacity': T.Capacity.configured(config),
+            'pool_seal': effective.get('pool_seal'),
             'launch_directory': str(runtime / 'launches'),
             'pins': dict(T.pin(path) for path in files), 'gpu_uuids': list(signatures),
             'bootstrap_recovery': {**bootstrap, 'source': str(proofs)} if unfinished or interrupted else None,
@@ -389,8 +422,9 @@ def configure_recovery(owner_directory, recovery, config, fleet, report):
     return launches
 
 
-def coordinator_partition(total, workers, recovery=None):
-    shared = R.COORDINATOR_SHARED_HOST_BYTES
+def coordinator_partition(total, workers, recovery=None, block_capacity=64):
+    minimum = T.Capacity.coordinator_shared_bytes(block_capacity, workers)
+    shared = minimum
     if recovery is not None:
         previous = recovery['previous_plan']
         if previous.get('schema_version') != 2:
@@ -399,6 +433,8 @@ def coordinator_partition(total, workers, recovery=None):
                 len(previous.get('workers', [])) != workers):
             raise ValueError('coordinator recovery partition changed physical assignment')
         shared = previous.get('coordinator_shared_bytes')
+    if type(shared) is not int or shared < minimum:
+        raise ValueError('coordinator shared partition is below the current compiled-owner allowance')
     return shared, R.coordinator_job_budgets(total, workers, shared)
 
 
@@ -406,7 +442,7 @@ def admit_cached_recovery(host, recovery):
     """Admit only the CPU coordinator; retained GPU budgets are identity metadata."""
     plan = recovery['previous_plan']
     ram, threads = plan['coordinator_ram_bytes'], plan['coordinator_threads']
-    shared, _ = coordinator_partition(ram, len(plan['workers']), recovery)
+    shared, _ = coordinator_partition(ram, len(plan['workers']), recovery, recovery.get("block_capacity", 64))
     reserve = max(2 * R.GIB, (host['physical_bytes'] + 9) // 10)
     available = max(0, host['available_bytes'] - reserve)
     if host['cgroup_memory_headroom'] is not None:
@@ -430,7 +466,7 @@ def admit_cached_recovery(host, recovery):
     return host, devices, budgets
 
 
-def pin_preseal(directories):
+def pin_preseal(directories, block_capacity=64):
     """Bound and pin every cache artifact before admitting GPU services."""
     if len(directories) > 64:
         raise ValueError('pre-seal cache directory limit exceeded')
@@ -446,7 +482,7 @@ def pin_preseal(directories):
         nodes = cache.get('stable_nodes')
         if (cache.get('schema_version') != 1 or cache.get('status') != 'preseal_verified'
                 or cache.get('preseal_only') is not True
-                or not isinstance(nodes, list) or not 1 <= len(nodes) <= 62):
+                or not isinstance(nodes, list) or not 1 <= len(nodes) <= T.Capacity.validate(block_capacity) - 2):
             raise ValueError('invalid pre-seal cache manifest')
         pins.update([T.pin(manifest)])
         names = set()
@@ -454,8 +490,8 @@ def pin_preseal(directories):
             if not isinstance(node, dict):
                 raise ValueError('invalid pre-seal node record')
             level, index, size = (node.get(k) for k in ('level', 'index', 'bytes'))
-            if (type(level) is not int or not 0 < level < 6
-                    or type(index) is not int or not 0 <= index < (64 >> level)
+            if (type(level) is not int or not 0 < level < T.Capacity.depth(block_capacity)
+                    or type(index) is not int or not 0 <= index < (block_capacity >> level)
                     or type(size) is not int or not 0 < size <= 2 * 1024 * 1024):
                 raise ValueError('invalid pre-seal node geometry or size')
             name = f'node.{level}.{index}'
@@ -493,12 +529,23 @@ def application_recovery_inputs(directory):
     previous = read(directory.parent / 'config.json')
     if Path(previous['owner_directory']).resolve() != directory:
         raise ValueError('application recovery owner identity differs')
-    proof = directory / 'root-only/node.6.0'
+    proof = directory / ('root-only/' + T.Capacity.root_file(previous))
     if not proof.is_file():
         return {}
     if previous.get('native_host') is None or previous.get('preseal_only'):
         raise ValueError('application recovery requires a sealed native owner')
     return dict(recover_proof=proof, recover_binding=previous['native_host'])
+
+
+def release_native_cache(native):
+    """Release idle verifier state; later native checks still replay the journal."""
+    if native is None:
+        return False
+    close = getattr(native.store.verifier, 'close', None)
+    if close is None:
+        return False
+    close()
+    return True
 
 
 def owner(path):
@@ -522,6 +569,9 @@ def owner(path):
                                  recover_binding=config['native_host'] if config.get('native_recovery_proof') else None)
             native.check(config["native_host"])
         intake = open_intake(native, config.get("arrival_store"), config.get("arrival_selection"), prefix=preseal)
+        if config.get('pool_seal') is not None:
+            if PoolSeal.selection(intake, native, config['arrival_selection'], config['pool_workflow']) != config['pool_seal']:
+                raise ValueError('owner native selection changed its post-seal clock')
         fixture = directory / "input"
         fixture.mkdir(mode=0o700)
         for source in T.fixture_files(Path(config["fixture"]), config["count"], "paired"):
@@ -529,23 +579,49 @@ def owner(path):
             shutil.copyfile(source, target)
             if G.digest(target) != config["pins"][str(source)]:
                 raise ValueError("shared owner copied fixture differs")
+        if pool_mode:
+            result['idle_native_cache_released'] = release_native_cache(native)
         proving_started = time.monotonic()
         T.execute_logged([config["gpu_binary"], "prove-fleet-gpu", fixture, config["expected"],
                                     config["fleet_plan"], directory / "proofs"],
                                    directory / "prove.log", T.clean_environment() | {
                                        "RAYON_NUM_THREADS": str(config["coordinator_threads"])})
         proving = time.monotonic() - proving_started
+        if config.get('pool_calibration') is not None:
+            collected = read(directory / 'proofs/calibration-result.json')
+            fleet = read(config['fleet_plan'])
+            PoolCalibration.validate_result(collected, config['pool_calibration'], config['pool_workflow'],
+                fleet['pool_scheduling'], config.get('native_host'), config['workers'][0]['budget']['gpu']['uuid'],
+                directory / 'proofs')
+            result.update(status='succeeded', pool_calibration=True, calibration_result=collected,
+                cpu_audited=False, durable_host_applied=False, native_blocks_applied=0,
+                elapsed_seconds=time.monotonic() - started)
+            return
         if pool_mode:
             stopped = read(directory / "proofs/pool-stopped.json")
             if stopped.get('workers_drained') is not True:
                 raise ValueError('persistent pool did not drain workers')
+            native.check(config['native_host'])
+            handoff = PoolHandoff.transition(directory / 'proofs', config)
+            if handoff is not None:
+                # Prefix arrivals are now claimed by the final selection. Replay
+                # that native selection; the original prefix cannot grant it.
+                del native, intake
+                native, intake = PoolHandoff.verify_native(config, handoff)
+            elif intake is not None:
+                if preseal:
+                    intake.check_prefix(native)
+                else:
+                    intake.check_selection(config['arrival_selection'], native)
+            if config.get('pool_seal') is not None:
+                PoolSeal.check(config['pool_seal'], config['pool_workflow'])
             result.update(status='succeeded', pool_service=True, pool_result=stopped,
                           cpu_audited=False, durable_host_applied=False,
                           native_blocks_applied=0, elapsed_seconds=time.monotonic() - started)
             return
         execution = read(directory / "proofs/result.json")
         validate_execution(execution, config["count"], config["workers"], config.get("native_host"),
-            preseal_only=preseal, allow_worker_failover=config.get('allow_worker_failover', False),
+            block_capacity=T.Capacity.configured(config), preseal_only=preseal, allow_worker_failover=config.get('allow_worker_failover', False),
             recovery_source=config.get('recover_from'),
             recover_cached_only=config.get('recover_cached_only', False))
         result.update(allow_worker_failover=config.get('allow_worker_failover', False),
@@ -558,7 +634,7 @@ def owner(path):
         actual = [(f"node.{n['level']}.{n['index']}", n["mode"], n["count"]) for n in nodes]
         expected = [(task["file"], task["mode"], task["count"]) for task in plan["tasks"]]
         if preseal:
-            expected = [task for task in expected if 0 < int(task[0].split('.')[1]) < 6
+            expected = [task for task in expected if 0 < int(task[0].split('.')[1]) < T.Capacity.depth(T.Capacity.configured(config))
                         and task[2] == 1 << int(task[0].split('.')[1])]
         planned = {task[0]: task for task in expected}
         for cached in execution.get('reused_nodes', []):
@@ -598,10 +674,10 @@ def owner(path):
         for name in T.public_names("paired"):
             shutil.copyfile(fixture / name, root_only / name)
         shutil.copyfile(config["expected"], root_only / "expected.json")
-        shutil.copyfile(directory / "proofs/node.6.0", root_only / "node.6.0")
+        shutil.copyfile(directory / ("proofs/" + T.Capacity.root_file(config)), root_only / T.Capacity.root_file(config))
         audit_started = time.monotonic()
         T.execute_logged([config["cpu_binary"], "audit-root", root_only, root_only / "expected.json",
-                                 root_only / "body.json", root_only / "node.6.0"],
+                                 root_only / "body.json", root_only / T.Capacity.root_file(config)],
                                 directory / "audit.log", T.clean_environment() | {
                                     "RAYON_NUM_THREADS": str(config["coordinator_threads"])})
         audit = time.monotonic() - audit_started
@@ -610,7 +686,7 @@ def owner(path):
                       execution_backend="typed-shared-process-dag", execution_result=execution,
                       fresh_proofs=len(nodes), cpu_audited=True, proving_seconds=proving,
                       cpu_audit_seconds=audit, elapsed_seconds=time.monotonic() - started,
-                      root_bytes=(root_only / "node.6.0").stat().st_size,
+                      root_bytes=(root_only / T.Capacity.root_file(config)).stat().st_size,
                       artifacts={p.name: G.digest(p) for p in root_only.iterdir()},
                       binary_sha256=config["pins"][config["gpu_binary"]],
                       arrival_backend_integrated=False, durable_host_applied=False,
@@ -619,7 +695,7 @@ def owner(path):
             application_started = time.monotonic()
             HeadGuard.publish_handoff(native, directory)
             try:
-                receipt = native.apply(root_only / "node.6.0", config["native_host"])
+                receipt = native.apply(root_only / T.Capacity.root_file(config), config["native_host"])
             except N.H.CommitIndeterminate:
                 result.update(native_application_status="indeterminate", durable_host_applied=None,
                               native_blocks_applied=None)
@@ -637,7 +713,7 @@ def owner(path):
                 result["arrival_publication_status"] = "pending"
                 try:
                     applied = intake.record_application(config["arrival_selection"], native, receipt,
-                                                        root_only / "node.6.0")
+                                                        root_only / T.Capacity.root_file(config))
                 except importlib.import_module("block_v2_native_arrivals").IntakeCommitIndeterminate:
                     result["arrival_publication_status"] = "indeterminate"
                     raise
@@ -653,39 +729,95 @@ def owner(path):
         G.durable(directory / "result.json", result, True)
 
 
+def check_pool_scope(qualified, prefix, reuse, arrival_store, arrival_selection):
+    """Only bounded native phases may precompute or import intake subtrees."""
+    if (prefix or reuse or arrival_store) and not qualified:
+        raise ValueError('pool prefix, reuse and intake require bounded timing-approved phases')
+    if prefix and (reuse or not arrival_store or arrival_selection):
+        raise ValueError('pool prefix requires unsealed intake without imported caches')
+    if reuse and (not arrival_store or not arrival_selection):
+        raise ValueError('pool prefix import requires the sealed native arrival selection')
+    if not prefix and bool(arrival_store) != bool(arrival_selection):
+        raise ValueError('pool arrival store and sealed selection must be supplied together')
+
+
+def check_prefix_workflows(directories, workflow):
+    for directory in directories:
+        if read(Path(directory) / 'result.json').get('pool_workflow') != workflow:
+            raise ValueError('bounded prefix cache changed its original workflow')
+
+
 def run(args, control=None):
     preseal = getattr(args, 'preseal', False)
+    calibration_mode = PoolCalibration.check_mode(args)
+    owned = Owned.check_mode(args)
     pool_requests = getattr(args, 'pool_requests', None)
-    pool_runtime = getattr(args, 'pool_runtime_seconds', 172800)
+    timing_approvals = PoolTiming.approvals(getattr(args, 'pool_timing_approval', []), args.gpu_uuid)
+    qualified_pool = bool(timing_approvals)
+    bounded_pool = qualified_pool or calibration_mode
+    workflow_path = getattr(args, 'pool_workflow', None)
+    if workflow_path is not None and not bounded_pool:
+        raise ValueError('pool workflow binding requires timing approvals or explicit calibration')
+    workflow, workflow_pins = (PoolTiming.workflow(workflow_path)
+        if bounded_pool and not args.recover_owner else (None, {}))
+    phase_window = None
+    if bounded_pool and control is not None:
+        if workflow_path is not None and workflow is not None and workflow != control['pool_workflow']:
+            raise ValueError('workflow receipt changed after controller admission')
+        workflow = copy.deepcopy(control['pool_workflow'])
+        phase_window = copy.deepcopy(control['pool_scheduling'])
+    pool_runtime = getattr(args, 'pool_runtime_seconds', None)
+    if pool_runtime is None:
+        pool_runtime = PoolTiming.SERVICE_SECONDS if bounded_pool else 172800
+    if qualified_pool and pool_requests is None:
+        raise ValueError('pool timing approvals require --pool-requests')
+    handoff = getattr(args, 'pool_prefix_handoff', False)
+    if handoff and (not qualified_pool or not preseal or not args.arrival_store or args.arrival_selection):
+        raise ValueError('live prefix handoff requires a bounded native arrival prefix pool')
     if pool_requests is not None:
+        check_pool_scope(qualified_pool, preseal, args.reuse_preseal, args.arrival_store, args.arrival_selection)
         pool_requests = pool_requests.resolve(strict=True)
         if (not pool_requests.is_dir() or pool_requests.stat().st_mode & 0o077
-                or not args.host_config or preseal or args.recover_owner or args.reuse_preseal
-                or args.arrival_store or getattr(args, 'allow_worker_failover', False)
-                or not 7200 <= pool_runtime <= 604800):
-            raise ValueError('pool requires private request directory, native host, fresh session, and bounded runtime')
+                or not args.host_config or (args.recover_owner and not qualified_pool)
+                or getattr(args, 'recover_cached_only', False)
+                or getattr(args, 'allow_worker_failover', False)
+                or (pool_runtime != PoolTiming.SERVICE_SECONDS if qualified_pool else not 7200 <= pool_runtime <= 604800)):
+            raise ValueError('pool requires private request directory, native host, and bounded runtime; only qualified phases support recovery')
 
     failover = getattr(args, 'allow_worker_failover', False)
     recover_owner = getattr(args, 'recover_owner', None)
     cached_only = getattr(args, 'recover_cached_only', False)
     if cached_only and not recover_owner:
         raise ValueError('cached-only continuation requires --recover-owner')
-    if recover_owner and (not args.host_config or preseal or getattr(args, 'reuse_preseal', [])):
-        raise ValueError('coordinator recovery requires a sealed native candidate without pre-seal import')
+    if recover_owner and (not args.host_config or ((preseal or args.reuse_preseal) and not qualified_pool)):
+        raise ValueError('coordinator recovery requires original native scope; prefixes require bounded pooling')
     if failover and (not args.host_config or len(set(args.gpu_uuid)) < 2):
         raise ValueError('worker failover requires a native candidate and at least two GPUs')
-    reuse, cache_pins = pin_preseal(getattr(args, 'reuse_preseal', []))
+    reuse, cache_pins = pin_preseal(getattr(args, 'reuse_preseal', []), T.Capacity.select(args.count, getattr(args, "block_capacity", None)))
     if (preseal or reuse) and not args.host_config:
         raise ValueError('pre-seal proving and reuse require a native candidate')
     gpu, cpu, source = (path.resolve(strict=True) for path in [args.gpu_binary, args.cpu_binary, args.fixture])
+    block_capacity = T.Capacity.select(args.count, getattr(args, "block_capacity", None))
+    T.Capacity.require_binaries(block_capacity, gpu, cpu)
     inputs = T.fixture_files(source, args.count, "paired")
     scripts = [Path(__file__).resolve(), Path(M.__file__).resolve(), Path(T.__file__).resolve(),
                Path(M.C.__file__).resolve(), Path(G.__file__).resolve(), Path(R.__file__).resolve(),
-               Path(Bootstrap.__file__).resolve()]
+               Path(Bootstrap.__file__).resolve(), Path(T.Capacity.__file__).resolve()]
     scripts.append(Path(Controller.__file__).resolve())
     scripts.append(Path(Calibration.__file__).resolve())
-    workload = getattr(args, "workload", None) or Path(__file__).with_name("block-v2-multi-gpu-direct-readback-workload.json")
+    scripts.append(Path(PoolTiming.__file__).resolve())
+    scripts.append(Path(PoolSeal.__file__).resolve())
+    scripts.append(Path(PoolHandoff.__file__).resolve())
+    scripts.append(Path(PoolCalibration.__file__).resolve())
+    scripts.append(Path(Owned.__file__).resolve())
+    scripts.append(Path(PublicCache.__file__).resolve())
+    if owned:
+        scripts.append(Owned.workload_path(block_capacity))
+    workload = getattr(args, "workload", None) or (Owned.workload_path(block_capacity) if owned else Path(__file__).with_name("block-v2-multi-gpu-direct-readback-workload.json"))
     pins = dict(T.pin(path) for path in [gpu, cpu, *inputs, *scripts, workload])
+    pins.update(workflow_pins)
+    if calibration_mode:
+        pins.update(PoolCalibration.load(args.pool_calibration)[1])
     fixed_path = getattr(args, 'resource_assignment', None)
     fixed = None
     if fixed_path is not None:
@@ -710,14 +842,28 @@ def run(args, control=None):
     if intake is not None:
         A = importlib.import_module("block_v2_native_arrivals")
         pins.update(dict([T.pin(Path(A.__file__).resolve())]))
-    recovery = pin_recovery(recover_owner, args.count, gpu, cpu, native.binding) if recover_owner else None
+    recovery = pin_recovery(recover_owner, args.count, gpu, cpu, native.binding,
+                            prefix=preseal, reuse=reuse, arrival_store=args.arrival_store,
+                            arrival_selection=args.arrival_selection) if recover_owner else None
     if recovery:
         if args.gpu_uuid != recovery['gpu_uuids']:
             raise ValueError('coordinator recovery requires the original ordered GPU assignments')
         pins.update(recovery['pins'])
+        if qualified_pool:
+            recovered_workflow, workflow_pins = PoolTiming.workflow(workflow_path, recovery['previous_plan'])
+            if control is not None and recovered_workflow != workflow:
+                raise ValueError('recovery workflow differs from controller admission')
+            workflow = recovered_workflow
+            pins.update(workflow_pins)
+    if qualified_pool:
+        check_prefix_workflows(reuse, workflow)
+    sealed_clock = (PoolSeal.selection(intake, native, args.arrival_selection, workflow)
+                    if qualified_pool and intake is not None and not preseal else None)
+    if recovery is not None and recovery.get('pool_seal') != sealed_clock:
+        raise ValueError('coordinator recovery changed the original post-seal clock')
     out = args.evidence.resolve()
     locks = G.lock_fleet()
-    report = {"schema": "lattica-typed-shared-gpu-v1", "status": "preparing", "count": args.count,
+    report = {"schema": "lattica-typed-shared-gpu-v1", "status": "preparing", "count": args.count, "block_capacity": T.Capacity.select(args.count, getattr(args, "block_capacity", None)),
               "scope": "One candidate DAG across independently bounded persistent GPU services; fixture inputs only",
               "production_ready": False, "delivered_transactions_measured": False, "attempts": [],
               "preseal_only": preseal, "preseal_dispatch": preseal or bool(reuse), "reuse_preseal": reuse}
@@ -747,9 +893,9 @@ def run(args, control=None):
             G.durable(out / "native-host.json", native.binding, True)
             pins.update(dict([T.pin(out / "native-host.json")]))
         T.execute_logged([cpu, "plan", source, expected], proof_plan, T.clean_environment())
-        T.validate_plan(read(proof_plan), "paired")
+        T.validate_plan(read(proof_plan), "paired", block_capacity)
         pins.update(dict(T.pin(p) for p in [expected, proof_plan]))
-        profile = T.resource_profile(workload, "paired", "compact")
+        profile = T.resource_profile(workload, "paired", "owned" if owned else "compact", block_capacity)
         check_recovery_profile(profile, recovery)
         calibrations = None
         if getattr(args, 'calibration_trial', []):
@@ -773,23 +919,34 @@ def run(args, control=None):
                 getattr(args, 'recovery_admission_timeout', 120), assignment=fixed, calibrations=calibrations)
         first = next(iter(budgets.values()))
         coordinator_bytes = first["host"]["coordinator_bytes"]
+        if bounded_pool and (coordinator_bytes != 1 << 30 or first['host']['fleet_bytes'] != 4 << 30
+                or any(budget['host']['worker_bytes'] > 3 << 30 for budget in budgets.values())):
+            raise ValueError('bounded native qualification requires the original 3/1/4 GiB host limits')
         coordinator_shared_bytes, job_budgets = coordinator_partition(
-            coordinator_bytes, len(devices), recovery)
+            coordinator_bytes, len(devices), recovery, block_capacity)
         coordinator_threads = int(first["cpu"]["coordinator_capacity"])
         if coordinator_threads < 1 or str(coordinator_threads) != first["cpu"]["coordinator_capacity"]:
             raise ValueError("shared coordinator requires an integral admitted CPU capacity")
+        if calibration_mode and (coordinator_threads != 4 or first['cpu']['rayon_threads'] != 4):
+            raise ValueError('calibration requires four coordinator and worker threads within the aggregate cap')
         owner_dir = out / "owner"
         owner_dir.mkdir(mode=0o700)
-        config = {"gpu_binary": str(gpu), "cpu_binary": str(cpu), "fixture": str(source), "count": args.count,
+        config = {"gpu_binary": str(gpu), "cpu_binary": str(cpu), "fixture": str(source), "count": args.count, "block_capacity": T.Capacity.select(args.count, getattr(args, "block_capacity", None)),
                   "pins": pins, "expected": str(expected), "proof_plan": str(proof_plan),
                   "owner_directory": str(owner_dir), "owner_unit": owner_unit,
                   "coordinator_threads": coordinator_threads, "fleet_plan": str(out / "fleet-plan.json"), "workers": [],
                   "preseal_only": preseal, "reuse_preseal": reuse, "allow_worker_failover": failover}
+        config['pool_prefix_handoff'] = handoff
         config['context_calibrations'] = calibrations
+        if sealed_clock is not None:
+            PoolSeal.check(sealed_clock, workflow)
+            config['pool_seal'] = report['pool_seal'] = sealed_clock
         fleet = {"schema_version": 2, "recover_from": None, "coordinator_unit": owner_unit, "coordinator_ram_bytes": coordinator_bytes,
+                 "pool_calibration": None,
                  "coordinator_shared_bytes": coordinator_shared_bytes,
                  "coordinator_threads": coordinator_threads, "fleet_bytes": first["host"]["fleet_bytes"], "workers": [],
                  "preseal_only": preseal, "reuse_preseal": reuse, "allow_worker_failover": failover}
+        fleet['pool_prefix_handoff'] = handoff
         guard = str(owner_dir / 'coordinator-startup')
         config['workload_path'] = str(workload.resolve(strict=True))
         config['workload_profile'] = profile
@@ -819,10 +976,16 @@ def run(args, control=None):
         if pool_requests:
             config['pool_requests'] = fleet['pool_requests'] = str(pool_requests)
             report['pool_service'] = True
+        if bounded_pool:
+            boot, current = PoolTiming.workflow_clock()
+            workflow = PoolTiming.validate_workflow(workflow, boot, current)
+            config['pool_workflow'] = fleet['pool_workflow'] = report['pool_workflow'] = workflow
         for index, device in enumerate(devices):
             uuid = device["uuid"]
             budget = budgets[uuid]
             budget['proving_environment'] = G.proving_environment(budget.get('proving_environment'))
+            if bounded_pool:
+                budget['proving_environment'] = {'LATTICA_PROVING_POLICY': 'gpu-required', 'LATTICA_PROVING_REPORT': '1'}
             if native is not None:
                 budget["native_host"] = native.binding
             budget["host"]["coordinator_job_bytes"] = job_budgets[index]
@@ -835,9 +998,21 @@ def run(args, control=None):
                 scratch = args.scratch.resolve() / budget["unit"].removesuffix(".service")
                 scratch.mkdir(mode=0o700)
                 (directory / "scratch").symlink_to(scratch, target_is_directory=True)
-            if pool_requests:
-                budget['pool_job_limit'] = 16384
+            if pool_requests or calibration_mode:
+                budget['pool_job_limit'] = PoolTiming.PHASE_JOB_LIMIT // len(devices) if bounded_pool else 16384
             G.durable(directory / "budget.json", budget, True)
+            timing_path = None
+            if qualified_pool:
+                timing_path = directory / 'pool-timing.json'
+                pins.update(PoolTiming.stage(timing_approvals[uuid], timing_path, gpu, device, budget,
+                                             profile, G.environment(budget, directory)))
+            if calibration_mode:
+                request, calibration_binding, calibration_pins = PoolCalibration.stage(args.pool_calibration,
+                    gpu, device, budget, profile, G.environment(budget, directory))
+                config['pool_calibration'] = fleet['pool_calibration'] = request
+                report['pool_calibration'] = True
+                report['calibration_binding'] = calibration_binding
+                pins.update(calibration_pins)
             arguments = ["serve-shared-process-gpu", str(owner_dir / "input"), str(expected),
                 launch_directory, str(budget["host"]["worker_bytes"])]
             if cached_only:
@@ -848,7 +1023,7 @@ def run(args, control=None):
                     'launcher': ['/usr/bin/false'], 'log': str(directory / 'prove.log')})
                 continue
             worker_config = {"schema_version": 1, "budget": budget, "directory": str(directory),
-                             "owner_unit": owner_unit, "runtime_seconds": pool_runtime if pool_requests else 7200, "command": [str(gpu), *arguments], "pins": copy.deepcopy(pins)}
+                             "owner_unit": owner_unit, "runtime_seconds": pool_runtime if pool_requests or calibration_mode else 7200, "command": [str(gpu), *arguments], "pins": copy.deepcopy(pins)}
             worker_config["pins"].update(dict([T.pin(directory / "budget.json")]))
             for path in inputs:
                 worker_config["pins"][str(owner_dir / "input" / path.name)] = pins[str(path)]
@@ -858,8 +1033,15 @@ def run(args, control=None):
             pins.update(dict(T.pin(p) for p in [directory / "budget.json", launch_file]))
             fleet["workers"].append({"assignment": budget, "arguments": arguments,
                 "launcher": [sys.executable, str(Path(__file__).resolve()), "--launch-worker", str(launch_file)],
-                "log": str(directory / "prove.log")})
+                "log": str(directory / "prove.log"), "pool_timing": str(timing_path) if timing_path else None})
             report["attempts"].append({"unit": budget["unit"], "uuid": uuid, "directory": str(directory)})
+        if bounded_pool:
+            fleet['pool_scheduling'] = phase_window or PoolTiming.service_window(workflow)
+            boot, current = PoolTiming.workflow_clock()
+            if (fleet['pool_scheduling']['boot_id'] != boot
+                    or current >= fleet['pool_scheduling']['dispatch_deadline_monotonic_ms']):
+                raise ValueError('controller preparation exhausted the original dispatch window')
+            report['host_pool_timing_approved'] = qualified_pool
         G.durable(out / "fleet-plan.json", fleet, True)
         pins.update(dict([T.pin(out / "fleet-plan.json")]))
         G.durable(out / "config.json", config, True)
@@ -869,9 +1051,13 @@ def run(args, control=None):
             "runtime_scope": "CPU coordinator only; retained GPU budgets are identity metadata" if cached_only else "GPU fleet"}, True)
         if control is not None:
             Controller.authorize(control, out / 'config.json')
+        if pool_requests:
+            report['idle_native_cache_released'] = release_native_cache(native)
         G.systemctl("set-property", "--runtime", G.SLICE, f"MemoryMax={fleet['fleet_bytes']}", "MemorySwapMax=0", "MemoryAccounting=yes")
         before = M.event_counters(Path("/sys/fs/cgroup") / G.unit_state(G.SLICE)["ControlGroup"].lstrip('/') / "memory.events")
-        command = properties(owner_unit, coordinator_bytes, f"{coordinator_threads * 100}%", host["effective_cpus"], owner_dir, pool_runtime if pool_requests else 7200)
+        command = properties(owner_unit, coordinator_bytes, f"{coordinator_threads * 100}%", host["effective_cpus"], owner_dir, pool_runtime if pool_requests or calibration_mode else 7200)
+        if bounded_pool:
+            command[command.index('--slice=' + G.SLICE)] = '--slice=' + PoolTiming.COORDINATOR_SLICE
         if control is not None:
             command += ['--property=BindsTo=' + control['unit'], '--property=After=' + control['unit']]
         command += ["--property=StandardOutput=append:" + str(owner_dir / "worker.log"), "--property=StandardError=inherit",
@@ -882,9 +1068,13 @@ def run(args, control=None):
         G.durable(out / "summary.json", report, True)
         launched = True
         execution_started = time.monotonic()
+        if sealed_clock is not None:
+            PoolSeal.check(sealed_clock, workflow)
         subprocess.run(command, check=True, timeout=30)
         observed = set()
         while True:
+            if sealed_clock is not None:
+                PoolSeal.check(sealed_clock, workflow)
             head_change = None if pool_requests else HeadGuard.observe(native, owner_dir)
             if head_change is not None:
                 report['native_head_change'] = head_change
@@ -899,7 +1089,10 @@ def run(args, control=None):
             with (owner_dir / "telemetry.jsonl").open("a") as stream:
                 stream.write(json.dumps({"time_ns": time.time_ns(), "unit": state}) + "\n")
             if G.terminated(state):
-                if not (pool_requests and state.get("Result") == "success" and state.get("ExecMainStatus") == "0" and read(owner_dir / "result.json").get("pool_service") is True) and not owner_succeeded(owner_dir, state, prefix=preseal):
+                diagnostic_success = ((pool_requests or calibration_mode) and state.get("Result") == "success"
+                    and state.get("ExecMainStatus") == "0" and read(owner_dir / "result.json").get(
+                        'pool_calibration' if calibration_mode else 'pool_service') is True)
+                if not diagnostic_success and not owner_succeeded(owner_dir, state, prefix=preseal):
                     late_change = HeadGuard.failed_application(native, owner_dir)
                     if late_change is not None:
                         report['native_head_change'] = late_change
@@ -908,6 +1101,32 @@ def run(args, control=None):
                 break
             time.sleep(0.5)
         result = read(owner_dir / "result.json")
+        if calibration_mode:
+            if result.get('status') != 'succeeded' or result.get('pool_calibration') is not True:
+                raise ValueError('bounded CLI calibration owner failed')
+            collected = result['calibration_result']
+            PoolCalibration.validate_result(collected, config['pool_calibration'], workflow,
+                fleet['pool_scheduling'], config.get('native_host'), devices[0]['uuid'], owner_dir / 'proofs')
+            quiescent_fleet(owner_unit, report['attempts'])
+            worker = config['workers'][0]
+            accounting = read(Path(worker['directory']) / 'accounting.json')
+            validate_worker_accounting(accounting, worker['budget'], {}, False)
+            completed = T.public_events(Path(worker['directory']) / 'prove.log', 'typed_gpu_work_complete')
+            if len(completed) != 1 or completed[0]['recursive_proofs'] != collected['fresh_proofs']:
+                raise ValueError('calibration worker proof count differs from accepted live observations')
+            owner_accounting = read(owner_dir / 'accounting.json')
+            T.validate_accounting(owner_accounting, {'host': {'worker_bytes': coordinator_bytes}})
+            if any(pid in observed for pid, _, _ in G.gpu_processes()):
+                raise ValueError('calibration GPU context remains after exit')
+            after = M.event_counters(Path('/sys/fs/cgroup') / G.unit_state(G.SLICE)['ControlGroup'].lstrip('/') / 'memory.events')
+            deltas = fleet_event_deltas(before, after, [], False)
+            T.check_pins(pins)
+            report.update(status='succeeded', calibration_result=collected,
+                worker_accounting=accounting, owner_accounting=owner_accounting,
+                parent_memory_event_deltas=deltas, cpu_audited_roots=0, native_blocks_applied=0,
+                approved_for_pool_import=False,
+                scope='Live maintained-CLI calibration samples; independent complete proof and stage audit pending')
+            return
         if pool_requests:
             if result.get('status') != 'succeeded' or result.get('pool_service') is not True:
                 raise ValueError('persistent pool owner failed')
@@ -923,7 +1142,7 @@ def run(args, control=None):
             return
 
         validate_execution(result["execution_result"], args.count, config["workers"],
-            config.get("native_host"), preseal_only=preseal, allow_worker_failover=failover,
+            config.get("native_host"), block_capacity=T.Capacity.select(args.count, getattr(args, "block_capacity", None)), preseal_only=preseal, allow_worker_failover=failover,
             recovery_source=config.get('recover_from'), recover_cached_only=cached_only)
         if preseal:
             audit = read(owner_dir / 'prefix-audit.json')
@@ -934,7 +1153,7 @@ def run(args, control=None):
                     or result.get('prefix_audit') != audit or audit.get('status') != 'passed'
                     or audit.get('cpu_audited_roots') != 0
                     or len(audit.get('nodes', [])) != result['fresh_proofs'] + result['reused_proofs']
-                    or (owner_dir / 'proofs/node.6.0').exists()):
+                    or (owner_dir / ('proofs/' + T.Capacity.root_file(capacity=T.Capacity.select(args.count, getattr(args, "block_capacity", None))))).exists()):
                 raise ValueError('shared prefix audit or native isolation differs')
             native.check(native.binding)
             intake.check_prefix(native)
@@ -945,10 +1164,10 @@ def run(args, control=None):
                     or result["native_blocks_applied"] != 1
                     or result.get("native_host_binding") != native.binding):
                 raise ValueError("shared native owner did not confirm one bound application")
-            native.verify_application(result["native_application"], owner_dir / "root-only/node.6.0", native.binding)
+            native.verify_application(result["native_application"], owner_dir / ("root-only/" + T.Capacity.root_file(capacity=T.Capacity.select(args.count, getattr(args, "block_capacity", None)))), native.binding)
             if intake is not None:
                 applied = intake.verify_recorded_application(args.arrival_selection, native,
-                    result["native_application"], owner_dir / "root-only/node.6.0")
+                    result["native_application"], owner_dir / ("root-only/" + T.Capacity.root_file(capacity=T.Capacity.select(args.count, getattr(args, "block_capacity", None)))))
                 if (result.get("arrival_publication_status") != "applied"
                         or result.get("arrival_application") != applied
                         or result.get("arrival_selection") != args.arrival_selection):
@@ -1018,6 +1237,13 @@ def run(args, control=None):
                     cancelled = intake.cancel(args.arrival_selection, 'stale_head')
                     Controller.publish(out / 'stale-selection.json', cancelled)
                     report['stale_selection'] = cancelled
+            if owned and launched and (pool_requests or calibration_mode):
+                # Retained proof/journal files otherwise keep their cache charged
+                # to the shared 1 GiB coordinator slice across retired services.
+                # Preserve all bytes and the existing failure/deadline evidence.
+                deadline_ms = fleet['pool_scheduling']['dispatch_deadline_monotonic_ms'] + 30000
+                report['public_artifact_cache_retirement'] = retire_public_artifacts(
+                    owner_unit, report['attempts'], owner_dir, deadline_ms)
         except BaseException as error:
             report.update(status="failed", cleanup_failure=f"{type(error).__name__}: {error}")
             raise
@@ -1040,7 +1266,15 @@ def argument_parser():
     parser.add_argument('--recover-controller', type=Path,
                         help='resume an interrupted controller in a fresh evidence directory')
     parser.add_argument('--pool-requests', type=Path, help='private local inbox for persistent native candidates')
-    parser.add_argument('--pool-runtime-seconds', type=int, default=172800, help='bounded persistent service lifetime, 7200 to 604800 seconds')
+    parser.add_argument('--pool-runtime-seconds', type=int, help='service lifetime: 180 seconds with timing approvals; otherwise 7200 to 604800 (default 172800)')
+    parser.add_argument('--pool-timing-approval', action='append', default=[], metavar='UUID=PATH',
+        help='independently approved exact-image timings for each worker; enables bounded GPU-required pool dispatch')
+    parser.add_argument('--pool-workflow', type=Path,
+        help='original 600-second workflow clock receipt; recovery retains the prior receipt exactly')
+    parser.add_argument('--pool-calibration', type=Path,
+                      help='bounded explicit live-sample request for one maintained CLI worker; no automatic timing approval')
+    parser.add_argument('--owned-public-gpu', action='store_true',
+                        help='explicit 3/1/4 GiB owned public GPU qualification profile for a bounded worker')
     parser.add_argument("--owner", type=Path)
     parser.add_argument("--launch-worker", type=Path)
     parser.add_argument("--gpu-binary", type=Path)
@@ -1060,12 +1294,15 @@ def argument_parser():
     parser.add_argument("--recovery-admission-timeout", type=float, default=120,
         help="maximum seconds to wait for the original recovery limits to fit (up to 300)")
     parser.add_argument("--preseal", action="store_true", help="prove complete unsealed native prefix subtrees")
+    parser.add_argument('--pool-prefix-handoff', action='store_true',
+                        help='retain one bounded prefix pool for one authenticated final selection')
     parser.add_argument("--reuse-preseal", type=Path, action="append", default=[],
                         help="reuse a previous prefix owner's proofs directory after CPU verification")
     parser.add_argument('--calibration-trial', type=Path, action='append', default=[],
                         help='complete pinned single-GPU shared-owner trial for context calibration')
     parser.add_argument("--gpu-uuid", action="append", default=[])
     parser.add_argument("--count", type=int, choices=T.COUNTS, default=8)
+    parser.add_argument("--block-capacity", type=int, choices=T.Capacity.SUPPORTED_CAPACITIES)
     parser.add_argument("--scratch", type=Path, default=Path("/tmp"))
     parser.add_argument("--evidence", type=Path)
     parser.add_argument("--recover-cached-only", action="store_true",
@@ -1098,10 +1335,14 @@ def main():
         args, recovered = Controller.recover(args, parser)
     if any(getattr(args, name) is None for name in ["gpu_binary", "cpu_binary", "fixture", "evidence"]):
         parser.error("GPU/CPU binaries, fixture and fresh evidence directory are required")
+    calibration_mode = PoolCalibration.check_mode(args)
+    owned = Owned.check_mode(args)
     scripts = set(Path(__file__).resolve().parent.glob('*.py')) | {Path(__file__).resolve()}
     paths = [args.gpu_binary.resolve(strict=True), args.cpu_binary.resolve(strict=True),
              *T.fixture_files(args.fixture.resolve(strict=True), args.count, 'paired'), *scripts,
              Path(__file__).with_name('block-v2-multi-gpu-direct-readback-workload.json')]
+    if owned:
+        paths.append(Owned.workload_path(T.Capacity.select(args.count, args.block_capacity)))
     if args.host_config:
         paths.append(args.host_config.resolve(strict=True))
     if args.resource_assignment:
@@ -1109,6 +1350,8 @@ def main():
     if args.workload:
         paths.append(args.workload.resolve(strict=True))
     pins = dict(T.pin(path) for path in paths)
+    if calibration_mode:
+        pins.update(PoolCalibration.load(args.pool_calibration)[1])
     if args.calibration_trial:
         pins.update(Calibration.source_pins(args.calibration_trial, sys.modules[__name__]))
     if args.supervise:

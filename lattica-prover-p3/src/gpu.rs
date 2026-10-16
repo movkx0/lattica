@@ -34,6 +34,8 @@ use rayon::prelude::*;
 use std::cell::RefCell;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+pub(crate) mod ntt_cache;
+
 /// Lightweight profiling counters (GPU NTT wall-time + call count), for the benchmark to attribute
 /// how much of a proof is spent in the accelerated LDE. Reset/read via `prof_reset`/`prof_report`.
 pub static NTT_NANOS: AtomicU64 = AtomicU64::new(0);
@@ -69,7 +71,8 @@ pub fn prof_report() -> (f64, u64, f64, u64) {
 }
 
 /// OpenCL C: Goldilocks field ops (matching p3's reduce128/add) + a radix-2 DIT NTT.
-pub(crate) const KERNEL_SRC: &str = r#"
+pub(crate) const KERNEL_SRC: &str = concat!(
+    r#"
 #define NEG_ORDER 0xFFFFFFFFUL
 #define GP        0xFFFFFFFF00000001UL
 inline ulong gl_reduce128(ulong lo,ulong hi){ uint hh=(uint)(hi>>32),hl=(uint)(hi&0xFFFFFFFFUL);
@@ -239,7 +242,9 @@ __kernel void quotient(
     out[(size_t)row*2+1]=gl_canon(gl_mul(c1,iv));
   }
 }
-"#;
+"#,
+    include_str!("gpu/ntt_cached.cl")
+);
 
 /// Pinned staging window size in u64 elements (8 Mi × 8 B = 64 MiB). Transfers chunk through it.
 const STAGING_LEN: usize = 8 << 20;
@@ -532,7 +537,11 @@ fn enqueue_tiled_ntt(
     let pq = &ctx.pq;
     // C = columns per tile: wide enough for coalesced runs, capped by the matrix width (w=2 quotient
     // chunks waste no lanes) and at 16 (128-byte runs). Tile budget: 2^(lt+log_c) u64 = 32 KiB.
-    let log_c = (w.next_power_of_two().trailing_zeros() as usize).min(4);
+    let log_c = (w.next_power_of_two().trailing_zeros() as usize).min(ntt_cache::max_column_bits(
+        pq.device(),
+        log_h,
+        w,
+    ));
     let lt_cap = (12 - log_c).min(log_h);
     let n_groups = log_h.div_ceil(lt_cap);
     let (base, rem) = (log_h / n_groups, log_h % n_groups);
@@ -554,8 +563,15 @@ fn enqueue_tiled_ntt(
         if last {
             result_in_dst = std::ptr::eq(outb, dst);
         }
+        let power_words = ntt_cache::power_words(lt, log_c, last && (post_c != 1 || post_b != 1));
+        let kernel_name = if power_words.is_some() {
+            "ntt_tile_cached"
+        } else {
+            "ntt_tile"
+        };
         unsafe {
-            pq.kernel_builder("ntt_tile")
+            let mut builder = pq.kernel_builder(kernel_name);
+            builder
                 .arg(inb)
                 .arg(outb)
                 .arg(w as u32)
@@ -572,11 +588,11 @@ fn enqueue_tiled_ntt(
                 .arg(&wlens_buf)
                 .arg_local::<u64>(n_el)
                 .global_work_size(n_wgs * wg)
-                .local_work_size(wg)
-                .build()
-                .unwrap()
-                .enq()
-                .unwrap();
+                .local_work_size(wg);
+            if let Some(words) = power_words {
+                builder.arg_local::<u64>(words);
+            }
+            builder.build().unwrap().enq().unwrap();
         }
         s0 += lt;
     }

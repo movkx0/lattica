@@ -50,7 +50,14 @@ pub(crate) fn admit_data(
     Ok(())
 }
 
-pub(super) fn admit_registered(program: &RegisteredProgram) -> Result<(), String> {
+pub(super) fn admit_prepared(program: &PreparedProgram) -> Result<(), String> {
+    // Charge the larger standalone owner for either path. Registry-bound
+    // setup adds no diagnostic identity or independently retained receipt.
+    const {
+        assert!(
+            core::mem::size_of::<RegistryProgram>() <= core::mem::size_of::<RegisteredProgram>()
+        );
+    }
     let rows = program.air.program().height();
     let (backing, device_salts) = backing(&program.data, rows, 1)?;
     let bytes = add(

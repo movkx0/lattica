@@ -3,10 +3,17 @@
 use super::*;
 use crate::block_v2::{commitment, machine::programs};
 
+#[cfg(feature = "gpu")]
+pub(crate) mod nvidia;
+
 pub(crate) const BATCH_WORDS: usize = 4096;
 pub(crate) const WORKSPACE_BYTES: u64 = (BATCH_WORDS as u64 + 4) * 8;
 pub(crate) const MAX_ALLOCATION_BYTES: u64 = BATCH_WORDS as u64 * 8;
 pub(crate) const HOST_BYTES: u64 = 1 << 16;
+// Static workgroup SRAM, separate from the unchanged global-buffer allowance.
+// One workgroup owns one sequential sponge, with one state word per lane.
+const HASH_LANES: usize = 8;
+const COOPERATIVE_MIN_WORDS: usize = 64;
 
 pub(crate) const KERNEL_SRC: &str = r#"
 __kernel void device_public_hash(__global ulong *state, __global const ulong *input,
@@ -22,6 +29,108 @@ __kernel void device_public_hash(__global ulong *state, __global const ulong *in
         perm8(s, rci, rcp, rcf, diag);
     }
     for (uint i = 0; i < 4; ++i) state[i] = gl_canon(s[i]);
+}
+
+#if defined(LATTICA_PUBLIC_HASH_NVIDIA_SHUFFLE)
+// One eight-item workgroup occupies lanes 0..7 of one NVIDIA warp. All lanes
+// execute each exchange with the same active mask and source indices in 0..8.
+// Volatile prevents eliminating or hoisting an exchange based only on this
+// lane's inputs: its result also depends on the other participating lanes.
+inline ulong public_hash_exchange(ulong value, uint source) {
+    uint low, high;
+    asm volatile("shfl.sync.idx.b32 %0, %1, %2, 31, 255;" : "=r"(low) : "r"((uint)value), "r"(source));
+    asm volatile("shfl.sync.idx.b32 %0, %1, %2, 31, 255;" : "=r"(high) : "r"((uint)(value>>32)), "r"(source));
+    return ((ulong)high<<32)|(ulong)low;
+}
+inline ulong public_hash_external(ulong value, uint lane, __local ulong *words) {
+    ulong sum=gl_add(value, public_hash_exchange(value, lane^1u));
+    sum=gl_add(sum, public_hash_exchange(sum, lane^2u));
+    ulong next=public_hash_exchange(value, (lane&4u)|((lane+1u)&3u));
+    ulong own=gl_add(sum, gl_add(value, gl_add(next,next)));
+    ulong partner=public_hash_exchange(own, lane^4u);
+    return gl_add(gl_add(own,own),partner);
+}
+inline ulong public_hash_internal(ulong value, uint lane, ulong diagonal,
+                                 __local ulong *words) {
+    ulong sum=gl_add(value, public_hash_exchange(value,lane^1u));
+    sum=gl_add(sum, public_hash_exchange(sum,lane^2u));
+    sum=gl_add(sum, public_hash_exchange(sum,lane^4u));
+    return gl_add(gl_mul(value,diagonal),sum);
+}
+#else
+inline ulong public_hash_external(ulong value, uint lane, __local ulong *words) {
+    words[lane] = value;
+    barrier(CLK_LOCAL_MEM_FENCE);
+    const uint base = lane & 4u, other = lane ^ 4u;
+    const uint next = base | ((lane + 1u) & 3u);
+    ulong own_sum = gl_add(gl_add(words[base], words[base + 1u]),
+                           gl_add(words[base + 2u], words[base + 3u]));
+    const uint opposite = base ^ 4u;
+    ulong other_sum = gl_add(gl_add(words[opposite], words[opposite + 1u]),
+                             gl_add(words[opposite + 2u], words[opposite + 3u]));
+    // The existing M4 row i is sum(x) + x[i] + 2*x[(i+1) mod 4].
+    ulong own = gl_add(own_sum, gl_add(value, gl_add(words[next], words[next])));
+    ulong partner = gl_add(other_sum,
+        gl_add(words[other], gl_add(words[next ^ 4u], words[next ^ 4u])));
+    ulong result = gl_add(gl_add(own, own), partner);
+    // Every lane must finish reading before the next layer writes the scratch.
+    barrier(CLK_LOCAL_MEM_FENCE);
+    return result;
+}
+
+inline ulong public_hash_internal(ulong value, uint lane, ulong diagonal,
+                                 __local ulong *words) {
+    words[lane] = value;
+    barrier(CLK_LOCAL_MEM_FENCE);
+    ulong low = gl_add(gl_add(words[0], words[1]), gl_add(words[2], words[3]));
+    ulong high = gl_add(gl_add(words[4], words[5]), gl_add(words[6], words[7]));
+    ulong result = gl_add(gl_mul(value, diagonal), gl_add(low, high));
+    barrier(CLK_LOCAL_MEM_FENCE);
+    return result;
+}
+
+#endif
+
+__attribute__((reqd_work_group_size(8, 1, 1)))
+__kernel void device_public_hash_cooperative(__global ulong *state,
+    __global const ulong *input, const ulong domain, const ulong length,
+    const uint first, const uint count, __global const ulong *rci,
+    __global const ulong *rcp, __global const ulong *rcf,
+    __global const ulong *diag) {
+    const uint lane = get_local_id(0);
+    __local ulong words[8];
+    ulong value = lane < 4u && !first ? state[lane] : 0UL;
+    if (first && lane < 2u) value = lane == 0u ? domain : length;
+    const ulong diagonal = diag[lane];
+    for (uint offset = 0; offset < count; offset += 4u) {
+        if (lane >= 4u) {
+            uint index = offset + lane - 4u;
+            value = index < count ? input[index] : 0UL;
+        }
+        value = public_hash_external(value, lane, words);
+        #if defined(LATTICA_PUBLIC_HASH_NVIDIA_SHUFFLE)
+#pragma unroll
+#endif
+for (uint round = 0; round < 4u; ++round) {
+            value = gl_pow7(gl_add(value, rci[round * 8u + lane]));
+            value = public_hash_external(value, lane, words);
+        }
+        #if defined(LATTICA_PUBLIC_HASH_NVIDIA_SHUFFLE)
+#pragma unroll
+#endif
+for (uint round = 0; round < 22u; ++round) {
+            if (lane == 0u) value = gl_pow7(gl_add(value, rcp[round]));
+            value = public_hash_internal(value, lane, diagonal, words);
+        }
+        #if defined(LATTICA_PUBLIC_HASH_NVIDIA_SHUFFLE)
+#pragma unroll
+#endif
+for (uint round = 0; round < 4u; ++round) {
+            value = gl_pow7(gl_add(value, rcf[round * 8u + lane]));
+            value = public_hash_external(value, lane, words);
+        }
+    }
+    if (lane < 4u) state[lane] = gl_canon(value);
 }
 
 __kernel void device_validate_summary(__global const ulong *words, __global ulong *status,
@@ -274,13 +383,23 @@ impl DeviceSession {
     fn hash_public_stream_inner(
         &self,
         domain: u64,
+        produce: impl FnMut(&mut FieldSink<'_>) -> Result<(), String>,
+        after_batch: impl FnMut(u128) -> Result<(), String>,
+    ) -> Result<[u64; 4], String> {
+        self.hash_public_stream_kernel(domain, produce, after_batch, true)
+    }
+
+    fn hash_public_stream_kernel(
+        &self,
+        domain: u64,
         mut produce: impl FnMut(&mut FieldSink<'_>) -> Result<(), String>,
         mut after_batch: impl FnMut(u128) -> Result<(), String>,
+        cooperative: bool,
     ) -> Result<[u64; 4], String> {
         let length = stream_length(domain, &mut produce)?;
         #[cfg(not(feature = "gpu"))]
         {
-            let _ = (length, after_batch);
+            let _ = (length, after_batch, cooperative);
             return Err("GPU public hashing is not implemented on Metal".into());
         }
         #[cfg(feature = "gpu")]
@@ -304,12 +423,20 @@ impl DeviceSession {
                         .map_err(|e| e.to_string())?;
                 }
                 let mut event = compute::Event::empty();
-                // SAFETY: one work item owns four state words. Every full chunk
-                // is a multiple of the four-word rate; only the last is padded.
+                let (kernel, lanes) = if cooperative && words.len() >= COOPERATIVE_MIN_WORDS {
+                    ("device_public_hash_cooperative", HASH_LANES)
+                } else {
+                    ("device_public_hash", 1)
+                };
+                // SAFETY: one workgroup owns the four capacity words. The
+                // cooperative kernel requires exactly eight uniformly active
+                // lanes and 64 bytes of static local SRAM. No barriers depend
+                // on per-lane branches. Every full chunk is a multiple of the
+                // four-word rate; only the final chunk is zero padded.
                 unsafe {
                     engine
                         .pq
-                        .kernel_builder("device_public_hash")
+                        .kernel_builder(kernel)
                         .arg(&state.storage.buffer)
                         .arg(&input.storage.buffer)
                         .arg(domain)
@@ -320,7 +447,8 @@ impl DeviceSession {
                         .arg(&engine.constants[1].buffer)
                         .arg(&engine.constants[2].buffer)
                         .arg(&engine.constants[3].buffer)
-                        .global_work_size(1usize)
+                        .global_work_size(lanes)
+                        .local_work_size(lanes)
                         .build()
                         .map_err(|e| e.to_string())?
                         .cmd()
@@ -328,7 +456,7 @@ impl DeviceSession {
                         .enq()
                         .map_err(|e| e.to_string())?;
                 }
-                let ns = engine.timeline.record("device_public_hash", &event)?;
+                let ns = engine.timeline.record(kernel, &event)?;
                 engine.stats.uploaded_bytes += words.len() as u64 * 8;
                 {
                     let mut stats = self.session.stats.lock().unwrap();
@@ -358,5 +486,11 @@ impl DeviceSession {
     }
 }
 
+#[cfg(all(test, feature = "gpu"))]
+mod cooperative_tests;
+#[cfg(all(test, feature = "gpu"))]
+mod shuffle_tests;
+#[cfg(all(test, feature = "gpu"))]
+mod unroll_tests;
 #[cfg(test)]
 mod tests;

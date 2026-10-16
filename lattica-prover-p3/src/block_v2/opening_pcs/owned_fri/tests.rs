@@ -139,6 +139,7 @@ fn resident_fri_matches_upstream_at_multiple_heights_without_layer_transfers() {
                 &mut actual_challenger,
                 log_height,
                 &[],
+                64 << 20,
             )
             .unwrap();
             (expected, actual)

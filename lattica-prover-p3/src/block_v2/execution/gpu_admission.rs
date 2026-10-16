@@ -18,6 +18,35 @@ const MAX_ASSIGNMENT_BYTES: u64 = 1 << 20;
 const MAX_CGROUP_BYTES: u64 = 64 << 10;
 
 mod assignment;
+#[cfg(feature = "stream")]
+mod private_data;
+mod rayon_stacks;
+mod stack_backing;
+
+// Share only stack observations with the private-wallet startup path. These
+// helpers confer no public assignment, registry or proving authority.
+#[cfg(all(feature = "gpu", feature = "stream"))]
+pub(crate) fn validate_wallet_caller_stack() -> Result<(), Error> {
+    stack_backing::validate_caller(true)
+}
+
+#[cfg(all(feature = "gpu", feature = "stream"))]
+pub(crate) fn validate_wallet_rayon_stacks(threads: u32) -> Result<(), Error> {
+    let reserved = super::worker_budget::rayon_stack_host_bytes(threads)?;
+    rayon_stacks::validate_global(usize::try_from(threads)?, reserved)
+}
+
+/// Assignment input and decoding overlap the native bootstrap at startup.
+pub(super) const ASSIGNMENT_HOST_BYTES: u64 = assignment::HOST_BYTES;
+
+fn admit_startup_input(total: u64) -> Result<(), Error> {
+    assignment::admit_host(
+        total
+            .checked_sub(super::worker_budget::CALLER_STACK_HOST_BYTES)
+            .and_then(|bytes| bytes.checked_sub(crate::host_memory::RETAINED_SYSTEM_HOST_BYTES))
+            .ok_or("worker RAM cannot admit caller stack, retained allocator and startup input")?,
+    )
+}
 
 /// An assignment checked against the current process, before any thread starts.
 /// Construction is deliberately private: callers cannot substitute a snapshot
@@ -39,7 +68,12 @@ impl Admission {
             .ok_or("missing public GPU worker assignment")?;
         let environment = Environment::from_env()?;
         let observed = Observed::current(Path::new(&std::env::var("LATTICA_SPILL_DIR")?))?;
-        assignment::admit_host(observed.memory)?;
+        admit_startup_input(observed.memory)?;
+        stack_backing::validate_caller(false)?;
+        #[cfg(all(feature = "stream", target_env = "gnu"))]
+        crate::spill_alloc::host_backing::admit_worker_startup("before_assignment")?;
+        #[cfg(feature = "stream")]
+        private_data::admit_cold("before_assignment")?;
         let assignment = read_assignment(File::open(path)?)?;
         Self::validate(assignment, &environment, observed)
     }
@@ -59,13 +93,57 @@ impl Admission {
     /// Call once, at process startup. An already initialized global Rayon pool
     /// rejects, as it did in the CLI runtime; this never silently borrows a pool.
     pub fn initialize_rayon(&self) -> Result<(), Error> {
+        // Admission may have been moved to a different caller thread since
+        // from_env. Revalidate here before any pool thread or GPU starts.
+        stack_backing::validate_caller(true)?;
+        #[cfg(all(feature = "stream", target_env = "gnu"))]
+        crate::spill_alloc::host_backing::admit_worker_startup("before_rayon")?;
+        let reserved = super::worker_budget::rayon_stack_host_bytes(u32::try_from(self.threads)?)?;
+        #[cfg(feature = "stream")]
+        crate::spill_alloc::config_admission::admit(
+            self.assignment["host"]["spill_bytes"]
+                .as_u64()
+                .ok_or("missing admitted spill allowance")?,
+            self.assignment["host"]["scratch_path"]
+                .as_str()
+                .ok_or("missing admitted scratch path")?,
+        )?;
+        #[cfg(feature = "stream")]
+        private_data::install(
+            self.assignment["host"]["worker_bytes"]
+                .as_u64()
+                .ok_or("missing admitted worker RAM")?,
+            u32::try_from(self.threads)?,
+            self.assignment["host"]["spill_bytes"]
+                .as_u64()
+                .ok_or("missing admitted spill allowance")?,
+        )?;
+        #[cfg(feature = "stream")]
+        crate::spill_alloc::system_budget::admit_worker(usize::try_from(
+            super::worker_budget::system_request_limit_bytes(
+                self.assignment["host"]["worker_bytes"]
+                    .as_u64()
+                    .ok_or("missing admitted worker RAM")?,
+                u32::try_from(self.threads)?,
+            )?,
+        )?)?;
+        #[cfg(feature = "stream")]
+        crate::spill_alloc::host_budget::admit_worker(usize::try_from(
+            super::worker_budget::host_request_limit_bytes(
+                self.assignment["host"]["worker_bytes"]
+                    .as_u64()
+                    .ok_or("missing admitted worker RAM")?,
+                u32::try_from(self.threads)?,
+            )?,
+        )?)?;
         rayon::ThreadPoolBuilder::new()
             .num_threads(self.threads)
+            .stack_size(super::worker_budget::RAYON_STACK_BYTES)
             .build_global()?;
         if rayon::current_num_threads() != self.threads {
             return Err("actual Rayon pool differs from budget".into());
         }
-        Ok(())
+        rayon_stacks::validate_global(self.threads, reserved)
     }
 
     fn validate(
@@ -73,7 +151,7 @@ impl Admission {
         environment: &Environment,
         observed: Observed,
     ) -> Result<Self, Error> {
-        assignment::admit_host(observed.memory)?;
+        admit_startup_input(observed.memory)?;
         let number = |section: &str, key: &str| -> Result<u64, Error> {
             assignment[section][key]
                 .as_u64()
@@ -125,6 +203,16 @@ impl Admission {
         if threads == 0 || environment.threads != threads {
             return Err("Rayon thread environment differs from budget".into());
         }
+        let stacks = super::worker_budget::rayon_stack_host_bytes(u32::try_from(threads)?)?;
+        if stacks
+            .checked_add(ASSIGNMENT_HOST_BYTES)
+            .and_then(|bytes| bytes.checked_add(super::worker_budget::CALLER_STACK_HOST_BYTES))
+            .and_then(|bytes| bytes.checked_add(crate::host_memory::RETAINED_SYSTEM_HOST_BYTES))
+            .ok_or("worker startup RAM overflow")?
+            > observed.memory
+        {
+            return Err("worker RAM cannot admit Rayon stacks and startup input".into());
+        }
         if environment.gpu_uuid != string("gpu", "uuid")?
             || environment.managed != number("gpu", "managed_bytes")?
             || environment.context != number("gpu", "context_bytes")?
@@ -136,6 +224,12 @@ impl Admission {
         if observed.scratch_device != number("host", "scratch_device")? {
             return Err("scratch filesystem changed since admission".into());
         }
+        #[cfg(feature = "stream")]
+        super::worker_budget::private_data_limit_bytes(
+            observed.memory,
+            u32::try_from(threads)?,
+            environment.spill,
+        )?;
         Ok(Self {
             assignment,
             threads,

@@ -1,5 +1,191 @@
 # Incremental recursive block proving v2
 
+## Transaction capacity profiles — 2026-10-16
+
+The typed prover supports separate **64- and 128-transaction research builds**.
+The default remains 64/depth 6 so existing keys, fixtures, and accepted history
+keep their identity. The `block-v2-capacity-128` Cargo feature selects 128/depth 7
+and the candidate namespace `LATTICA-BLOCK-V2-CANDIDATE-00128`. This is a separate
+research profile, not a production activation or an unlimited block size.
+
+| Capacity | Tree depth | Full paired recursive proofs | Reference DAG nodes | Conservative proof statements | Composition loss |
+| --- | --- | --- | --- | --- | --- |
+| 64 (default) | 6 | 63 | 127 | 191 | 8 bits |
+| 128 (supported build) | 7 | 127 | 255 | 383 | 9 bits |
+| 256 (planned) | 8 | 255 | 511 | 767 | 10 bits |
+| 512 (planned) | 9 | 511 | 1,023 | 1,535 | 11 bits |
+
+Counts include issuance transactions. A full paired 128-entry block needs 128
+wallet proofs and 127 recursive proofs. The synthetic fixture contains 96 user
+transactions and 32 issuance transactions. Its root artifact is `node.7.0`.
+Commitment, finalizer, selection, recovery storage, policy arrays, native replay,
+and controller admission derive their bounds from the selected capacity. Counts
+1–128 are admitted in the new profile; 129, 256, and 512 are rejected.
+
+Build CPU and GPU executables into separate, fresh target directories; for example,
+from `lattica-prover-p3`:
+
+```sh
+CARGO_TARGET_DIR=target/block-128-cpu cargo build --locked --offline --release \
+  --no-default-features --features block-v2-host,stream,block-v2-capacity-128 \
+  --bin block-v2-paired-probe --lib
+CARGO_TARGET_DIR=target/block-128-gpu cargo build --locked --offline --release \
+  --no-default-features --features block-v2-host,stream,gpu,block-v2-capacity-128 \
+  --bin block-v2-paired-probe --lib
+target/block-128-cpu/release/block-v2-paired-probe capacity
+```
+
+Use `--block-capacity 128` in typed fixture preparation and GPU runners. Runners
+infer 128 when `--count` exceeds 64, but the explicit flag is required for a small
+block using 128-profile keys. CPU and GPU capacity descriptors must agree even for
+a small block. Pool/campaign configuration should contain `"block_capacity": 128`.
+Build the Zig calculator with `zig build block-v2-expected-root -Dblock-capacity=128`.
+The host bridge builder also takes `--block-capacity 128`; its linked Rust library
+must use the same feature. A mismatched native/Rust bridge is rejected. Historical
+host libraries without the capacity export are interpreted as 64 only.
+
+Generate fresh wallet proofs, registry keys, native fixtures, and timing
+calibration for the new profile. Do not reuse 64-profile proofs, journals, or
+qualification receipts as 128-profile artifacts. Existing 64-profile timing and
+memory evidence remains specific to that profile.
+
+The owned GPU descriptor is
+`lattica-prover-p3/scripts/block-v2-typed-owned-gpu-workload-128.json`. Compilation
+of all twelve modes against full-size public proof shapes retains the 262,144-row
+geometry, 94 main columns, and 200 preprocessing columns. Its witness host
+reservation is 2,057,939,444 bytes. The enforced limits remain 3 GiB worker RAM,
+1 GiB coordinator RAM, 4 GiB aggregate RAM, zero swap, and four threads; GPU
+admission retains 7 GiB managed VRAM, 4 GiB context allowance, and 1 GiB headroom.
+For one 128-profile worker, the unchanged 1 GiB coordinator is partitioned into
+687 MiB shared metadata and 337 MiB per-job verification allowance. Multiworker
+coordinators reserve one additional MiB of shared metadata per additional worker;
+admission still checks their total physical assignment and each verifier floor.
+The 64-profile partition remains 576 MiB shared and 448 MiB per job for one worker.
+The descriptor specifies resource-model bounds. Measured full-block results appear
+below.
+The descriptor does not claim complete-lifetime qualification. Existing deadline
+checks still apply; capacity support alone does not establish deadline feasibility.
+
+The ignored `capacity_profile_resource_geometry` regression compiles every mode
+and checks the descriptor using `LATTICA_FULL_SIZE_FIXTURE` (public template shapes)
+and `LATTICA_FULL_SIZE_OUTPUT` (a fresh report path). It performs no proof acceptance
+or GPU execution. Boundary tests separately compare all ordered roots through the
+selected capacity, independent Rust/Zig vectors, full DAGs, policy storage, and
+binary/native profile mismatches.
+
+Validation on 2026-10-16 includes selected Rust capacity and proof-constraint tests
+for both profiles, Python controller/native-admission tests, both Zig profiles,
+128-profile Rust/Zig root comparisons through 128 entries, linked native capacity
+and mismatch checks, CPU/GPU all-target compilation, and two GPU statement-parity
+tests. A subsequent [complete 128-entry benchmark](evidence/block-v2-capacity-128-benchmark-2026-10-16.json)
+produced three fresh full recursive proofs over the same public synthetic fixture,
+each requiring **127 recursive proofs for 96 user + 32 issuance transactions**.
+Every root, wallet, and recursive node passed independent CPU verification;
+journal recovery reproduced each root, and a separate Zig calculation matched the
+ordered statement. All 127 proving requests per trial report all 16 required
+arithmetic stages on OpenCL.
+
+The measurements use an RTX 5080 (16,303 MiB), four CPU threads, and Rust 1.96.0
+release builds with optimization level 3, thin LTO, and one codegen unit:
+
+| Trial | Full GPU process (seconds) | Full CPU/replay audit (seconds) | Total transactions/second |
+| --- | ---: | ---: | ---: |
+| 1 (cold driver cache) | 657.110 | 55.810 | 0.1948 |
+| 2 (reused driver cache) | 612.021 | 56.006 | 0.2091 |
+| 3 (reused driver cache) | 611.745 | 55.257 | 0.2092 |
+
+GPU process time includes initialization, input checks, all proving and serialization,
+and shutdown. Median process time is **612.021 seconds**:
+**0.2091 total transactions/second** or
+**0.1569 user transactions/second**.
+Each root is **1,683,948 bytes**. Worker cgroup RAM peaks at
+**1.609 GiB**; sampled prover-process VRAM peaks at **7.002 GiB**.
+VRAM sampling can miss brief spikes. There are no swap or OOM events.
+Root-only CPU verification takes about **48 milliseconds**; the full audits above
+also recheck every wallet and intermediate node and perform journal recovery.
+
+Transforms have the largest reported GPU device-time total, followed by commitments
+and quotient evaluation. The warm trials average about 83% GPU utilization and 25%
+memory-controller utilization. These counters do not conclusively distinguish
+compute saturation from memory-bandwidth saturation.
+
+Preparation is separate: fresh CPU wallet proofs take **170.610 seconds**,
+fresh GPU registry keys **512.725 seconds**, and all preparation/checks total
+**705.506 seconds**. The first partial timing attempt
+cleared the driver-cache environment and repeatedly compiled kernels; it is retained
+and excluded. Measured trials restore the normal environment and use a pinned
+workspace-local driver-cache path.
+
+The complete audit exposed a remaining 256 MiB durable artifact quota: this fixture's
+wallets and recursive proofs occupy about 310 MiB. Publication now reserves
+`2 * capacity * MAX_PROOF_BYTES`, including the temporary publication name:
+256 MiB at capacity 64 and 512 MiB at capacity 128. The successful audit uses this
+change; the GPU proof and its timings are unchanged. Physical RAM/VRAM limits remain
+the budgets stated above. The failed audit is retained separately.
+
+This is a standalone full-block prover measurement using the bounded owned GPU
+startup. It does not qualify shared-service deadlines, native transaction delivery,
+or sustained scheduled throughput.
+
+The standalone typed driver supports optional host-stage overlap with
+`LATTICA_V2_HOST_PIPELINE=1` (`0`, the default, retains serial execution).
+An existing Rayon worker verifies and writes the previous proof, then loads and
+verifies the next task's children while the calling thread proves the current
+node. A direct dependency forces a barrier: the producer must pass verification
+and finish its durable write before the consumer's input is prepared. At most
+one completed output and one prefetched task coexist with the active proof;
+errors drain the scoped worker and prevent a successful block result.
+
+This pipeline reserves an additional 512 MiB **within** the worker's assigned RAM,
+subtracting it from the active session allowance. It creates no extra OS threads
+and runs one GPU proof at a time. GPU transform/commitment/challenge/quotient/FRI
+dependencies, GPU admission, proof mathematics, and the shared-service scheduler
+are unchanged. The setting applies to standalone `prove-cpu`/`prove-gpu` driver
+work, including the offline bounded benchmark adapter; it is not shared-service
+timing qualification. Its fixed one-task lookahead does not grow with block size.
+
+A [complete 128-transaction pipeline trial](evidence/block-v2-host-pipeline-benchmark-2026-10-16.json)
+on 2026-10-16 took **598.840 seconds** for the full GPU process:
+**0.21375 total transactions/second**, or **0.16031 user transactions/second**.
+All 127 fresh recursive nodes and all 128 wallets passed independent CPU
+verification and journal replay; the full audit took 56.416 seconds. Every proving
+request reported all 16 required GPU stages. Six pipeline tests passed, including
+dependency ordering for every supported count and failure cleanup.
+
+The pipeline recorded **13.813 seconds** of host work concurrent with active proof
+calls, with one dependency barrier. This is overlap of host/proof-call intervals,
+not a measurement of simultaneous GPU kernels. Worker cgroup RAM peaked at
+**1.447 GiB**, sampled aggregate RAM at **2.347 GiB**, and sampled worker VRAM at
+**7.002 GiB**, under the same physical caps and with zero swap/OOM events.
+
+The process time is 2.15% below the earlier 612.021-second median, but this is a
+historical comparison, **not a confirmed matched speedup**. Two fresh serial
+controls and a diagnostic run of the original validated serial binary failed
+with `CL_MEM_OBJECT_ALLOCATION_FAILURE`. Other GPU workloads appeared during
+those controls; total device use reached 15,211 MiB, and final inspection identified
+SteamVR processes in a separate cgroup. All partial attempts are retained and
+excluded from full-proof timings. The pipeline remains opt-in, and its successful
+proof and audit are independent of these failed controls.
+
+The [root-only proof bundle](../lattica-prover-p3/benchmark-results/gpu-capacity-128-20261016/proof-bundle-128.tar.gz)
+contains the final root, twelve keys, expected statement, body, and verification
+instructions. The complete wallet/node artifacts remain in the linked evidence.
+
+For 256 and 512, widen transaction counts and slot/span indices before adding
+features: current `u8` counts cannot represent 256, and `u8` slots cannot represent
+512 positions. Version affected expected statements, job/worker packets, snapshots,
+calibration records, and native codecs instead of reinterpreting old bytes. Grow
+bounded body/plan envelopes as well: the 128-entry public fixture already occupies
+about 99 KB of the current 128 KiB JSON limit. Add depth-8/depth-9 programs and
+identities, reassess complete-tree security and proof size, and grow durable
+artifact quotas and the store guard: worst-case paired publication needs 1 GiB
+at 256 entries and 2 GiB at 512. Recompute all worker/coordinator resource bounds,
+generate fresh keys and fixtures, and qualify complete GPU/CPU-audited blocks,
+recovery, and native delivery
+on the target hardware. The planned capacities are metadata only until those gates
+pass.
+
+
 ## Current throughput qualification — 2026-10-04
 
 The [two-hour pilot contract](../lattica-prover-p3/scripts/block-v2-throughput-contract.json)

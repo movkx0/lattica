@@ -151,7 +151,8 @@ impl MachineAir {
             match row {
                 Row::Public(_) => {}
                 Row::Alu(ops) => {
-                    for (lane, op) in ops.iter().enumerate() {
+                    for (lane, index) in ops.iter().enumerate() {
+                        let op = self.program.operation(*index)?;
                         let reads = op.reads();
                         let writes = op.writes();
                         if let Some(w) = reads.first() {
@@ -169,7 +170,8 @@ impl MachineAir {
                     }
                 }
                 Row::Cubic(ops) => {
-                    for (group, op) in ops.iter().enumerate() {
+                    for (group, index) in ops.iter().enumerate() {
+                        let op = self.program.operation(*index)?;
                         let (a, b, out) = match op {
                             Op::CubicMul { a, b, out } => (a, Some(b), out),
                             Op::CubicInverse { a, out } => (a, None, out),
@@ -185,8 +187,11 @@ impl MachineAir {
                         }
                     }
                 }
-                Row::Poseidon { input, .. } => {
-                    let input = input.map(|w| values[w.0]);
+                Row::Poseidon(index) => {
+                    let Op::Poseidon { input, .. } = self.program.operation(*index)? else {
+                        return Err(ExecutionError::InvalidWire);
+                    };
+                    let input = input.map(|w| values[w as usize]);
                     t[HASH_A..HASH_A + 8].copy_from_slice(&input);
                     let _ = permutation(input, |column, value| {
                         t[column] = value;
@@ -252,7 +257,8 @@ impl BaseAir<Val> for MachineAir {
                     }
                 }
                 Row::Alu(ops) => {
-                    for (lane, op) in ops.iter().enumerate() {
+                    for (lane, index) in ops.iter().enumerate() {
+                        let op = self.program.operation(*index).ok()?;
                         set_opcode(t, lane, op.code());
                         let reads = op.reads();
                         let writes = op.writes();
@@ -275,7 +281,8 @@ impl BaseAir<Val> for MachineAir {
                     }
                 }
                 Row::Cubic(ops) => {
-                    for (group, op) in ops.iter().enumerate() {
+                    for (group, index) in ops.iter().enumerate() {
+                        let op = self.program.operation(*index).ok()?;
                         let (a, b, out) = match op {
                             Op::CubicMul { a, b, out } => {
                                 t[EXT_MUL + group] = Val::ONE;
@@ -299,7 +306,11 @@ impl BaseAir<Val> for MachineAir {
                         }
                     }
                 }
-                Row::Poseidon { input, output } => {
+                Row::Poseidon(index) => {
+                    let Op::Poseidon { input, output } = self.program.operation(*index).ok()?
+                    else {
+                        return None;
+                    };
                     t[IS_HASH] = Val::ONE;
                     // All C ports hold hash checkpoints, including extra lanes.
                     // Only the first eight have authenticated bus multiplicities.
@@ -307,9 +318,9 @@ impl BaseAir<Val> for MachineAir {
                         set_opcode(t, lane, 0);
                     }
                     for i in 0..8 {
-                        t[ADDR_A + i] = Val::from_usize(input[i].0 + 1);
-                        t[ADDR_C + i] = Val::from_usize(output[i].0 + 1);
-                        t[MULT_C + i] = Val::from_u32(self.program.references[output[i].0]);
+                        t[ADDR_A + i] = Val::from_usize(input[i] as usize + 1);
+                        t[ADDR_C + i] = Val::from_usize(output[i] as usize + 1);
+                        t[MULT_C + i] = Val::from_u32(self.program.references[output[i] as usize]);
                     }
                 }
             }
@@ -578,7 +589,7 @@ mod layout_tests {
         let row = program
             .rows
             .iter()
-            .position(|r| matches!(r, Row::Poseidon { .. }))
+            .position(|r| matches!(r, Row::Poseidon(_)))
             .unwrap();
         let witness = core::array::from_fn::<_, 8, _>(|i| Val::from_usize(i + 1));
         let values = program.evaluate(&[], &witness).unwrap();

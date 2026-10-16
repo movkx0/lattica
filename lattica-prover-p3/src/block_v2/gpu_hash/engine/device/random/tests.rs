@@ -1,4 +1,7 @@
 use super::*;
+#[cfg(feature = "gpu")]
+#[path = "compaction_diagnostic.rs"]
+mod compaction_diagnostic;
 use p3_field::PrimeField64;
 use rand::{RngExt, SeedableRng};
 
@@ -332,13 +335,16 @@ fn gpu_random_rejection_compaction_preserves_reference_order_and_scrubs_secrets(
     let _shutdown = super::super::super::TestShutdownGuard;
     initialize();
     let session = DeviceSession::new().unwrap();
-    for count in [1usize, 255, 256, 257, 4097] {
+    for count in [1usize, 127, 128, 129, 255, 256, 257, 511, 512, 513, 4097,
+        32767, 32768, 32769, 65535, 65536, 65537, BATCH_WORDS - 256, BATCH_WORDS - 1, BATCH_WORDS] {
         for offset in [0u32, 1, 15] {
-            for all_rejected in [false, true] {
+            for pattern in 0..3 {
                 let candidates: Vec<_> = (0..count)
                     .map(|i| {
-                        if all_rejected {
+                        if pattern == 1 {
                             GOLDILOCKS_MODULUS
+                        } else if pattern == 2 {
+                            i as u64
                         } else {
                             [
                                 0,
@@ -364,7 +370,7 @@ fn gpu_random_rejection_compaction_preserves_reference_order_and_scrubs_secrets(
                 session
                     .with_engine(|engine| {
                         let plan = Plan::new(
-                            count,
+                            count + 34,
                             0,
                             engine.accounting.lock().unwrap().live,
                             engine.limits.managed_bytes,
@@ -375,9 +381,9 @@ fn gpu_random_rejection_compaction_preserves_reference_order_and_scrubs_secrets(
                         let offsets = SecretAllocation::new(engine, plan.tiles)?;
                         let total = SecretAllocation::new(engine, 1)?;
                         let output = RandomWords {
-                            storage: SecretAllocation::new(engine, count)?,
+                            storage: SecretAllocation::new(engine, count + 34)?,
                             session: session.clone(),
-                            count,
+                            count: count + 34,
                         };
                         let mut words = vec![0u64; plan.raw_words];
                         for (i, &n) in candidates.iter().enumerate() {
@@ -397,19 +403,28 @@ fn gpu_random_rejection_compaction_preserves_reference_order_and_scrubs_secrets(
                             .fill(9u64, None)
                             .enq()
                             .map_err(|e| e.to_string())?;
+                    if count == 1 {
+                        for invalid in [0, BATCH_WORDS + 1, usize::MAX] {
+                            let error = compact(
+                                engine, &raw, &counts, &offsets, &total, &output, offset, invalid, 17,
+                            ).unwrap_err();
+                            assert!(error.contains("bounded offset scan"));
+                        }
+                    }
                         let (n, _) = compact(
-                            engine, &raw, &counts, &offsets, &total, &output, offset, count, 0,
+                            engine, &raw, &counts, &offsets, &total, &output, offset, count, 17,
                         )?;
                         assert_eq!(n, accepted);
-                        let mut actual = vec![0u64; count];
+                        let mut actual = vec![0u64; count + 34];
                         output
                             .buffer()
                             .read(&mut actual[..])
                             .enq()
                             .map_err(|e| e.to_string())?;
                         fence.finish()?;
-                        assert_eq!(&actual[..accepted], &expected);
-                        assert!(actual[accepted..].iter().all(|&n| n == 9));
+                        assert!(actual[..17].iter().all(|&n| n == 9));
+                        assert_eq!(&actual[17..17 + accepted], &expected);
+                        assert!(actual[17 + accepted..].iter().all(|&n| n == 9));
                         output.storage.scrub();
                         output
                             .buffer()

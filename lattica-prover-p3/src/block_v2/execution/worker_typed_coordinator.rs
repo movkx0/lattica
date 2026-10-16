@@ -20,10 +20,10 @@ const ARC_HEADER_BYTES: usize = 2 * size_of::<usize>();
 const INPUT_BYTES: usize = 2 * (MAX_PROOF_BYTES + ARC_HEADER_BYTES);
 // The result frame can coexist with the publication Vec and its Arc conversion.
 const PUBLICATION_BYTES: usize = 2 * (MAX_PROOF_BYTES + ARC_HEADER_BYTES);
-// A caller creates a launch-binding request before dispatch creates its owned
-// request. That duplicate can overlap collection, but is gone before publication
-// in the fleet path; the serial path retains the caller's request instead. Take
-// the larger of the second request and publication copies, not both lifetimes.
+// Legacy callers may retain a launch-binding request while dispatch owns another.
+// The local pool moves a single prepared request into dispatch. Keep the larger
+// legacy overlap covered; take the larger of a second request and publication
+// copies, not both lifetimes. Preparing once does not increase admission limits.
 const TRANSIENT_BYTES: usize = if launch::MAX_REQUEST_BYTES > PUBLICATION_BYTES {
     launch::MAX_REQUEST_BYTES
 } else {
@@ -74,6 +74,7 @@ fn metadata_bytes(
         + size_of::<packet::Request<&[u8]>>()
         + 2 * (size_of::<packet::Child>() + size_of::<ArtifactRef>() + size_of::<&[u8]>())
         + size_of::<launch::Token>()
+        + size_of::<launch::PreparedRequest>()
         + MAX_TOKEN_BYTES;
     let total = add(copies, controls)?;
     if total > METADATA_BYTES {

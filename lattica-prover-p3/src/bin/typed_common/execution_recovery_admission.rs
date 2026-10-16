@@ -138,7 +138,7 @@ fn interrupted(source: &Path, plan: &Plan, state: &State) -> Result<bool, Error>
     Ok(true)
 }
 
-pub(super) fn trace(source: &Path, current: &Plan, expected: &Expected) -> Result<Origin, Error> {
+pub(super) fn trace(source: &Path, current: &Plan, expected: &Expected, root: JobId) -> Result<Origin, Error> {
     let mut cursor = source.to_owned();
     let mut seen = BTreeSet::new();
     let mut interrupted_epochs = Vec::new();
@@ -153,7 +153,8 @@ pub(super) fn trace(source: &Path, current: &Plan, expected: &Expected) -> Resul
             return Err("recovery lineage must be bounded, distinct canonical directories".into());
         }
         let previous: Plan = read_json(&cursor.join("fleet-plan.json"))?;
-        compatible(&previous, current)?;
+        let effective = pool_transition::effective_plan(&cursor, &previous, root)?;
+        compatible(&effective, current)?;
         let state: State = read_json(&cursor.join("recovery-state.json"))?;
         validate_state(&cursor, &previous, &state)?;
         let old: Coordinator = read_json(&cursor.join("coordinator.json"))?;
@@ -164,11 +165,9 @@ pub(super) fn trace(source: &Path, current: &Plan, expected: &Expected) -> Resul
         {
             return Err("old coordinator is not quiescent or its binary identity differs".into());
         }
-        if read_json::<serde_json::Value>(&cursor.join("expected.json"))?
-            != serde_json::to_value(expected)?
-        {
-            return Err("recovery expected statement differs".into());
-        }
+        let original: Expected = read_json(&cursor.join("expected.json"))?;
+        previous.native_host.as_ref().ok_or("recovery original native binding")?.head_for(&original)?;
+        effective.native_host.as_ref().ok_or("recovery effective native binding")?.head_for(expected)?;
         newest.get_or_insert((state.clone(), old.identity.pid()));
         if interrupted(&cursor, &previous, &state)? {
             interrupted_epochs.push(state.epoch);

@@ -142,6 +142,104 @@ fn private_file(path: &Path, bytes: &[u8]) {
 }
 
 #[test]
+fn cache_advice_reports_descriptor_errors() {
+    use std::os::fd::OwnedFd;
+    let (reader, _writer) = std::io::pipe().unwrap();
+    // Production callers validate regular files before reaching this helper.
+    // A non-file descriptor exercises POSIX's direct error-number return.
+    let file = File::from(OwnedFd::from(reader));
+    let error = retire_public_pages(&file).unwrap_err().to_string();
+    assert!(error.starts_with("immutable proof page-cache advice: "));
+}
+
+#[test]
+#[ignore = "bounded file-cache diagnostic; requires a fresh private directory on a disk filesystem"]
+fn disk_cache_lifetime_preserves_public_bytes_and_rejects_corruption() {
+    use std::time::Instant;
+
+    // mincore observes page-cache residency without faulting file pages into
+    // this mapping. No system cache, driver cache or cgroup peak is reset.
+    fn resident_bytes(path: &Path) -> usize {
+        let file = File::open(path).unwrap();
+        let len = usize::try_from(file.metadata().unwrap().len()).unwrap();
+        // SAFETY: sysconf takes no pointer and returns the configured page size.
+        let page = usize::try_from(unsafe { libc::sysconf(libc::_SC_PAGESIZE) }).unwrap();
+        assert!(page.is_power_of_two());
+        let mut residency = vec![0u8; len.div_ceil(page)];
+        // SAFETY: the owned descriptor is live, offset zero is aligned, and no
+        // pointer into this PROT_NONE mapping is dereferenced.
+        let mapping = unsafe {
+            libc::mmap(std::ptr::null_mut(), len, libc::PROT_NONE, libc::MAP_PRIVATE,
+                file.as_raw_fd(), 0)
+        };
+        assert_ne!(mapping, libc::MAP_FAILED);
+        // SAFETY: residency has one initialized byte for every mapped page.
+        let observed = unsafe { libc::mincore(mapping, len, residency.as_mut_ptr()) };
+        // SAFETY: exactly the successful mapping above, with no live references.
+        let unmapped = unsafe { libc::munmap(mapping, len) };
+        assert_eq!(observed, 0);
+        assert_eq!(unmapped, 0);
+        residency.iter().filter(|&&v| v & 1 != 0).count() * page
+    }
+
+    let directory = PathBuf::from(std::env::var_os("LATTICA_ARTIFACT_CACHE_DIAGNOSTIC").unwrap());
+    assert!(directory.is_absolute());
+    let path = directory.join("store");
+    let mut store = ArtifactStore::create(&path,
+        StoreLimits { bytes: 256 << 20, entries: 256 }).unwrap();
+    const COUNT: usize = 96;
+    const BYTES: usize = 1 << 20;
+    let mut identities = Vec::with_capacity(COUNT);
+    let mut bytes = vec![0x5a; BYTES];
+    let started = Instant::now();
+    for index in 0..COUNT {
+        bytes[..8].copy_from_slice(&(index as u64).to_le_bytes());
+        let ticket = wallet(index as u64 + 1, &bytes);
+        identities.push(store.put_wallet(ticket, &bytes).unwrap());
+    }
+    let published_ms = started.elapsed().as_millis();
+    let residency = || identities.iter()
+        .map(|identity| resident_bytes(&path.join(artifact_name(*identity))))
+        .sum::<usize>();
+    let published_resident_bytes = residency();
+    // Ordinary reads model the old file-cache retention behavior. They do not
+    // constitute a matched whole-workflow control or generate any proofs.
+    for identity in &identities {
+        identity.check_bytes(&fs::read(path.join(artifact_name(*identity))).unwrap()).unwrap();
+    }
+    let warmed_resident_bytes = residency();
+    let started = Instant::now();
+    for identity in &identities {
+        let copy = store.read_exact(*identity).unwrap();
+        identity.check_bytes(&copy).unwrap();
+        assert_eq!(copy.len(), BYTES);
+    }
+    let read_ms = started.elapsed().as_millis();
+    let read_resident_bytes = residency();
+    let usage = store.usage();
+    drop(store);
+    let store = ArtifactStore::open(&path,
+        StoreLimits { bytes: 256 << 20, entries: 256 }).unwrap();
+    assert_eq!(store.usage(), usage);
+    for identity in &identities { store.read_exact(*identity).unwrap(); }
+    let first = identities[0];
+    bytes[..8].copy_from_slice(&999u64.to_le_bytes());
+    fs::write(path.join(artifact_name(first)), &bytes).unwrap();
+    assert!(store.read_exact(first).is_err());
+    assert!(!store.needs_recovery());
+    // Keep observation separate from proof/storage assertions: successful
+    // advice is not a portable guarantee that the kernel evicts these pages.
+    println!("artifact_cache_lifetime {}", serde_json::json!({
+        "artifacts":COUNT,"public_bytes":COUNT*BYTES,"published_ms":published_ms,
+        "published_resident_bytes":published_resident_bytes,
+        "ordinary_read_resident_bytes":warmed_resident_bytes,
+        "store_read_resident_bytes":read_resident_bytes,"store_read_ms":read_ms,
+        "reopen_bytes_verified":true,"corruption_rejected":true,
+        "proofs_generated":0,"native_blocks_applied":0,"is_workflow_qualification":false
+    }));
+}
+
+#[test]
 fn private_store_has_one_owner_and_reopens_without_accepting_existing_path_as_new() {
     let temp = Temp::new();
     let store = ArtifactStore::create(&temp.store(), limits()).unwrap();
@@ -230,6 +328,106 @@ fn admission_counts_temporary_and_published_names_without_partial_writes() {
     assert!(store.put_wallet(second, &[3, 4]).is_err());
     assert_eq!(store.usage().artifacts, 1);
     assert_eq!(store.usage().pending_files, 0);
+}
+
+#[test]
+fn owned_wallet_publication_checks_all_identities_before_writing_and_rechecks_disk() {
+    let temp = Temp::new();
+    let mut store = ArtifactStore::create(&temp.store(), limits()).unwrap();
+    use crate::block_v2::execution::job::test_support::{typed_wallet, typed_pin};
+    let left = typed_wallet(1, 1, &[1, 2]);
+    let right = typed_wallet(2, 1, &[3, 4]);
+    let job = Job::typed_pair(0, left, Some(right)).unwrap();
+    let inputs = [
+        VerifiedWalletPayload::new(left, vec![1, 2]).unwrap(),
+        VerifiedWalletPayload::new(right, vec![3, 4]).unwrap(),
+    ];
+    let incorrect = [inputs[0].clone(), inputs[0].clone()];
+    assert!(store.put_verified_job_inputs(&job, &incorrect).is_err());
+    assert!(store.put_verified_job_inputs(&job, &inputs[..1]).is_err());
+    let empty = Job::empty(typed_pin(), [9; 32], 0, 1).unwrap();
+    assert!(store.put_verified_job_inputs(&empty, &inputs).is_err());
+    assert_eq!(store.usage().artifacts, 0);
+    assert!(!store.needs_recovery());
+    store.put_verified_job_inputs(&job, &inputs).unwrap();
+    let usage = store.usage();
+    store.put_verified_job_inputs(&job, &inputs).unwrap();
+    assert_eq!(store.usage(), usage);
+    for input in &inputs {
+        assert_eq!(store.read_exact(input.ticket().artifact()).unwrap(), input.bytes());
+    }
+    fs::write(temp.store().join(artifact_name(right.artifact())), [3, 0]).unwrap();
+    assert!(store.put_verified_job_inputs(&job, &inputs).is_err());
+    assert!(store.read_exact(right.artifact()).is_err());
+    assert_eq!(inputs[1].bytes(), [3, 4]);
+}
+
+#[test]
+fn owned_wallet_publication_preserves_interruption_and_recovery_boundaries() {
+    for stage in [Fault::AfterWrite, Fault::AfterFileSync, Fault::AfterPublish, Fault::AfterDirectorySync, Fault::AfterCleanup] {
+        let temp = Temp::new();
+        let mut store = ArtifactStore::create(&temp.store(), limits()).unwrap();
+        let ticket = wallet(1, &[2, 3]);
+        let job = Job::wrap(0, ticket).unwrap();
+        let inputs = [VerifiedWalletPayload::new(ticket, vec![2, 3]).unwrap()];
+        store.fault = Some(stage);
+        assert!(store.put_verified_job_inputs(&job, &inputs).is_err());
+        assert!(store.needs_recovery());
+        assert!(store.put_verified_job_inputs(&job, &inputs).is_err());
+        drop(store);
+        let mut reopened = ArtifactStore::open(&temp.store(), limits()).unwrap();
+        reopened.recover_pending().unwrap();
+        reopened.put_verified_job_inputs(&job, &inputs).unwrap();
+        assert_eq!(reopened.read_exact(ticket.artifact()).unwrap(), inputs[0].bytes());
+        assert!(!reopened.needs_recovery());
+    }
+}
+
+#[test]
+fn owned_publication_retains_disk_integrity_checks_and_exact_bytes() {
+    let temp = Temp::new();
+    let mut store = ArtifactStore::create(&temp.store(), limits()).unwrap();
+    let job = Job::wrap(0, wallet(1, &[1])).unwrap();
+    let bytes = vec![7, 8, 9];
+    let ticket = node(&job, &bytes);
+    let payload = VerifiedNodePayload::bind(ticket, bytes.clone()).unwrap();
+    let identity = store.put_verified_node(&payload).unwrap();
+    assert_eq!(identity, ticket.artifact());
+    assert_eq!(store.read_exact(identity).unwrap(), bytes);
+    let usage = store.usage();
+    store.put_verified_node(&payload).unwrap();
+    assert_eq!(store.usage(), usage);
+    // Owning a valid source buffer never approves a changed disk artifact.
+    fs::write(temp.store().join(artifact_name(identity)), [7, 8, 0]).unwrap();
+    assert!(store.put_verified_node(&payload).is_err());
+    assert!(store.read_exact(identity).is_err());
+    assert_eq!(payload.bytes(), bytes);
+}
+
+#[test]
+fn owned_publication_preserves_all_interruption_and_recovery_boundaries() {
+    for stage in [
+        Fault::AfterWrite,
+        Fault::AfterFileSync,
+        Fault::AfterPublish,
+        Fault::AfterDirectorySync,
+        Fault::AfterCleanup,
+    ] {
+        let temp = Temp::new();
+        let mut store = ArtifactStore::create(&temp.store(), limits()).unwrap();
+        let job = Job::wrap(0, wallet(1, &[1])).unwrap();
+        let payload = VerifiedNodePayload::bind(node(&job, &[2, 3]), vec![2, 3]).unwrap();
+        store.fault = Some(stage);
+        assert!(store.put_verified_node(&payload).is_err());
+        assert!(store.needs_recovery());
+        assert!(store.put_verified_node(&payload).is_err());
+        drop(store);
+        let mut reopened = ArtifactStore::open(&temp.store(), limits()).unwrap();
+        reopened.recover_pending().unwrap();
+        let identity = reopened.put_verified_node(&payload).unwrap();
+        assert_eq!(reopened.read_exact(identity).unwrap(), payload.bytes());
+        assert!(!reopened.needs_recovery());
+    }
 }
 
 #[test]

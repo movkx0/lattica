@@ -11,6 +11,14 @@ const body = @import("block_v2_host_body.zig");
 const p = @import("primitives.zig");
 const fixture = @import("block_v2_host_fixture.zig");
 
+extern fn lattica_v2_research_capacity_v1() callconv(.c) u32;
+
+/// Zero denotes a mismatched native/Rust profile and must reject startup.
+export fn lattica_v2_research_host_capacity_v1() callconv(.c) u32 {
+    const rust_capacity = lattica_v2_research_capacity_v1();
+    return if (rust_capacity == commitment.CAPACITY) rust_capacity else 0;
+}
+
 pub const GENESIS_MAGIC = "LBV2GN01";
 pub const REPLAY_MAGIC = "LBV2RP01";
 pub const STATE_MAGIC = "LBV2ST01";
@@ -61,7 +69,7 @@ export fn lattica_v2_research_fixture_wallet_v1(
 ) callconv(.c) i32 {
     if (output_len == null) return -1;
     output_len[0] = 0;
-    if (index >= 64 or output == null or cap == 0 or cap > fixture.MAX_EXPORT_BYTES) return -1;
+    if (index >= commitment.CAPACITY or output == null or cap == 0 or cap > fixture.MAX_EXPORT_BYTES) return -1;
     const size = fixture.wallet(index, output[0..cap]) catch return -2;
     output_len[0] = size;
     return 0;
@@ -154,6 +162,11 @@ fn initialState(allocator: std.mem.Allocator, bytes: []const u8) !Genesis {
 
 const MAX_SESSION_GENESIS_NOTES = 2 * fixture.MAX_SUSTAINED_SLOTS;
 const MAX_SESSION_GENESIS_BYTES = 68 + MAX_SESSION_GENESIS_NOTES * (32 + p.CT_LEN + 2 + node.MAX_NOTE_CIPHERTEXT_LEN);
+
+/// Separate bounded audit ABI. The legacy replay ABI keeps its original limits.
+pub const MAX_AUDIT_BLOCKS: usize = 4096;
+pub const MAX_AUDIT_RECORD_BYTES = 12 + 24 + commitment.CAPACITY * 8 + body.MAX_BODY_BYTES + ffi.MAX_PROOF_LEN;
+pub const AuditRecordReader = *const fn (?*anyopaque, u32, [*c]u8, usize, [*c]usize) callconv(.c) i32;
 
 fn initialStateBounded(allocator: std.mem.Allocator, bytes: []const u8, max_bytes: usize, max_notes: usize) !Genesis {
     if (bytes.len > max_bytes) return error.OversizeGenesis;
@@ -266,6 +279,68 @@ export fn lattica_v2_research_host_replay_v1(
         output_len < STATE_BYTES) return -1;
     var state = restore(registry_ptr[0..registry_len], context_ptr[0..context_len], genesis_ptr[0..genesis_len], records_ptr[0..records_len], output_ptr[0..output_len]) catch return -2;
     defer state.chain.deinit();
+    return 0;
+}
+
+fn auditRecord(state: *Genesis, context: commitment.Context, registry: []const u8, packet: []const u8) !void {
+    var reader = body.Reader{ .bytes = packet };
+    if (!std.mem.eql(u8, try reader.take(8), REPLAY_MAGIC) or try reader.uint(u32) != 1) return error.InvalidReplayVersion;
+    const height = try reader.uint(u64);
+    const body_len = try reader.uint(u32);
+    const proof_len = try reader.uint(u64);
+    const count = try reader.uint(u32);
+    if (height != state.height + 1 or height >= node.MAX_RANGE_VALUE or
+        body_len > body.MAX_BODY_BYTES or proof_len == 0 or proof_len > ffi.MAX_PROOF_LEN or
+        count == 0 or count > commitment.CAPACITY) return error.InvalidRecord;
+    var grants: [commitment.CAPACITY]u64 = undefined;
+    for (grants[0..count]) |*grant| grant.* = try reader.uint(u64);
+    const decoded = try body.decode(try reader.take(body_len));
+    if (decoded.count != count) return error.InvalidGrantCount;
+    const proof = try reader.take(@intCast(proof_len));
+    if (reader.offset != packet.len) return error.TrailingReplayData;
+    try state.chain.applyBlockV2Research(context, registry, decoded.transactions(), proof, height, grants[0..count]);
+    state.height = height;
+}
+
+/// Fresh full CPU replay with one bounded record buffer, independent of the
+/// mutable session cache. The trusted reader supplies an LBV2RP01 packet with
+/// exactly one record at each requested index, in order. It must write at most
+/// `cap` bytes and set `output_len`; a nonzero return rejects the entire audit.
+/// No callback pointer, native chain or input buffer survives this call. Output
+/// is meaningful only on return 0. This API never reads or writes journal files.
+export fn lattica_v2_research_host_audit_v2(
+    registry_ptr: [*c]const u8,
+    registry_len: usize,
+    context_ptr: [*c]const u8,
+    context_len: usize,
+    genesis_ptr: [*c]const u8,
+    genesis_len: usize,
+    blocks: u32,
+    read_record: ?AuditRecordReader,
+    reader_context: ?*anyopaque,
+    output_ptr: [*c]u8,
+    output_len: usize,
+) callconv(.c) i32 {
+    if (registry_ptr == null or context_ptr == null or genesis_ptr == null or output_ptr == null or read_record == null or
+        registry_len < 8 or registry_len > ffi.MAX_BLOCK_V2_REGISTRY_BYTES or context_len != 64 or
+        genesis_len < 68 or genesis_len > MAX_SESSION_GENESIS_BYTES or blocks > MAX_AUDIT_BLOCKS or
+        output_len != (@as(usize, blocks) + 1) * STATE_BYTES) return -1;
+    const registry = registry_ptr[0..registry_len];
+    if (!ffi.hasBlockV2ResearchBackend() or !std.mem.startsWith(u8, registry, "LBV2RG01")) return -2;
+    var state = initialStateBounded(std.heap.page_allocator, genesis_ptr[0..genesis_len], MAX_SESSION_GENESIS_BYTES, MAX_SESSION_GENESIS_NOTES) catch return -2;
+    defer state.chain.deinit();
+    const context = commitment.Context{ .profile_id = context_ptr[0..32].*, .chain_id = context_ptr[32..64].* };
+    writeState(state.chain, state.height, 0, output_ptr[0..STATE_BYTES]) catch return -2;
+    if (blocks == 0) return 0;
+    const packet = std.heap.page_allocator.alloc(u8, MAX_AUDIT_RECORD_BYTES) catch return -2;
+    defer std.heap.page_allocator.free(packet);
+    for (0..blocks) |index| {
+        var length: usize = 0;
+        if (read_record.?(reader_context, @intCast(index), packet.ptr, packet.len, &length) != 0) return -3;
+        if (length < 36 or length > packet.len) return -3;
+        auditRecord(&state, context, registry, packet[0..length]) catch return -2;
+        writeState(state.chain, state.height, @intCast(index + 1), output_ptr[(index + 1) * STATE_BYTES ..][0..STATE_BYTES]) catch return -2;
+    }
     return 0;
 }
 

@@ -78,9 +78,12 @@ fn full_tree_candidate_and_retry_limits_keep_shared_inputs_within_retained_bound
     let candidates: Vec<_> = (0..8)
         .map(|i| dag.attach(root.id(), [i; 32], 100_000, 0).unwrap())
         .collect();
-    assert_eq!(dag.jobs.len(), 127);
+    assert_eq!(dag.jobs.len(), crate::block_v2::profile::MAX_DAG_NODES);
     assert!(dag.attach(root.id(), [9; 32], 100_000, 0).is_err());
-    assert!(dag.candidates.values().all(|c| c.closure.len() == 127));
+    assert!(dag
+        .candidates
+        .values()
+        .all(|c| c.closure.len() == crate::block_v2::profile::MAX_DAG_NODES));
     assert!(dag.jobs.values().all(|r| r.candidates.len() == 8));
     check(&dag);
     let leaf = Job::wrap(0, wallet(1, &[1])).unwrap();
@@ -112,7 +115,10 @@ fn full_tree_candidate_and_retry_limits_keep_shared_inputs_within_retained_bound
     for id in candidates {
         dag.cancel(id, 769).unwrap();
     }
-    assert_eq!(dag.prune(780).unwrap(), 127);
+    assert_eq!(
+        dag.prune(780).unwrap(),
+        crate::block_v2::profile::MAX_DAG_NODES
+    );
     assert_eq!(dag.stored_bytes(), 0);
     check(&dag); // empty retained BTree roots still have a storage allowance
 }
@@ -129,7 +135,10 @@ fn accepted_output_and_verifying_input_ownership_remain_in_separate_components()
     dag.worker_stopped(lease, 2).unwrap();
     dag.begin_verification(lease, 3).unwrap();
     check(&dag);
-    assert_eq!(dag.retained_storage().unwrap().artifact_bytes, 64);
+    assert_eq!(
+        dag.retained_storage().unwrap().artifact_bytes,
+        crate::block_v2::profile::MAX_TRANSACTIONS
+    );
     let mut output = Vec::with_capacity(1 << 20);
     output.extend_from_slice(&[7, 8, 9]);
     let ticket = node(&leaf, &output);
@@ -138,10 +147,16 @@ fn accepted_output_and_verifying_input_ownership_remain_in_separate_components()
             .unwrap(),
         Completion::Accepted
     );
-    assert_eq!(dag.retained_storage().unwrap().artifact_bytes, 67);
+    assert_eq!(
+        dag.retained_storage().unwrap().artifact_bytes,
+        crate::block_v2::profile::MAX_TRANSACTIONS + 3
+    );
     check(&dag);
     dag.cancel(candidate, 5).unwrap();
-    assert_eq!(dag.prune(16).unwrap(), 127);
+    assert_eq!(
+        dag.prune(16).unwrap(),
+        crate::block_v2::profile::MAX_DAG_NODES
+    );
     assert_eq!(dag.retained_storage().unwrap().artifact_bytes, 0);
     check(&dag);
 }
@@ -246,9 +261,12 @@ fn query_capacities_preserve_ready_order_through_a_full_tree_and_prune() {
         );
         completed += 1;
     }
-    assert_eq!(completed, 127);
+    assert_eq!(completed, crate::block_v2::profile::MAX_DAG_NODES);
     dag.cancel(candidate, now).unwrap();
-    assert_eq!(dag.prune(now + 11).unwrap(), 127);
+    assert_eq!(
+        dag.prune(now + 11).unwrap(),
+        crate::block_v2::profile::MAX_DAG_NODES
+    );
     check(&dag);
     for (name, configured) in [
         ("cli", limits()),

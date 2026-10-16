@@ -3,6 +3,7 @@
 use crate::block_v2::compute;
 use crate::config::Val;
 pub mod device;
+mod capacity;
 pub(crate) mod fri_fold;
 pub mod lde_execute;
 pub mod lde_plan;
@@ -251,6 +252,8 @@ struct Accounting {
     device_peak: usize,
     device_buffers: usize,
     memory_window: Option<memory::WindowState>,
+    proof_capacity: Option<capacity::State>,
+    capacity_generation: u64,
 }
 
 struct Lease {
@@ -258,6 +261,7 @@ struct Lease {
     accounting: Arc<Mutex<Accounting>>,
     retained: bool,
     device: bool,
+    outside_capacity_generation: Option<u64>,
 }
 impl Lease {
     fn mark_retained(&mut self) -> Result<(), String> {
@@ -286,6 +290,11 @@ impl Lease {
 impl Drop for Lease {
     fn drop(&mut self) {
         let mut a = self.accounting.lock().unwrap();
+        if let (Some(generation), Some(capacity)) =
+            (self.outside_capacity_generation, a.proof_capacity.as_mut())
+        {
+            capacity.release_outside(generation, self.bytes);
+        }
         // A tree can be dropped by another thread while Engine is reporting or
         // replacing its workspace. Release both views in one critical section:
         // a separate retained lease would expose inconsistent intermediate totals.
@@ -310,9 +319,18 @@ fn reserve(
     if next > limit {
         return Err("GPU aggregate allocation budget exceeded".into());
     }
+    let outside_capacity_generation = a.proof_capacity
+        .as_ref()
+        .map(|capacity| capacity.check(a.live, bytes, limit))
+        .transpose()?
+        .flatten();
+    let allocations = a.allocations.checked_add(1).ok_or("GPU allocation counter overflow")?;
+    if let Some(generation) = outside_capacity_generation {
+        a.proof_capacity.as_mut().unwrap().charge_outside(generation, bytes);
+    }
     a.live = next;
     a.peak = a.peak.max(next);
-    a.allocations += 1;
+    a.allocations = allocations;
     if let Some(window) = &mut a.memory_window {
         window.peak_bytes = window.peak_bytes.max(next);
         window.max_new_allocation_bytes = window.max_new_allocation_bytes.max(bytes);
@@ -322,6 +340,7 @@ fn reserve(
         accounting: accounting.clone(),
         retained: false,
         device: false,
+        outside_capacity_generation,
     })
 }
 // Drop the OpenCL handle before releasing its budget reservation. No public clones.
@@ -915,6 +934,7 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
             .device(device)
             .src(
                 [
+                    device::public_hash::nvidia::source_prefix(device),
                     crate::gpu::KERNEL_SRC,
                     RETAINED_PATH_KERNEL,
                     lde_execute::KERNEL_SRC,
@@ -939,6 +959,8 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
                     device::PERIODIC_KERNEL_SRC,
                     device::HTLC_KERNEL_SRC,
                     device::RANDOM_KERNEL_SRC,
+                    #[cfg(test)]
+                    device::RANDOM_REFERENCE_KERNEL_SRC,
                     device::TRANSCRIPT_KERNEL_SRC,
                     device::SCALARS_KERNEL_SRC,
                     device::COMPILER_CONSTANTS_KERNEL_SRC,

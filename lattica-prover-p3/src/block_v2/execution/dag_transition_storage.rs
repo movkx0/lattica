@@ -25,7 +25,7 @@ impl Limits {
             // Charge cancellation lists together even where scopes are disjoint.
             growing_vector::<CandidateId>(self.candidates)?,
             mul(2, growing_vector::<AttemptId>(self.attempts)?)?,
-            btree::<JobId, ()>(128)?, // attachment closure before insertion
+            btree::<JobId, ()>(crate::block_v2::profile::MAX_DAG_NODES + 1)?, // attachment closure before insertion
             growing_vector::<JobId>(add(mul(2, self.jobs)?, 1)?)?,
             mul(2, btree::<JobId, ()>(self.jobs)?)?, // prune removable/keep sets
             vector::<JobId>(self.jobs)?,             // exact-capacity prune stack

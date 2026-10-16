@@ -67,7 +67,7 @@ pub fn hasBlockV2ResearchBackend() bool {
 }
 
 pub fn verifyBlockV2Research(proof: []const u8, expected: BlockV2ResearchExpected, trusted_registry: []const u8) bool {
-    if (proof.len == 0 or proof.len > MAX_PROOF_LEN or expected.count == 0 or expected.count > 64) return false;
+    if (proof.len == 0 or proof.len > MAX_PROOF_LEN or expected.count == 0 or expected.count > @import("block_v2_capacity.zig").CAPACITY) return false;
     if (trusted_registry.len > MAX_BLOCK_V2_REGISTRY_BYTES or !std.mem.startsWith(u8, trusted_registry, "LBV2RG01")) return false;
     _ = @import("block_v2.zig").digestFromBytes(&expected.root) catch return false;
     const verify = block_v2_research_backend orelse return false;

@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "name": "typed-paired-owned-depth-six-bootstrap-v1",
+  "height": 262144,
+  "page_bytes": 4096,
+  "geometry": {
+    "logical_lde_rows": 8388608,
+    "retained_quotient_rows": 4194304,
+    "degree_prefix_rows": 524288,
+    "main_columns": 98,
+    "preprocessing_columns": 200,
+    "permutation_columns_upper_bound": 55,
+    "quotient_matrices": 16,
+    "host_readback_layout": "direct",
+    "gpu_fri_fold": false,
+    "gpu_fri_resident": true,
+    "gpu_lookup": true,
+    "gpu_opening_eval": true,
+    "gpu_pcs_device_only": true,
+    "gpu_quotient_eval": true,
+    "gpu_quotient_resident": true,
+    "gpu_randomness": true,
+    "gpu_transcript": true,
+    "gpu_witness": true,
+    "main_trace_columns": 94,
+    "permutation_trace_columns_upper_bound": 51,
+    "query_readback_layout": "rows",
+    "opening_denominator_cache": false,
+    "lde_workspace_bytes": 0
+  },
+  "witness_bounds": {
+    "compiler_host_bytes": 734973680,
+    "compiler_retained_host_bytes": 41955376,
+    "input_values": 419117,
+    "main_columns": 94,
+    "metadata_bytes": 621708376,
+    "pcs_retained_host_bytes": 1048576,
+    "preprocessing_columns": 200,
+    "program_host_bytes": 647923296,
+    "program_retained_host_bytes": 270114428,
+    "rows": 262144,
+    "wires": 3669207
+  },
+  "owned_request_backing_includes_spill": true,
+  "complete_lifetime_qualified": false,
+  "phases": [
+    {
+      "name": "owned_request_backing",
+      "heap_bytes": 0,
+      "pinned_bytes": 0,
+      "driver_host_bytes": 134217728,
+      "resident_spill_bytes": 0,
+      "spill_payloads": [],
+      "managed_gpu_bytes": 0,
+      "max_gpu_allocation_bytes": 0
+    }
+  ]
+}

@@ -13,6 +13,67 @@ __kernel void device_periodic_expand(__global const ulong *source,
 }
 "#;
 
+/// Storage geometry shared by request admission and runtime expansion. No
+/// periodic field values or device allocations are needed to construct it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct PeriodicShape {
+    pub(crate) output: MatrixSpec,
+    input: MatrixSpec,
+    metadata: MatrixSpec,
+}
+
+impl PeriodicShape {
+    pub(crate) fn new(
+        log_rows: u32,
+        lengths: impl ExactSizeIterator<Item = usize>,
+    ) -> Result<Self, String> {
+        let count = lengths.len();
+        let output = MatrixSpec::new(log_rows, count, Extension::Base, RowOrder::Natural, 1)?;
+        let mut words = 0usize;
+        for len in lengths {
+            if !len.is_power_of_two() || len > output.rows() {
+                return Err("invalid periodic column length".into());
+            }
+            words = words
+                .checked_add(len)
+                .ok_or("periodic source size overflow")?;
+        }
+        let metadata = count.checked_mul(2).ok_or("periodic metadata overflow")?;
+        Ok(Self {
+            output,
+            input: MatrixSpec::new(0, words, Extension::Base, RowOrder::Natural, 1)?,
+            metadata: MatrixSpec::new(0, metadata, Extension::Base, RowOrder::Natural, 1)?,
+        })
+    }
+
+    pub(crate) fn input_words(self) -> usize {
+        self.input.words()
+    }
+    pub(crate) fn metadata_words(self) -> usize {
+        self.metadata.words()
+    }
+    pub(crate) fn allocation_bytes(self) -> [usize; 3] {
+        [
+            self.output.bytes(),
+            self.input.bytes(),
+            self.metadata.bytes(),
+        ]
+    }
+    pub(crate) fn plan(
+        self,
+        live: usize,
+        limit: usize,
+        max_alloc: usize,
+    ) -> Result<MemoryPlan, String> {
+        MemoryPlan::new(
+            &[self.output, self.input, self.metadata],
+            live,
+            limit,
+            max_alloc,
+        )
+    }
+}
+
 impl DeviceSession {
     pub(crate) fn periodic_matrix(
         &self,
@@ -20,27 +81,10 @@ impl DeviceSession {
         columns: &[Vec<u64>],
         host_allowance: usize,
     ) -> Result<DeviceMatrix, String> {
-        let output_spec = MatrixSpec::new(
-            log_rows,
-            columns.len(),
-            Extension::Base,
-            RowOrder::Natural,
-            1,
-        )?;
-        if columns
-            .iter()
-            .any(|c| !c.len().is_power_of_two() || c.len() > output_spec.rows())
-        {
-            return Err("invalid periodic column length".into());
-        }
-        let input_words = columns
-            .iter()
-            .try_fold(0usize, |n, c| n.checked_add(c.len()))
-            .ok_or("periodic source size overflow")?;
-        let metadata_words = columns
-            .len()
-            .checked_mul(2)
-            .ok_or("periodic metadata overflow")?;
+        let shape = PeriodicShape::new(log_rows, columns.iter().map(Vec::len))?;
+        let output_spec = shape.output;
+        let input_words = shape.input_words();
+        let metadata_words = shape.metadata_words();
         let bytes = input_words
             .checked_add(metadata_words)
             .and_then(|n| n.checked_mul(8))
@@ -57,9 +101,8 @@ impl DeviceSession {
         {
             return Err("periodic input exceeds host allowance or field modulus".into());
         }
-        let input_spec = MatrixSpec::new(0, input_words, Extension::Base, RowOrder::Natural, 1)?;
-        let metadata_spec =
-            MatrixSpec::new(0, metadata_words, Extension::Base, RowOrder::Natural, 1)?;
+        let input_spec = shape.input;
+        let metadata_spec = shape.metadata;
         #[cfg(not(feature = "gpu"))]
         {
             let _ = (output_spec, input_spec, metadata_spec);
@@ -67,7 +110,11 @@ impl DeviceSession {
         }
         #[cfg(feature = "gpu")]
         self.with_engine(|engine| {
-            let _plan = Self::plan(engine, &[output_spec, input_spec, metadata_spec])?;
+            let _plan = shape.plan(
+                engine.accounting.lock().unwrap().live,
+                engine.limits.managed_bytes,
+                engine.max_alloc,
+            )?;
             let output = self.allocate(engine, output_spec)?;
             let input = self.allocate(engine, input_spec)?;
             let metadata = self.allocate(engine, metadata_spec)?;

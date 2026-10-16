@@ -14,6 +14,7 @@ use p3_uni_stark::{ProvenSecurity, StarkSecurityParams};
 pub enum AdmissionError {
     Overflow,
     MultiplicityBound,
+    RegistryCommitmentMismatch,
     QuotientDegree,
     ProvingPolicy(crate::proving::Error),
     Gpu(String),

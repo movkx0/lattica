@@ -232,7 +232,7 @@ test "research body: version, kinds, counts, flags and field aliases reject" {
     buffer[7] ^= 1;
     try std.testing.expectError(error.InvalidVersion, decode(encoded));
     buffer[7] ^= 1;
-    for ([_]u32{ 0, 65, std.math.maxInt(u32) }) |count| {
+    for ([_]u32{ 0, commitment.CAPACITY + 1, std.math.maxInt(u32) }) |count| {
         std.mem.writeInt(u32, buffer[8..12], count, .little);
         try std.testing.expectError(error.InvalidCount, decode(encoded));
     }

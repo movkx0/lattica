@@ -8,6 +8,11 @@ use lattica_prover_p3::block_v2::{commitment::Context, feasibility::*, leaf, pro
 use lattica_prover_p3::{config, joinsplit_air as js, recursion::aggregation as agg};
 
 fn run() -> Result<(), String> {
+    // The complete workflow includes direct CPU proofs in the inherited Fp2
+    // backend, even when its initial candidate wallet can select a GPU.
+    lattica_prover_p3::proving::Request::from_env()
+        .and_then(|request| request.admit(&lattica_prover_p3::proving::legacy_cpu()))
+        .map_err(|error| error.to_string())?;
     println!("candidate_status=inactive");
     println!("budgets ram_bytes={RAM_BUDGET_BYTES} vram_bytes={VRAM_BUDGET_BYTES} scratch_bytes={SCRATCH_BUDGET_BYTES}");
     let ctx = Context {
@@ -100,3 +105,7 @@ fn main() -> ExitCode {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "cpu_reference_tests/mod.rs"]
+mod policy_tests;

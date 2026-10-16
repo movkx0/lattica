@@ -11,7 +11,7 @@ use super::{
     job::{Job, JobId, VerifiedNode},
     journal::DurableDag,
     policy_context::PolicyContext,
-    scheduler::{CostModel, WorkerCapabilities},
+    scheduler::{CostModel, TimingCalibration, WorkerCapabilities},
     selection::Selection,
 };
 use crate::block_v2::{
@@ -64,6 +64,11 @@ mod tests;
 /// reports are untrusted. Methods may touch only lease/workspace bookkeeping;
 /// the coordinator owns proof verification and logical completion.
 pub trait WorkerEndpoint {
+    /// A completed result can remain valid while the process needs replacement.
+    /// Retirement never substitutes for a physical shutdown receipt.
+    fn retirement_requested(&self) -> bool {
+        false
+    }
     fn heartbeat(&mut self) -> Result<(), Error> {
         Ok(())
     }
@@ -81,9 +86,33 @@ pub trait WorkerEndpoint {
     fn close(&mut self, owner: &mut DurableDag, now_ms: u64) -> Result<(), Error>;
 }
 
+/// Optional worker-local durations. These diagnostics never authorize a proof,
+/// renew a lease, or replace the coordinator's elapsed time in cost admission.
+/// The phases exclude coordinator verification/publication and transport waits;
+/// they must not be treated as an exclusive breakdown of coordinator wall time.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+pub struct WorkerTimings {
+    pub input_verification_ms: u64,
+    pub proving_ms: u64,
+    pub serialization_ms: u64,
+}
+
+impl TryFrom<super::worker::Timings> for WorkerTimings {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(value: super::worker::Timings) -> Result<Self, Self::Error> {
+        Ok(Self {
+            input_verification_ms: value.input_verification_ms.try_into()?,
+            proving_ms: value.proving_ms.try_into()?,
+            serialization_ms: value.serialization_ms.try_into()?,
+        })
+    }
+}
+
 pub struct WorkerResult {
     pub lease: Lease,
     pub proof: Vec<u8>,
+    pub worker_timings: Option<WorkerTimings>,
 }
 
 pub struct AcceptedJob {
@@ -91,6 +120,7 @@ pub struct AcceptedJob {
     pub worker: WorkerId,
     pub proof_bytes: usize,
     pub elapsed_ms: u64,
+    pub worker_timings: Option<WorkerTimings>,
 }
 
 struct Active {
@@ -110,6 +140,7 @@ struct Candidate {
     jobs: Vec<JobId>,
     context: PolicyContext,
     deadline_ms: u64,
+    prefix_only: bool,
 }
 
 /// Workers outlive candidates. Keep one coordinator instance for the service
@@ -126,6 +157,45 @@ pub struct PoolCoordinator {
 }
 
 impl PoolCoordinator {
+    /// Export only this coordinator's CPU-verified, durably accepted live
+    /// observations. The caller owns and separately budgets retained records.
+    pub fn export_worker_calibration(
+        &self,
+        worker: WorkerId,
+        job: JobId,
+        warm: bool,
+    ) -> Result<TimingCalibration, Error> {
+        let slot = self
+            .slots
+            .iter()
+            .find(|slot| slot.endpoint.capabilities().worker == worker)
+            .ok_or("pool unknown calibration worker")?;
+        let job = self.jobs.get(&job).ok_or("pool unknown calibration job")?;
+        self.costs
+            .export_calibration(&slot.endpoint.capabilities(), job, warm)
+    }
+
+    /// Timing evidence is supplied/approved by the host, never a worker packet.
+    /// Imports only seed scheduling; normal resource, lease, proof and deadline
+    /// admission is still mandatory for every job.
+    pub fn import_worker_calibration(
+        &mut self,
+        worker: WorkerId,
+        record: &TimingCalibration,
+        evidence: [u8; 32],
+    ) -> Result<(), Error> {
+        let slot = self
+            .slots
+            .iter()
+            .find(|slot| slot.endpoint.capabilities().worker == worker)
+            .ok_or("pool unknown calibration worker")?;
+        if slot.closed || slot.active.is_some() {
+            return Err("pool calibration requires an idle live worker".into());
+        }
+        self.costs
+            .import_calibration(&slot.endpoint.capabilities(), record, evidence)
+    }
+
     pub fn take_failures(&mut self) -> Vec<(WorkerId, String)> {
         std::mem::take(&mut self.failures)
     }
@@ -209,9 +279,113 @@ impl PoolCoordinator {
         deadline_ms: u64,
         now_ms: u64,
     ) -> Result<CandidateId, Error> {
-        if self.candidates.len() >= MAX_CANDIDATES || deadline_ms <= now_ms {
+        if deadline_ms <= now_ms {
             return Err("pool candidate admission".into());
         }
+        let incoming = self.candidate_jobs(selection, &context)?;
+        let candidate = selection.attach(&mut self.owner, eligibility, deadline_ms, now_ms)?;
+        self.remember_candidate(candidate, incoming, context, deadline_ms, false);
+        Ok(candidate)
+    }
+
+    /// Dispatch only complete non-root subtrees of an independently checked
+    /// unsealed native prefix. Final selection, native eligibility and policies
+    /// must be rechecked separately; this candidate cannot be sealed or applied.
+    pub fn submit_prefix(
+        &mut self,
+        selection: &Selection,
+        context: PolicyContext,
+        eligibility: [u8; 32],
+        deadline_ms: u64,
+        now_ms: u64,
+    ) -> Result<CandidateId, Error> {
+        if deadline_ms <= now_ms {
+            return Err("pool prefix admission".into());
+        }
+        let incoming = self.prefix_jobs(selection, &context)?;
+        let candidate = selection.attach(&mut self.owner, eligibility, deadline_ms, now_ms)?;
+        self.remember_candidate(candidate, incoming, context, deadline_ms, true);
+        Ok(candidate)
+    }
+
+    /// Adopt the exact candidate already sealed by durable recovery. The host
+    /// must revalidate its head and wallet policies first. This does not attach
+    /// a replacement candidate or extend the durable deadline.
+    pub fn adopt_sealed(
+        &mut self,
+        selection: &Selection,
+        context: PolicyContext,
+        candidate: CandidateId,
+        rechecked_eligibility: [u8; 32],
+        now_ms: u64,
+    ) -> Result<(), Error> {
+        if self.candidates.contains_key(&candidate) {
+            return Err("pool candidate already adopted".into());
+        }
+        let incoming = self.candidate_jobs(selection, &context)?;
+        let (root, deadline_ms) =
+            self.owner
+                .sealed_candidate_binding(candidate, rechecked_eligibility, now_ms)?;
+        if root != selection.root().id() {
+            return Err("pool sealed candidate selection mismatch".into());
+        }
+        self.remember_candidate(candidate, incoming, context, deadline_ms, false);
+        Ok(())
+    }
+
+    /// Adopt a recovered unsealed prefix without adding time or authorizing a
+    /// root. Recovery and the caller must preserve the original clock domain.
+    pub fn adopt_prefix(
+        &mut self,
+        selection: &Selection,
+        context: PolicyContext,
+        candidate: CandidateId,
+        rechecked_eligibility: [u8; 32],
+        now_ms: u64,
+    ) -> Result<(), Error> {
+        if self.candidates.contains_key(&candidate) {
+            return Err("pool candidate already adopted".into());
+        }
+        let incoming = self.prefix_jobs(selection, &context)?;
+        let (root, deadline_ms) =
+            self.owner
+                .unsealed_candidate_binding(candidate, rechecked_eligibility, now_ms)?;
+        if root != selection.root().id() {
+            return Err("pool prefix candidate selection mismatch".into());
+        }
+        self.remember_candidate(candidate, incoming, context, deadline_ms, true);
+        Ok(())
+    }
+
+    fn prefix_jobs(
+        &self,
+        selection: &Selection,
+        context: &PolicyContext,
+    ) -> Result<Vec<Job>, Error> {
+        let mut incoming = self.candidate_jobs(selection, context)?;
+        incoming.retain(Job::is_complete_non_root_subtree);
+        if incoming.is_empty() {
+            return Err("pool prefix has no complete non-root subtree".into());
+        }
+        Ok(incoming)
+    }
+
+    fn candidate_jobs(
+        &self,
+        selection: &Selection,
+        context: &PolicyContext,
+    ) -> Result<Vec<Job>, Error> {
+        if self.candidates.len() >= MAX_CANDIDATES {
+            return Err("pool candidate admission".into());
+        }
+        self.selection_jobs(selection, context)
+    }
+
+    fn selection_jobs(
+        &self,
+        selection: &Selection,
+        context: &PolicyContext,
+    ) -> Result<Vec<Job>, Error> {
         let count = selection.jobs().len();
         if count > MAX_SELECTION_JOBS
             || self
@@ -239,7 +413,86 @@ impl PoolCoordinator {
                 return Err("pool semantic job collision".into());
             }
         }
-        let candidate = selection.attach(&mut self.owner, eligibility, deadline_ms, now_ms)?;
+        Ok(incoming)
+    }
+
+    /// A trusted host may seal a verified extension of a complete unsealed
+    /// prefix. The same durable candidate and original deadline survive. Native
+    /// selection/issuance authority must be rechecked by the caller; this does
+    /// not apply a block or authorize a worker-supplied selection.
+    pub fn seal_prefix_extension(
+        &mut self,
+        candidate: CandidateId,
+        selection: &Selection,
+        context: PolicyContext,
+        eligibility: [u8; 32],
+        now_ms: u64,
+    ) -> Result<(), Error> {
+        let previous = self
+            .candidates
+            .get(&candidate)
+            .ok_or("pool unknown prefix")?;
+        if !previous.prefix_only
+            || context.binding() != previous.context.binding()
+            || self.slots.iter().any(|slot| slot.active.is_some())
+            || self.slots.iter().all(|slot| slot.closed)
+        {
+            return Err(
+                "pool prefix transition requires its original context and idle live workers".into(),
+            );
+        }
+        let (_, deadline_ms) =
+            self.owner
+                .unsealed_candidate_binding(candidate, eligibility, now_ms)?;
+        if previous.deadline_ms != deadline_ms {
+            return Err("pool prefix transition changed its original deadline".into());
+        }
+        for id in &previous.jobs {
+            if self.owner.status(*id)? != JobStatus::Completed {
+                return Err("pool prefix transition requires every subtree complete".into());
+            }
+        }
+        // Retain every old wallet policy, including an incomplete odd pair.
+        for job in selection.jobs() {
+            for artifact in job.wallet_inputs() {
+                if let Ok(old) = previous.context.policy(*artifact) {
+                    use crate::block_v2::typed_recursive::Policy;
+                    let same = match (old, context.policy(*artifact)?) {
+                        (Policy::JoinSplit, Policy::JoinSplit) => true,
+                        (
+                            Policy::Htlc { expected_height: a },
+                            Policy::Htlc { expected_height: b },
+                        ) => a == b,
+                        (
+                            Policy::Issuance { authorized_mint: a },
+                            Policy::Issuance { authorized_mint: b },
+                        ) => a == b,
+                        _ => false,
+                    };
+                    if !same {
+                        return Err(
+                            "pool prefix transition changed a retained wallet policy".into()
+                        );
+                    }
+                }
+            }
+        }
+        let incoming = self.selection_jobs(selection, &context)?;
+        selection.admit(&mut self.owner, now_ms)?;
+        self.owner
+            .seal_prefix_extension(candidate, selection.root().id(), eligibility, now_ms)?;
+        self.remember_candidate(candidate, incoming, context, deadline_ms, false);
+        Ok(())
+    }
+
+    fn remember_candidate(
+        &mut self,
+        candidate: CandidateId,
+        incoming: Vec<Job>,
+        context: PolicyContext,
+        deadline_ms: u64,
+        prefix_only: bool,
+    ) {
         let mut ids = Vec::with_capacity(incoming.len());
         ids.extend(incoming.iter().map(Job::id));
         for job in incoming {
@@ -251,9 +504,9 @@ impl PoolCoordinator {
                 jobs: ids,
                 context,
                 deadline_ms,
+                prefix_only,
             },
         );
-        Ok(candidate)
     }
 
     pub fn seal(
@@ -262,8 +515,12 @@ impl PoolCoordinator {
         eligibility: [u8; 32],
         now_ms: u64,
     ) -> Result<(), Error> {
-        if !self.candidates.contains_key(&candidate) {
-            return Err("pool unknown candidate".into());
+        match self.candidates.get(&candidate) {
+            None => return Err("pool unknown candidate".into()),
+            Some(candidate) if candidate.prefix_only => {
+                return Err("pool prefix cannot seal a native candidate".into());
+            }
+            Some(_) => {}
         }
         self.owner.seal(candidate, eligibility, now_ms)
     }
@@ -274,6 +531,13 @@ impl PoolCoordinator {
         eligibility: [u8; 32],
         now_ms: u64,
     ) -> Result<Option<Vec<u8>>, Error> {
+        if self
+            .candidates
+            .get(&candidate)
+            .is_some_and(|c| c.prefix_only)
+        {
+            return Err("pool prefix cannot export a candidate root".into());
+        }
         let Some(bytes) = self
             .owner
             .candidate_result(candidate, eligibility, now_ms)?
@@ -286,9 +550,82 @@ impl PoolCoordinator {
         Ok(Some(bytes.to_vec()))
     }
 
+    /// Borrow one durably CPU-verified prefix subtree after rechecking scope,
+    /// selection membership, eligibility and the original deadline. The caller
+    /// budgets any copy; an untrusted remote result cannot enter through here.
+    pub fn prefix_node(
+        &mut self,
+        candidate: CandidateId,
+        job: JobId,
+        eligibility: [u8; 32],
+        now_ms: u64,
+    ) -> Result<Option<&[u8]>, Error> {
+        let record = self
+            .candidates
+            .get(&candidate)
+            .ok_or("pool unknown prefix")?;
+        if !record.prefix_only || !record.jobs.contains(&job) {
+            return Err("pool prefix node scope or membership".into());
+        }
+        self.owner
+            .unsealed_candidate_binding(candidate, eligibility, now_ms)?;
+        self.owner.verified_node_bytes(job)
+    }
+
+    /// Visit the entire verified prefix only after every eligible subtree is
+    /// complete. No callback runs for a partial prefix. Bytes remain owned by
+    /// the durable coordinator; the caller budgets copies and rechecks its
+    /// clock before publishing the resulting cache manifest.
+    pub fn visit_complete_prefix(
+        &mut self,
+        candidate: CandidateId,
+        eligibility: [u8; 32],
+        now_ms: u64,
+        mut visit: impl FnMut(&Job, &[u8]) -> Result<(), Error>,
+    ) -> Result<bool, Error> {
+        let record = self
+            .candidates
+            .get(&candidate)
+            .ok_or("pool unknown prefix")?;
+        if !record.prefix_only {
+            return Err("pool prefix export scope".into());
+        }
+        self.owner
+            .unsealed_candidate_binding(candidate, eligibility, now_ms)?;
+        for job in &record.jobs {
+            if self.owner.status(*job)? != JobStatus::Completed {
+                return Ok(false);
+            }
+        }
+        for id in &record.jobs {
+            let job = self.jobs.get(id).ok_or("pool missing prefix job")?;
+            let proof = self
+                .owner
+                .verified_node_bytes(*id)?
+                .ok_or("pool missing prefix proof")?;
+            visit(job, proof)?;
+        }
+        Ok(true)
+    }
+
     /// Poll once; the caller controls I/O waiting and its monotonic clock. No
     /// sleep, filesystem path, GPU ordinal, or systemd detail enters scheduling.
+    /// If no deadline-admissible placement remains after accepting results,
+    /// return those completions first and reconsider placement on the next poll.
     pub fn step(&mut self, now_ms: u64) -> Result<Vec<AcceptedJob>, Error> {
+        self.step_before(now_ms, u64::MAX)
+    }
+
+    /// An additional host horizon can only shorten scheduling admission. It
+    /// never replaces the durable candidate deadline or a worker service window.
+    pub fn step_before(
+        &mut self,
+        now_ms: u64,
+        deadline_ms: u64,
+    ) -> Result<Vec<AcceptedJob>, Error> {
+        if now_ms >= deadline_ms {
+            return Err("pool additional dispatch deadline expired".into());
+        }
         let tick = Instant::now();
         let clock = || {
             now_ms
@@ -297,6 +634,7 @@ impl PoolCoordinator {
         };
         self.owner.advance(now_ms)?;
         self.reconcile_stops(now_ms)?;
+        self.retire_idle_workers(clock()?)?;
         if self.slots.iter().all(|s| s.closed) {
             return Err("pool has no surviving workers".into());
         }
@@ -357,6 +695,7 @@ impl PoolCoordinator {
                 worker: result.lease.worker(),
                 proof_bytes,
                 elapsed_ms,
+                worker_timings: result.worker_timings,
             });
             slot.active = None;
         }
@@ -365,7 +704,9 @@ impl PoolCoordinator {
             workers.extend(
                 self.slots
                     .iter()
-                    .filter(|s| !s.closed && s.active.is_none())
+                    .filter(|s| {
+                        !s.closed && s.active.is_none() && !s.endpoint.retirement_requested()
+                    })
                     .map(|s| s.endpoint.capabilities()),
             );
             if workers.is_empty() {
@@ -378,13 +719,46 @@ impl PoolCoordinator {
             }
             let mut deadlines = BTreeMap::new();
             for id in &ready {
-                deadlines.insert(*id, self.owner.job_deadline(*id)?);
+                deadlines.insert(*id, self.owner.job_deadline(*id)?.min(deadline_ms));
             }
             let Some(choice) =
                 self.costs
                     .select(&self.jobs, &ready, &workers, &deadlines, clock()?)?
             else {
                 if self.idle() {
+                    // Distinguish an exhausted physical service window from an
+                    // impossible candidate path. Relax only a temporary snapshot
+                    // to diagnose retirement; never issue a lease from it.
+                    let had_windows = workers.iter().any(|w| w.dispatch_deadline_ms.is_some());
+                    if had_windows {
+                        for worker in &mut workers {
+                            worker.dispatch_deadline_ms = None;
+                        }
+                        if let Some(expired) =
+                            self.costs
+                                .select(&self.jobs, &ready, &workers, &deadlines, clock()?)?
+                        {
+                            let slot = self
+                                .slots
+                                .iter_mut()
+                                .find(|s| {
+                                    !s.closed && s.endpoint.capabilities().worker == expired.worker
+                                })
+                                .ok_or("pool worker absent during service retirement")?;
+                            if slot.endpoint.capabilities().dispatch_deadline_ms.is_none() {
+                                return Err("pool service retirement lost its deadline".into());
+                            }
+                            slot.endpoint.close(&mut self.owner, clock()?)?;
+                            slot.closed = true;
+                            continue;
+                        }
+                    }
+                    // These completions are already durable. Deliver their
+                    // notifications before reporting an unchanged placement
+                    // rejection on the next poll; never dispatch past it.
+                    if !accepted.is_empty() {
+                        break;
+                    }
                     return Err("pool has no deadline-admissible placement".into());
                 }
                 break;
@@ -403,6 +777,27 @@ impl PoolCoordinator {
                 .ok_or("pool worker absent")?;
             slot.endpoint.set_context(context)?;
             let capabilities = slot.endpoint.capabilities();
+            let dispatch_now = clock()?;
+            let finish = dispatch_now
+                .checked_add(choice.service_ms)
+                .ok_or("pool service time overflow")?;
+            if dispatch_now
+                .checked_add(choice.remaining_path_ms)
+                .is_none_or(|finish| finish > deadline_ms)
+            {
+                return Err("pool context negotiation exhausted host deadline".into());
+            }
+            // Context negotiation may consume the last available service time.
+            // Recheck before creating an attempt; a failed shutdown holds the
+            // reservation and leaves the slot open for physical reconciliation.
+            if capabilities
+                .dispatch_deadline_ms
+                .is_some_and(|limit| finish > limit)
+            {
+                slot.endpoint.close(&mut self.owner, dispatch_now)?;
+                slot.closed = true;
+                continue;
+            }
             let lease = self.owner.lease(
                 choice.job,
                 choice.worker,
@@ -440,6 +835,26 @@ impl PoolCoordinator {
         Ok(())
     }
 
+    /// Complete cooperative retirement only at idle boundaries. A failed close
+    /// leaves the slot unavailable for dispatch and its reservation held.
+    pub fn retire_idle_workers(&mut self, now_ms: u64) -> Result<(), Error> {
+        for slot in &mut self.slots {
+            if !slot.closed
+                && slot.active.is_none()
+                && (slot.endpoint.retirement_requested()
+                    || slot
+                        .endpoint
+                        .capabilities()
+                        .dispatch_deadline_ms
+                        .is_some_and(|limit| now_ms >= limit))
+            {
+                slot.endpoint.close(&mut self.owner, now_ms)?;
+                slot.closed = true;
+            }
+        }
+        Ok(())
+    }
+
     /// Release a delivered or cancelled candidate without ending worker sessions.
     /// Keep its DAG artifacts until normal reference/retention pruning permits GC.
     pub fn retire(&mut self, candidate: CandidateId, now_ms: u64) -> Result<(), Error> {
@@ -456,6 +871,12 @@ impl PoolCoordinator {
 
     pub fn idle(&self) -> bool {
         self.slots.iter().all(|s| s.active.is_none())
+    }
+
+    /// All adapters have acknowledged shutdown, so the host may replace them
+    /// or save a drained checkpoint. An idle but still reserved worker is open.
+    pub fn workers_closed(&self) -> bool {
+        self.slots.iter().all(|s| s.closed)
     }
 
     pub fn close(&mut self, now_ms: u64) -> Result<(), Error> {

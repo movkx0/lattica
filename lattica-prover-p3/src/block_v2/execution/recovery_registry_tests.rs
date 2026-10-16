@@ -193,7 +193,11 @@ fn fresh_recovery() {
     approved().unwrap();
     wallet_calls.set(0);
     node_calls.set(0);
-    let (_, identity) = measure(|| registry.id().unwrap());
+    // Direct verification now approves a complete bounded registry, rather
+    // than constructing its old unbounded id. Measure that actual operation.
+    let (_, identity) = measure(|| pin.check_typed(&registry).unwrap());
+    let (_, digest) = measure(|| node_identity.check_bytes(&node_bytes).unwrap());
+    let (_, wallet_digest) = measure(|| wallet_ticket.artifact().check_bytes(&wallet_bytes).unwrap());
     let (context, setup) = measure(|| TypedRegistryContext::for_pin(&registry, pin));
     context.unwrap();
     let (direct, direct_requests) = measure_all(reference);
@@ -228,18 +232,25 @@ fn fresh_recovery() {
     assert!(
         !identity.overflow
             && !setup.overflow
+            && !digest.overflow
+            && !wallet_digest.overflow
             && !direct_requests.overflow
             && !reused_requests.overflow
     );
-    let reference_identities = 1 + wallet_calls.get() + 2 * node_calls.get();
-    eprintln!("recovery_registry_requests rayon_threads=1 direct_bytes={} reused_bytes={} identity_bytes={} setup_bytes={} direct_calls={} reused_calls={} identity_calls={} setup_calls={}", direct_requests.bytes, reused_requests.bytes, identity.bytes, setup.bytes, direct_requests.calls, reused_requests.calls, identity.calls, setup.calls);
+    let reference_identities = 1 + wallet_calls.get() + node_calls.get();
+    // Detached callbacks must rebind wallet and node digests; owned callbacks
+    // retain the exact buffers authenticated by their respective verifiers.
+    let detached_digests = node_calls.get();
+    eprintln!("recovery_registry_requests rayon_threads=1 direct_bytes={} reused_bytes={} identity_bytes={} setup_bytes={} digest_bytes={} direct_calls={} reused_calls={} identity_calls={} setup_calls={} digest_calls={}", direct_requests.bytes, reused_requests.bytes, identity.bytes, setup.bytes, digest.bytes, direct_requests.calls, reused_requests.calls, identity.calls, setup.calls, digest.calls);
     assert_eq!(
         direct_requests.bytes + setup.bytes,
-        reused_requests.bytes + reference_identities * identity.bytes
+        reused_requests.bytes + reference_identities * identity.bytes + detached_digests * digest.bytes
+            + wallet_calls.get() * wallet_digest.bytes
     );
     assert_eq!(
         direct_requests.calls + setup.calls,
-        reused_requests.calls + reference_identities * identity.calls
+        reused_requests.calls + reference_identities * identity.calls + detached_digests * digest.calls
+            + wallet_calls.get() * wallet_digest.calls
     );
 
     assert!(
@@ -261,6 +272,75 @@ fn fresh_recovery() {
         |_| Ok(Policy::JoinSplit)
     )
     .is_err());
+
+    // A verified load must authenticate the bytes read now, even if inventory
+    // metadata and the requested identity still name the original proof.
+    let context = TypedRegistryContext::for_pin(&registry, pin).unwrap();
+    let payload = store
+        .load_typed_node_approved(node_identity, &node_job, &context)
+        .unwrap();
+    assert_eq!(payload.ticket(), node_ticket);
+    let (ticket, mut detached) = payload.into_parts();
+    detached[0] ^= 1;
+    assert!(VerifiedNodePayload::bind(ticket, detached).is_err());
+    let proof_path = |identity: ArtifactRef| {
+        store_path.join(format!(
+            "{}-{}.proof",
+            if identity.kind() == ArtifactKind::Node { "n" } else { "w" },
+            crate::block_v2::execution::artifact_store::hex(&identity.digest_bytes())
+        ))
+    };
+    for (identity, original) in [
+        (wallet_ticket.artifact(), &wallet_bytes),
+        (node_identity, &node_bytes),
+    ] {
+        let mut changed = original.clone();
+        *changed.last_mut().unwrap() ^= 1;
+        let path = proof_path(identity);
+        fs::write(&path, changed).unwrap();
+        assert!(store.read_exact(identity).is_err());
+        assert!(restore_typed(
+            &snapshot, pin, &registry, chain, 2, limits, &store, |_| Ok(Policy::JoinSplit),
+        )
+        .is_err());
+        fs::write(&path, original).unwrap();
+    }
+
+    // Valid proofs under another digest's filename still pass numerical checks
+    // but must fail the requested identity. Only a separate test store changes.
+    let substituted_path = temp.0.join("substituted");
+    drop(ArtifactStore::create(&substituted_path, store_limits).unwrap());
+    let mut substituted = Vec::new();
+    for (kind, original) in [
+        (ArtifactKind::Wallet, &wallet_bytes),
+        (ArtifactKind::Node, &node_bytes),
+    ] {
+        let mut changed = original.clone();
+        changed[0] ^= 1;
+        let identity = ArtifactRef::from_bytes(kind, &changed).unwrap();
+        let name = proof_path(identity).file_name().unwrap().to_owned();
+        let mut file = OpenOptions::new()
+            .create_new(true).write(true).mode(0o600)
+            .open(substituted_path.join(name)).unwrap();
+        file.write_all(original).unwrap();
+        substituted.push(identity);
+    }
+    let substituted_store = ArtifactStore::open(&substituted_path, store_limits).unwrap();
+    let error = substituted_store
+        .load_typed_wallet(substituted[0], pin, &registry, chain, Policy::JoinSplit)
+        .unwrap_err();
+    assert_eq!(error.to_string(), "recovered typed wallet identity");
+    let error = substituted_store
+        .load_typed_wallet_approved(substituted[0], &context, chain, Policy::JoinSplit)
+        .err().unwrap();
+    assert_eq!(error.to_string(), "recovered typed wallet identity");
+    let error = substituted_store
+        .load_typed_node(substituted[1], &node_job, &registry).unwrap_err();
+    assert_eq!(error.to_string(), "recovered typed node identity");
+    let error = substituted_store
+        .load_typed_node_approved(substituted[1], &node_job, &context).err().unwrap();
+    assert_eq!(error.to_string(), "recovered typed recursive identity");
+    eprintln!("recovery_owned_payload detached_mutation_rejected=true corrupt_stored_proofs_rejected=2 valid_proof_identity_substitutions_rejected=4");
     node.proof.opened_values.instances[0].permutation_local[0] += profile::Challenge::ONE;
     let changed = codec::encode_node(&node).unwrap();
     let changed_identity = ArtifactRef::from_bytes(ArtifactKind::Node, &changed).unwrap();

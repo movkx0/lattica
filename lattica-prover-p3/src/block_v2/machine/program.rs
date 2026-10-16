@@ -105,8 +105,10 @@ pub(crate) enum Op {
         out: [Wire; 3],
     },
     Poseidon {
-        input: [Wire; 8],
-        output: [Wire; 8],
+        // MAX_WIRES fits in u32. Keep the largest operation from inflating
+        // every instruction, including arrays overlapping during growth.
+        input: [u32; 8],
+        output: [u32; 8],
     },
 }
 
@@ -122,7 +124,7 @@ impl Op {
             Self::Select { bit, a, b, .. } => vec![*a, *b, *bit],
             Self::CubicMul { a, b, .. } => a.iter().chain(b).copied().collect(),
             Self::CubicInverse { a, .. } => a.to_vec(),
-            Self::Poseidon { input, .. } => input.to_vec(),
+            Self::Poseidon { input, .. } => input.map(|w| Wire(w as usize)).to_vec(),
         }
     }
     pub(crate) fn writes(&self) -> Vec<Wire> {
@@ -137,7 +139,7 @@ impl Op {
             | Self::Select { out, .. } => vec![*out],
             Self::CubicMul { out, .. } | Self::CubicInverse { out, .. } => out.to_vec(),
             Self::Equal { .. } | Self::Boolean { .. } => vec![],
-            Self::Poseidon { output, .. } => output.to_vec(),
+            Self::Poseidon { output, .. } => output.map(|w| Wire(w as usize)).to_vec(),
         }
     }
     pub(crate) fn code(&self) -> usize {
@@ -160,9 +162,11 @@ impl Op {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Row {
     Public(usize),
-    Alu(Vec<Op>),
-    Cubic(Vec<Op>),
-    Poseidon { input: [Wire; 8], output: [Wire; 8] },
+    // Rows borrow immutable operations by stable index. Encoding and trace
+    // generation resolve these indices; indices are never authenticated data.
+    Alu(Vec<u32>),
+    Cubic(Vec<u32>),
+    Poseidon(u32),
 }
 
 #[derive(Clone, Debug)]
@@ -192,6 +196,12 @@ impl PartialEq for Program {
 impl Eq for Program {}
 
 impl Program {
+    pub(crate) fn operation(&self, index: u32) -> Result<&Op, ExecutionError> {
+        self.operations
+            .get(index as usize)
+            .ok_or(ExecutionError::InvalidWire)
+    }
+
     /// Peak requested builder storage, including packing and scoped scratch.
     /// This is not RSS and excludes separately reserved caller/compiler data.
     pub(crate) fn construction_host_bytes(&self) -> usize {
@@ -318,10 +328,10 @@ impl Program {
                     }
                 }
                 Op::Poseidon { input, output } => {
-                    let mut state = input.map(|w| values[w.0]);
+                    let mut state = input.map(|w| values[w as usize]);
                     default_goldilocks_poseidon2_8().permute_mut(&mut state);
                     for (w, v) in output.iter().zip(state) {
-                        values[w.0] = v;
+                        values[*w as usize] = v;
                     }
                 }
             }
@@ -638,7 +648,12 @@ impl<'a> ScopedProgramBuilder<'a> {
             return output;
         }
         let output = core::array::from_fn(|_| self.allocate());
-        self.push_operation(Op::Poseidon { input, output });
+        self.push_operation(Op::Poseidon {
+            // Overflow must stay invalid until finish() checks references;
+            // truncation could turn an invalid caller address into wire zero.
+            input: input.map(|w| u32::try_from(w.0).unwrap_or(u32::MAX)),
+            output: output.map(|w| u32::try_from(w.0).unwrap_or(u32::MAX)),
+        });
         self.permutations.insert(input, output, &mut self.memory);
         output
     }
@@ -742,10 +757,10 @@ impl<'a> ScopedProgramBuilder<'a> {
             return Err(ExecutionError::TooLarge);
         }
         // Construction interning tables and constant-folding caches are no
-        // longer needed. Drop them before cloning operations into AIR rows;
+        // longer needed. Drop them before compacting operations and packing rows;
         // another registered program can still be live in the worker cache.
         let (publics, witnesses, wires) = (self.publics, self.witnesses, self.wires);
-        let operations = core::mem::take(&mut self.operations);
+        let mut operations = core::mem::take(&mut self.operations);
         let mut memory = self.memory;
         drop(self);
 
@@ -768,6 +783,7 @@ impl<'a> ScopedProgramBuilder<'a> {
         if !height.is_power_of_two() || height < row_count.max(8) || height > (1 << 24) {
             return Err(ExecutionError::InvalidHeight);
         }
+        construction::compact_operations(&mut operations, &mut memory)?;
         let packing_bytes =
             construction::packing_bytes(&operations, row_count, alu_left + cubic_left, wires)?;
         if !memory.packing(packing_bytes) {
@@ -781,7 +797,8 @@ impl<'a> ScopedProgramBuilder<'a> {
         rows.extend((0..public_rows).map(Row::Public));
         let mut alu = Vec::new();
         let mut cubic = Vec::new();
-        for op in &operations {
+        for (index, op) in operations.iter().enumerate() {
+            let index = u32::try_from(index).map_err(|_| ExecutionError::TooLarge)?;
             if let Op::SelectHint { entries, bits, .. } = op {
                 if bits.len() > 24
                     || entries.len() != 1usize << bits.len()
@@ -815,25 +832,22 @@ impl<'a> ScopedProgramBuilder<'a> {
             // The SSA bus authenticates a DAG, not mutable machine state. Packing
             // independent row types cannot alter its semantics.
             match op {
-                Op::Poseidon { input, output } => rows.push(Row::Poseidon {
-                    input: *input,
-                    output: *output,
-                }),
+                Op::Poseidon { .. } => rows.push(Row::Poseidon(index)),
                 Op::CubicMul { .. } | Op::CubicInverse { .. } => {
                     if cubic.is_empty() {
                         cubic = Vec::with_capacity(cubic_left.min(EXT_LANES));
                     }
-                    cubic.push(op.clone());
+                    cubic.push(index);
                     cubic_left -= 1;
                     if cubic.len() == EXT_LANES {
                         rows.push(Row::Cubic(core::mem::take(&mut cubic)));
                     }
                 }
-                op => {
+                _ => {
                     if alu.is_empty() {
                         alu = Vec::with_capacity(alu_left.min(LANES));
                     }
-                    alu.push(op.clone());
+                    alu.push(index);
                     alu_left -= 1;
                     if alu.len() == LANES {
                         rows.push(Row::Alu(core::mem::take(&mut alu)));

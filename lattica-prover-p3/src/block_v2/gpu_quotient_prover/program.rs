@@ -17,6 +17,8 @@ use p3_field::PrimeField64;
 #[cfg(test)]
 use p3_lookup::{InteractionSymbolicBuilder, Lookup, LookupProtocol};
 use std::{collections::HashMap, sync::Arc};
+mod shape;
+pub(crate) use shape::ProgramShape;
 
 pub(crate) const WORDS_PER_INSTRUCTION: usize = 5;
 pub(crate) const MAX_NODES: usize = 1 << 18;
@@ -83,6 +85,16 @@ pub(crate) struct Program {
 }
 
 impl Program {
+    pub(crate) fn shape(&self) -> ProgramShape {
+        ProgramShape {
+            extension: self.extension,
+            instruction_words: self.instructions.len(),
+            registers: self.registers,
+            constraints: self.constraints,
+            row_words: self.row_words,
+            parameter_words: self.parameter_words,
+        }
+    }
     #[cfg(test)]
     pub fn compile<A, LG>(
         air: &A,

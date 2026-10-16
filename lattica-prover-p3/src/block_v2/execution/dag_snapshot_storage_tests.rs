@@ -100,7 +100,7 @@ fn parity(dag: &Dag) {
 
 #[test]
 fn recovery_metadata_is_bounded_before_loading_proofs_and_reencoding() {
-    let (mut dag, lease) = fixture_with_count(64);
+    let (mut dag, lease) = fixture_with_count(crate::block_v2::profile::MAX_TRANSACTIONS as u8);
     dag.limits.artifact_bytes = 512 << 20;
     dag.limits.workers = Resources {
         ram_bytes: 32768,
@@ -174,8 +174,11 @@ fn recovery_metadata_is_bounded_before_loading_proofs_and_reencoding() {
         |_, _| Err("unexpected output load".into()),
     )
     .unwrap();
-    assert_eq!(verified, 64);
-    assert_eq!(restored.dag.job_count(), 127);
+    assert_eq!(verified, crate::block_v2::profile::MAX_TRANSACTIONS);
+    assert_eq!(
+        restored.dag.job_count(),
+        crate::block_v2::profile::MAX_DAG_NODES
+    );
     assert_eq!(restored.candidates.len(), 1);
     assert_eq!(restored.attempts.len(), 255);
     assert_eq!(restored.workspaces.len(), 1);

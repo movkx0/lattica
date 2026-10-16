@@ -201,7 +201,7 @@ pub(super) fn run(
         println!("{record}");
         records.push(record);
     }
-    let root = bytes(&out.join("node.6.0"))?;
+    let root = bytes(&out.join(profile::ROOT_FILE))?;
     if owner.candidate_result(candidate, eligibility, now())? != Some(root.as_slice()) {
         return Err("typed DAG root differs from published proof".into());
     }
@@ -235,7 +235,7 @@ pub(super) fn run(
         &json!({"schema_version":1,"status":"proved_cpu_audit_pending",
         "count":prepared.expected.count,"construction":CONSTRUCTION,"registry_keys":KEY_COUNT,
         "fresh_proofs":records.len(),"seconds":started.elapsed().as_secs_f64(),
-        "worker_memory_bytes":budget,"root_file":"node.6.0","backend":"gpu",
+        "worker_memory_bytes":budget,"root_file":profile::ROOT_FILE,"backend":"gpu",
             "execution_backend":if dispatch.is_some() {"typed_process_dag_v1"} else {"typed_inline_dag_v1"},
             "worker_pid":worker_pid,"coordinator_pid":std::process::id(),
             "worker_process_exited":dispatch.is_some(),"cache_setups":stats.setups,"cache_hits":stats.hits,

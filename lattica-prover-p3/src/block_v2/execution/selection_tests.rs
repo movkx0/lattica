@@ -149,7 +149,7 @@ fn admit(dag: &mut Dag, selection: &Selection, now: u64) {
     for entry in &selection.entries {
         dag.admit(
             entry.job.clone(),
-            entry.inputs.iter().map(|i| i.bytes.to_vec()).collect(),
+            entry.inputs.iter().map(|i| i.bytes().to_vec()).collect(),
             now,
         )
         .unwrap();
@@ -180,7 +180,7 @@ fn every_single_count_has_exact_ordered_root_and_dependency_first_graph() {
         assert_eq!(selection.root().expected().root, expected(count));
         assert_eq!(selection.root().expected().count as usize, count);
         assert_eq!(selection.root().expected().level, DEPTH);
-        assert!(selection.jobs().len() <= 127);
+        assert!(selection.jobs().len() <= 2 * CAPACITY - 1);
         assert_eq!(
             selection
                 .jobs()
@@ -200,7 +200,7 @@ fn every_single_count_has_exact_ordered_root_and_dependency_first_graph() {
 #[test]
 fn grouped_selection_is_exactly_even_and_never_substitutes_a_single_wrapper() {
     let construction = WrapperConstruction::GroupedPair;
-    for count in 0..=65 {
+    for count in 0..=CAPACITY + 1 {
         let result = Selection::new(pin_for(construction), [9; 32], &inputs(construction, count));
         if count == 0 || count > CAPACITY || count % 2 != 0 {
             assert!(result.is_err());
@@ -215,7 +215,7 @@ fn grouped_selection_is_exactly_even_and_never_substitutes_a_single_wrapper() {
                 count / 2
             );
             assert!(!selection.jobs().any(|j| j.operation() == Operation::Wrap));
-            assert!(selection.jobs().len() <= 63);
+            assert!(selection.jobs().len() < CAPACITY);
         }
     }
 }
@@ -226,7 +226,7 @@ fn selection_rejects_wrong_artifacts_context_construction_and_capacity() {
     assert!(PublicInput::new(wallet_for(single, 1, &[1]), vec![2]).is_err());
     assert!(Selection::new(pin_for(single), [8; 32], &inputs(single, 1)).is_err());
     assert!(Selection::new(pin_for(single), [9; 32], &[]).is_err());
-    assert!(Selection::new(pin_for(single), [9; 32], &inputs(single, 65)).is_err());
+    assert!(Selection::new(pin_for(single), [9; 32], &inputs(single, CAPACITY + 1)).is_err());
     assert!(Selection::new(
         pin_for(WrapperConstruction::GroupedPair),
         [9; 32],
@@ -329,7 +329,7 @@ fn cpu_selection_matches_pinned_subtree_and_rejects_reordered_statement() -> Res
         .ok_or("missing reordered subtree")?;
     assert!(VerifiedNode::verify(wrong, &fixture.registry, &fixture.root_bytes).is_err());
     assert_eq!(selected.root().expected().count, 8);
-    assert_eq!(selected.root().expected().level, 6);
+    assert_eq!(selected.root().expected().level, DEPTH);
     println!("cpu_selection=PASS count=8 level=6 subtree_cpu_verified=true reordered_root_rejected=true full_root_proved=false");
     Ok(())
 }
@@ -350,7 +350,7 @@ fn cpu_selection_accepts_current_single_registry_and_odd_count() -> Result<(), E
     let before = Selection::new(f.pin, [0x5a; 32], &public[..2])?;
     let after = Selection::new(f.pin, [0x5a; 32], &public[..3])?;
     assert_eq!(after.root().expected().count, 3);
-    assert_eq!(after.root().expected().level, 6);
+    assert_eq!(after.root().expected().level, DEPTH);
     let pair = before
         .jobs()
         .find(|j| j.start() == 0 && j.expected().level == 1)

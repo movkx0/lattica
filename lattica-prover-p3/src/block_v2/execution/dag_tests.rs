@@ -86,6 +86,58 @@ fn finish_all(dag: &mut Dag, now: &mut u64) {
     }
 }
 
+#[cfg(target_os = "linux")]
+#[test]
+fn owned_node_cache_preserves_job_identity_and_storage_admission() {
+    use super::job::VerifiedNodePayload;
+    let mut d = Dag::new(
+        pin(),
+        [9; 32],
+        1,
+        Limits {
+            artifact_bytes: MAX_PROOF_BYTES,
+            ..limits()
+        },
+    )
+    .unwrap();
+    let job = leaf(0);
+    let payload =
+        |bytes: &[u8]| VerifiedNodePayload::bind(node(&job, bytes), bytes.to_vec()).unwrap();
+    assert!(d.cache_verified_node(payload(&[2]), 0).is_err());
+    assert_eq!(d.stored_bytes(), 0);
+    d.admit(job.clone(), vec![vec![1]], 0).unwrap();
+    assert!(d
+        .cache_verified_node(payload(&vec![2; MAX_PROOF_BYTES]), 0)
+        .is_err());
+    assert_eq!(d.stored_bytes(), 1);
+    let accepted = vec![2; MAX_PROOF_BYTES - 1];
+    d.cache_verified_node(payload(&accepted), 0).unwrap();
+    assert_eq!(d.stored_bytes(), MAX_PROOF_BYTES);
+    assert_eq!(d.status(job.id()).unwrap(), JobStatus::Completed);
+    assert!(d.cache_verified_node(payload(&[5, 6, 7]), 0).is_err());
+    d.cache_verified_node(payload(&accepted), 0).unwrap();
+    assert_eq!(d.stored_bytes(), MAX_PROOF_BYTES);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn owned_node_cache_preserves_live_reservations() {
+    use super::job::VerifiedNodePayload;
+    let mut d = dag();
+    candidate(&mut d, 1);
+    let job = leaf(0);
+    let lease = d
+        .lease(job.id(), WorkerId(1), request(), 1, 100, 0)
+        .unwrap();
+    let used = d.stored_bytes();
+    let payload = VerifiedNodePayload::bind(node(&job, &[42]), vec![42]).unwrap();
+    assert!(d.cache_verified_node(payload, 0).is_err());
+    assert_eq!(d.resource_use(), request());
+    assert_eq!(d.reserved_output_bytes(), MAX_PROOF_BYTES);
+    assert_eq!(d.stored_bytes(), used);
+    assert_eq!(d.attempt_status(lease).unwrap(), AttemptStatus::Leased);
+}
+
 #[test]
 fn graph_admission_requires_inputs_dependencies_and_full_nonempty_candidates() {
     let mut d = dag();
@@ -120,7 +172,9 @@ fn verified_siblings_release_parent_without_unrelated_level_barrier() {
     // parent outranks it. The parent does outrank the remaining leaf work.
     assert_eq!(
         ready[0],
-        Job::empty(pin(), [9; 32], 32, DEPTH - 1).unwrap().id()
+        Job::empty(pin(), [9; 32], 1 << (DEPTH - 1), DEPTH - 1)
+            .unwrap()
+            .id()
     );
     assert!(
         ready.iter().position(|id| *id == parent.id()).unwrap()
@@ -472,7 +526,7 @@ fn pruning_retains_transitive_dependencies_of_newer_unattached_parent() {
 #[test]
 fn maximum_graph_completes_with_shuffled_workers_within_aggregate_admission() {
     let mut d = dag();
-    let (root, c) = candidate(&mut d, 64);
+    let (root, c) = candidate(&mut d, crate::block_v2::profile::MAX_TRANSACTIONS as u8);
     d.seal(c, [1; 32], 0).unwrap();
     let mut now = 0;
     let mut completed = 0;
@@ -508,9 +562,12 @@ fn maximum_graph_completes_with_shuffled_workers_within_aggregate_admission() {
         assert_eq!(d.resource_use(), Resources::default());
         assert_eq!(d.reserved_output_bytes(), 0);
     }
-    assert_eq!(completed, 127);
-    assert_eq!(d.job_count(), 127);
-    assert_eq!(d.stored_bytes(), 64 + 127);
+    assert_eq!(completed, crate::block_v2::profile::MAX_DAG_NODES);
+    assert_eq!(d.job_count(), crate::block_v2::profile::MAX_DAG_NODES);
+    assert_eq!(
+        d.stored_bytes(),
+        3 * crate::block_v2::profile::MAX_TRANSACTIONS - 1
+    );
     assert_eq!(
         d.candidate_result(c, [1; 32], now).unwrap(),
         Some(&[42][..])

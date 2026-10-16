@@ -6,8 +6,8 @@ use crate::htlc_air as htlc;
 const INPUT_WORDS: usize = htlc::N_IN * (24 + htlc::DEPTH * 5) + htlc::M_OUT * 11 + 7;
 const GEOMETRY_WORDS: usize = 41;
 
-fn input_words(w: &htlc::Witness) -> InputWords {
-    let mut words = InputWords(Vec::with_capacity(INPUT_WORDS));
+fn input_words(w: &htlc::Witness) -> Result<InputWords, String> {
+    let mut words = InputWords(staging_words(INPUT_WORDS)?);
     for v in &w.inputs {
         words.0.extend(v.nk);
         words.0.extend([
@@ -39,7 +39,7 @@ fn input_words(w: &htlc::Witness) -> InputWords {
     words.0.extend([w.fee, w.mint]);
     words.0.extend(w.tx_binding.map(|x| x.as_canonical_u64()));
     words.0.push(w.current_height);
-    words
+    Ok(words)
 }
 
 pub(super) fn plan(host_allowance: usize) -> Result<Plan, String> {

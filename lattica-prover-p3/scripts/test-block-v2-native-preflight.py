@@ -4,6 +4,7 @@ import ctypes
 import struct
 from types import SimpleNamespace
 import unittest
+from unittest.mock import Mock
 
 import block_v2_host_store as H
 
@@ -11,6 +12,7 @@ import block_v2_host_store as H
 class Preflight(unittest.TestCase):
     def setUp(self):
         self.verifier = object.__new__(H.NativeVerifier)
+        self.verifier.capacity = 64
         self.verifier._context = bytes([3] * 32 + [4] * 32)
         self.verifier._registry = b'LBV2RG01fake'
         self.verifier._genesis = b'LBV2GN01' + struct.pack('<Q', 9) + bytes(52)
@@ -42,6 +44,18 @@ class Preflight(unittest.TestCase):
         self.assertEqual(ctypes.string_at(args[8], args[9]), body)
         self.assertEqual(args[10], 10)
         self.assertEqual(ctypes.string_at(args[11], args[12]), struct.pack('<QQQQ', 0, 0, 0, 7))
+
+    def test_selected_capacity_rejects_before_the_native_call(self):
+        body = b'LBV2BD01' + struct.pack('<I', 65)
+        for capacity, expected_calls in [(64, 0), (128, 1)]:
+            with self.subTest(capacity=capacity):
+                self.verifier.capacity = capacity
+                call = Mock(return_value=1)
+                self.verifier._lib = SimpleNamespace(
+                    lattica_v2_research_candidate_preflight_v1=call)
+                with self.assertRaises(H.RejectedBlock):
+                    self.verifier.preflight([], body, 10)
+                self.assertEqual(call.call_count, expected_calls)
 
     def test_bad_context_count_shapes_trailing_data_and_fields_are_rejected(self):
         packets = [self.packet[:119], self.packet + b'junk', b'badmagic' + self.packet[8:]]

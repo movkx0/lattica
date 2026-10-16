@@ -768,7 +768,8 @@ pub fn decode_result(
     request: &[u8],
     bytes: &[u8],
 ) -> Result<UnverifiedResult, Error> {
-    let (range, timings, stats) = parse_result(assignment, request, bytes)?;
+    let (range, timings, stats) =
+        parse_result(assignment, launch::RequestBinding::Bytes(request), bytes)?;
     let mut proof = storage_vec(range.len(), MAX_PROOF_BYTES)?;
     proof.extend_from_slice(&bytes[range]);
     Ok(UnverifiedResult {
@@ -783,6 +784,24 @@ pub fn decode_result(
 pub(super) fn decode_result_owned(
     assignment: &Assignment,
     request: &[u8],
+    bytes: Vec<u8>,
+) -> Result<UnverifiedResult, Error> {
+    decode_result_owned_inner(assignment, launch::RequestBinding::Bytes(request), bytes)
+}
+
+/// The original locally owned request supplies its identity, never the worker.
+/// Assignment binding and artifact validation remain identical to raw decoding.
+pub(super) fn decode_result_prepared_owned(
+    assignment: &Assignment,
+    request: &launch::PreparedRequest,
+    bytes: Vec<u8>,
+) -> Result<UnverifiedResult, Error> {
+    decode_result_owned_inner(assignment, launch::RequestBinding::Prepared(request), bytes)
+}
+
+fn decode_result_owned_inner(
+    assignment: &Assignment,
+    request: launch::RequestBinding<'_>,
     mut bytes: Vec<u8>,
 ) -> Result<UnverifiedResult, Error> {
     if bytes.capacity() > MAX_RESULT_BYTES {
@@ -803,13 +822,13 @@ pub(super) fn decode_result_owned(
 
 fn parse_result(
     assignment: &Assignment,
-    request: &[u8],
+    request: launch::RequestBinding<'_>,
     bytes: &[u8],
 ) -> Result<(std::ops::Range<usize>, Timings, CacheStats), Error> {
-    if bytes.len() > MAX_RESULT_BYTES || request.len() > launch::MAX_REQUEST_BYTES {
+    if bytes.len() > MAX_RESULT_BYTES || request.bytes().len() > launch::MAX_REQUEST_BYTES {
         return Err("CPU result/request size".into());
     }
-    check_assignment_request(assignment, request)?;
+    check_assignment_request(assignment, request.bytes())?;
     let mut r = Reader { bytes, at: 0 };
     let magic = if assignment.job.pin().is_typed() {
         TYPED_RESULT_MAGIC
@@ -819,7 +838,7 @@ fn parse_result(
     if r.take(8)? != magic
         || r.array()? != assignment.lease.process_key()?
         || r.job()? != assignment.job.id()
-        || r.array()? != launch::request_digest(request)?
+        || r.array()? != request.digest()?
     {
         return Err("CPU result assignment/request identity".into());
     }

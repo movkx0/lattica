@@ -17,7 +17,7 @@ fn context() -> Context {
 fn conformance(hash: &mut Derivation<'_>) -> Result<(), Error> {
     let context = context();
     let mut entries = Vec::new();
-    for i in 0..64u64 {
+    for i in 0..commitment::CAPACITY as u64 {
         let kind = Kind::from_code(1 + (i % 3) as u8)?;
         let words = [i, commitment::MODULUS - 1, 0, i + 1, 0];
         let entry = Entry {
@@ -30,7 +30,7 @@ fn conformance(hash: &mut Derivation<'_>) -> Result<(), Error> {
         );
         entries.push(entry);
     }
-    for count in [1, 2, 3, 17, 63, 64] {
+    for count in [1, 2, 3, 17, commitment::CAPACITY - 1, commitment::CAPACITY] {
         assert_eq!(
             commitment::root_with_hash(context, &entries[..count], &mut |d, f| hash.hash(d, f))?,
             commitment::root(context, &entries[..count])?
@@ -93,7 +93,11 @@ fn conformance(hash: &mut Derivation<'_>) -> Result<(), Error> {
     for (index, value, error) in [
         (0, 1u64 << 32, "noncanonical context limb"),
         (programs::MODE, 0, "node metadata range"),
-        (programs::LEVEL, 7, "node metadata range"),
+        (
+            programs::LEVEL,
+            u64::from(commitment::DEPTH + 1),
+            "node metadata range",
+        ),
         (programs::COUNT, 2, "node metadata range"),
     ] {
         let old = public[index];
@@ -191,7 +195,11 @@ fn summary_only_reports(backend: Backend) {
         (15, commitment::MODULUS - 1, "noncanonical context limb"),
         (programs::MODE, 0, "node metadata range"),
         (programs::MODE, 13, "node metadata range"),
-        (programs::LEVEL, 7, "node metadata range"),
+        (
+            programs::LEVEL,
+            u64::from(commitment::DEPTH + 1),
+            "node metadata range",
+        ),
         (
             programs::LEVEL,
             commitment::MODULUS - 1,
@@ -250,7 +258,7 @@ fn callback_validation_precedes_hashing_and_empty_hash_failures_propagate() {
         Err(C::NonCanonicalField)
     );
     assert_eq!(
-        commitment::empty_subtree_with_hash(context(), 7, &mut reject),
+        commitment::empty_subtree_with_hash(context(), commitment::DEPTH + 1, &mut reject),
         Err(C::InvalidLevel)
     );
     let empty = commitment::empty_subtree(context(), 2).unwrap();

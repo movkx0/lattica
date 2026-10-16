@@ -71,7 +71,7 @@ const Fixture = struct {
     inputs: [][2]node.Minted,
 
     fn init(allocator: std.mem.Allocator) !Fixture {
-        return initSlots(allocator, 64, .legacy);
+        return initSlots(allocator, @import("block_v2_capacity.zig").CAPACITY, .legacy);
     }
     fn initSlots(allocator: std.mem.Allocator, slots: usize, flavor: Flavor) !Fixture {
         if (slots == 0 or slots > (if (flavor == .sustained) MAX_SUSTAINED_SLOTS else MAX_DELIVERY_SLOTS)) return error.InvalidFixtureCapacity;
@@ -96,7 +96,7 @@ const Fixture = struct {
 };
 
 pub fn genesis(output: []u8) !usize {
-    return genesisSlots(64, .legacy, output);
+    return genesisSlots(@import("block_v2_capacity.zig").CAPACITY, .legacy, output);
 }
 
 pub fn deliveryGenesis(slots: usize, output: []u8) !usize {
@@ -128,7 +128,7 @@ fn genesisSlots(slots: usize, flavor: Flavor, output: []u8) !usize {
 }
 
 pub fn wallet(index: usize, output: []u8) !usize {
-    if (index >= 64) return error.InvalidFixtureIndex;
+    if (index >= @import("block_v2_capacity.zig").CAPACITY) return error.InvalidFixtureIndex;
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();

@@ -158,32 +158,32 @@ fn numerical_allocations_and_verification_decisions_fit_the_source_bound() {
         valid: bool,
     ) {
         super::super::verification_envelope::check(
-            &registered.air,
-            &registered.data.common,
-            registered.analysis.quotient_chunks,
+            &registered.prepared.air,
+            &registered.prepared.data.common,
+            registered.prepared.analysis.quotient_chunks,
             proof,
         )
         .unwrap();
         let plan = Plan::new(
-            &registered.air,
-            &registered.data.common,
-            registered.analysis.quotient_chunks,
+            &registered.prepared.air,
+            &registered.prepared.data.common,
+            registered.prepared.analysis.quotient_chunks,
         )
         .unwrap();
         let (result, observed) = measure(|| {
             verify_batch(
                 config,
-                core::slice::from_ref(&registered.air),
+                core::slice::from_ref(&registered.prepared.air),
                 proof,
                 public,
-                &registered.data.common,
+                &registered.prepared.data.common,
             )
         });
         assert_eq!(result.is_ok(), valid, "{result:?}");
         bounded(observed, plan.requested_bytes);
         assert_eq!(registered.verify(proof, &public[0]).is_ok(), valid);
         eprintln!("native_verifier_scratch_observed height={} publics={} valid={valid} requested_bytes={} calls={} largest={} source_bound={} wide={}",
-            registered.air.program().height(), public[0].len(), observed.bytes, observed.calls, observed.largest, plan.requested_bytes, cfg!(feature = "block-v2-wide-lanes"));
+            registered.prepared.air.program().height(), public[0].len(), observed.bytes, observed.calls, observed.largest, plan.requested_bytes, cfg!(feature = "block-v2-wide-lanes"));
     }
     for publics in [1, 33] {
         for height in [8, 64] {

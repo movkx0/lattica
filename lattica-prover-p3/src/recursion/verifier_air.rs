@@ -244,6 +244,7 @@ pub fn prove_transcript(
     alpha: [Val; 2],
     zeta: [Val; 2],
 ) -> Vec<u8> {
+    crate::proving::legacy_cpu_admission().expect("CPU research proving policy");
     let pis = vec![alpha[0], alpha[1], zeta[0], zeta[1]];
     let proof = prove(
         &make_config(),
@@ -365,6 +366,7 @@ pub fn native_sample_bits(x: Val) -> u64 {
 }
 
 pub fn prove_sample_bits(x: Val, index: u64) -> Vec<u8> {
+    crate::proving::legacy_cpu_admission().expect("CPU research proving policy");
     postcard::to_allocvec(&prove(
         &make_config(),
         &SampleBitsAir,
@@ -523,6 +525,7 @@ pub fn prove_reduced_opening(
     zeta: Challenge,
     reduced: Challenge,
 ) -> Vec<u8> {
+    crate::proving::legacy_cpu_admission().expect("CPU research proving policy");
     use p3_field::BasedVectorSpace;
     let pis = reduced.as_basis_coefficients_slice().to_vec();
     postcard::to_allocvec(&prove(
@@ -667,6 +670,7 @@ fn lh_build_trace(row: &[Val]) -> RowMajorMatrix<Val> {
 
 /// Prove that `MyHash(row) == digest` (the leaf hash), with the digest as public output.
 pub fn prove_leaf_hash(row: &[Val], digest: [Val; 4]) -> Vec<u8> {
+    crate::proving::legacy_cpu_admission().expect("CPU research proving policy");
     postcard::to_allocvec(&prove(
         &make_config(),
         &LeafHashAir,
@@ -826,6 +830,7 @@ fn ds_build_trace(zeta: Challenge) -> RowMajorMatrix<Val> {
 
 /// Prove the in-circuit domain selectors at ζ; the 4 selectors are the public output.
 pub fn prove_domain_selectors(zeta: Challenge, selectors: [Challenge; 4]) -> Vec<u8> {
+    crate::proving::legacy_cpu_admission().expect("CPU research proving policy");
     use p3_field::BasedVectorSpace;
     let pis: Vec<Val> = selectors
         .iter()
@@ -1020,6 +1025,7 @@ fn ft_build_trace(felts: &[Val]) -> RowMajorMatrix<Val> {
 /// Prove that the transcript over (instance ‖ ζ-commits ‖ round-commits) squeezes the public challenges
 /// (α, ζ, β_0..β_{R-1}), each a 2-coefficient F_p² value.
 pub fn prove_fri_transcript(felts: &[Val], challenges: &[[Val; 2]]) -> Vec<u8> {
+    crate::proving::legacy_cpu_admission().expect("CPU research proving policy");
     let pis: Vec<Val> = challenges.iter().flat_map(|c| [c[0], c[1]]).collect();
     postcard::to_allocvec(&prove(
         &make_config(),
@@ -1164,6 +1170,7 @@ pub fn prove_constraint_check(
     quotient: Challenge,
     pub_val: Val,
 ) -> Vec<u8> {
+    crate::proving::legacy_cpu_admission().expect("CPU research proving policy");
     use p3_field::BasedVectorSpace;
     let pis: Vec<Val> = quotient.as_basis_coefficients_slice().to_vec();
     let trace = cc_build_trace(
@@ -1350,6 +1357,7 @@ pub fn prove_ccs(
     pub_val: Val,
     quotient: Challenge,
 ) -> Vec<u8> {
+    crate::proving::legacy_cpu_admission().expect("CPU research proving policy");
     use p3_field::BasedVectorSpace;
     let pis = quotient.as_basis_coefficients_slice().to_vec();
     postcard::to_allocvec(&prove(

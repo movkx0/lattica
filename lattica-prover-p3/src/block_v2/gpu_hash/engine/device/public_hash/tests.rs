@@ -207,7 +207,7 @@ fn gpu_public_hash_stream_rejects_changed_replays_and_reports_completed_batches(
 }
 
 #[cfg(feature = "gpu")]
-fn initialize() {
+pub(super) fn initialize() {
     super::super::super::initialize_mode(
         super::super::super::Limits {
             managed_bytes: 1 << 20,
@@ -218,7 +218,7 @@ fn initialize() {
     )
     .unwrap();
 }
-fn live(session: &DeviceSession) -> usize {
+pub(super) fn live(session: &DeviceSession) -> usize {
     session
         .with_engine(|engine| Ok(engine.accounting.lock().unwrap().device_live))
         .unwrap()

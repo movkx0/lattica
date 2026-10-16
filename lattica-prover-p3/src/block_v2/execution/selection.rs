@@ -4,12 +4,11 @@
 //! by the host, not arrival order. Host state/issuance checks and current
 //! eligibility remain mandatory. This is not a block acceptance API.
 
-use super::job::{Job, JobId, RegistryPin, VerifiedWallet};
+use super::job::{Job, JobId, RegistryPin};
 use crate::block_v2::{
     commitment::{CAPACITY, DEPTH},
     recursive::{Error, WrapperConstruction},
 };
-use std::sync::Arc;
 
 #[path = "selection_storage.rs"]
 mod storage;
@@ -19,40 +18,11 @@ mod preparation;
 pub use preparation::PreparationStorage;
 
 /// Exact public proof bytes bound to an existing verification ticket.
-#[derive(Clone)]
-pub struct PublicInput {
-    wallet: VerifiedWallet,
-    bytes: Arc<[u8]>,
-}
-
-impl PublicInput {
-    /// Bounds ownership transfer into Arc even when the proof Vec has spare
-    /// backing. The unchanged encoded proof limit is smaller than this ceiling.
-    pub const INPUT_CAPACITY_BYTES: usize = 4 * crate::block_v2::profile::MAX_PROOF_BYTES;
-
-    pub fn new(wallet: VerifiedWallet, bytes: Vec<u8>) -> Result<Self, Error> {
-        if bytes.capacity() > Self::INPUT_CAPACITY_BYTES {
-            return Err("selection input backing exceeds conversion allowance".into());
-        }
-        wallet.artifact().check_bytes(&bytes)?;
-        Ok(Self {
-            wallet,
-            bytes: bytes.into(),
-        })
-    }
-}
+pub use super::job::VerifiedWalletPayload as PublicInput;
 
 struct Entry {
     job: Job,
     inputs: Vec<PublicInput>,
-}
-
-impl Entry {
-    fn wallet_bytes(&self) -> Vec<Vec<u8>> {
-        let mut copies = Vec::with_capacity(self.inputs.len());
-        copies.extend(self.inputs.iter().map(|input| input.bytes.to_vec()));
-        copies
-    }
 }
 
 /// Complete depth-six dense-prefix graph, in dependency-first admission order.
@@ -77,7 +47,7 @@ impl Selection {
             return Err("paired selection requires an even transaction count".into());
         }
         for input in inputs {
-            let context = input.wallet.summary().context;
+            let context = input.ticket().summary().context;
             if context.profile_id != pin.profile() || context.chain_id != chain {
                 return Err("selection wallet context mismatch".into());
             }
@@ -127,19 +97,19 @@ impl Selection {
             let start_index = start as usize;
             if unit == 0 {
                 let input = &inputs[start_index];
-                (Job::wrap(start, input.wallet)?, vec![input.clone()])
+                (Job::wrap(start, input.ticket())?, vec![input.clone()])
             } else {
                 let left = &inputs[start_index];
                 if pin.is_typed() {
                     let right = inputs.get(start_index + 1);
                     (
-                        Job::typed_pair(start, left.wallet, right.map(|r| r.wallet))?,
+                        Job::typed_pair(start, left.ticket(), right.map(|r| r.ticket()))?,
                         vec![left.clone(), right.unwrap_or(left).clone()],
                     )
                 } else {
                     let right = &inputs[start_index + 1];
                     (
-                        Job::wrap_pair(start, left.wallet, right.wallet)?,
+                        Job::wrap_pair(start, left.ticket(), right.ticket())?,
                         vec![left.clone(), right.clone()],
                     )
                 }
@@ -184,7 +154,7 @@ impl Selection {
         now_ms: u64,
     ) -> Result<JobId, Error> {
         for entry in &self.entries {
-            owner.admit(entry.job.clone(), entry.wallet_bytes(), now_ms)?;
+            owner.admit_verified_wallets(entry.job.clone(), &entry.inputs, now_ms)?;
         }
         Ok(self.root().id())
     }

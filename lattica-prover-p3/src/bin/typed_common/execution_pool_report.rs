@@ -2,7 +2,7 @@
 //! service does not replace endpoints during a request, so each can fail once.
 
 use super::*;
-use lattica_prover_p3::block_v2::execution::pool::{AcceptedJob, PoolOutputStorage};
+use lattica_prover_p3::block_v2::execution::pool::{AcceptedJob, PoolOutputStorage, WorkerTimings};
 use std::mem::size_of;
 
 const JOB_LIMIT: usize = 2 * commitment::CAPACITY - 1;
@@ -14,6 +14,8 @@ pub(super) struct JobRecord {
     worker: u64,
     elapsed_ms: u64,
     proof_bytes: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    worker_timings: Option<WorkerTimings>,
 }
 
 fn job_hex<S: serde::Serializer>(bytes: &[u8; 32], serializer: S) -> Result<S::Ok, S::Error> {
@@ -101,6 +103,7 @@ impl Report {
             worker: job.worker.0,
             elapsed_ms: job.elapsed_ms,
             proof_bytes: job.proof_bytes,
+            worker_timings: job.worker_timings,
         })
     }
 
@@ -123,6 +126,29 @@ impl Report {
     }
     pub fn failures(&self) -> &[FailureRecord] {
         &self.failures
+    }
+
+    /// Call only after the pool has returned a verified complete root. Reuse
+    /// includes imported prefix nodes and nodes retained by the current pool,
+    /// as well as nodes recovered from a previous service's journal.
+    pub fn completion<'a>(
+        &'a self,
+        native: &'a native::Binding,
+        started_ms: u64,
+        completed_ms: u64,
+    ) -> Completion<'a> {
+        Completion {
+            schema_version: 1,
+            status: "proved_cpu_audit_pending",
+            root_file: profile::ROOT_FILE,
+            fresh_proofs: self.jobs.len(),
+            reused_proofs: self.job_limit - self.jobs.len(),
+            started_ms,
+            completed_ms,
+            worker_failures: self.failures(),
+            native_host: native,
+            native_applied: false,
+        }
     }
 
     pub fn retained_storage_bytes(&self) -> Result<usize, Error> {
@@ -181,6 +207,22 @@ pub(super) struct Completion<'a> {
     pub native_applied: bool,
 }
 
+#[derive(serde::Serialize)]
+pub(super) struct PrefixCompletion<'a> {
+    pub schema_version: u32,
+    pub status: &'a str,
+    pub preseal_only: bool,
+    pub stable_nodes: &'a [preseal::Node],
+    pub fresh_proofs: usize,
+    pub reused_proofs: usize,
+    pub started_ms: u64,
+    pub completed_ms: u64,
+    pub worker_failures: &'a [FailureRecord],
+    pub native_host: &'a native::Binding,
+    pub pool_workflow: &'a pool_timing::Workflow,
+    pub native_applied: bool,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -191,6 +233,7 @@ mod tests {
             worker: u64::MAX,
             elapsed_ms: u64::MAX,
             proof_bytes: PoolOutputStorage::ROOT_LIMIT,
+            worker_timings: None,
         }
     }
 
@@ -234,6 +277,44 @@ mod tests {
     }
 
     #[test]
+    fn full_report_retains_worker_durations_without_replacing_coordinator_time() {
+        let mut report = Report::new(JOB_LIMIT, 16).unwrap();
+        let durations = WorkerTimings {
+            input_verification_ms: u64::MAX,
+            proving_ms: u64::MAX,
+            serialization_ms: u64::MAX,
+        };
+        for _ in 0..JOB_LIMIT {
+            let mut record = job(0xab);
+            record.elapsed_ms = 17;
+            record.worker_timings = Some(durations);
+            report.push_job(record).unwrap();
+        }
+        let bytes = encode(&report.jobs()).unwrap();
+        assert_eq!(bytes.capacity(), JSON_LIMIT);
+        assert!(bytes.len() < JSON_LIMIT);
+        let parsed: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let rows = parsed.as_array().unwrap();
+        assert_eq!(rows.len(), JOB_LIMIT);
+        for row in rows {
+            assert_eq!(row["elapsed_ms"], 17);
+            assert_eq!(
+                row["worker_timings"],
+                serde_json::json!({
+                    "input_verification_ms": u64::MAX,
+                    "proving_ms": u64::MAX,
+                    "serialization_ms": u64::MAX,
+                })
+            );
+        }
+        assert!(
+            report.retained_storage_bytes().unwrap()
+                <= Report::storage_plan(JOB_LIMIT, 16).unwrap().retained_bytes
+        );
+        eprintln!("bounded_worker_timings jobs={JOB_LIMIT} json_bytes={} json_limit={JSON_LIMIT} coordinator_elapsed_ms=17", bytes.len());
+    }
+
+    #[test]
     fn typed_records_preserve_json_values_and_borrow_failure_strings() {
         let mut report = Report::new(1, 1).unwrap();
         report.push_job(job(0xab)).unwrap();
@@ -247,21 +328,10 @@ mod tests {
             "profile":vec![5u8;32],"chain":vec![6u8;32],"root":[7,7,7,7],"count":4,
             "block_height":10,"authorized_issuance":{"3":7}}});
         let native: native::Binding = serde_json::from_value(native_value.clone()).unwrap();
-        let completion = Completion {
-            schema_version: 1,
-            status: "proved_cpu_audit_pending",
-            root_file: "node.6.0",
-            fresh_proofs: 1,
-            reused_proofs: 0,
-            started_ms: 10,
-            completed_ms: 20,
-            worker_failures: report.failures(),
-            native_host: &native,
-            native_applied: false,
-        };
+        let completion = report.completion(&native, 10, 20);
         assert_eq!(
             serde_json::from_slice::<serde_json::Value>(&encode(&completion).unwrap()).unwrap(),
-            json!({"schema_version":1,"status":"proved_cpu_audit_pending","root_file":"node.6.0",
+            json!({"schema_version":1,"status":"proved_cpu_audit_pending","root_file":profile::ROOT_FILE,
                 "fresh_proofs":1,"reused_proofs":0,"started_ms":10,"completed_ms":20,
                 "worker_failures":[{"worker":42,"reason":"quote \" newline\n rocket \u{1f680}"}],
                 "native_host":native_value,"native_applied":false})
@@ -280,6 +350,36 @@ mod tests {
             json!([{"worker":42,"reason":"quote \" newline\n rocket \u{1f680}"}])
         );
         assert_eq!(report.failures()[0].reason.as_ptr(), pointer);
+    }
+
+    #[test]
+    fn completion_counts_imported_and_recovered_proofs_without_new_job_records() {
+        let native: native::Binding = serde_json::from_value(json!({
+            "schema_version":1,"head_token":vec![1u8;32],"generation":0,
+            "configuration_sha256":vec![2u8;32],"complete_body_sha256":vec![3u8;32],
+            "preparation_sha256":vec![4u8;32],"expected":{"schema_version":1,
+            "profile":vec![5u8;32],"chain":vec![6u8;32],"root":[7,7,7,7],"count":64,
+            "block_height":10,"authorized_issuance":{}}
+        }))
+        .unwrap();
+        // A fresh 64-input candidate imports 56 prefix nodes and proves seven
+        // remaining jobs. Journal recovery and complete cache hits use the
+        // same receipt contract; none may relabel existing proofs as fresh.
+        for (fresh, reused) in [(7, 56), (12, 51), (0, 63), (63, 0)] {
+            let mut report = Report::new(63, 1).unwrap();
+            for index in 0..fresh {
+                report.push_job(job(index as u8)).unwrap();
+            }
+            let completion = report.completion(&native, 10, 20);
+            let value: serde_json::Value =
+                serde_json::from_slice(&encode(&completion).unwrap()).unwrap();
+            assert_eq!(value["fresh_proofs"], fresh);
+            assert_eq!(value["reused_proofs"], reused);
+            assert_eq!(value["status"], "proved_cpu_audit_pending");
+            assert_eq!(value["native_applied"], false);
+            assert_eq!(report.jobs().len(), fresh);
+            report.retained_storage_bytes().unwrap();
+        }
     }
 
     #[test]

@@ -202,6 +202,16 @@ impl FriData {
         session: &DeviceSession,
         indices: &[usize],
     ) -> Result<Vec<BatchOpening<F, FriExtensionMmcs<F>>>, String> {
+        self.open_rows_extension_with_allowance::<F>(session, indices, 1 << 20)
+    }
+
+    pub(crate) fn open_rows_extension_with_allowance<F: FriExtension>(
+        &self,
+        session: &DeviceSession,
+        indices: &[usize],
+        host_allowance: usize,
+    ) -> Result<Vec<BatchOpening<F, FriExtensionMmcs<F>>>, String> {
+        let host_allowance = host_allowance.min(1 << 20);
         if self.leaves.spec().extension() != F::DEVICE_EXTENSION {
             return Err("FRI query extension does not match its commitment".into());
         }
@@ -212,16 +222,16 @@ impl FriData {
             self.leaves.spec().columns(),
             indices.len(),
         )?;
-        if host_bytes > 1 << 20 {
+        if host_bytes > host_allowance {
             return Err("FRI query batch exceeds host proof allowance".into());
         }
         let mut openings = Self::proof_vector(indices.len())?;
-        let values = session.gather_rows(&self.leaves, indices, 1 << 20)?;
+        let values = session.gather_rows(&self.leaves, indices, host_allowance)?;
         let salts = match &self.salts {
-            FriSalts::Device(matrix) => session.gather_rows(matrix, indices, 1 << 20)?,
+            FriSalts::Device(matrix) => session.gather_rows(matrix, indices, host_allowance)?,
             FriSalts::Replay(recipe) => {
                 let matrix = recipe.materialize(session)?;
-                session.gather_rows(&matrix, indices, 1 << 20)?
+                session.gather_rows(&matrix, indices, host_allowance)?
             }
         };
         for (query, index) in indices.iter().enumerate() {

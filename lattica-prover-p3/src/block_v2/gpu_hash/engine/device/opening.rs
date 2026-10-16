@@ -5,7 +5,7 @@ use super::*;
 const MAX_WIDTH: usize = 4096;
 const MAX_POINTS: usize = 32;
 const MAX_LOG_ROWS: u32 = 25;
-const TILE_LIMIT: usize = 64 << 20;
+pub(super) const TILE_LIMIT: usize = 64 << 20;
 
 // Select separate kernels so the existing cubic implementation is unchanged.
 macro_rules! opening_kernel {
@@ -97,14 +97,14 @@ fn validate_prefix_extension(
     Ok(points.len() / degree)
 }
 
-struct EvaluationPlan {
-    rows: usize,
+pub(super) struct EvaluationPlan {
+    pub(super) rows: usize,
     inverse_words: usize,
     partial_words: usize,
-    peak: usize,
+    pub(super) peak: usize,
 }
 impl EvaluationPlan {
-    fn new(
+    pub(super) fn new(
         spec: MatrixSpec,
         points: usize,
         degree: usize,
@@ -119,7 +119,10 @@ impl EvaluationPlan {
             1,
         ];
         checked_peak(live, &fixed, limits, max_alloc)?;
-        let mut rows = spec.rows().min(4096);
+        // Bound the serial partial-sum reduction while amortizing per-kernel
+        // submission and observation waits. The loop still admits every buffer
+        // against the live aggregate, tile and individual-allocation budgets.
+        let mut rows = spec.rows().min(65536);
         while rows != 0 {
             let inverse_words = rows * points * degree;
             let partial_words = rows.div_ceil(128) * points * spec.columns * degree;
@@ -141,12 +144,12 @@ impl EvaluationPlan {
     }
 }
 
-struct ReductionPlan {
-    rows: usize,
-    peak: usize,
+pub(super) struct ReductionPlan {
+    pub(super) rows: usize,
+    pub(super) peak: usize,
 }
 impl ReductionPlan {
-    fn new(
+    pub(super) fn new(
         prefix: MatrixSpec,
         log_rows: u32,
         points: usize,
@@ -168,7 +171,9 @@ impl ReductionPlan {
             1,
         ];
         checked_peak(live, &fixed, limits, max_alloc)?;
-        let mut rows = height.min(65536);
+        // Amortize denominator/inversion dispatches while preserving aggregate,
+        // scratch-tile and individual-allocation admission for every buffer.
+        let mut rows = height.min(1 << 20);
         while rows != 0 {
             let inverse_words = rows * points * degree;
             let mut words = fixed.to_vec();

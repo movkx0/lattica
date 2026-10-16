@@ -4,22 +4,23 @@
 //! candidate, and policy. Remote transport must authenticate that authority.
 
 use super::job::{ArtifactKind, ArtifactRef};
+use crate::block_v2::profile::MAX_TRANSACTIONS;
 use crate::block_v2::{recursive::Error, typed_recursive::Policy};
 
 const MAGIC: &[u8; 8] = b"LVPCX001";
 const ENTRY_BYTES: usize = 32 + 4 + 1 + 8;
-pub const MAX_BYTES: usize = 8 + 32 + 4 + 64 * ENTRY_BYTES;
+pub const MAX_BYTES: usize = 8 + 32 + 4 + MAX_TRANSACTIONS * ENTRY_BYTES;
 
 #[derive(Clone, Copy)]
 pub struct PolicyContext {
     binding: [u8; 32],
-    policies: [Option<(ArtifactRef, Policy)>; 64],
+    policies: [Option<(ArtifactRef, Policy)>; MAX_TRANSACTIONS],
     len: usize,
 }
 
 impl PolicyContext {
     pub fn new(binding: [u8; 32], policies: Vec<(ArtifactRef, Policy)>) -> Result<Self, Error> {
-        if binding == [0; 32] || policies.len() > 64 {
+        if binding == [0; 32] || policies.len() > MAX_TRANSACTIONS {
             return Err("worker context binding/count".into());
         }
         for (index, (artifact, policy)) in policies.iter().enumerate() {
@@ -41,7 +42,7 @@ impl PolicyContext {
             }
         }
         let len = policies.len();
-        let mut slots = [None; 64];
+        let mut slots = [None; MAX_TRANSACTIONS];
         for (slot, policy) in slots.iter_mut().zip(policies) {
             *slot = Some(policy);
         }
@@ -89,7 +90,7 @@ impl PolicyContext {
             return Err("worker context size/version".into());
         }
         let count = u32::from_le_bytes(bytes[40..44].try_into()?) as usize;
-        if count > 64 || bytes.len() != 44 + count * ENTRY_BYTES {
+        if count > MAX_TRANSACTIONS || bytes.len() != 44 + count * ENTRY_BYTES {
             return Err("worker context noncanonical length".into());
         }
         let mut policies = Vec::with_capacity(count);
@@ -118,7 +119,7 @@ mod tests {
     #[test]
     fn fixed_policy_slots_discard_spare_capacity_and_bound_wire_storage() {
         let mut policies = Vec::with_capacity(4096);
-        for i in 0..64u8 {
+        for i in 0..MAX_TRANSACTIONS as u8 {
             policies.push((
                 ArtifactRef::from_bytes(ArtifactKind::Wallet, &[i]).unwrap(),
                 Policy::Issuance {
@@ -134,7 +135,7 @@ mod tests {
         assert_eq!(encoded.capacity(), MAX_BYTES);
         assert_eq!(copy.encode(), encoded);
         let decoded = PolicyContext::decode(&encoded).unwrap();
-        for i in 0..64u8 {
+        for i in 0..MAX_TRANSACTIONS as u8 {
             let artifact = ArtifactRef::from_bytes(ArtifactKind::Wallet, &[i]).unwrap();
             assert!(
                 matches!(decoded.policy(artifact).unwrap(), Policy::Issuance { authorized_mint } if authorized_mint == u64::from(i) + 1)
@@ -142,7 +143,7 @@ mod tests {
         }
         let empty = PolicyContext::new([8; 32], Vec::new()).unwrap().encode();
         assert_eq!((empty.len(), empty.capacity()), (44, 44));
-        eprintln!("typed_policy_context_storage bytes={} entries=64 wire_bytes={MAX_BYTES} retained_heap_owners=0", std::mem::size_of::<PolicyContext>());
+        eprintln!("typed_policy_context_storage bytes={} entries={MAX_TRANSACTIONS} wire_bytes={MAX_BYTES} retained_heap_owners=0", std::mem::size_of::<PolicyContext>());
     }
 
     #[test]

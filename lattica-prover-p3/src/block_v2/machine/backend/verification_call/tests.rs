@@ -318,9 +318,9 @@ fn complete_entry_point_requests_fit_on_valid_and_late_rejected_proofs() {
         let public = vec![Val::ZERO; publics];
         let mut proof = program.prove(&public, &[Val::ZERO]).unwrap();
         let plan = Plan::new(
-            &program.air,
-            &program.data.common,
-            program.analysis.quotient_chunks,
+            &program.prepared.air,
+            &program.prepared.data.common,
+            program.prepared.analysis.quotient_chunks,
             &proof,
         )
         .unwrap();

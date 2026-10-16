@@ -587,6 +587,22 @@ pub enum ProverData<M> {
     },
 }
 
+impl<M> ProverData<M> {
+    /// Retained device-only commitment metadata, including inline descriptors.
+    /// Repeated references and shared allocation/stream Arcs are conservatively
+    /// counted per occurrence. Other PCS representations retain their existing
+    /// explicit host/hybrid admission path and return None here.
+    pub(crate) fn opening_host_backing(&self) -> Result<Option<usize>, String> {
+        let Self::DeviceOnly { owned, salts, tree } = self else { return Ok(None) };
+        use cache_metadata::add;
+        let mut bytes = core::mem::size_of::<Self>();
+        bytes = add(bytes, owned.retained_host_backing()?)?;
+        bytes = add(bytes, salts.retained_host_backing()?)?;
+        bytes = add(bytes, tree.cached_host_backing()?)?;
+        Ok(Some(bytes))
+    }
+}
+
 impl Mmcs<Val> for CandidateMmcs {
     type ProverData<M> = ProverData<M>;
     type Commitment = <ValMmcs as Mmcs<Val>>::Commitment;

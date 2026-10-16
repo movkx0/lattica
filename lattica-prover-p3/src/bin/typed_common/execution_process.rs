@@ -73,3 +73,25 @@ pub(in super::super) fn serve(
         shutdown,
     )
 }
+
+#[cfg(feature = "gpu")]
+pub(in super::super) fn serve_owned(
+    dir: &Path,
+    pinned: &Path,
+    launches: &Path,
+    worker_bytes: u64,
+) -> Result<(u64, lattica_prover_p3::block_v2::gpu_hash::Snapshot), Error> {
+    use lattica_prover_p3::block_v2::execution::{native_worker, policy_context::PolicyContext};
+    let socket = UnixStream::from(std::io::stdin().as_fd().try_clone_to_owned()?);
+    native_worker::serve_owned(socket, launches, |assignment| {
+        super::super::typed_gpu::validate_owned_assignment(assignment, worker_bytes)?;
+        super::super::typed_gpu::require_owned_geometry(dir)?;
+        let prepared = prepare_for_backend(dir, pinned, true)?;
+        let config = assigned_config(&prepared, assignment)?;
+        let policy =
+            PolicyContext::new(prepared.selection.root().id().to_bytes(), prepared.policies)?;
+        // Do not retain Selection, wallet proof backing or a second registry
+        // during GPU startup or the persistent loop.
+        Ok((config, policy))
+    })
+}

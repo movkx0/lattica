@@ -5,7 +5,7 @@ use super::*;
 use crate::block_v2::gpu_hash::cache_metadata::{add, arc_bytes, capacity};
 
 pub(crate) const METADATA_BYTES: u64 = 8 << 20;
-pub(crate) const MAX_MAPPED_BYTES: u64 = 64 << 20;
+pub(crate) const MAX_MAPPED_BYTES: u64 = crate::host_memory::GPU_MAPPED_HOST_BYTES;
 pub(crate) const RETAINED_HOST_BYTES: u64 = METADATA_BYTES + MAX_MAPPED_BYTES;
 const SELECTOR_BYTES: usize = 256;
 const CONTAINER_SLOTS: usize = 4;
@@ -125,6 +125,23 @@ pub(super) fn admit(engine: &Engine) -> Result<(), String> {
             stored.metadata, stored.mapped, stored.total()?, RETAINED_HOST_BYTES);
     }
     Ok(())
+}
+
+/// Opening/FRI can grow the workspace and timing log. Keep the established
+/// metadata envelope, including reserve overlap, rather than only their current
+/// capacities. Mapped staging is fixed for the lifetime of this engine.
+pub(super) fn opening_reservation(engine: &Engine) -> Result<usize, String> {
+    #[cfg(feature = "gpu")]
+    {
+        let stored = census(engine)?;
+        stored.admit(RETAINED_HOST_BYTES)?;
+        add(METADATA_BYTES as usize, stored.mapped)
+    }
+    #[cfg(not(feature = "gpu"))]
+    {
+        let _ = engine;
+        Err("opening engine host reservation requires OpenCL".into())
+    }
 }
 
 #[cfg(all(test, feature = "gpu"))]

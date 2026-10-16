@@ -29,7 +29,8 @@ pub(crate) type FoldChunk = [Option<usize>; DIGEST];
 /// Shared AIR layout for device-owned batch trace assembly. Chunk entries are
 /// the same staged columns constrained by `eval_txroot_fold`.
 #[cfg(all(feature = "block-v2", feature = "gpu"))]
-pub(crate) struct DeviceBatchGeometry {
+#[derive(Clone, Copy)]
+pub(crate) struct DeviceBatchGeometry<'a> {
     pub height: usize,
     pub wallet_width: usize,
     pub public_width: usize,
@@ -38,7 +39,7 @@ pub(crate) struct DeviceBatchGeometry {
     pub root_block: usize,
     pub root_column: usize,
     pub root_output_row: usize,
-    pub chunks: Vec<FoldChunk>,
+    pub chunks: &'a [FoldChunk],
 }
 
 /// The largest batch (in tiles) that holds the ≥100-bit proven-soundness floor: measured 100 bits at
@@ -117,6 +118,52 @@ pub(crate) fn append_batch_selectors(
     cols.push(oh(&[root_block * BLOCK + BLOCK - 1])); // P_ROOT_UPDATE (= root_out_row)
 }
 
+/// Allocation-free counterpart of `append_batch_selectors`. Validate all
+/// geometry before writing so invalid buffers remain untouched.
+#[cfg(feature = "block-v2")]
+pub(crate) fn fill_batch_selector(
+    index: usize,
+    output: &mut [Val],
+    tile_height: usize,
+    fold_sk_blocks: usize,
+    fold_base: usize,
+    root_block: usize,
+) -> bool {
+    let Some(count) = fold_sk_blocks.checked_add(5) else {
+        return false;
+    };
+    let fold_end = fold_base
+        .checked_add(fold_sk_blocks)
+        .and_then(|n| n.checked_mul(BLOCK));
+    let root_end = root_block.checked_add(1).and_then(|n| n.checked_mul(BLOCK));
+    if tile_height == 0
+        || fold_sk_blocks == 0
+        || index >= count
+        || output.len() != tile_height
+        || fold_end.is_none_or(|n| n > tile_height)
+        || root_end.is_none_or(|n| n > tile_height)
+    {
+        return false;
+    }
+    output.fill(Val::ZERO);
+    if index == 0 {
+        output[tile_height - 1] = Val::ONE;
+    } else if index <= fold_sk_blocks {
+        output[(fold_base + index - 1) * BLOCK] = Val::ONE;
+    } else if index == fold_sk_blocks + 1 {
+        for block in 0..fold_sk_blocks - 1 {
+            output[(fold_base + block + 1) * BLOCK - 1] = Val::ONE;
+        }
+    } else if index == fold_sk_blocks + 2 {
+        output[fold_end.unwrap() - 1] = Val::ONE;
+    } else if index == fold_sk_blocks + 3 {
+        output[root_block * BLOCK] = Val::ONE;
+    } else {
+        output[root_end.unwrap() - 1] = Val::ONE;
+    }
+    true
+}
+
 /// Within-tile persistence: each staged column is constant across a tile (freed at the tile boundary).
 /// `staged`'s ORDER is the emission order, so it stays per-circuit (the constraint fnv pins it). Shared
 /// body only — this is a straight-line builder loop, no control-flow knobs.
@@ -125,9 +172,9 @@ pub(crate) fn eval_tile_persistence<AB: AirBuilder<F = Goldilocks>>(
     cur: &[AB::Expr],
     nxt: &[AB::Expr],
     tile_persist: AB::Expr,
-    staged: &[usize],
+    staged: impl IntoIterator<Item = usize>,
 ) {
-    for &c in staged {
+    for c in staged {
         builder
             .when_transition()
             .assert_zero(tile_persist.clone() * (nxt[c].clone() - cur[c].clone()));

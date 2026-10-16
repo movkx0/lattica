@@ -8,6 +8,7 @@ belongs in measured host finalization, and it is not production activation.
 """
 
 from contextlib import contextmanager
+from collections.abc import Sequence
 import base64
 import ctypes
 from dataclasses import dataclass
@@ -15,7 +16,9 @@ import fcntl
 import hashlib
 import json
 import os
+import operator
 from pathlib import Path
+import block_v2_capacity as Capacity
 import re
 import stat
 import struct
@@ -23,10 +26,11 @@ import tempfile
 import threading
 
 MAX_BLOCKS = 128
-MAX_BODY_BYTES = 256 * 1024
+MAX_BODY_BYTES = Capacity.MAX_TRANSACTIONS * 4096
 MAX_PROOF_BYTES = 2 * 1024 * 1024
 MAX_RECORD_BYTES = 4 * (MAX_BODY_BYTES + MAX_PROOF_BYTES) // 3 + 16 * 1024
 STATE_BYTES = 208
+MAX_STATE_JSON_BYTES = 4096
 HEX = re.compile(r'[0-9a-f]{64}')
 SCHEMA = 'lattica-research-host-journal-v1'
 
@@ -93,7 +97,7 @@ def body_count(body):
     if type(body) is not bytes or not 12 <= len(body) <= MAX_BODY_BYTES or body[:8] != b'LBV2BD01':
         raise RejectedBlock('complete public body encoding required')
     count = struct.unpack_from('<I', body, 8)[0]
-    if not 1 <= count <= 64:
+    if not 1 <= count <= Capacity.MAX_TRANSACTIONS:
         raise RejectedBlock('invalid complete-body count')
     return count
 
@@ -110,6 +114,85 @@ class Candidate:
         body_count(self.body)
         if type(self.proof) is not bytes or not 0 < len(self.proof) <= MAX_PROOF_BYTES:
             raise RejectedBlock('invalid root proof size')
+
+
+def candidate_identity(candidate):
+    candidate.validate()
+    return sha(struct.pack('<Q', candidate.height) +
+               bytes.fromhex(sha(candidate.body)) + bytes.fromhex(sha(candidate.proof)))
+
+
+@dataclass(frozen=True)
+class _HistoryEntry:
+    digest: str
+    parent: object
+    height: int
+    identity: str
+    state: dict
+
+
+class HistorySnapshot(Sequence):
+    """Pinned public history with bounded metadata and one decoded record at a time.
+
+    Each index was authenticated by the store; native replay still verifies every
+    uncached candidate. Loading bytes authenticates them again. New snapshots
+    always reread the published branch, including when a native session is warm.
+    No verifier/session or whole-history proof buffer is retained here.
+    """
+    __slots__ = ('_directory', '_configuration_sha', '_entries')
+
+    def __init__(self, directory, configuration_sha, entries):
+        self._directory = directory
+        self._configuration_sha = configuration_sha
+        self._entries = tuple(entries)
+
+    def __len__(self):
+        return len(self._entries)
+
+    def __getitem__(self, index):
+        if isinstance(index, slice):
+            return HistorySnapshot(self._directory, self._configuration_sha, self._entries[index])
+        entry = self._entries[operator.index(index)]
+        _, candidate = Store._read_record(self._directory, self._configuration_sha, entry.digest)
+        return candidate
+
+    def __eq__(self, other):
+        if not isinstance(other, Sequence):
+            return NotImplemented
+        return len(self) == len(other) and all(a == b for a, b in zip(self, other))
+
+    def _identities(self):
+        return [entry.identity for entry in self._entries]
+
+
+class _HistoryWithSuffix(Sequence):
+    """Borrow the caller's new candidates without materializing the old prefix."""
+    __slots__ = ('_prefix', '_suffix')
+
+    def __init__(self, prefix, suffix):
+        self._prefix, self._suffix = prefix, tuple(suffix)
+
+    def __len__(self):
+        return len(self._prefix) + len(self._suffix)
+
+    def __getitem__(self, index):
+        index = operator.index(index)
+        if index < 0:
+            index += len(self)
+        if not 0 <= index < len(self):
+            raise IndexError(index)
+        return self._prefix[index] if index < len(self._prefix) else self._suffix[index - len(self._prefix)]
+
+    def _identities(self):
+        return self._prefix._identities() + [candidate_identity(candidate) for candidate in self._suffix]
+
+
+def history_identities(candidates):
+    # Only store-owned indexes may reuse authenticated content identities.
+    # Ordinary caller sequences must validate/hash their actual candidate bytes.
+    if type(candidates) in (HistorySnapshot, _HistoryWithSuffix):
+        return candidates._identities()
+    return [candidate_identity(candidate) for candidate in candidates]
 
 
 class IssuancePolicy:
@@ -138,7 +221,7 @@ class IssuancePolicy:
 
     def for_prefix(self, height, count):
         """Planning only: grants for occupied slots, without waiving later slots."""
-        if type(count) is not int or not 1 <= count <= 64:
+        if type(count) is not int or not 1 <= count <= Capacity.MAX_TRANSACTIONS:
             raise RejectedBlock('invalid candidate prefix count')
         row = self._grants.get(height, {})
         return tuple(row.get(index, 0) for index in range(count))
@@ -174,6 +257,15 @@ class NativeVerifier:
                 loaded.lattica_v2_research_host_initialize_v1()
                 self._libraries[str(library)] = (library_sha, loaded)
             self._lib = self._libraries[str(library)][1]
+        capacity = getattr(self._lib, 'lattica_v2_research_host_capacity_v1', None)
+        if capacity is None:
+            self.capacity = 64  # Historical libraries only implement the depth-six profile.
+        else:
+            capacity.argtypes = []
+            capacity.restype = ctypes.c_uint32
+            self.capacity = capacity()
+            if self.capacity not in Capacity.SUPPORTED_CAPACITIES:
+                raise HostStoreError('native/Rust block profile mismatch')
         self._call = self._lib.lattica_v2_research_host_replay_v1
         self._call.argtypes = [ctypes.c_void_p, ctypes.c_size_t] * 5
         self._call.restype = ctypes.c_int32
@@ -183,6 +275,8 @@ class NativeVerifier:
                               'verifier': 'native-root-replay-v1', 'registry_sha256': sha(registry),
                               'profile_id': profile_id.hex(), 'chain_id': chain_id.hex(),
                               'genesis_sha256': sha(genesis), 'issuance_policy_sha256': policy.sha256}
+        if self.capacity != 64:
+            self.configuration['block_capacity'] = self.capacity
         self.identity = {'kind': 'native-root-replay-v1', 'library_path': str(library),
                          'library_sha256': library_sha}
 
@@ -193,6 +287,8 @@ class NativeVerifier:
         for candidate in candidates:
             candidate.validate()
             count = body_count(candidate.body)
+            if count > self.capacity:
+                raise RejectedBlock('candidate exceeds native block capacity')
             grants = self._policy.for_block(candidate.height, count)
             stream.extend(struct.pack('<QIQI', candidate.height, len(candidate.body), len(candidate.proof), count))
             stream.extend(struct.pack('<' + 'Q' * count, *grants))
@@ -218,6 +314,8 @@ class NativeVerifier:
         """
         import struct
         count = body_count(complete_body)
+        if count > self.capacity:
+            raise RejectedBlock('candidate exceeds native block capacity')
         if type(height) is not int or not 0 <= height < 1 << 64 or len(candidates) >= MAX_BLOCKS:
             raise RejectedBlock('invalid native candidate height')
         buffers = self._history_inputs(candidates)
@@ -235,7 +333,7 @@ class NativeVerifier:
             ctypes.c_uint64, ctypes.c_void_p, ctypes.c_size_t,
             ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t)]
         call.restype = ctypes.c_int32
-        output = ctypes.create_string_buffer(8 + 112 + 64 * (2 + 31 * 8))
+        output = ctypes.create_string_buffer(8 + 112 + self.capacity * (2 + 31 * 8))
         length = ctypes.c_size_t()
         args.extend((body_buffer, len(complete_body), height, grant_buffer, len(grant_bytes),
                      output, len(output), ctypes.byref(length)))
@@ -454,6 +552,34 @@ class Store:
                 'tip': tip, 'state': state, 'generation': generation,
                 'verified_by': self.verifier.identity}
 
+    @staticmethod
+    def _read_record(directory, configuration_sha, tip):
+        try:
+            _digest(tip)
+            records = directory / 'records'
+            if not stat.S_ISDIR(records.lstat().st_mode):
+                raise CorruptStore('record directory must be a real directory')
+            raw = Store._read_file(records / (tip + '.json'), MAX_RECORD_BYTES)
+            if sha(raw) != tip:
+                raise CorruptStore('record hash mismatch')
+            row = _json(raw)
+            if (set(row) != {'schema', 'configuration_sha256', 'parent', 'height', 'body',
+                            'body_sha256', 'proof', 'proof_sha256', 'state', 'verified_by'}
+                    or row['schema'] != SCHEMA or row['configuration_sha256'] != configuration_sha
+                    or not isinstance(row['state'], dict)
+                    or len(canonical(row['state'])) > MAX_STATE_JSON_BYTES):
+                raise CorruptStore('invalid immutable record or oversized state metadata')
+            if row['parent'] is not None:
+                _digest(row['parent'])
+            candidate = Candidate(row['height'], base64.b64decode(row['body'], validate=True),
+                                  base64.b64decode(row['proof'], validate=True))
+            candidate.validate()
+            if sha(candidate.body) != row['body_sha256'] or sha(candidate.proof) != row['proof_sha256']:
+                raise CorruptStore('body/proof hash mismatch')
+            return row, candidate
+        except (FileNotFoundError, ValueError, TypeError, KeyError, RejectedBlock) as error:
+            raise CorruptStore('unreadable or malformed history record') from error
+
     def _history(self):
         try:
             if self._read_file(self.directory / 'configuration.json', 16384) != self._configuration:
@@ -471,24 +597,13 @@ class Store:
                 if tip in seen or len(records) == getattr(self.verifier, 'history_limit', MAX_BLOCKS):
                     raise CorruptStore('cyclic or oversized journal history')
                 seen.add(tip)
-                raw = self._read_file(self.directory / 'records' / (tip + '.json'), MAX_RECORD_BYTES)
-                if sha(raw) != tip:
-                    raise CorruptStore('record hash mismatch')
-                row = _json(raw)
-                if (set(row) != {'schema', 'configuration_sha256', 'parent', 'height', 'body',
-                                'body_sha256', 'proof', 'proof_sha256', 'state', 'verified_by'}
-                        or row['schema'] != SCHEMA or row['configuration_sha256'] != self._configuration_sha):
-                    raise CorruptStore('invalid immutable record')
-                body = base64.b64decode(row['body'], validate=True)
-                proof = base64.b64decode(row['proof'], validate=True)
-                candidate = Candidate(row['height'], body, proof)
-                candidate.validate()
-                if sha(body) != row['body_sha256'] or sha(proof) != row['proof_sha256']:
-                    raise CorruptStore('body/proof hash mismatch')
-                records.append((tip, row, candidate))
+                row, candidate = self._read_record(self.directory, self._configuration_sha, tip)
+                records.append(_HistoryEntry(tip, row['parent'], candidate.height,
+                                             candidate_identity(candidate), row['state']))
                 tip = row['parent']
+                del row, candidate
             records.reverse()
-            return data, head, records
+            return data, head, HistorySnapshot(self.directory, self._configuration_sha, records)
         except (FileNotFoundError, ValueError, TypeError, KeyError, RejectedBlock) as error:
             raise CorruptStore('unreadable or malformed published history') from error
 
@@ -496,9 +611,9 @@ class Store:
     def _check_states(records, states, head=None):
         if len(states) != len(records) + 1 or states[0].get('blocks') != 0:
             raise CorruptStore('native replay returned incomplete states')
-        for index, (_, row, candidate) in enumerate(records, 1):
-            if (row['state'] != states[index] or states[index].get('blocks') != index
-                    or states[index].get('height') != candidate.height):
+        for index, entry in enumerate(records._entries, 1):
+            if (entry.state != states[index] or states[index].get('blocks') != index
+                    or states[index].get('height') != entry.height):
                 raise CorruptStore('recorded state differs from verified native application')
         if head is not None and head['state'] != states[-1]:
             raise CorruptStore('head state differs from verified native application')
@@ -517,10 +632,14 @@ class Store:
     def snapshot(self):
         # Immutable verified history can be proved outside the lock; the token
         # still fences eventual submission against concurrent writes/reorgs.
-        """Recovery validates all published bodies/proofs, then confirms the head sync."""
+        """Verify the branch and return a pinned, lazy candidate sequence.
+
+        Sequence indexing, iteration, slicing and equality remain available;
+        callers needing a materialized tuple can explicitly call tuple(history).
+        """
         with self._locked():
             raw, head, records = self._history()
-            states = self.verifier.replay([record[2] for record in records])
+            states = self.verifier.replay(records)
             self._check_states(records, states, head)
             descriptor = os.open(self.directory / 'HEAD.json', os.O_RDONLY | os.O_NOFOLLOW)
             try:
@@ -530,7 +649,7 @@ class Store:
             self._sync_dir(self.directory)
             self._sync_dir(self.directory.parent)
             return (View(sha(raw), head['tip'], states[-1], head['generation']),
-                    tuple(record[2] for record in records))
+                    records)
 
     def commit(self, candidate, *, expected_head):
         return self._replace([candidate], expected_head=expected_head, ancestor='current')
@@ -550,7 +669,7 @@ class Store:
             raw, _, records = self._history()
             if sha(raw) != published.token:
                 raise StaleHead('published head changed during application recovery')
-            parent = self._head(records[-1][1]['parent'], parent_state, expected_generation)
+            parent = self._head(records._entries[-1].parent, parent_state, expected_generation)
             if sha(canonical(parent)) != expected_parent:
                 raise StaleHead('published application has a different verified parent')
         return published, View(expected_parent, parent['tip'], parent_state, expected_generation)
@@ -570,14 +689,14 @@ class Store:
             if head['generation'] == 2**64 - 1:
                 raise HostStoreError('journal generation exhausted')
             if ancestor != 'current':
-                prior_states = self.verifier.replay([row[2] for row in records])
+                prior_states = self.verifier.replay(records)
                 self._check_states(records, prior_states, head)
             if ancestor == 'current':
                 prefix = records
             elif ancestor is None:
-                prefix = []
+                prefix = records[:0]
             else:
-                index = next((i for i, row in enumerate(records) if row[0] == ancestor), None)
+                index = next((i for i, entry in enumerate(records._entries) if entry.digest == ancestor), None)
                 if index is None:
                     raise StaleHead('reorg ancestor is not in the published branch')
                 prefix = records[:index + 1]
@@ -585,13 +704,13 @@ class Store:
                 raise RejectedBlock('research journal history limit exceeded')
             for candidate in candidates:
                 candidate.validate()
-            states = self.verifier.replay([row[2] for row in prefix] + candidates)
+            states = self.verifier.replay(_HistoryWithSuffix(prefix, candidates))
             self._check_states(prefix, states[:len(prefix) + 1])
             if len(states) != len(prefix) + len(candidates) + 1:
                 raise RejectedBlock('native replay returned incomplete replacement states')
             if ancestor == 'current' and states[len(prefix)] != head['state']:
                 raise CorruptStore('published parent differs from native replay')
-            parent = prefix[-1][0] if prefix else None
+            parent = prefix._entries[-1].digest if prefix else None
             for index, candidate in enumerate(candidates, len(prefix) + 1):
                 if states[index].get('blocks') != index or states[index].get('height') != candidate.height:
                     raise RejectedBlock('native replacement state metadata mismatch')

@@ -1404,6 +1404,11 @@ pub fn stream_answer_query(
     (step, group_index)
 }
 
+fn cpu_proving_admission() -> std::io::Result<()> {
+    crate::proving::legacy_cpu_admission()
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Unsupported, e.to_string()))
+}
+
 /// The FRI commit-phase commitment type — the `ChallengeMmcs` (= its inner hiding `ValMmcs`) commitment,
 /// a `MerkleCap` of `DIGEST`-wide digests. `stream_commit_codeword(...).cap()` is exactly its `AsRef`.
 type FriCommit = MerkleCap<Val, [Val; DIGEST]>;
@@ -1444,6 +1449,7 @@ where
     R: rand::Rng,
     OpenInput: Fn(usize) -> Vec<BatchOpening<Val, ValMmcs>>,
 {
+    cpu_proving_admission()?;
     assert!(!inputs.is_empty());
     assert!(
         params.num_queries > 0,
@@ -1578,6 +1584,7 @@ where
     R: rand::Rng,
     OpenInput: Fn(usize) -> Vec<BatchOpening<Val, ValMmcs>>,
 {
+    cpu_proving_admission()?;
     assert!(!inputs.is_empty());
     assert!(
         params.num_queries > 0,
@@ -2440,6 +2447,7 @@ where
         + for<'a> Air<ProverConstraintFolder<'a, MyConfig>>
         + for<'a> Air<DebugConstraintBuilder<'a, Val>>,
 {
+    cpu_proving_admission()?;
     let h = trace.height();
     let w = trace.width();
     let trace_store = MmapLdeStore::new(h, w)?;
@@ -2472,6 +2480,7 @@ where
         + for<'a> Air<ProverConstraintFolder<'a, MyConfig>>
         + for<'a> Air<DebugConstraintBuilder<'a, Val>>,
 {
+    cpu_proving_admission()?;
     stream_prove_from_trace_store_inner(
         config,
         air,
@@ -2498,6 +2507,7 @@ where
         + for<'a> Air<ProverConstraintFolder<'a, MyConfig>>
         + for<'a> Air<DebugConstraintBuilder<'a, Val>>,
 {
+    cpu_proving_admission()?;
     stream_prove_from_trace_store_inner(
         config,
         air,
@@ -2753,6 +2763,7 @@ where
         + for<'a> Air<ProverConstraintFolder<'a, MyConfig>>
         + for<'a> Air<DebugConstraintBuilder<'a, Val>>,
 {
+    cpu_proving_admission()?;
     use crate::config::{production_fri, MyPcs, NUM_RANDOM_CODEWORDS};
     use rand::SeedableRng;
     use rand_chacha::ChaCha20Rng;

@@ -31,6 +31,95 @@ fn cached() -> CachedScope {
     CachedScope::preprocessing(&run.finish(true).unwrap()).unwrap()
 }
 
+fn compilation() -> CachedScope {
+    let run = Run::new(
+        "compile",
+        required(),
+        inventory(CoverageScope::RegistryCompilation),
+    )
+    .unwrap();
+    receipt(&run, 5);
+    CachedScope::registry_compilation(&run.finish(true).unwrap()).unwrap()
+}
+
+#[test]
+fn cached_compilation_marks_only_its_scope_without_replaying_arithmetic() {
+    let cached = compilation();
+    let run = parent(&[
+        ("registry", CoverageScope::RegistryCompilation),
+        ("proof", CoverageScope::RegisteredProof),
+    ]);
+    run.reuse_registry_compilation(&cached).unwrap();
+    let proof = run
+        .child("proof", "proof", inventory(CoverageScope::RegisteredProof))
+        .unwrap();
+    receipt(&proof, 2);
+    proof.finish(true).unwrap();
+    let report = run.finish(true).unwrap();
+    assert!(report.stage_coverage_complete && report.components[0].cached);
+    assert!(!report.components[1].cached);
+    assert_eq!(report.observations.len(), 1);
+    assert_eq!(report.observations[0].device_calls, 2);
+    assert_eq!(report.observations[0].device_ns, 7);
+}
+
+#[test]
+fn compilation_receipt_rejects_wrong_scope_failure_incomplete_and_lost_observation() {
+    for reject in 0..4 {
+        let run = Run::new(
+            "compile",
+            required(),
+            inventory(CoverageScope::RegistryCompilation),
+        )
+        .unwrap();
+        receipt(&run, 1);
+        let mut changed = run.finish(true).unwrap();
+        match reject {
+            0 => changed.capabilities.scope = CoverageScope::Preprocessing,
+            1 => changed.succeeded = false,
+            2 => changed.stage_coverage_complete = false,
+            3 => changed.observation_errors = 1,
+            _ => unreachable!(),
+        }
+        assert!(CachedScope::registry_compilation(&changed).is_err());
+    }
+}
+
+#[test]
+fn cached_compilation_cannot_cross_scope_backend_profile_or_duplicate_slot() {
+    let cached = compilation();
+    let run = parent(&[("registry", CoverageScope::RegistryCompilation)]);
+    run.reuse_registry_compilation(&cached).unwrap();
+    assert!(run.reuse_registry_compilation(&cached).is_err());
+    assert!(run.finish(true).is_err());
+    let run = parent(&[("setup", CoverageScope::Preprocessing)]);
+    assert!(run.reuse_preprocessing("setup", &cached).is_err());
+    assert!(run.finish(true).is_err());
+    let run = parent(&[("registry", CoverageScope::RegistryCompilation)]);
+    assert!(run.reuse_registry_compilation(&self::cached()).is_err());
+    assert!(run.finish(true).is_err());
+    for cpu in [false, true] {
+        let mut caps = inventory(CoverageScope::RegistryCompilation);
+        if cpu {
+            caps.set(Stage::Preprocessing, Backend::Cpu);
+        } else {
+            caps.profile = Profile::LegacyQuadratic;
+        }
+        let source = Run::new("foreign", Request::compatible(), caps).unwrap();
+        if cpu {
+            source
+                .measure(Stage::Preprocessing, Backend::Cpu, || ())
+                .unwrap();
+        } else {
+            receipt(&source, 1);
+        }
+        let foreign = CachedScope::registry_compilation(&source.finish(true).unwrap()).unwrap();
+        let run = parent(&[("registry", CoverageScope::RegistryCompilation)]);
+        assert!(run.reuse_registry_compilation(&foreign).is_err());
+        assert!(run.finish(true).is_err());
+    }
+}
+
 #[test]
 fn overlapping_stage_receipts_cannot_cover_an_omitted_component() {
     let run = parent(&[

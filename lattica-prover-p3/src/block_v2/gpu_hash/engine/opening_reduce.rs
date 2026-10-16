@@ -119,15 +119,10 @@ impl Plan {
     }
 }
 
-pub(super) const KERNEL_SRC: &str = r#"
+pub(super) const KERNEL_SRC: &str = concat!(
+    include_str!("extension_multiply.cl"),
+    r#"
 // Candidate extension basis: X^3 = X + 1, not the binomial cubic basis.
-inline void opening_cubic_mul(ulong a[3], ulong b[3], ulong out[3]) {
-    ulong c3 = gl_add(gl_mul(a[1], b[2]), gl_mul(a[2], b[1]));
-    ulong c4 = gl_mul(a[2], b[2]);
-    out[0] = gl_add(gl_mul(a[0], b[0]), c3);
-    out[1] = gl_add(gl_add(gl_mul(a[0], b[1]), gl_mul(a[1], b[0])), gl_add(c3, c4));
-    out[2] = gl_add(gl_add(gl_add(gl_mul(a[0], b[2]), gl_mul(a[1], b[1])), gl_mul(a[2], b[0])), c4);
-}
 __kernel void opening_reduce(__global const ulong *input,
     __global const ulong *weights, __global const ulong *denominators,
     __global const ulong *terms, __global ulong *output,
@@ -193,7 +188,8 @@ __kernel void opening_reduce_compact(__global const ulong *compressed,
     for (uint k = 0; k < 3; ++k)
         output[at + k] = gl_canon(gl_add(output[at + k], sum[k]));
 }
-"#;
+"#
+);
 
 fn append_challenge(words: &mut Vec<u64>, value: Challenge) {
     words.extend(

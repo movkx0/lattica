@@ -42,7 +42,7 @@ fn limits() -> Limits {
 
 #[test]
 fn every_typed_count_matches_native_commitment_and_minimal_plan() {
-    for count in 1..=64 {
+    for count in 1..=commitment::CAPACITY {
         let public = inputs(count);
         let selection = Selection::new(typed_pin(), [9; 32], &public).unwrap();
         let entries: Vec<_> = (0..count)
@@ -65,7 +65,7 @@ fn every_typed_count_matches_native_commitment_and_minimal_plan() {
         .unwrap();
         assert_eq!(selection.root().expected().root, expected, "count {count}");
         assert_eq!(selection.root().expected().count as usize, count);
-        assert_eq!(selection.root().expected().level, 6);
+        assert_eq!(selection.root().expected().level, commitment::DEPTH);
         assert_eq!(
             selection.jobs().len(),
             typed_pairs::proof_plan(count as u8)
@@ -74,7 +74,7 @@ fn every_typed_count_matches_native_commitment_and_minimal_plan() {
         );
         assert_eq!(
             selection.root().operation() == Operation::Finalize,
-            count <= 32
+            count <= commitment::CAPACITY / 2
         );
         let mut finished = BTreeSet::new();
         let mut covered = BTreeSet::new();
@@ -121,7 +121,7 @@ fn later_arrival_reuses_complete_pairs_and_replaces_partial_pair() {
     assert!(Job::finalize(selections[3].root()).is_err());
     let legacy = PublicInput::new(wallet(1, &[1]), vec![1]).unwrap();
     assert!(Selection::new(typed_pin(), [9; 32], &[legacy]).is_err());
-    assert!(Job::wrap_pair(0, public[0].wallet, public[1].wallet).is_err());
+    assert!(Job::wrap_pair(0, public[0].ticket(), public[1].ticket()).is_err());
 }
 
 #[test]
@@ -180,7 +180,7 @@ fn typed_checkpoint_reconstructs_jobs_and_rejects_registry_or_mode_changes() {
     for entry in &selection.entries {
         dag.admit(
             entry.job.clone(),
-            entry.inputs.iter().map(|p| p.bytes.to_vec()).collect(),
+            entry.inputs.iter().map(|p| p.bytes().to_vec()).collect(),
             0,
         )
         .unwrap();
@@ -196,9 +196,9 @@ fn typed_checkpoint_reconstructs_jobs_and_rejects_registry_or_mode_changes() {
             |identity| {
                 let p = public
                     .iter()
-                    .find(|p| p.wallet.artifact() == identity)
+                    .find(|p| p.ticket().artifact() == identity)
                     .ok_or("unknown test wallet")?;
-                Ok((p.wallet, p.bytes.to_vec()))
+                Ok((p.ticket(), p.bytes().to_vec()))
             },
             |_, _| Err("no completed test nodes".into()),
         )

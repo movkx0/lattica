@@ -18,15 +18,21 @@ use std::path::PathBuf;
 pub const MAX_BOOTSTRAP_BYTES: usize = crate::native_gpu::PUBLIC_WORKER_BOOTSTRAP_MAX_BYTES;
 const VERSION: u32 = 1;
 
+#[path = "native_worker_decode.rs"]
+mod decode;
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Bootstrap {
     version: u32,
+    #[serde(deserialize_with = "decode::registry")]
     registry: Registry<12>,
     profile: [u8; 32],
     chain: [u8; 32],
     executable: [u8; 32],
+    #[serde(deserialize_with = "decode::path")]
     launches: PathBuf,
+    #[serde(deserialize_with = "decode::policy")]
     policy_context: Vec<u8>,
 }
 
@@ -105,7 +111,16 @@ impl Bootstrap {
         if bytes.is_empty() || bytes.len() > MAX_BOOTSTRAP_BYTES {
             return Err("native public bootstrap size".into());
         }
+        decode::layout()?;
         Ok(serde_json::from_slice(bytes)?)
+    }
+
+    // The independently checked assignment must cover decoding before the
+    // bootstrap can allocate. Registry approval still happens in into_worker.
+    #[cfg(any(test, feature = "gpu"))]
+    fn parse_for_worker(bytes: &[u8], assignment: &serde_json::Value) -> Result<Self, Error> {
+        decode::admit(assignment)?;
+        Self::parse_fields(bytes)
     }
 
     fn identity(&self, assignment: &serde_json::Value) -> Result<[u8; 32], Error> {
@@ -165,7 +180,7 @@ impl Bootstrap {
         assignment: &serde_json::Value,
     ) -> Result<(Config, PolicyContext), Error> {
         let (peak, _) = super::worker_budget::resources(assignment)?;
-        super::worker::typed::storage::admit_startup(peak.ram_bytes)?;
+        super::worker::typed::storage::admit_startup(peak.ram_bytes, peak.threads)?;
         let (context, policy) = self.validate()?;
         let config = Config::from_checked_assignment(
             context.to_owned_registry(),
@@ -181,7 +196,7 @@ impl Bootstrap {
     #[cfg(any(test, feature = "gpu"))]
     fn into_worker(self, assignment: &serde_json::Value) -> Result<WorkerBootstrap, Error> {
         let (peak, _) = super::worker_budget::resources(assignment)?;
-        super::worker::typed::storage::admit_startup(peak.ram_bytes)?;
+        super::worker::typed::storage::admit_startup(peak.ram_bytes, peak.threads)?;
         self.validate_shape()?;
         let identity = self.identity(assignment)?;
         let registry = crate::block_v2::typed_recursive::CheckedRegistry::new(self.registry)?;
@@ -246,8 +261,10 @@ fn identity_encoding(value: &impl Serialize) -> Result<Vec<u8>, Error> {
 #[cfg(feature = "gpu")]
 pub(crate) fn serve(socket: std::os::unix::net::UnixStream, bytes: &[u8]) -> Result<u64, Error> {
     use crate::block_v2::{gpu_hash, native_public_gpu};
-    let bootstrap = Bootstrap::parse_fields(bytes)?;
+    let prepared = native_public_gpu::Prepared::from_env()?;
+    let bootstrap = Bootstrap::parse_for_worker(bytes, prepared.assignment())?;
     bootstrap.validate_shape()?;
+    super::worker::typed::storage::check_native_inputs(bytes.len(), bootstrap.launches.capacity())?;
     if transport::running_image_fingerprint()? != bootstrap.executable {
         return Err("native public worker executable differs from trusted bootstrap".into());
     }
@@ -255,23 +272,14 @@ pub(crate) fn serve(socket: std::os::unix::net::UnixStream, bytes: &[u8]) -> Res
     if !metadata.is_dir() || metadata.file_type().is_symlink() {
         return Err("native public worker launch directory is not a directory".into());
     }
-    let prepared = native_public_gpu::Prepared::from_env()?;
     let WorkerBootstrap {
         config,
         policy,
         launches,
     } = bootstrap.into_worker(prepared.assignment())?;
+    #[cfg(target_env = "gnu")]
+    crate::spill_alloc::host_backing::report("native_bootstrap", 0);
     prepared.initialize()?;
-    struct Shutdown(bool);
-    impl Drop for Shutdown {
-        fn drop(&mut self) {
-            if self.0 {
-                if let Err(error) = gpu_hash::shutdown() {
-                    eprintln!("native public worker cleanup rejected: {error}");
-                }
-            }
-        }
-    }
     let mut shutdown = Shutdown(true);
     process::serve(
         socket,
@@ -284,6 +292,67 @@ pub(crate) fn serve(socket: std::os::unix::net::UnixStream, bytes: &[u8]) -> Res
             Ok(())
         },
     )
+}
+
+#[cfg(feature = "gpu")]
+struct Shutdown(bool);
+
+#[cfg(feature = "gpu")]
+impl Drop for Shutdown {
+    fn drop(&mut self) {
+        if self.0 {
+            if let Err(error) = crate::block_v2::gpu_hash::shutdown() {
+                eprintln!("public worker cleanup rejected: {error}");
+            }
+        }
+    }
+}
+
+/// Serve the existing public-worker protocol after independently trusted,
+/// bounded CLI preparation. Admission precedes CPU preparation (which may use
+/// Rayon); device creation follows it. Only configuration and fixed policy
+/// slots survive preparation. This preserves the caller's protocol identity
+/// and grants neither registry approval nor permission to apply a result.
+///
+/// The enclosing runtime must fence this exact service and keep its assignment,
+/// environment and cgroup fixed until exit. A returned error is not evidence
+/// that a coordinator may release its workspace reservation.
+#[cfg(feature = "gpu")]
+pub fn serve_owned(
+    socket: std::os::unix::net::UnixStream,
+    launches: &std::path::Path,
+    prepare: impl FnOnce(&serde_json::Value) -> Result<(Config, PolicyContext), Error>,
+) -> Result<(u64, crate::block_v2::gpu_hash::Snapshot), Error> {
+    use crate::block_v2::{gpu_hash, native_public_gpu};
+    let prepared = native_public_gpu::Prepared::from_env()?;
+    transport::absolute_path(launches)?;
+    let metadata = std::fs::symlink_metadata(launches)?;
+    if !metadata.is_dir() || metadata.file_type().is_symlink() {
+        return Err("public worker launch directory is not a directory".into());
+    }
+    // Reject files, listeners and disconnected descriptors before admission
+    // starts threads or creates a device. Ownership stays with this function.
+    socket.peer_addr()?;
+    let (config, policy) = prepared.initialize_with(|assignment| {
+        let (config, policy) = prepare(assignment)?;
+        config.check_admitted_assignment(assignment)?;
+        Ok((config, policy))
+    })?;
+    let mut shutdown = Shutdown(true);
+    let mut stats = None;
+    let count = process::serve(
+        socket,
+        config,
+        launches,
+        |artifact| policy.policy(artifact),
+        || {
+            stats = gpu_hash::report("owned public GPU workspace");
+            gpu_hash::shutdown()?;
+            shutdown.0 = false;
+            Ok(())
+        },
+    )?;
+    Ok((count, stats.ok_or("missing owned public GPU telemetry")?))
 }
 
 /// Duplicate a connected Unix stream without consuming the caller's descriptor.

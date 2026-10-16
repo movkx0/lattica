@@ -3,7 +3,8 @@ use super::*;
 #[path = "execution_recovery_admission.rs"]
 mod admission;
 use lattica_prover_p3::block_v2::execution::{
-    os_worker, resources::Resources, transport::image_fingerprint,
+    journal::PreviousAttempt, os_worker, resources::Resources, transport::image_fingerprint,
+    workspace::WorkspaceLease,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -148,8 +149,11 @@ fn stable_assignment(assignment: &serde_json::Value) -> serde_json::Value {
 }
 
 fn compatible(previous: &Plan, current: &Plan) -> Result<(), Error> {
-    if previous.preseal_only
-        || !previous.reuse_preseal.is_empty()
+    if previous.pool_calibration.is_some()
+        || current.pool_calibration.is_some()
+        || previous.preseal_only != current.preseal_only
+        || previous.pool_prefix_handoff != current.pool_prefix_handoff
+        || previous.reuse_preseal != current.reuse_preseal
         || previous.native_host.is_none()
         || serde_json::to_value(&previous.native_host)?
             != serde_json::to_value(&current.native_host)?
@@ -158,7 +162,10 @@ fn compatible(previous: &Plan, current: &Plan) -> Result<(), Error> {
         || previous.coordinator_ram_bytes != current.coordinator_ram_bytes
         || previous.coordinator_shared_bytes != current.coordinator_shared_bytes
         || previous.fleet_bytes != current.fleet_bytes
-        || validate_plan(previous)? != validate_plan(current)?
+        || previous.pool_scheduling.is_some() != current.pool_scheduling.is_some()
+        || previous.pool_workflow != current.pool_workflow
+        || previous.pool_requests.is_some() != current.pool_requests.is_some()
+        || validate_plan_shape(previous)? != validate_plan(current)?
         || previous
             .workers
             .iter()
@@ -196,12 +203,12 @@ pub(super) fn restore(
             .checked_sub(plan.coordinator_shared_bytes)
             .ok_or("recovery shared RAM exceeds coordinator assignment")?,
     )?;
-    let origin = admission::trace(source, plan, &prepared.expected)?;
+    let origin = admission::trace(source, plan, &prepared.expected, prepared.selection.root().id())?;
     let previous = &origin.plan;
     let state = &origin.state;
     let old = &origin.coordinator;
     let worker_source = &origin.worker_source;
-    let assignments = validate_plan(&previous)?;
+    let assignments = validate_plan_shape(previous)?;
     let mut starts = Vec::new();
     for index in (0..previous.workers.len()).filter(|_| !previous.recover_cached_only) {
         starts.push(prior_worker(worker_source, previous, old, index)?);
@@ -225,6 +232,10 @@ pub(super) fn restore(
             entries: budget::ARTIFACT_ENTRIES,
         },
     )?;
+    let mut limits = budget::fleet_limits(&assignments)?;
+    if plan.pool_requests.is_some() {
+        pool_service::configure_limits(&mut limits, true);
+    }
     let recovery = DurableDag::recover_typed(
         &state.durable_runtime.join("journal"),
         JournalLimits {
@@ -235,7 +246,7 @@ pub(super) fn restore(
         &prepared.registry,
         prepared.expected.chain,
         next.epoch,
-        budget::fleet_limits(&assignments)?,
+        limits,
         |identity| {
             prepared
                 .policies
@@ -247,14 +258,23 @@ pub(super) fn restore(
     )?;
     let journal_previous_epoch = recovery.previous_epoch();
     origin.check_checkpoint(&recovery)?;
-    if !recovery.previous_candidates().iter().any(|candidate| {
-        candidate.root == prepared.selection.root().id()
-            && candidate.eligibility == head
-            && candidate.sealed
-            && !candidate.cancelled
-    }) {
-        return Err("recovery has no sealed candidate for the current native head".into());
+    let prior_candidate = recovery
+        .previous_candidates()
+        .iter()
+        .find(|candidate| {
+            candidate.root == prepared.selection.root().id()
+                && candidate.eligibility == head
+                && candidate.sealed != plan.preseal_only
+                && !candidate.cancelled
+        })
+        .ok_or("recovery has no candidate with the current native head and scope")?;
+    if plan.pool_workflow.is_some()
+        && (recovery.previous_candidates().len() != 1
+            || prior_candidate.deadline_ms != pool_timing::CANDIDATE_MS)
+    {
+        return Err("bounded pool recovery candidate or original deadline changed".into());
     }
+    let prior_candidate = prior_candidate.id;
     let mut launches = LaunchStore::open(
         &state.durable_runtime.join("launches"),
         LaunchLimits { records: 256 },
@@ -333,45 +353,67 @@ pub(super) fn restore(
         );
     }
     let unresolved_workspaces = recovery.unresolved_workspaces().len();
-    let (owner, candidate) = recovery.resume_sealed_with_workspaces(
-        |attempt| {
-            if !revocations
-                .iter()
-                .any(|revoked| revoked.lease() == attempt.lease)
-            {
-                return Err("unreconciled old lease".into());
+    let reconcile_attempt = |attempt: &PreviousAttempt| {
+        if !revocations
+            .iter()
+            .any(|revoked| revoked.lease() == attempt.lease)
+        {
+            return Err("unreconciled old lease".into());
+        }
+        Ok(())
+    };
+    let reconcile_workspace = |workspace: &WorkspaceLease| {
+        let prior = starts
+            .iter()
+            .find(|prior| (prior.index as u64 + 1) * 2 - 1 == workspace.worker().0)
+            .ok_or("unresolved workspace has an unknown worker")?;
+        if workspace.resources() != workspace_resources(assignments[prior.index].0) {
+            return Err("old workspace resource assignment differs".into());
+        }
+        if previous.startup_fenced {
+            let fence = prior
+                .startup
+                .as_ref()
+                .ok_or("reserved workspace lacks its startup fence")?;
+            if !fence.future_start_fenced || !fence.process_and_service_quiescent {
+                return Err("old workspace startup was not reconciled".into());
             }
-            Ok(())
-        },
-        |workspace| {
-            let prior = starts
-                .iter()
-                .find(|prior| (prior.index as u64 + 1) * 2 - 1 == workspace.worker().0)
-                .ok_or("unresolved workspace has an unknown worker")?;
-            if workspace.resources() != workspace_resources(assignments[prior.index].0) {
-                return Err("old workspace resource assignment differs".into());
-            }
-            if previous.startup_fenced {
-                let fence = prior
-                    .startup
-                    .as_ref()
-                    .ok_or("reserved workspace lacks its startup fence")?;
-                if !fence.future_start_fenced || !fence.process_and_service_quiescent {
-                    return Err("old workspace startup was not reconciled".into());
-                }
-            }
-            match &prior.start {
-                Some(start) if os_worker::exited(&start.os_identity, &start.unit)? => {}
-                None if previous.startup_fenced && prior.startup.is_some() => {}
-                _ => return Err("old workspace lacks exact process/cgroup reconciliation".into()),
-            }
-            Ok(())
-        },
-        now,
-        prepared.selection.root().id(),
-        head,
-        3_600_000,
-    )?;
+        }
+        match &prior.start {
+            Some(start) if os_worker::exited(&start.os_identity, &start.unit)? => {}
+            None if previous.startup_fenced && prior.startup.is_some() => {}
+            _ => return Err("old workspace lacks exact process/cgroup reconciliation".into()),
+        }
+        Ok(())
+    };
+    let (owner, candidate) = if plan.pool_workflow.is_some() && plan.preseal_only {
+        recovery.resume_prefix_candidate_with_workspaces(
+            reconcile_attempt,
+            reconcile_workspace,
+            now,
+            prior_candidate,
+            prepared.selection.root().id(),
+            head,
+        )?
+    } else if plan.pool_workflow.is_some() {
+        recovery.resume_sealed_candidate_with_workspaces(
+            reconcile_attempt,
+            reconcile_workspace,
+            now,
+            prior_candidate,
+            prepared.selection.root().id(),
+            head,
+        )?
+    } else {
+        recovery.resume_sealed_with_workspaces(
+            reconcile_attempt,
+            reconcile_workspace,
+            now,
+            prepared.selection.root().id(),
+            head,
+            3_600_000,
+        )?
+    };
     if owner.resource_use()? != Resources::default() {
         return Err("old reservations survived coordinator reconciliation".into());
     }
@@ -393,6 +435,8 @@ pub(super) fn restore(
                 "startup":prior.startup,
             })).collect::<Vec<_>>(),
             "original_resource_assignments_preserved":true,
+            "original_workflow_deadline_preserved":plan.pool_workflow.is_some(),
+            "preseal_only":plan.preseal_only,
         }),
     )?;
     Ok((owner, next, candidate))
@@ -501,6 +545,90 @@ mod tests {
             worker.assignment["native_host"] = binding.clone();
         }
         plan
+    }
+
+    #[test]
+    fn bounded_recovery_keeps_the_workflow_and_accepts_a_new_service_window() {
+        let now = {
+            let mut value = libc::timespec {
+                tv_sec: 0,
+                tv_nsec: 0,
+            };
+            assert_eq!(
+                unsafe { libc::clock_gettime(libc::CLOCK_MONOTONIC, &mut value) },
+                0
+            );
+            value.tv_sec as u64 * 1000 + value.tv_nsec as u64 / 1_000_000
+        };
+        let boot = std::fs::read_to_string("/proc/sys/kernel/random/boot_id").unwrap();
+        let start = now.saturating_sub(200_000);
+        let mut old = native_plan();
+        old.pool_requests = Some("/old-requests".into());
+        old.pool_workflow = Some(pool_timing::Workflow {
+            schema_version: 1,
+            boot_id: boot.trim().into(),
+            started_monotonic_ms: start,
+            deadline_monotonic_ms: start + pool_timing::CANDIDATE_MS,
+        });
+        old.pool_scheduling = Some(pool_timing::Window {
+            schema_version: 1,
+            boot_id: boot.trim().into(),
+            issued_monotonic_ms: start,
+            dispatch_deadline_monotonic_ms: start + pool_timing::DISPATCH_MS,
+        });
+        for worker in &mut old.workers {
+            worker.pool_timing = Some("/host-approved.json".into());
+        }
+        validate_plan_shape(&old).unwrap();
+        let mut new = old.clone();
+        new.pool_requests = Some("/next-requests".into());
+        new.recover_from = Some("/old-proofs".into());
+        new.coordinator_unit = "lattica-v2-multi-owner-next.service".into();
+        for (index, worker) in new.workers.iter_mut().enumerate() {
+            worker.assignment["unit"] = json!(format!("next-worker-{index}"));
+        }
+        let window = new.pool_scheduling.as_mut().unwrap();
+        window.issued_monotonic_ms = now;
+        window.dispatch_deadline_monotonic_ms = now + pool_timing::DISPATCH_MS;
+        compatible(&old, &new).unwrap();
+        // Prefix recovery keeps its native scope and never becomes a sealed
+        // candidate. Final candidate recovery keeps the exact imported paths.
+        let mut old_prefix = old.clone();
+        let mut new_prefix = new.clone();
+        for plan in [&mut old_prefix, &mut new_prefix] {
+            plan.preseal_only = true;
+            let mut binding = serde_json::to_value(&plan.native_host).unwrap();
+            binding["scope"] = json!("prefix");
+            plan.native_host = Some(serde_json::from_value(binding.clone()).unwrap());
+            for worker in &mut plan.workers {
+                worker.assignment["native_host"] = binding.clone();
+            }
+        }
+        compatible(&old_prefix, &new_prefix).unwrap();
+        assert!(compatible(&old, &new_prefix).is_err());
+        assert!(compatible(&old_prefix, &new).is_err());
+        new_prefix.reuse_preseal.push("/prefix-cache".into());
+        assert!(validate_plan(&new_prefix).is_err());
+        let mut old_import = old.clone();
+        let mut new_import = new.clone();
+        old_import.reuse_preseal.push("/original-cache".into());
+        new_import.reuse_preseal = old_import.reuse_preseal.clone();
+        compatible(&old_import, &new_import).unwrap();
+        new_import.reuse_preseal[0] = "/another-cache".into();
+        assert!(compatible(&old_import, &new_import).is_err());
+        let mut changed = new.clone();
+        let workflow = changed.pool_workflow.as_mut().unwrap();
+        workflow.started_monotonic_ms += 1;
+        workflow.deadline_monotonic_ms += 1;
+        assert!(compatible(&old, &changed).is_err());
+        let mut changed = new.clone();
+        changed.pool_workflow = None;
+        assert!(validate_plan(&changed).is_err());
+        assert!(compatible(&old, &changed).is_err());
+        let mut changed = new;
+        changed.pool_workflow.as_mut().unwrap().boot_id =
+            "00000000-0000-0000-0000-000000000000".into();
+        assert!(compatible(&old, &changed).is_err());
     }
 
     #[test]

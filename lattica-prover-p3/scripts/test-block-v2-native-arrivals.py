@@ -9,6 +9,7 @@ import struct
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 import block_v2_native_arrivals as A
 
@@ -57,6 +58,143 @@ def child_submit(directory, stage):
 
 
 class IntakeTests(unittest.TestCase):
+    def test_input_references_preserve_order_bytes_and_snapshot_receipts(self):
+        for index in [2, 0, 1]:
+            self.submit(index)
+        requests = ['request-0', 'request-1']
+        eager = self.store.candidate_inputs(expected_head=HEAD, request_ids=requests)
+        refs = self.store.candidate_input_refs(expected_head=HEAD, request_ids=requests)
+        self.assertEqual([[ref[key] for key in ['receipt', 'body', 'wallet']] for ref in refs],
+                         [[row[key] for key in ['receipt', 'body', 'wallet']] for row in eager])
+        changed = refs[0]['receipt']
+        changed['metadata']['changed'] = True
+        self.assertEqual(refs[0]['receipt'], eager[0]['receipt'])
+        with self.assertRaises(KeyError):
+            refs[0]['untrusted-column']
+        import block_v2_pending_candidate as B
+        self.assertEqual(B._complete(refs), B._complete(eager))
+
+    def test_input_references_allow_late_arrivals_without_changing_the_snapshot(self):
+        self.submit(0)
+        refs = self.store.candidate_input_refs(expected_head=HEAD)
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            pool.submit(self.submit, 1).result(timeout=5)
+        self.assertEqual([ref['receipt']['request_id'] for ref in refs], ['request-0'])
+        self.assertEqual(refs[0]['wallet'], b'\0wallet')
+
+    def test_input_reference_payload_hashes_are_checked_on_every_fetch(self):
+        self.submit(0)
+        ref = self.store.candidate_input_refs(expected_head=HEAD)[0]
+        for name, original in [('body', body(0)), ('wallet', b'\0wallet')]:
+            with self.subTest(name=name):
+                changed = original[:-1] + bytes([original[-1] ^ 1])
+                with self.store._transaction() as connection:
+                    connection.execute('UPDATE arrivals SET ' + name + '=? WHERE request_id=?',
+                                       (changed, 'request-0'))
+                # Reading metadata is not proof or payload authentication.
+                pending = self.store.candidate_input_refs(expected_head=HEAD)[0]
+                for retained in [ref, pending]:
+                    with self.assertRaisesRegex(A.IntakeError, 'payload changed'):
+                        retained[name]
+                with self.store._transaction() as connection:
+                    connection.execute('UPDATE arrivals SET ' + name + '=? WHERE request_id=?',
+                                       (original, 'request-0'))
+                self.assertEqual(ref[name], original)
+
+    def test_input_reference_rejects_self_consistent_replacement_and_metadata_change(self):
+        self.submit(0)
+        ref = self.store.candidate_input_refs(expected_head=HEAD)[0]
+        with self.store._transaction() as connection:
+            connection.execute('UPDATE arrivals SET wallet=?,wallet_sha256=? WHERE request_id=?',
+                               (b'changed', H.sha(b'changed'), 'request-0'))
+        with self.assertRaisesRegex(A.IntakeError, 'receipt changed'):
+            ref['wallet']
+        replacement = self.store.candidate_input_refs(expected_head=HEAD)[0]
+        self.assertEqual(replacement['wallet'], b'changed')
+        with self.store._transaction() as connection:
+            connection.execute('UPDATE arrivals SET received_unix_ns=? WHERE request_id=?', ('1', 'request-0'))
+        with self.assertRaisesRegex(A.IntakeError, 'receipt changed'):
+            replacement['body']
+
+    def test_input_reference_rejects_claimed_and_deleted_arrivals(self):
+        self.submit(0)
+        self.submit(1)
+        refs = self.store.candidate_input_refs(expected_head=HEAD)
+        self.store.seal(self.candidate, ['request-0', 'request-1'])
+        for key in ['body', 'wallet']:
+            with self.assertRaisesRegex(A.IntakeError, 'already sealed or applied'):
+                refs[0][key]
+        self.submit(2)
+        ref = self.store.candidate_input_refs(expected_head=HEAD)[0]
+        with self.store._transaction() as connection:
+            connection.execute('DELETE FROM arrivals WHERE request_id=?', ('request-2',))
+        with self.assertRaises(A.IntakeError):
+            ref['wallet']
+
+    def test_reference_bounds_reject_before_materializing_oversized_payloads(self):
+        store = A.Store.create(self.root / 'larger', self.host,
+                               A.Limits(16, 4 * 1024**2, 8 * 1024**2, 64))
+        store.submit('one', expected_head=HEAD, body=body(0), wallet=b'wallet')
+        ref = store.candidate_input_refs(expected_head=HEAD)[0]
+        for name, size, original in [('body', H.MAX_BODY_BYTES + 1, body(0)),
+                                     ('wallet', H.MAX_PROOF_BYTES + 1, b'wallet'),
+                                     ('metadata', 4097, H.canonical({}))]:
+            with self.subTest(name=name):
+                with store._transaction() as connection:
+                    connection.execute('UPDATE arrivals SET ' + name + '=zeroblob(?) WHERE request_id=?', (size, 'one'))
+                with self.assertRaisesRegex(A.IntakeError, 'oversized arrival reference'):
+                    store.candidate_input_refs(expected_head=HEAD)
+                with self.assertRaisesRegex(A.IntakeError, 'oversized arrival reference'):
+                    ref['wallet']
+                with store._transaction() as connection:
+                    connection.execute('UPDATE arrivals SET ' + name + '=? WHERE request_id=?', (original, 'one'))
+        self.assertEqual(ref['body'], body(0))
+
+    def test_input_reference_snapshot_keeps_head_order_and_count_guards(self):
+        original = self.submit(0)
+        for limit in [0, 4097, True]:
+            with self.assertRaises(ValueError):
+                self.store.candidate_input_refs(expected_head=HEAD, limit=limit)
+        with self.assertRaises(ValueError):
+            self.store.candidate_input_refs(expected_head=HEAD, request_ids=['request-0', 'request-0'])
+        self.host.view = SimpleNamespace(token='33' * 32, generation=1)
+        with self.assertRaises(H.StaleHead):
+            self.store.candidate_input_refs(expected_head=HEAD)
+        refs = self.store.candidate_input_refs(expected_head=self.host.view.token)
+        self.assertEqual(refs[0]['receipt'], original)
+        self.assertEqual(refs[0]['wallet'], b'\0wallet')
+
+    def test_bounded_seal_clock_is_durable_and_cannot_be_refreshed_by_resealing(self):
+        import block_v2_pool_seal as S
+        boot = '01234567-89ab-cdef-0123-456789abcdef'
+        workflow = {'schema_version': 1, 'boot_id': boot, 'started_monotonic_ms': 100000,
+                    'deadline_monotonic_ms': 700000}
+        self.submit(0)
+        self.submit(1)
+        with patch.object(S.T, 'workflow_clock', return_value=(boot, 200000)):
+            selected = self.store.seal(self.candidate, ['request-0', 'request-1'], pool_workflow=workflow)
+        self.assertEqual(selected['pool_seal']['sealed_monotonic_ms'], 200000)
+        self.assertEqual(selected['pool_seal']['deadline_monotonic_ms'], 380000)
+        reopened = A.Store(self.directory, self.host)
+        self.assertEqual(reopened.check_selection(selected['selection_id'], self.candidate), selected)
+        before = reopened.snapshot()
+        with patch.object(S.T, 'workflow_clock', return_value=(boot, 210000)), self.assertRaises(A.IntakeError):
+            reopened.seal(self.candidate, ['request-0', 'request-1'], pool_workflow=workflow)
+        self.assertEqual(reopened.snapshot(), before)
+        self.assertEqual(reopened.check_selection(selected['selection_id'], self.candidate), selected)
+
+    def test_seal_expiring_during_validation_cannot_publish_claims(self):
+        import block_v2_pool_seal as S
+        boot = '01234567-89ab-cdef-0123-456789abcdef'
+        workflow = {'schema_version': 1, 'boot_id': boot, 'started_monotonic_ms': 100000,
+                    'deadline_monotonic_ms': 700000}
+        self.submit(0)
+        self.submit(1)
+        before = self.store.snapshot()
+        with patch.object(S.T, 'workflow_clock', side_effect=[(boot, 200000), (boot, 380000)]), self.assertRaises(ValueError):
+            self.store.seal(self.candidate, ['request-0', 'request-1'], pool_workflow=workflow)
+        self.assertEqual(self.store.snapshot(), before)
+
     def test_application_recovery_accepts_sealed_or_exact_applied_receipt(self):
         selected = self.seal()
         receipt = {'head_token': '55' * 32, 'generation': 1}
@@ -210,6 +348,13 @@ class IntakeTests(unittest.TestCase):
         self.assertEqual(len(self.store.pending_inputs(expected_head=HEAD)), 1)
         with self.assertRaises(A.IntakeError):
             self.store.pending_inputs(expected_head=HEAD, request_ids=['request-0'])
+
+    def test_pending_snapshot_uses_the_native_128_profile_limit(self):
+        self.submit(0)
+        self.host.verifier.capacity = 128
+        self.assertEqual(len(self.store.pending_inputs(expected_head=HEAD, limit=128)), 1)
+        with self.assertRaises(ValueError):
+            self.store.pending_inputs(expected_head=HEAD, limit=129)
 
     def test_pending_snapshot_rejects_changed_head_and_invalid_bounds(self):
         self.submit(0)

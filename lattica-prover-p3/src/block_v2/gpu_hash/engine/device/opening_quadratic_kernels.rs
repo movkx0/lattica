@@ -1,10 +1,8 @@
 //! Pinned quadratic (u^2 = 7) opening kernels. Like the cubic path,
 //! denominator inversion uses one inverse per 128-lane product tree.
-pub(crate) const KERNEL_SRC: &str = r#"
-inline void opening_quadratic_mul(__private const ulong *a, __private const ulong *b, __private ulong *out) {
-    out[0] = gl_add(gl_mul(a[0], b[0]), gl_mul(7UL, gl_mul(a[1], b[1])));
-    out[1] = gl_add(gl_mul(a[0], b[1]), gl_mul(a[1], b[0]));
-}
+pub(crate) const KERNEL_SRC: &str = concat!(
+    include_str!("../extension_multiply.cl"),
+    r#"
 inline void opening_quadratic_inverse(__private const ulong *a, __private ulong *out) {
     ulong norm = gl_sub(gl_mul(a[0], a[0]), gl_mul(7UL, gl_mul(a[1], a[1])));
     ulong inverse = gl_pow(norm, 0xfffffffeffffffffUL);
@@ -144,4 +142,5 @@ __kernel void opening_reduce_compact_quadratic(__global const ulong *compressed,
     for (uint k = 0; k < 2; ++k)
         output[at + k] = gl_canon(gl_add(output[at + k], sum[k]));
 }
-"#;
+"#
+);

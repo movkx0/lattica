@@ -9,7 +9,7 @@ fn device_opening_plans_bound_tiles_all_allocations_and_aggregate_memory() {
         staging_bytes: 4096,
     };
     let plan = EvaluationPlan::new(spec, 3, 3, 1234, limits, 16 << 20).unwrap();
-    assert!(plan.rows.is_power_of_two() && plan.rows <= 4096);
+    assert!(plan.rows.is_power_of_two() && plan.rows <= 65536);
     assert_eq!(
         plan.peak,
         1234 + (9 + 18 + 3 * 17 * 3 + 1 + plan.inverse_words + plan.partial_words) * 8
@@ -28,6 +28,99 @@ fn device_opening_plans_bound_tiles_all_allocations_and_aggregate_memory() {
     assert!(ReductionPlan::new(spec, 14, 3, 3, limits.managed_bytes, limits, 16 << 20).is_err());
     assert!(ReductionPlan::new(spec, 14, 3, 3, 0, limits, (1 << 14) * 24 - 1).is_err());
     assert!(checked_peak(usize::MAX, &[1], limits, 16 << 20).is_err());
+}
+
+#[test]
+fn larger_evaluation_tiles_shrink_at_each_independent_memory_boundary() {
+    let spec = MatrixSpec::new(19, 7, Extension::Base, RowOrder::BitReversed, 7).unwrap();
+    let limits = super::super::super::super::Limits {
+        managed_bytes: 64 << 20,
+        tile_bytes: 64 << 20,
+        staging_bytes: 4096,
+    };
+    for degree in [2, 3] {
+        let full = EvaluationPlan::new(spec, 2, degree, 1234, limits, 16 << 20).unwrap();
+        assert_eq!(full.rows, 65536);
+        let scratch = (full.inverse_words + full.partial_words) * 8;
+        let exact = super::super::super::super::Limits {
+            managed_bytes: full.peak,
+            tile_bytes: scratch,
+            ..limits
+        };
+        assert_eq!(
+            EvaluationPlan::new(spec, 2, degree, 1234, exact, full.inverse_words * 8)
+                .unwrap()
+                .rows,
+            full.rows
+        );
+        for (live, bounded, allocation) in [
+            (1235, exact, full.inverse_words * 8),
+            (
+                1234,
+                super::super::super::super::Limits {
+                    tile_bytes: scratch - 1,
+                    ..exact
+                },
+                full.inverse_words * 8,
+            ),
+            (1234, exact, full.inverse_words * 8 - 1),
+        ] {
+            let reduced = EvaluationPlan::new(spec, 2, degree, live, bounded, allocation).unwrap();
+            assert_eq!(reduced.rows, full.rows / 2);
+            assert!(reduced.peak <= bounded.managed_bytes);
+            assert!((reduced.inverse_words + reduced.partial_words) * 8 <= bounded.tile_bytes);
+            assert!(
+                reduced.inverse_words * 8 <= allocation && reduced.partial_words * 8 <= allocation
+            );
+        }
+    }
+}
+
+#[test]
+fn larger_reduction_tiles_shrink_at_each_independent_memory_boundary() {
+    let spec = MatrixSpec::new(18, 7, Extension::Base, RowOrder::BitReversed, 7).unwrap();
+    let limits = super::super::super::super::Limits {
+        managed_bytes: 256 << 20,
+        tile_bytes: 64 << 20,
+        staging_bytes: 4096,
+    };
+    for degree in [2, 3] {
+        let full = ReductionPlan::new(spec, 20, 2, degree, 1234, limits, 64 << 20).unwrap();
+        assert_eq!(full.rows, 1 << 20);
+        let scratch = full.rows * 2 * degree * 8;
+        let exact = super::super::super::super::Limits {
+            managed_bytes: full.peak,
+            tile_bytes: scratch,
+            ..limits
+        };
+        assert_eq!(
+            ReductionPlan::new(spec, 20, 2, degree, 1234, exact, scratch)
+                .unwrap()
+                .rows,
+            full.rows
+        );
+        for (live, bounded, max_alloc) in [
+            (1235, exact, scratch),
+            (
+                1234,
+                super::super::super::super::Limits {
+                    tile_bytes: scratch - 1,
+                    ..exact
+                },
+                scratch,
+            ),
+            (1234, exact, scratch - 1),
+        ] {
+            let reduced =
+                ReductionPlan::new(spec, 20, 2, degree, live, bounded, max_alloc).unwrap();
+            assert_eq!(reduced.rows, full.rows / 2);
+            assert!(reduced.peak <= bounded.managed_bytes);
+            assert!(reduced.rows * 2 * degree * 8 <= bounded.tile_bytes);
+            assert!(reduced.rows * 2 * degree * 8 <= max_alloc);
+        }
+        let capped = ReductionPlan::new(spec, 21, 1, degree, 1234, limits, 64 << 20).unwrap();
+        assert_eq!(capped.rows, 1 << 20);
+    }
 }
 
 #[test]
@@ -105,16 +198,28 @@ fn device_opening_rejects_unsupported_prefixes_and_points_before_dispatch() {
 #[test]
 #[ignore = "requires OpenCL GPU; run serially in a <=3 GiB service with zero swap"]
 fn device_openings_match_polynomials_and_fri_inputs_without_intermediate_readback() {
-    opening_pipeline::<crate::block_v2::profile::Challenge>();
+    opening_pipeline::<crate::block_v2::profile::Challenge>(false);
 }
 
 #[test]
 #[ignore = "requires OpenCL GPU; run serially in a <=3 GiB service with zero swap"]
 fn quadratic_device_openings_match_polynomials_and_fri_inputs_without_intermediate_readback() {
-    opening_pipeline::<crate::config::Challenge>();
+    opening_pipeline::<crate::config::Challenge>(false);
 }
 
-fn opening_pipeline<Challenge: crate::block_v2::gpu_hash::FriExtension>() {
+#[test]
+#[ignore = "requires OpenCL GPU; larger admitted opening tiles and independent polynomial/FRI oracles"]
+fn larger_cubic_opening_tiles_match_polynomials_and_fri_inputs() {
+    opening_pipeline::<crate::block_v2::profile::Challenge>(true);
+}
+
+#[test]
+#[ignore = "requires OpenCL GPU; larger admitted opening tiles and independent polynomial/FRI oracles"]
+fn larger_quadratic_opening_tiles_match_polynomials_and_fri_inputs() {
+    opening_pipeline::<crate::config::Challenge>(true);
+}
+
+fn opening_pipeline<Challenge: crate::block_v2::gpu_hash::FriExtension>(large: bool) {
     use crate::block_v2::gpu_hash::{
         initialize_quotient_test_engine, shutdown, Limits, TestShutdownGuard,
     };
@@ -124,8 +229,8 @@ fn opening_pipeline<Challenge: crate::block_v2::gpu_hash::FriExtension>() {
     use p3_matrix::{dense::RowMajorMatrix, Matrix};
     let _shutdown = TestShutdownGuard;
     initialize_quotient_test_engine(Limits {
-        managed_bytes: 64 << 20,
-        tile_bytes: 128 << 10,
+        managed_bytes: if large { 256 << 20 } else { 64 << 20 },
+        tile_bytes: if large { 64 << 20 } else { 128 << 10 },
         staging_bytes: 64 << 10,
     })
     .unwrap();
@@ -154,13 +259,18 @@ fn opening_pipeline<Challenge: crate::block_v2::gpu_hash::FriExtension>() {
             row.reverse_bits() >> (usize::BITS - log)
         }
     };
-    for (log_rows, widths, shift, point_count) in [
-        (0u32, vec![1usize, 3], 7u64, 3usize),
-        (3, vec![3, 17], 11, 32),
-        (7, vec![9, 3], 7, 3),
-        (10, vec![17, 1], 11, 3),
-        (13, vec![3, 9], 7, 2),
-    ] {
+    let cases = if large {
+        vec![(15u32, vec![7usize], 7u64, 1usize), (16, vec![3], 11, 2)]
+    } else {
+        vec![
+            (0u32, vec![1usize, 3], 7u64, 3usize),
+            (3, vec![3, 17], 11, 32),
+            (7, vec![9, 3], 7, 3),
+            (10, vec![17, 1], 11, 3),
+            (13, vec![3, 9], 7, 2),
+        ]
+    };
+    for (log_rows, widths, shift, point_count) in cases {
         let session = DeviceSession::new().unwrap();
         let baseline = live(&session);
         let rows = 1usize << log_rows;
@@ -320,6 +430,24 @@ fn opening_pipeline<Challenge: crate::block_v2::gpu_hash::FriExtension>() {
             let mut expected = vec![Challenge::ZERO; full_rows];
             let mut first_power = 0;
             for (opening, (width, full, ys)) in prepared.iter().zip(&references) {
+                if large {
+                    let tile_rows = session
+                        .with_engine(|engine| {
+                            ReductionPlan::new(
+                                opening.prefix.spec,
+                                full_log,
+                                opening.count,
+                                degree,
+                                engine.accounting.lock().unwrap().live,
+                                engine.limits,
+                                engine.max_alloc,
+                            )
+                            .map(|plan| plan.rows)
+                        })
+                        .unwrap();
+                    assert_eq!(tile_rows, full_rows.min(1 << 20));
+                    assert!(tile_rows > 65536);
+                }
                 accumulator = accumulator.append(opening).unwrap();
                 for row in 0..full_rows {
                     let natural = reverse(row, full_log);

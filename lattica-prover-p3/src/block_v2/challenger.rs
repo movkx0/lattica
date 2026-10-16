@@ -9,6 +9,8 @@ use p3_symmetric::{Hash, MerkleCap};
 mod observation;
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 pub(crate) mod resources;
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+pub(crate) mod storage;
 
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 mod scalars;
@@ -73,6 +75,20 @@ impl CandidateChallenger {
     }
 
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    pub(crate) fn opening_host_backing(
+        &self,
+        session: &DeviceSession,
+    ) -> Result<Option<(usize, usize)>, String> {
+        match &self.inner {
+            Backend::Cpu(_) => Ok(None),
+            Backend::Gpu(gpu) => {
+                gpu.check_session(session)?;
+                gpu.opening_host_backing().map(Some)
+            }
+        }
+    }
+
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     pub(crate) fn begin_attempt(&self) -> Result<Option<TranscriptAttempt>, String> {
         match &self.inner {
             Backend::Cpu(_) => Ok(None),
@@ -89,21 +105,11 @@ impl CandidateChallenger {
             }
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Backend::Gpu(gpu) => {
-                // Bound host staging as well as device upload. Chunking does
-                // not insert a transcript boundary or flush pending inputs.
-                let mut values = values.into_iter();
-                loop {
-                    let words: Vec<_> = values
-                        .by_ref()
-                        .take(resources::BATCH_WORDS)
-                        .map(|value| value.as_canonical_u64())
-                        .collect();
-                    let result = gpu.observe(&words);
-                    checked(gpu, result);
-                    if words.len() < resources::BATCH_WORDS {
-                        break;
-                    }
-                }
+                let plan = checked(gpu, storage::Plan::observation());
+                let mut scope = checked(gpu, gpu.reserve_host_storage(plan));
+                let result =
+                    storage::observe_batches(values, |words| gpu.observe_scoped(words, &mut scope));
+                checked(gpu, result);
             }
         }
     }
@@ -119,11 +125,14 @@ impl CandidateChallenger {
                     checked(gpu, result);
                     return Vec::new();
                 }
-                let result = gpu.sample_bits(bits, count);
-                checked(gpu, result)
-                    .into_iter()
-                    .map(|n| n as usize)
-                    .collect()
+                let plan = checked(gpu, storage::Plan::sample(count));
+                let mut scope = checked(gpu, gpu.reserve_host_storage(plan));
+                let mut output = checked(gpu, storage::exact::<usize>(count));
+                let result = gpu.sample_bits_scoped(bits, count, &mut scope);
+                for word in checked(gpu, result) {
+                    output.push(word as usize);
+                }
+                output
             }
         }
     }
@@ -204,7 +213,9 @@ impl<A: BasedVectorSpace<Val>> CanSample<A> for CandidateChallenger {
             Backend::Cpu(cpu) => cpu.sample(),
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Backend::Gpu(gpu) => {
-                let result = gpu.sample_fields(A::DIMENSION);
+                let plan = checked(gpu, storage::Plan::sample(A::DIMENSION));
+                let mut scope = checked(gpu, gpu.reserve_host_storage(plan));
+                let result = gpu.sample_fields_scoped(A::DIMENSION, &mut scope);
                 let words = checked(gpu, result);
                 // Canonicalization and masking were done on GPU. This only
                 // assembles the existing public field/extension representation.

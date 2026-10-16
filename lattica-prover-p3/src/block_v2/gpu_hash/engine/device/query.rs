@@ -16,17 +16,17 @@ __kernel void device_query_prefix(__global const ulong *input,
 
 // Prefer <=64 MiB of scratch. A domain too tall for one column may use
 // exactly one column's larger working set, still bounded by log_rows <=25.
-const PREFERRED_SCRATCH: usize = 64 << 20;
+pub(super) const PREFERRED_SCRATCH: usize = 64 << 20;
 const HOST_METADATA: usize = 8 << 10;
 
 #[derive(Debug)]
-struct QueryPlan {
+pub(super) struct QueryPlan {
     height: usize,
-    columns: usize,
+    pub(super) columns: usize,
     inverse_words: usize,
     forward_words: usize,
-    workspace_bytes: usize,
-    host_peak_bytes: usize,
+    pub(super) workspace_bytes: usize,
+    pub(super) host_peak_bytes: usize,
 }
 
 fn geometry(input: MatrixSpec, log_rows: u32, indices: &[usize]) -> Result<(), String> {
@@ -48,7 +48,7 @@ fn geometry(input: MatrixSpec, log_rows: u32, indices: &[usize]) -> Result<(), S
 }
 
 impl QueryPlan {
-    fn new(
+    pub(super) fn new(
         input: MatrixSpec,
         log_rows: u32,
         queries: usize,

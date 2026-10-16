@@ -531,3 +531,4 @@ fn strict_native_completion_withholds_outputs_without_receipts_and_releases_buff
     drop((input, session));
     gpu_hash::shutdown().unwrap();
 }
+mod entrypoints;

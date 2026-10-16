@@ -23,10 +23,17 @@ pub(crate) mod verification_lifetimes;
 #[cfg(all(not(debug_assertions), target_arch = "x86_64"))]
 mod verification_scratch;
 
+/// Standalone registration includes the diagnostic execution-program identity.
 pub struct RegisteredProgram {
+    prepared: PreparedProgram,
+    id: [u64; 4],
+}
+
+// Registry-bound workers authenticate preprocessing against their approved cap.
+// Keeping the proving core separate prevents exposing an uncomputed identity.
+struct PreparedProgram {
     air: MachineAir,
     data: ProverData<Config>,
-    id: [u64; 4],
     analysis: super::analysis::MachineAnalysis,
     preprocessing_receipt: crate::proving::CachedScope,
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
@@ -36,6 +43,14 @@ pub struct RegisteredProgram {
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     gpu_pcs_host_allowance: usize,
 }
+
+enum SetupIdentity<'a> {
+    Standalone,
+    RegistryCap(&'a [[Val; 4]]),
+}
+
+mod registry_prover;
+pub(crate) use registry_prover::RegistryProgram;
 
 /// Verification-only state. It contains no preprocessing LDE, program witness,
 /// inner proof, or wallet data. The caller must authenticate the supplied cap.
@@ -467,6 +482,68 @@ impl RegisteredProgram {
         budget: u64,
         run: crate::proving::Run,
     ) -> Result<Self, super::analysis::AdmissionError> {
+        let (prepared, id) = PreparedProgram::prepare(air, budget, run, SetupIdentity::Standalone)?;
+        Ok(Self {
+            prepared,
+            id: id.expect("standalone identity computed"),
+        })
+    }
+    pub fn id(&self) -> [u64; 4] {
+        self.id
+    }
+    pub fn air(&self) -> &MachineAir {
+        self.prepared.air()
+    }
+    pub fn preprocessing_cap(&self) -> &p3_batch_stark::Commitment<Config> {
+        self.prepared.preprocessing_cap()
+    }
+    pub fn analysis(&self) -> &super::analysis::MachineAnalysis {
+        self.prepared.analysis()
+    }
+    pub fn verifier(&self) -> RegisteredVerifier {
+        self.prepared.verifier()
+    }
+    pub fn prove(
+        &self,
+        public: &[Val],
+        witness: &[Val],
+    ) -> Result<BatchProof<Config>, ExecutionError> {
+        self.prepared.prove(public, witness)
+    }
+    pub fn prove_with_request(
+        &self,
+        public: &[Val],
+        witness: &[Val],
+        request: crate::proving::Request,
+    ) -> Result<BatchProof<Config>, ExecutionError> {
+        self.prepared.prove_with_request(public, witness, request)
+    }
+    pub(crate) fn prove_in_run(
+        &self,
+        public: &[Val],
+        witness: &[Val],
+        run: crate::proving::Run,
+    ) -> Result<BatchProof<Config>, ExecutionError> {
+        self.prepared.prove_in_run(public, witness, run)
+    }
+    pub(crate) fn reuse_preprocessing(
+        &self,
+        request: &crate::proving::Run,
+    ) -> Result<(), crate::proving::Error> {
+        self.prepared.reuse_preprocessing(request)
+    }
+    pub fn verify(&self, proof: &BatchProof<Config>, public: &[Val]) -> Result<(), String> {
+        self.prepared.verify(proof, public)
+    }
+}
+
+impl PreparedProgram {
+    fn prepare(
+        air: MachineAir,
+        budget: u64,
+        run: crate::proving::Run,
+        identity: SetupIdentity<'_>,
+    ) -> Result<(Self, Option<[u64; 4]>), super::analysis::AdmissionError> {
         use crate::proving::{Backend, Stage};
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         super::gpu_backend::check_selected().map_err(super::analysis::AdmissionError::Gpu)?;
@@ -627,22 +704,45 @@ impl RegisteredProgram {
                 ))
             })
             .map_err(super::analysis::AdmissionError::ProvingPolicy)??;
-        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
-        let id = if let Some(constraints) = symbolic_constraints {
-            program_identity_device(
-                &air,
-                &data.common,
-                &analysis,
-                &constraints,
-                &preprocessing_config,
-                &run,
-            )
-            .map_err(super::analysis::AdmissionError::Gpu)?
-        } else {
-            program_identity(&air, &data.common, &analysis)
+        let id = match identity {
+            SetupIdentity::Standalone => {
+                #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+                let id = if let Some(constraints) = symbolic_constraints {
+                    program_identity_device(
+                        &air,
+                        &data.common,
+                        &analysis,
+                        &constraints,
+                        &preprocessing_config,
+                        &run,
+                    )
+                    .map_err(super::analysis::AdmissionError::Gpu)?
+                } else {
+                    program_identity(&air, &data.common, &analysis)
+                };
+                #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+                let id = program_identity(&air, &data.common, &analysis);
+                Some(id)
+            }
+            SetupIdentity::RegistryCap(expected) => {
+                let actual = data
+                    .common
+                    .preprocessed
+                    .as_ref()
+                    .expect("machine preprocessing")
+                    .commitment
+                    .roots();
+                if actual != expected {
+                    return Err(super::analysis::AdmissionError::RegistryCommitmentMismatch);
+                }
+                #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+                drop(symbolic_constraints);
+                if std::env::var("LATTICA_PROVING_REPORT").as_deref() == Ok("1") {
+                    eprintln!("bounded_registry_preprocessing expected_roots={} matched=true diagnostic_identity_computed=false", expected.len());
+                }
+                None
+            }
         };
-        #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
-        let id = program_identity(&air, &data.common, &analysis);
         drop(preprocessing_config);
         let report = run
             .finish(true)
@@ -652,7 +752,6 @@ impl RegisteredProgram {
         let registered = Self {
             air,
             data,
-            id,
             analysis,
             preprocessing_receipt,
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
@@ -664,10 +763,10 @@ impl RegisteredProgram {
         };
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         if registered.gpu_witness.is_some() {
-            cache_storage::admit_registered(&registered)
+            cache_storage::admit_prepared(&registered)
                 .map_err(super::analysis::AdmissionError::Gpu)?;
         }
-        Ok(registered)
+        Ok((registered, id))
     }
     pub(crate) fn reuse_preprocessing(
         &self,
@@ -678,9 +777,6 @@ impl RegisteredProgram {
 
     pub fn air(&self) -> &MachineAir {
         &self.air
-    }
-    pub fn id(&self) -> [u64; 4] {
-        self.id
     }
     /// Trusted public preprocessing key. Recursive callers must authenticate
     /// this cap against their registered-program policy, never a proof header.
@@ -1045,11 +1141,12 @@ mod tests {
         let proof = registered.prove(&public, &[Val::ONE]).unwrap();
         registered.verify(&proof, &public).unwrap();
         assert!(registered.verify(&proof, &[Val::ONE]).is_err());
-        let clean = registered.air.trace(&public, &[Val::ONE]).unwrap();
+        let clean = registered.prepared.air.trace(&public, &[Val::ONE]).unwrap();
         let mut hints = 0;
-        for (r, row) in registered.air.program.rows.iter().enumerate() {
+        for (r, row) in registered.prepared.air.program.rows.iter().enumerate() {
             if let Row::Alu(ops) = row {
                 for (lane, op) in ops.iter().enumerate() {
+                    let op = registered.prepared.air.program.operation(*op).unwrap();
                     if matches!(op, Op::SelectHint { .. }) {
                         hints += 1;
                         let mut trace = clean.clone();
@@ -1058,11 +1155,11 @@ mod tests {
                             prove_batch(
                                 &profile::make_config(),
                                 &[StarkInstance {
-                                    air: &registered.air,
+                                    air: &registered.prepared.air,
                                     trace: &trace,
                                     public_values: public.to_vec(),
                                 }],
-                                &registered.data,
+                                &registered.prepared.data,
                             )
                         }));
                         if let Ok(proof) = result {
@@ -1122,8 +1219,8 @@ mod tests {
                 .chain(cv)
                 .chain([Val::from_u64(bit)])
                 .collect::<Vec<_>>();
-            let clean = registered.air.trace(public, &witness).unwrap();
-            for (row, kind) in registered.air.program.rows.iter().enumerate() {
+            let clean = registered.prepared.air.trace(public, &witness).unwrap();
+            for (row, kind) in registered.prepared.air.program.rows.iter().enumerate() {
                 if let super::super::program::Row::Cubic(_) = kind {
                     let mut trace = clean.clone();
                     trace.values[row * super::super::WIDTH + c_column(0)] += Val::ONE;
@@ -1131,11 +1228,11 @@ mod tests {
                         prove_batch(
                             &profile::make_config(),
                             &[StarkInstance {
-                                air: &registered.air,
+                                air: &registered.prepared.air,
                                 trace: &trace,
                                 public_values: public.to_vec(),
                             }],
-                            &registered.data,
+                            &registered.prepared.data,
                         )
                     }));
                     if let Ok(proof) = result {
@@ -1222,7 +1319,7 @@ mod tests {
         let hash_row = program
             .rows
             .iter()
-            .position(|r| matches!(r, Row::Poseidon { .. }))
+            .position(|r| matches!(r, Row::Poseidon(_)))
             .unwrap();
         let cubic_row = program
             .rows
@@ -1230,7 +1327,7 @@ mod tests {
             .position(|r| matches!(r, Row::Cubic(ops) if ops.len() == EXT_LANES))
             .unwrap();
         let alu_row = program.rows.iter().position(|r| matches!(r, Row::Alu(ops)
-            if ops.len() == LANES && matches!(ops.last(), Some(Op::Add { .. } | Op::Mul { .. } | Op::Inverse { .. } | Op::Select { .. })))).unwrap();
+            if ops.len() == LANES && matches!(ops.last().and_then(|index| program.operation(*index).ok()), Some(Op::Add { .. } | Op::Mul { .. } | Op::Inverse { .. } | Op::Select { .. })))).unwrap();
         let padding_row = program.active_rows();
         assert!(padding_row < program.height());
         let mut witness: Vec<_> = (0..LANES * 2).map(|i| Val::from_usize(i + 2)).collect();
@@ -1246,7 +1343,7 @@ mod tests {
             proof.lookup_terminals[0].as_ref().unwrap().0,
             profile::Challenge::ZERO
         );
-        let clean = registered.air.trace(&public, &witness).unwrap();
+        let clean = registered.prepared.air.trace(&public, &witness).unwrap();
         // Bypass the interpreter: mutate active high lanes, overlapping fixed
         // hash checkpoints, unused arithmetic tail cells, public and padding rows.
         let mutations = [
@@ -1283,11 +1380,11 @@ mod tests {
                 prove_batch(
                     &profile::make_config(),
                     &[StarkInstance {
-                        air: &registered.air,
+                        air: &registered.prepared.air,
                         trace: &trace,
                         public_values: public.to_vec(),
                     }],
-                    &registered.data,
+                    &registered.prepared.data,
                 )
             }));
             if let Ok(proof) = result {
@@ -1337,11 +1434,16 @@ mod tests {
     fn rejects_unconstrained_copy_and_program_tampering() {
         let registered = RegisteredProgram::new(copy_program(7, None)).unwrap();
         let public = vec![Val::from_u64(12)];
-        let mut trace = registered.air.trace(&public, &[Val::from_u64(5)]).unwrap();
+        let mut trace = registered
+            .prepared
+            .air
+            .trace(&public, &[Val::from_u64(5)])
+            .unwrap();
         // First ALU row lanes: input, constant, add, assert_equal. Change the add's
         // reads and matching local output/assertion so its algebra remains true,
         // but make the read disagree with the wire's unique definition.
         let row = registered
+            .prepared
             .air
             .program
             .rows
@@ -1356,11 +1458,11 @@ mod tests {
             prove_batch(
                 &profile::make_config(),
                 &[StarkInstance {
-                    air: &registered.air,
+                    air: &registered.prepared.air,
                     trace: &trace,
                     public_values: public.clone(),
                 }],
-                &registered.data,
+                &registered.prepared.data,
             )
         }));
         if let Ok(proof) = result {

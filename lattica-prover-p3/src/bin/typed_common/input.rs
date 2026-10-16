@@ -32,7 +32,7 @@ impl<'de> DeserializeSeed<'de> for RejectExtra {
     }
 }
 
-fn bounded<'de, D, T, const LIMIT: usize>(decoder: D) -> Result<Vec<T>, D::Error>
+pub(super) fn bounded<'de, D, T, const LIMIT: usize>(decoder: D) -> Result<Vec<T>, D::Error>
 where
     D: serde::Deserializer<'de>,
     T: Deserialize<'de>,
@@ -201,9 +201,16 @@ impl Storage {
         })
     }
     pub(super) fn print(&self, prefix: &str) -> Result<(), Error> {
-        println!("{prefix} body_bytes={} expected_bytes={} entry_bytes={} task_bytes={} read_bytes={} key_canonical_bytes={} total_bytes={}",
-            self.body_bytes, self.expected_bytes, self.entry_bytes, self.task_bytes, self.read_bytes,
-            self.key_canonical_bytes, self.total_bytes()?);
+        println!(
+            "{prefix} body_bytes={} expected_bytes={} entry_bytes={} task_bytes={} read_bytes={} key_canonical_bytes={} total_bytes={}",
+            self.body_bytes,
+            self.expected_bytes,
+            self.entry_bytes,
+            self.task_bytes,
+            self.read_bytes,
+            self.key_canonical_bytes,
+            self.total_bytes()?
+        );
         Ok(())
     }
 }

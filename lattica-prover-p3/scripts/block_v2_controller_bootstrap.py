@@ -125,6 +125,8 @@ def intent(path):
 
 
 def create(args, script, pins, recovered=None):
+    if recovered is not None and getattr(args, 'pool_calibration', None):
+        raise ValueError('calibration controller recovery cannot renew the failed experiment')
     proving = G.proving_environment(recovered['intent'].get('proving_environment', {})) if recovered else G.proving_environment()
     directory = args.evidence.resolve()
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
@@ -152,6 +154,16 @@ def create(args, script, pins, recovered=None):
         executable_sha256=G.digest(Path(executable)), script=script, arguments=arguments(args),
         command=[executable, script, '--controller-request', str(path)], pins=pins,
         recovered_controller=recovered)
+    if getattr(args, 'pool_timing_approval', []) or getattr(args, 'pool_calibration', None):
+        import block_v2_pool_timing as timing
+        previous = None
+        if getattr(args, 'recover_owner', None):
+            config = read(args.recover_owner.resolve(strict=True).parent / 'config.json')
+            previous = read(Path(config['fleet_plan']))
+        workflow, workflow_pins = timing.workflow(getattr(args, 'pool_workflow', None), previous)
+        pins.update(workflow_pins)
+        value['pool_workflow'] = workflow
+        value['pool_scheduling'] = timing.service_window(workflow)
     check_pins(pins)
     if pins.get(script) != G.digest(Path(script)) or (gate / 'revoked.json').exists():
         raise ValueError('controller launcher code changed or was revoked')
@@ -186,7 +198,11 @@ def enter(path, parser, script):
             raise ValueError('controller request contains another entry mode or output directory')
         publish(gate / 'started.json', started)
         _lifetime_fds.append(fd)
-        return args, dict(gate=str(gate), unit=value['unit'], intent_sha256=G.digest(gate / 'intent.json'))
+        control = dict(gate=str(gate), unit=value['unit'], intent_sha256=G.digest(gate / 'intent.json'))
+        if getattr(args, 'pool_timing_approval', []) or getattr(args, 'pool_calibration', None):
+            control['pool_workflow'] = value['pool_workflow']
+            control['pool_scheduling'] = value['pool_scheduling']
+        return args, control
     except BaseException:
         os.close(fd)
         raise
@@ -291,6 +307,8 @@ def recover(args, parser):
     if receipt['intent'] is None:
         raise ValueError('controller stopped before its request was published; reuse the original command with a fresh evidence directory')
     recovered = parser.parse_args(receipt['intent']['arguments'])
+    if getattr(recovered, 'pool_calibration', None):
+        raise ValueError('calibration controller recovery cannot renew the failed experiment')
     recovered.evidence = args.evidence
     if receipt['recovery_owner'] is not None:
         recovered.recover_owner = Path(receipt['recovery_owner'])
@@ -298,15 +316,44 @@ def recover(args, parser):
     return recovered, receipt
 
 
+def controller_cpu_property():
+    # Explicit affinity enables cpuset accounting on this service even when
+    # only its sibling owner/worker services previously requested AllowedCPUs.
+    # Keep the inherited host restriction; aggregate quotas remain separate.
+    cpus = sorted(os.sched_getaffinity(0))
+    if not cpus:
+        raise ValueError('controller requires nonempty inherited CPU affinity')
+    return '--property=AllowedCPUs=' + ','.join(map(str, cpus))
+
+
 def launch(args, script, pins, accounting, recovered=None):
     path, value = create(args, script, pins, recovered)
     gate = path.parent
+    qualified = bool(getattr(args, 'pool_timing_approval', []) or getattr(args, 'pool_calibration', None))
+    properties = ['--property=MemoryMax=4G', '--property=CPUQuota=100%', '--setenv=RAYON_NUM_THREADS=1']
+    if qualified:
+        import block_v2_pool_timing as timing
+        locks = G.lock_fleet()
+        try:
+            active = json.loads(G.systemctl('list-units', 'lattica-v2-multi-*.service',
+                '--state=active,activating,deactivating', '--output=json', '--no-pager'))
+            if active:
+                raise ValueError('another native GPU fleet is active before controller admission')
+            G.systemctl('start', timing.COORDINATOR_SLICE)
+            G.systemctl('set-property', '--runtime', G.SLICE,
+                'MemoryMax=4G', 'MemorySwapMax=0', 'CPUQuota=400%')
+            G.systemctl('set-property', '--runtime', timing.COORDINATOR_SLICE,
+                'MemoryMax=1G', 'MemorySwapMax=0', 'CPUQuota=400%')
+        finally:
+            for lock_fd in locks:
+                os.close(lock_fd)
+        properties = ['--slice=' + timing.COORDINATOR_SLICE, '--property=MemoryMax=1G',
+            '--property=CPUQuota=400%', '--setenv=RAYON_NUM_THREADS=4', '--property=RuntimeMaxSec=180']
     command = ['systemd-run', '--user', '--quiet', '--expand-environment=no', '--service-type=exec',
         '--wait', '--pipe', '--unit=' + value['unit'], '--working-directory=' + value['cwd'],
-        '--property=MemoryMax=4G', '--property=MemorySwapMax=0', '--property=CPUQuota=100%',
+        *properties, controller_cpu_property(), '--property=MemorySwapMax=0',
         '--property=TasksMax=256', '--property=KillMode=control-group', '--property=OOMPolicy=kill',
         '--property=TimeoutStopSec=30', '--property=LimitCORE=0', '--property=UMask=0077',
-        '--setenv=RAYON_NUM_THREADS=1',
         accounting(gate.parent),
         *[f'--setenv={name}={setting}' for name, setting in value['proving_environment'].items()],
         *value['command']]

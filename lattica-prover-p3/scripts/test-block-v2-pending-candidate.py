@@ -2,11 +2,48 @@
 """Selection contracts; fake native screening here, real qualification retained separately."""
 
 import struct
+from pathlib import Path
+import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import Mock, patch
 import block_v2_pending_candidate as B
 
 H = B.H
+
+
+class PreparationConfiguration(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.journal, self.registry = self.root / 'journal', self.root / 'registry'
+        self.journal.mkdir(); self.registry.mkdir()
+        self.cpu, self.config = self.root / 'cpu', self.root / 'host.json'
+        self.cpu.write_bytes(b'explicit-noncryptographic-probe')
+        self.config.write_bytes(b'{}')
+        self.configuration = {'verifier': 'explicit-noncryptographic-stub'}
+        self.host = SimpleNamespace(directory=self.journal,
+            verifier=SimpleNamespace(configuration=dict(self.configuration)), snapshot=Mock())
+        self.intake = SimpleNamespace(host=self.host,
+            configuration=H.sha(H.canonical(self.configuration)), candidate_input_refs=Mock())
+
+    def prepare_rejected(self, message):
+        independent = SimpleNamespace(verifier=SimpleNamespace(configuration=self.configuration))
+        output = self.root / 'output'
+        with patch.object(B.N, 'open_host', return_value=independent), self.assertRaisesRegex(H.RejectedBlock, message):
+            B.prepare(self.intake, self.config, self.registry, self.cpu, output)
+        self.host.snapshot.assert_not_called()
+        self.intake.candidate_input_refs.assert_not_called()
+        self.assertEqual(B.N.read(output / 'manifest.json')['status'], 'failed')
+
+    def test_intake_configuration_must_match_even_when_its_store_is_reused(self):
+        self.intake.configuration = '99' * 32
+        self.prepare_rejected('candidate builder and intake use different native configurations')
+
+    def test_changed_cached_verifier_configuration_rejects_before_reading_arrivals(self):
+        self.host.verifier.configuration['verifier'] = 'substituted'
+        self.prepare_rejected('cached native store differs from pinned configuration')
 
 
 def arrival(name, kind=0):

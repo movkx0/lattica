@@ -69,13 +69,32 @@ impl Layout {
         }
         let mut ports = 0;
         for row in &program.rows {
+            if let Row::Alu(indices) | Row::Cubic(indices) = row {
+                for index in indices {
+                    let op = program.operation(*index)?;
+                    let valid = match row {
+                        Row::Alu(_) => op.code() <= 7,
+                        Row::Cubic(_) => {
+                            matches!(op, Op::CubicMul { .. } | Op::CubicInverse { .. })
+                        }
+                        _ => unreachable!(),
+                    };
+                    if !valid {
+                        return Err(ExecutionError::InvalidWire);
+                    }
+                }
+            }
             ports = add(
                 ports,
                 match row {
                     Row::Public(bank) if *bank < program.publics.div_ceil(PUBLICS_PER_ROW) => 0,
                     Row::Alu(ops) if ops.len() <= LANES => ops.len(),
                     Row::Cubic(ops) if ops.len() <= EXT_LANES => ops.len() * 3,
-                    Row::Poseidon { .. } => 8,
+                    Row::Poseidon(index)
+                        if matches!(program.operation(*index)?, Op::Poseidon { .. }) =>
+                    {
+                        8
+                    }
                     _ => return Err(ExecutionError::InvalidWire),
                 },
             )?;
@@ -230,7 +249,8 @@ impl WitnessProgram {
             let (kind, count, bank) = match row {
                 Row::Public(bank) => (4, 0, *bank),
                 Row::Alu(ops) => {
-                    for op in ops {
+                    for index in ops {
+                        let op = program.operation(*index)?;
                         if op.code() > 7 {
                             return Err(ExecutionError::InvalidWire);
                         }
@@ -258,7 +278,8 @@ impl WitnessProgram {
                     (1, ops.len(), 0)
                 }
                 Row::Cubic(ops) => {
-                    for op in ops {
+                    for index in ops {
+                        let op = program.operation(*index)?;
                         let (a, b, out) = match op {
                             Op::CubicMul { a, b, out } => (a, Some(b), out),
                             Op::CubicInverse { a, out } => (a, None, out),
@@ -277,14 +298,22 @@ impl WitnessProgram {
                     }
                     (2, ops.len() * 3, 0)
                 }
-                Row::Poseidon { input, output } => {
+                Row::Poseidon(index) => {
+                    let Op::Poseidon { input, output } = program.operation(*index)? else {
+                        return Err(ExecutionError::InvalidWire);
+                    };
                     for i in 0..8 {
                         port(
                             &mut data,
                             &mut port_at,
                             program,
                             0,
-                            [Some(input[i]), None, Some(output[i]), None],
+                            [
+                                Some(Wire(input[i] as usize)),
+                                None,
+                                Some(Wire(output[i] as usize)),
+                                None,
+                            ],
                             0,
                         )?;
                     }
@@ -402,7 +431,7 @@ fn encode(op: &Op, words: &mut [u64], hint_at: &mut usize) -> [u64; INSTRUCTION_
         }
         Op::Poseidon { input, output } => {
             for (dst, w) in c[1..].iter_mut().zip(input.iter().chain(output)) {
-                *dst = w.0 as u64;
+                *dst = u64::from(*w);
             }
         }
     }

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Check Rust/Zig native mixed roots. This does not qualify recursive proofs."""
+import block_v2_capacity as Capacity
 import argparse
 import hashlib
 import json
@@ -39,9 +40,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--rust', type=Path, required=True)
     parser.add_argument('--zig', type=Path, required=True)
+    parser.add_argument('--block-capacity', type=int, choices=Capacity.SUPPORTED_CAPACITIES, default=64)
     parser.add_argument('--evidence', type=Path, required=True)
     args = parser.parse_args()
     rust, zig = args.rust.resolve(strict=True), args.zig.resolve(strict=True)
+    Capacity.require_binaries(args.block_capacity, rust)
     directory = args.evidence.resolve()
     directory.mkdir(parents=True, exist_ok=False)
     contract_path = Path(__file__).with_name('block-v2-throughput-contract.json').resolve()
@@ -56,7 +59,7 @@ def main():
     invoke(directory, 'fixture-statements',
            [rust, 'fixture-statements', directory / 'body.json'], env)
     body = json.loads((directory / 'body.json').read_text())
-    if body['schema_version'] != 1 or len(body['transactions']) != 64:
+    if body['schema_version'] != 1 or len(body['transactions']) != args.block_capacity:
         raise ValueError('unexpected public fixture')
     profile = bytes([0x33] * 32)
     chain = bytes(body['chain'])
@@ -70,13 +73,14 @@ def main():
         encoded.append(f'{kind}:' + b''.join(v.to_bytes(8, 'little') for v in fields).hex())
     contract = json.loads(contract_path.read_text())
     results = []
-    for count in contract['required_counts']:
+    counts = sorted(set(contract['required_counts']) | ({65, 127, 128} if args.block_capacity == 128 else set()))
+    for count in counts:
         name = f'count-{count:02d}'
         output = invoke(directory, f'{name}-zig',
                         [zig, 'root-mixed', profile.hex(), chain.hex(), *encoded[:count]], env)
         fields = dict(word.split('=', 1) for word in output.split() if '=' in word)
         if fields.get('profile') != profile.hex() or fields.get('chain') != chain.hex() \
-                or fields.get('level') != '6' or fields.get('count') != str(count) \
+                or fields.get('level') != str(Capacity.depth(args.block_capacity)) or fields.get('count') != str(count) \
                 or fields.get('proof_verified') != 'false':
             raise ValueError('unexpected native Zig statement')
         root = bytes.fromhex(fields['root'])
@@ -93,7 +97,7 @@ def main():
         save(pinned, expected)
         planned = json.loads(invoke(directory, f'{name}-rust',
                                     [rust, 'plan', directory, pinned], env))
-        if planned['count'] != count or planned['depth'] != 6 \
+        if planned['count'] != count or planned['depth'] != Capacity.depth(args.block_capacity) or planned.get('block_capacity', 64) != args.block_capacity \
                 or planned['phase_admitted'] or planned['gpu_qualified']:
             raise ValueError('unexpected Rust native plan')
         results.append({'count': count, 'root_hex': root.hex(),
@@ -114,7 +118,7 @@ def main():
                        env, success=False)
     if any(digest(Path(path)) != pin for path, pin in pins.items()):
         raise ValueError('tool changed during native comparison')
-    summary = {'schema_version': 1, 'status': 'NATIVE_INTEROP_PASSED',
+    summary = {'schema_version': 1, 'status': 'NATIVE_INTEROP_PASSED', 'block_capacity': args.block_capacity,
                'proof_verified': False, 'mixed_root_qualified': False,
                'durable_host_applied': False, 'production_ready': False,
                'pins': pins, 'body_sha256': digest(directory / 'body.json'),

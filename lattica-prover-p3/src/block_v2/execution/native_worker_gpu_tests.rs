@@ -1,6 +1,11 @@
 //! C service qualification. The small fixture registers only Empty proofs;
 //! full-size finalizer tests use all twelve archived keys and verified inputs.
 use super::*;
+#[cfg(feature = "block-v2-wide-lanes")]
+#[path = "native_worker_gpu_nonempty_tests.rs"]
+mod nonempty_tests;
+#[path = "native_worker_gpu_retirement_tests.rs"]
+mod retirement_tests;
 use crate::block_v2::execution::{
     artifact_store::{ArtifactStore, StoreLimits},
     dag::{Completion, Limits, WorkerId},
@@ -187,6 +192,10 @@ impl Fixture {
     }
 
     fn check_memory_reports(&self, jobs: usize) {
+        self.check_memory_reports_with_setups(jobs, 1);
+    }
+
+    fn check_memory_reports_with_setups(&self, jobs: usize, setups: usize) {
         let log = fs::read_to_string(self.directory.join("worker.log")).unwrap();
         let plans: Vec<serde_json::Value> = log
             .lines()
@@ -197,25 +206,44 @@ impl Fixture {
         let expected = assigned
             - crate::block_v2::execution::worker::typed::storage::HOST_BYTES
             - crate::block_v2::execution::worker::typed::storage::INPUT_HOST_BYTES
-            - crate::block_v2::typed_recursive::storage::SESSION_HOST_BYTES;
+            - crate::host_memory::RETAINED_SYSTEM_HOST_BYTES
+            - crate::block_v2::execution::worker_budget::CALLER_STACK_HOST_BYTES
+            - crate::block_v2::typed_recursive::storage::SESSION_HOST_BYTES
+            - worker_budget::rayon_stack_host_bytes(
+                self.assignment["cpu"]["rayon_threads"]
+                    .as_u64()
+                    .unwrap()
+                    .try_into()
+                    .unwrap(),
+            )
+            .unwrap();
         let partitions: Vec<serde_json::Value> = log
             .lines()
             .filter_map(|line| line.strip_prefix("bounded_registered_host_budget "))
             .map(|json| serde_json::from_str(json).unwrap())
             .collect();
-        assert_eq!(partitions.len(), 1);
-        let partition = &partitions[0];
-        assert_eq!(partition["schema"], "lattica-registered-host-budget-v1");
-        assert_eq!(partition["total_host_bytes"].as_u64(), Some(expected));
-        let reserved = partition["reserved_host_bytes"].as_u64().unwrap();
-        let pcs = partition["pcs_host_bytes"].as_u64().unwrap();
-        assert!(reserved > 0 && pcs > 0);
-        assert_eq!(reserved.checked_add(pcs), Some(expected));
+        assert_eq!(partitions.len(), setups);
+        for partition in &partitions {
+            assert_eq!(partition["schema"], "lattica-registered-host-budget-v1");
+            assert_eq!(partition["total_host_bytes"].as_u64(), Some(expected));
+            let reserved = partition["reserved_host_bytes"].as_u64().unwrap();
+            let pcs = partition["pcs_host_bytes"].as_u64().unwrap();
+            assert!(reserved > 0 && pcs > 0);
+            assert_eq!(reserved.checked_add(pcs), Some(expected));
+            eprintln!("native_worker_input_reservation assigned_bytes={assigned} decoded_input_bytes={} active_host_bytes={expected} reserved_host_bytes={reserved} pcs_host_bytes={pcs} lde_plans={}", crate::block_v2::execution::worker::typed::storage::INPUT_HOST_BYTES, plans.len());
+        }
         assert!(!plans.is_empty());
-        assert!(plans
-            .iter()
-            .all(|plan| plan["host_budget_bytes"].as_u64() == Some(pcs)));
-        eprintln!("native_worker_input_reservation assigned_bytes={assigned} decoded_input_bytes={} active_host_bytes={expected} reserved_host_bytes={reserved} pcs_host_bytes={pcs} lde_plans={}", crate::block_v2::execution::worker::typed::storage::INPUT_HOST_BYTES, plans.len());
+        let mut current_pcs = None;
+        for line in log.lines() {
+            if let Some(json) = line.strip_prefix("bounded_registered_host_budget ") {
+                let partition: serde_json::Value = serde_json::from_str(json).unwrap();
+                current_pcs = Some(partition["pcs_host_bytes"].as_u64().unwrap());
+            } else if let Some(json) = line.strip_prefix("bounded_gpu_lde_plan ") {
+                let plan: serde_json::Value = serde_json::from_str(json).unwrap();
+                assert!(current_pcs.is_some());
+                assert_eq!(plan["host_budget_bytes"].as_u64(), current_pcs);
+            }
+        }
         let reports: Vec<serde_json::Value> = fs::read_to_string(self.directory.join("worker.log"))
             .unwrap()
             .lines()
@@ -607,6 +635,156 @@ fn native_service_rejects_and_cleans_up_without_releasing_reservations() {
         assert_eq!(owner.resource_use().unwrap(), reserved);
         println!("native_public_service_rejected case={case} gpu_retired=true reservations_retained=true");
     }
+}
+
+#[test]
+#[ignore = "requires pinned C service and capped serial service"]
+fn native_service_rejects_unbounded_and_retained_caller_stacks_before_hello() {
+    for (case, reason) in [
+        (
+            "retained-stack",
+            "retained caller stack mapping exceeds reservation",
+        ),
+        (
+            "unlimited-stack",
+            "main caller requires a bounded RLIMIT_STACK within 8 MiB",
+        ),
+    ] {
+        let f = Fixture::new(case);
+        let (owner, _worker, _launches) = f.owner();
+        let reserved = owner.resource_use().unwrap();
+        let (mut launcher, _) = f.launcher(&f.bootstrap, case);
+        let (mut socket, child_socket) = UnixStream::pair().unwrap();
+        socket
+            .set_read_timeout(Some(Duration::from_secs(120)))
+            .unwrap();
+        let mut child = launcher
+            .stdin(Stdio::from(OwnedFd::from(child_socket)))
+            .spawn()
+            .unwrap();
+        drop(launcher);
+        // Do not send HELLO: caller admission must fail before protocol input.
+        let mut byte = [0];
+        assert_eq!(socket.read(&mut byte).unwrap(), 0, "{case}");
+        drop(socket);
+        assert!(child.wait().unwrap().success(), "{case}");
+        let log = fs::read_to_string(f.directory.join("worker.log")).unwrap();
+        assert!(log.contains(reason), "{case}: {log}");
+        assert!(
+            log.contains("rc=1 completed=0 descriptor_preserved=1 gpu_retired=1 shutdown_ok=1"),
+            "{case}: {log}"
+        );
+        for marker in [
+            "bounded_caller_stack ",
+            "bounded_rayon_stacks ",
+            "bounded_gpu_",
+        ] {
+            assert!(!log.contains(marker), "{case}: {log}");
+        }
+        assert_eq!(owner.resource_use().unwrap(), reserved);
+        println!("native_caller_stack_rejected case={case} before_hello=true gpu_retired=true reservations_retained=true");
+    }
+}
+
+#[test]
+#[ignore = "requires pinned C service and capped serial service"]
+fn native_service_rejects_retained_allocator_capacity_before_hello() {
+    let f = Fixture::new("retained-heap-before-start");
+    let (owner, _worker, _launches) = f.owner();
+    let reserved = owner.resource_use().unwrap();
+    let (mut launcher, _) = f.launcher(&f.bootstrap, "retained-heap-before-start");
+    let (mut socket, child_socket) = UnixStream::pair().unwrap();
+    socket
+        .set_read_timeout(Some(Duration::from_secs(120)))
+        .unwrap();
+    let mut child = launcher
+        .stdin(Stdio::from(OwnedFd::from(child_socket)))
+        .spawn()
+        .unwrap();
+    drop(launcher);
+    // No HELLO is sent: existing allocator backing must reject before input,
+    // thread creation or GPU initialization, while preserving caller ownership.
+    assert_eq!(socket.read(&mut [0u8]).unwrap(), 0);
+    drop(socket);
+    assert!(child.wait().unwrap().success());
+    let log = fs::read_to_string(f.directory.join("worker.log")).unwrap();
+    assert!(log.contains("native_retained_heap_fixture requested_bytes=805306368"));
+    assert!(log.contains("cold allocator backing exceeds retained System reservation"));
+    assert!(log.contains("rc=1 completed=0 descriptor_preserved=1 gpu_retired=1 shutdown_ok=1"));
+    let records: Vec<serde_json::Value> = log
+        .lines()
+        .filter_map(|line| line.strip_prefix("bounded_allocator_startup "))
+        .map(|json| serde_json::from_str(json).unwrap())
+        .collect();
+    assert_eq!(records.len(), 1);
+    assert_eq!(records[0]["boundary"], "before_assignment");
+    assert_eq!(records[0]["allowed"], false);
+    assert_eq!(records[0]["accounting_valid"], true);
+    assert_eq!(records[0]["limit_bytes"], 512u64 << 20);
+    assert!(records[0]["reported_system_bytes"].as_u64().unwrap() >= 768 << 20);
+    for marker in [
+        "bounded_rayon_stacks ",
+        "bounded_gpu_",
+        "proving_stage_report ",
+    ] {
+        assert!(!log.contains(marker), "{log}");
+    }
+    assert_eq!(owner.resource_use().unwrap(), reserved);
+    println!("native_cold_allocator_rejected before_assignment=true before_hello=true gpu_retired=true reservations_retained=true");
+}
+
+#[test]
+#[ignore = "requires pinned C service and capped serial service"]
+fn native_service_rejects_private_mapping_capacity_before_hello() {
+    let f = Fixture::new("private-mapping-before-start");
+    let (owner, _worker, _launches) = f.owner();
+    let reserved = owner.resource_use().unwrap();
+    let (mut launcher, _) = f.launcher(&f.bootstrap, "private-mapping-before-start");
+    let (mut socket, child_socket) = UnixStream::pair().unwrap();
+    socket
+        .set_read_timeout(Some(Duration::from_secs(120)))
+        .unwrap();
+    let mut child = launcher
+        .stdin(Stdio::from(OwnedFd::from(child_socket)))
+        .spawn()
+        .unwrap();
+    drop(launcher);
+    // No HELLO is sent: existing private writable mappings must reject before input,
+    // thread creation or GPU initialization, while preserving caller ownership.
+    assert_eq!(socket.read(&mut [0u8]).unwrap(), 0);
+    drop(socket);
+    assert!(child.wait().unwrap().success());
+    let log = fs::read_to_string(f.directory.join("worker.log")).unwrap();
+    assert!(log.contains(
+        "native_private_mapping_fixture mapped_bytes=537919488 writable=true shared=false"
+    ));
+    assert!(log.contains("cold private writable data exceeds startup reservation"));
+    assert!(log.contains("rc=1 completed=0 descriptor_preserved=1 gpu_retired=1 shutdown_ok=1"));
+    let records: Vec<serde_json::Value> = log
+        .lines()
+        .filter_map(|line| line.strip_prefix("bounded_private_data_startup "))
+        .map(|json| serde_json::from_str(json).unwrap())
+        .collect();
+    assert_eq!(records.len(), 1);
+    assert_eq!(records[0]["boundary"], "before_assignment");
+    assert_eq!(records[0]["allowed"], false);
+    assert_eq!(records[0]["limit_bytes"], 536870912u64);
+    let observed = records[0]["observed_bytes"].as_u64().unwrap();
+    assert!(observed >= 513 << 20);
+    // This input fit the earlier ceiling that improperly lent caller-stack
+    // capacity to private data. It must now reject before assignment decoding.
+    assert!(observed <= 545456128);
+    for marker in [
+        "bounded_rayon_stacks ",
+        "bounded_private_data_limit ",
+        "bounded_system_requests ",
+        "bounded_gpu_",
+        "proving_stage_report ",
+    ] {
+        assert!(!log.contains(marker), "{log}");
+    }
+    assert_eq!(owner.resource_use().unwrap(), reserved);
+    println!("native_cold_private_data_rejected before_assignment=true before_hello=true gpu_retired=true reservations_retained=true");
 }
 
 #[test]

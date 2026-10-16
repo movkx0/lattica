@@ -1,0 +1,500 @@
+{
+  "schema": "lattica-host-pipeline-benchmark-v1",
+  "status": "pipeline_verified_control_incomplete",
+  "scope": "Standalone offline typed paired proving; reused synthetic inputs and registry, fresh proofs",
+  "transactions": 128,
+  "user_transactions": 96,
+  "issuance_transactions": 32,
+  "recursive_proofs_per_block": 127,
+  "comparison": "One complete pipelined trial. Fresh serial controls failed, including the previously validated original binary. Historical comparison only; matched speedup not established.",
+  "failed_controls": [
+    {
+      "label": "new binary serial",
+      "path": "serial-allocation-failure/prove-serial",
+      "completed_nodes": 3,
+      "elapsed_before_failure_seconds": 22.079991104998044,
+      "exit_code": 101,
+      "error": "OpenCL CL_MEM_OBJECT_ALLOCATION_FAILURE (-4); underlying cause undetermined",
+      "worker_cgroup_peak_bytes": 1029902336,
+      "oom_events": 0,
+      "swap_bytes": 0,
+      "excluded_from_complete_proof_timing": true,
+      "log_sha256": "e26fa47a01b841afb814e2f9df656c6f9a866cac09ebdd032c1c317935dee3f9",
+      "sampled_device_peak_mib": 13238.0,
+      "processes_at_sampled_device_peak": [
+        {
+          "pid": 1385,
+          "used_mib": 60
+        },
+        {
+          "pid": 377052,
+          "used_mib": 268
+        },
+        {
+          "pid": 428152,
+          "used_mib": 6442
+        },
+        {
+          "pid": 428407,
+          "used_mib": 5512
+        }
+      ]
+    },
+    {
+      "label": "new binary serial retry",
+      "path": "serial-allocation-failure-retry/prove-serial",
+      "completed_nodes": 25,
+      "elapsed_before_failure_seconds": 142.40637259899813,
+      "exit_code": 101,
+      "error": "OpenCL CL_MEM_OBJECT_ALLOCATION_FAILURE (-4); underlying cause undetermined",
+      "worker_cgroup_peak_bytes": 1017069568,
+      "oom_events": 0,
+      "swap_bytes": 0,
+      "excluded_from_complete_proof_timing": true,
+      "log_sha256": "5dc16c46a036dfa73f8053cadbf7bc1a8db93700c0b92202f15cea3c0e04c2fb",
+      "sampled_device_peak_mib": 13903.0,
+      "processes_at_sampled_device_peak": [
+        {
+          "pid": 1385,
+          "used_mib": 58
+        },
+        {
+          "pid": 377052,
+          "used_mib": 109
+        },
+        {
+          "pid": 431856,
+          "used_mib": 115
+        },
+        {
+          "pid": 432969,
+          "used_mib": 2688
+        },
+        {
+          "pid": 435102,
+          "used_mib": 2440
+        },
+        {
+          "pid": 435177,
+          "used_mib": 103
+        },
+        {
+          "pid": 435399,
+          "used_mib": 9
+        },
+        {
+          "pid": 436820,
+          "used_mib": 7342
+        }
+      ]
+    },
+    {
+      "label": "original validated serial binary",
+      "path": "run-01/prove-serial",
+      "completed_nodes": 1,
+      "elapsed_before_failure_seconds": 12.477133121006773,
+      "exit_code": 101,
+      "error": "OpenCL CL_MEM_OBJECT_ALLOCATION_FAILURE (-4); underlying cause undetermined",
+      "worker_cgroup_peak_bytes": 1018028032,
+      "oom_events": 0,
+      "swap_bytes": 0,
+      "excluded_from_complete_proof_timing": true,
+      "log_sha256": "b4608e020aed23c9e2bbea5a22d23115f1e39577d5a6af8a354a59b313740e5a",
+      "sampled_device_peak_mib": 15211.0,
+      "processes_at_sampled_device_peak": [
+        {
+          "pid": 1385,
+          "used_mib": 57
+        },
+        {
+          "pid": 377052,
+          "used_mib": 89
+        },
+        {
+          "pid": 431856,
+          "used_mib": 115
+        },
+        {
+          "pid": 435102,
+          "used_mib": 2464
+        },
+        {
+          "pid": 435177,
+          "used_mib": 103
+        },
+        {
+          "pid": 435399,
+          "used_mib": 9
+        },
+        {
+          "pid": 439578,
+          "used_mib": 5004
+        },
+        {
+          "pid": 440080,
+          "used_mib": 5684
+        }
+      ]
+    }
+  ],
+  "trials": {
+    "pipeline": {
+      "process_seconds": 598.8403490679921,
+      "internal_proving_seconds": 598.477321062,
+      "total_transactions_per_second": 0.2137464521206919,
+      "user_transactions_per_second": 0.16030983909051894,
+      "cpu_user_seconds": 580.831271,
+      "cpu_system_seconds": 28.139941,
+      "full_cpu_audit_seconds": 56.415628337999806,
+      "root_cpu_audit_seconds": 0.04825456900289282,
+      "pipeline": {
+        "event": "typed_host_pipeline",
+        "extra_host_reserve_bytes": 536870912,
+        "max_gpu_proofs": 1,
+        "max_pending_outputs": 1,
+        "max_prefetched_tasks": 1,
+        "session_memory_bytes": 2684354560,
+        "stats": {
+          "concurrent_seconds": 13.813017423999993,
+          "dependency_barriers": 1,
+          "host_seconds": 13.813017423999993,
+          "proving_seconds": 595.8710334479999,
+          "rounds": 127
+        }
+      },
+      "worker_cgroup_peak_bytes": 1553285120,
+      "sampled_fleet_peak_bytes": 2519990272,
+      "sampled_worker_vram_peak_mib": 7170,
+      "mean_gpu_utilization_percent": 84.29629629629629,
+      "mean_memory_controller_utilization_percent": 25.423280423280424,
+      "quotient_kernel_build_seconds": [
+        0.028502626,
+        0.02583297,
+        0.023966855,
+        0.024012838,
+        0.023683625,
+        0.023846641,
+        0.024185925,
+        0.024233417,
+        0.023975738,
+        0.023561902,
+        0.024346163,
+        0.024167676,
+        0.023901866,
+        0.025314322,
+        0.024460378,
+        0.023737279,
+        0.023826873,
+        0.024892526,
+        0.023672938,
+        0.024359015,
+        0.026005681,
+        0.023819774,
+        0.023859956,
+        0.023673708,
+        0.024287893,
+        0.024107666,
+        0.024124367,
+        0.024230711,
+        0.024393158,
+        0.025416909,
+        0.023780154,
+        0.023380138,
+        0.024079916,
+        0.024023684,
+        0.024045436,
+        0.024102698,
+        0.024278555,
+        0.024101378,
+        0.024576207,
+        0.024213413,
+        0.023977744,
+        0.02462835,
+        0.024641221,
+        0.024149891,
+        0.023952944,
+        0.023647291,
+        0.024342039,
+        0.024729465,
+        0.023839669,
+        0.024521957,
+        0.024509316,
+        0.023704724,
+        0.024134851,
+        0.024365241,
+        0.023744507,
+        0.024503347,
+        0.023659003,
+        0.023713595,
+        0.02431715,
+        0.024652734,
+        0.024222146,
+        0.024583952,
+        0.026428465,
+        0.024248498,
+        0.024161494,
+        0.023984777,
+        0.023902815,
+        0.025385054,
+        0.026695337,
+        0.02501526,
+        0.028394896,
+        0.024662065,
+        0.026826323,
+        0.024920397,
+        0.025295291,
+        0.024798902,
+        0.025272601,
+        0.025386986,
+        0.025200538,
+        0.025343915,
+        0.024626085,
+        0.025764542,
+        0.024842675,
+        0.02523636,
+        0.024774782,
+        0.024510181,
+        0.025587745,
+        0.025318814,
+        0.025923539,
+        0.025358596,
+        0.025059014,
+        0.024652888,
+        0.025547084,
+        0.025000952,
+        0.025241092,
+        0.024831855,
+        0.025424719,
+        0.025231742,
+        0.024658088,
+        0.024122777,
+        0.025111477,
+        0.026282234,
+        0.02493838,
+        0.024562785,
+        0.024811366,
+        0.024709541,
+        0.024758563,
+        0.025460302,
+        0.025457002,
+        0.024948491,
+        0.025179251,
+        0.025223713,
+        0.024523274,
+        0.02539264,
+        0.026938453,
+        0.025563167,
+        0.024716482,
+        0.028006956,
+        0.024721083,
+        0.024128529,
+        0.024086118,
+        0.024097718,
+        0.024948362,
+        0.024798656,
+        0.024280505,
+        0.025031066,
+        0.024705883
+      ],
+      "root_bytes": 1683948,
+      "root_sha256": "8703f538dc7bd2592159f2679e695bf1b0416ef82ca85069c1dea6fa48c5c94e",
+      "worker_pid": 419102,
+      "gpu_proof_reports": 127,
+      "cpu_audited_nodes": 127
+    }
+  },
+  "historical_baseline": {
+    "summary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-capacity-128-20261016/summary.json",
+    "summary_sha256": "5e42ba127f46f92eedfe0d62a2d1d9d1d606fcf095a8907db1640e88d05f7534",
+    "median_process_seconds": 612.0213613289961,
+    "prior_complete_trials": 3,
+    "warm_complete_trials": 2,
+    "observed_time_difference_seconds": 13.18101226100407,
+    "observed_time_difference_percent": 2.153685000860375,
+    "observed_throughput_difference_percent": 2.2010895360538685,
+    "confirmed_matched_speedup": false
+  },
+  "enforced_limits": {
+    "worker_ram_bytes": 3221225472,
+    "coordinator_ram_bytes": 1073741824,
+    "aggregate_ram_bytes": 4294967296,
+    "gpu_managed_bytes": 7516192768,
+    "gpu_context_bytes": 4294967296,
+    "gpu_headroom_bytes": 1073741824,
+    "cpu_threads": 4,
+    "swap_bytes": 0
+  },
+  "source_manifest_sha256": "cce10606a6ed1e1d193701682b0a0107b7537a4e391f5921b2d8d9111f812c68",
+  "binary_manifest_sha256": "092811cd1bf1bd8aafd1885eb7e6061773f0162158b1c5f5e94ae6ab03965a0c",
+  "build_and_test": [
+    {
+      "stage": "test",
+      "command": [
+        "systemd-run",
+        "--user",
+        "--wait",
+        "--pipe",
+        "--unit=lattica-host-pipeline-test-78556038306785",
+        "-p",
+        "MemoryMax=3G",
+        "-p",
+        "MemorySwapMax=0",
+        "-p",
+        "CPUQuota=400%",
+        "-p",
+        "RuntimeMaxSec=3600",
+        "-p",
+        "KillMode=control-group",
+        "-p",
+        "LimitCORE=0",
+        "--working-directory=/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-host-pipeline-128-20261016/source",
+        "/usr/bin/env",
+        "PATH=/home/access/code/lattica/.tools/rust-1.96.0/bin:/usr/local/bin:/usr/bin:/bin",
+        "CARGO_HOME=/home/access/code/lattica/.tools/cargo-1.96.0",
+        "CARGO_BUILD_JOBS=1",
+        "RAYON_NUM_THREADS=4",
+        "CARGO_PROFILE_RELEASE_OPT_LEVEL=3",
+        "CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1",
+        "CARGO_PROFILE_RELEASE_LTO=thin",
+        "CARGO_TARGET_DIR=/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-host-pipeline-128-20261016/target-gpu",
+        "cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "--features",
+        "block-v2-capacity-128,block-v2-wide-lanes,stream,gpu",
+        "--bin",
+        "block-v2-paired-probe",
+        "host_pipeline",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "seconds": 1.733757488997071
+    },
+    {
+      "stage": "build",
+      "command": [
+        "systemd-run",
+        "--user",
+        "--wait",
+        "--pipe",
+        "--unit=lattica-host-pipeline-build-78557772236261",
+        "-p",
+        "MemoryMax=3G",
+        "-p",
+        "MemorySwapMax=0",
+        "-p",
+        "CPUQuota=400%",
+        "-p",
+        "RuntimeMaxSec=3600",
+        "-p",
+        "KillMode=control-group",
+        "-p",
+        "LimitCORE=0",
+        "--working-directory=/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-host-pipeline-128-20261016/source",
+        "/usr/bin/env",
+        "PATH=/home/access/code/lattica/.tools/rust-1.96.0/bin:/usr/local/bin:/usr/bin:/bin",
+        "CARGO_HOME=/home/access/code/lattica/.tools/cargo-1.96.0",
+        "CARGO_BUILD_JOBS=1",
+        "RAYON_NUM_THREADS=4",
+        "CARGO_PROFILE_RELEASE_OPT_LEVEL=3",
+        "CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1",
+        "CARGO_PROFILE_RELEASE_LTO=thin",
+        "CARGO_TARGET_DIR=/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-host-pipeline-128-20261016/target-gpu",
+        "cargo",
+        "build",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "--features",
+        "block-v2-capacity-128,block-v2-wide-lanes,stream,gpu",
+        "--bin",
+        "capacity-128-benchmark"
+      ],
+      "exit_code": 0,
+      "seconds": 44.9684544000047,
+      "sha256": "aec7c33e1354c8ec654905bfc5cfe9784434925b1be109bbd3404676effbcbcf"
+    }
+  ],
+  "baseline_inputs": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-capacity-128-20261016/run-01/fixture-manifest.json",
+  "hardware": {
+    "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "name": "NVIDIA GeForce RTX 5080",
+    "total_bytes": 17094934528,
+    "free_bytes": 15559819264,
+    "driver": "615.78.08",
+    "pci": "00000000:01:00.0"
+  },
+  "control_limitation": "Other GPU workloads appeared after the pipeline trial; failed controls reached 13,238\u201315,211 MiB device use. Final inspection identifies SteamVR processes in a separate cgroup. Contention is consistent with the allocation failures; no valid fresh serial timing is available.",
+  "quiescence": {
+    "time_unix": 1792180845.0923705,
+    "benchmark_services_quiescent": true,
+    "benchmark_worker_pids": [
+      419102,
+      428152,
+      432969,
+      439578
+    ],
+    "worker_exited": {
+      "419102": true,
+      "428152": true,
+      "432969": true,
+      "439578": true
+    },
+    "benchmark_gpu_workers_exited": true,
+    "remaining_gpu_processes": [
+      {
+        "pid": 1385,
+        "used_mib": 57,
+        "name": "kwin_wayland",
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/session.slice/plasma-kwin_wayland.service"
+      },
+      {
+        "pid": 377052,
+        "used_mib": 86,
+        "name": "brave",
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-brave\\x2dbrowser@42423271c724423c894982b78ff9ba75.service"
+      },
+      {
+        "pid": 431856,
+        "used_mib": 115,
+        "name": "steamwebhelper",
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-steam@9ba004c9a9dc4d66bd11597c4098f62f.service"
+      },
+      {
+        "pid": 435102,
+        "used_mib": 2212,
+        "name": "vrcompositor",
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-steam@9ba004c9a9dc4d66bd11597c4098f62f.service"
+      },
+      {
+        "pid": 435177,
+        "used_mib": 103,
+        "name": "vrwebhelper",
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-steam@9ba004c9a9dc4d66bd11597c4098f62f.service"
+      },
+      {
+        "pid": 435399,
+        "used_mib": 9,
+        "name": "vrwebhelper",
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-steam@9ba004c9a9dc4d66bd11597c4098f62f.service"
+      },
+      {
+        "pid": 440080,
+        "used_mib": 5011,
+        "name": "SteamVR_SourceV",
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-steam@9ba004c9a9dc4d66bd11597c4098f62f.service"
+      }
+    ]
+  },
+  "validation": "The pipeline root, all 128 wallets and all 127 recursive nodes independently CPU verified; journal replay passed. Six concurrency/dependency/failure tests passed.",
+  "overlap_scope": "CPU input loading/verification and previous proof verification/serialization/write overlap one active proof call; cryptographic GPU stages retain their ordering.",
+  "production_deadline_qualified": false,
+  "native_delivery_benchmarked": false,
+  "sustained_throughput_qualified": false,
+  "sampling_note": "Worker RAM is a cgroup high-water mark; VRAM/fleet RAM/utilization are sampled about every 0.5 seconds."
+}

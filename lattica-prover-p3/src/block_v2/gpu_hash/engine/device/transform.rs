@@ -46,6 +46,21 @@ fn geometry(
     Ok((output, width, auxiliary_words))
 }
 
+/// Only storage is planned here: output ordering and canonical coset shifts do
+/// not change sizes. Runtime validates its actual domain before calling this.
+pub(super) fn storage_plan(
+    input: MatrixSpec, log_rows: u32, live: usize,
+    limits: super::super::Limits, max_alloc: usize,
+) -> Result<MemoryPlan, String> {
+    let (spec, _, auxiliary_words) = geometry(input, log_rows, 1, RowOrder::BitReversed)?;
+    if input.log_rows.max(log_rows).max(2) as usize * 8 > max_alloc {
+        return Err("device transform constants exceed the allocation limit".into());
+    }
+    MemoryPlan::new(&[spec, spec],
+        live.checked_add(auxiliary_words * 8).ok_or("device transform budget overflow")?,
+        limits.managed_bytes, max_alloc)
+}
+
 impl DeviceSession {
     /// Interpolate this matrix on its specified coset, then evaluate it on a
     /// larger (or equal-size) coset. Extension coefficients are independent
@@ -59,10 +74,10 @@ impl DeviceSession {
         order: RowOrder,
     ) -> Result<DeviceMatrix, String> {
         self.check_owner(input)?;
-        let (spec, width, auxiliary_words) = geometry(input.spec, log_rows, shift, order)?;
+        let (spec, width, _) = geometry(input.spec, log_rows, shift, order)?;
         #[cfg(not(feature = "gpu"))]
         {
-            let _ = (spec, width, auxiliary_words);
+            let _ = (spec, width);
             Err("owned device transforms are not implemented on Metal".into())
         }
         #[cfg(feature = "gpu")]
@@ -71,16 +86,7 @@ impl DeviceSession {
                 engine.fence().finish()?;
                 engine.lde_workspace = None;
                 let live = engine.accounting.lock().unwrap().live;
-                if (input.spec.log_rows.max(log_rows).max(2) as usize) * 8 > engine.max_alloc {
-                    return Err("device transform constants exceed the allocation limit".into());
-                }
-                let _plan = MemoryPlan::new(
-                    &[spec, spec],
-                    live.checked_add(auxiliary_words * 8)
-                        .ok_or("device transform budget overflow")?,
-                    engine.limits.managed_bytes,
-                    engine.max_alloc,
-                )?;
+                let _plan = storage_plan(input.spec, log_rows, live, engine.limits, engine.max_alloc)?;
                 let output = self.allocate(engine, spec)?;
                 let scratch = self.allocate(engine, spec)?;
                 let alloc = |words| {
@@ -359,4 +365,17 @@ mod tests {
         }
         shutdown().unwrap();
     }
+}
+
+#[test]
+fn shared_transform_plan_charges_input_outputs_and_constants() {
+    use crate::block_v2::gpu_hash::Limits;
+    let limits = Limits { managed_bytes: 1 << 20, tile_bytes: 1 << 20, staging_bytes: 4096 };
+    let input = MatrixSpec::new(8, 1, Extension::Base, RowOrder::Natural, 1).unwrap();
+    let live = 71 + input.bytes();
+    let expected = live + 2 * input.bytes() + (8 + 8 + 2) * 8;
+    let plan = storage_plan(input, 8, live, limits, 4096).unwrap();
+    assert_eq!(plan.peak_bytes, expected);
+    assert!(storage_plan(input, 8, live, Limits { managed_bytes: expected - 1, ..limits }, 4096).is_err());
+    assert!(storage_plan(input, 8, live, limits, input.bytes() - 1).is_err());
 }

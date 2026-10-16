@@ -31,9 +31,65 @@ impl LocalProcessEndpoint {
             active: None,
         })
     }
+
+    /// Install host-approved qualification before any candidate is dispatched.
+    /// The caller must check the physical device/driver and complete settings;
+    /// the adapter independently binds the process executable and descriptor.
+    pub fn with_timing_identity(
+        mut self,
+        identity: super::super::scheduler::TimingIdentity,
+    ) -> Result<Self, Error> {
+        if self.context.is_some()
+            || self.active.is_some()
+            || self.capabilities.timing_identity.is_some()
+        {
+            return Err("pool local timing qualification already installed or active".into());
+        }
+        let deadline = self.capabilities.dispatch_deadline_ms;
+        self.capabilities = self.worker.scheduling_capabilities_with_timing(identity)?;
+        self.capabilities.dispatch_deadline_ms = deadline;
+        Ok(self)
+    }
+
+    /// Explicitly forecast same-mode preprocessing retention for this qualified
+    /// process. Typed process configurations retain at least their last mode;
+    /// the timing identity already binds the actual cache configuration.
+    /// Retirement, mode changes and process replacement still invalidate the
+    /// assumed continuation. This grants no lease or process-lifetime extension.
+    pub fn with_retention_forecast(mut self) -> Result<Self, Error> {
+        if self.context.is_some()
+            || self.active.is_some()
+            || self.capabilities.timing_identity.is_none()
+            || self.capabilities.forecast_retained_mode
+            || self.worker.retirement_requested()
+        {
+            return Err("pool local retention forecast requires idle qualified process".into());
+        }
+        self.capabilities.forecast_retained_mode = true;
+        Ok(self)
+    }
+
+    /// The host derives this cutoff from the observed service lifetime and
+    /// reserves teardown time separately. Never accept a remote self-reported
+    /// extension or change it after dispatch has begun. OS limits remain final.
+    pub fn with_dispatch_deadline(mut self, deadline_ms: u64) -> Result<Self, Error> {
+        if deadline_ms == 0
+            || self.context.is_some()
+            || self.active.is_some()
+            || self.capabilities.dispatch_deadline_ms.is_some()
+            || self.worker.retirement_requested()
+        {
+            return Err("pool dispatch deadline requires an idle unconfigured process".into());
+        }
+        self.capabilities.dispatch_deadline_ms = Some(deadline_ms);
+        Ok(self)
+    }
 }
 
 impl WorkerEndpoint for LocalProcessEndpoint {
+    fn retirement_requested(&self) -> bool {
+        self.worker.retirement_requested()
+    }
     fn heartbeat(&mut self) -> Result<(), Error> {
         self.worker.heartbeat()
     }
@@ -62,13 +118,18 @@ impl WorkerEndpoint for LocalProcessEndpoint {
         }
         self.active = Some(lease);
         let task = self.worker.task(owner, lease, now_ms)?;
-        let request = task.request()?;
+        let prepared = self.worker.prepare_dispatch(task)?;
         let token = self
             .launches
             .lock()
             .map_err(|_| "pool launch store poisoned")?
-            .issue_bound(owner, lease, &request, self.worker.execution_digest()?)?;
-        self.worker.dispatch(&token, task)
+            .issue_prepared_bound(
+                owner,
+                lease,
+                prepared.bound_request(),
+                self.worker.execution_digest()?,
+            )?;
+        self.worker.dispatch_prepared(&token, prepared)
     }
 
     fn try_result(
@@ -93,11 +154,15 @@ impl WorkerEndpoint for LocalProcessEndpoint {
             .ok_or("pool local launch still active")?;
         let mode = owner.leased_job(lease)?.operation().proof_mode();
         let output = completed.reconcile(owner, now_ms)?;
+        // The packet format already bounds each duration to u64. Keep the
+        // conversion checked so unavailable diagnostics cannot fail a proof.
+        let worker_timings = WorkerTimings::try_from(output.timings()).ok();
         self.capabilities.resident_mode = Some(mode);
         self.active = None;
         Ok(Some(WorkerResult {
             lease,
             proof: output.into_bytes(),
+            worker_timings,
         }))
     }
 

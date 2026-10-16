@@ -54,6 +54,50 @@ pub(super) fn request_digest(bytes: &[u8]) -> Result<[u8; 32], Error> {
     digest(REQUEST_DOMAIN, bytes)
 }
 
+/// Locally owned bytes and their locally computed identity. No mutable access,
+/// supplied digest, serialization or launch authority crosses this boundary.
+pub(super) struct PreparedRequest {
+    bytes: Vec<u8>,
+    digest: [u8; 32],
+}
+
+impl PreparedRequest {
+    pub(super) fn new(bytes: Vec<u8>) -> Result<Self, Error> {
+        if bytes.capacity() > MAX_REQUEST_BYTES {
+            return Err("prepared launch request capacity".into());
+        }
+        let digest = request_digest(&bytes)?;
+        Ok(Self { bytes, digest })
+    }
+
+    pub(super) fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
+/// A cached identity can only come from the immutable local owner above.
+/// Received bytes always use `Bytes` and are hashed independently.
+pub(super) enum RequestBinding<'a> {
+    Bytes(&'a [u8]),
+    Prepared(&'a PreparedRequest),
+}
+
+impl<'a> RequestBinding<'a> {
+    pub(super) fn bytes(&self) -> &'a [u8] {
+        match self {
+            Self::Bytes(bytes) => bytes,
+            Self::Prepared(request) => request.bytes(),
+        }
+    }
+
+    pub(super) fn digest(&self) -> Result<[u8; 32], Error> {
+        match self {
+            Self::Bytes(bytes) => request_digest(bytes),
+            Self::Prepared(request) => Ok(request.digest),
+        }
+    }
+}
+
 /// Local process metadata, not proof authority or a network/consensus encoding.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Token {
@@ -68,6 +112,14 @@ impl Token {
     pub(super) fn check_request(&self, bytes: &[u8]) -> Result<(), Error> {
         self.validate()?;
         if request_digest(bytes)? != self.request {
+            return Err("launch request substitution".into());
+        }
+        Ok(())
+    }
+
+    pub(super) fn check_prepared_request(&self, request: &PreparedRequest) -> Result<(), Error> {
+        self.validate()?;
+        if request.digest != self.request {
             return Err("launch request substitution".into());
         }
         Ok(())
@@ -414,7 +466,13 @@ impl LaunchStore {
         lease: Lease,
         request: &[u8],
     ) -> Result<Token, Error> {
-        self.issue_inner(owner, lease, request, None, LaunchBinding::Direct)
+        self.issue_inner(
+            owner,
+            lease,
+            RequestBinding::Bytes(request),
+            None,
+            LaunchBinding::Direct,
+        )
     }
 
     /// Bind executable/configuration identity in addition to the exact packet.
@@ -430,7 +488,25 @@ impl LaunchStore {
         self.issue_inner(
             owner,
             lease,
-            request,
+            RequestBinding::Bytes(request),
+            Some(execution),
+            LaunchBinding::Direct,
+        )
+    }
+
+    /// Reuse only an identity computed over this coordinator's immutable bytes.
+    /// The receiving worker still independently hashes its incoming request.
+    pub(super) fn issue_prepared_bound(
+        &mut self,
+        owner: &mut DurableDag,
+        lease: Lease,
+        request: &PreparedRequest,
+        execution: [u8; 32],
+    ) -> Result<Token, Error> {
+        self.issue_inner(
+            owner,
+            lease,
+            RequestBinding::Prepared(request),
             Some(execution),
             LaunchBinding::Direct,
         )
@@ -507,7 +583,13 @@ impl LaunchStore {
         path: [u8; 32],
     ) -> Result<Token, Error> {
         let binding = owner.authorized_supervisor(lease, self.directory.identity()?, path)?;
-        self.issue_inner(owner, lease, request, Some(execution), binding)
+        self.issue_inner(
+            owner,
+            lease,
+            RequestBinding::Bytes(request),
+            Some(execution),
+            binding,
+        )
     }
 
     /// Recover a V3 attempt which durably never obtained execution permission.
@@ -565,7 +647,7 @@ impl LaunchStore {
         &mut self,
         owner: &mut DurableDag,
         lease: Lease,
-        request: &[u8],
+        request: RequestBinding<'_>,
         execution: Option<[u8; 32]>,
         binding: LaunchBinding,
     ) -> Result<Token, Error> {
@@ -575,7 +657,7 @@ impl LaunchStore {
             key: lease.process_key()?,
             root: self.directory.identity()?,
             resources: assignment.resources(),
-            request: request_digest(request)?,
+            request: request.digest()?,
             execution,
         };
         token.validate()?;

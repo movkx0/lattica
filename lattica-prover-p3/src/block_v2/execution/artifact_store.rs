@@ -14,6 +14,7 @@ use std::{
     collections::BTreeMap,
     fs::{self, DirBuilder, File, Metadata, OpenOptions},
     io::{Read, Write},
+    os::fd::AsRawFd,
     os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt},
     path::{Path, PathBuf},
 };
@@ -21,7 +22,8 @@ use std::{
 use rand::TryRng;
 
 use super::job::{
-    ArtifactKind, ArtifactRef, Job, RegistryPin, TypedRegistryContext, VerifiedNode, VerifiedWallet,
+    ArtifactKind, ArtifactRef, Job, RegistryPin, TypedRegistryContext, VerifiedNode,
+    VerifiedNodePayload, VerifiedWallet, VerifiedWalletPayload,
 };
 use crate::block_v2::{
     profile::MAX_PROOF_BYTES,
@@ -99,6 +101,20 @@ impl ArtifactStore {
         }
         for (identity, bytes) in job.wallet_inputs().iter().zip(bytes) {
             self.put(*identity, bytes)?;
+        }
+        Ok(())
+    }
+
+    /// Incoming bytes are authenticated by local immutable ownership. Existing
+    /// files still pass the independent read/digest and durability checks.
+    pub(super) fn put_verified_job_inputs(
+        &mut self,
+        job: &Job,
+        inputs: &[VerifiedWalletPayload],
+    ) -> Result<(), Error> {
+        VerifiedWalletPayload::check_job_inputs(job, inputs)?;
+        for input in inputs {
+            self.put_checked(input.ticket().artifact(), input.bytes())?;
         }
         Ok(())
     }
@@ -260,6 +276,15 @@ impl ArtifactStore {
         self.put(ticket.artifact(), bytes)
     }
 
+    /// The local verifier owns these exact immutable bytes. Existing on-disk
+    /// artifacts still receive the ordinary independent read/digest check.
+    pub(crate) fn put_verified_node(
+        &mut self,
+        payload: &VerifiedNodePayload,
+    ) -> Result<ArtifactRef, Error> {
+        self.put_checked(payload.ticket().artifact(), payload.bytes())
+    }
+
     pub fn load_wallet(
         &self,
         identity: ArtifactRef,
@@ -270,7 +295,7 @@ impl ArtifactStore {
         if identity.kind() != ArtifactKind::Wallet {
             return Err("artifact is not a wallet proof".into());
         }
-        let bytes = self.read_exact(identity)?;
+        let bytes = self.read_for_verification(identity)?;
         let ticket = VerifiedWallet::verify(pin, registry, chain, &bytes)?;
         if ticket.artifact() != identity {
             return Err("recovered wallet identity".into());
@@ -287,7 +312,7 @@ impl ArtifactStore {
         if identity.kind() != ArtifactKind::Node {
             return Err("artifact is not a recursive node".into());
         }
-        let bytes = self.read_exact(identity)?;
+        let bytes = self.read_for_verification(identity)?;
         let ticket = VerifiedNode::verify(job, registry, &bytes)?;
         if ticket.artifact() != identity {
             return Err("recovered node identity".into());
@@ -306,7 +331,7 @@ impl ArtifactStore {
         if identity.kind() != ArtifactKind::Wallet {
             return Err("artifact is not a typed wallet proof".into());
         }
-        let bytes = self.read_exact(identity)?;
+        let bytes = self.read_for_verification(identity)?;
         let ticket = VerifiedWallet::verify_typed(pin, registry, chain, policy, &bytes)?;
         if ticket.artifact() != identity {
             return Err("recovered typed wallet identity".into());
@@ -323,7 +348,7 @@ impl ArtifactStore {
         if identity.kind() != ArtifactKind::Node {
             return Err("artifact is not a typed recursive node".into());
         }
-        let bytes = self.read_exact(identity)?;
+        let bytes = self.read_for_verification(identity)?;
         let ticket = VerifiedNode::verify_typed(job, registry, &bytes)?;
         if ticket.artifact() != identity {
             return Err("recovered typed node identity".into());
@@ -337,16 +362,16 @@ impl ArtifactStore {
         registry: &TypedRegistryContext<'_>,
         chain: [u8; 32],
         policy: crate::block_v2::typed_recursive::Policy,
-    ) -> Result<(VerifiedWallet, Vec<u8>), Error> {
+    ) -> Result<VerifiedWalletPayload, Error> {
         if identity.kind() != ArtifactKind::Wallet {
             return Err("artifact is not a typed wallet proof".into());
         }
-        let bytes = self.read_exact(identity)?;
-        let ticket = registry.verify_stored_wallet(chain, policy, &bytes)?;
-        if ticket.artifact() != identity {
+        let bytes = self.read_for_verification(identity)?;
+        let payload = registry.verify_stored_wallet_owned(chain, policy, bytes)?;
+        if payload.ticket().artifact() != identity {
             return Err("recovered typed wallet identity".into());
         }
-        Ok((ticket, bytes))
+        Ok(payload)
     }
 
     pub(crate) fn load_typed_node_approved(
@@ -354,16 +379,16 @@ impl ArtifactStore {
         identity: ArtifactRef,
         job: &Job,
         registry: &TypedRegistryContext<'_>,
-    ) -> Result<(VerifiedNode, Vec<u8>), Error> {
+    ) -> Result<VerifiedNodePayload, Error> {
         if identity.kind() != ArtifactKind::Node {
             return Err("artifact is not a typed recursive node".into());
         }
-        let bytes = self.read_exact(identity)?;
-        let ticket = registry.verify_node(job, &bytes)?;
-        if ticket.artifact() != identity {
+        let bytes = self.read_for_verification(identity)?;
+        let payload = registry.verify_node_owned(job, bytes)?;
+        if payload.ticket().artifact() != identity {
             return Err("recovered typed recursive identity".into());
         }
-        Ok((ticket, bytes))
+        Ok(payload)
     }
 
     fn check_owner(&self) -> Result<(), Error> {
@@ -461,37 +486,58 @@ impl ArtifactStore {
     }
 
     pub(super) fn read_exact(&self, identity: ArtifactRef) -> Result<Vec<u8>, Error> {
+        let bytes = self.read_for_verification(identity)?;
+        identity.check_bytes(&bytes)?;
+        Ok(bytes)
+    }
+
+    // These bytes are untrusted. A verified loader must run the full proof
+    // verifier and compare its derived artifact identity before returning them.
+    // Ordinary reads use read_exact; ownership/inventory/size checks are shared.
+    fn read_for_verification(&self, identity: ArtifactRef) -> Result<Vec<u8>, Error> {
         self.require_ready()?;
         let name = artifact_name(identity);
         if self.inventory.artifacts.get(&name) != Some(&identity) {
             return Err("artifact unavailable in inventory".into());
         }
-        let file = self.open_file(&name)?;
+        let mut file = self.open_file(&name)?;
         let metadata = file.metadata()?;
         check_file(&metadata, self.uid, false)?;
         if metadata.len() != u64::from(identity.byte_len()) {
             return Err("artifact file length changed".into());
         }
         let bytes = super::bounded_io::read_file(
-            &mut { file },
+            &mut file,
             identity.byte_len() as usize,
             MAX_PROOF_BYTES,
         )?;
-        identity.check_bytes(&bytes)?;
+        // The caller owns this bounded copy and still has to authenticate it.
+        // Avoid keeping another cached copy charged to an ancestor cgroup
+        // after the process that first charged those pages has stopped.
+        retire_public_pages(&file)?;
         Ok(bytes)
     }
 
     fn put(&mut self, identity: ArtifactRef, bytes: &[u8]) -> Result<ArtifactRef, Error> {
         self.require_ready()?;
         identity.check_bytes(bytes)?;
+        self.put_checked(identity, bytes)
+    }
+
+    // Only a checked detached buffer or an opaque owned verifier payload enters
+    // here. This is not a caller-supplied trust flag and is never serialized.
+    fn put_checked(&mut self, identity: ArtifactRef, bytes: &[u8]) -> Result<ArtifactRef, Error> {
+        self.require_ready()?;
         self.refresh()?;
         self.require_ready()?;
         let name = artifact_name(identity);
         if self.inventory.artifacts.contains_key(&name) {
             self.read_exact(identity)?;
             // A previous writer may have died after linking but before fsync.
-            self.open_file(&name)?.sync_all()?;
+            let file = self.open_file(&name)?;
+            file.sync_all()?;
             self.directory.sync_all()?;
+            retire_public_pages(&file)?;
             return Ok(identity);
         }
         let extra = (bytes.len() as u64)
@@ -544,6 +590,9 @@ impl ArtifactStore {
             self.inject(Fault::AfterCleanup)?;
             self.directory.sync_all()?;
             self.refresh()?;
+            // Both published data and directory updates are durable. Advice
+            // uses the original descriptor, never a reopened caller path.
+            retire_public_pages(&file)?;
             Ok(())
         })();
         if result.is_err() {
@@ -552,6 +601,25 @@ impl ArtifactStore {
         result?;
         Ok(identity)
     }
+}
+
+/// Retire only the page-cache copy of this immutable public artifact. The
+/// bounded owned bytes, durable file, inventory and proof checks are unchanged.
+/// This is a kernel hint, not a reservation or evidence of physical release;
+/// the enclosing cgroup and whole-workflow resource checks remain authoritative.
+fn retire_public_pages(file: &File) -> Result<(), Error> {
+    // SAFETY: File owns a live descriptor for a checked regular proof file.
+    // Offset zero and length zero advise through EOF without mapping or
+    // modifying file bytes. posix_fadvise returns the error number directly.
+    let error = unsafe { libc::posix_fadvise(file.as_raw_fd(), 0, 0, libc::POSIX_FADV_DONTNEED) };
+    if error != 0 {
+        return Err(format!(
+            "immutable proof page-cache advice: {}",
+            std::io::Error::from_raw_os_error(error)
+        )
+        .into());
+    }
+    Ok(())
 }
 
 pub(super) fn fd_path(file: &File) -> PathBuf {

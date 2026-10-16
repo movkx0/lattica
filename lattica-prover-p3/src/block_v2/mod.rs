@@ -51,6 +51,8 @@ pub mod typed_fixture;
 pub mod typed_leaf;
 pub mod typed_recursive;
 #[cfg(feature = "gpu")]
+mod wallet_output;
+#[cfg(feature = "gpu")]
 pub(crate) mod wallet_worker;
 
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]

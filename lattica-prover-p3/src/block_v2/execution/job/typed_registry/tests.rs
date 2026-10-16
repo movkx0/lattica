@@ -187,6 +187,39 @@ fn context_reuses_identity_without_allocating_and_keeps_framing_checks() {
     eprintln!("wallet_registry_context_reuse pins=64 allocations=0 framing_rejections=3");
 }
 
+#[test]
+fn owned_wallet_verification_keeps_framing_and_bounds_capacity_before_decoding() {
+    let registry = registry();
+    let context = TypedRegistryContext::new(&registry, registry.id().unwrap()).unwrap();
+    for bytes in [vec![], b"LBV2TW01".to_vec(), b"LBV2WL02x".to_vec(), b"LBV2TW01x".to_vec()] {
+        assert!(context.verify_wallet_owned([9; 32], Policy::JoinSplit, bytes).is_err());
+    }
+    let mut oversized = Vec::with_capacity(VerifiedWalletPayload::INPUT_CAPACITY_BYTES + 1);
+    oversized.extend(b"LBV2TW01x");
+    let error = context.verify_wallet_owned([9; 32], Policy::JoinSplit, oversized).err().unwrap();
+    assert_eq!(error.to_string(), "selection input backing exceeds conversion allowance");
+}
+
+#[test]
+fn owned_node_verification_rejects_invalid_inputs_and_changed_job_pins() {
+    let registry = registry();
+    let context = TypedRegistryContext::new(&registry, registry.id().unwrap()).unwrap();
+    let job = Job::empty(context.pin(), [9; 32], 0, 1).unwrap();
+    for bytes in [vec![], vec![0], b"LBV2ND01".to_vec(), vec![0; profile::MAX_PROOF_BYTES + 1]] {
+        assert!(context.verify_node_owned(&job, bytes).is_err());
+    }
+    for change in 0..3 {
+        let mut changed = job.clone();
+        match change {
+            0 => changed.pin.typed = false,
+            1 => changed.pin.construction = WrapperConstruction::SingleWallet,
+            _ => changed.pin.profile[0] ^= 1,
+        }
+        let error = context.verify_node_owned(&changed, vec![1]).err().unwrap();
+        assert_eq!(error.to_string(), "typed execution registry substitution");
+    }
+}
+
 #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
 pub(crate) fn fresh_check(wallet: &WalletProof, policy: Policy) {
     let registry = registry();
@@ -196,6 +229,9 @@ pub(crate) fn fresh_check(wallet: &WalletProof, policy: Policy) {
     let direct =
         VerifiedWallet::verify_typed(context.pin(), &registry, wallet.chain, policy, &artifact)
             .unwrap();
+    let owned = context.verify_wallet_owned(wallet.chain, policy, artifact.clone()).unwrap();
+    assert_eq!(owned.ticket(), direct);
+    assert_eq!(owned.bytes(), artifact);
     for _ in 0..2 {
         #[cfg(all(not(debug_assertions), target_arch = "x86_64"))]
         let reused = {
@@ -246,6 +282,7 @@ pub(crate) fn fresh_check(wallet: &WalletProof, policy: Policy) {
     });
     let (reused, observed) = measure(|| context.verify_wallet(wrong_chain, policy, &artifact));
     assert!(direct.is_err() && reused.is_err());
+    assert!(context.verify_wallet_owned(wrong_chain, policy, artifact.clone()).is_err());
     assert_eq!(
         direct.unwrap_err().to_string(),
         reused.unwrap_err().to_string()
@@ -261,6 +298,7 @@ pub(crate) fn fresh_check(wallet: &WalletProof, policy: Policy) {
     let mut bad = TYPED_WALLET_MAGIC.to_vec();
     bad.extend(postcard::to_allocvec(&altered).unwrap());
     assert!(context.verify_wallet(wallet.chain, policy, &bad).is_err());
-    eprintln!("wallet_registry_context_fresh mode={} verified=3 chain_rejections=2 altered_public_rejected=true identity_bytes={} identity_calls={} direct_rejected_bytes={} reused_rejected_bytes={} direct_rejected_calls={} reused_rejected_calls={}",
+    assert!(context.verify_wallet_owned(wallet.chain, policy, bad).is_err());
+    eprintln!("wallet_registry_context_fresh mode={} verified=4 chain_rejections=3 altered_public_rejections=2 identity_bytes={} identity_calls={} direct_rejected_bytes={} reused_rejected_bytes={} direct_rejected_calls={} reused_rejected_calls={}",
         policy.mode(), identity.bytes, identity.calls, reference.bytes, observed.bytes, reference.calls, observed.calls);
 }

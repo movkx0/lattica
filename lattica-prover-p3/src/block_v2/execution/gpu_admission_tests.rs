@@ -1,6 +1,133 @@
 use super::*;
 use serde_json::json;
 
+#[test]
+fn caller_stack_is_reserved_before_assignment_parsing() {
+    let caller = super::super::worker_budget::CALLER_STACK_HOST_BYTES;
+    let floor = ASSIGNMENT_HOST_BYTES + caller + crate::host_memory::RETAINED_SYSTEM_HOST_BYTES;
+    for total in [0, caller - 1, caller, floor - 1] {
+        assert!(admit_startup_input(total).is_err());
+    }
+    admit_startup_input(floor).unwrap();
+    eprintln!(
+        "caller_stack_startup_input floor_bytes={floor} caller_bytes={caller} early_rejections=4"
+    );
+}
+
+#[test]
+fn rayon_stacks_must_fit_beside_startup_input_before_threads_start() {
+    let stacks = super::super::worker_budget::rayon_stack_host_bytes(4).unwrap();
+    let floor = stacks
+        + ASSIGNMENT_HOST_BYTES
+        + super::super::worker_budget::CALLER_STACK_HOST_BYTES
+        + crate::host_memory::RETAINED_SYSTEM_HOST_BYTES;
+    for (available, accepted) in [(floor - 1, false), (floor, true)] {
+        let (mut assignment, mut environment, mut observed) = fixture();
+        assignment["host"]["worker_bytes"] = json!(available);
+        environment.host_output = available;
+        observed.memory = available;
+        // Isolate the startup stack boundary from the independent spill/data
+        // partition, which cannot fit the fixture's usual 2 GiB spill cap here.
+        assignment["host"]["spill_bytes"] = json!(1 << 20);
+        environment.spill = 1 << 20;
+        assert_eq!(
+            Admission::validate(assignment, &environment, observed).is_ok(),
+            accepted
+        );
+    }
+}
+
+#[cfg(feature = "stream")]
+#[test]
+fn private_data_partition_rejects_overlapping_spill_before_threads_start() {
+    let (_, _, observed) = fixture();
+    let worker = observed.memory;
+    let stacks = super::super::worker_budget::rayon_stack_host_bytes(4).unwrap()
+        + super::super::worker_budget::CALLER_STACK_HOST_BYTES;
+    let shared_boundary = worker - stacks - crate::host_memory::GPU_MAPPED_HOST_BYTES;
+    for (spill, accepted) in [
+        (0, false),
+        (shared_boundary - 1, true),
+        (shared_boundary, false),
+        (worker, false),
+        (u64::MAX, false),
+    ] {
+        let (mut assignment, mut environment, observed) = fixture();
+        assignment["host"]["spill_bytes"] = json!(spill);
+        environment.spill = spill;
+        assert_eq!(
+            Admission::validate(assignment, &environment, observed).is_ok(),
+            accepted
+        );
+    }
+}
+
+#[test]
+fn explicit_rayon_stacks_override_environment_in_a_fresh_process() {
+    const CHILD: &str = "LATTICA_RAYON_STACK_TEST_CHILD";
+    if std::env::var(CHILD).as_deref() == Ok("1") {
+        let (assignment, environment, observed) = fixture();
+        let admission = Admission::validate(assignment, &environment, observed).unwrap();
+        // libtest's caller inherited RUST_MIN_STACK=64 MiB. Reject it before
+        // creating the pool; a bounded caller can then initialize successfully.
+        assert!(admission.initialize_rayon().is_err());
+        std::thread::Builder::new()
+            .stack_size(2 << 20)
+            .spawn(move || {
+                admission.initialize_rayon().unwrap();
+                #[cfg(feature = "stream")]
+                {
+                    let requests = crate::spill_alloc::system_budget::snapshot();
+                    assert_eq!(requests.limit_bytes, Some(2666594304));
+                    assert!(requests.accounting_valid);
+                    assert_eq!(requests.rejected_requests, 0);
+                }
+                assert_eq!(rayon::current_num_threads(), 4);
+                assert!(admission.initialize_rayon().is_err());
+                #[cfg(feature = "gpu")]
+                assert!(!crate::block_v2::gpu_hash::is_enabled());
+            })
+            .unwrap()
+            .join()
+            .unwrap();
+        return;
+    }
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            concat!(
+                module_path!(),
+                "::explicit_rayon_stacks_override_environment_in_a_fresh_process"
+            )
+            .split_once("::")
+            .unwrap()
+            .1,
+            "--test-threads=1",
+            "--nocapture",
+        ])
+        .env(CHILD, "1")
+        .env("RUST_MIN_STACK", (64 << 20).to_string())
+        .env("LATTICA_PROVING_REPORT", "1")
+        .env("LATTICA_SPILL_MAX_BYTES", (2u64 << 30).to_string())
+        .env("LATTICA_SPILL_DIR", "/tmp")
+        .env("LATTICA_SPILL_BACKING", "file")
+        .output()
+        .unwrap();
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(output.status.success(), "{stderr}");
+    assert!(
+        stdout.contains("test result: ok. 1 passed; 0 failed;"),
+        "{stdout}"
+    );
+    assert!(stderr.contains("bounded_rayon_stacks threads=4 stack_bytes=2097152"));
+    assert!(stderr.contains("reserved_host_bytes=9175040"));
+    #[cfg(feature = "stream")]
+    assert!(stderr.contains("bounded_system_requests "));
+    eprint!("{stderr}");
+    print!("{stdout}");
+}
+
 fn fixture() -> (Value, Environment, Observed) {
     let unit = "lattica-v2-multi-admission-fixture.service";
     let assignment = json!({
@@ -11,7 +138,7 @@ fn fixture() -> (Value, Environment, Observed) {
         "cpu": {"version": 1, "quota_percent": "400%", "allowed_cpus": [2, 3, 7, 8],
                 "rayon_threads": 4},
         "host": {"version": 1, "worker_bytes": 3u64 << 30, "fleet_bytes": 8u64 << 30,
-                 "spill_bytes": 2u64 << 30, "scratch_device": 42},
+                 "spill_bytes": 2u64 << 30, "scratch_device": 42, "scratch_path": "/tmp"},
         "existing_workload_metadata": {"retained": true}
     });
     let environment = Environment {

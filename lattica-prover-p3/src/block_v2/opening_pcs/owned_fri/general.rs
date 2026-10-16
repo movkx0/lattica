@@ -24,6 +24,7 @@ pub(in crate::block_v2::opening_pcs) fn prove<F: FriExtension>(
     challenger: &mut Challenger,
     max_height: usize,
     rounds: &[&ProverData],
+    host_allowance: usize,
 ) -> Result<FriProof<F, FriExtensionMmcs<F>, Val, Vec<BatchOpening<Val, CandidateMmcs>>>, String> {
     prove_with_query_allowance(
         session,
@@ -33,7 +34,7 @@ pub(in crate::block_v2::opening_pcs) fn prove<F: FriExtension>(
         challenger,
         max_height,
         rounds,
-        HOST_QUERY_ALLOWANCE,
+        host_allowance.min(HOST_QUERY_ALLOWANCE),
     )
 }
 
@@ -119,7 +120,7 @@ fn prove_with_query_allowance<F: FriExtension>(
             session,
             &folded,
             log_arity,
-            HOST_SALT_ALLOWANCE,
+            query_allowance.min(HOST_SALT_ALLOWANCE),
         )?;
         challenger.observe(commitment.clone());
         commits.push(commitment);
@@ -138,7 +139,7 @@ fn prove_with_query_allowance<F: FriExtension>(
         &folded,
         params.log_blowup,
         params.log_final_poly_len,
-        HOST_QUERY_ALLOWANCE,
+        query_allowance,
     )?;
     if coefficients.len() != (1 << params.log_final_poly_len) * F::DIMENSION {
         return Err("FRI final coefficient count differs from storage plan".into());
@@ -166,7 +167,7 @@ fn prove_with_query_allowance<F: FriExtension>(
             .ok_or("PCS input height exceeds resident FRI")?;
         let mut local = FriData::proof_vector(indices.len())?;
         local.extend(indices.iter().map(|i| i >> shift));
-        let openings = mmcs.open_owned_queries(session, data, &local, HOST_QUERY_ALLOWANCE)?;
+        let openings = mmcs.open_owned_queries(session, data, &local, query_allowance)?;
         for (query, opening) in openings.into_iter().enumerate() {
             input_proofs[query].push(opening);
         }
@@ -180,7 +181,7 @@ fn prove_with_query_allowance<F: FriExtension>(
     for (data, log_arity) in &layers {
         let mut local = FriData::proof_vector(indices.len())?;
         local.extend(indices.iter().map(|i| i >> (reduced_bits + log_arity)));
-        let queries = data.open_rows_extension::<F>(session, &local)?;
+        let queries = data.open_rows_extension_with_allowance::<F>(session, &local, query_allowance)?;
         for (query, opening) in queries.into_iter().enumerate() {
             let (mut rows, proof) = opening.unpack();
             let mut row = rows.pop().ok_or("missing resident FRI query row")?;

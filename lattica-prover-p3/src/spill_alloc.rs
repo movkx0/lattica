@@ -13,7 +13,8 @@
 //! # No reentrancy
 //! The spill path (`alloc_big`/`dealloc`) uses only raw libc syscalls (`open`/`ftruncate`/`mmap`/…) and
 //! a stack path buffer — it never touches the Rust heap, so it can't recurse into this allocator. The
-//! hot path (`size < THRESHOLD`) is a single const compare + delegate to `System`, and never calls
+//! hot path (`size < THRESHOLD`) delegates to `System` and records owned requests in block-v2 builds;
+//! it never calls
 //! `cfg()` (whose one-time init allocates a small `String` for the env lookup — which routes to `System`
 //! precisely because it is below `THRESHOLD`).
 //!
@@ -39,8 +40,23 @@
 use std::alloc::{GlobalAlloc, Layout, System};
 #[cfg(test)]
 pub(crate) mod allocation_requests;
+#[cfg(all(
+    target_os = "linux",
+    target_env = "gnu",
+    any(feature = "block-v2", test)
+))]
+pub(crate) mod host_backing;
+#[cfg(any(feature = "block-v2", test))]
+pub(crate) mod host_budget;
+#[cfg(any(feature = "block-v2", test))]
+pub(crate) mod system_budget;
+#[cfg(any(feature = "block-v2", test))]
+pub(crate) mod system_requests;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::OnceLock;
+
+#[cfg(feature = "block-v2")]
+pub(crate) mod config_admission;
 
 /// mmap/allocation page granularity. All spill mappings are page-aligned, so the returned pointer
 /// (`base + PAGE`) satisfies any alignment up to `PAGE`; larger alignments fall through to `System`.
@@ -202,14 +218,69 @@ unsafe fn read_hdr(base: *const u8) -> (u64, i64, u64) {
 /// The out-of-core global allocator. See the module docs.
 pub struct SpillAlloc;
 
+/// Track only successful System requests. Direct spill mappings have their own
+/// counters; allocator metadata, retained arenas and foreign callers are separate.
+#[inline]
+unsafe fn system_alloc(layout: Layout, zeroed: bool) -> *mut u8 {
+    #[cfg(any(feature = "block-v2", test))]
+    {
+        if !host_budget::HOST.reserve(layout.size()) {
+            return std::ptr::null_mut();
+        }
+        if !system_budget::SYSTEM.reserve(layout.size()) {
+            host_budget::HOST.release(layout.size());
+            return std::ptr::null_mut();
+        }
+    }
+    let ptr = if zeroed {
+        System.alloc_zeroed(layout)
+    } else {
+        System.alloc(layout)
+    };
+    #[cfg(any(feature = "block-v2", test))]
+    {
+        if ptr.is_null() {
+            system_budget::SYSTEM.release(layout.size());
+            host_budget::HOST.release(layout.size());
+        } else {
+            system_requests::SYSTEM.allocated(layout.size());
+        }
+    }
+    ptr
+}
+
+#[inline]
+unsafe fn system_dealloc(ptr: *mut u8, layout: Layout) {
+    System.dealloc(ptr, layout);
+    #[cfg(any(feature = "block-v2", test))]
+    {
+        system_requests::SYSTEM.deallocated(layout.size());
+        system_budget::SYSTEM.release(layout.size());
+        host_budget::HOST.release(layout.size());
+    }
+}
+
+/// The request sent to System or mmap, including our header and page rounding.
+/// This does not include System's own metadata, arena slack or retained pages.
+pub(crate) fn backing_layout(layout: Layout) -> Option<Layout> {
+    if layout.size() < THRESHOLD || layout.align() > PAGE {
+        return Some(layout);
+    }
+    let payload = layout.size().checked_add(PAGE - 1)? & !(PAGE - 1);
+    Layout::from_size_align(payload.checked_add(PAGE)?, PAGE).ok()
+}
+
 /// Reserve an explicitly bounded heap buffer without changing the global spill
 /// policy. The returned Vec has length zero and can be freed by SpillAlloc.
 /// This is an admission decision, never a retry after a spill allocation fails.
+/// The limit includes our header/page rounding in the System request, not
+/// System's internal metadata or retained arena capacity.
 #[cfg(any(feature = "block-v2", test))]
 pub(crate) fn reserve_heap<T>(elements: usize, byte_limit: usize) -> Option<Vec<T>> {
     const MAX_WORKSPACE: usize = 2 << 30;
     let layout = Layout::array::<T>(elements).ok()?;
-    if byte_limit > MAX_WORKSPACE || layout.size() > byte_limit {
+    let system_layout = backing_layout(layout)?;
+    if byte_limit > MAX_WORKSPACE || system_layout.size() > byte_limit {
         return None;
     }
     if layout.size() < THRESHOLD || layout.align() > PAGE {
@@ -217,13 +288,11 @@ pub(crate) fn reserve_heap<T>(elements: usize, byte_limit: usize) -> Option<Vec<
         values.try_reserve_exact(elements).ok()?;
         return Some(values);
     }
-    let payload = layout.size().checked_add(PAGE - 1)? & !(PAGE - 1);
-    let total = payload.checked_add(PAGE)?;
-    let system_layout = Layout::from_size_align(total, PAGE).ok()?;
+    let total = system_layout.size();
     // SAFETY: Header and capacity match SpillAlloc::dealloc. No uninitialized
     // element is exposed: callers initialize spare capacity before setting len.
     unsafe {
-        let base = System.alloc(system_layout);
+        let base = system_alloc(system_layout, false);
         if base.is_null() {
             return None;
         }
@@ -272,8 +341,12 @@ impl SpillAlloc {
     /// each carrying a one-page header before the returned (page-aligned) payload pointer.
     #[inline(never)]
     unsafe fn alloc_big(&self, layout: Layout) -> *mut u8 {
-        let payload = (layout.size() + PAGE - 1) & !(PAGE - 1);
-        let total = PAGE + payload;
+        let Some(system_layout) = backing_layout(layout) else {
+            // Returning a headerless System block here would violate dealloc's
+            // invariant. Reject impossible layouts before any allocation.
+            return std::ptr::null_mut();
+        };
+        let total = system_layout.size();
         if ARMED.load(Ordering::Relaxed) > 0 {
             let limit = cfg().max_bytes;
             if MMAP_BYTES
@@ -286,6 +359,12 @@ impl SpillAlloc {
                 BUDGET_REJECTIONS.fetch_add(1, Ordering::Relaxed);
                 return std::ptr::null_mut();
             }
+            #[cfg(any(feature = "block-v2", test))]
+            if !host_budget::HOST.reserve(total) {
+                MMAP_BYTES.fetch_sub(total as u64, Ordering::Relaxed);
+                BUDGET_REJECTIONS.fetch_add(1, Ordering::Relaxed);
+                return std::ptr::null_mut();
+            }
             if let Some((base, fd)) = map_file(total) {
                 write_hdr(base, MAGIC_MMAP, fd, total as u64);
                 MMAP_COUNT.fetch_add(1, Ordering::Relaxed);
@@ -294,16 +373,15 @@ impl SpillAlloc {
                 return base.add(PAGE);
             }
             MMAP_BYTES.fetch_sub(total as u64, Ordering::Relaxed);
+            #[cfg(any(feature = "block-v2", test))]
+            host_budget::HOST.release(total);
             MAPPING_FAILURES.fetch_add(1, Ordering::Relaxed);
             if limit.is_some() {
                 return std::ptr::null_mut();
             }
             // mmap failed (e.g. scratch full) → fall through to a plain in-RAM System block.
         }
-        let Ok(l) = Layout::from_size_align(total, PAGE) else {
-            return System.alloc(layout);
-        };
-        let base = System.alloc(l);
+        let base = system_alloc(system_layout, false);
         if base.is_null() {
             return base;
         }
@@ -320,7 +398,7 @@ unsafe impl GlobalAlloc for SpillAlloc {
         #[cfg(test)]
         allocation_requests::observe(layout.size());
         if layout.size() < THRESHOLD || layout.align() > PAGE {
-            return System.alloc(layout); // hot path: no cfg(), no atomics
+            return system_alloc(layout, false); // No cfg() initialization or allocation.
         }
         self.alloc_big(layout)
     }
@@ -328,27 +406,36 @@ unsafe impl GlobalAlloc for SpillAlloc {
     #[inline]
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         if layout.size() < THRESHOLD || layout.align() > PAGE {
-            return System.dealloc(ptr, layout);
+            return system_dealloc(ptr, layout);
         }
         let base = ptr.sub(PAGE);
         let (magic, fd, total) = read_hdr(base);
         match magic {
             MAGIC_MMAP => {
-                libc::munmap(base as *mut libc::c_void, total as usize);
+                let unmapped = libc::munmap(base as *mut libc::c_void, total as usize) == 0;
                 if fd >= 0 {
                     libc::close(fd as libc::c_int);
                 }
+                if !unmapped {
+                    // Failed physical release cannot create capacity for new
+                    // ownership. Keep the reservation and reject future use.
+                    #[cfg(any(feature = "block-v2", test))]
+                    host_budget::HOST.invalidate();
+                    return;
+                }
                 MMAP_COUNT.fetch_sub(1, Ordering::Relaxed);
                 MMAP_BYTES.fetch_sub(total, Ordering::Relaxed);
+                #[cfg(any(feature = "block-v2", test))]
+                host_budget::HOST.release(total as usize);
             }
             MAGIC_SYS => {
-                System.dealloc(
+                system_dealloc(
                     base,
                     Layout::from_size_align_unchecked(total as usize, PAGE),
                 );
             }
             // Should be unreachable (every >= THRESHOLD alloc writes a header); fall back rather than UB.
-            _ => System.dealloc(ptr, layout),
+            _ => system_dealloc(ptr, layout),
         }
     }
 
@@ -357,7 +444,7 @@ unsafe impl GlobalAlloc for SpillAlloc {
         #[cfg(test)]
         allocation_requests::observe(layout.size());
         if layout.size() < THRESHOLD || layout.align() > PAGE {
-            return System.alloc_zeroed(layout); // calloc for small allocs
+            return system_alloc(layout, true); // calloc for small allocs
         }
         let ptr = self.alloc_big(layout);
         if ptr.is_null() {
@@ -426,10 +513,32 @@ mod tests {
     use super::*;
 
     #[test]
+    fn backing_requests_include_headers_rounding_and_reject_impossible_layouts() {
+        for (bytes, alignment, expected) in [
+            (0, 1, 0),
+            (THRESHOLD - 1, 8, THRESHOLD - 1),
+            (THRESHOLD, 8, THRESHOLD + PAGE),
+            (THRESHOLD + 1, 8, THRESHOLD + 2 * PAGE),
+            (THRESHOLD + PAGE, 8, THRESHOLD + 2 * PAGE),
+            (THRESHOLD, 2 * PAGE, THRESHOLD),
+        ] {
+            let layout = Layout::from_size_align(bytes, alignment).unwrap();
+            assert_eq!(backing_layout(layout).unwrap().size(), expected);
+        }
+        let largest = Layout::from_size_align((isize::MAX as usize) & !(PAGE - 1), PAGE).unwrap();
+        assert!(backing_layout(largest).is_none());
+        // A valid caller Layout can become impossible after adding our header.
+        // No headerless fallback may escape to dealloc's header-reading branch.
+        assert!(unsafe { SpillAlloc.alloc(largest) }.is_null());
+        assert!(reserve_heap::<u8>(THRESHOLD + 1, THRESHOLD + 2 * PAGE - 1).is_none());
+        assert!(reserve_heap::<u8>(2 << 30, 2 << 30).is_none());
+    }
+
+    #[test]
     fn explicit_heap_reservation_is_bounded_and_compatible_with_global_free() {
         let _armed = SpillScope::arm();
         let before = spill_stats();
-        let mut values = reserve_heap::<u64>(THRESHOLD / 8, THRESHOLD).unwrap();
+        let mut values = reserve_heap::<u64>(THRESHOLD / 8, THRESHOLD + PAGE).unwrap();
         assert_eq!(values.len(), 0);
         assert_eq!(values.capacity(), THRESHOLD / 8);
         assert_eq!(spill_stats(), before);
@@ -443,7 +552,8 @@ mod tests {
         assert_eq!(values, [3, 5, 7]);
         drop(values);
         assert_eq!(spill_stats(), before);
-        assert!(reserve_heap::<u64>(THRESHOLD / 8, THRESHOLD - 1).is_none());
+        assert!(reserve_heap::<u64>(THRESHOLD / 8, THRESHOLD + PAGE - 1).is_none());
+        assert!(reserve_heap::<u64>(THRESHOLD / 8, THRESHOLD).is_none());
         assert!(reserve_heap::<u64>(usize::MAX, THRESHOLD).is_none());
         assert!(reserve_heap::<u8>(1, (2 << 30) + 1).is_none());
         assert_eq!(reserve_heap::<()>(42, 0).unwrap().len(), 0);
@@ -455,7 +565,7 @@ mod tests {
         let scope = SpillScope::arm();
         let n = THRESHOLD / core::mem::size_of::<u64>();
         let source: Vec<u64> = (0..n as u64).collect();
-        let mut copied = copy_to_heap(&source, THRESHOLD).unwrap();
+        let mut copied = copy_to_heap(&source, THRESHOLD + PAGE).unwrap();
         assert_eq!(source, copied);
         unsafe {
             assert_eq!(

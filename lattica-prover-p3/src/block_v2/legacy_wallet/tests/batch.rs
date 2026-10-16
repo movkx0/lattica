@@ -1,6 +1,8 @@
 use super::*;
 use crate::{batch_htlc_air as bh, batch_joinsplit_air as bj};
 
+mod capacity;
+
 fn initialize() {
     let fusion = quotient_pcs::initialize_research_from_env().unwrap();
     quotient_pcs::initialize_gpu_quotient_from_env(true, fusion).unwrap();
@@ -210,6 +212,7 @@ fn gpu_legacy_batch_abi_returns_device_roots_and_cpu_verifies_after_shutdown() {
     assert_eq!(before.allocations, after.allocations);
     assert_eq!(before.uploaded_bytes, after.uploaded_bytes);
     let mut results = Vec::new();
+    let probe = crate::block_v2::wallet_worker::admission_tests::PrivateInputProbe::start();
     for kind in 0..2 {
         for count in [1usize, 3] {
             let encoded = witnesses[kind][..count].concat();
@@ -240,6 +243,7 @@ fn gpu_legacy_batch_abi_returns_device_roots_and_cpu_verifies_after_shutdown() {
             results.push((kind, count, proof[..proof_len].to_vec(), root));
         }
     }
+    probe.finish(8);
     gpu_hash::shutdown().unwrap();
     {
         let _compatible = Env::set("LATTICA_PROVING_POLICY", "compatible");

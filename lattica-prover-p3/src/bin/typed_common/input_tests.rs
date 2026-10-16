@@ -25,7 +25,7 @@ impl Drop for Directory {
 
 #[test]
 fn all_body_counts_keep_json_and_task_order_with_bounded_capacities() {
-    for count in 1..=64 {
+    for count in 1..=profile::MAX_TRANSACTIONS as u8 {
         let (body, expected) = tests::candidate(count);
         let body_bytes = serde_json::to_vec(&body).unwrap();
         let parsed: Body = serde_json::from_slice(&body_bytes).unwrap();
@@ -64,12 +64,12 @@ fn all_body_counts_keep_json_and_task_order_with_bounded_capacities() {
         .unwrap()
         .print("bounded_preparation_ingress")
         .unwrap();
-    println!("bounded_preparation_ingress_parity counts=64 stable_order=true json_roundtrip=true exact_capacity=true");
+    println!("bounded_preparation_ingress_parity counts={} stable_order=true json_roundtrip=true exact_capacity=true", profile::MAX_TRANSACTIONS);
 }
 
 #[test]
 fn oversized_json_collections_fail_before_decoding_the_extra_payload() {
-    let (body, expected) = tests::candidate(64);
+    let (body, expected) = tests::candidate(profile::MAX_TRANSACTIONS as u8);
     let mut value = serde_json::to_value(&body).unwrap();
     value["transactions"]
         .as_array_mut()
@@ -98,7 +98,9 @@ fn oversized_json_collections_fail_before_decoding_the_extra_payload() {
         .to_string();
     assert!(error.contains("preparation collection limit"), "{error}");
     let mut value = serde_json::to_value(&expected).unwrap();
-    value["authorized_issuance"] = (0..65).map(|i| (i.to_string(), json!(1))).collect();
+    value["authorized_issuance"] = (0..=profile::MAX_TRANSACTIONS)
+        .map(|i| (i.to_string(), json!(1)))
+        .collect();
     let encoded = serde_json::to_vec(&value).unwrap();
     let error = serde_json::from_slice::<Expected>(&encoded)
         .err()

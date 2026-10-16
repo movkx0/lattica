@@ -2,7 +2,11 @@
 //! limits from a checkpoint; the host supplies the independently pinned budget.
 use super::*;
 
-pub(super) const ARTIFACT_BYTES: u64 = 256 << 20;
+// A full paired block retains C wallets and C-1 recursive proofs. Publication
+// temporarily counts one additional proof name, even for a hard link. Reserve
+// the wire-size ceiling for all 2*C names: 256 MiB at 64, 512 MiB at 128.
+pub(super) const ARTIFACT_BYTES: u64 =
+    2 * commitment::CAPACITY as u64 * profile::MAX_PROOF_BYTES as u64;
 pub(super) const ARTIFACT_ENTRIES: usize = 512;
 pub(super) const SNAPSHOT_BYTES: usize = 1 << 20;
 pub(super) const RECOVERY_WINDOW_MS: u64 = 3_600_000;

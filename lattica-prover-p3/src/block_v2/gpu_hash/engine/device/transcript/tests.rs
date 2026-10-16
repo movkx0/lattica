@@ -99,6 +99,80 @@ fn gpu_bounded_transcript_slots_reject_before_copy_and_return_after_scrubbing() 
 #[test]
 #[cfg(feature = "gpu")]
 #[ignore = "requires OpenCL GPU; run serially in a <=3 GiB zero-swap service"]
+fn gpu_transcript_host_quota_owns_states_and_concurrent_operations() {
+    let _shutdown = super::super::super::TestShutdownGuard;
+    initialize();
+    let session = DeviceSession::new().unwrap();
+    let baseline = live(&session);
+    let state_bytes = state_host_backing().unwrap();
+    // The research constructor has no state-count ceiling; host ownership must
+    // still reject a future state before its device allocation or copy.
+    let mut root = session.new_transcript().unwrap();
+    assert_eq!(session.transcript_host_reserved_bytes(), state_bytes);
+    let snapshot = root.snapshot().unwrap();
+    assert_eq!(session.transcript_host_reserved_bytes(), 2 * state_bytes);
+    drop(snapshot);
+    assert_eq!(session.transcript_host_reserved_bytes(), state_bytes);
+
+    let barrier = std::sync::Barrier::new(2);
+    std::thread::scope(|threads| {
+        let holder = threads.spawn(|| {
+            let _scope = session
+                .reserve_transcript_host(host_storage_plan::Plan {
+                    bytes: limits::HOST_BYTES - 2 * state_bytes + 1,
+                })
+                .unwrap();
+            barrier.wait();
+            barrier.wait();
+        });
+        barrier.wait();
+        let before = session.stats();
+        let rejected = [
+            root.snapshot().is_err(),
+            session.new_transcript().is_err(),
+            root.observe(&[1]).is_err(),
+            root.sample_fields(1).is_err(),
+            session.next_points([1; 3], &[5]).is_err(),
+        ];
+        let after = session.stats();
+        barrier.wait();
+        holder.join().unwrap();
+        assert!(rejected.into_iter().all(|rejected| rejected));
+        assert_eq!(before, after);
+    });
+    assert_eq!(session.transcript_host_reserved_bytes(), state_bytes);
+    let mut reference = cpu();
+    compare(&mut reference, &mut root, 3);
+
+    let other = DeviceSession::new().unwrap();
+    let mut foreign = other
+        .reserve_transcript_host(host_storage_plan::Plan::observation().unwrap())
+        .unwrap();
+    let before = session.stats();
+    assert!(root.observe_scoped(&[1], &mut foreign).is_err());
+    assert_eq!(before, session.stats());
+    drop(foreign);
+    assert_eq!(other.transcript_host_reserved_bytes(), 0);
+
+    let mut failed = session.new_transcript().unwrap();
+    failed.fault = Some(Fault::Unwind);
+    let retained = session.transcript_host_reserved_bytes();
+    assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _ = failed.sample_fields(3);
+    }))
+    .is_err());
+    assert_eq!(session.transcript_host_reserved_bytes(), retained);
+    drop(failed);
+    compare(&mut reference, &mut root, 1);
+    drop(root);
+    assert_eq!(session.transcript_host_reserved_bytes(), 0);
+    assert_eq!(live(&session), baseline);
+    eprintln!("gpu_transcript_host_ownership state_bytes={state_bytes} states_retained=true simultaneous_rejection_before_work=true nested_owner_checked=true failure_and_unwind_release=true zero_live_bytes_after_drop=true");
+}
+
+#[test]
+#[cfg(feature = "gpu")]
+#[ignore = "requires OpenCL GPU; run serially in a <=3 GiB zero-swap service"]
 fn gpu_transcript_matches_duplex_absorption_extensions_and_query_bits() {
     let _shutdown = super::super::super::TestShutdownGuard;
     initialize();

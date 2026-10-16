@@ -166,20 +166,26 @@ const BATCH_N_PERIODIC: usize = P_ROOT_UPDATE + 1;
 /// The AIR-side chunk table the tx-root fold injects, in fold order — the in-circuit twin of the native
 /// `statement_chunks`. The HTLC statement extends the join-split one with `[S_HEIGHT,0,0,0]` and the
 /// hashlock (an auditor checks this table against `statement_chunks` side by side).
-fn fold_chunks() -> Vec<crate::batch_common::FoldChunk> {
-    let full = |base: usize| [Some(base), Some(base + 1), Some(base + 2), Some(base + 3)];
-    let mut v = Vec::with_capacity(FOLD_SK_BLOCKS);
-    v.push(full(S_ANCHOR));
-    for i in 0..N_IN {
-        v.push(full(S_NF + i * DIGEST));
+const fn fold_chunks() -> [crate::batch_common::FoldChunk; FOLD_SK_BLOCKS] {
+    const fn full(base: usize) -> crate::batch_common::FoldChunk {
+        [Some(base), Some(base + 1), Some(base + 2), Some(base + 3)]
     }
-    for j in 0..M_OUT {
-        v.push(full(S_OUTCM + j * DIGEST));
+    let mut v = [[None; DIGEST]; FOLD_SK_BLOCKS];
+    v[0] = full(S_ANCHOR);
+    let mut i = 0;
+    while i < N_IN {
+        v[1 + i] = full(S_NF + i * DIGEST);
+        i += 1;
     }
-    v.push([Some(S_FEE), Some(S_MINT), None, None]);
-    v.push(full(S_TXBIND));
-    v.push([Some(S_HEIGHT), None, None, None]);
-    v.push(full(S_HASHLOCK));
+    let mut j = 0;
+    while j < M_OUT {
+        v[1 + N_IN + j] = full(S_OUTCM + j * DIGEST);
+        j += 1;
+    }
+    v[1 + N_IN + M_OUT] = [Some(S_FEE), Some(S_MINT), None, None];
+    v[2 + N_IN + M_OUT] = full(S_TXBIND);
+    v[3 + N_IN + M_OUT] = [Some(S_HEIGHT), None, None, None];
+    v[4 + N_IN + M_OUT] = full(S_HASHLOCK);
     v
 }
 
@@ -188,7 +194,8 @@ fn fold_chunks() -> Vec<crate::batch_common::FoldChunk> {
 use crate::config::make_config;
 
 #[cfg(all(feature = "block-v2", feature = "gpu"))]
-pub(crate) fn device_batch_geometry() -> crate::batch_common::DeviceBatchGeometry {
+pub(crate) fn device_batch_geometry() -> crate::batch_common::DeviceBatchGeometry<'static> {
+    const CHUNKS: [crate::batch_common::FoldChunk; FOLD_SK_BLOCKS] = fold_chunks();
     crate::batch_common::DeviceBatchGeometry {
         height: TILE_HEIGHT,
         wallet_width: WIDTH,
@@ -198,7 +205,7 @@ pub(crate) fn device_batch_geometry() -> crate::batch_common::DeviceBatchGeometr
         root_block: ROOT_BLOCK,
         root_column: ROOT,
         root_output_row: root_out_row(),
-        chunks: fold_chunks(),
+        chunks: &CHUNKS,
     }
 }
 
@@ -217,6 +224,42 @@ fn batch_periodic() -> Vec<Vec<Val>> {
 }
 
 pub struct HtlcBatchAir;
+#[cfg(feature = "block-v2")]
+impl crate::block_v2::machine::verifier::periodic::Source for HtlcBatchAir {
+    fn count(&self) -> usize {
+        BATCH_N_PERIODIC
+    }
+    fn len(&self, index: usize) -> Option<usize> {
+        if index < N_PERIODIC {
+            crate::htlc_air::periodic_source::len(index)
+        } else {
+            (index < BATCH_N_PERIODIC).then_some(TILE_HEIGHT)
+        }
+    }
+    fn fill(
+        &self,
+        index: usize,
+        output: &mut [Val],
+    ) -> Result<(), crate::block_v2::machine::verifier::CompileError> {
+        let valid = if index < N_PERIODIC {
+            crate::htlc_air::periodic_source::fill(index, output)
+        } else {
+            crate::batch_common::fill_batch_selector(
+                index - N_PERIODIC,
+                output,
+                TILE_HEIGHT,
+                FOLD_SK_BLOCKS,
+                FOLD_BASE,
+                ROOT_BLOCK,
+            )
+        };
+        valid
+            .then_some(())
+            .ok_or(crate::block_v2::machine::verifier::CompileError::Shape(
+                "periodic source geometry",
+            ))
+    }
+}
 
 impl BaseAir<Goldilocks> for HtlcBatchAir {
     fn width(&self) -> usize {
@@ -235,29 +278,17 @@ impl BaseAir<Goldilocks> for HtlcBatchAir {
 
 impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for HtlcBatchAir {
     fn eval(&self, builder: &mut AB) {
-        let cur: Vec<AB::Expr> = builder
-            .main()
-            .current_slice()
-            .iter()
-            .map(|&x| x.into())
-            .collect();
-        let nxt: Vec<AB::Expr> = builder
-            .main()
-            .next_slice()
-            .iter()
-            .map(|&x| x.into())
-            .collect();
-        let p: Vec<AB::Expr> = builder
-            .periodic_values()
-            .iter()
-            .map(|&x| x.into())
-            .collect();
+        let main = builder.main();
+        let cur: [AB::Expr; BATCH_WIDTH] = core::array::from_fn(|i| main.current_slice()[i].into());
+        let nxt: [AB::Expr; BATCH_WIDTH] = core::array::from_fn(|i| main.next_slice()[i].into());
+        let p: [AB::Expr; BATCH_N_PERIODIC] =
+            core::array::from_fn(|i| builder.periodic_values()[i].into());
         let one = AB::Expr::ONE;
-        let pis: Vec<AB::Expr> = builder.public_values().iter().map(|&x| x.into()).collect();
+        let pis: [AB::Expr; DIGEST] = core::array::from_fn(|i| builder.public_values()[i].into());
         let tile_last = p[P_TILE_LAST].clone();
 
         // 1. the per-tile statement = this tile's staging columns (layout parallels the public inputs).
-        let mut statement = vec![AB::Expr::ZERO; N_PUBLIC];
+        let mut statement: [AB::Expr; N_PUBLIC] = core::array::from_fn(|_| AB::Expr::ZERO);
         for k in 0..DIGEST {
             statement[PI_ANCHOR + k] = cur[S_ANCHOR + k].clone();
         }
@@ -283,23 +314,13 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for HtlcBatchAir {
 
         // 2. staging columns are tile-persistent (constant within a tile, free at the tile boundary).
         let tile_persist = one.clone() - tile_last.clone();
-        let mut staged: Vec<usize> = vec![S_FEE, S_MINT, S_HEIGHT];
-        for k in 0..DIGEST {
-            staged.push(S_ANCHOR + k);
-            staged.push(S_TXBIND + k);
-            staged.push(S_HASHLOCK + k);
-        }
-        for i in 0..N_IN {
-            for k in 0..DIGEST {
-                staged.push(S_NF + i * DIGEST + k);
-            }
-        }
-        for j in 0..M_OUT {
-            for k in 0..DIGEST {
-                staged.push(S_OUTCM + j * DIGEST + k);
-            }
-        }
-        crate::batch_common::eval_tile_persistence(builder, &cur, &nxt, tile_persist, &staged);
+        // Preserve the constraint emission order without allocating index storage.
+        let staged = [S_FEE, S_MINT, S_HEIGHT]
+            .into_iter()
+            .chain((0..DIGEST).flat_map(|k| [S_ANCHOR + k, S_TXBIND + k, S_HASHLOCK + k]))
+            .chain((0..N_IN * DIGEST).map(|k| S_NF + k))
+            .chain((0..M_OUT * DIGEST).map(|k| S_OUTCM + k));
+        crate::batch_common::eval_tile_persistence(builder, &cur, &nxt, tile_persist, staged);
 
         // 3. the per-tile HTLC spend constraints — reused verbatim, fed the staging statement + tile_last.
         //    (the cur == statement[..] bindings inside eval_spend double as the staging bindings.)
@@ -421,6 +442,22 @@ pub fn verify_batch_bytes(proof_bytes: &[u8], root: &[Val]) -> bool {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn batch_fold_chunks_match_native_statement_order() {
+        let public: Vec<super::Val> = (1..=crate::htlc_air::N_PUBLIC)
+            .map(|n| super::Val::from_u64(n as u64))
+            .collect();
+        let encoded: Vec<_> = super::fold_chunks()
+            .iter()
+            .map(|chunk| {
+                chunk.map(|column| {
+                    column.map_or(super::Val::ZERO, |column| public[column - super::WIDTH])
+                })
+            })
+            .collect();
+        assert_eq!(encoded, super::statement_chunks(&public));
+    }
+
     use super::*;
     use crate::htlc_air::demo_htlc_witness;
 

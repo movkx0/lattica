@@ -3,6 +3,30 @@ use crate::proving::{Capabilities, CoverageScope, Policy, Profile, Request};
 use p3_field::PrimeCharacteristicRing;
 
 #[test]
+fn tree_staging_includes_statements_during_dummy_generation() {
+    let layout = crate::batch_joinsplit_air::device_batch_geometry();
+    let dummy = Plan::new(1 << 20).unwrap().staging_bytes().unwrap();
+    for count in [1, 3, crate::MAX_TREE_TX] {
+        let statements = count * js::N_PUBLIC;
+        let host = (statements + 3 + 4 * layout.chunks.len()) * 8 + dummy;
+        assert!(TreePlan::new(statements, host - 1).is_err());
+        let plan = TreePlan::new(statements, host).unwrap();
+        let words = plan.words().unwrap();
+        assert_eq!(words.len(), plan.specs[1].words());
+        assert_eq!(words.capacity(), words.len());
+        assert!(TreePlan::new(statements, (statements + words.len() + 4) * 8).is_err());
+    }
+    for words in [
+        0,
+        js::N_PUBLIC - 1,
+        (crate::MAX_TREE_TX + 1) * js::N_PUBLIC,
+        usize::MAX,
+    ] {
+        assert!(TreePlan::new(words, usize::MAX).is_err());
+    }
+}
+
+#[test]
 #[ignore = "requires release native GPU startup in a 1 GiB managed bounded service"]
 fn gpu_tree_roots_match_cpu_through_maximum_count_without_private_readback() {
     assert_eq!(crate::native_gpu::lattica_gpu_initialize_from_env(), 0);
@@ -59,8 +83,26 @@ fn gpu_tree_roots_match_cpu_through_maximum_count_without_private_readback() {
             })
             .collect();
         let before = session.stats();
+        let geometry_words = 3 + 4 * crate::batch_joinsplit_air::device_batch_geometry()
+            .chunks
+            .len();
+        let host = (fields.len() + geometry_words) * 8
+            + Plan::new(1 << 20).unwrap().staging_bytes().unwrap();
+        let allocations = crate::block_v2::gpu_hash::report("tree_staging_before")
+            .unwrap()
+            .allocations;
+        assert!(session
+            .joinsplit_tree_root(&fields, count, host - 1, &run)
+            .is_err());
+        assert_eq!(session.stats(), before);
+        assert_eq!(
+            crate::block_v2::gpu_hash::report("tree_staging_after")
+                .unwrap()
+                .allocations,
+            allocations
+        );
         let actual = session
-            .joinsplit_tree_root(&fields, count, 1 << 30, &run)
+            .joinsplit_tree_root(&fields, count, host, &run)
             .unwrap();
         assert_eq!(
             session.stats().downloaded_bytes - before.downloaded_bytes,

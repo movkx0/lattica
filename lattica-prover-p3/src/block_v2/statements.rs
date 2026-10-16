@@ -66,12 +66,21 @@ pub(crate) fn compile_in<T>(
     key_count: usize,
     body: impl FnOnce(&super::machine::programs::RegistryPrefix) -> Result<T, Error>,
 ) -> Result<T, Error> {
+    Ok(compile_in_reported(request, height, key_count, body)?.0)
+}
+
+pub(crate) fn compile_in_reported<T>(
+    request: &Run,
+    height: usize,
+    key_count: usize,
+    body: impl FnOnce(&super::machine::programs::RegistryPrefix) -> Result<T, Error>,
+) -> Result<(T, Report), Error> {
     let run = request.child(
         "registry",
         "block_v2_registry_compilation",
         profile::public_scope_capabilities(Stage::Preprocessing),
     )?;
-    operate_in(run, Stage::Preprocessing, |hash| {
+    let (result, report) = operate_in(run, Stage::Preprocessing, |hash| {
         let prefix = super::machine::programs::RegistryPrefix::with_backend(
             height,
             key_count,
@@ -79,8 +88,8 @@ pub(crate) fn compile_in<T>(
             hash.compiler_constants(),
         )?;
         body(&prefix)
-    })?
-    .0
+    })?;
+    Ok((result?, report))
 }
 
 pub(crate) fn derive<T>(

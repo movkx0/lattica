@@ -69,6 +69,41 @@ pub extern "C" fn lattica_gpu_public_worker_initialize_from_env() -> i32 {
 /// a clean protocol STOP and GPU teardown; no wallet or registry authority is
 /// granted. Call once in a fresh process, without prior GPU initialization.
 ///
+/// Worker admission includes 65,537 bytes for the qualified caller's bootstrap
+/// buffer (including its EOF probe) and 65,536 bytes for retained launch-path
+/// backing throughout the service. Additional caller-owned storage needs its
+/// own allowance; a borrowed slice does not expose its owner's full capacity.
+/// Admission also reserves an 8 MiB caller stack plus bounded guards/signal
+/// backing. Keep the calling stack and its alternate stack within these bounds
+/// throughout the call. A main-thread caller must keep RLIMIT_STACK at most
+/// 8 MiB; raising it after admission invalidates the resource contract. Other
+/// caller threads and their storage require separate accounting.
+/// GNU/Linux stream workers require a valid glibc allocator observation no
+/// greater than the reserved 512 MiB System baseline before assignment decoding
+/// and again before Rayon starts. Missing observations reject startup. This is
+/// a boundary check; direct mappings and later allocator growth remain separate.
+/// Before Rayon starts, stream admission also fixes a process-wide ceiling on
+/// live/in-flight Rust System requests, outside stack and retained-heap reserves.
+/// Refused requests follow the caller's allocation-failure behavior; infallible
+/// Rust allocations may abort the worker. The ceiling lasts until process exit
+/// and excludes allocator metadata/retention, foreign allocations and mappings.
+/// A second shared ceiling charges simultaneous System requests and full spill
+/// backing, including in-flight reservations, with mapped GPU staging reserved
+/// separately. Nonresident spill capacity is still charged. This ceiling also
+/// persists through exit and is not complete allocator or RSS admission.
+/// Stream startup checks cold private writable data, then lowers both soft and
+/// hard RLIMIT_DATA to worker RAM minus caller/Rayon stacks, the full assigned
+/// spill allowance and mapped GPU staging. Disk-backed spill capacity is still
+/// reserved; this does not assume those pages remain nonresident. The hard
+/// limit persists until process exit and is not restored after failure. Keep
+/// other startup owners quiescent during admission; discard a failed worker.
+/// The allocator's cached spill cap, directory and backing must match admission;
+/// a changed environment cannot replace an older cached configuration. Active
+/// spill scopes reject before thread creation, without changing that configuration.
+/// Shared mappings, grow-down stacks and complete RSS remain separate.
+/// Kernel ignore_rlimit_data must be observable, disabled and remain fixed;
+/// unavailable or unknown enforcement rejects startup.
+///
 /// # Safety
 /// `bootstrap` must reference `bootstrap_len` readable bytes for this call.
 /// `completed_out` must be aligned, writable and disjoint from those bytes.

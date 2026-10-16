@@ -322,6 +322,74 @@ pub struct VerifiedWallet {
     artifact: ArtifactRef,
 }
 
+/// Owns exactly the immutable public bytes authenticated by a wallet ticket.
+/// This local authority is never serialized or accepted from worker metadata.
+/// Cloning shares only immutable backing; detached bytes must be checked again.
+#[derive(Clone)]
+pub struct VerifiedWalletPayload {
+    ticket: VerifiedWallet,
+    bytes: std::sync::Arc<[u8]>,
+}
+
+impl VerifiedWalletPayload {
+    /// Bound the Vec-to-Arc conversion, including the caller's spare capacity.
+    pub const INPUT_CAPACITY_BYTES: usize = 4 * profile::MAX_PROOF_BYTES;
+
+    /// Bind detached bytes to an existing local verification ticket. Callers
+    /// that transfer ownership during verification avoid this second digest.
+    pub fn new(ticket: VerifiedWallet, bytes: Vec<u8>) -> Result<Self, Error> {
+        Self::check_capacity(&bytes)?;
+        if ticket.artifact().kind() != ArtifactKind::Wallet {
+            return Err("verified wallet payload kind".into());
+        }
+        ticket.artifact().check_bytes(&bytes)?;
+        Ok(Self {
+            ticket,
+            bytes: bytes.into(),
+        })
+    }
+
+    fn check_capacity(bytes: &Vec<u8>) -> Result<(), Error> {
+        if bytes.capacity() > Self::INPUT_CAPACITY_BYTES {
+            return Err("selection input backing exceeds conversion allowance".into());
+        }
+        Ok(())
+    }
+
+    pub fn ticket(&self) -> VerifiedWallet {
+        self.ticket
+    }
+
+    pub fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    pub(super) fn shared_bytes(&self) -> &std::sync::Arc<[u8]> {
+        &self.bytes
+    }
+
+    /// Check all inputs before publishing any. Byte authentication is carried
+    /// by ownership; exact artifact, context and count checks remain mandatory.
+    pub(super) fn check_job_inputs(job: &Job, inputs: &[Self]) -> Result<(), Error> {
+        if inputs.len() != job.wallet_inputs().len() {
+            return Err("verified wallet input count".into());
+        }
+        for (identity, input) in job.wallet_inputs().iter().zip(inputs) {
+            if *identity != input.ticket.artifact()
+                || input.ticket.pin != job.pin()
+                || input.ticket.summary().context != job.expected().context
+            {
+                return Err("verified wallet input identity/context".into());
+            }
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+#[path = "job/wallet_payload_tests.rs"]
+mod wallet_payload_tests;
+
 impl VerifiedWallet {
     pub fn verify(
         pin: RegistryPin,
@@ -754,6 +822,14 @@ impl Job {
         programs::statement(self.expected, self.operation.proof_mode())
     }
 
+    /// Eligible before sealing only when the entire non-root range is present.
+    /// Padded, empty and root jobs depend on the final candidate selection.
+    pub fn is_complete_non_root_subtree(&self) -> bool {
+        self.expected.level > 0
+            && self.expected.level < commitment::DEPTH
+            && u16::from(self.expected.count) == 1u16 << self.expected.level
+    }
+
     /// Semantic equality permits a second valid randomized wallet artifact.
     /// An in-flight attempt must continue to use its original frozen manifest.
     pub fn same_semantics(&self, other: &Self) -> bool {
@@ -772,6 +848,37 @@ impl Job {
 pub struct VerifiedNode {
     job: JobId,
     artifact: ArtifactRef,
+}
+
+/// Owns the exact immutable bytes authenticated by a node ticket. This is local
+/// authority only: it is neither serialized nor accepted from another process.
+/// Returning its parts consumes the binding; rebinding checks the digest again.
+pub struct VerifiedNodePayload {
+    ticket: VerifiedNode,
+    bytes: Vec<u8>,
+}
+
+impl VerifiedNodePayload {
+    pub(crate) fn bind(ticket: VerifiedNode, bytes: Vec<u8>) -> Result<Self, Error> {
+        if ticket.artifact().kind() != ArtifactKind::Node {
+            return Err("verified node payload kind".into());
+        }
+        ticket.artifact().check_bytes(&bytes)?;
+        Ok(Self { ticket, bytes })
+    }
+
+    pub fn ticket(&self) -> VerifiedNode {
+        self.ticket
+    }
+
+    /// Borrow only the immutable buffer authenticated by this local verifier.
+    pub fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    pub(crate) fn into_parts(self) -> (VerifiedNode, Vec<u8>) {
+        (self.ticket, self.bytes)
+    }
 }
 
 impl VerifiedNode {
@@ -979,6 +1086,26 @@ mod tests {
     use super::*;
     use commitment::{Entry, Kind};
 
+    #[test]
+    fn owned_node_payload_rejects_detached_mutation_length_and_kind() {
+        let job = Job::empty(test_support::pin(), [9; 32], 0, 1).unwrap();
+        let original = vec![1, 2, 3];
+        let ticket = test_support::node(&job, &original);
+        let payload = VerifiedNodePayload::bind(ticket, original.clone()).unwrap();
+        assert_eq!(payload.ticket(), ticket);
+        let (detached, mut bytes) = payload.into_parts();
+        assert_eq!(bytes, original);
+        bytes[1] ^= 1;
+        assert!(VerifiedNodePayload::bind(detached, bytes).is_err());
+        assert!(VerifiedNodePayload::bind(ticket, vec![1, 2]).is_err());
+        assert!(VerifiedNodePayload::bind(ticket, vec![1, 2, 3, 0]).is_err());
+        let wrong_kind = VerifiedNode {
+            artifact: ArtifactRef::from_bytes(ArtifactKind::Wallet, &original).unwrap(),
+            ..ticket
+        };
+        assert!(VerifiedNodePayload::bind(wrong_kind, original).is_err());
+    }
+
     // Native structural fixtures only, not cryptographic proof tickets.
     fn wallet(construction: WrapperConstruction, value: u64, proof_bytes: &[u8]) -> VerifiedWallet {
         let pin = RegistryPin {
@@ -1059,7 +1186,7 @@ mod tests {
         assert_ne!(a.id(), Job::wrap_pair(0, right, left).unwrap().id());
         assert_ne!(a.id(), Job::wrap_pair(2, left, right).unwrap().id());
         assert!(Job::wrap_pair(1, left, right).is_err());
-        assert!(Job::wrap_pair(64, left, right).is_err());
+        assert!(Job::wrap_pair(profile::MAX_TRANSACTIONS as u8, left, right).is_err());
     }
 
     #[test]

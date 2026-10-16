@@ -28,13 +28,14 @@ def pin(path):
     return {"path": str(path), "sha256": T.G.digest(path), "bytes": path.stat().st_size}
 
 
-def validate_public_fixtures(fixtures, count):
+def validate_public_fixtures(fixtures, count, block_capacity=None):
+    block_capacity = T.Capacity.select(count, block_capacity)
     if len(fixtures) != 2:
         raise ValueError("comparison requires two distinct constructions")
     for construction, directory in fixtures.items():
-        T.fixture_files(directory, 64, construction)
+        T.fixture_files(directory, block_capacity, construction)
     baseline, candidate = fixtures.values()
-    names = ["body.json", *(f"wallet.{index}" for index in range(64))]
+    names = ["body.json", *(f"wallet.{index}" for index in range(block_capacity))]
     public = {name: T.G.digest(baseline / name) for name in names}
     if any(T.G.digest(candidate / name) != sha for name, sha in public.items()):
         raise ValueError("both constructions must use the same 64 public leaves and body")
@@ -63,7 +64,9 @@ def checked_trial(directory, construction, count, assignment, assignment_sha, gp
             or summary.get("schema") != "lattica-typed-gpu-bootstrap-v1"
             or result.get("schema") != "lattica-typed-gpu-bootstrap-v1"):
         raise ValueError("worker and controller did not both succeed with the same result")
-    spec = T.construction_spec(construction)
+    block_capacity = T.Capacity.configured(summary)
+    root_file = T.Capacity.root_file(capacity=block_capacity)
+    spec = T.construction_spec(construction, block_capacity)
     if (result.get("construction") != construction or result.get("registry_keys") != spec["keys"]
             or result.get("count") != count or result.get("cpu_audited") is not True
             or result.get("binary_sha256") != gpu_sha
@@ -73,23 +76,23 @@ def checked_trial(directory, construction, count, assignment, assignment_sha, gp
         raise ValueError("trial changed the fixed resource assignment")
     T.validate_accounting(summary["accounting"], result["budget"])
     plan = json.loads((directory / "plan.json").read_text())
-    T.validate_plan(plan, construction)
+    T.validate_plan(plan, construction, block_capacity)
     T.validate_fresh_nodes(plan, directory / "001-typed/prove.log", directory / "001-typed/prove.log")
     if result.get("fresh_proofs") != plan["fresh_proofs"]:
         raise ValueError("trial did not produce the planned number of fresh proofs")
     bundle = directory / "001-typed/root-only"
-    required = {*T.public_names(construction), "expected.json", "node.6.0"}
+    required = {*T.public_names(construction), "expected.json", root_file}
     if set(result["artifacts"]) != required or {p.name for p in bundle.iterdir()} != required:
         raise ValueError("root-only audit bundle contains unexpected or missing artifacts")
     for name, sha in result["artifacts"].items():
         path = bundle / name
         if path.is_symlink() or not path.is_file() or T.G.digest(path) != sha:
             raise ValueError("root-only audit artifact changed")
-    if not 0 < result["root_bytes"] <= 2 * T.R.MIB or (bundle / "node.6.0").stat().st_size != result["root_bytes"]:
+    if not 0 < result["root_bytes"] <= 2 * T.R.MIB or (bundle / root_file).stat().st_size != result["root_bytes"]:
         raise ValueError("root size does not match the retained artifact or the 2 MiB limit")
     audits = T.public_events(directory / "001-typed/audit.log", "independent_cpu_root_audit")
     if (len(audits) != 1 or audits[0].get("passed") is not True
-            or audits[0].get("count") != count or audits[0].get("depth") != 6
+            or audits[0].get("count") != count or audits[0].get("depth") != T.Capacity.depth(block_capacity)
             or audits[0].get("root_bytes") != result["root_bytes"]):
         raise ValueError("independent CPU audit event does not match the retained root")
     for key in ("elapsed_seconds", "proving_seconds", "cpu_audit_seconds"):
@@ -99,7 +102,7 @@ def checked_trial(directory, construction, count, assignment, assignment_sha, gp
     return {"construction": construction, "worker_seconds": result["elapsed_seconds"],
             "proving_seconds": result["proving_seconds"], "cpu_audit_seconds": result["cpu_audit_seconds"],
             "fresh_proofs": result["fresh_proofs"], "cpu_audited": True,
-            "root_bytes": result["root_bytes"], "root_sha256": result["artifacts"]["node.6.0"],
+            "root_bytes": result["root_bytes"], "root_sha256": result["artifacts"][root_file],
             "peak_charged_ram_bytes": int(summary["accounting"]["memory.peak"]),
             "context_measurement": summary["context_measurement"],
             "result_source": pin(result_path), "summary_source": pin(directory / "summary.json")}
@@ -155,6 +158,7 @@ def main():
             parser.add_argument(f"--{role}-{kind}", f"--{legacy}-{kind}", dest=f"{role}_{kind}", type=Path, required=True)
     parser.add_argument("--gpu-uuid", required=True)
     parser.add_argument("--count", type=int, choices=T.COUNTS, default=4)
+    parser.add_argument("--block-capacity", type=int, choices=T.Capacity.SUPPORTED_CAPACITIES)
     parser.add_argument("--pairs", type=int, default=5)
     parser.add_argument("--scratch", type=Path, default=Path("/tmp"))
     parser.add_argument("--workload", type=Path,
@@ -162,6 +166,7 @@ def main():
     parser.add_argument("--evidence", type=Path, required=True)
     parser.add_argument("--trial-timeout", type=int, default=7200)
     args = parser.parse_args()
+    block_capacity = T.Capacity.select(args.count, args.block_capacity)
     if args.baseline == args.candidate:
         parser.error("baseline and candidate must be distinct constructions")
     if not 1 <= args.pairs <= 10 or args.trial_timeout <= 0:
@@ -187,7 +192,7 @@ def main():
             inputs.extend(binaries[name].values())
         pins = dict(T.pin(path) for path in inputs)
         report["input_pins"] = pins
-        report["public_fixture"] = validate_public_fixtures(fixtures, args.count)
+        report["public_fixture"] = validate_public_fixtures(fixtures, args.count, block_capacity)
         locks = T.G.lock_fleet()
         try:
             if json.loads(T.G.systemctl("list-units", "lattica-v2-multi-*.service", "--state=active,activating,deactivating", "--output=json", "--no-pager")):
@@ -197,7 +202,7 @@ def main():
             devices = [d for d in T.R.detect_gpus(str(binaries[args.baseline]["gpu"])) if d["uuid"] == args.gpu_uuid]
             if len(devices) != 1:
                 raise ValueError("comparison GPU UUID was not uniquely detected")
-            profiles = {name: T.resource_profile(args.workload, name, args.ram_admission) for name in fixtures}
+            profiles = {name: T.resource_profile(args.workload, name, args.ram_admission, block_capacity) for name in fixtures}
             automatic = T.assigned_budget(host, devices[0], profiles[args.baseline])
             assignment = T.comparison_assignment(automatic, profiles[args.baseline])
             for name, profile in profiles.items():
@@ -225,7 +230,7 @@ def main():
                     "--ram-admission", args.ram_admission,
                            "--gpu-binary", str(binaries[name]["gpu"]), "--cpu-binary", str(binaries[name]["cpu"]),
                            "--fixture", str(fixtures[name]), "--gpu-uuid", args.gpu_uuid,
-                           "--count", str(args.count), "--scratch", str(args.scratch.resolve()),
+                           "--count", str(args.count), "--block-capacity", str(block_capacity), "--scratch", str(args.scratch.resolve()),
                            "--workload", str(args.workload.resolve()), "--resource-assignment", str(assignment_path),
                            "--evidence", str(directory)]
                 active = {"pair": number, "construction": name, "directory": str(directory), "command": command}

@@ -166,6 +166,22 @@ impl TraceCommitShape {
     pub(crate) fn allocation_bytes(self) -> [usize; 2] {
         [self.random_words * 8, 8]
     }
+    pub(crate) fn storage_plan(
+        self,
+        location: SampleLocation,
+        live: usize,
+        managed: usize,
+        max_allocation: usize,
+    ) -> Result<CommitInputStorage, String> {
+        CommitInputStorage::new(
+            [self.random_words, 0],
+            1,
+            location,
+            live,
+            managed,
+            max_allocation,
+        )
+    }
     pub(crate) fn lde_shape(self) -> super::super::lde_plan::InputShape {
         super::super::lde_plan::InputShape {
             height: self.height,
@@ -236,22 +252,17 @@ impl DeviceSession {
         self.with_engine(|engine| {
             use super::random::SampleBuffer;
             let live = engine.accounting.lock().unwrap().live;
-            let pending_samples = if generated.is_some() {
-                0
+            let location = if generated.is_some() {
+                SampleLocation::Resident
             } else {
-                shape.random_words * 8
+                SampleLocation::Uploaded
             };
-            if live
-                .checked_add(pending_samples)
-                .and_then(|n| n.checked_add(8))
-                .is_none_or(|n| n > engine.limits.managed_bytes)
-                || shape
-                    .allocation_bytes()
-                    .iter()
-                    .any(|n| *n > engine.max_alloc)
-            {
-                return Err("trace hiding samples exceed GPU admission".into());
-            }
+            let _plan = shape.storage_plan(
+                location,
+                live,
+                engine.limits.managed_bytes,
+                engine.max_alloc,
+            )?;
             let alloc = |words| {
                 let mut a = allocation(
                     &engine.pq,

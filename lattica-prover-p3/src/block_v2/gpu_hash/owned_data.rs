@@ -13,6 +13,26 @@ enum Storage {
 }
 
 impl OwnedInputs {
+    pub(super) fn retained_host_backing(&self) -> Result<usize, String> {
+        use super::cache_metadata::{add, capacity};
+        let mut bytes = capacity::<Dimensions>(self.dimensions.capacity())?;
+        match &self.storage {
+            Storage::Private(matrices) => {
+                bytes = add(bytes, capacity::<DeviceMatrix>(matrices.capacity())?)?;
+                for matrix in matrices {
+                    bytes = add(bytes, matrix.retained_host_backing())?;
+                }
+            }
+            Storage::Public(matrices) => {
+                bytes = add(bytes, capacity::<PublicMatrix>(matrices.capacity())?)?;
+                for matrix in matrices {
+                    bytes = add(bytes, matrix.cached_host_backing())?;
+                }
+            }
+        }
+        Ok(bytes)
+    }
+
     pub(super) fn cached_public_backing(
         &self,
         height: usize,
@@ -77,6 +97,27 @@ impl OwnedInputs {
 
     fn is_private(&self) -> bool {
         matches!(self.storage, Storage::Private(_))
+    }
+}
+
+#[cfg(all(test, feature = "stream"))]
+#[test]
+fn retained_prefix_spare_capacity_matches_allocator_requests() {
+    use crate::spill_alloc::allocation_requests::measure;
+    for public in [false, true] {
+        let (inputs, allocated) = measure(|| OwnedInputs {
+            storage: if public {
+                Storage::Public(Vec::with_capacity(3))
+            } else {
+                Storage::Private(Vec::with_capacity(3))
+            },
+            dimensions: Vec::with_capacity(7),
+        });
+        let (bytes, census) = measure(|| inputs.retained_host_backing().unwrap());
+        assert_eq!(bytes, allocated.bytes);
+        assert_eq!(allocated.calls, 2);
+        assert_eq!(census.calls, 0);
+        assert!(!allocated.overflow && !census.overflow);
     }
 }
 

@@ -57,7 +57,9 @@ fn exercise(mut reference: CpuChallenger, mut actual: CandidateChallenger) {
         assert_eq!(pool.install(|| actual.grind(bits)), expected);
         for bits in [0, 1, 16, 25, 63] {
             let expected: Vec<_> = (0..128).map(|_| reference.sample_bits(bits)).collect();
-            assert_eq!(actual.sample_bits_vec(bits, 128), expected);
+            let sampled = actual.sample_bits_vec(bits, 128);
+            assert_eq!(sampled.capacity(), 128);
+            assert_eq!(sampled, expected);
         }
     }
     let mut fork = actual.clone();

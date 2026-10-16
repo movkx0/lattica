@@ -5,7 +5,7 @@ use crate::block_v2::{
     codec,
     execution::job::{Job, RegistryPin, VerifiedWallet},
     gpu_hash,
-    machine::gpu_backend::resources::Bounds,
+    machine::{self, gpu_backend::resources::Bounds},
     typed_fixture,
 };
 use crate::native_gpu::{lattica_gpu_public_worker_initialize_from_env, lattica_gpu_shutdown};
@@ -15,6 +15,9 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
+
+#[path = "typed_recursive_full_size_tests/nonempty.rs"]
+mod nonempty;
 
 fn directory() -> PathBuf {
     std::env::var_os("LATTICA_FULL_SIZE_FIXTURE")
@@ -76,6 +79,38 @@ fn wallet(index: usize, policy: Policy, kind: &str) -> WalletProof {
     wallet
 }
 
+fn program_storage(program: &machine::Program) -> serde_json::Value {
+    use machine::program::{Op, Row, Wire};
+    let hints = |op: &Op| match op {
+        Op::SelectHint { entries, bits, .. } => {
+            (entries.capacity() + bits.capacity()) * std::mem::size_of::<Wire>()
+        }
+        _ => 0,
+    };
+    let mut row_operations = 0;
+    for row in &program.rows {
+        if let Row::Alu(ops) | Row::Cubic(ops) = row {
+            row_operations += ops.capacity();
+        }
+    }
+    serde_json::json!({
+        "operation_bytes": std::mem::size_of::<Op>(),
+        "row_bytes": std::mem::size_of::<Row>(),
+        "operation_count": program.operations.len(),
+        "operation_capacity": program.operations.capacity(),
+        "operation_storage_bytes": program.operations.capacity() * std::mem::size_of::<Op>(),
+        "operation_hint_bytes": program.operations.iter().map(hints).sum::<usize>(),
+        "row_capacity": program.rows.capacity(),
+        "row_storage_bytes": program.rows.capacity() * std::mem::size_of::<Row>(),
+        "row_operation_capacity": row_operations,
+        "row_operation_storage_bytes": row_operations * std::mem::size_of::<u32>(),
+        "row_hint_bytes": 0,
+        "reference_storage_bytes": program.references.capacity() * std::mem::size_of::<u32>(),
+        "construction_peak_bytes": program.construction_host_bytes(),
+        "is_rss_bound": false,
+    })
+}
+
 #[test]
 #[ignore = "bounded CPU compilation of a real full-size registry mode; does not prove or admit GPU work"]
 fn full_size_mode_resource_geometry() {
@@ -117,6 +152,7 @@ fn full_size_mode_resource_geometry() {
         "version": 1, "height": registry.height, "mode": mode,
         "required_height": required_height, "profile": registry.id().unwrap(),
         "witness_bounds": bounds, "witness_reservation": reservation,
+        "program_storage": program_storage(&program),
         "public_wallets_cpu_verified": true, "gpu_initialized": false,
         "proof_completed": false,
     });

@@ -31,6 +31,9 @@ use super::gpu_hash::FriExtensionMmcs;
 pub use field::OpeningField;
 mod owned;
 mod owned_fri;
+mod storage;
+mod commitment_storage;
+mod runtime_storage;
 #[cfg(test)]
 mod test_support;
 
@@ -70,24 +73,80 @@ pub(super) fn open_hiding<E: OpeningField>(
     is_preprocessing: bool,
     random_columns: usize,
     session: Option<&super::gpu_hash::device::DeviceSession>,
+    host_allowance: usize,
 ) -> (OpenedValues<E>, HidingProof<E>) {
+    let unhidden_round = is_preprocessing
+        .then_some(<ResidentInner<E> as Pcs<E, Challenger>>::PREPROCESSED_TRACE_IDX);
+    let mut partition = None;
     let (mut values, proof) = if let Some(session) = session {
-        let (values, input, max_height) =
-            owned::evaluate_and_reduce(session, mmcs, fri.log_blowup, &rounds, challenger)
-                .expect("owned GPU opening failed; no silent fallback");
+        let retained = commitment_storage::Partition::new(&rounds, host_allowance)
+            .expect("retained commitment admission failed");
+        let opening_allowance = if let Some(plan) = &retained {
+            plan.report();
+            if let Some(runtime) = runtime_storage::Partition::new(
+                session,
+                challenger,
+                plan.opening_allowance,
+            )
+            .expect("opening runtime storage admission failed")
+            {
+                runtime.report();
+                runtime.opening_allowance
+            } else {
+                plan.opening_allowance
+            }
+        } else {
+            host_allowance
+        };
+        let (values, input, max_height) = owned::evaluate_and_reduce(
+            session,
+            mmcs,
+            fri.log_blowup,
+            &rounds,
+            challenger,
+            opening_allowance,
+        )
+        .expect("owned GPU opening failed; no silent fallback");
         let proof = match input {
             owned::FriInputs::Host(input) => {
                 prove_fri_inputs(mmcs, fri, rounds, challenger, max_height, input)
             }
             owned::FriInputs::Device(input) => {
-                E::prove_owned(session, mmcs, fri, input, challenger, max_height, &rounds)
-                    .expect("resident GPU FRI failed; no silent fallback")
+                let plan = storage::Partition::new(
+                    &values,
+                    &rounds,
+                    input.capacity(),
+                    random_columns,
+                    unhidden_round,
+                    opening_allowance,
+                )
+                .expect("resident opening output exceeds host allowance");
+                plan.report();
+                let proof = E::prove_owned(
+                    session,
+                    mmcs,
+                    fri,
+                    input,
+                    challenger,
+                    max_height,
+                    &rounds,
+                    plan.fri_allowance,
+                )
+                .expect("resident GPU FRI failed; no silent fallback");
+                partition = Some(plan);
+                proof
             }
         };
         (values, proof)
     } else {
         E::open_host(mmcs, fri, rounds, challenger)
     };
+    if let Some(plan) = partition {
+        let random =
+            storage::split_hiding(&mut values, random_columns, unhidden_round, plan.hiding_bytes)
+                .expect("resident hiding output exceeds admitted partition");
+        return (values, (random, proof));
+    }
     let random_values = values
         .iter_mut()
         .enumerate()

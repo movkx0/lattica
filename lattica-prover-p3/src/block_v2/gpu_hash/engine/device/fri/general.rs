@@ -45,7 +45,7 @@ __kernel void device_fri_mix_general(__global const ulong *folded,__global const
 }
 "#;
 
-fn vector(spec: MatrixSpec) -> Result<(), String> {
+pub(super) fn vector(spec: MatrixSpec) -> Result<(), String> {
     if !matches!(spec.extension, Extension::Quadratic | Extension::Cubic)
         || spec.columns != 1
         || spec.log_rows > 25
@@ -79,22 +79,9 @@ impl DeviceSession {
         host_allowance: usize,
     ) -> Result<Vec<u64>, String> {
         self.check_owner(input)?;
-        vector(input.spec)?;
-        if log_final_len > 16
-            || log_blowup.checked_add(log_final_len) != Some(input.spec.log_rows as usize)
-        {
-            return Err("final polynomial domain or coefficient count exceeds its bound".into());
-        }
-        let spec = MatrixSpec::new(
-            log_final_len as u32,
-            1,
-            input.spec.extension,
-            RowOrder::Natural,
-            1,
-        )?;
-        if spec.bytes() > host_allowance {
-            return Err("final polynomial exceeds host output allowance".into());
-        }
+        let shape =
+            super::storage::FinalShape::new(input.spec, log_blowup, log_final_len, host_allowance)?;
+        let spec = shape.output;
         if log_final_len == 0 {
             return self.gather_rows_stage(
                 input,
@@ -109,15 +96,8 @@ impl DeviceSession {
         }
         #[cfg(feature = "gpu")]
         self.with_engine(|engine| {
-            let auxiliary = (log_final_len + 2) * 8;
             let live = engine.accounting.lock().unwrap().live;
-            let _plan = MemoryPlan::new(
-                &[spec, spec],
-                live.checked_add(auxiliary)
-                    .ok_or("final polynomial budget overflow")?,
-                engine.limits.managed_bytes,
-                engine.max_alloc,
-            )?;
+            shape.plan(live, engine.limits.managed_bytes, engine.max_alloc)?;
             let output = self.allocate(engine, spec)?;
             let scratch = self.allocate(engine, spec)?;
             let alloc = |words| {
@@ -260,21 +240,12 @@ impl DeviceSession {
         log_arity: usize,
     ) -> Result<DeviceMatrix, String> {
         self.check_owner(input)?;
-        vector(input.spec)?;
-        if !(1..=4).contains(&log_arity) || log_arity > input.spec.log_rows as usize {
-            return Err("FRI leaf arity exceeds input or supported bound".into());
-        }
+        let spec = super::storage::leaves(input.spec, log_arity)?;
         Ok(DeviceMatrix {
             storage: input.storage.clone(),
             private_random: input.private_random.clone(),
             session: self.session.clone(),
-            spec: MatrixSpec::new(
-                input.spec.log_rows - log_arity as u32,
-                1 << log_arity,
-                input.spec.extension,
-                RowOrder::BitReversed,
-                1,
-            )?,
+            spec,
         })
     }
 
@@ -292,13 +263,7 @@ impl DeviceSession {
         if input.spec.extension == Extension::Cubic && log_arity == 1 {
             return self.fold_cubic(input, beta);
         }
-        let spec = MatrixSpec::new(
-            input.spec.log_rows - log_arity as u32,
-            1,
-            input.spec.extension,
-            RowOrder::BitReversed,
-            1,
-        )?;
+        let spec = super::storage::fold_output(input.spec, log_arity)?;
         #[cfg(not(feature = "gpu"))]
         {
             let _ = spec;
@@ -306,6 +271,12 @@ impl DeviceSession {
         }
         #[cfg(feature = "gpu")]
         self.with_engine(|engine| {
+            super::storage::vector_output(
+                spec,
+                engine.accounting.lock().unwrap().live,
+                engine.limits.managed_bytes,
+                engine.max_alloc,
+            )?;
             let output = self.allocate(engine, spec)?;
             let fence = engine.fence();
             let mut event = compute::Event::empty();
@@ -370,6 +341,12 @@ impl DeviceSession {
         }
         #[cfg(feature = "gpu")]
         self.with_engine(|engine| {
+            super::storage::vector_output(
+                folded.spec,
+                engine.accounting.lock().unwrap().live,
+                engine.limits.managed_bytes,
+                engine.max_alloc,
+            )?;
             let output = self.allocate(engine, folded.spec)?;
             let fence = engine.fence();
             let mut event = compute::Event::empty();

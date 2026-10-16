@@ -172,6 +172,8 @@ block-v2 = ["dep:p3-batch-stark", "dep:p3-lookup", "dep:tracing", "dep:libc", "d
 # Never use this build with legacy candidate keys or as a measured-series runner.
 # No production ABI/activation. Native validation and recursive closure are separate gates.
 block-v2-wide-lanes = ["block-v2"]
+# Distinct depth-seven research profile; legacy 64-transaction builds remain compatible.
+block-v2-capacity-128 = ["block-v2"]
 # Versioned research host verification. No legacy verifier fallback or activation.
 block-v2-host = ["block-v2-wide-lanes"]
 # Enable the RESEARCH out-of-core (streaming) prover: a `#[global_allocator]` that spills large

@@ -3,6 +3,8 @@
 use super::super::quotient::Plan;
 use super::*;
 use crate::block_v2::gpu_quotient_prover::program::Program;
+mod partition;
+pub(crate) use partition::PartitionStorage;
 
 pub(crate) const KERNEL_SRC: &str = r#"
 __kernel void device_quotient_scatter_coset(__global const ulong *input,
@@ -122,6 +124,8 @@ mod partition_tests {
 pub(crate) struct PreparedQuotient {
     program: Arc<Program>,
     code: Allocation,
+    #[cfg(feature = "gpu")]
+    specialized: Option<super::super::quotient::specialized::Compiled>,
     context: Arc<JobLease>,
 }
 
@@ -251,13 +255,22 @@ impl DeviceSession {
             self.check_owner(input)?;
         }
         let specs: Vec<_> = inputs.iter().map(|m| m.spec).collect();
-        let (spec, part_log, cosets) = partition_geometry(
-            &specs,
-            log_trace,
-            log_quotient,
-            shift,
-            prepared.program.extension,
-        )?;
+        let storage = self.with_engine(|engine| {
+            let live = engine.accounting.lock().unwrap().live;
+            let cache = engine.lde_workspace.as_ref().map_or(0, |w| w.bytes());
+            PartitionStorage::new(
+                &specs,
+                log_trace,
+                log_quotient,
+                shift,
+                program.shape(),
+                live,
+                cache,
+                engine.limits,
+                engine.max_alloc,
+            )
+        })?;
+        let (spec, part_log, cosets) = (storage.output, storage.part_log, storage.cosets);
         #[cfg(not(feature = "gpu"))]
         {
             let _ = (prepared, spec, part_log, cosets, alpha, parameters);
@@ -342,6 +355,7 @@ impl DeviceSession {
         }
         #[cfg(feature = "gpu")]
         self.with_engine(|engine| {
+            let specialized = super::super::quotient::specialized::prepare(engine, &program)?;
             let mut code = allocation(
                 &engine.pq,
                 &engine.accounting,
@@ -365,6 +379,7 @@ impl DeviceSession {
             Ok(PreparedQuotient {
                 program,
                 code,
+                specialized,
                 context: self.session.context.clone(),
             })
         })
@@ -515,8 +530,19 @@ impl DeviceSession {
                 let mut event = compute::Event::empty();
                 // SAFETY: compiler bounds input/parameter/register indices; each
                 // tile writes a disjoint slice of the full output allocation.
+                let mut kernel = engine.pq.kernel_builder(if program.extension == Extension::Quadratic {
+                    "quadratic_quotient"
+                } else {
+                    "cubic_quotient"
+                });
+                if let Some(compiled) = &prepared.specialized {
+                    kernel.program(&compiled.program).name("specialized_quotient");
+                }
+                if let Some(local) = super::super::quotient::row_workgroup(engine.pq.device(), rows) {
+                    kernel.local_work_size(local);
+                }
                 unsafe {
-                    engine.pq.kernel_builder(if program.extension == Extension::Quadratic { "quadratic_quotient" } else { "cubic_quotient" })
+                    kernel
                         .arg(&prepared.code.buffer).arg(program.instruction_count() as u32)
                         .arg(&input.buffer).arg(program.row_words as u32)
                         .arg(&params.buffer).arg(&weights.buffer).arg(&scratch.buffer)
@@ -530,6 +556,10 @@ impl DeviceSession {
                 device_ns += self.session.record_event(engine, crate::proving::Stage::Quotient, "device_extension_quotient", &event)?;
             }
             fence.finish()?;
+            drop(fence);
+            if let Some(compiled) = &prepared.specialized {
+                compiled.check_execution(engine)?;
+            }
             let mut stats = self.session.stats.lock().unwrap();
             stats.quotient_evaluations += 1;
             stats.quotient_device_ns += device_ns;

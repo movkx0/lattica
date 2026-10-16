@@ -73,7 +73,9 @@ fn batch_geometry_and_aggregate_plan_reject_invalid_shapes_and_counts() {
     )
     .is_err());
     let mut layout = batch_js::device_batch_geometry();
-    layout.chunks[0][0] = Some(layout.batch_width);
+    let mut chunks = layout.chunks.to_vec();
+    chunks[0][0] = Some(layout.batch_width);
+    layout.chunks = &chunks;
     assert!(BatchPlan::new(layout, 1, Plan::new(HOST).unwrap(), HOST).is_err());
     assert!(BatchPlan::new(
         batch_js::device_batch_geometry(),
@@ -82,6 +84,33 @@ fn batch_geometry_and_aggregate_plan_reject_invalid_shapes_and_counts() {
         HOST
     )
     .is_err());
+}
+
+#[test]
+fn batch_staging_requires_the_combined_host_allowance_before_materialization() {
+    let mut admission_host = 0;
+    for (layout, single) in [
+        (batch_js::device_batch_geometry(), Plan::new(HOST).unwrap()),
+        (
+            batch_htlc::device_batch_geometry(),
+            super::super::htlc::plan(HOST).unwrap(),
+        ),
+    ] {
+        let host = (11 + 4 * layout.chunks.len()) * 8 + single.staging_bytes().unwrap();
+        admission_host = admission_host.max(host);
+        for count in [0, 1, 3, MAX_BATCH_TILES] {
+            // One byte below the complete staging shape must fail, even though
+            // the individual wallet input buffer fits.
+            assert!(BatchPlan::new(layout, count, single, host - 1).is_err());
+            let plan = BatchPlan::new(layout, count, single, host).unwrap();
+            let words = plan.words().unwrap();
+            assert_eq!(words.len(), plan.geometry.words());
+            assert_eq!(words.capacity(), words.len());
+            assert_eq!(words[8], count.max(1).next_power_of_two() as u64);
+        }
+    }
+    assert!(admission_extra(admission_host - 1).is_err());
+    assert!(admission_extra(admission_host).is_ok());
 }
 
 #[test]
@@ -133,6 +162,19 @@ fn gpu_legacy_batch_traces_and_roots_match_cpu_with_device_padding() {
     let before_allocations = gpu_hash::report("batch_admission_before")
         .unwrap()
         .allocations;
+    let joinsplit_host = (11 + 4 * batch_js::device_batch_geometry().chunks.len()) * 8
+        + Plan::new(HOST).unwrap().staging_bytes().unwrap();
+    let htlc_host = (11 + 4 * batch_htlc::device_batch_geometry().chunks.len()) * 8
+        + super::super::htlc::plan(HOST)
+            .unwrap()
+            .staging_bytes()
+            .unwrap();
+    assert!(session
+        .joinsplit_batch_witness(&[], joinsplit_host - 1, &run())
+        .is_err());
+    assert!(session
+        .htlc_batch_witness(&[], htlc_host - 1, &run())
+        .is_err());
     assert!(session
         .joinsplit_batch_witness(&invalid, HOST, &run())
         .is_err());
@@ -156,7 +198,7 @@ fn gpu_legacy_batch_traces_and_roots_match_cpu_with_device_padding() {
         let run = run();
         let before = session.stats();
         let frame = session
-            .joinsplit_batch_witness(&witnesses, HOST, &run)
+            .joinsplit_batch_witness(&witnesses, joinsplit_host, &run)
             .unwrap();
         let generated = session.stats();
         let padded = batch_js::padded_tiles(count);
@@ -186,7 +228,9 @@ fn gpu_legacy_batch_traces_and_roots_match_cpu_with_device_padding() {
             .collect();
         let run = run();
         let before = session.stats();
-        let frame = session.htlc_batch_witness(&witnesses, HOST, &run).unwrap();
+        let frame = session
+            .htlc_batch_witness(&witnesses, htlc_host, &run)
+            .unwrap();
         let generated = session.stats();
         let padded = batch_js::padded_tiles(count);
         assert_eq!(

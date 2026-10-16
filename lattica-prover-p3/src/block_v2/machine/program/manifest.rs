@@ -39,7 +39,10 @@ fn operation(op: &Op, emit: &mut Sink<'_>) -> Result<(), String> {
             words(a.iter().chain(b).map(|w| w.0 as u64), emit)?;
         }
         Op::CubicInverse { a, .. } => wires(a, emit)?,
-        Op::Poseidon { input, .. } => wires(input, emit)?,
+        Op::Poseidon { input, .. } => {
+            emit(input.len() as u64)?;
+            words(input.iter().copied().map(u64::from), emit)?;
+        }
     }
     match op {
         Op::Input { out, .. }
@@ -52,7 +55,10 @@ fn operation(op: &Op, emit: &mut Sink<'_>) -> Result<(), String> {
         | Op::Select { out, .. } => wires(&[*out], emit),
         Op::CubicMul { out, .. } | Op::CubicInverse { out, .. } => wires(out, emit),
         Op::Equal { .. } | Op::Boolean { .. } => emit(0),
-        Op::Poseidon { output, .. } => wires(output, emit),
+        Op::Poseidon { output, .. } => {
+            emit(output.len() as u64)?;
+            words(output.iter().copied().map(u64::from), emit)
+        }
     }
 }
 
@@ -94,19 +100,23 @@ impl Program {
                         ],
                         emit,
                     )?;
-                    for op in ops {
-                        operation(op, emit)?;
+                    for index in ops {
+                        operation(
+                            self.operation(*index)
+                                .map_err(|_| "invalid row operation index")?,
+                            emit,
+                        )?;
                     }
                 }
-                Row::Poseidon { input, output } => {
+                Row::Poseidon(index) => {
                     words([1, 1], emit)?;
-                    operation(
-                        &Op::Poseidon {
-                            input: *input,
-                            output: *output,
-                        },
-                        emit,
-                    )?;
+                    let op = self
+                        .operation(*index)
+                        .map_err(|_| "invalid row operation index")?;
+                    if !matches!(op, Op::Poseidon { .. }) {
+                        return Err("invalid hash row operation".into());
+                    }
+                    operation(op, emit)?;
                 }
             }
         }

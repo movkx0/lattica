@@ -18,6 +18,8 @@ use p3_commit::Pcs;
 use p3_field::{PrimeCharacteristicRing, PrimeField64};
 use p3_lookup::LogUpGadget;
 use p3_uni_stark::{Commitments, Proof, StarkGenericConfig};
+mod admission;
+pub(crate) use admission::Prepared;
 
 /// Static public tables are encoded compactly on the host. Expansion,
 /// interpolation and coset evaluation run on GPU; no periodic evaluations return.
@@ -70,14 +72,23 @@ pub(crate) fn prove<
     trace: DeviceMatrix,
     public_values: &[Val],
     run: &Run,
+    prepared: Prepared,
 ) -> Result<Proof<ProvingConfig<E>>, String> {
     let pcs = config.pcs();
+    prepared.check_operation_host_allowance(pcs.host_output_budget())?;
+    let periodic_host_allowance = prepared.periodic_host_bytes();
     let session = pcs.quotient_session()?;
     let input = TraceInput::<Val>::Device(trace);
     input.validate_device(&session, air.width())?;
     let log_degree = input.height().ilog2() as usize;
     let log_ext_degree = log_degree + 1;
     let layout = AirLayout::from_air::<Val>(air);
+    if prepared.rows != input.height()
+        || prepared.shape.extension != E::DEVICE_EXTENSION
+        || !prepared.recorded.matches_layout(layout)
+    {
+        return Err("owned uni recording differs from runtime shape".into());
+    }
     if config.is_zk() != 1
         || layout.preprocessed_width != 0
         || public_values.len() != layout.num_public_values
@@ -87,7 +98,7 @@ pub(crate) fn prove<
                 .into(),
         );
     }
-    let mut compiled = compile::Batch::new(1, pcs.host_output_budget())?;
+    let mut compiled = compile::Batch::new(1, symbolic::HOST_BYTES as usize)?;
     let _execution = session.observe_single_air(run)?;
     let randomness_attempt = pcs.begin_randomness_attempt()?;
     let mut challenger = config.initialise_challenger();
@@ -116,9 +127,10 @@ pub(crate) fn prove<
     // The empty lookup list preserves the uni constraint order and hiding
     // degree rule. Only the internal evaluator layout lowers periodic inputs.
     let gadget = LogUpGadget::new();
-    let constraints =
-        symbolic::batch_with_layout(air, layout, &[], &gadget, Constants::device(&session, run))
-            .map_err(|e| format!("owned uni symbolic compilation: {e:?}"))?;
+    let constraints = prepared
+        .recorded
+        .normalize(Constants::device(&session, run))
+        .map_err(|e| format!("owned uni symbolic compilation: {e:?}"))?;
     let log_chunks = symbolic::batch_log_chunks(air, &constraints, &[], &gadget, 1)
         .map_err(|e| format!("owned uni quotient degree: {e:?}"))?;
     if air
@@ -131,6 +143,7 @@ pub(crate) fn prove<
         .into_base_only::<E>()
         .map_err(|e| format!("owned uni base constraints: {e:?}"))?;
     let program = Program::from_periodic_constraints(layout, &constraints)?;
+    prepared.shape.check(&program)?;
     compiled.push(program, log_chunks, constraints.base.len())?;
     drop(constraints);
     compiled.report();
@@ -140,18 +153,17 @@ pub(crate) fn prove<
     let trace_domain = DomainSpec::new(1, log_degree)?;
     let ext_domain = DomainSpec::new(1, log_ext_degree)?;
     let quotient_domain = session.disjoint_domain(ext_domain, log_ext_degree + log_chunks)?;
-    let columns = air.periodic_columns();
-    if columns.len() != layout.num_periodic_columns {
-        return Err("periodic column count differs from AIR layout".into());
-    }
-    let periodic = periodic_prefix(
-        &session,
-        &columns,
-        log_degree as u32,
-        quotient_domain.shift().as_canonical_u64(),
-        pcs.host_output_budget(),
-    )?;
-    drop(columns);
+    let periodic = if let Some(source) = prepared.periodic {
+        periodic_prefix(
+            &session,
+            source.columns(),
+            log_degree as u32,
+            quotient_domain.shift().as_canonical_u64(),
+            periodic_host_allowance,
+        )?
+    } else {
+        None
+    };
     let (trace_commit, trace_data) = pcs.commit_main_device(vec![(ext_domain, trace)])?;
 
     // Exact p3-uni-stark order: degrees, zero preprocessing width, main cap,

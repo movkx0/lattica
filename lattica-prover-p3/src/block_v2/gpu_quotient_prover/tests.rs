@@ -13,6 +13,7 @@ use p3_lookup::{logup::LogUpGadget, InteractionBuilder, LookupProtocol, Lookups}
 mod device_pipeline;
 mod extensions;
 mod lookup;
+mod workgroups;
 
 /// Add next-row reads and interleaved base/extension assertions to the native
 /// machine AIR. These checks intentionally need not hold on the random matrices

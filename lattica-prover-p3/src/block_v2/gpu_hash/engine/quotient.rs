@@ -3,12 +3,35 @@
 //! Returning host quotient values is a temporary PCS boundary, not residency.
 //! The owned-device adapter reuses these kernels and the memory planner.
 use super::*;
-use crate::block_v2::gpu_quotient_prover::program::Program;
+use crate::block_v2::gpu_quotient_prover::program::{Program, ProgramShape};
 use crate::block_v2::profile::Challenge;
 use p3_field::BasedVectorSpace;
 
 const MAX_OUTPUT_BYTES: usize = 1 << 30;
 const MAX_TILE_ROWS: usize = 1024;
+// Device-owned inputs need no larger host staging buffers. Admit more parallel
+// rows when the existing aggregate, tile-byte and allocation limits allow it.
+const MAX_DEVICE_TILE_ROWS: usize = 16 * 1024;
+// The owned-quotient reservation in block_v2_resources.py includes this
+// allowance beside live matrices. Charge parameters/status and row storage
+// together; a larger row cap must not borrow another component's allowance.
+pub(super) const DEVICE_WORKSPACE_BYTES: usize = 64 << 20;
+
+#[cfg(feature = "gpu")]
+pub(super) mod specialized;
+
+/// Small admitted tiles need more independently scheduled workgroups on NVIDIA.
+/// Keep other devices on their driver's default and preserve exact row bounds.
+#[cfg(feature = "gpu")]
+pub(super) fn row_workgroup(device: compute::Device, rows: usize) -> Option<usize> {
+    use compute::core::{DeviceInfo, DeviceInfoResult};
+    (rows.is_power_of_two()
+        && matches!(
+            device.info(DeviceInfo::VendorId),
+            Ok(DeviceInfoResult::VendorId(0x10de))
+        ))
+    .then_some(rows.min(32))
+}
 
 pub(super) const KERNEL_SRC: &str = concat!(
     "#define QUOTIENT_DEGREE 3\n#define QUOTIENT_ALPHA cubic_quotient_alpha\n#define QUOTIENT_EVALUATE cubic_quotient\n#define QUOTIENT_MUL opening_cubic_mul\n",
@@ -32,7 +55,7 @@ impl Plan {
         limits: Limits,
         max_alloc: usize,
     ) -> Result<Self, String> {
-        Self::with_storage(program, height, live, limits, max_alloc, false)
+        Self::with_storage(program.shape(), height, live, limits, max_alloc, false)
     }
 
     /// `live` already includes the prepared program and the full device output.
@@ -43,11 +66,22 @@ impl Plan {
         limits: Limits,
         max_alloc: usize,
     ) -> Result<Self, String> {
-        Self::with_storage(program, height, live, limits, max_alloc, true)
+        Self::for_shape(program.shape(), height, live, limits, max_alloc)
+    }
+
+    /// Reuse the runtime planner with bounded metadata and no instruction allocation.
+    pub(super) fn for_shape(
+        shape: ProgramShape,
+        height: usize,
+        live: usize,
+        limits: Limits,
+        max_alloc: usize,
+    ) -> Result<Self, String> {
+        Self::with_storage(shape, height, live, limits, max_alloc, true)
     }
 
     fn with_storage(
-        program: &Program,
+        program: ProgramShape,
         height: usize,
         live: usize,
         limits: Limits,
@@ -58,7 +92,7 @@ impl Plan {
             if resident {
                 0
             } else {
-                program.instructions.len()
+                program.instruction_words
             },
             program.parameter_words.max(1),
             program.constraints * program.extension.degree(),
@@ -87,8 +121,24 @@ impl Plan {
                 })
             })
             .ok_or("GPU quotient row size overflow")?;
-        let capacity = (free.min(limits.tile_bytes).min(max_alloc) / 8 / row_words)
-            .min(MAX_TILE_ROWS)
+        let workspace_rows = if resident {
+            DEVICE_WORKSPACE_BYTES
+                .checked_sub(static_bytes)
+                .ok_or("GPU quotient parameters exceed admitted device workspace")?
+        } else {
+            usize::MAX
+        };
+        let capacity = (free
+            .min(limits.tile_bytes)
+            .min(max_alloc)
+            .min(workspace_rows)
+            / 8
+            / row_words)
+            .min(if resident {
+                MAX_DEVICE_TILE_ROWS
+            } else {
+                MAX_TILE_ROWS
+            })
             .min(height);
         if capacity == 0 {
             return Err("GPU quotient workspace cannot fit one row".into());
@@ -120,7 +170,7 @@ mod tests {
 
     // A constant and a fold: 112 static bytes, then 64 bytes per row
     // (two input words, three scratch words and three output words).
-    fn program() -> Program {
+    pub(super) fn program() -> Program {
         Program {
             extension: device::Extension::Cubic,
             instructions: vec![0, 0, 7, 0, 0, 16, 0, 0, 0, 0],
@@ -225,6 +275,73 @@ mod tests {
         assert_eq!(exact.static_words[0], 0);
         assert_eq!(exact.tile_words[2], 0);
         assert!(Plan::for_device(&program(), 1024, 300, limits(4096), 23).is_err());
+    }
+
+    #[test]
+    fn larger_device_tiles_keep_aggregate_scratch_allocation_and_height_bounds() {
+        for extension in [device::Extension::Quadratic, device::Extension::Cubic] {
+            let mut program = program();
+            program.extension = extension;
+            let live = 300;
+            let fixed = (2 + extension.degree()) * 8;
+            let per_row = (program.row_words + program.registers * extension.degree()) * 8;
+            let limits = Limits {
+                managed_bytes: 1 << 20,
+                tile_bytes: 1 << 20,
+                staging_bytes: 64,
+            };
+            for (height, budget, max_alloc, expected_rows) in [
+                (65536, limits, 1 << 20, 16384),
+                (4096, limits, 1 << 20, 4096),
+                (
+                    65536,
+                    Limits {
+                        tile_bytes: per_row * 8192 - 1,
+                        ..limits
+                    },
+                    1 << 20,
+                    4096,
+                ),
+                (
+                    65536,
+                    Limits {
+                        managed_bytes: live + fixed + per_row * 4096 - 1,
+                        ..limits
+                    },
+                    1 << 20,
+                    2048,
+                ),
+                (65536, limits, per_row * 2048 - 1, 1024),
+            ] {
+                let plan = Plan::for_device(&program, height, live, budget, max_alloc).unwrap();
+                assert_eq!(plan.rows, expected_rows);
+                let scratch_bytes = plan.tile_words.iter().sum::<usize>() * 8;
+                assert!(scratch_bytes <= budget.tile_bytes);
+                assert!(plan.peak <= budget.managed_bytes);
+                assert!(plan
+                    .static_words
+                    .iter()
+                    .chain(&plan.tile_words)
+                    .all(|words| words * 8 <= max_alloc));
+                assert!(plan.rows.is_power_of_two() && plan.rows <= height);
+                assert_eq!(plan.tile_words[2], 0);
+            }
+            assert!(Plan::for_device(&program, 0, live, limits, 1 << 20).is_err());
+            // Plenty of aggregate/driver space does not authorize borrowing
+            // from live matrix reservations for a large register file.
+            program.registers = 1024;
+            let large = Limits {
+                managed_bytes: 1 << 30,
+                tile_bytes: 128 << 20,
+                staging_bytes: 64,
+            };
+            let plan = Plan::for_device(&program, 65536, live, large, 1 << 30).unwrap();
+            let workspace = (plan.static_words.iter().sum::<usize>()
+                + plan.tile_words.iter().sum::<usize>())
+                * 8;
+            assert!(workspace <= 64 << 20);
+            assert_eq!(plan.rows, 2048);
+        }
     }
 }
 
@@ -373,12 +490,14 @@ pub(crate) fn evaluate(
                 .map_err(|e| e.to_string())?;
             uploaded += rows * program.row_words * 8;
             let mut event = Event::empty();
+            let mut kernel = engine.pq.kernel_builder("cubic_quotient");
+            if let Some(local) = row_workgroup(engine.pq.device(), rows) {
+                kernel.local_work_size(local);
+            }
             // SAFETY: compiler validates all row, parameter and register
             // indices; each work item owns one disjoint scratch column.
             unsafe {
-                engine
-                    .pq
-                    .kernel_builder("cubic_quotient")
+                kernel
                     .arg(&code.buffer)
                     .arg(program.instruction_count() as u32)
                     .arg(&input.buffer)

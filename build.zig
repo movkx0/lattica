@@ -9,11 +9,14 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    const block_capacity = b.option(u16, "block-capacity", "Research block capacity (64 or 128; must match the Rust library)") orelse 64;
+    if (block_capacity != 64 and block_capacity != 128) @panic("supported block capacities are 64 and 128");
     const gpu_prover = b.option(bool, "gpu-prover", "Use the native GPU prover for wallet demos and FFI tests (requires configured gpu-required policy)") orelse false;
     const prover_library = b.option([]const u8, "prover-library", "Path to the prebuilt Rust prover static library") orelse
         "lattica-prover-p3/target/release/liblattica_prover_p3.a";
     const prover_options = b.addOptions();
     prover_options.addOption(bool, "gpu_prover", gpu_prover);
+    prover_options.addOption(u16, "block_capacity", block_capacity);
 
     const exe = b.addExecutable(.{
         .name = "lattica-wallet",
@@ -43,7 +46,7 @@ pub fn build(b: *std.Build) void {
 
     const unit_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/tests.zig"),
+            .root_source_file = b.path(if (block_capacity == 128) "src/tests_128.zig" else "src/tests.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -60,7 +63,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     const expected_root_mod = b.createModule(.{
-        .root_source_file = b.path("src/block_v2_expected_root.zig"),
+        .root_source_file = b.path(if (block_capacity == 128) "src/block_v2_expected_root_128.zig" else "src/block_v2_expected_root.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -83,7 +86,7 @@ pub fn build(b: *std.Build) void {
     const prod_probe = b.addExecutable(.{
         .name = "lattica-production-probe",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/production_probe.zig"),
+            .root_source_file = b.path(if (block_capacity == 128) "src/production_probe_128.zig" else "src/production_probe.zig"),
             .target = target,
             .optimize = optimize,
         }),

@@ -71,9 +71,9 @@ fn prepare_for_backend(dir: &Path, pinned: &Path, gpu: bool) -> Result<Prepared,
     for index in 0..expected.count as usize {
         let policy = policy(&body.transactions[index], index, &expected)?;
         let proof = bytes(&dir.join(format!("wallet.{index}")))?;
-        let ticket = context.verify_wallet(expected.chain, policy, &proof)?;
-        policies.push((ticket.artifact(), policy));
-        inputs.push(PublicInput::new(ticket, proof)?);
+        let input = context.verify_wallet_owned(expected.chain, policy, proof)?;
+        policies.push((input.ticket().artifact(), policy));
+        inputs.push(input);
     }
     preparation::check_lists(&inputs, &policies)?;
     let selection = Selection::new(pin, expected.chain, &inputs)?;
@@ -113,11 +113,15 @@ mod process;
 mod proving;
 #[path = "execution_recover.rs"]
 mod recovery;
-pub(super) use fleet::audit_preseal;
 pub(super) use fleet::prove as prove_fleet;
+pub(super) use fleet::{audit_pool_calibration, audit_preseal};
+#[cfg(feature = "gpu")]
+pub(super) use process::serve_owned as serve_owned_process;
 pub(super) use process::{prove as prove_process, serve as serve_process};
 
 pub(super) use recovery::recover;
+#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+pub(super) use recovery::audit_pool_journal;
 
 pub(super) fn prove(
     dir: &Path,
@@ -176,8 +180,8 @@ pub(super) fn audit(
     std::fs::DirBuilder::new().mode(0o700).create(out)?;
     write_json(&out.join("plan.json"), &describe(&prepared))?;
     let store_limits = StoreLimits {
-        bytes: 128 << 20,
-        entries: 512,
+        bytes: budget::ARTIFACT_BYTES,
+        entries: budget::ARTIFACT_ENTRIES,
     };
     let journal_limits = JournalLimits {
         snapshot_bytes: 1 << 20,
@@ -186,7 +190,7 @@ pub(super) fn audit(
         jobs: 256,
         candidates: 8,
         attempts: 256,
-        artifact_bytes: 128 << 20,
+        artifact_bytes: budget::ARTIFACT_BYTES as usize,
         recovery_window_ms: 3_600_000,
         workers: Resources {
             ram_bytes: 1 << 30,

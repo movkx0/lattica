@@ -108,10 +108,7 @@ impl Bounds {
         }
         for row in &program.rows {
             if let Row::Alu(ops) | Row::Cubic(ops) = row {
-                source = add(source, bytes::<Op>(ops.capacity())?)?;
-                for op in ops {
-                    source = add(source, hint_heap(op)?)?;
-                }
+                source = add(source, bytes::<u32>(ops.capacity())?)?;
             }
         }
         let bounds = Self {

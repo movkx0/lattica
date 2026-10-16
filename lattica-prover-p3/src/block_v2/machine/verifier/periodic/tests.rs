@@ -10,10 +10,18 @@ fn all_leaf_columns_match_unchanged_air_tables_and_reject_bad_buffers() {
     let js = ContextJoinSplitAir;
     let issuance = ContextAir(crate::joinsplit_air::JoinSplitAir);
     let htlc = ContextAir(crate::htlc_air::HtlcAir);
+    let raw_js = crate::joinsplit_air::JoinSplitAir;
+    let raw_htlc = crate::htlc_air::HtlcAir;
+    let batch_js = crate::batch_joinsplit_air::JoinSplitBatchAir;
+    let batch_htlc = crate::batch_htlc_air::HtlcBatchAir;
     for (source, columns) in [
         (&js as &dyn Source, js.periodic_columns()),
         (&issuance as &dyn Source, issuance.periodic_columns()),
         (&htlc as &dyn Source, htlc.periodic_columns()),
+        (&raw_js as &dyn Source, raw_js.periodic_columns()),
+        (&raw_htlc as &dyn Source, raw_htlc.periodic_columns()),
+        (&batch_js as &dyn Source, batch_js.periodic_columns()),
+        (&batch_htlc as &dyn Source, batch_htlc.periodic_columns()),
     ] {
         assert_eq!(source.count(), columns.len());
         let mut total = 0;

@@ -37,6 +37,8 @@ use super::{FINALIZER, PAIRED};
 
 #[path = "input.rs"]
 mod input;
+#[path = "host_pipeline.rs"]
+mod host_pipeline;
 #[cfg(test)]
 #[path = "input_tests.rs"]
 mod input_tests;
@@ -134,7 +136,7 @@ struct Expected {
 impl Expected {
     fn validate(&self) -> Result<(), Error> {
         if self.schema_version != 1
-            || !(1..=64).contains(&self.count)
+            || !(1..=profile::MAX_TRANSACTIONS as u8).contains(&self.count)
             || self.block_height >= 1u64 << lattica_prover_p3::htlc_air::BITS
             || self.root.iter().any(|v| *v >= commitment::MODULUS)
             || self.authorized_issuance.iter().any(|(i, mint)| {
@@ -163,7 +165,7 @@ impl Expected {
                 count: self.count,
                 level: commitment::DEPTH,
             },
-            if FINALIZER && self.count <= 32 {
+            if FINALIZER && usize::from(self.count) <= profile::MAX_TRANSACTIONS / 2 {
                 FINALIZE_MODE
             } else {
                 programs::MERGE
@@ -228,7 +230,10 @@ fn body(dir: &Path) -> Result<Body, Error> {
 }
 
 fn validate_body(body: &Body) -> Result<(), Error> {
-    if body.schema_version != 1 || body.transactions.is_empty() || body.transactions.len() > 64 {
+    if body.schema_version != 1
+        || body.transactions.is_empty()
+        || body.transactions.len() > profile::MAX_TRANSACTIONS
+    {
         return Err("invalid mixed body size/version".into());
     }
     for tx in &body.transactions {
@@ -447,7 +452,10 @@ fn tasks(body: &Body, expected: &Expected) -> Result<Vec<Task>, Error> {
 }
 
 fn fixture_body() -> Body {
-    let statements = typed_fixture::statements();
+    fixture_body_from_statements(typed_fixture::statements())
+}
+
+fn fixture_body_from_statements(statements: Vec<Vec<u64>>) -> Body {
     let kinds = [
         TransactionType::Joinsplit,
         TransactionType::HtlcRedeem,
@@ -470,18 +478,23 @@ fn fixture_body() -> Body {
 
 fn fixture(dir: &Path) -> Result<(), Error> {
     fs::create_dir(dir)?;
-    let body = fixture_body();
-    write_json(&dir.join("body.json"), &body)?;
-    for index in 0..64 {
+    let mut statements = Vec::with_capacity(profile::MAX_TRANSACTIONS);
+    for index in 0..profile::MAX_TRANSACTIONS {
         let started = Instant::now();
         let (wallet, _) = typed_fixture::wallet(index)?;
         write_artifact(&dir.join(format!("wallet.{index}")), WALLET_MAGIC, &wallet)?;
+        statements.push(wallet.public.iter().map(Val::as_canonical_u64).collect());
         println!(
             "{}",
             json!({"event":"fixture_leaf", "index":index, "seconds":started.elapsed().as_secs_f64()})
         );
     }
-    Ok(())
+    // Publish the body only after every leaf was proved and independently
+    // verified, using the same public fields that were written with the proofs.
+    write_json(
+        &dir.join("body.json"),
+        &fixture_body_from_statements(statements),
+    )
 }
 
 fn fixture_policy(body: &Body) -> Expected {
@@ -492,7 +505,7 @@ fn fixture_policy(body: &Body) -> Expected {
         profile: [0; 32],
         chain: body.chain,
         root: [0; 4],
-        count: 64,
+        count: profile::MAX_TRANSACTIONS as u8,
         block_height: typed_fixture::HEIGHT,
         authorized_issuance: body
             .transactions
@@ -521,8 +534,12 @@ fn templates(dir: &Path) -> Result<[WalletProof; 3], Error> {
 }
 
 fn expected(dir: &Path, count: u8, out: &Path) -> Result<(), Error> {
-    if !(1..=64).contains(&count) {
-        return Err("count must be 1..64".into());
+    if !(1..=profile::MAX_TRANSACTIONS as u8).contains(&count) {
+        return Err(format!(
+            "count must be 1..{} for the selected block profile",
+            profile::MAX_TRANSACTIONS
+        )
+        .into());
     }
     let body = body(dir)?;
     let registry = registry(dir)?;
@@ -565,7 +582,7 @@ fn audit(dir: &Path, expected: &Expected, public_body: &Body, root: &Path) -> Re
     registry.verify(expected.profile, &node, &expected.public())?;
     println!(
         "{}",
-        json!({"event":"independent_cpu_root_audit", "count":expected.count, "root_bytes":bytes.len(), "depth":6, "passed":true, "production_ready":false})
+        json!({"event":"independent_cpu_root_audit", "count":expected.count, "root_bytes":bytes.len(), "depth":profile::TREE_DEPTH, "block_capacity":profile::MAX_TRANSACTIONS, "passed":true, "production_ready":false})
     );
     Ok(())
 }
@@ -602,51 +619,77 @@ fn require_cpu_limit(budget: u64) -> Result<(), Error> {
     Ok(())
 }
 
+fn task_depends_on(task: &Task, producer: &Task) -> bool {
+    if task.mode == programs::MERGE {
+        producer.level + 1 == task.level && producer.index / 2 == task.index
+    } else {
+        FINALIZER && task.mode == FINALIZE_MODE && producer.index == 0
+    }
+}
+
+fn prepare_children(
+    task: &Task,
+    tasks: &[Task],
+    registry: &Registry,
+    expected: &Expected,
+    out: &Path,
+) -> Result<Vec<NodeProof>, Error> {
+    let mut children = input::exact(2)?;
+    let mut read_child = |level, index| -> Result<(), Error> {
+        let planned = tasks
+            .iter()
+            .find(|t| t.level == level && t.index == index)
+            .ok_or("missing child task")?;
+        let bytes = read_bytes(&out.join(planned.name()), profile::MAX_PROOF_BYTES)?;
+        let node = codec::decode_node(&bytes)?;
+        registry.verify(expected.profile, &node, &planned.public())?;
+        children.push(node);
+        Ok(())
+    };
+    if task.mode == programs::MERGE {
+        read_child(task.level - 1, task.index * 2)?;
+        read_child(task.level - 1, task.index * 2 + 1)?;
+    } else if FINALIZER && task.mode == FINALIZE_MODE {
+        let level = if PAIRED {
+            typed_pairs::proof_plan(expected.count)?.subtree_level
+        } else {
+            typed_finalizer::proof_plan(expected.count)?.subtree_level
+        };
+        read_child(level, 0)?;
+    }
+    Ok(children)
+}
+
 fn prove(dir: &Path, expected: &Expected, out: &Path, budget: u64, gpu: bool) -> Result<(), Error> {
     require_cpu_limit(budget)?;
+    let pipelined = match std::env::var("LATTICA_V2_HOST_PIPELINE") {
+        Err(std::env::VarError::NotPresent) => false,
+        Ok(value) if value == "0" => false,
+        Ok(value) if value == "1" => true,
+        _ => return Err("LATTICA_V2_HOST_PIPELINE must be 0 or 1".into()),
+    };
     let started = Instant::now();
     let body = body(dir)?;
     let registry = registry(dir)?;
     let tasks = tasks(&body, expected)?;
-    let mut session = Session::new(registry.clone(), expected.profile, budget)?;
+    let session_budget = budget
+        .checked_sub(if pipelined { host_pipeline::RESERVE_BYTES } else { 0 })
+        .filter(|bytes| *bytes > 0)
+        .ok_or("worker RAM below host pipeline reserve")?;
+    let mut session = Session::new(registry.clone(), expected.profile, session_budget)?;
     // Verify the complete candidate before allocating recursive preprocessing.
     let wallets = (0..expected.count as usize)
         .map(|i| verified_wallet(dir, &body, i, expected))
         .collect::<Result<Vec<_>, _>>()?;
     fs::create_dir(out)?;
     write_json(&out.join("expected.json"), expected)?;
-    for task in &tasks {
+    let prepare = |task: &Task| prepare_children(task, &tasks, &registry, expected, out);
+    let mut prove_one = |task: &Task, children: Vec<NodeProof>| {
         let stage = Instant::now();
         let node = match task.mode {
             programs::EMPTY => session.empty(expected.chain, task.level)?,
-            programs::MERGE => {
-                let child = |index| -> Result<NodeProof, Error> {
-                    let planned = tasks
-                        .iter()
-                        .find(|t| t.level + 1 == task.level && t.index == index)
-                        .ok_or("missing child task")?;
-                    let bytes = read_bytes(&out.join(planned.name()), profile::MAX_PROOF_BYTES)?;
-                    let node = codec::decode_node(&bytes)?;
-                    registry.verify(expected.profile, &node, &planned.public())?;
-                    Ok(node)
-                };
-                session.merge(&child(task.index * 2)?, &child(task.index * 2 + 1)?)?
-            }
-            mode if FINALIZER && mode == FINALIZE_MODE => {
-                let level = if PAIRED {
-                    typed_pairs::proof_plan(expected.count)?.subtree_level
-                } else {
-                    typed_finalizer::proof_plan(expected.count)?.subtree_level
-                };
-                let planned = tasks
-                    .iter()
-                    .find(|t| t.level == level && t.index == 0)
-                    .ok_or("missing finalizer child task")?;
-                let bytes = read_bytes(&out.join(planned.name()), profile::MAX_PROOF_BYTES)?;
-                let child = codec::decode_node(&bytes)?;
-                registry.verify(expected.profile, &child, &planned.public())?;
-                session.finalize(&child)?
-            }
+            programs::MERGE => session.merge(&children[0], &children[1])?,
+            mode if FINALIZER && mode == FINALIZE_MODE => session.finalize(&children[0])?,
             _ if PAIRED => {
                 let left = task.index * 2;
                 let right = if task.summary.count == 2 {
@@ -668,13 +711,29 @@ fn prove(dir: &Path, expected: &Expected, out: &Path, budget: u64, gpu: bool) ->
                 policy(&body.transactions[task.index], task.index, expected)?,
             )?,
         };
+        Ok((node, stage))
+    };
+    let finish = |task: &Task, (node, stage): (NodeProof, Instant)| -> Result<(), Error> {
         registry.verify(expected.profile, &node, &task.public())?;
         let bytes = codec::encode_node(&node)?;
         println!(
             "{}",
             json!({"event":"fresh_typed_node", "level":task.level, "index":task.index, "mode":task.mode, "count":task.summary.count, "bytes":bytes.len(), "seconds":stage.elapsed().as_secs_f64()})
         );
-        write_bytes(&out.join(task.name()), &bytes, profile::MAX_PROOF_BYTES)?;
+        write_bytes(&out.join(task.name()), &bytes, profile::MAX_PROOF_BYTES)
+    };
+    if pipelined {
+        let stats = host_pipeline::run(&tasks, prepare, prove_one, finish, task_depends_on)?;
+        println!("{}", json!({"event":"typed_host_pipeline", "stats":stats,
+            "extra_host_reserve_bytes":host_pipeline::RESERVE_BYTES,
+            "session_memory_bytes":session_budget, "max_gpu_proofs":1,
+            "max_prefetched_tasks":1, "max_pending_outputs":1}));
+    } else {
+        for task in &tasks {
+            let children = prepare(task)?;
+            let output = prove_one(task, children)?;
+            finish(task, output)?;
+        }
     }
     write_json(
         &out.join("result.json"),
@@ -682,7 +741,8 @@ fn prove(dir: &Path, expected: &Expected, out: &Path, budget: u64, gpu: bool) ->
             "schema_version":1, "status":"proved_cpu_audit_pending", "count":expected.count,
             "construction":CONSTRUCTION, "registry_keys":KEY_COUNT,
             "fresh_proofs":tasks.len(), "seconds":started.elapsed().as_secs_f64(),
-            "worker_memory_bytes":budget, "root_file":"node.6.0", "backend":if gpu {"gpu"} else {"cpu"},
+            "worker_memory_bytes":budget, "root_file":format!("node.{}.0", profile::TREE_DEPTH), "backend":if gpu {"gpu"} else {"cpu"},
+            "host_pipeline":pipelined,
             "durable_host_applied":false, "production_ready":false,
         }),
     )
@@ -730,6 +790,10 @@ fn verify_wallet_inputs(dir: &Path, pinned: &Path, out: &Path) -> Result<(), Err
 fn run_inner(args: &[String], gpu: bool) -> Result<(), Error> {
     let values: Vec<&str> = args.iter().skip(1).map(String::as_str).collect();
     match values.as_slice() {
+        ["capacity"] => {
+            println!("{}", json!({"schema":"lattica-block-capacity-v1", "max_transactions":profile::MAX_TRANSACTIONS, "tree_depth":profile::TREE_DEPTH, "candidate_profile_id":profile::CANDIDATE_PROFILE_ID, "planned_capacities":profile::PLANNED_CAPACITIES}));
+            Ok(())
+        },
         ["fixture", dir] => fixture(Path::new(dir)),
         ["fixture-statements", out] => write_json(Path::new(out), &fixture_body()),
         ["geometry", dir] => {
@@ -738,7 +802,7 @@ fn run_inner(args: &[String], gpu: bool) -> Result<(), Error> {
             let height = if PAIRED { typed_recursive::common_height_paired([&js, &htlc, &issuance])? } else if FINALIZER { typed_recursive::common_height_finalized([&js, &htlc, &issuance])? } else { typed_recursive::common_height([&js, &htlc, &issuance])? };
             let report = analysis::analyze(&programs::shape(height)?).map_err(|e| format!("{e:?}"))?;
             write_json(&dir.join("height.json"), &height)?;
-            println!("{}", json!({"event":"typed_geometry", "height":height, "construction":CONSTRUCTION, "registry_keys":KEY_COUNT,
+            println!("{}", json!({"event":"typed_geometry", "height":height, "construction":CONSTRUCTION, "registry_keys":KEY_COUNT, "block_capacity":profile::MAX_TRANSACTIONS, "depth":profile::TREE_DEPTH,
                 "main_width":report.main_width, "preprocessed_width":report.preprocessed_width,
                 "retained_lde_lower_bound_bytes":report.retained_lde_bytes,
                 "phase_admitted":false, "gpu_qualified":false}));
@@ -786,12 +850,19 @@ fn run_inner(args: &[String], gpu: bool) -> Result<(), Error> {
         #[cfg(all(target_os = "linux", feature = "stream"))]
         ["audit-preseal", dir, pinned, nodes, out] => execution::audit_preseal(Path::new(dir), Path::new(pinned), Path::new(nodes), Path::new(out)),
         #[cfg(all(target_os = "linux", feature = "stream"))]
+        ["audit-pool-calibration", dir, pinned, request, nodes, out] => execution::audit_pool_calibration(
+            Path::new(dir), Path::new(pinned), Path::new(request), Path::new(nodes), Path::new(out)),
+        #[cfg(all(target_os = "linux", feature = "stream"))]
         ["execution-plan", dir, pinned, out] => execution::plan(Path::new(dir), Path::new(pinned), Path::new(out)),
         #[cfg(all(target_os = "linux", feature = "stream", feature = "gpu"))]
         ["prove-fleet-gpu", dir, pinned, plan, out] => execution::prove_fleet(
             Path::new(dir), Path::new(pinned), Path::new(plan), Path::new(out)),
         #[cfg(all(target_os = "linux", feature = "stream"))]
         ["execution-audit", dir, pinned, nodes, head, out] => execution::audit(Path::new(dir), Path::new(pinned), Path::new(nodes), head, Path::new(out)),
+        #[cfg(all(target_os = "linux", feature = "stream", not(any(feature = "gpu", feature = "gpu-metal"))))]
+        ["audit-pool-journal", dir, pinned, runtime, assignment, root, head, epoch, out] => execution::audit_pool_journal(
+            Path::new(dir), Path::new(pinned), Path::new(runtime), Path::new(assignment),
+            Path::new(root), head, epoch.parse()?, Path::new(out)),
         #[cfg(all(target_os = "linux", feature = "stream"))]
         ["execution-recover", dir, pinned, runtime, assignment, root, head, epoch, out] => execution::recover(
             Path::new(dir), Path::new(pinned), Path::new(runtime), Path::new(assignment),
@@ -799,7 +870,7 @@ fn run_inner(args: &[String], gpu: bool) -> Result<(), Error> {
         ["plan", dir, pinned] => {
             let expected: Expected = read_json(Path::new(pinned))?;
             let tasks = tasks(&body(Path::new(dir))?, &expected)?;
-            println!("{}", json!({"count":expected.count, "depth":6, "fresh_proofs":tasks.len(), "construction":CONSTRUCTION, "registry_keys":KEY_COUNT,
+            println!("{}", json!({"count":expected.count, "depth":profile::TREE_DEPTH, "block_capacity":profile::MAX_TRANSACTIONS, "fresh_proofs":tasks.len(), "construction":CONSTRUCTION, "registry_keys":KEY_COUNT,
                 "tasks":tasks.iter().map(|t| json!({"file":t.name(), "mode":t.mode, "count":t.summary.count})).collect::<Vec<_>>(),
                 "phase_admitted":false, "gpu_qualified":false}));
             Ok(())
@@ -812,6 +883,7 @@ fn run_inner(args: &[String], gpu: bool) -> Result<(), Error> {
             "audit-root REGISTRY_DIR EXPECTED BODY ROOT; paired construction with block-v2-host also supports: ",
             "export-host-registry DIR OUT | export-host-expected EXPECTED_JSON OUT; ",
             "paired CPU-only Linux+stream diagnostics: execution-plan DIR EXPECTED OUT | ",
+            "audit-pool-calibration DIR EXPECTED REQUEST NODES OUT | ",
             "execution-audit DIR EXPECTED NODES HEAD_HEX OUT_DIRECTORY | ",
             "execution-recover DIR EXPECTED RUNTIME BUDGET ROOT HEAD_HEX NEXT_EPOCH OUT_DIRECTORY"
         ).into()),
@@ -869,6 +941,51 @@ mod tests {
     use p3_field::PrimeCharacteristicRing;
     use std::collections::BTreeSet;
 
+    #[test]
+    fn fixture_rejection_does_not_publish_an_unproved_body() {
+        let selector = format!(
+            "{}::fixture_rejection_child",
+            module_path!().split_once("::").unwrap().1
+        );
+        for (policy, report) in [
+            ("gpu-required", "1"),
+            ("invalid-policy", "1"),
+            ("compatible", "invalid-report"),
+        ] {
+            let result = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", &selector, "--nocapture"])
+                .env("LATTICA_TYPED_FIXTURE_CLI_CHILD", "1")
+                .env("LATTICA_PROVING_POLICY", policy)
+                .env("LATTICA_PROVING_REPORT", report)
+                .output()
+                .unwrap();
+            let stdout = String::from_utf8_lossy(&result.stdout);
+            let stderr = String::from_utf8_lossy(&result.stderr);
+            assert!(result.status.success(), "{stdout}\n{stderr}");
+            assert!(
+                stdout.contains("test result: ok. 1 passed; 0 failed;"),
+                "{stdout}\n{stderr}"
+            );
+            assert!(!stderr.contains("proving_stage_report "));
+        }
+    }
+
+    #[test]
+    fn fixture_rejection_child() {
+        if std::env::var("LATTICA_TYPED_FIXTURE_CLI_CHILD").as_deref() != Ok("1") {
+            return;
+        }
+        let dir =
+            std::env::temp_dir().join(format!("lattica-typed-fixture-{}", std::process::id()));
+        assert!(!dir.exists());
+        let error = fixture(&dir).unwrap_err();
+        assert!(error
+            .downcast_ref::<lattica_prover_p3::proving::Error>()
+            .is_some());
+        assert_eq!(fs::read_dir(&dir).unwrap().count(), 0);
+        fs::remove_dir(dir).unwrap();
+    }
+
     pub(super) fn candidate(count: u8) -> (Body, Expected) {
         let kinds = [
             TransactionType::Joinsplit,
@@ -907,8 +1024,43 @@ mod tests {
     }
 
     #[test]
-    fn all_contract_counts_have_ordered_depth_six_dependencies_and_fresh_work() {
-        for count in [1, 2, 3, 4, 8, 16, 32, 63, 64] {
+    fn host_pipeline_preserves_every_supported_proof_plan() {
+        for count in 1..=profile::MAX_TRANSACTIONS as u8 {
+            let (body, expected) = candidate(count);
+            let tasks = tasks(&body, &expected).unwrap();
+            let finished = std::sync::Mutex::new(BTreeSet::new());
+            let stats = host_pipeline::run(
+                &tasks,
+                |task| {
+                    let finished = finished.lock().unwrap();
+                    if task.mode == programs::MERGE {
+                        assert!(finished.contains(&(task.level - 1, task.index * 2)));
+                        assert!(finished.contains(&(task.level - 1, task.index * 2 + 1)));
+                    } else if FINALIZER && task.mode == FINALIZE_MODE {
+                        let level = if PAIRED {
+                            typed_pairs::proof_plan(count)?.subtree_level
+                        } else {
+                            typed_finalizer::proof_plan(count)?.subtree_level
+                        };
+                        assert!(finished.contains(&(level, 0)));
+                    }
+                    Ok(())
+                },
+                |_, ()| Ok(()),
+                |task, ()| {
+                    assert!(finished.lock().unwrap().insert((task.level, task.index)));
+                    Ok(())
+                },
+                task_depends_on,
+            ).unwrap();
+            assert_eq!(stats.rounds, tasks.len());
+            assert_eq!(finished.lock().unwrap().len(), tasks.len());
+        }
+    }
+
+    #[test]
+    fn all_contract_counts_have_ordered_dependencies_and_fresh_work() {
+        for count in 1..=profile::MAX_TRANSACTIONS as u8 {
             let (body, expected) = candidate(count);
             let tasks = tasks(&body, &expected).unwrap();
             let mut finished = BTreeSet::new();
@@ -956,14 +1108,31 @@ mod tests {
                 );
             }
             let root = tasks.last().unwrap();
-            assert_eq!((root.level, root.index, root.summary.count), (6, 0, count));
+            assert_eq!(
+                (root.level, root.index, root.summary.count),
+                (commitment::DEPTH, 0, count)
+            );
             assert_eq!(root.summary.root, expected.root);
             assert_eq!(root.public(), expected.public());
-            if count == 64 {
-                assert_eq!(tasks.len(), if PAIRED { 63 } else { 127 });
+            if count as usize == profile::MAX_TRANSACTIONS {
+                assert_eq!(
+                    tasks.len(),
+                    if PAIRED {
+                        profile::MAX_TRANSACTIONS - 1
+                    } else {
+                        profile::MAX_DAG_NODES
+                    }
+                );
             }
             if count == 1 {
-                assert_eq!(tasks.len(), if FINALIZER { 2 } else { 13 });
+                assert_eq!(
+                    tasks.len(),
+                    if FINALIZER {
+                        2
+                    } else {
+                        2 * profile::TREE_DEPTH + 1
+                    }
+                );
             }
         }
     }
@@ -999,7 +1168,7 @@ mod tests {
     #[test]
     fn malformed_expectations_fail_before_proving() {
         let (_, expected) = candidate(4);
-        for count in [0, 65, 255] {
+        for count in [0, (profile::MAX_TRANSACTIONS + 1) as u8, 255] {
             let mut wrong = expected.clone();
             wrong.count = count;
             assert!(wrong.validate().is_err());

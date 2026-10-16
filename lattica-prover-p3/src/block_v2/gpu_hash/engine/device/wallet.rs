@@ -7,6 +7,20 @@ use p3_field::PrimeField64;
 #[cfg(feature = "gpu")]
 mod batch;
 mod htlc;
+mod proof_storage;
+pub(crate) use proof_storage::{WalletDevicePlan, WalletProofMinimum};
+
+/// A batch generates one single-wallet frame at a time. Bound its auxiliary
+/// storage with the actual single/batch planners, including empty batches.
+#[cfg(feature = "gpu")]
+fn witness_storage_extra(host_allowance: usize) -> Result<(usize, usize), String> {
+    batch::admission_extra(host_allowance)
+}
+
+#[cfg(not(feature = "gpu"))]
+fn witness_storage_extra(_host_allowance: usize) -> Result<(usize, usize), String> {
+    Err("wallet phase admission requires the owned OpenCL implementation".into())
+}
 #[cfg(feature = "gpu")]
 mod tree;
 
@@ -59,6 +73,18 @@ impl WalletTrace {
 const INPUT_WORDS: usize = js::N_IN * (9 + js::DEPTH * 5) + js::M_OUT * 10 + 6;
 const GEOMETRY_WORDS: usize = 28;
 struct InputWords(Vec<u64>);
+// Call only after the complete staging shape is admitted. Check the returned
+// capacity before encoding private inputs or extending public geometry.
+fn staging_words(count: usize) -> Result<Vec<u64>, String> {
+    let mut words = Vec::new();
+    words
+        .try_reserve_exact(count)
+        .map_err(|_| "wallet staging reservation failed")?;
+    if words.capacity() != count {
+        return Err("wallet staging reservation exceeds admitted capacity".into());
+    }
+    Ok(words)
+}
 impl Drop for InputWords {
     fn drop(&mut self) {
         for word in &mut self.0 {
@@ -68,8 +94,8 @@ impl Drop for InputWords {
         }
     }
 }
-fn input_words(w: &js::Witness) -> InputWords {
-    let mut words = InputWords(Vec::with_capacity(INPUT_WORDS));
+fn input_words(w: &js::Witness) -> Result<InputWords, String> {
+    let mut words = InputWords(staging_words(INPUT_WORDS)?);
     for v in &w.inputs {
         words.0.extend(v.nk);
         words.0.extend([
@@ -93,9 +119,10 @@ fn input_words(w: &js::Witness) -> InputWords {
     words.0.extend([w.fee, w.mint]);
     words.0.extend(w.tx_binding.map(|x| x.as_canonical_u64()));
     debug_assert_eq!(words.0.len(), INPUT_WORDS);
-    words
+    Ok(words)
 }
 
+#[derive(Clone, Copy)]
 struct Plan {
     trace: MatrixSpec,
     public: MatrixSpec,
@@ -145,8 +172,15 @@ impl Plan {
             geometry_words: GEOMETRY_WORDS,
         })
     }
-    fn specs(&self) -> Result<Vec<MatrixSpec>, String> {
-        Ok(vec![
+    fn staging_bytes(&self) -> Result<usize, String> {
+        self.input_words
+            .checked_add(self.geometry_words)
+            .and_then(|n| n.checked_add(1))
+            .and_then(|n| n.checked_mul(8))
+            .ok_or_else(|| "wallet host staging overflow".into())
+    }
+    fn specs(&self) -> Result<[MatrixSpec; 5], String> {
+        Ok([
             self.trace,
             self.public,
             MatrixSpec::new(0, self.input_words, Extension::Base, RowOrder::Natural, 1)?,
@@ -203,7 +237,7 @@ impl DeviceSession {
         &self,
         plan: Plan,
         geometry: &[u64],
-        inputs: impl FnOnce() -> InputWords,
+        inputs: impl FnOnce() -> Result<InputWords, String>,
         kernels: [&'static str; 3],
         run: &crate::proving::Run,
     ) -> Result<WalletTrace, String> {
@@ -236,7 +270,7 @@ impl DeviceSession {
                 ],
                 queue: engine.pq.queue().clone(),
             };
-            let words = inputs();
+            let words = inputs()?;
             if words.0.len() != plan.input_words {
                 return Err("wallet input length mismatch".into());
             }

@@ -13,7 +13,7 @@ use std::{
 use rand::TryRng;
 
 use super::{
-    job::{ArtifactRef, Job, JobId, Operation, RegistryPin, VerifiedNode},
+    job::{ArtifactRef, Job, JobId, Operation, RegistryPin, VerifiedNode, VerifiedNodePayload, VerifiedWalletPayload},
     resources::Resources,
     workspace::{WorkspaceId, WorkspaceLease},
 };
@@ -25,9 +25,16 @@ mod storage;
 pub use snapshot::sizing::SnapshotStorage;
 pub use storage::RetainedStorage;
 
+#[path = "dag_wallet_inputs.rs"]
+mod wallet_inputs;
+use wallet_inputs::WalletInputs;
+
 #[path = "dag_transition_storage.rs"]
 mod transition_storage;
 pub use transition_storage::TransitionStorage;
+
+#[path = "dag_prefix_transition.rs"]
+mod prefix_transition;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CandidateId {
@@ -356,7 +363,29 @@ impl Dag {
         now_ms: u64,
     ) -> Result<(), Error> {
         self.advance(now_ms)?;
-        node.artifact().check_bytes(&bytes)?;
+        let payload = VerifiedNodePayload::bind(node, bytes)?;
+        self.cache_node_payload(payload, now_ms)
+    }
+
+    /// A local verifier already authenticated the buffer owned by this payload.
+    /// This does not admit a remote claim or an independently supplied buffer.
+    #[cfg(target_os = "linux")]
+    pub(super) fn cache_verified_node(
+        &mut self,
+        payload: VerifiedNodePayload,
+        now_ms: u64,
+    ) -> Result<(), Error> {
+        self.advance(now_ms)?;
+        self.cache_node_payload(payload, now_ms)
+    }
+
+    #[cfg(target_os = "linux")]
+    fn cache_node_payload(
+        &mut self,
+        payload: VerifiedNodePayload,
+        now_ms: u64,
+    ) -> Result<(), Error> {
+        let (node, bytes) = payload.into_parts();
         let record = self
             .jobs
             .get(&node.job())
@@ -524,6 +553,19 @@ impl Dag {
     /// Equal semantic jobs retain the first exact wallet artifacts, including
     /// while a randomized alternate public proof for the same statement arrives.
     pub fn admit(&mut self, job: Job, wallets: Vec<Vec<u8>>, now_ms: u64) -> Result<JobId, Error> {
+        self.admit_inputs(job, WalletInputs::Detached(wallets), now_ms)
+    }
+
+    pub(super) fn admit_verified_wallets(
+        &mut self,
+        job: Job,
+        wallets: &[VerifiedWalletPayload],
+        now_ms: u64,
+    ) -> Result<JobId, Error> {
+        self.admit_inputs(job, WalletInputs::Verified(wallets), now_ms)
+    }
+
+    fn admit_inputs(&mut self, job: Job, wallets: WalletInputs<'_>, now_ms: u64) -> Result<JobId, Error> {
         if job.owned_heap_bytes()? > storage::job_heap_limit()? {
             return Err("execution job retained backing bound".into());
         }
@@ -531,12 +573,7 @@ impl Dag {
         if job.pin() != self.pin || job.expected().context.chain_id != self.chain {
             return Err("execution graph profile/chain mismatch".into());
         }
-        if wallets.len() != job.wallet_inputs().len() {
-            return Err("execution wallet input count".into());
-        }
-        for (identity, bytes) in job.wallet_inputs().iter().zip(&wallets) {
-            identity.check_bytes(bytes)?;
-        }
+        wallets.check(&job)?;
         if let Some(existing) = self.jobs.get(&job.id()) {
             if !existing.job.same_semantics(&job) {
                 return Err("execution job identity conflict".into());
@@ -578,15 +615,11 @@ impl Dag {
         } else if !job.dependencies().is_empty() {
             return Err("execution unexpected dependency".into());
         }
-        let bytes = wallets
-            .iter()
-            .try_fold(0usize, |n, b| n.checked_add(b.len()))
-            .ok_or("execution store arithmetic")?;
+        let bytes = wallets.byte_len()?;
         self.store_admission(bytes)?;
         // Do not let in-place collect retain the caller's arbitrary outer Vec
         // capacity. Arc conversion already allocates only each payload's len.
-        let mut retained_wallets = Vec::with_capacity(wallets.len());
-        retained_wallets.extend(wallets.into_iter().map(Arc::from));
+        let retained_wallets = wallets.into_shared();
         let id = job.id();
         self.jobs.insert(
             id,
@@ -628,32 +661,7 @@ impl Dag {
         if self.candidates.len() >= self.limits.candidates || deadline_ms <= now_ms {
             return Err("execution candidate limit/deadline".into());
         }
-        let root_job = &self
-            .jobs
-            .get(&root)
-            .ok_or("execution unknown candidate root")?
-            .job;
-        if root_job.start() != 0
-            || root_job.expected().level != DEPTH
-            || root_job.expected().count == 0
-        {
-            return Err("execution candidate requires a complete nonempty tree".into());
-        }
-        let mut closure = BTreeSet::new();
-        let mut stack = vec![root];
-        while let Some(id) = stack.pop() {
-            if closure.insert(id) {
-                let job = &self
-                    .jobs
-                    .get(&id)
-                    .ok_or("execution missing dependency")?
-                    .job;
-                stack.extend(job.dependencies());
-                if closure.len() > 127 {
-                    return Err("execution candidate tree bound".into());
-                }
-            }
-        }
+        let closure = self.candidate_closure(root)?;
         let sequence = self
             .candidate_sequence
             .checked_add(1)
@@ -1251,6 +1259,52 @@ impl Dag {
         leases
     }
 
+    /// Check the durable root, deadline and eligibility before a pool adopts a
+    /// sealed candidate. Caller bookkeeping must not replace these bindings.
+    pub(super) fn sealed_candidate_binding(
+        &mut self,
+        id: CandidateId,
+        rechecked_eligibility: [u8; 32],
+        now_ms: u64,
+    ) -> Result<(JobId, u64), Error> {
+        self.candidate_binding(id, rechecked_eligibility, true, now_ms)
+    }
+
+    pub(super) fn unsealed_candidate_binding(
+        &mut self,
+        id: CandidateId,
+        rechecked_eligibility: [u8; 32],
+        now_ms: u64,
+    ) -> Result<(JobId, u64), Error> {
+        self.candidate_binding(id, rechecked_eligibility, false, now_ms)
+    }
+
+    fn candidate_binding(
+        &mut self,
+        id: CandidateId,
+        rechecked_eligibility: [u8; 32],
+        sealed: bool,
+        now_ms: u64,
+    ) -> Result<(JobId, u64), Error> {
+        self.advance(now_ms)?;
+        let candidate = self
+            .candidates
+            .get(&id)
+            .ok_or("execution unknown candidate")?;
+        if candidate.sealed != sealed
+            || candidate.cancelled
+            || candidate.eligibility != rechecked_eligibility
+        {
+            return Err(if sealed {
+                "execution candidate not sealed/current"
+            } else {
+                "execution candidate not unsealed/current"
+            }
+            .into());
+        }
+        Ok((candidate.root, candidate.deadline_ms))
+    }
+
     /// Returned bytes are available only for the exact sealed selection and a
     /// freshly matching host eligibility stamp. Host atomic application remains
     /// outside this API, as do production activation and full64 qualification.
@@ -1260,15 +1314,8 @@ impl Dag {
         rechecked_eligibility: [u8; 32],
         now_ms: u64,
     ) -> Result<Option<&[u8]>, Error> {
-        self.advance(now_ms)?;
-        let c = self
-            .candidates
-            .get(&id)
-            .ok_or("execution unknown candidate")?;
-        if !c.sealed || c.cancelled || c.eligibility != rechecked_eligibility {
-            return Err("execution candidate not sealed/current".into());
-        }
-        Ok(self.jobs[&c.root]
+        let (root, _) = self.sealed_candidate_binding(id, rechecked_eligibility, now_ms)?;
+        Ok(self.jobs[&root]
             .output
             .as_ref()
             .map(|(_, bytes)| bytes.as_ref()))

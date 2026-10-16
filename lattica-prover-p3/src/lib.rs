@@ -23,6 +23,8 @@ compile_error!("gpu-metal requires macOS");
 mod gpu_constants;
 #[cfg(feature = "gpu")]
 pub mod gpu_pcs; // GPU-hiding PCS wrapper: quotient randomization pipeline device-side
+#[cfg(any(feature = "block-v2", all(feature = "stream", test)))]
+mod host_memory;
 pub mod htlc_air; // v3: shielded HTLC spend (redeem/refund) — clone of joinsplit_air, extended
 pub mod joinsplit_air;
 #[cfg(all(feature = "gpu-metal", target_os = "macos"))]
@@ -278,27 +280,38 @@ pub unsafe extern "C" fn lattica_joinsplit_verify(
 
 // Single-wallet ABI admission follows the explicitly selected prover. Batch
 // and recursive ABI admission remains tied to their independently qualified paths.
-fn wallet_abi_admission() -> bool {
-    std::panic::catch_unwind(|| {
-        #[cfg(all(feature = "block-v2", feature = "gpu"))]
-        if block_v2::legacy_wallet::is_selected() {
-            return block_v2::legacy_wallet::abi_admitted();
-        }
-        proving::legacy_abi_admission()
-    })
-    .unwrap_or(false)
+#[must_use = "keep the ABI admission alive until outputs have been returned"]
+enum WalletAbiAdmission {
+    Cpu,
+    #[cfg(all(feature = "block-v2", feature = "gpu"))]
+    Gpu { _context: block_v2::gpu_hash::device::DeviceSession },
 }
 
-fn tree_abi_admission(count: usize) -> bool {
+fn wallet_abi_admission() -> Option<WalletAbiAdmission> {
     std::panic::catch_unwind(|| {
         #[cfg(all(feature = "block-v2", feature = "gpu"))]
         if block_v2::legacy_wallet::is_selected() {
-            return block_v2::legacy_wallet::tree_abi_admitted(count);
+            return block_v2::legacy_wallet::abi_admission()
+                .ok()
+                .map(|_context| WalletAbiAdmission::Gpu { _context });
+        }
+        proving::legacy_abi_admission().then_some(WalletAbiAdmission::Cpu)
+    })
+    .unwrap_or(None)
+}
+
+fn tree_abi_admission(count: usize) -> Option<WalletAbiAdmission> {
+    std::panic::catch_unwind(|| {
+        #[cfg(all(feature = "block-v2", feature = "gpu"))]
+        if block_v2::legacy_wallet::is_selected() {
+            return block_v2::legacy_wallet::tree_abi_admission(count)
+                .ok()
+                .map(|_context| WalletAbiAdmission::Gpu { _context });
         }
         let _ = count;
-        proving::legacy_abi_admission()
+        proving::legacy_abi_admission().then_some(WalletAbiAdmission::Cpu)
     })
-    .unwrap_or(false)
+    .unwrap_or(None)
 }
 
 fn build_joinsplit_proof(witness: &joinsplit_air::Witness) -> Option<(Vec<u8>, Vec<u8>)> {
@@ -381,9 +394,9 @@ pub unsafe extern "C" fn lattica_joinsplit_prove_demo(
     if proof_out.is_null() || pi_out.is_null() || proof_len.is_null() || pi_len.is_null() {
         return 1; // fail-closed on any null pointer (audit M-01)
     }
-    if !wallet_abi_admission() {
+    let Some(_admission) = wallet_abi_admission() else {
         return 1;
-    }
+    };
     let built = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let witness = joinsplit_air::demo_witness();
         build_joinsplit_proof(&witness)
@@ -490,9 +503,9 @@ pub unsafe extern "C" fn lattica_htlc_prove_demo(
     if proof_out.is_null() || pi_out.is_null() || proof_len.is_null() || pi_len.is_null() {
         return 1;
     }
-    if !wallet_abi_admission() {
+    let Some(_admission) = wallet_abi_admission() else {
         return 1;
-    }
+    };
     let built = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let witness = htlc_air::demo_htlc_witness();
         build_htlc_proof(&witness)
@@ -581,6 +594,8 @@ fn put_path(out: &mut Vec<u8>, sib: &[[Goldilocks; 4]], bits: &[bool]) {
 
 /// Parse the witness byte layout into a circuit witness. Fail-closed on wrong length / non-canonical.
 fn parse_joinsplit_witness(b: &[u8]) -> Option<joinsplit_air::Witness> {
+    #[cfg(all(test, feature = "block-v2", feature = "gpu"))]
+    block_v2::wallet_worker::admission_tests::private_input_boundary();
     use joinsplit_air::{Input, Output, Witness, M_OUT, N_IN};
     if b.len() != JS_WITNESS_LEN {
         return None;
@@ -700,9 +715,9 @@ pub unsafe extern "C" fn lattica_joinsplit_prove(
     {
         return 1; // fail-closed on any null pointer, incl. the output length pointers (audit M-01)
     }
-    if !wallet_abi_admission() {
+    let Some(_admission) = wallet_abi_admission() else {
         return 1;
-    }
+    };
     let wb = slice::from_raw_parts(witness_ptr, witness_len);
     let w = match parse_joinsplit_witness(wb) {
         Some(w) => w,
@@ -792,9 +807,9 @@ pub unsafe extern "C" fn lattica_batch_prove(
     if witness_len != n_tx.checked_mul(JS_WITNESS_LEN).unwrap_or(usize::MAX) {
         return 1; // exactly n_tx concatenated join-split witness records
     }
-    if !wallet_abi_admission() {
+    let Some(_admission) = wallet_abi_admission() else {
         return 1;
-    }
+    };
     let wb = slice::from_raw_parts(witness_ptr, witness_len);
     let mut ws = Vec::with_capacity(n_tx);
     for i in 0..n_tx {
@@ -1017,9 +1032,9 @@ pub unsafe extern "C" fn lattica_joinsplit_tree_prove(
     if witness_len != n_tx.checked_mul(JS_WITNESS_LEN).unwrap_or(usize::MAX) {
         return 1;
     }
-    if !tree_abi_admission(n_tx) {
+    let Some(_admission) = tree_abi_admission(n_tx) else {
         return 1;
-    }
+    };
     let wb = slice::from_raw_parts(witness_ptr, witness_len);
     let mut ws = Vec::with_capacity(n_tx);
     for i in 0..n_tx {
@@ -1098,9 +1113,9 @@ pub unsafe extern "C" fn lattica_htlc_batch_prove(
     if witness_len != n_tx.checked_mul(HTLC_WITNESS_LEN).unwrap_or(usize::MAX) {
         return 1;
     }
-    if !wallet_abi_admission() {
+    let Some(_admission) = wallet_abi_admission() else {
         return 1;
-    }
+    };
     let wb = slice::from_raw_parts(witness_ptr, witness_len);
     let mut ws = Vec::with_capacity(n_tx);
     for i in 0..n_tx {
@@ -1137,6 +1152,8 @@ const fn htlc_witness_len() -> usize {
 const HTLC_WITNESS_LEN: usize = htlc_witness_len();
 
 fn parse_htlc_witness(b: &[u8]) -> Option<htlc_air::Witness> {
+    #[cfg(all(test, feature = "block-v2", feature = "gpu"))]
+    block_v2::wallet_worker::admission_tests::private_input_boundary();
     use htlc_air::{Input, Output, Witness, M_OUT, N_IN};
     if b.len() != HTLC_WITNESS_LEN {
         return None;
@@ -1278,9 +1295,9 @@ pub unsafe extern "C" fn lattica_htlc_prove(
     {
         return 1;
     }
-    if !wallet_abi_admission() {
+    let Some(_admission) = wallet_abi_admission() else {
         return 1;
-    }
+    };
     let wb = slice::from_raw_parts(witness_ptr, witness_len);
     let w = match parse_htlc_witness(wb) {
         Some(w) => w,

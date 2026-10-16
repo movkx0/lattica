@@ -89,23 +89,22 @@ class NativeSessionVerifier(H.NativeVerifier):
             raise H.RejectedBlock('declared native history limit exceeded')
         with self._session_mutex:
             try:
-                ids = []
-                for candidate in candidates:
-                    candidate.validate()
-                    ids.append(H.sha(struct.pack('<Q', candidate.height) +
-                                     bytes.fromhex(H.sha(candidate.body)) + bytes.fromhex(H.sha(candidate.proof))))
+                ids = H.history_identities(candidates)
                 if len(ids) < len(self._record_ids) or ids[:len(self._record_ids)] != self._record_ids:
                     self.close()
                 if not self._handle:
                     self._open()
                 for index in range(len(self._record_ids), len(candidates)):
                     candidate = candidates[index]
+                    if H.candidate_identity(candidate) != ids[index]:
+                        raise H.CorruptStore('loaded candidate differs from its authenticated history index')
                     packet = self._history_inputs([candidate])[-1]
                     output = ctypes.create_string_buffer(H.STATE_BYTES)
                     if self._session_calls['apply'](self._handle, packet, len(packet) - 1, output, len(output)) != 0:
                         raise H.RejectedBlock(f'native incremental application rejected at record {index}')
                     self._states.append(self._decode_state(output.raw, index + 1, candidate.height))
                     self._record_ids.append(ids[index])
+                    del candidate, packet, output
                 return copy.deepcopy(self._states)
             except Exception:
                 self.close()
@@ -113,6 +112,8 @@ class NativeSessionVerifier(H.NativeVerifier):
 
     def _preflight(self, candidates, complete_body, height, grants):
         count = H.body_count(complete_body)
+        if count > self.capacity:
+            raise H.RejectedBlock('candidate exceeds native block capacity')
         if type(height) is not int or not 0 <= height < 1 << 52 or len(candidates) >= self.history_limit:
             raise H.RejectedBlock('invalid native candidate height/history')
         with self._session_mutex:
@@ -120,7 +121,7 @@ class NativeSessionVerifier(H.NativeVerifier):
             body = ctypes.create_string_buffer(complete_body)
             grant_bytes = struct.pack('<' + 'Q' * count, *grants)
             encoded_grants = ctypes.create_string_buffer(grant_bytes)
-            output = ctypes.create_string_buffer(8 + 112 + 64 * (2 + 31 * 8))
+            output = ctypes.create_string_buffer(8 + 112 + self.capacity * (2 + 31 * 8))
             length = ctypes.c_size_t()
             if (self._session_calls['preflight'](self._handle, body, len(complete_body), height,
                     encoded_grants, len(grant_bytes), output, len(output), ctypes.byref(length)) != 0

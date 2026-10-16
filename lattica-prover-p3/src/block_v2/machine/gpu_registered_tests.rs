@@ -4,7 +4,9 @@ use p3_field::PrimeCharacteristicRing;
 
 const HOST_BUDGET: u64 = (64 << 20)
     + crate::block_v2::machine::symbolic::LOOKUP_RETAINED_HOST_BYTES
-    + crate::block_v2::machine::symbolic::HOST_BYTES
+    // Setup reserves symbolic scratch outside the PCS partition; proving
+    // also requires that partition to admit its quotient compiler workspace.
+    + 2 * crate::block_v2::machine::symbolic::HOST_BYTES
     + crate::block_v2::machine::backend::NATIVE_VERIFIER_COMPONENT_BYTES
     + crate::block_v2::gpu_hash::ENGINE_RETAINED_HOST_BYTES;
 
@@ -27,14 +29,15 @@ fn cached_pcs_metadata_rejects_spare_cap_storage_and_preserves_device_state() {
         crate::proving::Request::compatible(),
     )
     .unwrap();
-    let rows = registered.air.program().height();
+    let rows = registered.prepared.air.program().height();
     let device_salts = quotient_pcs::gpu_randomness_enabled();
     let limit = gpu_hash::cache_metadata::bound(rows as u64, device_salts).unwrap();
-    super::cache_storage::admit_registered(&registered).unwrap();
+    super::cache_storage::admit_prepared(&registered.prepared).unwrap();
     let mut roots = Vec::with_capacity(limit as usize / core::mem::size_of::<[Val; 4]>() + 1);
     roots.extend_from_slice(registered.preprocessing_cap().roots());
     let original = std::mem::replace(
         &mut registered
+            .prepared
             .data
             .common
             .preprocessed
@@ -45,18 +48,19 @@ fn cached_pcs_metadata_rejects_spare_cap_storage_and_preserves_device_state() {
     );
     assert_eq!(registered.preprocessing_cap().roots(), original.roots());
     let before = gpu_hash::report("cached PCS before metadata rejection").unwrap();
-    assert!(super::cache_storage::admit_registered(&registered)
+    assert!(super::cache_storage::admit_prepared(&registered.prepared)
         .unwrap_err()
         .contains("metadata exceeds allowance"));
-    assert!(super::cache_storage::admit_data(&registered.data, rows, 1).is_err());
+    assert!(super::cache_storage::admit_data(&registered.prepared.data, rows, 1).is_err());
     registered
+        .prepared
         .data
         .common
         .preprocessed
         .as_mut()
         .unwrap()
         .commitment = original;
-    super::cache_storage::admit_registered(&registered).unwrap();
+    super::cache_storage::admit_prepared(&registered.prepared).unwrap();
     let after = gpu_hash::report("cached PCS after metadata restoration").unwrap();
     assert_eq!(before.allocations, after.allocations);
     assert_eq!(before.uploaded_bytes, after.uploaded_bytes);
@@ -119,9 +123,10 @@ fn registered_device_preprocessing_uses_host_staging_bound_not_host_lde_payload(
     let registered =
         RegisteredProgram::new_with_request(air, allowance, crate::proving::Request::compatible())
             .unwrap();
-    assert!(registered.gpu_witness.is_some());
+    assert!(registered.prepared.gpu_witness.is_some());
     assert_eq!(registered.analysis().height, 16384);
     assert!(registered
+        .prepared
         .data
         .prover_only
         .preprocessed_prover_data
@@ -271,7 +276,7 @@ fn registered_proofs(randomness: bool, transcript: bool, strict: bool) {
         crate::proving::Request::from_env().unwrap()
     };
     let mut registered = RegisteredProgram::new_with_request(air(), HOST_BUDGET, request).unwrap();
-    assert!(registered.gpu_witness.is_some());
+    assert!(registered.prepared.gpu_witness.is_some());
     {
         use p3_uni_stark::StarkGenericConfig;
         assert!(!profile::preprocessing_config()
@@ -355,7 +360,7 @@ fn registered_proofs(randomness: bool, transcript: bool, strict: bool) {
         return;
     }
     if strict {
-        let prepared = registered.gpu_witness.take();
+        let prepared = registered.prepared.gpu_witness.take();
         assert!(matches!(
             registered.prove_with_request(&public, &public, request),
             Err(ExecutionError::GpuFailure)
@@ -363,7 +368,7 @@ fn registered_proofs(randomness: bool, transcript: bool, strict: bool) {
         let rejected = gpu_hash::report("strict missing preprocessing provenance").unwrap();
         assert_eq!(rejected.allocations, baseline.allocations);
         assert_eq!(rejected.uploaded_bytes, baseline.uploaded_bytes);
-        registered.gpu_witness = prepared;
+        registered.prepared.gpu_witness = prepared;
     }
     let mut wrong = public.clone();
     wrong[63] += Val::ONE;
@@ -569,7 +574,7 @@ fn registered_worker_bounds(randomness: bool, transcript: bool) {
     }
     let registered =
         RegisteredProgram::new_with_memory_budget(original.clone(), HOST_BUDGET).unwrap();
-    assert!(registered.gpu_witness.is_some());
+    assert!(registered.prepared.gpu_witness.is_some());
     if transcript {
         let public: Vec<_> = (1..=64).map(Val::from_u64).collect();
         let baseline =

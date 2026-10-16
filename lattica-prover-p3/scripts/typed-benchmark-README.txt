@@ -1,6 +1,20 @@
 Mixed-root research benchmark tooling
 ====================================
 
+Capacity selection (2026-10-16)
+-------------------------------
+Default builds retain capacity 64. Build with block-v2-capacity-128 for the separate
+128/depth-7 profile, and pass --block-capacity 128 to CPU preparation and typed GPU
+runners. A count above 64 infers 128 in GPU runners. Both binaries must report the
+same capacity; use the `capacity` command to inspect them. Rebuild keys, wallet
+proofs, and fixtures for this profile. Root bundles contain node.7.0.
+
+The owned persistent GPU runner automatically selects
+block-v2-typed-owned-gpu-workload-128.json with --owned-public-gpu and capacity 128.
+Explicit --workload files must match the chosen capacity. Resource and deadline
+limits remain enforced; 64-profile calibration is not 128-profile qualification.
+See ../../docs/block-proving-v2.md for build commands and the 256/512 migration plan.
+
 Linux GPU bootstrap
 -------------------
 

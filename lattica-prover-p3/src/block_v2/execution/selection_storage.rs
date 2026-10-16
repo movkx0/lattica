@@ -1,4 +1,4 @@
-//! One immutable selection, one input conversion and one admission-copy phase.
+//! One immutable selection, one input conversion and one shared-input admission.
 //! Caller input-list backing, additional selections/results and verification
 //! remain separate owners. Proof Arc allocations are counted once per selection.
 
@@ -11,6 +11,7 @@ use crate::block_v2::{
     profile::MAX_PROOF_BYTES,
 };
 use core::mem::size_of;
+use std::sync::Arc;
 
 const MAX_ENTRIES: usize = 2 * CAPACITY - 1;
 
@@ -86,8 +87,12 @@ impl Selection {
             admission_bytes: [
                 size_of::<Job>(),
                 job_heap()?,
-                size_of::<Vec<Vec<u8>>>(),
-                vector::<Vec<u8>>(2)?,
+                size_of::<&[PublicInput]>(),
+                size_of::<Vec<Arc<[u8]>>>(),
+                vector::<Arc<[u8]>>(2)?,
+                // Preserve the prior two-proof allowance conservatively. The
+                // shared admission path allocates only handles; disk integrity
+                // reads and detached callers remain independently bounded.
                 mul(2, MAX_PROOF_BYTES)?,
             ]
             .into_iter()
@@ -122,22 +127,22 @@ impl Selection {
             )?;
             handles = add(handles, entry.inputs.capacity())?;
             for input in &entry.inputs {
-                if input.bytes.len() > MAX_PROOF_BYTES {
+                if input.bytes().len() > MAX_PROOF_BYTES {
                     return Err("selection proof backing invariant".into());
                 }
                 if seen[..unique]
                     .iter()
                     .flatten()
-                    .any(|old| Arc::ptr_eq(old, &input.bytes))
+                    .any(|old| Arc::ptr_eq(old, input.shared_bytes()))
                 {
                     continue;
                 }
                 if unique == CAPACITY {
                     return Err("selection distinct proof bound".into());
                 }
-                seen[unique] = Some(&input.bytes);
+                seen[unique] = Some(input.shared_bytes());
                 unique += 1;
-                proofs = add(proofs, arc_slice::<u8>(input.bytes.len())?)?;
+                proofs = add(proofs, arc_slice::<u8>(input.bytes().len())?)?;
             }
         }
         if handles > CAPACITY || metadata > plan.metadata_bytes || proofs > plan.proof_bytes {

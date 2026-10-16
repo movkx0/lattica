@@ -280,3 +280,38 @@ fn builder_rejects_partial_root_growth_before_normalization() {
     })
     .is_err());
 }
+
+#[cfg(feature = "stream")]
+#[test]
+fn maintained_wallet_air_evaluation_allocations_are_owned_by_recorder() {
+    use crate::block_v2::{leaf::ContextJoinSplitAir, typed_leaf::ContextAir};
+    use p3_air::{Air, BaseAir};
+
+    fn audit<A: BaseAir<Val> + Air<Builder>>(air: &A) {
+        // Count actual allocator requests independently of the recorder. Include
+        // builder setup, every callback allocation and its cleanup. Fixed AIR
+        // arrays and index iterators must leave no uncharged Vec allocations.
+        let (admitted, actual) = crate::spill_alloc::allocation_requests::measure(|| {
+            scoped(HOST_BYTES, false, || {
+                let mut builder = Builder::new(AirLayout::from_air::<Val>(air))?;
+                air.eval(&mut builder);
+                builder.check()?;
+                Ok(state())
+            })
+        });
+        let admitted = admitted.unwrap();
+        assert!(!actual.overflow && actual.calls > 0);
+        assert_eq!(actual.calls, admitted.allocations, "unowned AIR allocation");
+        assert!(actual.bytes <= admitted.bytes && admitted.bytes <= HOST_BYTES);
+        eprintln!("wallet_air_recording_ownership air={} allocation_calls={} requested_bytes={} admitted_bytes={} unowned_heap_allocations=0",
+            core::any::type_name::<A>(), actual.calls, actual.bytes, admitted.bytes);
+    }
+
+    audit(&crate::joinsplit_air::JoinSplitAir);
+    audit(&crate::htlc_air::HtlcAir);
+    audit(&ContextJoinSplitAir);
+    audit(&ContextAir(crate::joinsplit_air::JoinSplitAir));
+    audit(&ContextAir(crate::htlc_air::HtlcAir));
+    audit(&crate::batch_joinsplit_air::JoinSplitBatchAir);
+    audit(&crate::batch_htlc_air::HtlcBatchAir);
+}

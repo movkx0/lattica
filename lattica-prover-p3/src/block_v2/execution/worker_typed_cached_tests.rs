@@ -70,7 +70,10 @@ fn fixture(temp: &Temp) -> (DurableDag, TypedRegistry<12>, RegistryPin, Selectio
             artifact_bytes: 32 << 20,
             recovery_window_ms: 1000,
             workers: Resources {
-                ram_bytes: storage::STARTUP_HOST_BYTES + coordinator::HOST_BYTES + 1100,
+                ram_bytes: storage::STARTUP_HOST_BYTES
+                    + 2 * crate::block_v2::execution::worker_budget::RAYON_THREAD_HOST_BYTES
+                    + coordinator::HOST_BYTES
+                    + 1100,
                 vram_bytes: 0,
                 scratch_bytes: 500,
                 threads: 2,
@@ -85,7 +88,9 @@ fn fixture(temp: &Temp) -> (DurableDag, TypedRegistry<12>, RegistryPin, Selectio
 fn budgets() -> (Resources, Resources) {
     (
         Resources {
-            ram_bytes: storage::STARTUP_HOST_BYTES + 1000,
+            ram_bytes: storage::STARTUP_HOST_BYTES
+                + 2 * crate::block_v2::execution::worker_budget::RAYON_THREAD_HOST_BYTES
+                + 1000,
             vram_bytes: 0,
             scratch_bytes: 500,
             threads: 2,

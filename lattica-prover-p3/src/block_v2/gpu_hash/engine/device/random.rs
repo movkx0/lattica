@@ -4,6 +4,8 @@
 use super::*;
 use rand_chacha::ChaCha20Rng;
 
+mod admission;
+pub(crate) use admission::FieldStoragePlan;
 mod public_salts;
 pub(crate) use public_salts::PublicSaltStream;
 pub use public_salts::PublicSalts;
@@ -14,7 +16,13 @@ pub use replay::ReplaySalts;
 const STREAM_WORDS: u128 = 1 << 68; // rand_chacha positions count u32 words.
 const MAX_OUTPUT_WORDS: usize = 1 << 28;
 const BATCH_WORDS: usize = 1 << 20;
+// Keep the Rust admission bound within the OpenCL offset scan's local array.
+const _: () = assert!(TILE_WORDS == 256 && BATCH_WORDS <= TILE_WORDS * 4096);
 const TILE_WORDS: usize = 256;
+// Two words per lane for counts/scatter; their local arrays use at most 1 KiB.
+// The offset scan has a separate 16 KiB local array plus compiler overhead.
+#[cfg(feature = "gpu")]
+const COMPACTION_LANES: usize = TILE_WORDS / 2;
 // Fail explicitly instead of letting a faulty/adversarial stream retry forever.
 // Rejected words never enter a proof; the complete attempt must be retired.
 const MAX_REJECTIONS: u64 = 1024;
@@ -149,6 +157,33 @@ struct Stream {
 /// Clone shares a cursor; it never copies or replays a random stream.
 #[derive(Clone)]
 pub(crate) struct DeviceRandom(Arc<Stream>);
+
+fn retained_stream_host_backing() -> usize {
+    use crate::block_v2::gpu_hash::cache_metadata::arc_bytes;
+    arc_bytes::<Stream>() + arc_bytes::<SecretAllocation>() + arc_bytes::<Allocation>()
+}
+
+#[cfg(all(test, feature = "stream"))]
+#[test]
+fn retained_salt_stream_backing_matches_allocator_requests() {
+    use crate::spill_alloc::allocation_requests::measure;
+    use core::mem::MaybeUninit;
+    let (_owned, requests) = measure(|| {
+        (
+            Arc::new(MaybeUninit::<Stream>::uninit()),
+            Arc::new(MaybeUninit::<SecretAllocation>::uninit()),
+            Arc::new(MaybeUninit::<Allocation>::uninit()),
+        )
+    });
+    assert_eq!(retained_stream_host_backing(), requests.bytes);
+    assert_eq!(requests.calls, 3);
+    assert!(!requests.overflow);
+    eprintln!(
+        "retained_salt_stream_census planned_bytes={} independent_bytes={}",
+        retained_stream_host_backing(),
+        requests.bytes
+    );
+}
 impl core::fmt::Debug for DeviceRandom {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.write_str("DeviceRandom(<redacted>)")
@@ -271,20 +306,71 @@ fn compact(
     count: usize,
     output_start: usize,
 ) -> Result<(usize, u128), String> {
+    compact_with_layout(
+        engine,
+        raw,
+        counts,
+        offsets,
+        total,
+        output,
+        offset,
+        count,
+        output_start,
+        CompactionLayout::Parallel,
+    )
+}
+
+#[cfg(feature = "gpu")]
+#[derive(Clone, Copy)]
+enum CompactionLayout {
+    Parallel,
+    #[cfg(test)]
+    SerialOffsetsReference,
+}
+
+#[cfg(feature = "gpu")]
+fn compact_with_layout(
+    engine: &mut Engine,
+    raw: &SecretAllocation,
+    counts: &SecretAllocation,
+    offsets: &SecretAllocation,
+    total: &SecretAllocation,
+    output: &RandomWords,
+    offset: u32,
+    count: usize,
+    output_start: usize,
+    layout: CompactionLayout,
+) -> Result<(usize, u128), String> {
+    // The offset kernel has 4096 local scan entries. Fail before any dispatch
+    // if a caller bypasses the bounded batch plan.
+    if count == 0 || count > BATCH_WORDS {
+        return Err("random compaction exceeds bounded offset scan".into());
+    }
     let tiles = count.div_ceil(TILE_WORDS);
+    let count_kernel = "device_random_counts";
+    let scatter_kernel = "device_random_scatter";
+    let (offset_kernel, parallel_offsets) = match layout {
+        CompactionLayout::Parallel => ("device_random_offsets", true),
+        #[cfg(test)]
+        CompactionLayout::SerialOffsetsReference => {
+            ("device_random_offsets_serial_reference", false)
+        }
+    };
+    let work_items = tiles * COMPACTION_LANES;
     let mut elapsed = 0;
     let mut event = compute::Event::empty();
     // SAFETY: the caller's Plan admits all raw words, tile counters and the
     // output suffix. Ordered kernels compute disjoint, stable scatter ranges.
     unsafe {
-        engine
-            .pq
-            .kernel_builder("device_random_counts")
+        let mut kernel = engine.pq.kernel_builder(count_kernel);
+        kernel
             .arg(raw.buffer())
             .arg(counts.buffer())
             .arg(offset)
             .arg(count as u32)
-            .global_work_size(tiles)
+            .global_work_size(work_items);
+        kernel.local_work_size(COMPACTION_LANES);
+        kernel
             .build()
             .map_err(|e| e.to_string())?
             .cmd()
@@ -292,17 +378,24 @@ fn compact(
             .enq()
             .map_err(|e| e.to_string())?;
     }
-    elapsed += engine.timeline.record("device_random_counts", &event)?;
+    elapsed += engine.timeline.record(count_kernel, &event)?;
     event = compute::Event::empty();
     unsafe {
-        engine
-            .pq
-            .kernel_builder("device_random_offsets")
+        let mut kernel = engine.pq.kernel_builder(offset_kernel);
+        kernel
             .arg(counts.buffer())
             .arg(offsets.buffer())
             .arg(total.buffer())
             .arg(tiles as u32)
-            .global_work_size(1usize)
+            .global_work_size(if parallel_offsets {
+                COMPACTION_LANES
+            } else {
+                1
+            });
+        if parallel_offsets {
+            kernel.local_work_size(COMPACTION_LANES);
+        }
+        kernel
             .build()
             .map_err(|e| e.to_string())?
             .cmd()
@@ -310,19 +403,20 @@ fn compact(
             .enq()
             .map_err(|e| e.to_string())?;
     }
-    elapsed += engine.timeline.record("device_random_offsets", &event)?;
+    elapsed += engine.timeline.record(offset_kernel, &event)?;
     event = compute::Event::empty();
     unsafe {
-        engine
-            .pq
-            .kernel_builder("device_random_scatter")
+        let mut kernel = engine.pq.kernel_builder(scatter_kernel);
+        kernel
             .arg(raw.buffer())
             .arg(offsets.buffer())
             .arg(output.buffer())
             .arg(offset)
             .arg(count as u32)
             .arg(output_start as u64)
-            .global_work_size(tiles)
+            .global_work_size(work_items);
+        kernel.local_work_size(COMPACTION_LANES);
+        kernel
             .build()
             .map_err(|e| e.to_string())?
             .cmd()
@@ -330,7 +424,7 @@ fn compact(
             .enq()
             .map_err(|e| e.to_string())?;
     }
-    elapsed += engine.timeline.record("device_random_scatter", &event)?;
+    elapsed += engine.timeline.record(scatter_kernel, &event)?;
     let mut accepted = [0u64];
     total
         .buffer()
@@ -373,37 +467,20 @@ impl DeviceRandom {
             return Err("GPU random stream has failed".into());
         }
         self.0.session.with_engine(|engine| {
-            let mut live = engine
+            let live = engine
                 .accounting
                 .lock()
                 .map_err(|_| "GPU accounting poisoned")?
                 .live;
-            for &bytes in pending {
-                live = live
-                    .checked_add(bytes)
-                    .ok_or("GPU random pending allocation overflow")?;
-                if bytes > engine.max_alloc || live > engine.limits.managed_bytes {
-                    return Err("GPU random pending inputs exceed admission".into());
-                }
-            }
-            let mut position = cursor.position;
-            for &count in requests {
-                Plan::new(
-                    count,
-                    position,
-                    live,
-                    engine.limits.managed_bytes,
-                    engine.max_alloc,
-                )?;
-                if retain_outputs {
-                    live = live
-                        .checked_add(count * 8)
-                        .ok_or("GPU random batch output overflow")?;
-                }
-                position = position
-                    .checked_add(count as u128 * 2)
-                    .ok_or("GPU random batch cursor overflow")?;
-            }
+            FieldStoragePlan::new(
+                requests.iter().copied(),
+                pending,
+                retain_outputs,
+                cursor.position,
+                live,
+                engine.limits.managed_bytes,
+                engine.max_alloc,
+            )?;
             Ok(())
         })
     }

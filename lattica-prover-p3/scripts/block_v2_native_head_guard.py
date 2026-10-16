@@ -4,12 +4,13 @@ import os
 from pathlib import Path
 import time
 import block_v2_controller_bootstrap as C
+import block_v2_capacity as Capacity
 
 
 def handoff_record(native, directory, pid):
     return dict(schema_version=1, record_type='native_application_handoff', owner_pid=pid,
                 native_host_binding=native.binding, current_head_token=native.current_head.token,
-                proof_sha256=C.G.digest(Path(directory) / 'root-only/node.6.0'))
+                proof_sha256=C.G.digest(Path(directory) / 'root-only' / Capacity.root_file(capacity=getattr(native.store.verifier, 'capacity', 64))))
 
 
 def owner_pid(directory):

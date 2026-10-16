@@ -34,9 +34,39 @@ fn gpu_tree_container_preserves_cpu_verifier_and_statement_order() {
         output.root,
         crate::batch_joinsplit_air::batch_root(&witnesses)
     );
+    let encoded: Vec<u8> = witnesses
+        .iter()
+        .flat_map(crate::encode_joinsplit_witness)
+        .collect();
+    let mut abi_proof = vec![0; output_bound(witnesses.len()).unwrap()];
+    let mut abi_root = [0; 32];
+    let (mut proof_len, mut root_len) = (0, 0);
+    let probe = crate::block_v2::wallet_worker::admission_tests::PrivateInputProbe::start();
+    // SAFETY: live disjoint buffers of the advertised bounded sizes.
+    assert_eq!(
+        unsafe {
+            crate::lattica_joinsplit_tree_prove(
+                encoded.as_ptr(),
+                encoded.len(),
+                witnesses.len(),
+                abi_proof.as_mut_ptr(),
+                abi_proof.len(),
+                &mut proof_len,
+                abi_root.as_mut_ptr(),
+                abi_root.len(),
+                &mut root_len,
+            )
+        },
+        0
+    );
+    probe.finish(3);
+    assert_eq!(root_len, 32);
+    assert_eq!(abi_root.as_slice(), crate::encode_digest(&output.root));
+    abi_proof.truncate(proof_len);
     assert_eq!(crate::native_gpu::lattica_gpu_shutdown(), 0);
     let root = output.root;
     assert!(crate::verify_joinsplit_tree_bytes(&output.proof, &root, 3));
+    assert!(crate::verify_joinsplit_tree_bytes(&abi_proof, &root, 3));
     assert!(!crate::verify_joinsplit_tree_bytes(&output.proof, &root, 2));
     let mut changed_root = root.clone();
     changed_root[0] += Val::ONE;

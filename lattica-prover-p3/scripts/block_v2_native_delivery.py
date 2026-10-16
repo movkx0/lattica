@@ -9,6 +9,7 @@ import ctypes
 import importlib.util
 import json
 from pathlib import Path
+import block_v2_capacity as Capacity
 import shutil
 import struct
 import subprocess
@@ -47,9 +48,9 @@ def prepare_batch(store, indices, registry_fixture, cpu_probe, output, *, wallet
     Returns a manifest; apply_prepared checks all pinned inputs and uses the
     original head token. Reorgs or concurrent writes may make work stale.
     """
-    if (not 1 <= len(indices) <= 64 or len(set(indices)) != len(indices)
+    if (not 1 <= len(indices) <= Capacity.MAX_TRANSACTIONS or len(set(indices)) != len(indices)
             or any(type(i) is not int or not 0 <= i < store.verifier.wallet_slot_limit for i in indices)):
-        raise ValueError('choose 1..64 distinct funded delivery slot indices')
+        raise ValueError('choose distinct funded delivery slots within the supported block capacity')
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=False)
     fixture = Path(registry_fixture).resolve(strict=True)

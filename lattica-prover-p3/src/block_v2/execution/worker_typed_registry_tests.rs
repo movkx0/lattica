@@ -15,7 +15,8 @@ fn registry() -> TypedRegistry<12> {
 
 fn resources() -> Resources {
     Resources {
-        ram_bytes: storage::STARTUP_HOST_BYTES,
+        ram_bytes: storage::STARTUP_HOST_BYTES
+            + crate::block_v2::execution::worker_budget::rayon_stack_host_bytes(2).unwrap(),
         vram_bytes: 0,
         scratch_bytes: 500,
         threads: 2,
@@ -26,7 +27,13 @@ fn resources() -> Resources {
 fn undersized_worker_rejects_before_registry_allocation() {
     let registry = registry();
     let pin = RegistryPin::new_typed(&registry, registry.id().unwrap()).unwrap();
-    for ram_bytes in [0, storage::HOST_BYTES, storage::STARTUP_HOST_BYTES - 1] {
+    for ram_bytes in [
+        0,
+        storage::HOST_BYTES,
+        storage::STARTUP_HOST_BYTES
+            + 2 * crate::block_v2::execution::worker_budget::RAYON_THREAD_HOST_BYTES
+            - 1,
+    ] {
         let registry = registry.clone();
         let (result, requested) = measure(|| {
             TypedWorker::new(
@@ -42,17 +49,23 @@ fn undersized_worker_rejects_before_registry_allocation() {
         assert!(!requested.overflow && requested.bytes <= 1048);
     }
     let mut worker = TypedWorker::new(registry, pin, resources()).unwrap();
-    let session_memory = storage::session_memory_bytes(resources().ram_bytes).unwrap();
+    let stacks = crate::block_v2::execution::worker_budget::rayon_stack_host_bytes(2).unwrap();
+    let session_memory = storage::session_memory_bytes(resources().ram_bytes, 2).unwrap();
     assert_eq!(
         session_memory,
-        resources().ram_bytes - storage::HOST_BYTES - storage::INPUT_HOST_BYTES
+        resources().ram_bytes
+            - storage::HOST_BYTES
+            - storage::INPUT_HOST_BYTES
+            - crate::host_memory::RETAINED_SYSTEM_HOST_BYTES
+            - crate::block_v2::execution::worker_budget::CALLER_STACK_HOST_BYTES
+            - stacks
     );
     let active =
         crate::block_v2::typed_recursive::storage::active_memory_bytes(session_memory, 0).unwrap();
     let session = worker.session.as_mut().unwrap();
     assert!(session.configure_cache(2, active).is_err());
     session.configure_cache(2, active - 1).unwrap();
-    eprintln!("worker_registry_startup minimum_bytes={} early_rejections=3 session_bytes={session_memory} active_bytes={active} registry_setup_not_subtracted=true decoded_input_bytes={}", storage::STARTUP_HOST_BYTES, storage::INPUT_HOST_BYTES);
+    eprintln!("worker_registry_startup minimum_bytes={} early_rejections=3 session_bytes={session_memory} active_bytes={active} registry_setup_not_subtracted=true decoded_input_bytes={}", resources().ram_bytes, storage::INPUT_HOST_BYTES);
 }
 
 #[test]
@@ -123,7 +136,7 @@ fn fresh_wallet_inputs_serial() {
             let TypedInputs::Pair(proofs, policies, count) = inputs else {
                 panic!("expected pair")
             };
-            assert_eq!(*count, 1);
+            assert_eq!(count, 1);
             assert_eq!(policies.len(), 2);
             assert!(policies
                 .iter()

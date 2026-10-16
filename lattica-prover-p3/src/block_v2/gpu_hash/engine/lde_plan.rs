@@ -60,8 +60,12 @@ pub struct LdeCommitPlan {
     /// Additional owned device prefixes, already included in the peak.
     pub device_output_bytes: usize,
     pub host_output_bytes: usize,
+    /// Allocator requests for all outputs, including headers/page rounding.
+    pub host_output_backing_bytes: usize,
     /// Only one matrix is reordered at a time; all other admitted outputs stay live.
     pub host_reorder_workspace_bytes: usize,
+    /// Largest simultaneous reorder allocation, including its own header.
+    pub host_reorder_backing_bytes: usize,
     pub predicted_host_peak_bytes: usize,
     pub projected_input_upload_bytes: usize,
     pub projected_salt_upload_bytes: usize,
@@ -100,11 +104,13 @@ impl LdeCommitPlan {
         // Matrix count follows the quotient partition, not the LDE blowup.
         // Keep the existing aggregate heap allowance independent of that count.
         let max_heap_bytes = (1usize << crate::block_v2::profile::LOG_BLOWUP) * per_matrix;
-        if self.inputs.len() > max_matrices || self.host_output_bytes > max_heap_bytes {
+        if self.inputs.len() > max_matrices || self.host_output_backing_bytes > max_heap_bytes {
             return Err("quotient heap aggregate allowance exceeded".into());
         }
         for input in &self.inputs {
-            if bytes(mul(self.retained_height, input.width)?)? > per_matrix {
+            if super::lde_readback::backing_bytes(mul(self.retained_height, input.width)?)?
+                > per_matrix
+            {
                 return Err("quotient heap matrix allowance exceeded".into());
             }
         }
@@ -228,6 +234,7 @@ impl LdeCommitPlan {
         let mut max_width = 0;
         let mut input_upload = 0;
         let mut host_output = 0;
+        let mut host_output_backing_bytes = 0;
         let mut prefixes = Vec::with_capacity(inputs.len());
         for input in inputs {
             // Current tiled kernel requires at least one butterfly stage.
@@ -255,12 +262,14 @@ impl LdeCommitPlan {
             total_row_width = add(total_row_width, add(input.width, SALT_COLUMNS)?)?;
             max_width = max_width.max(input.width);
             input_upload = add(input_upload, bytes(mul(input.height, input.width)?)?)?;
-            host_output = add(
-                host_output,
-                bytes(mul(retention.host_rows(height), input.width)?)?,
+            let host_elements = mul(retention.host_rows(height), input.width)?;
+            host_output = add(host_output, bytes(host_elements)?)?;
+            host_output_backing_bytes = add(
+                host_output_backing_bytes,
+                super::lde_readback::backing_bytes(host_elements)?,
             )?;
         }
-        if host_output > host_output_budget_bytes {
+        if host_output_backing_bytes > host_output_budget_bytes {
             return Err("LDE host readback exceeds caller allowance".into());
         }
         let hash = plan_slots(output_height, total_row_width, limits, max_alloc, slots)?;
@@ -304,18 +313,19 @@ impl LdeCommitPlan {
         }
         let columns_per_tile = 1usize << maximum.ilog2();
         let mut host_reorder_workspace_bytes = 0;
+        let mut host_reorder_backing_bytes = 0;
         for input in inputs {
             if readback_layout == super::lde_readback::ReadbackLayout::Banded
                 && retention != LdeRetention::DeviceOnly
                 && input.width > columns_per_tile
             {
-                host_reorder_workspace_bytes = host_reorder_workspace_bytes.max(bytes(mul(
-                    retention.host_rows(output_height),
-                    input.width,
-                )?)?);
+                let elements = mul(retention.host_rows(output_height), input.width)?;
+                host_reorder_workspace_bytes = host_reorder_workspace_bytes.max(bytes(elements)?);
+                host_reorder_backing_bytes =
+                    host_reorder_backing_bytes.max(super::lde_readback::backing_bytes(elements)?);
             }
         }
-        let predicted_host_peak_bytes = add(host_output, host_reorder_workspace_bytes)?;
+        let predicted_host_peak_bytes = add(host_output_backing_bytes, host_reorder_backing_bytes)?;
         if predicted_host_peak_bytes > host_output_budget_bytes {
             return Err("LDE host output plus reorder workspace exceeds caller allowance".into());
         }
@@ -343,7 +353,9 @@ impl LdeCommitPlan {
             predicted_managed_peak_bytes,
             device_output_bytes: 0,
             host_output_bytes: host_output,
+            host_output_backing_bytes,
             host_reorder_workspace_bytes,
+            host_reorder_backing_bytes,
             predicted_host_peak_bytes,
             projected_input_upload_bytes: input_upload,
             projected_salt_upload_bytes,
@@ -387,6 +399,10 @@ impl LdeCommitPlan {
             .map(|input| (self.prefixes[matrix] + input.width) % RATE)
     }
 }
+#[cfg(test)]
+#[path = "lde_backing_tests.rs"]
+mod backing_tests;
+
 #[cfg(test)]
 mod tests {
     use super::super::{GIB, MAX_MANAGED_BYTES, MIB};
@@ -536,10 +552,13 @@ mod tests {
             };
             let banded = make(48 * GIB, ReadbackLayout::Banded).unwrap();
             assert!(banded.host_reorder_workspace_bytes > 0);
-            assert!(make(banded.host_output_bytes, ReadbackLayout::Banded).is_err());
-            let direct = make(banded.host_output_bytes, ReadbackLayout::Direct).unwrap();
+            assert!(make(banded.host_output_backing_bytes, ReadbackLayout::Banded).is_err());
+            let direct = make(banded.host_output_backing_bytes, ReadbackLayout::Direct).unwrap();
             assert_eq!(direct.host_reorder_workspace_bytes, 0);
-            assert_eq!(direct.predicted_host_peak_bytes, banded.host_output_bytes);
+            assert_eq!(
+                direct.predicted_host_peak_bytes,
+                banded.host_output_backing_bytes
+            );
             assert_eq!(
                 direct.projected_host_readback_bytes,
                 banded.projected_host_readback_bytes
@@ -552,7 +571,7 @@ mod tests {
                 direct.tiles().collect::<Vec<_>>(),
                 banded.tiles().collect::<Vec<_>>()
             );
-            assert!(make(banded.host_output_bytes - 1, ReadbackLayout::Direct).is_err());
+            assert!(make(banded.host_output_backing_bytes - 1, ReadbackLayout::Direct).is_err());
         }
     }
 
@@ -588,7 +607,15 @@ mod tests {
         assert!(p.predicted_managed_peak_bytes <= MAX_MANAGED_BYTES);
         assert_eq!(p.host_output_bytes, 302usize * (1 << 23) * 8);
         assert_eq!(p.host_reorder_workspace_bytes, 204usize * (1 << 23) * 8);
-        assert_eq!(p.predicted_host_peak_bytes, 506usize * (1 << 23) * 8);
+        let headers = if cfg!(feature = "stream") {
+            3 * 4096
+        } else {
+            0
+        };
+        assert_eq!(
+            p.predicted_host_peak_bytes,
+            506usize * (1 << 23) * 8 + headers
+        );
         assert_eq!(p.projected_host_readback_bytes, p.host_output_bytes);
         assert_eq!(p.projected_input_upload_bytes, 302usize * (1 << 19) * 8);
         assert_eq!(p.projected_salt_upload_bytes, 2usize * (1 << 23) * 4 * 8);

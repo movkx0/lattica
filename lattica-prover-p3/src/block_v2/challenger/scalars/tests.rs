@@ -57,6 +57,82 @@ fn lookup_bus_metadata_preserves_global_names_local_identity_and_empty_instances
     assert!(bus_layout(&[&excess]).is_err());
 }
 
+#[cfg(feature = "stream")]
+#[test]
+fn lookup_host_metadata_is_exact_and_bounded_for_sparse_and_shared_names() {
+    use crate::spill_alloc::allocation_requests::measure;
+    for count in [1, resources::SCALAR_OUTPUTS] {
+        let rows = (0..count)
+            .map(|index| {
+                vec![lookup(
+                    if index % 3 == 0 {
+                        Kind::Local
+                    } else {
+                        Kind::Global(format!("bus-{}", (count - index) % 7))
+                    },
+                    &[1],
+                )]
+            })
+            .collect::<Vec<_>>();
+        let refs = rows.iter().map(Vec::as_slice).collect::<Vec<_>>();
+        let ((ids, width, buses), requests) = measure(|| bus_layout(&refs).unwrap());
+        assert_eq!(ids.len(), count);
+        assert_eq!(ids.capacity(), count);
+        assert_eq!(width, 1);
+        assert!(buses <= count);
+        assert!(ids.iter().all(|row| row.len() == 1 && row.capacity() == 1));
+        let independent = count
+            * (core::mem::size_of::<Vec<usize>>()
+                + core::mem::size_of::<usize>()
+                + core::mem::size_of::<(&str, usize)>());
+        assert_eq!(requests.bytes, independent);
+        assert_eq!(requests.calls, count + 2);
+        assert!(!requests.overflow);
+        assert!(requests.bytes <= storage::Plan::lookup(count, count).unwrap().bytes);
+        // A direct encounter-order oracle, separate from the sorted-name table.
+        let mut names = std::collections::HashMap::new();
+        let mut next = 0;
+        for (row, actual) in rows.iter().zip(&ids) {
+            let expected = match &row[0].kind {
+                Kind::Local => {
+                    let id = next;
+                    next += 1;
+                    id
+                }
+                Kind::Global(name) => *names.entry(name).or_insert_with(|| {
+                    let id = next;
+                    next += 1;
+                    id
+                }),
+            };
+            assert_eq!(actual, &[expected]);
+        }
+        assert_eq!(buses, next);
+        eprintln!("lookup_host_metadata count={count} allocated_bytes={} independent_bytes={independent} exact_capacities=true", requests.bytes);
+    }
+    let refs = vec![&[][..]; resources::SCALAR_OUTPUTS];
+    let ((ids, _, buses), requests) = measure(|| bus_layout(&refs).unwrap());
+    assert_eq!(buses, 0);
+    assert!(ids.iter().all(|row| row.is_empty() && row.capacity() == 0));
+    assert_eq!(
+        requests.bytes,
+        refs.len() * core::mem::size_of::<Vec<usize>>()
+    );
+    assert_eq!(requests.calls, 1);
+}
+
+#[cfg(feature = "stream")]
+#[test]
+fn lookup_rejects_excess_empty_instances_before_metadata_allocation() {
+    use crate::spill_alloc::allocation_requests::measure;
+    let refs = vec![&[][..]; resources::SCALAR_OUTPUTS + 1];
+    let (error, requests) = measure(|| bus_layout(&refs).unwrap_err());
+    assert!(error.contains("lookup host metadata"));
+    // Only the returned diagnostic String is allocated, not the outer ID table.
+    assert_eq!(requests.calls, 1);
+    assert_eq!(requests.bytes, error.capacity());
+}
+
 #[test]
 #[cfg(feature = "gpu")]
 #[ignore = "requires OpenCL GPU; run serially in a <=3 GiB zero-swap service"]
@@ -130,6 +206,16 @@ fn gpu_scalar_failure_retires_challenger_family_without_poisoning_new_attempts()
     .is_err());
     assert_eq!(before, session.stats());
     assert!(related.begin_attempt().is_err());
+    let mut empty_excess = CandidateChallenger::new_gpu(&session).unwrap();
+    let related = empty_excess.clone();
+    let refs = vec![&[][..]; resources::SCALAR_OUTPUTS + 1];
+    let before = session.stats();
+    assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+        || empty_excess.gpu_lookup_challenges(&refs)
+    ))
+    .is_err());
+    assert_eq!(before, session.stats());
+    assert!(related.begin_attempt().is_err());
     let mut fresh = CandidateChallenger::new_gpu(&session).unwrap();
     let related = fresh.clone();
     let Backend::Gpu(transcript) = &mut fresh.inner else {
@@ -158,4 +244,25 @@ fn gpu_scalar_failure_retires_challenger_family_without_poisoning_new_attempts()
         <CandidateChallenger as CanSample<Challenge>>::sample(&mut independent),
         adapter().sample()
     );
+
+    let shared = CandidateChallenger::new_gpu(&session).unwrap();
+    let sibling = shared.clone();
+    let retained = session.transcript_host_reserved_bytes();
+    let plan = storage::Plan::next_points(resources::SCALAR_OUTPUTS, 3).unwrap();
+    let held = session
+        .reserve_transcript_host(storage::Plan {
+            bytes: resources::HOST_BYTES - retained - plan.bytes + 1,
+        })
+        .unwrap();
+    let domains = vec![DomainSpec::new(7, 8).unwrap(); resources::SCALAR_OUTPUTS];
+    let point = Challenge::from_basis_coefficients_fn(|i| Val::new(i as u64 + 1));
+    let before = session.stats();
+    assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _ = shared.next_points(point, &domains);
+    }))
+    .is_err());
+    assert_eq!(before, session.stats());
+    assert!(sibling.begin_attempt().is_err());
+    drop(held);
+    assert_eq!(session.transcript_host_reserved_bytes(), retained);
 }

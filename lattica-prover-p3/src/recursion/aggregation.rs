@@ -352,6 +352,7 @@ pub enum AggregationError {
     },
     TraceLayout(String),
     BackendUnavailable(&'static str),
+    ProvingPolicy(crate::proving::Error),
     ProverIo(std::io::Error),
     MalformedAggregateProof,
 }
@@ -2194,6 +2195,7 @@ pub fn prove_joinsplit_aggregate_research(
     inputs: &[JoinSplitAggregateInput<'_>],
     options: ResearchAggregationOptions,
 ) -> Result<JoinSplitAggregateProof, AggregationError> {
+    crate::proving::legacy_cpu_admission().map_err(AggregationError::ProvingPolicy)?;
     let (inner_config, parsed) = parse_and_verify_inputs(inputs, options)?;
     let instance = build_instance(&parsed, &inner_config)?;
     let width = instance.trace.width;
@@ -2232,6 +2234,7 @@ pub fn prove_joinsplit_aggregate_production_research(
     inputs: &[JoinSplitAggregateInput<'_>],
     options: ProductionAggregationOptions,
 ) -> Result<JoinSplitAggregateProof, AggregationError> {
+    crate::proving::legacy_cpu_admission().map_err(AggregationError::ProvingPolicy)?;
     let (inner_config, parsed) = parse_and_verify_production_inputs(inputs, options.inner_profile)?;
     let plan = plan_production_aggregate_from_parsed(&parsed, &inner_config)?;
     plan.check_limits_for_backend(options.backend)?;
@@ -2324,6 +2327,7 @@ pub fn prove_joinsplit_aggregate_production_padded_research<'a>(
     dummy: JoinSplitAggregateInput<'a>,
     options: ProductionAggregationOptions,
 ) -> Result<JoinSplitAggregateProof, AggregationError> {
+    crate::proving::legacy_cpu_admission().map_err(AggregationError::ProvingPolicy)?;
     let padded = pad_joinsplit_aggregate_production_inputs(inputs, dummy, options.inner_profile)?;
     prove_joinsplit_aggregate_production_research(&padded, options)
 }

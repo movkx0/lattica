@@ -19,7 +19,9 @@ mod builder;
 mod expression;
 mod lookup;
 mod normalize;
+mod recorded;
 mod recording;
+pub(crate) use recorded::RecordedUni;
 #[cfg(test)]
 mod tests;
 pub(crate) mod verifier;

@@ -25,9 +25,25 @@ use crate::config::{MyCompress, MyHash, Val};
 
 /// Research namespace, NOT a reviewed verifier/program identity or activation ID.
 /// Freeze a new identity after the recursive program and complete profile are reviewed.
+#[cfg(not(feature = "block-v2-capacity-128"))]
 pub const CANDIDATE_PROFILE_ID: [u8; 32] = *b"LATTICA-BLOCK-V2-CANDIDATE-00001";
-pub const MAX_TRANSACTIONS: usize = 64;
-pub const TREE_DEPTH: usize = 6;
+#[cfg(feature = "block-v2-capacity-128")]
+pub const CANDIDATE_PROFILE_ID: [u8; 32] = *b"LATTICA-BLOCK-V2-CANDIDATE-00128";
+pub const MAX_TRANSACTIONS: usize = if cfg!(feature = "block-v2-capacity-128") {
+    128
+} else {
+    64
+};
+pub const TREE_DEPTH: usize = MAX_TRANSACTIONS.ilog2() as usize;
+pub const ROOT_FILE: &str = if cfg!(feature = "block-v2-capacity-128") {
+    "node.7.0"
+} else {
+    "node.6.0"
+};
+/// Planning only: these sizes require wider count codecs and fresh qualification.
+pub const PLANNED_CAPACITIES: [usize; 2] = [256, 512];
+/// A full reference DAG has one wrapper per leaf and one node per merge.
+pub const MAX_DAG_NODES: usize = 2 * MAX_TRANSACTIONS - 1;
 pub const BLOCK_INTERVAL_SECS: u64 = 12 * 60;
 pub const MAX_PROOF_BYTES: usize = 2 * 1024 * 1024;
 // Research node transport only. Wallets keep their existing encoding/profile.
@@ -49,7 +65,7 @@ pub const CHALLENGE_FIELD_BITS: usize = 191;
 /// Conservative floor for birthday collision resistance of four Goldilocks elements.
 pub const HASH_COLLISION_BITS: usize = 127;
 pub const MIN_TREE_SECURITY_BITS: usize = 100;
-/// 64 wallet proofs + 64 leaf/empty wrappers + 63 binary merge proofs.
+/// N wallet proofs + N leaf/empty wrappers + (N - 1) binary merge proofs.
 /// This is an accounting assumption, not evidence that those recursive proofs exist.
 pub const MAX_TREE_PROOF_STATEMENTS: usize = 3 * MAX_TRANSACTIONS - 1;
 
@@ -277,16 +293,22 @@ pub(crate) fn preprocessing_config() -> Config {
 /// Fresh per-proof entropy for an explicitly selected owned GPU wallet path.
 #[cfg(feature = "gpu")]
 pub(crate) fn make_gpu_proving_config<E: super::pcs_field::PcsField>(
+    assigned_host_bytes: usize,
 ) -> Result<super::pcs_field::ProvingConfig<E>, crate::proving::Error> {
     if !resident_research_enabled() || !super::quotient_pcs::research_enabled() {
         return Err(crate::proving::Error::ComponentRejected);
     }
-    Ok(config_with_rngs(
+    let budget = host_budget::selected_budget(assigned_host_bytes)?;
+    if budget != assigned_host_bytes {
+        return Err(crate::proving::Error::ComponentRejected);
+    }
+    Ok(config_with_rngs_and_host_budget(
         ChaCha20Rng::from_rng(&mut rand::rng()),
         ChaCha20Rng::from_rng(&mut rand::rng()),
         Some(ChaCha20Rng::from_rng(&mut rand::rng())),
         true,
         false,
+        Some(budget),
     ))
 }
 
@@ -521,7 +543,10 @@ mod tests {
         assert_eq!(composition_bits(127, 1), Ok(127));
         assert_eq!(composition_bits(127, 2), Ok(126));
         assert_eq!(composition_bits(127, 3), Ok(125));
-        assert_eq!(composition_bits(127, MAX_TREE_PROOF_STATEMENTS), Ok(119));
+        assert_eq!(
+            composition_bits(127, MAX_TREE_PROOF_STATEMENTS),
+            Ok(127 - (TREE_DEPTH + 2))
+        );
         assert_eq!(composition_bits(3, 191), Ok(0));
         assert_eq!(
             composition_bits(127, 0),

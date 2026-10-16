@@ -124,23 +124,35 @@ fn extension_compiler_uses_compact_rows_parameters_and_constants() {
 #[test]
 #[ignore = "requires OpenCL GPU; run serially in a <=3 GiB zero-swap service"]
 fn quadratic_quotients_match_cpu_with_owned_partitioned_inputs_and_commitments() {
-    conformance::<crate::config::Challenge>();
+    conformance::<crate::config::Challenge>(false);
 }
 
 #[test]
 #[ignore = "requires OpenCL GPU; run serially in a <=3 GiB zero-swap service"]
 fn cubic_quotients_match_cpu_with_owned_partitioned_inputs_and_commitments() {
-    conformance::<profile::Challenge>();
+    conformance::<profile::Challenge>(false);
 }
 
-fn conformance<F: FriExtension>()
+#[test]
+#[ignore = "requires selected OpenCL GPU; run serially in a <=3 GiB zero-swap service"]
+fn quadratic_quotients_match_cpu_across_large_device_tiles() {
+    conformance::<crate::config::Challenge>(true);
+}
+
+#[test]
+#[ignore = "requires selected OpenCL GPU; run serially in a <=3 GiB zero-swap service"]
+fn cubic_quotients_match_cpu_across_large_device_tiles() {
+    conformance::<profile::Challenge>(true);
+}
+
+fn conformance<F: FriExtension>(large_tiles: bool)
 where
     SymbolicExpressionExt<Val, F>: Algebra<F>,
 {
     let _shutdown = TestShutdownGuard;
     gpu_hash::initialize_quotient_test_engine(Limits {
         managed_bytes: 64 << 20,
-        tile_bytes: 128 << 10,
+        tile_bytes: if large_tiles { 16 << 20 } else { 128 << 10 },
         staging_bytes: 64 << 10,
     })
     .unwrap();
@@ -152,9 +164,12 @@ where
     let hash = MyHash::new(permutation.clone());
     let compress = MyCompress::new(permutation);
     let mut cases = 0;
-    for (log_trace, log_quotient, shift) in
-        [(0u32, 3u32, 7u64), (3, 6, 11), (5, 9, 7), (10, 13, 11)]
-    {
+    let domains = if large_tiles {
+        &[(10u32, 15u32, 7u64), (14, 16, 11)][..]
+    } else {
+        &[(0u32, 3u32, 7u64), (3, 6, 11), (5, 9, 7), (10, 13, 11)][..]
+    };
+    for &(log_trace, log_quotient, shift) in domains {
         let session = DeviceSession::new().unwrap();
         let height = 1usize << log_quotient;
         let matrix = |width, salt: u64| {
@@ -407,6 +422,10 @@ where
     }
     drop(prepared);
     gpu_hash::shutdown().unwrap();
-    assert_eq!(cases, 16);
+    assert_eq!(cases, 4 * domains.len());
+    println!(
+        "device_quotient_tile_conformance extension={} large_tiles={large_tiles} cases={cases}",
+        F::DIMENSION
+    );
     eprintln!("extension_quotient_cpu_matched degree={} cases={cases} quotient_readback_before_commit_bytes=0", F::DIMENSION);
 }

@@ -77,6 +77,24 @@ fn gpu_scalar_arithmetic_matches_upstream_at_field_and_geometry_boundaries() {
         }
     }
     let logs: Vec<_> = (0..=32).collect();
+    let maximum_logs: Vec<_> = (0..MAX_SCALARS).map(|i| i % 33).collect();
+    for extension in [Extension::Quadratic, Extension::Cubic] {
+        let point = [7u64, 13, 29];
+        let actual = session
+            .next_points_extension(extension, &point[..extension.degree()], &maximum_logs)
+            .unwrap();
+        assert_eq!(actual.len(), MAX_SCALARS * extension.degree());
+        assert_eq!(actual.capacity(), actual.len());
+        for (row, &log) in actual.chunks_exact(extension.degree()).zip(&maximum_logs) {
+            for (&word, &coefficient) in row.iter().zip(&point) {
+                assert_eq!(
+                    Val::new(word),
+                    Val::new(coefficient) * Val::TWO_ADIC_GENERATORS[log]
+                );
+            }
+        }
+    }
+    eprintln!("gpu_scalar_host_capacity max_outputs={MAX_SCALARS} degrees=2,3 exact_capacities=true cpu_reference_checked=true");
     for point in [[0; 2], [p - 1, p - 2], [7, 13]] {
         type Quadratic = crate::config::Challenge;
         let value = Quadratic::from_basis_coefficients_fn(|i| Val::new(point[i]));
@@ -187,6 +205,22 @@ fn gpu_scalars_reject_invalid_inputs_and_memory_before_execution() {
     }
     assert!(session.disjoint_domain(domain, 33).is_err());
     assert_eq!(before, session.stats());
+    let other = DeviceSession::new().unwrap();
+    let plan = host_storage::Plan::next_points(1, 3).unwrap();
+    let mut foreign = other.reserve_transcript_host(plan).unwrap();
+    assert!(session
+        .next_points_extension_scoped(Extension::Cubic, &[1; 3], &[5], &mut foreign)
+        .is_err());
+    let mut small = session
+        .reserve_transcript_host(host_storage::Plan { bytes: 1 })
+        .unwrap();
+    assert!(session
+        .next_points_extension_scoped(Extension::Cubic, &[1; 3], &[5], &mut small)
+        .is_err());
+    assert_eq!(before, session.stats());
+    drop((foreign, small));
+    assert_eq!(session.transcript_host_reserved_bytes(), 0);
+    assert_eq!(other.transcript_host_reserved_bytes(), 0);
     for allocation_limit in [false, true] {
         let saved = session
             .with_engine(|engine| {

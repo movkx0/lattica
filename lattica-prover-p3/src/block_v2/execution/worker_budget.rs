@@ -2,6 +2,72 @@
 //! Uses the existing assignment schema; the runtime must enforce physical caps.
 use super::resources::Resources;
 use crate::block_v2::recursive::Error;
+/// Qualified Linux Rayon stacks. Include both guards and a bounded alternate
+/// signal stack. This is separate from allocator, main-thread and driver storage.
+pub const RAYON_STACK_BYTES: usize = 2 << 20;
+pub const RAYON_STACK_AUX_BYTES: usize = 64 << 10;
+pub const RAYON_THREAD_HOST_BYTES: u64 = (RAYON_STACK_BYTES + 3 * RAYON_STACK_AUX_BYTES) as u64;
+/// The blocking caller's stack persists through startup, jobs and shutdown.
+/// Other caller-owned threads and allocator/driver storage remain separate.
+pub const CALLER_STACK_BYTES: usize = 8 << 20;
+pub const CALLER_STACK_HOST_BYTES: u64 = (CALLER_STACK_BYTES + 3 * RAYON_STACK_AUX_BYTES) as u64;
+
+pub fn rayon_stack_host_bytes(threads: u32) -> Result<u64, Error> {
+    if threads == 0 {
+        return Err("Rayon stack reservation requires positive thread count".into());
+    }
+    RAYON_THREAD_HOST_BYTES
+        .checked_mul(u64::from(threads))
+        .ok_or_else(|| "Rayon stack reservation overflow".into())
+}
+
+/// Ceiling for live/in-flight Rust System requests, including protocol and
+/// startup owners. Physical allocator retention and stacks keep their own
+/// reservations. This does not bound allocator metadata, drivers or RSS.
+pub fn system_request_limit_bytes(worker_bytes: u64, threads: u32) -> Result<u64, Error> {
+    worker_bytes
+        .checked_sub(rayon_stack_host_bytes(threads)?)
+        .and_then(|n| n.checked_sub(CALLER_STACK_HOST_BYTES))
+        .and_then(|n| n.checked_sub(crate::host_memory::RETAINED_SYSTEM_HOST_BYTES))
+        .filter(|n| *n > 0)
+        .ok_or_else(|| {
+            "worker RAM cannot admit Rust System requests beside stacks and retention".into()
+        })
+}
+
+/// Full System + spill request backing shares one ceiling. Reserve the known
+/// mapped GPU staging separately; the ceiling is not complete allocator/RSS
+/// admission and does not lend nonresident spill capacity to other owners.
+pub fn host_request_limit_bytes(worker_bytes: u64, threads: u32) -> Result<u64, Error> {
+    system_request_limit_bytes(worker_bytes, threads)?
+        .checked_sub(crate::host_memory::GPU_MAPPED_HOST_BYTES)
+        .filter(|n| *n > 0)
+        .ok_or_else(|| "worker RAM cannot admit combined requests beside mapped staging".into())
+}
+
+/// Kernel private writable data envelope, including retained/foreign allocators.
+/// Reserve the full spill allowance and mapped staging outside this envelope:
+/// file-backed shared mappings need not count against Linux RLIMIT_DATA. Disk
+/// backing does not prove those pages stay nonresident. Other shared/read-only
+/// mappings, kernel ownership and complete process RSS remain separate.
+pub fn private_data_limit_bytes(
+    worker_bytes: u64,
+    threads: u32,
+    spill_bytes: u64,
+) -> Result<u64, Error> {
+    if spill_bytes == 0 {
+        return Err("private data partition requires a positive spill allowance".into());
+    }
+    worker_bytes
+        .checked_sub(rayon_stack_host_bytes(threads)?)
+        .and_then(|n| n.checked_sub(CALLER_STACK_HOST_BYTES))
+        .and_then(|n| n.checked_sub(spill_bytes))
+        .and_then(|n| n.checked_sub(crate::host_memory::GPU_MAPPED_HOST_BYTES))
+        .filter(|n| *n > 0)
+        .ok_or_else(|| {
+            "worker RAM cannot admit private data beside stacks, spill and mapped staging".into()
+        })
+}
 
 // Kept outside the local-process runtime so a planner can validate assignments
 // without Linux IPC or the stream feature. Full process RSS is still separate.
@@ -104,6 +170,45 @@ pub(super) fn preprocessing_cache(assignment: &serde_json::Value) -> Result<(usi
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn system_request_ceiling_keeps_stacks_and_retention_outside_the_heap() {
+        let reserved = rayon_stack_host_bytes(4).unwrap()
+            + CALLER_STACK_HOST_BYTES
+            + crate::host_memory::RETAINED_SYSTEM_HOST_BYTES;
+        for total in [0, reserved - 1, reserved] {
+            assert!(system_request_limit_bytes(total, 4).is_err());
+        }
+        assert!(system_request_limit_bytes(3 << 30, 0).is_err());
+        assert_eq!(system_request_limit_bytes(reserved + 1, 4).unwrap(), 1);
+        assert_eq!(system_request_limit_bytes(3 << 30, 4).unwrap(), 2666594304);
+        assert_eq!(host_request_limit_bytes(3 << 30, 4).unwrap(), 2599485440);
+        let mapped = crate::host_memory::GPU_MAPPED_HOST_BYTES;
+        assert!(host_request_limit_bytes(reserved + mapped, 4).is_err());
+        assert!(host_request_limit_bytes(3 << 30, 0).is_err());
+        assert_eq!(
+            host_request_limit_bytes(reserved + mapped + 1, 4).unwrap(),
+            1
+        );
+        let spill = 1 << 30;
+        assert_eq!(
+            private_data_limit_bytes(3 << 30, 4, spill).unwrap(),
+            2062614528
+        );
+        let separate = rayon_stack_host_bytes(4).unwrap()
+            + CALLER_STACK_HOST_BYTES
+            + spill
+            + crate::host_memory::GPU_MAPPED_HOST_BYTES;
+        assert!(private_data_limit_bytes(separate, 4, spill).is_err());
+        assert!(private_data_limit_bytes(3 << 30, 0, spill).is_err());
+        assert!(private_data_limit_bytes(3 << 30, 4, 0).is_err());
+        assert!(private_data_limit_bytes(3 << 30, 4, u64::MAX).is_err());
+        assert_eq!(private_data_limit_bytes(separate + 1, 4, spill).unwrap(), 1);
+        assert_eq!(
+            private_data_limit_bytes(3 << 30, 4, spill).unwrap() + separate,
+            3 << 30
+        );
+    }
 
     #[test]
     fn coordinator_shared_storage_is_subtracted_without_growing_physical_ram() {

@@ -349,10 +349,10 @@ class HostStoreTests(unittest.TestCase):
         self.assertEqual(policy.for_block(10, 4), (0, 0, 0, 7))
         with self.assertRaises(H.RejectedBlock):
             policy.for_block(10, 3)
-        for grants in ({True: {0: 7}}, {10: {64: 7}}, {10: {3: 0}}, {10: {3: 2**52}}):
+        for grants in ({True: {0: 7}}, {10: {H.Capacity.MAX_TRANSACTIONS: 7}}, {10: {3: 0}}, {10: {3: 2**52}}):
             with self.assertRaises(ValueError):
                 H.IssuancePolicy(grants)
-        for c in (candidate(count=0), candidate(count=65), H.Candidate(True, candidate().body, b'x'),
+        for c in (candidate(count=0), candidate(count=H.Capacity.MAX_TRANSACTIONS + 1), H.Candidate(True, candidate().body, b'x'),
                   H.Candidate(10, b'statement-only-json', b'x'), H.Candidate(10, candidate().body, b'')):
             with self.assertRaises(H.RejectedBlock):
                 c.validate()

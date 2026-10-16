@@ -5,7 +5,7 @@ use crate::block_v2::execution::storage_bound::{add, btree, mul, vector};
 use core::mem::size_of;
 
 const INPUTS: usize = 2;
-const CLOSURE: usize = 127;
+const CLOSURE: usize = crate::block_v2::profile::MAX_DAG_NODES;
 // Arc<[u8]> owns two usize counters and byte data, padded to usize alignment.
 const ARC_OVERHEAD: usize = 3 * size_of::<usize>();
 

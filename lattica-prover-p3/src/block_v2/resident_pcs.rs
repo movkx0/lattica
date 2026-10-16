@@ -345,6 +345,7 @@ impl<E: PcsField> ResidentState<E> {
             } else {
                 None
             },
+            self.host_budget,
         );
         if let Some(guard) = guard {
             guard.complete();
@@ -622,10 +623,15 @@ pub(super) fn compact_prover_data() -> bool {
 }
 
 pub(super) fn host_output_budget() -> usize {
+    try_host_output_budget().expect("invalid host output byte budget")
+}
+
+/// Fallible resource admission before private input decoding/preparation.
+pub(super) fn try_host_output_budget() -> Result<usize, String> {
     match std::env::var("LATTICA_V2_HOST_OUTPUT_BYTES") {
-        Ok(value) => value.parse().expect("invalid host output byte budget"),
-        Err(std::env::VarError::NotPresent) => HOST_OUTPUT_BUDGET,
-        Err(_) => panic!("invalid host output budget environment"),
+        Ok(value) => value.parse().map_err(|_| "invalid host output byte budget".into()),
+        Err(std::env::VarError::NotPresent) => Ok(HOST_OUTPUT_BUDGET),
+        Err(_) => Err("invalid host output budget environment".into()),
     }
 }
 

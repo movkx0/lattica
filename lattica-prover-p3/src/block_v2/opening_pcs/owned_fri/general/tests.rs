@@ -150,14 +150,15 @@ fn run<F: FriExtension + Serialize + DeserializeOwned>() {
             vec![session.alias_private(&input).unwrap()],
             &mut actual,
             log_height,
-            &[]
+            &[],
+            64 << 20,
         )
         .is_err());
         let foreign = DeviceSession::new().unwrap();
         // Insufficient combined storage rejects before folds, randomness or
         // transcript work. The subsequent byte-for-byte oracle also checks
         // that rejection did not consume either stream.
-        assert!(prove_with_query_allowance(
+        assert!(prove(
             &session,
             &mmcs,
             &gpu,
@@ -175,7 +176,8 @@ fn run<F: FriExtension + Serialize + DeserializeOwned>() {
             vec![session.alias_private(&input).unwrap()],
             &mut actual,
             log_height,
-            &[]
+            &[],
+            64 << 20,
         )
         .is_err());
         assert_eq!(before, session.stats());
@@ -226,6 +228,7 @@ fn run<F: FriExtension + Serialize + DeserializeOwned>() {
             &mut actual,
             log_height,
             &[],
+            64 << 20,
         )
         .unwrap();
         transcript.complete();

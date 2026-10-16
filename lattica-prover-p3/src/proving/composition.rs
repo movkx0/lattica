@@ -13,7 +13,7 @@ pub struct ComponentObservation {
     pub stage_coverage_complete: bool,
 }
 
-/// Public immutable preprocessing provenance. Only an actual completed run can
+/// Immutable compilation/preprocessing provenance. Only an actual completed run can
 /// create this receipt; reuse records provenance without replaying device events.
 #[derive(Clone, Debug)]
 pub(crate) struct CachedScope {
@@ -22,6 +22,20 @@ pub(crate) struct CachedScope {
 }
 
 impl CachedScope {
+    pub(crate) fn registry_compilation(report: &Report) -> Result<Self, Error> {
+        if report.capabilities.scope != CoverageScope::RegistryCompilation
+            || !report.succeeded
+            || !report.stage_coverage_complete
+            || report.observation_errors != 0
+        {
+            return Err(Error::ComponentRejected);
+        }
+        Ok(Self {
+            capabilities: report.capabilities.clone(),
+            complete: true,
+        })
+    }
+
     pub(crate) fn retained_host_bytes(&self) -> Result<usize, String> {
         self.capabilities
             .stages
@@ -206,6 +220,26 @@ impl Run {
     }
 
     pub(crate) fn reuse_preprocessing(&self, id: &str, cached: &CachedScope) -> Result<(), Error> {
+        self.reuse_scope(id, cached, CoverageScope::Preprocessing)
+    }
+
+    pub(crate) fn reuse_registry_compilation(&self, cached: &CachedScope) -> Result<(), Error> {
+        if !cached.complete {
+            return Err(Error::ComponentRejected);
+        }
+        self.reuse_scope("registry", cached, CoverageScope::RegistryCompilation)
+    }
+
+    fn reuse_scope(
+        &self,
+        id: &str,
+        cached: &CachedScope,
+        scope: CoverageScope,
+    ) -> Result<(), Error> {
+        if cached.capabilities.scope != scope {
+            lose_observation(&mut self.state.lock().unwrap());
+            return Err(Error::ComponentRejected);
+        }
         let parent = self.claim(id, &cached.capabilities)?;
         let mut state = self.state.lock().unwrap();
         if state.finished {

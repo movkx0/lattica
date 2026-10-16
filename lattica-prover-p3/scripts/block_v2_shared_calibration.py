@@ -28,7 +28,8 @@ def source_profile(config, shared):
     else:
         workloads = [Path(path) for path in config['pins']
                      if Path(path).name == 'block-v2-multi-gpu-direct-readback-workload.json']
-    profiles = [shared.T.resource_profile(path, 'paired', 'compact') for path in workloads]
+    mode = config.get('workload_profile', {}).get('typed_ram_admission', 'compact')
+    profiles = [shared.T.resource_profile(path, 'paired', mode) for path in workloads]
     if not profiles or any(profile != profiles[0] for profile in profiles):
         raise ValueError('shared calibration workload pins are missing or ambiguous')
     if config.get('workload_profile', profiles[0]) != profiles[0]:
@@ -79,11 +80,13 @@ def load(directories, *, shared, gpu_sha, cpu_sha, profile, count, assignment, u
             or len(uuids) != len(set(uuids))):
         raise ValueError('shared calibration requires the exact selected fixed assignment')
     expected_profile = shared.G.profile_digest({'workload': profile})
-    shared.T.validate_plan(target_plan, 'paired')
+    block_capacity = shared.T.Capacity.configured(profile)
+    root_file = shared.T.Capacity.root_file(capacity=block_capacity)
+    shared.T.validate_plan(target_plan, 'paired', block_capacity)
     if target_plan.get('count') != count:
         raise ValueError('shared calibration target plan count differs')
     required_tasks = {(task['mode'], task['count']) for task in target_plan['tasks']
-                      if not preseal or task['file'] != 'node.6.0'}
+                      if not preseal or task['file'] != root_file}
     if not required_tasks:
         raise ValueError('shared calibration target has no proof work')
     calibrations, pins, seen = {}, {}, set()
@@ -141,7 +144,7 @@ def load(directories, *, shared, gpu_sha, cpu_sha, profile, count, assignment, u
                 or stable_limits(normalized_limits(shared, budget)) != stable_limits(assignment['limits_by_gpu'][uuid])
                 or assignment['limits_by_gpu'][uuid]['gpu'].get('bootstrap') is not False):
             raise ValueError('shared calibration changes managed GPU, CPU, RAM, spill or device assignments')
-        shared.validate_execution(result['execution_result'], source_count, config['workers'], config.get('native_host'),
+        shared.validate_execution(result['execution_result'], source_count, config['workers'], config.get('native_host'), block_capacity=block_capacity,
                                   allow_worker_failover=config.get('allow_worker_failover', False))
         termination = result['execution_result']['workers'][0]
         identity_path = directory/'owner/proofs/execution/worker-0-start.json'
@@ -168,7 +171,7 @@ def load(directories, *, shared, gpu_sha, cpu_sha, profile, count, assignment, u
         if measured != recorded.get('context_measurement'):
             raise ValueError('shared calibration summary differs from recorded context samples')
         artifacts = result.get('artifacts', {})
-        if 'node.6.0' not in artifacts:
+        if root_file not in artifacts:
             raise ValueError('shared calibration lacks the audited root')
         artifact_paths = []
         for name, digest in artifacts.items():

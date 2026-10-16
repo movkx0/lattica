@@ -121,7 +121,10 @@ pub fn analyze(program: &Program) -> Result<ProgramUsage> {
     for row in &program.rows {
         match row {
             Row::Public(_) => rows.public = add(rows.public, 1)?,
-            Row::Poseidon { .. } => {
+            Row::Poseidon(index) => {
+                if !matches!(program.operation(*index), Ok(Op::Poseidon { .. })) {
+                    return Err("invalid packed hash operation index");
+                }
                 rows.poseidon = add(rows.poseidon, 1)?;
                 packed[12] = add(packed[12], 1)?;
                 assigned = add(assigned, WIDTH as u64)?;
@@ -139,7 +142,10 @@ pub fn analyze(program: &Program) -> Result<ProgramUsage> {
                     rows.alu = add(rows.alu, 1)?;
                     alu_used = add(alu_used, ops.len() as u64)?;
                 }
-                for op in ops {
+                for index in ops {
+                    let op = program
+                        .operation(*index)
+                        .map_err(|_| "invalid packed operation index")?;
                     let (kind, cells, _) = operation(op);
                     if (cubic && !(10..=11).contains(&kind)) || (!cubic && kind >= 10) {
                         return Err("wrong operation family in packed row");
@@ -323,10 +329,7 @@ mod tests {
         );
         let mut bad = p;
         bad.operations.pop();
-        assert_eq!(
-            analyze(&bad),
-            Err("program operation/row/reference accounting differs")
-        );
+        assert_eq!(analyze(&bad), Err("invalid packed operation index"));
     }
 
     #[test]

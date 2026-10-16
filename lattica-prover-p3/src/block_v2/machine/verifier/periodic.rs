@@ -41,6 +41,8 @@ macro_rules! source {
     };
 }
 source!(ContextJoinSplitAir, joinsplit_air);
+source!(crate::joinsplit_air::JoinSplitAir, joinsplit_air);
+source!(crate::htlc_air::HtlcAir, htlc_air);
 source!(
     ContextAir<crate::joinsplit_air::JoinSplitAir>,
     joinsplit_air

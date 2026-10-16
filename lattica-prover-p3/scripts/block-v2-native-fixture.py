@@ -11,6 +11,7 @@ import ctypes
 import hashlib
 import json
 from pathlib import Path
+import block_v2_capacity as Capacity
 import shutil
 import struct
 import subprocess
@@ -19,7 +20,7 @@ import time
 
 KINDS = ('joinsplit', 'htlc_redeem', 'htlc_refund', 'issuance')
 # V1 uses ML-KEM-768 (1088-byte KEM ciphertext), two inputs/two outputs,
-# 256-byte ciphertext caps and at most 64 transactions. Match the native bound.
+# 256-byte ciphertext caps per note. The complete body uses the selected native capacity.
 MAX_WALLET_EXPORT = 16 + 186252 + 2 * 1024 * 1024 + 264
 
 
@@ -58,9 +59,9 @@ def main():
     parser.add_argument('--indices', type=int, nargs='+', default=[0, 1, 2, 3])
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    if (not 1 <= len(args.indices) <= 64 or len(set(args.indices)) != len(args.indices)
-            or any(not 0 <= index < 64 for index in args.indices)):
-        parser.error('choose one to 64 unique native fixture indices from 0 to 63')
+    if (not 1 <= len(args.indices) <= Capacity.MAX_TRANSACTIONS or len(set(args.indices)) != len(args.indices)
+            or any(not 0 <= index < Capacity.MAX_TRANSACTIONS for index in args.indices)):
+        parser.error('choose unique native fixture indices within the selected block capacity')
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
     library, cpu = args.library.resolve(strict=True), args.cpu_probe.resolve(strict=True)

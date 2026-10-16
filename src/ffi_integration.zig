@@ -20,6 +20,7 @@ const testing = std.testing;
 // prover_abi.zig, mirroring lattica-prover-p3/include/lattica_prover_p3.h).
 const prover_abi = @import("prover_abi.zig");
 const prover_options = @import("prover_options");
+pub const lattica_block_capacity = prover_options.block_capacity;
 const prover_runtime = @import("prover_runtime.zig");
 const lattica_joinsplit_prove_demo = prover_abi.lattica_joinsplit_prove_demo;
 const lattica_joinsplit_verify = prover_abi.lattica_joinsplit_verify;

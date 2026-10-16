@@ -220,12 +220,95 @@ fn run<F: FriExtension + Serialize + DeserializeOwned>() {
             .zip(&points)
             .map(|(d, p)| (d, p.clone()))
             .collect::<Vec<_>>();
-        let (opened, reduced, height) =
-            evaluate_and_reduce::<F>(&session, &mmcs, fri.log_blowup, &rounds, &mut actual)
+        #[cfg(feature = "stream")]
+        {
+            use super::super::runtime_storage::Partition;
+            let allowance = 128 << 20;
+            let original = Partition::new(&session, &actual, allowance)
+                .unwrap()
                 .unwrap();
+            let snapshot = actual.clone();
+            let shared = Partition::new(&session, &actual, allowance)
+                .unwrap()
+                .unwrap();
+            assert!(shared.opening_allowance < original.opening_allowance);
+            drop(snapshot);
+            let before = session.stats();
+            let (runtime, census) = crate::spill_alloc::allocation_requests::measure(|| {
+                Partition::new(&session, &actual, allowance)
+                    .unwrap()
+                    .unwrap()
+            });
+            assert_eq!(census.calls, 0);
+            assert!(!census.overflow);
+            assert_eq!(runtime.opening_allowance, original.opening_allowance);
+            let retained = allowance - runtime.opening_allowance;
+            assert!(Partition::new(&session, &actual, retained).is_err());
+            assert_eq!(
+                Partition::new(&session, &actual, retained + 1)
+                    .unwrap()
+                    .unwrap()
+                    .opening_allowance,
+                1
+            );
+            let wrong_session = DeviceSession::new().unwrap();
+            assert!(Partition::new(&wrong_session, &actual, allowance).is_err());
+            let hybrid = Challenger::new(perm.clone());
+            assert!(Partition::new(&session, &hybrid, 0).unwrap().is_none());
+            assert_eq!(before, session.stats());
+            eprintln!("opening_runtime_census degree={} charged_bytes={} census_allocation_free=true snapshots_counted=true insufficient_allowance_rejected_before_work=true wrong_session_rejected=true hybrid_preserved=true", F::DIMENSION, retained);
+        }
+        let before_opening = session.stats();
+        #[cfg(feature = "stream")]
+        {
+            let (retained, census) = crate::spill_alloc::allocation_requests::measure(|| {
+                super::super::commitment_storage::Partition::new(&rounds, 64 << 20)
+                    .unwrap()
+                    .unwrap()
+            });
+            assert_eq!(census.calls, 0);
+            assert!(!census.overflow);
+            assert!(retained.retained_bytes > rounds.len() * core::mem::size_of::<ProverData>());
+            assert!(super::super::commitment_storage::Partition::new(
+                &rounds,
+                retained.retained_bytes
+            )
+            .is_err());
+            assert_eq!(before_opening, session.stats());
+            eprintln!("retained_commitment_census degree={} retained_bytes={} census_allocation_free=true insufficient_allowance_rejected_before_work=true", F::DIMENSION, retained.retained_bytes);
+        }
+        assert!(
+            evaluate_and_reduce::<F>(&session, &mmcs, fri.log_blowup, &rounds, &mut actual, 1,)
+                .is_err()
+        );
+        assert_eq!(before_opening, session.stats());
+        let (opened, reduced, height) = evaluate_and_reduce::<F>(
+            &session,
+            &mmcs,
+            fri.log_blowup,
+            &rounds,
+            &mut actual,
+            64 << 20,
+        )
+        .unwrap();
+        assert_eq!(opened.capacity(), rounds.len());
+        for (values, (data, points)) in opened.iter().zip(&rounds) {
+            assert_eq!(values.capacity(), points.len());
+            for ((matrix, points), dimension) in values
+                .iter()
+                .zip(points)
+                .zip(data.owned_dimensions().unwrap())
+            {
+                assert_eq!(matrix.capacity(), points.len());
+                for point in matrix {
+                    assert_eq!(point.capacity(), dimension.width);
+                }
+            }
+        }
         let FriInputs::Device(reduced) = reduced else {
             panic!("owned PCS must not return host FRI inputs");
         };
+        assert_eq!(reduced.capacity(), reduced.len());
         let retained = data.iter().collect::<Vec<_>>();
         let proof = super::super::owned_fri::general::prove(
             &session,
@@ -235,6 +318,7 @@ fn run<F: FriExtension + Serialize + DeserializeOwned>() {
             &mut actual,
             height,
             &retained,
+            64 << 20,
         )
         .unwrap();
         transcript_attempt.complete();

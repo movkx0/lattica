@@ -24,6 +24,17 @@ const DECODE_TASK_ELEMENTS: usize = ROW_TASK_BYTES / size_of::<Val>();
 
 pub(super) const MAX_QUOTIENT_OUTPUT_BYTES: usize = 2 << 30;
 
+/// The allocator request for one host matrix, including SpillAlloc's header
+/// and rounding when enabled. System metadata/retention remains separate.
+pub(super) fn backing_bytes(elements: usize) -> Result<usize, String> {
+    let layout = std::alloc::Layout::array::<Val>(elements)
+        .map_err(|_| "LDE host matrix allocation layout overflow")?;
+    #[cfg(feature = "stream")]
+    let layout = crate::spill_alloc::backing_layout(layout)
+        .ok_or("LDE host matrix backing layout overflow")?;
+    Ok(layout.size())
+}
+
 #[derive(Clone, Copy, Debug, Default)]
 pub(super) enum OutputStorage {
     #[default]
@@ -72,7 +83,7 @@ fn reserve(elements: usize, storage: OutputStorage, label: &str) -> Result<Vec<V
     )
     };
     if matches!(storage, OutputStorage::QuotientHeap) {
-        if bytes > MAX_QUOTIENT_OUTPUT_BYTES {
+        if backing_bytes(elements)? > MAX_QUOTIENT_OUTPUT_BYTES {
             return Err(fail("quotient heap matrix allowance exceeded".into()));
         }
         #[cfg(feature = "stream")]
@@ -103,6 +114,7 @@ pub(super) struct ReorderStats {
     pub elapsed_ns: u128,
     pub bytes: usize,
     pub workspace_bytes: usize,
+    pub workspace_backing_bytes: usize,
 }
 
 impl HostReadback {
@@ -147,7 +159,9 @@ impl HostReadback {
             return Err("LDE readback exceeds allocation range".into());
         }
         if matches!(output_storage, OutputStorage::QuotientHeap) {
-            if bytes > MAX_QUOTIENT_OUTPUT_BYTES {
+            // Reject before reserving even the banded staging buffer. Its
+            // retained heap counterpart must fit when finish materializes it.
+            if backing_bytes(elements)? > MAX_QUOTIENT_OUTPUT_BYTES {
                 return Err("quotient heap matrix allowance exceeded".into());
             }
             eprintln!(
@@ -338,6 +352,7 @@ impl HostReadback {
                 elapsed_ns: started.elapsed().as_nanos(),
                 bytes,
                 workspace_bytes: bytes,
+                workspace_backing_bytes: backing_bytes(self.elements)?,
             },
         ))
     }
@@ -680,7 +695,13 @@ mod tests {
                         writer.append_rows(first, columns, row0, &raw).unwrap();
                     }
                 }
-                let (matrix, _) = writer.finish().unwrap();
+                let (matrix, stats) = writer.finish().unwrap();
+                let reordered = band < width;
+                assert_eq!(stats.workspace_bytes, if reordered { 96 << 20 } else { 0 });
+                assert_eq!(
+                    stats.workspace_backing_bytes,
+                    if reordered { (96 << 20) + 4096 } else { 0 }
+                );
                 assert_eq!(matrix.values.len(), height * width);
                 for (index, value) in matrix.values.iter().enumerate() {
                     assert_eq!(*value, Val::new(word(index / width, index % width)));

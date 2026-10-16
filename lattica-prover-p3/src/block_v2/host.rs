@@ -22,6 +22,12 @@ pub const EXPECTED_MAGIC: &[u8; 8] = b"LBV2EX01";
 pub const MAX_REGISTRY_BYTES: usize = 64 * 1024;
 pub const EXPECTED_BYTES: usize = 112;
 
+/// Native bridge builds must agree with this capacity before accepting bodies.
+#[no_mangle]
+pub extern "C" fn lattica_v2_research_capacity_v1() -> u32 {
+    profile::MAX_TRANSACTIONS as u32
+}
+
 /// The registry comes from trusted host configuration, independently of a
 /// submitted block. Canonical decoding rejects alternate/trailing encodings.
 pub fn encode_registry(registry: &Registry<12>) -> Result<Vec<u8>, Error> {
@@ -47,7 +53,7 @@ impl Expected {
             return Err("research host expectation version/length".into());
         }
         let count = u64::from_le_bytes(bytes[104..112].try_into()?);
-        if !(1..=64).contains(&count) {
+        if !(1..=profile::MAX_TRANSACTIONS as u64).contains(&count) {
             return Err("research host root count".into());
         }
         Ok(Self {
@@ -61,7 +67,7 @@ impl Expected {
     }
 
     pub fn encode(self) -> Result<[u8; EXPECTED_BYTES], Error> {
-        if !(1..=64).contains(&self.count) {
+        if !(1..=profile::MAX_TRANSACTIONS as u8).contains(&self.count) {
             return Err("research host root count".into());
         }
         let mut bytes = [0; EXPECTED_BYTES];
@@ -98,7 +104,7 @@ pub fn verify_root(
             count: expected.count,
             level: commitment::DEPTH,
         },
-        if expected.count <= 32 {
+        if usize::from(expected.count) <= profile::MAX_TRANSACTIONS / 2 {
             typed_pairs::FINALIZE
         } else {
             programs::MERGE
@@ -165,7 +171,7 @@ mod tests {
                 chain_id: [9; 32],
             },
             root: [0, 1, commitment::MODULUS - 1, 99],
-            count: 64,
+            count: profile::MAX_TRANSACTIONS as u8,
         };
         let bytes = expected.encode().unwrap();
         assert_eq!(Expected::decode(&bytes).unwrap(), expected);
@@ -173,7 +179,7 @@ mod tests {
         let mut trailing = bytes.to_vec();
         trailing.push(0);
         assert!(Expected::decode(&trailing).is_err());
-        for count in [0, 65, u64::MAX] {
+        for count in [0, profile::MAX_TRANSACTIONS as u64 + 1, u64::MAX] {
             let mut bad = bytes;
             bad[104..].copy_from_slice(&count.to_le_bytes());
             assert!(Expected::decode(&bad).is_err());

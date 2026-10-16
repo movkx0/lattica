@@ -189,6 +189,23 @@ impl QuotientCommitShape {
         [self.random_words, self.mask_words, self.chunks * 3]
     }
 
+    pub(crate) fn storage_plan(
+        self,
+        location: SampleLocation,
+        live: usize,
+        managed: usize,
+        max_allocation: usize,
+    ) -> Result<CommitInputStorage, String> {
+        CommitInputStorage::new(
+            [self.random_words, self.mask_words],
+            self.chunks * 3,
+            location,
+            live,
+            managed,
+            max_allocation,
+        )
+    }
+
     pub(crate) fn bytes(self) -> Result<usize, String> {
         self.allocation_words()
             .into_iter()
@@ -263,21 +280,17 @@ impl DeviceSession {
             use p3_field::{Field, PrimeField64};
             let chunks = shape.chunks;
             let live = engine.accounting.lock().unwrap().live;
-            let pending_bytes = if generated.is_some() {
-                chunks * 3 * 8
+            let location = if generated.is_some() {
+                SampleLocation::Resident
             } else {
-                shape.bytes()?
+                SampleLocation::Uploaded
             };
-            if live
-                .checked_add(pending_bytes)
-                .is_none_or(|n| n > engine.limits.managed_bytes)
-                || shape
-                    .allocation_words()
-                    .iter()
-                    .any(|n| n * 8 > engine.max_alloc)
-            {
-                return Err("quotient commitment samples exceed GPU admission".into());
-            }
+            let _plan = shape.storage_plan(
+                location,
+                live,
+                engine.limits.managed_bytes,
+                engine.max_alloc,
+            )?;
             let alloc = |words| -> Result<Allocation, String> {
                 let mut a = allocation(
                     &engine.pq,

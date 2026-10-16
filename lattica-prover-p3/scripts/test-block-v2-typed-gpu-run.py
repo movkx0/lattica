@@ -144,8 +144,10 @@ class TypedGpu(unittest.TestCase):
     def test_compact_admission_has_distinct_identity_and_keeps_full_default(self):
         full = T.resource_profile(PROFILE, "finalizer")
         compact = T.resource_profile(PROFILE, "finalizer", "compact")
-        self.assertEqual(T.minimum_ram(full), 31675383808)
-        self.assertEqual(T.minimum_ram(compact), 11844714496)
+        # Include the separate 512 MiB retained allocator, 64 MiB decoded
+        # input and 8 MiB protocol reservations added to both legacy models.
+        self.assertEqual(T.minimum_ram(full), 32287752192)
+        self.assertEqual(T.minimum_ram(compact), 12457082880)
         self.assertEqual(compact["name"], "typed-finalizer-compact-depth-six-bootstrap-v1")
         second = copy.deepcopy(device())
         second["uuid"] = "GPU-typed-2"

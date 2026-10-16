@@ -4,8 +4,14 @@ use super::*;
 mod bootstrap;
 #[path = "execution_native.rs"]
 mod native;
+#[path = "execution_pool_calibration.rs"]
+mod pool_calibration;
 #[path = "execution_pool_service.rs"]
 mod pool_service;
+#[path = "execution_pool_timing.rs"]
+mod pool_timing;
+#[path = "execution_pool_transition.rs"]
+mod pool_transition;
 #[path = "execution_preseal.rs"]
 mod preseal;
 #[path = "execution_fleet_recover.rs"]
@@ -37,7 +43,13 @@ use std::{
 #[serde(deny_unknown_fields)]
 struct Plan {
     #[serde(default)]
+    pool_calibration: Option<pool_calibration::Request>,
+    #[serde(default)]
     pool_requests: Option<PathBuf>,
+    #[serde(default)]
+    pool_scheduling: Option<pool_timing::Window>,
+    #[serde(default)]
+    pool_workflow: Option<pool_timing::Workflow>,
     #[serde(default)]
     coordinator_bootstrap_guard: Option<PathBuf>,
     #[serde(default)]
@@ -50,6 +62,8 @@ struct Plan {
     recover_cached_only: bool,
     #[serde(default)]
     preseal_only: bool,
+    #[serde(default)]
+    pool_prefix_handoff: bool,
     #[serde(default)]
     reuse_preseal: Vec<PathBuf>,
     schema_version: u32,
@@ -66,6 +80,8 @@ struct Plan {
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Worker {
+    #[serde(default)]
+    pool_timing: Option<PathBuf>,
     assignment: serde_json::Value,
     launcher: Vec<String>,
     arguments: Vec<String>,
@@ -73,6 +89,8 @@ struct Worker {
 }
 
 struct Slot {
+    pool_timing: Option<pool_timing::Loaded>,
+    dispatch_deadline_ms: Option<u64>,
     index: usize,
     worker: ProcessWorker,
     peak: Resources,
@@ -98,16 +116,78 @@ fn startup_intent(worker: &Worker) -> Result<startup::Intent, Error> {
 }
 
 fn validate_plan(plan: &Plan) -> Result<Vec<(Resources, Resources)>, Error> {
-    if let Some(requests) = &plan.pool_requests {
-        if !requests.is_absolute()
-            || plan.native_host.is_none()
+    let resources = validate_plan_shape(plan)?;
+    if let Some(window) = &plan.pool_scheduling {
+        window.deadline(0)?;
+    }
+    if let Some(workflow) = &plan.pool_workflow {
+        workflow.validate_live()?;
+    }
+    Ok(resources)
+}
+
+// Historical service windows are normally expired at recovery. Their shape
+// and immutable workflow binding remain mandatory; only the new launch is live.
+fn validate_plan_shape(plan: &Plan) -> Result<Vec<(Resources, Resources)>, Error> {
+    let calibration = plan.pool_calibration.is_some();
+    let bounded = plan.pool_scheduling.is_some();
+    let qualified = bounded && !calibration;
+    if plan.pool_prefix_handoff
+        && (!qualified
+            || !plan.preseal_only
+            || plan.pool_requests.is_none()
+            || plan.recover_cached_only
+            || !plan.reuse_preseal.is_empty())
+    {
+        return Err("prefix handoff requires one bounded native prefix pool".into());
+    }
+    if bounded != plan.pool_workflow.is_some()
+        || (qualified && plan.pool_requests.is_none())
+        || plan
+            .workers
+            .iter()
+            .any(|w| w.pool_timing.is_some() != qualified)
+        || plan
+            .workers
+            .iter()
+            .filter_map(|w| w.pool_timing.as_ref())
+            .any(|p| !p.is_absolute())
+    {
+        return Err(
+            "pool scheduling requires one host timing approval per worker and a pool session"
+                .into(),
+        );
+    }
+    if let Some(request) = &plan.pool_calibration {
+        request.validate()?;
+        if !bounded
+            || plan.workers.len() != 1
+            || plan.pool_requests.is_some()
             || plan.recover_from.is_some()
             || plan.recover_cached_only
             || plan.preseal_only
             || !plan.reuse_preseal.is_empty()
+            || plan.allow_worker_failover
+            || !plan.startup_fenced
+            || plan.coordinator_bootstrap_guard.is_none()
+            || plan.coordinator_threads != 4
+        {
+            return Err("calibration requires one fresh bounded startup-fenced worker without recovery, pooling or failover".into());
+        }
+    }
+    if let Some(window) = &plan.pool_scheduling {
+        plan.pool_workflow.as_ref().unwrap().check_window(window)?;
+    }
+    if let Some(requests) = &plan.pool_requests {
+        if !requests.is_absolute()
+            || plan.native_host.is_none()
+            || (plan.recover_from.is_some() && !qualified)
+            || plan.recover_cached_only
+            || ((plan.preseal_only || !plan.reuse_preseal.is_empty()) && !qualified)
+            || (plan.preseal_only && !plan.reuse_preseal.is_empty())
         {
             return Err(
-                "persistent pool requires a native binding and a fresh, sealed session".into(),
+                "pool requires a native binding; only bounded phases support recovery".into(),
             );
         }
     }
@@ -118,10 +198,9 @@ fn validate_plan(plan: &Plan) -> Result<Vec<(Resources, Resources)>, Error> {
     if let Some(source) = &plan.recover_from {
         if !source.is_absolute()
             || plan.native_host.is_none()
-            || plan.preseal_only
-            || !plan.reuse_preseal.is_empty()
+            || ((plan.preseal_only || !plan.reuse_preseal.is_empty()) && !qualified)
         {
-            return Err("coordinator recovery requires a sealed native candidate and an absolute prior owner directory".into());
+            return Err("coordinator recovery requires the original native scope and an absolute prior owner directory; prefixes require bounded pooling".into());
         }
     }
     if plan.allow_worker_failover && (plan.native_host.is_none() || plan.workers.len() < 2) {
@@ -141,7 +220,12 @@ fn validate_plan(plan: &Plan) -> Result<Vec<(Resources, Resources)>, Error> {
     if plan.schema_version != 2 || plan.coordinator_threads == 0 {
         return Err("shared typed coordinator plan version or CPU assignment".into());
     }
-    storage::KnownShared::new(plan.workers.len())?.admit(plan.coordinator_shared_bytes)?;
+    let known = if plan.pool_requests.is_some() && !qualified {
+        storage::KnownShared::persistent(plan.workers.len())?
+    } else {
+        storage::KnownShared::new(plan.workers.len())?
+    };
+    known.admit(plan.coordinator_shared_bytes)?;
     let mut devices = BTreeSet::new();
     let mut services = BTreeSet::new();
     let mut resources = Vec::new();
@@ -171,6 +255,13 @@ fn validate_plan(plan: &Plan) -> Result<Vec<(Resources, Resources)>, Error> {
         }
         resources.push(budget::resources(a)?);
     }
+    if calibration
+        && resources
+            .iter()
+            .any(|(peak, _)| peak.ram_bytes > 3 << 30 || peak.threads != 4)
+    {
+        return Err("calibration requires the original worker RAM and four-thread limits".into());
+    }
     let limits = budget::fleet_limits(&resources)?;
     let packet_bytes = resources.iter().try_fold(0u64, |sum, (_, jobs)| {
         sum.checked_add(jobs.ram_bytes)
@@ -191,7 +282,45 @@ fn validate_plan(plan: &Plan) -> Result<Vec<(Resources, Resources)>, Error> {
     Ok(resources)
 }
 
+fn coordinator_fleet_parent(parent: &Path, bounded: bool) -> Result<&Path, Error> {
+    if !bounded {
+        return Ok(parent);
+    }
+    if parent.file_name().and_then(|v| v.to_str()) != Some("lattica-v2-multi-coordinator.slice")
+        || std::fs::read_to_string(parent.join("memory.max"))?.trim() != (1u64 << 30).to_string()
+        || std::fs::read_to_string(parent.join("memory.swap.max"))?.trim() != "0"
+    {
+        return Err(
+            "bounded controller and coordinator must share the original 1 GiB allowance".into(),
+        );
+    }
+    let fleet = parent
+        .parent()
+        .ok_or("bounded coordinator fleet slice missing")?;
+    for group in [parent, fleet] {
+        let cpu = std::fs::read_to_string(group.join("cpu.max"))?;
+        let fields = cpu.split_whitespace().collect::<Vec<_>>();
+        if fields.len() != 2
+            || fields[0].parse::<u64>()?
+                != fields[1]
+                    .parse::<u64>()?
+                    .checked_mul(4)
+                    .ok_or("CPU limit overflow")?
+        {
+            return Err("bounded native fleet requires four aggregate CPU threads".into());
+        }
+    }
+    Ok(fleet)
+}
+
 fn require_coordinator(plan: &Plan) -> Result<(), Error> {
+    if plan.pool_workflow.is_some()
+        && (plan.coordinator_ram_bytes != 1 << 30 || plan.fleet_bytes != 4 << 30)
+    {
+        return Err(
+            "bounded native host assignment differs from the original 1/4 GiB limits".into(),
+        );
+    }
     require_cpu_limit(plan.coordinator_ram_bytes)?;
     let membership = std::fs::read_to_string("/proc/self/cgroup")?;
     let relative = membership
@@ -202,15 +331,16 @@ fn require_coordinator(plan: &Plan) -> Result<(), Error> {
     let parent = group
         .parent()
         .ok_or("shared coordinator fleet slice missing")?;
+    let fleet = coordinator_fleet_parent(parent, plan.pool_workflow.is_some())?;
     if !plan.coordinator_unit.starts_with("lattica-v2-multi-owner-")
         || !plan.coordinator_unit.ends_with(".service")
         || group.file_name().and_then(|v| v.to_str()) != Some(plan.coordinator_unit.as_str())
-        || parent.file_name().and_then(|v| v.to_str()) != Some("lattica-v2-multi.slice")
-        || std::fs::read_to_string(parent.join("memory.max"))?
+        || fleet.file_name().and_then(|v| v.to_str()) != Some("lattica-v2-multi.slice")
+        || std::fs::read_to_string(fleet.join("memory.max"))?
             .trim()
             .parse::<u64>()?
             != plan.fleet_bytes
-        || std::fs::read_to_string(parent.join("memory.swap.max"))?.trim() != "0"
+        || std::fs::read_to_string(fleet.join("memory.swap.max"))?.trim() != "0"
         || rayon::current_num_threads() != plan.coordinator_threads as usize
     {
         return Err("shared coordinator physical assignment differs".into());
@@ -253,6 +383,16 @@ pub(in super::super) fn audit_preseal(
     preseal::audit(dir, pinned, nodes, out)
 }
 
+pub(in super::super) fn audit_pool_calibration(
+    dir: &Path,
+    pinned: &Path,
+    request: &Path,
+    nodes: &Path,
+    out: &Path,
+) -> Result<(), Error> {
+    pool_calibration::audit::run(dir, pinned, request, nodes, out)
+}
+
 fn start_fleet(
     plan: &Plan,
     prepared: &Prepared,
@@ -266,6 +406,16 @@ fn start_fleet(
     now: impl Fn() -> u64,
 ) -> Result<(LaunchStore, Vec<Slot>), Error> {
     let assignments = validate_plan(plan)?;
+    let dispatch_deadline_ms = plan
+        .pool_scheduling
+        .as_ref()
+        .map(|w| w.deadline(now()))
+        .transpose()?;
+    let timing_executable = if plan.pool_scheduling.is_some() && plan.pool_calibration.is_none() {
+        Some(image_fingerprint(&std::env::current_exe()?)?)
+    } else {
+        None
+    };
     let launch_directory = durable_runtime.join("launches");
     let launches = if plan.recover_from.is_some() {
         LaunchStore::open(
@@ -327,6 +477,19 @@ fn start_fleet(
         let config = process::assigned_config(prepared, &spec.assignment)?;
         let mut worker =
             ProcessWorker::prepare(owner, config, WorkerId(id - 1), job_worker, now())?;
+        let timing = match (&spec.pool_timing, timing_executable) {
+            (Some(path), Some(executable)) => {
+                let timing = pool_timing::Loaded::load(
+                    path,
+                    executable,
+                    spec.assignment["gpu"]["uuid"].as_str().unwrap(),
+                )?;
+                timing.check(&worker)?;
+                Some(timing)
+            }
+            (None, None) => None,
+            _ => return Err("pool timing launch configuration mismatch".into()),
+        };
         write_bytes(
             &runtime.join(format!("worker-{index}.session")),
             worker.session_bytes(),
@@ -365,6 +528,8 @@ fn start_fleet(
             }),
         )?;
         slots.push(Slot {
+            pool_timing: timing,
+            dispatch_deadline_ms,
             index,
             worker,
             peak,
@@ -393,23 +558,21 @@ pub(in super::super) fn prove(
     let assignments = validate_plan(&plan)?;
     require_coordinator(&plan)?;
     let bootstrap = bootstrap::enter(&plan, plan_path, out)?;
+    let clock = pool_timing::Clock::new(plan.pool_workflow.as_ref(), started)?;
+    let now = || clock.now();
     let prepared = prepare_for_backend(dir, pinned, true)?;
+    if plan.pool_workflow.is_some() && now() >= pool_timing::CANDIDATE_MS {
+        return Err("pool workflow expired during preparation".into());
+    }
     let mut limits = budget::fleet_limits(&assignments)?;
-    if plan.pool_requests.is_some() {
-        limits.jobs = 4096;
-        limits.candidates = 256;
-        limits.attempts = 16384;
-        limits.artifact_bytes = 512usize << 20;
-        // Completed roots are durably exported before retirement. Keep active
-        // candidates for recovery, but release unreferenced retired artifacts.
-        limits.recovery_window_ms = 0;
+    if plan.pool_requests.is_some() || plan.pool_calibration.is_some() {
+        pool_service::configure_limits(&mut limits, plan.pool_scheduling.is_some());
     }
     std::fs::DirBuilder::new().mode(0o700).create(out)?;
     write_json(&out.join("expected.json"), &prepared.expected)?;
     write_json(&out.join("execution-plan.json"), &describe(&prepared))?;
     let runtime = out.join("execution");
     std::fs::DirBuilder::new().mode(0o700).create(&runtime)?;
-    let now = || started.elapsed().as_millis() as u64;
     // Fixture qualification only. Native intake must supply a verified head token.
     let head = match &plan.native_host {
         Some(binding) => binding.head_for(&prepared.expected)?,
@@ -423,29 +586,16 @@ pub(in super::super) fn prove(
     } else {
         let store = ArtifactStore::create(
             &runtime.join("artifacts"),
-            StoreLimits {
-                bytes: if plan.pool_requests.is_some() {
-                    512 << 20
-                } else {
-                    budget::ARTIFACT_BYTES
-                },
-                entries: if plan.pool_requests.is_some() {
-                    4096
-                } else {
-                    budget::ARTIFACT_ENTRIES
-                },
-            },
+            pool_service::store_limits(
+                plan.pool_requests.is_none() || plan.pool_scheduling.is_some(),
+            ),
         )?;
         (
             DurableDag::create(
                 &runtime.join("journal"),
-                JournalLimits {
-                    snapshot_bytes: if plan.pool_requests.is_some() {
-                        8 << 20
-                    } else {
-                        budget::SNAPSHOT_BYTES
-                    },
-                },
+                pool_service::journal_limits(
+                    plan.pool_requests.is_none() || plan.pool_scheduling.is_some(),
+                ),
                 store,
                 prepared.pin,
                 prepared.expected.chain,
@@ -456,7 +606,14 @@ pub(in super::super) fn prove(
             None,
         )
     };
-    if let Some(requests) = &plan.pool_requests {
+    if let Some(request) = &plan.pool_calibration {
+        recovery::record(&plan, &recovery_state, out)?;
+        let candidate =
+            prepared
+                .selection
+                .attach(&mut owner, head, pool_timing::CANDIDATE_MS, now())?;
+        owner.seal(candidate, head, now())?;
+        request.prepare(&prepared, &mut owner, now)?;
         let (launches, slots) = start_fleet(
             &plan,
             &prepared,
@@ -469,7 +626,60 @@ pub(in super::super) fn prove(
             bootstrap,
             now,
         )?;
-        return pool_service::serve(&plan, requests, prepared, owner, launches, slots, out, now);
+        return pool_calibration::run(&plan, request, prepared, owner, launches, slots, out, now);
+    }
+    if let Some(requests) = &plan.pool_requests {
+        if recovered_candidate.is_none() {
+            recovery::record(&plan, &recovery_state, out)?;
+        }
+        let initial_candidate = if recovered_candidate.is_none() && !plan.reuse_preseal.is_empty() {
+            let workflow = plan
+                .pool_workflow
+                .as_ref()
+                .ok_or("prefix import requires a bounded pool")?;
+            let candidate =
+                prepared
+                    .selection
+                    .attach(&mut owner, head, pool_timing::CANDIDATE_MS, now())?;
+            owner.seal(candidate, head, now())?;
+            let reused = preseal::import(
+                &plan.reuse_preseal,
+                plan.native_host.as_ref(),
+                &prepared,
+                &mut owner,
+                out,
+                now,
+                Some(workflow),
+            )?;
+            write_json(&out.join("execution-reused.json"), &reused)?;
+            Some(candidate)
+        } else {
+            recovered_candidate
+        };
+        let (launches, slots) = start_fleet(
+            &plan,
+            &prepared,
+            &mut owner,
+            &recovery_state.durable_runtime,
+            &runtime,
+            dir,
+            pinned,
+            out,
+            bootstrap,
+            now,
+        )?;
+        return pool_service::serve(
+            &plan,
+            requests,
+            (dir, pinned),
+            prepared,
+            owner,
+            initial_candidate,
+            launches,
+            slots,
+            out,
+            now,
+        );
     }
     let candidate = if let Some(candidate) = recovered_candidate {
         candidate
@@ -495,6 +705,7 @@ pub(in super::super) fn prove(
             &mut owner,
             out,
             now,
+            None,
         )?
     };
     write_json(&out.join("execution-reused.json"), &reused)?;
@@ -545,6 +756,9 @@ pub(in super::super) fn prove(
                     profile: prepared.pin.profile(),
                     resources: s.jobs,
                     resident_mode: s.resident_mode,
+                    timing_identity: None,
+                    forecast_retained_mode: false,
+                    dispatch_deadline_ms: None,
                 })
                 .collect();
             if idle.is_empty() {
@@ -682,6 +896,9 @@ pub(in super::super) fn prove(
                     profile: prepared.pin.profile(),
                     resources: slot.jobs,
                     resident_mode: slot.resident_mode,
+                    timing_identity: None,
+                    forecast_retained_mode: false,
+                    dispatch_deadline_ms: None,
                 },
                 job,
                 stats.hits == 1,
@@ -718,11 +935,11 @@ pub(in super::super) fn prove(
         return Err("shared DAG finished with active work".into());
     }
     if !plan.preseal_only {
-        let root = bytes(&out.join("node.6.0"))?;
+        let root = bytes(&out.join(profile::ROOT_FILE))?;
         if owner.candidate_result(candidate, head, now())?.as_deref() != Some(root.as_slice()) {
             return Err("shared DAG root differs from accepted proof".into());
         }
-    } else if out.join("node.6.0").exists() {
+    } else if out.join(profile::ROOT_FILE).exists() {
         return Err("unsealed subtree work unexpectedly exported a candidate root".into());
     }
     let mut workers = Vec::new();
@@ -764,7 +981,7 @@ pub(in super::super) fn prove(
         "coordinator_pid":std::process::id(),"workers":workers,"maximum_active_jobs":maximum_active,
         "count":prepared.expected.count,"construction":CONSTRUCTION,"registry_keys":KEY_COUNT,
         "fresh_proofs":records.len(),"cpu_verified_nodes":records.len(),"seconds":started.elapsed().as_secs_f64(),
-            "root_file":if plan.preseal_only {None} else {Some("node.6.0")},
+            "root_file":if plan.preseal_only {None} else {Some(profile::ROOT_FILE)},
             "backend":if plan.recover_cached_only {"cpu"} else {"gpu"},"worker_processes_exited":true,
         "workspace_released_after_gpu_teardown":true,"arrival_backend_integrated":false,
         "durable_host_applied":false,"production_ready":false}),
@@ -775,13 +992,43 @@ pub(in super::super) fn prove(
 mod tests {
     use super::*;
 
+    #[test]
+    fn bounded_control_processes_share_one_host_and_cpu_allowance() {
+        let directory =
+            std::env::temp_dir().join(format!("lattica-native-budget-{}", std::process::id()));
+        let fleet = directory.join("lattica-v2-multi.slice");
+        let controls = fleet.join("lattica-v2-multi-coordinator.slice");
+        std::fs::create_dir_all(&controls).unwrap();
+        std::fs::write(controls.join("memory.max"), (1u64 << 30).to_string()).unwrap();
+        std::fs::write(controls.join("memory.swap.max"), "0").unwrap();
+        for group in [&controls, &fleet] {
+            std::fs::write(group.join("cpu.max"), "400000 100000").unwrap();
+        }
+        assert_eq!(coordinator_fleet_parent(&controls, true).unwrap(), fleet);
+        assert_eq!(coordinator_fleet_parent(&fleet, false).unwrap(), fleet);
+        assert!(coordinator_fleet_parent(&fleet, true).is_err());
+        std::fs::write(controls.join("memory.max"), (2u64 << 30).to_string()).unwrap();
+        assert!(coordinator_fleet_parent(&controls, true).is_err());
+        std::fs::write(controls.join("memory.max"), (1u64 << 30).to_string()).unwrap();
+        std::fs::write(controls.join("memory.swap.max"), "1").unwrap();
+        assert!(coordinator_fleet_parent(&controls, true).is_err());
+        std::fs::write(controls.join("memory.swap.max"), "0").unwrap();
+        for group in [&controls, &fleet] {
+            std::fs::write(group.join("cpu.max"), "max 100000").unwrap();
+            assert!(coordinator_fleet_parent(&controls, true).is_err());
+            std::fs::write(group.join("cpu.max"), "400000 100000").unwrap();
+        }
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
     pub(super) fn plan() -> Plan {
         let workers = (0..2)
             .map(|index| Worker {
+                pool_timing: None,
                 assignment: json!({"gpu":{"uuid":format!("GPU-{index}"),"managed_bytes":1u64 << 30},
                 "host":{"worker_bytes":4u64 << 30,"spill_bytes":2u64 << 30,
-                "coordinator_bytes":2u64 << 30,"coordinator_job_bytes":768u64 << 20,
-                "coordinator_shared_bytes":512u64 << 20,"fleet_bytes":10u64 << 30},
+                "coordinator_bytes":2u64 << 30,"coordinator_job_bytes":((2u64 << 30) - storage::shared_reservation(2)) / 2,
+                "coordinator_shared_bytes":storage::shared_reservation(2),"fleet_bytes":10u64 << 30},
                 "cpu":{"rayon_threads":4-index},"unit":format!("worker-{index}")}),
                 launcher: vec!["/usr/bin/python3".into()],
                 arguments: vec![],
@@ -789,7 +1036,10 @@ mod tests {
             })
             .collect();
         Plan {
+            pool_calibration: None,
             pool_requests: None,
+            pool_scheduling: None,
+            pool_workflow: None,
             coordinator_bootstrap_guard: None,
             startup_fenced: false,
             allow_worker_failover: false,
@@ -798,12 +1048,13 @@ mod tests {
             schema_version: 2,
             coordinator_unit: "lattica-v2-multi-owner-test.service".into(),
             coordinator_ram_bytes: 2 << 30,
-            coordinator_shared_bytes: 512 << 20,
+            coordinator_shared_bytes: storage::shared_reservation(2),
             coordinator_threads: 1,
             fleet_bytes: 10 << 30,
             workers,
             native_host: None,
             preseal_only: false,
+            pool_prefix_handoff: false,
             reuse_preseal: Vec::new(),
         }
     }
@@ -835,7 +1086,12 @@ mod tests {
             .remove("coordinator_shared_bytes");
         assert!(serde_json::from_value::<Plan>(missing).is_err());
 
-        for shared in [0, (512 << 20) - 1, u64::MAX] {
+        for shared in [
+            0,
+            512 << 20,
+            storage::COORDINATOR_SHARED_BYTES - 1,
+            u64::MAX,
+        ] {
             let mut bad = base.clone();
             bad.coordinator_shared_bytes = shared;
             for worker in &mut bad.workers {

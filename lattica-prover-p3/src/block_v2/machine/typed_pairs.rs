@@ -412,7 +412,7 @@ mod tests {
             FINALIZE,
         );
         let template = compile_registration(height, FINALIZE, None).unwrap();
-        for level in [1, 5, commitment::DEPTH] {
+        for level in [1, commitment::DEPTH - 1, commitment::DEPTH] {
             let node = commitment::empty_subtree(context, level).unwrap();
             let child = programs::statement(node, programs::EMPTY);
             let proof = registered.prove(&child, &empty.witness).unwrap();
@@ -478,11 +478,15 @@ mod tests {
             (64, 127, 63),
         ] {
             let plan = proof_plan(count).unwrap();
-            assert_eq!(plan.single_wrapper_proofs, single);
-            assert_eq!(plan.proposed_proofs, paired);
+            let extra = u16::from(commitment::CAPACITY == 128 && count > 32);
+            assert_eq!(plan.single_wrapper_proofs, single + extra);
+            assert_eq!(plan.proposed_proofs, paired + extra);
         }
         assert!(proof_plan(0).is_err());
-        assert!(proof_plan(65).is_err());
+        assert!(proof_plan((commitment::CAPACITY + 1) as u8).is_err());
+        let full = proof_plan(commitment::CAPACITY as u8).unwrap();
+        assert_eq!(full.proposed_proofs as usize, commitment::CAPACITY - 1);
+        assert_eq!(full.finalizer_proofs, 0);
     }
 
     #[test]
@@ -506,10 +510,20 @@ mod tests {
             .zip(kinds)
             .map(|(w, mode)| leaf(context, w, mode))
             .collect();
-        let mut registered_shapes = BTreeMap::new();
+        // Compare every ordered pair against its mode's complete program while
+        // retaining only one reference program at a time. Holding all nine
+        // full-size programs makes this conformance test exceed worker limits.
+        let mut ordered_pairs: BTreeMap<_, Vec<_>> = BTreeMap::new();
         for left in 0..4 {
             for right in 0..4 {
                 let mode = mode_for([kinds[left], kinds[right]]).unwrap();
+                ordered_pairs.entry(mode).or_default().push((left, right));
+            }
+        }
+        assert_eq!(ordered_pairs.len(), 9);
+        for (mode, pairs) in ordered_pairs {
+            let mut registered_shape = None;
+            for (left, right) in pairs {
                 let values = [
                     wallets[left].public.as_slice(),
                     wallets[right].public.as_slice(),
@@ -526,13 +540,13 @@ mod tests {
                     compiled.program.height() <= height,
                     "paired compiler increased the shared height"
                 );
-                if let Some(expected) = registered_shapes.get(&mode) {
+                if let Some(expected) = &registered_shape {
                     assert_eq!(
                         &compiled.program, expected,
                         "wallet proof contents changed preprocessing"
                     );
                 } else {
-                    registered_shapes.insert(mode, compiled.program.clone());
+                    registered_shape = Some(compiled.program.clone());
                 }
                 compiled.program.evaluate(&pair, &compiled.witness).unwrap();
                 if left != right {
@@ -618,7 +632,6 @@ mod tests {
                 }
             }
         }
-        assert_eq!(registered_shapes.len(), 9);
         for mode in [programs::EMPTY, programs::MERGE, FINALIZE] {
             let compiled = compile_registration(height, mode, None).unwrap();
             eprintln!(

@@ -179,13 +179,14 @@ def controller_state(directory, shared):
                 or summary.get('cleanup_failure')):
             raise ValueError('supervised success lacks CPU audit and native application')
         shared.validate_execution(result['execution_result'], config['count'], config['workers'],
-            config['native_host'], allow_worker_failover=config.get('allow_worker_failover', False),
+            config['native_host'], block_capacity=shared.T.Capacity.configured(config), allow_worker_failover=config.get('allow_worker_failover', False),
             recovery_source=config.get('recover_from'), recover_cached_only=config.get('recover_cached_only', False))
         return dict(action='succeeded', state=state, result=summary['result'],
                     summary_sha256=G.digest(summary_path), reconciliation=reconciliation)
     # A published export is a hint to use the existing strict cached recovery
     # verifier. It supplies no proof validity or journal authority on its own.
-    cached = (directory/'owner/root-only/node.6.0').is_file() or (directory/'owner/proofs/node.6.0').is_file()
+    root_file = shared.T.Capacity.root_file(config)
+    cached = (directory/'owner/root-only'/root_file).is_file() or (directory/'owner/proofs'/root_file).is_file()
     return dict(action='recover', reason=summary.get('failure', 'controller stopped before result'),
                 state=state, cached_only=cached, reconciliation=reconciliation)
 

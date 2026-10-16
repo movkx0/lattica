@@ -1,5 +1,33 @@
 use super::*;
 
+#[test]
+fn compact_poseidon_keeps_canonical_u64_wire_encoding() {
+    let input = [
+        0,
+        1,
+        255,
+        65535,
+        65536,
+        MAX_WIRES as u32 - 2,
+        MAX_WIRES as u32 - 1,
+        13,
+    ];
+    let output = [8, 9, 10, 11, 12, 13, 14, 15];
+    let mut encoded = Vec::new();
+    operation(&Op::Poseidon { input, output }, &mut |word| {
+        encoded.push(word);
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(
+        encoded,
+        vec![
+            8, 8, 0, 1, 255, 65535, 65536, 67_108_862, 67_108_863, 13, 8, 8, 9, 10, 11, 12, 13, 14,
+            15
+        ]
+    );
+}
+
 // Frozen pre-stream encoder: preserve its row cloning and address vectors as
 // an independent compatibility oracle, including input/hint discriminants.
 fn legacy(program: &Program) -> Vec<u64> {
@@ -31,18 +59,19 @@ fn legacy(program: &Program) -> Vec<u64> {
             }
             Row::Alu(ops) => {
                 out.push(0);
-                ops.clone()
+                ops.iter()
+                    .map(|index| program.operation(*index).unwrap().clone())
+                    .collect()
             }
             Row::Cubic(ops) => {
                 out.push(2);
-                ops.clone()
+                ops.iter()
+                    .map(|index| program.operation(*index).unwrap().clone())
+                    .collect()
             }
-            Row::Poseidon { input, output } => {
+            Row::Poseidon(index) => {
                 out.push(1);
-                vec![Op::Poseidon {
-                    input: *input,
-                    output: *output,
-                }]
+                vec![program.operation(*index).unwrap().clone()]
             }
         };
         out.push(ops.len() as u64);
@@ -140,18 +169,24 @@ fn all_operations() -> Program {
             out: [w(12), w(13), w(14)],
         },
     ];
+    let alu_ids = (0..ops.len() as u32).collect();
+    let cubic_ids = (ops.len() as u32..(ops.len() + cubic.len()) as u32).collect();
+    let mut operations = ops;
+    operations.extend(cubic);
+    let hash_id = operations.len() as u32;
+    operations.push(Op::Poseidon {
+        input: std::array::from_fn(|i| i as u32),
+        output: std::array::from_fn(|i| (i + 8) as u32),
+    });
     Program {
-        operations: vec![],
+        operations,
         rows: vec![
             Row::Public(0),
             Row::Public(1),
-            Row::Alu(ops),
+            Row::Alu(alu_ids),
             Row::Alu(vec![]),
-            Row::Cubic(cubic),
-            Row::Poseidon {
-                input: std::array::from_fn(w),
-                output: std::array::from_fn(|i| w(i + 8)),
-            },
+            Row::Cubic(cubic_ids),
+            Row::Poseidon(hash_id),
         ],
         references: vec![0, 1, u32::MAX, 3],
         publics: 40,
@@ -177,6 +212,20 @@ fn borrowed_manifest_matches_frozen_encoding_for_all_operations() {
     let mut other = program.clone();
     other.construction_host_bytes = 0;
     assert_eq!(other.manifest_fields(), expected);
+}
+
+#[test]
+fn manifest_rejects_invalid_shared_operation_indices_and_hash_families() {
+    for row in [
+        Row::Alu(vec![u32::MAX]),
+        Row::Cubic(vec![u32::MAX]),
+        Row::Poseidon(u32::MAX),
+        Row::Poseidon(0),
+    ] {
+        let mut program = all_operations();
+        program.rows[0] = row;
+        assert!(program.emit_manifest(&mut |_| Ok(())).is_err());
+    }
 }
 
 #[test]

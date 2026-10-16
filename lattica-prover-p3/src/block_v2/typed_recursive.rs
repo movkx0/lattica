@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use super::commitment;
 use super::commitment::{Context, Kind};
 use super::machine::{
-    backend::{RegisteredProgram, RegisteredVerifier},
+    backend::{RegisteredProgram, RegisteredVerifier, RegistryProgram},
     programs::{self, Compiled, PUBLIC_VALUES},
     typed_finalizer, typed_pairs,
     typed_programs::{self, Caps, HTLC, ISSUANCE},
@@ -19,6 +19,7 @@ use super::machine::{
 use super::profile;
 use super::recursive::{self, Error, NodeProof, WalletProof};
 
+mod binding_cache;
 mod checked_registry;
 #[cfg(all(test, feature = "stream"))]
 mod constructor_tests;
@@ -29,8 +30,10 @@ mod constructor_tests;
 ))]
 mod session_registry_tests;
 pub(crate) mod storage;
+mod verified_node;
 use crate::{htlc_air as htlc, joinsplit_air as js};
 pub(crate) use checked_registry::{CheckedRegistry, CheckedRegistryRef};
+pub(crate) use verified_node::VerifiedNodeInput;
 
 /// Supplied independently from the host's expected transaction/height/policy.
 #[derive(Clone, Copy)]
@@ -344,7 +347,7 @@ pub struct Session<const N: usize = 5> {
     registry: Registry<N>,
     expected_profile: [u8; 32],
     worker_memory_bytes: u64,
-    cached: storage::Cache<(u64, RegisteredProgram), N>,
+    cached: storage::Cache<binding_cache::Entry, N>,
     cache_entries: usize,
     cache_reserve_bytes: u64,
     stats: recursive::CacheStats,
@@ -438,9 +441,19 @@ impl<const N: usize> Session<N> {
         compiled: Compiled,
         public: [Val; PUBLIC_VALUES],
     ) -> Result<NodeProof, Error> {
-        if public[programs::MODE] != Val::from_u64(mode)
+        self.prove_compiled(run, mode, compiled, public, None)
+    }
+
+    fn check_public(
+        &self,
+        run: &crate::proving::Run,
+        mode: u64,
+        public: &[Val; PUBLIC_VALUES],
+    ) -> Result<(), Error> {
+        if !(1..=N as u64).contains(&mode)
+            || public[programs::MODE] != Val::from_u64(mode)
             || super::statements::derive_in(run, "statement_check", |hash| {
-                hash.summary(&public, N as u64)
+                hash.summary(public, N as u64)
             })?
             .context
             .profile_id
@@ -448,18 +461,44 @@ impl<const N: usize> Session<N> {
         {
             return Err("typed session mode/profile".into());
         }
+        Ok(())
+    }
+
+    fn touch_cached(&mut self, index: usize) -> Result<(), Error> {
+        let entry = self.cached.remove(index);
+        self.cached.push(entry)?;
+        self.stats.hits = self
+            .stats
+            .hits
+            .checked_add(1)
+            .ok_or("typed cache hit overflow")?;
+        Ok(())
+    }
+
+    fn prove_compiled(
+        &mut self,
+        run: &crate::proving::Run,
+        mode: u64,
+        compiled: Compiled,
+        public: [Val; PUBLIC_VALUES],
+        binding: Option<binding_cache::Binding>,
+    ) -> Result<NodeProof, Error> {
+        self.check_public(run, mode, &public)?;
         let program = compiled
             .program
             .pad_to(self.registry.height)
             .map_err(|e| format!("{e:?}"))?;
-        let cached_index = self.cached.iter().position(|(m, _)| *m == mode);
+        let cached_index = self.cached.iter().position(|entry| entry.mode == mode);
         if let Some(index) = cached_index {
-            if self.cached[index].1.air().program() != &program {
+            if self.cached[index].registered.air().program() != &program {
                 return Err("typed cached program changed".into());
             }
-            self.cached[index].1.reuse_preprocessing(run)?;
+            self.cached[index].registered.reuse_preprocessing(run)?;
             drop(program);
-            let entry = self.cached.remove(index);
+            let mut entry = self.cached.remove(index);
+            if binding.is_some() {
+                entry.binding = binding;
+            }
             self.cached.push(entry)?;
             self.stats.hits = self
                 .stats
@@ -472,7 +511,7 @@ impl<const N: usize> Session<N> {
             while self.cached.len() >= self.cache_entries {
                 self.cached.remove(0);
             }
-            let registered = RegisteredProgram::new_in_run(
+            let registered = RegistryProgram::new_in_run(
                 MachineAir::new(program),
                 storage::active_memory_bytes(self.worker_memory_bytes, self.cache_reserve_bytes)?,
                 run.child(
@@ -480,26 +519,40 @@ impl<const N: usize> Session<N> {
                     "block_v2_preprocessing",
                     profile::preprocessing_capabilities(),
                 )?,
+                &self.registry.caps[(mode - 1) as usize],
             )
             .map_err(|e| format!("{e:?}"))?;
             if registered.preprocessing_cap().roots() != self.registry.caps[(mode - 1) as usize] {
                 return Err("typed program differs from registered key".into());
             }
-            self.cached.push((mode, registered))?;
+            self.cached.push(binding_cache::Entry {
+                mode,
+                registered,
+                binding,
+            })?;
             self.stats.setups = self
                 .stats
                 .setups
                 .checked_add(1)
                 .ok_or("typed cache setup overflow")?;
         }
+        self.prove_cached(run, public, &compiled.witness)
+    }
+
+    fn prove_cached(
+        &self,
+        run: &crate::proving::Run,
+        public: [Val; PUBLIC_VALUES],
+        witness: &[Val],
+    ) -> Result<NodeProof, Error> {
         let proof = self
             .cached
             .last()
             .unwrap()
-            .1
+            .registered
             .prove_in_run(
                 &public,
-                &compiled.witness,
+                witness,
                 run.child(
                     "proof",
                     "block_v2_registered_program",
@@ -578,18 +631,7 @@ impl<const N: usize> Session<N> {
                 hash.merge(left, right)
             })?;
             let mode = typed_pairs::mode_for(policies.map(Policy::mode))?;
-            let caps: &typed_pairs::Caps = self.registry.caps.as_slice().try_into()?;
-            let compiled = super::statements::compile_in(run, self.registry.height, N, |prefix| {
-                Ok(typed_pairs::wrapper_pair_with_registry(
-                    self.registry.height,
-                    caps,
-                    mode,
-                    [&wallets[0].public, &wallets[1].public],
-                    [&wallets[0].proof, &wallets[1].proof],
-                    Some(prefix),
-                )?)
-            })?;
-            self.prove(run, mode, compiled, programs::statement(node, mode))
+            self.prove_pair_bound(run, mode, wallets, programs::statement(node, mode))
         })
     }
 
@@ -623,27 +665,29 @@ impl<const N: usize> Session<N> {
         crate::block_v2::statements::request("block_v2_typed_merge", |run| {
             self.verify_registered(left, &left.public)?;
             self.verify_registered(right, &right.public)?;
-            let node = super::statements::derive_in(run, "statement", |hash| {
-                let left = hash.summary(&left.public, N as u64)?;
-                let right = hash.summary(&right.public, N as u64)?;
-                hash.merge(left, right)
-            })?;
-            let compiled = super::statements::compile_in(run, self.registry.height, N, |prefix| {
-                Ok(programs::merge_with_registry(
-                    self.registry.height,
-                    &self.registry.caps,
-                    [&left.public, &right.public],
-                    [&left.proof, &right.proof],
-                    Some(prefix),
-                )?)
-            })?;
-            self.prove(
-                run,
-                programs::MERGE,
-                compiled,
-                programs::statement(node, programs::MERGE),
-            )
+            self.merge_proof(run, left, right)
         })
+    }
+
+    // Only the ordinary verifying entry point and the opaque owned-input
+    // handoff call this helper. It is not an unchecked crate API.
+    fn merge_proof(
+        &mut self,
+        run: &crate::proving::Run,
+        left: &NodeProof,
+        right: &NodeProof,
+    ) -> Result<NodeProof, Error> {
+        let node = super::statements::derive_in(run, "statement", |hash| {
+            let left = hash.summary(&left.public, N as u64)?;
+            let right = hash.summary(&right.public, N as u64)?;
+            hash.merge(left, right)
+        })?;
+        self.prove_recursive(
+            run,
+            binding_cache::Operation::Merge,
+            &[(&left.public, &left.proof), (&right.public, &right.proof)],
+            programs::statement(node, programs::MERGE),
+        )
     }
 
     /// Terminal proof for a separately registered finalizer construction.
@@ -657,34 +701,25 @@ impl<const N: usize> Session<N> {
                 }
             };
             self.verify_registered(child, &child.public)?;
-            let node = super::statements::derive_in(run, "statement", |hash| {
-                hash.finalize(&child.public, N as u64, mode)
-            })?;
-            let compiled = if N == typed_pairs::KEY_COUNT {
-                let caps: &typed_pairs::Caps = self.registry.caps.as_slice().try_into()?;
-                super::statements::compile_in(run, self.registry.height, N, |prefix| {
-                    Ok(typed_pairs::finalize_with_registry(
-                        self.registry.height,
-                        caps,
-                        &child.public,
-                        &child.proof,
-                        Some(prefix),
-                    )?)
-                })?
-            } else {
-                let caps: &typed_finalizer::Caps = self.registry.caps.as_slice().try_into()?;
-                super::statements::compile_in(run, self.registry.height, N, |prefix| {
-                    Ok(typed_finalizer::compile_with_registry(
-                        self.registry.height,
-                        caps,
-                        &child.public,
-                        &child.proof,
-                        Some(prefix),
-                    )?)
-                })?
-            };
-            self.prove(run, mode, compiled, programs::statement(node, mode))
+            self.finalize_proof(run, mode, child)
         })
+    }
+
+    fn finalize_proof(
+        &mut self,
+        run: &crate::proving::Run,
+        mode: u64,
+        child: &NodeProof,
+    ) -> Result<NodeProof, Error> {
+        let node = super::statements::derive_in(run, "statement", |hash| {
+            hash.finalize(&child.public, N as u64, mode)
+        })?;
+        self.prove_recursive(
+            run,
+            binding_cache::Operation::Finalize,
+            &[(&child.public, &child.proof)],
+            programs::statement(node, mode),
+        )
     }
 }
 
@@ -882,3 +917,12 @@ mod tests {
         // deliberately not evidence of a proved mixed-transaction root.
     }
 }
+
+#[cfg(all(
+    test,
+    feature = "gpu",
+    feature = "stream",
+    feature = "block-v2-capacity-128"
+))]
+#[path = "typed_recursive_capacity_tests.rs"]
+mod capacity_tests;

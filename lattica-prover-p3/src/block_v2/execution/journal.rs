@@ -24,7 +24,7 @@ use std::{
 use super::{
     artifact_store::{self, ArtifactStore, StoreUsage},
     dag::{self, AttemptId, CandidateId, Completion, Dag, JobStatus, Lease, Limits, WorkerId},
-    job::{ArtifactRef, Job, JobId, RegistryPin, VerifiedNode},
+    job::{ArtifactRef, Job, JobId, RegistryPin, VerifiedNode, VerifiedWalletPayload},
     resources::Resources,
     workspace::{WorkspaceId, WorkspaceLease},
 };
@@ -460,6 +460,22 @@ impl Recovery {
         &self.restored.workspaces
     }
 
+    /// Inspect freshly CPU-verified retained proof bytes without resuming this
+    /// journal, advancing its epoch, or granting candidate/application rights.
+    /// The caller must independently bind the job and historical candidate.
+    /// Unreconciled workers or workspaces forbid this clean audit path.
+    pub fn verified_node_bytes(&self, job: JobId) -> Result<Option<&[u8]>, Error> {
+        self.journal.check_current()?;
+        self.store.require_ready()?;
+        if !self.journal.pending.is_empty() {
+            return Err("retained proof audit refuses pending journal writes".into());
+        }
+        if !self.restored.attempts.is_empty() || !self.restored.workspaces.is_empty() {
+            return Err("retained proof audit requires reconciled attempts and workspaces".into());
+        }
+        self.restored.dag.verified_node_bytes(job)
+    }
+
     /// Reconciliation must authoritatively stop/drain both proving and verifier
     /// work for each exact old lease; absence must be checked, never inferred from
     /// elapsed time. It must be idempotent if recovery is retried after a failure.
@@ -506,6 +522,109 @@ impl Recovery {
                 .ok_or("candidate deadline overflow")?;
             let candidate = dag.attach(root, eligibility, deadline, now)?;
             dag.seal(candidate, eligibility, now)?;
+            Ok(candidate)
+        })
+    }
+
+    /// Resume one exact sealed candidate without renewing its deadline. The
+    /// deadline comes only from the authoritative snapshot, and is checked
+    /// after all old proving, verification and workspace users are reconciled.
+    /// Candidate attachment and the new epoch share one atomic checkpoint.
+    ///
+    /// The caller must revalidate the native head and preserve the original
+    /// clock domain across services (including rejecting a changed boot for
+    /// host-monotonic deadlines). Neither a new process clock nor a fresh
+    /// relative lifetime is valid for this operation.
+    pub fn resume_sealed_candidate_with_workspaces(
+        self,
+        reconcile: impl FnMut(&PreviousAttempt) -> Result<(), Error>,
+        reconcile_workspace: impl FnMut(&WorkspaceLease) -> Result<(), Error>,
+        now: impl FnOnce() -> u64,
+        previous: CandidateId,
+        root: JobId,
+        eligibility: [u8; 32],
+    ) -> Result<(DurableDag, CandidateId), Error> {
+        self.resume_scoped_candidate_with_workspaces(
+            reconcile,
+            reconcile_workspace,
+            now,
+            previous,
+            root,
+            eligibility,
+            true,
+        )
+    }
+
+    /// Resume one exact unsealed prefix under its original deadline. This does
+    /// not seal it, renew it, or authorize a root. The caller must authenticate
+    /// the current native prefix and retain the original clock domain, just as
+    /// for sealed candidate recovery above.
+    pub fn resume_prefix_candidate_with_workspaces(
+        self,
+        reconcile: impl FnMut(&PreviousAttempt) -> Result<(), Error>,
+        reconcile_workspace: impl FnMut(&WorkspaceLease) -> Result<(), Error>,
+        now: impl FnOnce() -> u64,
+        previous: CandidateId,
+        root: JobId,
+        eligibility: [u8; 32],
+    ) -> Result<(DurableDag, CandidateId), Error> {
+        self.resume_scoped_candidate_with_workspaces(
+            reconcile,
+            reconcile_workspace,
+            now,
+            previous,
+            root,
+            eligibility,
+            false,
+        )
+    }
+
+    fn resume_scoped_candidate_with_workspaces(
+        self,
+        reconcile: impl FnMut(&PreviousAttempt) -> Result<(), Error>,
+        reconcile_workspace: impl FnMut(&WorkspaceLease) -> Result<(), Error>,
+        now: impl FnOnce() -> u64,
+        previous: CandidateId,
+        root: JobId,
+        eligibility: [u8; 32],
+        sealed: bool,
+    ) -> Result<(DurableDag, CandidateId), Error> {
+        let candidate = self
+            .restored
+            .candidates
+            .iter()
+            .find(|candidate| candidate.id == previous)
+            .ok_or(if sealed {
+                "sealed recovery candidate is absent from the journal"
+            } else {
+                "prefix recovery candidate is absent from the journal"
+            })?;
+        if candidate.root != root
+            || candidate.eligibility != eligibility
+            || candidate.sealed != sealed
+            || candidate.cancelled
+        {
+            return Err(if sealed {
+                "sealed recovery candidate binding or state changed"
+            } else {
+                "prefix recovery candidate binding or state changed"
+            }
+            .into());
+        }
+        let deadline = candidate.deadline_ms;
+        self.resume_initialized(reconcile, reconcile_workspace, now, |dag, now| {
+            if deadline <= now {
+                return Err(if sealed {
+                    "sealed recovery candidate deadline expired during reconciliation"
+                } else {
+                    "prefix recovery candidate deadline expired during reconciliation"
+                }
+                .into());
+            }
+            let candidate = dag.attach(root, eligibility, deadline, now)?;
+            if sealed {
+                dag.seal(candidate, eligibility, now)?;
+            }
             Ok(candidate)
         })
     }
@@ -805,6 +924,23 @@ impl DurableDag {
         let outcome = self.core.admit(job, wallets, now_ms);
         self.persist(outcome)
     }
+
+    /// Local verified ownership crosses storage and graph admission unchanged.
+    /// Publication failures retain the ordinary recovery/poisoning boundary.
+    pub(super) fn admit_verified_wallets(
+        &mut self,
+        job: Job,
+        wallets: &[VerifiedWalletPayload],
+        now_ms: u64,
+    ) -> Result<JobId, Error> {
+        self.live()?;
+        if let Err(error) = self.store.put_verified_job_inputs(&job, wallets) {
+            self.poisoned = self.store.needs_recovery();
+            return Err(error);
+        }
+        let outcome = self.core.admit_verified_wallets(job, wallets, now_ms);
+        self.persist(outcome)
+    }
     pub fn attach(
         &mut self,
         root: JobId,
@@ -829,6 +965,17 @@ impl DurableDag {
     pub fn cancel(&mut self, candidate: CandidateId, now_ms: u64) -> Result<(), Error> {
         self.live()?;
         let outcome = self.core.cancel(candidate, now_ms);
+        self.persist(outcome)
+    }
+    pub(super) fn seal_prefix_extension(
+        &mut self,
+        candidate: CandidateId,
+        root: JobId,
+        eligibility: [u8; 32],
+        now_ms: u64,
+    ) -> Result<(), Error> {
+        self.live()?;
+        let outcome = self.core.seal_prefix_extension(candidate, root, eligibility, now_ms);
         self.persist(outcome)
     }
     pub fn advance(&mut self, now_ms: u64) -> Result<(), Error> {
@@ -957,6 +1104,45 @@ impl DurableDag {
         let outcome = self.core.cache_node(ticket, bytes, now_ms);
         self.persist(outcome)
     }
+
+    /// Publish and admit the exact owned bytes authenticated by a local CPU
+    /// verifier. A worker packet or serialized approval cannot construct this
+    /// payload. All ordinary durable writes, graph and deadline checks remain.
+    pub fn cache_verified_node(
+        &mut self,
+        payload: super::job::VerifiedNodePayload,
+        now_ms: u64,
+    ) -> Result<(), Error> {
+        self.live()?;
+        if let Err(error) = self.store.put_verified_node(&payload) {
+            self.poisoned = self.store.needs_recovery();
+            return Err(error);
+        }
+        let outcome = self.core.cache_verified_node(payload, now_ms);
+        self.persist(outcome)
+    }
+    pub(super) fn sealed_candidate_binding(
+        &mut self,
+        candidate: CandidateId,
+        eligibility: [u8; 32],
+        now_ms: u64,
+    ) -> Result<(JobId, u64), Error> {
+        self.advance(now_ms)?;
+        self.core
+            .sealed_candidate_binding(candidate, eligibility, now_ms)
+    }
+
+    pub(super) fn unsealed_candidate_binding(
+        &mut self,
+        candidate: CandidateId,
+        eligibility: [u8; 32],
+        now_ms: u64,
+    ) -> Result<(JobId, u64), Error> {
+        self.advance(now_ms)?;
+        self.core
+            .unsealed_candidate_binding(candidate, eligibility, now_ms)
+    }
+
     pub fn candidate_result(
         &mut self,
         candidate: CandidateId,

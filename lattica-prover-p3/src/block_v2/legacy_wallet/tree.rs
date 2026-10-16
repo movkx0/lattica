@@ -25,8 +25,10 @@ fn output_bound(count: usize) -> Result<usize, Error> {
     Ok(bound)
 }
 
-pub(crate) fn tree_abi_admitted(count: usize) -> bool {
-    super::abi_admitted() && output_bound(count).is_ok()
+pub(crate) fn tree_abi_admission(count: usize) -> Result<DeviceSession, Error> {
+    let context = super::abi_admission()?;
+    output_bound(count)?;
+    Ok(context)
 }
 
 pub(crate) fn prove_joinsplit_tree(
@@ -35,7 +37,7 @@ pub(crate) fn prove_joinsplit_tree(
 ) -> Result<TreeProof, Error> {
     let bound = output_bound(witnesses.len())?;
     request.admit(&capabilities())?;
-    admission(request)?;
+    let _context = admission(request)?;
     // Leaves produce their own complete proof receipts. This additional receipt
     // covers only public root binding and container serialization, with GPU
     // generation of the fixed dummy statement. It cannot certify a leaf proof.

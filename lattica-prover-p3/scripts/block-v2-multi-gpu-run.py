@@ -215,6 +215,12 @@ def proving_environment(source=None):
 
 def environment(budget, directory):
     gpu, cpu, host = (budget[k] for k in ('gpu', 'cpu', 'host'))
+    # Owned admission binds the allocator's cached directory byte-for-byte to
+    # the assignment before Rayon starts. Its explicit one-worker experiment
+    # uses the selected scratch directory directly; the legacy paths retain
+    # their per-service scratch link. All backing remains charged to the worker.
+    spill_directory = (host['scratch_path'] if budget.get('typed_ram_admission') == 'owned'
+                       else str(directory / 'scratch'))
     layout = budget.get('readback_layout', 'banded')
     if layout not in ('banded', 'direct'):
         raise ValueError('unsupported assigned readback layout')
@@ -284,7 +290,7 @@ def environment(budget, directory):
         'LATTICA_V2_GPU_WITNESS': '1' if witness else '0',
         'LATTICA_V2_GPU_RANDOMNESS': '1' if randomness else '0',
         'LATTICA_V2_GPU_TRANSCRIPT': '1' if transcript else '0',
-        'LATTICA_V2_HOST_OUTPUT_BYTES': str(host['worker_bytes']), 'LATTICA_SPILL_MAX_BYTES': str(host['spill_bytes']), 'LATTICA_SPILL_DIR': str(directory / 'scratch'),
+        'LATTICA_V2_HOST_OUTPUT_BYTES': str(host['worker_bytes']), 'LATTICA_SPILL_MAX_BYTES': str(host['spill_bytes']), 'LATTICA_SPILL_DIR': spill_directory,
         'LATTICA_V2_GPU_HASH': '1', 'LATTICA_V2_GPU_RETAIN_TREES': '1', 'LATTICA_V2_GPU_PIPELINE': '0',
         'LATTICA_V2_GPU_RESIDENT_LDE': '1', 'LATTICA_V2_GPU_OPENINGS': '1', 'LATTICA_V2_GPU_OPENING_COMPACT': '1',
         'LATTICA_V2_GPU_OPENING_PINNED': '0', 'LATTICA_V2_QUOTIENT_FUSION': '1', 'LATTICA_V2_GPU_QUOTIENT_LDE': '1',

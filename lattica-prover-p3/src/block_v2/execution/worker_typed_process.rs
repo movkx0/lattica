@@ -39,8 +39,27 @@ const CONTEXT: u8 = 7;
 const CONTEXT_READY: u8 = 8;
 const PING: u8 = 9;
 const PONG: u8 = 10;
+const RESULT_RETIRING: u8 = 11;
 const MAX_FRAME: usize = MAX_REQUEST_BYTES + MAX_TOKEN_BYTES + 512;
 const TIMEOUT: Duration = Duration::from_secs(600);
+
+/// An admitted task and its exact launch-binding packet. The packet stays
+/// immutable until dispatch consumes it; preparing it grants no launch authority.
+pub struct PreparedDispatch {
+    task: Task,
+    request: launch::PreparedRequest,
+}
+
+impl PreparedDispatch {
+    pub fn request(&self) -> &[u8] {
+        self.request.bytes()
+    }
+
+    pub(in crate::block_v2::execution) fn bound_request(&self) -> &launch::PreparedRequest {
+        &self.request
+    }
+}
+
 pub(crate) const CONFIGURATION_IDENTITY_MAX_BYTES: usize = 1 << 20;
 
 #[cfg(test)]
@@ -76,6 +95,28 @@ pub struct Config {
 }
 
 impl Config {
+    /// A trusted preparation callback must retain the independently admitted
+    /// resources and current executable, even when it uses another identity
+    /// encoding than the native bootstrap.
+    #[cfg(feature = "gpu")]
+    pub(crate) fn check_admitted_assignment(
+        &self,
+        assignment: &serde_json::Value,
+    ) -> Result<(), Error> {
+        let (peak, jobs) = crate::block_v2::execution::worker_budget::resources(assignment)?;
+        let (entries, reserve) =
+            crate::block_v2::execution::worker_budget::preprocessing_cache(assignment)?;
+        if self.peak != peak
+            || self.jobs != jobs
+            || self.cache_entries != entries
+            || self.cache_reserve_bytes != reserve
+            || self.executable != running_image_fingerprint()?
+        {
+            return Err("prepared public worker differs from admitted assignment/image".into());
+        }
+        Ok(())
+    }
+
     /// Interpret the existing independently pinned worker assignment. This
     /// builds protocol identity; it does not enforce OS or GPU resources.
     pub fn from_assignment(
@@ -112,7 +153,7 @@ impl Config {
         policy_assignment: [u8; 32],
     ) -> Result<Self, Error> {
         peak.validate_capacity()?;
-        storage::admit_startup(peak.ram_bytes)?;
+        storage::admit_startup(peak.ram_bytes, peak.threads)?;
         let registry = crate::block_v2::typed_recursive::CheckedRegistry::new(registry)?;
         Self::from_checked(
             registry,
@@ -159,8 +200,8 @@ impl Config {
     ) -> Result<Self, Error> {
         pin.check_typed_approved(&registry.as_ref())?;
         peak.validate_capacity()?;
-        storage::admit_startup(peak.ram_bytes)?;
-        storage::session_memory_bytes(peak.ram_bytes)?;
+        storage::admit_startup(peak.ram_bytes, peak.threads)?;
+        storage::session_memory_bytes(peak.ram_bytes, peak.threads)?;
         jobs.validate_request()?;
         coordinator::admit_budget(jobs.ram_bytes)?;
         if jobs.threads != peak.threads || jobs.vram_bytes != 0 || jobs.scratch_bytes != 0 {
@@ -190,7 +231,7 @@ impl Config {
             || entries > 12
             || (entries == 1) != (reserve_bytes == 0)
             || crate::block_v2::typed_recursive::storage::active_memory_bytes(
-                storage::session_memory_bytes(self.peak.ram_bytes)?,
+                storage::session_memory_bytes(self.peak.ram_bytes, self.peak.threads)?,
                 reserve_bytes,
             )
             .is_err()
@@ -323,6 +364,21 @@ fn receive_body(socket: &mut UnixStream, size: usize, bound: usize) -> Result<Ve
     Ok(bytes)
 }
 
+fn receive_result(socket: &mut UnixStream) -> Result<(Vec<u8>, bool), Error> {
+    let mut header = [0; 9];
+    socket.read_exact(&mut header)?;
+    let size = u64::from_le_bytes(header[1..].try_into()?);
+    if !matches!(header[0], RESULT | RESULT_RETIRING)
+        || size > packet::MAX_RESULT_BYTES.min(MAX_FRAME) as u64
+    {
+        return Err("typed process result kind or size".into());
+    }
+    Ok((
+        receive_body(socket, usize::try_from(size)?, packet::MAX_RESULT_BYTES)?,
+        header[0] == RESULT_RETIRING,
+    ))
+}
+
 fn configure(socket: &UnixStream) -> Result<(), Error> {
     socket.set_read_timeout(Some(TIMEOUT))?;
     socket.set_write_timeout(Some(TIMEOUT))?;
@@ -382,12 +438,13 @@ pub struct ProcessWorker {
     child: Option<Child>,
     service: Option<service::OwnedService>,
     socket: Option<UnixStream>,
-    pending: Option<(Task, Vec<u8>)>,
+    pending: Option<(Task, launch::PreparedRequest)>,
     pid: Option<u32>,
     stats: CacheStats,
     completed: u64,
     poisoned: bool,
     exited_cleanly: bool,
+    retirement_requested: bool,
 }
 
 impl ProcessWorker {
@@ -437,6 +494,7 @@ impl ProcessWorker {
             completed: 0,
             poisoned: false,
             exited_cleanly: false,
+            retirement_requested: false,
         })
     }
 
@@ -495,6 +553,9 @@ impl ProcessWorker {
 
     pub fn task(&self, owner: &mut DurableDag, lease: Lease, now_ms: u64) -> Result<Task, Error> {
         self.stats()?;
+        if self.retirement_requested {
+            return Err("typed process requested retirement".into());
+        }
         if self.socket.is_none() || self.exited_cleanly {
             return Err("typed process is not running".into());
         }
@@ -521,13 +582,40 @@ impl ProcessWorker {
     /// Send one job without waiting, retaining its workspace use and request.
     /// Another worker can run concurrently while this reservation remains held.
     pub fn dispatch(&mut self, token: &Token, task: Task) -> Result<(), Error> {
+        let prepared = self.prepare_dispatch(task)?;
+        self.dispatch_prepared(token, prepared)
+    }
+
+    fn check_dispatch(&self, task: &Task) -> Result<(), Error> {
         self.stats()?;
+        if self.retirement_requested {
+            return Err("typed process requested retirement".into());
+        }
         if task.workspace.lease() != self.reservation.lease()? {
             return Err("typed process task belongs to another workspace".into());
         }
-        let request = task.request()?;
+        Ok(())
+    }
+
+    /// Prepare once, then let the caller bind a launch token to these bytes.
+    /// Ownership prevents the binding packet and dispatched task from diverging.
+    pub fn prepare_dispatch(&self, task: Task) -> Result<PreparedDispatch, Error> {
+        self.check_dispatch(&task)?;
+        let request = launch::PreparedRequest::new(task.request()?)?;
+        Ok(PreparedDispatch { task, request })
+    }
+
+    /// Consume the exact prepared packet without re-encoding its public proofs.
+    /// Process/workspace and token checks still run immediately before sending.
+    pub fn dispatch_prepared(
+        &mut self,
+        token: &Token,
+        prepared: PreparedDispatch,
+    ) -> Result<(), Error> {
+        self.check_dispatch(&prepared.task)?;
+        let PreparedDispatch { task, request } = prepared;
         token.check_execution(self.execution_digest()?)?;
-        token.check_request(&request)?;
+        token.check_prepared_request(&request)?;
         let token_bytes = token.encode()?;
         let token_len = (token_bytes.len() as u64).to_le_bytes();
         self.poisoned = true;
@@ -536,12 +624,20 @@ impl ProcessWorker {
         send_parts(
             socket,
             JOB,
-            &[&token_len, &token_bytes, &self.pending.as_ref().unwrap().1],
+            &[
+                &token_len,
+                &token_bytes,
+                self.pending.as_ref().unwrap().1.bytes(),
+            ],
         )
     }
 
     pub fn has_pending(&self) -> bool {
         self.pending.is_some()
+    }
+    /// The last result remains valid; close the idle worker before replacement.
+    pub fn retirement_requested(&self) -> bool {
+        self.retirement_requested
     }
     pub fn scheduling_capabilities(
         &self,
@@ -551,7 +647,29 @@ impl ProcessWorker {
             profile: self.config.pin.profile(),
             resources: self.config.jobs,
             resident_mode: None,
+            timing_identity: None,
+            forecast_retained_mode: false,
+            dispatch_deadline_ms: None,
         }
+    }
+
+    /// The host approves physical device/driver/kernel/settings fingerprints.
+    /// Bind them to this process image and its actual immutable descriptor.
+    /// Candidate policies/launch paths belong to protocol fencing, not timing.
+    pub fn scheduling_capabilities_with_timing(
+        &self,
+        identity: crate::block_v2::execution::scheduler::TimingIdentity,
+    ) -> Result<crate::block_v2::execution::scheduler::WorkerCapabilities, Error> {
+        let mut descriptor = self.config;
+        descriptor.policy_assignment = [0; 32];
+        let identity = identity.bind_configuration(
+            self.config.executable,
+            configuration_digest(&descriptor.bytes())?,
+        )?;
+        Ok(crate::block_v2::execution::scheduler::WorkerCapabilities {
+            timing_identity: Some(identity),
+            ..self.scheduling_capabilities()
+        })
     }
 
     /// Switch the host-derived public policy without dropping preprocessing or
@@ -634,8 +752,8 @@ impl ProcessWorker {
             .as_ref()
             .ok_or("typed process has no pending job")?;
         let socket = self.socket.as_mut().ok_or("typed process is not running")?;
-        let response = receive(socket, RESULT, packet::MAX_RESULT_BYTES)?;
-        let result = packet::decode_result_owned(&task.assignment, request, response)?;
+        let (response, retiring) = receive_result(socket)?;
+        let result = packet::decode_result_prepared_owned(&task.assignment, request, response)?;
         let stats = result.stats();
         let next = self
             .completed
@@ -652,6 +770,7 @@ impl ProcessWorker {
         let (task, _) = self.pending.take().unwrap();
         self.stats = total_stats;
         self.completed = next;
+        self.retirement_requested = retiring;
         self.poisoned = false;
         Ok(CompletedJob {
             task,
@@ -754,8 +873,11 @@ pub fn serve(
         .ok_or("typed worker missing session")?
         .configure_cache(config.cache_entries, config.cache_reserve_bytes)?;
     worker.request_resources = config.jobs;
+    #[cfg(target_env = "gnu")]
+    crate::spill_alloc::host_backing::report("ready", 0);
     send(&mut socket, READY, &ready)?;
     let mut completed = 0u64;
+    let mut retiring = false;
     let mut public_context: Option<PolicyContext> = None;
     loop {
         let (kind, packet) = receive_command(&mut socket)?;
@@ -783,6 +905,8 @@ pub fn serve(
             let memory = crate::block_v2::gpu_hash::begin_memory_window()?;
             worker.close();
             shutdown()?;
+            #[cfg(target_env = "gnu")]
+            crate::spill_alloc::host_backing::report("shutdown", completed);
             #[cfg(feature = "gpu")]
             if let Some(memory) = memory {
                 eprintln!(
@@ -800,6 +924,9 @@ pub fn serve(
             send(&mut socket, STOPPED, &receipt)?;
             return Ok(completed);
         }
+        if retiring {
+            return Err("typed process job after retirement request".into());
+        }
         if packet.len() < 8 {
             return Err("typed process token frame truncated".into());
         }
@@ -811,6 +938,8 @@ pub fn serve(
         let request = &packet[8 + token_len..];
         token.check_execution(digest)?;
         let gate = WorkerGate::enter(launches, &token, request)?;
+        #[cfg(target_env = "gnu")]
+        crate::spill_alloc::host_backing::report("job_start", completed);
         #[cfg(feature = "gpu")]
         let memory = crate::block_v2::gpu_hash::begin_memory_window()?;
         let result =
@@ -824,6 +953,8 @@ pub fn serve(
                 },
             )?;
         worker.drain()?;
+        #[cfg(target_env = "gnu")]
+        crate::spill_alloc::host_backing::report("job_drained", completed);
         #[cfg(feature = "gpu")]
         if let Some(memory) = memory {
             eprintln!(
@@ -836,7 +967,24 @@ pub fn serve(
         }
         drop(gate);
         storage::check_buffers(packet.capacity(), result.capacity())?;
-        send(&mut socket, RESULT, &result)?;
+        #[cfg(target_env = "gnu")]
+        {
+            retiring = !crate::spill_alloc::host_backing::worker_reuse_allowed(
+                config.peak.ram_bytes,
+                config.cache_reserve_bytes,
+            );
+        }
+        #[cfg(not(target_env = "gnu"))]
+        {
+            // Without an allocator observation, deliver this job and require
+            // physical exit before another process takes its reservation.
+            retiring = true;
+        }
+        send(
+            &mut socket,
+            if retiring { RESULT_RETIRING } else { RESULT },
+            &result,
+        )?;
         completed = completed
             .checked_add(1)
             .ok_or("typed process job count overflow")?;

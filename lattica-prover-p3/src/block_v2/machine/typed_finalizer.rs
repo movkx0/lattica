@@ -257,11 +257,20 @@ mod tests {
             (64, 127, 127),
         ] {
             let plan = proof_plan(count).unwrap();
-            assert_eq!(plan.reference_proofs, reference);
-            assert_eq!(plan.proposed_proofs, proposed);
+            assert_eq!(
+                plan.reference_proofs,
+                reference + 2 * u16::from(commitment::DEPTH - 6)
+            );
+            assert_eq!(
+                plan.proposed_proofs,
+                proposed + u16::from(commitment::CAPACITY == 128 && count > 32)
+            );
         }
         assert!(proof_plan(0).is_err());
-        assert!(proof_plan(65).is_err());
+        assert!(proof_plan((commitment::CAPACITY + 1) as u8).is_err());
+        let full = proof_plan(commitment::CAPACITY as u8).unwrap();
+        assert_eq!(full.proposed_proofs as usize, 2 * commitment::CAPACITY - 1);
+        assert_eq!(full.finalizer_proofs, 0);
         assert!(proof_plan(u8::MAX).is_err());
     }
 
@@ -278,13 +287,13 @@ mod tests {
             profile_id: programs::profile_id(1 << 18, &caps()).unwrap(),
             chain_id: [73; 32],
         };
-        let entries: Vec<_> = (0..32)
+        let entries: Vec<_> = (0..commitment::CAPACITY / 2)
             .map(|i| Entry {
                 kind: [Kind::JoinSplit, Kind::Htlc, Kind::Coinbase][i % 3],
                 statement_digest: [i as u64 + 1, 2, 3, 4],
             })
             .collect();
-        for count in 1..=32 {
+        for count in 1..=commitment::CAPACITY / 2 {
             let expected = commitment::root(context, &entries[..count]).unwrap();
             for level in proof_plan(count as u8).unwrap().subtree_level..commitment::DEPTH {
                 let node = subtree(context, &entries[..count], level);
@@ -296,7 +305,7 @@ mod tests {
                     wrong[i] += Val::ONE;
                     assert!(program.evaluate(&wrong, &[]).is_err());
                 }
-                for bad_level in [6, 7, 64] {
+                for bad_level in [commitment::DEPTH as u64, commitment::DEPTH as u64 + 1, 64] {
                     let mut wrong = values.clone();
                     wrong[LEVEL] = Val::from_u64(bad_level);
                     assert!(program.evaluate(&wrong, &[]).is_err());
@@ -342,7 +351,7 @@ mod tests {
             FINALIZE,
         );
         let template = compile_registration(height, FINALIZE, None).unwrap();
-        for level in [0, 5, 6] {
+        for level in [0, commitment::DEPTH - 1, commitment::DEPTH] {
             let child = programs::statement(
                 commitment::empty_subtree(context, level).unwrap(),
                 programs::EMPTY,

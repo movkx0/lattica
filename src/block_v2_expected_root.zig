@@ -143,7 +143,7 @@ fn mixedArguments(args: []const []const u8) !commitment.NodeSummary {
     return .{ .context = context, .level = commitment.DEPTH, .count = @intCast(count), .root = try commitment.root(context, entries[0..count]) };
 }
 
-test "mixed arguments bind type order and every required depth-six count" {
+test "mixed arguments bind type order and every selected tree depth and count" {
     const js = "1:" ++ ("00" ** (26 * 8));
     const htlc = "2:" ++ ("00" ** (31 * 8));
     const issuance = "3:" ++ ("00" ** (26 * 8));
@@ -152,9 +152,9 @@ test "mixed arguments bind type order and every required depth-six count" {
     var args: [commitment.CAPACITY + 4][]const u8 = undefined;
     args[0..4].* = .{ "tool", "root-mixed", id, id };
     for (args[4..], 0..) |*arg, index| arg.* = kinds[index % kinds.len];
-    for ([_]usize{ 1, 2, 3, 4, 8, 16, 32, 63, 64 }) |count| {
+    for (1..commitment.CAPACITY + 1) |count| {
         const node = try mixedArguments(args[0 .. count + 4]);
-        try std.testing.expectEqual(@as(u8, 6), node.level);
+        try std.testing.expectEqual(@as(u8, commitment.DEPTH), node.level);
         try std.testing.expectEqual(@as(u8, @intCast(count)), node.count);
     }
     const before = (try mixedArguments(args[0..8])).root;
@@ -302,7 +302,7 @@ test "padded-eight is level six and matches ordered empty-subtree extension" {
         extended = try commitment.mergeNodes(extended, try commitment.emptySubtree(context, extended.level));
     }
     const padded = try derivePadded(context, values);
-    try std.testing.expectEqual(@as(u8, 6), padded.level);
+    try std.testing.expectEqual(@as(u8, commitment.DEPTH), padded.level);
     try std.testing.expectEqual(@as(u8, 8), padded.count);
     try std.testing.expectEqualDeep(extended, padded);
     const left_empty = try commitment.emptySubtree(context, 3);
@@ -330,7 +330,7 @@ test "generic padded selection covers every count without changing eight alias" 
     }
     for (1..commitment.CAPACITY + 1) |count| {
         const node = try deriveSelection(contextFixture(), rows[0..count]);
-        try std.testing.expectEqual(@as(u8, 6), node.level);
+        try std.testing.expectEqual(@as(u8, commitment.DEPTH), node.level);
         try std.testing.expectEqual(@as(u8, @intCast(count)), node.count);
         if (count == COUNT) try std.testing.expectEqualDeep(try derivePadded(contextFixture(), rows[0..COUNT].*), node);
     }
@@ -343,7 +343,7 @@ test "generic padded selection covers every count without changing eight alias" 
     try std.testing.expect(!std.mem.eql(u64, &before.root, &after.root));
 }
 
-test "generic selection arguments require one to 64 canonical public statements" {
+test "generic selection arguments require the selected block capacity canonical public statements" {
     const zero = hex(FIELD_COUNT * 8, [_]u8{0} ** (FIELD_COUNT * 8));
     const id = "11" ** 32;
     try std.testing.expectError(error.InvalidArguments, selectionArguments(&.{}));

@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "status": "partial",
+  "goal_status": "active",
+  "kind": "source entrypoint and resource ownership review",
+  "parent_evidence": "docs/evidence/gpu-local-request-digest-workflow-2026-10-16.json",
+  "parent_evidence_sha256": "124d71711012973261f73677a46c9a57ea3d95e869aa306ceab9759c89e4c5bd",
+  "source_files_verified": 705,
+  "declaration_count": 89,
+  "declaration_files": 30,
+  "family_count": 15,
+  "command_candidates": 20,
+  "ownership_domains": 7,
+  "phase_overlap_rows": 6,
+  "artifacts": {
+    "lattica-prover-p3/benchmark-results/gpu-entrypoint-ownership-review-20261016/control/review-01.py": "8790be131d05e141eaa0ee5ad2f66d230641d27ec5de4e25898d82cd12926b38",
+    "lattica-prover-p3/benchmark-results/gpu-entrypoint-ownership-review-20261016/control/entrypoint-ownership-inventory-01.json": "7d8db03093f517740d1387a43d7ac94e6d38196048c47faa9dad4c8d7d918c42",
+    "lattica-prover-p3/benchmark-results/gpu-entrypoint-ownership-review-20261016/control/continuation-01.json": "dadcbf7ed3d4a0e1061269321672e92e8099a349e6c505d6046b73311bf3421e"
+  },
+  "application_source_changed": false,
+  "fresh_gpu_proofs": 0,
+  "native_blocks_applied": 0,
+  "accepted_history_blocks": 8,
+  "accepted_height": 17,
+  "whole_program_reachability_proved": false,
+  "full_resource_lifetime_admission": false,
+  "production_ready": false,
+  "sustained_throughput_qualified": false
+}

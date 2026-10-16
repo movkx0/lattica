@@ -34,6 +34,10 @@ __kernel void QUOTIENT_EVALUATE(__global const ulong *code, uint instructions,
     ulong first = gl_mul(z, gl_pow(gl_sub(x, 1UL), 0xfffffffeffffffffUL));
     ulong last = gl_mul(z, gl_pow(transition, 0xfffffffeffffffffUL));
     ulong accumulator[QUOTIENT_DEGREE] = {0};
+#ifdef QUOTIENT_SPECIALIZED
+    QUOTIENT_SPECIALIZED(input, width, parameters, weights, scratch, rows, row,
+        first, last, transition, accumulator);
+#else
     for (uint pc = 0; pc < instructions; ++pc) {
         size_t at = 5 * (size_t)pc;
         uint op = (uint)code[at], dst = (uint)code[at + 1];
@@ -80,6 +84,7 @@ __kernel void QUOTIENT_EVALUATE(__global const ulong *code, uint instructions,
             for (uint j = 0; j < QUOTIENT_DEGREE; ++j) scratch[((size_t)dst * QUOTIENT_DEGREE + j) * rows + row] = r[j];
         }
     }
+#endif
     for (uint j = 0; j < QUOTIENT_DEGREE; ++j) output[QUOTIENT_DEGREE * ((size_t)output_first + row) + j] = gl_canon(gl_mul(accumulator[j], inverse_z));
 }
 
@@ -87,3 +92,4 @@ __kernel void QUOTIENT_EVALUATE(__global const ulong *code, uint instructions,
 #undef QUOTIENT_ALPHA
 #undef QUOTIENT_EVALUATE
 #undef QUOTIENT_MUL
+#undef QUOTIENT_SPECIALIZED

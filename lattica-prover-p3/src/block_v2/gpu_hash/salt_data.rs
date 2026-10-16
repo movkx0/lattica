@@ -18,6 +18,38 @@ pub(super) enum SaltView<'a> {
     Replay(&'a [ReplaySalts]),
 }
 impl SaltStore {
+    pub(super) fn retained_host_backing(&self) -> Result<usize, String> {
+        use super::cache_metadata::{add, capacity};
+        let mut bytes;
+        match self {
+            Self::Host(matrices) => {
+                bytes = capacity::<RowMajorMatrix<Val>>(matrices.capacity())?;
+                for matrix in matrices {
+                    bytes = add(bytes, capacity::<Val>(matrix.values.capacity())?)?;
+                }
+            }
+            Self::Device(matrices) => {
+                bytes = capacity::<DeviceMatrix>(matrices.capacity())?;
+                for matrix in matrices {
+                    bytes = add(bytes, matrix.retained_host_backing())?;
+                }
+            }
+            Self::PublicDevice(matrices) => {
+                bytes = capacity::<PublicSalts>(matrices.capacity())?;
+                for matrix in matrices {
+                    bytes = add(bytes, matrix.cached_host_backing())?;
+                }
+            }
+            Self::Replay(recipes) => {
+                bytes = capacity::<ReplaySalts>(recipes.capacity())?;
+                for recipe in recipes {
+                    bytes = add(bytes, recipe.retained_host_backing())?;
+                }
+            }
+        }
+        Ok(bytes)
+    }
+
     pub(super) fn cached_public_backing(
         &self,
         height: usize,
@@ -68,6 +100,34 @@ impl SaltStore {
             Self::PublicDevice(m) => SaltView::PublicDevice(m),
             Self::Replay(m) => SaltView::Replay(m),
         }
+    }
+}
+
+#[cfg(all(test, feature = "stream"))]
+#[test]
+fn retained_salt_backing_counts_host_and_empty_device_capacities() {
+    use crate::spill_alloc::allocation_requests::measure;
+    let (host, allocated) = measure(|| {
+        let mut matrices = Vec::with_capacity(3);
+        let mut values = Vec::with_capacity(67);
+        values.resize(32, Val::default());
+        matrices.push(RowMajorMatrix::new(values, 4));
+        SaltStore::Host(matrices)
+    });
+    let (bytes, census) = measure(|| host.retained_host_backing().unwrap());
+    assert_eq!(bytes, allocated.bytes);
+    assert_eq!(census.calls, 0);
+    assert!(!allocated.overflow && !census.overflow);
+    for variant in 0..3 {
+        let (store, allocated) = measure(|| match variant {
+            0 => SaltStore::Device(Vec::with_capacity(5)),
+            1 => SaltStore::PublicDevice(Vec::with_capacity(5)),
+            _ => SaltStore::Replay(Vec::with_capacity(5)),
+        });
+        let (bytes, census) = measure(|| store.retained_host_backing().unwrap());
+        assert_eq!(bytes, allocated.bytes);
+        assert_eq!(allocated.calls, 1);
+        assert_eq!(census.calls, 0);
     }
 }
 impl SaltView<'_> {

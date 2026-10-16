@@ -17,7 +17,12 @@ use p3_goldilocks::Goldilocks;
 
 type Val = Goldilocks;
 
-fn main() {
+fn run() -> Result<(), String> {
+    // This demo includes the CPU-only Poseidon2 reference prover. Admit the
+    // whole workflow before native hashing or witness construction starts.
+    lattica_prover_p3::proving::Request::from_env()
+        .and_then(|request| request.admit(&lattica_prover_p3::proving::legacy_cpu()))
+        .map_err(|error| error.to_string())?;
     let input: [Val; 8] = core::array::from_fn(|i| Val::new(i as u64 + 1));
     let out = native_permute(input);
     println!("lattica-prover-p3 demo: Poseidon2-Goldilocks, zero-knowledge FRI STARK");
@@ -28,13 +33,8 @@ fn main() {
 
     // The reference across-rows Poseidon2 AIR (validation lineage for the fused circuits' hash regions).
     let p2_in: [Val; 8] = core::array::from_fn(|i| Val::new(i as u64 * 11 + 1));
-    match poseidon2_air::prove_verify(p2_in) {
-        Ok(()) => println!("  across-rows Poseidon2 AIR (ZK, demo config): ACCEPTED"),
-        Err(e) => {
-            println!("  across-rows Poseidon2 AIR: FAILED ({e})");
-            std::process::exit(1);
-        }
-    }
+    poseidon2_air::prove_verify(p2_in)?;
+    println!("  across-rows Poseidon2 AIR (ZK, demo config): ACCEPTED");
 
     // Join-split (N-in/M-out) — the production circuit, under the production config.
     let (jbytes, jprove, jverify, jproven) = joinsplit_air::measure(&joinsplit_air::demo_witness());
@@ -48,7 +48,16 @@ fn main() {
         jverify,
         jproven
     );
+    Ok(())
 }
+
+fn main() -> Result<(), String> {
+    run()
+}
+
+#[cfg(test)]
+#[path = "bin/cpu_reference_tests/mod.rs"]
+mod policy_tests;
 
 #[cfg(test)]
 mod tests {

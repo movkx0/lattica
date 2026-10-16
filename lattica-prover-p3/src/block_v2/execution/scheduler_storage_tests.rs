@@ -14,6 +14,9 @@ fn full_cost_history_eviction_and_worker_forgetting_preserve_storage_and_estimat
             threads: 2,
         },
         resident_mode: None,
+        timing_identity: None,
+        forecast_retained_mode: false,
+        dispatch_deadline_ms: None,
     };
     let mut model = CostModel::new(100).unwrap();
     let plan = CostModel::storage_plan().unwrap();

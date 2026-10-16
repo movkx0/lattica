@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Check a real mixed root and retain rejected mutations in a fresh directory."""
+import block_v2_capacity as Capacity
 import argparse
 import hashlib
 import json
@@ -20,9 +21,9 @@ def write_json(path, data):
         stream.write("\n")
 
 
-def audit(binary, directory, log):
+def audit(binary, directory, log, block_capacity=64):
     command = [str(binary), "audit-root", str(directory), str(directory / "expected.json"),
-               str(directory / "body.json"), str(directory / "node.6.0")]
+               str(directory / "body.json"), str(directory / Capacity.root_file(capacity=block_capacity))]
     env = {key: value for key, value in os.environ.items()
            if not key.startswith(("LATTICA_", "RAYON_"))}
     env["RAYON_NUM_THREADS"] = "1"
@@ -42,12 +43,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cpu-binary", type=Path, required=True)
     parser.add_argument("--bundle", type=Path, required=True)
+    parser.add_argument("--block-capacity", type=int, choices=Capacity.SUPPORTED_CAPACITIES, default=64)
     parser.add_argument("--keys", type=int, choices=(5, 6, 12), required=True)
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     os.umask(0o077)
     binary, bundle = args.cpu_binary.resolve(strict=True), args.bundle.resolve(strict=True)
-    names = {"height.json", "body.json", "expected.json", "node.6.0"}
+    Capacity.require_binaries(args.block_capacity, binary)
+    block_capacity = args.block_capacity
+    names = {"height.json", "body.json", "expected.json", Capacity.root_file(capacity=block_capacity)}
     names.update(f"key.{i}" for i in range(1, args.keys + 1))
     if {path.name for path in bundle.iterdir()} != names:
         raise ValueError("audit bundle must contain only root, policy, public body and trusted keys")
@@ -64,7 +68,7 @@ def main():
                "registry_keys": args.keys, "rayon_threads": 1,
                "scope": "Rejection tests on an existing real root; no fresh proving or delivered-throughput measurement."}
     try:
-        control = audit(binary, bundle, out / "positive-control.log")
+        control = audit(binary, bundle, out / "positive-control.log", block_capacity)
         summary["positive_control"] = control
         if control["returncode"] != 0 or control["passed_audit_events"] != 1:
             raise ValueError("original root failed its positive control")
@@ -93,7 +97,7 @@ def main():
                 data["transactions"][0], data["transactions"][1] = data["transactions"][1], data["transactions"][0]
                 path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
             elif case == "proof-byte":
-                path = directory / "node.6.0"
+                path = directory / Capacity.root_file(capacity=block_capacity)
                 data = bytearray(path.read_bytes())
                 data[len(data) // 2] ^= 1
                 path.write_bytes(data)
@@ -102,7 +106,7 @@ def main():
                 if pins[name] == pins["key.2"]:
                     raise ValueError("key substitution must change the registered key")
                 shutil.copyfile(bundle / "key.2", directory / name)
-            outcome = audit(binary, directory, directory / "audit.log")
+            outcome = audit(binary, directory, directory / "audit.log", block_capacity)
             outcome.update(case=case, expected="reject",
                            artifacts={name: digest(directory / name) for name in sorted(names)})
             summary["cases"].append(outcome)

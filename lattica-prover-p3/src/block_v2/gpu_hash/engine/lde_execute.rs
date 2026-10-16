@@ -218,12 +218,17 @@ pub fn coset_lde_commit(
 
 /// Kernel scheduling shared with the existing tiled-NTT arithmetic, without
 /// borrowing that module's separate context or allocator.
-fn ntt_groups(height: usize, width: usize) -> Result<Vec<(usize, usize, usize)>, String> {
+fn ntt_groups(
+    height: usize,
+    width: usize,
+    max_column_bits: usize,
+) -> Result<Vec<(usize, usize, usize)>, String> {
     if height < 2
         || !height.is_power_of_two()
         || height > u32::MAX as usize
         || width == 0
         || width > u32::MAX as usize
+        || !(3..=4).contains(&max_column_bits)
     {
         return Err("unsupported resident NTT geometry".into());
     }
@@ -232,7 +237,7 @@ fn ntt_groups(height: usize, width: usize) -> Result<Vec<(usize, usize, usize)>,
         .checked_next_power_of_two()
         .ok_or("NTT column overflow")?
         .trailing_zeros()
-        .min(4) as usize;
+        .min(max_column_bits as u32) as usize;
     let cap = (12 - log_c).min(log_h);
     let groups = log_h.div_ceil(cap);
     let (base, extra) = (log_h / groups, log_h % groups);
@@ -370,8 +375,13 @@ impl Engine {
         bit_reversed: bool,
         opening: bool,
     ) -> Result<bool, String> {
-        let groups = ntt_groups(height, width)?;
         let log_h = height.trailing_zeros() as usize;
+        #[cfg(feature = "gpu")]
+        let max_column_bits =
+            crate::gpu::ntt_cache::max_column_bits(self.pq.device(), log_h, width);
+        #[cfg(feature = "gpu-metal")]
+        let max_column_bits = 4;
+        let groups = ntt_groups(height, width, max_column_bits)?;
         if height
             .checked_mul(width)
             .is_none_or(|n| n > src.len() || n > dst.len())
@@ -394,12 +404,28 @@ impl Engine {
             let workgroup = (local_elements / 2).clamp(32, 256);
             let workgroups = (height >> count) * width.div_ceil(1 << log_c);
             let mut event = Event::empty();
+            #[cfg(feature = "gpu")]
+            let power_words = crate::gpu::ntt_cache::power_words(
+                count,
+                log_c,
+                last && (post_c != 1 || post_b != 1),
+            );
+            #[cfg(feature = "gpu-metal")]
+            let power_words: Option<usize> = None;
+            let kernel_name = if power_words.is_some() {
+                "ntt_tile_cached"
+            } else {
+                "ntt_tile"
+            };
             // SAFETY: whole independent columns, bounded u32 row/column indexing,
-            // 32 KiB local tile, and distinct buffers at permutation boundaries.
+            // <=32 KiB total local storage and distinct permutation buffers.
             unsafe {
-                let kernel = self
-                    .pq
-                    .kernel_builder("ntt_tile")
+                // OpenCL mutates its builder; the Metal wrapper consumes it.
+                #[cfg(feature = "gpu")]
+                let mut builder = self.pq.kernel_builder(kernel_name);
+                #[cfg(feature = "gpu-metal")]
+                let builder = self.pq.kernel_builder(kernel_name);
+                let builder = builder
                     .arg(input)
                     .arg(output)
                     .arg(width as u32)
@@ -416,9 +442,12 @@ impl Engine {
                     .arg(roots)
                     .arg_local::<u64>(local_elements)
                     .global_work_size(workgroups * workgroup)
-                    .local_work_size(workgroup)
-                    .build()
-                    .map_err(|e| e.to_string())?;
+                    .local_work_size(workgroup);
+                #[cfg(feature = "gpu")]
+                if let Some(words) = power_words {
+                    builder.arg_local::<u64>(words);
+                }
+                let kernel = builder.build().map_err(|e| e.to_string())?;
                 let command = kernel.cmd().enew(&mut event);
                 #[cfg(test)]
                 let command = if let Some(gate) = self.lde_gate.as_ref() {
@@ -692,6 +721,10 @@ impl Engine {
                 "transform_buffer_bytes": plan.transform_buffer_bytes,
                 "predicted_managed_peak_bytes": plan.predicted_managed_peak_bytes,
                 "predicted_host_peak_bytes": plan.predicted_host_peak_bytes,
+                "host_output_payload_bytes": plan.host_output_bytes,
+                "host_output_backing_bytes": plan.host_output_backing_bytes,
+                "host_reorder_payload_bytes": plan.host_reorder_workspace_bytes,
+                "host_reorder_backing_bytes": plan.host_reorder_backing_bytes,
                 "host_budget_bytes": host_budget,
             })
         );
@@ -994,7 +1027,7 @@ impl Engine {
                 self.stats.lde_host_workspace_peak_bytes = self
                     .stats
                     .lde_host_workspace_peak_bytes
-                    .max(reorder.workspace_bytes);
+                    .max(reorder.workspace_backing_bytes);
                 matrices.push(matrix);
             }
             // Reuse a transform buffer for bounded salt bands only AFTER its
@@ -1193,19 +1226,23 @@ mod tests {
     fn ntt_schedule_covers_every_stage_with_bounded_local_storage() {
         for log_h in 1..32 {
             for width in [1usize, 2, 3, 4, 7, 16, 35, 98, 204, 1024] {
-                let groups = ntt_groups(1usize << log_h, width).unwrap();
-                let mut stage = 0;
-                for (start, count, log_c) in groups {
-                    assert_eq!(start, stage);
-                    assert!(count > 0 && (1usize << (count + log_c)) * 8 <= 32 * 1024);
-                    stage += count;
+                for columns in [3, 4] {
+                    let groups = ntt_groups(1usize << log_h, width, columns).unwrap();
+                    let mut stage = 0;
+                    for (start, count, log_c) in groups {
+                        assert_eq!(start, stage);
+                        assert!(count > 0 && (1usize << (count + log_c)) * 8 <= 32 * 1024);
+                        stage += count;
+                    }
+                    assert_eq!(stage, log_h);
                 }
-                assert_eq!(stage, log_h);
             }
         }
         for (height, width) in [(0, 1), (1, 1), (3, 1), (8, 0), (8, usize::MAX)] {
-            assert!(ntt_groups(height, width).is_err());
+            assert!(ntt_groups(height, width, 4).is_err());
         }
+        assert!(ntt_groups(256, 16, 2).is_err());
+        assert!(ntt_groups(256, 16, usize::MAX).is_err());
     }
 
     fn check_cpu_reference(inputs: &[LdeInput<'_>], cap_height: usize) -> LdeCommitOutput {
@@ -1488,8 +1525,8 @@ mod tests {
                 shift: Val::GENERATOR.inverse(),
             },
         ];
-        assert!(ntt_groups(8192, 3).unwrap().len() > 1);
-        assert!(ntt_groups(32768, 3).unwrap().len() > 1);
+        assert!(ntt_groups(8192, 3, 4).unwrap().len() > 1);
+        assert!(ntt_groups(32768, 3, 4).unwrap().len() > 1);
         let output = check_cpu_reference(&inputs, 6);
         let before = ENGINE
             .get()

@@ -18,6 +18,7 @@ def row(blocks, height):
 
 class SessionModel(NativeSessionVerifier):
     def __init__(self, limit=4096):
+        self.capacity = 64
         self.history_limit = limit
         self._session_mutex = threading.RLock()
         self._handle, self._record_ids, self._states = 0, [], []
@@ -52,6 +53,20 @@ def candidate(height, proof=b'public-test-model'):
 
 
 class SessionTests(unittest.TestCase):
+    def test_explicit_close_reconstructs_history_and_still_rejects_invalid_proofs(self):
+        verifier = SessionModel()
+        history = [candidate(10), candidate(11)]
+        before = verifier.replay(history)
+        verifier.close()
+        self.assertEqual((verifier._handle, verifier._record_ids, verifier._states), (0, [], []))
+        self.assertEqual(verifier.replay(history), before)
+        self.assertEqual((verifier.opens, verifier.applies), (2, 4))
+        verifier.close()
+        with self.assertRaises(H.RejectedBlock):
+            verifier.replay([candidate(10), candidate(11, b'invalid')])
+        self.assertEqual((verifier._handle, verifier._record_ids, verifier._states), (0, [], []))
+        self.assertEqual(verifier.replay(history), before)
+
     def test_only_new_suffix_is_applied_and_returned_state_is_not_mutable_cache(self):
         verifier = SessionModel()
         history = [candidate(10), candidate(11)]

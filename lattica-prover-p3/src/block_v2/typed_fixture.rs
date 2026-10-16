@@ -27,9 +27,11 @@ enum Witness {
 /// height. The order repeats JoinSplit, HTLC redeem, HTLC refund, issuance.
 /// Prefixes of the 64-wallet fixture cover the contract's smaller counts.
 fn witnesses() -> Vec<Witness> {
-    let mut witnesses = Vec::with_capacity(64);
+    #[cfg(test)]
+    tests::record_preparation();
+    let mut witnesses = Vec::with_capacity(super::profile::MAX_TRANSACTIONS);
     let mut commitments = Vec::with_capacity(128);
-    for index in 0..64 {
+    for index in 0..super::profile::MAX_TRANSACTIONS {
         let offset = Val::from_usize(1000 * (index + 1));
         if index % 4 == 1 || index % 4 == 2 {
             let mut w = htlc::demo_htlc_witness();
@@ -121,32 +123,35 @@ fn witnesses() -> Vec<Witness> {
 /// Generate one public leaf. The native witness set always has 64 entries so
 /// every call uses the same anchor, regardless of the selected prefix count.
 /// Proving randomness remains fresh; only the public statement is repeatable.
+/// Synthetic input construction and independent verification use CPU arithmetic;
+/// the statement exported here comes from the admitted leaf prover.
 pub fn wallet(index: usize) -> Result<(WalletProof, Policy), Error> {
-    if index >= 64 {
-        return Err("mixed fixture index must be below 64".into());
+    let request = crate::proving::Request::from_env()?;
+    let _admission = leaf::admit_wallet_request(request)?;
+    if index >= super::profile::MAX_TRANSACTIONS {
+        return Err("mixed fixture index exceeds the selected block capacity".into());
     }
     let witness = witnesses().swap_remove(index);
     let context = Context {
         profile_id: profile::CANDIDATE_PROFILE_ID,
         chain_id: CHAIN,
     };
-    let (public, bytes, policy) = match witness {
+    let (proved, policy) = match witness {
         Witness::JoinSplit(w) if w.mint == 0 => (
-            js::public_values(&w),
-            leaf::prove_joinsplit_research(&w, &context).map_err(|e| format!("{e:?}"))?,
+            leaf::prove_joinsplit_with_public(&w, &context, request)
+                .map_err(|e| format!("{e:?}"))?,
             Policy::JoinSplit,
         ),
         Witness::JoinSplit(w) => (
-            js::public_values(&w),
-            typed_leaf::prove_issuance_research(&w, &context, MINT)
+            typed_leaf::prove_issuance_with_public(&w, &context, MINT, request)
                 .map_err(|e| format!("{e:?}"))?,
             Policy::Issuance {
                 authorized_mint: MINT,
             },
         ),
         Witness::Htlc(w) => (
-            htlc::public_values(&w),
-            typed_leaf::prove_htlc_research(&w, &context).map_err(|e| format!("{e:?}"))?,
+            typed_leaf::prove_htlc_with_public(&w, &context, request)
+                .map_err(|e| format!("{e:?}"))?,
             Policy::Htlc {
                 expected_height: HEIGHT,
             },
@@ -154,10 +159,10 @@ pub fn wallet(index: usize) -> Result<(WalletProof, Policy), Error> {
     };
     let wallet = WalletProof {
         chain: CHAIN,
-        public,
+        public: proved.public,
         // This envelope was just generated locally. Still use the bounded,
         // canonical decoder used by retained research artifacts.
-        proof: codec::decode(bytes.get(72..).ok_or("short generated leaf")?)?,
+        proof: codec::decode(proved.envelope.get(72..).ok_or("short generated leaf")?)?,
     };
     typed_recursive::verify_wallet(&wallet, policy)?;
     Ok((wallet, policy))
@@ -176,49 +181,5 @@ pub fn statements() -> Vec<Vec<u64>> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use std::collections::BTreeSet;
-
-    #[test]
-    fn all_fixture_statements_share_anchor_and_have_unique_spends_and_outputs() {
-        let statements = statements();
-        let anchor = &statements[0][..4];
-        let mut nullifiers = BTreeSet::new();
-        let mut outputs = BTreeSet::new();
-        for (i, public) in statements.iter().enumerate() {
-            assert_eq!(&public[..4], anchor);
-            for nf in public[js::PI_NF..js::PI_OUTCM].chunks_exact(4) {
-                assert!(nullifiers.insert(nf.to_vec()));
-            }
-            for cm in public[js::PI_OUTCM..js::PI_FEE].chunks_exact(4) {
-                assert!(outputs.insert(cm.to_vec()));
-            }
-            assert_eq!(public[js::PI_MINT], if i % 4 == 3 { MINT } else { 0 });
-            if i % 4 == 1 || i % 4 == 2 {
-                assert_eq!(public[htlc::PI_HEIGHT], HEIGHT);
-                let hashlock = &public[htlc::PI_HASHLOCK..];
-                assert_eq!(hashlock.iter().all(|v| *v == 0), i % 4 == 2);
-            }
-        }
-        assert_eq!(nullifiers.len(), 128);
-        assert_eq!(outputs.len(), 128);
-    }
-
-    #[test]
-    fn each_fixture_type_has_a_valid_context_bound_proof() {
-        for index in 0..4 {
-            let (wallet, policy) = wallet(index).unwrap();
-            typed_recursive::verify_wallet(&wallet, policy).unwrap();
-            assert_eq!(
-                wallet
-                    .public
-                    .iter()
-                    .map(|v| v.as_canonical_u64())
-                    .collect::<Vec<_>>(),
-                statements()[index]
-            );
-        }
-        assert!(wallet(64).is_err());
-    }
-}
+#[path = "typed_fixture_tests.rs"]
+mod tests;

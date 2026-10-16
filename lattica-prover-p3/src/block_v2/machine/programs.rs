@@ -30,6 +30,11 @@ const AIR_DOMAIN: u64 = 0x4c42563212;
 
 pub(crate) mod registry_setup;
 
+pub(crate) mod paired_inputs;
+#[cfg(test)]
+mod recursive_input_prototype;
+pub(crate) mod recursive_inputs;
+
 /// Public key material only. Not evidence that these keys belong to approved programs.
 pub type Caps<const N: usize = 3> = [Vec<[Val; 4]>; N];
 
@@ -688,7 +693,13 @@ pub(crate) fn empty_with_registry<const N: usize>(
     registry(&mut b, &mut inputs, &public, height, caps, prefix)?;
     assert_constant(&mut b, public[MODE], EMPTY);
     assert_constant(&mut b, public[COUNT], 0);
-    let masks = selectors::<7>(&mut b, public[LEVEL], 0, 6, constants)?;
+    let masks = selectors::<{ commitment::DEPTH as usize + 1 }>(
+        &mut b,
+        public[LEVEL],
+        0,
+        u64::from(commitment::DEPTH),
+        constants,
+    )?;
     let mut root = b.hash_fields(commitment::EMPTY, &public[..16]);
     let zero = b.constant(Val::ZERO);
     let mut selected = [zero; 4];
@@ -697,7 +708,7 @@ pub(crate) fn empty_with_registry<const N: usize>(
             let term = b.mul(root[i], mask);
             selected[i] = b.add(selected[i], term);
         }
-        if level < 6 {
+        if level < commitment::DEPTH as usize {
             let level = b.constant(Val::from_usize(level + 1));
             root = parent_root(&mut b, level, zero, zero, &root, &root);
         }
@@ -761,7 +772,13 @@ pub(crate) fn merge_with_registry<const N: usize>(
     let left = &child[0];
     let right = &child[1];
     b.assert_equal(left[LEVEL], right[LEVEL]);
-    let levels = selectors::<6>(&mut b, left[LEVEL], 0, 5, constants)?;
+    let levels = selectors::<{ commitment::DEPTH as usize }>(
+        &mut b,
+        left[LEVEL],
+        0,
+        u64::from(commitment::DEPTH - 1),
+        constants,
+    )?;
     let one = b.constant(Val::ONE);
     let level = b.add(left[LEVEL], one);
     b.assert_equal(level, public[LEVEL]);
@@ -808,7 +825,7 @@ mod tests {
             chain_id: [37; 32],
         };
         let compiled = empty(height, &caps).unwrap();
-        for level in 0..=6 {
+        for level in 0..=commitment::DEPTH {
             let public = statement(commitment::empty_subtree(context, level).unwrap(), EMPTY);
             compiled
                 .program

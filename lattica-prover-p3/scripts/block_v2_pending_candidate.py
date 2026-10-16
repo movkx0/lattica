@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+import block_v2_capacity as Capacity
 import shutil
 import struct
 import subprocess
@@ -94,7 +95,8 @@ def _choose(host, view, history, pool, limit, screen, attempts, *, complete=True
         accepted = None
         for row in pool:
             request = row['receipt']['request_id']
-            role = len(row['body']) > 12 and row['body'][12] == 3
+            body = row['body']
+            role = len(body) > 12 and body[12] == 3
             key = (request, grants[position])
             if request in used or request in invalid_wallets or key in rejected or role != bool(grants[position]):
                 continue
@@ -132,8 +134,8 @@ def _choose(host, view, history, pool, limit, screen, attempts, *, complete=True
 
 
 def prepare(intake, host_config, registry_fixture, cpu_probe, output, *, request_ids=None, limit=64, scan_limit=256, prefix=False):
-    if type(limit) is not int or not 1 <= limit <= 64:
-        raise ValueError('candidate limit must be in 1..64')
+    if type(limit) is not int or not 1 <= limit <= Capacity.MAX_TRANSACTIONS:
+        raise ValueError('candidate limit must be within a supported block capacity')
     if type(scan_limit) is not int or not limit <= scan_limit <= 4096:
         raise ValueError('scan limit must cover the candidate limit and be at most 4096')
     if request_ids is not None and (not isinstance(request_ids, list) or not 1 <= len(request_ids) <= limit):
@@ -148,13 +150,13 @@ def prepare(intake, host_config, registry_fixture, cpu_probe, output, *, request
         arrival_head_revalidation=True, selection_policy='independent-host-policy-v1' if request_ids is None else 'explicit-host-order-v1',
         scan_limit=scan_limit, selection_attempts=[])
     try:
-        host = N.open_host(config, intake.host.directory)
+        host = N.checked_host(config, intake.host.directory, store=intake.host)
         if H.sha(H.canonical(host.verifier.configuration)) != intake.configuration:
             raise H.RejectedBlock('candidate builder and intake use different native configurations')
         manifest['verifier'] = host.verifier.identity
         view, history = host.snapshot()
         height = view.state['height'] + 1
-        pool = intake.candidate_inputs(expected_head=view.token, request_ids=request_ids, limit=scan_limit)
+        pool = intake.candidate_input_refs(expected_head=view.token, request_ids=request_ids, limit=scan_limit)
         manifest.update(parent_head_token=view.token, parent_tip=view.tip, parent_state=view.state, height=height,
             scanned_request_ids=[r['receipt']['request_id'] for r in pool],
             history=[{'height': c.height, 'body_sha256': H.sha(c.body), 'proof_sha256': H.sha(c.proof)} for c in history])
@@ -200,4 +202,5 @@ def prepare(intake, host_config, registry_fixture, cpu_probe, output, *, request
     finally:
         manifest['elapsed_seconds'] = time.monotonic() - started
         (output / 'manifest.json').write_bytes(H.canonical(manifest))
-    return N.Candidate(config, intake.host.directory, output, len(selected), prefix=prefix)
+    # Transfer the verified host so candidate validation reuses its native chain.
+    return N.Candidate(config, intake.host.directory, output, len(selected), prefix=prefix, store=host)

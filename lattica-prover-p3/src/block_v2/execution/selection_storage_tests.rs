@@ -99,7 +99,7 @@ fn durable_handoff_keeps_lease_inputs_after_all_caller_proof_owners_are_dropped(
         .collect();
     let weak: Vec<_> = inputs
         .iter()
-        .map(|input| Arc::downgrade(&input.bytes))
+        .map(|input| Arc::downgrade(input.shared_bytes()))
         .collect();
     let selection = Selection::new(typed_pin(), [9; 32], &inputs).unwrap();
     let job = selection
@@ -144,9 +144,7 @@ fn durable_handoff_keeps_lease_inputs_after_all_caller_proof_owners_are_dropped(
     drop(inputs);
     assert!(weak.iter().all(|input| input.upgrade().is_some()));
     drop(selection);
-    assert!(weak.iter().all(|input| input.upgrade().is_none()));
-    // Weak observers retain backing themselves; discard them before leasing.
-    drop(weak);
+    assert!(weak.iter().all(|input| input.upgrade().is_some()));
     owner.seal(candidate, [3; 32], 0).unwrap();
     let lease = owner
         .lease(
@@ -165,6 +163,7 @@ fn durable_handoff_keeps_lease_inputs_after_all_caller_proof_owners_are_dropped(
         .unwrap();
     for index in 0..2 {
         let bytes = owner.input_bytes(lease, index).unwrap();
+        assert_eq!(bytes.as_ptr(), weak[index].upgrade().unwrap().as_ptr());
         assert_eq!(bytes.len(), proof_bytes);
         assert!(bytes.iter().all(|byte| *byte == index as u8 + 1));
         job.wallet_inputs()[index].check_bytes(bytes).unwrap();
@@ -173,7 +172,9 @@ fn durable_handoff_keeps_lease_inputs_after_all_caller_proof_owners_are_dropped(
     assert_eq!(owner.resource_use().unwrap().ram_bytes, 1);
     owner.worker_stopped(lease, 3).unwrap();
     assert_eq!(owner.resource_use().unwrap(), Resources::default());
-    eprintln!("bounded_preparation_handoff inputs={count} proof_bytes_each={proof_bytes} expired_strong_owners={count} preserved_lease_inputs=2 release_requires_stop=true");
+    drop(owner);
+    assert!(weak.iter().all(|input| input.upgrade().is_none()));
+    eprintln!("bounded_preparation_handoff inputs={count} proof_bytes_each={proof_bytes} shared_backing_preserved=true preserved_lease_inputs=2 release_requires_stop=true");
 }
 
 #[test]
@@ -208,7 +209,7 @@ fn all_selection_shapes_keep_metadata_and_shared_proofs_within_the_component() {
                     PublicInput::new(wallet, bytes).unwrap()
                 })
                 .collect();
-            let weak = Arc::downgrade(&inputs[0].bytes);
+            let weak = Arc::downgrade(inputs[0].shared_bytes());
             let selection = Selection::new(pin, [9; 32], &inputs).unwrap();
             drop(inputs);
             assert!(weak.upgrade().is_some());
@@ -220,7 +221,7 @@ fn all_selection_shapes_keep_metadata_and_shared_proofs_within_the_component() {
             shapes += 1;
         }
     }
-    assert_eq!(shapes, 160);
+    assert_eq!(shapes, 5 * CAPACITY / 2);
     eprintln!(
         "bounded_selection_storage metadata_bytes={} proof_bytes={} construction_bytes={} input_conversion_bytes={} admission_bytes={} total_bytes={total} shapes={shapes}",
         plan.metadata_bytes, plan.proof_bytes, plan.construction_bytes,
@@ -229,18 +230,15 @@ fn all_selection_shapes_keep_metadata_and_shared_proofs_within_the_component() {
 }
 
 #[test]
-fn maximum_distinct_proofs_survive_caller_release_and_admission_copies_are_independent() {
+fn maximum_distinct_proofs_survive_caller_release_with_shared_admission_handles() {
     let proof = vec![13; MAX_PROOF_BYTES];
     let wallet = typed_wallet(1, 1, &proof);
     let validated = PublicInput::new(wallet, proof).unwrap();
-    // Reuse the already checked structural ticket while creating independent
-    // allocations of identical bytes. This tests ownership, not proof validity.
+    // Rebind the structural ticket to independent allocations. This tests
+    // ownership and capacity, not numerical proof validity.
     let mut inputs = Vec::with_capacity(CAPACITY);
     for _ in 0..CAPACITY {
-        inputs.push(PublicInput {
-            wallet,
-            bytes: Arc::from(validated.bytes.to_vec()),
-        });
+        inputs.push(PublicInput::new(wallet, validated.bytes().to_vec()).unwrap());
     }
     drop(validated);
     let selection = Selection::new(typed_pin(), [9; 32], &inputs).unwrap();
@@ -253,18 +251,19 @@ fn maximum_distinct_proofs_survive_caller_release_and_admission_copies_are_indep
         .iter()
         .find(|entry| entry.inputs.len() == 2)
         .unwrap();
-    let mut copies = entry.wallet_bytes();
-    assert_eq!(copies.capacity(), 2);
-    assert!(copies
-        .iter()
-        .all(|proof| proof.capacity() == MAX_PROOF_BYTES));
-    assert_ne!(copies[0].as_ptr(), entry.inputs[0].bytes.as_ptr());
-    copies[0][0] ^= 1;
-    assert_eq!(entry.inputs[0].bytes[0], 13);
-    assert_eq!(copies[1][0], 13);
+    let handles = entry.inputs.clone();
+    assert_eq!(handles.capacity(), 2);
+    for (handle, input) in handles.iter().zip(&entry.inputs) {
+        assert!(Arc::ptr_eq(handle.shared_bytes(), input.shared_bytes()));
+    }
+    // A detached caller can mutate only a new allocation, never these owners.
+    let mut detached = handles[0].bytes().to_vec();
+    detached[0] ^= 1;
+    assert_eq!(entry.inputs[0].bytes()[0], 13);
+    assert!(PublicInput::new(wallet, detached).is_err());
     eprintln!(
-        "bounded_selection_maximum retained_bytes={retained} retained_limit_bytes={} unique_inputs={CAPACITY} proof_bytes_each={MAX_PROOF_BYTES} admission_copy_bytes={}",
-        plan.retained_bytes().unwrap(), copies.iter().map(|v| v.capacity()).sum::<usize>()
+        "bounded_selection_maximum retained_bytes={retained} retained_limit_bytes={} unique_inputs={CAPACITY} proof_bytes_each={MAX_PROOF_BYTES} admission_handles_share_backing=true",
+        plan.retained_bytes().unwrap()
     );
 }
 
@@ -284,8 +283,11 @@ fn input_spare_capacity_is_bounded_and_aliases_are_counted_by_allocation() {
         .iter_mut()
         .find(|entry| entry.inputs.len() == 2)
         .unwrap();
-    assert!(Arc::ptr_eq(&entry.inputs[0].bytes, &entry.inputs[1].bytes));
-    entry.inputs[1].bytes = Arc::from(entry.inputs[1].bytes.to_vec());
+    assert!(Arc::ptr_eq(
+        entry.inputs[0].shared_bytes(),
+        entry.inputs[1].shared_bytes()
+    ));
+    entry.inputs[1] = PublicInput::new(wallet, entry.inputs[1].bytes().to_vec()).unwrap();
     let independent = selection.retained_storage_bytes().unwrap();
     assert_eq!(independent - aliased, arc_slice::<u8>(1).unwrap());
     assert!(arc_slice::<u64>(usize::MAX).is_err());

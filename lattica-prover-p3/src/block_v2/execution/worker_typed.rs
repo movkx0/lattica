@@ -15,8 +15,8 @@ use crate::block_v2::{
 enum TypedInputs {
     Pair([WalletProof; 2], [Policy; 2], u8),
     Empty,
-    Merge([NodeProof; 2]),
-    Finalize(NodeProof),
+    Merge([crate::block_v2::typed_recursive::VerifiedNodeInput; 2]),
+    Finalize(crate::block_v2::typed_recursive::VerifiedNodeInput),
 }
 
 struct PreparedInputs {
@@ -26,8 +26,12 @@ struct PreparedInputs {
 }
 
 impl PreparedInputs {
-    fn with<T>(self, body: impl FnOnce(&TypedInputs) -> Result<T, Error>) -> Result<T, Error> {
-        body(&self.values)
+    fn with<T>(self, body: impl FnOnce(TypedInputs) -> Result<T, Error>) -> Result<T, Error> {
+        // Keep the cumulative decode allowance alive until the owned inputs
+        // have been consumed and the entire proving call has returned.
+        let result = body(self.values);
+        drop(self._storage);
+        result
     }
 }
 
@@ -57,7 +61,7 @@ impl TypedWorker {
         resources: Resources,
     ) -> Result<Self, Error> {
         resources.validate_capacity()?;
-        storage::admit_startup(resources.ram_bytes)?;
+        storage::admit_startup(resources.ram_bytes, resources.threads)?;
         let registry = crate::block_v2::typed_recursive::CheckedRegistry::new(registry)?;
         Self::from_checked(registry, pin, resources)
     }
@@ -68,11 +72,11 @@ impl TypedWorker {
         resources: Resources,
     ) -> Result<Self, Error> {
         resources.validate_capacity()?;
-        storage::admit_startup(resources.ram_bytes)?;
+        storage::admit_startup(resources.ram_bytes, resources.threads)?;
         pin.check_typed_approved(&registry.as_ref())?;
         let session = Session::from_checked(
             registry,
-            storage::session_memory_bytes(resources.ram_bytes)?,
+            storage::session_memory_bytes(resources.ram_bytes, resources.threads)?,
         )?;
         Ok(Self {
             pin,
@@ -174,14 +178,14 @@ impl TypedWorker {
                 TypedInputs::Empty,
             ),
             Operation::Merge | Operation::Finalize => {
-                let child = |index: usize| -> Result<NodeProof, Error> {
+                let child = |index: usize| {
                     let child = &request.children[index];
                     let proof = storage.node(&request.inputs[index])?;
-                    registry.verify(
-                        &proof,
+                    crate::block_v2::typed_recursive::VerifiedNodeInput::verify(
+                        &registry,
+                        proof,
                         &programs::statement(child.expected, child.operation.proof_mode()),
-                    )?;
-                    Ok(proof)
+                    )
                 };
                 let inputs = if request.operation == Operation::Finalize {
                     TypedInputs::Finalize(child(0)?)
@@ -250,11 +254,11 @@ impl TypedWorker {
         let started = Instant::now();
         let proof = inputs.with(|inputs| match inputs {
             TypedInputs::Pair(wallets, policies, count) => {
-                session.wrap_pair([&wallets[0], &wallets[1]], *policies, *count)
+                session.wrap_pair([&wallets[0], &wallets[1]], policies, count)
             }
             TypedInputs::Empty => session.empty(chain, request.expected.level),
-            TypedInputs::Merge(children) => session.merge(&children[0], &children[1]),
-            TypedInputs::Finalize(child) => session.finalize(child),
+            TypedInputs::Merge([left, right]) => session.merge_verified(left, right),
+            TypedInputs::Finalize(child) => session.finalize_verified(child),
         })?;
         let proving_ms = started.elapsed().as_millis();
         if proof.public != programs::statement(request.expected, request.operation.proof_mode()) {

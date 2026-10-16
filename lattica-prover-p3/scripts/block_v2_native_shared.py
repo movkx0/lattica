@@ -6,6 +6,7 @@ identifies their verified snapshot; it cannot establish native delivery alone.
 import ctypes
 import json
 from pathlib import Path
+import block_v2_capacity as Capacity
 import struct
 
 import block_v2_host_store as H
@@ -58,11 +59,27 @@ def open_verifier(config_path):
         Path(config["genesis"]).read_bytes(),
         H.IssuancePolicy({int(height): {int(index): value for index, value in row.items()}
                           for height, row in grants.items()}), **extra)
+    if Capacity.validate(config.get('block_capacity', verifier.capacity)) != verifier.capacity:
+        raise H.RejectedBlock('native library does not match configured block capacity')
     return verifier
 
 
 def open_host(config_path, journal):
     return H.Store(journal, open_verifier(config_path))
+
+
+def checked_host(config_path, journal, *, store=None):
+    """Independently open pinned configuration before reusing a native store.
+
+    This only checks store identity; callers must still verify the current head.
+    """
+    expected = open_host(config_path, journal)
+    if store is None:
+        return expected
+    if (Path(store.directory).resolve() != Path(journal).resolve(strict=True)
+            or H.canonical(store.verifier.configuration) != H.canonical(expected.verifier.configuration)):
+        raise H.RejectedBlock('cached native store differs from pinned configuration')
+    return store
 
 
 def native_expected(verifier, complete_body):
@@ -85,18 +102,15 @@ class Candidate:
         self.recovered_receipt = None
         if (recover_proof is None) != (recover_binding is None) or (prefix and recover_proof is not None):
             raise H.RejectedBlock('application recovery requires a sealed proof and original binding')
-        if type(count) is not int or not 1 <= count <= 64:
-            raise H.RejectedBlock("native candidate count must be an integer in 1..64")
+        if type(count) is not int or not 1 <= count <= Capacity.MAX_TRANSACTIONS:
+            raise H.RejectedBlock("native candidate count must be within a supported block capacity")
         self.config_path = Path(config_path).resolve(strict=True)
         self.journal = Path(journal).resolve(strict=True)
         self.fixture = Path(fixture).resolve(strict=True)
         self.config_pin = D.pin(self.config_path)
-        self.store = open_host(self.config_path, self.journal)
-        if store is not None:
-            if (Path(store.directory).resolve() != self.journal
-                    or H.canonical(store.verifier.configuration) != H.canonical(self.store.verifier.configuration)):
-                raise H.RejectedBlock('cached native store differs from pinned configuration')
-            self.store = store
+        self.store = checked_host(self.config_path, self.journal, store=store)
+        if count > self.store.verifier.capacity:
+            raise H.RejectedBlock('candidate exceeds native block capacity')
         self.manifest_path = self.fixture / "manifest.json"
         self.manifest_pin = D.pin(self.manifest_path)
         manifest = read(self.manifest_path)

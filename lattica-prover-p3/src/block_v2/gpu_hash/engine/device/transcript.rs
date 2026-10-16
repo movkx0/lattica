@@ -4,8 +4,10 @@
 use super::random::SecretAllocation;
 use super::*;
 use crate::block_v2::challenger::resources as limits;
+use crate::block_v2::challenger::storage as host_storage_plan;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::MutexGuard;
+mod host_storage;
 
 const STATE_WORDS: usize = limits::STATE_WORDS;
 pub(crate) const MAX_TRANSCRIPT_WORDS: usize = limits::BATCH_WORDS;
@@ -138,8 +140,16 @@ pub(crate) struct DeviceTranscript {
     slot: StateSlot,
     session: DeviceSession,
     failed: Arc<Mutex<bool>>,
+    // Return the host charge only after the state and shared family handles
+    // have been dropped. All states, including future snapshots, own a charge.
+    _host_storage: HostScope,
     #[cfg(test)]
     fault: Option<Fault>,
+}
+
+pub(super) fn state_host_backing() -> Result<usize, String> {
+    // Charging shared counters/attempt metadata for every state is conservative.
+    host_storage::family_bytes(1)
 }
 
 /// Whole-proof retirement, including failures outside transcript operations.
@@ -174,6 +184,9 @@ impl DeviceSession {
     }
 
     pub(crate) fn new_transcript_bounded(&self, limit: usize) -> Result<DeviceTranscript, String> {
+        let host_storage = self.reserve_transcript_host(host_storage_plan::Plan {
+            bytes: state_host_backing()?,
+        })?;
         let slot = StateSlot::new(limit)?;
         #[cfg(not(feature = "gpu"))]
         return Err("GPU transcript is not implemented on Metal".into());
@@ -195,6 +208,7 @@ impl DeviceSession {
                 slot,
                 session: self.clone(),
                 failed: Arc::new(Mutex::new(false)),
+                _host_storage: host_storage,
                 #[cfg(test)]
                 fault: None,
             })
@@ -203,6 +217,13 @@ impl DeviceSession {
 }
 
 impl DeviceTranscript {
+    pub(crate) fn reserve_host_storage(
+        &self,
+        plan: host_storage_plan::Plan,
+    ) -> Result<HostScope, String> {
+        self.session.reserve_transcript_host(plan)
+    }
+
     pub(crate) fn session(&self) -> DeviceSession {
         self.session.clone()
     }
@@ -250,6 +271,9 @@ impl DeviceTranscript {
         return Err("GPU transcript snapshots are not implemented on Metal".into());
         #[cfg(feature = "gpu")]
         {
+            let host_storage = self.reserve_host_storage(host_storage_plan::Plan {
+                bytes: state_host_backing()?,
+            })?;
             let mut execution = Execution::new(&self.failed)?;
             let slot = self.slot.acquire()?;
             let snapshot = self.session.with_engine(|engine| {
@@ -287,6 +311,7 @@ impl DeviceTranscript {
                     slot,
                     session: self.session.clone(),
                     failed: self.failed.clone(),
+                    _host_storage: host_storage,
                     #[cfg(test)]
                     fault: None,
                 })
@@ -298,6 +323,17 @@ impl DeviceTranscript {
 
     /// Admission is atomic for one bounded batch, including empty no-op input.
     pub(crate) fn observe(&mut self, words: &[u64]) -> Result<(), String> {
+        let mut scope = self.reserve_host_storage(host_storage_plan::Plan::observation()?)?;
+        self.observe_scoped(words, &mut scope)
+    }
+
+    pub(crate) fn observe_scoped(
+        &mut self,
+        words: &[u64],
+        scope: &mut HostScope,
+    ) -> Result<(), String> {
+        self.session
+            .check_transcript_host(scope, host_storage_plan::Plan::observation()?)?;
         if words.len() > MAX_TRANSCRIPT_WORDS || words.iter().any(|&n| n >= GOLDILOCKS_MODULUS) {
             return Err("GPU transcript observations must be bounded canonical fields".into());
         }
@@ -366,15 +402,44 @@ impl DeviceTranscript {
         self.sample(count, u64::MAX)
     }
 
+    pub(crate) fn sample_fields_scoped(
+        &mut self,
+        count: usize,
+        scope: &mut HostScope,
+    ) -> Result<Vec<u64>, String> {
+        self.sample_scoped(count, u64::MAX, scope)
+    }
+
     /// Even zero-bit sampling consumes a field, as upstream does.
     pub(crate) fn sample_bits(&mut self, bits: usize, count: usize) -> Result<Vec<u64>, String> {
         self.sample(count, bit_mask(bits)?)
     }
 
+    pub(crate) fn sample_bits_scoped(
+        &mut self,
+        bits: usize,
+        count: usize,
+        scope: &mut HostScope,
+    ) -> Result<Vec<u64>, String> {
+        self.sample_scoped(count, bit_mask(bits)?, scope)
+    }
+
     fn sample(&mut self, count: usize, mask: u64) -> Result<Vec<u64>, String> {
+        let mut scope = self.reserve_host_storage(host_storage_plan::Plan::sample(count)?)?;
+        self.sample_scoped(count, mask, &mut scope)
+    }
+
+    fn sample_scoped(
+        &mut self,
+        count: usize,
+        mask: u64,
+        scope: &mut HostScope,
+    ) -> Result<Vec<u64>, String> {
         if count == 0 || count > MAX_TRANSCRIPT_WORDS {
             return Err("GPU transcript sampling requires 1..4096 fields".into());
         }
+        self.session
+            .check_transcript_host(scope, host_storage_plan::Plan::sample(count)?)?;
         #[cfg(not(feature = "gpu"))]
         return Err("GPU transcript sampling is not implemented on Metal".into());
         #[cfg(feature = "gpu")]
@@ -382,8 +447,8 @@ impl DeviceTranscript {
             let mut execution = Execution::new(&self.failed)?;
             let values = self.session.with_engine(|engine| {
                 admit(engine, &[count])?;
+                let mut values = host_storage_plan::zeroed_words(count)?;
                 let output = SecretAllocation::new(engine, count)?;
-                let mut values = vec![0u64; count];
                 let fence = engine.fence();
                 let mut event = compute::Event::empty();
                 execution.begin();
@@ -464,6 +529,7 @@ impl DeviceTranscript {
         {
             return Err("GPU grinding exceeds bit count or candidate bounds".into());
         }
+        let _host_storage = self.reserve_host_storage(host_storage_plan::Plan::grind()?)?;
         #[cfg(not(feature = "gpu"))]
         return Err("GPU transcript grinding is not implemented on Metal".into());
         #[cfg(feature = "gpu")]

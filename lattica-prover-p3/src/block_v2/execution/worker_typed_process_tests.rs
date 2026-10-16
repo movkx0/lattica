@@ -45,7 +45,9 @@ fn config() -> Config {
         pin,
         [9; 32],
         Resources {
-            ram_bytes: storage::STARTUP_HOST_BYTES + 1000,
+            ram_bytes: storage::STARTUP_HOST_BYTES
+                + 2 * crate::block_v2::execution::worker_budget::RAYON_THREAD_HOST_BYTES
+                + 1000,
             vram_bytes: 0,
             scratch_bytes: 500,
             threads: 2,
@@ -60,6 +62,58 @@ fn config() -> Config {
         configuration_digest(b"independent synthetic public policy").unwrap(),
     )
     .unwrap()
+}
+
+#[test]
+fn timing_identity_binds_actual_image_and_descriptor_but_not_candidate_policy() {
+    use crate::block_v2::execution::scheduler::TimingIdentity;
+    let temp = Temp::new();
+    let (_owner, mut worker) = fixture(&temp);
+    let identity = TimingIdentity::new(
+        [1; 32],
+        [2; 32],
+        worker.config.executable,
+        [4; 32],
+        [5; 32],
+        [6; 32],
+    )
+    .unwrap();
+    assert!(worker.scheduling_capabilities().timing_identity.is_none());
+    let initial = worker
+        .scheduling_capabilities_with_timing(identity)
+        .unwrap()
+        .timing_identity;
+    worker.config.policy_assignment = [43; 32];
+    assert_eq!(
+        worker
+            .scheduling_capabilities_with_timing(identity)
+            .unwrap()
+            .timing_identity,
+        initial
+    );
+    for field in 0..6 {
+        let previous = worker.config;
+        match field {
+            0 => worker.config.peak.ram_bytes += 1,
+            1 => worker.config.peak.vram_bytes += 1,
+            2 => worker.config.peak.scratch_bytes += 1,
+            3 => worker.config.cache_entries += 1,
+            4 => worker.config.cache_reserve_bytes += 1,
+            _ => worker.config.registry_id[0] ^= 1,
+        }
+        assert_ne!(
+            worker
+                .scheduling_capabilities_with_timing(identity)
+                .unwrap()
+                .timing_identity,
+            initial
+        );
+        worker.config = previous;
+    }
+    worker.config.executable[0] ^= 1;
+    assert!(worker
+        .scheduling_capabilities_with_timing(identity)
+        .is_err());
 }
 
 fn fixture(temp: &Temp) -> (DurableDag, ProcessWorker) {
@@ -114,7 +168,9 @@ fn process_configuration_reserves_session_storage_before_launch() {
         storage::HOST_BYTES,
         storage::HOST_BYTES + SESSION_HOST_BYTES - 1,
         storage::HOST_BYTES + SESSION_HOST_BYTES,
-        storage::STARTUP_HOST_BYTES - 1,
+        storage::STARTUP_HOST_BYTES
+            + 2 * crate::block_v2::execution::worker_budget::RAYON_THREAD_HOST_BYTES
+            - 1,
     ] {
         let peak = Resources {
             ram_bytes: bytes,
@@ -131,9 +187,21 @@ fn process_configuration_reserves_session_storage_before_launch() {
         )
         .is_err());
     }
-    let active =
-        cfg.peak.ram_bytes - storage::HOST_BYTES - storage::INPUT_HOST_BYTES - SESSION_HOST_BYTES;
+    let active = cfg.peak.ram_bytes
+        - storage::HOST_BYTES
+        - storage::INPUT_HOST_BYTES
+        - crate::host_memory::RETAINED_SYSTEM_HOST_BYTES
+        - crate::block_v2::execution::worker_budget::CALLER_STACK_HOST_BYTES
+        - SESSION_HOST_BYTES
+        - 2 * crate::block_v2::execution::worker_budget::RAYON_THREAD_HOST_BYTES;
     assert!(cfg.clone().with_preprocessing_cache(2, active).is_err());
+    assert!(cfg
+        .clone()
+        .with_preprocessing_cache(
+            2,
+            active + crate::host_memory::RETAINED_SYSTEM_HOST_BYTES - 1
+        )
+        .is_err());
     assert!(cfg.clone().with_preprocessing_cache(2, u64::MAX).is_err());
     let admitted = cfg.with_preprocessing_cache(2, active - 1).unwrap();
     assert_eq!(admitted.cache_reserve_bytes, active - 1);
@@ -179,7 +247,10 @@ fn fixture_capacity(temp: &Temp, workers: u32) -> (DurableDag, ProcessWorker) {
             artifact_bytes: 32 << 20,
             recovery_window_ms: 1000,
             workers: Resources {
-                ram_bytes: (storage::STARTUP_HOST_BYTES + coordinator::HOST_BYTES + 1100)
+                ram_bytes: (storage::STARTUP_HOST_BYTES
+                    + 2 * crate::block_v2::execution::worker_budget::RAYON_THREAD_HOST_BYTES
+                    + coordinator::HOST_BYTES
+                    + 1100)
                     * u64::from(workers),
                 vram_bytes: 0,
                 scratch_bytes: 500 * u64::from(workers),
@@ -240,7 +311,7 @@ fn child() {
     if case == "dies-idle" {
         std::process::exit(7);
     }
-    if case == "held-result" {
+    if case == "held-result" || case == "retiring-result" {
         let root = PathBuf::from(std::env::var_os("LATTICA_TYPED_PROCESS_TEST_DIR").unwrap());
         let bytes = receive(&mut socket, JOB, MAX_FRAME).unwrap();
         let token_len = u64::from_le_bytes(bytes[..8].try_into().unwrap()) as usize;
@@ -269,7 +340,16 @@ fn child() {
         )
         .unwrap();
         drop(gate);
-        send(&mut socket, RESULT, &result).unwrap();
+        send(
+            &mut socket,
+            if case == "retiring-result" {
+                RESULT_RETIRING
+            } else {
+                RESULT
+            },
+            &result,
+        )
+        .unwrap();
         receive(&mut socket, STOP, 0).unwrap();
         let counters: Vec<_> = [1u64, 0, 1]
             .into_iter()
@@ -327,6 +407,81 @@ fn idle_context_switch_preserves_process_and_reservation_but_fences_old_identity
 #[test]
 #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
 fn pending_dispatch_keeps_reservations_while_another_worker_shuts_down() {
+    pending_result_lifecycle(false, false);
+}
+
+#[test]
+#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+fn retiring_result_preserves_verification_and_reservation_until_physical_exit() {
+    pending_result_lifecycle(true, false);
+}
+
+#[test]
+#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+fn prepared_dispatch_moves_bound_packet_and_preserves_result_lifecycle() {
+    pending_result_lifecycle(false, true);
+    pending_result_lifecycle(true, true);
+}
+
+#[test]
+#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+fn prepared_dispatch_rejects_request_and_execution_substitution_before_send() {
+    use crate::block_v2::execution::{
+        job::test_support::typed_wallet_for,
+        launch::{LaunchLimits, LaunchStore},
+        selection::{PublicInput, Selection},
+    };
+    for wrong_request in [true, false] {
+        let temp = Temp::new();
+        let (mut owner, mut worker) = fixture(&temp);
+        let cfg = config();
+        let wallet = typed_wallet_for(cfg.pin, 1, 1, &[1]);
+        let selection = Selection::new(
+            cfg.pin,
+            cfg.chain,
+            &[PublicInput::new(wallet, vec![1]).unwrap()],
+        )
+        .unwrap();
+        selection.attach(&mut owner, [8; 32], 1000, 0).unwrap();
+        // This child panics if it receives any job: rejection must precede I/O.
+        worker.start(command("idle")).unwrap();
+        let job = selection.jobs().next().unwrap();
+        let lease = owner
+            .lease(job.id(), WorkerId(2), cfg.jobs, 1, 1000, 0)
+            .unwrap();
+        let task = worker.task(&mut owner, lease, 0).unwrap();
+        let prepared = worker.prepare_dispatch(task).unwrap();
+        let mut launches =
+            LaunchStore::create(&temp.0.join("launches"), LaunchLimits { records: 4 }).unwrap();
+        let execution = if wrong_request {
+            worker.execution_digest().unwrap()
+        } else {
+            launch::digest(DOMAIN, b"another process context").unwrap()
+        };
+        let request = if wrong_request {
+            &b"another request"[..]
+        } else {
+            prepared.request()
+        };
+        let token = launches
+            .issue_bound(&mut owner, lease, request, execution)
+            .unwrap();
+        let reserved = owner.resource_use().unwrap();
+        assert!(worker.dispatch_prepared(&token, prepared).is_err());
+        assert!(!worker.has_pending());
+        assert_eq!(owner.resource_use().unwrap(), reserved);
+        assert!(worker.child.as_mut().unwrap().try_wait().unwrap().is_none());
+        let revoked = launches.revoke(lease).unwrap();
+        assert!(launches.try_idle(&revoked).unwrap().is_some());
+        // Dropping a rejected task is not a job-stop receipt. Process destruction
+        // terminates the child, while durable reservations still need recovery.
+        drop(worker);
+        assert_eq!(owner.resource_use().unwrap(), reserved);
+    }
+}
+
+#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+fn pending_result_lifecycle(retiring: bool, use_prepared: bool) {
     use crate::block_v2::execution::{
         dag::Completion,
         job::{test_support::typed_wallet_for, VerifiedNode},
@@ -347,7 +502,11 @@ fn pending_dispatch_keeps_reservations_while_another_worker_shuts_down() {
     let mut second =
         ProcessWorker::prepare(&mut owner, cfg.clone(), WorkerId(3), WorkerId(4), 0).unwrap();
     second.start(command("idle")).unwrap();
-    let mut child = command("held-result");
+    let mut child = command(if retiring {
+        "retiring-result"
+    } else {
+        "held-result"
+    });
     child.env("LATTICA_TYPED_PROCESS_TEST_DIR", &temp.0);
     first.start(child).unwrap();
     let job = selection.jobs().next().unwrap();
@@ -355,18 +514,45 @@ fn pending_dispatch_keeps_reservations_while_another_worker_shuts_down() {
         .lease(job.id(), WorkerId(2), cfg.jobs, 1, 1000, 0)
         .unwrap();
     let task = first.task(&mut owner, lease, 0).unwrap();
-    let request = task.request().unwrap();
+    let (task, prepared) = if use_prepared {
+        (None, Some(first.prepare_dispatch(task).unwrap()))
+    } else {
+        (Some(task), None)
+    };
+    let legacy_request = task.as_ref().map(|task| task.request().unwrap());
+    let request = prepared
+        .as_ref()
+        .map(PreparedDispatch::request)
+        .or(legacy_request.as_deref())
+        .unwrap();
+    let request_pointer = request.as_ptr();
     let mut launches =
         LaunchStore::create(&temp.0.join("launches"), LaunchLimits { records: 4 }).unwrap();
-    let token = launches
-        .issue_bound(
+    let token = if let Some(prepared) = prepared.as_ref() {
+        launches.issue_prepared_bound(
             &mut owner,
             lease,
-            &request,
+            prepared.bound_request(),
             first.execution_digest().unwrap(),
         )
-        .unwrap();
-    first.dispatch(&token, task).unwrap();
+    } else {
+        launches.issue_bound(
+            &mut owner,
+            lease,
+            request,
+            first.execution_digest().unwrap(),
+        )
+    }
+    .unwrap();
+    if let Some(prepared) = prepared {
+        first.dispatch_prepared(&token, prepared).unwrap();
+        assert_eq!(
+            first.pending.as_ref().unwrap().1.bytes().as_ptr(),
+            request_pointer
+        );
+    } else {
+        first.dispatch(&token, task.unwrap()).unwrap();
+    }
     let deadline = Instant::now() + Duration::from_secs(10);
     while !temp.0.join("received").exists() {
         assert!(Instant::now() < deadline);
@@ -401,6 +587,12 @@ fn pending_dispatch_keeps_reservations_while_another_worker_shuts_down() {
         std::thread::sleep(Duration::from_millis(5));
     };
     assert!(!first.has_pending());
+    assert_eq!(first.retirement_requested(), retiring);
+    if retiring {
+        let charged = owner.resource_use().unwrap();
+        assert!(first.task(&mut owner, lease, 2).is_err());
+        assert_eq!(owner.resource_use().unwrap(), charged);
+    }
     let revoked = launches.revoke(lease).unwrap();
     assert!(launches.try_idle(&revoked).unwrap().is_some());
     let output = completed.reconcile(&mut owner, 2).unwrap();
@@ -509,6 +701,30 @@ fn bounded_protocol_rejects_oversized_truncated_and_unexpected_frames() {
     let (mut a, mut b) = UnixStream::pair().unwrap();
     send(&mut a, STOP, &[1]).unwrap();
     assert!(receive_command(&mut b).is_err());
+}
+
+#[test]
+fn retiring_result_frames_preserve_payload_and_reject_bad_headers_before_body() {
+    for kind in [RESULT, RESULT_RETIRING] {
+        let (mut writer, mut reader) = UnixStream::pair().unwrap();
+        send(&mut writer, kind, &[3, 5, 7]).unwrap();
+        let (bytes, retiring) = receive_result(&mut reader).unwrap();
+        assert_eq!(bytes, [3, 5, 7]);
+        assert_eq!(retiring, kind == RESULT_RETIRING);
+    }
+    for (kind, size) in [
+        (READY, 0),
+        (RESULT_RETIRING, packet::MAX_RESULT_BYTES as u64 + 1),
+    ] {
+        let (mut writer, mut reader) = UnixStream::pair().unwrap();
+        let mut header = [0u8; 9];
+        header[0] = kind;
+        header[1..].copy_from_slice(&size.to_le_bytes());
+        writer.write_all(&header).unwrap();
+        // The writer remains open and sends no body: rejection must use the
+        // header alone, without waiting for or reserving the claimed payload.
+        assert!(receive_result(&mut reader).is_err());
+    }
 }
 
 #[test]
@@ -833,7 +1049,9 @@ fn configuration_moves_registry_and_preserves_v1_wire_layout() {
     assert_eq!(&wire[136..168], &[0x44; 32]);
     // v1 fixture: peak RAM/VRAM/scratch/threads, job resources, then cache.
     let expected_tail: Vec<u8> = [
-        storage::STARTUP_HOST_BYTES + 1000,
+        storage::STARTUP_HOST_BYTES
+            + 2 * crate::block_v2::execution::worker_budget::RAYON_THREAD_HOST_BYTES
+            + 1000,
         0,
         500,
         2,

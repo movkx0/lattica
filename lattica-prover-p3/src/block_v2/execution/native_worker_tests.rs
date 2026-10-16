@@ -2,6 +2,233 @@ use super::super::worker_budget;
 use super::*;
 
 #[test]
+fn native_bootstrap_decode_matches_reference_fields() {
+    // Preserve the original serde field behavior independently of the new
+    // bounded visitors. Registry/policy approval remains a separate step.
+    #[derive(Serialize, Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Reference {
+        version: u32,
+        registry: Registry<12>,
+        profile: [u8; 32],
+        chain: [u8; 32],
+        executable: [u8; 32],
+        launches: PathBuf,
+        policy_context: Vec<u8>,
+    }
+    let base = bootstrap();
+    let value = serde_json::to_value(&base).unwrap();
+    let mut corpus = vec![base.encode().unwrap()];
+    for mutation in 0..8 {
+        let mut changed = value.clone();
+        match mutation {
+            0 => changed["registry"]["ignored_by_registry"] = json!({"nested": [1, 2, 3]}),
+            1 => changed["launches"] = json!("/tmp/é GPU 🦀\n\t"),
+            2 => changed["registry"]["caps"][0] = json!([]),
+            3 => changed["policy_context"] = json!([]),
+            4 => changed["untrusted_override"] = json!(true),
+            5 => changed["registry"]["height"] = json!("8"),
+            6 => {
+                changed["registry"] =
+                    json!([value["registry"]["height"], value["registry"]["caps"]])
+            }
+            _ => {
+                changed = json!([
+                    value["version"],
+                    value["registry"],
+                    value["profile"],
+                    value["chain"],
+                    value["executable"],
+                    value["launches"],
+                    value["policy_context"]
+                ])
+            }
+        }
+        corpus.push(serde_json::to_vec(&changed).unwrap());
+    }
+    corpus.extend([
+        b"".to_vec(),
+        b"{}".to_vec(),
+        b"[]{}".to_vec(),
+        b"null".to_vec(),
+    ]);
+    let encoded = String::from_utf8(base.encode().unwrap()).unwrap();
+    corpus.push(format!("{{\"version\":1,{}", &encoded[1..]).into_bytes());
+    for bytes in &corpus {
+        match (
+            serde_json::from_slice::<Reference>(bytes),
+            Bootstrap::parse_fields(bytes),
+        ) {
+            (Ok(reference), Ok(bounded)) => assert_eq!(
+                serde_json::to_vec(&reference).unwrap(),
+                serde_json::to_vec(&bounded).unwrap()
+            ),
+            (Err(_), Err(_)) => {}
+            _ => panic!("native bootstrap field decoding differs"),
+        }
+    }
+    eprintln!(
+        "native_bootstrap_decode_equivalence cases={} wire_fields_unchanged=true",
+        corpus.len()
+    );
+}
+
+#[test]
+fn native_bootstrap_decode_reserves_exact_bounded_backing() {
+    use crate::spill_alloc::allocation_requests::measure;
+    let base = bootstrap();
+    let encoded = base.encode().unwrap();
+    let (decoded, requests) = measure(|| Bootstrap::parse_fields(&encoded).unwrap());
+    let cap_len = 1 << profile::CAP_HEIGHT;
+    assert!(decoded
+        .registry
+        .caps
+        .iter()
+        .all(|cap| cap.len() == cap_len && cap.capacity() == cap_len));
+    assert_eq!(
+        decoded.policy_context.capacity(),
+        super::super::policy_context::MAX_BYTES
+    );
+    assert_eq!(
+        decoded.launches.capacity(),
+        decoded.launches.as_os_str().len()
+    );
+    let expected = 12 * cap_len * std::mem::size_of::<[Val; 4]>()
+        + super::super::policy_context::MAX_BYTES
+        + decoded.launches.capacity();
+    assert!(!requests.overflow);
+    assert_eq!((requests.calls, requests.bytes), (14, expected));
+    decode::layout().unwrap();
+    assert!(
+        super::super::gpu_admission::ASSIGNMENT_HOST_BYTES + decode::HOST_BYTES
+            <= super::super::worker::typed::storage::INPUT_HOST_BYTES
+    );
+    eprintln!("native_bootstrap_decode_backing allocations={} requested_bytes={} bootstrap_allowance_bytes={} assignment_allowance_bytes={} input_allowance_bytes={}", requests.calls, requests.bytes, decode::HOST_BYTES, super::super::gpu_admission::ASSIGNMENT_HOST_BYTES, super::super::worker::typed::storage::INPUT_HOST_BYTES);
+}
+
+#[test]
+fn native_bootstrap_decode_bounds_cap_and_policy_growth() {
+    use crate::spill_alloc::allocation_requests::measure;
+    let base = bootstrap();
+    let cap_limit = 1 << profile::CAP_HEIGHT;
+    let policy_limit = super::super::policy_context::MAX_BYTES;
+    let mut cases = 0;
+    for length in [0, 1, cap_limit - 1, cap_limit, cap_limit + 1, 512, 2000] {
+        let mut candidate = base.clone();
+        candidate.registry.caps[0] = vec![[Val::ZERO; 4]; length];
+        let encoded = serde_json::to_vec(&candidate).unwrap();
+        assert!(encoded.len() <= MAX_BOOTSTRAP_BYTES);
+        let (result, requests) = measure(|| Bootstrap::parse_fields(&encoded));
+        assert_eq!(result.is_ok(), length <= cap_limit);
+        assert!(!requests.overflow && requests.bytes < decode::HOST_BYTES as usize);
+        assert!(requests.largest <= 4096.max(policy_limit));
+        if length > cap_limit {
+            // The first cap rejects after one fixed allocation, before later
+            // fields can allocate or the oversized vector can grow.
+            assert!(requests.bytes < 4096);
+        }
+        cases += 1;
+    }
+    for length in [
+        0,
+        1,
+        policy_limit - 1,
+        policy_limit,
+        policy_limit + 1,
+        20000,
+    ] {
+        let mut candidate = base.clone();
+        candidate.policy_context = vec![0; length];
+        let encoded = serde_json::to_vec(&candidate).unwrap();
+        assert!(encoded.len() <= MAX_BOOTSTRAP_BYTES);
+        let (result, requests) = measure(|| Bootstrap::parse_fields(&encoded));
+        assert_eq!(result.is_ok(), length <= policy_limit);
+        assert!(!requests.overflow && requests.bytes < decode::HOST_BYTES as usize);
+        assert!(requests.largest <= 4096.max(policy_limit));
+        cases += 1;
+    }
+    eprintln!("native_bootstrap_decode_vector_bounds cases={cases} cap_limit={cap_limit} policy_limit={policy_limit} growth_rejected_before_allocation=true");
+}
+
+#[test]
+fn native_bootstrap_decode_escape_scratch_and_errors_fit_allowance() {
+    use crate::spill_alloc::allocation_requests::measure;
+    let base = bootstrap();
+    let mut cases = 0;
+    for length in [1, 4096, 40000] {
+        let mut candidate = base.clone();
+        candidate.launches = PathBuf::from(format!("/{}", "x".repeat(length)));
+        let encoded = serde_json::to_vec(&candidate).unwrap();
+        assert!(encoded.len() <= MAX_BOOTSTRAP_BYTES);
+        let (result, requests) = measure(|| Bootstrap::parse_fields(&encoded).unwrap());
+        assert_eq!(result.launches, candidate.launches);
+        assert!(!requests.overflow && requests.bytes < decode::HOST_BYTES as usize);
+        cases += 1;
+    }
+    for length in [1, 4096, 8000] {
+        let mut candidate = base.clone();
+        candidate.launches = PathBuf::from(format!("/{}", "\0".repeat(length)));
+        let encoded = serde_json::to_vec(&candidate).unwrap();
+        assert!(encoded.len() <= MAX_BOOTSTRAP_BYTES);
+        let (result, requests) = measure(|| Bootstrap::parse_fields(&encoded).unwrap());
+        assert_eq!(result.launches, candidate.launches);
+        assert!(!requests.overflow && requests.bytes < decode::HOST_BYTES as usize);
+        eprintln!("native_bootstrap_decode_parser escaped_values={length} encoded_bytes={} requested_bytes={} allowance_bytes={}", encoded.len(), requests.bytes, decode::HOST_BYTES);
+        cases += 1;
+    }
+    for escaped in [false, true] {
+        let name = if escaped {
+            "\\u0000".repeat(10000)
+        } else {
+            "x".repeat(60000)
+        };
+        let encoded = format!("{{\"{name}\":0}}").into_bytes();
+        assert!(encoded.len() <= MAX_BOOTSTRAP_BYTES);
+        let (result, requests) = measure(|| Bootstrap::parse_fields(&encoded));
+        assert!(result.is_err());
+        assert!(!requests.overflow && requests.bytes < decode::HOST_BYTES as usize);
+        cases += 1;
+    }
+    let oversized = vec![b' '; MAX_BOOTSTRAP_BYTES + 1];
+    let (result, requests) = measure(|| Bootstrap::parse_fields(&oversized));
+    assert!(result.is_err());
+    assert!(!requests.overflow && requests.bytes < 4096 && requests.largest < 4096);
+    eprintln!("native_bootstrap_decode_parser_bounds cases={cases} oversized_input_rejected_before_parse=true");
+}
+
+#[test]
+fn native_bootstrap_decode_floor_precedes_parsing() {
+    use crate::spill_alloc::allocation_requests::measure;
+    let base = bootstrap();
+    let encoded = base.encode().unwrap();
+    let malformed = vec![b'['; MAX_BOOTSTRAP_BYTES];
+    let floor = super::super::worker::typed::storage::STARTUP_HOST_BYTES
+        + 4 * crate::block_v2::execution::worker_budget::RAYON_THREAD_HOST_BYTES;
+    let mut early_rejections = 0;
+    for bytes in [&encoded, &malformed] {
+        for available in [0, 1, floor - 1] {
+            let mut assigned = assignment();
+            assigned["host"]["worker_bytes"] = json!(available);
+            let (result, requests) = measure(|| Bootstrap::parse_for_worker(bytes, &assigned));
+            let error = result.err().expect("short budget must reject");
+            assert!(error.downcast_ref::<serde_json::Error>().is_none());
+            assert!(!requests.overflow && requests.bytes < 4096 && requests.largest < 4096);
+            early_rejections += 1;
+        }
+    }
+    let mut assigned = assignment();
+    assigned["host"]["worker_bytes"] = json!(floor);
+    let decoded = Bootstrap::parse_for_worker(&encoded, &assigned).unwrap();
+    assert_eq!(serde_json::to_vec(&decoded).unwrap(), encoded);
+    assert!(Bootstrap::parse_for_worker(&malformed, &assigned)
+        .err()
+        .unwrap()
+        .downcast_ref::<serde_json::Error>()
+        .is_some());
+    eprintln!("native_bootstrap_decode_floor early_rejections={early_rejections} startup_host_bytes={floor} checked_before_parse=true gpu_initializations=0");
+}
+
+#[test]
 fn native_owned_bootstrap_reuses_one_approval_and_moves_launch_path() {
     use crate::spill_alloc::allocation_requests::measure_all;
     let pool = rayon::ThreadPoolBuilder::new()
@@ -164,7 +391,9 @@ fn bootstrap() -> Bootstrap {
     .unwrap()
 }
 
-const WORKER_BYTES: u64 = super::super::worker::typed::storage::STARTUP_HOST_BYTES + 3000;
+const WORKER_BYTES: u64 = super::super::worker::typed::storage::STARTUP_HOST_BYTES
+    + 4 * crate::block_v2::execution::worker_budget::RAYON_THREAD_HOST_BYTES
+    + 3000;
 const JOB_BYTES: u64 = super::super::worker::typed::coordinator::HOST_BYTES + 500;
 const COORDINATOR_BYTES: u64 = JOB_BYTES + 500;
 
@@ -172,6 +401,40 @@ fn assignment() -> serde_json::Value {
     json!({"host": {"worker_bytes": WORKER_BYTES, "coordinator_bytes": COORDINATOR_BYTES,
                    "coordinator_job_bytes": JOB_BYTES, "spill_bytes": 9000},
            "gpu": {"managed_bytes": 2000}, "cpu": {"rayon_threads": 4}})
+}
+
+#[cfg(feature = "gpu")]
+#[test]
+fn prepared_cli_config_cannot_substitute_resources_cache_or_executable() {
+    let mut base = bootstrap();
+    base.executable = transport::running_image_fingerprint().unwrap();
+    let assigned = assignment();
+    let config = base.config(&assigned).unwrap();
+    config.check_admitted_assignment(&assigned).unwrap();
+    for (group, field) in [
+        ("host", "worker_bytes"),
+        ("host", "spill_bytes"),
+        ("host", "coordinator_job_bytes"),
+        ("gpu", "managed_bytes"),
+        ("cpu", "rayon_threads"),
+    ] {
+        let mut changed = assigned.clone();
+        changed[group][field] = json!(changed[group][field].as_u64().unwrap() + 1);
+        assert!(
+            config.check_admitted_assignment(&changed).is_err(),
+            "{group}.{field}"
+        );
+    }
+    let mut changed = assigned.clone();
+    changed["preprocessing_cache"] = json!({"entries":2,"reserve_bytes":1});
+    assert!(config.check_admitted_assignment(&changed).is_err());
+    base.executable[0] ^= 1;
+    assert!(base
+        .config(&assigned)
+        .unwrap()
+        .check_admitted_assignment(&assigned)
+        .is_err());
+    assert!(!crate::block_v2::gpu_hash::is_enabled());
 }
 
 #[test]
@@ -301,7 +564,10 @@ fn assignment_resources_and_cache_keep_existing_semantics() {
     let cache_limit = crate::block_v2::typed_recursive::storage::active_memory_bytes(
         WORKER_BYTES
             - super::super::worker::typed::storage::HOST_BYTES
-            - super::super::worker::typed::storage::INPUT_HOST_BYTES,
+            - super::super::worker::typed::storage::INPUT_HOST_BYTES
+            - crate::host_memory::RETAINED_SYSTEM_HOST_BYTES
+            - crate::block_v2::execution::worker_budget::CALLER_STACK_HOST_BYTES
+            - 4 * super::super::worker_budget::RAYON_THREAD_HOST_BYTES,
         0,
     )
     .unwrap();

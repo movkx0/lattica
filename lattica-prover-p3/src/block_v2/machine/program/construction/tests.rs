@@ -8,6 +8,38 @@ fn budget(limit: usize) -> Budget {
     budget
 }
 
+#[test]
+#[cfg(feature = "stream")]
+fn compaction_reserves_old_and_new_arrays_before_moving_hint_ownership() {
+    let mut operations = Vec::with_capacity(64);
+    let entries = vec![Wire(0), Wire(1)];
+    let hint_address = entries.as_ptr();
+    operations.push(Op::SelectHint {
+        entries,
+        bits: vec![Wire(2)],
+        out: Wire(3),
+    });
+    let source_address = operations.as_ptr();
+    let needed = packing_bytes(&operations, 0, 0, 0).unwrap() + size_of::<Op>();
+    let mut denied = budget(needed - 1);
+    let (result, requests) = crate::spill_alloc::allocation_requests::measure(|| {
+        compact_operations(&mut operations, &mut denied)
+    });
+    assert_eq!(result, Err(ExecutionError::TooLarge));
+    assert_eq!(requests.calls, 0);
+    assert_eq!(operations.as_ptr(), source_address);
+    assert_eq!(operations.len(), 1);
+    let mut admitted = budget(needed);
+    compact_operations(&mut operations, &mut admitted).unwrap();
+    assert_eq!(operations.capacity(), 1);
+    assert_eq!(admitted.peak, needed);
+    let Op::SelectHint { entries, .. } = &operations[0] else {
+        panic!()
+    };
+    assert_eq!(entries.as_ptr(), hint_address);
+    assert_eq!(entries, &[Wire(0), Wire(1)]);
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct Collision(u64);
 impl Hash for Collision {
@@ -159,7 +191,8 @@ fn rejection_stops_builder_operations_and_proof_input_growth() {
 fn packing_and_hint_storage_share_the_same_enforced_allowance() {
     let mut builder = ProgramBuilder::new(0).unwrap();
     builder.input();
-    let needed = packing_bytes(&builder.operations, 1, 1, 1).unwrap();
+    let needed = packing_bytes(&builder.operations, 0, 0, 0).unwrap()
+        + builder.operations.len() * size_of::<Op>();
     builder.memory.limit = Some(needed - 1);
     assert_eq!(builder.finish(None).unwrap_err(), ExecutionError::TooLarge);
     let mut builder = ProgramBuilder::new(0).unwrap();

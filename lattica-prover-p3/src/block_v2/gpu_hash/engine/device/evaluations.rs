@@ -18,6 +18,58 @@ __kernel void device_evaluation_scale(__global ulong *coefficients,
 }
 "#;
 
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct EvaluationShape(MatrixSpec);
+
+impl EvaluationShape {
+    pub(crate) fn new(spec: MatrixSpec) -> Result<Self, String> {
+        if spec.extension != Extension::Base
+            || spec.order != RowOrder::Natural
+            || !(1..=25).contains(&spec.log_rows)
+            || spec.columns > 4096
+        {
+            return Err("device evaluations require bounded natural-order base columns".into());
+        }
+        Ok(Self(spec))
+    }
+
+    pub(crate) fn storage_plan(
+        self,
+        live: usize,
+        managed: usize,
+        max_allocation: usize,
+    ) -> Result<CommitInputStorage, String> {
+        CommitInputStorage::new(
+            [0, 0],
+            2,
+            SampleLocation::Resident,
+            live,
+            managed,
+            max_allocation,
+        )
+    }
+
+    pub(crate) fn lde_shape(
+        self,
+        added_bits: usize,
+    ) -> Result<super::super::lde_plan::InputShape, String> {
+        if added_bits >= 32
+            || self
+                .0
+                .rows()
+                .checked_shl(added_bits as u32)
+                .is_none_or(|n| n > 1 << 25)
+        {
+            return Err("device evaluation LDE exceeds supported height".into());
+        }
+        Ok(super::super::lde_plan::InputShape {
+            height: self.0.rows(),
+            width: self.0.columns,
+            added_bits,
+        })
+    }
+}
+
 pub(crate) struct EvaluationInput {
     values: DeviceMatrix,
     parameters: Allocation,
@@ -29,19 +81,15 @@ impl DeviceSession {
     ) -> Result<EvaluationInput, String> {
         self.check_owner(values)?;
         let spec = values.spec();
-        if spec.extension != Extension::Base
-            || spec.order != RowOrder::Natural
-            || !(1..=25).contains(&spec.log_rows)
-            || spec.columns > 4096
-        {
-            return Err("device evaluations require bounded natural-order base columns".into());
-        }
+        let shape = EvaluationShape::new(spec)?;
         #[cfg(not(feature = "gpu"))]
         {
             Err("device evaluation commitments are not implemented on Metal".into())
         }
         #[cfg(feature = "gpu")]
         self.with_engine(|engine| {
+            let live = engine.accounting.lock().unwrap().live;
+            let _plan = shape.storage_plan(live, engine.limits.managed_bytes, engine.max_alloc)?;
             let mut parameters = allocation(
                 &engine.pq,
                 &engine.accounting,
@@ -90,21 +138,7 @@ impl EvaluationInput {
         &self,
         added_bits: usize,
     ) -> Result<super::super::lde_plan::InputShape, String> {
-        if added_bits >= 32
-            || self
-                .values
-                .spec
-                .rows()
-                .checked_shl(added_bits as u32)
-                .is_none_or(|n| n > 1 << 25)
-        {
-            return Err("device evaluation LDE exceeds supported height".into());
-        }
-        Ok(super::super::lde_plan::InputShape {
-            height: self.values.spec.rows(),
-            width: self.values.spec.columns,
-            added_bits,
-        })
+        EvaluationShape::new(self.values.spec)?.lde_shape(added_bits)
     }
     pub(crate) fn check_session(&self, session: &DeviceSession) -> Result<(), String> {
         session.check_owner(&self.values)

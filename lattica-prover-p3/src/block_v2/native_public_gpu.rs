@@ -42,10 +42,19 @@ impl Prepared {
     }
 
     pub(crate) fn initialize(self) -> Result<(), String> {
+        self.initialize_with(|_| Ok(())).map_err(|e| e.to_string())
+    }
+
+    /// Admit allocators and Rayon before bounded CPU preparation can start
+    /// threads. The preparation result is the only state carried into device
+    /// startup; a preparation failure never creates a GPU context.
+    pub(crate) fn initialize_with<T>(
+        self,
+        prepare: impl FnOnce(&serde_json::Value) -> Result<T, super::recursive::Error>,
+    ) -> Result<T, super::recursive::Error> {
         gpu_startup::select()?;
-        self.admission
-            .initialize_rayon()
-            .map_err(|e| e.to_string())?;
+        self.admission.initialize_rayon()?;
+        let value = prepare(self.admission.assignment())?;
         let mut created = gpu_startup::Startup::begin()?;
         if !gpu_hash::initialize_resident_from_env()? {
             return Err("public GPU worker startup requires resident commitments".into());
@@ -54,6 +63,6 @@ impl Prepared {
             .admit(&profile::recursive_request_capabilities())
             .map_err(|e| e.to_string())?;
         created.accept();
-        Ok(())
+        Ok(value)
     }
 }

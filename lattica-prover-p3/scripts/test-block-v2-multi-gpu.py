@@ -31,6 +31,43 @@ def calibration(uuid='GPU-a', overhead=600 * R.MIB):
 
 
 class ResourceTests(unittest.TestCase):
+    def test_caller_stack_cannot_be_lent_to_the_prover(self):
+        self.assertEqual(R.CALLER_STACK_HOST_BYTES, 8585216)
+        profile = json.loads(Path(__file__).with_name(
+            'block-v2-multi-gpu-direct-readback-workload.json').read_text())
+        budget = R.plan(host(), [device()], 1, profile)['GPU-a']
+        profile['phases'] = [dict(name='caller-stack-overlap',
+            heap_bytes=budget['host']['worker_bytes'] - R.extra_host_reserve(profile)
+                       - R.worker_stack_reserve(budget) - R.CALLER_STACK_HOST_BYTES,
+            pinned_bytes=0, driver_host_bytes=0, resident_spill_bytes=0,
+            managed_gpu_bytes=0, max_gpu_allocation_bytes=0, spill_payloads=[])]
+        self.assertTrue(R.workload_fits(budget, profile))
+        profile['phases'][0]['heap_bytes'] += 1
+        self.assertFalse(R.workload_fits(budget, profile))
+        with patch.object(R, 'CALLER_STACK_HOST_BYTES', 0):
+            self.assertTrue(R.workload_fits(budget, profile))
+
+    def test_rayon_stacks_are_reserved_beside_every_phase(self):
+        self.assertEqual(R.RAYON_THREAD_HOST_BYTES, 2293760)
+        profile = json.loads(Path(__file__).with_name(
+            'block-v2-multi-gpu-direct-readback-workload.json').read_text())
+        budget = R.plan(host(), [device()], 1, profile)['GPU-a']
+        for threads in [1, 2, 4, 64]:
+            budget['cpu']['rayon_threads'] = threads
+            stacks = R.worker_stack_reserve(budget)
+            self.assertEqual(stacks, threads * R.RAYON_THREAD_HOST_BYTES)
+            profile['phases'] = [dict(name='stack-overlap',
+                heap_bytes=budget['host']['worker_bytes'] - R.extra_host_reserve(profile) - stacks - R.CALLER_STACK_HOST_BYTES,
+                pinned_bytes=0, driver_host_bytes=0, resident_spill_bytes=0,
+                managed_gpu_bytes=0, max_gpu_allocation_bytes=0, spill_payloads=[])]
+            self.assertTrue(R.workload_fits(budget, profile))
+            profile['phases'][0]['heap_bytes'] += 1
+            self.assertTrue(any('host RAM' in item for item in R.workload_failures(budget, profile)))
+        for threads in [0, -1, True, 1.5, '4', 1 << 32]:
+            budget['cpu']['rayon_threads'] = threads
+            with self.assertRaises(ValueError):
+                R.worker_stack_reserve(budget)
+
     def test_coordinator_jobs_split_only_within_an_admitted_cap(self):
         floor = R.COORDINATOR_JOB_HOST_BYTES
         shared = R.COORDINATOR_SHARED_HOST_BYTES
@@ -117,7 +154,7 @@ class ResourceTests(unittest.TestCase):
         profile = profiles[1]
         budget = R.plan(host(), [device()], 1, profile)['GPU-a']
         profile['phases'] = [dict(name='decoded-input-overlap',
-            heap_bytes=budget['host']['worker_bytes'] - R.extra_host_reserve(profile),
+            heap_bytes=budget['host']['worker_bytes'] - R.extra_host_reserve(profile) - R.worker_stack_reserve(budget) - R.CALLER_STACK_HOST_BYTES,
             pinned_bytes=0, driver_host_bytes=0, resident_spill_bytes=0,
             managed_gpu_bytes=0, max_gpu_allocation_bytes=0, spill_payloads=[])]
         self.assertTrue(R.workload_fits(budget, profile))
@@ -126,6 +163,33 @@ class ResourceTests(unittest.TestCase):
         with patch.object(R, 'WORKER_INPUT_HOST_BYTES', 0):
             self.assertTrue(R.workload_fits(budget, profile))
 
+    def test_retained_allocator_capacity_overlaps_every_job_and_extra_cache(self):
+        baseline = json.loads(Path(__file__).with_name(
+            'block-v2-multi-gpu-direct-readback-workload.json').read_text())
+        self.assertEqual(R.RETAINED_SYSTEM_HOST_BYTES, 512 * R.MIB)
+        for entries, extra_cache in [(1, 0), (2, 128 * R.MIB), (12, 384 * R.MIB)]:
+            with self.subTest(entries=entries):
+                profile = copy.deepcopy(baseline)
+                profile['preprocessing_cache'] = dict(entries=entries, reserve_bytes=extra_cache)
+                budget = R.plan(host(), [device()], 1, profile)['GPU-a']
+                # The previous partition could hand retained arena capacity to
+                # a new job as if it were free. These simultaneous lifetimes
+                # must fail admission until that capacity is reserved too.
+                previous_heap = (budget['host']['worker_bytes'] - R.extra_host_reserve(profile)
+                                 - R.worker_stack_reserve(budget) - R.CALLER_STACK_HOST_BYTES
+                                 + R.RETAINED_SYSTEM_HOST_BYTES)
+                profile['phases'] = [dict(name=name, heap_bytes=previous_heap,
+                    pinned_bytes=0, driver_host_bytes=0, resident_spill_bytes=0,
+                    managed_gpu_bytes=0, max_gpu_allocation_bytes=0, spill_payloads=[])
+                    for name in ['startup', 'cold-job', 'empty-job', 'cached-job']]
+                failures = R.workload_failures(budget, profile)
+                self.assertEqual(len(failures), len(profile['phases']))
+                self.assertTrue(all('host RAM' in failure for failure in failures))
+                for phase in profile['phases']:
+                    phase['heap_bytes'] -= R.RETAINED_SYSTEM_HOST_BYTES
+                self.assertTrue(R.workload_fits(budget, profile))
+                profile['phases'][-1]['heap_bytes'] += 1
+                self.assertFalse(R.workload_fits(budget, profile))
     def transcript_profile(self):
         profile = self.randomness_profile()
         profile['geometry']['gpu_transcript'] = True
@@ -890,7 +954,7 @@ class ResourceTests(unittest.TestCase):
     def test_fri_and_preprocessing_reservations_survive_every_admission_check(self):
         profile = json.loads(Path(__file__).with_name('block-v2-multi-gpu-direct-readback-workload.json').read_text())
         budget = R.plan(host(), [device()], 1, profile)['GPU-a']
-        profile['phases'] = [dict(name='boundary', heap_bytes=budget['host']['worker_bytes'] - R.WORKER_PROTOCOL_HOST_BYTES - R.WORKER_INPUT_HOST_BYTES,
+        profile['phases'] = [dict(name='boundary', heap_bytes=budget['host']['worker_bytes'] - R.WORKER_PROTOCOL_HOST_BYTES - R.WORKER_INPUT_HOST_BYTES - R.RETAINED_SYSTEM_HOST_BYTES - R.worker_stack_reserve(budget) - R.CALLER_STACK_HOST_BYTES,
             pinned_bytes=0, driver_host_bytes=0, resident_spill_bytes=0, managed_gpu_bytes=0,
             max_gpu_allocation_bytes=0, spill_payloads=[])]
         self.assertTrue(R.workload_fits(budget, profile))
@@ -963,7 +1027,7 @@ class ResourceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'query readback layout'):
             S.environment(budget, Path('/tmp/test'))
 
-    def test_direct_readback_admits_two_workers_without_relaxing_budgets(self):
+    def test_direct_readback_two_workers_require_retained_allocator_capacity(self):
         directory = Path(__file__).parent
         banded = json.loads((directory / 'block-v2-multi-gpu-workload.json').read_text())
         direct = json.loads((directory / 'block-v2-multi-gpu-direct-readback-workload.json').read_text())
@@ -971,6 +1035,14 @@ class ResourceTests(unittest.TestCase):
         h['available_bytes'] = 43 * R.GIB
         devices = [device('GPU-a'), device('GPU-b')]
         calibrations = {d['uuid']: calibration(d['uuid']) for d in devices}
+        # The former 43 GiB host fixture lacks room for the retained arenas.
+        # Preserve rejection at that capacity, then admit only with additional
+        # detected host memory; each assignment still uses the shared planner.
+        with self.assertRaisesRegex(ValueError, 'host RAM'):
+            R.plan(h, devices, 2, direct, calibrations)
+        with patch.object(R, 'RETAINED_SYSTEM_HOST_BYTES', 0):
+            self.assertEqual(len(R.plan(h, devices, 2, direct, calibrations)), 2)
+        h['available_bytes'] += 2 * R.RETAINED_SYSTEM_HOST_BYTES
         with self.assertRaisesRegex(ValueError, 'host RAM|spill'):
             R.plan(h, devices, 2, banded, calibrations)
         budgets = R.plan(h, devices, 2, direct, calibrations)
@@ -1163,7 +1235,7 @@ class ResourceTests(unittest.TestCase):
         self.assertLess(q['gpu']['managed_bytes'], b['gpu']['managed_bytes'])
         self.assertEqual(q['cpu'], b['cpu'])
         self.assertTrue(R.workload_fits(q, profile))
-        self.assertEqual(q['host']['worker_bytes'], 19 * R.GIB)
+        self.assertEqual(q['host']['worker_bytes'], 19 * R.GIB + R.RETAINED_SYSTEM_HOST_BYTES)
 
     def test_fallback_retains_specific_resource_failure(self):
         h = host()

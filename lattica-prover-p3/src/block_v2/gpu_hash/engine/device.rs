@@ -6,10 +6,14 @@ use crate::block_v2::compute;
 use crate::config::Val;
 use std::sync::{Arc, Mutex};
 
+mod host_storage;
 mod observation;
+pub(crate) use host_storage::HostScope;
 pub(crate) use observation::ExecutionObservation;
+mod commit_storage;
 mod compiler_constants;
 mod compiler_folding;
+pub(crate) use commit_storage::{CommitInputStorage, SampleLocation};
 mod evaluations;
 pub(crate) mod public_hash;
 mod random;
@@ -19,8 +23,8 @@ mod transcript;
 mod transcript_kernels;
 pub(super) use compiler_constants::KERNEL_SRC as COMPILER_CONSTANTS_KERNEL_SRC;
 pub(super) use compiler_folding::KERNEL_SRC as COMPILER_FOLDING_KERNEL_SRC;
-pub(crate) use evaluations::EvaluationInput;
 pub(super) use evaluations::KERNEL_SRC as EVALUATIONS_KERNEL_SRC;
+pub(crate) use evaluations::{EvaluationInput, EvaluationShape};
 pub(super) use public_hash::KERNEL_SRC as PUBLIC_HASH_KERNEL_SRC;
 pub(crate) use scalars::DomainSpec;
 pub(super) use scalars::KERNEL_SRC as SCALARS_KERNEL_SRC;
@@ -28,6 +32,7 @@ pub(crate) use transcript::{DeviceTranscript, TranscriptAttempt};
 pub(super) use transcript_kernels::KERNEL_SRC as TRANSCRIPT_KERNEL_SRC;
 mod htlc_kernels;
 mod periodic;
+pub(crate) use periodic::PeriodicShape;
 mod trace_commit;
 mod wallet;
 #[cfg(feature = "gpu")]
@@ -45,7 +50,9 @@ pub use random::PublicSalts;
 pub use random::ReplaySalts;
 pub(crate) use random::{DeviceRandom, RandomWords};
 pub(super) use random_kernels::KERNEL_SRC as RANDOM_KERNEL_SRC;
-pub(crate) use wallet::WalletTrace;
+#[cfg(test)]
+pub(super) use random_kernels::REFERENCE_KERNEL_SRC as RANDOM_REFERENCE_KERNEL_SRC;
+pub(crate) use wallet::{WalletDevicePlan, WalletProofMinimum, WalletTrace};
 pub(super) use wallet_kernels::KERNEL_SRC as WALLET_KERNEL_SRC;
 pub(crate) use witness::{PreparedWitness, PreprocessingTrace, WitnessError};
 pub(super) use witness_kernels::KERNEL_SRC as WITNESS_KERNEL_SRC;
@@ -323,12 +330,22 @@ struct Session {
     context: Arc<JobLease>,
     stats: Mutex<SessionStats>,
     observed_stages: std::sync::atomic::AtomicU32,
+    transcript_host: Arc<host_storage::HostQuota>,
 }
 
 /// Clones refer to the same attempt. Create a fresh session for each new proof.
 #[derive(Clone)]
 pub struct DeviceSession {
     session: Arc<Session>,
+}
+
+/// Keeps managed capacity and the engine context through a serial proof.
+/// The capacity lease drops first; actual allocations retain their own leases.
+#[must_use = "retain managed capacity through all proving work and serialization"]
+pub(crate) struct ProofCapacity {
+    _capacity: super::capacity::Lease,
+    _plan: Option<WalletDevicePlan>,
+    _context: Arc<JobLease>,
 }
 
 /// Owns both the allocation reservation and the engine's exclusive device lease.
@@ -344,6 +361,35 @@ impl DeviceMatrix {
     pub fn spec(&self) -> MatrixSpec {
         self.spec
     }
+
+    /// Allocation/scrub-owner wrappers only. Session, shared engine/driver and
+    /// device payloads have separate owners. Aliases may be charged repeatedly.
+    pub(crate) fn retained_host_backing(&self) -> usize {
+        matrix_host_backing(self.private_random.is_some())
+    }
+}
+
+fn matrix_host_backing(has_scrub_owner: bool) -> usize {
+    use crate::block_v2::gpu_hash::cache_metadata::arc_bytes;
+    arc_bytes::<Allocation>()
+        + if has_scrub_owner {
+            arc_bytes::<random::SecretAllocation>()
+        } else {
+            0
+        }
+}
+
+#[cfg(all(test, feature = "stream"))]
+#[test]
+fn retained_matrix_wrapper_backing_matches_allocator_requests() {
+    use crate::spill_alloc::allocation_requests::measure;
+    use core::mem::MaybeUninit;
+    let (_allocation, allocation) = measure(|| Arc::new(MaybeUninit::<Allocation>::uninit()));
+    let (_scrub, scrub) = measure(|| Arc::new(MaybeUninit::<random::SecretAllocation>::uninit()));
+    assert_eq!(matrix_host_backing(false), allocation.bytes);
+    assert_eq!(matrix_host_backing(true), allocation.bytes + scrub.bytes);
+    assert_eq!(allocation.calls + scrub.calls, 2);
+    assert!(!allocation.overflow && !scrub.overflow);
 }
 
 /// The cap is the bounded transcript handoff. Tree nodes and the originating
@@ -381,7 +427,56 @@ impl DeviceSession {
                 context: engine._job_lease.clone(),
                 stats: Mutex::new(SessionStats::default()),
                 observed_stages: std::sync::atomic::AtomicU32::new(0),
+                transcript_host: host_storage::new_quota(),
             }),
+        })
+    }
+
+    /// Wallet proving uses the engine's existing managed ceiling, including
+    /// retained allocations, rather than lending future phase capacity to a
+    /// competing caller. Shape-derived peak admission remains a separate step.
+    pub(crate) fn reserve_proof_capacity(&self) -> Result<ProofCapacity, String> {
+        self.reserve_wallet_capacity(None)
+    }
+
+    /// Reject impossible wallet shapes under the same engine lock that grants
+    /// the capacity owner. Existing reusable workspaces are already included
+    /// in that owner's ceiling; the minimum is not added to live bytes again.
+    pub(crate) fn reserve_wallet_proof_capacity(
+        &self,
+        minimum: WalletProofMinimum,
+    ) -> Result<ProofCapacity, String> {
+        self.reserve_wallet_capacity(Some(minimum))
+    }
+
+    fn reserve_wallet_capacity(
+        &self,
+        minimum: Option<WalletProofMinimum>,
+    ) -> Result<ProofCapacity, String> {
+        self.with_engine(|engine| {
+            if let Some(minimum) = minimum {
+                minimum.check(engine.limits.managed_bytes, engine.max_alloc)?;
+            }
+            let mut plan = None;
+            let capacity = super::capacity::Lease::new_checked(
+                engine.accounting.clone(),
+                engine.limits.managed_bytes,
+                engine.limits.managed_bytes,
+                |live| {
+                    plan = minimum
+                        .map(|minimum| minimum.plan(engine, live))
+                        .transpose()?;
+                    Ok(())
+                },
+            )?;
+            if let Some(plan) = &plan {
+                plan.report();
+            }
+            Ok(ProofCapacity {
+                _capacity: capacity,
+                _plan: plan,
+                _context: engine._job_lease.clone(),
+            })
         })
     }
     fn with_engine<T>(
@@ -716,6 +811,12 @@ impl DeviceSession {
         }
         #[cfg(feature = "gpu")]
         return self.with_engine(|engine| {
+            fri::storage::vector_output(
+                spec,
+                engine.accounting.lock().unwrap().live,
+                engine.limits.managed_bytes,
+                engine.max_alloc,
+            )?;
             let output = self.allocate(engine, spec)?;
             let fence = engine.fence();
             let mut event = compute::Event::empty();

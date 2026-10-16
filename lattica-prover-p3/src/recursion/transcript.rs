@@ -259,6 +259,7 @@ use crate::config::{make_config, MyConfig};
 /// Prove that absorbing `blocks` squeezes `out` (the final rate lanes).
 #[cfg(test)]
 pub fn prove_squeeze(blocks: &[[Val; RATE]], out: [Val; RATE]) -> Vec<u8> {
+    crate::proving::legacy_cpu_admission().expect("CPU research proving policy");
     let proof = prove(
         &make_config(),
         &SpongeAir {

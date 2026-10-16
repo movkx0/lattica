@@ -11,16 +11,18 @@ import block_v2_native_head_guard as G
 
 
 class NativeHeadGuard(unittest.TestCase):
-    def native(self, observed):
+    def native(self, observed, capacity=64):
         return SimpleNamespace(binding={'generation': 2, 'head_token': [17] * 32},
             current_head=SimpleNamespace(token='11' * 32, generation=2),
-            store=SimpleNamespace(published_head_token=Mock(return_value=observed)))
+            store=SimpleNamespace(verifier=SimpleNamespace(capacity=capacity),
+                published_head_token=Mock(return_value=observed)))
 
-    def owner(self, root):
+    def owner(self, root, capacity=64):
         (root / 'coordinator-startup').mkdir()
         (root / 'coordinator-startup/started.json').write_text(json.dumps({'pid': os.getpid()}))
         (root / 'root-only').mkdir()
-        (root / 'root-only/node.6.0').write_bytes(b'unit-test-root')
+        name = {64: 'node.6.0', 128: 'node.7.0'}[capacity]
+        (root / 'root-only' / name).write_bytes(b'unit-test-root')
 
     def test_unbound_and_unchanged_head_need_no_application_files(self):
         self.assertIsNone(G.observe(None, '/missing/owner'))
@@ -37,15 +39,26 @@ class NativeHeadGuard(unittest.TestCase):
             self.assertFalse(change['observation_is_native_validation'])
 
     def test_atomic_application_handoff_defers_to_native_compare_and_swap(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            self.owner(root)
-            native = self.native('22' * 32)
-            G.publish_handoff(native, root)
-            self.assertIsNone(G.observe(native, root))
-            self.assertFalse(list(root.glob('*.partial')))
-            with self.assertRaises(FileExistsError):
+        for capacity in [64, 128]:
+            with self.subTest(capacity=capacity), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.owner(root, capacity)
+                native = self.native('22' * 32, capacity)
                 G.publish_handoff(native, root)
+                self.assertIsNone(G.observe(native, root))
+                self.assertFalse(list(root.glob('*.partial')))
+                with self.assertRaises(FileExistsError):
+                    G.publish_handoff(native, root)
+
+    def test_declared_capacity_does_not_fall_back_to_another_root(self):
+        for capacity, other in [(64, 128), (128, 64)]:
+            with self.subTest(capacity=capacity), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.owner(root, other)
+                native = self.native('22' * 32, capacity)
+                with self.assertRaises(FileNotFoundError):
+                    G.publish_handoff(native, root)
+                self.assertFalse((root / 'native-application-started.json').exists())
 
     def test_handoff_requires_the_actual_owner_process(self):
         with tempfile.TemporaryDirectory() as tmp:

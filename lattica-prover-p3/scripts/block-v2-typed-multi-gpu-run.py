@@ -113,6 +113,10 @@ def load_calibrations(directories, gpu_sha, profile, construction, count, assign
 
 
 def plan_budgets(host, devices, profile, assignment=None, calibrations=None):
+    if profile.get('typed_ram_admission') == 'owned':
+        owned = importlib.import_module('block_v2_owned_cli')
+        return owned.plan_budgets(host, devices, profile, assignment, calibrations,
+                                  resource_signature=T.resource_signature, slice_name=G.SLICE)
     uuids = [device["uuid"] for device in devices]
     if not uuids or len(uuids) != len(set(uuids)):
         raise ValueError("one distinct selected GPU is required for each worker slot")
@@ -186,6 +190,7 @@ def main():
     parser.add_argument("--fixture", type=Path, required=True)
     parser.add_argument("--gpu-uuid", action="append", required=True)
     parser.add_argument("--count", type=int, choices=T.COUNTS, default=4)
+    parser.add_argument("--block-capacity", type=int, choices=T.Capacity.SUPPORTED_CAPACITIES)
     parser.add_argument("--mode", choices=("sequential", "concurrent"), default="sequential")
     parser.add_argument("--scratch", type=Path, default=Path("/tmp"))
     parser.add_argument("--workload", type=Path,
@@ -216,16 +221,18 @@ def main():
             raise ValueError("another worker is active")
         fixture = args.fixture.resolve(strict=True)
         gpu, cpu = args.gpu_binary.resolve(strict=True), args.cpu_binary.resolve(strict=True)
-        profile = T.resource_profile(args.workload, args.construction, args.ram_admission)
+        block_capacity = T.Capacity.select(args.count, args.block_capacity)
+        T.Capacity.require_binaries(block_capacity, gpu, cpu)
+        profile = T.resource_profile(args.workload, args.construction, args.ram_admission, block_capacity)
         paths = [*T.fixture_files(fixture, args.count, args.construction), gpu, cpu, Path(__file__),
-                 Path(C.__file__), Path(T.__file__), Path(G.__file__), Path(R.__file__), args.workload]
+                 Path(C.__file__), Path(T.__file__), Path(G.__file__), Path(R.__file__), Path(T.Capacity.__file__), args.workload]
         if args.resource_assignment:
             paths.append(args.resource_assignment)
         pins = dict(T.pin(path) for path in paths)
         expected, plan = out / "template-expected.json", out / "template-plan.json"
         T.execute_logged([cpu, "expected", fixture, args.count, expected], out / "expected.log", T.clean_environment())
         T.execute_logged([cpu, "plan", fixture, expected], plan, T.clean_environment())
-        T.validate_plan(json.loads(plan.read_text()), args.construction)
+        T.validate_plan(json.loads(plan.read_text()), args.construction, block_capacity)
         pins.update(dict(T.pin(path) for path in (expected, plan)))
         G.systemctl("start", G.SLICE)
         host = G.detect_worker_host(str(args.scratch.resolve(strict=True)))
@@ -261,7 +268,7 @@ def main():
             budget["unit"] = f"lattica-v2-multi-{os.getpid()}-typed-{index}.service"
             config = {"gpu_binary": str(gpu), "cpu_binary": str(cpu), "fixture": str(fixture),
                       "execution_backend": args.execution_backend,
-                      "count": args.count, "construction": args.construction, "ram_admission": args.ram_admission,
+                      "count": args.count, "block_capacity": block_capacity, "construction": args.construction, "ram_admission": args.ram_admission,
                       "workload": profile, "pins": local_pins, "expected": str(root / "expected.json"),
                       "plan": str(root / "plan.json"), "resource_assignment": str(root / "resource-assignment.json"),
                       "resource_assignment_sha256": local_pins[str(root / "resource-assignment.json")]}
@@ -270,7 +277,7 @@ def main():
             attempt = {"unit": budget["unit"], "uuid": uuid, "directory": str(root / "001-typed"), "status": "preparing"}
             report["attempts"].append(attempt)
             worker_reports[uuid] = {"schema": "lattica-typed-gpu-bootstrap-v1", "status": "preparing",
-                "count": args.count, "construction": args.construction, "ram_admission": args.ram_admission,
+                "count": args.count, "block_capacity": block_capacity, "construction": args.construction, "ram_admission": args.ram_admission,
                 "attempt": attempt, "production_ready": False, "cold_full64_qualified": False,
                 "durable_host_applied": False, "timing_boundary": "Worker fixture copy, recursive proving and independent CPU root audit; registry preparation excluded"}
             G.durable(root / "summary.json", worker_reports[uuid], True)

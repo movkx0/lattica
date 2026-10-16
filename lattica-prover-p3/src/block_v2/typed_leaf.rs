@@ -10,7 +10,7 @@ use p3_uni_stark::{prove, verify, Proof};
 
 use super::{
     commitment::Context,
-    leaf::LeafError,
+    leaf::{LeafError, ProvedLeaf},
     profile::{self, Config},
 };
 use crate::{htlc_air as htlc, joinsplit_air as js};
@@ -138,9 +138,17 @@ pub fn prove_htlc_with_request(
     context: &Context,
     request: crate::proving::Request,
 ) -> Result<Vec<u8>, Error> {
+    prove_htlc_with_public(witness, context, request).map(|proved| proved.envelope)
+}
+
+pub(crate) fn prove_htlc_with_public(
+    witness: &htlc::Witness,
+    context: &Context,
+    request: crate::proving::Request,
+) -> Result<ProvedLeaf, Error> {
     #[cfg(feature = "gpu")]
     if super::leaf::gpu_wallet_selected() {
-        return prove_htlc_on_gpu(witness, context, request);
+        return prove_htlc_on_gpu_with_public(witness, context, request);
     }
     use crate::proving::{Backend, Run, Stage};
     let capabilities = profile::proving_capabilities(false);
@@ -158,7 +166,7 @@ pub fn prove_htlc_with_request(
     if witness.mint != 0 {
         return Err(Error::UnauthorizedIssuance);
     }
-    let values = run
+    let mut values = run
         .measure(Stage::PublicValues, Backend::Cpu, || {
             public(context, &htlc::public_values(witness), htlc::N_PUBLIC)
         })
@@ -181,7 +189,12 @@ pub fn prove_htlc_with_request(
     let encoded = encode(&proof, HTLC_MAGIC, context);
     run.finish(encoded.is_ok())
         .map_err(|_| LeafError::ProvingPolicy)?;
-    encoded
+    let envelope = encoded?;
+    values.truncate(htlc::N_PUBLIC);
+    Ok(ProvedLeaf {
+        envelope,
+        public: values,
+    })
 }
 
 /// Owned OpenCL HTLC proving with the existing typed leaf encoding. This
@@ -194,26 +207,37 @@ pub fn prove_htlc_on_gpu(
     context: &Context,
     request: crate::proving::Request,
 ) -> Result<Vec<u8>, Error> {
-    use super::resident_pcs;
+    prove_htlc_on_gpu_with_public(witness, context, request).map(|proved| proved.envelope)
+}
+
+#[cfg(feature = "gpu")]
+fn prove_htlc_on_gpu_with_public(
+    witness: &htlc::Witness,
+    context: &Context,
+    request: crate::proving::Request,
+) -> Result<ProvedLeaf, Error> {
     use p3_uni_stark::StarkGenericConfig;
-    let run = super::leaf::gpu_wallet_run("block_v2_htlc_gpu", request)?;
+    let (run, _context, prepared) = super::leaf::gpu_wallet_run("block_v2_htlc_gpu", request, &ContextAir(htlc::HtlcAir), htlc::HEIGHT)?;
     if witness.mint != 0 {
         return Err(Error::UnauthorizedIssuance);
     }
     if context.profile_id != profile::CANDIDATE_PROFILE_ID {
         return Err(LeafError::WrongProfile.into());
     }
-    let config = profile::make_proving_config();
+    let config = prepared
+        .config::<profile::Challenge>()
+        .map_err(|_| LeafError::GpuFailure)?;
+    let host_allowance = config.pcs().host_output_budget();
     let session = config
         .pcs()
         .quotient_session()
         .map_err(|_| LeafError::GpuFailure)?;
     let frame = session
-        .htlc_witness(witness, resident_pcs::host_output_budget(), &run)
+        .htlc_witness(witness, host_allowance, &run)
         .map_err(|_| LeafError::GpuFailure)?;
     let before = session.stats();
     let (trace, statement) = frame
-        .into_proving_parts(&session, resident_pcs::host_output_budget())
+        .into_proving_parts(&session, host_allowance)
         .map_err(|_| LeafError::GpuFailure)?;
     let readback = session.stats().downloaded_bytes - before.downloaded_bytes;
     if readback != (htlc::N_PUBLIC * 8) as u64 {
@@ -228,11 +252,22 @@ pub fn prove_htlc_on_gpu(
         trace,
         &values,
         &run,
+        prepared,
     )
     .map_err(|_| LeafError::GpuFailure)?;
-    let encoded = encode(&proof, HTLC_MAGIC, context)?;
+    let encoded = super::wallet_output::serialize(
+        &proof,
+        &[&statement, &values],
+        &[HTLC_MAGIC, &context.profile_id, &context.chain_id],
+        profile::MAX_PROOF_BYTES,
+        host_allowance,
+    )
+    .map_err(LeafError::from)?;
     run.finish(true).map_err(|_| LeafError::ProvingPolicy)?;
-    Ok(encoded)
+    Ok(ProvedLeaf {
+        envelope: encoded,
+        public: statement,
+    })
 }
 
 pub fn verify_htlc_research(
@@ -290,9 +325,19 @@ pub fn prove_issuance_with_request(
     authorized_mint: u64,
     request: crate::proving::Request,
 ) -> Result<Vec<u8>, Error> {
+    prove_issuance_with_public(witness, context, authorized_mint, request)
+        .map(|proved| proved.envelope)
+}
+
+pub(crate) fn prove_issuance_with_public(
+    witness: &js::Witness,
+    context: &Context,
+    authorized_mint: u64,
+    request: crate::proving::Request,
+) -> Result<ProvedLeaf, Error> {
     #[cfg(feature = "gpu")]
     if super::leaf::gpu_wallet_selected() {
-        return prove_issuance_on_gpu(witness, context, authorized_mint, request);
+        return prove_issuance_on_gpu_with_public(witness, context, authorized_mint, request);
     }
     use crate::proving::{Backend, Run, Stage};
     let capabilities = profile::proving_capabilities(false);
@@ -313,7 +358,7 @@ pub fn prove_issuance_with_request(
     {
         return Err(Error::UnauthorizedIssuance);
     }
-    let values = run
+    let mut values = run
         .measure(Stage::PublicValues, Backend::Cpu, || {
             public(context, &js::public_values(witness), js::N_PUBLIC)
         })
@@ -336,7 +381,12 @@ pub fn prove_issuance_with_request(
     let encoded = encode(&proof, ISSUANCE_MAGIC, context);
     run.finish(encoded.is_ok())
         .map_err(|_| LeafError::ProvingPolicy)?;
-    encoded
+    let envelope = encoded?;
+    values.truncate(js::N_PUBLIC);
+    Ok(ProvedLeaf {
+        envelope,
+        public: values,
+    })
 }
 
 /// Owned OpenCL issuance proving with the existing typed encoding. The external
@@ -349,9 +399,19 @@ pub fn prove_issuance_on_gpu(
     authorized_mint: u64,
     request: crate::proving::Request,
 ) -> Result<Vec<u8>, Error> {
-    use super::resident_pcs;
+    prove_issuance_on_gpu_with_public(witness, context, authorized_mint, request)
+        .map(|proved| proved.envelope)
+}
+
+#[cfg(feature = "gpu")]
+fn prove_issuance_on_gpu_with_public(
+    witness: &js::Witness,
+    context: &Context,
+    authorized_mint: u64,
+    request: crate::proving::Request,
+) -> Result<ProvedLeaf, Error> {
     use p3_uni_stark::StarkGenericConfig;
-    let run = super::leaf::gpu_wallet_run("block_v2_issuance_gpu", request)?;
+    let (run, _context, prepared) = super::leaf::gpu_wallet_run("block_v2_issuance_gpu", request, &ContextAir(js::JoinSplitAir), js::HEIGHT)?;
     if witness.mint != authorized_mint
         || authorized_mint == 0
         || authorized_mint >= 1u64 << js::BITS
@@ -361,17 +421,20 @@ pub fn prove_issuance_on_gpu(
     if context.profile_id != profile::CANDIDATE_PROFILE_ID {
         return Err(LeafError::WrongProfile.into());
     }
-    let config = profile::make_proving_config();
+    let config = prepared
+        .config::<profile::Challenge>()
+        .map_err(|_| LeafError::GpuFailure)?;
+    let host_allowance = config.pcs().host_output_budget();
     let session = config
         .pcs()
         .quotient_session()
         .map_err(|_| LeafError::GpuFailure)?;
     let frame = session
-        .joinsplit_witness(witness, resident_pcs::host_output_budget(), &run)
+        .joinsplit_witness(witness, host_allowance, &run)
         .map_err(|_| LeafError::GpuFailure)?;
     let before = session.stats();
     let (trace, statement) = frame
-        .into_proving_parts(&session, resident_pcs::host_output_budget())
+        .into_proving_parts(&session, host_allowance)
         .map_err(|_| LeafError::GpuFailure)?;
     let readback = session.stats().downloaded_bytes - before.downloaded_bytes;
     if readback != (js::N_PUBLIC * 8) as u64 {
@@ -387,11 +450,22 @@ pub fn prove_issuance_on_gpu(
         trace,
         &values,
         &run,
+        prepared,
     )
     .map_err(|_| LeafError::GpuFailure)?;
-    let encoded = encode(&proof, ISSUANCE_MAGIC, context)?;
+    let encoded = super::wallet_output::serialize(
+        &proof,
+        &[&statement, &values],
+        &[ISSUANCE_MAGIC, &context.profile_id, &context.chain_id],
+        profile::MAX_PROOF_BYTES,
+        host_allowance,
+    )
+    .map_err(LeafError::from)?;
     run.finish(true).map_err(|_| LeafError::ProvingPolicy)?;
-    Ok(encoded)
+    Ok(ProvedLeaf {
+        envelope: encoded,
+        public: statement,
+    })
 }
 
 pub fn verify_issuance_research(

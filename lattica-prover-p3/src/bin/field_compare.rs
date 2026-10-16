@@ -7,6 +7,7 @@
 //! algebraic (Poseidon2) hiding Merkle commitment, and a `DuplexChallenger`, so the only differences
 //! are the field and its natural extension/width. The ratio (not the absolute size) is the takeaway.
 
+use lattica_prover_p3::proving::{Policy, Request};
 use p3_air::BaseAir;
 use p3_baby_bear::{
     default_babybear_poseidon2_16, BabyBear, GenericPoseidon2LinearLayersBabyBear,
@@ -41,7 +42,24 @@ struct Row {
     verify_ms: u128,
 }
 
-fn goldilocks_measure(n: usize) -> Row {
+// This benchmark also uses BabyBear, outside the production Goldilocks
+// profiles. Admit its CPU implementation without claiming production-profile
+// stage coverage or relying on whichever GPU features were compiled in.
+fn admit_cpu_benchmark() -> Result<(), String> {
+    match Request::from_env()
+        .map_err(|error| error.to_string())?
+        .policy
+    {
+        Policy::Compatible | Policy::CpuRequired => Ok(()),
+        Policy::GpuRequired => Err(
+            "field_compare CPU reference proving does not support proving policy GpuRequired"
+                .into(),
+        ),
+    }
+}
+
+fn goldilocks_measure(n: usize) -> Result<Row, String> {
+    admit_cpu_benchmark()?;
     type Val = Goldilocks;
     type Challenge = BinomialExtensionField<Val, 2>; // F_p^2 ≈ 127-bit
     type Perm = p3_goldilocks::Poseidon2Goldilocks<8>;
@@ -93,16 +111,17 @@ fn goldilocks_measure(n: usize) -> Row {
     let t1 = Instant::now();
     verify(&config, &air, &proof, &[]).unwrap();
     let verify_ms = t1.elapsed().as_millis();
-    Row {
+    Ok(Row {
         field: "Goldilocks w8",
         width,
         proof_kb: bytes.len() as f64 / 1024.0,
         prove_ms,
         verify_ms,
-    }
+    })
 }
 
-fn babybear_measure(n: usize) -> Row {
+fn babybear_measure(n: usize) -> Result<Row, String> {
+    admit_cpu_benchmark()?;
     type Val = BabyBear;
     type Challenge = BinomialExtensionField<Val, 4>; // F_p^4 ≈ 124-bit
     type Perm = p3_baby_bear::Poseidon2BabyBear<16>;
@@ -154,13 +173,13 @@ fn babybear_measure(n: usize) -> Row {
     let t1 = Instant::now();
     verify(&config, &air, &proof, &[]).unwrap();
     let verify_ms = t1.elapsed().as_millis();
-    Row {
+    Ok(Row {
         field: "BabyBear w16",
         width,
         proof_kb: bytes.len() as f64 / 1024.0,
         prove_ms,
         verify_ms,
-    }
+    })
 }
 
 // Shared hiding-Mmcs alias to keep the per-field type lines short.
@@ -175,7 +194,8 @@ type MerkleHiding<Val, H, C, const D: usize> = p3_merkle_tree::MerkleTreeHidingM
     D,
 >;
 
-fn main() {
+fn run() -> Result<(), String> {
+    admit_cpu_benchmark()?;
     let n = 128; // compressions (≈ the spend's ~36 hashes, padded); ratio is N-independent
     println!("Field comparison: {n} Poseidon2 compressions, matched FRI (lb{LOG_BLOWUP} q{NUM_QUERIES} pow{QUERY_POW} ar1 cap0), ZK");
     println!(
@@ -183,10 +203,61 @@ fn main() {
         "field", "width", "proof(KB)", "prove(ms)", "verify(ms)"
     );
     println!("{}", "-".repeat(58));
-    for r in [goldilocks_measure(n), babybear_measure(n)] {
+    for r in [goldilocks_measure(n)?, babybear_measure(n)?] {
         println!(
             "{:<16} {:>6} {:>10.1} {:>10} {:>11}",
             r.field, r.width, r.proof_kb, r.prove_ms, r.verify_ms
+        );
+    }
+    Ok(())
+}
+
+fn main() -> Result<(), String> {
+    run()
+}
+
+#[cfg(test)]
+#[path = "cpu_reference_tests/mod.rs"]
+mod policy_tests;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn field_helpers_reject_before_trace_dimensions() {
+        policy_tests::isolated(
+            "tests::field_helpers_reject_before_trace_dimensions",
+            "gpu-required",
+            "0",
+            || {
+                for result in [goldilocks_measure(usize::MAX), babybear_measure(usize::MAX)] {
+                    let error = result.err().expect("CPU field helper ignored GPU policy");
+                    assert!(error.contains("GpuRequired"), "{error}");
+                }
+            },
+        );
+    }
+
+    #[test]
+    #[ignore = "two full CPU reference proofs; run in a bounded service"]
+    fn field_cpu_reference_proofs_verify() {
+        policy_tests::isolated(
+            "tests::field_cpu_reference_proofs_verify",
+            "cpu-required",
+            "0",
+            || run().unwrap(),
+        );
+    }
+
+    #[test]
+    #[ignore = "two full CPU reference proofs; run in a bounded service"]
+    fn field_compatible_reference_proofs_verify() {
+        policy_tests::isolated(
+            "tests::field_compatible_reference_proofs_verify",
+            "compatible",
+            "0",
+            || run().unwrap(),
         );
     }
 }

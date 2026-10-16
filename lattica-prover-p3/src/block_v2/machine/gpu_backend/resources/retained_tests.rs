@@ -205,7 +205,7 @@ fn source_counts_arc_and_nested_spare_capacity_without_allocating() {
     let mut packed = 0;
     for row in &mut program.rows {
         if let Row::Alu(ops) | Row::Cubic(ops) = row {
-            grow!(*ops, Op, 128);
+            grow!(*ops, u32, 128);
             packed += 1;
         }
     }

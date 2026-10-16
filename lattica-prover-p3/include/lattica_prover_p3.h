@@ -84,7 +84,8 @@ int32_t lattica_gpu_initialize_from_env(void);
  * This initializes the backend only: it neither approves a registry, installs
  * a verifier, serves proof packets nor authorizes private wallet inputs. Use
  * the existing pinned public worker protocol and independent CPU verification.
- * After a failure that starts Rayon, discard the worker process. Failed startup
+ * Admission can irreversibly lower process limits before Rayon starts. Discard
+ * the worker process after any failed startup. Failed startup
  * releases a newly created GPU engine. The normal drain/shutdown API applies.
  */
 int32_t lattica_gpu_public_worker_initialize_from_env(void);
@@ -105,6 +106,41 @@ int32_t lattica_gpu_public_worker_initialize_from_env(void);
  * Disconnects/protocol errors reject and attempt GPU cleanup. Exit the worker
  * process after any return; coordinator reservations require observed exit.
  * No call unwinds across this boundary. Uses GPU_* lifecycle statuses above.
+ * Admission retains 65537 bytes for the qualified caller's bootstrap buffer
+ * (including its EOF probe), plus 65536 bytes for launch-path backing, alongside
+ * protocol packets/results. Additional caller-owned storage needs its own
+ * allowance; the service cannot infer an allocation's capacity from this pointer.
+ * Caller stack admission reserves 8 MiB plus bounded guards/signal backing.
+ * Keep that stack and its alternate stack within the admitted bounds for the
+ * entire call. Main-thread callers must keep RLIMIT_STACK <= 8 MiB; raising it
+ * after admission invalidates the resource contract. Other caller threads and
+ * their storage need separate accounting.
+ * GNU/Linux stream workers check reported glibc System backing against the
+ * reserved 512 MiB baseline before assignment decoding and before Rayon starts.
+ * Missing/invalid observations or excess backing reject startup. This boundary
+ * check does not bound direct mappings, later allocator growth or process RSS.
+ * Before Rayon starts, stream admission also fixes a process-wide ceiling on
+ * live/in-flight Rust System requests, outside stack and retained-heap reserves.
+ * Refused requests follow the caller's allocation-failure behavior; infallible
+ * Rust allocations may abort the worker. This ceiling lasts until process exit
+ * and excludes allocator metadata/retention, foreign allocations and mappings.
+ * A second shared ceiling charges simultaneous System requests and full spill
+ * backing, including in-flight reservations, with mapped GPU staging reserved
+ * separately. Nonresident spill capacity is still charged. This ceiling also
+ * persists through exit and is not complete allocator or RSS admission.
+ * Stream startup also checks cold private writable data against the retained
+ * 512 MiB baseline, then lowers both RLIMIT_DATA limits
+ * to worker RAM minus caller/Rayon stacks, the full assigned spill allowance
+ * and mapped GPU staging. Disk-backed spill capacity is still reserved; no
+ * assumption of nonresident pages is made. These hard limits persist
+ * until process exit; they are not restored. Keep other startup owners quiescent
+ * during admission. Cached spill cap, directory and backing must match admission;
+ * current environment variables cannot replace an older cached configuration.
+ * Active spill scopes reject before thread creation without changing their config
+ * or admitting a worker. Kernel data limits exclude shared mappings and grow-down
+ * stacks and do not establish complete RSS or workload lifetime admission.
+ * The kernel's ignore_rlimit_data parameter must be visible, disabled and kept
+ * fixed throughout the worker lifetime; unknown enforcement rejects startup.
  */
 int32_t lattica_gpu_public_worker_serve(int32_t socket_fd,
                                       const uint8_t *bootstrap, size_t bootstrap_len,
@@ -156,6 +192,9 @@ int32_t lattica_htlc_batch_prove(const uint8_t *witness_ptr, size_t witness_len,
  * canonical LBV2RG01 twelve-key envelope. 0 means CPU root verification passed;
  * nonzero rejects. State, heights, issuance policy and durable application are
  * checked separately by the host. No wallet/inner proof archive is required. */
+/* Selected research block capacity; 64 unless built with block-v2-capacity-128. */
+uint32_t lattica_v2_research_capacity_v1(void);
+
 int32_t lattica_v2_research_root_verify_v1(
     const uint8_t *proof_ptr, size_t proof_len,
     const uint8_t *expected_ptr, size_t expected_len,

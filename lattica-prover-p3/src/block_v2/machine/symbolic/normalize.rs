@@ -14,7 +14,7 @@ pub(super) mod tests;
 /// Check every recorded root, including unused interaction/constraint streams,
 /// before any backend arithmetic. Input AIRs and layouts are trusted compiler
 /// types; this does not admit arbitrary remote AIR code or unbounded evaluation.
-pub(super) fn admit(builder: &Builder, storage: &Storage) -> Result<(), CompileError> {
+pub(super) fn admit(builder: &Builder, storage: &Storage) -> Result<usize, CompileError> {
     builder.check()?;
     enum Node<'a> {
         Base(&'a BaseExpr),
@@ -99,7 +99,7 @@ pub(super) fn admit(builder: &Builder, storage: &Storage) -> Result<(), CompileE
             },
         }
     }
-    Ok(())
+    Ok(seen.iter().map(Map::len).sum())
 }
 
 /// Maps *input Arc identity* to output Arc identity. Structural interning would

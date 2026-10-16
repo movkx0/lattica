@@ -11,8 +11,8 @@ use p3_goldilocks::{default_goldilocks_poseidon2_8, Goldilocks};
 use p3_symmetric::Permutation;
 
 pub type Digest = [u64; 4];
-pub const CAPACITY: usize = 64;
-pub const DEPTH: u8 = 6;
+pub const CAPACITY: usize = super::profile::MAX_TRANSACTIONS;
+pub const DEPTH: u8 = super::profile::TREE_DEPTH as u8;
 pub const LEAF: u64 = 0x4c42563201;
 pub const EMPTY: u64 = 0x4c42563202;
 pub const NODE: u64 = 0x4c42563203;
@@ -42,8 +42,8 @@ impl core::fmt::Display for CommitmentError {
             Self::InvalidKind => "unknown transaction kind",
             Self::NonCanonicalField => "noncanonical Goldilocks field element",
             Self::EmptyBlock => "transaction block must contain at least one entry",
-            Self::TooManyEntries => "transaction block exceeds capacity 64",
-            Self::InvalidLevel => "subtree level exceeds depth 6",
+            Self::TooManyEntries => "transaction block exceeds the selected profile capacity",
+            Self::InvalidLevel => "subtree level exceeds the selected profile depth",
             Self::InvalidCount => "subtree count exceeds its level capacity",
             Self::ContextMismatch => "child contexts differ",
             Self::LevelMismatch => "child levels differ",
@@ -233,7 +233,7 @@ fn statement_digest_known_answer() {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NodeSummary {
     pub context: Context,
-    pub level: u8, // leaf = 0, block root = 6
+    pub level: u8, // leaf = 0, block root = DEPTH
     pub count: u8,
     pub root: Digest,
 }
@@ -369,7 +369,7 @@ pub(crate) fn merge_nodes_with_hash<E: From<CommitmentError>>(
     parent_with_hash(left, right, hash)
 }
 
-/// Pure fixed-depth ordered root, derived solely from 1..64 actual entries.
+/// Pure fixed-depth ordered root, derived solely from 1..=CAPACITY actual entries.
 /// Entries occupy a dense left prefix; all remaining leaves are canonical empty
 /// padding. Does not validate the transactions represented by the statements.
 pub fn root(context: Context, entries: &[Entry]) -> Result<Digest, CommitmentError> {
@@ -585,7 +585,7 @@ mod tests {
             Err(CommitmentError::InvalidLevel)
         );
         assert_eq!(
-            empty_subtree(context, 7),
+            empty_subtree(context, DEPTH + 1),
             Err(CommitmentError::InvalidLevel)
         );
         assert_eq!(
@@ -604,7 +604,7 @@ mod tests {
             Err(CommitmentError::InvalidCount)
         );
         malformed = padding;
-        malformed.count = 65;
+        malformed.count = CAPACITY as u8 + 1;
         assert_eq!(
             validate_summary(malformed),
             Err(CommitmentError::InvalidCount)
@@ -712,6 +712,31 @@ mod tests {
             ),
         ];
         for (count, expected) in cases {
+            let expected = if CAPACITY == 128 {
+                match count {
+                    1 => [
+                        1719088681811455256,
+                        3784946348286393085,
+                        102202004987483611,
+                        7812851926581934268,
+                    ],
+                    3 => [
+                        18071769206368850718,
+                        12267123904538889849,
+                        14282296381733390540,
+                        11878263812742437100,
+                    ],
+                    64 => [
+                        12309679497342909667,
+                        10670441576657957019,
+                        7584999350215681528,
+                        530809197028742090,
+                    ],
+                    _ => unreachable!(),
+                }
+            } else {
+                expected
+            };
             assert_eq!(root(context, &entries[..count]).unwrap(), expected);
         }
         assert_eq!(
@@ -754,6 +779,54 @@ mod tests {
                 9218176674975975282,
                 16593340716784826968
             ]
+        );
+    }
+    #[cfg(feature = "block-v2-capacity-128")]
+    #[test]
+    fn depth_seven_boundary_vectors_match_independent_zig() {
+        let context = test_context();
+        let entries = test_entries();
+        let cases = [
+            (
+                65,
+                [
+                    6080894061941524695,
+                    8206141543391133739,
+                    18052537990903454431,
+                    17607317148699457922,
+                ],
+            ),
+            (
+                127,
+                [
+                    13162498951661099892,
+                    5957909223328980021,
+                    17713642233035120978,
+                    10284001351028614644,
+                ],
+            ),
+            (
+                128,
+                [
+                    3212955311469222528,
+                    5172513459328252406,
+                    14986610299600922248,
+                    12832136556519715318,
+                ],
+            ),
+        ];
+        for (count, expected) in cases {
+            assert_eq!(root(context, &entries[..count]).unwrap(), expected);
+        }
+        let mut changed = entries;
+        changed[127].statement_digest[0] += 1;
+        assert_ne!(
+            root(context, &entries).unwrap(),
+            root(context, &changed).unwrap()
+        );
+        assert_eq!(
+            root(context, &[entries[0]; 129]),
+            Err(CommitmentError::TooManyEntries)
         );
     }
 }

@@ -289,6 +289,7 @@ pub fn prove_opening(
     path: &[([Val; DIGEST], bool)],
     root: [Val; DIGEST],
 ) -> Vec<u8> {
+    crate::proving::legacy_cpu_admission().expect("CPU research proving policy");
     let mut pis = leaf.to_vec();
     pis.extend_from_slice(&root);
     let proof = prove(&make_config(), &FriMerkleAir, build_trace(leaf, path), &pis);

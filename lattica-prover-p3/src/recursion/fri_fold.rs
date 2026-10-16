@@ -312,6 +312,7 @@ pub fn prove_fold_chain(
     x0: Val,
     final_eval: Challenge,
 ) -> Vec<u8> {
+    crate::proving::legacy_cpu_admission().expect("CPU research proving policy");
     let mut pis = coeffs(e0).to_vec();
     pis.extend_from_slice(&coeffs(final_eval));
     let proof = prove(
@@ -347,6 +348,7 @@ pub fn prove_fold(
     s: Val,
     claimed: Challenge,
 ) -> Vec<u8> {
+    crate::proving::legacy_cpu_admission().expect("CPU research proving policy");
     let proof = prove(
         &make_config(),
         &FriFoldAir,

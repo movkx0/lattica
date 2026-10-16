@@ -102,6 +102,11 @@ mod tests {
                 worker: WorkerId(i as u64),
                 proof_bytes: PoolOutputStorage::ROOT_LIMIT,
                 elapsed_ms: i as u64,
+                worker_timings: Some(WorkerTimings {
+                    input_verification_ms: u64::MAX,
+                    proving_ms: u64::MAX,
+                    serialization_ms: u64::MAX,
+                }),
             });
         }
         let mut failures = Vec::new();

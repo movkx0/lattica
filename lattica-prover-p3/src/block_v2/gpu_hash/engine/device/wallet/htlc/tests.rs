@@ -104,7 +104,9 @@ fn htlc_plan_covers_raw_inputs_and_air_geometry() {
         p.specs().unwrap().iter().map(|s| s.bytes()).sum::<usize>(),
         p.trace.bytes() + p.public.bytes() + required
     );
-    assert_eq!(input_words(&fixture(1)).0.len(), INPUT_WORDS);
+    let words = input_words(&fixture(1)).unwrap();
+    assert_eq!(words.0.len(), INPUT_WORDS);
+    assert_eq!(words.0.capacity(), INPUT_WORDS);
     assert_eq!((htlc::HEIGHT, htlc::WIDTH, htlc::N_PUBLIC), (4096, 36, 31));
 }
 

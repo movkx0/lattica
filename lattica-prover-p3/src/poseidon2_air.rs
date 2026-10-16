@@ -218,6 +218,7 @@ fn trace(input: [Val; W]) -> RowMajorMatrix<Val> {
 }
 
 pub fn prove_verify(input: [Val; W]) -> Result<(), String> {
+    crate::proving::legacy_cpu_admission().map_err(|e| e.to_string())?;
     let config = make_config(1);
     let air = Poseidon2RowsAir;
     let out = native_permute(input);

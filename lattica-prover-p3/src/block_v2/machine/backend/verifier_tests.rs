@@ -110,6 +110,7 @@ fn bounded_and_reference_verifiers_accept_proof_and_reject_tampering() {
         1,
         8,
         registered
+            .prepared
             .data
             .common
             .preprocessed
@@ -122,6 +123,7 @@ fn bounded_and_reference_verifiers_accept_proof_and_reject_tampering() {
     let reference = common_from_cap(
         &verifier.air,
         registered
+            .prepared
             .data
             .common
             .preprocessed

@@ -17,7 +17,10 @@ fn wallet_plan_covers_staging_and_both_outputs() {
             .sum::<usize>(),
         plan.trace.bytes() + plan.public.bytes() + host
     );
-    assert_eq!(input_words(&js::demo_witness()).0.len(), INPUT_WORDS);
+    let words = input_words(&js::demo_witness()).unwrap();
+    assert_eq!(words.0.len(), INPUT_WORDS);
+    assert_eq!(words.0.capacity(), INPUT_WORDS);
+    assert!(staging_words(usize::MAX).is_err());
 }
 
 fn run() -> Run {

@@ -93,30 +93,56 @@ impl<'a> TypedRegistryContext<'a> {
             .map(|(ticket, _)| ticket)
     }
 
-    // Durable recovery retains the reference decoder's general input allowance.
-    // The recovery phase separately reserves decoding plus numerical verification.
-    pub(crate) fn verify_stored_wallet(
+    /// Verify and retain one owned buffer without rehashing a detached ticket.
+    /// Reject excessive backing before decoding or numerical verification.
+    pub fn verify_wallet_owned(
         &self,
         expected_chain: [u8; 32],
         policy: Policy,
-        bytes: &[u8],
-    ) -> Result<VerifiedWallet, Error> {
+        bytes: Vec<u8>,
+    ) -> Result<VerifiedWalletPayload, Error> {
+        VerifiedWalletPayload::check_capacity(&bytes)?;
+        let ticket = self.verify_wallet(expected_chain, policy, &bytes)?;
+        Ok(VerifiedWalletPayload { ticket, bytes: bytes.into() })
+    }
+
+    // Durable recovery retains the reference decoder's general input allowance.
+    // The recovery phase separately reserves decoding plus numerical verification.
+    pub(crate) fn verify_stored_wallet_owned(
+        &self,
+        expected_chain: [u8; 32],
+        policy: Policy,
+        bytes: Vec<u8>,
+    ) -> Result<VerifiedWalletPayload, Error> {
+        VerifiedWalletPayload::check_capacity(&bytes)?;
         let storage = codec::proofs::Storage::new(codec::proofs::INPUT_STORAGE_LIMIT);
-        VerifiedWallet::verify_typed_owned_approved(
+        let (ticket, _) = VerifiedWallet::verify_typed_owned_approved(
             self.pin,
             &self.approved,
             expected_chain,
             policy,
-            bytes,
+            &bytes,
             &storage,
-        )
-        .map(|(ticket, _)| ticket)
+        )?;
+        Ok(VerifiedWalletPayload { ticket, bytes: bytes.into() })
     }
 
     /// Check the full job pin, canonical encoding and original numerical proof.
     /// Only registry identity construction is reused across this immutable borrow.
     pub fn verify_node(&self, job: &Job, bytes: &[u8]) -> Result<VerifiedNode, Error> {
         VerifiedNode::verify_typed_approved(job, &self.approved, bytes)
+    }
+
+    /// Verification and digest derivation authenticate this owned buffer before
+    /// it enters durable storage or the graph. No mutable alias survives this
+    /// transfer; a detached ticket and caller-supplied bytes require rebinding.
+    pub fn verify_node_owned(
+        &self,
+        job: &Job,
+        bytes: Vec<u8>,
+    ) -> Result<VerifiedNodePayload, Error> {
+        let ticket = self.verify_node(job, &bytes)?;
+        Ok(VerifiedNodePayload { ticket, bytes })
     }
 }
 

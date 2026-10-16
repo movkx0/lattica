@@ -20,6 +20,7 @@ import threading
 import time
 
 import block_v2_host_store as H
+import block_v2_capacity as Capacity
 import block_v2_native_delivery as D
 import block_v2_native_shared as N
 from benchmark_report.campaign import analyze
@@ -80,8 +81,9 @@ def prepare(config, request):
 
 
 def validate(config):
-    if config.get('schema_version') != 1 or config['count'] not in (4, 8, 16, 32, 64):
+    if config.get('schema_version') != 1 or config['count'] not in (4, 8, 16, 32, 64, 128):
         raise ValueError('campaign requires a current-profile mixed count')
+    Capacity.configured(config)
     integers = {'max_roots': (1, 256), 'min_roots': (1, 256),
                 'min_duration_seconds': (0, 604800), 'max_wall_seconds': (1, 604800),
                 'candidate_timeout_seconds': (1, 3600)}
@@ -316,7 +318,7 @@ def run(config_path, output):
             result = N.read(result_dir / 'result.json')
             for failure in result.get('worker_failures', []):
                 events.emit('failed', reason='pool worker failure: ' + failure['reason'])
-            proof = result_dir / 'node.6.0'
+            proof = result_dir / Capacity.root_file(config)
             if result['status'] != 'proved_cpu_audit_pending' or result['native_host'] != candidate.binding:
                 raise ValueError('pool completion does not match native candidate')
             with (output / f'audit-{sequence:06}.log').open('xb') as log:
@@ -328,7 +330,7 @@ def run(config_path, output):
                                 str(fixture / 'body.json'), str(proof)], check=True, stdout=log, stderr=subprocess.STDOUT,
                                env={k: v for k, v in os.environ.items() if not k.startswith('LATTICA_V2_')}, timeout=300)
             verified = events.emit('root_verified', block_id=bid, cpu_audited=True, expected_statement_verified=True,
-                                  level=6, proof_bytes=str(proof.stat().st_size), proof_sha256=H.sha(proof.read_bytes()),
+                                  level=Capacity.depth(Capacity.configured(config)), proof_bytes=str(proof.stat().st_size), proof_sha256=H.sha(proof.read_bytes()),
                                   profile_sha256=bytes(candidate.binding['expected']['profile']).hex())
             receipt = candidate.apply(proof, candidate.binding)
             candidate.verify_application(receipt, proof, candidate.binding)
@@ -389,7 +391,7 @@ def run(config_path, output):
         report['sustained_throughput_qualified'] = (config['mode'] == 'qualifying' and report['status'] == 'succeeded'
                                                   and report['sustained_workload_complete'] and deadline_misses == 0
                                                   and report['accounting']['failures'] == 0 and report['resource_failures'] == 0
-                                                  and (config['count'] != 64 or report.get('cold_first_delivery_seconds', float('inf')) <= 600))
+                                                  and (config['count'] < 64 or report.get('cold_first_delivery_seconds', float('inf')) <= 600))
         publish(output / 'summary.json', report)
     return 0 if report['status'] == 'succeeded' else 1
 

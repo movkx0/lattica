@@ -16,10 +16,11 @@ SPEC.loader.exec_module(T)
 G, R = T.G, T.R
 
 
-def leaf_files(source):
-    paths = [source / name for name in ("body.json", *(f"wallet.{i}" for i in range(64)))]
+def leaf_files(source, block_capacity=64):
+    T.Capacity.validate(block_capacity)
+    paths = [source / name for name in ("body.json", *(f"wallet.{i}" for i in range(block_capacity)))]
     if any(not p.is_file() or p.is_symlink() or not 0 < p.stat().st_size <= (128 * 1024 if p.name == "body.json" else 2 * R.MIB) for p in paths):
-        raise ValueError("public fixture must contain 64 nonsymlink leaf artifacts and its body")
+        raise ValueError("public fixture must contain every selected-capacity leaf artifact and its body")
     return paths
 
 
@@ -28,7 +29,8 @@ def worker(packet_path):
     out = packet_path.parent
     config, budget = packet["config"], packet["budget"]
     construction = config.get("construction", "reference")
-    spec = T.construction_spec(construction)
+    block_capacity = T.Capacity.configured(config)
+    spec = T.construction_spec(construction, block_capacity)
     T.check_pins(config["pins"])
     fixture = out / "fixture"
     binary = config["cpu_binary"]
@@ -45,7 +47,7 @@ def worker(packet_path):
         if config.get("public_fixture"):
             before = time.monotonic()
             fixture.mkdir(mode=0o700)
-            for source in leaf_files(Path(config["public_fixture"])):
+            for source in leaf_files(Path(config["public_fixture"]), block_capacity):
                 shutil.copyfile(source, fixture / source.name)
                 if G.digest(fixture / source.name) != config["pins"][str(source)]:
                     raise ValueError("copied public fixture differs from pinned source")
@@ -66,9 +68,9 @@ def worker(packet_path):
                 geometry = T.public_events(out / "geometry.log", "typed_geometry")
                 if len(geometry) != 1:
                     raise ValueError("missing typed geometry identity")
-                T.validate_plan(geometry[0], construction)
+                T.validate_plan(geometry[0], construction, block_capacity)
             print("PASS", name, stage["elapsed_seconds"], flush=True)
-        files = T.fixture_files(fixture, 64, construction)
+        files = T.fixture_files(fixture, block_capacity, construction)
         result.update(status="succeeded", cpu_registered=True, elapsed_seconds=time.monotonic() - started,
                       artifacts=dict(T.pin(path) for path in files))
     except BaseException as error:
@@ -84,6 +86,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--construction", choices=T.CONSTRUCTIONS, default="reference")
     parser.add_argument("--public-fixture", type=Path)
+    parser.add_argument("--block-capacity", type=int, choices=T.Capacity.SUPPORTED_CAPACITIES, default=64)
     parser.add_argument("--cpu-binary", type=Path)
     parser.add_argument("--evidence", type=Path)
     parser.add_argument("--worker", type=Path)
@@ -95,11 +98,14 @@ def main():
         parser.error("cpu-binary and evidence are required")
     os.umask(0o077)
     binary = args.cpu_binary.resolve(strict=True)
-    sources = [binary, Path(__file__), Path(T.__file__), Path(G.__file__), Path(R.__file__)]
-    config = {"cpu_binary": str(binary), "construction": args.construction}
+    if args.evidence.exists():
+        raise FileExistsError(args.evidence)
+    T.Capacity.require_binaries(args.block_capacity, binary)
+    sources = [binary, Path(__file__), Path(T.__file__), Path(G.__file__), Path(R.__file__), Path(T.Capacity.__file__)]
+    config = {"cpu_binary": str(binary), "construction": args.construction, "block_capacity": args.block_capacity}
     if args.public_fixture:
         source = args.public_fixture.resolve(strict=True)
-        sources += leaf_files(source)
+        sources += leaf_files(source, args.block_capacity)
         config["public_fixture"] = str(source)
     config["pins"] = dict(map(T.pin, sources))
     out = args.evidence.resolve()

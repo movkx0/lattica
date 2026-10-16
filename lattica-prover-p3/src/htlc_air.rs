@@ -166,6 +166,8 @@ pub struct Witness {
 /// Compute the public outputs from a witness, and assert the relation holds (all inputs under one
 /// anchor; value balance). Panics on an inconsistent witness — the prover-side oracle.
 pub fn native_outputs(w: &Witness) -> PublicOutputs {
+    #[cfg(test)]
+    crate::proving::record_cpu_witness_oracle();
     // per-input commitment, membership (shared anchor), nullifier
     let mut anchor: Option<[Val; DIGEST]> = None;
     let mut nullifiers = [[Val::ZERO; DIGEST]; N_IN];
@@ -627,7 +629,8 @@ impl BaseAir<Goldilocks> for HtlcAir {
 
 impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for HtlcAir {
     fn eval(&self, builder: &mut AB) {
-        let pis: Vec<AB::Expr> = builder.public_values().iter().map(|&x| x.into()).collect();
+        let pis: [AB::Expr; N_PUBLIC] =
+            core::array::from_fn(|i| builder.public_values()[i].into());
         eval_spend(builder, &pis, AB::Expr::ZERO);
     }
 }
@@ -645,13 +648,11 @@ pub fn eval_spend<AB: AirBuilder<F = Goldilocks>>(
     tile_last: AB::Expr,
 ) {
     let main = builder.main();
-    let cur: Vec<AB::Expr> = main.current_slice().iter().map(|&x| x.into()).collect();
-    let nxt: Vec<AB::Expr> = main.next_slice().iter().map(|&x| x.into()).collect();
-    let p: Vec<AB::Expr> = builder
-        .periodic_values()
-        .iter()
-        .map(|&x| x.into())
-        .collect();
+    // This body uses the spend prefix even when called by the larger batch AIR.
+    // Fixed arrays keep evaluation scratch out of the unaccounted heap.
+    let cur: [AB::Expr; WIDTH] = core::array::from_fn(|i| main.current_slice()[i].into());
+    let nxt: [AB::Expr; WIDTH] = core::array::from_fn(|i| main.next_slice()[i].into());
+    let p: [AB::Expr; N_PERIODIC] = core::array::from_fn(|i| builder.periodic_values()[i].into());
     let one = AB::Expr::ONE;
     let two = AB::Expr::TWO;
     let dom_own = AB::Expr::from(Goldilocks::from_u64(DOM_OWN));
@@ -663,7 +664,7 @@ pub fn eval_spend<AB: AirBuilder<F = Goldilocks>>(
     let is_init = p[0].clone();
     let is_full = p[1].clone();
     let is_partial = p[2].clone();
-    let rc: Vec<AB::Expr> = (0..8).map(|i| p[3 + i].clone()).collect();
+    let rc: [AB::Expr; 8] = core::array::from_fn(|i| p[3 + i].clone());
 
     // ---- Poseidon2 round constraints on the state columns (period-32 schedule) ----
     let mut init_s: [AB::Expr; 8] = core::array::from_fn(|i| cur[i].clone());
@@ -1263,7 +1264,23 @@ pub fn public_values(w: &Witness) -> Vec<Val> {
     pis
 }
 
+#[cfg(all(feature = "block-v2", feature = "gpu"))]
+fn prove_verify_on_gpu(
+    w: &Witness,
+    verify_pis: Option<&[Val]>,
+    entry: &'static str,
+) -> Result<(), String> {
+    let request = crate::proving::Request::from_env().map_err(|e| e.to_string())?;
+    let output = crate::block_v2::legacy_wallet::prove_htlc_entry(w, request, entry)
+        .map_err(|e| e.to_string())?;
+    crate::block_v2::legacy_wallet::verify_on_cpu(output, verify_pis, verify_bytes)
+}
+
 pub fn prove_verify_with(w: &Witness, pis: &[Val]) -> Result<(), String> {
+    #[cfg(all(feature = "block-v2", feature = "gpu"))]
+    if crate::block_v2::legacy_wallet::is_selected() {
+        return prove_verify_on_gpu(w, Some(pis), "legacy_htlc_prove_verify_with");
+    }
     crate::proving::legacy_cpu_admission().map_err(|e| e.to_string())?;
     let config = make_config();
     let air = HtlcAir;
@@ -1279,6 +1296,10 @@ pub fn prove_verify_with(w: &Witness, pis: &[Val]) -> Result<(), String> {
 }
 
 pub fn prove_verify(w: &Witness) -> Result<(), String> {
+    #[cfg(all(feature = "block-v2", feature = "gpu"))]
+    if crate::block_v2::legacy_wallet::is_selected() {
+        return prove_verify_on_gpu(w, None, "legacy_htlc_prove_verify");
+    }
     crate::proving::legacy_cpu_admission().map_err(|e| e.to_string())?;
     prove_verify_with(w, &public_values(w))
 }
@@ -1475,10 +1496,28 @@ pub fn demo_htlc_witness() -> Witness {
 
 /// (proof bytes, prove ms, verify ms, proven security bits) for a representative join-split.
 pub fn measure(w: &Witness) -> (usize, u128, u128, usize) {
+    #[cfg(all(feature = "block-v2", feature = "gpu"))]
+    if crate::block_v2::legacy_wallet::is_selected() {
+        let request = crate::proving::Request::from_env().expect("proving request");
+        let started = std::time::Instant::now();
+        let output =
+            crate::block_v2::legacy_wallet::prove_htlc_entry(w, request, "legacy_htlc_measure")
+                .expect("wallet measurement proving policy");
+        let prove_ms = started.elapsed().as_millis();
+        let bytes = output.proof.len();
+        let started = std::time::Instant::now();
+        crate::block_v2::legacy_wallet::verify_on_cpu(output, None, verify_bytes)
+            .expect("wallet measurement CPU verification");
+        let verify_ms = started.elapsed().as_millis();
+        let proven = crate::config::proven_security_bits(&HtlcAir, HEIGHT);
+        return (bytes, prove_ms, verify_ms, proven);
+    }
+    crate::proving::legacy_cpu_admission().expect("CPU wallet measurement policy");
+    // Measure complete proof preparation for either backend; verification is separate.
+    let t0 = std::time::Instant::now();
     let config = make_config();
     let trace = build_trace(w);
     let pis = public_values(w);
-    let t0 = std::time::Instant::now();
     let proof = prove(&config, &HtlcAir, trace, &pis);
     let prove_ms = t0.elapsed().as_millis();
     let bytes = postcard::to_allocvec(&proof).unwrap();
@@ -1498,6 +1537,10 @@ pub fn proven_security_bits() -> usize {
 /// Prove with the witness's real public inputs, verify against `verify_pis` (tests FS binding).
 #[allow(dead_code)]
 pub fn prove_real_verify_with(w: &Witness, verify_pis: &[Val]) -> Result<(), String> {
+    #[cfg(all(feature = "block-v2", feature = "gpu"))]
+    if crate::block_v2::legacy_wallet::is_selected() {
+        return prove_verify_on_gpu(w, Some(verify_pis), "legacy_htlc_prove_real_verify_with");
+    }
     crate::proving::legacy_cpu_admission().map_err(|e| e.to_string())?;
     let config = make_config();
     let air = HtlcAir;

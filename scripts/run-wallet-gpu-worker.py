@@ -25,6 +25,10 @@ def launch(args):
         raise ValueError('launch from the wallet owner, outside an existing worker assignment')
     if not re.fullmatch(r'GPU-[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}', args.gpu_uuid):
         raise ValueError('an explicit GPU UUID is required')
+    if type(args.managed_gpu_gib) is not int or not 1 <= args.managed_gpu_gib <= 7:
+        raise ValueError('managed GPU allowance must be between 1 and 7 GiB')
+    if type(args.host_output_gib) is not int or not 1 <= args.host_output_gib <= 2:
+        raise ValueError('host-output allowance must be between 1 and 2 GiB, leaving room for stacks, staging and retained heap')
     command = args.command
     if command and command[0] == '--':
         command = command[1:]
@@ -44,8 +48,8 @@ def launch(args):
     service = 'lattica-wallet-' + uuid.uuid4().hex + '.service'
     assignment = state / (service + '.json')
     budget = dict(schema='lattica-wallet-local-gpu-v1', service=service, gpu_uuid=args.gpu_uuid,
-                  host_bytes=3 << 30, threads=4, managed_gpu_bytes=1 << 30,
-                  context_gpu_bytes=4 << 30, host_output_bytes=1 << 30)
+                  host_bytes=3 << 30, threads=4, managed_gpu_bytes=args.managed_gpu_gib << 30,
+                  context_gpu_bytes=4 << 30, host_output_bytes=args.host_output_gib << 30)
     with os.fdopen(os.open(assignment, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600), 'w') as stream:
         json.dump(budget, stream, indent=2)
         stream.write('\n')
@@ -100,6 +104,10 @@ def main():
                         help='owner-only directory retaining public resource assignments')
     parser.add_argument('--workdir', type=Path, default=Path.cwd())
     parser.add_argument('--storage', choices=['full', 'compact'], default='full')
+    parser.add_argument('--managed-gpu-gib', type=int, choices=range(1, 8), default=1,
+                        help='managed GPU allowance in GiB; context allowance remains 4 GiB')
+    parser.add_argument('--host-output-gib', type=int, choices=range(1, 3), default=1,
+                        help='host-output GiB, leaving room for stacks, staging and retained heap inside the 3 GiB process cap')
     parser.add_argument('command', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     try:

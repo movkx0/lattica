@@ -533,6 +533,65 @@ fn owned_result_reuses_buffer_and_binds_every_original_request_byte() {
 }
 
 #[test]
+fn prepared_result_checks_original_assignment_and_untrusted_result_bytes() {
+    let temp = Temp::new();
+    let (_, assignment) = synthetic_assignment(&temp);
+    let request = encode_request(&assignment).unwrap();
+    let prepared = launch::PreparedRequest::new(request.clone()).unwrap();
+    let key = assignment.lease.process_key().unwrap();
+    let digest = launch::request_digest(&request).unwrap();
+    let packet =
+        encode_result(key, assignment.job().id(), digest, &[1], timings(), stats()).unwrap();
+    let owned = packet.clone();
+    let pointer = owned.as_ptr();
+    let capacity = owned.capacity();
+    let decoded = decode_result_prepared_owned(&assignment, &prepared, owned).unwrap();
+    assert_eq!(decoded.bytes(), &[1]);
+    assert_eq!(decoded.bytes().as_ptr(), pointer);
+    assert_eq!(decoded.bytes.capacity(), capacity);
+    // Matching a changed request's locally computed digest is insufficient:
+    // every field and public input must still match the original assignment.
+    for offset in 0..request.len() {
+        let mut changed = request.clone();
+        changed[offset] ^= 1;
+        let changed_digest = launch::request_digest(&changed).unwrap();
+        let changed = launch::PreparedRequest::new(changed).unwrap();
+        let report = encode_result(
+            key,
+            assignment.job().id(),
+            changed_digest,
+            &[1],
+            timings(),
+            stats(),
+        )
+        .unwrap();
+        assert!(
+            decode_result_prepared_owned(&assignment, &changed, report).is_err(),
+            "request byte {offset}"
+        );
+    }
+    for offset in 0..packet.len() {
+        if (104..144).contains(&offset) {
+            continue; // Untrusted timing/cache telemetry is not proof authority.
+        }
+        let mut changed = packet.clone();
+        changed[offset] ^= 1;
+        assert!(
+            decode_result_prepared_owned(&assignment, &prepared, changed).is_err(),
+            "result byte {offset}"
+        );
+    }
+    for end in 0..packet.len() {
+        assert!(
+            decode_result_prepared_owned(&assignment, &prepared, packet[..end].to_vec()).is_err()
+        );
+    }
+    let mut oversized = Vec::with_capacity(MAX_RESULT_BYTES + 1);
+    oversized.extend_from_slice(&packet);
+    assert!(decode_result_prepared_owned(&assignment, &prepared, oversized).is_err());
+}
+
+#[test]
 fn results_bind_original_assignment_packet_and_exact_artifact_but_are_not_tickets() {
     let temp = Temp::new();
     let (_, assignment) = synthetic_assignment(&temp);

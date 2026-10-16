@@ -11,8 +11,8 @@ const field = @import("field.zig");
 const poseidon2 = @import("poseidon2.zig");
 
 pub const Digest = [4]u64;
-pub const CAPACITY: usize = 64;
-pub const DEPTH: u8 = 6;
+pub const CAPACITY: usize = @import("block_v2_capacity.zig").CAPACITY;
+pub const DEPTH: u8 = @import("block_v2_capacity.zig").DEPTH;
 pub const LEAF: u64 = 0x4c42563201;
 pub const EMPTY: u64 = 0x4c42563202;
 pub const NODE: u64 = 0x4c42563203;
@@ -154,7 +154,7 @@ test "block v2: canonical statement digest Rust known answer" {
 
 pub const NodeSummary = struct {
     context: Context,
-    level: u8, // leaf = 0, block root = 6
+    level: u8, // leaf = 0, block root = DEPTH
     count: u8,
     root: Digest,
 };
@@ -190,7 +190,7 @@ fn parent(left: NodeSummary, right: NodeSummary) Error!NodeSummary {
     };
 }
 
-/// Canonical padding ONLY. Even level 6 is not an accepted transaction block.
+/// Canonical padding ONLY. Even a depth-DEPTH root is not an accepted transaction block.
 pub fn emptySubtree(context: Context, level: u8) Error!NodeSummary {
     _ = try levelCapacity(level);
     const fields = context.toFields();
@@ -224,7 +224,7 @@ pub fn mergeNodes(left: NodeSummary, right: NodeSummary) Error!NodeSummary {
     return parent(left, right);
 }
 
-/// Pure fixed-depth ordered root, derived solely from 1..64 actual entries.
+/// Pure fixed-depth ordered root, derived solely from 1..CAPACITY actual entries.
 /// Entries occupy a dense left prefix; all remaining leaves are canonical empty
 /// padding. Does not validate the transactions represented by the statements.
 pub fn root(context: Context, entries: []const Entry) Error!Digest {
@@ -375,7 +375,7 @@ test "block v2: padding dense prefix and validated summary metadata" {
     changed.chain_id[0] ^= 1;
     try testing.expectError(error.ContextMismatch, mergeNodes(a, try leaf(changed, entries[1])));
     try testing.expectError(error.InvalidLevel, mergeNodes(padding, padding));
-    try testing.expectError(error.InvalidLevel, emptySubtree(context, 7));
+    try testing.expectError(error.InvalidLevel, emptySubtree(context, DEPTH + 1));
     try testing.expectError(error.InvalidLevel, emptySubtree(context, 255));
     var malformed = a;
     malformed.count = 2;
@@ -383,7 +383,7 @@ test "block v2: padding dense prefix and validated summary metadata" {
     malformed.count = 255;
     try testing.expectError(error.InvalidCount, validateSummary(malformed));
     malformed = padding;
-    malformed.count = 65;
+    malformed.count = @as(u8, CAPACITY) + 1;
     try testing.expectError(error.InvalidCount, validateSummary(malformed));
     malformed = a;
     malformed.level = 255;
@@ -428,7 +428,11 @@ test "block v2: cross-language known answers" {
     const context = testContext();
     const entries = testEntries();
     const counts = [_]usize{ 1, 3, 64 };
-    const expected = [_]Digest{
+    const expected = if (CAPACITY == 128) [_]Digest{
+        .{ 1719088681811455256, 3784946348286393085, 102202004987483611, 7812851926581934268 },
+        .{ 18071769206368850718, 12267123904538889849, 14282296381733390540, 11878263812742437100 },
+        .{ 12309679497342909667, 10670441576657957019, 7584999350215681528, 530809197028742090 },
+    } else [_]Digest{
         .{ 17302586004775321400, 14060252879667703226, 4653393007796374416, 4872023104817232206 },
         .{ 4814516697696595194, 16120349432758846240, 10073192216511493316, 3373496859766494287 },
         .{ 10210199181207880258, 12592273171222783804, 5412254068206525201, 9204339462543883831 },

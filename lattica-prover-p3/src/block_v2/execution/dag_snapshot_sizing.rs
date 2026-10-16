@@ -47,17 +47,18 @@ impl Limits {
             mul(a, vec_bytes::<ArtifactRef>(2)?)?,
             set_bytes::<u64>(a)?, // attempt ids
             set_bytes::<WorkerId>(mul(2, a)?)?,
-            set_bytes::<JobId>(j)?,          // active
-            map_bytes::<u64, usize>(a)?,     // launch indices
-            set_bytes::<JobId>(j)?,          // owned
-            set_bytes::<JobId>(j.min(128))?, // candidate validation closure
+            set_bytes::<JobId>(j)?,      // active
+            map_bytes::<u64, usize>(a)?, // launch indices
+            set_bytes::<JobId>(j)?,      // owned
+            set_bytes::<JobId>(j.min(crate::block_v2::profile::MAX_DAG_NODES + 1))?, // candidate validation closure
             add(
                 size_of::<Vec<JobId>>(),
                 growing_vector::<JobId>(add(mul(2, j)?, 1)?)?,
             )?,
             vec_bytes::<ArtifactRef>(2)?, // expected input manifest
-            vec_bytes::<VerifiedWallet>(2)?,
-            vec_bytes::<Vec<u8>>(2)?, // proof backing has a separate allowance
+            // Tickets and immutable handles travel together. Proof backing
+            // and its bounded Vec-to-Arc conversion have separate allowances.
+            vec_bytes::<VerifiedWalletPayload>(2)?,
         ]
         .into_iter()
         .try_fold(0, add)?;

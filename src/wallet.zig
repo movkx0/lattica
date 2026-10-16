@@ -12,6 +12,7 @@ const poseidon2 = @import("poseidon2.zig");
 const tree = @import("tree.zig");
 const node = @import("node.zig");
 const prover_options = @import("prover_options");
+pub const lattica_block_capacity = prover_options.block_capacity;
 const prover_runtime = @import("prover_runtime.zig");
 
 /// First 6 bytes of `bytes` as 12 lowercase hex characters.

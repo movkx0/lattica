@@ -27,6 +27,45 @@ use std::{
 const REQUEST: &[u8] = b"bounded immutable public CPU assignment";
 
 #[test]
+#[ignore = "CPU-only request digest cost diagnostic; synthetic bytes, no throughput claim"]
+fn local_request_digest_cost() {
+    use std::hint::black_box;
+
+    for size in [64 << 10, 2 << 20, MAX_REQUEST_BYTES] {
+        let bytes: Vec<_> = (0..size).map(|i| (i.wrapping_mul(31)) as u8).collect();
+        let expected = request_digest(&bytes).unwrap();
+        let mut one_hash_ns = Vec::new();
+        let mut three_hashes_ns = Vec::new();
+        for trial in 0..6 {
+            // Alternate order; this measures hashing only, not a live dispatch.
+            for count in if trial % 2 == 0 { [1, 3] } else { [3, 1] } {
+                let start = Instant::now();
+                for _ in 0..count {
+                    assert_eq!(
+                        black_box(request_digest(black_box(&bytes)).unwrap()),
+                        expected
+                    );
+                }
+                let elapsed = start.elapsed().as_nanos();
+                if count == 1 {
+                    one_hash_ns.push(elapsed);
+                } else {
+                    three_hashes_ns.push(elapsed);
+                }
+            }
+        }
+        eprintln!(
+            "local_request_digest_cost {}",
+            serde_json::json!({
+                "bytes": size, "one_hash_ns": one_hash_ns, "three_hashes_ns": three_hashes_ns,
+                "synthetic_input": true, "live_workflow_attribution": false,
+                "fresh_proofs": 0, "native_blocks_applied": 0
+            })
+        );
+    }
+}
+
+#[test]
 fn streamed_request_digest_matches_original_framing_at_protocol_bounds() {
     for size in (0..=17).chain([4095, 4096, MAX_REQUEST_BYTES - 1, MAX_REQUEST_BYTES]) {
         let bytes: Vec<_> = (0..size).map(|i| (i * 31) as u8).collect();
@@ -47,6 +86,64 @@ fn streamed_request_digest_matches_original_framing_at_protocol_bounds() {
     assert!(request_digest(&[]).is_err());
     assert!(request_digest(&vec![0; MAX_REQUEST_BYTES + 1]).is_err());
 }
+
+#[test]
+fn prepared_request_owns_bounded_bytes_and_preserves_raw_identity() {
+    for size in [1, 4096, MAX_REQUEST_BYTES] {
+        let bytes = vec![0x35; size];
+        let expected = request_digest(&bytes).unwrap();
+        let pointer = bytes.as_ptr();
+        let request = PreparedRequest::new(bytes).unwrap();
+        assert_eq!(request.bytes().as_ptr(), pointer);
+        assert_eq!(request.bytes().len(), size);
+        assert_eq!(
+            RequestBinding::Prepared(&request).digest().unwrap(),
+            expected
+        );
+        assert_eq!(
+            RequestBinding::Bytes(request.bytes()).digest().unwrap(),
+            expected
+        );
+    }
+    assert!(PreparedRequest::new(vec![]).is_err());
+    assert!(PreparedRequest::new(vec![0; MAX_REQUEST_BYTES + 1]).is_err());
+    let mut spare = Vec::with_capacity(MAX_REQUEST_BYTES + 1);
+    spare.push(1);
+    assert!(PreparedRequest::new(spare).is_err());
+}
+
+#[test]
+fn prepared_launch_preserves_wire_binding_and_independent_worker_checks() {
+    let temp = Temp::new();
+    let mut launches = temp.gate();
+    let (mut owner, lease, _) = temp.owner();
+    let request = PreparedRequest::new(REQUEST.to_vec()).unwrap();
+    let execution = digest(0x4c42563277, b"pinned execution spec").unwrap();
+    let mut expected = token(&launches, lease);
+    expected.execution = Some(execution);
+    let token = launches
+        .issue_prepared_bound(&mut owner, lease, &request, execution)
+        .unwrap();
+    assert_eq!(token, expected);
+    assert_eq!(token.encode().unwrap(), expected.encode().unwrap());
+    token.check_prepared_request(&request).unwrap();
+    token.check_request(request.bytes()).unwrap();
+    token.check_execution(execution).unwrap();
+    let wrong = PreparedRequest::new(b"substituted request".to_vec()).unwrap();
+    assert!(token.check_prepared_request(&wrong).is_err());
+    assert!(token.check_request(wrong.bytes()).is_err());
+    assert!(WorkerGate::enter(&temp.launches(), &token, wrong.bytes()).is_err());
+    // A failed incoming hash must not consume the actual launch permission.
+    drop(WorkerGate::enter(&temp.launches(), &token, request.bytes()).unwrap());
+    assert!(WorkerGate::enter(&temp.launches(), &token, request.bytes()).is_err());
+    let revoked = launches.revoke(lease).unwrap();
+    assert!(launches.try_idle(&revoked).unwrap().is_some());
+    assert!(WorkerGate::enter(&temp.launches(), &token, request.bytes()).is_err());
+    assert!(launches
+        .issue_prepared_bound(&mut owner, lease, &request, execution)
+        .is_err());
+}
+
 const CHILD_TEST: &str = "block_v2::execution::launch::tests::subprocess_helper";
 const FAULTS: [Fault; 8] = [
     Fault::WorkerLockDurable,

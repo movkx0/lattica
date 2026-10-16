@@ -124,6 +124,12 @@ impl DeviceRandom {
 }
 
 impl ReplaySalts {
+    /// Each recipe conservatively charges the shared stream and seed wrappers.
+    /// The stream's session, engine/driver objects and device bytes stay separate.
+    pub(crate) fn retained_host_backing(&self) -> usize {
+        retained_stream_host_backing()
+    }
+
     pub(crate) fn spec(&self) -> MatrixSpec {
         self.spec
     }

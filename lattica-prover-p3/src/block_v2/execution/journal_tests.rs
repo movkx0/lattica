@@ -9,6 +9,12 @@ mod workspace;
 
 #[path = "durable_storage_tests.rs"]
 mod durable_storage;
+#[path = "recovery_deadline_tests.rs"]
+mod recovery_deadline;
+#[path = "recovery_prefix_tests.rs"]
+mod recovery_prefix;
+#[path = "recovery_prefix_transition_tests.rs"]
+mod recovery_prefix_transition;
 use crate::block_v2::{
     commitment::DEPTH,
     execution::{
@@ -120,6 +126,75 @@ fn candidate(d: &mut DurableDag, count: u8) -> (Job, CandidateId) {
     let root = tree(d, count, 0, DEPTH);
     let id = d.attach(root.id(), [1; 32], 1000, 0).unwrap();
     (root, id)
+}
+
+#[test]
+fn owned_wallet_admission_keeps_journal_failure_poisoning_after_publication() {
+    for stage in [
+        Fault::AfterWrite,
+        Fault::AfterFileSync,
+        Fault::AfterRename,
+        Fault::AfterDirectorySync,
+    ] {
+        let temp = Temp::new();
+        let mut d = temp.create();
+        let ticket = wallet(1, &[1]);
+        let job = Job::wrap(0, ticket).unwrap();
+        let inputs = [VerifiedWalletPayload::new(ticket, vec![1]).unwrap()];
+        d.journal.fault = Some(stage);
+        assert!(d.admit_verified_wallets(job.clone(), &inputs, 0).is_err());
+        assert!(d.poisoned);
+        assert!(d.admit_verified_wallets(job.clone(), &inputs, 0).is_err());
+        assert!(d.ready().is_err());
+        drop(d);
+        let store = ArtifactStore::open(&temp.store(), store_limits()).unwrap();
+        assert_eq!(store.read_exact(ticket.artifact()).unwrap(), vec![1]);
+    }
+}
+
+#[test]
+fn owned_cache_publishes_exact_bytes_without_changing_candidate_authority() {
+    use super::super::job::VerifiedNodePayload;
+    let temp = Temp::new();
+    let mut d = temp.create();
+    let (root, candidate) = candidate(&mut d, 4);
+    let ticket = node(&root, &[42]);
+    let payload = VerifiedNodePayload::bind(ticket, vec![42]).unwrap();
+    d.cache_verified_node(payload, 1).unwrap();
+    assert_eq!(d.verified_node_bytes(root.id()).unwrap(), Some(&[42][..]));
+    assert_eq!(d.store.read_exact(ticket.artifact()).unwrap(), vec![42]);
+    assert!(d.candidate_result(candidate, [1; 32], 2).is_err());
+    d.seal(candidate, [1; 32], 2).unwrap();
+    assert_eq!(
+        d.candidate_result(candidate, [1; 32], 3).unwrap(),
+        Some(&[42][..])
+    );
+    assert!(d.candidate_result(candidate, [2; 32], 4).is_err());
+    assert!(d.candidate_result(candidate, [1; 32], 1000).is_err());
+}
+
+#[test]
+fn owned_cache_keeps_journal_failure_poisoning_after_durable_artifact_publication() {
+    use super::super::job::VerifiedNodePayload;
+    for stage in [
+        Fault::AfterWrite,
+        Fault::AfterFileSync,
+        Fault::AfterRename,
+        Fault::AfterDirectorySync,
+    ] {
+        let temp = Temp::new();
+        let mut d = temp.create();
+        let (root, _) = candidate(&mut d, 4);
+        let ticket = node(&root, &[42]);
+        let payload = VerifiedNodePayload::bind(ticket, vec![42]).unwrap();
+        d.journal.fault = Some(stage);
+        assert!(d.cache_verified_node(payload, 1).is_err());
+        assert!(d.poisoned);
+        assert!(d.cache_node(ticket, vec![42], 2).is_err());
+        drop(d);
+        let store = ArtifactStore::open(&temp.store(), store_limits()).unwrap();
+        assert_eq!(store.read_exact(ticket.artifact()).unwrap(), vec![42]);
+    }
 }
 fn complete(d: &mut DurableDag, id: JobId, now: &mut u64) -> Lease {
     let lease = d.lease(id, WorkerId(1), request(), 1, 100, *now).unwrap();
@@ -464,6 +539,63 @@ fn sealed_recovery_checkpoint_can_be_reopened_before_any_new_dispatch() {
 }
 
 #[test]
+fn retained_proof_audit_preserves_snapshot_and_rejects_replaced_head() {
+    let temp = Temp::new();
+    let mut owner = temp.create();
+    let (root, candidate) = candidate(&mut owner, 3);
+    let mut now = 0;
+    while let Some(id) = owner.ready().unwrap().first().copied() {
+        complete(&mut owner, id, &mut now);
+    }
+    owner.seal(candidate, [1; 32], now).unwrap();
+    let generation = owner.generation().unwrap();
+    let snapshot = fs::read(temp.journal().join(STATE)).unwrap();
+    drop(owner);
+
+    let recovery = recover(&temp, 2);
+    assert_eq!(recovery.previous_epoch(), 1);
+    assert_eq!(recovery.journal.generation, generation);
+    assert_eq!(recovery.previous_candidates()[0].id, candidate);
+    assert_eq!(recovery.previous_candidates()[0].deadline_ms, 1000);
+    assert_eq!(
+        recovery.verified_node_bytes(root.id()).unwrap().unwrap(),
+        root.id().to_bytes()
+    );
+    assert_eq!(fs::read(temp.journal().join(STATE)).unwrap(), snapshot);
+    drop(recovery);
+
+    // Reopening with the same proposed epoch succeeds because inspection never
+    // published an epoch, candidate, retention deadline or journal generation.
+    let recovery = recover(&temp, 2);
+    assert_eq!(recovery.previous_epoch(), 1);
+    assert_eq!(recovery.journal.generation, generation);
+    let replacement = temp.path.join("replacement");
+    private_file(&replacement, &snapshot);
+    fs::rename(replacement, temp.journal().join(STATE)).unwrap();
+    assert!(recovery.verified_node_bytes(root.id()).is_err());
+}
+
+#[test]
+fn retained_proof_audit_refuses_unresolved_attempts() {
+    let temp = Temp::new();
+    let mut owner = temp.create();
+    let (root, _) = candidate(&mut owner, 3);
+    drop(owner);
+    let recovery = recover(&temp, 2);
+    assert!(recovery.verified_node_bytes(root.id()).unwrap().is_none());
+    let mut owner = recovery
+        .resume(|_| panic!("no attempt exists"), || 0)
+        .unwrap();
+    owner.attach(root.id(), [1; 32], 1000, 0).unwrap();
+    let job = owner.ready().unwrap()[0];
+    owner.lease(job, WorkerId(1), request(), 1, 100, 0).unwrap();
+    drop(owner);
+    let recovery = recover(&temp, 3);
+    assert!(!recovery.unresolved_attempts().is_empty());
+    assert!(recovery.verified_node_bytes(root.id()).is_err());
+}
+
+#[test]
 fn recovery_requires_reconciliation_and_rebases_retention_after_success() {
     let temp = Temp::new();
     let mut d = temp.create();
@@ -749,7 +881,7 @@ fn snapshot_metadata_is_rejected_before_any_proof_callback() {
         (40, 2),
         (41, 0),
         (229, 255),
-        (230, 64),
+        (230, crate::block_v2::profile::MAX_TRANSACTIONS as u8),
         (231, 1),
         (232, 3),
         (233, 2),
@@ -782,6 +914,36 @@ fn snapshot_metadata_is_rejected_before_any_proof_callback() {
     let mut bad = bytes.clone();
     bad[start + 40..start + 48].fill(0);
     reject(&bad, 2, limits());
+}
+
+#[test]
+fn snapshot_node_callbacks_cannot_substitute_bytes_ticket_or_job() {
+    let temp = Temp::new();
+    let mut d = temp.create();
+    let job = leaf(0);
+    d.admit(job.clone(), vec![vec![1]], 0).unwrap();
+    let ticket = node(&job, &[42]);
+    d.cache_node(ticket, vec![42], 0).unwrap();
+    let snapshot = d.core.snapshot().unwrap();
+    for changed in 0..3 {
+        let result = dag::snapshot::restore_with(
+            &snapshot,
+            pin(),
+            [9; 32],
+            2,
+            limits(),
+            |_| Ok((wallet(1, &[1]), vec![1])),
+            |_, _| {
+                Ok(match changed {
+                    0 => (ticket, vec![43]),
+                    1 => (node(&job, &[43]), vec![43]),
+                    _ => (node(&leaf(1), &[42]), vec![42]),
+                })
+            },
+        );
+        assert!(result.is_err());
+    }
+    assert!(restored(&snapshot, &d.store, 2).is_ok());
 }
 
 #[test]

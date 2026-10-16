@@ -6,6 +6,9 @@ use super::*;
 
 pub(crate) const SESSION_HOST_BYTES: u64 = 1 << 20;
 pub(super) const REGISTRY_HOST_BYTES: usize = 64 << 10;
+// Inline binding plans are included in size_of::<Session>(). Reserve bounded
+// capability-vector backing for every possible cached compilation receipt too.
+pub(super) const COMPILATION_RECEIPT_BYTES: usize = 4 << 10;
 
 // Session fields and registry backing remain live while bounded identity setup
 // borrows that registry. Proof work starts after setup releases its workspace.
@@ -119,6 +122,7 @@ pub(super) fn registry_backing<const N: usize>(registry: &Registry<N>) -> Result
 pub(super) fn admit_session<const N: usize>(registry: &Registry<N>) -> Result<u64, Error> {
     let bytes = core::mem::size_of::<Session<N>>()
         .checked_add(registry_backing(registry)?)
+        .and_then(|bytes| bytes.checked_add(N.checked_mul(COMPILATION_RECEIPT_BYTES)?))
         .ok_or("typed session storage overflow")? as u64;
     if bytes > SESSION_HOST_BYTES {
         return Err("typed session storage allowance".into());
@@ -210,7 +214,12 @@ mod tests {
         let pin = registry.id().unwrap();
         let census = admit_session(&registry).unwrap();
         assert!(census <= SESSION_HOST_BYTES);
-        assert!(census > core::mem::size_of::<Cache<(u64, RegisteredProgram), N>>() as u64);
+        assert!(
+            census
+                >= (core::mem::size_of::<Session<N>>()
+                    + registry_backing(&registry).unwrap()
+                    + N * COMPILATION_RECEIPT_BYTES) as u64
+        );
         eprintln!("typed_session_storage keys={N} bytes={census} limit={SESSION_HOST_BYTES}");
         assert!(Session::new(registry.clone(), pin, SESSION_HOST_BYTES).is_err());
         let mut session = Session::new(registry, pin, SESSION_STARTUP_HOST_BYTES).unwrap();

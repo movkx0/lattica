@@ -54,30 +54,35 @@ impl Request {
 }
 
 pub fn prove(request_bytes: &[u8], witness: &[u8]) -> Result<Vec<u8>, Error> {
+    let proving = crate::proving::Request::from_env()?;
+    let _admission = leaf::admit_wallet_request(proving)?;
     let request = Request::decode(request_bytes)?;
     let context = Context {
         profile_id: profile::CANDIDATE_PROFILE_ID,
         chain_id: request.chain,
     };
-    let (public, envelope, policy) = match request.kind {
+    let (proved, policy) = match request.kind {
         1 | 3 => {
             let w = crate::parse_joinsplit_witness(witness)
                 .ok_or("invalid native join-split witness")?;
             if w.mint != request.authorized_mint {
                 return Err("native witness mint differs from host authorization".into());
             }
-            let public = crate::joinsplit_air::public_values(&w);
             if request.kind == 1 {
                 (
-                    public,
-                    leaf::prove_joinsplit_research(&w, &context).map_err(|e| format!("{e:?}"))?,
+                    leaf::prove_joinsplit_with_public(&w, &context, proving)
+                        .map_err(|e| format!("{e:?}"))?,
                     Policy::JoinSplit,
                 )
             } else {
                 (
-                    public,
-                    typed_leaf::prove_issuance_research(&w, &context, request.authorized_mint)
-                        .map_err(|e| format!("{e:?}"))?,
+                    typed_leaf::prove_issuance_with_public(
+                        &w,
+                        &context,
+                        request.authorized_mint,
+                        proving,
+                    )
+                    .map_err(|e| format!("{e:?}"))?,
                     Policy::Issuance {
                         authorized_mint: request.authorized_mint,
                     },
@@ -90,8 +95,8 @@ pub fn prove(request_bytes: &[u8], witness: &[u8]) -> Result<Vec<u8>, Error> {
                 return Err("native HTLC witness differs from host height/policy".into());
             }
             (
-                crate::htlc_air::public_values(&w),
-                typed_leaf::prove_htlc_research(&w, &context).map_err(|e| format!("{e:?}"))?,
+                typed_leaf::prove_htlc_with_public(&w, &context, proving)
+                    .map_err(|e| format!("{e:?}"))?,
                 Policy::Htlc {
                     expected_height: request.height,
                 },
@@ -100,13 +105,18 @@ pub fn prove(request_bytes: &[u8], witness: &[u8]) -> Result<Vec<u8>, Error> {
         _ => unreachable!(),
     };
     let expected_fields = if request.kind == 2 { 31 } else { 26 };
-    if public.len() != expected_fields {
+    if proved.public.len() != expected_fields {
         return Err("unsupported native public-statement shape".into());
     }
     let wallet = WalletProof {
         chain: request.chain,
-        public,
-        proof: codec::decode(envelope.get(72..).ok_or("short generated research leaf")?)?,
+        public: proved.public,
+        proof: codec::decode(
+            proved
+                .envelope
+                .get(72..)
+                .ok_or("short generated research leaf")?,
+        )?,
     };
     typed_recursive::verify_wallet(&wallet, policy)?;
     let mut encoded_wallet = b"LBV2TW01".to_vec();
@@ -181,7 +191,11 @@ pub unsafe extern "C" fn lattica_v2_research_wallet_prove_v1(
 }
 
 #[cfg(test)]
-mod tests {
+#[path = "host_wallet_tests.rs"]
+mod tests;
+
+#[cfg(test)]
+mod bounds_tests {
     use super::*;
 
     fn request(kind: u64, height: u64, mint: u64) -> [u8; REQUEST_BYTES] {

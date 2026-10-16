@@ -5,6 +5,8 @@ use crate::proving::{Policy, Request};
 use serde::Deserialize;
 use std::{ffi::OsString, sync::OnceLock};
 
+mod runtime;
+
 pub(crate) const ENV: &str = "LATTICA_WALLET_WORKER_BUDGET";
 const MAX_ASSIGNMENT_BYTES: u64 = 8192;
 
@@ -34,8 +36,16 @@ struct Assignment {
 pub(crate) struct Prepared(Option<Assignment>);
 static ASSIGNMENT: OnceLock<Option<Assignment>> = OnceLock::new();
 
+impl Prepared {
+    pub(crate) fn initialize_runtime(&self) -> Result<(), String> {
+        runtime::initialize(self.0.as_ref())
+    }
+}
+
 pub(crate) fn is_assigned() -> bool {
-    std::env::var_os(ENV).is_some() || ASSIGNMENT.get().is_some_and(Option::is_some)
+    std::env::var_os(ENV).is_some()
+        || ASSIGNMENT.get().is_some_and(Option::is_some)
+        || runtime::is_pinned()
 }
 
 pub(crate) fn prepare() -> Result<Prepared, String> {
@@ -46,6 +56,7 @@ pub(crate) fn prepare() -> Result<Prepared, String> {
     if ASSIGNMENT.get().is_some_and(|current| *current != selected) {
         return Err("wallet worker assignment cannot change within a process".into());
     }
+    runtime::check_assignment(selected.as_ref())?;
     Ok(Prepared(selected))
 }
 
@@ -54,6 +65,7 @@ pub(crate) fn finish(prepared: Prepared) -> Result<(), String> {
     if current.0 != prepared.0 {
         return Err("wallet worker assignment changed during startup".into());
     }
+    runtime::check_ready(current.0.as_ref())?;
     if let Err(value) = ASSIGNMENT.set(prepared.0) {
         if ASSIGNMENT.get() != Some(&value) {
             return Err("wallet worker assignment changed during startup".into());
@@ -71,8 +83,49 @@ pub(crate) fn admit(request: Request) -> Result<(), String> {
                     .into(),
             );
         }
+        runtime::check_ready(selected.0.as_ref())?;
     }
     Ok(())
+}
+
+/// Pin the selected engine and its exclusive device lease across preparation.
+/// DeviceSession already prevents shutdown while its context reference is live.
+/// This does not reserve per-proof matrix or host allocation capacity.
+pub(crate) fn retain_gpu_context() -> Result<super::gpu_hash::device::DeviceSession, String> {
+    if !super::leaf::gpu_wallet_selected() {
+        return Err("private wallet GPU backend is not selected".into());
+    }
+    let context = super::gpu_hash::device::DeviceSession::new()?;
+    super::gpu_hash::require_resident_backend()?;
+    Ok(context)
+}
+
+pub(crate) fn require_gpu_resources() -> Result<(), String> {
+    if std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_some()
+        || super::resident_pcs::try_host_output_budget()? < super::machine::symbolic::HOST_BYTES as usize
+    {
+        return Err("private wallet request has no admitted host/resource contract".into());
+    }
+    Ok(())
+}
+
+pub(crate) fn admit_gpu(
+    request: Request,
+) -> Result<super::gpu_hash::device::DeviceSession, String> {
+    let context = retain_gpu_context()?;
+    require_gpu_resources()?;
+    admit(request)?;
+    Ok(context)
+}
+
+/// Retain the existing managed-device ceiling across an entire serial proof.
+/// Input wrappers use admit_gpu() only to pin the context; the actual prover
+/// owns this capacity once, so nested ABI/export wrappers do not reserve twice.
+pub(crate) fn admit_gpu_proof(
+    request: Request,
+    minimum: super::gpu_hash::device::WalletProofMinimum,
+) -> Result<super::gpu_hash::device::ProofCapacity, String> {
+    admit_gpu(request)?.reserve_wallet_proof_capacity(minimum)
 }
 
 impl Budget {
@@ -110,6 +163,7 @@ impl Budget {
         {
             return Err("invalid wallet worker resource assignment".into());
         }
+        runtime::Limits::for_budget(self)?;
         Ok(())
     }
 
@@ -179,9 +233,6 @@ fn load(path: OsString) -> Result<Assignment, String> {
     budget.validate()?;
     budget.environment()?;
     let (cgroup_device, cgroup_inode) = runtime_limits(&budget)?;
-    if rayon::current_num_threads() != budget.threads as usize {
-        return Err("wallet worker Rayon pool differs from assignment".into());
-    }
     Ok(Assignment {
         path,
         budget,
@@ -305,3 +356,6 @@ fn runtime_limits(budget: &Budget) -> Result<(u64, u64), String> {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+pub(crate) mod admission_tests;

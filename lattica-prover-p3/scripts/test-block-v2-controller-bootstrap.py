@@ -14,6 +14,81 @@ S = importlib.import_module('block-v2-typed-shared-gpu-run')
 
 
 class ControllerBootstrap(unittest.TestCase):
+    def test_controller_cpuset_preserves_inherited_affinity_and_rejects_empty(self):
+        with mock.patch.object(C.os, 'sched_getaffinity', return_value={7, 1, 3, 5}):
+            self.assertEqual(C.controller_cpu_property(), '--property=AllowedCPUs=1,3,5,7')
+        with mock.patch.object(C.os, 'sched_getaffinity', return_value=set()):
+            with self.assertRaises(ValueError): C.controller_cpu_property()
+
+    def test_calibration_recovery_cannot_issue_a_new_workflow(self):
+        self.args.pool_calibration = self.root / 'calibration.json'
+        self.args.evidence = self.root / 'forbidden-recovery'
+        with self.assertRaises(ValueError):
+            C.create(self.args, self.script, {}, recovered={'intent': self.value})
+        self.assertFalse(self.args.evidence.exists())
+        original = dict(self.value, arguments=C.arguments(self.args))
+        self.args.recover_controller = self.root / 'old'
+        with mock.patch.object(C, 'reconcile', return_value={'intent': original, 'recovery_owner': None}):
+            with self.assertRaises(ValueError):
+                C.recover(self.args, S.argument_parser())
+
+    def test_calibration_controller_uses_the_bounded_pool_limits(self):
+        self.args.pool_calibration = self.root / 'calibration.json'
+        with mock.patch.object(C, 'create', return_value=(self.path, self.value)), \
+                mock.patch.object(C.G, 'lock_fleet', return_value=[]), \
+                mock.patch.object(C.os, 'sched_getaffinity', return_value={1, 3, 5, 7}), \
+                mock.patch.object(C.G, 'systemctl', side_effect=lambda *a: '[]' if a[0] == 'list-units' else ''), \
+                mock.patch.object(C.subprocess, 'run', return_value=mock.Mock(returncode=0)) as launch, \
+                mock.patch.object(C.B, 'quiescent'):
+            C.launch(self.args, self.script, {}, lambda directory: '--property=LimitCORE=0')
+        command = launch.call_args.args[0]
+        self.assertIn('--property=AllowedCPUs=1,3,5,7', command)
+        for argument in ['--slice=lattica-v2-multi-coordinator.slice', '--property=MemoryMax=1G',
+                         '--property=RuntimeMaxSec=180', '--property=CPUQuota=400%', '--setenv=RAYON_NUM_THREADS=4']:
+            self.assertIn(argument, command)
+
+    def test_calibration_dispatch_clock_is_pinned_before_launch(self):
+        self.args.pool_calibration = self.root / 'calibration.json'
+        self.args.evidence = self.root / 'calibration-run'
+        path, value = C.create(self.args, self.script, {str(self.script): C.G.digest(self.script)})
+        workflow, window = value['pool_workflow'], value['pool_scheduling']
+        self.assertEqual(workflow['boot_id'], window['boot_id'])
+        self.assertLessEqual(workflow['started_monotonic_ms'], window['issued_monotonic_ms'])
+        self.assertEqual(window['dispatch_deadline_monotonic_ms'] - window['issued_monotonic_ms'], 150000)
+        self.assertEqual(workflow['deadline_monotonic_ms'] - workflow['started_monotonic_ms'], 600000)
+        self.assertEqual(C.intent(path)[1]['pool_scheduling'], window)
+
+    def test_bounded_controller_and_owner_share_one_admitted_budget(self):
+        self.args.pool_timing_approval = ['GPU-a=/timing.json']
+        with mock.patch.object(C, 'create', return_value=(self.path, self.value)), \
+                mock.patch.object(C.G, 'lock_fleet', return_value=[]), \
+                mock.patch.object(C.G, 'systemctl', side_effect=lambda *a: '[]' if a[0] == 'list-units' else '') as systemctl, \
+                mock.patch.object(C.subprocess, 'run', return_value=mock.Mock(returncode=0)) as launch, \
+                mock.patch.object(C.B, 'quiescent'):
+            C.launch(self.args, self.script, {}, lambda directory: '--property=LimitCORE=0')
+        command = launch.call_args.args[0]
+        for argument in ['--slice=lattica-v2-multi-coordinator.slice', '--property=MemoryMax=1G',
+                         '--property=RuntimeMaxSec=180', '--property=CPUQuota=400%', '--setenv=RAYON_NUM_THREADS=4']:
+            self.assertIn(argument, command)
+        self.assertNotIn('--property=MemoryMax=4G', command)
+        calls = [call.args for call in systemctl.call_args_list]
+        self.assertIn(('set-property', '--runtime', 'lattica-v2-multi.slice',
+                      'MemoryMax=4G', 'MemorySwapMax=0', 'CPUQuota=400%'), calls)
+        self.assertIn(('set-property', '--runtime', 'lattica-v2-multi-coordinator.slice',
+                      'MemoryMax=1G', 'MemorySwapMax=0', 'CPUQuota=400%'), calls)
+
+    def test_bounded_dispatch_clock_is_pinned_before_controller_entry(self):
+        self.args.evidence = self.root / 'bounded'
+        self.args.pool_timing_approval = ['GPU-a=/timing.json']
+        self.args.pool_requests = self.root / 'requests'
+        path, value = C.create(self.args, self.script, {str(self.script): C.G.digest(self.script)})
+        workflow, window = value['pool_workflow'], value['pool_scheduling']
+        self.assertEqual(workflow['boot_id'], window['boot_id'])
+        self.assertLessEqual(workflow['started_monotonic_ms'], window['issued_monotonic_ms'])
+        self.assertEqual(window['dispatch_deadline_monotonic_ms'] - window['issued_monotonic_ms'], 150000)
+        self.assertEqual(workflow['deadline_monotonic_ms'] - workflow['started_monotonic_ms'], 600000)
+        self.assertEqual(C.intent(path)[1]['pool_scheduling'], window)
+
     def test_recovery_and_launch_keep_the_recorded_proving_policy(self):
         required = {'LATTICA_PROVING_POLICY': 'gpu-required', 'LATTICA_PROVING_REPORT': '1'}
         self.args.evidence = self.root / 'recovered'
