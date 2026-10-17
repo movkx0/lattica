@@ -18,6 +18,8 @@ use std::{
 
 #[path = "typed_recursive_full_size_tests/nonempty.rs"]
 mod nonempty;
+#[path = "typed_recursive_full_size_tests/mixed_pairs.rs"]
+mod mixed_pairs;
 
 fn directory() -> PathBuf {
     std::env::var_os("LATTICA_FULL_SIZE_FIXTURE")

@@ -9,6 +9,8 @@ use std::cell::Cell;
 
 mod fixed_u64;
 pub(crate) mod proofs;
+mod sizing;
+pub(crate) use sizing::encoded_node_len;
 
 const LEGACY_NODE_MAGIC: &[u8; 8] = b"LBV2RC01";
 const FIXED_NODE_MAGIC: &[u8; 8] = b"LBV2RC02";

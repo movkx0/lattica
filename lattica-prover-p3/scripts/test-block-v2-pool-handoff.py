@@ -50,10 +50,11 @@ class HandoffTests(unittest.TestCase):
         fleet = phase / 'fleet.json'
         fleet.write_text(json.dumps({'pool_scheduling': {'dispatch_deadline_monotonic_ms': now + remaining}}))
         config = {'pool_prefix_handoff': True, 'arrival_store': '/intake', 'owner_unit': 'unused.service',
-                  'pool_workflow': self.workflow, 'fleet_plan': str(fleet)}
+                  'pool_workflow': self.workflow, 'fleet_plan': str(fleet), 'native_host': self.prefix}
         (phase / 'config.json').write_text(json.dumps(config))
         (self.proofs / 'result.json').write_text('{}')
-        callback = {'command': ['/pinned/callback'], 'pins': {'/pinned/callback': '01' * 32}}
+        callback = {'command': ['/pinned/callback'], 'pins': {'/pinned/callback': '01' * 32},
+                    'continuation_reserve_ms': 75_000}
         return phase, callback
 
     def test_short_phase_defers_before_creating_a_service_or_calling_callback(self):
@@ -84,19 +85,66 @@ class HandoffTests(unittest.TestCase):
         self.assertFalse((phase / 'handoff').exists())
 
     def test_admitted_failure_is_terminal_and_keeps_original_service_cap(self):
-        phase, callback = self.admission_fixture(H.MIN_HANDOFF_MS)
+        phase, callback = self.admission_fixture(H.MIN_HANDOFF_MS + 75_000)
         supervisor = H.importlib.import_module('block-v2-typed-shared-gpu-run')
         with (self.clock(), patch.object(supervisor.G, 'systemctl', return_value='not-found'),
               patch.object(H.subprocess, 'run', return_value=H.subprocess.CompletedProcess([], 1)) as run):
             with self.assertRaisesRegex(ValueError, 'no automatic retry'):
                 H.run(phase, self.proofs, callback)
             self.assertIn('--property=RuntimeMaxSec=30', run.call_args.args[0])
+            admission = H.read(phase / 'handoff/input.json')
+            self.assertEqual(admission['continuation_reserve_ms'], 75_000)
+            self.assertEqual(admission['handoff_deadline_monotonic_ms'], 30_300)
             run.assert_called_once()
             with self.clock(301), self.assertRaisesRegex(ValueError, 'already started') as caught:
                 H.run(phase, self.proofs, callback)
             self.assertNotIsInstance(caught.exception, H.HandoffWindowUnavailable)
             run.assert_called_once()
         self.assertEqual(H.read(phase / 'config.json')['pool_workflow'], self.workflow)
+
+    def test_callback_window_alone_cannot_admit_the_sealed_continuation(self):
+        phase, callback = self.admission_fixture(50_000)
+        with self.clock(), patch.object(H.subprocess, 'run') as run:
+            with self.assertRaises(H.HandoffWindowUnavailable) as caught:
+                H.run(phase, self.proofs, callback)
+        run.assert_not_called()
+        self.assertFalse((phase / 'handoff').exists())
+        self.assertEqual(caught.exception.window['continuation_reserve_ms'], 75_000)
+        self.assertEqual(caught.exception.window['required_window_ms'], 105_000)
+
+    def test_missing_or_invalid_continuation_reserve_stops_before_handoff(self):
+        phase, callback = self.admission_fixture(150_000)
+        for reserve in [None, False, 0, -1, 1.5, '75000', 120_000, 150_000]:
+            supplied = callback | {'continuation_reserve_ms': reserve}
+            if reserve is None:
+                del supplied['continuation_reserve_ms']
+            with self.subTest(reserve=reserve), patch.object(H.subprocess, 'run') as run:
+                with self.assertRaisesRegex(ValueError, 'continuation reserve'):
+                    H.run(phase, self.proofs, supplied)
+                run.assert_not_called()
+                self.assertFalse((phase / 'handoff').exists())
+
+    def test_completed_callback_cannot_consume_reserved_proving_time(self):
+        phase, callback = self.admission_fixture(150_000)
+        supervisor = H.importlib.import_module('block-v2-typed-shared-gpu-run')
+        clock = [300]
+
+        def completed(*args, **kwargs):
+            directory = phase / 'handoff'
+            request = directory / 'request.json'
+            request.write_text(json.dumps(self.request))
+            (directory / 'receipt.json').write_text(json.dumps({
+                'native_authenticated': True, 'prefix_cpu_audited': True,
+                'pool_workflow': self.workflow, 'request_sha256': H.T.digest(request), 'pins': {}}))
+            clock[0] = 90_000
+            return H.subprocess.CompletedProcess([], 0)
+
+        with (patch.object(H.T, 'workflow_clock', side_effect=lambda: (self.workflow['boot_id'], clock[0])),
+              patch.object(supervisor.G, 'systemctl', return_value='not-found'),
+              patch.object(H.subprocess, 'run', side_effect=completed) as run):
+            with self.assertRaisesRegex(ValueError, 'consumed the reserved continuation window'):
+                H.run(phase, self.proofs, callback)
+            run.assert_called_once()
 
     def cache_fixture(self):
         self.proofs.chmod(0o700)

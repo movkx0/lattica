@@ -8,7 +8,7 @@ use std::{collections::BTreeMap, time::Instant};
 
 use super::{
     dag::{CandidateId, Completion, JobStatus, Lease, WorkerId},
-    job::{Job, JobId, VerifiedNode},
+    job::{Job, JobId, VerifiedNodePayload},
     journal::DurableDag,
     policy_context::PolicyContext,
     scheduler::{CostModel, TimingCalibration, WorkerCapabilities},
@@ -18,6 +18,8 @@ use crate::block_v2::{
     recursive::Error,
     typed_recursive::{CheckedRegistry, Registry},
 };
+#[cfg(test)]
+use super::job::VerifiedNode;
 
 const MAX_WORKERS: usize = 16;
 const MAX_CANDIDATES: usize = 8;
@@ -667,9 +669,9 @@ impl PoolCoordinator {
             }
             let expected = self.owner.begin_verification(result.lease, clock()?)?;
             let checked =
-                VerifiedNode::verify_typed_checked(&expected, &self.registry, &result.proof);
-            let ticket = match checked {
-                Ok(ticket) => ticket,
+                VerifiedNodePayload::verify_typed_checked(&expected, &self.registry, result.proof);
+            let payload = match checked {
+                Ok(payload) => payload,
                 Err(error) => {
                     self.owner
                         .finish_verification(result.lease, None, clock()?)?;
@@ -677,10 +679,10 @@ impl PoolCoordinator {
                     return Err(error);
                 }
             };
-            let proof_bytes = result.proof.len();
-            if self.owner.finish_verification(
+            let proof_bytes = payload.bytes().len();
+            if self.owner.finish_verified_node(
                 result.lease,
-                Some((ticket, result.proof)),
+                payload,
                 clock()?,
             )? != Completion::Accepted
             {

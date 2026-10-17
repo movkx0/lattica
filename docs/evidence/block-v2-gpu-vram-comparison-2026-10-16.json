@@ -1,0 +1,232 @@
+{
+  "schema": "lattica-gpu-vram-comparison-v1",
+  "status": "passed",
+  "date": "2026-10-16",
+  "scope": "Two matched small-block experiments with the existing depth-seven 128-capacity GPU prover; reused synthetic wallets and registry keys, fresh recursive proofs.",
+  "transactions_per_trial": 8,
+  "user_transactions_per_trial": 6,
+  "issuance_transactions_per_trial": 2,
+  "recursive_proofs_per_trial": 8,
+  "block_capacity": 128,
+  "completed_trials_including_warmups": 14,
+  "excluded_warmups": 2,
+  "measured_trials": 12,
+  "independently_cpu_audited_recursive_proofs": 112,
+  "trial_order": "Each experiment: one excluded baseline warm-up, then baseline/candidate/cached-candidate, then cached-candidate/candidate/baseline.",
+  "timing_scope": "Full GPU process, including initialization, proving, serialization and shutdown. Existing wallet/key preparation and independent CPU audits are excluded.",
+  "hardware": {
+    "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "opencl": {
+      "opencl_index": 0,
+      "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "name": "NVIDIA GeForce RTX 5080",
+      "pci": "0000:01:00.0",
+      "global_bytes": 16703946752,
+      "max_allocation_bytes": 4175986688,
+      "driver": "615.78.08"
+    },
+    "nvidia": {
+      "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "name": "NVIDIA GeForce RTX 5080",
+      "total_bytes": 17094934528,
+      "free_bytes": 15682502656,
+      "driver": "615.78.08",
+      "pci": "00000000:01:00.0"
+    }
+  },
+  "limits": {
+    "worker_ram_bytes": 3221225472,
+    "coordinator_ram_bytes": 1073741824,
+    "aggregate_ram_bytes": 4294967296,
+    "cpu_threads": 4,
+    "swap_bytes": 0,
+    "gpu_context_allowance_bytes": 4294967296,
+    "gpu_headroom_bytes": 1073741824
+  },
+  "host_pipeline_enabled": true,
+  "comparisons": [
+    {
+      "evidence_directory": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-vram-pilot-20261016",
+      "summary_sha256": "70f05444751e714189432a1038aae9cf24d5100c3914fdc560e15985d274a03c",
+      "controller_result_sha256": "5d1ae992d4257472c7862ae0eb0baebda9cfaeaf1e29506576bc2a7e21db9860",
+      "config_sha256": "04eb78cd63fdf16931fe9c2b9c7fee6d9896f0bd05e0bddeb6d1eaf0ebe46c1e",
+      "proof_manifest_sha256": "3fcee82d3b5dde5be599287c8ae8ca0492c0cd365827ef57938dc8e17a071b8f",
+      "control_manifest_sha256": "a09d769c9546c4c45068ed9930f67d636839999106a37acd5b083732aa61eab1",
+      "reporter_source_sha256": "47195ce79618e1bbd28e33c58d2f23a9e625b8f10a3511aeaa2f4a65e4cb99b3",
+      "aggregates": {
+        "baseline": {
+          "managed_bytes": 7516192768,
+          "max_allocation_bytes": 1073741824,
+          "workspace_bytes": 0,
+          "trials": 2,
+          "median_process_seconds": 44.621413671498885,
+          "process_seconds": [
+            44.606518322005286,
+            44.636309020992485
+          ],
+          "within_round_time_reduction_percent": [
+            0.0,
+            0.0
+          ],
+          "median_within_round_time_reduction_percent": 0.0,
+          "peak_worker_ram_bytes": 1246138368,
+          "sampled_peak_worker_vram_mib": 7170,
+          "cache_reuse_events": 0,
+          "median_transform_device_seconds": 13.482134288,
+          "median_commitment_device_seconds": 9.381646736
+        },
+        "wide": {
+          "managed_bytes": 9663676416,
+          "max_allocation_bytes": 2147483648,
+          "workspace_bytes": 0,
+          "trials": 2,
+          "median_process_seconds": 45.50381794450368,
+          "process_seconds": [
+            45.47645354999986,
+            45.5311823390075
+          ],
+          "within_round_time_reduction_percent": [
+            -1.9502423877037156,
+            -2.004810293777104
+          ],
+          "median_within_round_time_reduction_percent": -1.9775263407404098,
+          "peak_worker_ram_bytes": 1275146240,
+          "sampled_peak_worker_vram_mib": 8150,
+          "cache_reuse_events": 0,
+          "median_transform_device_seconds": 14.473271871999998,
+          "median_commitment_device_seconds": 9.37130136
+        },
+        "cached": {
+          "managed_bytes": 9663676416,
+          "max_allocation_bytes": 2147483648,
+          "workspace_bytes": 2147483648,
+          "trials": 2,
+          "median_process_seconds": 45.58393086150318,
+          "process_seconds": [
+            45.57242262799991,
+            45.59543909500644
+          ],
+          "within_round_time_reduction_percent": [
+            -2.165388248914568,
+            -2.148766542419267
+          ],
+          "median_within_round_time_reduction_percent": -2.1570773956669176,
+          "peak_worker_ram_bytes": 1273905152,
+          "sampled_peak_worker_vram_mib": 8150,
+          "cache_reuse_events": 16,
+          "median_transform_device_seconds": 14.470764544000001,
+          "median_commitment_device_seconds": 9.376195327999998
+        }
+      }
+    },
+    {
+      "evidence_directory": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-vram-roomy-20261016",
+      "summary_sha256": "525ed33104ddadb95ec73de61451a5383fda8759ce84b95cea5ae555aad7655f",
+      "controller_result_sha256": "5d1ae992d4257472c7862ae0eb0baebda9cfaeaf1e29506576bc2a7e21db9860",
+      "config_sha256": "fea12d33332725257d089ed65db66cdd0a52653d713f835e0dcd5d6f81c7ade7",
+      "proof_manifest_sha256": "6563292dc59ce90c8edb52bdbcd1650c6d520fb61c4a1b1ba67dab2a33631ad7",
+      "control_manifest_sha256": "9ec6c025ff0bc55fea78817d8b76a6659c7e697bc4c3c32fe594dc510f5db2be",
+      "reporter_source_sha256": "47195ce79618e1bbd28e33c58d2f23a9e625b8f10a3511aeaa2f4a65e4cb99b3",
+      "aggregates": {
+        "baseline": {
+          "managed_bytes": 7516192768,
+          "max_allocation_bytes": 1073741824,
+          "workspace_bytes": 0,
+          "trials": 2,
+          "median_process_seconds": 44.70615350300068,
+          "process_seconds": [
+            44.67586402800225,
+            44.736442977999104
+          ],
+          "within_round_time_reduction_percent": [
+            0.0,
+            0.0
+          ],
+          "median_within_round_time_reduction_percent": 0.0,
+          "peak_worker_ram_bytes": 1261260800,
+          "sampled_peak_worker_vram_mib": 7170,
+          "cache_reuse_events": 0,
+          "median_transform_device_seconds": 13.482644976,
+          "median_commitment_device_seconds": 9.383646816
+        },
+        "roomy": {
+          "managed_bytes": 9663676416,
+          "max_allocation_bytes": 1073741824,
+          "workspace_bytes": 0,
+          "trials": 2,
+          "median_process_seconds": 44.569739432998176,
+          "process_seconds": [
+            44.606385535997106,
+            44.53309332999925
+          ],
+          "within_round_time_reduction_percent": [
+            0.1555168400584228,
+            0.45455032734690315
+          ],
+          "median_within_round_time_reduction_percent": 0.305033583702663,
+          "peak_worker_ram_bytes": 1261744128,
+          "sampled_peak_worker_vram_mib": 7170,
+          "cache_reuse_events": 0,
+          "median_transform_device_seconds": 13.479420880000001,
+          "median_commitment_device_seconds": 9.361293184
+        },
+        "roomy-cached": {
+          "managed_bytes": 9663676416,
+          "max_allocation_bytes": 1073741824,
+          "workspace_bytes": 2147483648,
+          "trials": 2,
+          "median_process_seconds": 44.530850859991915,
+          "process_seconds": [
+            44.51123942999402,
+            44.55046228998981
+          ],
+          "within_round_time_reduction_percent": [
+            0.3684866573706258,
+            0.4157252468658723
+          ],
+          "median_within_round_time_reduction_percent": 0.39210595211824906,
+          "peak_worker_ram_bytes": 1249263616,
+          "sampled_peak_worker_vram_mib": 7170,
+          "cache_reuse_events": 16,
+          "median_transform_device_seconds": 13.473883312,
+          "median_commitment_device_seconds": 9.380212304
+        }
+      }
+    }
+  ],
+  "finding": "Doubling the per-buffer limit widened main transforms from 16 to 32 columns, increased transform device time by about one second per trial and slowed complete trial time by about 2%. Keeping 1 GiB buffers with a 9 GiB managed budget reduced median trial time by 0.31%, or 0.39% with scratch reuse. The sample does not establish a substantial or general speedup.",
+  "decision": "Retain the existing 7 GiB managed budget, 1 GiB buffer limit, and disabled transform scratch cache. Experimental variants remain available through the benchmark runner.",
+  "default_prover_settings_changed": false,
+  "concurrent_gpu_proofs_enabled": false,
+  "validation": "All selected wallets, all 112 fresh recursive nodes, all 14 roots and all durable journal replays passed independent CPU verification. Every recursive proof reported all 16 required arithmetic stages on OpenCL. All stages exited successfully, with zero RAM-limit/OOM events, zero swap, and clean GPU teardown. No additional GPU compute process appeared during measured trials.",
+  "admission_tests": {
+    "exit_code": 0,
+    "test_sha256": "18fcb1d1b6c4946ad708604076dd5cec6858bc7e8120ac3d8cd82177ff8da436",
+    "runner_sha256": "0d299e34a9925169d799249be93c759000bdb3a4132fc6ff6ef8e9392a608fc2",
+    "command": [
+      "python3",
+      "lattica-prover-p3/scripts/test-benchmark-gpu-vram.py"
+    ]
+  },
+  "quiescence": {
+    "recorded_at_utc": "2026-10-17T03:30:06.708985+00:00",
+    "active_experiment_services": [],
+    "gpu_rows": [
+      "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, NVIDIA GeForce RTX 5080, 975 MiB, 1 %"
+    ],
+    "compute_process_rows": [
+      "1385, /usr/bin/kwin_wayland, 47 MiB"
+    ]
+  },
+  "limitations": [
+    "Eight-transaction partial blocks in the 128 profile, not complete 128-transaction timings or sustained throughput.",
+    "Two measured trials per candidate; differences below one percent do not establish a general performance improvement.",
+    "The capacity experiment does not classify compute versus memory-bandwidth saturation.",
+    "VRAM peaks are sampled; managed allocation limits are separate from physical memory use."
+  ],
+  "reproduction": "lattica-prover-p3/scripts/gpu-vram-benchmark-README.txt",
+  "source_manifest_sha256": "cce10606a6ed1e1d193701682b0a0107b7537a4e391f5921b2d8d9111f812c68",
+  "binary_manifest_sha256": "a9ff242b2b4b37739c2384c13f1584fb60f7504f90f4e29313c165dca0288947",
+  "expected_statement_sha256": "71463981ae6b4b676b78e258339ed4093ce1b7e5cba66f299dde11bddb4cdb6b",
+  "cancelled_256_run_resumed": false
+}

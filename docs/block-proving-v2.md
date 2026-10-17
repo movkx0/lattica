@@ -185,6 +185,186 @@ recovery, and native delivery
 on the target hardware. The planned capacities are metadata only until those gates
 pass.
 
+### Additional VRAM comparison — 2026-10-16
+
+The [matched VRAM experiments](evidence/block-v2-gpu-vram-comparison-2026-10-16.json)
+tested larger transform batches and reusable GPU scratch buffers on the RTX
+5080. Each trial contains **eight transactions (six user, two issuance)** and
+eight fresh recursive proofs ending in a depth-seven root under the 128-capacity
+profile. These are small-block comparisons, not new complete 128-transaction
+timings. Both experiments use the same pinned binary, input fixture, registry,
+host pipeline, four CPU threads, 3 GiB worker RAM, and zero swap.
+
+Each experiment excludes one warm-up, then runs its three settings in forward
+and reverse order. GPU process time includes initialization, proving,
+serialization, and shutdown; independent CPU audits are timed separately.
+
+| Experiment | Managed VRAM / maximum buffer / scratch cache | Median process seconds | Change from matched control | Sampled worker VRAM peak |
+| --- | --- | ---: | ---: | ---: |
+| 1, control | 7 GiB / 1 GiB / off | 44.621 | — | 7,170 MiB |
+| 1, wider batches | 9 GiB / 2 GiB / off | 45.504 | 1.98% slower | 8,150 MiB |
+| 1, wider batches and cache | 9 GiB / 2 GiB / 2 GiB | 45.584 | 2.16% slower | 8,150 MiB |
+| 2, control | 7 GiB / 1 GiB / off | 44.706 | — | 7,170 MiB |
+| 2, extra managed memory | 9 GiB / 1 GiB / off | 44.570 | 0.31% faster | 7,170 MiB |
+| 2, extra managed memory and cache | 9 GiB / 1 GiB / 2 GiB | 44.531 | 0.39% faster | 7,170 MiB |
+
+The doubled per-buffer allowance widens main transforms from 16 to 32 columns.
+Their aggregate reported device time rises from about **13.48 to 14.47 seconds**
+per trial, while commitment time stays near 9.38 seconds. Scratch reuse is
+actually exercised eight times per cached trial. Keeping 1 GiB buffers avoids
+the wider-batch slowdown, but the two measured repetitions per candidate do not
+establish a substantial or general speedup. GPU context allowance remains
+4 GiB and headroom 1 GiB; the higher-memory arms require 14 GiB free VRAM.
+
+All **14 runs, including warm-ups**, passed root verification, independent CPU
+verification of all selected wallets and **112 fresh recursive nodes**, and
+durable journal replay. Every recursive request reported all 16 required stages
+on OpenCL. RAM-limit/OOM events and swap remained zero; GPU teardown passed,
+and no additional compute process appeared during the measured trials.
+
+The default 7 GiB managed budget, 1 GiB buffer limit, and disabled scratch cache
+are retained. The comparison does not establish whether the kernels are limited
+by arithmetic or memory bandwidth. The
+[reproduction instructions](../lattica-prover-p3/scripts/gpu-vram-benchmark-README.txt)
+and experimental runner preserve all tested settings; four resource-admission
+regression checks pass. The cancelled 256-transaction experiment was not resumed.
+
+
+### Two concurrent GPU workers — 2026-10-17
+
+The [two-worker comparison](evidence/block-v2-gpu-two-workers-2026-10-17.json)
+found **13.19% lower throughput** with two concurrent workers on the RTX
+5080, with the specialized quotient kernels enabled. Each worker proves a
+complete **eight-transaction block (six user, two issuance)** with eight fresh
+recursive proofs ending in a depth-seven root under the 128-capacity profile.
+This tests two independent blocks, not parallel stages of one complete
+128-transaction block.
+
+The final experiment measures two sequential pairs and two concurrent pairs,
+reversing their order in the second round. Both modes use the same binary,
+fixture, and per-worker budget. Sequential pair time sums the two process
+durations; concurrent pair time is their union makespan. Process time includes
+initialization, proving, serialization, and shutdown. Wallet/key preparation,
+admission waits, and independent CPU audits are excluded.
+
+| Mode | Median time for two blocks | Worst pair time | Total transactions/s | User transactions/s |
+| --- | ---: | ---: | ---: | ---: |
+| One worker, blocks sequentially | 88.472 s | 88.521 s | 0.18085 | 0.13564 |
+| Two concurrent workers | 101.917 s | 102.070 s | 0.15699 | 0.11774 |
+
+Concurrent pair time is **15.20% longer**. The separate standard-budget
+single-worker reference takes **44.282 s**; it is one
+reference run, not a replicated comparison. Concurrent sampled worker VRAM
+peaks at **14,340 MiB combined**; whole-device
+VRAM, including desktop use, peaks at **15,317 MiB**.
+Combined sampled worker RAM peaks at **2.145 GiB**;
+aggregate cgroup RAM, including its accounted caches, peaks at
+**4.894 GiB**.
+
+Each worker has 7,064 MiB managed VRAM, 224 MiB context allowance, a 1 GiB
+maximum buffer, 3 GiB RAM, and four Rayon threads; scratch cache and swap are
+disabled. The workers share CPUs 0–3, a **400% aggregate CPU quota**, and a
+7 GiB RAM cap. Admission requires 14,704 MiB free VRAM, including 128 MiB
+shared headroom. A controller retains the exclusive canonical device lease
+and transfers it only to its assigned workers; ordinary workers remain excluded.
+
+Earlier comparisons retained the normal **4 GiB specialization gate**, so their
+smaller context allowance selected the generic GPU quotient interpreter. With
+7,064 MiB managed memory, sequential/concurrent pair medians were 109.986/131.987 s
+(16.67% lower throughput). With the full 7 GiB managed allowance they were
+109.631/133.349 s (17.79% lower throughput; one pair per mode). The generic
+quotient path explains the roughly 44-to-55-second single-worker slowdown;
+the managed allocation reduction alone does not.
+
+The final research variant permits specialized kernels at 224 MiB context only
+under a validated transferred lease. It retains compiler/device/shape checks,
+limits private backing to 64 MiB, and enforces the context allowance at
+synchronized checkpoints. Its fresh complete calibration observes
+**145.089 MiB** context and passes
+the required 25% margin. Every worker selects and executes eight specialized
+quotients. This calibrated allowance applies only to this isolated experiment;
+ordinary context and specialization defaults remain unchanged.
+
+All **80 recursive proofs in the final experiment** pass independent CPU
+verification, along with every root, selected wallet proof, and journal replay.
+Across the three comparisons, **208 recursive proofs** pass these audits.
+Every proof reports all 16 proving stages on OpenCL. There are no new worker or
+fleet RAM-limit/OOM events or swap; the fleet RAM cap is restored and the GPU
+workers exit cleanly. GPU PID overlap is measured, but simultaneous kernel
+execution is not profiled. Memory samples can miss short peaks, and two pairs
+per mode do not constitute sustained-throughput qualification.
+
+Keep **one worker per GPU** for this configuration. Experimental source patches,
+bounded controllers, manifests, and archives are retained with the
+[reproduction instructions](../lattica-prover-p3/scripts/gpu-two-worker-benchmark-README.txt).
+Production sources and defaults are unchanged by this experiment. The cancelled
+256-transaction run was not resumed.
+
+
+### Parallel recursive aggregation of 128 transactions — 2026-10-17
+
+The [complete-block comparison](evidence/block-v2-parallel-aggregation-128-2026-10-17.json)
+measures recursive aggregation within **one full 128-transaction block**, with
+96 user transactions and 32 issuance transactions. Two 64-transaction subtrees
+each require 63 fresh proofs; a final merge produces the depth-seven root.
+Running the sibling subtrees concurrently on the RTX 5080 gives **17.78% lower throughput**
+than processing them sequentially under the same resource limits.
+
+Both modes use the same binary, fixture, specialized quotient kernels, host
+pipeline, and three-process plan: left subtree, right subtree, then root. In
+the parallel mode, only the first two processes overlap. The root starts after
+both workers finish successfully; every parent verifies the exact expected
+child statements before proving. This is static subtree partitioning on one
+GPU, with one complete block measured per mode, sequential first.
+
+| Mode | Complete 128-transaction aggregation | Total transactions/s | User transactions/s | CPU audit, excluded from proving |
+| --- | ---: | ---: | ---: | ---: |
+| Sequential sibling subtrees | 602.367 s | 0.21250 | 0.15937 | 55.759 s |
+| Parallel sibling subtrees, then root | 732.593 s | 0.17472 | 0.13104 | 55.502 s |
+
+Time spans the first proving process start through final root-process exit,
+including initialization, input authentication, proof generation, durable
+output, shutdown, and dependency/launch gaps. Wallet/key generation, admission
+waits, and independent CPU audits are excluded. Each process authenticates the
+full wallet fixture. The sequential control uses the same three-process plan;
+it is not a new monolithic single-process reference.
+
+Parallel sampled combined worker VRAM peaks at
+**14,340 MiB**; whole-device VRAM, including
+desktop use, peaks at **15,315 MiB**. Combined
+sampled worker RAM peaks at **2.687 GiB**,
+and aggregate cgroup RAM, including accounted caches, at
+**5.728 GiB**. The final parallel root
+is **1,683,948 bytes**.
+
+Each worker retains the prior isolated experiment's 7,064 MiB managed VRAM,
+224 MiB context allowance, 1 GiB buffer limit, 3 GiB RAM, and four Rayon threads.
+Both workers share CPUs 0–3, a **400% aggregate CPU quota**, and 7 GiB RAM.
+Scratch cache and swap are disabled. The controller transfers its validated
+exclusive device lease only to assigned workers; admission requires 14,704 MiB
+free VRAM including 128 MiB shared headroom. Before parallel admission, the
+complete sequential block passes independent CPU audits and confirms at least
+25% context margin. Synchronized context checks and the 64 MiB specialized
+private-backing limit remain active.
+
+All **254 newly generated recursive proofs**, both root-only proofs, every
+selected wallet, and both journal replays pass independent CPU verification.
+Every recursive proof reports all 16 stages on OpenCL and executes a specialized
+quotient kernel. Three focused source tests pass for partition coverage,
+dependency closure, and invalid-input rejection. GPU PID overlap and the root
+dependency barrier are verified from process timing and telemetry. There are
+no new worker/fleet RAM-limit or OOM events and no swap. Workers exit cleanly,
+the device lease is released, and the prior fleet RAM cap is restored.
+
+Keep one active GPU prover for this configuration; this partitioned parallel run did not improve throughput.
+One run per mode is exploratory evidence, and sampled memory can miss short
+peaks. The result does not establish kernel simultaneity or a compute-versus-
+bandwidth bottleneck. Production source and defaults are unchanged by this
+experiment. Exact source patches, manifests, build records, and the bounded
+controller are preserved with the
+[reproduction instructions](../lattica-prover-p3/scripts/gpu-parallel-aggregation-README.txt).
+The cancelled 256-transaction run was not resumed.
+
 
 ## Current throughput qualification — 2026-10-04
 

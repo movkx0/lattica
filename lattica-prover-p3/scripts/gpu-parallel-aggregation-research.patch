@@ -1,0 +1,414 @@
+--- a/control/driver/aggregation_partition.rs
++++ b/control/driver/aggregation_partition.rs
+@@ -0,0 +1,104 @@
++//! Isolated benchmark partitioning for complete power-of-two paired trees.
++//! The controller runs disjoint sibling subtrees, joins both workers, then
++//! starts the root partition. No proof or verification rule changes.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub(super) enum Partition {
++    Left,
++    Right,
++    Root,
++}
++
++impl Partition {
++    pub(super) fn parse(value: &str) -> Result<Self, String> {
++        match value {
++            "left" => Ok(Self::Left),
++            "right" => Ok(Self::Right),
++            "root" => Ok(Self::Root),
++            _ => Err("aggregation partition must be left, right, or root".into()),
++        }
++    }
++
++    pub(super) fn name(self) -> &'static str {
++        match self {
++            Self::Left => "left",
++            Self::Right => "right",
++            Self::Root => "root",
++        }
++    }
++}
++
++pub(super) fn classify(level: u8, index: usize, subtree_depth: u8) -> Result<Partition, String> {
++    if !(2..=7).contains(&subtree_depth) || !(1..=7).contains(&level) {
++        return Err("aggregation partition depth outside paired 128-capacity tree".into());
++    }
++    if level >= subtree_depth {
++        if index == 0 && (level == subtree_depth || level == 7) {
++            return Ok(Partition::Root);
++        }
++        return Err("aggregation partition has an invalid root/finalizer coordinate".into());
++    }
++    match index >> (subtree_depth - level - 1) {
++        0 => Ok(Partition::Left),
++        1 => Ok(Partition::Right),
++        _ => Err("aggregation partition index outside the selected subtree".into()),
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn every_supported_complete_tree_splits_by_transaction_interval() {
++        for depth in 2..=7 {
++            let half = 1usize << (depth - 1);
++            let mut counts = [0; 3];
++            for level in 1..=depth {
++                for index in 0..1usize << (depth - level) {
++                    let partition = classify(level, index, depth).unwrap();
++                    let start = index << level;
++                    let end = (index + 1) << level;
++                    let expected = if end <= half { Partition::Left }
++                        else if start >= half { Partition::Right }
++                        else { Partition::Root };
++                    assert_eq!(partition, expected);
++                    counts[match partition { Partition::Left => 0, Partition::Right => 1, Partition::Root => 2 }] += 1;
++                }
++            }
++            assert_eq!(counts, [half - 1, half - 1, 1]);
++            if depth < 7 {
++                assert_eq!(classify(7, 0, depth), Ok(Partition::Root));
++            }
++        }
++    }
++
++    #[test]
++    fn all_dependencies_stay_within_their_worker_until_the_final_join() {
++        for depth in 2..=7 {
++            for level in 2..depth {
++                for index in 0..1usize << (depth - level) {
++                    let parent = classify(level, index, depth).unwrap();
++                    assert_eq!(classify(level - 1, index * 2, depth), Ok(parent));
++                    assert_eq!(classify(level - 1, index * 2 + 1, depth), Ok(parent));
++                }
++            }
++            assert_eq!(classify(depth - 1, 0, depth), Ok(Partition::Left));
++            assert_eq!(classify(depth - 1, 1, depth), Ok(Partition::Right));
++            assert_eq!(classify(depth, 0, depth), Ok(Partition::Root));
++        }
++    }
++
++    #[test]
++    fn malformed_coordinates_and_partition_names_fail_closed() {
++        for (level, index, depth) in [(0, 0, 7), (8, 0, 7), (1, 64, 7), (6, 2, 7),
++            (7, 1, 7), (4, 0, 3), (1, 0, 1), (1, 0, 8)] {
++            assert!(classify(level, index, depth).is_err());
++        }
++        for value in ["", "all", "LEFT", "root/../left"] {
++            assert!(Partition::parse(value).is_err());
++        }
++        for name in ["left", "right", "root"] {
++            assert_eq!(Partition::parse(name).unwrap().name(), name);
++        }
++    }
++}
+--- a/control/driver/driver.rs
++++ b/control/driver/driver.rs
+@@ -39,6 +39,8 @@
+ mod input;
+ #[path = "host_pipeline.rs"]
+ mod host_pipeline;
++#[path = "aggregation_partition.rs"]
++mod aggregation_partition;
+ #[cfg(test)]
+ #[path = "input_tests.rs"]
+ mod input_tests;
+@@ -671,7 +673,30 @@
+     let started = Instant::now();
+     let body = body(dir)?;
+     let registry = registry(dir)?;
+-    let tasks = tasks(&body, expected)?;
++    let all_tasks = tasks(&body, expected)?;
++    let partition = match std::env::var("LATTICA_V2_AGGREGATION_PARTITION") {
++        Err(std::env::VarError::NotPresent) => None,
++        Ok(value) => Some(aggregation_partition::Partition::parse(&value)?),
++        Err(error) => return Err(error.into()),
++    };
++    let tasks = if let Some(partition) = partition {
++        if !PAIRED || expected.count < 4 || !expected.count.is_power_of_two() {
++            return Err("aggregation partitions require a complete paired power-of-two tree".into());
++        }
++        let depth = typed_pairs::proof_plan(expected.count)?.subtree_level;
++        let mut selected = input::exact(all_tasks.len())?;
++        for task in &all_tasks {
++            if aggregation_partition::classify(task.level, task.index, depth)? == partition {
++                selected.push(*task);
++            }
++        }
++        if selected.is_empty() {
++            return Err("aggregation partition must contain fresh proof tasks".into());
++        }
++        selected
++    } else {
++        all_tasks.clone()
++    };
+     let session_budget = budget
+         .checked_sub(if pipelined { host_pipeline::RESERVE_BYTES } else { 0 })
+         .filter(|bytes| *bytes > 0)
+@@ -681,9 +706,22 @@
+     let wallets = (0..expected.count as usize)
+         .map(|i| verified_wallet(dir, &body, i, expected))
+         .collect::<Result<Vec<_>, _>>()?;
+-    fs::create_dir(out)?;
+-    write_json(&out.join("expected.json"), expected)?;
+-    let prepare = |task: &Task| prepare_children(task, &tasks, &registry, expected, out);
++    if let Some(partition) = partition {
++        let pinned: Expected = read_json(&out.join("expected.json"))?;
++        if serde_json::to_value(&pinned)? != serde_json::to_value(expected)? {
++            return Err("aggregation partition output belongs to a different statement".into());
++        }
++        if tasks.iter().any(|task| out.join(task.name()).exists()) {
++            return Err("aggregation partition output already exists".into());
++        }
++        println!("{}", json!({"event":"aggregation_partition_plan", "partition":partition.name(),
++            "tasks":tasks.iter().map(|task| task.name()).collect::<Vec<_>>(),
++            "fresh_proofs":tasks.len(), "count":expected.count}));
++    } else {
++        fs::create_dir(out)?;
++        write_json(&out.join("expected.json"), expected)?;
++    }
++    let prepare = |task: &Task| prepare_children(task, &all_tasks, &registry, expected, out);
+     let mut prove_one = |task: &Task, children: Vec<NodeProof>| {
+         let stage = Instant::now();
+         let node = match task.mode {
+@@ -736,12 +774,13 @@
+         }
+     }
+     write_json(
+-        &out.join("result.json"),
++        &out.join(partition.map(|part| format!("result-{}.json", part.name())).unwrap_or_else(|| "result.json".into())),
+         &json!({
+-            "schema_version":1, "status":"proved_cpu_audit_pending", "count":expected.count,
++            "schema_version":1, "status":if partition.is_some() {"partition_proved_cpu_audit_pending"} else {"proved_cpu_audit_pending"}, "count":expected.count,
++            "aggregation_partition":partition.map(|part| part.name()),
+             "construction":CONSTRUCTION, "registry_keys":KEY_COUNT,
+             "fresh_proofs":tasks.len(), "seconds":started.elapsed().as_secs_f64(),
+-            "worker_memory_bytes":budget, "root_file":format!("node.{}.0", profile::TREE_DEPTH), "backend":if gpu {"gpu"} else {"cpu"},
++            "worker_memory_bytes":budget, "root_file":if partition.is_none() || partition == Some(aggregation_partition::Partition::Root) {Some(format!("node.{}.0", profile::TREE_DEPTH))} else {None}, "backend":if gpu {"gpu"} else {"cpu"},
+             "host_pipeline":pipelined,
+             "durable_host_applied":false, "production_ready":false,
+         }),
+--- a/source/src/block_v2/gpu_hash/engine.rs
++++ b/source/src/block_v2/gpu_hash/engine.rs
+@@ -236,6 +236,8 @@
+ }
+ 
+ mod memory;
++#[cfg(target_os = "linux")]
++mod research_lease;
+ pub(crate) use memory::begin_memory_window;
+ mod allocation_limit;
+ pub(crate) mod host_storage;
+@@ -721,6 +723,7 @@
+ struct JobLease {
+     _global: File,
+     _device: Option<File>,
++    research_shared: bool,
+ }
+ #[cfg(target_os = "linux")]
+ fn job_lease() -> Result<JobLease, String> {
+@@ -732,15 +735,20 @@
+             return Err("invalid GPU UUID lease name".into());
+         }
+         let global = lease_file("exclusive.lock", true)?;
+-        let device = lease_file(&format!("{}.lock", uuid.to_ascii_lowercase()), false)?;
++        let (device, research_shared) = match research_lease::from_env(&uuid)? {
++            Some(inherited) => (inherited, true),
++            None => (lease_file(&format!("{}.lock", uuid.to_ascii_lowercase()), false)?, false),
++        };
+         Ok(JobLease {
+             _global: global,
+             _device: Some(device),
++            research_shared,
+         })
+     } else {
+         Ok(JobLease {
+             _global: lease_file("exclusive.lock", false)?,
+             _device: None,
++            research_shared: false,
+         })
+     }
+ }
+@@ -755,6 +763,7 @@
+     Ok(JobLease {
+         _global: lease_file("exclusive.lock", false)?,
+         _device: None,
++        research_shared: false,
+     })
+ }
+ #[cfg(not(any(target_os = "linux", all(target_os = "macos", feature = "gpu-metal"))))]
+@@ -889,7 +898,14 @@
+     limits.validate()?;
+     let lease = job_lease()?; // BEFORE creating a context or allocating anything on the device.
+     let driver_reserve = env_bytes("LATTICA_V2_GPU_CONTEXT_BYTES", DRIVER_RESERVE_BYTES)?;
+-    if driver_reserve < 512 * MIB {
++    // Isolated controller-owned experiment: job_lease() has already validated
++    // the transferred exclusive device descriptor. Its controller requires a
++    // fresh full-proof calibration with 25% margin before concurrent admission.
++    #[cfg(target_os = "linux")]
++    let minimum_context = if lease.research_shared { 224 * MIB } else { 512 * MIB };
++    #[cfg(not(target_os = "linux"))]
++    let minimum_context = 512 * MIB;
++    if driver_reserve < minimum_context {
+         return Err("GPU context allowance below minimum".into());
+     }
+     #[cfg(feature = "gpu")]
+@@ -3269,6 +3285,11 @@
+             "managed_live_bytes": managed_live_bytes, "process_bytes": process_bytes,
+             "context_bytes": context_bytes, "limit_bytes": limit})
+         );
++        if self._job_lease.research_shared
++            && context_bytes > env_bytes("LATTICA_V2_GPU_CONTEXT_BYTES", DRIVER_RESERVE_BYTES)?
++        {
++            return Err("observed research context VRAM exceeds assigned allowance".into());
++        }
+         if process_bytes > limit {
+             return Err("observed process VRAM exceeds assigned total budget".into());
+         }
+--- a/source/src/block_v2/gpu_hash/engine/quotient/specialized.rs
++++ b/source/src/block_v2/gpu_hash/engine/quotient/specialized.rs
+@@ -272,11 +272,16 @@
+ ) -> Result<Option<Compiled>, String> {
+     use ocl::core::{DeviceInfo, DeviceInfoResult, KernelWorkGroupInfo, KernelWorkGroupInfoResult};
+     let device = engine.pq.device();
++    let driver_reserve = super::super::env_bytes(
++        "LATTICA_V2_GPU_CONTEXT_BYTES",
++        super::super::DRIVER_RESERVE_BYTES,
++    )?;
++    // Research-only allowance: the engine holds a validated controller-owned
++    // exclusive device lease. The controller calibrates all eight specialized
++    // proofs before pair admission and requires 25% observed context margin.
++    let research_context = engine._job_lease.research_shared && driver_reserve >= 224 << 20;
+     if super::row_workgroup(device, 32).is_none()
+-        || super::super::env_bytes(
+-            "LATTICA_V2_GPU_CONTEXT_BYTES",
+-            super::super::DRIVER_RESERVE_BYTES,
+-        )? < REQUIRED_DRIVER_RESERVE
++        || (driver_reserve < REQUIRED_DRIVER_RESERVE && !research_context)
+     {
+         return Ok(None);
+     }
+@@ -321,16 +326,21 @@
+         }
+         _ => return Err("GPU private size response".into()),
+     };
+-    // Allow at most 128 MiB of rounded resident private backing within the
+-    // 4 GiB opaque driver allowance; no managed workspace is borrowed.
++    // Ordinary execution retains its 4 GiB driver allowance. The isolated
++    // calibrated experiment also caps rounded resident private backing at
++    // 64 MiB; managed workspace is never borrowed.
+     if private_bytes > MAX_PRIVATE_BYTES {
+         eprintln!("bounded_gpu_quotient_specialization selected=false private_bytes={private_bytes} limit_bytes={MAX_PRIVATE_BYTES}");
+         return Ok(None);
+     }
+     let private_backing = units * 2048 * private_bytes.div_ceil(256) * 256;
+     assert!(private_backing <= 128 << 20);
++    if driver_reserve < REQUIRED_DRIVER_RESERVE && private_backing > 64 << 20 {
++        eprintln!("bounded_gpu_quotient_specialization selected=false research_private_bound_bytes={private_backing}");
++        return Ok(None);
++    }
+     engine.context_checkpoint("specialized quotient compilation")?;
+-    eprintln!("bounded_gpu_quotient_specialization selected=true degree={} instructions={} blocks={} source_bytes={} source_capacity={} private_bytes={private_bytes} resident_private_bound_bytes={private_backing} driver_reserve_bytes={REQUIRED_DRIVER_RESERVE} build_ns={}",
++    eprintln!("bounded_gpu_quotient_specialization selected=true degree={} instructions={} blocks={} source_bytes={} source_capacity={} private_bytes={private_bytes} resident_private_bound_bytes={private_backing} driver_reserve_bytes={driver_reserve} research_context={research_context} build_ns={}",
+         program.extension.degree(), program.instruction_count(), program.instruction_count().div_ceil(BLOCK), source.len(), source.capacity(), started.elapsed().as_nanos());
+     Ok(Some(Compiled {
+         program: compiled,
+--- a/source/src/block_v2/gpu_hash/engine/research_lease.rs
++++ b/source/src/block_v2/gpu_hash/engine/research_lease.rs
+@@ -0,0 +1,93 @@
++//! Isolated research only: borrow an already-held device lock via SCM_RIGHTS.
++//! The controller owns the exclusive canonical device lease throughout both
++//! workers. Normal workers still acquire that same exclusive lock themselves.
++use std::fs::{File, OpenOptions};
++use std::os::fd::{AsRawFd, FromRawFd};
++use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
++use std::path::Path;
++
++fn inherited(fd: i32, path: &Path) -> Result<File, String> {
++    if fd < 3 { return Err("invalid transferred GPU lease descriptor".into()); }
++    let duplicate = unsafe { libc::fcntl(fd, libc::F_DUPFD_CLOEXEC, 3) };
++    if duplicate < 0 { return Err(std::io::Error::last_os_error().to_string()); }
++    // F_DUPFD_CLOEXEC returned a new, uniquely owned descriptor.
++    let file = unsafe { File::from_raw_fd(duplicate) };
++    let uid = unsafe { libc::geteuid() };
++    let directory = std::fs::symlink_metadata(path.parent().ok_or("missing lease parent")?)
++        .map_err(|e| e.to_string())?;
++    if !directory.is_dir() || directory.uid() != uid || directory.mode() & 0o777 != 0o700 {
++        return Err("transferred GPU lease requires a private owner directory".into());
++    }
++    let probe = OpenOptions::new().read(true).write(true)
++        .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC).open(path).map_err(|e| e.to_string())?;
++    let a = file.metadata().map_err(|e| e.to_string())?;
++    let b = probe.metadata().map_err(|e| e.to_string())?;
++    if !a.is_file() || a.uid() != uid || a.mode() & 0o777 != 0o600
++        || a.dev() != b.dev() || a.ino() != b.ino() {
++        return Err("transferred descriptor is not the canonical device lease".into());
++    }
++    // An independent open must be blocked, while the transferred open-file
++    // description must already own the exclusive lock. Neither test unlocks
++    // the controller's description.
++    if unsafe { libc::flock(probe.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } == 0 {
++        return Err("transferred device lease was not already held".into());
++    }
++    let error = std::io::Error::last_os_error();
++    if error.raw_os_error() != Some(libc::EWOULDBLOCK) {
++        return Err(error.to_string());
++    }
++    if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
++        return Err("transferred descriptor does not own the device lease".into());
++    }
++    Ok(file)
++}
++
++pub(super) fn from_env(uuid: &str) -> Result<Option<File>, String> {
++    let Some(value) = std::env::var_os("LATTICA_V2_GPU_RESEARCH_LEASE_FD") else { return Ok(None); };
++    let fd = value.to_str().ok_or("invalid GPU lease descriptor encoding")?
++        .parse::<i32>().map_err(|_| "invalid GPU lease descriptor number")?;
++    let uid = unsafe { libc::geteuid() };
++    let path = std::path::PathBuf::from(format!("/tmp/lattica-v2-gpu-lease-{uid}/{}.lock", uuid.to_ascii_lowercase()));
++    inherited(fd, &path).map(Some)
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use std::os::unix::fs::DirBuilderExt;
++    use std::sync::atomic::{AtomicUsize, Ordering};
++    static SEQUENCE: AtomicUsize = AtomicUsize::new(0);
++    fn fixture() -> (std::path::PathBuf, File) {
++        let path = std::env::temp_dir().join(format!("lattica-two-worker-lease-{}-{}", std::process::id(), SEQUENCE.fetch_add(1, Ordering::SeqCst)));
++        std::fs::DirBuilder::new().mode(0o700).create(&path).unwrap();
++        let lock = path.join("device.lock");
++        let file = OpenOptions::new().read(true).write(true).create_new(true).mode(0o600).open(&lock).unwrap();
++        (path, file)
++    }
++    #[test]
++    fn research_lease_keeps_normal_workers_excluded_until_all_holders_drop() {
++        let (directory, owner) = fixture();
++        let path = directory.join("device.lock");
++        assert_eq!(unsafe { libc::flock(owner.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) }, 0);
++        let first = inherited(owner.as_raw_fd(), &path).unwrap();
++        let second = inherited(owner.as_raw_fd(), &path).unwrap();
++        drop(owner); drop(first);
++        let probe = OpenOptions::new().read(true).write(true).open(&path).unwrap();
++        assert_ne!(unsafe { libc::flock(probe.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) }, 0);
++        drop(second);
++        assert_eq!(unsafe { libc::flock(probe.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) }, 0);
++        drop(probe); std::fs::remove_dir_all(directory).unwrap();
++    }
++    #[test]
++    fn research_lease_rejects_unlocked_wrong_and_invalid_descriptors() {
++        let (directory, owner) = fixture();
++        let path = directory.join("device.lock");
++        assert!(inherited(owner.as_raw_fd(), &path).is_err());
++        let other = OpenOptions::new().read(true).write(true).create_new(true).mode(0o600).open(directory.join("other.lock")).unwrap();
++        assert!(inherited(other.as_raw_fd(), &path).is_err());
++        assert!(inherited(-1, &path).is_err());
++        assert!(inherited(0, &path).is_err());
++        assert!(inherited(i32::MAX, &path).is_err());
++        drop(other);drop(owner);std::fs::remove_dir_all(directory).unwrap();
++    }
++}

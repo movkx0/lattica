@@ -84,6 +84,22 @@ fn check_accepted_completion(worker_timings: Option<WorkerTimings>) {
     }
     let proof = matching.expect("archived proof of wallets 0 and 1");
     VerifiedNode::verify_typed(pair, &registry, &proof).unwrap();
+    let checked_registry = CheckedRegistry::new(registry.clone()).unwrap();
+    let owned = VerifiedNodePayload::verify_typed_checked(pair, &checked_registry, proof.clone())
+        .unwrap();
+    assert_eq!(owned.ticket().job(), pair.id());
+    assert_eq!(owned.bytes(), proof.as_slice());
+    drop(owned);
+    assert!(VerifiedNodePayload::verify_typed_checked(
+        pair,
+        &checked_registry,
+        proof[..proof.len() - 1].to_vec(),
+    ).is_err());
+    assert!(VerifiedNodePayload::verify_typed_checked(
+        selection.root(),
+        &checked_registry,
+        proof.clone(),
+    ).is_err());
     let proof_len = proof.len();
     let temp = Temp::new();
     let store_limits = StoreLimits {

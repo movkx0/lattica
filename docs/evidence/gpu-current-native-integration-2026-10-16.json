@@ -1,0 +1,2307 @@
+{
+  "schema_version": 1,
+  "checkpoint": "9.299",
+  "date": "2026-10-16",
+  "scope": "Current-source native builds and standalone wallet ABI; no assigned public-worker execution.",
+  "summary": {
+    "status": "passed",
+    "source_files": 880,
+    "separately_pinned_harness_sources": 2,
+    "harness_sources_already_in_snapshot": 2,
+    "generated_options": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/harness/gpu_prover_options.zig",
+    "source_archives": 14,
+    "build_or_test_runs": 12,
+    "independently_checked_images": 8,
+    "native_and_rust_capacity": 64,
+    "cpu_ffi_passed": 32,
+    "cpu_ffi_skipped": 1,
+    "gpu_ffi_passed": 36,
+    "fresh_gpu_proofs": 5,
+    "gpu_tree_operations": 1,
+    "required_wallet_stages": 15,
+    "gpu_shutdowns": 3,
+    "memory_peaks": {
+      "isolation-preparation-01": 85032960,
+      "rust-cpu-01": 1306537984,
+      "bridge-cpu-01": 681459712,
+      "cli-cpu-01": 307064832,
+      "rust-gpu-01": 1488359424,
+      "bridge-gpu-01": 525811712,
+      "cli-gpu-01": 371146752,
+      "zig-tests-01": 589799424,
+      "zig-root-tests-01": 385003520,
+      "zig-ffi-tests-01": 438095872,
+      "c-service-build-01": 172613632,
+      "zig-service-test-01": 330948608,
+      "zig-gpu-ffi-build-01": 395894784,
+      "gpu-ffi-worker": 252997632,
+      "gpu-ffi-fleet": 253071360
+    },
+    "changed_shared_paths": 0,
+    "changed_supplemental_paths": 0,
+    "original_collector_failures": 2,
+    "original_auditor_failures": 3,
+    "proof_reruns": 0,
+    "native_worker_service_qualified": false,
+    "full_resource_lifetime_admission": false,
+    "native_blocks_applied": 0,
+    "funded_slots_consumed": 0,
+    "production_ready": false,
+    "sustained_throughput_qualified": false
+  },
+  "source_files": {
+    "build.zig": "87a469016743a1085a79af68b440c5be81d6b56810a18c7558dda69e0084df24",
+    "lattica-prover-p3/.cargo/config.toml": "3e53c2589d496b9e70431c6a097f5221051128f646009694eb35e487e0518ab4",
+    "lattica-prover-p3/Cargo.lock": "856c6de4172223b10011963f34c545d6df1389d67ba8d2c7ba3442fdf786214a",
+    "lattica-prover-p3/Cargo.toml": "4d29ee64d4ed88caf175ad1405c5080b831da0ab6a5436b332479cc02ae5af56",
+    "lattica-prover-p3/build.rs": "51bda6326566e5a4643dcdd07b90381cdf727ce125c2a9fb9d4d01f190b356bb",
+    "lattica-prover-p3/examples/caller_storage.rs": "903cb6b2a648c8b1b1e2665dc992ac8536a656fc5a5d42baca47a761acdc02ce",
+    "lattica-prover-p3/examples/coordinator_storage.rs": "012382fc13e80bb3c730835a66b57fd85d30e983a2da8a2fca1c65fc930dc337",
+    "lattica-prover-p3/examples/local_pool_storage.rs": "76b4207fcac080587f432bf5054ae5cf8fe389bc12f30771fd72c46097b9b7e9",
+    "lattica-prover-p3/examples/pool_storage.rs": "b24858d2436c880ffff424384db1b11757585a96e4faeb1a688e8941472b43a2",
+    "lattica-prover-p3/examples/recovery_artifact_cost.rs": "a47afc9c5bc40f2c8703776342d08dfe8c1cfdd895516d66938c0907689b0cc0",
+    "lattica-prover-p3/examples/shared_coordinator_storage.rs": "9286eccc2a879ed5d5b9ed38580fbde4d09a8ae35da94b6f5189649679ad8582",
+    "lattica-prover-p3/include/lattica_block_v2_host_bridge.h": "cff33157f402518cf55f2961d1b569314ea21efde34902c704cee114256ba342",
+    "lattica-prover-p3/include/lattica_prover_p3.h": "6d28534ccde45b643060353bc70d961e86257e11a2e584d48929a47656acd99e",
+    "lattica-prover-p3/scripts/apple_benchmark_export.py": "6b99e19455b9283568c9c3f270f8276908dea01d0ae173cac4ec755d8c7fb5bc",
+    "lattica-prover-p3/scripts/bench-apple-metal.py": "7343b084e817fba812d08145d7878df2892ed698c47f539d96b6baa86f43f330",
+    "lattica-prover-p3/scripts/benchmark_report/__init__.py": "2439075037e8f11deac0b8215ead675541204ba706b48805014776fb886760dd",
+    "lattica-prover-p3/scripts/benchmark_report/campaign.py": "a140924e76b0adc0d3bb0b0f627dc3647a6c84711d699d462e86326a0b205945",
+    "lattica-prover-p3/scripts/benchmark_report/history.py": "b2014bfb10345ec4f6f57ea0ae572d6be7795376481781d20d47c45ec4c710fd",
+    "lattica-prover-p3/scripts/benchmark_report/measurements.py": "b749d8b430eb4176bcf2efc0597d9839e1bdd11ea370c8a05fc2b19eb425cd9e",
+    "lattica-prover-p3/scripts/benchmark_report/model.py": "bcc909e5c7393f50778e693f4b15c7f4736c153212a7040c50d46012740e2a64",
+    "lattica-prover-p3/scripts/benchmark_report/query.py": "0cb160d60fe73488749c1cef5c6a543bf8e94767203ac8df5d53599ef50dc23b",
+    "lattica-prover-p3/scripts/benchmark_report/report.py": "38121f670fc2fee1847ef529235f240537860858462d28ca72acff143105ac31",
+    "lattica-prover-p3/scripts/benchmark_report/typed.py": "c25d1cad0ddc0747ec7a74bc6052ddbfa4e2fc6311560ebde7668222c00ec69c",
+    "lattica-prover-p3/scripts/block-v2-accounting.py": "f9b665c3210ec602799acf5ada2338084063677d42d48065324f23f31bdd1ad0",
+    "lattica-prover-p3/scripts/block-v2-benchmark-report.py": "dfc2ef3965bbcac9b675d1d1bb8a7c1438ca1aa4b017c86d25ee85fb63f2e1f7",
+    "lattica-prover-p3/scripts/block-v2-count-phase-analysis.py": "29b6d103572b6c10acb59431a811b64f86849c22a6b3bc1b5ca7e6b833f4d3ed",
+    "lattica-prover-p3/scripts/block-v2-eight-series.py": "31d6f084965ad61ae8ae6faca2f249db01353894c6c5f06c71a40cee6ea16ea1",
+    "lattica-prover-p3/scripts/block-v2-fusion-prune.py": "81e7b9b4d700b7dacfc3cd858cf54bf6a436b9b81a4712395ef7d2c14db5a06c",
+    "lattica-prover-p3/scripts/block-v2-fusion-trial.py": "cb36fd551f3442a4eaa534536691cca8a0bda01c1b7dbe7bf7cfccfb87ec8e2c",
+    "lattica-prover-p3/scripts/block-v2-gpu-compact-trial.py": "f294ce1abda041306bf3b6f4d74df8843495c7cfec571fdb9a5361b6bace7953",
+    "lattica-prover-p3/scripts/block-v2-gpu-grouped-trial.py": "5c80b001f864289925452f6223520e7dc700f795147373987f68d402c6c56614",
+    "lattica-prover-p3/scripts/block-v2-gpu-trial.sh": "b47b949fad69574199def6e8d54d120d0b28a5d1172527f1f4c6de296de937f3",
+    "lattica-prover-p3/scripts/block-v2-grouped-trial.py": "8bd17f9e084bb95119829b2c356e6f2968539e14011955d8ed623cb29c5e489e",
+    "lattica-prover-p3/scripts/block-v2-lookup-mask-model.py": "fb4410f6c83037209d736d0f40165113cbad426ccc9c91fa9dadfff308354d80",
+    "lattica-prover-p3/scripts/block-v2-multi-gpu-compare.py": "d3373d87bd0abc0c44a408f70394ca727343ee21782094876efaba29b515ee12",
+    "lattica-prover-p3/scripts/block-v2-multi-gpu-direct-readback-workload.json": "48174de0b9de99549e86b39966c416fd3021bf8f69014dd6bffe8fe8c90b3d64",
+    "lattica-prover-p3/scripts/block-v2-multi-gpu-run.py": "843990dbc2f11aa023443f8f04bec048b22535b04b545bf85e4addb58611fad0",
+    "lattica-prover-p3/scripts/block-v2-multi-gpu-workload.json": "4f58c95a83bc721bf309fb237e7838b10053a7c387c9bd27ca42293d88fd6498",
+    "lattica-prover-p3/scripts/block-v2-native-arrivals.py": "962e53d3527f362a9b16ea85f17adc4987b503e9235df93e4395de6fa1e14ad9",
+    "lattica-prover-p3/scripts/block-v2-native-fixture.py": "d58d283368e551ac37cc5af3d876e05e3e04b790c924495adbf9e0dcfd6d40ae",
+    "lattica-prover-p3/scripts/block-v2-padding-trial.py": "7035b25465251f2e486ab21431671cf9e96f0b06fe9400a8bf80f607977fe9bf",
+    "lattica-prover-p3/scripts/block-v2-pool-campaign.py": "010c1e98b9f6eb8917c937263178ea96ef48674c4ee8f6f72f3c43f9bdfc977b",
+    "lattica-prover-p3/scripts/block-v2-pool-phases.py": "f41dd75ea16e96879d3b509003d5f0e25ad07be2bd7cfded5cf2733fd904628b",
+    "lattica-prover-p3/scripts/block-v2-pool-research.py": "cd029a476a1dd015d2e52df365e824212e1c638130392be2fc6d3871982bb987",
+    "lattica-prover-p3/scripts/block-v2-query-compare.py": "1dadef9a587d1eed3e355ddec6a73b07da4617ec3489bc656203724a9a1abada",
+    "lattica-prover-p3/scripts/block-v2-readback-compare.py": "9ad3da456c33c7ef4763218c54f70162969abb4d4d1849d2f9bc2674d09a6ac6",
+    "lattica-prover-p3/scripts/block-v2-retention-model.py": "799ad4fe2693a37ec2acd6c7f2b48d276b7d35319ab4ff1a12f7fe78139198d3",
+    "lattica-prover-p3/scripts/block-v2-scalability.py": "57d8cf346c5de468cc125c130e075fbc9ab696374236102aa6e8098faa551de9",
+    "lattica-prover-p3/scripts/block-v2-scratch-bench.py": "8f57c624b4193e00561a19928728295e07e6758ba66178a0b6e8f642bbccccf0",
+    "lattica-prover-p3/scripts/block-v2-single-eight-trial.py": "919c120d597cb9197b0531949fd5327a9e3a1ff67564b51e3223d022991db302",
+    "lattica-prover-p3/scripts/block-v2-throughput-contract.json": "66b17e23800d6f12b2e2e0c47b1b17cb59e5f99ad79f7828d0f06078e9f2e46f",
+    "lattica-prover-p3/scripts/block-v2-throughput-pilot.py": "83c07ca43d7985bdc6caa5470a6a33fa240ebdf347e0f260895b10d6dd84477d",
+    "lattica-prover-p3/scripts/block-v2-two-level.sh": "50075d4e85f0a3fbec31c686fb6f77c48275f4dc1c02fb7f836ef0694990a92a",
+    "lattica-prover-p3/scripts/block-v2-typed-compare.py": "1a58114c6d5e826f955a64f48952ebf3398d34d7749258d8c3a5b87a89a13290",
+    "lattica-prover-p3/scripts/block-v2-typed-count-analysis.py": "4423899c470bac59bcbae0b0db4dc64afb55c43e03f3f573d6c318ff684a2788",
+    "lattica-prover-p3/scripts/block-v2-typed-count-matrix.py": "c4ef6cb8d9602f138e654ffc2b95aa754c7d1ac9cf42b71e9a26074413123b7a",
+    "lattica-prover-p3/scripts/block-v2-typed-cpu-prepare.py": "d9bb5e2aa1f66d3b08088399f5d5bfa6123b8615fd8735444eed03cc3eec466f",
+    "lattica-prover-p3/scripts/block-v2-typed-fleet-compare.py": "be8eb38d57c9609b0c3ee5cc523e81f4a094da7ffe70c4e51f68b81c91ceba49",
+    "lattica-prover-p3/scripts/block-v2-typed-gpu-run.py": "b8224b6c320112c431450b1572f60699a604acf90751840d3187048702708acc",
+    "lattica-prover-p3/scripts/block-v2-typed-interop.py": "220f713b8e90ca0b8d114d74ea0878d233756d87f012471632204ff3d5a2f2bb",
+    "lattica-prover-p3/scripts/block-v2-typed-multi-gpu-run.py": "c039c5e980e590f6e81ccbb90e6e88037b90c7ea5040ac580a05b2906e4fd5e5",
+    "lattica-prover-p3/scripts/block-v2-typed-negative-audit.py": "947bf657d9f75f8dc00f8f45fb7880d9351a8d46fb63802e9e5c767d5c63c1f4",
+    "lattica-prover-p3/scripts/block-v2-typed-owned-gpu-workload-128.json": "46c11502fff82b27569557684f077099b117bba96494042629d0039672d9ef63",
+    "lattica-prover-p3/scripts/block-v2-typed-owned-gpu-workload.json": "22bdbf72c757daf82141097394696c7bd3663b8a57922265fac5914ae9deb4a7",
+    "lattica-prover-p3/scripts/block-v2-typed-shared-gpu-run.py": "fb0cdf6ba73731798e0cd763d4b340d2fddc0384eca72aa25c3387693577d2e3",
+    "lattica-prover-p3/scripts/block_v2_capacity.py": "af07a6dc807c7e145a5503f1a9f3047b6e9c35cef91a4dfaa90911d2c6ab6109",
+    "lattica-prover-p3/scripts/block_v2_controller_bootstrap.py": "d7355377f919bcaccb60e603fb6bb398302029ad3c531d3e172ba31d1e681adc",
+    "lattica-prover-p3/scripts/block_v2_coordinator_bootstrap.py": "4aae4d950b3e62cbf096d2b6301f51c72db5b785e2ed9815fb5689145062014d",
+    "lattica-prover-p3/scripts/block_v2_host_store.py": "e44e6ed30c156e57531e2e85cf69459e024b6914f8f8eafd46cfc68d7fc5df3f",
+    "lattica-prover-p3/scripts/block_v2_native_arrivals.py": "2e6f4cc7034ad5634565f4700f77a12107c879819378fef85ca2d96bb8a2acc8",
+    "lattica-prover-p3/scripts/block_v2_native_audit.py": "6b04b779178c533c8844cca19745fc4e869e7bab8e474aa3c44f026b11bb56a1",
+    "lattica-prover-p3/scripts/block_v2_native_delivery.py": "79e719be5b810ec9c469e852426049bf0d833c4203840d09d59e2a85bcd3d099",
+    "lattica-prover-p3/scripts/block_v2_native_head_guard.py": "e3c0d231dbed73d2b717a68c71f729db40bf9a5b1ca4496f9ac5bb0e809c5034",
+    "lattica-prover-p3/scripts/block_v2_native_session.py": "598e9c46b4dd587e06ec4ef81d35249ddeded83524c1584868999214a9acfac8",
+    "lattica-prover-p3/scripts/block_v2_native_shared.py": "b8f03e2854a234033ab50daaef872e21752e94bb74489f3d73deb06ea252f994",
+    "lattica-prover-p3/scripts/block_v2_owned_cli.py": "ae7e9777e662ec182f6b4d8eecea7dde408c8cfd792aa392f6c263711285b46e",
+    "lattica-prover-p3/scripts/block_v2_pending_candidate.py": "aafc62f7fe544c21aa892fd4f0047863d9c6aa2ab87e4e7f13ac005a1ee9f983",
+    "lattica-prover-p3/scripts/block_v2_pool_calibration.py": "84986589ad4d69308af3a595b889da3ac78d21625d082663ba9ea77025c7f201",
+    "lattica-prover-p3/scripts/block_v2_pool_handoff.py": "4fe0b9deaa573fd1cb81b621e48f1f00a5b4d328d149047c4a911d69591c7547",
+    "lattica-prover-p3/scripts/block_v2_pool_phases.py": "221b30c6ad0093e2a80a659b71640eb73c1287cf5378a3cefd0210cee75e1144",
+    "lattica-prover-p3/scripts/block_v2_pool_qualification.py": "8829f355c8479d7cd47b18b2acfc35f99f8cbe7eaeda4c4e11c4bb14253800d3",
+    "lattica-prover-p3/scripts/block_v2_pool_seal.py": "72f17c8786174c08896ca1cffa0b05de3106a1716fad5fe7a1c7d4a5d78a0ebe",
+    "lattica-prover-p3/scripts/block_v2_pool_timing.py": "efd3d7049d5eda9dd3c13755924e64f0a8ad6ece6e544246879065c457baa06f",
+    "lattica-prover-p3/scripts/block_v2_public_artifact_cache.py": "1a3ddbafb775150ce4aec824f30794bcdedd3a7166549e6318f804ae69c803d3",
+    "lattica-prover-p3/scripts/block_v2_report_export.py": "f378382cf1a54bbc05a4dc15528cbadb4a146ae3488fabe72048ecfc7d5c7018",
+    "lattica-prover-p3/scripts/block_v2_resources.py": "a3f08464a3db4a425335fda3766275b8ade38b2fa6e30745f211fbd39d6385d4",
+    "lattica-prover-p3/scripts/block_v2_runtime_observer.py": "0eb8eeaf97bc4cf1fedfb3d7183ae3f1b515a84d3dd943bc6bedb870a207573a",
+    "lattica-prover-p3/scripts/block_v2_shared_calibration.py": "09e38f7ecf0a1820985bf4b514c213c36eef64bc582e24a3ecf4adc535d07578",
+    "lattica-prover-p3/scripts/block_v2_supervisor.py": "d91d4886239144e87ff8c523a73092620839c111b2e3331ad86bf50fb9a398ab",
+    "lattica-prover-p3/scripts/block_v2_throughput.py": "0be9d7008ee64810ebb56769f029bddc43ee38dc08d966def1bacdbbbd2e4d0e",
+    "lattica-prover-p3/scripts/build-apple-metal.py": "6f0cabe07fe870427795bc8f2529bf1677ab17198529311e3803f85bf5f6486c",
+    "lattica-prover-p3/scripts/build-block-v2-host.py": "e406de5f34fde116b7125cddea71d454f311fc019f82a8df311dad6a2fe0f321",
+    "lattica-prover-p3/scripts/check-abi-symbols.sh": "34f6ab4c64e174cc88c62ab3f3c662462512e62cd39698ebe6f15d00ee4b270a",
+    "lattica-prover-p3/scripts/check-apple-source-commit.py": "9716fb41ee2bbb2b036a06cae8b87bcc126fc571caf263de9ec403932429409c",
+    "lattica-prover-p3/scripts/check-block-v2-native-session.py": "f97c6d919ba068a8c2a22f05a82ec1d9748e9819c9b51fdfaf846b9c9eb85cef",
+    "lattica-prover-p3/scripts/export-apple-benchmarks.py": "0f87abe3e5649d8f28ba521ccc85d60fee4f153105ce8ddf1a87fa4ea6e33842",
+    "lattica-prover-p3/scripts/generate-metal-kernels.py": "1056db237802414d8a78533d509c73946b3bb0d2f896fbcfeb96c6c12b5c24c8",
+    "lattica-prover-p3/scripts/prepare-apple-benchmark-package.py": "7ed35bff22cd99c920fe6db971495194918d3d7ad4f460f8666c0f7cb435619b",
+    "lattica-prover-p3/scripts/prepare-block-v2-gpu-default-bench.py": "84b056864519c7aa14a795314b68d83d005cf83ae0291b108a0390f83a528d1f",
+    "lattica-prover-p3/scripts/prepare-block-v2-max-threads.py": "80dc876ff27b844f67b78d3ada6868adec3bfbf82253f90bbac085696ac47078",
+    "lattica-prover-p3/scripts/prepare-block-v2-pipeline-bench.py": "d43936a71a87fbe83b469c31f7ac4de90f0c3947b43a4f7687c98a22731b0b55",
+    "lattica-prover-p3/scripts/qualify-block-v2-native-delivery.py": "bd4c51f65f2e3cc5268b2b5dee658234999bf17a4805bffc44db5e3c8238c772",
+    "lattica-prover-p3/scripts/qualify-block-v2-native-host.py": "f663e781a8f25baeef64cad3e40575032fe4ba9c8200d7782a10c48e5746a0e6",
+    "lattica-prover-p3/scripts/qualify-block-v2-typed-execution.py": "6b661c02b0e16e3f506a39a07a88f09ba4ce69384b26ecdf0a246a666e3efc61",
+    "lattica-prover-p3/scripts/qualify-block-v2-typed-recovery.py": "e4ce4ee76b73de422616e5bd4b84f549afe3c5821246b5262cf9f62a9e99a2cb",
+    "lattica-prover-p3/scripts/qualify-vram16-capacity.py": "25f1e9c5a32c26d8dd0ffa5decbf0fb814c637eba289c9b358815e09fc9c28da",
+    "lattica-prover-p3/scripts/report-apple-metal.py": "54799ec1aad4c8df59b73308dcc5d1cadbf55e4f25bc1cc0153028ca944419bb",
+    "lattica-prover-p3/scripts/report-block-v2-fusion.py": "07a8a626880ddf41e64e1936070ca8d5cd4be059c566a20200ac041bf65ade7e",
+    "lattica-prover-p3/scripts/report-block-v2-gpu-default-bench.py": "3baf3bf7c8218c6a4e065a8a3e9f91b43a168916f604f9925439511fb9d47922",
+    "lattica-prover-p3/scripts/report-retained-pilot.py": "c0e4d314bb2ce9aaed8b7d8ed2834e2db1377917c83158b5713ef756e58bfb11",
+    "lattica-prover-p3/scripts/run-apple-benchmark-package.py": "2571145dcf1ab51de1cc0b13a6a126be4d43ccb215c270c90067715e7a49c5d0",
+    "lattica-prover-p3/scripts/test-apple-benchmark-export.py": "e9355ac244a706aa73ea60fad6e08c25705a7a029b3288251d7da412592809bd",
+    "lattica-prover-p3/scripts/test-apple-benchmark-package.py": "6685f0b622ffea1e236cd25dc00275cf6ad030b4f61f4fb6b58b648e2dd85dcc",
+    "lattica-prover-p3/scripts/test-apple-source-commit.py": "6539c476b2aa9b3cefab17f899a795ff33f24d18ff06473d3b6025a29efae70d",
+    "lattica-prover-p3/scripts/test-bench-apple-metal.py": "d85a8ded5315c27a047d9f405923a1929015f4198511b6a90c3948218ac4b564",
+    "lattica-prover-p3/scripts/test-block-v2-benchmark-report.py": "559b9a765d782fe41dae0f350178def7f62b629be771a4ec653bc5fe89a2d740",
+    "lattica-prover-p3/scripts/test-block-v2-capacity.py": "6824c2471358dc03f7ac11fa05d1ddf432676375598e6a945d83ce142eb9369a",
+    "lattica-prover-p3/scripts/test-block-v2-controller-bootstrap.py": "5ad3eaca088358bbfd7f02d142c80f3362ca02e64148d4b1438b5ead705adafd",
+    "lattica-prover-p3/scripts/test-block-v2-coordinator-bootstrap.py": "daf17675de2a15565994ee4e57912db98c78193d32ad0a40557f423e0592c9ae",
+    "lattica-prover-p3/scripts/test-block-v2-count-phase-analysis.py": "c0e0b9df253c0c6d1822fb442f6a1bec8812e8dfd325c551f23673df6dd04627",
+    "lattica-prover-p3/scripts/test-block-v2-eight-series-lifecycle-harness.py": "cdcaea7b1f6cacebe60e3111bb3ca160f0a10e493a7dd0807d13b5844e47e239",
+    "lattica-prover-p3/scripts/test-block-v2-eight-series-lifecycle.py": "d58864bdcd7d7ad23ebeedb261318229066ba5a74aa4b7b611dfa4075a7709d3",
+    "lattica-prover-p3/scripts/test-block-v2-eight-series.py": "7cb7429b5b7456dd2e83368188c69358557b289f0d955c933dc12d1b3bd0ad71",
+    "lattica-prover-p3/scripts/test-block-v2-fusion-prune.py": "3a65d15216eabe4439ba3f768e14bb33204261894f2cd308256e26dbd5f52b09",
+    "lattica-prover-p3/scripts/test-block-v2-fusion-trial.py": "9731157ec1c710906274b0864c66a6de553c368b6312b868aeada34472adee54",
+    "lattica-prover-p3/scripts/test-block-v2-gpu-compact-entrypoints.py": "24d8b08e48786317745c9dcb4ab28ecbfd3a1a8007317c86b8616945f39bb054",
+    "lattica-prover-p3/scripts/test-block-v2-gpu-compact-lifecycle.py": "c2527109e6a8cbc4c0557509ebb99dcfbd5fb6178a29cb906586c9f05b79671d",
+    "lattica-prover-p3/scripts/test-block-v2-gpu-compact-trial.py": "9a4d9aea241b78652fa66373bcd5c1de7e7c94ca452487ca3a73fe4ebc4c86b6",
+    "lattica-prover-p3/scripts/test-block-v2-gpu-grouped-entrypoints.py": "173e91ce661ce518eee5551910f89f0f59c32e02d5d8af5c813dc7df90bb06bf",
+    "lattica-prover-p3/scripts/test-block-v2-gpu-grouped-lifecycle.py": "acb76c504fc8ddf5bd2166c38aaa682502a8c962ed68dfc19f5c60d2a1d8781f",
+    "lattica-prover-p3/scripts/test-block-v2-gpu-grouped-trial.py": "fa4925581af4093acaed5d97d9e02e62144919185ae449c2271ff6bfd25b9827",
+    "lattica-prover-p3/scripts/test-block-v2-grouped-lifecycle.py": "9fd78f199a40c09f153ae216e7d024b49006235e782e1e40c0d218b847c2ad6e",
+    "lattica-prover-p3/scripts/test-block-v2-grouped-trial.py": "c958089527d5a7becc3bd83a07cb10fd82960dbcabd44a313a27e89e3e2be52c",
+    "lattica-prover-p3/scripts/test-block-v2-host-history.py": "cd47f4a08f33437aa56ba4fb3607e6df5d1f156e83e6f483900e61ee54903f5e",
+    "lattica-prover-p3/scripts/test-block-v2-host-store.py": "448a961ff91dd97badbb9605df950ce3390816658f3635e4f0d91d9e2b1247a8",
+    "lattica-prover-p3/scripts/test-block-v2-lookup-mask-model.py": "88b6591b51995ecec2dc6497d845ff504276e75644d60ce9eabb7f89c3c32521",
+    "lattica-prover-p3/scripts/test-block-v2-multi-gpu.py": "24caa8b324005c0a8e6b0fe5912c1ca12de86aa9d37523682dda57523cf854c0",
+    "lattica-prover-p3/scripts/test-block-v2-native-arrivals.py": "0cec008532a439852e4978c8d68f0fc5bef5799c6d4d2716825337edf88d438a",
+    "lattica-prover-p3/scripts/test-block-v2-native-audit.py": "d35e6b7a4b80d61be2add3ebfa2f7746fa1d06fe0e2112455c3fb39834687078",
+    "lattica-prover-p3/scripts/test-block-v2-native-head-guard.py": "e7a50e3edcdca7a434ff35e764a94f342aba90e211ccd551ca601cf4458aae06",
+    "lattica-prover-p3/scripts/test-block-v2-native-host.py": "871d0a0c82918abf76c6d5fe917470c95db737e1e0f00fe1be7f00e31882485d",
+    "lattica-prover-p3/scripts/test-block-v2-native-preflight.py": "ce5ea72dc288415c3b9cb1295d6db37373aac220d9e187534a6a97515f779bb2",
+    "lattica-prover-p3/scripts/test-block-v2-native-session.py": "3d420fa61fdd4c1d03d77da14a79c19c9e8acc7179e23f09d2325c242d462b70",
+    "lattica-prover-p3/scripts/test-block-v2-native-shared.py": "3884b1f18a8f6493a4e82ed6c7457d5cb10878bf0c1088bababe98b141884c6d",
+    "lattica-prover-p3/scripts/test-block-v2-owned-cli.py": "d172aa038b671dd18baa6402bd5a57f6c0584e8fb6b6477d563cd5becfb29885",
+    "lattica-prover-p3/scripts/test-block-v2-padding-trial.py": "8ce6e10681525ea8c30d84f16fe504c5cfc573ee5151212ff70dd3e6548a82ae",
+    "lattica-prover-p3/scripts/test-block-v2-pending-candidate.py": "8a612c8d2494f423ad9b1d636979818f073ba966be091ff64b08e73ed47d240b",
+    "lattica-prover-p3/scripts/test-block-v2-pipeline-bench.py": "8a87ffd3b0b0a273cbe93e2fb890a49a471a8fafb6c77f66cdf45b11188d096c",
+    "lattica-prover-p3/scripts/test-block-v2-pool-calibration.py": "68864e2dbbf73878eb366a24ddf2790b84044d30adcb41c223e101608c2e5452",
+    "lattica-prover-p3/scripts/test-block-v2-pool-handoff.py": "af835a6fd487222c5e0f20ca09748f7824e5549df70c572f9f94d7c1a00cdcc6",
+    "lattica-prover-p3/scripts/test-block-v2-pool-phases.py": "7bf9eb65c086701cffa3d6bc8a0b82f2005187ccd0e9dac5130a478b2c8fb3fa",
+    "lattica-prover-p3/scripts/test-block-v2-pool-prefix.py": "9cf24b30d17b6649e53e03206e95e171ef82f2b26f1bb44f29134086c526f008",
+    "lattica-prover-p3/scripts/test-block-v2-pool-seal.py": "3476832e08d63ffc27ae18d1ba0bbaa396d9734075dba38d251217fe8c21e79f",
+    "lattica-prover-p3/scripts/test-block-v2-pool-timing.py": "1a9e2f82ada907c1f9cf1f0b4d268b1328ec579f92eae5de18a787629092b938",
+    "lattica-prover-p3/scripts/test-block-v2-pool.py": "91d78e50b8a9b1a7d18958ae811aaff9ddddcd29fcd173e4d5ce5460064ca038",
+    "lattica-prover-p3/scripts/test-block-v2-public-artifact-cache.py": "582bc976b667da1cdb25e034d2abd43c8d8098b05d234a0e1b5a3c7039de4544",
+    "lattica-prover-p3/scripts/test-block-v2-query-compare.py": "8ee1ffa3f4e3ce1c6e72138b189237e1bf7f06ec7a45e9c553b8f7d2354582ec",
+    "lattica-prover-p3/scripts/test-block-v2-query-report.py": "4fd14e84a651f5d4841df329179242a7105bbe32a8f30b49b66728fbee35ffc1",
+    "lattica-prover-p3/scripts/test-block-v2-readback-compare.py": "ec8e8784cf539dd178a2205542eab9ac73caefd338f7007ba8ec35319b43b8f9",
+    "lattica-prover-p3/scripts/test-block-v2-retention-model.py": "8d1c75fd82889b7fdec720a5d640500f8e589f058c246e24829e396f0b232789",
+    "lattica-prover-p3/scripts/test-block-v2-runtime-observer.py": "bac2332460bc64ad264b401dd394462a4db005a43a77b69c269d12f5e7a4e2f3",
+    "lattica-prover-p3/scripts/test-block-v2-scalability.py": "c2aca406d4ec307c9b83951338d736ae504acda3969ab835aca6a4f69e7ce486",
+    "lattica-prover-p3/scripts/test-block-v2-scratch-bench.py": "c7ce37cd76c9d4e94233d799ad0b4e93373e12e0d1f2edda5d3aa240ad587235",
+    "lattica-prover-p3/scripts/test-block-v2-shared-calibration.py": "61e55286d3935568d129168034c8fa188a332473c4a55875b6c1016450ef2893",
+    "lattica-prover-p3/scripts/test-block-v2-single-eight-lifecycle.py": "85f33a352794e9462e9996d32d9c1659b6f86bd688373fa9ac64d7445feefe6b",
+    "lattica-prover-p3/scripts/test-block-v2-single-eight-trial.py": "c9ec6ee26e6dd268e3416e386a46e5a7fc79aa822dde109512ff55260e9ce26f",
+    "lattica-prover-p3/scripts/test-block-v2-supervisor.py": "37d51a740c589dcf560c3167a25d0b8886a08292f910e5dbbb27f9eca587640b",
+    "lattica-prover-p3/scripts/test-block-v2-throughput.py": "e3831558e47e5b0f818c2a283b6447dddbca682c64cf25d99fa713071b84e4a2",
+    "lattica-prover-p3/scripts/test-block-v2-typed-compare.py": "8d79570e251373888c1aa33d73a321df13ca5fd9bf1b32e6969e4a9b9c7425f3",
+    "lattica-prover-p3/scripts/test-block-v2-typed-comparison-report.py": "35d5f027511e55de4e9c099a0eb703c3315b955e076ddb7207fcef20db9810be",
+    "lattica-prover-p3/scripts/test-block-v2-typed-count-analysis.py": "1322e6152443f278d946bbff1b56ccd24e09cf943de627b0ad17d1a1fe078156",
+    "lattica-prover-p3/scripts/test-block-v2-typed-count-matrix.py": "13466b20761effd4804be39c2eb28fb3f775622a3d974a1469c950dd97ca9a4c",
+    "lattica-prover-p3/scripts/test-block-v2-typed-cpu-prepare.py": "ee3b33937377686d95df14a671e4651ae8f222519c4571b6a9eade24b034d51c",
+    "lattica-prover-p3/scripts/test-block-v2-typed-fleet-compare.py": "3d238008d5e131f261e460abc2ced9a4d0514f4277ba2a0bba4930f5a25d61f1",
+    "lattica-prover-p3/scripts/test-block-v2-typed-fleet-report.py": "b9190ec0b1a738bef46cc286d738f6502750f02afeea24a33f538486fa478dec",
+    "lattica-prover-p3/scripts/test-block-v2-typed-gpu-run.py": "3f63e3aac7e09c080f8f2fe0da49a852c7e7be439c1109dc39cb7d2524341bd0",
+    "lattica-prover-p3/scripts/test-block-v2-typed-multi-gpu-run.py": "5619fd7e2b4dc5d0edaaeb17d03afac390cbbbf7dd54be442ec82315e23f43a8",
+    "lattica-prover-p3/scripts/test-block-v2-typed-recovery.py": "b736e65f5a9d9b5fe9c9188fd2115f7e3aeee68a039b640773fd8b59d4050f08",
+    "lattica-prover-p3/scripts/test-block-v2-typed-report.py": "0f8d486d2a92a83bc457ac9786e759405e03b905348edcf9211830ae0ca75f32",
+    "lattica-prover-p3/scripts/test-block-v2-typed-shared-gpu-run.py": "d241a3a205d591839f831b1b42840b68b280b1ae0905c0e3e5214722f89fa0e0",
+    "lattica-prover-p3/scripts/test-metal-backend.py": "b01d8b32f02822c579b2c8e17b456e98202dc43d088238d6b98a7e3ebed72b1a",
+    "lattica-prover-p3/scripts/test-report-block-v2-fusion.py": "f095d638775588279592e28e1cdd0087d015b708b99a5ce5fe490db754178e56",
+    "lattica-prover-p3/scripts/test-vram16-capacity.py": "470bcb4bceced8076c001bda8dc08e43318bd9b1318b9348ca5f10a25ad602f4",
+    "lattica-prover-p3/src/batch_common.rs": "8c1e2f9bdad439dc0ac803be7c610a774ee156720025b96316028fcb3fd984fc",
+    "lattica-prover-p3/src/batch_htlc_air.rs": "aba2edc1772928b850b8d9785a848c4f801e810a9925a00ab8712dfb12c0da7d",
+    "lattica-prover-p3/src/batch_joinsplit_air.rs": "5aecae91d2c6e2501f0bc7ca4b1bc4ecc8eceebc6b91451585f41989ce1cf546",
+    "lattica-prover-p3/src/bin/apple_benchmark_memory.json": "423a039e752737bbf42fcc9c139cfb3a76aa1ea73f7d68e1b82bae5061c0da9d",
+    "lattica-prover-p3/src/bin/apple_field_bench.rs": "13b9188e461947020fb67290e9cdd3fc86aa4a8b3492b5fdc3e2a21320e3d817",
+    "lattica-prover-p3/src/bin/block_v2_artifact_audit.rs": "9ee7cfeaec0c6b6967bb2682d0b3c4e75c6196310d07043e18df404d244ee0a5",
+    "lattica-prover-p3/src/bin/block_v2_cpu_worker.rs": "2db37bbbf197e507c79e670ccb9429f4c7bbab293bf86f47067f7ee2a390a3f9",
+    "lattica-prover-p3/src/bin/block_v2_execution_probe.rs": "545d1cfc09f541aeaf01e646e0f0bd6fc035c5a1393d31e96c81ef1d33c76f37",
+    "lattica-prover-p3/src/bin/block_v2_feasibility.rs": "0950007c91065945a8d87243f50558de1203fcea1ab4f581f3dbaff1ceacd910",
+    "lattica-prover-p3/src/bin/block_v2_finalized_probe.rs": "24ef74c2166c06719f41ecb5d05178747be6513236211ecc021fbff8f8056664",
+    "lattica-prover-p3/src/bin/block_v2_four_wallet_geometry.rs": "b2bcd1ea23d223e272ea9916b5717ec585eaa792c7d8eac018ca82fb9c313f90",
+    "lattica-prover-p3/src/bin/block_v2_gpu_grouped_probe.rs": "05f578b11c9b3377b62d376cd7b1fe8b128b95944d63218868d1150ce29a0e65",
+    "lattica-prover-p3/src/bin/block_v2_grouped_artifact_audit.rs": "eb0cd9bdc7795d3847a957b67c407275690532889ce230fd82fa3c29ce82a2f1",
+    "lattica-prover-p3/src/bin/block_v2_grouped_probe.rs": "966d17b42719e6c446e2076f92667df97c3ff71c98c28035e9d0f7cde7fb0203",
+    "lattica-prover-p3/src/bin/block_v2_grouped_publics.rs": "9957c2af93af20ab9caa4f31d4510743eb1091f7ac87cdd3b6f4f6e2962e72e9",
+    "lattica-prover-p3/src/bin/block_v2_metal_grouped_probe.rs": "178c1ae26ad84681eadbdb14903132a57f2142fd5ba0597593b4ba53010c14a8",
+    "lattica-prover-p3/src/bin/block_v2_padding_probe.rs": "2a07fa3ab1222a5eb64686d2f5d728917064af22ada88fa72dd67101b3c54aee",
+    "lattica-prover-p3/src/bin/block_v2_paired_probe.rs": "08ae0dbc241eeb9885abca731b8c3ab08814cd11312c50033eb5e4ab3537ad65",
+    "lattica-prover-p3/src/bin/block_v2_recursion_probe.rs": "82e2a15af1f57ce96504524f94941dd4a60b8163341f134f6e77f11321468448",
+    "lattica-prover-p3/src/bin/block_v2_single_eight_probe.rs": "6d0ed0509373207bb85fd38176d2fe333b1e46138d9d2afb256598dd2beb8ed7",
+    "lattica-prover-p3/src/bin/block_v2_typed_probe.rs": "d995a0a87790372375461952297ab5293eadec63040b3730e7b4a451a473fbbf",
+    "lattica-prover-p3/src/bin/cpu_reference_tests/mod.rs": "f53d5dff9866acb262d1497d33ab96904d436d9552a1fbd6ddedd6fdc198eeb5",
+    "lattica-prover-p3/src/bin/dump_p2.rs": "25e17f5672ebaa13ef17025a36ba6bf64df21a77a84c3eaac203b7da492e6049",
+    "lattica-prover-p3/src/bin/field_compare.rs": "8854dc040a2d302216be762a648f32ae77a5c18899e0e4c9801289567a639a1b",
+    "lattica-prover-p3/src/bin/grouped_common/adaptive.rs": "46ada534697e762a348a9812e0b19e006200a3aedbcf2a6209fb2ea80d0a6cb7",
+    "lattica-prover-p3/src/bin/grouped_common/mod.rs": "39bbcadd79109fe34d3e0f1789488ef3895fb8e93450f2df4ac7835cc7e4ba1f",
+    "lattica-prover-p3/src/bin/typed_common/driver.rs": "2af39ccd6dffc47a178034a9dfd36bcfba67ff9f5869a40e1e0c25be44f7e1f5",
+    "lattica-prover-p3/src/bin/typed_common/execution.rs": "cb42f2017365d48f8ef2ecdb1a05d919708ac9f837fff0c3fc346cbfb9bccee0",
+    "lattica-prover-p3/src/bin/typed_common/execution_bootstrap.rs": "ec0039c19d4dc65d08e9a45b99c8f23df3282c100918c25d073c8ce33f950312",
+    "lattica-prover-p3/src/bin/typed_common/execution_budget.rs": "831d1fa464b40b10be5e9ff096d240447cb8832f9c3f8a2c599a3483dfed45f0",
+    "lattica-prover-p3/src/bin/typed_common/execution_fleet.rs": "6e54c4cfd1bbfd4134295ea002e0d591d5367fb0300cf2dd67597088183f150f",
+    "lattica-prover-p3/src/bin/typed_common/execution_fleet_recover.rs": "50ced409369312446afc5e4cf79232adcba68e4ea07f1c02b15316eea66c1fdb",
+    "lattica-prover-p3/src/bin/typed_common/execution_fleet_storage.rs": "125f7c043b680b1520a819926efea9e12b1abcd7f7508921b36810cd3b85da1b",
+    "lattica-prover-p3/src/bin/typed_common/execution_native.rs": "0fb6b136c4f9532898ad4baac104e12396f1a75195760711529317e4890a14eb",
+    "lattica-prover-p3/src/bin/typed_common/execution_pool_calibration.rs": "876104529839d879c573fe281532d4aec39fdc98487e7c4952f36ef42e21057f",
+    "lattica-prover-p3/src/bin/typed_common/execution_pool_calibration_audit.rs": "f016b45c31942176c10e01f2b88071c6db41dfca3c64c381152fcfee5d5a476f",
+    "lattica-prover-p3/src/bin/typed_common/execution_pool_calibration_tests.rs": "32c762ca62e8a9ce4eebb5fdc15d6e0b9b0794d9415371268b84f33ec321d559",
+    "lattica-prover-p3/src/bin/typed_common/execution_pool_report.rs": "528dce4a48ff6111dd6c9281f963cce2cf75036df2c0a6f2a2b9081b2d5469e7",
+    "lattica-prover-p3/src/bin/typed_common/execution_pool_service.rs": "4ca3a87a3fbe758c9de36af767e5c498882c344c0788f4427df1e2ac877386ab",
+    "lattica-prover-p3/src/bin/typed_common/execution_pool_timing.rs": "d9a2ad2dfb63124d3fe8a015baa29be89870ce7b649d0b7def630d9e1aa6a831",
+    "lattica-prover-p3/src/bin/typed_common/execution_pool_timing_tests.rs": "52663dfeadbf24501fe66e9e18129f52a416bfcf76bc668d72bf61311bfed454",
+    "lattica-prover-p3/src/bin/typed_common/execution_pool_transition.rs": "8aa0dd25622dffbec52a20f9b0b1cc547a423005eb2dcf1e0e980ca69c99ed1e",
+    "lattica-prover-p3/src/bin/typed_common/execution_preparation.rs": "40f67238c55c3a20c6c689befb59b842a0c7e607a000c729199260f5e8e276b5",
+    "lattica-prover-p3/src/bin/typed_common/execution_preparation_diagnostic.rs": "1f87ceed13a376d38959ebc1b19db70b3a1a1db4e86fb242ef8053826e64cf82",
+    "lattica-prover-p3/src/bin/typed_common/execution_preseal.rs": "25b1dc5e399d4fe37d549861567307209d9aa5a24ba59ca479a973e5573cb06e",
+    "lattica-prover-p3/src/bin/typed_common/execution_preseal_diagnostic.rs": "455e6a1317e17fce7ecb754d8dbd57e2c55aee472f1df30aa7e58836e19c646a",
+    "lattica-prover-p3/src/bin/typed_common/execution_process.rs": "c5f3afca35948bfab7175d3fd742dc3050c76ebcdc20b1a39565c3e7d3a79ddc",
+    "lattica-prover-p3/src/bin/typed_common/execution_prove.rs": "3e7ff26c16869791a9acad36db1ca2346cdc2f6a9e24203fea0fb589a8269b60",
+    "lattica-prover-p3/src/bin/typed_common/execution_recover.rs": "2acae75273c0fcd6383bfc084d1d028e120aaca850581d4bbce06cc40be349ce",
+    "lattica-prover-p3/src/bin/typed_common/execution_recovery_admission.rs": "dd1452e8837c79e1cf4906515e325134c6aca61560a10e010c9865cfd6f8672f",
+    "lattica-prover-p3/src/bin/typed_common/gpu.rs": "6ce80050db7094d7f6d4f82963db0c2cbfac7773397976ffd4747286b9c0782c",
+    "lattica-prover-p3/src/bin/typed_common/host_pipeline.rs": "fd248ad1cd99907588618f6f3fcc2bee89550694e86414a2a027ef8b24ee68d2",
+    "lattica-prover-p3/src/bin/typed_common/host_pipeline_tests.rs": "1fd5c46a9bc6043710aaf0539d1b5a8ef58d4a37d1fdbc457c3c89d290ad78b8",
+    "lattica-prover-p3/src/bin/typed_common/input.rs": "4be7df4111e7c38719a7161584419e2ad8de82eff286929ea4993c87fbe3075e",
+    "lattica-prover-p3/src/bin/typed_common/input_tests.rs": "043aa20b3d6ddf888c7311c698c472c82520cf2856229d1c3f812b246debb2b3",
+    "lattica-prover-p3/src/block_v2/batched_fri.rs": "18c9cfc9be3f206b96879b0d089221a9ea747417be4486fcc90d6032f14e05ae",
+    "lattica-prover-p3/src/block_v2/challenger.rs": "e94cbe7d74674af70a9e361db3a34e2ddeca07a698464aa4d5b23aa6d093a029",
+    "lattica-prover-p3/src/block_v2/challenger/observation.rs": "97adc76a3e8be2d275a20fb7b1d9e961e930b38380fc7b59aba2484a8a670bdd",
+    "lattica-prover-p3/src/block_v2/challenger/resources.rs": "6cc74b1340c8133365075b5875d64284cb5fd2d6db823302e46aad2d8ab239b6",
+    "lattica-prover-p3/src/block_v2/challenger/resources/tests.rs": "dd70587ec6df2c9b49a57aacb8698c86d0150fbf959f5172b3718f8b0a855b04",
+    "lattica-prover-p3/src/block_v2/challenger/scalars.rs": "3c3c9039a403958b335235fd0e0ce7ce80589a75b941d5b2bd79b946992e457b",
+    "lattica-prover-p3/src/block_v2/challenger/scalars/tests.rs": "c3e5c5ff69fc5a0d95c2c044f88f7296180b7eda9e761eb64228015121878ee8",
+    "lattica-prover-p3/src/block_v2/challenger/storage.rs": "65dcdc33dc42e03a9a5b004a75887a607c7ef6521b0f215a008cbafa0708575d",
+    "lattica-prover-p3/src/block_v2/challenger/storage/tests.rs": "b2ea1052c3aa6c6f8566c3b16ba846fa06ea8dec32acce7d95370834cfe39d3f",
+    "lattica-prover-p3/src/block_v2/challenger/tests.rs": "7716201d9505b9e76db39fb4bf2b91e16f40401cd7d28ee0cdd5526ca9395d5c",
+    "lattica-prover-p3/src/block_v2/codec.rs": "c50375598fcce1af619656a03bc90a5eb14cc7c43575bbdb390bac687ee4a7cf",
+    "lattica-prover-p3/src/block_v2/codec/fixed_u64.rs": "a052e4f8a0e8753ba2e7c3ff76bb0367e7f90937c633f03fcf5d5871ada7bf83",
+    "lattica-prover-p3/src/block_v2/codec/proofs.rs": "f17e5364a8091abe8e20efed19c8675bf00a853402852c0c8edc84aebbe3458c",
+    "lattica-prover-p3/src/block_v2/codec/proofs/schema.rs": "0c87ec0b97cdabb0b09f495a55b7c19832835362fd3f4462d6dd011cd0b2748b",
+    "lattica-prover-p3/src/block_v2/codec/proofs/tests.rs": "16fed2c269bf50a36701f7e6f760a30e13ba87ac0f440ef06edae29a3ba4e049",
+    "lattica-prover-p3/src/block_v2/codec/sizing.rs": "c765fddb35ebc9d36b561d3acc3079f0103adcb17529ed23a9469bdc16020ab2",
+    "lattica-prover-p3/src/block_v2/commitment.rs": "d3b9865347c1c28ffa55d149502b56f711d020b866e6487a5a4d958b65fa6b00",
+    "lattica-prover-p3/src/block_v2/commitment/stream.rs": "d0c730c69afc741df73a0c7da74ade7d1066c55fd44ba1537054240e773d5a0f",
+    "lattica-prover-p3/src/block_v2/coset_workspace.rs": "c24635d9d8adb3317128d5ff312df33983cab0af623620b54250dfd25ce8cf2e",
+    "lattica-prover-p3/src/block_v2/device_pcs_tests.rs": "8dbff1a61f0c1191d91460a086a26503327b21e272f0df4645e63ab3e76ff8e7",
+    "lattica-prover-p3/src/block_v2/execution/arrival_process_tests.rs": "7dee9285cafee8de7a857d7ebe43cfda9cc5e456aadd7bc0fd01a223a1c19a80",
+    "lattica-prover-p3/src/block_v2/execution/artifact_store.rs": "c1091ae753a116a79a2c24fda958b4a71b97a78896cb8a7cfc769db4f948677f",
+    "lattica-prover-p3/src/block_v2/execution/artifact_store_storage.rs": "b5b090eb6e7b7e349f31f985165883ffd55ed2f6b6522829d69af77bbb8f952f",
+    "lattica-prover-p3/src/block_v2/execution/artifact_store_tests.rs": "59db5d463c2abf94de38f43abe710c41570ac829a0c9c1210b8269aee0ee6735",
+    "lattica-prover-p3/src/block_v2/execution/bounded_io.rs": "3c07f728a53bb6a583fef67e884003259d748e3213ff1166532dce91bdfdff62",
+    "lattica-prover-p3/src/block_v2/execution/dag.rs": "b74de5542a96e75f1b91a576045c7dcdda989c7aa8970e01be12fbb50abb475d",
+    "lattica-prover-p3/src/block_v2/execution/dag_prefix_transition.rs": "b413d64c9e6f68924645524b8d899583307784cc39a71a6cc565e2b64cd3e025",
+    "lattica-prover-p3/src/block_v2/execution/dag_snapshot.rs": "8a2787a8df5fa2daa2a3075c2924b7911a8d65c4998c96c0711f1d6fa5ed1bb3",
+    "lattica-prover-p3/src/block_v2/execution/dag_snapshot_buffer.rs": "578773f4e03c357440531356dc0b5ea4b9b6ab3deb84a62cc75616c6c8d4bfbf",
+    "lattica-prover-p3/src/block_v2/execution/dag_snapshot_reference.rs": "d228d82b3e27271442240ecab764775ca4d64afbaa2b62f47c933521dafd6257",
+    "lattica-prover-p3/src/block_v2/execution/dag_snapshot_sizing.rs": "805f3298e144f6603454775ee90c44b68a6649e2757bc03534f0bdccf3cacf2b",
+    "lattica-prover-p3/src/block_v2/execution/dag_snapshot_storage_tests.rs": "f2de30562a03be77afdc3b41ed68f9a45a0f77d0413cbd2acc512a15ac4a3568",
+    "lattica-prover-p3/src/block_v2/execution/dag_storage.rs": "0caaa1a250c68d527a39a39aa46380bbb85ce8a70031890426b1d117ee76dda8",
+    "lattica-prover-p3/src/block_v2/execution/dag_storage_tests.rs": "7d4c45dd37f0adca6dd58949eea7cd0ba21444c2e3d9e6eeba690cce8204e727",
+    "lattica-prover-p3/src/block_v2/execution/dag_tests.rs": "e0499363c5b2cff467736ba00d97b5eb8451674d1930200bf0cd1976251f0ed1",
+    "lattica-prover-p3/src/block_v2/execution/dag_transition_storage.rs": "22a3c99cb39acc47aecd7b259b104020ffa60d1ceac6a22e7f3567459c84ebdc",
+    "lattica-prover-p3/src/block_v2/execution/dag_wallet_inputs.rs": "aabb6509d32eb3465ed760d5f02d6a880c59af03e5eec3db8f036fb3e8819c33",
+    "lattica-prover-p3/src/block_v2/execution/durable_storage_tests.rs": "3c82bd0e0eff8c2ff6052953a54c3d41750e54e28c338cb79c00b65b721dca13",
+    "lattica-prover-p3/src/block_v2/execution/gpu_admission.rs": "f507705d754edbf8f83c1965c1ffd2c0c6c024d2b230a3bba997e7e9739894db",
+    "lattica-prover-p3/src/block_v2/execution/gpu_admission/assignment.rs": "a0331bfdd395b3138f9b78a4298a3f58c4eb9e01f113bc235203431d841f3b4b",
+    "lattica-prover-p3/src/block_v2/execution/gpu_admission/assignment_tests.rs": "64d9fda1f3f5c8ff41922fd1c1d8022fa3cd67d2e55cd676e1b3bbe2f5b1994f",
+    "lattica-prover-p3/src/block_v2/execution/gpu_admission/private_data.rs": "862e552ccb24246db715f94732bf68e08c6996e84fa972abb2c2ae5e2ce07084",
+    "lattica-prover-p3/src/block_v2/execution/gpu_admission/private_data/tests.rs": "69497f58a12787b50e779063c544b2085b2949c3fa5ec06e8bb5f6866eac3c46",
+    "lattica-prover-p3/src/block_v2/execution/gpu_admission/rayon_stacks.rs": "78b3173634847ec8f5ef9f3a78c961a920b336bc18aa90d8b1268febdc5370ff",
+    "lattica-prover-p3/src/block_v2/execution/gpu_admission/stack_backing.rs": "3e0123aa0194e1b2bc541457b864a32a93d9a768f982361d0441e3268a478e12",
+    "lattica-prover-p3/src/block_v2/execution/gpu_admission_tests.rs": "3540f81f9f205fa8eca16736d7f1256684b72dc12abbc66bae2d2d16ecd92a5e",
+    "lattica-prover-p3/src/block_v2/execution/io_storage.rs": "8b87efcb21d83a417d3b5d26e467b9801f1223a9e43f5c5fdae4bf3c5527ae4f",
+    "lattica-prover-p3/src/block_v2/execution/job.rs": "cc6a5c2e845a4a2f17a92915d0f56fd561e0235b967c35e1540b8d4e7f75c1a1",
+    "lattica-prover-p3/src/block_v2/execution/job/node_approval_tests.rs": "379344a5bd641aa8aac8a2f01b5640c4b383ef2a0c4a5ca55793b06bf198c060",
+    "lattica-prover-p3/src/block_v2/execution/job/registry_pin_tests.rs": "28d239f911bcf69dfab3d023d99e3a46d75ddd7125e76ebd839967052cf25349",
+    "lattica-prover-p3/src/block_v2/execution/job/typed_registry.rs": "c2f99f46a713778c4e3127e61d96bc2959637dcaf05cb331c37f68ef7ff21b54",
+    "lattica-prover-p3/src/block_v2/execution/job/typed_registry/recovery.rs": "e3dc3a7d999bc7c04a0d2e73fc750343c4b01cdba3c44ed9a471731bdbcdd3a5",
+    "lattica-prover-p3/src/block_v2/execution/job/typed_registry/tests.rs": "4f01a5fca3896fcf07aa47358356ee353a94764523170cdb3d73e96b1d4e9e8f",
+    "lattica-prover-p3/src/block_v2/execution/job/wallet_payload_tests.rs": "4f86b435e0d7af50f59e26763264ce5e9da1343f0cbd0248bc2e2413c8445c45",
+    "lattica-prover-p3/src/block_v2/execution/journal.rs": "fea872873225fb41032f4e4b40194eb432c67b3226ea5beb573a4f282386e0a1",
+    "lattica-prover-p3/src/block_v2/execution/journal_storage.rs": "10ae3e43417b6ce29923a2cd4032ae06fa36df08f087f58945efabba23b7576b",
+    "lattica-prover-p3/src/block_v2/execution/journal_tests.rs": "26046eab2aa93b82379492f4515d36ff521a4b9432e4c91340ac7fa2fc09c16b",
+    "lattica-prover-p3/src/block_v2/execution/journal_workspace.rs": "88b99963fee811d9b9bebc6ab4554baba9d298d9c6d7dc83e181e311fc3a3e28",
+    "lattica-prover-p3/src/block_v2/execution/launch.rs": "f81368853c9f5b866389608d0b5d95d4edeb66494166a9b623ef7b7943474422",
+    "lattica-prover-p3/src/block_v2/execution/launch_storage.rs": "398fbadff9a1f82fffd0989514e9e6cc2f9abca17b27fbd68babf333a5387a20",
+    "lattica-prover-p3/src/block_v2/execution/launch_storage_tests.rs": "332d1eb919574c06e63041c75452207de04f36a1af8591e6bf0f3d065050bdad",
+    "lattica-prover-p3/src/block_v2/execution/launch_tests.rs": "5a06af4d3cf0c7d2495142720dc412a8b2b6885b12be71e186e73b0f608813dd",
+    "lattica-prover-p3/src/block_v2/execution/mod.rs": "2f21925d6e9b944ebccb960fea0da24b6b807ae0975c963615c0137cfcb92136",
+    "lattica-prover-p3/src/block_v2/execution/native_worker.rs": "751fa2d18ccbe84fae03dca076d5ef0f5d9c7a651284fb99e0c94b36ca5ade59",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_decode.rs": "c8771fd0fed0982321d9d97a44c368988068d44710a34334ef3e02ec96b5f336",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_mixed_tests.rs": "7f2e3beebbe84828b909bfdc97f469e562511a5c7e3c60f7b0c93735bc9e3d6f",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_nonempty_tests.rs": "a33011143f041c17bed2ec3af08c942cc5e02002a1a963fd47c4fa35e62cbf02",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_pool_calibration_tests.rs": "c41abc6f6551d9f1779cf28158c46a5d4b53bf624c07d183ea688c6100fd7f09",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_pool_resume_tests.rs": "7170f1eaf3fd3689666165218d47b975916895a780e51ecd23b9129b08290d2a",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_retention_pool_tests.rs": "b5e746f3fdcdf978a5b2e83f3e7b22c1c3b10131ecec055ede7677163c141320",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_retirement_tests.rs": "a0955eee6440d8d8357ee4042149ba8d014907820b333d67f3264edbdcff4deb",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_sixteen_tests.rs": "8215932658907b1d7221386cd16ecfd0d98c610755faa7cfd00e75249d0cadc7",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_sixty_four_calibration_tests.rs": "6b46a80cb0d02ea54719ba489ea74f50b2be1d6cae1b8389de1387a9a82de7d9",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_sixty_four_fixture.rs": "4ea4afd595ee2a8fabe27633d3a9e9f856b3ecc4fef0143ae399ea409a6a880a",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_sixty_four_tests.rs": "db5578af7551c26bbe693d44eb06a89a85f34738e77c39c6bb862dbd7d917478",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_tests.rs": "3416ef7593c186dc06aa7ab2cade4e45692f05db056665191779ddacebeeb862",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_thirty_two_fixture.rs": "293eba6267bc69c7637de4b15c8ce2054c2fe5837590a7ba9bdca8d4bb3115f1",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_thirty_two_pool_tests.rs": "ce0e60e61a5a87aab55910981f901ed713793afa471374c28d51e9367b3c5fd6",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_thirty_two_tests.rs": "6ea10a0162081660a5887b777fa9aa8fec31c4adeddaeaea47e65053983557d2",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_gpu_thirty_two_timing_tests.rs": "74697ec9cc3dd3ad79aeb905dd1827125182124054135d813565235c4c30e806",
+    "lattica-prover-p3/src/block_v2/execution/native_worker_tests.rs": "8b8a79ebede599a30d686dd1319849a0c506f9d782ef89bb7952e99e6bc70ec6",
+    "lattica-prover-p3/src/block_v2/execution/os_worker.rs": "bd7899d2880eaf79c9eb79721b1968eb8677295a1d43c738fb2afdf99654a911",
+    "lattica-prover-p3/src/block_v2/execution/os_worker_storage.rs": "4f09fe33d7077ce0bb2ed3c1d4d0733e07c9ffe1f8aa7c89d3c20c0f360e93c5",
+    "lattica-prover-p3/src/block_v2/execution/os_worker_tests.rs": "b4b4e60f1bfdfab93556f77f69b50df76c4271d18ba20735c878c723e5781b24",
+    "lattica-prover-p3/src/block_v2/execution/policy_context.rs": "50213523b60f6af85c1d674e6e2d70f0b34402c0d669446859f83254251713b9",
+    "lattica-prover-p3/src/block_v2/execution/pool.rs": "a6136675e069e715369d126f858efd48cc05e15ee7ae901e0f245f6aa08c8926",
+    "lattica-prover-p3/src/block_v2/execution/pool/completion_tests.rs": "b57fef4e7256497553e3e3a590b268ff03584273f0a4a30f30daf7bd2d80558a",
+    "lattica-prover-p3/src/block_v2/execution/pool/local.rs": "849d87984d9fe60e1c8ff1282b1ca71623d49dd73685ca2f23c255f02e6a4c4a",
+    "lattica-prover-p3/src/block_v2/execution/pool/local_storage.rs": "64cfffc716451264e36b1f2e60c5373fb6f2486c9dd2579e0dd91c0773dc753b",
+    "lattica-prover-p3/src/block_v2/execution/pool/prefix_tests.rs": "5129a93c547fafd7be267dcfa9ba03826e608c38e4258e14ceccde664c9b8c9a",
+    "lattica-prover-p3/src/block_v2/execution/pool/prefix_transition_tests.rs": "b35eb6ce291770a265f705b03583363c983866308b2d784c1d2cc443cd520d7e",
+    "lattica-prover-p3/src/block_v2/execution/pool/recovery_tests.rs": "006c58901490b82a26d99b5a0992fd9397b37d397ae74e2029be7836f25e6213",
+    "lattica-prover-p3/src/block_v2/execution/pool/registry_tests.rs": "bf40d67a4f79205e5c3dc80f4bbfff7d79ac8c697e95d5b4f312ba31dc1a6434",
+    "lattica-prover-p3/src/block_v2/execution/pool/result_storage.rs": "d233c1c7d3e98157e3091d4a8c0d11beb0fab63b1ed84d576c6c2d7df454449f",
+    "lattica-prover-p3/src/block_v2/execution/pool/service_window_tests.rs": "8818bf56091ac86e8073f690489df1d30bbe4dae334b749155795176474e9b45",
+    "lattica-prover-p3/src/block_v2/execution/pool/storage.rs": "c356c36003078ec5443c217dc1500a74b0af9d664032a4add3212f1e66ff3c63",
+    "lattica-prover-p3/src/block_v2/execution/pool/storage_tests.rs": "4df7045faa6c891c747e6615cb26ea9306df74b9ba856e88e529a5c9a5a585a5",
+    "lattica-prover-p3/src/block_v2/execution/pool/tests.rs": "2bcc03b75385a1d5db833cbced37b7b6f9dbc4c2c332b70caecc1b8d3a0aa83d",
+    "lattica-prover-p3/src/block_v2/execution/preparation_storage.rs": "603ab8b9b088cd953d52e710881531cd6fb2f261d7df1a727958356646e42766",
+    "lattica-prover-p3/src/block_v2/execution/process.rs": "133923cedbcb51adc4b70a99250f1cc34a48c5458297ce93ecf0c3fff672b1ae",
+    "lattica-prover-p3/src/block_v2/execution/process_tests.rs": "ea2094fba9d2b8bd2271b4cb57cbcbad25b4f5bfa00ed8dc80ae830bbee4a99a",
+    "lattica-prover-p3/src/block_v2/execution/recovery_deadline_tests.rs": "a1c879172f52d87be8fe200b0f879dc723747fc228e7582286adae66415d2674",
+    "lattica-prover-p3/src/block_v2/execution/recovery_prefix_tests.rs": "539b2b69e5b70ae9ca7cb4601d47931a6015492db7a5a17e30012c3feb1c6aa4",
+    "lattica-prover-p3/src/block_v2/execution/recovery_prefix_transition_tests.rs": "8b991927245d2d4552d92eedd954024a64c2280374215b637525162684f568ef",
+    "lattica-prover-p3/src/block_v2/execution/recovery_registry_tests.rs": "1466b7bad9c0a14b09ded93c0ad2056e40b25c532d6761f2942827b1149e7ac7",
+    "lattica-prover-p3/src/block_v2/execution/recovery_wallet_ownership_tests.rs": "f7a2f17a357c6348dc5e95824aeed9580db5243e121f9aeb706c63bce1362b99",
+    "lattica-prover-p3/src/block_v2/execution/resources.rs": "3e0ef5d875bba4fa47a641c57fb32402c43130c3edeadaf7bf5b0901f22bd0c2",
+    "lattica-prover-p3/src/block_v2/execution/scheduler.rs": "53c94981265d790c3af91a9df9f239cd5fa84e247453df7ad824a6c22e1b4e93",
+    "lattica-prover-p3/src/block_v2/execution/scheduler/cache_tests.rs": "891e72f610feab8f3309de779496278d6ae4616ee83e8891cbc967f15baf3ee4",
+    "lattica-prover-p3/src/block_v2/execution/scheduler/calibration.rs": "b9a87e7e26f41697f478756d63ab1454025271bc5565fb15773dc18c9bf6b671",
+    "lattica-prover-p3/src/block_v2/execution/scheduler/calibration/tests.rs": "634ac2b23947e0c2e92a7ba0da4c59e4a33d1cbff0b957a058e2a462c370c3c7",
+    "lattica-prover-p3/src/block_v2/execution/scheduler/continuation.rs": "19fd656acca84e5ba3331c93cbed5f1da17ae0108c932430f7cff34418d637e7",
+    "lattica-prover-p3/src/block_v2/execution/scheduler/depth_tests.rs": "188a7f6da2a8c1ec4fbaf53c643761efa500238b14689dc0dfec964b9b5dda36",
+    "lattica-prover-p3/src/block_v2/execution/scheduler/retention_tests.rs": "1765006316790212fe12ca78eb975994d1605944ea8a0c6af197e1aa3fbb8db9",
+    "lattica-prover-p3/src/block_v2/execution/scheduler/tests.rs": "31fde18f353401fb6cf0704c447e34e3d4b8278b0551180fd8a543dc32777563",
+    "lattica-prover-p3/src/block_v2/execution/scheduler_storage.rs": "6d3ac1ca89fd8bc3817ff0da0f3316a0a33a495d60ac585c2cbca744a599eec4",
+    "lattica-prover-p3/src/block_v2/execution/scheduler_storage_tests.rs": "d9a4460ecb5efa5c95e5fa802c55c971f3d906099b50e1128baf0bf1cb3b8343",
+    "lattica-prover-p3/src/block_v2/execution/selection.rs": "810c46a7efabdcc07b2cecbfb461b7a626abe62dcae9f7f495c2eeb1cfb74123",
+    "lattica-prover-p3/src/block_v2/execution/selection_storage.rs": "33bffc8856013cb064dd32ce071b14e45a625a696ac68467f621112f79725c16",
+    "lattica-prover-p3/src/block_v2/execution/selection_storage_tests.rs": "b9e4046fd8710a4c06cb41a872eaab0e937fcbfafbbe78be8f3a6627ef565a3b",
+    "lattica-prover-p3/src/block_v2/execution/selection_tests.rs": "403f350c060ec361834ad7ebee3f733c35fb75a565650e5455a2fc31b8f20754",
+    "lattica-prover-p3/src/block_v2/execution/startup.rs": "a11283977754de4f45478fb1b99b5ebbf82840a2687812f08d4eb0e07453b2ae",
+    "lattica-prover-p3/src/block_v2/execution/storage_bound.rs": "1c0df03320069404b6e3e8fe02eeb356de8d24efaa3a12f75b813e4cd31e5bcb",
+    "lattica-prover-p3/src/block_v2/execution/supervisor.rs": "755ab143fb05d91be0832ead2390df5a5e8f078785f0a4efceb06764179657c9",
+    "lattica-prover-p3/src/block_v2/execution/supervisor_process_tests.rs": "1810dd35ce52c992058e4a25792885c83c425e5938178e7825a070bfe3692303",
+    "lattica-prover-p3/src/block_v2/execution/supervisor_tests.rs": "a2142ccd259f2759c99a575e71d553d12f06b5ec4f29fb8ef1cd6decb5840d7a",
+    "lattica-prover-p3/src/block_v2/execution/test_fixture.rs": "f2d2d3920ca6928a6211958a0bb3d09e80d1331d8e990237bb435ae94e8f62cd",
+    "lattica-prover-p3/src/block_v2/execution/transport.rs": "175e9024fb6010c6415868e12cca23562cfc3ab1b37209970b7f820ae4dd7a1a",
+    "lattica-prover-p3/src/block_v2/execution/transport_tests.rs": "f383ac7ff0acc36984585e9696e8407cfaa26c57878e60cc69fd7858f103b75c",
+    "lattica-prover-p3/src/block_v2/execution/typed_selection_tests.rs": "44fbe9fedb85a62109c6dff6c3e8b303e6a4817a645631d2dd012d710693c4b0",
+    "lattica-prover-p3/src/block_v2/execution/verification_process_tests.rs": "17a34207ec731e4b3c11a0145f02a166f804d039cbce583fc92206e3b402e751",
+    "lattica-prover-p3/src/block_v2/execution/verification_tests.rs": "72ba6bf04f0b7fd63f2bd2e53d5de920bccc52995cda9d4abde2f843ed98a72a",
+    "lattica-prover-p3/src/block_v2/execution/worker.rs": "e1d3cef819108d48f069db93d85694e2e4405d89c36076725f094d5b52639585",
+    "lattica-prover-p3/src/block_v2/execution/worker_budget.rs": "6315d7d6200218861c95cddf591c199e2d3a25ada6705d2d6617cbba804d1274",
+    "lattica-prover-p3/src/block_v2/execution/worker_cached.rs": "f64e116b5cb2e78b49b4262c86817c4f7bb5376a15d70de454cd45ec0482e6f4",
+    "lattica-prover-p3/src/block_v2/execution/worker_cached_bench_tests.rs": "40ea77471252248d474ebec32bd5c9db8d1d18256820f051db172a2e5c561bae",
+    "lattica-prover-p3/src/block_v2/execution/worker_cached_tests.rs": "808adaf151a0a2ad5975dff86b01395a3e2e0240ca186a1450313771f2da177d",
+    "lattica-prover-p3/src/block_v2/execution/worker_legacy_budget_tests.rs": "e1fc698f06dce6363f39cad0e94edfe24529c55b0e86b9de31e0bf172bbb7cae",
+    "lattica-prover-p3/src/block_v2/execution/worker_packet.rs": "8bf51b16144991183d4fcaeb7a46f9216e4f711d0ba6076b5c08d5bbe430b84d",
+    "lattica-prover-p3/src/block_v2/execution/worker_packet_tests.rs": "7e15500e75dba8a6046c550e105218939751b768906966611a638d9322140b8e",
+    "lattica-prover-p3/src/block_v2/execution/worker_tests.rs": "2a783cbda48bd12befe472cdf47d06ac17c8f06a79f5818e381fcaab805d6c2d",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed.rs": "d99f793247f27f8f1aec356de3b873502a3a5536da3931a07e804a523608f6e6",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_cached.rs": "c05e09414039a72e3f6c95322eaa5bfd0411ba7e3ed5f379d5ca2681bdd2add7",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_cached_tests.rs": "814b257f629d01ba7620f6ac4a25ab269e98fe0a4d1ba148588a0952dcd1db3d",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_coordinator.rs": "5b9c3697d3c0aa99e6f08d286d2ae5e6e1547b28dabb6c27fbeab97e783c0499",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_packet_tests.rs": "c41a242feb55515961207241233755085873f2b3d2b48ab0af5a7ff27e86bcc2",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_process.rs": "4ddc4d0f681eef1cf6ccf1912ecb2291470f4c7809f06662f572d3784c288fab",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_process_service.rs": "c6bcc158f8034b624570a584f5655a034e50e982c4c3cf8faec4e55d095886dc",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_process_storage.rs": "17299ef0d77beae994546d0cc2b82dd051bdac478a57b2b69df981f02802d0ec",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_process_tests.rs": "a04ebf5200a68aeeece0ad5e1e250435d81bbc0d367248dae2ab039a72db43bf",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_registry_tests.rs": "1bfb38228f8e3b8f804f0784d6e560f95c28f212e285a368258f21b31308dfd2",
+    "lattica-prover-p3/src/block_v2/execution/worker_typed_storage.rs": "3de78f92d29d63c2e8469cf0ce3df750adb01ac8d4b0798f4a5000fe608c9c8f",
+    "lattica-prover-p3/src/block_v2/execution/workspace.rs": "c0488d18c1c823e93794c1749a5114ae4f85a4abc199683605d2a656e5c0fad6",
+    "lattica-prover-p3/src/block_v2/execution/workspace_tests.rs": "91b7ea80999e25af9b2f851ac4d7bd54b7208f3a4eab60034028ab743f4ab705",
+    "lattica-prover-p3/src/block_v2/extension_mmcs.rs": "042b11983e56ec00db1b354896ae021c9c76750b838763eb876eb84f1325c20c",
+    "lattica-prover-p3/src/block_v2/feasibility.rs": "02809c8f1ac49b7eabdaaa70edd9a016600e214d88eae5062902b9daaf37c5b8",
+    "lattica-prover-p3/src/block_v2/gpu_hash.rs": "67c916abf2c4dc2fea17309af285b4065a9e3c9aba44ff7e77837b88ece6d305",
+    "lattica-prover-p3/src/block_v2/gpu_hash/cache_metadata.rs": "ac6a70b89b44eac41a821cea3e112712d013e9358e628972e71ed17d39f7e416",
+    "lattica-prover-p3/src/block_v2/gpu_hash/compact_data.rs": "fec38b4671b03688e63d5273a47db585be11f61e7de1a435071adc9e18bf6dc1",
+    "lattica-prover-p3/src/block_v2/gpu_hash/device_data.rs": "36fde425a0058120602ea016228c4b67632ca3785a2cdf6a10295d7289324fc1",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine.rs": "c5ead2749fe87c1641274fb8009a1b2e8d7b06105008c6277b71320975a8ba28",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/allocation_limit.rs": "d3b828620bf1075be5571d824ddb1bff80e224856186c85d6d87ba5b9357dd17",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/capacity.rs": "af69ca82b6e04441b1205b100de77c90cfb524e5749b0f44c7e5c867a408c5af",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/capacity/tests.rs": "b5718ff162b13ceb0d44ce0ed315194c22c896c97fcee307cf7096c29aac0638",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device.rs": "d796d21eeb73856854b05318978bb89799634cd389ffe734d1144ff371972ea5",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/commit_storage.rs": "f18a241712f31ed6da62d52ff240f0a8f07d5f62f3d16a131bcb727ee4b0c814",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/compiler_constants.rs": "ec80cdba19ea57831b4ed86c0f15a08eac306d5f8349f3a096c0af9471facf52",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/compiler_folding.rs": "6965114e82a06c1d900405a46da92ab12ee232ce9462b6e67a2f37affd4eb0f1",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/evaluations.rs": "d348a67504b403c8c5a9bd7ebca85cbf31d2998dd024d6ca07cf8be279d76dc6",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/fri.rs": "18f746517938613fd8e11c7825d8fa21a22931a880115dcfacfc1e3d59fd04aa",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/fri/general.rs": "2ea8d503d0042d328243186a4b1da70bf995633d880976c6512dc0b9895984cc",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/fri/general/tests.rs": "cd1dfd8c2ec7debe4c24d46b2d5d966977b4392296ed0bc9d87ab75ae0228ec5",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/fri/storage.rs": "e881e8859ee07ba2073115f688059cb6afde085e6c4bd18496b256e9d384cb81",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/fri/storage/tests.rs": "edfaf416d04212f0c149a93a09b500dd68968ab66e962612015a23de9d5862bc",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/host_storage.rs": "3099aa76c66fe0fd5eff9cee9075ac5b5460529d9ac1c40a56f2ad5f4f212f13",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/host_storage/quota.rs": "5726c1e0559f41735a5af614d73fc3b4407e1cc5af0d4c5e0aee5b653673e7f4",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/host_storage/quota/tests.rs": "80ca598f7086c616d74387a93d8a0a7e7799f9b0c686b7237b58cc285e817a54",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/htlc_kernels.rs": "90f36080911618aba73d151f724b95f4c7a32b704f47304ad59f6d6516e0db4d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/lookup.rs": "9f3b06aa609f9419f818e5a224e053fb19ccac2f66ee18e49dba67bf9022449d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/lookup_kernels.rs": "054674b1b8bc9b1705d68a54ed85cb586dcea14446469069eee343675c620244",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/observation.rs": "167380c679f2e44b6715dace16783cc99b843f7448212767261f609949e79fb8",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/opening.rs": "27ee46c4a85e9f0fc3652afc84d8c3a290f514cabb80c47685297745f252cdb4",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/opening/tests.rs": "9f39d739da869e33663fd60e56ef646bae85b2db26aa6a7cbb87360efb0dfe78",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/opening_kernels.rs": "1ce06a13c7b3de5f2416fad2a5982334e06b8b833c17d97cb3f2ccf22e8025a0",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/opening_quadratic_kernels.rs": "27f7637612afef6ba539eb5a10bee6194e7613fd477bdc17b9d7925a977b79f5",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/periodic.rs": "93237cf52f32f73d3b0b7ba0daf574aef603cd85e6c3a1f9749efe35c0eb6b8a",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/public_hash.rs": "8c96a05a0213d057ae2f148e49b47016de424a541a47c67981b9f41eae6aa050",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/public_hash/cooperative_tests.rs": "8722acdf8685baff710ab594807734b748d905ee4fe0aae0240fd855851cf7c9",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/public_hash/nvidia.rs": "2de8b37f0ced59d00d70a007d45052799e9d6da8efcf7eeb3cee0e9861718133",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/public_hash/shuffle_tests.rs": "67ed233bbcbaa3ad88ae36d0315915c051a8d2fae7fdaf87f838eb568d245799",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/public_hash/tests.rs": "519b63b6f59a93c91e0c254d0497b5f88030c4135e53d0cafe0bfe8885940bb4",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/public_hash/unroll_tests.rs": "f0b591879509863f2528b033f667612cb197a96e81ba145fddcf2aa880ed6456",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/query.rs": "7790a278b12d08b4aebf1b2f8e44bab9be6215a1ff7aae1e6939b39c15e3c104",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/query/tests.rs": "98b0e12d379df0bc10bf99413382b5c39b58ecaa5b6e853fadd342b7eefb08be",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/quotient.rs": "97100776d28a703047c576121fedeb0272460b3fb5e65b4ad40a1fa73487158f",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/quotient/partition.rs": "f0f1cc91ff2891de66639901f496ac058c8f9c223eb415cd4b9481eddb37c542",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/quotient_commit.rs": "675c7d7313e02f7e77718fdcd5e758dd53d1edf4a5c10f1656c67c549881e118",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random.rs": "70c915dff692057da0ab7bc7c9d625e25e3bd21caa778b32abd6f7bdf44a3570",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random/admission.rs": "449bb5ae539b8b9881bc55c5d420794cff19c8f78f2f1a21c9fde665397c65a5",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random/admission/tests.rs": "f92e0c3cc152a462002d16d93013774f92541e529f9077c9ef08e2b2246b1455",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random/compaction_diagnostic.rs": "8b74ca0557a7fd14a644542baa4157eea77368ac461d81dd5d37f2cc9b6f252c",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random/public_salts.rs": "b2c4b39d119ae60fc7e8890f1e0c65f4fe94b3937aa08c0f707caa71d947dc62",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random/replay.rs": "c9fe12bfc54d81a7574144d6d7a7ec3049e319dfb320a8424402da802a023b22",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random/replay/tests.rs": "f43af3ce61c3ad82d2baa8f0d7af64500bb04b5d39eca8f9d9834017f29a7567",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random/tests.rs": "3cd6e9bb1fe289ed065d4f859c3e065855127ffe3a9e39e9d7e74d74a8efbea2",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/random_kernels.rs": "1a11003b367d60eb97adfb29a00072bcf9d2adfe7bbaa0fb64118ebb54844744",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/scalars.rs": "5872bb7062da3abc8f38ad1fe18f90f9d062b6c4f10b66a1eaee68ca5c980c82",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/scalars/tests.rs": "81fa2c9b25d52d3537dd9c85557d11e20e1597d4ea4833dcdd1814885cb66c3f",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/storage.rs": "820014c117b704e71f35b4c83212261bb7ba5ebf2a35c01903cfeb805656c405",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/storage/projection.rs": "e5ec04501006cf6f36b71fcd243b938cd7094bdc8d7b3fff7499a6391967c6fd",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/tests.rs": "2ceb798a1947c35740a0f46aa7842e6f0b0b9975396fe5d4ad6065eeb9d6edb3",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/trace_commit.rs": "c0cd9dc43661e556ec360f42a36bccaec71e289d8addbe6fccb0787b86a50673",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transcript.rs": "0f0ab6c02ac84a1209ea683c0e0cee9811a5a8767020d1d5f187b9efb13b550e",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transcript/host_storage.rs": "eacea6cc125108e31e957b16d0606b3e0a85a8a5642b946f03b347aa752194fe",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transcript/tests.rs": "23aa7072189674909a186c9dc766f93df41885e7f7d596b1c5373fc051b1580f",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transcript_kernels.rs": "c6acc9fd29ac5297b20859d33b8aa194bd4e2283f6384270edd5ca39ad48144d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transform.rs": "c12398d89daaf7a59fc54903bb73819abb281fa276ce2047c51b81055f0115c8",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet.rs": "655094756bbab6451a47123cc00eb4bc34548def5ba46797762806b0b38431a5",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/batch.rs": "51fe08f06d35525264eee573077961272aaa8475e1e3f467f56b6cfdaef98448",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/batch/tests.rs": "80ff43c3a9122bbe916cc756c554e8cf9e2f04ed1e19ab2b7ca89c49494ffd05",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/htlc.rs": "03098297ce289abd02cf15f7c481bdf72acda32287e60eb04c77928470034cd4",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/htlc/tests.rs": "925210778fc1b5e5173252eb48215b7ec07ff028a3220b17a1cc79030d13ea9c",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/proof_storage.rs": "028741c9a885e19a5e21fdf145f9708c728cd86cfdaed9b23d733688bbd32d07",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/proof_storage/phases.rs": "8be88157a762369ffef5f32029140b8e7ce779757dbcd803d9b3972a47fbf58e",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/proof_storage/phases/commitments.rs": "e2661cb817cdcf91d4f29afcca7a0faca5638f95a7c23ffbe70f6b06a83b7f14",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/proof_storage/phases/fri.rs": "c220afe783a09651dc61f10f004ca29e4826a3bbd8ba3e468d02109f5de420ac",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/proof_storage/phases/inputs.rs": "09373d2de04329a486a1cf84fce7148fe76578aba03d2185e9928e1c94362b6f",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/proof_storage/phases/operations.rs": "c4795f4cd8c872235f22d04d8cbf69c78601e950248bec18a9c9d5935c595d11",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/proof_storage/phases/randomness.rs": "59db7703177bd9c9852f00992322c0b2a5bc187c381b6ccf9e838f30dea05292",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/proof_storage/phases/tests.rs": "b9bb02efd88810541e8454be841a06927d7e410a8dfdef02b9434daad1616317",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/proof_storage/tests.rs": "c6671549699a81cae222eb28e4cf4a8b8cb6cd050f48981d0fa397cb0c639c71",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/tests.rs": "89eeda3e52dfa9a0d3af5096e7f14cf8c3c0e21c9881a0daf524fc2ce23cba00",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/tree.rs": "f5209ff6b460df99c9cf0b03bc2802f518f4dcbfd06ab912173c32d4029bd314",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/tree/tests.rs": "a0019dd0d32922e9ef4f288c801de1afc66f4f78c7f4a1a8d80517264467d4c5",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet_batch_kernels.rs": "72ecd3d58162b9763e3188db4583929ff6902ea60d9a46af845d64f3216fc175",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet_kernels.rs": "9c852660676df98ad0d3733fdc86e903cc3ba10ecd76bfde0a3df6eb18ce8aa8",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/witness.rs": "80b088435539a07cb33f65527e633d87ddf0b8580bd2ef72ecfcb4d58e921745",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/witness/tests.rs": "c87b893ed9a0cb0d7111b3a5d351943eca6cc76ce695e9121e5407e63eeeb0d0",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/witness_kernels.rs": "e815ea110483d8cf605330aada19db3e33a92da689a5bf604a2bb7d6524a3334",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/extension_multiply.cl": "038989f6da786c13a151e1acbca66e7f733cd5d3bbf20487e6131a47c4e3eab6",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/fri_fold.rs": "028552417541c8ce7ee2ef9fdfc84a63e67d40f788707ea632e9b7f76e844bd3",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/host_storage.rs": "0767358d0cee38c633a1340d65e927dc537b1bb0b0367af8b21a042b58e35f42",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_backing_tests.rs": "81d802876db1220b7f64ca70b79387f99691c0bdf0564589dc784b49ca3576fb",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_execute.rs": "fe1c01d980ae6a36a193a81e1f188bc77bf030b709f2cccfbe31f82d849f5b57",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_plan.rs": "c90d3830ba6903f9442dff985e93985177b15807141c7f46e5cdc8708baf9504",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_readback.rs": "f4dec85a17c561a9a68382e1e9fa572e0fde07dcb792b6426ff2dc9cf1168b2f",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/memory.rs": "96a8f17920594c6149b72f74e52ebbc2902e9ba70d507dfa6b16adde3e3b1774",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce.rs": "6253fc1ad18976c7426db5ad953bb647046b5c3839a48057eb09ff1d07a4b76f",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce/compact.rs": "fa62a180e317a2e52124b671a97073d8c6a57400038dfafb69a85c72a5d9cdbb",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce/compact/denominator_cache.rs": "f89c7d4e6897c1bcfc21058305b2a64c84440ea441dcfd3a396fb83507e9d665",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/opening_reduce/compact/tests.rs": "3ec07087d08f8faee4f4bd5944350b6e8e27a7d8fc72a70521005c901c1a67e6",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/query_reconstruct.rs": "0eb57d6e38eb91b0acdef3089c0fda5b405750dd0d9df74707db2f08ff01e095",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/quotient.rs": "412d91825ccae2963c5c740a7ec56d1b72a51959a27ed3d0646651f0a05a87a9",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/quotient/specialized.rs": "3c0edee15730837cc0a3f65f5703aaf30a50c42c3be1d49856448de3ab26e7dc",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/quotient_kernels.cl": "00d13dd6288ea0babb2e4ef88cf6b52d3660838ce763133e17fe2df415a0838d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/fri_data.rs": "f56a84935ab7be87eebfc0592398deb6078fe7b8f7f5640076dfd016a85b798d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/owned_data.rs": "b5b91d8f013147503aa344ec34622cf42a879ed9c0dd4719f7ea5a74fb3974db",
+    "lattica-prover-p3/src/block_v2/gpu_hash/owned_queries.rs": "8f558171bfa330fa563f69c1d943cc3f2071b37b53ea7a31f49190ed4385fb5d",
+    "lattica-prover-p3/src/block_v2/gpu_hash/owned_queries/tests.rs": "ea1ec4dc7836361fb099eb042f52fb4eb0277209730f1a3e07483a906c426e7c",
+    "lattica-prover-p3/src/block_v2/gpu_hash/salt_data.rs": "8f4724f4a2c3749268e7ffac58132844bcc6879b68349757359e63de26cc18de",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/LICENSE-APACHE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/check_constraints.rs": "62a0e1fd55cfa37649662f4b93979d38c13faa098e39be7c800caa880776539f",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/compile.rs": "c0330d78eaf64cebf71a4bd2a0261a11f38cb1b6655211221a5fbead03aff0d0",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/domain.rs": "d9e250713542069ce3bf1a0b2f77dd4918cac0c79f1c8253455c84e883505592",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/evaluate.rs": "a1a12807e272fd0f83404948f7f408a93a39ec41a7bec151b51c17833411f05d",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/input.rs": "207e6e0512344328eebf596f79910c34ffa311c372e16b4233fcd9ee11fe8748",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/lookup_program.rs": "d2dc067b15def80963f670c68ff954f359a31bae05a0a9d22db3abdab41d11ac",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/mod.rs": "14ac87211986ffc9fd7fffe4c3b9f3fae3403cc94cc2e6ff8156f4dc4f05908a",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/opened_values.rs": "a2df613f88ef51c83123895caf1e648ede14ab0848b13dd56bc6e062a0021fe0",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/opened_values/tests.rs": "5ea25f568e8a0a5e6d26c101aaa3bb8b70ab3d7480f1c58d9209825559487b40",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/program.rs": "4e1e512054fb0b6c6dc16f8ab93d2aff722013eb6cea65e06bae43c04111d8b0",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/program/shape.rs": "658e19838988e6aa3c0edbeb177c7a2d5a69fa9d11a877405aa6088946dc21ff",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/tests.rs": "f106c7c9f9ed023df5ee438c9e2112505d6fa2d4903900c457eca20f12846949",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/tests/device_pipeline.rs": "052e0744d4d2949bd81033f9d9146ffc0836c5da2345ef247f4e02a2deec9bd8",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/tests/extensions.rs": "8f62ecd1755298c1a0654e56bc0f7331af9e59c25e6d8b7cb16018beb4c7ef1d",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/tests/lookup.rs": "20ab4adc15759655e5bf07624e37386bf2fd30c2b7c6c57568eda7ef4a160a56",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/tests/workgroups.rs": "b84e4c9d8444b0970b8dd84b2f8abb1caddadc86ab791eb0b2436e8e27799a05",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/uni.rs": "388a3aafec02c5a2a2ca46411da8239b5105c77a09abe15da5456954a708a1b9",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/uni/admission.rs": "1dbe45b22f6ead3fe32a14d9fe39908700d07d4bd716b99d865e6c3aa490f62f",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/uni/admission/periodic.rs": "bc9f31bb7e4bda68858f70ef78ac10781397ba9018070b7eb0065f8c92b06bfc",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/uni/admission/periodic/tests.rs": "ab72a6f1bf1d98359017656f22278c1651f114d661837931b04f49bd60728c1b",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/uni/admission/tests.rs": "259366ba4ad479e3b4c9eda8b7adedb5ae9154ebd6f8e845d451dd599ddab93f",
+    "lattica-prover-p3/src/block_v2/gpu_quotient_prover/uni/tests.rs": "b9f14db0f24d99c779777c87ad89541738f286271a5b6d127a43333fb73247a7",
+    "lattica-prover-p3/src/block_v2/gpu_startup.rs": "6c1c1277241c1a116b0aeb539ff7fbdc3c6b2097326cb0f0a617f31cdd473b85",
+    "lattica-prover-p3/src/block_v2/heap_dft.rs": "f3819ce543ee0c4c1f7bad1adafbd9963f92b1772397abeeab578074c1664b21",
+    "lattica-prover-p3/src/block_v2/host.rs": "bcc861b616af2a3cb4b2f57685850628ad5f1242916e33738793a8003268864f",
+    "lattica-prover-p3/src/block_v2/host_wallet.rs": "3cd7c790ca2b013e31cd8dc7cf81b48f16d9f7346e9590c9152fe458ef66fec0",
+    "lattica-prover-p3/src/block_v2/host_wallet_tests.rs": "dab20177ddcb7863a3524f0cf3146b4808818a02f1a350bf4830477a9d703c10",
+    "lattica-prover-p3/src/block_v2/leaf.rs": "ebdcc0fa568c1e1942a6bc0b44bc3b9a87a92beae39461a4492405136931b6c6",
+    "lattica-prover-p3/src/block_v2/legacy_wallet.rs": "a9628e3b9c9f81b620ea3c0d91cde6c2d66c6cd4d26bcb778a0f069b5fc68906",
+    "lattica-prover-p3/src/block_v2/legacy_wallet/tests.rs": "209dde2281d655cec793e6a67415d98d0fbb9c2be54cfd5b24d1fd40e1fd2aff",
+    "lattica-prover-p3/src/block_v2/legacy_wallet/tests/batch.rs": "ad81b4cdeb74d5815d1a2c643f6bd51ad02bafefbf76f1afc179bab9acd3e472",
+    "lattica-prover-p3/src/block_v2/legacy_wallet/tests/batch/capacity.rs": "fb51e79f0086084c53411ab9ab78950e3796ca526e999b5e44268b06a790e5cc",
+    "lattica-prover-p3/src/block_v2/legacy_wallet/tests/helpers.rs": "1c694983ae392c5b8ce8868c009888f793371df47a06345813ca4d2768eb6c26",
+    "lattica-prover-p3/src/block_v2/legacy_wallet/tree.rs": "fff8191e504207fc52132f1273493854ce9ea4e784004022579536b938a524c2",
+    "lattica-prover-p3/src/block_v2/legacy_wallet/tree/tests.rs": "0356a1736ed82857662df1c5986452dbcd767b3639bc805d267f06cb9049811d",
+    "lattica-prover-p3/src/block_v2/machine/air.rs": "64f22c2931986132faf06fe0c85695d3b7fc1c9a14851e8c60abe98b0fc2f575",
+    "lattica-prover-p3/src/block_v2/machine/air/degree_tests.rs": "b8643c69985f53c2761bdff13b6bb3c7fcb118a6691502a551e8a60dca9d141f",
+    "lattica-prover-p3/src/block_v2/machine/analysis.rs": "4b3eb9be474044a6e44bafd3a5c3b7db4e01813d31223487f8d882b5e96f08b5",
+    "lattica-prover-p3/src/block_v2/machine/backend.rs": "dd7d50a85a48c2618d12082dcd9e87fb8dc3f4abd443aeaa7084d9cf931f42df",
+    "lattica-prover-p3/src/block_v2/machine/backend/cache_storage.rs": "da0b916206d3a6972ce659f0f8080de8562d47e9f7d3c93f89616ca3aac2df43",
+    "lattica-prover-p3/src/block_v2/machine/backend/inverse_tests.rs": "f425b81ad29f0e4e9e11e8bf1be16e8763f8941ece96f6689064dac1ddee0ec6",
+    "lattica-prover-p3/src/block_v2/machine/backend/metadata_tests.rs": "4988bb2236026b424d9ca2fe19f7c260926c70766e440f0681de8edfe6e9a824",
+    "lattica-prover-p3/src/block_v2/machine/backend/registry_prover.rs": "9e2d3eca58988ecf5900c27ea3d9dbd9d5692646fd2f90f4b44c25fd2af572a2",
+    "lattica-prover-p3/src/block_v2/machine/backend/registry_prover_tests.rs": "27cf9d6d4ac9fb2af803e299c52cb71696174a02427ada14d5afc6417096510a",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_call.rs": "03ee06d59d8f8baf6fae5903e2e08991fc0c97aee8249c71c920ee7b65ff9251",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_call/storage.rs": "b251f84728b3039c7a896721bfa463c00065562f0fa4f40edfa8216053da48f5",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_call/tests.rs": "f3d977876f5171ac27ffc6911e5efba933439e2f1632991924f463398ecbd8c6",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_envelope.rs": "3170cbfbb3c8d39235c8ca8473d5e3c66eb009ab9caffa430c66dd8642ea2fa4",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_envelope/tests.rs": "0bd3569c06768493e63bd691fb6005530ed3eb6d9e55ccf5fa1111c062c617f4",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_lifetimes.rs": "7f54a0fe7d43164645c691730f4f994f063ae43b3b97181e7dcb1a814b602eff",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_lifetimes/tests.rs": "0b8a4b79005c4ccf3fc81d77882388035c3d4ad07945db51f7e958b362f63c6f",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_scratch.rs": "fef0df6c6f4a1b8404a749deee47a373a850fa2a5ad44c5241441a00eee7c8bb",
+    "lattica-prover-p3/src/block_v2/machine/backend/verification_scratch/tests.rs": "c93934246dc78b306041e81348ca02a71aa4b75c820c5e623f2ab5a6679e439f",
+    "lattica-prover-p3/src/block_v2/machine/backend/verifier_tests.rs": "3273c51e3e4a594877c7b289e57c28c6a3a501d63d30f3de64abfbb535205aa5",
+    "lattica-prover-p3/src/block_v2/machine/circuit.rs": "12c08fbd671ac6b79a296d8f47cd5aee29c6d1fdb36b78066a6dbcf0055bda5e",
+    "lattica-prover-p3/src/block_v2/machine/compiler_constants.rs": "fcdccfae866c517e3b20c797d07b63cf279c5dc822d14b04ff9e72d060509228",
+    "lattica-prover-p3/src/block_v2/machine/compiler_constants/folding.rs": "b749cd6ab17d09cb5726e1f7c23c5911972f5576086b37a14868ba5b72438014",
+    "lattica-prover-p3/src/block_v2/machine/fingerprint.rs": "ca919bbe440f4a244dfbef4f7c0f0ffb9944b47ada2a35dbd16173b75e5d453b",
+    "lattica-prover-p3/src/block_v2/machine/fingerprint/bounded.rs": "2cb4765ac61c9e454e5d041311a21de7d46e48076f41663ba3250174fb7c73c8",
+    "lattica-prover-p3/src/block_v2/machine/fingerprint/bounded/tests.rs": "818a4a7e0a012863d6d019aeac4a14f0e7bc47bb426cd78851d47378f7e46067",
+    "lattica-prover-p3/src/block_v2/machine/gpu_backend.rs": "698609d611d2e0be07e93ac06410d48311422f1f25401b0783ac72a489ff950f",
+    "lattica-prover-p3/src/block_v2/machine/gpu_backend/resources.rs": "151996b1c89a2b71e8bff1298902dbd9356b680b22f827f473811be0fe7a63dd",
+    "lattica-prover-p3/src/block_v2/machine/gpu_backend/resources/lookup_tests.rs": "c7d3106ebd24a0daf0e1af41fe401db6dafe4e611788aecb2b0d9f56527aff0a",
+    "lattica-prover-p3/src/block_v2/machine/gpu_backend/resources/retained_tests.rs": "113cd5727418e97267fac8bef3883d60c8d690731bb0ee1274e88965a877c54f",
+    "lattica-prover-p3/src/block_v2/machine/gpu_program.rs": "39f7850c24e80ca469ecccac2fc1ecccecf84c5622e9a1eb993497180dcf9438",
+    "lattica-prover-p3/src/block_v2/machine/gpu_program/schedule.rs": "8e8ee2c05e37e0dd588b8fcac755f2bc2ca12220d321eded1b30346a3a62f37b",
+    "lattica-prover-p3/src/block_v2/machine/gpu_program/schedule/tests.rs": "9df16804cd1d603ecc056a4ccebf284aacec75bf2d55cd8d1a46631fb43690f0",
+    "lattica-prover-p3/src/block_v2/machine/gpu_program/tests.rs": "b85e02835933b917325cb42230ea84c35c55824b417177910dc3ac4667de8ac3",
+    "lattica-prover-p3/src/block_v2/machine/gpu_registered_tests.rs": "41add2e4076ffbe8515a91247e382016108d50f1a04cddf7f06af7b11af19592",
+    "lattica-prover-p3/src/block_v2/machine/merkle.rs": "81bdc7094c2c22b33c3873086019199f36a0674603780e45abce524400e52d08",
+    "lattica-prover-p3/src/block_v2/machine/mod.rs": "79bbc94d0b7c68e0e9bca82b4e25d5ba83368d395902b19b2710c6741b9f6c2f",
+    "lattica-prover-p3/src/block_v2/machine/program.rs": "02a98bd64620f0de3363fa47fa55b24345b3d03c09577d7f2b9e023c809851a4",
+    "lattica-prover-p3/src/block_v2/machine/program/compiler_memo.rs": "7b0157e446b4ca20ca326c6558324b7b642c9bd8c880e8f20309485dd0a451c6",
+    "lattica-prover-p3/src/block_v2/machine/program/compiler_memo/tests.rs": "b5c8540dfe5fdbc67bc3fe347678c16e5835a523231206a37c30718705e882c7",
+    "lattica-prover-p3/src/block_v2/machine/program/compiler_scratch.rs": "e5481b4933f741dbdd808068fa8ef26e1c1603efd48722ab149a92d4df2e4e35",
+    "lattica-prover-p3/src/block_v2/machine/program/compiler_scratch/tests.rs": "62743fea6d67a437dd1c47069f6a25fdb8a1138224c704aee5760520f575d608",
+    "lattica-prover-p3/src/block_v2/machine/program/construction.rs": "8a15c69f4129602cc3a10b0b0a0f3dbd63ea5bf04563b349b680b095d8fb8918",
+    "lattica-prover-p3/src/block_v2/machine/program/construction/tests.rs": "ecc485b8a1cd0587429f53c89452ffd0e750f8b8a243ba70241e9de51e1cab5b",
+    "lattica-prover-p3/src/block_v2/machine/program/manifest.rs": "9f42860dc4e1c8588653111ff94f311f39dd0f202ac73eb3580b24c803e8dbe6",
+    "lattica-prover-p3/src/block_v2/machine/program/manifest/tests.rs": "9ea7f01f38c1164855093bdf0158482a7aae74d6a9ca57757d339c45396d8a93",
+    "lattica-prover-p3/src/block_v2/machine/program/packing_tests.rs": "6541bf6def1132cb84f0563cd7b95c374c8a9488ec206ebb29757baa429636ec",
+    "lattica-prover-p3/src/block_v2/machine/program/proof_inputs.rs": "0128749fb93a5058471418f12cc19f3c56be623cae8be0ebc5ce3fdf81c4f2bf",
+    "lattica-prover-p3/src/block_v2/machine/program/proof_inputs/tests.rs": "c590e95e1c0269c173930018508e26b097176f5ee420edbb2b4e4f1b33d91a6e",
+    "lattica-prover-p3/src/block_v2/machine/programs.rs": "2215c0493b7aab1f6e8613984d5456f4cbc328d788cd64f63219928f1456251d",
+    "lattica-prover-p3/src/block_v2/machine/programs/paired_inputs.rs": "7be162f7e099604f8fa180ac4a790df390c0d8266a39413e551e8fccfe17b688",
+    "lattica-prover-p3/src/block_v2/machine/programs/paired_inputs/tests.rs": "fd3fad6fbf1760bfbd5fb78ed614c3ca4c5772ba0c115e8557e3454f2696bead",
+    "lattica-prover-p3/src/block_v2/machine/programs/recursive_input_prototype.rs": "a8fc98ee814d0c769c9b02d8f4ae4f610c68ded2dc44016046a88818bfbb1ea6",
+    "lattica-prover-p3/src/block_v2/machine/programs/recursive_input_prototype/tests.rs": "a0487e30c2d67fe69d27f611e1fb3d05edb231b76e2ad47ccee795730149116e",
+    "lattica-prover-p3/src/block_v2/machine/programs/recursive_inputs.rs": "be73a004e6889bb7f7321ad138df221d6b083ef0a27bb69722cdb52d844b059a",
+    "lattica-prover-p3/src/block_v2/machine/programs/registry_setup.rs": "7179a91c8c0829c1ba2b32d3718c98c73c3b53f489842280a7fbf628eb549680",
+    "lattica-prover-p3/src/block_v2/machine/programs/registry_setup/tests.rs": "a0f5c8ad052b960f68c1b14ed3aafe83a1f83498298bc421c0ce3468291ff714",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/builder.rs": "ff6da98207f5e294345687b660537d71550d242f0059ba43aaf11bd365877fef",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/expression.rs": "6af1616eeebf1834367b04d3dbb1082f4f48e7a47004aaa3bd13ecd575eb55c2",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/lookup.rs": "53f5b805f68817597be0ac22aed32bbbeb73c916cf74c5bc1578e7bcd1e932ad",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/lookup/tests.rs": "8f11baea721733749f2fce73392cc2206e96175c8fc38e1d0a6c9e2544cc2977",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/mod.rs": "29e4e6ce7f19ca6876dfc916bfd633653234af557313cd01926fb6ff6db85604",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/normalize.rs": "a36acef4aa1be925930b598b84fe4c49339093ed0df0f431fa640d7a25034a2e",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/normalize/storage.rs": "b71c641d02c8a2bfea30a452b79801af67aefeb085d9cdb3f197c3a131a9f8e1",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/normalize/storage/tests.rs": "f4442f042ea08961b558697c15fc03c865fdddcc4204b10479463fb99e1f310f",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/normalize/tests.rs": "6709f1c58bcb892c1af78ee19521f0b3fd9c165ecd28a5af56adec8db50c37e4",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/recorded.rs": "9a4d3f555a7f97ab080eb29ada2cafbf0937e4b26af7db4b932da3688abe584d",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/recording.rs": "dc6dab042592494c6a3f171758d896c35eb067e77cd52a133dc779483da9cf14",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/recording/tests.rs": "fbed8e4d270355ae180eee69e075743506ae2dd4b18e209a008c974bcd0aa2fb",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/tests.rs": "a8e40f820f80ae88ac9fa7c29a470e003f393d2796b1df5a9efcaf8a7b3b2863",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/verifier.rs": "827aa6e66e7da83d2264ef162a8dc3db2219322a6246823e31e4301b9047e0ad",
+    "lattica-prover-p3/src/block_v2/machine/symbolic/verifier/tests.rs": "ef05f8142580c721f9cf000d9591a9b24170c8f1a62399ea8c334e639ea1d271",
+    "lattica-prover-p3/src/block_v2/machine/transcript.rs": "cdd344ae87f75f76aca0f1749e9cea35606b3a4b299eea861037abc37eeaabc3",
+    "lattica-prover-p3/src/block_v2/machine/typed_finalizer.rs": "c936a036eb681e6472957c089b834bb703d5fe5adfb01355863368168a1b9af9",
+    "lattica-prover-p3/src/block_v2/machine/typed_pairs.rs": "1d8318da037c7878e28c2ec155bceeb2c288a087eefd1fcc42abc1bcff5a9e09",
+    "lattica-prover-p3/src/block_v2/machine/typed_programs.rs": "1c300570f08826b4eeb92442cbca547b9b84c11c00e5a531eeec6187b62a9725",
+    "lattica-prover-p3/src/block_v2/machine/usage.rs": "236fcf02b7cd9705a3379c10f474cb05453b1a03ada012812cc0630cc17ad824",
+    "lattica-prover-p3/src/block_v2/machine/verifier/batch.rs": "a62d8d37bf5868227dc05f5e2f5054d27281b3ecb1b1ee03aeaa1eaf33e3e44f",
+    "lattica-prover-p3/src/block_v2/machine/verifier/expressions.rs": "f70f2e55dcdfc7e2fd02ad819ad2c155378d445d354027faf21f22d613542459",
+    "lattica-prover-p3/src/block_v2/machine/verifier/expressions/tests.rs": "f0ac80fe41305d1837bb0f5147affc823a7946ec5f4281a7cb59f69f139ddb95",
+    "lattica-prover-p3/src/block_v2/machine/verifier/mod.rs": "ce66450463dbbf0b3a588d44e08443078a4df48610c2b600301c8d31acc1d7a4",
+    "lattica-prover-p3/src/block_v2/machine/verifier/pcs.rs": "d070751ba1ff5834b2459c45774641b671683c9ed47e1c879de4cd6ff6067817",
+    "lattica-prover-p3/src/block_v2/machine/verifier/pcs/tests.rs": "4ce5862efc6a7c4a65f2b0809afda6990e8bdbaf36f685643adc2085634462df",
+    "lattica-prover-p3/src/block_v2/machine/verifier/pcs/tests/reference.rs": "5951d8a1a964081078a01abf1fa567cfa958788dcefbc3bb3ef6b7b2a700c51c",
+    "lattica-prover-p3/src/block_v2/machine/verifier/periodic.rs": "b82367ce3843ed328c3f7bd4e37ddb9b5924e5cee36a687219e299543f10f6e7",
+    "lattica-prover-p3/src/block_v2/machine/verifier/periodic/tests.rs": "7820b113a715dd47b75559f30d391c9312f0a84a44e8a803cd0a3f1355bfec54",
+    "lattica-prover-p3/src/block_v2/machine/verifier/template.rs": "2164e42b0f1bd2665533996f9b90c5fe6b366d5c231432b4b87df7400dc19ff7",
+    "lattica-prover-p3/src/block_v2/machine/verifier/uni.rs": "24732449dbb61f79cb4d8e5d00066a81b89a233917a53f2c1288e728c87f651f",
+    "lattica-prover-p3/src/block_v2/mod.rs": "26549b18816216b8961bf4d39328ae0b2f6cae227619c555096539b6781c8399",
+    "lattica-prover-p3/src/block_v2/multi_air_pipeline_tests.rs": "be1dba692d2062f95e5f9352e655a1f54ebb2f7677ccb298f8530e5cce3a917b",
+    "lattica-prover-p3/src/block_v2/native_gpu.rs": "2e5e9344e9d79dc427d25b3310b6b746cd2c1301610150a770e172aa24a49f96",
+    "lattica-prover-p3/src/block_v2/native_public_gpu.rs": "67e03575dfacd994bcd5a9e60dc5f4e59a922b46479c1ac1490231a1be565e32",
+    "lattica-prover-p3/src/block_v2/normalization_workspace.rs": "be32cb3d3a7b5500f06728786a95d71212808d3d59d6db1e4f5ee93a1a181341",
+    "lattica-prover-p3/src/block_v2/opening_pcs.rs": "317453fbcf28f5f8e20a8bc2704d0157d32be46cbed5604e676bc3e30d6e945d",
+    "lattica-prover-p3/src/block_v2/opening_pcs/commitment_storage.rs": "7916ad0a526776b24252d16c0f0d7657cc09938503ebc6b75fcfbb96bf78c81e",
+    "lattica-prover-p3/src/block_v2/opening_pcs/commitment_storage/tests.rs": "00a59482a6dced497bede661c9c77e3f60fde3ee87c927fd588eba43fb4471a2",
+    "lattica-prover-p3/src/block_v2/opening_pcs/field.rs": "3d805ed9923fa26ba862910686f9c028be79f5b8096d86cfa179f3736cc04b5d",
+    "lattica-prover-p3/src/block_v2/opening_pcs/field/tests.rs": "53702818668fdfda1b9e14351420ed25fa9e27af8617e76ed0134107b92127f7",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned.rs": "c1bd44bc752a780d76d4f9e399a1d461fed687bfa826d423386e298ca9880870",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned/storage.rs": "4a38fe00c5ad141a4e7bca4dc5be80af58050291f0cca135ab68fbeba460695a",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned/storage/tests.rs": "421bb43bad40c595e3d939bb193c0af309c7af7e309f9ba1773b84c48b8529e7",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned/tests.rs": "9fdb934d033d66b72ebb93f2e15741f2d6384a03876beefe1ca5d1f8034577fc",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri.rs": "372bcc3e0e3462c0375401ae311164f02f0abcb911facc6f784cbbb39a649621",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri/general.rs": "342360b13cae880e344c9bb00cef6589f80fa34cbf1c08625c6c6f134327452d",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri/general/storage.rs": "c684638e6bbe11c33ae248d38e69657ee47245e7dc6319d8c044838304cde5f2",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri/general/storage/tests.rs": "066c6c86b1ee072261174e1542731efe26b46bd3a9649b0736362de53a4bf637",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri/general/tests.rs": "3a38795c5a0f7f4b04a605a3ba90742098cbb7fbaeaab49ecd764554f9cd6ab6",
+    "lattica-prover-p3/src/block_v2/opening_pcs/owned_fri/tests.rs": "6d8d47d1b65ff729c481ac8a462f4b198bed01ccdbc287aebc46af6659c9e54a",
+    "lattica-prover-p3/src/block_v2/opening_pcs/runtime_storage.rs": "fa373d384aee0707a39197009cbf6940dd9ce0a7100ebca8e4a5f22db3b880d6",
+    "lattica-prover-p3/src/block_v2/opening_pcs/storage.rs": "5cb19ce934906408a472367981e30999845f7116057fe0df8a3a7c34bab9817b",
+    "lattica-prover-p3/src/block_v2/opening_pcs/storage/tests.rs": "14dbe66f89aec62dec8e4c7f1d0cb90e25d3a16e7b7ea2a0e28d56b920117046",
+    "lattica-prover-p3/src/block_v2/opening_pcs/test_support.rs": "feecada55054fddbd380821aadc211ab5ff4028effdc0044815709fcd82fd3fa",
+    "lattica-prover-p3/src/block_v2/pcs_field.rs": "04097bc9b95188408503eedee44d435340f8b5c156d46ba6aedab086d3f8ac9d",
+    "lattica-prover-p3/src/block_v2/perf.rs": "05673d7ced6d292d15a0c59e151664d496a8e5d57f51618d3e7141fc5383bf98",
+    "lattica-prover-p3/src/block_v2/perf/timeline.rs": "0b14c986f5725b9d2a62b56d3b0f4c14d72d52fef2eae7e5e0421d5df89d07cd",
+    "lattica-prover-p3/src/block_v2/profile.rs": "981f3a160adecfde820d902f7fd4742722d05259b7cfbaaa64db33dc0abd7cb8",
+    "lattica-prover-p3/src/block_v2/profile/verification.rs": "be21c7805c4eeaf6d06ee60e3e2173d11996a776a5d37974ad4899898d991b24",
+    "lattica-prover-p3/src/block_v2/profile_host_budget.rs": "842d1faa631c4a5021e7db9d2d908e65343a6359b855327b5b76a41af05672fe",
+    "lattica-prover-p3/src/block_v2/quotient_pcs.rs": "9f83224dc38e7f42dbd5bfedfef7764081d2a20cc3ed84df94be0bdb41e9a66d",
+    "lattica-prover-p3/src/block_v2/quotient_pipeline_tests.rs": "ee3aa120450a024939eb3bb8f7bc3cc40618ccb73d03e15a1eec7e57467e1668",
+    "lattica-prover-p3/src/block_v2/random_integration_tests.rs": "839c86e4c61a5058c396599df288b707df64971c1d1c0d2c9d8f6a141eabc3f0",
+    "lattica-prover-p3/src/block_v2/random_pipeline_tests.rs": "d17c430e8b2ae8ea86d6a0c23fbe597a4114484a043450025b0b105148fb017f",
+    "lattica-prover-p3/src/block_v2/random_storage_tests.rs": "f0269f818b733be8035ac8229c3841315699e60ef3118042e8ebc44fa33477bf",
+    "lattica-prover-p3/src/block_v2/randomness.rs": "850d40948279560877996c1e9772d90e5e7dbca92aed534f14fc495e6a4d0925",
+    "lattica-prover-p3/src/block_v2/randomness/resources.rs": "150536e5a6bdf681a643f2b6bfbfe0318cee3122c74a872a6162f9b800d609ba",
+    "lattica-prover-p3/src/block_v2/recursive.rs": "370f3bd173cf89d494bc0488724eb917f7ed0a32bddc807e0beacafd40362d09",
+    "lattica-prover-p3/src/block_v2/recursive_checked_registry.rs": "c4407561e65204d8cfc7fdf862c47be0654c008fd24acbe18ca096279b17bedb",
+    "lattica-prover-p3/src/block_v2/recursive_checked_registry_tests.rs": "aee87d5b15d192ddaa48058f468f8edeff047878c0e8eec363ff3db18ac2a297",
+    "lattica-prover-p3/src/block_v2/recursive_gpu_budget_tests.rs": "d3d8c5849902f82366b266d8ae6aff4c85ab8440d5b1a03c0f4aeccd6d12b3d7",
+    "lattica-prover-p3/src/block_v2/recursive_startup_tests.rs": "6d7e4100682a356a32c3cfa9a365c1dbe6fd710939add91b4e40e5662f977bf6",
+    "lattica-prover-p3/src/block_v2/recursive_storage.rs": "17412a972db0097e4b49a04412920f03a643e671e5890f40139bf185a2e9eb2d",
+    "lattica-prover-p3/src/block_v2/resident_pcs.rs": "909ddf43d5b6481d80c1a9237b853bb7ea37f02067b1822f4fa24d74e7376d0c",
+    "lattica-prover-p3/src/block_v2/resident_pcs_tests.rs": "1a1382e01b4f4434ab8c07a033af5ec54618e16ec2fd7aded7a4733886b5f283",
+    "lattica-prover-p3/src/block_v2/statements.rs": "b2ab0e59b5139dd653b12cbd02cd0e77c043a6ff2b532d8a206f22ebd343e426",
+    "lattica-prover-p3/src/block_v2/statements/compiler_tests.rs": "71b8ea4b6f7f0b913010cc26ed34f1060606aad50bbb12ac437f8daf55c8db77",
+    "lattica-prover-p3/src/block_v2/statements/folding_tests.rs": "ff38ae9a693f3c31cdbd81fc565605803251960198bb47de9958987ff01447a3",
+    "lattica-prover-p3/src/block_v2/statements/native_public_tests.rs": "78070230f93f1bd6023288d6c5b5ac541543c2330c93105d7b8f68845bf9d4e8",
+    "lattica-prover-p3/src/block_v2/statements/registry_tests.rs": "f84bad0305a98f0774a1b81db3db0259f446e5562f24f111782b493e3729c191",
+    "lattica-prover-p3/src/block_v2/statements/symbolic_tests.rs": "5e82bec99891a197efbc48a3aaf69049747aeab302dc265e8987da565495e321",
+    "lattica-prover-p3/src/block_v2/statements/tests.rs": "6692145a3edb5a583225cd8113570295537acbbe4dfeaaa4730b0f1b82a58bb9",
+    "lattica-prover-p3/src/block_v2/typed_fixture.rs": "d43f872b15feb32540e4b98f93c73105d3773b9bcb7051a3fc87700d4738e7fd",
+    "lattica-prover-p3/src/block_v2/typed_fixture_tests.rs": "963375d5303a9fa29cd977fc696f3ba478b30ddc64bc3d4815457c8a86566973",
+    "lattica-prover-p3/src/block_v2/typed_leaf.rs": "0a065863ca2206ddb6d0e1f382fe8486c62df9f67c0da5acd38939a40e1269a0",
+    "lattica-prover-p3/src/block_v2/typed_leaf/gpu_tests.rs": "e2b2c6fb8a05b2807e338f0ddeeaf6873ca37c4e729f03a8d0ffb124e8d555a4",
+    "lattica-prover-p3/src/block_v2/typed_recursive.rs": "cf805e9029dc0fa2bdb6cd66a7deb294917f8cf8a96649cef7a67ed4ebfd182b",
+    "lattica-prover-p3/src/block_v2/typed_recursive/binding_cache.rs": "c7f5dad6ddb16eb578d9e8bd57023d2ee51c4dbe31644575fbc8199714cfa86d",
+    "lattica-prover-p3/src/block_v2/typed_recursive/binding_cache/tests.rs": "a91e762d71f26f6352001da0c894dd4dfbf63ad5c72fb94fa720c3793219cbd8",
+    "lattica-prover-p3/src/block_v2/typed_recursive/checked_registry.rs": "373abe5423d93f4d88825244898a346fdd856bf920c2d56aba8f105734f50c2f",
+    "lattica-prover-p3/src/block_v2/typed_recursive/checked_registry/tests.rs": "65d0a5eff59fbfb6cd7144a16d406821219183b466c10c84d147ac154e239db1",
+    "lattica-prover-p3/src/block_v2/typed_recursive/constructor_tests.rs": "b0220c47279dadbc281b8e3f21a0fd507ad6a04b3674c0bdfac16c4a0eff61d5",
+    "lattica-prover-p3/src/block_v2/typed_recursive/session_registry_tests.rs": "c2fb609f66a14aeef937d86b26ba3d5e20eeeb5a95fd050430bccb734de17cbb",
+    "lattica-prover-p3/src/block_v2/typed_recursive/storage.rs": "76ef477a1f76967a8243fbee9c16eb3ede8b4e27f562d4703a494f51924a0961",
+    "lattica-prover-p3/src/block_v2/typed_recursive/verified_node.rs": "c324e4e19ec14422236c8953e0ccfef31dc3b2f0133cfbb100de9d57c0331547",
+    "lattica-prover-p3/src/block_v2/typed_recursive/verified_node/tests.rs": "572976d9d9a5dc7344953d3ff9799ee278bd408fe296a3340fd2eb4499be0427",
+    "lattica-prover-p3/src/block_v2/typed_recursive_capacity_tests.rs": "0e2919142829bdcaca5f862110431e45a38fea6953bd821af6cee0e088646400",
+    "lattica-prover-p3/src/block_v2/typed_recursive_full_size_tests.rs": "c3751fac41beaab99adb5afd502acb85365f6436fc45bbddc9590dbac9b3cc1e",
+    "lattica-prover-p3/src/block_v2/typed_recursive_full_size_tests/mixed_pairs.rs": "d3bf5227b8d60b4ea7eca3cad36621c34e8b33adb7ff5486528d83917fdd20f4",
+    "lattica-prover-p3/src/block_v2/typed_recursive_full_size_tests/mixed_pairs/tree.rs": "2d5140380f219c2b1f196d3639d59be66702bcda7d8f125d55932852371c251c",
+    "lattica-prover-p3/src/block_v2/typed_recursive_full_size_tests/nonempty.rs": "01b42ba14dc71d8f32bb862423de2c5593f4c05b91fc68f8d8b5c15c3f3fb0a4",
+    "lattica-prover-p3/src/block_v2/wallet_output.rs": "c6e8e459a9642d30ebce150a03538541921d3349d561209c6b1b5b0294861b57",
+    "lattica-prover-p3/src/block_v2/wallet_output/storage.rs": "8bd80ec9d3f804ec45dd06323a6d7632ca7795fe386b4b46ddca618c9192caa8",
+    "lattica-prover-p3/src/block_v2/wallet_output/tests.rs": "82f84cc8c6658c4169b900dd8455782fe59c25c9edb3c25a8378c34ec6f5b751",
+    "lattica-prover-p3/src/block_v2/wallet_verification.rs": "9dd05c131791c76c05dc0f0687d9ca4a74b1b3cc0f4abb3ba25eb4ac1c8c5beb",
+    "lattica-prover-p3/src/block_v2/wallet_verification/air.rs": "4be495e45ef1bb35e34050f57fa6f9c714a01a5ce7138e2b3b1d4df18411ee6d",
+    "lattica-prover-p3/src/block_v2/wallet_verification/air/tests.rs": "78917735deed01cf7b344c495ee381d1d6166c2fe6b25aebf332594e7a2f0b6c",
+    "lattica-prover-p3/src/block_v2/wallet_verification/decoded.rs": "997d00e0c037c2f2b5a3aa4e3eb33efd4574dd66b174a7674aa1bf56adfd6af0",
+    "lattica-prover-p3/src/block_v2/wallet_verification/decoded/tests.rs": "7cfe6ac4912c679b073e9273abf95a345f6c8dab807989b7da6c04ede29faa19",
+    "lattica-prover-p3/src/block_v2/wallet_verification/intake.rs": "07be3772d2bce9342e6c110897559fdc54000173f0e85fb5c490a3eca60cc5f2",
+    "lattica-prover-p3/src/block_v2/wallet_verification/scratch.rs": "e9b3fbae493429f4f2fb231817c82950e1812fe41fbc16dc7647a8b8a9b9f624",
+    "lattica-prover-p3/src/block_v2/wallet_verification/scratch/ledger.rs": "4a6dc22158f51e73bd62620d0f9accc04488e8eb9321a725dc1cbefe57a030ba",
+    "lattica-prover-p3/src/block_v2/wallet_verification/scratch/periodic.rs": "cc8a223d89e32725beeb9ebf50289789e90ae136a0c3c815c8e35d2167a1d30c",
+    "lattica-prover-p3/src/block_v2/wallet_verification/scratch/tests.rs": "8f1c7c277574ded327221cb3d0e3f97f7faadcf5f7afb67dfb388f491605400e",
+    "lattica-prover-p3/src/block_v2/wallet_verification/storage.rs": "88ed8c1cdc022d1f24c2f0bb3bc7a39ee1708de928d8d556a6f9df3cda09cb10",
+    "lattica-prover-p3/src/block_v2/wallet_verification/tests.rs": "57a78fab1a70f833bb185b114129c0a194b7896a16ce607edf4aa054eb3b4364",
+    "lattica-prover-p3/src/block_v2/wallet_worker.rs": "c925ca3c5310a425ccde7f9f803e518483f6741885c7705569566006e923fbac",
+    "lattica-prover-p3/src/block_v2/wallet_worker/admission_tests.rs": "7b3cf381dcf5923f9cdf257a8a64f51c74f072e56bfbafe8f5259513c834b611",
+    "lattica-prover-p3/src/block_v2/wallet_worker/runtime.rs": "1def33d319e884846e847172e7f80cdd93ce86d5dbd496e571f5a2443e31a2f8",
+    "lattica-prover-p3/src/block_v2/wallet_worker/runtime/tests.rs": "f1a1213b4e0516b4884503c82ad09dc2de26d119fb93dd043927ad48fc01cd93",
+    "lattica-prover-p3/src/block_v2/wallet_worker/tests.rs": "e9b67e679175ca7358f857381e5c3345d24d6f2dc4fc3351e1af5ebeefaf239a",
+    "lattica-prover-p3/src/block_v2/witness_pipeline_tests.rs": "aa6581b2db90b9c435e2119684b44b9835996d96dc9daac369a25f376620b67e",
+    "lattica-prover-p3/src/config.rs": "7524e18273049419734b2278918993eadbccebd492b78df4fc564fef03811fc4",
+    "lattica-prover-p3/src/constraint_fingerprint.rs": "41f695147adea83dfa24be61c0250f9960be53301b5ea7f79381e99b4f2b6f19",
+    "lattica-prover-p3/src/cpu_sme2.rs": "ebb97906ceba2c5f02b3ec6bdc7338115b0f1363145269867d735f702dd6a848",
+    "lattica-prover-p3/src/cpu_sme2/goldilocks.c": "fba50e43a64ce8e3b8b0a946bfd455d9896cbcae0d87394f15aeebd021f2c865",
+    "lattica-prover-p3/src/domains.rs": "4b47186d6a0c94c4b7c6f4fe838c7ace7d429415f96aa7b3190465fab0aa640d",
+    "lattica-prover-p3/src/gpu.rs": "9e58bdc35743d047871a4df4ed0e652f5a55730d452524cca545154b92ba5b4e",
+    "lattica-prover-p3/src/gpu/ntt_cache.rs": "38fce2b773b8c7ab26e2282a1d83fef5ad3ac15b5b3f9371cfea83c19acb43dc",
+    "lattica-prover-p3/src/gpu/ntt_cached.cl": "11b42e0e6898f28f81647fe2edbdaea2a50b66ad556cc09c95f647134e780dc7",
+    "lattica-prover-p3/src/gpu_constants.rs": "b588ad5cffe13371379daf3e75962034b97714bd8563bf2d107e82bba9448a53",
+    "lattica-prover-p3/src/gpu_device.rs": "801f7ea3749c1114455b7f243b686b50b69b83e80ac7424fa7f46493690dc1b9",
+    "lattica-prover-p3/src/gpu_pcs.rs": "98304ed27c73d4ab6425c4a8306959e55d7dbb5d74f1e8f91d681a0aa7fe7ada",
+    "lattica-prover-p3/src/host_memory.rs": "9620df9d806cacd1693e50626e97ed1f5b07c0b625eeb9b23cba2937f70f5de3",
+    "lattica-prover-p3/src/htlc_air.rs": "a073a5149715a132fe9a7907d2c296e6ac872b465564c0b25edf50863dfdac57",
+    "lattica-prover-p3/src/htlc_air/periodic_source.rs": "f21098a278d644ffae91a2d25fb3f846f8cd50a390c1d98f390b37a27092611e",
+    "lattica-prover-p3/src/joinsplit_air.rs": "8cecaa1ac5efa240c493eb54a376b37bac8c3a3689072b366881bbfb2c91d2ff",
+    "lattica-prover-p3/src/joinsplit_air/periodic_source.rs": "473c67402a3bdda50cc88e39df81eb0a03c614dfb9638bbd81a0305d98e4d685",
+    "lattica-prover-p3/src/lib.rs": "18acdba6a0a0fc9efb2a7f5a705210acb2ae122ab18ca3c7a168556c3788ebdb",
+    "lattica-prover-p3/src/main.rs": "613719f104afb6b9df0d190237c3e75d9baad7c98480d0d58a106c0ee189e1a8",
+    "lattica-prover-p3/src/metal_compute/kernels.metal": "4366d80236c563010040ea8b5526fe692c9b631436acc74d1d672ab02d55a6d3",
+    "lattica-prover-p3/src/metal_compute/mod.rs": "f908c3c419a5781b5598034f950101c48afc5ee76b624a5f803bfb89083a22bd",
+    "lattica-prover-p3/src/metal_compute/tests.rs": "611d2c44c4c5a9287c4e7888b85692227a69412e928acae2a7e00515e89dbac2",
+    "lattica-prover-p3/src/native_gpu.rs": "e5ecc4c38bff7824fa7a0334ffcd1b963aa70917df0220a67b03eadb96d2d893",
+    "lattica-prover-p3/src/native_gpu/tests.rs": "63c018bf7e5f82d93b591853b8fcd51d24a1fb632de884baa8ff71a3afc9f57e",
+    "lattica-prover-p3/src/poseidon2_air.rs": "dd228226d6e0a04743ea94546671f616b3d208c4d683caf00da4ec0cce9f1d5d",
+    "lattica-prover-p3/src/poseidon2_air/periodic_source.rs": "33dd45360b055d7aa0349e9cda4ea1e55897f1a6ea290e207b11aea933158481",
+    "lattica-prover-p3/src/proving.rs": "973b283f7a103051c0c935965d66da0082f067bb8f417e787d0a79840a0e47ac",
+    "lattica-prover-p3/src/proving/composition.rs": "778a53023088aab4420974d8602a2c70e7c934317aaea0f051e6378272394bba",
+    "lattica-prover-p3/src/proving/composition/tests.rs": "82c352f379d804f193eecffa44337273d0f6128bf3ef8ef0bed6435b29648cf9",
+    "lattica-prover-p3/src/proving/tests.rs": "b4fcb17fce2efe7cd14f91d274954ec292e00b0b45a7c56b98f9101523584a11",
+    "lattica-prover-p3/src/proving/tests/entrypoints.rs": "7c98edb47109b2ee11651bd8e24456b800202d18ca43c5e71e8172249e566500",
+    "lattica-prover-p3/src/quotient_gpu.rs": "fab8008a8d932577062732167942bb44a862d484d960a418f8ce82bd40ea4d62",
+    "lattica-prover-p3/src/recursion/aggregation.rs": "8cf8260e7c07be0a4b9af92dd003e4aaf7a0ae5276d374e923060498e794ed96",
+    "lattica-prover-p3/src/recursion/fri_fold.rs": "53e5356e36e65ed2b195774b315fad15303d846ad083f64d43b547a8b1f17fb9",
+    "lattica-prover-p3/src/recursion/fri_merkle.rs": "39633faad55b675959576c75ae8f7474f41dffe90bcd7e80b460660f2f008b33",
+    "lattica-prover-p3/src/recursion/mod.rs": "5febfe3bd2b9a513e3c60c0f66e62b32f43d286fa9be5db900fab05a11766e7a",
+    "lattica-prover-p3/src/recursion/monolith/air.rs": "a1f525193276c71089bb47ab79d01845701e87e2e71f4833cf5a43adfcb8e3e6",
+    "lattica-prover-p3/src/recursion/monolith/build.rs": "30e9c8b7cde3b23bc1db5873d5c9b7443318c22fad1fcf4a54febc0c08e08609",
+    "lattica-prover-p3/src/recursion/monolith/gadgets.rs": "d01d746040b31db34109089e27cc9a3351ba013bce9dde2063d684810910179f",
+    "lattica-prover-p3/src/recursion/monolith/lineage.rs": "5a9836d306f9a8635c7414440e79c7c63202b019c8183e02356061fa33a3f4b1",
+    "lattica-prover-p3/src/recursion/monolith/mod.rs": "70ca19e141fd77e61ef3a4b25dce2e20aaba89ccb1fdeb114875f54c19749980",
+    "lattica-prover-p3/src/recursion/monolith/tests.rs": "ca0d65d1a48e4c21d51cfbb8950f5bb97d3a9de8ece7aa24b0ea91a09e70f444",
+    "lattica-prover-p3/src/recursion/native_fri.rs": "8dd2915baa1a0392328864dcac219b10c0f0095c0739f8bd83c05e96b060e107",
+    "lattica-prover-p3/src/recursion/native_verify.rs": "3867e488f4eb24a3226e81858e9db7d7d15c346aa53bda24c9b8cb2ebf40651c",
+    "lattica-prover-p3/src/recursion/transcript.rs": "e1099f0c7b905780907618e0c1cdcfc55a4f3a79dcc43c88e6a1ea4cf48b0ee6",
+    "lattica-prover-p3/src/recursion/verifier_air.rs": "e34f2a1b1f35fb83c24157376c9b0313e8c0a8b9256fd27789c551106cf9a860",
+    "lattica-prover-p3/src/spend_common.rs": "3979dca0b6266d5bd768d31313f02f115aea5e220ca174401188f85cf595e3b3",
+    "lattica-prover-p3/src/spill_alloc.rs": "9ecb7b03ef35c28ee4421a34cfaee20acc54a66bf7f231b1cc6dc84bc0cadd28",
+    "lattica-prover-p3/src/spill_alloc/allocation_requests.rs": "ea1f8d96e96c275159d70a5fa1d62b38132d0f83228a888071bdc10b959f9f75",
+    "lattica-prover-p3/src/spill_alloc/config_admission.rs": "4a9101da3779c844448e8274b776d2c3a1e4d1ecbf9284335eef484071341af3",
+    "lattica-prover-p3/src/spill_alloc/host_backing.rs": "a49f3a0072691294d814b40b307d9cb121057dfa9f14652cefeaed9faf4b6f70",
+    "lattica-prover-p3/src/spill_alloc/host_budget.rs": "552a6301748f50444f2822031a08d30df0e135f92119a6c4ad0ed29449ec1c64",
+    "lattica-prover-p3/src/spill_alloc/host_budget/tests.rs": "48f2a2a445c8efa10e0af67c64083f3f9573931ba8bc1954cf7a141fbe3f82e8",
+    "lattica-prover-p3/src/spill_alloc/system_budget.rs": "3e460d933acb815df2f90d9c9b31e6a92cd7d5e2f0edea86d308fa6e0119db22",
+    "lattica-prover-p3/src/spill_alloc/system_budget/tests.rs": "86aab462898c9a994ef80a21172551113bea99238e6c4b16e0661efc02b1bedd",
+    "lattica-prover-p3/src/spill_alloc/system_requests.rs": "f382049cf7dcee5cb54fff9289dbae678c838e466510d623a1c15cb6fca830a1",
+    "lattica-prover-p3/src/spill_alloc/system_requests/allocator_tests.rs": "4e86cfadc62df5260c906246b695ae6e564c352f7b6b5083da199fb5270c5f21",
+    "lattica-prover-p3/src/stream_prove.rs": "d13b3d4cd77f6a230bc9c98edba582200d636a9a039ff9a45b39787bc210a3c7",
+    "lattica-prover-p3/tests/gpu_large_batch.c": "5f71cc659a3a228a1b3db4a10385a057189dd6a5d803f62bfdaf60e288fcc9db",
+    "lattica-prover-p3/tests/gpu_lifecycle.c": "e6b0e8453a995c4c6f18b1fe88a4916581febc1d86e54607f779d608f91b1b1d",
+    "lattica-prover-p3/tests/gpu_public_service.c": "b531d9c83845efa5211d8f728a87b69143faee8743a6a95f0b753c935439e645",
+    "lattica-prover-p3/tests/gpu_public_service.zig": "fcaeb209950afd5b77957478d8deaa3a19b6efc3ff994b29c6b10aeb2fefa29e",
+    "lattica-prover-p3/tests/gpu_public_worker.c": "52bca00adba59792ca2028ccf15bb3b46d85e00a134b16f18eb1639433453b41",
+    "lattica-prover-p3/tests/gpu_public_worker.zig": "6fa9380b36c783d43ddc5601a2aca2f676f13da26d9a8ab24e61d680a0d61f4a",
+    "lattica-prover-p3/tests/gpu_tree.c": "e95cf6ad2e7199c17f254aee6b2057cb1d37f9070671f52f6db5388da99f99c6",
+    "lattica-prover-p3/tests/gpu_wallet_worker.c": "5d0b2af1dd29cff588507a4194c8278a8b384773482f22abea0317956812d29f",
+    "lattica-prover-p3/vendor/p3-field/.cargo_vcs_info.json": "f944ba4c9a8d2ffd36bed154071d3122d72c342a4445a3680e40bac67669d059",
+    "lattica-prover-p3/vendor/p3-field/CHANGELOG.md": "2f2cf3f5a13ebf1397a375ecda120b47e79ed8f4d41cb8c6003fa876a6f3214f",
+    "lattica-prover-p3/vendor/p3-field/Cargo.lock": "2c2b8504472c7368ad0d87b9d521486dd4476b6a1dfea5ce775f666e4bbd82a0",
+    "lattica-prover-p3/vendor/p3-field/Cargo.toml": "4cccba01a8c6bd35a7e12514d9e59a02974a3ec2e07ae222d125c006197fd330",
+    "lattica-prover-p3/vendor/p3-field/Cargo.toml.orig": "1745f996977840bbdb0d307d819bd4696901d847d06f4ea5e27a57132ccba38d",
+    "lattica-prover-p3/vendor/p3-field/LICENSE-APACHE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "lattica-prover-p3/vendor/p3-field/README.md": "7a955916822600090791297cfda5669348b59fdfb1594a0ec1723c7194cccbf1",
+    "lattica-prover-p3/vendor/p3-field/UPSTREAM.json": "2a655da637cceffc49c9c36e3ae09482d058e4ca5c66c5590fc47dc0a4cb3af2",
+    "lattica-prover-p3/vendor/p3-field/benches/batch_inverse.rs": "e6315de0a67ccb72b0137bb9068ec5d2a41293cd464a3a87990f741467d2d20c",
+    "lattica-prover-p3/vendor/p3-field/src/array.rs": "fd84eab3769c2cc2dde86bc549a368d0adeca838c482bc29b765b67998b462a1",
+    "lattica-prover-p3/vendor/p3-field/src/batch_inverse.rs": "44598c9bb6991f48e2a238e4afbd45639710b2d930569e7740e5dbffb2958181",
+    "lattica-prover-p3/vendor/p3-field/src/coset.rs": "540d5ea209fefde0cff5b466f78b22c4f460e589efb55d1b97783bb2f964775c",
+    "lattica-prover-p3/vendor/p3-field/src/dup.rs": "866a17cc58ff96affe9cd88afc02dbc608d7636e679dcb4a0efd169db4baa070",
+    "lattica-prover-p3/vendor/p3-field/src/exponentiation.rs": "2449631f8b995abb62b66c0b8442629b739921dd0b522bf5b04502608693db43",
+    "lattica-prover-p3/vendor/p3-field/src/extension/binomial_extension.rs": "121de37700922b14733abf2f762c16691cf699d2731ed6ada14ae800d4280823",
+    "lattica-prover-p3/vendor/p3-field/src/extension/complex.rs": "a8e0fb533819e13e4f1c267ac0da04a1ea64c8d53fabde6a67a501dcf3b4edee",
+    "lattica-prover-p3/vendor/p3-field/src/extension/cubic_extension.rs": "5c38d406e2e0e92475bac7debb5488302520867d99967c159b42c872abdcea45",
+    "lattica-prover-p3/vendor/p3-field/src/extension/mod.rs": "aac05a6fdcc6f309792680d356c00ee491b4ad79790f746a04119523fe68ec38",
+    "lattica-prover-p3/vendor/p3-field/src/extension/packed_binomial_extension.rs": "40d2a44e158e9bce141226708b56d193b7cb34f5dec10c7ea1fc684e05ce9ede",
+    "lattica-prover-p3/vendor/p3-field/src/extension/packed_cubic_extension.rs": "ddef8b64059c5a8668a92d8cdbe261e3bd67210fb8ed38c0758c5cb881da1e80",
+    "lattica-prover-p3/vendor/p3-field/src/extension/packed_quintic_extension.rs": "26558de174cbc97864af6b98fdcbfb5d128620f633a86c4cb0434bcfd211783f",
+    "lattica-prover-p3/vendor/p3-field/src/extension/quintic_extension.rs": "47dda94a12d861afd41e85658e30cb0c132b83dc77455f32dddf721ac220e889",
+    "lattica-prover-p3/vendor/p3-field/src/field.rs": "e3989fb870feedac023c984cf240216020abb6f44cf67b57fb38d4ff3d02b069",
+    "lattica-prover-p3/vendor/p3-field/src/helpers.rs": "4c139cb8a38ae2a335638988d751934daf8e05d9d764e563fe0709775bcbdc64",
+    "lattica-prover-p3/vendor/p3-field/src/integers.rs": "052cb3b093c72b22c1ccee95a07d9543cf2e5e11b1ea97ed99268cd7e7d4ff95",
+    "lattica-prover-p3/vendor/p3-field/src/lib.rs": "348e633ff2c34ecf1ffe88f2b55002dace5714fc244eef49899df3152beb25e6",
+    "lattica-prover-p3/vendor/p3-field/src/op_assign_macros.rs": "3a1fb5eeef1b8a414dd0f9712e5ef9d877ce966407bcb8553b5edf9d1b07965f",
+    "lattica-prover-p3/vendor/p3-field/src/packed/aarch64_neon.rs": "de0660bdf76ce67f88b5b2c285e6dbc2f8bec87293f44ff0cbb88dac5c86d1bd",
+    "lattica-prover-p3/vendor/p3-field/src/packed/interleaves.rs": "4f0af347a2cd4add88f15f5ca4ed1fd3095d33a64399accdbd0cd556ead16578",
+    "lattica-prover-p3/vendor/p3-field/src/packed/mod.rs": "101493582dde370a4dcfd141fda49dfe1be94a8bfc3ac4b966b14cd80c0c370d",
+    "lattica-prover-p3/vendor/p3-field/src/packed/no_packing.rs": "9a43309de14da4ddb751426032bb91c2e2f68e4cef02f3554fc1231f5cbabfde",
+    "lattica-prover-p3/vendor/p3-field/src/packed/packed_traits.rs": "0c585e4e3151d70a0bc2c0e9524bcda15fbf540da82c2390aa1348b9dc9ff18b",
+    "lattica-prover-p3/vendor/p3-field/src/packed/tests_packed_mod.rs": "bae8ff80c291a3d7970585466cdce36f279424f12193fa81b612d8b45d251be0",
+    "lattica-prover-p3/vendor/p3-field/src/packed/x86_64_avx.rs": "d1b6d17cad16e3b7b6a613b89dd6743a019e2fbd9cc348c81078acd2b3320100",
+    "lattica-prover-p3/vendor/p3-field/tests/coset_tests.rs": "36bf4284afb766660d2eccb8e24ca71a06dfe97293780924d3aededce8924723",
+    "lattica-prover-p3/vendor/p3-field/tests/helpers_test.rs": "5abac2203825d4121bbb1d03d9750bb8563276454f508d37b7c660cc46b5b528",
+    "lattica-prover-p3/vendor/p3-lookup/.cargo_vcs_info.json": "052915b22c2e0eed606b899b77f2570bb944d77875f34c2b4fb71489cbf04126",
+    "lattica-prover-p3/vendor/p3-lookup/CHANGELOG.md": "ec5f0da8533bc593c725ae4282647bf8e54304966da1f9688438634ddc649b9f",
+    "lattica-prover-p3/vendor/p3-lookup/Cargo.toml": "88aaa0167d7c7c2e6cda98e4d21b6bd09c4f87ec8fc7c3c68b3877ad3f9029bd",
+    "lattica-prover-p3/vendor/p3-lookup/Cargo.toml.orig": "0142171fc38fe3490b33ad302ba23815b724c2aa4e66461ded136f1f8e8721c9",
+    "lattica-prover-p3/vendor/p3-lookup/LICENSE-APACHE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "lattica-prover-p3/vendor/p3-lookup/README.md": "967a8394031ea9acf8c0654acb98296adda50b8d88ceb244895272551f4fbd99",
+    "lattica-prover-p3/vendor/p3-lookup/UPSTREAM.json": "016ca9de617ea79649f010dc60afd570dfc9b143149359a4563b042f78643612",
+    "lattica-prover-p3/vendor/p3-lookup/benches/logup.rs": "6360bcf4a4cfd1633a87c04d9264a6e85c8ef2fb442dc66b105d336248100f5b",
+    "lattica-prover-p3/vendor/p3-lookup/src/builder.rs": "2c2e6e1a0736d889a73032f0949f17dfdca5eaa4d2c067453a4fb5f6f13441ec",
+    "lattica-prover-p3/vendor/p3-lookup/src/bus.rs": "011e6719e01cba6b017385622bb7e4485a4f88da3a0bf43761635d4e390d4c13",
+    "lattica-prover-p3/vendor/p3-lookup/src/challenges.rs": "e945e87b02878a93f79afc70dedc5999563e07cdc8d83f8eb543c45c57f384f3",
+    "lattica-prover-p3/vendor/p3-lookup/src/count.rs": "943038f6051d447766df9b95cb7704f87461586ab88c42ee956c8c08d1c4e84f",
+    "lattica-prover-p3/vendor/p3-lookup/src/debug_util.rs": "b77cc6e23d7a8eaecbc873db0db4f91d94dfd6e94d738e7cb4a317a62e5d7bd8",
+    "lattica-prover-p3/vendor/p3-lookup/src/folder.rs": "685bf8c518282b206da7548280a3682e6f35d2aa2ee3c289fbe4b7c5748f263a",
+    "lattica-prover-p3/vendor/p3-lookup/src/lib.rs": "207337945241fff7ecfd2de927bafe21703edc2d985aec5d6cfa81d5cbba65d4",
+    "lattica-prover-p3/vendor/p3-lookup/src/logup.rs": "2be0968bc048d18d7ac35623552fb49991d174dc4b9995d94d78bdde211f0f49",
+    "lattica-prover-p3/vendor/p3-lookup/src/protocol.rs": "14dfbe05848f5ea40b243d3f25a3bcffa7d05851a562ca32db46706e3bc21993",
+    "lattica-prover-p3/vendor/p3-lookup/src/symbolic.rs": "ccc5481c92158dfc22b773611e9178012bf93a1a64ff7eb701faa2b6ad607b07",
+    "lattica-prover-p3/vendor/p3-lookup/src/tests.rs": "902e0b9c8ede281ef2f39148254b4e85985de185ae8753ba2b924a32ab9e968c",
+    "lattica-prover-p3/vendor/p3-lookup/src/traits.rs": "466cce3a75ca3ffea91f8e1f5b9142c916568cee62aa7b8219957c4caff85e98",
+    "lattica-prover-p3/vendor/p3-lookup/src/types.rs": "d4417b64c1416072215b1cd6cf0fc19e536269592c887fbc0986106d7c4ecf35",
+    "lattica-prover-p3/vendor/p3-symmetric/.cargo_vcs_info.json": "d5bc751a0f10e2cdfe20061284ff290445606110880d0ba446c644a977761475",
+    "lattica-prover-p3/vendor/p3-symmetric/CHANGELOG.md": "b36cf566c213b203c7ad9774925ca514c64a985f4538d3e7662b3cf8e70e8bb6",
+    "lattica-prover-p3/vendor/p3-symmetric/Cargo.lock": "f8524945b5770f8ed4382d998ca0b7ab89c34855f88a06392ff12b5b2137b883",
+    "lattica-prover-p3/vendor/p3-symmetric/Cargo.toml": "5da7c68255de1831d70944161c606f96f71cdc72a7255ecec12cdbdbad6b55e7",
+    "lattica-prover-p3/vendor/p3-symmetric/Cargo.toml.orig": "39c155d00dfc598c1f3d61d93bd3f27a59295cc84a3559011a18cfeccf0c7eef",
+    "lattica-prover-p3/vendor/p3-symmetric/LICENSE-APACHE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "lattica-prover-p3/vendor/p3-symmetric/UPSTREAM.json": "308748ba32e245ab779dfa2b44d87df0405dcb180c24821cc2568b2c163b1a63",
+    "lattica-prover-p3/vendor/p3-symmetric/src/compression.rs": "7f5e98be7552bf5b858cbd3533c33e4156da12b59789effffe83ea76eec457ec",
+    "lattica-prover-p3/vendor/p3-symmetric/src/hash.rs": "44a5f9249064b218043619d182c91ca225da51688b4b58283bd537a1bf86eeff",
+    "lattica-prover-p3/vendor/p3-symmetric/src/hasher.rs": "392bc75948500ed991e85f6a26d8f4980b989f34305c431ae8c946a4d0430bb9",
+    "lattica-prover-p3/vendor/p3-symmetric/src/lib.rs": "edc00482e07ac0420b01144d9b8b45ca94a271c7d24a3ecdb5a48ddb3dafcf2e",
+    "lattica-prover-p3/vendor/p3-symmetric/src/permutation.rs": "151be9178a58631c5f68d14ac6214824b310bd2d4467c70373bdf4912313047a",
+    "lattica-prover-p3/vendor/p3-symmetric/src/serializing_hasher.rs": "82d65e117682b77818e0d66085d4e95442bd256d61ab3ebce0895584462179bf",
+    "lattica-prover-p3/vendor/p3-symmetric/src/sponge.rs": "02ca475d0b42fe979eb17ca08b3ceb599a9913a423fa276816092a52f2c7cac7",
+    "scripts/run-wallet-gpu-worker.py": "8f0037193b52b0ffda3a8f163d494112a25193b491d2a887958aa5005bca313a",
+    "scripts/test-run-wallet-gpu-worker.py": "d316c2285c56f8035b2eb6ce299538e8c2883aa6c0e1b280c328b877293638bb",
+    "scripts/with-toolchain.sh": "e4d34f1ce7ac5c7d1124f4a1347c87a4bb2b2284b256943bf5a7fd0ccf97073e",
+    "src/block_v2.zig": "b257a78c8dc63c897d3ce81b3c05e4aba59425216174d87bdc2c68c7056fab04",
+    "src/block_v2_capacity.zig": "666b29820cbb3b9d9edd970a7113b087fd776f2aa5b16e8cdbdfd9693ca1c810",
+    "src/block_v2_expected_root.zig": "23cb178d33d417154c1ab161ae505f9ea7b17db5b673166f736c4d0c1e3a7847",
+    "src/block_v2_expected_root_128.zig": "778f17d8e4f47cfb63b278ed9374637e353a5b10154426fc1b2b590916508188",
+    "src/block_v2_host_body.zig": "d5f1ad5796a8198bef595da274d8f7b6d80bc8551ae0dad8fae4751c458c14c0",
+    "src/block_v2_host_bridge.zig": "02b7994235c1ba5ba24e0316f05e6e72d4dabb42ac91fddbe73f3e5397063c12",
+    "src/block_v2_host_bridge_128.zig": "55163c3f0e087a71ddb4b1019ad6d71a96e0ae150df4d4d1c22dbe28f2516c93",
+    "src/block_v2_host_fixture.zig": "d735a02a47af1a1fc0beafaea378465896c9adf266c6d6b6e0c46725dbb59dd7",
+    "src/block_v2_host_tests.zig": "1030945b3aebecf02a528979aa86961f744f0abb0c0b05e23ad58f872b9c5a33",
+    "src/codec.zig": "c097cac73a8b3332e959fc2c6f44c01884869a2c7abbbc9e4b08fd16eb92585c",
+    "src/ffi.zig": "0365bf51e6978e9b1d45822a9aa5183da2760e04760a60e912ed444178793375",
+    "src/ffi_integration.zig": "4ef74ecf8b9227b0bfb0df48cdc6c7f1f7adc58eff6aa253cec15df62f768542",
+    "src/field.zig": "ee6e77d75b06495baa14459ac6dec0a63e7247d725f548b6fcd27f8a235c7970",
+    "src/integration_node.zig": "1ed17a405f829a646334bc9c10ae7f4b78f58a6e194ec6fc7a2859b6f2e2e23e",
+    "src/kat.zig": "3b8a887de21091b738d2a2329d08754009f01d2bceca7b3f471f90997019ef7d",
+    "src/node.zig": "536a6a140d61ddcad91f80e2f7df8a52e243aba9206de653e7728e4837b991fb",
+    "src/poseidon2.zig": "031340e80e6183661420b86d9ffb02b0a88b58c1c2481a939b643b96b5313668",
+    "src/primitives.zig": "4ae14d8ed14b5ea3c826b79491c94c31ead21c1cce94eb2f5a58fe780dc1a19d",
+    "src/production_probe.zig": "6857e2b19e6805bb284659da0d07033f7b86570f35725bc497e8fc0ea52c6c18",
+    "src/production_probe_128.zig": "205057817b00fb9ab5a144c9840c086f03c2333f989f890f20fac8cdc3f44b13",
+    "src/protocol.zig": "679869437618a162132d963cfd6a6e319570291acdbb4f874a03e1e6d34a8c9c",
+    "src/prover_abi.zig": "8c765844ecb915ba8425b0ae2f892fe5c6c61c34c53f8413d343789b08cb8ef8",
+    "src/prover_runtime.zig": "e23634177047e783ebfcd84a71a8734c82e7a6574b72324407d25dc3390dfe46",
+    "src/tests.zig": "196e6690aa8e55c3fc52a3a02f25f7126a41fe06e2777fad098b209b8758bee0",
+    "src/tests_128.zig": "f776148c0d6fd7ee94533f9a684fa5fcacffdef16c2e82f5cb47d7a9e39de9ec",
+    "src/tree.zig": "a6bdd9394da9554cf3d0aae1cd4d4a146f450a85bd87ef855bdbc1d8a8c95e41",
+    "src/tx.zig": "89a0f9cc0311f582714420e4f7563936fedb9586cb7e5575c6bae8e77369c3c2",
+    "src/wallet.zig": "6a4268abd2853c80801f49eabce30562975812e1cdcb82ffe5e2f843d4c93f82"
+  },
+  "source_archives": [
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/isolation-preparation-01/source.tar.gz",
+      "sha256": "1b3ec1e79b8ac284ea229c8e1e0b42569ac57d303ed4526405032bcc65bc739d",
+      "files": 880
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/source.tar.gz",
+      "sha256": "ae76a974fab2597dd396b714a7fa6b566c376a7d12ea3a0b1bd165da11f486bf",
+      "files": 880
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/source.tar.gz",
+      "sha256": "34e44051244a67e0fc52acba4acde7fab565a586b1a12830dd346d6ede632c1c",
+      "files": 880
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/source.tar.gz",
+      "sha256": "3281630e5d7433f90858037ee68eb661e862969929665fb3735a3686076f5c65",
+      "files": 880
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/source.tar.gz",
+      "sha256": "566f709fe6a7905aecd42df9a0f159e05a24e6493ef7beed3ab3e0831d5ab730",
+      "files": 880
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/source.tar.gz",
+      "sha256": "eb1cc060bb498d3a0111fe4c43582c4525f5803f81b84ae59fffa19865ff95b0",
+      "files": 880
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/source.tar.gz",
+      "sha256": "282df6a1c74fbf44dffc069f518280cf3ab4546c32bab68ef102afe6e95f2940",
+      "files": 880
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-tests-01/source.tar.gz",
+      "sha256": "a61fea79119c424c4f81673144217d55cf1bb2a6461456e5286fb3a7df0dfead",
+      "files": 880
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-root-tests-01/source.tar.gz",
+      "sha256": "a22eaa9e531bbf9c4d9da154222553f1a4692bdf66b153c3b3028a9d8b865516",
+      "files": 880
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-ffi-tests-01/source.tar.gz",
+      "sha256": "f1d353520adc14a69d1763cb3fc4e30304eb1592d89811c7acb06139d8a763a5",
+      "files": 880
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/source.tar.gz",
+      "sha256": "96d8cd0dc52ab7cd878592ec5c1dd85363451f56886fb7cdf4049ad843c18794",
+      "files": 880
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-service-test-01/source.tar.gz",
+      "sha256": "96d8cd0dc52ab7cd878592ec5c1dd85363451f56886fb7cdf4049ad843c18794",
+      "files": 880
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/source.tar.gz",
+      "sha256": "42deee78219258b9336c0359af7c6faaf33cc48a292ec38123580ca94663628a",
+      "files": 880
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-abi-01/harness-source.tar.gz",
+      "sha256": "1deac6d48c234e34d568da703ab444af7c91bb30dee8b00edc0f86b9d241d195",
+      "files": 2,
+      "supplemental": true
+    }
+  ],
+  "native_images": {
+    "rust-cpu-01": {
+      "original": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/isolated-source-01/lattica-prover-p3/target/release/liblattica_prover_p3.a",
+      "preserved": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/library-image.a",
+      "sha256": "0a466a27790bd02fde18ab406f2be41d0042a0761cb1fe406f8a7a6db11b181b"
+    },
+    "cli-cpu-01": {
+      "original": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/isolated-source-01/lattica-prover-p3/target/release/block-v2-paired-probe",
+      "preserved": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/production-image",
+      "sha256": "5dd2c4ce53a2dd73d0b721f05131b9e08ff221387fd72d8cae168280e6952eb1"
+    },
+    "rust-gpu-01": {
+      "original": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/isolated-source-01/lattica-prover-p3/target/release/liblattica_prover_p3.a",
+      "preserved": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/library-image.a",
+      "sha256": "5042ade987a1b0f4a7b139f0bd3b8c0641edcd51aa14ea60ee6dec68f895f110"
+    },
+    "cli-gpu-01": {
+      "original": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/isolated-source-01/lattica-prover-p3/target/release/block-v2-paired-probe",
+      "preserved": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/production-image",
+      "sha256": "ef093f1d519c9a91c921d18e29156b3ed8af2a141760e244017b921b237d3d1f"
+    },
+    "c-service-build-01": {
+      "preserved": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/c-service",
+      "sha256": "de7148ba9838969a62a92a7622761d6469ba14a75eba684d019e1e7f1bb9a838",
+      "bytes": 25776656
+    },
+    "zig-gpu-ffi-build-01": {
+      "preserved": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/ffi-tests",
+      "sha256": "9d55faf87ccf203e447ac78bc18b106f3b524708882156566dc8e9da44d3cede",
+      "bytes": 16516744
+    },
+    "bridge-cpu-01": {
+      "bytes": 27502792,
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/built/liblattica_host_bridge.so",
+      "sha256": "373b119056847f9fac8a579f6a9df82ba8aafe60fe0a86cf2705b598efaf6804"
+    },
+    "bridge-gpu-01": {
+      "bytes": 35535128,
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/built/liblattica_host_bridge.so",
+      "sha256": "f8e8610fc9fed23b1025613dbea726236c47e0877f85d694085bce678c7b055a"
+    }
+  },
+  "gpu_ffi": {
+    "status": "passed",
+    "source_files": 880,
+    "zig_tests_passed": 36,
+    "fresh_gpu_proofs": 5,
+    "gpu_tree_operations": 1,
+    "required_wallet_stages": 15,
+    "proof_entry_points": [
+      "legacy_joinsplit_gpu",
+      "legacy_joinsplit_gpu",
+      "legacy_joinsplit_gpu",
+      "legacy_joinsplit_gpu",
+      "legacy_htlc_gpu"
+    ],
+    "cpu_test_summaries": [
+      "32 passed; 1 skipped; 0 failed."
+    ],
+    "native_gpu_seconds": 1.4688417410070542,
+    "gpu_run": "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/gpu-ffi-01",
+    "raw_log_sha256": "8426d302aa9c3b610dd973803e79417c6f0653567a955b7427537a774c3f864d",
+    "original_collector_failed": true,
+    "proof_reruns": 0,
+    "gpu_shutdowns": 3,
+    "native_blocks_applied": 0,
+    "funded_slots_consumed": 0,
+    "full_resource_lifetime_admission": false,
+    "native_worker_service_qualified": false,
+    "production_ready": false,
+    "sustained_throughput_qualified": false
+  },
+  "artifacts": {
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-cpu-bridge-01/cgroup-before.json": {
+      "sha256": "78bb46ff69c54c7a2fce4aebbd3baba15c5fb9a550c134e2217a0f9afc350f2e",
+      "bytes": 242
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-cpu-bridge-01/command.json": {
+      "sha256": "472e21bd37c0c08a2e9ce7b0573fed352d4d177b724d3e86b79b7e82ff8a3ff9",
+      "bytes": 682
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-cpu-bridge-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-cpu-bridge-01/output.log": {
+      "sha256": "c9eb502206527ec23006972400a793f63819a69d3fb2c3982ce2bcea8698bcb7",
+      "bytes": 676
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-cpu-bridge-01/service-result.json": {
+      "sha256": "331dd85020eaf7c911e3417ee78f7ff17a0d1257e2a5c310696fc702d1c3f16f",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-cpu-bridge-02/cgroup-after.json": {
+      "sha256": "795c0da0b26e17644e206308a77a6ab9bb1e4655882ca3a704392f1c3254a641",
+      "bytes": 243
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-cpu-bridge-02/cgroup-before.json": {
+      "sha256": "33623ef3bbcabf4e070e36b4b56abbc71fe8f9e606d2dbcbe78071982f8ebecd",
+      "bytes": 242
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-cpu-bridge-02/command.json": {
+      "sha256": "aed45fdccf7d1d1447d7305cc34264acd2bc37c0c0fd717efa8f19642b9a1a31",
+      "bytes": 682
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-cpu-bridge-02/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-cpu-bridge-02/output.log": {
+      "sha256": "a685bdac501d1061fdaa4d097123c79816d9372abc555d9028fdcd8e635ba2fe",
+      "bytes": 382
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-cpu-bridge-02/result.json": {
+      "sha256": "f60b7509f6393652be9dfc975afce61dfc1ec7bcc426ebfbe95e4d75fdc6d7ec",
+      "bytes": 56
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-cpu-bridge-02/service-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-gpu-ffi-01/cgroup-after.json": {
+      "sha256": "5e7ab86abca74b84ba79feca9d4084c6059b12e703a84332b82fca5f57c5d027",
+      "bytes": 413
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-gpu-ffi-01/cgroup-before.json": {
+      "sha256": "379907d272c45ce1d6e895453e347699bd185afa4fa7d1a0bfa88a861ebcb8f9",
+      "bytes": 412
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-gpu-ffi-01/command.json": {
+      "sha256": "d6c72a01e624c213b823c734d3787ee7b356dddb318a6a666bc74bb10fdde9a2",
+      "bytes": 668
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-gpu-ffi-01/controller-pins.json": {
+      "sha256": "f2587b013460774f3239c0fada6f609f936c382889d21a15283a1981dbcdd448",
+      "bytes": 410
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-gpu-ffi-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-gpu-ffi-01/output.log": {
+      "sha256": "96da02d1524d115554d4a5bdb81c5968fe347bf245999ffb3688db3d40911e66",
+      "bytes": 1157
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-gpu-ffi-01/proof-reports.json": {
+      "sha256": "2c449ddb8dc3ce2d342bbc9d27fb06f49c4fe82bd5858bde949a38d14ac2a91c",
+      "bytes": 26958
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-gpu-ffi-01/result.json": {
+      "sha256": "1bac78165f7f87f3c88fac122fa4a20a2429de9fb161c8a1cad1b3c9dbc7a8f4",
+      "bytes": 56
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/accept-gpu-ffi-01/service-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/cgroup-after.json": {
+      "sha256": "e296b0b7bfa1e092996c99c631c556b01879c851154234ed11e537e13fd7a8a3",
+      "bytes": 396
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/cgroup-before.json": {
+      "sha256": "6caec9de8c74498a62acace5ba8eb57feb9ad93483e4808f675868589e26779f",
+      "bytes": 394
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/command.json": {
+      "sha256": "116ce84865335a33b799f77ee34bd6275b1435310b6d9acb28ddf5f83b698cf7",
+      "bytes": 1583
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/environment.json": {
+      "sha256": "a29ce434e333f53a48c553379c3be85efada45c9c589465947d2d5b62e81cc9c",
+      "bytes": 771
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/native-command.json": {
+      "sha256": "9f02a82e3cfc632e15df20892e2d88ccc1fd19a5f33db6d7c74d1d3144f7ad9e",
+      "bytes": 498
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/native-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/output.log": {
+      "sha256": "784c9ded081583ab1f24b12ce6b6a8cf512656e60fd380f99d611de11686560b",
+      "bytes": 747
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/request.json": {
+      "sha256": "ee644fb7d03eaaed96cfbd15173352da263aa359e4b3b38a05085ac28bce6620",
+      "bytes": 114
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/source-files.json": {
+      "sha256": "6230f2fae736483048cbe8a98ee96dbb351a03f9fbc88b7d152028c272b8125c",
+      "bytes": 115152
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/source.tar.gz": {
+      "sha256": "34e44051244a67e0fc52acba4acde7fab565a586b1a12830dd346d6ede632c1c",
+      "bytes": 2644599
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/built/build-1.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/built/build-2.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/built/host-bridge.o": {
+      "sha256": "de44351bc364f47f3e81505f8f331d05cbc585a1c7397e7973bc7a34d18a827e",
+      "bytes": 8703280
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/built/liblattica_host_bridge.so": {
+      "sha256": "373b119056847f9fac8a579f6a9df82ba8aafe60fe0a86cf2705b598efaf6804",
+      "bytes": 27502792
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-cpu-01/built/manifest.json": {
+      "sha256": "5548e35ce19982d8b74af50dc72f63cd0d691ab86ef1f6c6cf5cc1362265ee8d",
+      "bytes": 10612
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/cgroup-after.json": {
+      "sha256": "d9b0927b4ec9e5f682ecec4de16e9c7151c9d652019acfd882c01e061b688bc9",
+      "bytes": 396
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/cgroup-before.json": {
+      "sha256": "da7fe4fe93196767d23a4f551388e2ec1d077b11c3454d210a6779bea979bf92",
+      "bytes": 394
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/command.json": {
+      "sha256": "a600607da9b1823ff7d1336e059d669c0ed75d7811f481f41dd57e0caa7daa24",
+      "bytes": 1583
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/environment.json": {
+      "sha256": "a29ce434e333f53a48c553379c3be85efada45c9c589465947d2d5b62e81cc9c",
+      "bytes": 771
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/native-command.json": {
+      "sha256": "7e757ab0a4f1eadcf4fbf8b52c0c2792aae0c44b0b44ec34fea56c93277f2e07",
+      "bytes": 509
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/native-manifest.json": {
+      "sha256": "1d8707627bcb072020503101ccf87817989f145c75905f019eb50a256b98f067",
+      "bytes": 10631
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/native-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/output.log": {
+      "sha256": "3972b7278c2480fb82521f3a10c864c44648f3bd14e9e97dd036b425e94d1e23",
+      "bytes": 747
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/request.json": {
+      "sha256": "699d3660896e3c728c21adfb00a12033bef2e66da0e92c9ecafe74bec216626a",
+      "bytes": 114
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/source-files.json": {
+      "sha256": "6230f2fae736483048cbe8a98ee96dbb351a03f9fbc88b7d152028c272b8125c",
+      "bytes": 115152
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/source.tar.gz": {
+      "sha256": "eb1cc060bb498d3a0111fe4c43582c4525f5803f81b84ae59fffa19865ff95b0",
+      "bytes": 2644599
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/built/build-1.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/built/build-2.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/built/host-bridge.o": {
+      "sha256": "de44351bc364f47f3e81505f8f331d05cbc585a1c7397e7973bc7a34d18a827e",
+      "bytes": 8703280
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/built/liblattica_host_bridge.so": {
+      "sha256": "f8e8610fc9fed23b1025613dbea726236c47e0877f85d694085bce678c7b055a",
+      "bytes": 35535128
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/bridge-gpu-01/built/manifest.json": {
+      "sha256": "1d8707627bcb072020503101ccf87817989f145c75905f019eb50a256b98f067",
+      "bytes": 10631
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/c-service": {
+      "sha256": "de7148ba9838969a62a92a7622761d6469ba14a75eba684d019e1e7f1bb9a838",
+      "bytes": 25776656
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/cgroup-after.json": {
+      "sha256": "b6ee59b7b9e83f70ac7ef4fa48b4b1879208d2261ccfdecab62888b40e9bb2bb",
+      "bytes": 401
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/cgroup-before.json": {
+      "sha256": "60b30487374b36d71fb454ca5e48feb3d1044e612aaa37d73ecaee31ab80be1b",
+      "bytes": 399
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/command.json": {
+      "sha256": "8293ea39e2ee7da368c29fcc7f6de505d5946f8e02c9456dda2197a3256ce5e3",
+      "bytes": 1593
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/environment.json": {
+      "sha256": "a29ce434e333f53a48c553379c3be85efada45c9c589465947d2d5b62e81cc9c",
+      "bytes": 771
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/native-command.json": {
+      "sha256": "de21fe5d0defcfc9a8ad251276c9ec3153b2dc531195faaeeb15ba12952198ac",
+      "bytes": 774
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/native-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/output.log": {
+      "sha256": "6cb5c573b73439e7cd5a035df08d0aaa5a236fd8803634eee3bcee7580c5a02a",
+      "bytes": 304
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/request.json": {
+      "sha256": "b3688a6e4bdc3c22ae6c3507ab2ccd7b245da5a3e8f2795c0ce9a7cd92dea7a0",
+      "bytes": 104
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/service-image.json": {
+      "sha256": "452f672e74701290051876a9a992828bd416cae2ae680aa76103efdccb69101c",
+      "bytes": 253
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/source-files.json": {
+      "sha256": "6230f2fae736483048cbe8a98ee96dbb351a03f9fbc88b7d152028c272b8125c",
+      "bytes": 115152
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/source.tar.gz": {
+      "sha256": "96d8cd0dc52ab7cd878592ec5c1dd85363451f56886fb7cdf4049ad843c18794",
+      "bytes": 2644599
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/c-service-build-01/supplemental-input-pins.json": {
+      "sha256": "b731cf1169eb156997e1ba3a25c9771aca4d0fdf73b55c7f56d8555120e65d73",
+      "bytes": 616
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/cgroup-after.json": {
+      "sha256": "ba29ced7386ca8d0c1cb048ce9ebcc1e239d8f0e59205fbc239be846b5459533",
+      "bytes": 393
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/cgroup-before.json": {
+      "sha256": "ad849bff1ac13777d47e6f85fb44645130ed6e29190e8f9bc8cb3ab825754371",
+      "bytes": 391
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/command.json": {
+      "sha256": "1e915fd8deb12a34afac10942912e47fb77c53e8d3322a206b97e0b5f1e4014f",
+      "bytes": 1577
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/environment.json": {
+      "sha256": "a29ce434e333f53a48c553379c3be85efada45c9c589465947d2d5b62e81cc9c",
+      "bytes": 771
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/native-command.json": {
+      "sha256": "b001657ab003c5c90e566e7b79da2d5026c5af252d3f8e3bffea193a87e17f6a",
+      "bytes": 176
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/native-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/output.log": {
+      "sha256": "3597a018ec3d5f03b9565778377439cab594032ace7c6edd6cd9d2c7202cc8b8",
+      "bytes": 36687
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/production-image": {
+      "sha256": "5dd2c4ce53a2dd73d0b721f05131b9e08ff221387fd72d8cae168280e6952eb1",
+      "bytes": 6863640
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/production-image.json": {
+      "sha256": "1c9c704fbc6a0945529669dc3bb9e2ff9d5546b55b2727aa350d46db099c6cb5",
+      "bytes": 424
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/request.json": {
+      "sha256": "593478a32c0f710d6627c86bbf6d83a4b32fbd17bd6cc96983cc43ea40bc41de",
+      "bytes": 157
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/source-files.json": {
+      "sha256": "6230f2fae736483048cbe8a98ee96dbb351a03f9fbc88b7d152028c272b8125c",
+      "bytes": 115152
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-cpu-01/source.tar.gz": {
+      "sha256": "3281630e5d7433f90858037ee68eb661e862969929665fb3735a3686076f5c65",
+      "bytes": 2644599
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/cgroup-after.json": {
+      "sha256": "c01f17e7ee48d2658c6fa155a675856676465f327687b02d4df5ce80551e0977",
+      "bytes": 393
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/cgroup-before.json": {
+      "sha256": "047a8ad02c59ffb7ebf6cec96617cb572f287fae9ca821d023fe25a49519c6f8",
+      "bytes": 391
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/command.json": {
+      "sha256": "8c894795414eb7f32284a78748664e6ec75c52df70c1210860c6d9eb0c630c03",
+      "bytes": 1577
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/environment.json": {
+      "sha256": "a29ce434e333f53a48c553379c3be85efada45c9c589465947d2d5b62e81cc9c",
+      "bytes": 771
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/native-command.json": {
+      "sha256": "f3b7264fdda8d36a9c71cfb0d330f5a7ba04199840ef835465375df38df0bd3e",
+      "bytes": 180
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/native-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/output.log": {
+      "sha256": "2196d705e8c80d3b82c4051450acde5473b3b34a930fc59e2404007cb5b7b83f",
+      "bytes": 23905
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/production-image": {
+      "sha256": "ef093f1d519c9a91c921d18e29156b3ed8af2a141760e244017b921b237d3d1f",
+      "bytes": 13215848
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/production-image.json": {
+      "sha256": "f24b438701da467b2522f61b7a0696b9554104b362d93ab106b1c6cbcd696f2a",
+      "bytes": 424
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/request.json": {
+      "sha256": "27b1dfe87fc28babe8c6d9924865be2027766a70ef76ab34ac3f0a8e96916d01",
+      "bytes": 161
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/source-files.json": {
+      "sha256": "6230f2fae736483048cbe8a98ee96dbb351a03f9fbc88b7d152028c272b8125c",
+      "bytes": 115152
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/cli-gpu-01/source.tar.gz": {
+      "sha256": "282df6a1c74fbf44dffc069f518280cf3ab4546c32bab68ef102afe6e95f2940",
+      "bytes": 2644599
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/abi-campaign-01.py": {
+      "sha256": "ba7fe5e4ae45d1b6f552d557300ea48b3c0e9f24737b7861df6aa59e23cd9a1c",
+      "bytes": 327
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/accept-cpu-bridge-01.py": {
+      "sha256": "ef12946d8d6e152b5765a487a2fa51cf645006a579b1ab52028e71d7da494216",
+      "bytes": 7523
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/accept-cpu-bridge-02.py": {
+      "sha256": "ad7ceafb99e8c6487788eb2cbab70a37cb63cd26b19d6986d1f9943a5cef5f36",
+      "bytes": 7555
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/accept-gpu-ffi-01.py": {
+      "sha256": "4c54fe6077a5a760dcd023b2043b9d0f99f6b06814e93ddb39d62c33e0bc601c",
+      "bytes": 3861
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/audit-control-01.py": {
+      "sha256": "d77ab38183549c5d4dbee204d9f150e1648ac4149df201c10222ca020920a3c5",
+      "bytes": 5338
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/bridge-cpu-collector-failure-01.json": {
+      "sha256": "556f9cadf0608863808eed92eadc71298403df002a75a041837ab3312a33168c",
+      "bytes": 332
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/build-campaign-01.log": {
+      "sha256": "eeb6c17f761f2351a4f060dc37721d31e927926283f94e4c2b34b2f294000ea7",
+      "bytes": 329
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/build-campaign-01.py": {
+      "sha256": "9b17c57435241cd13f3f717d05ae7f3c8a7b9cfdf39d1bb8657ae51fd331cf62",
+      "bytes": 1071
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/build-campaign-02.log": {
+      "sha256": "aaa375da882bb5ec53af1f499892b71539767a82b262cc71787d5341ba602daa",
+      "bytes": 250
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/build-campaign-02.py": {
+      "sha256": "c02dc2bf6fe5537b60cb92c3aed1460e732ee9d0ede7973734d34464190ff606",
+      "bytes": 967
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/cpu-bridge-acceptance-01.json": {
+      "sha256": "bd9004e0c4396e2e02ab5a31d4218864ac92d3cab86218eab198d8c4d08c15f6",
+      "bytes": 1212
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/cpu-bridge-acceptance-failure-01.json": {
+      "sha256": "f7f68dc487d2effae8d4066bd1e151df1a931077e95296359af49edd604273ec",
+      "bytes": 303
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/gpu-ffi-01.py": {
+      "sha256": "4ba2fef81f714af2b9b5e9ef5d25c5b8cb78ef4ca8b6813de96b54f6261199bc",
+      "bytes": 2555
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/gpu-ffi-acceptance-01.json": {
+      "sha256": "de55987b432c048c8f6820cb68ca3f5e7b458e46aef3e8a9235d6f5ca8f1d691",
+      "bytes": 929
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/gpu-ffi-body-01.py": {
+      "sha256": "4c8c474705c68427421236df91d505cdbe6b1335771d351da8fa649f82218690",
+      "bytes": 7696
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/gpu-ffi-collector-failure-01.json": {
+      "sha256": "fbed8813e4400c0b7e7d4028cefc554580a3779e7962392422cebfc0075db65d",
+      "bytes": 665
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/handoff-01.py": {
+      "sha256": "ce6b2c51c2a2ca393bf6479fef4dfb8406bf5be85e573753522185c4151a9587",
+      "bytes": 1395
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/integration-audit-01.py": {
+      "sha256": "8e40043f947cb9754394c886cb59861aa5777b6d0ba5f18de76a811c0c879907",
+      "bytes": 8913
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/integration-audit-02.py": {
+      "sha256": "5569f6bc409dfc11aeb014d270f87b46df7bdd6187e7c51203b9e2086b011445",
+      "bytes": 8940
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/integration-audit-03.py": {
+      "sha256": "79f6c65bdda8ce3b29a0e1aff9e43340546bcf870a70e00fc46d5be616ad9614",
+      "bytes": 8973
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/integration-audit-failure-01.json": {
+      "sha256": "c97f14a6448355529b9089ebf283c642283b0eaa35d82238476287e4b39d32d8",
+      "bytes": 478
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/integration-audit-failure-02.json": {
+      "sha256": "0c860668f861fc2a5857c8e6116a5356e2e9f52d61329442bc3ee265e88e6298",
+      "bytes": 465
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/native-build-01.py": {
+      "sha256": "81352992eeac57ca0d880f13aa0f85c203e5f46b94e477561cac5063f625759e",
+      "bytes": 11506
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/native-build-02.py": {
+      "sha256": "3aadb2c07e114a179469193728a066562f1519d4b565313fca7d2f342886b9f2",
+      "bytes": 11509
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/native-build-03.py": {
+      "sha256": "f860d73093461775436956251893948adbe0a48ca050f195f754831221ae4c80",
+      "bytes": 13246
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/native-build-04.py": {
+      "sha256": "bf9a20300698c6db12931459bae036f01c8ae90a1d40ee1674931abeadd8fc99",
+      "bytes": 14302
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/package-01.py": {
+      "sha256": "190c87bd5ffe555fa84c248166873e2bef743dcafb765f200915ad73bec237d0",
+      "bytes": 4750
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/prepare-01.py": {
+      "sha256": "5884f5268d109124a7b47301ea95e28c6646ba05cbc35a5e1a9b4e4a88d0856d",
+      "bytes": 7858
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/review-01.py": {
+      "sha256": "7a0706abd50bac44c98b6677cb0635b52bee8082c99a408871cd9e3e0dd65151",
+      "bytes": 8007
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/review-abi-01.py": {
+      "sha256": "36798230dd212b0b37a3f41e79f3d9e0c998acf858330f70507626931906d4b7",
+      "bytes": 7535
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/verify-package-01.py": {
+      "sha256": "8cee0be8b22c17a927323d35288d7f0d036da376bded8bf87f480caa6b1472b2",
+      "bytes": 2261
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/gpu-ffi-01/cgroup-after.json": {
+      "sha256": "aee905a4d6a731aa0bdcea22b45dad5168a97b2f22f7754bceb60b67649c6e23",
+      "bytes": 1331
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/gpu-ffi-01/cgroup-before.json": {
+      "sha256": "8670a65c204486b9f944bf7483deab13ff50a5149a1bc0bc568edc233cbb8a54",
+      "bytes": 1327
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/gpu-ffi-01/command.json": {
+      "sha256": "781ac7bd4767c3ec39cdcda414e045f095d3128e70f6e5e26146cc71e537d081",
+      "bytes": 2359
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/gpu-ffi-01/environment.json": {
+      "sha256": "ed2330c06cc43d945711ff2a96b2e242518ae09fecc02728d029ba67f82340e9",
+      "bytes": 1480
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/gpu-ffi-01/fleet-cleanup.json": {
+      "sha256": "713413a8b69e09ce6c65dc63ce3c0e8479f2545af63d4007de057216fecb72ea",
+      "bytes": 83
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/gpu-ffi-01/input-pins.json": {
+      "sha256": "cf07ae526b23929e0307be78e977cb86c0a0dcaad88e86096f8a5b0f8a56ee46",
+      "bytes": 222841
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/gpu-ffi-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/gpu-ffi-01/native-command.json": {
+      "sha256": "c72706be6a7bd28fee0bc32397ddda5ed5eb649476bb8ae15ce260e2d9399c95",
+      "bytes": 141
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/gpu-ffi-01/native-result.json": {
+      "sha256": "b9dd8e3d28a3a6b3fffbbc695e24c4ad19e2d54b214cd177c758c11e7515df81",
+      "bytes": 57
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/gpu-ffi-01/output.log": {
+      "sha256": "8426d302aa9c3b610dd973803e79417c6f0653567a955b7427537a774c3f864d",
+      "bytes": 339464
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/gpu-ffi-01/preflight.json": {
+      "sha256": "59cdb8dab0bb509a36bdbb46a126c3fbebbb643422ddcac45c1a4c49efa91370",
+      "bytes": 483
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/gpu-ffi-01/service-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/harness/gpu_prover_options.zig": {
+      "sha256": "8f11f1f7280628abd4658828473515fb71a5c81454827bba813b8681cb168030",
+      "bytes": 71
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/harness/gpu_public_service.c": {
+      "sha256": "b531d9c83845efa5211d8f728a87b69143faee8743a6a95f0b753c935439e645",
+      "bytes": 5998
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/harness/gpu_public_service.zig": {
+      "sha256": "fcaeb209950afd5b77957478d8deaa3a19b6efc3ff994b29c6b10aeb2fefa29e",
+      "bytes": 333
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-01/cgroup-before.json": {
+      "sha256": "0656babc86a5da4f8b456012837a470095b61e0513c65f99006c802529206479",
+      "bytes": 415
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-01/command.json": {
+      "sha256": "e4858b7f62cb336fa1e77a6470d5257bf6ef7a55fb6cc94d51d41e34dfd914bc",
+      "bytes": 674
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-01/controller-pins.json": {
+      "sha256": "d44a8a88fd61676c24812fefe1a1a435aae9c2467e7dbe5b5262ee1c4b951ca8",
+      "bytes": 413
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-01/output.log": {
+      "sha256": "93aaf160d56af2fc019a316d8ea4d5e0c1e8042e0d9e31ee812a894bedf31e2b",
+      "bytes": 950
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-01/service-result.json": {
+      "sha256": "331dd85020eaf7c911e3417ee78f7ff17a0d1257e2a5c310696fc702d1c3f16f",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-02/cgroup-before.json": {
+      "sha256": "031e621735ae6b7d14f53ac81afb67745592c9e4e2a508d40e6f5b57b21d77a8",
+      "bytes": 415
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-02/command.json": {
+      "sha256": "f85bbde2f0ee827782548a1bc9940aef2e3b13f74c36d6af7639588f185eafae",
+      "bytes": 674
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-02/controller-pins.json": {
+      "sha256": "5e86b771d75d1b9e90bb28f336cd566b0e2712cc65c89ce6d5b310464c4ebbf0",
+      "bytes": 413
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-02/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-02/output.log": {
+      "sha256": "71ea0c30e955b674faac1bdbb2f12fc1b300336525f827dc57d9eeafda8e6187",
+      "bytes": 940
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-02/service-result.json": {
+      "sha256": "331dd85020eaf7c911e3417ee78f7ff17a0d1257e2a5c310696fc702d1c3f16f",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-03/cgroup-after.json": {
+      "sha256": "9a0f6926fb00b42603d8180f0568d6fda666765c30066bea61977b9de095ab7b",
+      "bytes": 416
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-03/cgroup-before.json": {
+      "sha256": "a42eeb26c07c56c9af5163008cf3807b09cb12529c134894e10150509856d3ea",
+      "bytes": 415
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-03/command.json": {
+      "sha256": "c6642d4907dfe739544226a383813d6bda056abd1fdc894992144e1bafd4b05f",
+      "bytes": 674
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-03/controller-pins.json": {
+      "sha256": "951a30db64dc865f8357b1748648874bf6a4155f1ea1ee4ac53412792188b916",
+      "bytes": 413
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-03/images.json": {
+      "sha256": "10cd44245e61faca71660d6a6e99ff9e9912cd661aaa4ac11784ba24fcd867f8",
+      "bytes": 2965
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-03/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-03/output.log": {
+      "sha256": "f82e9795c88c8b5899693433dcc1114a836023b9fae4f094bf13998e5e082f24",
+      "bytes": 1658
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-03/result.json": {
+      "sha256": "c03d9c7fec6a98d0f81b2b07caa72e30e2efb391987430c6b8e7adc2e616fbb2",
+      "bytes": 59
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-03/service-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-03/shared-source-drift.json": {
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-03/source-archives.json": {
+      "sha256": "ef1d5fc3c323c8c4b6228436c10b09fa7fa4764cc683cd4a320a28950dfc5283",
+      "bytes": 3238
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-03/summary.json": {
+      "sha256": "9b85a0a6be904d8967e8a3f8f548bce2b7ce2e304db0468a7f41ab2a44e53f52",
+      "bytes": 1477
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/integration-audit-03/supplemental-source-drift.json": {
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/isolation-preparation-01/capture-drift.json": {
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/isolation-preparation-01/cgroup-after.json": {
+      "sha256": "d13a9aacbef051f332cf5cf2ca4a516ec8b57a30bca043ce25fa6900565e93b6",
+      "bytes": 388
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/isolation-preparation-01/cgroup-before.json": {
+      "sha256": "598f2bdb7ae1f8c21d54d87c050e0e4fd2c27ff2cd114b523143c7b770d27a85",
+      "bytes": 387
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/isolation-preparation-01/changes-from-qualified-source.json": {
+      "sha256": "550f35633ec272d6fe5155d1ffdee658622b9fefd854809ef2e258b7c63e5887",
+      "bytes": 46
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/isolation-preparation-01/command.json": {
+      "sha256": "0325627c3f9838a00a19a6e3640d40d2131b0a62d41bb61cacb8255fb2f12aa7",
+      "bytes": 594
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/isolation-preparation-01/isolation.json": {
+      "sha256": "13c53487e9458eaf14d8a3783819b56a51aeab2ee57d0c9f381c903e8b9b2984",
+      "bytes": 1369
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/isolation-preparation-01/output.log": {
+      "sha256": "58b007b93af16e0374cab14ed04580befa4713416a43cbb52c56071b81c3f5c0",
+      "bytes": 289
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/isolation-preparation-01/result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/isolation-preparation-01/source-files.json": {
+      "sha256": "6230f2fae736483048cbe8a98ee96dbb351a03f9fbc88b7d152028c272b8125c",
+      "bytes": 115152
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/isolation-preparation-01/source.tar.gz": {
+      "sha256": "1b3ec1e79b8ac284ea229c8e1e0b42569ac57d303ed4526405032bcc65bc739d",
+      "bytes": 2644599
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-01/build-controller-candidates.json": {
+      "sha256": "79d3235a45815fa072a09e5b9e18e9d945efd11945e4494ffa5c244928c7dbb3",
+      "bytes": 62254
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-01/cgroup-after.json": {
+      "sha256": "a34ce7fa39cc17d9631de352483927ed1f30560759b46534a8f78554660b66aa",
+      "bytes": 243
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-01/cgroup-before.json": {
+      "sha256": "d12080dda612ac1c73fc6c36314bcc8c334c98994132706d3d7e208da7296995",
+      "bytes": 242
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-01/command.json": {
+      "sha256": "2b191cc7ab01dd424de80e886cff3caffd1f5bf00a915a98aa4253516ee757c5",
+      "bytes": 643
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-01/native-route-candidates.json": {
+      "sha256": "e28be76090da4a1adfc0ee6c88bbaff727d082b971abd1a097aaf08536ace3f9",
+      "bytes": 32929
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-01/output.log": {
+      "sha256": "5ffdad86aac4994e9a854053156a5117fd05533219aab5c78a80f0121abb44a7",
+      "bytes": 4470
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-01/prior-native-metadata-pin.json": {
+      "sha256": "7ba642caba729c78d4a84fb83e8fd927148ca8cdd5a1b178e8822ee48c2f8ca5",
+      "bytes": 217
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-01/prior-native-metadata.json": {
+      "sha256": "72d346b4cf20dafd4767eabe39e2b7270d4f8b7908a06d60a8ae63bd553c7b6e",
+      "bytes": 116577
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-01/result.json": {
+      "sha256": "91736b33f46ee3c37e8b0cac990cbe50d7a5ea2ed64116e482d5ff2c0cd71840",
+      "bytes": 45
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-01/review.json": {
+      "sha256": "4718b8252312485b70d3a08a2df07f5a7165e9a4df3c3c5b5c331fe67ef40ade",
+      "bytes": 4747
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-01/service-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-01/shared-source-drift.json": {
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-01/toolchains.json": {
+      "sha256": "22b6a519041c81683978a506014196cdda460c9d5b3353774e5adf43d27f5010",
+      "bytes": 129
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-abi-01/abi-controller-candidates.json": {
+      "sha256": "05955bab38359196e3827014fed25f158ce5893443d56932458edda079b26642",
+      "bytes": 29709
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-abi-01/cgroup-after.json": {
+      "sha256": "2b9de785d3a08e2745b020861bf8c6eb03a6c3605451ed579b5f385a202fe494",
+      "bytes": 243
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-abi-01/cgroup-before.json": {
+      "sha256": "d12080dda612ac1c73fc6c36314bcc8c334c98994132706d3d7e208da7296995",
+      "bytes": 242
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-abi-01/command.json": {
+      "sha256": "604e8798f3294ba73b73f9bc65fb22ee02db9b704c9a5c44b3564a0e1aa59676",
+      "bytes": 655
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-abi-01/harness-source-files.json": {
+      "sha256": "2e45a18437e5856602b8a2ee71b8552e789f0d424a63d1469f85fdc7e87dde7b",
+      "bytes": 533
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-abi-01/harness-source.tar.gz": {
+      "sha256": "1deac6d48c234e34d568da703ab444af7c91bb30dee8b00edc0f86b9d241d195",
+      "bytes": 2617
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-abi-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-abi-01/output.log": {
+      "sha256": "b0aaa0fbc600a3bbd70d4acb0b2852788a66d6705fdbb79f462923541398e153",
+      "bytes": 492
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-abi-01/result.json": {
+      "sha256": "63b1192866a49e7d5a82242c0ad854370fb15df2edc0029d511c01b096f6c264",
+      "bytes": 49
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-abi-01/review.json": {
+      "sha256": "2abccb1d4cf614e20d49d251231630f77487657046d2f14c431b3f1c2f904b2e",
+      "bytes": 211
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-abi-01/service-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/review-abi-01/shared-source-drift.json": {
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/cgroup-after.json": {
+      "sha256": "b94f6e732760cd144f4ce1bc1734129fc47e20cd7eeb6ea9e7d4a06bfa416815",
+      "bytes": 395
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/cgroup-before.json": {
+      "sha256": "e918d8c27180c9124e40015a190d01ec38b7ee77272ffd2083e86a9bcbaf7faa",
+      "bytes": 392
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/command.json": {
+      "sha256": "5b32479882dd94eb189df372010e1a0cf99756048890b765b4bd6b94d3e199c9",
+      "bytes": 1579
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/environment.json": {
+      "sha256": "a29ce434e333f53a48c553379c3be85efada45c9c589465947d2d5b62e81cc9c",
+      "bytes": 771
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/library-image.a": {
+      "sha256": "0a466a27790bd02fde18ab406f2be41d0042a0761cb1fe406f8a7a6db11b181b",
+      "bytes": 54154520
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/library-image.json": {
+      "sha256": "5427e4782f95d34ad13c92baeebbb52b6a1469dbf1e3c18304e3e02062e63ec5",
+      "bytes": 425
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/native-command.json": {
+      "sha256": "8a68b984e8def4a94ba42434ea54c967d3f514ace1fa811d685e24febc6cdb42",
+      "bytes": 149
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/native-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/output.log": {
+      "sha256": "eb480e179f912c84a3acc068a2febdc6fa75aabc0ea24ffc059703f4b0def85c",
+      "bytes": 10182
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/request.json": {
+      "sha256": "8b6b70ec05a28816e9c687ced46a3b433a515e3498afa8741b001805b7e4aeae",
+      "bytes": 128
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/source-files.json": {
+      "sha256": "6230f2fae736483048cbe8a98ee96dbb351a03f9fbc88b7d152028c272b8125c",
+      "bytes": 115152
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-cpu-01/source.tar.gz": {
+      "sha256": "ae76a974fab2597dd396b714a7fa6b566c376a7d12ea3a0b1bd165da11f486bf",
+      "bytes": 2644599
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/cgroup-after.json": {
+      "sha256": "2fa4604738ee08b27b15b5f26b4dd4380ac596ac6e6259a008c007b92dbdd5b6",
+      "bytes": 395
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/cgroup-before.json": {
+      "sha256": "d8dfe17dcc435d88ce0160838b2e83dab03be09d2209f841bd96e6a3eb8330a4",
+      "bytes": 392
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/command.json": {
+      "sha256": "00d410d01b3cddc7dec1360063e8ac5cd405cc6d116c8eaf21fab77e07233274",
+      "bytes": 1579
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/environment.json": {
+      "sha256": "a29ce434e333f53a48c553379c3be85efada45c9c589465947d2d5b62e81cc9c",
+      "bytes": 771
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/library-image.a": {
+      "sha256": "5042ade987a1b0f4a7b139f0bd3b8c0641edcd51aa14ea60ee6dec68f895f110",
+      "bytes": 69921490
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/library-image.json": {
+      "sha256": "e391ac175413c91107e36dab38e5c6b3039e5f05b961cde24346e080ff282146",
+      "bytes": 425
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/native-command.json": {
+      "sha256": "e03ac10cbcde8b7438f087597e033d41d962835e0493a60293910a86dddc0d27",
+      "bytes": 153
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/native-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/output.log": {
+      "sha256": "052c595fef44a1d2027413940d5129fdaec744ff228f0232332f8f796891b37d",
+      "bytes": 23823
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/request.json": {
+      "sha256": "2eb1d617d6bd689c93dcb3dd246ce646c10f6dd90273e2278c91262bf9a26384",
+      "bytes": 132
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/source-files.json": {
+      "sha256": "6230f2fae736483048cbe8a98ee96dbb351a03f9fbc88b7d152028c272b8125c",
+      "bytes": 115152
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/rust-gpu-01/source.tar.gz": {
+      "sha256": "566f709fe6a7905aecd42df9a0f159e05a24e6493ef7beed3ab3e0831d5ab730",
+      "bytes": 2644599
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-ffi-tests-01/cgroup-after.json": {
+      "sha256": "03861766514b30e4aff8c69662c726eea30978476b282851c7a016d111ef3fd7",
+      "bytes": 399
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-ffi-tests-01/cgroup-before.json": {
+      "sha256": "6da474b1a1cc39f8badc7e7b9d33fe0c41510cab74689a71c202c7d80702a282",
+      "bytes": 397
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-ffi-tests-01/command.json": {
+      "sha256": "2be2edf2a654daf16a1fcabb458b7fa64ed3b9cd9b49c9ce8fc16c2c6d7e5b05",
+      "bytes": 1589
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-ffi-tests-01/environment.json": {
+      "sha256": "a29ce434e333f53a48c553379c3be85efada45c9c589465947d2d5b62e81cc9c",
+      "bytes": 771
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-ffi-tests-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-ffi-tests-01/native-command.json": {
+      "sha256": "86c82132893d96336f78a5b39da41fb356dd6f96e3dcd417dd3e598bf76b82aa",
+      "bytes": 534
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-ffi-tests-01/native-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-ffi-tests-01/output.log": {
+      "sha256": "93c8662e87a223f17e8290ee0b311917d8bb3ef37d943b9450e599ebc3922cfc",
+      "bytes": 5362
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-ffi-tests-01/request.json": {
+      "sha256": "f33d833b46644e18e75a1ce4f014ed3b7728a70630fd3e1edf613d7e3c95a0fa",
+      "bytes": 116
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-ffi-tests-01/result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-ffi-tests-01/source-files.json": {
+      "sha256": "6230f2fae736483048cbe8a98ee96dbb351a03f9fbc88b7d152028c272b8125c",
+      "bytes": 115152
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-ffi-tests-01/source.tar.gz": {
+      "sha256": "f1d353520adc14a69d1763cb3fc4e30304eb1592d89811c7acb06139d8a763a5",
+      "bytes": 2644599
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/cgroup-after.json": {
+      "sha256": "7442b50c807ae2787580cf247e1ce5972dc90ecc789bf85c20808cfc946c5eba",
+      "bytes": 403
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/cgroup-before.json": {
+      "sha256": "f4898a15ba078eb978b58e65206ac2b2850c1297350986a9820586a5bbccb8d1",
+      "bytes": 401
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/command.json": {
+      "sha256": "8a4e891cfbbc11cc70a9426adc4fd3a16f96d95abcd849fb63269be8cf806bc8",
+      "bytes": 1597
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/environment.json": {
+      "sha256": "a29ce434e333f53a48c553379c3be85efada45c9c589465947d2d5b62e81cc9c",
+      "bytes": 771
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/ffi-tests": {
+      "sha256": "9d55faf87ccf203e447ac78bc18b106f3b524708882156566dc8e9da44d3cede",
+      "bytes": 16516744
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/native-command.json": {
+      "sha256": "ff6db079caa8c30599fef460ac61f45a2a56eb30eea8b73bd5bfcbc9e961f243",
+      "bytes": 1122
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/native-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/output.log": {
+      "sha256": "2beea295b9e3f640de764710ccfc70145820333fedc2d599dfb927764c359696",
+      "bytes": 309
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/request.json": {
+      "sha256": "f0447eb5239bd975eb66d1ca57118fb8da1645e04706e3af3f8b2bdedcae9a11",
+      "bytes": 106
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/source-files.json": {
+      "sha256": "6230f2fae736483048cbe8a98ee96dbb351a03f9fbc88b7d152028c272b8125c",
+      "bytes": 115152
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/source.tar.gz": {
+      "sha256": "42deee78219258b9336c0359af7c6faaf33cc48a292ec38123580ca94663628a",
+      "bytes": 2644599
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/supplemental-input-pins.json": {
+      "sha256": "4503b5e7e60be2133264b0d6e6e3807d4c13b81be3e87fc0f38c8504d662fbe9",
+      "bytes": 412
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-gpu-ffi-build-01/test-image.json": {
+      "sha256": "0baecd85c0ad8572bea578fbb67813f2b4123248c8180dfc4a3ce6f41259c60b",
+      "bytes": 255
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-root-tests-01/cgroup-after.json": {
+      "sha256": "f5e8b80bd45ae2553c0ecaccdcc05372e42ecc12887f8835f9ce4c83c602a2b8",
+      "bytes": 400
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-root-tests-01/cgroup-before.json": {
+      "sha256": "3afa908658d2ca85c7cd5f3f9b6d3f180b9f6eaa2c644c4327f774a523e22014",
+      "bytes": 398
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-root-tests-01/command.json": {
+      "sha256": "bc6eaf0d46067c17a10b1053e566b9d232a8d4003b388431749b821a2c2c75d9",
+      "bytes": 1591
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-root-tests-01/environment.json": {
+      "sha256": "a29ce434e333f53a48c553379c3be85efada45c9c589465947d2d5b62e81cc9c",
+      "bytes": 771
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-root-tests-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-root-tests-01/native-command.json": {
+      "sha256": "e5eb79442effa5c3d7b4d129944be2575e88bdac3199c7adbbe4e9f303aed7ca",
+      "bytes": 401
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-root-tests-01/native-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-root-tests-01/output.log": {
+      "sha256": "52502e754d8b9cf018fc355a15073e1420da0156e2a9087fc6042c95ff67ead1",
+      "bytes": 305
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-root-tests-01/request.json": {
+      "sha256": "131f11591271fce202a6649744a400c7f877c2fc53ff6fe12374633a88474c89",
+      "bytes": 135
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-root-tests-01/result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-root-tests-01/source-files.json": {
+      "sha256": "6230f2fae736483048cbe8a98ee96dbb351a03f9fbc88b7d152028c272b8125c",
+      "bytes": 115152
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-root-tests-01/source.tar.gz": {
+      "sha256": "a22eaa9e531bbf9c4d9da154222553f1a4692bdf66b153c3b3028a9d8b865516",
+      "bytes": 2644599
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-service-test-01/cgroup-after.json": {
+      "sha256": "5949b8299895e86969b69e6046fab45f6eaea19006d5bc062b10107c9114f24c",
+      "bytes": 402
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-service-test-01/cgroup-before.json": {
+      "sha256": "8a9f5758c3274f302a18007152c8bb1b24a17921d25a7345ba8fa16642820348",
+      "bytes": 400
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-service-test-01/command.json": {
+      "sha256": "131db24b39b69c59a0c847687d155bf3fd8cbdf1b82be0731e3e49fb8e1b1510",
+      "bytes": 1595
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-service-test-01/environment.json": {
+      "sha256": "a29ce434e333f53a48c553379c3be85efada45c9c589465947d2d5b62e81cc9c",
+      "bytes": 771
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-service-test-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-service-test-01/native-command.json": {
+      "sha256": "d2cce0791cbc4247bec71e2ae66b9a94cc5417a2d7d6643a245ef7f9c7c62ffa",
+      "bytes": 913
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-service-test-01/native-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-service-test-01/output.log": {
+      "sha256": "dc23eeb4465a900f12ef77201c5bee35bf90f43b50db397145f3cdc4d0cab86c",
+      "bytes": 429
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-service-test-01/request.json": {
+      "sha256": "a8ab9ab958a726f3a93b0fc3c425937ea33db141b7bc58acc2e67d2ce53f30db",
+      "bytes": 105
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-service-test-01/result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-service-test-01/source-files.json": {
+      "sha256": "6230f2fae736483048cbe8a98ee96dbb351a03f9fbc88b7d152028c272b8125c",
+      "bytes": 115152
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-service-test-01/source.tar.gz": {
+      "sha256": "96d8cd0dc52ab7cd878592ec5c1dd85363451f56886fb7cdf4049ad843c18794",
+      "bytes": 2644599
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-service-test-01/supplemental-input-pins.json": {
+      "sha256": "b731cf1169eb156997e1ba3a25c9771aca4d0fdf73b55c7f56d8555120e65d73",
+      "bytes": 616
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-tests-01/cgroup-after.json": {
+      "sha256": "90882d48baf7f5da46846cc52f6410acc591688d8ad613a1a4ec2d5b0a314894",
+      "bytes": 395
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-tests-01/cgroup-before.json": {
+      "sha256": "48fa00b78098f4c934a7e132dcd3536715ca15935b8fd7a3cb874a3f10e0e4fe",
+      "bytes": 393
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-tests-01/command.json": {
+      "sha256": "ff2c1783d648ec679bf1a5eefea6f79294a5e0ccdf54924ca8fb6a6471761877",
+      "bytes": 1581
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-tests-01/environment.json": {
+      "sha256": "a29ce434e333f53a48c553379c3be85efada45c9c589465947d2d5b62e81cc9c",
+      "bytes": 771
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-tests-01/interference.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-tests-01/native-command.json": {
+      "sha256": "e0001d0fd34149c6305d9d37e9b69872938c70c5fd4c31f95201b0b17e39a7cb",
+      "bytes": 378
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-tests-01/native-result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-tests-01/output.log": {
+      "sha256": "88f38b196745bf61ad0ae06811b1ca8fc83efd92750b197bdd58d6ef07bb7b72",
+      "bytes": 302
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-tests-01/request.json": {
+      "sha256": "9cc94a16be99b3108af6e6992fdc1f6f39198e7f08c31be3a78a1c6ffdc006f0",
+      "bytes": 112
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-tests-01/result.json": {
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2",
+      "bytes": 16
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-tests-01/source-files.json": {
+      "sha256": "6230f2fae736483048cbe8a98ee96dbb351a03f9fbc88b7d152028c272b8125c",
+      "bytes": 115152
+    },
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/zig-tests-01/source.tar.gz": {
+      "sha256": "a61fea79119c424c4f81673144217d55cf1bb2a6461456e5286fb3a7df0dfead",
+      "bytes": 2644599
+    }
+  },
+  "artifact_count": 297,
+  "shared_source_drift_at_packaging": {},
+  "limits": {
+    "build_worker_bytes": 3221225472,
+    "auditor_bytes": 1073741824,
+    "fleet_bytes": 4294967296,
+    "cpus": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "swap_bytes": 0,
+    "gpu_work_seconds": 150,
+    "gpu_service_seconds": 180,
+    "required_free_gpu_mib": 12288
+  },
+  "build_profile": {
+    "cargo_jobs": 2,
+    "codegen_units": 64,
+    "opt_level": 1,
+    "lto": false,
+    "offline": true,
+    "locked": true
+  },
+  "preserved_failures": [
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/bridge-cpu-collector-failure-01.json",
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/cpu-bridge-acceptance-failure-01.json",
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/gpu-ffi-collector-failure-01.json",
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/integration-audit-failure-01.json",
+    "lattica-prover-p3/benchmark-results/gpu-native-current-integration-20261016/control/integration-audit-failure-02.json"
+  ],
+  "production_timing_approval_transfers": false,
+  "goal_status": "active",
+  "production_ready": false,
+  "sustained_throughput_qualified": false,
+  "native_blocks_applied": 0,
+  "funded_slots_consumed": 0
+}

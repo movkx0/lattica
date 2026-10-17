@@ -310,6 +310,13 @@ class PhaseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'verified owner snapshot'):
             P.prepared_request(self.directory, fixture, self.binding | {'changed': 1}, self.workflow)
 
+    def test_unreserved_handoff_is_rejected_before_candidate_preparation(self):
+        output = self.directory / 'unreserved-handoff'
+        callback = {'command': ['/pinned/callback'], 'pins': {'/pinned/callback': '01' * 32}}
+        with self.assertRaisesRegex(ValueError, 'continuation reserve'):
+            P.run({}, self.directory, '/missing-clock', output, handoff=callback)
+        self.assertFalse(output.exists())
+
     def handoff_scenario(self, failure=None):
         """Exercise controller transitions with synthetic receipts and no proofs/services."""
         config, binding, _, files = self.native_binding()
@@ -341,7 +348,7 @@ class PhaseTests(unittest.TestCase):
             candidate = proofs / 'candidate-000000'
             candidate.mkdir(parents=True)
             fleet = phase / 'fleet.json'
-            write(fleet, {'pool_scheduling': {'dispatch_deadline_monotonic_ms': 16100 if number == 0 else 150100}})
+            write(fleet, {'pool_scheduling': {'dispatch_deadline_monotonic_ms': 50100 if number == 0 else 150100}})
             write(phase / 'config.json', config | {'pool_prefix_handoff': True,
                 'pool_workflow': self.workflow, 'fleet_plan': str(fleet), 'native_host': binding,
                 'fixture': str(self.directory), 'owner_directory': str(phase / 'owner'),
@@ -420,7 +427,8 @@ class PhaseTests(unittest.TestCase):
               patch.object(P.Handoff, 'run', side_effect=handoff), patch.object(P.S, 'pin_preseal'),
               patch.object(P, 'reconcile', side_effect=reconcile), patch.object(P, 'stop_owned_services'),
               patch.object(P.time, 'sleep')):
-            callback = {'command': ['/pinned/callback'], 'pins': {'/pinned/callback': '01' * 32}}
+            callback = {'command': ['/pinned/callback'], 'pins': {'/pinned/callback': '01' * 32},
+                        'continuation_reserve_ms': 75_000}
             if failure:
                 messages = {'callback': 'bounded native handoff failed', 'drain': 'successful drained supervision',
                     'reconciliation': 'worker still live', 'natural-stop': 'planned successful worker drain',

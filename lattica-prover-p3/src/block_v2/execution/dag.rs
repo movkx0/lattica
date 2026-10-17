@@ -36,6 +36,30 @@ pub use transition_storage::TransitionStorage;
 #[path = "dag_prefix_transition.rs"]
 mod prefix_transition;
 
+// Detached tickets still authenticate their supplied bytes at the existing
+// completion boundary. Owned payloads can only come from a local verifier or
+// checked rebinding; there is no caller-provided flag that skips validation.
+enum NodeCompletion {
+    Detached(VerifiedNode, Vec<u8>),
+    Owned(VerifiedNodePayload),
+}
+
+impl NodeCompletion {
+    fn ticket(&self) -> VerifiedNode {
+        match self {
+            Self::Detached(ticket, _) => *ticket,
+            Self::Owned(payload) => payload.ticket(),
+        }
+    }
+
+    fn into_verified(self) -> Result<VerifiedNodePayload, Error> {
+        match self {
+            Self::Detached(ticket, bytes) => VerifiedNodePayload::bind(ticket, bytes),
+            Self::Owned(payload) => Ok(payload),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CandidateId {
     session: [u8; 32],
@@ -1103,12 +1127,38 @@ impl Dag {
         result: Option<(VerifiedNode, Vec<u8>)>,
         now_ms: u64,
     ) -> Result<Completion, Error> {
+        self.finish_node_completion(
+            lease,
+            result.map(|(ticket, bytes)| NodeCompletion::Detached(ticket, bytes)),
+            now_ms,
+        )
+    }
+
+    /// The owned local verifier payload retains its binding through completion.
+    /// Attempt, deadline, duplicate and resource checks are shared with detached
+    /// results; only rehashing the same immutable buffer is unnecessary.
+    pub(super) fn finish_verified_node(
+        &mut self,
+        lease: Lease,
+        result: VerifiedNodePayload,
+        now_ms: u64,
+    ) -> Result<Completion, Error> {
+        self.finish_node_completion(lease, Some(NodeCompletion::Owned(result)), now_ms)
+    }
+
+    fn finish_node_completion(
+        &mut self,
+        lease: Lease,
+        result: Option<NodeCompletion>,
+        now_ms: u64,
+    ) -> Result<Completion, Error> {
         self.advance(now_ms)?;
         let a = self.attempt(lease)?;
         if a.status == AttemptStatus::Completed {
-            if let Some((node, bytes)) = result {
+            if let Some(result) = result {
+                let node = result.ticket();
                 if node.job() == lease.job && Some(node.artifact()) == a.accepted {
-                    node.artifact().check_bytes(&bytes)?;
+                    result.into_verified()?;
                     return Ok(Completion::Duplicate);
                 }
             }
@@ -1125,14 +1175,22 @@ impl Dag {
             self.release_if_quiescent(lease.id)?;
             return Ok(Completion::Fenced);
         }
-        let Some((node, bytes)) = result else {
+        let Some(result) = result else {
             self.terminate(lease.id, AttemptStatus::Rejected)?;
             return Ok(Completion::Rejected);
         };
-        if node.job() != lease.job || node.artifact().check_bytes(&bytes).is_err() {
+        if result.ticket().job() != lease.job {
             self.terminate(lease.id, AttemptStatus::Rejected)?;
             return Err("execution result job/artifact mismatch".into());
         }
+        let payload = match result.into_verified() {
+            Ok(payload) => payload,
+            Err(_) => {
+                self.terminate(lease.id, AttemptStatus::Rejected)?;
+                return Err("execution result job/artifact mismatch".into());
+            }
+        };
+        let (node, bytes) = payload.into_parts();
         let record = self
             .jobs
             .get_mut(&lease.job)

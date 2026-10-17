@@ -1,0 +1,136 @@
+--- /dev/null
++++ b/source/src/block_v2/gpu_hash/engine/research_lease.rs
+@@ -0,0 +1,93 @@
++//! Isolated research only: borrow an already-held device lock via SCM_RIGHTS.
++//! The controller owns the exclusive canonical device lease throughout both
++//! workers. Normal workers still acquire that same exclusive lock themselves.
++use std::fs::{File, OpenOptions};
++use std::os::fd::{AsRawFd, FromRawFd};
++use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
++use std::path::Path;
++
++fn inherited(fd: i32, path: &Path) -> Result<File, String> {
++    if fd < 3 { return Err("invalid transferred GPU lease descriptor".into()); }
++    let duplicate = unsafe { libc::fcntl(fd, libc::F_DUPFD_CLOEXEC, 3) };
++    if duplicate < 0 { return Err(std::io::Error::last_os_error().to_string()); }
++    // F_DUPFD_CLOEXEC returned a new, uniquely owned descriptor.
++    let file = unsafe { File::from_raw_fd(duplicate) };
++    let uid = unsafe { libc::geteuid() };
++    let directory = std::fs::symlink_metadata(path.parent().ok_or("missing lease parent")?)
++        .map_err(|e| e.to_string())?;
++    if !directory.is_dir() || directory.uid() != uid || directory.mode() & 0o777 != 0o700 {
++        return Err("transferred GPU lease requires a private owner directory".into());
++    }
++    let probe = OpenOptions::new().read(true).write(true)
++        .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC).open(path).map_err(|e| e.to_string())?;
++    let a = file.metadata().map_err(|e| e.to_string())?;
++    let b = probe.metadata().map_err(|e| e.to_string())?;
++    if !a.is_file() || a.uid() != uid || a.mode() & 0o777 != 0o600
++        || a.dev() != b.dev() || a.ino() != b.ino() {
++        return Err("transferred descriptor is not the canonical device lease".into());
++    }
++    // An independent open must be blocked, while the transferred open-file
++    // description must already own the exclusive lock. Neither test unlocks
++    // the controller's description.
++    if unsafe { libc::flock(probe.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } == 0 {
++        return Err("transferred device lease was not already held".into());
++    }
++    let error = std::io::Error::last_os_error();
++    if error.raw_os_error() != Some(libc::EWOULDBLOCK) {
++        return Err(error.to_string());
++    }
++    if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
++        return Err("transferred descriptor does not own the device lease".into());
++    }
++    Ok(file)
++}
++
++pub(super) fn from_env(uuid: &str) -> Result<Option<File>, String> {
++    let Some(value) = std::env::var_os("LATTICA_V2_GPU_RESEARCH_LEASE_FD") else { return Ok(None); };
++    let fd = value.to_str().ok_or("invalid GPU lease descriptor encoding")?
++        .parse::<i32>().map_err(|_| "invalid GPU lease descriptor number")?;
++    let uid = unsafe { libc::geteuid() };
++    let path = std::path::PathBuf::from(format!("/tmp/lattica-v2-gpu-lease-{uid}/{}.lock", uuid.to_ascii_lowercase()));
++    inherited(fd, &path).map(Some)
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use std::os::unix::fs::DirBuilderExt;
++    use std::sync::atomic::{AtomicUsize, Ordering};
++    static SEQUENCE: AtomicUsize = AtomicUsize::new(0);
++    fn fixture() -> (std::path::PathBuf, File) {
++        let path = std::env::temp_dir().join(format!("lattica-two-worker-lease-{}-{}", std::process::id(), SEQUENCE.fetch_add(1, Ordering::SeqCst)));
++        std::fs::DirBuilder::new().mode(0o700).create(&path).unwrap();
++        let lock = path.join("device.lock");
++        let file = OpenOptions::new().read(true).write(true).create_new(true).mode(0o600).open(&lock).unwrap();
++        (path, file)
++    }
++    #[test]
++    fn research_lease_keeps_normal_workers_excluded_until_all_holders_drop() {
++        let (directory, owner) = fixture();
++        let path = directory.join("device.lock");
++        assert_eq!(unsafe { libc::flock(owner.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) }, 0);
++        let first = inherited(owner.as_raw_fd(), &path).unwrap();
++        let second = inherited(owner.as_raw_fd(), &path).unwrap();
++        drop(owner); drop(first);
++        let probe = OpenOptions::new().read(true).write(true).open(&path).unwrap();
++        assert_ne!(unsafe { libc::flock(probe.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) }, 0);
++        drop(second);
++        assert_eq!(unsafe { libc::flock(probe.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) }, 0);
++        drop(probe); std::fs::remove_dir_all(directory).unwrap();
++    }
++    #[test]
++    fn research_lease_rejects_unlocked_wrong_and_invalid_descriptors() {
++        let (directory, owner) = fixture();
++        let path = directory.join("device.lock");
++        assert!(inherited(owner.as_raw_fd(), &path).is_err());
++        let other = OpenOptions::new().read(true).write(true).create_new(true).mode(0o600).open(directory.join("other.lock")).unwrap();
++        assert!(inherited(other.as_raw_fd(), &path).is_err());
++        assert!(inherited(-1, &path).is_err());
++        assert!(inherited(0, &path).is_err());
++        assert!(inherited(i32::MAX, &path).is_err());
++        drop(other);drop(owner);std::fs::remove_dir_all(directory).unwrap();
++    }
++}
+--- a/source/src/block_v2/gpu_hash/engine.rs
++++ b/source/src/block_v2/gpu_hash/engine.rs
+@@ -236,6 +236,8 @@
+ }
+ 
+ mod memory;
++#[cfg(target_os = "linux")]
++mod research_lease;
+ pub(crate) use memory::begin_memory_window;
+ mod allocation_limit;
+ pub(crate) mod host_storage;
+@@ -732,7 +734,10 @@
+             return Err("invalid GPU UUID lease name".into());
+         }
+         let global = lease_file("exclusive.lock", true)?;
+-        let device = lease_file(&format!("{}.lock", uuid.to_ascii_lowercase()), false)?;
++        let device = match research_lease::from_env(&uuid)? {
++            Some(inherited) => inherited,
++            None => lease_file(&format!("{}.lock", uuid.to_ascii_lowercase()), false)?,
++        };
+         Ok(JobLease {
+             _global: global,
+             _device: Some(device),
+@@ -889,7 +894,15 @@
+     limits.validate()?;
+     let lease = job_lease()?; // BEFORE creating a context or allocating anything on the device.
+     let driver_reserve = env_bytes("LATTICA_V2_GPU_CONTEXT_BYTES", DRIVER_RESERVE_BYTES)?;
+-    if driver_reserve < 512 * MIB {
++    // Isolated controller-owned experiment: job_lease() has already validated
++    // the transferred exclusive device descriptor. Its controller requires a
++    // fresh full-proof calibration with 25% margin before concurrent admission.
++    #[cfg(target_os = "linux")]
++    let minimum_context = if std::env::var_os("LATTICA_V2_GPU_RESEARCH_LEASE_FD").is_some()
++        && std::env::var_os("LATTICA_GPU_DEVICE_UUID").is_some() { 192 * MIB } else { 512 * MIB };
++    #[cfg(not(target_os = "linux"))]
++    let minimum_context = 512 * MIB;
++    if driver_reserve < minimum_context {
+         return Err("GPU context allowance below minimum".into());
+     }
+     #[cfg(feature = "gpu")]

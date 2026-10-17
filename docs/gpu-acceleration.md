@@ -1,6 +1,175 @@
 # GPU-accelerated proving (opt-in)
 
-The latest [combined-source integration](dag-gpu-implementation.md#9293-combined-source-integration--2026-10-16)
+The latest [development checkpoint](dag-gpu-implementation.md#9309-coordinator-cost-attribution-and-isolated-request-binding-candidate--2026-10-16)
+measures coordinator CPU costs and prepares an isolated optimization that retains
+the binding between an assignment and its immutable request. Request preparation
+takes about **181 ms** in the diagnostic, while verifier metadata takes about
+**5.5 ms**. Two selected regression runs pass **138 tests**, but overlap from
+another session excludes their resource qualification. Short serial batches have
+qualified **123 tests** so far. The candidate's idle queue is stopped after the
+resource conflict recurs across three goal turns; a saved controller resumes from
+the completed batches when the host is free. Remaining lifecycle checks, full-size
+proof replay, source integration and fresh production qualification are pending. The shared
+proving source and accepted production images are unchanged; no delivered speedup
+is established.
+
+The latest [native delivery](dag-gpu-implementation.md#9308-owned-completion-delivers-a-fresh-native-block--2026-10-16)
+uses the rebuilt owned-completion images to generate **127 fresh GPU proofs**
+and durably apply **48 user plus 16 issuance transactions**. Independent CPU
+wallet, graph and history audits pass. The workflow takes **587.303 seconds**,
+leaving **12.697 seconds** under its original deadline; accepted history is now
+**ten blocks at height 19**. The coordinator timing gap is 64.435 seconds,
+down from 70.420, while total workflow time falls by 2.671 seconds. These are
+single-run observations, not a matched speedup or sustained-throughput result.
+The original resource/deadline limits and full-GPU qualification gates remain.
+See [source evidence](evidence/gpu-owned-completion-workflow-2026-10-16.json).
+
+The preceding [image qualification](dag-gpu-implementation.md#9307-owned-completion-production-images-and-fresh-calibration--2026-10-16)
+rebuilds the owned-completion snapshot's optimized CPU/GPU native images and
+matching test harness. **32 fresh GPU proofs** pass interface, recursive-worker,
+retirement and calibration checks. Independent CPU replay covers the complete
+63-node graph and 64 archived wallets; **14 new timing classes** bind these
+images. All required wallet/recursive proving stages report OpenCL. An initial
+duplicate-order preflight is preserved separately from the successful fresh
+calibration. That qualification consumed no native block or funded slots and
+did not establish delivered throughput or a production deadline bound.
+See [source evidence](evidence/gpu-owned-completion-proving-2026-10-16.json).
+
+The preceding [completion-source checkpoint](dag-gpu-implementation.md#9306-owned-local-node-completion-avoids-repeated-artifact-digests--2026-10-16)
+removes two repeated operational digests when locally CPU-verified immutable
+proof bytes pass through storage and DAG acceptance. Independent verification,
+existing-file checks, attempt fencing and durable publication remain enforced.
+**160 CPU tests** pass, including full-size proof replay/recovery and malformed
+result rejection; CPU/GPU all-target checks also pass. An optimized probe measures
+**44.08 ms** per 1.68 MiB node digest. That checkpoint did not qualify production
+images or a fresh GPU workflow; no throughput gain is claimed.
+See [source evidence](evidence/gpu-owned-node-completion-2026-10-16.json).
+
+The preceding [native delivery checkpoint](dag-gpu-implementation.md#9305-reserved-handoff-delivers-a-fresh-native-block--2026-10-16)
+passes with **64 fresh wallet and 63 recursive GPU proofs**, independent CPU
+verification and durable application of **48 user plus 16 issuance transactions**.
+The new reserve check defers an unsealed prefix when only 33,409 ms remain,
+drains that worker and completes the seven final proofs on its replacement.
+The full workflow takes **589.974 seconds**, leaving **10.026 seconds** of its
+original deadline; post-seal application takes **79.899 seconds**. Accepted
+history is nine blocks at height 18. The original budgets and native image
+build manifests remain. Deadline margin, matched controls, sustained qualification
+and the full all-GPU goal remain open. See
+[source evidence](evidence/gpu-handoff-reserved-workflow-2026-10-16.json).
+
+The preceding [handoff checkpoint](dag-gpu-implementation.md#9304-reserve-final-proving-time-before-live-handoff--2026-10-16)
+fixes admission after an optimized delivery trial generated 64 wallet and 56
+recursive GPU proofs but applied no block. Its completed prefix left 34,180 ms
+in the worker window; sealing consumed most of that time. Callers must now
+reserve final proving time explicitly, and a short window defers before sealing.
+All 43 handoff/phase regressions pass. The proposed 75,000 ms reserve is a trial
+allowance requiring fresh live validation. Native binaries and their calibration
+remain unchanged; the four Python changes have a separate source manifest.
+See [source evidence](evidence/gpu-handoff-continuation-window-2026-10-16.json).
+
+The preceding [optimized-image checkpoint](dag-gpu-implementation.md#9303-optimized-native-images-and-cli-calibration--2026-10-16)
+qualifies the same 880-file snapshot with release optimization level 3,
+one codegen unit and thin LTO. The CPU interface suite passes 32 tests
+(one GPU-only skip), and the GPU suite passes all 36. Native worker and
+retirement checks, followed by fresh CLI calibration, produce **32 GPU
+proofs** in total. The calibration has **14 independently approved timing
+classes** and a complete CPU replay of 63 graph nodes and 64 archived wallets.
+The original resource caps remain. These are interface, lifecycle and job
+calibration results; fresh native delivery, matched throughput and sustained
+qualification remain open. See
+[source evidence](evidence/gpu-current-optimized-proving-2026-10-16.json).
+
+The preceding [CLI calibration checkpoint](dag-gpu-implementation.md#9302-current-cli-calibration--2026-10-16)
+adds **17 fresh GPU proofs** across eight serial phases and **14 independently
+approved timing classes**. The current CPU CLI verifies the complete 63-node
+graph and all 64 archived wallet inputs; every new request covers 16 OpenCL
+stages. The graph uses archived subtrees and is not a fresh delivered workflow.
+These timings belong to the opt-level 1, 64-codegen-unit, no-LTO images.
+Optimized release images require their own qualification and calibration. See
+[source evidence](evidence/gpu-current-cli-calibration-2026-10-16.json).
+
+The preceding [native lifecycle checkpoint](dag-gpu-implementation.md#9301-current-source-native-startup-and-retirement--2026-10-16)
+adds four startup rejection cases and two full-size GPU finalizer proofs
+across forced worker retirement and replacement. Physical process-exit
+observers confirm that replacement starts after the first worker exits.
+Both returned proofs verify on CPU after shutdown; all 16 required stages
+run on OpenCL. The incomplete first attempt remains preserved. These
+checks retain the existing resource limits and establish no throughput
+claim. See [source evidence](evidence/gpu-current-native-lifecycle-2026-10-16.json).
+
+The preceding [native worker checkpoint](dag-gpu-implementation.md#9300-current-source-native-worker-jobs-and-pool-roots--2026-10-16)
+qualifies assigned jobs through the newly linked C service: **eight fresh
+GPU proofs**, including six full-size pair/merge/finalizer proofs and two
+small padding proofs. All 16 required recursive stages report OpenCL.
+Three separate CPU-only processes verify all six persisted nonempty proofs
+after coordinator and worker exit. Two roots pass the local pool adapter;
+context updates, cache reuse, shutdown and reservation release pass. Four
+malformed-configuration/job/disconnect cases clean up while retaining their
+reservations. No native block or funded slot is consumed. Fresh calibration,
+matched delivered throughput and sustained qualification remain open. See
+[source evidence](evidence/gpu-current-native-worker-2026-10-16.json).
+
+The preceding [native integration checkpoint](dag-gpu-implementation.md#9299-current-source-native-builds-and-wallet-abi--2026-10-16)
+rebuilds CPU/GPU Rust libraries, worker CLIs and Zig bridges from the same
+880-file snapshot. Both bridges independently report capacity 64. The CPU FFI
+suite passes 32 tests with one GPU-only skip; the GPU FFI suite passes all 36,
+producing five fresh GPU wallet proofs and one tree-root operation. All 15
+required wallet proving stages report OpenCL, with CPU verification after
+shutdown. Fourteen source archives and eight native images are checked.
+Assigned public-worker execution, fresh calibration, delivered throughput and
+complete resource ownership remain open. See
+[source evidence](evidence/gpu-current-native-integration-2026-10-16.json).
+
+The preceding [mixed-policy tree qualification](dag-gpu-implementation.md#9298-mixed-policy-tree-with-cold-and-cached-recursion--2026-10-16)
+adds **four fresh GPU proofs**: cold and cached merge/finalizer runs over four
+archived inputs spanning JoinSplit, HTLC redeem/refund and issuance. The
+12-key registry uses 262,144 rows. All **16 request stages** report OpenCL;
+cache hits are explicitly recorded. Every proof verifies after shutdown and
+again in a separate CPU-only process, with altered statements rejected.
+Two geometry checks and the GPU-host all-target check pass. Evidence verifies
+**880 sources, three archives and 163 artifacts**. Only the test harness
+changes; native delivery, complete resource ownership and sustained/hardware
+qualification remain open. See
+[source evidence](evidence/gpu-mixed-policy-tree-cache-2026-10-16.json).
+
+The preceding [ordered wallet-pair qualification](dag-gpu-implementation.md#9297-full-size-ordered-wallet-policy-pairs--2026-10-16)
+adds **14 fresh GPU proofs** across all nine ordered JoinSplit/HTLC/issuance
+combinations and five HTLC-refund cases, using the **12-key, 262,144-row
+registry**. All **16 request stages** run on OpenCL. Every proof verifies after
+GPU shutdown and again in a separate CPU-only process, with altered statements
+rejected. Nine geometry checks and the final GPU-host all-target check pass.
+Only the test harness changes; evidence verifies **879 sources and 827
+artifacts**, preserving unsuccessful attempts. Mixed-policy trees, other
+registries, native delivery, complete lifetime ownership and throughput remain
+open. See [source evidence](evidence/gpu-mixed-policy-pairs-2026-10-16.json).
+
+The preceding [nonempty recursive qualification](dag-gpu-implementation.md#9296-current-source-nonempty-recursive-proof-tree--2026-10-16)
+produces **four fresh GPU proofs**: two pairs, their four-transaction merge and
+its depth-6 finalizer. The unchanged 878-file source uses the **12-key registry,
+262,144 rows and default capacity 64**. All **16 request stages** run on OpenCL;
+all four proofs verify on CPU after GPU shutdown. Three additional CPU-only
+processes verify persisted outputs after worker exit and reject altered
+statements. Evidence pins **180 artifacts and 78 fixture files**. This qualifies
+direct Rust requests; native service delivery, full-capacity roots, complete
+lifetime ownership and throughput remain open. See
+[source evidence](evidence/gpu-current-nonempty-recursion-2026-10-16.json).
+
+The preceding [recursive size-reporting change](dag-gpu-implementation.md#9295-recursive-size-reporting-without-an-output-allocation--2026-10-16)
+removes a **2 MiB temporary allocation per legacy recursive proof** used only
+to report encoded size. A bounded counting serializer preserves both encodings
+and the existing size cap. **25 codec tests, four all-target checks and three
+fresh CPU-verified GPU proofs** pass on the final isolated source. This reduces
+known host allocation requests; throughput and complete output ownership remain
+unqualified. See [source evidence](evidence/gpu-recursive-size-count-2026-10-16.json).
+
+The preceding [recursive budget/cache check](dag-gpu-implementation.md#9294-recursive-session-budget-and-cache-reuse--2026-10-16)
+adds **three fresh CPU-verified proofs** on the combined snapshot. Cold setup,
+warm reuse, explicit eviction, insufficient-budget rejection and altered-proof
+rejection pass, with all **16 request stages** on OpenCL. This verifies a small
+legacy session case; complete host/output ownership remains open. See
+[source evidence](evidence/gpu-recursive-budget-cache-2026-10-16.json).
+
+The preceding [combined-source integration](dag-gpu-implementation.md#9293-combined-source-integration--2026-10-16)
 checks **877 source/support files**, incorporating the concurrent session's
 capacity and host/pool changes. **135 Rust tests, 205 Python tests, four
 all-target checks and 25 GPU tests** pass, producing **44 fresh CPU-verified

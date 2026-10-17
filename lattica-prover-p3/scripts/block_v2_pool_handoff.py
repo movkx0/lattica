@@ -26,16 +26,37 @@ def job_bytes(config):
 MIN_HANDOFF_MS = 30_000
 
 
+def continuation_reserve_ms(value):
+    if type(value) is not int or not 0 < value < T.DISPATCH_MS - MIN_HANDOFF_MS:
+        raise ValueError('handoff requires a bounded positive continuation reserve')
+    return value
+
+
+def validate_callback(callback):
+    """The trusted controller reserves final proving time before it may seal."""
+    if (not isinstance(callback, dict)
+            or set(callback) != {'command', 'pins', 'continuation_reserve_ms'}
+            or not isinstance(callback['command'], list) or not callback['command']
+            or not all(isinstance(arg, str) for arg in callback['command'])
+            or not Path(callback['command'][0]).is_absolute()
+            or not isinstance(callback['pins'], dict) or not callback['pins']):
+        raise ValueError('handoff requires a pinned callback and a bounded continuation reserve')
+    return continuation_reserve_ms(callback['continuation_reserve_ms'])
+
+
 class HandoffWindowUnavailable(ValueError):
     """A live phase lacks the reserve before any handoff service has started."""
 
-    def __init__(self, workflow, phase_deadline_ms, observed_ms):
-        super().__init__('prefix phase lacks the minimum handoff window')
+    def __init__(self, workflow, phase_deadline_ms, observed_ms, continuation_ms):
+        reserve = continuation_reserve_ms(continuation_ms)
+        super().__init__('prefix phase lacks the handoff and continuation window')
         self.window = {
             'pool_workflow': copy.deepcopy(workflow),
             'phase_deadline_monotonic_ms': phase_deadline_ms,
             'observed_monotonic_ms': observed_ms,
             'minimum_handoff_ms': MIN_HANDOFF_MS,
+            'continuation_reserve_ms': reserve,
+            'required_window_ms': MIN_HANDOFF_MS + reserve,
         }
 
 
@@ -164,6 +185,14 @@ def child(input_path):
     workflow = config['pool_workflow']
     boot, now = T.workflow_clock()
     T.validate_workflow(workflow, boot, now)
+    reserve = continuation_reserve_ms(value.get('continuation_reserve_ms'))
+    handoff_deadline = value.get('handoff_deadline_monotonic_ms')
+    fleet = read(config['fleet_plan'])
+    completion_deadline = min(fleet['pool_scheduling']['dispatch_deadline_monotonic_ms'],
+                              workflow['deadline_monotonic_ms'])
+    if (type(handoff_deadline) is not int
+            or not now < handoff_deadline <= completion_deadline - reserve):
+        raise ValueError('handoff changed or exhausted its reserved continuation window')
     for path, digest in value['pins'].items():
         if T.digest(path) != digest:
             raise ValueError('handoff input changed after admission')
@@ -209,6 +238,10 @@ def child(input_path):
         raise ValueError('handoff prefix lacks complete independent CPU audit')
     retirement = retire_audited_prefix(cache, receipt, audited, prefix_pins, workflow['deadline_monotonic_ms'])
     publish(directory / 'audited-prefix-cache-retirement.json', retirement)
+    boot, now = T.workflow_clock()
+    T.validate_workflow(workflow, boot, now)
+    if now >= handoff_deadline:
+        raise ValueError('handoff preparation exhausted its window before sealing')
     response = directory / 'native-selection.json'
     with (directory / 'callback.log').open('xb') as log:
         subprocess.run([*value['command'], str(input_path), str(response)], check=True,
@@ -232,6 +265,10 @@ def child(input_path):
     pins.update(dict(S.T.pin(path) for path in S.T.fixture_files(final.fixture, final.count, 'paired')))
     pins[str(final.fixture / 'expected.json')] = T.digest(final.fixture / 'expected.json')
     Seal.check(seal, workflow)
+    boot, now = T.workflow_clock()
+    T.validate_workflow(workflow, boot, now)
+    if now >= handoff_deadline:
+        raise ValueError('handoff callback exhausted the reserved continuation window')
     publish(directory / 'request.json', request)
     publish(directory / 'receipt.json', {'schema_version': 1, 'native_authenticated': True,
             'prefix_cpu_audited': True, 'pool_workflow': workflow, 'pins': pins,
@@ -240,13 +277,10 @@ def child(input_path):
 
 
 def run(phase, prefix_cache, callback):
+    reserve = validate_callback(callback)
     phase = Path(phase)
     config = read(phase / 'config.json')
-    if (config.get('pool_prefix_handoff') is not True or not config.get('arrival_store')
-            or not isinstance(callback, dict) or set(callback) != {'command', 'pins'}
-            or not isinstance(callback['command'], list) or not callback['command']
-            or not all(isinstance(arg, str) for arg in callback['command'])
-            or not Path(callback['command'][0]).is_absolute() or not callback['pins']):
+    if config.get('pool_prefix_handoff') is not True or not config.get('arrival_store'):
         raise ValueError('handoff requires a pinned native callback and admitted prefix service')
     boot, now = T.workflow_clock()
     T.validate_workflow(config['pool_workflow'], boot, now)
@@ -256,20 +290,24 @@ def run(phase, prefix_cache, callback):
         raise ValueError('handoff has already started; no automatic retry')
     phase_deadline = fleet['pool_scheduling']['dispatch_deadline_monotonic_ms']
     workflow_remaining = config['pool_workflow']['deadline_monotonic_ms'] - now
-    if workflow_remaining < MIN_HANDOFF_MS:
-        raise ValueError('original workflow lacks the minimum handoff window')
+    required = MIN_HANDOFF_MS + reserve
+    if workflow_remaining < required:
+        raise ValueError('original workflow lacks the handoff and continuation window')
     remaining = min(phase_deadline - now, workflow_remaining)
     if remaining <= 0:
         raise ValueError('prefix service handoff window expired')
-    if remaining < MIN_HANDOFF_MS:
-        raise HandoffWindowUnavailable(config['pool_workflow'], phase_deadline, now)
+    if remaining < required:
+        raise HandoffWindowUnavailable(config['pool_workflow'], phase_deadline, now, reserve)
+    remaining -= reserve
     directory.mkdir(mode=0o700)
     pins = dict(callback['pins'])
     pins[str(phase / 'config.json')] = T.digest(phase / 'config.json')
+    pins[config['fleet_plan']] = T.digest(Path(config['fleet_plan']))
     pins[str(Path(prefix_cache) / 'result.json')] = T.digest(Path(prefix_cache) / 'result.json')
     pins[str(Path(__file__).resolve())] = T.digest(__file__)
     value = {'schema_version': 1, 'directory': str(directory), 'config': str(phase / 'config.json'),
-             'prefix_cache': str(prefix_cache), 'command': callback['command'], 'pins': pins}
+             'prefix_cache': str(prefix_cache), 'command': callback['command'], 'pins': pins,
+             'continuation_reserve_ms': reserve, 'handoff_deadline_monotonic_ms': now + remaining}
     publish(directory / 'input.json', value)
     unit = 'lattica-v2-handoff-' + T.digest(directory / 'input.json') + '.service'
     command = ['systemd-run', '--user', '--wait', '--pipe', '--collect', '--service-type=exec',
@@ -305,6 +343,10 @@ def run(phase, prefix_cache, callback):
     request = read(directory / 'request.json')
     check_extension(config['native_host'], request['native_host'])
     Seal.check(request['pool_seal'], config['pool_workflow'])
+    boot, now = T.workflow_clock()
+    T.validate_workflow(config['pool_workflow'], boot, now)
+    if min(phase_deadline, config['pool_workflow']['deadline_monotonic_ms']) - now < reserve:
+        raise ValueError('handoff consumed the reserved continuation window')
     return request
 
 

@@ -1,0 +1,860 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -174,6 +174,7 @@
+ block-v2-wide-lanes = ["block-v2"]
+ # Distinct depth-seven research profile; legacy 64-transaction builds remain compatible.
+ block-v2-capacity-128 = ["block-v2"]
++block-v2-capacity-256 = ["block-v2"]
+ # Versioned research host verification. No legacy verifier fallback or activation.
+ block-v2-host = ["block-v2-wide-lanes"]
+ # Enable the RESEARCH out-of-core (streaming) prover: a `#[global_allocator]` that spills large
+@@ -188,3 +189,8 @@
+ # unit). Longer compile, faster prover; results bit-identical.
+ lto = "thin"
+ codegen-units = 1
++
++[[bin]]
++name = "capacity-256-benchmark"
++path = "src/bin/capacity-256-benchmark.rs"
++required-features = ["gpu", "block-v2-capacity-256"]
+--- /dev/null
++++ b/scripts/block-v2-typed-owned-gpu-workload-256.json
+@@ -0,0 +1,59 @@
++{
++  "version": 1,
++  "name": "typed-paired-owned-depth-eight-bootstrap-v1",
++  "height": 262144,
++  "page_bytes": 4096,
++  "geometry": {
++    "logical_lde_rows": 8388608,
++    "retained_quotient_rows": 4194304,
++    "degree_prefix_rows": 524288,
++    "main_columns": 98,
++    "preprocessing_columns": 200,
++    "permutation_columns_upper_bound": 55,
++    "quotient_matrices": 16,
++    "host_readback_layout": "direct",
++    "gpu_fri_fold": false,
++    "gpu_fri_resident": true,
++    "gpu_lookup": true,
++    "gpu_opening_eval": true,
++    "gpu_pcs_device_only": true,
++    "gpu_quotient_eval": true,
++    "gpu_quotient_resident": true,
++    "gpu_randomness": true,
++    "gpu_transcript": true,
++    "gpu_witness": true,
++    "main_trace_columns": 94,
++    "permutation_trace_columns_upper_bound": 51,
++    "query_readback_layout": "rows",
++    "opening_denominator_cache": false,
++    "lde_workspace_bytes": 0
++  },
++  "witness_bounds": {
++    "compiler_host_bytes": 734979744,
++    "compiler_retained_host_bytes": 41955776,
++    "input_values": 419117,
++    "main_columns": 94,
++    "metadata_bytes": 621713440,
++    "pcs_retained_host_bytes": 1048576,
++    "preprocessing_columns": 200,
++    "program_host_bytes": 647923296,
++    "program_retained_host_bytes": 270116692,
++    "rows": 262144,
++    "wires": 3669232
++  },
++  "owned_request_backing_includes_spill": true,
++  "complete_lifetime_qualified": false,
++  "phases": [
++    {
++      "name": "owned_request_backing",
++      "heap_bytes": 0,
++      "pinned_bytes": 0,
++      "driver_host_bytes": 134217728,
++      "resident_spill_bytes": 0,
++      "spill_payloads": [],
++      "managed_gpu_bytes": 0,
++      "max_gpu_allocation_bytes": 0
++    }
++  ],
++  "block_capacity": 256
++}
+--- a/scripts/block_v2_capacity.py
++++ b/scripts/block_v2_capacity.py
+@@ -4,14 +4,14 @@
+ from pathlib import Path
+ 
+ DEFAULT_CAPACITY = 64
+-SUPPORTED_CAPACITIES = (64, 128)
+-PLANNED_CAPACITIES = (256, 512)
++SUPPORTED_CAPACITIES = (64, 128, 256)
++PLANNED_CAPACITIES = (512,)
+ MAX_TRANSACTIONS = max(SUPPORTED_CAPACITIES)
+ MAX_DAG_NODES = 2 * MAX_TRANSACTIONS - 1
+ 
+ def validate(capacity):
+     if type(capacity) is not int or capacity not in SUPPORTED_CAPACITIES:
+-        raise ValueError("supported block capacities are 64 and 128; 256/512 are planned")
++        raise ValueError("research capacities are 64, 128 and 256; 512 is planned")
+     return capacity
+ 
+ def depth(capacity):
+@@ -20,7 +20,7 @@
+ def select(count, capacity=None):
+     if type(count) is not int:
+         raise ValueError("transaction count must be an integer")
+-    capacity = validate(capacity if capacity is not None else (128 if count > 64 else 64))
++    capacity = validate(capacity if capacity is not None else (256 if count > 128 else 128 if count > 64 else 64))
+     if type(count) is not int or not 1 <= count <= capacity:
+         raise ValueError("transaction count exceeds the selected block profile")
+     return capacity
+--- a/scripts/block_v2_owned_cli.py
++++ b/scripts/block_v2_owned_cli.py
+@@ -18,7 +18,7 @@
+ 
+ def workload_path(block_capacity=64):
+     Capacity.validate(block_capacity)
+-    return WORKLOAD if block_capacity == 64 else WORKLOAD.with_name('block-v2-typed-owned-gpu-workload-128.json')
++    return WORKLOAD if block_capacity == 64 else WORKLOAD.with_name(f'block-v2-typed-owned-gpu-workload-{block_capacity}.json')
+ 
+ 
+ def resource_profile(path, block_capacity=64):
+--- a/src/bin/block_v2_single_eight_probe.rs
++++ b/src/bin/block_v2_single_eight_probe.rs
+@@ -80,7 +80,7 @@
+                 chain_id: self.chain,
+             },
+             level: ROOT_LEVEL as u8,
+-            count: WALLETS as u8,
++            count: WALLETS as lattica_prover_p3::block_v2::profile::TransactionCount,
+             root: self.root,
+         };
+         commitment::validate_summary(summary)?;
+--- /dev/null
++++ b/src/bin/capacity-256-benchmark.rs
+@@ -0,0 +1,5 @@
++const FINALIZER: bool = true;
++const PAIRED: bool = true;
++#[path = "typed_common/driver.rs"]
++mod driver;
++fn main() { driver::benchmark_main(); }
+--- a/src/bin/grouped_common/mod.rs
++++ b/src/bin/grouped_common/mod.rs
+@@ -81,7 +81,7 @@
+                 chain_id: self.chain,
+             },
+             level: ROOT_LEVEL as u8,
+-            count: WALLETS as u8,
++            count: WALLETS as lattica_prover_p3::block_v2::profile::TransactionCount,
+             root: self.root,
+         };
+         commitment::validate_summary(summary)?;
+--- /dev/null
++++ b/src/bin/typed_common/capacity_256_tests.rs
+@@ -0,0 +1,40 @@
++#![cfg(feature = "block-v2-capacity-256")]
++use lattica_prover_p3::block_v2::{commitment::{self, Context, Entry, Kind}, machine::{programs, typed_pairs}, profile, recursive};
++use p3_field::{PrimeCharacteristicRing, PrimeField64};
++
++#[test]
++fn full_count_survives_statement_and_tree_composition() {
++    assert_eq!((profile::MAX_TRANSACTIONS, commitment::DEPTH), (256, 8));
++    let context = Context { profile_id: profile::CANDIDATE_PROFILE_ID, chain_id: [42; 32] };
++    let entries: Vec<_> = (0..256).map(|i| Entry { kind: Kind::JoinSplit, statement_digest: [i, i + 1, i + 2, i + 3] }).collect();
++    let mut nodes: Vec<_> = entries.iter().map(|entry| commitment::leaf(context, *entry).unwrap()).collect();
++    while nodes.len() > 1 {
++        nodes = nodes.chunks_exact(2).map(|pair| commitment::merge_nodes(pair[0], pair[1]).unwrap()).collect();
++    }
++    let root = nodes[0];
++    assert_eq!(root.count, 256);
++    assert_eq!(root.root, commitment::root(context, &entries).unwrap());
++    let public = programs::statement(root, programs::MERGE);
++    assert_eq!(public[programs::COUNT].as_canonical_u64(), 256);
++    assert_eq!(recursive::summary(&public).unwrap(), root);
++    for invalid in [257, 512, 65536] {
++        let mut forged = public;
++        forged[programs::COUNT] = p3_goldilocks::Goldilocks::from_u64(invalid);
++        assert!(recursive::summary(&forged).is_err());
++    }
++    let mut excessive = entries.clone(); excessive.push(entries[0]);
++    assert!(commitment::root(context, &excessive).is_err());
++}
++
++#[test]
++fn complete_proof_plan_crosses_the_byte_boundary() {
++    for count in [1, 2, 63, 64, 65, 127, 128, 129, 254, 255, 256] {
++        let plan = typed_pairs::proof_plan(count).unwrap();
++        assert!(plan.subtree_level <= commitment::DEPTH);
++    }
++    assert!(typed_pairs::proof_plan(0).is_err());
++    assert!(typed_pairs::proof_plan(257).is_err());
++    let full = typed_pairs::proof_plan(256).unwrap();
++    assert_eq!(full.subtree_level, 8);
++    assert_eq!(full.proposed_proofs, 255);
++}
+--- a/src/bin/typed_common/driver.rs
++++ b/src/bin/typed_common/driver.rs
+@@ -42,6 +42,8 @@
+ #[cfg(test)]
+ #[path = "input_tests.rs"]
+ mod input_tests;
++#[cfg(all(test, feature = "block-v2-capacity-256"))]
++mod capacity_256_tests;
+ const KEY_COUNT: usize = if PAIRED {
+     12
+ } else if FINALIZER {
+@@ -72,7 +74,7 @@
+ } else {
+     b"LBV2TK01"
+ };
+-const JSON_LIMIT: usize = 128 * 1024;
++const JSON_LIMIT: usize = if cfg!(feature = "block-v2-capacity-256") { 512 * 1024 } else { 128 * 1024 };
+ 
+ #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+ #[serde(rename_all = "snake_case")]
+@@ -127,7 +129,7 @@
+     profile: [u8; 32],
+     chain: [u8; 32],
+     root: [u64; 4],
+-    count: u8,
++    count: profile::TransactionCount,
+     block_height: u64,
+     #[serde(deserialize_with = "input::authorizations")]
+     authorized_issuance: BTreeMap<usize, u64>,
+@@ -135,8 +137,8 @@
+ 
+ impl Expected {
+     fn validate(&self) -> Result<(), Error> {
+-        if self.schema_version != 1
+-            || !(1..=profile::MAX_TRANSACTIONS as u8).contains(&self.count)
++        if self.schema_version != profile::CAPACITY_SCHEMA
++            || !(1..=profile::MAX_TRANSACTIONS as profile::TransactionCount).contains(&self.count)
+             || self.block_height >= 1u64 << lattica_prover_p3::htlc_air::BITS
+             || self.root.iter().any(|v| *v >= commitment::MODULUS)
+             || self.authorized_issuance.iter().any(|(i, mint)| {
+@@ -230,7 +232,7 @@
+ }
+ 
+ fn validate_body(body: &Body) -> Result<(), Error> {
+-    if body.schema_version != 1
++    if body.schema_version != profile::CAPACITY_SCHEMA
+         || body.transactions.is_empty()
+         || body.transactions.len() > profile::MAX_TRANSACTIONS
+     {
+@@ -463,7 +465,7 @@
+         TransactionType::Issuance,
+     ];
+     Body {
+-        schema_version: 1,
++        schema_version: profile::CAPACITY_SCHEMA,
+         chain: typed_fixture::CHAIN,
+         transactions: statements
+             .into_iter()
+@@ -501,11 +503,11 @@
+     // These fixed policies apply only to the synthetic fixture command. Actual
+     // proving and audit commands always read the independent Expected document.
+     Expected {
+-        schema_version: 1,
++        schema_version: profile::CAPACITY_SCHEMA,
+         profile: [0; 32],
+         chain: body.chain,
+         root: [0; 4],
+-        count: profile::MAX_TRANSACTIONS as u8,
++        count: profile::MAX_TRANSACTIONS as profile::TransactionCount,
+         block_height: typed_fixture::HEIGHT,
+         authorized_issuance: body
+             .transactions
+@@ -533,8 +535,8 @@
+     ])
+ }
+ 
+-fn expected(dir: &Path, count: u8, out: &Path) -> Result<(), Error> {
+-    if !(1..=profile::MAX_TRANSACTIONS as u8).contains(&count) {
++fn expected(dir: &Path, count: profile::TransactionCount, out: &Path) -> Result<(), Error> {
++    if !(1..=profile::MAX_TRANSACTIONS as profile::TransactionCount).contains(&count) {
+         return Err(format!(
+             "count must be 1..{} for the selected block profile",
+             profile::MAX_TRANSACTIONS
+@@ -796,6 +798,12 @@
+         },
+         ["fixture", dir] => fixture(Path::new(dir)),
+         ["fixture-statements", out] => write_json(Path::new(out), &fixture_body()),
++        #[cfg(all(feature = "gpu", feature = "block-v2-capacity-256"))]
++        ["geometry-bounds", dir, out] => {
++            let wallets = templates(Path::new(dir))?;
++            let report = typed_recursive::capacity_benchmark_geometry([&wallets[0], &wallets[1], &wallets[2]])?;
++            write_json(Path::new(out), &report)
++        }
+         ["geometry", dir] => {
+             let dir = Path::new(dir);
+             let [js, htlc, issuance] = templates(dir)?;
+@@ -986,7 +994,7 @@
+         fs::remove_dir(dir).unwrap();
+     }
+ 
+-    pub(super) fn candidate(count: u8) -> (Body, Expected) {
++    pub(super) fn candidate(count: profile::TransactionCount) -> (Body, Expected) {
+         let kinds = [
+             TransactionType::Joinsplit,
+             TransactionType::HtlcRedeem,
+@@ -994,7 +1002,7 @@
+             TransactionType::Issuance,
+         ];
+         let body = Body {
+-            schema_version: 1,
++            schema_version: profile::CAPACITY_SCHEMA,
+             chain: typed_fixture::CHAIN,
+             transactions: typed_fixture::statements()
+                 .into_iter()
+@@ -1025,7 +1033,7 @@
+ 
+     #[test]
+     fn host_pipeline_preserves_every_supported_proof_plan() {
+-        for count in 1..=profile::MAX_TRANSACTIONS as u8 {
++        for count in 1..=profile::MAX_TRANSACTIONS as profile::TransactionCount {
+             let (body, expected) = candidate(count);
+             let tasks = tasks(&body, &expected).unwrap();
+             let finished = std::sync::Mutex::new(BTreeSet::new());
+@@ -1060,7 +1068,7 @@
+ 
+     #[test]
+     fn all_contract_counts_have_ordered_dependencies_and_fresh_work() {
+-        for count in 1..=profile::MAX_TRANSACTIONS as u8 {
++        for count in 1..=profile::MAX_TRANSACTIONS as profile::TransactionCount {
+             let (body, expected) = candidate(count);
+             let tasks = tasks(&body, &expected).unwrap();
+             let mut finished = BTreeSet::new();
+@@ -1168,7 +1176,7 @@
+     #[test]
+     fn malformed_expectations_fail_before_proving() {
+         let (_, expected) = candidate(4);
+-        for count in [0, (profile::MAX_TRANSACTIONS + 1) as u8, 255] {
++        for count in [0, (profile::MAX_TRANSACTIONS + 1) as profile::TransactionCount, profile::TransactionCount::MAX] {
+             let mut wrong = expected.clone();
+             wrong.count = count;
+             assert!(wrong.validate().is_err());
+@@ -1239,3 +1247,43 @@
+         fs::remove_dir_all(dir).unwrap();
+     }
+ }
++
++/// Offline full-block measurement only; retains normal owned GPU resource admission.
++/// This harness grants no pool timing approval or production deadline qualification.
++pub(crate) fn benchmark_main() {
++    extern "C" {
++        fn lattica_gpu_public_worker_initialize_from_env() -> i32;
++        fn lattica_gpu_shutdown() -> i32;
++    }
++    let execute = || -> Result<(), Error> {
++        let args: Vec<String> = std::env::args().collect();
++        if profile::MAX_TRANSACTIONS != 256 || !PAIRED {
++            return Err("this measurement harness requires the paired 256 profile".into());
++        }
++        if !matches!(args.get(1).map(String::as_str), Some("register" | "prove-cpu")) {
++            return Err("benchmark harness accepts register or prove-cpu arguments".into());
++        }
++        let budget: u64 = args.last().ok_or("missing worker budget")?.parse()?;
++        if budget != 3 << 30 {
++            return Err("benchmark worker must retain its 3 GiB allowance".into());
++        }
++        require_cpu_limit(budget)?;
++        let start = Instant::now();
++        if unsafe { lattica_gpu_public_worker_initialize_from_env() } != 0 {
++            return Err("bounded GPU benchmark initialization rejected".into());
++        }
++        let initialized = start.elapsed().as_secs_f64();
++        let result = run_inner(&args, true);
++        let shutdown = unsafe { lattica_gpu_shutdown() };
++        result?;
++        if shutdown != 0 { return Err("GPU teardown rejected".into()); }
++        println!("{}", json!({"event":"capacity_benchmark_complete", "block_capacity":256,
++            "gpu_initialization_seconds":initialized, "seconds":start.elapsed().as_secs_f64(),
++            "production_deadline_qualified":false, "worker_memory_bytes":budget}));
++        Ok(())
++    };
++    if let Err(error) = execute() {
++        eprintln!("capacity benchmark failed: {error}");
++        std::process::exit(1);
++    }
++}
+--- a/src/bin/typed_common/execution_pool_calibration_audit.rs
++++ b/src/bin/typed_common/execution_pool_calibration_audit.rs
+@@ -11,7 +11,7 @@
+     proof_bytes: usize,
+     mode: u64,
+     level: u8,
+-    count: u8,
++    count: profile::TransactionCount,
+ }
+ 
+ fn verify(
+--- a/src/bin/typed_common/input_tests.rs
++++ b/src/bin/typed_common/input_tests.rs
+@@ -25,7 +25,7 @@
+ 
+ #[test]
+ fn all_body_counts_keep_json_and_task_order_with_bounded_capacities() {
+-    for count in 1..=profile::MAX_TRANSACTIONS as u8 {
++    for count in 1..=profile::MAX_TRANSACTIONS as profile::TransactionCount {
+         let (body, expected) = tests::candidate(count);
+         let body_bytes = serde_json::to_vec(&body).unwrap();
+         let parsed: Body = serde_json::from_slice(&body_bytes).unwrap();
+@@ -69,7 +69,7 @@
+ 
+ #[test]
+ fn oversized_json_collections_fail_before_decoding_the_extra_payload() {
+-    let (body, expected) = tests::candidate(profile::MAX_TRANSACTIONS as u8);
++    let (body, expected) = tests::candidate(profile::MAX_TRANSACTIONS as profile::TransactionCount);
+     let mut value = serde_json::to_value(&body).unwrap();
+     value["transactions"]
+         .as_array_mut()
+--- a/src/block_v2/codec.rs
++++ b/src/block_v2/codec.rs
+@@ -12,8 +12,8 @@
+ mod sizing;
+ pub(crate) use sizing::encoded_node_len;
+ 
+-const LEGACY_NODE_MAGIC: &[u8; 8] = b"LBV2RC01";
+-const FIXED_NODE_MAGIC: &[u8; 8] = b"LBV2RC02";
++const LEGACY_NODE_MAGIC: &[u8; 8] = if cfg!(feature = "block-v2-capacity-256") { b"LBV2RC03" } else { b"LBV2RC01" };
++const FIXED_NODE_MAGIC: &[u8; 8] = if cfg!(feature = "block-v2-capacity-256") { b"LBV2RC04" } else { b"LBV2RC02" };
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+ enum Encoding {
+     Legacy,
+--- a/src/block_v2/commitment.rs
++++ b/src/block_v2/commitment.rs
+@@ -234,7 +234,7 @@
+ pub struct NodeSummary {
+     pub context: Context,
+     pub level: u8, // leaf = 0, block root = DEPTH
+-    pub count: u8,
++    pub count: crate::block_v2::profile::TransactionCount,
+     pub root: Digest,
+ }
+ 
+@@ -260,7 +260,7 @@
+     })
+ }
+ 
+-fn level_capacity(level: u8) -> Result<u8, CommitmentError> {
++fn level_capacity(level: u8) -> Result<crate::block_v2::profile::TransactionCount, CommitmentError> {
+     if level > DEPTH {
+         return Err(CommitmentError::InvalidLevel);
+     }
+@@ -604,7 +604,7 @@
+             Err(CommitmentError::InvalidCount)
+         );
+         malformed = padding;
+-        malformed.count = CAPACITY as u8 + 1;
++        malformed.count = CAPACITY as crate::block_v2::profile::TransactionCount + 1;
+         assert_eq!(
+             validate_summary(malformed),
+             Err(CommitmentError::InvalidCount)
+@@ -664,7 +664,7 @@
+         let entries = test_entries();
+         for count in 1..=CAPACITY {
+             let reference = reference_tree(context, &entries[..count], DEPTH);
+-            assert_eq!((reference.count, reference.level), (count as u8, DEPTH));
++            assert_eq!((reference.count, reference.level), (count as crate::block_v2::profile::TransactionCount, DEPTH));
+             assert_eq!(reference.root, root(context, &entries[..count]).unwrap());
+         }
+         assert_eq!(root(context, &[]), Err(CommitmentError::EmptyBlock));
+--- a/src/block_v2/execution/artifact_store.rs
++++ b/src/block_v2/execution/artifact_store.rs
+@@ -32,7 +32,7 @@
+ 
+ const LOCK: &str = ".owner.lock";
+ const PENDING: &str = ".pending-";
+-const MAX_STORE_BYTES: u64 = 512 * (1 << 20);
++pub(super) const MAX_STORE_BYTES: u64 = if cfg!(feature = "block-v2-capacity-256") { 1 << 30 } else { 512 * (1 << 20) };
+ const MAX_ENTRIES: usize = 16384;
+ 
+ #[path = "artifact_store_storage.rs"]
+--- a/src/block_v2/execution/dag.rs
++++ b/src/block_v2/execution/dag.rs
+@@ -172,7 +172,7 @@
+         if !(1..=4096).contains(&self.jobs)
+             || !(1..=256).contains(&self.candidates)
+             || !(1..=16384).contains(&self.attempts)
+-            || !(MAX_PROOF_BYTES..=512 * (1 << 20)).contains(&self.artifact_bytes)
++            || !(MAX_PROOF_BYTES..=super::artifact_store::MAX_STORE_BYTES as usize).contains(&self.artifact_bytes)
+         {
+             return Err("execution graph/store limit".into());
+         }
+--- a/src/block_v2/execution/dag_snapshot.rs
++++ b/src/block_v2/execution/dag_snapshot.rs
+@@ -12,10 +12,10 @@
+ };
+ 
+ pub(crate) const MAX_SNAPSHOT_BYTES: usize = 8 * (1 << 20);
+-const MAGIC: &[u8; 8] = b"LVDAG001";
+-const BOUND_MAGIC: &[u8; 8] = b"LVDAG002";
+-const STAGED_MAGIC: &[u8; 8] = b"LVDAG003";
+-const WORKSPACE_MAGIC: &[u8; 8] = b"LVDAG004";
++const MAGIC: &[u8; 8] = if cfg!(feature = "block-v2-capacity-256") { b"LVDAG101" } else { b"LVDAG001" };
++const BOUND_MAGIC: &[u8; 8] = if cfg!(feature = "block-v2-capacity-256") { b"LVDAG102" } else { b"LVDAG002" };
++const STAGED_MAGIC: &[u8; 8] = if cfg!(feature = "block-v2-capacity-256") { b"LVDAG103" } else { b"LVDAG003" };
++const WORKSPACE_MAGIC: &[u8; 8] = if cfg!(feature = "block-v2-capacity-256") { b"LVDAG104" } else { b"LVDAG004" };
+ 
+ #[derive(Clone, Debug)]
+ pub struct PreviousCandidate {
+--- a/src/block_v2/execution/job.rs
++++ b/src/block_v2/execution/job.rs
+@@ -30,7 +30,7 @@
+ #[path = "job/registry_pin_tests.rs"]
+ mod registry_pin_tests;
+ 
+-const SCHEMA: u64 = 1;
++const SCHEMA: u64 = crate::block_v2::profile::CAPACITY_SCHEMA as u64;
+ // Distinct from commitment, registry, AIR and statement hash domains.
+ const JOB_DOMAIN: u64 = 0x4c42563271;
+ const ARTIFACT_DOMAIN: u64 = 0x4c42563272;
+--- a/src/block_v2/execution/journal.rs
++++ b/src/block_v2/execution/journal.rs
+@@ -40,7 +40,7 @@
+ 
+ const STATE: &str = "state";
+ const LOCK: &str = ".owner.lock";
+-const MAGIC: &[u8; 8] = b"LVJRN001";
++const MAGIC: &[u8; 8] = if cfg!(feature = "block-v2-capacity-256") { b"LVJRN002" } else { b"LVJRN001" };
+ const HEADER: usize = 52;
+ const HASH_DOMAIN: u64 = 0x4c42563273;
+ const MAX_PENDING: usize = 16;
+--- a/src/block_v2/execution/scheduler.rs
++++ b/src/block_v2/execution/scheduler.rs
+@@ -58,7 +58,7 @@
+     identity: Option<TimingIdentity>,
+     mode: u64,
+     level: u8,
+-    count: u8,
++    count: crate::block_v2::profile::TransactionCount,
+     ram_bytes: u64,
+     vram_bytes: u64,
+     scratch_bytes: u64,
+--- a/src/block_v2/execution/scheduler/calibration.rs
++++ b/src/block_v2/execution/scheduler/calibration.rs
+@@ -65,15 +65,15 @@
+     resources: Resources,
+     mode: u64,
+     level: u8,
+-    input_count: u8,
++    input_count: crate::block_v2::profile::TransactionCount,
+     warm: bool,
+     count: u8,
+     samples: [u64; MAX_SAMPLES],
+ }
+ 
+ impl TimingCalibration {
+-    pub const ENCODED_BYTES: usize = 8 + 6 * 32 + 32 + 3 * 8 + 4 + 8 + 4 + 8 * MAX_SAMPLES;
+-    const MAGIC: &'static [u8; 8] = b"LTTCAL01";
++    pub const ENCODED_BYTES: usize = 8 + 6 * 32 + 32 + 3 * 8 + 4 + 8 + 3 + crate::block_v2::profile::COUNT_BYTES + 8 * MAX_SAMPLES;
++    const MAGIC: &'static [u8; 8] = if cfg!(feature = "block-v2-capacity-256") { b"LTTCAL02" } else { b"LTTCAL01" };
+ 
+     pub fn encode(&self) -> [u8; Self::ENCODED_BYTES] {
+         let mut bytes = [0; Self::ENCODED_BYTES];
+@@ -96,12 +96,9 @@
+         }
+         write(&self.resources.threads.to_le_bytes());
+         write(&self.mode.to_le_bytes());
+-        write(&[
+-            self.level,
+-            self.input_count,
+-            u8::from(self.warm),
+-            self.count,
+-        ]);
++        write(&[self.level]);
++        write(&self.input_count.to_le_bytes());
++        write(&[u8::from(self.warm), self.count]);
+         for value in self.samples {
+             write(&value.to_le_bytes());
+         }
+@@ -139,7 +136,9 @@
+             threads: u32::from_le_bytes(take(bytes, &mut offset)),
+         };
+         let mode = u64::from_le_bytes(take(bytes, &mut offset));
+-        let [level, input_count, warm, count] = take(bytes, &mut offset);
++        let [level] = take(bytes, &mut offset);
++        let input_count = crate::block_v2::profile::TransactionCount::from_le_bytes(take(bytes, &mut offset));
++        let [warm, count] = take(bytes, &mut offset);
+         if warm > 1 {
+             return Err("scheduler calibration warm flag".into());
+         }
+--- a/src/block_v2/execution/worker_packet.rs
++++ b/src/block_v2/execution/worker_packet.rs
+@@ -11,10 +11,10 @@
+     recursive::WrapperConstruction,
+ };
+ 
+-const REQUEST_MAGIC: &[u8; 8] = b"LVCPUR01";
+-const RESULT_MAGIC: &[u8; 8] = b"LVCPUS01";
+-const TYPED_REQUEST_MAGIC: &[u8; 8] = b"LVTYPR01";
+-const TYPED_RESULT_MAGIC: &[u8; 8] = b"LVTYPS01";
++const REQUEST_MAGIC: &[u8; 8] = if cfg!(feature = "block-v2-capacity-256") { b"LVCPUR02" } else { b"LVCPUR01" };
++const RESULT_MAGIC: &[u8; 8] = if cfg!(feature = "block-v2-capacity-256") { b"LVCPUS02" } else { b"LVCPUS01" };
++const TYPED_REQUEST_MAGIC: &[u8; 8] = if cfg!(feature = "block-v2-capacity-256") { b"LVTYPR02" } else { b"LVTYPR01" };
++const TYPED_RESULT_MAGIC: &[u8; 8] = if cfg!(feature = "block-v2-capacity-256") { b"LVTYPS02" } else { b"LVTYPS01" };
+ pub const MAX_RESULT_BYTES: usize = MAX_PROOF_BYTES + 256;
+ const RESULT_HEADER_BYTES: usize = 181;
+ 
+@@ -87,7 +87,8 @@
+ }
+ fn put_summary(out: &mut Vec<u8>, value: NodeSummary) -> Result<(), Error> {
+     commitment::validate_summary(value)?;
+-    out.extend([value.level, value.count]);
++    out.push(value.level);
++    out.extend(value.count.to_le_bytes());
+     out.extend(commitment::digest_bytes(value.root)?);
+     Ok(())
+ }
+@@ -142,7 +143,7 @@
+         let value = NodeSummary {
+             context,
+             level: self.byte()?,
+-            count: self.byte()?,
++            count: crate::block_v2::profile::TransactionCount::from_le_bytes(self.take(crate::block_v2::profile::COUNT_BYTES)?.try_into()?),
+             root: commitment::digest_from_bytes(self.take(32)?)?,
+         };
+         commitment::validate_summary(value)?;
+--- a/src/block_v2/execution/worker_typed.rs
++++ b/src/block_v2/execution/worker_typed.rs
+@@ -13,7 +13,7 @@
+ };
+ 
+ enum TypedInputs {
+-    Pair([WalletProof; 2], [Policy; 2], u8),
++    Pair([WalletProof; 2], [Policy; 2], crate::block_v2::profile::TransactionCount),
+     Empty,
+     Merge([crate::block_v2::typed_recursive::VerifiedNodeInput; 2]),
+     Finalize(crate::block_v2::typed_recursive::VerifiedNodeInput),
+--- a/src/block_v2/host.rs
++++ b/src/block_v2/host.rs
+@@ -17,8 +17,8 @@
+ #[path = "host_wallet.rs"]
+ pub mod wallet;
+ 
+-pub const REGISTRY_MAGIC: &[u8; 8] = b"LBV2RG01";
+-pub const EXPECTED_MAGIC: &[u8; 8] = b"LBV2EX01";
++pub const REGISTRY_MAGIC: &[u8; 8] = if cfg!(feature = "block-v2-capacity-256") { b"LBV2RG02" } else { b"LBV2RG01" };
++pub const EXPECTED_MAGIC: &[u8; 8] = if cfg!(feature = "block-v2-capacity-256") { b"LBV2EX02" } else { b"LBV2EX01" };
+ pub const MAX_REGISTRY_BYTES: usize = 64 * 1024;
+ pub const EXPECTED_BYTES: usize = 112;
+ 
+@@ -44,7 +44,7 @@
+ pub struct Expected {
+     pub context: Context,
+     pub root: commitment::Digest,
+-    pub count: u8,
++    pub count: crate::block_v2::profile::TransactionCount,
+ }
+ 
+ impl Expected {
+@@ -62,12 +62,12 @@
+                 chain_id: bytes[40..72].try_into()?,
+             },
+             root: commitment::digest_from_bytes(&bytes[72..104])?,
+-            count: count as u8,
++            count: count as crate::block_v2::profile::TransactionCount,
+         })
+     }
+ 
+     pub fn encode(self) -> Result<[u8; EXPECTED_BYTES], Error> {
+-        if !(1..=profile::MAX_TRANSACTIONS as u8).contains(&self.count) {
++        if !(1..=profile::MAX_TRANSACTIONS as crate::block_v2::profile::TransactionCount).contains(&self.count) {
+             return Err("research host root count".into());
+         }
+         let mut bytes = [0; EXPECTED_BYTES];
+@@ -171,7 +171,7 @@
+                 chain_id: [9; 32],
+             },
+             root: [0, 1, commitment::MODULUS - 1, 99],
+-            count: profile::MAX_TRANSACTIONS as u8,
++            count: profile::MAX_TRANSACTIONS as crate::block_v2::profile::TransactionCount,
+         };
+         let bytes = expected.encode().unwrap();
+         assert_eq!(Expected::decode(&bytes).unwrap(), expected);
+--- a/src/block_v2/machine/programs.rs
++++ b/src/block_v2/machine/programs.rs
+@@ -48,7 +48,7 @@
+     out[..16].copy_from_slice(&node.context.to_fields().map(Val::from_u64));
+     out[MODE] = Val::from_u64(mode);
+     out[LEVEL] = Val::from_u8(node.level);
+-    out[COUNT] = Val::from_u8(node.count);
++    out[COUNT] = Val::from_u64(node.count as u64);
+     out[ROOT..].copy_from_slice(&node.root.map(Val::from_u64));
+     out
+ }
+--- a/src/block_v2/machine/typed_finalizer.rs
++++ b/src/block_v2/machine/typed_finalizer.rs
+@@ -33,11 +33,11 @@
+     pub proposed_proofs: u16,
+ }
+ 
+-pub fn proof_plan(count: u8) -> Result<ProofPlan, CompileError> {
++pub fn proof_plan(count: crate::block_v2::profile::TransactionCount) -> Result<ProofPlan, CompileError> {
+     if count == 0 || count > 1 << commitment::DEPTH {
+         return Err(CompileError::Shape("finalizer transaction count"));
+     }
+-    fn nodes(level: u8, count: u8) -> u16 {
++    fn nodes(level: u8, count: crate::block_v2::profile::TransactionCount) -> u16 {
+         if count == 0 || level == 0 {
+             return 1;
+         }
+@@ -267,8 +267,8 @@
+             );
+         }
+         assert!(proof_plan(0).is_err());
+-        assert!(proof_plan((commitment::CAPACITY + 1) as u8).is_err());
+-        let full = proof_plan(commitment::CAPACITY as u8).unwrap();
++        assert!(proof_plan((commitment::CAPACITY + 1) as crate::block_v2::profile::TransactionCount).is_err());
++        let full = proof_plan(commitment::CAPACITY as crate::block_v2::profile::TransactionCount).unwrap();
+         assert_eq!(full.proposed_proofs as usize, 2 * commitment::CAPACITY - 1);
+         assert_eq!(full.finalizer_proofs, 0);
+         assert!(proof_plan(u8::MAX).is_err());
+@@ -295,7 +295,7 @@
+             .collect();
+         for count in 1..=commitment::CAPACITY / 2 {
+             let expected = commitment::root(context, &entries[..count]).unwrap();
+-            for level in proof_plan(count as u8).unwrap().subtree_level..commitment::DEPTH {
++            for level in proof_plan(count as crate::block_v2::profile::TransactionCount).unwrap().subtree_level..commitment::DEPTH {
+                 let node = subtree(context, &entries[..count], level);
+                 let mut values = programs::statement(node, programs::MERGE).to_vec();
+                 values.extend(expected.map(Val::from_u64));
+--- a/src/block_v2/machine/typed_pairs.rs
++++ b/src/block_v2/machine/typed_pairs.rs
+@@ -68,9 +68,9 @@
+     pub proposed_proofs: u16,
+ }
+ 
+-pub fn proof_plan(count: u8) -> Result<ProofPlan, CompileError> {
++pub fn proof_plan(count: crate::block_v2::profile::TransactionCount) -> Result<ProofPlan, CompileError> {
+     let single = typed_finalizer::proof_plan(count)?;
+-    fn nodes(level: u8, count: u8) -> u16 {
++    fn nodes(level: u8, count: crate::block_v2::profile::TransactionCount) -> u16 {
+         if count == 0 || level == 1 {
+             return 1;
+         }
+@@ -483,8 +483,8 @@
+             assert_eq!(plan.proposed_proofs, paired + extra);
+         }
+         assert!(proof_plan(0).is_err());
+-        assert!(proof_plan((commitment::CAPACITY + 1) as u8).is_err());
+-        let full = proof_plan(commitment::CAPACITY as u8).unwrap();
++        assert!(proof_plan((commitment::CAPACITY + 1) as crate::block_v2::profile::TransactionCount).is_err());
++        let full = proof_plan(commitment::CAPACITY as crate::block_v2::profile::TransactionCount).unwrap();
+         assert_eq!(full.proposed_proofs as usize, commitment::CAPACITY - 1);
+         assert_eq!(full.finalizer_proofs, 0);
+     }
+--- a/src/block_v2/profile.rs
++++ b/src/block_v2/profile.rs
+@@ -25,23 +25,28 @@
+ 
+ /// Research namespace, NOT a reviewed verifier/program identity or activation ID.
+ /// Freeze a new identity after the recursive program and complete profile are reviewed.
+-#[cfg(not(feature = "block-v2-capacity-128"))]
+-pub const CANDIDATE_PROFILE_ID: [u8; 32] = *b"LATTICA-BLOCK-V2-CANDIDATE-00001";
+-#[cfg(feature = "block-v2-capacity-128")]
+-pub const CANDIDATE_PROFILE_ID: [u8; 32] = *b"LATTICA-BLOCK-V2-CANDIDATE-00128";
+-pub const MAX_TRANSACTIONS: usize = if cfg!(feature = "block-v2-capacity-128") {
+-    128
+-} else {
+-    64
+-};
++#[cfg(all(feature = "block-v2-capacity-128", feature = "block-v2-capacity-256"))]
++compile_error!("select exactly one research capacity profile");
++#[cfg(feature = "block-v2-capacity-256")]
++pub type TransactionCount = u16;
++#[cfg(not(feature = "block-v2-capacity-256"))]
++pub type TransactionCount = u8;
++pub const COUNT_BYTES: usize = core::mem::size_of::<TransactionCount>();
++pub const CAPACITY_SCHEMA: u32 = if cfg!(feature = "block-v2-capacity-256") { 2 } else { 1 };
++pub const CANDIDATE_PROFILE_ID: [u8; 32] = if cfg!(feature = "block-v2-capacity-256") {
++    *b"LATTICA-BLOCK-V2-CANDIDATE-00256"
++} else if cfg!(feature = "block-v2-capacity-128") {
++    *b"LATTICA-BLOCK-V2-CANDIDATE-00128"
++} else { *b"LATTICA-BLOCK-V2-CANDIDATE-00001" };
++pub const MAX_TRANSACTIONS: usize = if cfg!(feature = "block-v2-capacity-256") {
++    256
++} else if cfg!(feature = "block-v2-capacity-128") { 128 } else { 64 };
+ pub const TREE_DEPTH: usize = MAX_TRANSACTIONS.ilog2() as usize;
+-pub const ROOT_FILE: &str = if cfg!(feature = "block-v2-capacity-128") {
+-    "node.7.0"
+-} else {
+-    "node.6.0"
+-};
+-/// Planning only: these sizes require wider count codecs and fresh qualification.
+-pub const PLANNED_CAPACITIES: [usize; 2] = [256, 512];
++pub const ROOT_FILE: &str = if cfg!(feature = "block-v2-capacity-256") {
++    "node.8.0"
++} else if cfg!(feature = "block-v2-capacity-128") { "node.7.0" } else { "node.6.0" };
++/// 512 also requires wider slot/range indices and fresh qualification.
++pub const PLANNED_CAPACITIES: [usize; 1] = [512];
+ /// A full reference DAG has one wrapper per leaf and one node per merge.
+ pub const MAX_DAG_NODES: usize = 2 * MAX_TRANSACTIONS - 1;
+ pub const BLOCK_INTERVAL_SECS: u64 = 12 * 60;
+@@ -49,9 +54,9 @@
+ // Research node transport only. Wallets keep their existing encoding/profile.
+ // The wide registry and program manifest bind this revision explicitly.
+ #[cfg(not(feature = "block-v2-wide-lanes"))]
+-pub const NODE_CODEC_REVISION: u64 = 1;
++pub const NODE_CODEC_REVISION: u64 = if cfg!(feature = "block-v2-capacity-256") { 3 } else { 1 };
+ #[cfg(feature = "block-v2-wide-lanes")]
+-pub const NODE_CODEC_REVISION: u64 = 2;
++pub const NODE_CODEC_REVISION: u64 = if cfg!(feature = "block-v2-capacity-256") { 4 } else { 2 };
+ pub const LOG_BLOWUP: usize = 4;
+ /// Canonical quotient partitions supported by the GPU compiler and PCS. This
+ /// bound is independent of the per-chunk LDE blowup; batch AIRs need 32 chunks.
+--- a/src/block_v2/recursive.rs
++++ b/src/block_v2/recursive.rs
+@@ -210,7 +210,7 @@
+             chain_id: context_bytes[32..].try_into().unwrap(),
+         },
+         level: words[programs::LEVEL] as u8,
+-        count: words[programs::COUNT] as u8,
++        count: words[programs::COUNT] as crate::block_v2::profile::TransactionCount,
+         root: core::array::from_fn(|i| words[programs::ROOT + i]),
+     }
+ }
+--- a/src/block_v2/typed_recursive.rs
++++ b/src/block_v2/typed_recursive.rs
+@@ -250,6 +250,32 @@
+             _ => unreachable!("validated typed pair mode"),
+         })
+     })
++}
++
++/// Isolated 256-profile diagnostic: derive every registration resource bound
++/// before admitting a GPU worker. This does not produce or accept a proof.
++#[cfg(all(feature = "gpu", feature = "block-v2-capacity-256"))]
++pub fn capacity_benchmark_geometry(wallets: [&WalletProof; 3]) -> Result<serde_json::Value, Error> {
++    use super::machine::gpu_backend::resources::Bounds;
++    let height = 1 << 18;
++    let mut modes = Vec::new();
++    for mode in 1..=12 {
++        let compiled = super::statements::compile(height, 12, |prefix| {
++            Ok(typed_pairs::compile_registration_with_registry(
++                height, mode, paired_templates(mode, wallets), Some(prefix),
++            )?)
++        })?;
++        let required_height = compiled.program.height();
++        if required_height > height { return Err("256 profile exceeds fixed geometry".into()); }
++        let program = compiled.program.pad_to(height).map_err(|e| format!("{e:?}"))?;
++        let bounds = Bounds::for_program_with_device_salts(&program, true)?;
++        let reservation = bounds.reservation(1)?;
++        modes.push(serde_json::json!({"mode":mode, "required_height":required_height,
++            "witness_bounds":bounds, "witness_reservation":reservation}));
++    }
++    Ok(serde_json::json!({"block_capacity":profile::MAX_TRANSACTIONS,
++        "depth":profile::TREE_DEPTH, "height":height, "modes":modes,
++        "gpu_initialized":false, "proof_completed":false}))
+ }
+ 
+ pub fn register_paired(
+@@ -605,7 +631,7 @@
+         &mut self,
+         wallets: [&WalletProof; 2],
+         policies: [Policy; 2],
+-        count: u8,
++        count: crate::block_v2::profile::TransactionCount,
+     ) -> Result<NodeProof, Error> {
+         crate::block_v2::statements::request("block_v2_typed_wrap_pair", |run| {
+             if N != typed_pairs::KEY_COUNT || !matches!(count, 1 | 2) {

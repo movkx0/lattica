@@ -648,6 +648,81 @@ fn recovery_requires_reconciliation_and_rebases_retention_after_success() {
 }
 
 #[test]
+fn owned_completion_cannot_bypass_a_live_or_abandoned_verifier_guard() {
+    use super::super::job::VerifiedNodePayload;
+    let temp = Temp::new();
+    let mut d = temp.create();
+    candidate(&mut d, 1);
+    let job = leaf(0);
+    let lease = d.lease(job.id(), WorkerId(1), request(), 1, 100, 0).unwrap();
+    d.worker_stopped(lease, 1).unwrap();
+    let task = d.begin_guarded_verification(lease, 2).unwrap();
+    let payload = || VerifiedNodePayload::bind(node(&job, &[42]), vec![42]).unwrap();
+    let before = d.store.inventory();
+    assert!(d.finish_verified_node(lease, payload(), 3).is_err());
+    assert_eq!(d.store.inventory(), before);
+    assert_eq!(d.resource_use().unwrap(), request());
+    drop(task);
+    assert!(d.finish_verified_node(lease, payload(), 4).is_err());
+    assert_eq!(d.store.inventory(), before);
+    assert_eq!(d.resource_use().unwrap(), request());
+    assert_eq!(d.finish_verification(lease, None, 5).unwrap(), Completion::Rejected);
+    assert_eq!(d.resource_use().unwrap(), Resources::default());
+    assert_durable(&d);
+}
+
+#[test]
+fn owned_completion_keeps_journal_failure_poisoning_after_publication() {
+    use super::super::job::VerifiedNodePayload;
+    for stage in [Fault::AfterWrite, Fault::AfterFileSync, Fault::AfterRename, Fault::AfterDirectorySync] {
+        let temp = Temp::new();
+        let mut d = temp.create();
+        candidate(&mut d, 1);
+        let job = leaf(0);
+        let lease = d.lease(job.id(), WorkerId(1), request(), 1, 100, 0).unwrap();
+        d.worker_stopped(lease, 1).unwrap();
+        d.begin_verification(lease, 2).unwrap();
+        let ticket = node(&job, &[42]);
+        let payload = VerifiedNodePayload::bind(ticket, vec![42]).unwrap();
+        d.journal.fault = Some(stage);
+        assert!(d.finish_verified_node(lease, payload, 3).is_err());
+        assert!(d.poisoned);
+        assert!(d.ready().is_err());
+        drop(d);
+        let store = ArtifactStore::open(&temp.store(), store_limits()).unwrap();
+        assert_eq!(store.read_exact(ticket.artifact()).unwrap(), vec![42]);
+    }
+}
+
+#[test]
+fn owned_completion_checks_existing_disk_artifacts_and_preserves_duplicates() {
+    use super::super::job::VerifiedNodePayload;
+    let temp = Temp::new();
+    let mut d = temp.create();
+    candidate(&mut d, 1);
+    let job = leaf(0);
+    let lease = d.lease(job.id(), WorkerId(1), request(), 1, 100, 0).unwrap();
+    d.worker_stopped(lease, 1).unwrap();
+    d.begin_verification(lease, 2).unwrap();
+    let ticket = node(&job, &[42]);
+    let payload = || VerifiedNodePayload::bind(ticket, vec![42]).unwrap();
+    assert_eq!(d.finish_verified_node(lease, payload(), 3).unwrap(), Completion::Accepted);
+    assert_durable(&d);
+    assert_eq!(d.finish_verified_node(lease, payload(), 4).unwrap(), Completion::Duplicate);
+    let stored = temp.store().join(format!(
+        "n-{}.proof",
+        artifact_store::hex(&ticket.artifact().digest_bytes())
+    ));
+    fs::write(&stored, [43]).unwrap();
+    assert!(d.finish_verified_node(lease, payload(), 5).is_err());
+    assert_eq!(fs::read(&stored).unwrap(), vec![43]);
+    assert!(!d.poisoned);
+    fs::write(&stored, [42]).unwrap();
+    assert_eq!(d.finish_verified_node(lease, payload(), 6).unwrap(), Completion::Duplicate);
+    assert_durable(&d);
+}
+
+#[test]
 fn each_mutation_and_error_path_is_durable_before_visibility() {
     let temp = Temp::new();
     let mut d = temp.create();

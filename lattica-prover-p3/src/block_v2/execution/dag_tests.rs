@@ -86,6 +86,77 @@ fn finish_all(dag: &mut Dag, now: &mut u64) {
     }
 }
 
+#[test]
+fn owned_completion_preserves_attempt_gate_and_duplicate_identity() {
+    use super::job::VerifiedNodePayload;
+    let mut d = dag();
+    candidate(&mut d, 1);
+    let job = leaf(0);
+    let payload = |bytes: &[u8]| {
+        VerifiedNodePayload::bind(node(&job, bytes), bytes.to_vec()).unwrap()
+    };
+    let lease = d.lease(job.id(), WorkerId(1), request(), 1, 100, 0).unwrap();
+    assert!(d.finish_verified_node(lease, payload(&[42]), 0).is_err());
+    assert_eq!(d.resource_use(), request());
+    d.worker_stopped(lease, 1).unwrap();
+    assert!(d.finish_verified_node(lease, payload(&[42]), 1).is_err());
+    d.begin_verification(lease, 2).unwrap();
+    assert_eq!(d.finish_verified_node(lease, payload(&[42]), 3).unwrap(), Completion::Accepted);
+    let stored = d.stored_bytes();
+    assert_eq!(d.resource_use(), Resources::default());
+    assert_eq!(d.reserved_output_bytes(), 0);
+    assert_eq!(d.finish_verified_node(lease, payload(&[42]), 4).unwrap(), Completion::Duplicate);
+    assert_eq!(d.stored_bytes(), stored);
+    assert!(d.finish_verified_node(lease, payload(&[43]), 5).is_err());
+    assert_eq!(d.attempt_status(lease).unwrap(), AttemptStatus::Completed);
+    assert_eq!(d.stored_bytes(), stored);
+}
+
+#[test]
+fn owned_completion_rejects_another_verified_job() {
+    use super::job::VerifiedNodePayload;
+    let mut d = dag();
+    candidate(&mut d, 2);
+    let job = leaf(0);
+    let lease = d.lease(job.id(), WorkerId(1), request(), 1, 100, 0).unwrap();
+    d.worker_stopped(lease, 1).unwrap();
+    d.begin_verification(lease, 2).unwrap();
+    let before = d.stored_bytes();
+    let wrong = VerifiedNodePayload::bind(node(&leaf(1), &[42]), vec![42]).unwrap();
+    assert!(d.finish_verified_node(lease, wrong, 3).is_err());
+    assert_eq!(d.attempt_status(lease).unwrap(), AttemptStatus::Rejected);
+    assert_eq!(d.stored_bytes(), before);
+    assert_eq!(d.resource_use(), Resources::default());
+    assert_eq!(d.reserved_output_bytes(), 0);
+}
+
+#[test]
+fn owned_completion_fences_cancellation_and_expiry_before_releasing_resources() {
+    use super::job::VerifiedNodePayload;
+    for cancel in [false, true] {
+        let mut d = dag();
+        let (_, selected) = candidate(&mut d, 1);
+        let job = leaf(0);
+        let lease = d.lease(job.id(), WorkerId(1), request(), 1, 100, 0).unwrap();
+        d.worker_stopped(lease, 1).unwrap();
+        d.begin_verification(lease, 2).unwrap();
+        let now = if cancel {
+            d.cancel(selected, 3).unwrap();
+            4
+        } else {
+            d.advance(101).unwrap();
+            102
+        };
+        assert_eq!(d.resource_use(), request());
+        let before = d.stored_bytes();
+        let payload = VerifiedNodePayload::bind(node(&job, &[42]), vec![42]).unwrap();
+        assert_eq!(d.finish_verified_node(lease, payload, now).unwrap(), Completion::Fenced);
+        assert_eq!(d.stored_bytes(), before);
+        assert_eq!(d.resource_use(), Resources::default());
+        assert_eq!(d.reserved_output_bytes(), 0);
+    }
+}
+
 #[cfg(target_os = "linux")]
 #[test]
 fn owned_node_cache_preserves_job_identity_and_storage_admission() {

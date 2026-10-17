@@ -322,6 +322,8 @@ def defer_handoff(directory, inbox, workflow, cache, unavailable):
     config = read(directory / 'config.json')
     fleet = read(config['fleet_plan'])
     window = unavailable.window
+    reserve = Handoff.continuation_reserve_ms(window.get('continuation_reserve_ms'))
+    required = Handoff.MIN_HANDOFF_MS + reserve
     boot, now = T.workflow_clock()
     T.validate_workflow(workflow, boot, now)
     if (window['pool_workflow'] != workflow or config.get('pool_workflow') != workflow
@@ -329,9 +331,10 @@ def defer_handoff(directory, inbox, workflow, cache, unavailable):
             or config.get('pool_prefix_handoff') is not True or config.get('preseal_only') is not True
             or window['phase_deadline_monotonic_ms'] != fleet['pool_scheduling']['dispatch_deadline_monotonic_ms']
             or window['minimum_handoff_ms'] != Handoff.MIN_HANDOFF_MS
+            or window.get('required_window_ms') != required
             or not workflow['started_monotonic_ms'] <= window['observed_monotonic_ms'] <= now
-            or not 0 < window['phase_deadline_monotonic_ms'] - now < Handoff.MIN_HANDOFF_MS
-            or workflow['deadline_monotonic_ms'] - now < Handoff.MIN_HANDOFF_MS):
+            or not 0 < window['phase_deadline_monotonic_ms'] - now < required
+            or workflow['deadline_monotonic_ms'] - now < required):
         raise ValueError('handoff deferral changed its original admission or workflow')
     if (inbox / 'stop').exists() or (inbox / 'stop').is_symlink():
         raise ValueError('handoff deferral requires an unrequested stop')
@@ -361,6 +364,8 @@ def check_deferred_handoff(directory, inbox, record):
 
 
 def run(config, fixture, workflow_path, output, *, handoff=None):
+    if handoff is not None:
+        Handoff.validate_callback(handoff)
     config = dict(config)
     config['pool_prefix_handoff'] = handoff is not None
     fixture, output = Path(fixture).resolve(strict=True), Path(output).absolute()

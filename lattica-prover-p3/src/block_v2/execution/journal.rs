@@ -1070,17 +1070,7 @@ impl DurableDag {
         now_ms: u64,
     ) -> Result<Completion, Error> {
         self.live()?;
-        if let Some(guard) = self.verifiers.get(&lease.id()) {
-            if guard.upgrade().is_some() {
-                return Err("guarded verifier/result has not drained".into());
-            }
-            // A dropped or unwound task permits rejection, never an invented
-            // successful result. Recovery still reconciles unmanaged verifiers.
-            if result.is_some() {
-                return Err("abandoned verification task can only be rejected".into());
-            }
-            self.verifiers.remove(&lease.id());
-        }
+        self.check_verification_completion(lease, result.is_some())?;
         if let Some((ticket, bytes)) = &result {
             if let Err(error) = self.store.put_node(*ticket, bytes) {
                 self.poisoned = self.store.needs_recovery();
@@ -1089,6 +1079,44 @@ impl DurableDag {
         }
         let outcome = self.core.finish_verification(lease, result, now_ms);
         self.persist(outcome)
+    }
+
+    /// Complete using the exact bytes authenticated by the local CPU verifier.
+    /// Existing files are still independently checked, and publication, attempt
+    /// fencing and verifier-lifetime guards are unchanged.
+    pub fn finish_verified_node(
+        &mut self,
+        lease: Lease,
+        payload: super::job::VerifiedNodePayload,
+        now_ms: u64,
+    ) -> Result<Completion, Error> {
+        self.live()?;
+        self.check_verification_completion(lease, true)?;
+        if let Err(error) = self.store.put_verified_node(&payload) {
+            self.poisoned = self.store.needs_recovery();
+            return Err(error);
+        }
+        let outcome = self.core.finish_verified_node(lease, payload, now_ms);
+        self.persist(outcome)
+    }
+
+    fn check_verification_completion(
+        &mut self,
+        lease: Lease,
+        has_result: bool,
+    ) -> Result<(), Error> {
+        if let Some(guard) = self.verifiers.get(&lease.id()) {
+            if guard.upgrade().is_some() {
+                return Err("guarded verifier/result has not drained".into());
+            }
+            // A dropped or unwound task permits rejection, never an invented
+            // successful result. Recovery still reconciles unmanaged verifiers.
+            if has_result {
+                return Err("abandoned verification task can only be rejected".into());
+            }
+            self.verifiers.remove(&lease.id());
+        }
+        Ok(())
     }
     pub fn cache_node(
         &mut self,

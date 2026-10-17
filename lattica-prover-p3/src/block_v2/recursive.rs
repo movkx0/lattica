@@ -453,8 +453,7 @@ impl ProverSession {
             .in_scope(|| registered.verifier().verify(&proof, &public))?;
         let node = NodeProof { public, proof };
         let bytes = tracing::info_span!(target: "lattica_block_v2_perf", "node serialization")
-            .in_scope(|| super::codec::encode_node(&node))?
-            .len()
+            .in_scope(|| super::codec::encoded_node_len(&node))?
             - super::codec::NODE_MAGIC.len();
         println!(
             "proof_verified mode={mode} prove_and_verify_ms={} node_payload_bytes={bytes}",

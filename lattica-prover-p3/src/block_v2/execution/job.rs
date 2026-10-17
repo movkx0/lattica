@@ -859,6 +859,17 @@ pub struct VerifiedNodePayload {
 }
 
 impl VerifiedNodePayload {
+    /// Authenticate the owned buffer once, then retain it without exposing
+    /// mutable bytes or accepting a worker-supplied verification ticket.
+    pub(crate) fn verify_typed_checked(
+        job: &Job,
+        registry: &crate::block_v2::typed_recursive::CheckedRegistry,
+        bytes: Vec<u8>,
+    ) -> Result<Self, Error> {
+        let ticket = VerifiedNode::verify_typed_checked(job, registry, &bytes)?;
+        Ok(Self { ticket, bytes })
+    }
+
     pub(crate) fn bind(ticket: VerifiedNode, bytes: Vec<u8>) -> Result<Self, Error> {
         if ticket.artifact().kind() != ArtifactKind::Node {
             return Err("verified node payload kind".into());

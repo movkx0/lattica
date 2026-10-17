@@ -1,6 +1,450 @@
 Persistent local pool and delivered-throughput campaigns
 
-Current combined-source checkpoint: integration checks (section 9.293)
+Development checkpoint: coordinator costs and isolated request binding (section 9.309)
+Bounded optimized CPU diagnostics complete and recover ten two-wallet trials and
+three single-pair completions in 64-wallet/63-job DAGs. They generate no proofs,
+apply no block and consume no funded slot. Metadata setup is about 5.5 ms;
+numerical verification 29 ms; artifact hashing 44.6 ms. Preparing a request in
+the larger DAG takes about 181 ms. Snapshot encoding is small; durable clock
+persistence remains enabled. These are diagnostic costs, not delivered speedups.
+An isolated 882-file candidate retains each immutable assignment/request binding
+through collection, while checking every returned packet and independently
+verifying its proof. It is not yet installed in the shared source tree.
+Two complete selected test runs report 138 passed / 14 ignored, but overlap from
+another session excludes their resource qualification. Short serial batches have
+qualified 123 tests at this checkpoint. The resource conflict recurs across three
+goal turns. Only this candidate's two idle orchestration processes are stopped;
+all completed checks remain intact. Resume the unfinished batches when the other
+session releases the validation resources. Full-size replay, CPU/GPU all-target
+checks, integration and fresh production-image qualification remain pending.
+The accepted ten-block height-19 history, production images, timing approvals,
+original budgets and all full-GPU qualification gates remain unchanged.
+Continuation (crate relative):
+benchmark-results/gpu-bound-assignment-result-20261016/control/continuation-03.json
+Diagnostic results (crate relative):
+benchmark-results/gpu-coordinator-cost-review-20261016/cost-01/summary.json
+benchmark-results/gpu-coordinator-cost-review-20261016/cost-scaled-01/summary.json
+
+Current delivered checkpoint: owned-completion native delivery (section 9.308)
+The rebuilt images deliver a fresh block from slots 1280-1343: 64 GPU wallet
+proofs and 63 GPU recursive proofs, with independent CPU wallet/graph/history
+verification and durable native application. Accepted: 48 user transactions and
+16 issuance transactions. History: ten blocks at height 19. Root: 1683948 bytes.
+Prefix phases complete 22, 20 and 14 jobs. With only 35363 ms left, the third
+worker defers before sealing because admission requires 105000 ms. It drains;
+a replacement admits the 75000 ms continuation reserve and completes seven jobs.
+Workflow: 587303 ms, leaving 12697 ms. Sealing: 503968 ms into that clock.
+Post-seal through application: 81165 ms. Campaign including final chain audit
+and cleanup: 602.594 seconds. The latter has different deadline endpoints.
+Coordinator job intervals total 397807 ms; recorded worker timers total
+333372 ms. The remaining 64435 ms gap is 5985 ms smaller than the prior run.
+Full workflow time is 2671 ms shorter. This is not exclusive cost attribution,
+a matched speedup or sustained-throughput qualification. Margin remains narrow.
+All required stages report OpenCL. Native builds and runtime share the same
+880-file source; independent audits pass without hard memory-limit/OOM events
+or service/lease overlap. The original resource/deadline/cadence limits remain.
+Next native slots: 1344-1407. Unused funded slots: 8096. At least 1504 more slots
+are needed for a separate fresh 150-root campaign before controls.
+Next: attribute remaining costs, recover adequate margin, matched delivered
+controls and the outstanding full-GPU qualification gates.
+Metadata/continuation (crate relative):
+benchmark-results/gpu-owned-completion-workflow-20261016/control/current-validation-01.json
+benchmark-results/gpu-owned-completion-workflow-20261016/control/continuation-02.json
+Evidence (repository relative):
+docs/evidence/gpu-owned-completion-workflow-2026-10-16.json
+
+Preceding checkpoint: owned-completion production qualification (section 9.307)
+The frozen 880-file source now has rebuilt CPU/GPU static libraries, CLI images
+and host bridges at opt-level 3, one codegen unit and thin LTO. A matching
+GPU-enabled correctness harness is rebuilt at opt-level 1.
+32 CPU interface tests pass (one GPU-only skip), as do all 36 GPU interface
+tests. Fresh proofs: five wallets, eight native recursive proofs, two retirement
+finalizers and 17 CLI calibration proofs. Total: 32. All required 15 wallet / 16
+recursive stages report OpenCL. The new pool completion path accepts two roots;
+separate CPU processes verify nonempty outputs after worker exit.
+14 fresh timing classes pass independent approval. The CPU CLI verifies all
+63 graph nodes and 64 archived wallets. A duplicate-order preflight is retained;
+a distinct new candidate passes. No proving worker or funded slot was used by
+that rejected preflight. A stale service-summary archive count is independently
+corrected during packaging, retaining its original report.
+No new native block or funded slots are consumed. Accepted history remains nine
+blocks at height 18; next native slots are 1280-1343, with 8160 unused slots.
+Next: fresh delivery with the 75000 ms continuation reserve and measured margin.
+Original resource/deadline limits and all remaining full-GPU gates remain.
+Metadata/continuation (crate relative):
+benchmark-results/gpu-owned-completion-native-20261016/control/current-validation-01.json
+benchmark-results/gpu-owned-completion-native-20261016/control/continuation-01.json
+Evidence (repository relative):
+docs/evidence/gpu-owned-completion-proving-2026-10-16.json
+
+Preceding checkpoint: owned local node completion (section 9.306)
+Pool completion now consumes the immutable bytes authenticated by its local CPU
+verifier through artifact publication and DAG acceptance. Two repeated artifact
+digest passes are removed. Detached ticket/buffer and existing-file checks remain,
+as do worker/verifier ownership, cancellation, expiry, job/duplicate fencing,
+durable publication and resource release. No proof or wire format changes.
+159 selected CPU regressions pass, including six new completion cases. One
+separate full-size CPU test passes, replaying an archived pair twice through
+verification, durable completion and recovery, with truncation and wrong-job
+rejection. Total: 160 passing test executions. CPU/GPU all-target checks pass.
+An optimized read-only probe measures a median 44.078 ms per 1683948-byte node
+digest across ten samples. This is not a measured workflow saving or throughput
+gain. The correctness test image uses opt-level 1; the diagnostic uses opt-level
+3, one codegen unit and thin LTO. Both are explicitly separate from production.
+The 880-file snapshot changes seven Rust source/test files. Production images
+have not been rebuilt/qualified for it; prior timing approvals do not transfer.
+Next: production-image qualification, fresh workflow margin and matched controls.
+Accepted baseline history: nine blocks, height 18. Next native slots: 1280-1343.
+Unused funded slots: 8160. This source checkpoint consumes no slots or proofs.
+Original limits and all remaining full-GPU qualification gates remain.
+Metadata/continuation (crate relative):
+benchmark-results/gpu-owned-node-completion-20261016/control/current-validation-01.json
+benchmark-results/gpu-owned-node-completion-20261016/control/continuation-01.json
+Evidence (repository relative):
+docs/evidence/gpu-owned-node-completion-2026-10-16.json
+
+Preceding checkpoint: reserved handoff delivers a fresh native block (section 9.305)
+Fresh slots 1216-1279 produce 64 wallet and 63 recursive GPU proofs. Independent
+CPU verification and durable native application pass: 48 user transactions and
+16 issuance transactions. Accepted history is nine blocks at height 18.
+The third prefix phase has only 33409 ms left, below the required 105000 ms.
+The unsealed prefix defers, its worker drains, and a replacement admits handoff
+with a 75000 ms continuation reserve before completing the seven final proofs.
+Full workflow: 589974 ms, leaving 10026 ms under the unchanged 600000 ms limit.
+Post-seal-through-application: 79899 ms. Campaign including cleanup/final chain
+audit: 604.750 seconds. These intervals have different endpoints. This run does
+not qualify production latency, matched speedup or sustained throughput.
+All 15 wallet and 16 recursive stages report OpenCL. Original resource limits
+remain; independent audits pass without hard memory-limit/OOM events or overlap.
+The original native build manifests and separate four-file Python overlay remain.
+The first supplemental auditor's path-type failure is retained; delivery-audit-02
+passes on the same proof artifacts. No proofs or transactions are repeated.
+Next native slots: 1280-1343. Unused funded slots: 8160. Prior failed slots remain
+terminal. Next: adequate workflow margin, matched controls and the original
+remaining proving/lifetime/fault/history/sustained/hardware qualification gates.
+Metadata/continuation (crate relative):
+benchmark-results/gpu-handoff-reserved-workflow-20261016/control/current-validation-01.json
+benchmark-results/gpu-handoff-reserved-workflow-20261016/control/continuation-01.json
+Evidence (repository relative):
+docs/evidence/gpu-handoff-reserved-workflow-2026-10-16.json
+
+Preceding checkpoint: reserve final proving time before live handoff (section 9.304)
+An optimized delivery trial generated 64 fresh wallet and 56 recursive GPU
+proofs, all independently CPU audited, but delivered no block. Its completed
+prefix left 34180 ms in the worker dispatch window; sealing left 15608 ms and
+the final request completed no jobs. Slots 1152-1215 are terminal and must never
+be retried. Accepted history remains eight blocks at height 17.
+The callback contract now requires exactly command, pins and
+continuation_reserve_ms. The reserve must be an integer strictly between 0 and
+120000 ms. Admission needs 30000 ms plus that reserve; a shorter live-worker
+window defers the unsealed prefix, drains the worker and starts a replacement
+within the original workflow clock. The callback service cannot use the
+reserved final-proving time. Missing/invalid reservations fail before preparation.
+All 43 CPU regressions pass (13 handoff, 30 phase). A 75000 ms trial reserve
+requires 105000 ms initially; it is not a qualified production latency bound.
+The native binaries and their 14 timing approvals are unchanged. The four
+Python changes have a separate runtime source manifest; image build manifests
+retain the original source hashes. Fresh live validation remains pending.
+Next native slots: 1216-1279. Unused funded slots: 8224. Original resource and
+deadline limits remain; failed candidates are never renewed.
+Audit (crate relative):
+benchmark-results/gpu-handoff-continuation-window-20261016/change-audit-01/summary.json
+Evidence (repository relative):
+docs/evidence/gpu-handoff-continuation-window-2026-10-16.json
+
+Preceding checkpoint: optimized native images and CLI calibration (section 9.303)
+The same 880-file snapshot is qualified with release opt-level 3, one codegen
+unit, thin LTO and two Cargo jobs. CPU ABI tests: 32 pass, one GPU-only skip.
+GPU ABI tests: all 36 pass, with five fresh wallet proofs and one tree operation.
+The native service adds eight recursive proofs and four rejection cases;
+startup/retirement checks add four admission rejections and two finalizers.
+Fresh CLI calibration adds 17 proofs and 14 independently approved timing
+classes. CPU replay verifies all 63 graph nodes and 64 archived wallets.
+Total fresh GPU proofs: 32. No native block or funded slot is consumed.
+All 15 wallet or 16 recursive request stages run on OpenCL as applicable.
+Original 3 GiB worker, 1 GiB coordinator/auditor, 4 GiB fleet, CPUs 0-3,
+zero swap, 150/180-second GPU work/service limits and 12288 MiB free-GPU gate
+remain. Optimized-image approvals are fresh; baseline approvals do not transfer.
+Next: fresh current-source native delivery with adequate deadline margin,
+then matched delivered-transaction controls and remaining original gates.
+Metadata/continuation (crate relative):
+benchmark-results/gpu-current-optimized-native-20261016/control/current-validation-01.json
+benchmark-results/gpu-current-optimized-native-20261016/control/continuation-01.json
+Evidence (repository relative):
+docs/evidence/gpu-current-optimized-proving-2026-10-16.json
+
+Preceding checkpoint: current CLI calibration (section 9.302)
+Eight serial phases produce 17 fresh GPU proofs and 14 independently approved
+timing classes for the current CPU/GPU CLI images. Mixed-policy pair modes 4
+and 8, merge levels 2-5 and depth-6 64-input finalization have cold/warm worker
+samples. All 16 required request stages complete on OpenCL. Every phase has
+a separate 1 GiB CPU proof audit; a final audit verifies the complete 63-node
+graph and all 64 archived wallets. The final proof is 1683948 bytes.
+The candidate ordering differs from recorded prior and failed roots. Its
+56 imported public subtrees are independently reverified. Seventeen fresh
+proofs cover 15 unique jobs, including two repeated jobs whose new encodings
+differ. This is calibration over archived inputs, not a fresh 63-proof
+workflow or native delivery. No native block or funded slot is consumed.
+The unchanged 880-file source snapshot is checked across 11 archives.
+Original 3 GiB worker, 1 GiB coordinator/auditor, 4 GiB fleet, CPUs 0-3,
+zero swap, 150/180-second GPU work/service limits and 12288 MiB free-GPU gate
+remain. Independent audits record no new memory-limit events and verify
+shutdown, proof dependencies, image hashes and timing-record identities.
+These approvals bind the opt-level 1, 64-codegen-unit, no-LTO images. They
+do not transfer to rebuilt images. The repository's optimized release
+settings need fresh native qualification and calibration before a delivery
+trial. Complete resource ownership, remaining routes/fault paths, matched
+controls, 24 hours AND 150 roots and other hardware remain open.
+Metadata/continuation (crate relative):
+benchmark-results/gpu-current-production-calibration-20261016/control/current-validation-01.json
+benchmark-results/gpu-current-production-calibration-20261016/control/continuation-01.json
+Evidence (repository relative):
+docs/evidence/gpu-current-cli-calibration-2026-10-16.json
+
+Preceding checkpoint: native startup and retirement (section 9.301)
+The current C service rejects retained/unlimited caller stacks, retained
+allocator capacity and excessive private writable mappings before HELLO
+and GPU startup. Four cases pass across three test processes, preserving
+caller descriptors and coordinator reservations.
+A fourth test process completes two fresh 262144-row finalizer proofs.
+Test-only retained libc capacity forces the first worker to retire after
+returning a valid result. Further dispatch and premature replacement reject.
+Physical pidfd observers confirm the first exit before the replacement
+observer arms and replacement launches. The replacement has a fresh PID,
+execution digest, setup and proof bytes. Both 1683948-byte proofs verify
+again on CPU after both workers exit; changed statements reject. All 16
+required recursive request stages run on OpenCL, with zero managed storage
+at shutdown. This does not establish complete allocator/RSS lifetime bounds.
+The initial lifecycle attempt stopped after its first verified proof because
+the controller read unit instead of replacement_unit from the observer plan.
+Its evidence is preserved, and its proof is excluded from the accepted
+two-proof lifecycle count. The corrected controller completes a fresh full
+lifecycle. A failed preparation audit of structured historical hash records
+is also preserved. No production source or allocator policy changes occur.
+Original 1 GiB coordinator/auditor, 3 GiB worker, 4 GiB fleet, CPUs 0-3,
+zero swap, 150/180-second GPU work/service deadlines and 12288 MiB free-GPU
+gate remain. No native block or funded slot is consumed. Calibration,
+larger workloads, remaining fault/route coverage, complete resource ownership,
+matched delivery controls, 24 hours AND 150 roots and other hardware remain open.
+Metadata/continuation (crate relative):
+benchmark-results/gpu-native-current-lifecycle-20261016/control/current-validation-01.json
+benchmark-results/gpu-native-current-lifecycle-20261016/control/continuation-01.json
+Evidence (repository relative):
+docs/evidence/gpu-current-native-lifecycle-2026-10-16.json
+
+Preceding checkpoint: native worker jobs and pool roots (section 9.300)
+The unchanged 880-file snapshot and newly linked C service execute eight
+fresh GPU proofs: two small 2048-row padding jobs, two full-size pairs,
+two merges and two pool finalizers. All 16 recursive request stages run on
+OpenCL. Nonempty proofs use the 12-key, 262144-row registry and are each
+1683948 bytes. Four archived JoinSplit wallets (0,4,8,12) are reused.
+New pair outputs feed the merges, and these outputs feed finalizers. Each
+successful worker has one cold setup and one cache hit. Context updates,
+observed exit, zero managed storage at shutdown and reservation release pass.
+The finalizer test uses the real local pool adapter and accepts two roots;
+it does not apply native blocks or deliver new user transactions.
+Three separate 1 GiB CPU-only processes verify both persisted outputs per
+operation after coordinator and worker exit, rejecting four mutations per
+proof. Four malformed configuration/executable/job/disconnect cases retire
+the GPU and preserve caller descriptors while retaining reservations for
+explicit recovery. All five native test processes and three CPU verifiers pass.
+The 1 GiB coordinator and 3 GiB worker share a 4 GiB fleet, CPUs 0-3, zero
+swap and the unchanged 150/180-second GPU work/service deadlines. GPU runs
+retain the 12288 MiB free-memory gate. A current measured merge assignment
+conservatively covers pair, merge and finalizer geometry; its reservations
+are recomputed from the pinned source. Worker samples check physical caps;
+sampled worker peaks are lower bounds, while retained fleet peaks are final.
+Evidence reopens 14 inherited source archives, pins 78 fixture files and
+links all native/CPU outputs to the current images. No proving source changes,
+native blocks or funded-slot consumption occur. Current native calibration,
+larger workloads, retained-arena replacement qualification, complete resource
+ownership, remaining routes, matched controls, 24 hours AND 150 roots,
+multi-GPU, AMD OpenCL and native Apple Metal/local Mac integration remain open.
+Metadata/continuation (crate relative):
+benchmark-results/gpu-native-current-service-20261016/control/current-validation-01.json
+benchmark-results/gpu-native-current-service-20261016/control/continuation-01.json
+Evidence (repository relative):
+docs/evidence/gpu-current-native-worker-2026-10-16.json
+
+Preceding checkpoint: native builds and wallet ABI (section 9.299)
+The unchanged 880-file snapshot builds CPU/GPU Rust static libraries, worker
+CLIs and Zig host bridges. Both bridges independently report capacity 64.
+Zig unit/root checks and the public-service rejection test pass. CPU FFI:
+32 passed, one GPU-only skip. GPU FFI: all 36 passed, five fresh wallet proofs
+(four JoinSplit, one HTLC) plus one tree-root operation. All 15 required
+wallet stages have completed OpenCL observations. CPU verification and
+tamper/replay checks occur after GPU shutdown; all three shutdowns release
+the GPU lease with zero managed bytes live.
+Evidence checks 14 source archives and eight native images. The C/Zig
+service harnesses were separately frozen and are already included among
+the 880 canonical sources; generated GPU options are separately pinned.
+Original collector/auditor failures remain preserved. Successful proofs
+were not rerun to repair evidence collection.
+Original 3 GiB build/worker, 1 GiB auditor, 4 GiB fleet, four CPUs, zero swap,
+150/180-second GPU work/service limits and 12288 MiB free-GPU gate remain.
+Builds use two Cargo jobs, opt-level 1, 64 codegen units and no LTO. Previous
+production timing approvals do not transfer to these newly linked images.
+This standalone wallet ABI run has no private/public worker assignment.
+The C public service is linked but still needs real assigned-job execution.
+No native block or funded slot was consumed. Complete resource lifetime
+ownership, remaining routes, current worker execution, calibration and
+matched delivered-transaction controls, 24 hours AND 150 roots, multi-GPU,
+AMD OpenCL and native Apple Metal/local Mac integration remain open.
+Metadata/continuation (crate relative):
+benchmark-results/gpu-native-current-integration-20261016/control/current-validation-01.json
+benchmark-results/gpu-native-current-integration-20261016/control/continuation-01.json
+Evidence (repository relative):
+docs/evidence/gpu-current-native-integration-2026-10-16.json
+
+Preceding checkpoint: mixed-policy tree and cache reuse (section 9.298)
+
+The final 880-file snapshot produces four fresh GPU proofs: cold and cached
+level-2 merge, then cold and cached depth-6 finalization. The two inherited
+pair proofs from section 9.297 cover archived wallets 0,5,2,7: JoinSplit,
+HTLC redeem, HTLC refund and issuance. The finalizer consumes the new cold
+merge output. The 12-key registry has 262144 rows and default capacity 64.
+Only the fixture harness changes; proving implementation is unchanged.
+
+Each operation has one setup and one cache hit. Cold/warm proof bytes differ
+while the expected statement remains identical. All 16 request stages have
+completed OpenCL observations; registry/preprocessing cache hits are explicit.
+All four proofs verify after GPU shutdown, and two separate 1 GiB CPU-only
+processes verify both persisted outputs for their operation after worker exit.
+Both verification paths reject changed context, level, count and root. Each
+proof is 1683948 bytes. Two geometry checks, the GPU-host all-target check and
+the rebuilt image pass.
+
+Evidence verifies 880 sources, three archives and 163 artifacts, including
+parent dependencies and the 78 pinned fixture files. The shared whitelist
+matches at packaging. GPU service peaks are 1141.24 MiB for merge and 672.22
+MiB for finalization; separate CPU verifiers peak at 32.92 and 32.55 MiB.
+The image build peaks at 2860.12 MiB. Original limits and the 12288 MiB free-GPU
+gate remain, with no observed overlap or memory-limit/OOM events. No native
+block, new wallet issuance or funded slot is consumed.
+
+This is one four-input direct Rust tree with inherited parent proofs. Other
+registries and warm-cache combinations, mixed redeem/refund HTLC pairs,
+complete resource and entrypoint coverage, native Zig/ABI and production
+images, calibration and delivery controls, sustained tests and other hardware
+remain open. The full goal is active; no throughput or production claim follows.
+
+Metadata/continuation (crate relative):
+benchmark-results/gpu-mixed-tree-qualification-20261016/control/current-validation-01.json
+benchmark-results/gpu-mixed-tree-qualification-20261016/control/continuation-01.json
+Evidence (repository relative):
+docs/evidence/gpu-mixed-policy-tree-cache-2026-10-16.json
+
+Preceding checkpoint: full-size ordered wallet-policy pairs (section 9.297)
+
+The final 879-file snapshot produces 14 fresh GPU pair proofs across all nine
+ordered JoinSplit/HTLC/issuance combinations and five HTLC-refund cases. The
+12-key registry uses 262144 rows and default capacity 64. Each proof covers
+two archived inputs at level 1 and is 1683948 bytes. Inputs are reused across
+cases; this does not represent 28 newly delivered user transactions.
+
+All 16 request stages complete on OpenCL. Every proof verifies on CPU after
+GPU shutdown and again in a separate 1 GiB process after worker exit. Both
+paths reject changed context, level, count and root. Nine CPU geometry tests,
+the final GPU-host all-target check and the rebuilt test image pass. Each GPU
+request uses one cold setup. Only test harness source changes.
+
+Evidence verifies 827 artifacts, 78 fixture files, three final source archives
+and three preserved initial source archives. The shared source whitelist
+matched at packaging. GPU service peaks span 799.56-875.46 MiB; separate CPU
+verifiers span 31.06-33.54 MiB. The final image build peaks at 2820.41 MiB.
+Original resource limits and the 12288 MiB free-GPU gate remain unchanged,
+with no observed overlap or memory-limit/OOM events in accepted services.
+
+Preserved failures include a controller prefix rejected before GPU startup,
+a corrected test-only shutdown assertion and a stale collector directory
+reference. They are excluded from accepted coverage. No native block or
+funded slot is consumed. Mixed redeem/refund HTLC pairs, warm-cache cases,
+mixed-policy merge/finalizer trees, other registries, complete lifetime and
+entrypoint coverage, native Zig/ABI and production images, calibration and
+delivery controls, sustained tests and other hardware remain open. These
+correctness cases establish no throughput or production-readiness claim.
+
+Metadata/continuation (crate relative):
+benchmark-results/gpu-mixed-pair-qualification-20261016/control/current-validation-01.json
+benchmark-results/gpu-mixed-pair-qualification-20261016/control/continuation-01.json
+Evidence (repository relative):
+docs/evidence/gpu-mixed-policy-pairs-2026-10-16.json
+
+Preceding checkpoint: nonempty recursive proof tree (section 9.296)
+
+The unchanged 878-file section 9.295 snapshot produces four fresh GPU proofs:
+two pairs from four distinct archived JoinSplit inputs, a four-transaction
+level-2 merge and its depth-6 finalizer. The 12-key registry uses 262144 rows
+and default capacity 64. All 16 request stages report OpenCL, and all four
+proofs verify on CPU after GPU shutdown. Three separate 1 GiB CPU processes
+also verify the persisted right pair, merge and finalizer after worker exit,
+rejecting altered context, level, count and root. Each proof is 1683948 bytes.
+
+Evidence pins 180 artifacts, 78 fixture files, eleven inherited source archives
+and the unchanged test image. Three CPU geometry checks supply reservations.
+The shared source whitelist matched the snapshot at packaging. GPU service
+peaks are 800.10, 795.95, 1145.46 and 704.93 MiB for left pair, right pair,
+merge and finalizer, respectively. Original worker/auditor/fleet, CPU, swap,
+deadline and 12288 MiB free-GPU limits remain, with no observed service overlap
+or memory-limit/OOM events. No native block or funded slot is consumed.
+
+This is direct Rust API qualification with native GPU initialization. Native
+Zig/ABI/service delivery, full-capacity roots, other nonempty registry/policy
+routes, complete lifetime ownership and command/cfg/raw-arithmetic inventory,
+production images/calibration, matched controls, long history, 24 hours AND
+150 roots, multi-GPU, AMD OpenCL and native Apple Metal/local Mac integration
+remain open. These correctness samples establish no throughput claim.
+
+Metadata/continuation (crate relative):
+benchmark-results/gpu-recursive-lifetime-audit-20261016/control/current-validation-01.json
+benchmark-results/gpu-recursive-lifetime-audit-20261016/control/continuation-01.json
+Evidence (repository relative):
+docs/evidence/gpu-current-nonempty-recursion-2026-10-16.json
+
+Preceding checkpoint: recursive size reporting without allocation (section 9.295)
+
+Legacy recursive proof diagnostics now use a bounded counting serializer in
+place of a temporary 2 MiB encoded output buffer. Both established encodings,
+the proof-size cap and serializer errors are preserved. 25 codec tests, four
+all-target checks (CPU/GPU, fixed-width and no-stream configurations) and three
+fresh CPU-verified GPU proofs pass on the final 878-file snapshot. Independent
+allocation observations report zero requests for sizing both wire encodings.
+All 16 GPU request stages remain covered across cold setup, reuse and eviction.
+
+Evidence verifies 11 source archives, 169 artifacts and a reviewed three-path,
+169-line diff. The shared source whitelist matched at packaging. The final
+build/test peak is 2853.49 MiB and the GPU test peak is 254.57 MiB, under the
+original limits and free-memory gate, with no observed service overlap or
+memory-limit/OOM events. This change does not own escaped proof/output storage
+or establish a throughput gain. No native block or funded slot was consumed.
+
+Metadata/continuation (crate relative):
+benchmark-results/gpu-recursive-size-count-20261016/control/current-validation-01.json
+benchmark-results/gpu-recursive-size-count-20261016/control/continuation-01.json
+Evidence (repository relative):
+docs/evidence/gpu-recursive-size-count-2026-10-16.json
+
+Preceding checkpoint: recursive session budget/cache reuse (section 9.294)
+
+One existing GPU test on the unchanged combined snapshot produces three fresh
+CPU-verified legacy padding proofs at height 2048. Two cold setups, one cache
+hit, explicit eviction, five insufficient-budget/configuration rejections and
+public/opening mutation rejection pass. All 16 request stages report OpenCL.
+The assigned 1 GiB session allowance reserves 1 MiB for retained session storage;
+service memory peaks at 238.53 MiB under the original limits. The original result
+collector expected an obsolete log marker; an independent audit validates the
+successful raw run and actual pinned marker, with no proof rerun. This is not
+complete returned-output, cache or enclosing-lifetime ownership qualification.
+No native blocks or funded slots are consumed. Source and production images
+are unchanged; the full goal remains active.
+
+Metadata/continuation (crate relative):
+benchmark-results/gpu-recursive-budget-cache-20261016/control/current-validation-01.json
+benchmark-results/gpu-recursive-budget-cache-20261016/control/continuation-01.json
+Evidence (repository relative):
+docs/evidence/gpu-recursive-budget-cache-2026-10-16.json
+
+Preceding combined-source checkpoint: integration checks (section 9.293)
 
 The frozen combined source includes 877 source/support files, incorporating the
 concurrent session's capacity and host/pool changes. 135 Rust tests, 205 Python
