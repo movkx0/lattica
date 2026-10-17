@@ -16,8 +16,8 @@ ENV = {'PHASE_DIR', 'PHASE_SLOTS', 'LATE_PHASE_SLOTS', 'QUERY_PHASE_SLOTS',
 
 
 def model(profile, workers, heavy=1, late=1, query=1):
-    if type(workers) is not int or not 1 <= workers <= 3:
-        raise ValueError('phase model supports one to three workers')
+    if type(workers) is not int or not 1 <= workers <= 4:
+        raise ValueError('phase model supports one to four workers')
     if (heavy, late, query) != (1, 1, 1):
         raise ValueError('initial Linux phase qualification requires one slot in each pool')
     if profile.get('typed_ram_admission') != 'compact' or R.readback_layout(profile) != 'direct':
@@ -93,13 +93,22 @@ def schedule(plan, out, gpu_workers, shared_dir=None):
     return result
 
 
-def admit_host(host, plan):
+def admit_host(host, plan, capacity_test_fleet_bytes=None):
     coordinator = R.up(max(512 * R.MIB, (host['physical_bytes'] + 49) // 50))
     os_reserve = max(2 * R.GIB, (host['physical_bytes'] + 9) // 10)
     available = host['available_bytes'] - os_reserve
     if host['cgroup_memory_headroom'] is not None:
         available = min(available, host['cgroup_memory_headroom'])
     required = R.up(plan['fleet_payload_bytes'] + coordinator)
+    if capacity_test_fleet_bytes is not None:
+        # An explicit capacity experiment may fail below the conservative model.
+        # Keep the real host reserve, per-worker bounds, tmpfs checks, and cgroup
+        # enforcement; this option must never increase the admitted host budget.
+        minimum = plan['worker_cap_bytes'] + coordinator
+        if (type(capacity_test_fleet_bytes) is not int
+                or not minimum <= capacity_test_fleet_bytes < required):
+            raise ValueError('capacity-test fleet cap must fit one worker plus coordinator and be below the model')
+        required = capacity_test_fleet_bytes
     if required > available:
         raise ValueError(f'phase fleet needs {required} bytes; {available} available after OS reserve')
     fs = host['scratch']

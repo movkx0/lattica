@@ -59,6 +59,10 @@ def calibration(paths, binary, inventory, profile):
                 if measured_env[key] != expected_env[key]:
                     raise ValueError('context qualification memory/scratch policy changed')
             uuid = worker['uuid']
+            # A qualification may include a removable GPU that is now absent.
+            # Its measurements cannot qualify any currently selected device.
+            if uuid not in inventory:
+                continue
             device = inventory[uuid]
             if worker['drivers'] != dict(nvidia=device['nvidia']['driver'], opencl=device['opencl']['driver']):
                 raise ValueError('context qualification driver changed')
@@ -74,11 +78,28 @@ def compute_processes():
     return [(int(pid.strip()), uuid.strip(), name.strip()) for pid, uuid, name in csv.reader(out.stdout.splitlines())]
 
 
+def display_process(pid, name, proc_root=Path('/proc')):
+    if Path(name).name in ('kwin_wayland', 'Xorg', 'gnome-shell'):
+        return True
+    # NVIDIA also lists the desktop browser renderer as a compute process.
+    # Identify that exact existing process; other browser/helper/compute jobs
+    # still block admission. Live free VRAM includes its allocations.
+    process = proc_root / str(pid)
+    try:
+        return (process.stat().st_uid == os.getuid()
+                and str((process / 'exe').readlink()) in (
+                    '/opt/brave-bin/brave', '/opt/google/chrome/chrome',
+                    '/usr/lib/chromium/chromium')
+                and b'--type=gpu-process' in (process / 'cmdline').read_bytes().replace(b'\0', b' ').split())
+    except (FileNotFoundError, ProcessLookupError, PermissionError, OSError):
+        return False
+
+
 def idle(uuids):
     allowed = set()
     for pid, uuid, name in compute_processes():
         if uuid in uuids:
-            if Path(name).name not in ('kwin_wayland', 'Xorg', 'gnome-shell'):
+            if not display_process(pid, name):
                 raise ValueError(f'GPU busy with another compute process: {pid} {name}')
             allowed.add(pid)
     return allowed
@@ -114,12 +135,27 @@ def main():
     ap.add_argument('--gpu-uuid', action='append', required=True)
     ap.add_argument('--calibration', type=Path, action='append', default=[])
     ap.add_argument('--managed-gib', type=float, default=6.25)
+    ap.add_argument('--capacity-test-fleet-gib', type=float,
+                    help='Explicit experiment below the modeled RAM bound; abort on any memory-limit event')
+    ap.add_argument('--profile-clock-library', type=Path,
+                    help='Capture a single GPU job with Nsight and this compiled NVTX clock helper')
     ap.add_argument('--evidence', type=Path, required=True)
     args = ap.parse_args()
     os.umask(0o077)
     out = args.evidence.resolve()
     out.mkdir(mode=0o700, parents=True, exist_ok=False)
     gpu, cpu, fixture = (p.resolve(strict=True) for p in (args.gpu_binary, args.cpu_binary, args.fixture))
+    profiling = None
+    if args.profile_clock_library is not None:
+        if len(args.gpu_uuid) != 1:
+            raise ValueError('per-job hardware profiling requires one worker to own the counter capture')
+        nsys = Path(shutil.which('nsys') or '/missing/nsys').resolve(strict=True)
+        devices = subprocess.check_output(['nvidia-smi', '--query-gpu=index,uuid',
+                                          '--format=csv,noheader,nounits'], text=True)
+        indices = {u.strip(): int(i) for i, u in csv.reader(devices.splitlines())}
+        profiling = dict(nsys=str(nsys), gpu_index=indices[args.gpu_uuid[0]],
+                         clock_library=str(args.profile_clock_library.resolve(strict=True)),
+                         clock_runner=str(Path(__file__).with_name('block_v2_linux_profile.py').resolve()))
     profile = T.resource_profile(Path(__file__).with_name('block-v2-multi-gpu-direct-readback-workload.json'), 'paired', 'compact')
     profile['geometry']['query_readback_layout'] = 'gather'
     plan = P.model(profile, len(args.gpu_uuid))
@@ -129,16 +165,24 @@ def main():
     report = dict(schema='lattica-linux-phase-screen-v1', status='preparing', binary_sha256=G.digest(gpu),
                   count_per_root=8, workers=[], memory_model=plan, workload=profile, gpu_only=False,
                   started_ns=time.time_ns(), production_ready=False)
+    report['linux_profile'] = profiling
     G.durable(out / 'summary.json', report, True)
     locks, live, prior, shared_dir = [], [], None, None
     try:
         locks = G.lock_fleet()
         allowed = idle(args.gpu_uuid)
+        report['allowed_background_pids'] = sorted(allowed)
         inventory = {d['uuid']: d for d in R.detect_gpus(str(gpu))}
         if any(u not in inventory for u in args.gpu_uuid):
             raise ValueError('selected GPU unavailable')
         host = G.detect_worker_host(Path('/tmp'))
-        host_budget = P.admit_host(host, plan)
+        capacity_cap = (None if args.capacity_test_fleet_gib is None
+                        else int(args.capacity_test_fleet_gib * R.GIB))
+        host_budget = P.admit_host(host, plan, capacity_test_fleet_bytes=capacity_cap)
+        report['capacity_test'] = dict(
+            below_modeled_bound=capacity_cap is not None,
+            enforced_fleet_bytes=host_budget['fleet_bytes'],
+            modeled_fleet_bytes=R.up(plan['fleet_payload_bytes'] + host_budget['coordinator_bytes']))
         calibrated = calibration(args.calibration, gpu, inventory, profile)
         counts = Counter(args.gpu_uuid)
         (out / 'phases').mkdir(mode=0o700)
@@ -150,6 +194,9 @@ def main():
         # Pin controller sources as well as both binaries, public wallets and keys.
         sources = [gpu, cpu, *T.fixture_files(fixture, 8, 'paired'), *Path(__file__).parent.glob('*.py'),
                    Path(__file__).with_name('block-v2-multi-gpu-direct-readback-workload.json')]
+        if profiling is not None:
+            sources += [Path(profiling[k]) for k in ('nsys', 'clock_library', 'clock_runner')]
+            sources.append(Path(__file__).with_name('linux_profile_clock.c'))
         pins = dict(T.pin(p.resolve()) for p in sources)
         T.execute_logged([cpu, 'expected', fixture, 8, out / 'expected.json'], out / 'expected.log', T.clean_environment())
         T.execute_logged([cpu, 'plan', fixture, out / 'expected.json'], out / 'plan.json', T.clean_environment())
@@ -197,14 +244,19 @@ def main():
                           pins=local_pins, expected=str(out / 'expected.json'), plan=str(out / 'plan.json'),
                           resource_assignment=str(root / 'assignment.json'),
                           resource_assignment_sha256=local_pins[str(root / 'assignment.json')])
+            if profiling is not None:
+                config['linux_profile'] = profiling
             G.durable(root / 'config.json', config, True)
             worker = dict(index=index, uuid=uuid, drivers=budget['drivers'], unit=budget['unit'],
                           directory=str(root / '001-typed'), budget=budget, config=config, observed_pids=[])
             report['workers'].append(worker)
         G.durable(out / 'admission.json', dict(host=host, devices=inventory, plan=plan, host_budget=host_budget), True)
+        G.systemctl('start', G.SLICE)
         prior = dict(line.split('=', 1) for line in G.systemctl('show', G.SLICE, '--property=MemoryMax,MemorySwapMax').splitlines())
         G.systemctl('set-property', '--runtime', G.SLICE, f"MemoryMax={host_budget['fleet_bytes']}", 'MemorySwapMax=0', 'MemoryAccounting=yes')
         group = G.systemctl('show', G.SLICE, '--property=ControlGroup', '--value').strip()
+        if not group:
+            raise RuntimeError('worker slice has no active cgroup')
         fleet = Path('/sys/fs/cgroup') / group.lstrip('/')
         before = M.event_counters(fleet / 'memory.events')
         report.update(status='running', fleet_events_before=before)

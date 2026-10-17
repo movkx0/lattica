@@ -1,0 +1,181 @@
+{
+  "schema": "lattica-desktop-versus-laptop-v1",
+  "workload": "Eight-input paired hybrid GPU prover; eight fresh recursive proofs; CPU root audit",
+  "hardware": {
+    "old_cpu": "Intel Core Ultra 9 275HX",
+    "old_logical_cpus": 24,
+    "old_desktop_gpu_link": "PCIe 4.0 x4 downstream of ASMedia 2461 bridge, from saved hardware inspection",
+    "new_cpu": "AMD Ryzen 9 9950X3D2",
+    "new_physical_cores": 16,
+    "new_logical_cpus": 32,
+    "new_l3_mib": 192,
+    "new_desktop_gpu_link": "PCIe 5.0 x16; current and maximum reported by nvidia-smi",
+    "old_hardware_source": "/home/access/code/lattica/docs/evidence/block-v2-retention-matched-2026-10-01.json",
+    "old_bridge_source": "/home/access/code/lattica/docs/bounded-execution-engine.md:4038"
+  },
+  "runs": [
+    {
+      "label": "Old laptop + internal RTX 5080",
+      "prover_execution_seconds": 291.678872821,
+      "rayon_threads": 8,
+      "worker_ram_limit_gib": 18.0,
+      "managed_vram_gib": 7.0,
+      "query_readback_layout": "rows",
+      "binary_sha256": "1a5f5b7c5ce9bee9d83d68ea00482ecddd4cee70400a3701b6012ee34cb064f3",
+      "fresh_proofs": 8,
+      "cpu_audited": true,
+      "gpu_uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "operation_seconds": {
+        "bounded_gpu_pipeline_checkpoint": {
+          "upload_device_ns": 1.763858816,
+          "download_device_ns": 2.080727296
+        },
+        "bounded_gpu_lde_checkpoint": {
+          "transform_device_ns": 39.121431488
+        },
+        "bounded_gpu_opening_host_checkpoint": {
+          "upload_device_ns": 1.684395232
+        },
+        "performance_span": {
+          "total_ns": 77.513052887
+        }
+      },
+      "source": "/home/access/code/lattica/lattica-prover-p3/target/linux-multigpu-concurrency-20261008/attempt-03/sequential/gpu-01/summary.json",
+      "source_sha256": "0d76ffaffd05b7278533fa4d3f12928ec1c992e7b77d7a2fd086ec093247981d"
+    },
+    {
+      "label": "Old laptop + external desktop RTX 5080",
+      "prover_execution_seconds": 317.884630902,
+      "rayon_threads": 8,
+      "worker_ram_limit_gib": 18.0,
+      "managed_vram_gib": 6.5,
+      "query_readback_layout": "rows",
+      "binary_sha256": "1a5f5b7c5ce9bee9d83d68ea00482ecddd4cee70400a3701b6012ee34cb064f3",
+      "fresh_proofs": 8,
+      "cpu_audited": true,
+      "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "operation_seconds": {
+        "bounded_gpu_pipeline_checkpoint": {
+          "upload_device_ns": 37.887198752,
+          "download_device_ns": 19.481328288
+        },
+        "bounded_gpu_lde_checkpoint": {
+          "transform_device_ns": 19.427165632
+        },
+        "bounded_gpu_opening_host_checkpoint": {
+          "upload_device_ns": 24.427702912
+        },
+        "performance_span": {
+          "total_ns": 70.013112516
+        }
+      },
+      "source": "/home/access/code/lattica/lattica-prover-p3/target/linux-multigpu-concurrency-20261008/attempt-03/sequential/gpu-02/summary.json",
+      "source_sha256": "2b1efef7ef07b47b66fa97b78204c6a3684b3a22fbb6c84b500d99c986f384d5"
+    },
+    {
+      "label": "9950X3D2 + desktop RTX 5080 / capture 1",
+      "prover_execution_seconds": 195.67880933,
+      "rayon_threads": 6,
+      "worker_ram_limit_gib": 23.5,
+      "managed_vram_gib": 6.25,
+      "query_readback_layout": "gather",
+      "binary_sha256": "b9c5718915d09b6286960394af0087670c4394d1801c1653c0d33a9ea8d27f5d",
+      "fresh_proofs": 8,
+      "cpu_audited": true,
+      "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "operation_seconds": {
+        "bounded_gpu_pipeline_checkpoint": {
+          "upload_device_ns": 1.947951584,
+          "download_device_ns": 1.257627776
+        },
+        "bounded_gpu_lde_checkpoint": {
+          "transform_device_ns": 17.58184672
+        },
+        "bounded_gpu_opening_host_checkpoint": {
+          "upload_device_ns": 1.275423776
+        },
+        "performance_span": {
+          "total_ns": 57.961251699
+        }
+      },
+      "source": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-gpu-profile-20261009/desktop-single-03/summary.json",
+      "source_sha256": "3bfd88fccb6f1c6c7f021a30ed4da69f4592a211a25f9f5f0a24dd27f59bf413"
+    },
+    {
+      "label": "9950X3D2 + desktop RTX 5080 / capture 2",
+      "prover_execution_seconds": 196.257256551,
+      "rayon_threads": 6,
+      "worker_ram_limit_gib": 23.5,
+      "managed_vram_gib": 6.25,
+      "query_readback_layout": "gather",
+      "binary_sha256": "b9c5718915d09b6286960394af0087670c4394d1801c1653c0d33a9ea8d27f5d",
+      "fresh_proofs": 8,
+      "cpu_audited": true,
+      "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "operation_seconds": {
+        "bounded_gpu_pipeline_checkpoint": {
+          "upload_device_ns": 1.945864384,
+          "download_device_ns": 1.254441728
+        },
+        "bounded_gpu_lde_checkpoint": {
+          "transform_device_ns": 17.583822016
+        },
+        "bounded_gpu_opening_host_checkpoint": {
+          "upload_device_ns": 1.272833184
+        },
+        "performance_span": {
+          "total_ns": 58.365148859
+        }
+      },
+      "source": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-gpu-profile-20261009/desktop-single-04/summary.json",
+      "source_sha256": "6e0a453825756b88b8578b2c38d77650839142dfa24e8f0b18ed8277d8a02d37"
+    }
+  ],
+  "new_average_prover_seconds": 195.9680329405,
+  "observed_speedup_over_laptop_internal": 1.4884002683721373,
+  "observed_speedup_over_laptop_external": 1.622124925847046,
+  "batch_runs": [
+    {
+      "platform": "Core Ultra 9 275HX laptop",
+      "label": "New-binary 1+1",
+      "jobs": 2,
+      "elapsed_seconds": 427.4633367630013,
+      "jobs_per_hour": 16.8435497989665
+    },
+    {
+      "platform": "Core Ultra 9 275HX laptop",
+      "label": "New-binary 2+1",
+      "jobs": 3,
+      "elapsed_seconds": 551.0116569950187,
+      "jobs_per_hour": 19.600311287239492
+    },
+    {
+      "platform": "Core Ultra 9 275HX laptop",
+      "label": "Four-worker 2+2",
+      "jobs": 4,
+      "elapsed_seconds": 809.3967063910095,
+      "jobs_per_hour": 17.791028659120265
+    },
+    {
+      "platform": "Ryzen 9 9950X3D2 desktop",
+      "label": "One worker / capture 03",
+      "jobs": 1,
+      "elapsed_seconds": 204.69448509999984,
+      "jobs_per_hour": 17.587186084868307
+    },
+    {
+      "platform": "Ryzen 9 9950X3D2 desktop",
+      "label": "One worker / capture 04",
+      "jobs": 1,
+      "elapsed_seconds": 204.01631994100012,
+      "jobs_per_hour": 17.64564717685865
+    }
+  ],
+  "caveats": [
+    "Standalone old runs use a different binary, 8 rather than 6 Rayon threads, different memory limits and row rather than gather query readback. This is not an isolated CPU or PCIe A/B test.",
+    "Old concurrency runs and new profiles use the same b9c5718915d0 binary, but concurrency and sampling differ.",
+    "Operation timings overlap and must not be summed. Transfer counters describe their named operation family, not total PCIe traffic.",
+    "The new single worker does not use all 16 physical CPU cores. No new-machine multiworker throughput result is available.",
+    "Prover execution timings exclude profiler export and controller/audit overhead. Batch timings include launch and CPU audit; new captures also include profiling/report overhead."
+  ]
+}
