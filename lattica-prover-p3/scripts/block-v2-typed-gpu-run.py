@@ -369,9 +369,13 @@ def worker(attempt_file):
     validate_plan(plan, construction, Capacity.configured(config))
     proof_dir = directory / "proofs"
     gpu_env = {**clean_environment(), **G.environment(budget, directory)}
+    gpu_command = [config['gpu_binary'], command, fixture, expected, proof_dir,
+                   budget['host']['worker_bytes']]
+    if config.get('linux_profile') is not None:
+        from block_v2_linux_profile import command as profile_command
+        gpu_command, gpu_env = profile_command(config, budget, directory, gpu_command, gpu_env)
     prove_started = time.monotonic()
-    execute_logged([config["gpu_binary"], command, fixture, expected, proof_dir,
-                    budget["host"]["worker_bytes"]], directory / "prove.log", gpu_env)
+    execute_logged(gpu_command, directory / 'prove.log', gpu_env)
     proving_seconds = time.monotonic() - prove_started
     validate_fresh_nodes(plan, directory / "prove.log", directory / "prove.log")
     root = proof_dir / Capacity.root_file(config)

@@ -77,9 +77,12 @@ def check(repo, stage=False):
         problems.append('Pending Mac modules missing from the index:\n' + '\n'.join(sorted(missing)))
     if problems:
         raise IncompleteSource('\n\n'.join(problems))
-    git(repo, 'diff', '--cached', '--check')
     changed = names(repo, 'diff', '--cached', '--no-renames', '--name-only', '-z')
-    return sorted(changed)
+    changed_source = sorted(name for name in changed if source_path(name))
+    if changed_source:
+        git(repo, 'diff', '--cached', '--check', '--',
+            *(':(literal)' + name for name in changed_source))
+    return changed_source
 
 
 def main():

@@ -15,7 +15,7 @@ class CountMatrix(unittest.TestCase):
     def test_selection_requires_explicit_unique_counts_and_devices(self):
         self.assertEqual(M.validate_selection([1,2],['GPU-a','GPU-b']),
                          [(1,'GPU-a'),(1,'GPU-b'),(2,'GPU-a'),(2,'GPU-b')])
-        for counts,uuids in (([],['GPU-a']),([4,4],['GPU-a']),([7],['GPU-a']),
+        for counts,uuids in (([],['GPU-a']),([4,4],['GPU-a']),([max(M.T.COUNTS)+1],['GPU-a']),
                              ([True],['GPU-a']),([1],[]),([1],['GPU-a','GPU-a']),([1],['0'])):
             with self.assertRaises(ValueError):M.validate_selection(counts,uuids)
 
@@ -26,7 +26,7 @@ class CountMatrix(unittest.TestCase):
         self.assertFalse(result['all_required_counts_passed'])
         result=M.coverage(list(M.T.COUNTS),['GPU-a','GPU-b'],trials)
         self.assertEqual(result['completed'],1)
-        self.assertEqual(len(result['pending']),17)
+        self.assertEqual(len(result['pending']),2*len(M.T.COUNTS)-1)
         self.assertFalse(result['all_required_counts_passed'])
 
     def test_missing_or_duplicate_device_count_cannot_qualify(self):
@@ -41,7 +41,7 @@ class CountMatrix(unittest.TestCase):
         self.assertTrue(result['all_required_counts_passed'])
         self.assertEqual(result['pending'],[])
         result=M.coverage(list(M.T.COUNTS),['GPU-a','GPU-b'],trials[:-1])
-        self.assertEqual(result['pending'],[{'count':64,'gpu_uuid':'GPU-b'}])
+        self.assertEqual(result['pending'],[{'count':max(M.T.COUNTS),'gpu_uuid':'GPU-b'}])
 
     def test_reusing_a_root_requires_its_exact_fixture_profile_auditor_and_gpu(self):
         with tempfile.TemporaryDirectory() as tmp:

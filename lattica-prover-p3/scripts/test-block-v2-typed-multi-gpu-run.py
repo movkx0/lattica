@@ -340,6 +340,7 @@ class TypedFleet(unittest.TestCase):
                 argv += ["--gpu-uuid", device["uuid"]]
             with ExitStack() as stack:
                 stack.enter_context(patch.object(sys, "argv", argv))
+                capacity_check = stack.enter_context(patch.object(F.T.Capacity, "require_binaries"))
                 for owner, name, replacement in [
                     (F.G, "lock_fleet", lambda: []), (F.G, "systemctl", systemctl),
                     (F.G, "detect_worker_host", lambda path: host), (F.R, "detect_gpus", lambda path: devices),
@@ -358,6 +359,7 @@ class TypedFleet(unittest.TestCase):
                         F.main()
                 else:
                     F.main()
+            capacity_check.assert_called_once_with(64, gpu, cpu)
             report = json.loads((out / "summary.json").read_text())
             self.assertTrue(all((Path(a["directory"]) / "retained-failure-evidence").exists() for a in report["attempts"]))
             return report, order

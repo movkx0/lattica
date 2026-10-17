@@ -12,6 +12,15 @@ spec.loader.exec_module(C)
 
 
 class SourceCheckpoint(unittest.TestCase):
+    def test_whitespace_check_is_limited_to_source(self):
+        self.write('docs/evidence/retained.svg', '<svg>  \n</svg>\n')
+        self.git('add', 'docs')
+        self.assertEqual(C.check(self.root), [])
+        self.write(C.REQUIRED[0], '// source with trailing whitespace  \n')
+        self.git('add', C.REQUIRED[0])
+        with self.assertRaises(subprocess.CalledProcessError):
+            C.check(self.root)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

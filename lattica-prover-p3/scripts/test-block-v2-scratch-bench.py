@@ -15,6 +15,15 @@ spec.loader.exec_module(B)
 
 
 class ScratchBenchTests(unittest.TestCase):
+    def baseline(self):
+        # Command generation needs a config, not an ignored historical run.
+        return dict(gpu_runner="/fixture/gpu", cpu_runner="/fixture/cpu",
+                    auditor="/fixture/auditor", accounting="/fixture/accounting.py",
+                    reference="/fixture/reference", job="/fixture/job",
+                    evidence="/fixture/evidence", external=[], backend="resident",
+                    source_archive="/fixture/source.tar", gpu_uuid="GPU-test",
+                    gpu_index=0, gpu_openings=1, gpu_compact=1, quotient_fusion=1)
+
     def controller(self, threads=16):
         code = B.derive_controller(B.TEMPLATE.read_text(), threads, Path("/tmp/private-scratch"))
         module = types.ModuleType("derived")
@@ -23,7 +32,7 @@ class ScratchBenchTests(unittest.TestCase):
         return module
 
     def test_generated_commands_hold_compute_and_resource_settings(self):
-        baseline = json.loads(B.BASELINE.read_text())["config"]
+        baseline = self.baseline()
         for threads in (8, 16):
             controller = self.controller(threads)
             cfg = {**baseline, "scratch_dir": "/tmp/private-scratch"}
@@ -127,7 +136,7 @@ class ScratchBenchTests(unittest.TestCase):
             self.assertTrue(monitor.host_output.closed)
 
     def test_benchmark_invocation_uses_same_pinned_inputs(self):
-        cfg = json.loads(B.BASELINE.read_text())["config"]
+        cfg = self.baseline()
         plan = {"config": cfg, "arms": {"ram16": {"controller": "/frozen/controller.py"}}}
         argv = B.invocation(Path("/persistent"), plan, "ram16", "round-1-ram16", False)
         self.assertEqual(argv[3:6], ["prove", "/persistent/jobs/round-1-ram16", "/persistent/evidence/round-1-ram16"])

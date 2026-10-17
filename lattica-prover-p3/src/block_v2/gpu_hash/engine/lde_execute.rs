@@ -933,9 +933,8 @@ impl Engine {
             };
             #[cfg(not(feature = "gpu-metal"))]
             let shared: Option<()> = None;
-            #[cfg(feature = "gpu-metal")]
-            let mut public_readback = if public_preprocessing && retention_bits > 0
-                && std::env::var_os("LATTICA_APPLE_SHARED_PREPROCESSING_DIR").is_some() {
+                        let mut public_readback = if public_preprocessing && retention_bits > 0
+                && std::env::var_os(crate::block_v2::worker_memory::env_name("SHARED_PREPROCESSING_DIR")).is_some() {
                 if masks.is_some() || shared.is_some() || plan.readback_layout != super::lde_readback::ReadbackLayout::Direct {
                     return Err("shared public preprocessing requires direct host readback without masks".into());
                 }
@@ -946,10 +945,7 @@ impl Engine {
                 super::super::shared_preprocessing::SharedReadback::for_public_input(
                     &public_input, plan.retained_height(), plan.columns_per_tile())?
             } else { None };
-            #[cfg(feature = "gpu-metal")]
             let public_mapped = public_readback.is_some();
-            #[cfg(not(feature = "gpu-metal"))]
-            let public_mapped = { let _ = public_preprocessing; false };
             let mut readback = if retention == LdeRetention::DeviceOnly || shared.is_some() || public_mapped {
                 None
             } else {
@@ -1155,8 +1151,7 @@ impl Engine {
                 if let Some(readback) = &mut readback {
                     self.lde_read_columns(transformed, readback, tile.first_column, tile.columns)?;
                 }
-                #[cfg(feature = "gpu-metal")]
-                if let Some(readback) = &mut public_readback {
+                                if let Some(readback) = &mut public_readback {
                     self.lde_read_columns(transformed, readback, tile.first_column, tile.columns)?;
                 }
                 #[cfg(feature = "gpu-metal")]
@@ -1195,8 +1190,7 @@ impl Engine {
                     matrices.push(matrix);
                 }
             }
-            #[cfg(feature = "gpu-metal")]
-            if let Some(readback) = public_readback {
+                        if let Some(readback) = public_readback {
                 prefixes.push(p3_matrix::dense::DenseMatrix::new(
                     super::super::prefix_storage::PrefixStorage::Shared(readback.finish()?), shape.width));
             }
@@ -1288,8 +1282,7 @@ impl Engine {
         }
         self.stats.lde_wall_ns += started.elapsed().as_nanos();
         self.context_checkpoint("resident LDE complete")?;
-        #[cfg(feature = "gpu-metal")]
-        if crate::block_v2::apple_memory::reclaim_enabled() {
+                if crate::block_v2::worker_memory::reclaim_enabled() {
             self.workspace = None;
         }
         if buffers.bytes() <= self.lde_workspace_limit {
@@ -1409,14 +1402,16 @@ mod tests {
         for log_h in 1..32 {
             for width in [1usize, 2, 3, 4, 7, 16, 35, 98, 204, 1024] {
                 for columns in [3, 4] {
-                    let groups = ntt_groups(1usize << log_h, width, columns, 12).unwrap();
+                for tile_log2 in 10..=12 {
+                let groups = ntt_groups(1usize << log_h, width, columns, tile_log2).unwrap();
                     let mut stage = 0;
                     for (start, count, log_c) in groups {
                         assert_eq!(start, stage);
-                        assert!(count > 0 && (1usize << (count + log_c)) * 8 <= 32 * 1024);
+                    assert!(count > 0 && count + log_c <= tile_log2);
                         stage += count;
                     }
                     assert_eq!(stage, log_h);
+                }
                 }
             }
         }

@@ -12,8 +12,9 @@ pub use owned_data::OwnedInputs;
 pub(crate) mod engine;
 pub(crate) use engine::begin_memory_window;
 mod compact_salts;
-#[cfg(feature = "gpu-metal")]
 mod shared_preprocessing;
+#[cfg(feature = "gpu")]
+mod device_slots;
 mod prefix_storage;
 pub(crate) use engine::fri_fold::fold as fold_fri;
 pub(crate) use engine::host_storage::RETAINED_HOST_BYTES as ENGINE_RETAINED_HOST_BYTES;

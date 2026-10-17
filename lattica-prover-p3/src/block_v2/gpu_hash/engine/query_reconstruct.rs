@@ -1,9 +1,10 @@
 //! Reconstruct each tile once for a batch of queries; download only those rows.
 //! Salt and Merkle path data are retained by the caller. No randomness is used.
+use crate::block_v2::worker_memory::MEMORY_BACKEND;
 use super::*;
 use crate::config::Val;
 use p3_field::{Field, PrimeCharacteristicRing, PrimeField64, TwoAdicField};
-use p3_matrix::{Matrix, dense::RowMajorMatrix};
+use p3_matrix::Matrix;
 
 pub(super) const KERNEL_SRC: &str = r#"
 __kernel void query_gather(
@@ -17,7 +18,6 @@ __kernel void query_gather(
 }
 "#;
 
-#[cfg(any(feature = "gpu-metal", test))]
 fn query_scratch_allowance(value: Option<&str>) -> Result<usize, String> {
     match value {
         None => Ok(usize::MAX),
@@ -86,8 +86,7 @@ pub(crate) fn reconstruct(
     }
     // Acquire before ENGINE and allocations. Declared first, so a QueueFence,
     // temporary buffers and the engine guard all retire before this permit.
-    #[cfg(feature = "gpu-metal")]
-    let _query_phase = crate::block_v2::apple_memory::PhaseGuard::acquire_query()?;
+    let _query_phase = crate::block_v2::worker_memory::PhaseGuard::acquire_query()?;
     let mut guard = ENGINE
         .get()
         .ok_or("GPU not initialized")?
@@ -96,7 +95,6 @@ pub(crate) fn reconstruct(
     let engine = guard.as_mut().ok_or("GPU shut down")?;
     engine.fence().finish()?;
     engine.workspace = None;
-    #[cfg(feature = "gpu-metal")]
     engine.reclaim_transient_scratch("before query reconstruction", false)?;
     if indices.is_empty() {
         return Ok(Vec::new());
@@ -120,10 +118,7 @@ pub(crate) fn reconstruct(
         .and_then(|bytes| bytes.checked_sub(backend_reserve))
         .ok_or("query workspace allowance")?;
     let max_width = prefixes.iter().map(|p| p.width).max().unwrap();
-    #[cfg(feature = "gpu-metal")]
-    let transform_allowance = query_scratch_allowance(std::env::var("LATTICA_APPLE_QUERY_SCRATCH_BYTES").ok().as_deref())?;
-    #[cfg(not(feature = "gpu-metal"))]
-    let transform_allowance = usize::MAX;
+    let transform_allowance = query_scratch_allowance(std::env::var(crate::block_v2::worker_memory::env_name("QUERY_SCRATCH_BYTES")).ok().as_deref())?;
     let columns = tile_columns(
         height,
         max_width,
@@ -133,9 +128,8 @@ pub(crate) fn reconstruct(
         gather,
         transform_allowance,
     )?;
-    #[cfg(feature = "gpu-metal")]
     if transform_allowance != usize::MAX {
-        eprintln!("apple_query_scratch pid={} height={height} columns={columns} transform_bytes={} allowance_bytes={transform_allowance}",
+        eprintln!("{MEMORY_BACKEND}_query_scratch pid={} height={height} columns={columns} transform_bytes={} allowance_bytes={transform_allowance}",
             std::process::id(), 2 * height * columns * 8);
     }
     let alloc = |n| {
@@ -162,9 +156,8 @@ pub(crate) fn reconstruct(
     } else {
         None
     };
-    #[cfg(feature = "gpu-metal")]
-    if crate::block_v2::apple_memory::reclaim_enabled() {
-        crate::block_v2::apple_memory::checkpoint("query scratch allocated");
+    if crate::block_v2::worker_memory::reclaim_enabled() {
+        crate::block_v2::worker_memory::checkpoint("query scratch allocated");
     }
     let mut result: Vec<Vec<Vec<Val>>> = indices
         .iter()
@@ -302,9 +295,8 @@ pub(crate) fn reconstruct(
     engine.stats.query_reconstruction_wall_ns += started.elapsed().as_nanos();
     drop(fence);
     drop((a, b, forward, inverse, query_indices, query_output));
-    #[cfg(feature = "gpu-metal")]
-    if crate::block_v2::apple_memory::reclaim_enabled() {
-        crate::block_v2::apple_memory::checkpoint("query scratch released");
+    if crate::block_v2::worker_memory::reclaim_enabled() {
+        crate::block_v2::worker_memory::checkpoint("query scratch released");
     }
     Ok(result)
 }

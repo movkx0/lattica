@@ -1,0 +1,5088 @@
+{
+  "schema": "lattica-desktop-concurrency-comparison-v1",
+  "status": "succeeded",
+  "arms": {
+    "single-before": {
+      "name": "single-before",
+      "status": "succeeded",
+      "workers": 1,
+      "elapsed_seconds": 191.51512314400134,
+      "jobs_per_hour": 18.79747113909714,
+      "jobs": [
+        {
+          "index": 0,
+          "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "elapsed_seconds": 190.25391711700104,
+          "prover_execution_seconds": 189.567324318,
+          "rayon_threads": 6,
+          "fresh_proofs": 8,
+          "cpu_audited": true,
+          "memory_events": {
+            "low": 0,
+            "high": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_kill": 0,
+            "oom_group_kill": 0,
+            "sock_throttled": 0
+          },
+          "phase_wait_seconds": {
+            "heavy": 0.0,
+            "late": 0.0,
+            "query": 0.0
+          },
+          "charged_ram_peak_bytes": 21172027392,
+          "worker_gpu_peak_bytes": 5710544896,
+          "context": {
+            "peak_context_bytes": 276822288,
+            "peak_process_bytes": 5041553408,
+            "samples": 37
+          },
+          "cpu_seconds": 489.57325
+        }
+      ],
+      "fresh_recursive_proofs": 8,
+      "cpu_root_audits": 1,
+      "gpu_binary_sha256": "b9c5718915d09b6286960394af0087670c4394d1801c1653c0d33a9ea8d27f5d",
+      "fleet_sampled_ram_peak_bytes": 21206835200,
+      "fleet_memory_cap_bytes": 26575110144,
+      "below_modeled_ram_bound": false,
+      "sampled_worker_vram_sum_peak_bytes": 5710544896,
+      "phase_maximum": {
+        "heavy": 1,
+        "late": 1,
+        "query": 1
+      },
+      "admitted_phase_concurrency": {
+        "maximum": 1,
+        "overlap_seconds": 0.0
+      },
+      "phase_intervals": [
+        {
+          "pid": 144687,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 12067122639064,
+          "end_ns": 12072098778296,
+          "duration_seconds": 4.976139232,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12072098833338,
+          "end_ns": 12081439469162,
+          "duration_seconds": 9.340635824,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12088727886727,
+          "end_ns": 12088753724392,
+          "duration_seconds": 0.025837665,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12088754882299,
+          "end_ns": 12088988040015,
+          "duration_seconds": 0.233157716,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12088989201962,
+          "end_ns": 12089350076336,
+          "duration_seconds": 0.360874374,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12089367818744,
+          "end_ns": 12089833394466,
+          "duration_seconds": 0.465575722,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12089834568303,
+          "end_ns": 12089973329939,
+          "duration_seconds": 0.138761636,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12081439445421,
+          "end_ns": 12090110826163,
+          "duration_seconds": 8.671380742,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12094320042646,
+          "end_ns": 12103604598968,
+          "duration_seconds": 9.284556322,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12110305974176,
+          "end_ns": 12110330603872,
+          "duration_seconds": 0.024629696,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12110331733838,
+          "end_ns": 12110566593482,
+          "duration_seconds": 0.234859644,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12110567736788,
+          "end_ns": 12110928440004,
+          "duration_seconds": 0.360703216,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12110945755955,
+          "end_ns": 12111411500281,
+          "duration_seconds": 0.465744326,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12111412678449,
+          "end_ns": 12111551381351,
+          "duration_seconds": 0.138702902,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12103604576848,
+          "end_ns": 12111691113286,
+          "duration_seconds": 8.086536438,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 12115318689264,
+          "end_ns": 12120423885530,
+          "duration_seconds": 5.105196266,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12120423913271,
+          "end_ns": 12129931138047,
+          "duration_seconds": 9.507224776,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12136605044389,
+          "end_ns": 12136629328182,
+          "duration_seconds": 0.024283793,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12136630457177,
+          "end_ns": 12136865173454,
+          "duration_seconds": 0.234716277,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12136866300160,
+          "end_ns": 12137259282930,
+          "duration_seconds": 0.39298277,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12137277672004,
+          "end_ns": 12137744387117,
+          "duration_seconds": 0.466715113,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12137745557015,
+          "end_ns": 12137883828889,
+          "duration_seconds": 0.138271874,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12129931116556,
+          "end_ns": 12138022855254,
+          "duration_seconds": 8.091738698,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12141874463089,
+          "end_ns": 12151216686701,
+          "duration_seconds": 9.342223612,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12157844909130,
+          "end_ns": 12157870723014,
+          "duration_seconds": 0.025813884,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12157871798277,
+          "end_ns": 12158106614577,
+          "duration_seconds": 0.2348163,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12158107685031,
+          "end_ns": 12158471110513,
+          "duration_seconds": 0.363425482,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12158487331870,
+          "end_ns": 12158954792301,
+          "duration_seconds": 0.467460431,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12158955910637,
+          "end_ns": 12159093423320,
+          "duration_seconds": 0.137512683,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12151216663790,
+          "end_ns": 12159230318818,
+          "duration_seconds": 8.013655028,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 12162096128757,
+          "end_ns": 12168224196730,
+          "duration_seconds": 6.128067973,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12168224223761,
+          "end_ns": 12178173386402,
+          "duration_seconds": 9.949162641,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12184770758122,
+          "end_ns": 12184795700861,
+          "duration_seconds": 0.024942739,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12184796945291,
+          "end_ns": 12185030852913,
+          "duration_seconds": 0.233907622,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12185032097723,
+          "end_ns": 12185392793844,
+          "duration_seconds": 0.360696121,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12185411929078,
+          "end_ns": 12185884656781,
+          "duration_seconds": 0.472727703,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12185885905341,
+          "end_ns": 12186024392283,
+          "duration_seconds": 0.138486942,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12178173362861,
+          "end_ns": 12186157305100,
+          "duration_seconds": 7.983942239,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12189181837637,
+          "end_ns": 12198433200177,
+          "duration_seconds": 9.25136254,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12205043892984,
+          "end_ns": 12205069450627,
+          "duration_seconds": 0.025557643,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12205070608824,
+          "end_ns": 12205305486405,
+          "duration_seconds": 0.234877581,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12205306649212,
+          "end_ns": 12205667491087,
+          "duration_seconds": 0.360841875,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12205685275976,
+          "end_ns": 12206150029725,
+          "duration_seconds": 0.464753749,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12206151228294,
+          "end_ns": 12206289570369,
+          "duration_seconds": 0.138342075,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12198433176536,
+          "end_ns": 12206422200894,
+          "duration_seconds": 7.989024358,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12209420221938,
+          "end_ns": 12218677271749,
+          "duration_seconds": 9.257049811,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12225273227607,
+          "end_ns": 12225298173706,
+          "duration_seconds": 0.024946099,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12225299360344,
+          "end_ns": 12225532301166,
+          "duration_seconds": 0.232940822,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12225533492194,
+          "end_ns": 12225892929912,
+          "duration_seconds": 0.359437718,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12225911148468,
+          "end_ns": 12226380420698,
+          "duration_seconds": 0.46927223,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12226381646578,
+          "end_ns": 12226520700162,
+          "duration_seconds": 0.139053584,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12218677249498,
+          "end_ns": 12226652390248,
+          "duration_seconds": 7.97514075,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 12228615268777,
+          "end_ns": 12233237597044,
+          "duration_seconds": 4.622328267,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12233237621475,
+          "end_ns": 12242530551573,
+          "duration_seconds": 9.292930098,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12249139712072,
+          "end_ns": 12249165551667,
+          "duration_seconds": 0.025839595,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12249166717934,
+          "end_ns": 12249401146335,
+          "duration_seconds": 0.234428401,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12249402320062,
+          "end_ns": 12249763490518,
+          "duration_seconds": 0.361170456,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12249781322000,
+          "end_ns": 12250246314265,
+          "duration_seconds": 0.464992265,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12250247489002,
+          "end_ns": 12250388182072,
+          "duration_seconds": 0.14069307,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 144687,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12242530528142,
+          "end_ns": 12250522895410,
+          "duration_seconds": 7.992367268,
+          "waited_seconds": 0.0,
+          "worker": 0
+        }
+      ],
+      "phase_wait_seconds": {
+        "heavy": 0.0,
+        "late": 0.0,
+        "query": 0.0
+      },
+      "memory_events": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "cleanup_errors": [],
+      "fleet_limits_restored": {
+        "MemoryMax": "infinity",
+        "MemorySwapMax": "infinity"
+      },
+      "shared_directory_removed": true,
+      "summary": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/desktop-concurrency-20261009/campaign-01/single-before/summary.json",
+      "summary_sha256": "b59f95443699a3c8e089f54b3844a7ec3669f685a57763914cd8094a36d138ca",
+      "fleet_memory_series": [
+        {
+          "clock_ns": 12061123997671,
+          "bytes": 264871936
+        },
+        {
+          "clock_ns": 12062149459617,
+          "bytes": 298098688
+        },
+        {
+          "clock_ns": 12063176412973,
+          "bytes": 532697088
+        },
+        {
+          "clock_ns": 12064202215272,
+          "bytes": 543981568
+        },
+        {
+          "clock_ns": 12065228359604,
+          "bytes": 683515904
+        },
+        {
+          "clock_ns": 12066254263237,
+          "bytes": 918499328
+        },
+        {
+          "clock_ns": 12067280976002,
+          "bytes": 2144497664
+        },
+        {
+          "clock_ns": 12068332300194,
+          "bytes": 6646452224
+        },
+        {
+          "clock_ns": 12069391197171,
+          "bytes": 9048272896
+        },
+        {
+          "clock_ns": 12070445712391,
+          "bytes": 8084885504
+        },
+        {
+          "clock_ns": 12071499204119,
+          "bytes": 8082485248
+        },
+        {
+          "clock_ns": 12072557333015,
+          "bytes": 8754651136
+        },
+        {
+          "clock_ns": 12073624820829,
+          "bytes": 11903848448
+        },
+        {
+          "clock_ns": 12074728888883,
+          "bytes": 13827571712
+        },
+        {
+          "clock_ns": 12075805579450,
+          "bytes": 13471764480
+        },
+        {
+          "clock_ns": 12076881508325,
+          "bytes": 13489864704
+        },
+        {
+          "clock_ns": 12077959304295,
+          "bytes": 13507956736
+        },
+        {
+          "clock_ns": 12079035209719,
+          "bytes": 13525323776
+        },
+        {
+          "clock_ns": 12080167678471,
+          "bytes": 13536317440
+        },
+        {
+          "clock_ns": 12081253683863,
+          "bytes": 13803376640
+        },
+        {
+          "clock_ns": 12082326227520,
+          "bytes": 10281472000
+        },
+        {
+          "clock_ns": 12083404540330,
+          "bytes": 11992432640
+        },
+        {
+          "clock_ns": 12084497913200,
+          "bytes": 13661024256
+        },
+        {
+          "clock_ns": 12085587210174,
+          "bytes": 14072676352
+        },
+        {
+          "clock_ns": 12086664481221,
+          "bytes": 10214998016
+        },
+        {
+          "clock_ns": 12087787081602,
+          "bytes": 9974153216
+        },
+        {
+          "clock_ns": 12088861419681,
+          "bytes": 10263977984
+        },
+        {
+          "clock_ns": 12089935850992,
+          "bytes": 10264186880
+        },
+        {
+          "clock_ns": 12090988891768,
+          "bytes": 7968157696
+        },
+        {
+          "clock_ns": 12092078328456,
+          "bytes": 8010420224
+        },
+        {
+          "clock_ns": 12093137814732,
+          "bytes": 8270532608
+        },
+        {
+          "clock_ns": 12094197324559,
+          "bytes": 8354189312
+        },
+        {
+          "clock_ns": 12095303930012,
+          "bytes": 12536696832
+        },
+        {
+          "clock_ns": 12096376581850,
+          "bytes": 12115410944
+        },
+        {
+          "clock_ns": 12097453622476,
+          "bytes": 13727535104
+        },
+        {
+          "clock_ns": 12098529162510,
+          "bytes": 13745278976
+        },
+        {
+          "clock_ns": 12099610276670,
+          "bytes": 13762113536
+        },
+        {
+          "clock_ns": 12100689533205,
+          "bytes": 13780377600
+        },
+        {
+          "clock_ns": 12101772782461,
+          "bytes": 13797163008
+        },
+        {
+          "clock_ns": 12102854783526,
+          "bytes": 13814824960
+        },
+        {
+          "clock_ns": 12103929266756,
+          "bytes": 9443602432
+        },
+        {
+          "clock_ns": 12105011965479,
+          "bytes": 11162857472
+        },
+        {
+          "clock_ns": 12106094934333,
+          "bytes": 12895715328
+        },
+        {
+          "clock_ns": 12107189430793,
+          "bytes": 13924106240
+        },
+        {
+          "clock_ns": 12108263097420,
+          "bytes": 10236530688
+        },
+        {
+          "clock_ns": 12109357029146,
+          "bytes": 10327441408
+        },
+        {
+          "clock_ns": 12110433252706,
+          "bytes": 10323210240
+        },
+        {
+          "clock_ns": 12111508708865,
+          "bytes": 10323034112
+        },
+        {
+          "clock_ns": 12112564463436,
+          "bytes": 8079671296
+        },
+        {
+          "clock_ns": 12113622636414,
+          "bytes": 8182235136
+        },
+        {
+          "clock_ns": 12114681195448,
+          "bytes": 8368496640
+        },
+        {
+          "clock_ns": 12115707543719,
+          "bytes": 9272901632
+        },
+        {
+          "clock_ns": 12116776620718,
+          "bytes": 15526166528
+        },
+        {
+          "clock_ns": 12117841353082,
+          "bytes": 16207757312
+        },
+        {
+          "clock_ns": 12118898481727,
+          "bytes": 15244288000
+        },
+        {
+          "clock_ns": 12119956603032,
+          "bytes": 15244226560
+        },
+        {
+          "clock_ns": 12121027441572,
+          "bytes": 16503705600
+        },
+        {
+          "clock_ns": 12122106367499,
+          "bytes": 19059777536
+        },
+        {
+          "clock_ns": 12123189907252,
+          "bytes": 20445810688
+        },
+        {
+          "clock_ns": 12124275252238,
+          "bytes": 20462661632
+        },
+        {
+          "clock_ns": 12125358837272,
+          "bytes": 20480028672
+        },
+        {
+          "clock_ns": 12126444603175,
+          "bytes": 20498108416
+        },
+        {
+          "clock_ns": 12127558112030,
+          "bytes": 20514172928
+        },
+        {
+          "clock_ns": 12128642657723,
+          "bytes": 20531101696
+        },
+        {
+          "clock_ns": 12129736817564,
+          "bytes": 20860174336
+        },
+        {
+          "clock_ns": 12130808737516,
+          "bytes": 17111728128
+        },
+        {
+          "clock_ns": 12131887655150,
+          "bytes": 18856886272
+        },
+        {
+          "clock_ns": 12132969948811,
+          "bytes": 20483321856
+        },
+        {
+          "clock_ns": 12134059305807,
+          "bytes": 20896874496
+        },
+        {
+          "clock_ns": 12135136149387,
+          "bytes": 17037316096
+        },
+        {
+          "clock_ns": 12136203578176,
+          "bytes": 16918310912
+        },
+        {
+          "clock_ns": 12137274410132,
+          "bytes": 17086672896
+        },
+        {
+          "clock_ns": 12138329963710,
+          "bytes": 15093313536
+        },
+        {
+          "clock_ns": 12139384629771,
+          "bytes": 15097962496
+        },
+        {
+          "clock_ns": 12140471080959,
+          "bytes": 15213899776
+        },
+        {
+          "clock_ns": 12141531879788,
+          "bytes": 15327072256
+        },
+        {
+          "clock_ns": 12142644322807,
+          "bytes": 19316441088
+        },
+        {
+          "clock_ns": 12143726064353,
+          "bytes": 19155095552
+        },
+        {
+          "clock_ns": 12144803876450,
+          "bytes": 20503023616
+        },
+        {
+          "clock_ns": 12145880811512,
+          "bytes": 20520091648
+        },
+        {
+          "clock_ns": 12146961563777,
+          "bytes": 20537483264
+        },
+        {
+          "clock_ns": 12148042339374,
+          "bytes": 20554289152
+        },
+        {
+          "clock_ns": 12149123151081,
+          "bytes": 20571590656
+        },
+        {
+          "clock_ns": 12150205024932,
+          "bytes": 20589113344
+        },
+        {
+          "clock_ns": 12151273221868,
+          "bytes": 15988707328
+        },
+        {
+          "clock_ns": 12152348051053,
+          "bytes": 17505492992
+        },
+        {
+          "clock_ns": 12153428612930,
+          "bytes": 19261562880
+        },
+        {
+          "clock_ns": 12154522192063,
+          "bytes": 20591349760
+        },
+        {
+          "clock_ns": 12155589263414,
+          "bytes": 16792580096
+        },
+        {
+          "clock_ns": 12156665367229,
+          "bytes": 17057812480
+        },
+        {
+          "clock_ns": 12157735745123,
+          "bytes": 17107537920
+        },
+        {
+          "clock_ns": 12158809799436,
+          "bytes": 17106960384
+        },
+        {
+          "clock_ns": 12159864797307,
+          "bytes": 15113822208
+        },
+        {
+          "clock_ns": 12160915856769,
+          "bytes": 15134277632
+        },
+        {
+          "clock_ns": 12161980375025,
+          "bytes": 15631261696
+        },
+        {
+          "clock_ns": 12163044731014,
+          "bytes": 10603470848
+        },
+        {
+          "clock_ns": 12164121439493,
+          "bytes": 16583962624
+        },
+        {
+          "clock_ns": 12165214258173,
+          "bytes": 16583954432
+        },
+        {
+          "clock_ns": 12166284638005,
+          "bytes": 15685238784
+        },
+        {
+          "clock_ns": 12167354390832,
+          "bytes": 15685201920
+        },
+        {
+          "clock_ns": 12168425613078,
+          "bytes": 15644413952
+        },
+        {
+          "clock_ns": 12169528405591,
+          "bytes": 19656327168
+        },
+        {
+          "clock_ns": 12170622870867,
+          "bytes": 20402053120
+        },
+        {
+          "clock_ns": 12171707330908,
+          "bytes": 20838273024
+        },
+        {
+          "clock_ns": 12172792285918,
+          "bytes": 20856934400
+        },
+        {
+          "clock_ns": 12173878089323,
+          "bytes": 20874448896
+        },
+        {
+          "clock_ns": 12174962103785,
+          "bytes": 20892303360
+        },
+        {
+          "clock_ns": 12176046002393,
+          "bytes": 20909903872
+        },
+        {
+          "clock_ns": 12177126290554,
+          "bytes": 20926791680
+        },
+        {
+          "clock_ns": 12178202256590,
+          "bytes": 16320139264
+        },
+        {
+          "clock_ns": 12179279847152,
+          "bytes": 17882300416
+        },
+        {
+          "clock_ns": 12180357448374,
+          "bytes": 19654131712
+        },
+        {
+          "clock_ns": 12181452610476,
+          "bytes": 20954021888
+        },
+        {
+          "clock_ns": 12182527901774,
+          "bytes": 17167069184
+        },
+        {
+          "clock_ns": 12183614127734,
+          "bytes": 17419948032
+        },
+        {
+          "clock_ns": 12184690428222,
+          "bytes": 17468915712
+        },
+        {
+          "clock_ns": 12185771734283,
+          "bytes": 17468375040
+        },
+        {
+          "clock_ns": 12186835773105,
+          "bytes": 15459848192
+        },
+        {
+          "clock_ns": 12187900721334,
+          "bytes": 15482683392
+        },
+        {
+          "clock_ns": 12188969356721,
+          "bytes": 15860350976
+        },
+        {
+          "clock_ns": 12190051609429,
+          "bytes": 19890384896
+        },
+        {
+          "clock_ns": 12191130561104,
+          "bytes": 19506483200
+        },
+        {
+          "clock_ns": 12192210255999,
+          "bytes": 20841582592
+        },
+        {
+          "clock_ns": 12193290599899,
+          "bytes": 20858441728
+        },
+        {
+          "clock_ns": 12194370325484,
+          "bytes": 20876013568
+        },
+        {
+          "clock_ns": 12195450834901,
+          "bytes": 20893876224
+        },
+        {
+          "clock_ns": 12196533165541,
+          "bytes": 20911828992
+        },
+        {
+          "clock_ns": 12197616492292,
+          "bytes": 20930179072
+        },
+        {
+          "clock_ns": 12198698606543,
+          "bytes": 16695025664
+        },
+        {
+          "clock_ns": 12199777260984,
+          "bytes": 18265874432
+        },
+        {
+          "clock_ns": 12200857760169,
+          "bytes": 20025167872
+        },
+        {
+          "clock_ns": 12201949989299,
+          "bytes": 21051645952
+        },
+        {
+          "clock_ns": 12203029658590,
+          "bytes": 17394139136
+        },
+        {
+          "clock_ns": 12204122232524,
+          "bytes": 17483116544
+        },
+        {
+          "clock_ns": 12205197654493,
+          "bytes": 17479036928
+        },
+        {
+          "clock_ns": 12206274419896,
+          "bytes": 17479028736
+        },
+        {
+          "clock_ns": 12207338404493,
+          "bytes": 15472758784
+        },
+        {
+          "clock_ns": 12208404509095,
+          "bytes": 15492980736
+        },
+        {
+          "clock_ns": 12209476988524,
+          "bytes": 15717806080
+        },
+        {
+          "clock_ns": 12210588327695,
+          "bytes": 19900362752
+        },
+        {
+          "clock_ns": 12211667773706,
+          "bytes": 19485102080
+        },
+        {
+          "clock_ns": 12212749029180,
+          "bytes": 20855164928
+        },
+        {
+          "clock_ns": 12213829410279,
+          "bytes": 20872904704
+        },
+        {
+          "clock_ns": 12214911943244,
+          "bytes": 20890132480
+        },
+        {
+          "clock_ns": 12215995042492,
+          "bytes": 20908544000
+        },
+        {
+          "clock_ns": 12217078277205,
+          "bytes": 20925845504
+        },
+        {
+          "clock_ns": 12218161553520,
+          "bytes": 20943745024
+        },
+        {
+          "clock_ns": 12219235471726,
+          "bytes": 16999526400
+        },
+        {
+          "clock_ns": 12220313038799,
+          "bytes": 18748743680
+        },
+        {
+          "clock_ns": 12221393779841,
+          "bytes": 20523872256
+        },
+        {
+          "clock_ns": 12222482288957,
+          "bytes": 21206835200
+        },
+        {
+          "clock_ns": 12223565445016,
+          "bytes": 17438334976
+        },
+        {
+          "clock_ns": 12224638484375,
+          "bytes": 17319415808
+        },
+        {
+          "clock_ns": 12225717785398,
+          "bytes": 17487351808
+        },
+        {
+          "clock_ns": 12226783287272,
+          "bytes": 15491641344
+        },
+        {
+          "clock_ns": 12227846883089,
+          "bytes": 15485587456
+        },
+        {
+          "clock_ns": 12228873322003,
+          "bytes": 16335409152
+        },
+        {
+          "clock_ns": 12229951048762,
+          "bytes": 13509816320
+        },
+        {
+          "clock_ns": 12231041155300,
+          "bytes": 16383168512
+        },
+        {
+          "clock_ns": 12232108898105,
+          "bytes": 15377940480
+        },
+        {
+          "clock_ns": 12233177031634,
+          "bytes": 15377711104
+        },
+        {
+          "clock_ns": 12234261121960,
+          "bytes": 19453820928
+        },
+        {
+          "clock_ns": 12235339804446,
+          "bytes": 19220676608
+        },
+        {
+          "clock_ns": 12236422028975,
+          "bytes": 20634480640
+        },
+        {
+          "clock_ns": 12237503201691,
+          "bytes": 20651962368
+        },
+        {
+          "clock_ns": 12238586120218,
+          "bytes": 20669751296
+        },
+        {
+          "clock_ns": 12239669559576,
+          "bytes": 20687937536
+        },
+        {
+          "clock_ns": 12240753506694,
+          "bytes": 20705161216
+        },
+        {
+          "clock_ns": 12241837813236,
+          "bytes": 20722311168
+        },
+        {
+          "clock_ns": 12242914882846,
+          "bytes": 16328368128
+        },
+        {
+          "clock_ns": 12243996548061,
+          "bytes": 18087821312
+        },
+        {
+          "clock_ns": 12245079303801,
+          "bytes": 19865862144
+        },
+        {
+          "clock_ns": 12246169056863,
+          "bytes": 20633522176
+        },
+        {
+          "clock_ns": 12247254808853,
+          "bytes": 16901636096
+        },
+        {
+          "clock_ns": 12248333240827,
+          "bytes": 16721260544
+        },
+        {
+          "clock_ns": 12249412829737,
+          "bytes": 17002278912
+        },
+        {
+          "clock_ns": 12250488910005,
+          "bytes": 16631312384
+        },
+        {
+          "clock_ns": 12251580956439,
+          "bytes": 13699543040
+        }
+      ]
+    },
+    "concurrent-two": {
+      "name": "concurrent-two",
+      "status": "succeeded",
+      "workers": 2,
+      "elapsed_seconds": 232.69117953500063,
+      "jobs_per_hour": 30.942298777238353,
+      "jobs": [
+        {
+          "index": 0,
+          "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "elapsed_seconds": 215.5877623010001,
+          "prover_execution_seconds": 214.914312812,
+          "rayon_threads": 6,
+          "fresh_proofs": 8,
+          "cpu_audited": true,
+          "memory_events": {
+            "low": 0,
+            "high": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_kill": 0,
+            "oom_group_kill": 0,
+            "sock_throttled": 0
+          },
+          "phase_wait_seconds": {
+            "heavy": 18.407,
+            "late": 0.0,
+            "query": 0.0
+          },
+          "charged_ram_peak_bytes": 21218512896,
+          "worker_gpu_peak_bytes": 5710544896,
+          "context": {
+            "peak_context_bytes": 276822288,
+            "peak_process_bytes": 5041553408,
+            "samples": 37
+          },
+          "cpu_seconds": 506.11717
+        },
+        {
+          "index": 1,
+          "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "elapsed_seconds": 231.15815839400057,
+          "prover_execution_seconds": 230.469704195,
+          "rayon_threads": 6,
+          "fresh_proofs": 8,
+          "cpu_audited": true,
+          "memory_events": {
+            "low": 0,
+            "high": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_kill": 0,
+            "oom_group_kill": 0,
+            "sock_throttled": 0
+          },
+          "phase_wait_seconds": {
+            "heavy": 26.733,
+            "late": 0.0,
+            "query": 0.0
+          },
+          "charged_ram_peak_bytes": 7744548864,
+          "worker_gpu_peak_bytes": 5710544896,
+          "context": {
+            "peak_context_bytes": 276822288,
+            "peak_process_bytes": 5041553408,
+            "samples": 37
+          },
+          "cpu_seconds": 513.515882
+        }
+      ],
+      "fresh_recursive_proofs": 16,
+      "cpu_root_audits": 2,
+      "gpu_binary_sha256": "b9c5718915d09b6286960394af0087670c4394d1801c1653c0d33a9ea8d27f5d",
+      "fleet_sampled_ram_peak_bytes": 28545069056,
+      "fleet_memory_cap_bytes": 38117834752,
+      "below_modeled_ram_bound": false,
+      "sampled_worker_vram_sum_peak_bytes": 9275703296,
+      "phase_maximum": {
+        "heavy": 1,
+        "late": 1,
+        "query": 1
+      },
+      "admitted_phase_concurrency": {
+        "maximum": 2,
+        "overlap_seconds": 118.806762064
+      },
+      "phase_intervals": [
+        {
+          "pid": 154984,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 12864407898339,
+          "end_ns": 12869485580967,
+          "duration_seconds": 5.077682628,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12876440993066,
+          "end_ns": 12885656604757,
+          "duration_seconds": 9.215611691,
+          "waited_seconds": 6.955,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12892729925205,
+          "end_ns": 12892754575001,
+          "duration_seconds": 0.024649796,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12892755717872,
+          "end_ns": 12892995605901,
+          "duration_seconds": 0.239888029,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12892996739671,
+          "end_ns": 12893371218914,
+          "duration_seconds": 0.374479243,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12893389087189,
+          "end_ns": 12893868809472,
+          "duration_seconds": 0.479722283,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12893869950352,
+          "end_ns": 12894033091967,
+          "duration_seconds": 0.163141615,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12885656581596,
+          "end_ns": 12894183695714,
+          "duration_seconds": 8.527114118,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12897809349485,
+          "end_ns": 12907691294874,
+          "duration_seconds": 9.881945389,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12914652817383,
+          "end_ns": 12914677674865,
+          "duration_seconds": 0.024857482,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12914678925461,
+          "end_ns": 12914917789927,
+          "duration_seconds": 0.238864466,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12914919057253,
+          "end_ns": 12915292333710,
+          "duration_seconds": 0.373276457,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12915311515561,
+          "end_ns": 12915788683215,
+          "duration_seconds": 0.477167654,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12915790237854,
+          "end_ns": 12915932873660,
+          "duration_seconds": 0.142635806,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12907691271733,
+          "end_ns": 12916087667426,
+          "duration_seconds": 8.396395693,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 12919775021350,
+          "end_ns": 12925242622188,
+          "duration_seconds": 5.467600838,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12925242650169,
+          "end_ns": 12934606614441,
+          "duration_seconds": 9.363964272,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12941568870171,
+          "end_ns": 12941593212508,
+          "duration_seconds": 0.024342337,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12941594277125,
+          "end_ns": 12941827793052,
+          "duration_seconds": 0.233515927,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12941828861339,
+          "end_ns": 12942190905440,
+          "duration_seconds": 0.362044101,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12942207170579,
+          "end_ns": 12942761931870,
+          "duration_seconds": 0.554761291,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12942763068600,
+          "end_ns": 12943008654320,
+          "duration_seconds": 0.24558572,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12934606592610,
+          "end_ns": 12943574987291,
+          "duration_seconds": 8.968394681,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12951342891252,
+          "end_ns": 12960816499680,
+          "duration_seconds": 9.473608428,
+          "waited_seconds": 4.06,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12968236508387,
+          "end_ns": 12968261477748,
+          "duration_seconds": 0.024969361,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12968262628439,
+          "end_ns": 12968504754856,
+          "duration_seconds": 0.242126417,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12968505909587,
+          "end_ns": 12968877233841,
+          "duration_seconds": 0.371324254,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12968894800686,
+          "end_ns": 12969368679931,
+          "duration_seconds": 0.473879245,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12969369879974,
+          "end_ns": 12969509413776,
+          "duration_seconds": 0.139533802,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12960816478219,
+          "end_ns": 12969659255473,
+          "duration_seconds": 8.842777254,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 12973043245513,
+          "end_ns": 12979493110135,
+          "duration_seconds": 6.449864622,
+          "waited_seconds": 0.401,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12979493136156,
+          "end_ns": 12989506063301,
+          "duration_seconds": 10.012927145,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12996546137561,
+          "end_ns": 12996570689011,
+          "duration_seconds": 0.02455145,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12996571761468,
+          "end_ns": 12996806888327,
+          "duration_seconds": 0.235126859,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12996807964414,
+          "end_ns": 12997172241582,
+          "duration_seconds": 0.364277168,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12997188650713,
+          "end_ns": 12997657051197,
+          "duration_seconds": 0.468400484,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12997658131255,
+          "end_ns": 12997799218438,
+          "duration_seconds": 0.141087183,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12989506040840,
+          "end_ns": 12997937759569,
+          "duration_seconds": 8.431718729,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 13007160995468,
+          "end_ns": 13016663618955,
+          "duration_seconds": 9.502623487,
+          "waited_seconds": 6.039,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13023780428223,
+          "end_ns": 13023806067617,
+          "duration_seconds": 0.025639394,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13023807243689,
+          "end_ns": 13024046799945,
+          "duration_seconds": 0.239556256,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13024047981297,
+          "end_ns": 13024420289614,
+          "duration_seconds": 0.372308317,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13024438329715,
+          "end_ns": 13024915421546,
+          "duration_seconds": 0.477091831,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13024916641780,
+          "end_ns": 13025059955384,
+          "duration_seconds": 0.143313604,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 13016663595594,
+          "end_ns": 13025204981184,
+          "duration_seconds": 8.54138559,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 13028337038564,
+          "end_ns": 13037978893895,
+          "duration_seconds": 9.641855331,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13045029766609,
+          "end_ns": 13045055918753,
+          "duration_seconds": 0.026152144,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13045057173238,
+          "end_ns": 13045298648617,
+          "duration_seconds": 0.241475379,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13045299899122,
+          "end_ns": 13045674126321,
+          "duration_seconds": 0.374227199,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13045693235207,
+          "end_ns": 13046171705378,
+          "duration_seconds": 0.478470171,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13046172993304,
+          "end_ns": 13046315535463,
+          "duration_seconds": 0.142542159,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 13037978871794,
+          "end_ns": 13046469108494,
+          "duration_seconds": 8.4902367,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 13049445094567,
+          "end_ns": 13054201891114,
+          "duration_seconds": 4.756796547,
+          "waited_seconds": 0.952,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 13054201922285,
+          "end_ns": 13063963204178,
+          "duration_seconds": 9.761281893,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13070959190441,
+          "end_ns": 13070984628452,
+          "duration_seconds": 0.025438011,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13070985740571,
+          "end_ns": 13071221633572,
+          "duration_seconds": 0.235893001,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13071222741360,
+          "end_ns": 13071804525515,
+          "duration_seconds": 0.581784155,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13071821410182,
+          "end_ns": 13072579874700,
+          "duration_seconds": 0.758464518,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13072580989659,
+          "end_ns": 13072723406267,
+          "duration_seconds": 0.142416608,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154984,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 13063963181447,
+          "end_ns": 13072873889208,
+          "duration_seconds": 8.910707761,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 154995,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 12869498065834,
+          "end_ns": 12876424429258,
+          "duration_seconds": 6.926363424,
+          "waited_seconds": 5.088,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12885663851619,
+          "end_ns": 12895061339687,
+          "duration_seconds": 9.397488068,
+          "waited_seconds": 9.239,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12902716507766,
+          "end_ns": 12902742037431,
+          "duration_seconds": 0.025529665,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12902743239124,
+          "end_ns": 12902981160963,
+          "duration_seconds": 0.237921839,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12902982380907,
+          "end_ns": 12903352339719,
+          "duration_seconds": 0.369958812,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12903370821860,
+          "end_ns": 12903842808254,
+          "duration_seconds": 0.471986394,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12903844033938,
+          "end_ns": 12903987837396,
+          "duration_seconds": 0.143803458,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12895061317546,
+          "end_ns": 12904136348262,
+          "duration_seconds": 9.075030716,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12907964560806,
+          "end_ns": 12917422798186,
+          "duration_seconds": 9.45823738,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12924722233591,
+          "end_ns": 12924747647947,
+          "duration_seconds": 0.025414356,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12924748738935,
+          "end_ns": 12924981844854,
+          "duration_seconds": 0.233105919,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12924982936612,
+          "end_ns": 12925348634574,
+          "duration_seconds": 0.365697962,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12925365406777,
+          "end_ns": 12925956928724,
+          "duration_seconds": 0.591521947,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12925958158298,
+          "end_ns": 12926172800257,
+          "duration_seconds": 0.214641959,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12917422774575,
+          "end_ns": 12926765540744,
+          "duration_seconds": 9.342766169,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 12934628356193,
+          "end_ns": 12941961480614,
+          "duration_seconds": 7.333124421,
+          "waited_seconds": 4.135,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12941961507335,
+          "end_ns": 12951335353379,
+          "duration_seconds": 9.373846044,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12958188553445,
+          "end_ns": 12958215210172,
+          "duration_seconds": 0.026656727,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12958216505519,
+          "end_ns": 12958457355361,
+          "duration_seconds": 0.240849842,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12958458660759,
+          "end_ns": 12958832365815,
+          "duration_seconds": 0.373705056,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12958852744165,
+          "end_ns": 12959329577922,
+          "duration_seconds": 0.476833757,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12959330888940,
+          "end_ns": 12959471689145,
+          "duration_seconds": 0.140800205,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12951335331948,
+          "end_ns": 12959618848021,
+          "duration_seconds": 8.283516073,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12963231701636,
+          "end_ns": 12973021400471,
+          "duration_seconds": 9.789698835,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12979824795854,
+          "end_ns": 12979849493142,
+          "duration_seconds": 0.024697288,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12979850614682,
+          "end_ns": 12980084339266,
+          "duration_seconds": 0.233724584,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12980085478896,
+          "end_ns": 12980702564084,
+          "duration_seconds": 0.617085188,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12980720524675,
+          "end_ns": 12981466883155,
+          "duration_seconds": 0.74635848,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 12981468078477,
+          "end_ns": 12981609474244,
+          "duration_seconds": 0.141395767,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 12973021378730,
+          "end_ns": 12981759973461,
+          "duration_seconds": 8.738594731,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 12989507516735,
+          "end_ns": 12997762777445,
+          "duration_seconds": 8.25526071,
+          "waited_seconds": 4.837,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 12997762804787,
+          "end_ns": 13007146377246,
+          "duration_seconds": 9.383572459,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13014079335069,
+          "end_ns": 13014104661270,
+          "duration_seconds": 0.025326201,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13014105917036,
+          "end_ns": 13014347090802,
+          "duration_seconds": 0.241173766,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13014348347607,
+          "end_ns": 13014720088894,
+          "duration_seconds": 0.371741287,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13014739289187,
+          "end_ns": 13015212962178,
+          "duration_seconds": 0.473672991,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13015214444453,
+          "end_ns": 13015355432431,
+          "duration_seconds": 0.140987978,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 13007146354965,
+          "end_ns": 13015507260874,
+          "duration_seconds": 8.360905909,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 13018546009667,
+          "end_ns": 13028282849689,
+          "duration_seconds": 9.736840022,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13035190371578,
+          "end_ns": 13035216075244,
+          "duration_seconds": 0.025703666,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13035217269126,
+          "end_ns": 13035458203421,
+          "duration_seconds": 0.240934295,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13035459398193,
+          "end_ns": 13035830567183,
+          "duration_seconds": 0.37116899,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13035848861765,
+          "end_ns": 13036323129500,
+          "duration_seconds": 0.474267735,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13036324366805,
+          "end_ns": 13036466342043,
+          "duration_seconds": 0.141975238,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 13028282825497,
+          "end_ns": 13036612149610,
+          "duration_seconds": 8.329324113,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 13039665339342,
+          "end_ns": 13049428221449,
+          "duration_seconds": 9.762882107,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13057027445490,
+          "end_ns": 13057060671243,
+          "duration_seconds": 0.033225753,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13057061824554,
+          "end_ns": 13057366486414,
+          "duration_seconds": 0.30466186,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13057367671925,
+          "end_ns": 13057739881199,
+          "duration_seconds": 0.372209274,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13057758027332,
+          "end_ns": 13058232900053,
+          "duration_seconds": 0.474872721,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13058234139498,
+          "end_ns": 13058375692116,
+          "duration_seconds": 0.141552618,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 13049428199318,
+          "end_ns": 13058523799470,
+          "duration_seconds": 9.095600152,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 13063987364053,
+          "end_ns": 13070727583357,
+          "duration_seconds": 6.740219304,
+          "waited_seconds": 3.434,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 13070727610608,
+          "end_ns": 13080407622221,
+          "duration_seconds": 9.680011613,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13087109393915,
+          "end_ns": 13087134122624,
+          "duration_seconds": 0.024728709,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13087135169079,
+          "end_ns": 13087368990656,
+          "duration_seconds": 0.233821577,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13087370047382,
+          "end_ns": 13087730828365,
+          "duration_seconds": 0.360780983,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13087752082822,
+          "end_ns": 13088260290183,
+          "duration_seconds": 0.508207361,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13088261349579,
+          "end_ns": 13088398812763,
+          "duration_seconds": 0.137463184,
+          "waited_seconds": 0.0,
+          "worker": 1
+        },
+        {
+          "pid": 154995,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 13080407600650,
+          "end_ns": 13088533057307,
+          "duration_seconds": 8.125456657,
+          "waited_seconds": 0.0,
+          "worker": 1
+        }
+      ],
+      "phase_wait_seconds": {
+        "heavy": 45.14,
+        "late": 0.0,
+        "query": 0.0
+      },
+      "memory_events": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "cleanup_errors": [],
+      "fleet_limits_restored": {
+        "MemoryMax": "infinity",
+        "MemorySwapMax": "infinity"
+      },
+      "shared_directory_removed": true,
+      "summary": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/desktop-concurrency-20261009/campaign-01/concurrent-two-retry-01/summary.json",
+      "summary_sha256": "3870f43c9b9cbcff01bf7f3cae873e2f60a6c3369f246f425dd3c6b728cc02b5",
+      "fleet_memory_series": [
+        {
+          "clock_ns": 12858217432377,
+          "bytes": 205991936
+        },
+        {
+          "clock_ns": 12859258837377,
+          "bytes": 255672320
+        },
+        {
+          "clock_ns": 12860328224871,
+          "bytes": 623349760
+        },
+        {
+          "clock_ns": 12861369262822,
+          "bytes": 783945728
+        },
+        {
+          "clock_ns": 12862411034840,
+          "bytes": 1054015488
+        },
+        {
+          "clock_ns": 12863451092335,
+          "bytes": 1523036160
+        },
+        {
+          "clock_ns": 12864492893952,
+          "bytes": 2563358720
+        },
+        {
+          "clock_ns": 12865576980200,
+          "bytes": 6964498432
+        },
+        {
+          "clock_ns": 12866674693609,
+          "bytes": 9992450048
+        },
+        {
+          "clock_ns": 12867754201319,
+          "bytes": 9028521984
+        },
+        {
+          "clock_ns": 12868833091155,
+          "bytes": 9028247552
+        },
+        {
+          "clock_ns": 12869913455670,
+          "bytes": 9836707840
+        },
+        {
+          "clock_ns": 12871049720242,
+          "bytes": 10004979712
+        },
+        {
+          "clock_ns": 12872184898198,
+          "bytes": 10004979712
+        },
+        {
+          "clock_ns": 12873315515603,
+          "bytes": 10004639744
+        },
+        {
+          "clock_ns": 12874440402946,
+          "bytes": 9013051392
+        },
+        {
+          "clock_ns": 12875556030739,
+          "bytes": 9041137664
+        },
+        {
+          "clock_ns": 12876684209354,
+          "bytes": 9478701056
+        },
+        {
+          "clock_ns": 12877858724167,
+          "bytes": 12444385280
+        },
+        {
+          "clock_ns": 12879048020271,
+          "bytes": 14823174144
+        },
+        {
+          "clock_ns": 12880185596064,
+          "bytes": 14472454144
+        },
+        {
+          "clock_ns": 12881323656981,
+          "bytes": 14491156480
+        },
+        {
+          "clock_ns": 12882466731084,
+          "bytes": 14509555712
+        },
+        {
+          "clock_ns": 12883605686006,
+          "bytes": 14529441792
+        },
+        {
+          "clock_ns": 12884746744005,
+          "bytes": 14547529728
+        },
+        {
+          "clock_ns": 12885883087868,
+          "bytes": 10711093248
+        },
+        {
+          "clock_ns": 12887097853094,
+          "bytes": 16114388992
+        },
+        {
+          "clock_ns": 12888273110343,
+          "bytes": 19700281344
+        },
+        {
+          "clock_ns": 12889450344712,
+          "bytes": 20428935168
+        },
+        {
+          "clock_ns": 12890603885081,
+          "bytes": 16653705216
+        },
+        {
+          "clock_ns": 12891807446387,
+          "bytes": 16868413440
+        },
+        {
+          "clock_ns": 12892966228204,
+          "bytes": 16883314688
+        },
+        {
+          "clock_ns": 12894112904566,
+          "bytes": 16901255168
+        },
+        {
+          "clock_ns": 12895242480150,
+          "bytes": 10252005376
+        },
+        {
+          "clock_ns": 12896379400884,
+          "bytes": 12127502336
+        },
+        {
+          "clock_ns": 12897515749515,
+          "bytes": 14184910848
+        },
+        {
+          "clock_ns": 12898734710091,
+          "bytes": 19453698048
+        },
+        {
+          "clock_ns": 12899877296896,
+          "bytes": 14910349312
+        },
+        {
+          "clock_ns": 12901138181861,
+          "bytes": 16806039552
+        },
+        {
+          "clock_ns": 12902301469870,
+          "bytes": 16702676992
+        },
+        {
+          "clock_ns": 12903465930095,
+          "bytes": 16891002880
+        },
+        {
+          "clock_ns": 12904608817784,
+          "bytes": 14609510400
+        },
+        {
+          "clock_ns": 12905761635888,
+          "bytes": 14682857472
+        },
+        {
+          "clock_ns": 12906908946021,
+          "bytes": 14962176000
+        },
+        {
+          "clock_ns": 12908057061212,
+          "bytes": 10841808896
+        },
+        {
+          "clock_ns": 12909248196826,
+          "bytes": 16887058432
+        },
+        {
+          "clock_ns": 12910484877324,
+          "bytes": 20519940096
+        },
+        {
+          "clock_ns": 12911678121836,
+          "bytes": 20857606144
+        },
+        {
+          "clock_ns": 12912850420433,
+          "bytes": 17106313216
+        },
+        {
+          "clock_ns": 12914008354504,
+          "bytes": 17004974080
+        },
+        {
+          "clock_ns": 12915170613601,
+          "bytes": 17192054784
+        },
+        {
+          "clock_ns": 12916311101995,
+          "bytes": 14980206592
+        },
+        {
+          "clock_ns": 12917448032795,
+          "bytes": 10386472960
+        },
+        {
+          "clock_ns": 12918590722953,
+          "bytes": 12116955136
+        },
+        {
+          "clock_ns": 12919751708116,
+          "bytes": 14175379456
+        },
+        {
+          "clock_ns": 12920908987749,
+          "bytes": 19380555776
+        },
+        {
+          "clock_ns": 12922048374211,
+          "bytes": 19270881280
+        },
+        {
+          "clock_ns": 12923185630392,
+          "bytes": 18453463040
+        },
+        {
+          "clock_ns": 12924297192138,
+          "bytes": 18481717248
+        },
+        {
+          "clock_ns": 12925422568060,
+          "bytes": 18917650432
+        },
+        {
+          "clock_ns": 12926584871761,
+          "bytes": 22683688960
+        },
+        {
+          "clock_ns": 12927748702473,
+          "bytes": 22126780416
+        },
+        {
+          "clock_ns": 12928874192471,
+          "bytes": 21744132096
+        },
+        {
+          "clock_ns": 12930002033197,
+          "bytes": 21949149184
+        },
+        {
+          "clock_ns": 12931092058582,
+          "bytes": 21950107648
+        },
+        {
+          "clock_ns": 12932178461980,
+          "bytes": 21968207872
+        },
+        {
+          "clock_ns": 12933266634751,
+          "bytes": 21985812480
+        },
+        {
+          "clock_ns": 12934355729487,
+          "bytes": 22001901568
+        },
+        {
+          "clock_ns": 12935458925081,
+          "bytes": 19617873920
+        },
+        {
+          "clock_ns": 12936576610240,
+          "bytes": 21454295040
+        },
+        {
+          "clock_ns": 12937710245929,
+          "bytes": 23082983424
+        },
+        {
+          "clock_ns": 12938840404418,
+          "bytes": 23465238528
+        },
+        {
+          "clock_ns": 12939949996701,
+          "bytes": 18652045312
+        },
+        {
+          "clock_ns": 12941043668784,
+          "bytes": 18525204480
+        },
+        {
+          "clock_ns": 12942155817258,
+          "bytes": 18973474816
+        },
+        {
+          "clock_ns": 12943296501288,
+          "bytes": 22728847360
+        },
+        {
+          "clock_ns": 12944402059638,
+          "bytes": 20599529472
+        },
+        {
+          "clock_ns": 12945511977445,
+          "bytes": 22060060672
+        },
+        {
+          "clock_ns": 12946623356321,
+          "bytes": 22197633024
+        },
+        {
+          "clock_ns": 12947735451873,
+          "bytes": 22034829312
+        },
+        {
+          "clock_ns": 12948846536334,
+          "bytes": 22052900864
+        },
+        {
+          "clock_ns": 12949956959100,
+          "bytes": 22071603200
+        },
+        {
+          "clock_ns": 12951065716557,
+          "bytes": 22088691712
+        },
+        {
+          "clock_ns": 12952212948447,
+          "bytes": 22786232320
+        },
+        {
+          "clock_ns": 12953332886415,
+          "bytes": 24112205824
+        },
+        {
+          "clock_ns": 12954471491902,
+          "bytes": 27374755840
+        },
+        {
+          "clock_ns": 12955604640262,
+          "bytes": 26426216448
+        },
+        {
+          "clock_ns": 12956732880119,
+          "bytes": 23965020160
+        },
+        {
+          "clock_ns": 12957850743072,
+          "bytes": 23876571136
+        },
+        {
+          "clock_ns": 12958975876600,
+          "bytes": 24054001664
+        },
+        {
+          "clock_ns": 12960082358719,
+          "bytes": 22090215424
+        },
+        {
+          "clock_ns": 12961174970410,
+          "bytes": 17798066176
+        },
+        {
+          "clock_ns": 12962281381354,
+          "bytes": 19685539840
+        },
+        {
+          "clock_ns": 12963403837560,
+          "bytes": 21851025408
+        },
+        {
+          "clock_ns": 12964558798535,
+          "bytes": 26358603776
+        },
+        {
+          "clock_ns": 12965665797598,
+          "bytes": 22039523328
+        },
+        {
+          "clock_ns": 12966795386031,
+          "bytes": 23941922816
+        },
+        {
+          "clock_ns": 12967919675365,
+          "bytes": 23957446656
+        },
+        {
+          "clock_ns": 12969046693044,
+          "bytes": 24027369472
+        },
+        {
+          "clock_ns": 12970152234239,
+          "bytes": 22058962944
+        },
+        {
+          "clock_ns": 12971257831192,
+          "bytes": 22101147648
+        },
+        {
+          "clock_ns": 12972376062835,
+          "bytes": 22419394560
+        },
+        {
+          "clock_ns": 12973448674803,
+          "bytes": 19119599616
+        },
+        {
+          "clock_ns": 12974592349796,
+          "bytes": 19584368640
+        },
+        {
+          "clock_ns": 12975755419559,
+          "bytes": 23055044608
+        },
+        {
+          "clock_ns": 12976908730056,
+          "bytes": 22829973504
+        },
+        {
+          "clock_ns": 12978047222783,
+          "bytes": 19119112192
+        },
+        {
+          "clock_ns": 12979167444870,
+          "bytes": 18999717888
+        },
+        {
+          "clock_ns": 12980328028559,
+          "bytes": 21781647360
+        },
+        {
+          "clock_ns": 12981481138032,
+          "bytes": 23141171200
+        },
+        {
+          "clock_ns": 12982649948881,
+          "bytes": 22833041408
+        },
+        {
+          "clock_ns": 12983785878627,
+          "bytes": 22366830592
+        },
+        {
+          "clock_ns": 12984900386303,
+          "bytes": 22710923264
+        },
+        {
+          "clock_ns": 12986014512658,
+          "bytes": 22729375744
+        },
+        {
+          "clock_ns": 12987127609701,
+          "bytes": 22747369472
+        },
+        {
+          "clock_ns": 12988244064747,
+          "bytes": 22765010944
+        },
+        {
+          "clock_ns": 12989361865806,
+          "bytes": 21533450240
+        },
+        {
+          "clock_ns": 12990513743089,
+          "bytes": 20661174272
+        },
+        {
+          "clock_ns": 12991674797710,
+          "bytes": 22519791616
+        },
+        {
+          "clock_ns": 12992866182709,
+          "bytes": 23926968320
+        },
+        {
+          "clock_ns": 12994029085269,
+          "bytes": 22100803584
+        },
+        {
+          "clock_ns": 12995176977644,
+          "bytes": 19493896192
+        },
+        {
+          "clock_ns": 12996315051310,
+          "bytes": 19543650304
+        },
+        {
+          "clock_ns": 12997457342736,
+          "bytes": 19542671360
+        },
+        {
+          "clock_ns": 12998673043865,
+          "bytes": 21504847872
+        },
+        {
+          "clock_ns": 12999816998472,
+          "bytes": 20957990912
+        },
+        {
+          "clock_ns": 13000979409396,
+          "bytes": 23139962880
+        },
+        {
+          "clock_ns": 13002131466739,
+          "bytes": 22948118528
+        },
+        {
+          "clock_ns": 13003286381701,
+          "bytes": 22966276096
+        },
+        {
+          "clock_ns": 13004441699625,
+          "bytes": 22985314304
+        },
+        {
+          "clock_ns": 13005599971543,
+          "bytes": 23004663808
+        },
+        {
+          "clock_ns": 13006756449957,
+          "bytes": 23022993408
+        },
+        {
+          "clock_ns": 13007966145763,
+          "bytes": 23130312704
+        },
+        {
+          "clock_ns": 13009126241504,
+          "bytes": 25012383744
+        },
+        {
+          "clock_ns": 13010309705625,
+          "bytes": 28102840320
+        },
+        {
+          "clock_ns": 13011477479592,
+          "bytes": 27079503872
+        },
+        {
+          "clock_ns": 13012650078225,
+          "bytes": 24693993472
+        },
+        {
+          "clock_ns": 13013815953526,
+          "bytes": 24761376768
+        },
+        {
+          "clock_ns": 13014983394432,
+          "bytes": 24779538432
+        },
+        {
+          "clock_ns": 13016125536811,
+          "bytes": 22788329472
+        },
+        {
+          "clock_ns": 13017261338255,
+          "bytes": 18912645120
+        },
+        {
+          "clock_ns": 13018421316266,
+          "bytes": 21262721024
+        },
+        {
+          "clock_ns": 13019629365129,
+          "bytes": 27086204928
+        },
+        {
+          "clock_ns": 13020815107628,
+          "bytes": 26819420160
+        },
+        {
+          "clock_ns": 13021995381672,
+          "bytes": 24651292672
+        },
+        {
+          "clock_ns": 13023162092925,
+          "bytes": 24551186432
+        },
+        {
+          "clock_ns": 13024328512879,
+          "bytes": 24737820672
+        },
+        {
+          "clock_ns": 13025479056802,
+          "bytes": 22774898688
+        },
+        {
+          "clock_ns": 13026625649126,
+          "bytes": 22798753792
+        },
+        {
+          "clock_ns": 13027776162656,
+          "bytes": 22958587904
+        },
+        {
+          "clock_ns": 13028920637286,
+          "bytes": 20055703552
+        },
+        {
+          "clock_ns": 13030086540951,
+          "bytes": 24709148672
+        },
+        {
+          "clock_ns": 13031267024828,
+          "bytes": 27963469824
+        },
+        {
+          "clock_ns": 13032461453441,
+          "bytes": 28545069056
+        },
+        {
+          "clock_ns": 13033640873431,
+          "bytes": 24705089536
+        },
+        {
+          "clock_ns": 13034793535892,
+          "bytes": 24603721728
+        },
+        {
+          "clock_ns": 13035956487239,
+          "bytes": 24790786048
+        },
+        {
+          "clock_ns": 13037101433693,
+          "bytes": 22814302208
+        },
+        {
+          "clock_ns": 13038242469639,
+          "bytes": 18390188032
+        },
+        {
+          "clock_ns": 13039394184677,
+          "bytes": 20546486272
+        },
+        {
+          "clock_ns": 13040621540123,
+          "bytes": 26629066752
+        },
+        {
+          "clock_ns": 13041817354121,
+          "bytes": 27010641920
+        },
+        {
+          "clock_ns": 13042972410300,
+          "bytes": 24759652352
+        },
+        {
+          "clock_ns": 13044158870638,
+          "bytes": 24886820864
+        },
+        {
+          "clock_ns": 13045319121383,
+          "bytes": 24752549888
+        },
+        {
+          "clock_ns": 13046472549194,
+          "bytes": 22791659520
+        },
+        {
+          "clock_ns": 13047609971700,
+          "bytes": 22802563072
+        },
+        {
+          "clock_ns": 13048707680243,
+          "bytes": 22594633728
+        },
+        {
+          "clock_ns": 13049814987211,
+          "bytes": 19237007360
+        },
+        {
+          "clock_ns": 13050961612134,
+          "bytes": 19838496768
+        },
+        {
+          "clock_ns": 13052117810801,
+          "bytes": 23188652032
+        },
+        {
+          "clock_ns": 13053269379390,
+          "bytes": 22921654272
+        },
+        {
+          "clock_ns": 13054415105738,
+          "bytes": 19581911040
+        },
+        {
+          "clock_ns": 13055596462980,
+          "bytes": 23287799808
+        },
+        {
+          "clock_ns": 13056748324826,
+          "bytes": 24053940224
+        },
+        {
+          "clock_ns": 13057898804457,
+          "bytes": 24518111232
+        },
+        {
+          "clock_ns": 13059023898463,
+          "bytes": 22524678144
+        },
+        {
+          "clock_ns": 13060150416536,
+          "bytes": 22552735744
+        },
+        {
+          "clock_ns": 13061237994763,
+          "bytes": 22342303744
+        },
+        {
+          "clock_ns": 13062326595319,
+          "bytes": 22359887872
+        },
+        {
+          "clock_ns": 13063414574004,
+          "bytes": 22377472000
+        },
+        {
+          "clock_ns": 13064494352016,
+          "bytes": 19286102016
+        },
+        {
+          "clock_ns": 13065623358514,
+          "bytes": 21120995328
+        },
+        {
+          "clock_ns": 13066754302002,
+          "bytes": 22942429184
+        },
+        {
+          "clock_ns": 13067901655613,
+          "bytes": 23469875200
+        },
+        {
+          "clock_ns": 13069031466172,
+          "bytes": 19678728192
+        },
+        {
+          "clock_ns": 13070153893883,
+          "bytes": 18673889280
+        },
+        {
+          "clock_ns": 13071275763656,
+          "bytes": 19547676672
+        },
+        {
+          "clock_ns": 13072432245944,
+          "bytes": 22849556480
+        },
+        {
+          "clock_ns": 13073611855358,
+          "bytes": 22518628352
+        },
+        {
+          "clock_ns": 13074721933631,
+          "bytes": 20715126784
+        },
+        {
+          "clock_ns": 13075805398318,
+          "bytes": 20732092416
+        },
+        {
+          "clock_ns": 13076886963708,
+          "bytes": 20749393920
+        },
+        {
+          "clock_ns": 13077969625071,
+          "bytes": 20767481856
+        },
+        {
+          "clock_ns": 13079051713604,
+          "bytes": 20785569792
+        },
+        {
+          "clock_ns": 13080139760904,
+          "bytes": 20732104704
+        },
+        {
+          "clock_ns": 13081211684445,
+          "bytes": 17048178688
+        },
+        {
+          "clock_ns": 13082298534633,
+          "bytes": 18815709184
+        },
+        {
+          "clock_ns": 13083391719354,
+          "bytes": 20505112576
+        },
+        {
+          "clock_ns": 13084492892268,
+          "bytes": 20888260608
+        },
+        {
+          "clock_ns": 13085572773420,
+          "bytes": 17031028736
+        },
+        {
+          "clock_ns": 13086638114773,
+          "bytes": 16912551936
+        },
+        {
+          "clock_ns": 13087707412044,
+          "bytes": 17080070144
+        },
+        {
+          "clock_ns": 13088758261366,
+          "bytes": 15351832576
+        },
+        {
+          "clock_ns": 13089803809204,
+          "bytes": 13744242688
+        }
+      ]
+    },
+    "single-after": {
+      "name": "single-after",
+      "status": "succeeded",
+      "workers": 1,
+      "elapsed_seconds": 190.1864687670004,
+      "jobs_per_hour": 18.92879142948072,
+      "jobs": [
+        {
+          "index": 0,
+          "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+          "elapsed_seconds": 188.03968623199944,
+          "prover_execution_seconds": 187.349677529,
+          "rayon_threads": 6,
+          "fresh_proofs": 8,
+          "cpu_audited": true,
+          "memory_events": {
+            "low": 0,
+            "high": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_kill": 0,
+            "oom_group_kill": 0,
+            "sock_throttled": 0
+          },
+          "phase_wait_seconds": {
+            "heavy": 0.0,
+            "late": 0.0,
+            "query": 0.0
+          },
+          "charged_ram_peak_bytes": 21244633088,
+          "worker_gpu_peak_bytes": 5710544896,
+          "context": {
+            "peak_context_bytes": 276822288,
+            "peak_process_bytes": 5041553408,
+            "samples": 37
+          },
+          "cpu_seconds": 485.600068
+        }
+      ],
+      "fresh_recursive_proofs": 8,
+      "cpu_root_audits": 1,
+      "gpu_binary_sha256": "b9c5718915d09b6286960394af0087670c4394d1801c1653c0d33a9ea8d27f5d",
+      "fleet_sampled_ram_peak_bytes": 21506363392,
+      "fleet_memory_cap_bytes": 26575110144,
+      "below_modeled_ram_bound": false,
+      "sampled_worker_vram_sum_peak_bytes": 5710544896,
+      "phase_maximum": {
+        "heavy": 1,
+        "late": 1,
+        "query": 1
+      },
+      "admitted_phase_concurrency": {
+        "maximum": 1,
+        "overlap_seconds": 0.0
+      },
+      "phase_intervals": [
+        {
+          "pid": 158793,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 13097740602272,
+          "end_ns": 13102800807895,
+          "duration_seconds": 5.060205623,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 13102800864947,
+          "end_ns": 13112663209001,
+          "duration_seconds": 9.862344054,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13119408670825,
+          "end_ns": 13119433242403,
+          "duration_seconds": 0.024571578,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13119434391543,
+          "end_ns": 13119673681821,
+          "duration_seconds": 0.239290278,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13119675023300,
+          "end_ns": 13120036235160,
+          "duration_seconds": 0.36121186,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13120053661148,
+          "end_ns": 13120516842903,
+          "duration_seconds": 0.463181755,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13120517981832,
+          "end_ns": 13120655976704,
+          "duration_seconds": 0.137994872,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 13112663186430,
+          "end_ns": 13120804204940,
+          "duration_seconds": 8.14101851,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 13124371276002,
+          "end_ns": 13133545762421,
+          "duration_seconds": 9.174486419,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13140173939555,
+          "end_ns": 13140198563914,
+          "duration_seconds": 0.024624359,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13140199684743,
+          "end_ns": 13140444818047,
+          "duration_seconds": 0.245133304,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13140445942656,
+          "end_ns": 13140803660220,
+          "duration_seconds": 0.357717564,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13140820951170,
+          "end_ns": 13141288713422,
+          "duration_seconds": 0.467762252,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13141289870972,
+          "end_ns": 13141427939727,
+          "duration_seconds": 0.138068755,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 13133545740490,
+          "end_ns": 13141578256364,
+          "duration_seconds": 8.032515874,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 13145175907386,
+          "end_ns": 13150197090720,
+          "duration_seconds": 5.021183334,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 13150197114551,
+          "end_ns": 13159501103587,
+          "duration_seconds": 9.303989036,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13166092207358,
+          "end_ns": 13166143149506,
+          "duration_seconds": 0.050942148,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13166144627200,
+          "end_ns": 13166393579770,
+          "duration_seconds": 0.24895257,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13166394669147,
+          "end_ns": 13166752677924,
+          "duration_seconds": 0.358008777,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13166769383078,
+          "end_ns": 13167233659819,
+          "duration_seconds": 0.464276741,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13167234784528,
+          "end_ns": 13167373689438,
+          "duration_seconds": 0.13890491,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 13159501080226,
+          "end_ns": 13167506164689,
+          "duration_seconds": 8.005084463,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 13171053975644,
+          "end_ns": 13180224710812,
+          "duration_seconds": 9.170735168,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13186833497857,
+          "end_ns": 13186858040879,
+          "duration_seconds": 0.024543022,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13186859142967,
+          "end_ns": 13187091954562,
+          "duration_seconds": 0.232811595,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13187093058130,
+          "end_ns": 13187453031778,
+          "duration_seconds": 0.359973648,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13187469912139,
+          "end_ns": 13187933535273,
+          "duration_seconds": 0.463623134,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13187934681402,
+          "end_ns": 13188073935739,
+          "duration_seconds": 0.139254337,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 13180224688991,
+          "end_ns": 13188207099221,
+          "duration_seconds": 7.98241023,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 13191021183587,
+          "end_ns": 13197120579029,
+          "duration_seconds": 6.099395442,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 13197120603440,
+          "end_ns": 13206314688331,
+          "duration_seconds": 9.194084891,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13212857181583,
+          "end_ns": 13212881746844,
+          "duration_seconds": 0.024565261,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13212882939716,
+          "end_ns": 13213116831411,
+          "duration_seconds": 0.233891695,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13213118023132,
+          "end_ns": 13213480453889,
+          "duration_seconds": 0.362430757,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13213498712588,
+          "end_ns": 13213963171463,
+          "duration_seconds": 0.464458875,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13213964368704,
+          "end_ns": 13214102052102,
+          "duration_seconds": 0.137683398,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 13206314665610,
+          "end_ns": 13214229942727,
+          "duration_seconds": 7.915277117,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 13217220249731,
+          "end_ns": 13227153358002,
+          "duration_seconds": 9.933108271,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13233768185160,
+          "end_ns": 13233793105095,
+          "duration_seconds": 0.024919935,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13233794272896,
+          "end_ns": 13234027459986,
+          "duration_seconds": 0.23318709,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13234028623527,
+          "end_ns": 13234388971243,
+          "duration_seconds": 0.360347716,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13234406698338,
+          "end_ns": 13234870395752,
+          "duration_seconds": 0.463697414,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13234871602624,
+          "end_ns": 13235009057074,
+          "duration_seconds": 0.13745445,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 13227153336121,
+          "end_ns": 13235137556788,
+          "duration_seconds": 7.984220667,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 13238125899453,
+          "end_ns": 13247367639521,
+          "duration_seconds": 9.241740068,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13253953108423,
+          "end_ns": 13253978828231,
+          "duration_seconds": 0.025719808,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13253979852625,
+          "end_ns": 13254213092735,
+          "duration_seconds": 0.23324011,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13254214128950,
+          "end_ns": 13254574026787,
+          "duration_seconds": 0.359897837,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13254589618859,
+          "end_ns": 13255052415010,
+          "duration_seconds": 0.462796151,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13255053482356,
+          "end_ns": 13255203943358,
+          "duration_seconds": 0.150461002,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 13247367617800,
+          "end_ns": 13255330960071,
+          "duration_seconds": 7.963342271,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "preprocessing",
+          "pool": "heavy",
+          "start_ns": 13257265629673,
+          "end_ns": 13261899163201,
+          "duration_seconds": 4.633533528,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "trace and quotient",
+          "pool": "heavy",
+          "start_ns": 13261899187792,
+          "end_ns": 13271018106665,
+          "duration_seconds": 9.118918873,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13277567526362,
+          "end_ns": 13277592065118,
+          "duration_seconds": 0.024538756,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13277593247669,
+          "end_ns": 13277827841103,
+          "duration_seconds": 0.234593434,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13277829011073,
+          "end_ns": 13278190428634,
+          "duration_seconds": 0.361417561,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13278208345095,
+          "end_ns": 13278671952262,
+          "duration_seconds": 0.463607167,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "query reconstruction",
+          "pool": "query",
+          "start_ns": 13278673122183,
+          "end_ns": 13278810509904,
+          "duration_seconds": 0.137387721,
+          "waited_seconds": 0.0,
+          "worker": 0
+        },
+        {
+          "pid": 158793,
+          "name": "quotient commitment through queries",
+          "pool": "late",
+          "start_ns": 13271018083824,
+          "end_ns": 13278940513827,
+          "duration_seconds": 7.922430003,
+          "waited_seconds": 0.0,
+          "worker": 0
+        }
+      ],
+      "phase_wait_seconds": {
+        "heavy": 0.0,
+        "late": 0.0,
+        "query": 0.0
+      },
+      "memory_events": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "cleanup_errors": [],
+      "fleet_limits_restored": {
+        "MemoryMax": "infinity",
+        "MemorySwapMax": "infinity"
+      },
+      "shared_directory_removed": true,
+      "summary": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/desktop-concurrency-20261009/campaign-01/single-after/summary.json",
+      "summary_sha256": "d6eafa4df0f151875cc340564457b420cd2ea6184a6929e86e3482f63a95419b",
+      "fleet_memory_series": [
+        {
+          "clock_ns": 13091741438507,
+          "bytes": 301961216
+        },
+        {
+          "clock_ns": 13092767017073,
+          "bytes": 335228928
+        },
+        {
+          "clock_ns": 13093794880074,
+          "bytes": 596258816
+        },
+        {
+          "clock_ns": 13094820556487,
+          "bytes": 607055872
+        },
+        {
+          "clock_ns": 13095848087677,
+          "bytes": 754495488
+        },
+        {
+          "clock_ns": 13096874183090,
+          "bytes": 983465984
+        },
+        {
+          "clock_ns": 13097901361386,
+          "bytes": 2145394688
+        },
+        {
+          "clock_ns": 13098986300036,
+          "bytes": 6674214912
+        },
+        {
+          "clock_ns": 13100077201761,
+          "bytes": 9140572160
+        },
+        {
+          "clock_ns": 13101147378648,
+          "bytes": 8176857088
+        },
+        {
+          "clock_ns": 13102219895514,
+          "bytes": 8176594944
+        },
+        {
+          "clock_ns": 13103302746586,
+          "bytes": 8919556096
+        },
+        {
+          "clock_ns": 13104395557827,
+          "bytes": 12042108928
+        },
+        {
+          "clock_ns": 13105491894787,
+          "bytes": 13985185792
+        },
+        {
+          "clock_ns": 13106583187114,
+          "bytes": 13635342336
+        },
+        {
+          "clock_ns": 13107674781179,
+          "bytes": 13653188608
+        },
+        {
+          "clock_ns": 13108772621263,
+          "bytes": 13671124992
+        },
+        {
+          "clock_ns": 13109867876519,
+          "bytes": 13689970688
+        },
+        {
+          "clock_ns": 13110965998586,
+          "bytes": 13707395072
+        },
+        {
+          "clock_ns": 13112054845276,
+          "bytes": 13718822912
+        },
+        {
+          "clock_ns": 13113137900909,
+          "bytes": 9721798656
+        },
+        {
+          "clock_ns": 13114228594700,
+          "bytes": 11510931456
+        },
+        {
+          "clock_ns": 13115318564146,
+          "bytes": 13250797568
+        },
+        {
+          "clock_ns": 13116429120543,
+          "bytes": 14073372672
+        },
+        {
+          "clock_ns": 13117514461780,
+          "bytes": 10315300864
+        },
+        {
+          "clock_ns": 13118599014387,
+          "bytes": 10180661248
+        },
+        {
+          "clock_ns": 13119685708634,
+          "bytes": 10411995136
+        },
+        {
+          "clock_ns": 13120769991042,
+          "bytes": 9732616192
+        },
+        {
+          "clock_ns": 13121839129298,
+          "bytes": 8119877632
+        },
+        {
+          "clock_ns": 13122909803826,
+          "bytes": 8258150400
+        },
+        {
+          "clock_ns": 13123989471022,
+          "bytes": 8470806528
+        },
+        {
+          "clock_ns": 13125136466871,
+          "bytes": 12684746752
+        },
+        {
+          "clock_ns": 13126231552898,
+          "bytes": 12528226304
+        },
+        {
+          "clock_ns": 13127325905580,
+          "bytes": 13880045568
+        },
+        {
+          "clock_ns": 13128420507218,
+          "bytes": 13897760768
+        },
+        {
+          "clock_ns": 13129518317282,
+          "bytes": 13916610560
+        },
+        {
+          "clock_ns": 13130614509311,
+          "bytes": 13934379008
+        },
+        {
+          "clock_ns": 13131711534523,
+          "bytes": 13952733184
+        },
+        {
+          "clock_ns": 13132812335114,
+          "bytes": 13970075648
+        },
+        {
+          "clock_ns": 13133897957172,
+          "bytes": 9666449408
+        },
+        {
+          "clock_ns": 13134984228445,
+          "bytes": 11427745792
+        },
+        {
+          "clock_ns": 13136079868661,
+          "bytes": 13226307584
+        },
+        {
+          "clock_ns": 13137182611290,
+          "bytes": 14138519552
+        },
+        {
+          "clock_ns": 13138281139683,
+          "bytes": 10380152832
+        },
+        {
+          "clock_ns": 13139368860383,
+          "bytes": 10318950400
+        },
+        {
+          "clock_ns": 13140456150489,
+          "bytes": 10477809664
+        },
+        {
+          "clock_ns": 13141541595202,
+          "bytes": 9977528320
+        },
+        {
+          "clock_ns": 13142611284567,
+          "bytes": 8177147904
+        },
+        {
+          "clock_ns": 13143682651951,
+          "bytes": 8310185984
+        },
+        {
+          "clock_ns": 13144758550939,
+          "bytes": 8518180864
+        },
+        {
+          "clock_ns": 13145786629286,
+          "bytes": 9628393472
+        },
+        {
+          "clock_ns": 13146866584762,
+          "bytes": 16367591424
+        },
+        {
+          "clock_ns": 13147940011971,
+          "bytes": 16367357952
+        },
+        {
+          "clock_ns": 13148997943703,
+          "bytes": 15403700224
+        },
+        {
+          "clock_ns": 13150052848091,
+          "bytes": 15403442176
+        },
+        {
+          "clock_ns": 13151136530163,
+          "bytes": 19438583808
+        },
+        {
+          "clock_ns": 13152207302802,
+          "bytes": 19009146880
+        },
+        {
+          "clock_ns": 13153279279289,
+          "bytes": 20618502144
+        },
+        {
+          "clock_ns": 13154349567089,
+          "bytes": 20636164096
+        },
+        {
+          "clock_ns": 13155422827294,
+          "bytes": 20653674496
+        },
+        {
+          "clock_ns": 13156497780880,
+          "bytes": 20671033344
+        },
+        {
+          "clock_ns": 13157572085793,
+          "bytes": 20688596992
+        },
+        {
+          "clock_ns": 13158645425991,
+          "bytes": 20706267136
+        },
+        {
+          "clock_ns": 13159713066638,
+          "bytes": 16337367040
+        },
+        {
+          "clock_ns": 13160783494123,
+          "bytes": 17911603200
+        },
+        {
+          "clock_ns": 13161858765324,
+          "bytes": 19677941760
+        },
+        {
+          "clock_ns": 13162939182874,
+          "bytes": 20809138176
+        },
+        {
+          "clock_ns": 13164009019851,
+          "bytes": 16744972288
+        },
+        {
+          "clock_ns": 13165100260054,
+          "bytes": 17240842240
+        },
+        {
+          "clock_ns": 13166174491545,
+          "bytes": 17236545536
+        },
+        {
+          "clock_ns": 13167245091975,
+          "bytes": 17236664320
+        },
+        {
+          "clock_ns": 13168295910754,
+          "bytes": 15265058816
+        },
+        {
+          "clock_ns": 13169355518821,
+          "bytes": 15362158592
+        },
+        {
+          "clock_ns": 13170415178426,
+          "bytes": 15478960128
+        },
+        {
+          "clock_ns": 13171481629592,
+          "bytes": 16056561664
+        },
+        {
+          "clock_ns": 13172556494959,
+          "bytes": 19223719936
+        },
+        {
+          "clock_ns": 13173659664389,
+          "bytes": 21162049536
+        },
+        {
+          "clock_ns": 13174732694129,
+          "bytes": 20677337088
+        },
+        {
+          "clock_ns": 13175806039100,
+          "bytes": 20694937600
+        },
+        {
+          "clock_ns": 13176881698387,
+          "bytes": 20712448000
+        },
+        {
+          "clock_ns": 13177955036131,
+          "bytes": 20729532416
+        },
+        {
+          "clock_ns": 13179031848801,
+          "bytes": 20747464704
+        },
+        {
+          "clock_ns": 13180101564570,
+          "bytes": 19078455296
+        },
+        {
+          "clock_ns": 13181170904940,
+          "bytes": 17380995072
+        },
+        {
+          "clock_ns": 13182244023379,
+          "bytes": 19150110720
+        },
+        {
+          "clock_ns": 13183328663044,
+          "bytes": 20678918144
+        },
+        {
+          "clock_ns": 13184396125682,
+          "bytes": 17783988224
+        },
+        {
+          "clock_ns": 13185473156320,
+          "bytes": 17203757056
+        },
+        {
+          "clock_ns": 13186540085058,
+          "bytes": 17222373376
+        },
+        {
+          "clock_ns": 13187612065261,
+          "bytes": 17253425152
+        },
+        {
+          "clock_ns": 13188666353224,
+          "bytes": 15271718912
+        },
+        {
+          "clock_ns": 13189720521030,
+          "bytes": 15295627264
+        },
+        {
+          "clock_ns": 13190781411833,
+          "bytes": 15618265088
+        },
+        {
+          "clock_ns": 13191833918440,
+          "bytes": 10007429120
+        },
+        {
+          "clock_ns": 13192904852851,
+          "bytes": 16746524672
+        },
+        {
+          "clock_ns": 13193989879458,
+          "bytes": 16746233856
+        },
+        {
+          "clock_ns": 13195053277286,
+          "bytes": 15847202816
+        },
+        {
+          "clock_ns": 13196116179969,
+          "bytes": 15847186432
+        },
+        {
+          "clock_ns": 13197180664677,
+          "bytes": 15634997248
+        },
+        {
+          "clock_ns": 13198283152915,
+          "bytes": 19817758720
+        },
+        {
+          "clock_ns": 13199357801756,
+          "bytes": 19637641216
+        },
+        {
+          "clock_ns": 13200434046003,
+          "bytes": 20997836800
+        },
+        {
+          "clock_ns": 13201510656112,
+          "bytes": 21016702976
+        },
+        {
+          "clock_ns": 13202588909329,
+          "bytes": 21034045440
+        },
+        {
+          "clock_ns": 13203668542741,
+          "bytes": 21051105280
+        },
+        {
+          "clock_ns": 13204747678810,
+          "bytes": 21069070336
+        },
+        {
+          "clock_ns": 13205826660958,
+          "bytes": 21086494720
+        },
+        {
+          "clock_ns": 13206897823104,
+          "bytes": 17182441472
+        },
+        {
+          "clock_ns": 13207971793479,
+          "bytes": 18951999488
+        },
+        {
+          "clock_ns": 13209040830657,
+          "bytes": 20703019008
+        },
+        {
+          "clock_ns": 13210130180080,
+          "bytes": 21335347200
+        },
+        {
+          "clock_ns": 13211208870549,
+          "bytes": 17566318592
+        },
+        {
+          "clock_ns": 13212275374677,
+          "bytes": 17447301120
+        },
+        {
+          "clock_ns": 13213348807662,
+          "bytes": 17616154624
+        },
+        {
+          "clock_ns": 13214407963067,
+          "bytes": 15635537920
+        },
+        {
+          "clock_ns": 13215469870237,
+          "bytes": 15640743936
+        },
+        {
+          "clock_ns": 13216533140654,
+          "bytes": 15644790784
+        },
+        {
+          "clock_ns": 13217600994635,
+          "bytes": 16605093888
+        },
+        {
+          "clock_ns": 13218676060914,
+          "bytes": 20051677184
+        },
+        {
+          "clock_ns": 13219764585641,
+          "bytes": 21506363392
+        },
+        {
+          "clock_ns": 13220836779299,
+          "bytes": 21018415104
+        },
+        {
+          "clock_ns": 13221909688116,
+          "bytes": 21035167744
+        },
+        {
+          "clock_ns": 13222987648487,
+          "bytes": 21052944384
+        },
+        {
+          "clock_ns": 13224063578767,
+          "bytes": 21070508032
+        },
+        {
+          "clock_ns": 13225138158726,
+          "bytes": 21087817728
+        },
+        {
+          "clock_ns": 13226211152943,
+          "bytes": 21103468544
+        },
+        {
+          "clock_ns": 13227281603267,
+          "bytes": 16581828608
+        },
+        {
+          "clock_ns": 13228353378935,
+          "bytes": 18202279936
+        },
+        {
+          "clock_ns": 13229424859707,
+          "bytes": 19948773376
+        },
+        {
+          "clock_ns": 13230509084816,
+          "bytes": 21160210432
+        },
+        {
+          "clock_ns": 13231578651839,
+          "bytes": 17380896768
+        },
+        {
+          "clock_ns": 13232653962737,
+          "bytes": 17567358976
+        },
+        {
+          "clock_ns": 13233729276982,
+          "bytes": 17616072704
+        },
+        {
+          "clock_ns": 13234802087605,
+          "bytes": 17616330752
+        },
+        {
+          "clock_ns": 13235863583408,
+          "bytes": 15637794816
+        },
+        {
+          "clock_ns": 13236923873805,
+          "bytes": 15659540480
+        },
+        {
+          "clock_ns": 13237997955774,
+          "bytes": 16120717312
+        },
+        {
+          "clock_ns": 13239087779569,
+          "bytes": 20066881536
+        },
+        {
+          "clock_ns": 13240156758222,
+          "bytes": 19304357888
+        },
+        {
+          "clock_ns": 13241244737321,
+          "bytes": 21018439680
+        },
+        {
+          "clock_ns": 13242318388499,
+          "bytes": 21036109824
+        },
+        {
+          "clock_ns": 13243394149104,
+          "bytes": 21053972480
+        },
+        {
+          "clock_ns": 13244470978353,
+          "bytes": 21071667200
+        },
+        {
+          "clock_ns": 13245546093465,
+          "bytes": 21089230848
+        },
+        {
+          "clock_ns": 13246623450570,
+          "bytes": 21106003968
+        },
+        {
+          "clock_ns": 13247692437091,
+          "bytes": 16767004672
+        },
+        {
+          "clock_ns": 13248763827253,
+          "bytes": 18523844608
+        },
+        {
+          "clock_ns": 13249837966291,
+          "bytes": 20292530176
+        },
+        {
+          "clock_ns": 13250921193277,
+          "bytes": 21256871936
+        },
+        {
+          "clock_ns": 13251993439866,
+          "bytes": 17741799424
+        },
+        {
+          "clock_ns": 13253074511053,
+          "bytes": 17629577216
+        },
+        {
+          "clock_ns": 13254150366572,
+          "bytes": 17625100288
+        },
+        {
+          "clock_ns": 13255216071261,
+          "bytes": 17625268224
+        },
+        {
+          "clock_ns": 13256275239375,
+          "bytes": 15650750464
+        },
+        {
+          "clock_ns": 13257302657958,
+          "bytes": 15674068992
+        },
+        {
+          "clock_ns": 13258367725841,
+          "bytes": 11926749184
+        },
+        {
+          "clock_ns": 13259445102580,
+          "bytes": 16550445056
+        },
+        {
+          "clock_ns": 13260506216306,
+          "bytes": 15604510720
+        },
+        {
+          "clock_ns": 13261565834315,
+          "bytes": 15545110528
+        },
+        {
+          "clock_ns": 13262653339792,
+          "bytes": 19621539840
+        },
+        {
+          "clock_ns": 13263726486827,
+          "bytes": 19465875456
+        },
+        {
+          "clock_ns": 13264803239205,
+          "bytes": 20796264448
+        },
+        {
+          "clock_ns": 13265878301697,
+          "bytes": 20813828096
+        },
+        {
+          "clock_ns": 13266955733238,
+          "bytes": 20831760384
+        },
+        {
+          "clock_ns": 13268032301009,
+          "bytes": 20849348608
+        },
+        {
+          "clock_ns": 13269107709977,
+          "bytes": 20867174400
+        },
+        {
+          "clock_ns": 13270186748558,
+          "bytes": 20885037056
+        },
+        {
+          "clock_ns": 13271260913037,
+          "bytes": 16519024640
+        },
+        {
+          "clock_ns": 13272334237676,
+          "bytes": 18040123392
+        },
+        {
+          "clock_ns": 13273410766680,
+          "bytes": 19808346112
+        },
+        {
+          "clock_ns": 13274497014630,
+          "bytes": 20771667968
+        },
+        {
+          "clock_ns": 13275572793196,
+          "bytes": 17019879424
+        },
+        {
+          "clock_ns": 13276654971715,
+          "bytes": 17173565440
+        },
+        {
+          "clock_ns": 13277730216012,
+          "bytes": 17170026496
+        },
+        {
+          "clock_ns": 13278797850989,
+          "bytes": 17170128896
+        },
+        {
+          "clock_ns": 13279820574021,
+          "bytes": 13816512512
+        },
+        {
+          "clock_ns": 13280866698087,
+          "bytes": 13806342144
+        }
+      ]
+    }
+  },
+  "serial_controls": {
+    "jobs": 2,
+    "elapsed_seconds": 381.70159191100174,
+    "mean_job_seconds": 190.85079595550087,
+    "jobs_per_hour": 18.862902729729157,
+    "control_spread_percent": 0.6961743965221512
+  },
+  "concurrent_speedup_over_serial": 1.6403784306469058,
+  "older_linux": [
+    {
+      "label": "New-binary 1+1",
+      "jobs": 2,
+      "elapsed_seconds": 427.4633367630013,
+      "effective_jobs_per_hour": 16.8435497989665,
+      "source": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-phase-20261008/qualification-04/summary.json",
+      "four_worker_throughput_change_percent": 5.625173264912964
+    },
+    {
+      "label": "New-binary 2+1",
+      "jobs": 3,
+      "elapsed_seconds": 551.0116569950187,
+      "effective_jobs_per_hour": 19.600311287239492,
+      "source": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-phase-20261008/two-plus-one-01/summary.json",
+      "four_worker_throughput_change_percent": -9.230887211965532
+    },
+    {
+      "label": "Four-worker 2+2",
+      "jobs": 4,
+      "elapsed_seconds": 809.3967063910095,
+      "effective_jobs_per_hour": 17.791028659120265,
+      "source": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-phase-20261009/two-plus-two-02/summary.json",
+      "four_worker_throughput_change_percent": 0.0
+    }
+  ],
+  "apple": [
+    {
+      "platform": "Apple M5 Pro / 64 GiB unified memory",
+      "workers": 1,
+      "threads_per_worker": 18,
+      "gpus": 1,
+      "elapsed_seconds": 220.2215200419887,
+      "jobs_per_hour": 16.34717624014948,
+      "inputs_per_job": 8,
+      "recursive_proofs_per_job": 7,
+      "completed_proofs": 7,
+      "cpu_root_audits": 1,
+      "aggregate_rss_peak_bytes": 17670488064,
+      "zero_additional_swap": true,
+      "normal_memory_pressure": true,
+      "proof_binary_sha256": null,
+      "source": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/docs/apple-memory-concurrency-2026-10-07.html",
+      "json_pointer": "/baseline/raw/baseline"
+    },
+    {
+      "platform": "Apple M5 Pro / 64 GiB unified memory",
+      "workers": 3,
+      "threads_per_worker": 6,
+      "gpus": 1,
+      "elapsed_seconds": 355.82229466699937,
+      "jobs_per_hour": 30.352229643472203,
+      "inputs_per_job": 8,
+      "recursive_proofs_per_job": 7,
+      "completed_proofs": 21,
+      "cpu_root_audits": 3,
+      "aggregate_rss_peak_bytes": 49172938752,
+      "zero_additional_swap": true,
+      "normal_memory_pressure": true,
+      "proof_binary_sha256": "ba85754b34c61edc8857c429cead22ecf3096756ef763c8ef5e19eb6b8b0b311",
+      "source": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/docs/apple-memory-concurrency-2026-10-07.html",
+      "json_pointer": "/baseline/raw/window"
+    },
+    {
+      "platform": "Apple M5 Pro / 64 GiB unified memory",
+      "workers": 4,
+      "threads_per_worker": 4,
+      "gpus": 1,
+      "elapsed_seconds": 521.7128326670063,
+      "jobs_per_hour": 27.6013912220386,
+      "inputs_per_job": 8,
+      "recursive_proofs_per_job": 7,
+      "completed_proofs": 28,
+      "cpu_root_audits": 4,
+      "aggregate_rss_peak_bytes": 53827092480,
+      "zero_additional_swap": true,
+      "normal_memory_pressure": true,
+      "proof_binary_sha256": "b4921199a83e14ce66c363046fba765dba2d4edf1f7c5d5c8ef19b7d6a15024f",
+      "source": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/docs/apple-memory-concurrency-2026-10-07.html",
+      "json_pointer": "/previous/raw/window"
+    },
+    {
+      "platform": "Apple M5 Pro / 64 GiB unified memory",
+      "workers": 5,
+      "threads_per_worker": 3,
+      "gpus": 1,
+      "elapsed_seconds": 676.5569029579929,
+      "jobs_per_hour": 26.605300930788985,
+      "inputs_per_job": 8,
+      "recursive_proofs_per_job": 7,
+      "completed_proofs": 35,
+      "cpu_root_audits": 5,
+      "aggregate_rss_peak_bytes": 64297385984,
+      "zero_additional_swap": true,
+      "normal_memory_pressure": true,
+      "proof_binary_sha256": "b4921199a83e14ce66c363046fba765dba2d4edf1f7c5d5c8ef19b7d6a15024f",
+      "source": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/docs/apple-memory-concurrency-2026-10-07.html",
+      "json_pointer": "/current/raw/window"
+    }
+  ],
+  "fresh_linux_jobs": 4,
+  "fresh_linux_recursive_proofs": 32,
+  "fresh_linux_cpu_audits": 4,
+  "campaign": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/desktop-concurrency-20261009/campaign-01",
+  "campaign_sha256": "b3c8ddcea552b8e2c429b11a51a731782faa494b371b6ef20b9220c6ce6f0584",
+  "postflight": {
+    "status": "passed",
+    "checked_ns": 1791595279400000875,
+    "arms": [
+      {
+        "name": "single-before",
+        "workers": 1,
+        "scratch_removed": true,
+        "cpu_audits_passed": true,
+        "zero_memory_events": true
+      },
+      {
+        "name": "concurrent-two",
+        "workers": 2,
+        "scratch_removed": true,
+        "cpu_audits_passed": true,
+        "zero_memory_events": true
+      },
+      {
+        "name": "single-after",
+        "workers": 1,
+        "scratch_removed": true,
+        "cpu_audits_passed": true,
+        "zero_memory_events": true
+      }
+    ],
+    "controller_sources_unchanged": true,
+    "fleet_limits": "MemoryMax=infinity\nMemorySwapMax=infinity",
+    "running_worker_units": "",
+    "gpu_processes": "2020, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, /usr/bin/kwin_wayland",
+    "gpu_inventory": "name, uuid, memory.total [MiB], memory.free [MiB], utilization.gpu [%], pcie.link.gen.current, pcie.link.width.current, pcie.link.gen.max, pcie.link.width.max\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 16303 MiB, 15085 MiB, 1 %, 5, 16, 5, 16"
+  },
+  "postflight_sha256": "a012321a33f8841bdd23dd426c049bb93bf0d6061139b99d66144ceb47fae4ab",
+  "retained_interrupted_attempts": [
+    {
+      "name": "concurrent-two",
+      "summary": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/desktop-concurrency-20261009/campaign-01/concurrent-two/summary.json",
+      "status": "failed",
+      "reason": "Controller stopped after a new browser GPU process appeared; excluded from throughput."
+    }
+  ],
+  "sources": {
+    "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/docs/apple-memory-concurrency-2026-10-07.html": "88a8d060bde9d217155e3936d37f21854a7426d7ccc5c126f2df65f90e7d131d",
+    "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/docs/evidence/linux-memory-4workers-2026-10-09.json": "52b7909cff5a9f18de440eb1ee704ef4d16f9d8c5abeebaca62806dece2dde3e"
+  },
+  "caveats": [
+    "Apple jobs use seven recursive proofs versus eight for Linux.",
+    "Apple uses different proof binaries, Metal, thread counts, launch staggering and memory controls.",
+    "Batch timing includes startup and CPU root audits; builds and wallet proof generation are excluded.",
+    "Phase overlap does not demonstrate simultaneous GPU kernel execution.",
+    "One new concurrency sample; controls bracket it. No sustained-capacity or production throughput claim."
+  ]
+}

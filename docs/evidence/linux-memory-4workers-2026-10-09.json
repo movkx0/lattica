@@ -1,0 +1,306 @@
+{
+  "schema": "lattica-linux-four-worker-capacity-evidence-v1",
+  "status": "passed",
+  "count_per_job": 8,
+  "jobs": 4,
+  "fresh_recursive_proofs": 32,
+  "cpu_audited_roots": 4,
+  "elapsed_seconds": 809.3967063910095,
+  "workers": [
+    {
+      "index": 0,
+      "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+      "elapsed_seconds": 807.9911920980085,
+      "prove_seconds": null,
+      "cpu_audited": true,
+      "fresh_proofs": 8,
+      "charged_ram_peak_bytes": 7715033088,
+      "rayon_threads": 5,
+      "managed_gpu_bytes": 6710886400,
+      "context": {
+        "peak_context_bytes": 209713424,
+        "peak_process_bytes": 4974444544,
+        "samples": 37
+      },
+      "phase_wait_ms": {
+        "heavy": 467132,
+        "late": 0,
+        "query": 0
+      },
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      }
+    },
+    {
+      "index": 1,
+      "uuid": "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+      "elapsed_seconds": 792.621931842994,
+      "prove_seconds": null,
+      "cpu_audited": true,
+      "fresh_proofs": 8,
+      "charged_ram_peak_bytes": 7702339584,
+      "rayon_threads": 5,
+      "managed_gpu_bytes": 6710886400,
+      "context": {
+        "peak_context_bytes": 209713424,
+        "peak_process_bytes": 4974444544,
+        "samples": 37
+      },
+      "phase_wait_ms": {
+        "heavy": 424387,
+        "late": 17405,
+        "query": 0
+      },
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      }
+    },
+    {
+      "index": 2,
+      "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "name": "NVIDIA GeForce RTX 5080",
+      "elapsed_seconds": 778.0717136900057,
+      "prove_seconds": null,
+      "cpu_audited": true,
+      "fresh_proofs": 8,
+      "charged_ram_peak_bytes": 7674519552,
+      "rayon_threads": 5,
+      "managed_gpu_bytes": 6710886400,
+      "context": {
+        "peak_context_bytes": 278919440,
+        "peak_process_bytes": 5043650560,
+        "samples": 37
+      },
+      "phase_wait_ms": {
+        "heavy": 357860,
+        "late": 1913,
+        "query": 0
+      },
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      }
+    },
+    {
+      "index": 3,
+      "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "name": "NVIDIA GeForce RTX 5080",
+      "elapsed_seconds": 749.3657048899913,
+      "prove_seconds": null,
+      "cpu_audited": true,
+      "fresh_proofs": 8,
+      "charged_ram_peak_bytes": 21124378624,
+      "rayon_threads": 5,
+      "managed_gpu_bytes": 6710886400,
+      "context": {
+        "peak_context_bytes": 278919440,
+        "peak_process_bytes": 5043650560,
+        "samples": 37
+      },
+      "phase_wait_ms": {
+        "heavy": 343762,
+        "late": 0,
+        "query": 0
+      },
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      }
+    }
+  ],
+  "fleet_sampled_peak_bytes": 33100599296,
+  "capacity_test": {
+    "below_modeled_bound": true,
+    "enforced_fleet_bytes": 38654705664,
+    "modeled_fleet_bytes": 47781511168
+  },
+  "fleet_memory_event_deltas": {
+    "high": 0,
+    "low": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_group_kill": 0,
+    "oom_kill": 0,
+    "sock_throttled": 0
+  },
+  "phase_maxima": {
+    "heavy": 1,
+    "late": 1,
+    "query": 1
+  },
+  "max_workers_holding_heavy_or_late": 2,
+  "max_gpu_contexts": 4,
+  "max_gpu_contexts_per_device": {
+    "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b": 2,
+    "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c": 2
+  },
+  "same_gpu_phase_overlap_seconds": {
+    "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c": 132.465343886,
+    "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b": 115.083920828
+  },
+  "both_gpu_phase_overlap_seconds": 286.045906231,
+  "cleanup_errors": [],
+  "fleet_limits_restored": {
+    "MemoryMax": "infinity",
+    "MemorySwapMax": "infinity"
+  },
+  "shared_directory_removed": true,
+  "binary_sha256": "b9c5718915d09b6286960394af0087670c4394d1801c1653c0d33a9ea8d27f5d",
+  "raw_evidence": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-phase-20261009/two-plus-two-02",
+  "summary_sha256": "bf5f1496514042da8abf7b50ac61ce395c54fef6f8aeeea61ea90b71d787f9c3",
+  "comparison": [
+    {
+      "label": "Earlier sequential",
+      "jobs": 2,
+      "elapsed_seconds": 612.6721901790006,
+      "effective_jobs_per_hour": 11.751798295098755,
+      "source": "/home/access/code/lattica/lattica-prover-p3/target/linux-multigpu-concurrency-20261008/attempt-03/sequential/summary.json",
+      "four_worker_throughput_change_percent": 51.38984019611919
+    },
+    {
+      "label": "Earlier 1+1",
+      "jobs": 2,
+      "elapsed_seconds": 379.10568282600434,
+      "effective_jobs_per_hour": 18.99206560642494,
+      "source": "/home/access/code/lattica/lattica-prover-p3/target/linux-multigpu-concurrency-20261008/attempt-03/concurrent/summary.json",
+      "four_worker_throughput_change_percent": -6.323887944544426
+    },
+    {
+      "label": "New-binary 1+1",
+      "jobs": 2,
+      "elapsed_seconds": 427.4633367630013,
+      "effective_jobs_per_hour": 16.8435497989665,
+      "source": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-phase-20261008/qualification-04/summary.json",
+      "four_worker_throughput_change_percent": 5.625173264912964
+    },
+    {
+      "label": "New-binary 2+1",
+      "jobs": 3,
+      "elapsed_seconds": 551.0116569950187,
+      "effective_jobs_per_hour": 19.600311287239492,
+      "source": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-phase-20261008/two-plus-one-01/summary.json",
+      "four_worker_throughput_change_percent": -9.230887211965532
+    },
+    {
+      "label": "Four-worker 2+2",
+      "jobs": 4,
+      "elapsed_seconds": 809.3967063910095,
+      "effective_jobs_per_hour": 17.791028659120265,
+      "source": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-phase-20261009/two-plus-two-02/summary.json",
+      "four_worker_throughput_change_percent": 0.0
+    }
+  ],
+  "validation": {
+    "python_checks": 73,
+    "prover_rebuilt": false
+  },
+  "scope": "Single Linux hybrid-prover capacity screen, not GPU-only or production qualification. Same prover binary as the new 1+1 and 2+1 screens; five CPU threads per worker instead of six, and an explicit 36 GiB fleet cap below the 44.5 GiB modeled bound.",
+  "final_cleanup": {
+    "worker_pids_remaining": [],
+    "shared_cache_removed": true,
+    "limits": "MemoryCurrent=497463296\nTasksCurrent=0\nMemoryMax=infinity\nMemorySwapMax=infinity\n",
+    "gpu_processes_after": "pid, gpu_uuid, used_gpu_memory [MiB]\n1820, GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b, 12 MiB\n1820, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 46 MiB\n",
+    "private_scratch_removed": true,
+    "private_scratch_paths": [
+      "/tmp/lattica-v2-multi-612638-phase-0",
+      "/tmp/lattica-v2-multi-612638-phase-1",
+      "/tmp/lattica-v2-multi-612638-phase-2",
+      "/tmp/lattica-v2-multi-612638-phase-3"
+    ]
+  },
+  "controller_source_snapshot": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-phase-20261009/two-plus-two-02-controller-source",
+  "controller_source_sha256": {
+    "block-v2-linux-phase-run.py": "eb5aa668c84145985326bf7463c567731fe4883647241f8621ff1d1086221da4",
+    "block_v2_phase_memory.py": "e2d7c6cb5cdcc70816f69ea74bef7a9be412d8fda5e86d12820f162d8b200e67",
+    "test-block-v2-phase-memory.py": "27e4c5e1e72fdefeed95f062c61173090a06397b62b42bd4d8a1f56158e6af9e"
+  },
+  "invocation": {
+    "argv": [
+      "/usr/bin/python3",
+      "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/scripts/block-v2-linux-phase-run.py",
+      "--gpu-binary",
+      "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-phase-20261008/frozen-v4/gpu-block-v2-paired-probe",
+      "--cpu-binary",
+      "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-phase-20261008/frozen/cpu-block-v2-paired-probe",
+      "--fixture",
+      "/home/access/code/lattica/lattica-prover-p3/target/linux-multigpu-concurrency-20261008/frozen/fixture",
+      "--calibration",
+      "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-phase-20261008/qualification-04",
+      "--managed-gib",
+      "6.25",
+      "--capacity-test-fleet-gib",
+      "36",
+      "--evidence",
+      "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-phase-20261009/two-plus-two-02",
+      "--gpu-uuid",
+      "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "--gpu-uuid",
+      "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b",
+      "--gpu-uuid",
+      "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "--gpu-uuid",
+      "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+    ],
+    "baseline": "/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-phase-20261008/two-plus-one-01",
+    "idle_checks": [
+      {
+        "time_ns": 1791563522210770198,
+        "gpus": {
+          "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b": {
+            "utilization": 0,
+            "used_mib": 64,
+            "free_mib": 15861
+          },
+          "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c": {
+            "utilization": 0,
+            "used_mib": 723,
+            "free_mib": 15211
+          }
+        },
+        "quiet_samples": 1
+      },
+      {
+        "time_ns": 1791563525284984976,
+        "gpus": {
+          "GPU-9ccf62bc-bc19-a667-4803-d3bce901ee6b": {
+            "utilization": 0,
+            "used_mib": 64,
+            "free_mib": 15861
+          },
+          "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c": {
+            "utilization": 0,
+            "used_mib": 723,
+            "free_mib": 15211
+          }
+        },
+        "quiet_samples": 2
+      }
+    ],
+    "allow_desktop_activity": false,
+    "purpose": "Four-worker 2+2 capacity experiment, 36 GiB fleet cap, no swap"
+  }
+}

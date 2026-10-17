@@ -1,6 +1,7 @@
 //! One serialized GPU context with aggregate allocation accounting and a
 //! process-lifetime lease compatible with legacy global-exclusive workers.
 use crate::block_v2::compute;
+use crate::block_v2::worker_memory::MEMORY_BACKEND;
 use crate::config::Val;
 pub mod device;
 mod capacity;
@@ -721,6 +722,7 @@ static INITIALIZE: Mutex<()> = Mutex::new(());
 struct JobLease {
     _global: File,
     _device: Option<File>,
+    _slot: Option<File>,
 }
 #[cfg(target_os = "linux")]
 fn job_lease() -> Result<JobLease, String> {
@@ -732,15 +734,24 @@ fn job_lease() -> Result<JobLease, String> {
             return Err("invalid GPU UUID lease name".into());
         }
         let global = lease_file("exclusive.lock", true)?;
-        let device = lease_file(&format!("{}.lock", uuid.to_ascii_lowercase()), false)?;
+        let workers = super::device_slots::workers()?;
+        let device = lease_file(&format!("{}.lock", uuid.to_ascii_lowercase()), workers > 1)?;
+        let slot = if workers > 1 {
+            let dir = std::path::Path::new("/tmp").join(format!("lattica-v2-gpu-slots-{}-{}", unsafe { libc::geteuid() }, uuid.to_ascii_lowercase()));
+            Some(super::device_slots::acquire(&dir, workers,
+                env_bytes("LATTICA_V2_GPU_MANAGED_BYTES", MAX_MANAGED_BYTES)?,
+                env_bytes("LATTICA_V2_GPU_CONTEXT_BYTES", DRIVER_RESERVE_BYTES)?)?)
+        } else { None };
         Ok(JobLease {
             _global: global,
             _device: Some(device),
+            _slot: slot,
         })
     } else {
         Ok(JobLease {
             _global: lease_file("exclusive.lock", false)?,
             _device: None,
+            _slot: None,
         })
     }
 }
@@ -759,6 +770,7 @@ fn job_lease() -> Result<JobLease, String> {
     Ok(JobLease {
         _global: lease_file("exclusive.lock", coordinated)?,
         _device: None,
+            _slot: None,
     })
 }
 #[cfg(not(any(target_os = "linux", all(target_os = "macos", feature = "gpu-metal"))))]
@@ -920,6 +932,7 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
             }
             _ => return Err("GPU global memory unavailable".into()),
         };
+        super::device_slots::check_capacity(super::device_slots::workers()?, limits.managed_bytes, driver_reserve, global)?;
         if limits
             .managed_bytes
             .checked_add(driver_reserve)
@@ -2387,18 +2400,17 @@ mod tests {
         assert!(timeline.deferred.pending.is_empty());
     }
 
-    #[cfg(feature = "gpu-metal")]
     #[test]
-    #[ignore = "isolated Apple GPU query permit/fence injection"]
+    #[ignore = "isolated GPU query permit/fence injection"]
     fn gpu_apple_query_reconstruction_error_and_unwind_release_permit() {
         use p3_matrix::dense::RowMajorMatrix;
         use compute::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
-        use crate::block_v2::apple_memory;
+        use crate::block_v2::worker_memory;
         let _shutdown = TestShutdownGuard;
         let dir = std::env::temp_dir().join(format!("lattica-query-fence-{}", std::process::id()));
-        apple_memory::private_directory(&dir).unwrap();
-        std::env::set_var("LATTICA_APPLE_PHASE_DIR", &dir);
-        std::env::set_var("LATTICA_APPLE_QUERY_PHASE_SLOTS", "1");
+        worker_memory::private_directory(&dir).unwrap();
+        std::env::set_var(crate::block_v2::worker_memory::env_name("PHASE_DIR"), &dir);
+        std::env::set_var(crate::block_v2::worker_memory::env_name("QUERY_PHASE_SLOTS"), "1");
         initialize_mode(Limits { managed_bytes: 16*MIB, tile_bytes: 64*1024, staging_bytes: 32*1024 }, TransferMode::Serial).unwrap();
         let prefixes = vec![super::super::prefix_storage::host(RowMajorMatrix::new(vec![Val::ONE; 8*3], 3))];
         for unwind in [false, true] {
@@ -2419,8 +2431,8 @@ mod tests {
             release.join(); e.lde_gate = None;
             assert_eq!(e.snapshot().managed_live_bytes, before);
             drop(slot);
-            let permit = apple_memory::lock_file(&dir.join("query/phase-0.lock")).unwrap();
-            assert!(apple_memory::lock(&permit, true).unwrap(), "query permit leaked");
+            let permit = worker_memory::lock_file(&dir.join("query/phase-0.lock")).unwrap();
+            assert!(worker_memory::lock(&permit, true).unwrap(), "query permit leaked");
         }
         let rows = query_reconstruct::reconstruct(&prefixes, 128, &[0, 127]).unwrap();
         assert_eq!(rows, vec![vec![vec![Val::ONE; 3]]; 2]);
@@ -2463,14 +2475,13 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "gpu-metal")]
     #[test]
     #[ignore = "requires isolated Apple GPU and LATTICA_APPLE_MEMORY_RECLAIM=1"]
     fn gpu_apple_transient_retirement_preserves_live_commitments() {
         use lde_execute::LdeInput;
         use p3_field::Field;
         use p3_matrix::dense::RowMajorMatrix;
-        assert!(crate::block_v2::apple_memory::reclaim_enabled());
+        assert!(crate::block_v2::worker_memory::reclaim_enabled());
         initialize_mode(Limits { managed_bytes: 16 * MIB, tile_bytes: 64 * 1024, staging_bytes: 32 * 1024 }, TransferMode::Serial).unwrap();
         let mut engine = TestEngine::take();
         engine.lde_workspace_limit = MIB;
@@ -3387,30 +3398,32 @@ impl Engine {
     }
 }
 
-#[cfg(feature = "gpu-metal")]
 pub(crate) fn reclaim_scratch() -> Result<(), String> {
-    if !crate::block_v2::apple_memory::reclaim_enabled() { return Ok(()); }
+    if !crate::block_v2::worker_memory::reclaim_enabled() { return Ok(()); }
     let Some(engine) = ENGINE.get() else { return Ok(()) };
     let mut slot = engine.lock().map_err(|_| "GPU engine poisoned")?;
     let Some(engine) = slot.as_mut() else { return Ok(()) };
     engine.reclaim_transient_scratch("scratch retired", true)
 }
 
-#[cfg(feature = "gpu-metal")]
 impl Engine {
     /// Called while the engine is already locked. Never re-enter ENGINE here.
     fn reclaim_transient_scratch(&mut self, label: &str, retire_tables: bool) -> Result<(), String> {
-        if !crate::block_v2::apple_memory::reclaim_enabled() { return Ok(()); }
+        if !crate::block_v2::worker_memory::reclaim_enabled() { return Ok(()); }
         self.fence().finish()?;
         self.resolve_timing()?;
         let released_bytes = self.workspace.as_ref().map_or(0, Workspace::bytes)
             + self.lde_workspace.as_ref().map_or(0, lde_execute::TransformBuffers::bytes);
         self.workspace = None;
         self.lde_workspace = None;
+        #[cfg(feature = "gpu-metal")]
         if retire_tables { self.pq.retire_ntt_cache()?; }
+        // OpenCL NTT roots are workspace allocations, not a backend cache.
+        #[cfg(not(feature = "gpu-metal"))]
+        let _ = retire_tables;
         let live = self.accounting.lock().map_err(|_| "GPU accounting poisoned")?.live;
-        eprintln!("apple_scratch_retired pid={} label={label:?} released_bytes={released_bytes} managed_live_bytes={live}", std::process::id());
-        crate::block_v2::apple_memory::checkpoint(label);
+        eprintln!("{MEMORY_BACKEND}_scratch_retired pid={} label={label:?} released_bytes={released_bytes} managed_live_bytes={live}", std::process::id());
+        crate::block_v2::worker_memory::checkpoint(label);
         Ok(())
     }
 }

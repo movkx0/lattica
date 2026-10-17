@@ -1,9 +1,10 @@
-//! A per-run shared, read-only copy of PUBLIC preprocessing prefixes on macOS.
+//! A per-run shared, read-only copy of PUBLIC preprocessing prefixes on Linux and macOS.
 //! The filename is only a lookup hint. Every cache hit is checked word-for-word
 //! against fresh GPU readback before it can enter prover data. Salts, commitment
 //! trees, witnesses and hiding RNG state are never shared by this module.
+use crate::block_v2::worker_memory::MEMORY_BACKEND;
 use super::{engine::lde_execute::LdeInput, engine::lde_readback::ColumnReadback};
-use crate::{block_v2::apple_memory, config::Val};
+use crate::{block_v2::worker_memory, config::Val};
 use p3_field::PrimeField64;
 use std::{
     collections::hash_map::DefaultHasher,
@@ -16,6 +17,71 @@ use std::{
     path::{Path, PathBuf},
     ptr::NonNull,
 };
+
+fn pool_bytes(dir: &Path) -> Result<u64, String> {
+    let mut total = 0u64;
+    for entry in std::fs::read_dir(dir).map_err(|e| e.to_string())? {
+        let path = entry.map_err(|e| e.to_string())?.path();
+        if !matches!(path.extension().and_then(|s| s.to_str()), Some("prefix" | "partial")) { continue; }
+        let m = match std::fs::symlink_metadata(path) {
+            Ok(m) => m,
+            // An aborted writer unmaps before removing its partial file.
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(e) => return Err(e.to_string()),
+        };
+        if !m.is_file() || m.uid() != unsafe { libc::geteuid() } || m.nlink() != 1 {
+            return Err("invalid shared preprocessing pool entry".into());
+        }
+        total = total.checked_add(m.len()).ok_or("shared preprocessing pool overflow")?;
+    }
+    Ok(total)
+}
+
+#[cfg(test)]
+fn check_pool_capacity(dir: &Path, requested: u64, capacity: u64) -> Result<(), String> {
+    let total = pool_bytes(dir)?.checked_add(requested).ok_or("shared preprocessing pool overflow")?;
+    if total > capacity { return Err("shared preprocessing pool capacity exceeded".into()); }
+    Ok(())
+}
+
+/// Caller holds the capacity lock and the new key's exclusive writer lock.
+/// Each mapped reader holds a separate shared reader lease, so successful exclusive
+/// acquisition proves unlink cannot leave hidden live mappings outside the cap.
+fn reserve_pool_capacity(dir: &Path, requested: u64, capacity: u64) -> Result<(), String> {
+    let mut total = pool_bytes(dir)?.checked_add(requested).ok_or("shared preprocessing pool overflow")?;
+    if total <= capacity { return Ok(()); }
+    if requested > capacity { return Err("public prefix exceeds shared preprocessing capacity".into()); }
+    let mut candidates = std::fs::read_dir(dir).map_err(|e| e.to_string())?
+        .map(|entry| entry.map(|e| e.path()).map_err(|e| e.to_string())).collect::<Result<Vec<_>, _>>()?;
+    candidates.sort();
+    for path in candidates {
+        if path.extension().and_then(|s| s.to_str()) != Some("prefix") { continue; }
+        let key = path.file_stem().and_then(|s| s.to_str()).ok_or("invalid public prefix filename")?;
+        if key.is_empty() || !key.bytes().all(|b| b.is_ascii_hexdigit()) { continue; }
+        let lease = worker_memory::lock_file(&dir.join(format!("{key}.lock")))?;
+        if !worker_memory::lock(&lease, true)? { continue; }
+        let readers = worker_memory::lock_file(&dir.join(format!("{key}.readers.lock")))?;
+        if !worker_memory::lock(&readers, true)? { continue; }
+        let m = std::fs::symlink_metadata(&path).map_err(|e| e.to_string())?;
+        if !m.is_file() || m.uid() != unsafe { libc::geteuid() } || m.mode() & 0o777 != 0o400 || m.nlink() != 1 {
+            return Err("invalid public prefix eviction candidate".into());
+        }
+        std::fs::remove_file(&path).map_err(|e| e.to_string())?;
+        total = total.checked_sub(m.len()).ok_or("shared preprocessing capacity accounting")?;
+        eprintln!("{MEMORY_BACKEND}_shared_preprocessing_evicted pid={} key={key} inode={} bytes={} clock_ns={}",
+            std::process::id(), m.ino(), m.len(), worker_memory::clock_ns());
+        if total <= capacity { return Ok(()); }
+    }
+    Err("shared preprocessing capacity is occupied by live readers or writers".into())
+}
+
+fn shared_lock(file: &File) -> Result<(), String> {
+    loop {
+        if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_SH) } == 0 { return Ok(()); }
+        let e = std::io::Error::last_os_error();
+        if e.kind() != std::io::ErrorKind::Interrupted { return Err(e.to_string()); }
+    }
+}
 
 struct Mapping {
     pointer: NonNull<Val>,
@@ -68,7 +134,9 @@ impl Drop for Mapping {
 }
 
 pub(crate) struct SharedPrefix {
+    // Drop the mapping before its shared lease, including on unwind.
     mapping: Mapping,
+    _reader_lease: File,
 }
 // Published mappings have PROT_READ, no mutable API and no mutable aliases.
 unsafe impl Send for SharedPrefix {}
@@ -81,6 +149,7 @@ impl SharedPrefix {
 
 pub(super) struct SharedReadback {
     mapping: Option<Mapping>,
+    _cache_lease: Option<File>,
     _writer_lock: Option<File>,
     partial: Option<PathBuf>,
     ready: PathBuf,
@@ -95,7 +164,7 @@ impl SharedReadback {
         height: usize,
         columns: usize,
     ) -> Result<Option<Self>, String> {
-        let Some(dir) = std::env::var_os("LATTICA_APPLE_SHARED_PREPROCESSING_DIR") else {
+        let Some(dir) = std::env::var_os(crate::block_v2::worker_memory::env_name("SHARED_PREPROCESSING_DIR")) else {
             return Ok(None);
         };
         let mut key = DefaultHasher::new();
@@ -137,14 +206,17 @@ impl SharedReadback {
         if columns == 0 || !key.bytes().all(|b| b.is_ascii_hexdigit()) {
             return Err("invalid shared preprocessing key/columns".into());
         }
-        apple_memory::private_directory(dir)?;
-        let lock = apple_memory::lock_file(&dir.join(format!("{key}.lock")))?;
-        apple_memory::lock(&lock, false)?;
+        worker_memory::private_directory(dir)?;
+        let lock = worker_memory::lock_file(&dir.join(format!("{key}.lock")))?;
+        worker_memory::lock(&lock, false)?;
+        // A separate shared lease avoids non-atomic flock EX-to-SH conversion.
+        // Eviction acquires both locks nonblockingly; mappings retain the reader
+        // lease until after munmap, even if publication or validation fails.
+        let reader_lease = worker_memory::lock_file(&dir.join(format!("{key}.readers.lock")))?;
+        shared_lock(&reader_lease)?;
         let ready = dir.join(format!("{key}.prefix"));
-        let open = OpenOptions::new()
-            .read(true)
-            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
-            .open(&ready);
+        let open = OpenOptions::new().read(true)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC).open(&ready);
         let (mapping, partial, writer_lock) = match open {
             Ok(file) => {
                 let m = file.metadata().map_err(|e| e.to_string())?;
@@ -158,10 +230,18 @@ impl SharedReadback {
                 (Mapping::new(file, elements, false)?, None, None)
             }
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                // Serialize different public keys while reserving the finite cache pool.
+                let capacity_lock = worker_memory::lock_file(&dir.join("capacity.lock"))?;
+                worker_memory::lock(&capacity_lock, false)?;
+                if let Some(capacity) = std::env::var_os(worker_memory::env_name("SHARED_PREPROCESSING_MAX_BYTES")) {
+                    let capacity: u64 = capacity.to_str().and_then(|v| v.parse().ok())
+                        .filter(|n| *n > 0).ok_or("invalid shared preprocessing capacity")?;
+                    reserve_pool_capacity(dir, (elements * 8) as u64, capacity)?;
+                }
                 let path = dir.join(format!(
                     "{key}.{}.{}.partial",
                     std::process::id(),
-                    crate::metal_compute::diagnostics::clock_ns()
+                    worker_memory::clock_ns()
                 ));
                 let file = OpenOptions::new()
                     .read(true)
@@ -182,18 +262,19 @@ impl SharedReadback {
                         return Err(e);
                     }
                 };
+                drop(capacity_lock);
                 (
                     mapping,
                     Some(path),
-                    Some(lock.try_clone().map_err(|e| e.to_string())?),
+                    Some(lock),
                 )
             }
             Err(e) => return Err(e.to_string()),
         };
-        eprintln!("apple_shared_preprocessing pid={} key={key} cache_hit={} bytes={} inode={} validation=fresh_gpu_readback",
-            std::process::id(), partial.is_none(), elements * 8, mapping.file.metadata().map_err(|e| e.to_string())?.ino());
-        Ok(Self {
+        let cache_hit = partial.is_none();
+        let readback = Self {
             mapping: Some(mapping),
+            _cache_lease: Some(reader_lease),
             _writer_lock: writer_lock,
             partial,
             ready,
@@ -201,9 +282,11 @@ impl SharedReadback {
             width,
             columns: columns.min(width),
             initialized: 0,
-        })
+        };
+        eprintln!("{MEMORY_BACKEND}_shared_preprocessing pid={} key={key} cache_hit={cache_hit} bytes={} inode={} validation=fresh_gpu_readback",
+            std::process::id(), elements * 8, readback.mapping.as_ref().unwrap().file.metadata().map_err(|e| e.to_string())?.ino());
+        Ok(readback)
     }
-
     pub(super) fn finish(mut self) -> Result<SharedPrefix, String> {
         if self.initialized != self.height * self.width {
             return Err("shared preprocessing readback incomplete".into());
@@ -226,11 +309,17 @@ impl SharedReadback {
                 .map_err(|e| e.to_string())?;
             // MAP_SHARED writes are already coherent between processes. Atomic
             // publication under flock exposes only a completely initialized file.
+            let capacity_lock = worker_memory::lock_file(&self.ready.parent().unwrap().join("capacity.lock"))?;
+            worker_memory::lock(&capacity_lock, false)?;
             std::fs::rename(path, &self.ready).map_err(|e| e.to_string())?;
             self.partial = None;
         }
+        eprintln!("{MEMORY_BACKEND}_shared_preprocessing_ready pid={} inode={} bytes={} validation=complete clock_ns={}",
+            std::process::id(), mapping.file.metadata().map_err(|e| e.to_string())?.ino(),
+            mapping.elements * 8, worker_memory::clock_ns());
         Ok(SharedPrefix {
             mapping: self.mapping.take().unwrap(),
+            _reader_lease: self._cache_lease.take().unwrap(),
         })
     }
 }
@@ -289,6 +378,7 @@ impl ColumnReadback for SharedReadback {
 }
 impl Drop for SharedReadback {
     fn drop(&mut self) {
+        drop(self.mapping.take());
         if let Some(path) = &self.partial {
             let _ = std::fs::remove_file(path);
         }
@@ -305,10 +395,43 @@ mod tests {
         r.finish().unwrap()
     }
     #[test]
+    fn shared_prefix_pool_counts_ready_and_incomplete_files() {
+        let dir = std::env::temp_dir().join(format!("lattica-prefix-capacity-{}", std::process::id()));
+        worker_memory::private_directory(&dir).unwrap();
+        std::fs::write(dir.join("a.prefix"), [0u8; 24]).unwrap();
+        std::fs::write(dir.join("b.partial"), [0u8; 8]).unwrap();
+        assert!(check_pool_capacity(&dir, 16, 48).is_ok());
+        assert!(check_pool_capacity(&dir, 17, 48).is_err());
+        assert!(check_pool_capacity(&dir, u64::MAX, 48).is_err());
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+    #[test]
+    fn shared_prefix_eviction_requires_all_reader_leases_to_retire() {
+        let dir = std::env::temp_dir().join(format!("lattica-prefix-eviction-{}", std::process::id()));
+        worker_memory::private_directory(&dir).unwrap();
+        let first = fill(SharedReadback::open(&dir, "a", 2, 3, 2).unwrap());
+        let second = fill(SharedReadback::open(&dir, "a", 2, 3, 2).unwrap());
+        assert!(reserve_pool_capacity(&dir, 48, 48).is_err());
+        drop(first);
+        assert!(reserve_pool_capacity(&dir, 48, 48).is_err());
+        assert_eq!(second.values().len(), 6);
+        drop(second);
+        reserve_pool_capacity(&dir, 48, 48).unwrap();
+        assert!(!dir.join("a.prefix").exists());
+        let writer = SharedReadback::open(&dir, "b", 2, 3, 2).unwrap();
+        assert!(reserve_pool_capacity(&dir, 48, 48).is_err());
+        drop(writer);
+        reserve_pool_capacity(&dir, 48, 48).unwrap();
+        let replacement = fill(SharedReadback::open(&dir, "c", 2, 3, 2).unwrap());
+        assert_eq!(replacement.values().len(), 6);
+        drop(replacement);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+    #[test]
     fn shared_prefix_publication_validation_and_readonly_reuse() {
         let dir =
             std::env::temp_dir().join(format!("lattica-shared-prefix-test-{}", std::process::id()));
-        apple_memory::private_directory(&dir).unwrap();
+        worker_memory::private_directory(&dir).unwrap();
         let incomplete = SharedReadback::open(&dir, "a", 2, 3, 2).unwrap();
         assert!(!dir.join("a.prefix").exists());
         drop(incomplete);

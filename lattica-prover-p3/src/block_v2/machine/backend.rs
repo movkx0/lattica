@@ -563,9 +563,9 @@ impl PreparedProgram {
         } else {
             backend
         };
-        #[cfg(feature = "gpu-metal")]
-        let _memory_phase = super::super::apple_memory::PhaseGuard::acquire("preprocessing")
-            .expect("Apple preprocessing phase admission");
+        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+        let _memory_phase = super::super::worker_memory::PhaseGuard::acquire("preprocessing")
+            .expect("Worker preprocessing phase admission");
         let _phase =
             tracing::info_span!(target: "lattica_block_v2_perf", "preprocessing setup").entered();
         // Configuring the PCS records the actual storage mode before selecting
@@ -847,6 +847,11 @@ impl PreparedProgram {
         } else {
             Backend::Mixed
         };
+        // Hold the heavy phase for the entire owned proof. The host-trace path
+        // hands it to the late phase only after retiring its trace prefixes.
+        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+        let mut memory_phase = super::super::worker_memory::PhaseGuard::acquire("trace and quotient")
+            .expect("Worker proof phase admission");
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         {
             super::gpu_backend::check_selected().map_err(|_| ExecutionError::GpuFailure)?;
@@ -914,10 +919,7 @@ impl PreparedProgram {
                 return Ok(proof);
             }
         }
-        #[cfg(feature = "gpu-metal")]
-        let mut memory_phase = super::super::apple_memory::PhaseGuard::acquire("trace and quotient")
-            .expect("Apple proof phase admission");
-        #[cfg(feature = "gpu-metal")]
+        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         let mut late_phase = None;
         let trace = run
             .measure(Stage::WitnessTrace, Backend::Cpu, || {
@@ -950,12 +952,12 @@ impl PreparedProgram {
                                     )
                                 },
                                 |pcs, groups| {
-                                    #[cfg(feature = "gpu-metal")]
+                                    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
                                     {
                                         super::super::gpu_hash::engine::reclaim_scratch()
-                                            .expect("Apple proof scratch retirement");
-                                        late_phase = super::super::apple_memory::PhaseGuard::acquire_late()
-                                            .expect("Apple late proof phase admission");
+                                            .expect("Worker proof scratch retirement");
+                                        late_phase = super::super::worker_memory::PhaseGuard::acquire_late()
+                                            .expect("Worker late proof phase admission");
                                         drop(memory_phase.take());
                                     }
                                     pcs.commit_quotient_evaluations(groups).expect(
@@ -967,12 +969,12 @@ impl PreparedProgram {
                         })
                 })
                 .map_err(|_| ExecutionError::ProvingPolicy)?;
-            #[cfg(feature = "gpu-metal")]
+            #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             {
                 drop(trace);
                 if late_phase.is_some() {
                     super::super::gpu_hash::engine::reclaim_scratch()
-                        .expect("Apple late proof scratch retirement");
+                        .expect("Worker late proof scratch retirement");
                     drop(late_phase.take());
                 }
             }

@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Linux four-worker capacity test — 9 October 2026</title>
+<style>body{font:17px/1.55 system-ui,sans-serif;max-width:1000px;margin:40px auto;padding:0 24px;color:#172b3a;background:#fafbfc}h1{line-height:1.2}table{border-collapse:collapse;width:100%;margin:22px 0}th,td{text-align:left;padding:10px;border-bottom:1px solid #ccd5df}th{background:#eaf0f6}code{overflow-wrap:anywhere}a{color:#175cb0}</style>
+<h1>Four workers across two GPUs</h1><p>9 October 2026 · Linux · Hybrid prover · Eight inputs per job</p>
+<p>All four jobs completed and all four roots passed independent CPU audits, producing 32 fresh recursive proofs.
+Total elapsed time was <strong>809.40 seconds</strong>, equivalent to
+<strong>17.79 eight-input jobs/hour</strong> for this screen.</p>
+<h2>Comparison</h2><table><thead><tr><th>Run</th><th>Jobs</th><th>Fleet elapsed</th><th>Effective jobs/hour</th></tr></thead><tbody><tr><td>Earlier sequential</td><td>2</td><td>612.67s</td><td>11.75</td></tr><tr><td>Earlier 1+1</td><td>2</td><td>379.11s</td><td>18.99</td></tr><tr><td>New-binary 1+1</td><td>2</td><td>427.46s</td><td>16.84</td></tr><tr><td>New-binary 2+1</td><td>3</td><td>551.01s</td><td>19.60</td></tr><tr><td>Four-worker 2+2</td><td>4</td><td>809.40s</td><td>17.79</td></tr></tbody></table>
+<p>The four-worker run delivered <strong>9.2% lower throughput</strong> than the earlier three-worker 2+1 run.
+The 2+1 layout remains the fastest measured configuration in these screens.</p>
+<p>Fleet elapsed includes launch, fixture copying, preprocessing, proving and CPU audits. Builds and prior fixture/key preparation are excluded.
+These are single runs, not a sustained throughput measurement. The four-worker screen used five CPU threads per worker; the new 1+1 and 2+1 screens used six.
+It used the identical prover binary, 6.25 GiB managed VRAM per worker, 512 MiB reserved driver context per worker, and heavy=1, late=1, query=1 permits.</p>
+<h2>Memory and concurrency</h2><p>Sampled fleet RAM peaked at <strong>30.83 GiB</strong> under an enforced 36 GiB cap.
+The conservative model requires 44.5 GiB. This was an explicitly capped experiment below that bound, with the normal OS reserve, per-worker bounds, tmpfs checks and swap prohibition retained.
+There were zero worker or fleet memory-limit events. At most 2 workers simultaneously held heavy or late phase permits.</p>
+<p>Each worker spent between 344 and 467 seconds waiting for the heavy-phase permit.
+The RAM cap was not reached; four worker processes do not imply four simultaneously admitted memory-heavy proving phases.</p>
+<p>Both GPUs had admitted proving phases overlapping for 286.05 seconds.
+Same-GPU overlap is recorded per device in the evidence file. Per-worker memory peaks are charged cgroup peaks and must not be summed as a simultaneous physical-memory peak.</p>
+<h2>Individual jobs</h2><table><thead><tr><th>Worker</th><th>GPU</th><th>Job elapsed</th><th>Fresh proofs</th><th>CPU audit</th></tr></thead><tbody><tr><td>0</td><td>NVIDIA GeForce RTX 5080 Laptop GPU</td><td>807.99s</td><td>8</td><td>Passed</td></tr><tr><td>1</td><td>NVIDIA GeForce RTX 5080 Laptop GPU</td><td>792.62s</td><td>8</td><td>Passed</td></tr><tr><td>2</td><td>NVIDIA GeForce RTX 5080</td><td>778.07s</td><td>8</td><td>Passed</td></tr><tr><td>3</td><td>NVIDIA GeForce RTX 5080</td><td>749.37s</td><td>8</td><td>Passed</td></tr></tbody></table>
+<h2>Reproducibility</h2><p>GPU prover SHA-256: <code>b9c5718915d09b6286960394af0087670c4394d1801c1653c0d33a9ea8d27f5d</code></p>
+<p>Raw evidence: <code>/home/access/code/lattica/.tools/worktrees/linux-memory-concurrency/lattica-prover-p3/target/linux-phase-20261009/two-plus-two-02</code></p><p><a href="evidence/linux-memory-4workers-2026-10-09.json">Compact evidence and comparisons</a></p>
+<p>73 focused Python checks passed. No prover source changes or rebuild were needed. This result does not qualify the separate GPU-only prototype or a production pool.</p>
+<p>Postflight checks confirmed that all benchmark processes and GPU allocations drained, all private scratch and shared public cache were removed, and the fleet RAM and swap limits were restored to their original values.</p>
+</html>
