@@ -14,6 +14,11 @@ LIB="${CARGO_TARGET_DIR:-target}/release/liblattica_prover_p3.a"
 EXPECTED="$(cat <<'EOF'
 lattica_batch_prove
 lattica_batch_verify
+lattica_gpu_drain
+lattica_gpu_initialize_from_env
+lattica_gpu_public_worker_initialize_from_env
+lattica_gpu_public_worker_serve
+lattica_gpu_shutdown
 lattica_htlc_batch_prove
 lattica_htlc_batch_verify
 lattica_htlc_prove
