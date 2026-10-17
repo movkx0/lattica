@@ -9,8 +9,12 @@ mod owned_data;
 mod owned_queries;
 pub(crate) use fri_data::{FriData, FriExtension, FriExtensionMmcs};
 pub use owned_data::OwnedInputs;
-mod engine;
+pub(crate) mod engine;
 pub(crate) use engine::begin_memory_window;
+mod compact_salts;
+#[cfg(feature = "gpu-metal")]
+mod shared_preprocessing;
+mod prefix_storage;
 pub(crate) use engine::fri_fold::fold as fold_fri;
 pub(crate) use engine::host_storage::RETAINED_HOST_BYTES as ENGINE_RETAINED_HOST_BYTES;
 pub(crate) use engine::opening_reduce::{
@@ -73,6 +77,12 @@ pub(crate) fn initialize_tracked_from_env() -> Result<bool, String> {
             let mut limits = Limits::default();
             limits.managed_bytes =
                 engine::env_bytes("LATTICA_V2_GPU_MANAGED_BYTES", limits.managed_bytes)?;
+            #[cfg(feature = "gpu-metal")]
+            if crate::metal_compute::resident::enabled() {
+                // Leave 512 MiB inside the 8 GiB temporary allowance for tables
+                // and the bounded quotient interpreter's code/input/registers.
+                limits.managed_bytes = limits.managed_bytes.min((8usize << 30) - (512 << 20));
+            }
             let created = engine::initialize(limits)?;
             ENABLED.store(true, Ordering::Release);
             Ok(created)
@@ -445,18 +455,33 @@ impl CandidateMmcs {
         ),
         String,
     > {
-        self.commit_resident_retained_owned(
+        self.commit_resident_retained_owned_with_preprocessing(
             inputs,
             added_bits,
             host_output_budget_bytes,
             masks,
             retention_bits,
             None,
+            false,
         )
     }
 
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn commit_resident_retained_owned(
+        &self,
+        inputs: Vec<(p3_field::coset::TwoAdicMultiplicativeCoset<Val>, RowMajorMatrix<Val>)>,
+        added_bits: usize,
+        host_output_budget_bytes: usize,
+        masks: Option<&[RowMajorMatrix<Val>]>,
+        retention_bits: usize,
+        capture: Option<(&device::DeviceSession, bool)>,
+    ) -> Result<(<Self as Mmcs<Val>>::Commitment, ProverData<RowMajorMatrix<Val>>), String> {
+        self.commit_resident_retained_owned_with_preprocessing(inputs, added_bits,
+            host_output_budget_bytes, masks, retention_bits, capture, false)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn commit_resident_retained_owned_with_preprocessing(
         &self,
         inputs: Vec<(
             p3_field::coset::TwoAdicMultiplicativeCoset<Val>,
@@ -467,6 +492,7 @@ impl CandidateMmcs {
         masks: Option<&[RowMajorMatrix<Val>]>,
         retention_bits: usize,
         capture: Option<(&device::DeviceSession, bool)>,
+        public_preprocessing: bool,
     ) -> Result<
         (
             <Self as Mmcs<Val>>::Commitment,
@@ -513,15 +539,10 @@ impl CandidateMmcs {
         if masks.is_some() {
             plan.validate_quotient_storage()?;
         }
-        let salts: Vec<_> = {
-            let mut rng = self
-                .rng
-                .lock()
-                .map_err(|_| "resident salt stream poisoned")?;
-            inputs
-                .iter()
-                .map(|_| RowMajorMatrix::rand(&mut *rng, plan.output_height(), 4))
-                .collect()
+        let replay_salts = retention_bits != 0 && compact_salts::enabled()?;
+        let (salts, salt_checkpoints) = {
+            let mut rng = self.rng.lock().map_err(|_| "resident salt stream poisoned")?;
+            compact_salts::generate(&mut rng, plan.output_height(), inputs.len(), replay_salts)?
         };
         let requests: Vec<_> = inputs
             .iter()
@@ -533,18 +554,23 @@ impl CandidateMmcs {
                 shift: Val::GENERATOR / domain.shift(),
             })
             .collect();
-        let output = engine::lde_execute::retained_lde_commit_storage(
+        let output = if public_preprocessing && capture.is_none() {
+            engine::lde_execute::public_preprocessing_lde_commit(
+                &requests, self.cap_height, host_output_budget_bytes, retention_bits,
+            )?
+        } else { engine::lde_execute::retained_lde_commit_storage(
             &requests,
             masks,
             self.cap_height,
             host_output_budget_bytes,
             self.lde_retention(retention_bits),
             capture.map(|(session, _)| session),
-        )?;
-        self.finish_lde_commit(
+        )? };
+        self.finish_lde_commit_with_salts(
             output,
             salts,
             capture.is_some_and(|(_, preprocessing)| preprocessing),
+            salt_checkpoints,
         )
     }
 }

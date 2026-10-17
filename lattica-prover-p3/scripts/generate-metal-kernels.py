@@ -6,6 +6,7 @@ the prover compiles the checked-in MSL, never translates source at runtime.
 """
 import hashlib
 import re
+from metal_kernel_variants import variants
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -78,5 +79,5 @@ kernel void arithmetic_probe(device const ulong* a [[buffer(0)]],
 """
 destination = ROOT / "src/metal_compute/kernels.metal"
 destination.parent.mkdir(exist_ok=True)
-destination.write_text(header + source)
+destination.write_text(header + variants(source) + (ROOT / "src/metal_compute/quotient.metal").read_text())
 print("Generated", destination, "kernels:", ", ".join(kernels + ["arithmetic_probe"]))

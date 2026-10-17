@@ -420,13 +420,14 @@ impl<E: PcsField> ResidentState<E> {
                     .collect()
             })
         };
-        self.mmcs.commit_resident_retained_owned(
+        self.mmcs.commit_resident_retained_owned_with_preprocessing(
             randomized,
             self.log_blowup,
             self.host_budget,
             None,
             usize::from(compact_prover_data()),
             self.device_session.as_ref().map(|s| (s, preprocessing)),
+            preprocessing,
         )
     }
 

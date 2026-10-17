@@ -181,6 +181,7 @@ impl DeviceSession {
                         source,
                         &scratch.storage.buffer,
                         &inverse.buffer,
+                        true,
                         input.spec.rows(),
                         width,
                         1,
@@ -188,6 +189,7 @@ impl DeviceSession {
                         false,
                         false,
                         false,
+                        None,
                     )?;
                     &scratch.storage.buffer
                 } else {
@@ -224,6 +226,7 @@ impl DeviceSession {
                         &output.storage.buffer,
                         &scratch.storage.buffer,
                         &forward.buffer,
+                        false,
                         spec.rows(),
                         width,
                         1,
@@ -231,6 +234,7 @@ impl DeviceSession {
                         true,
                         order == RowOrder::BitReversed,
                         false,
+                        None,
                     )?
                 } else {
                     false

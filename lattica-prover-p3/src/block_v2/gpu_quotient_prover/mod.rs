@@ -26,7 +26,9 @@ use p3_air::Air;
 #[cfg(debug_assertions)]
 use p3_air::DebugConstraintBuilder;
 use p3_commit::{Pcs, PolynomialSpace};
-use p3_field::{Algebra, PrimeField};
+use p3_field::{Algebra, PrimeField64};
+#[cfg(feature = "gpu-metal")]
+mod metal;
 use p3_lookup::folder::ProverConstraintFolderWithLookups;
 use p3_lookup::logup::LogUpGadget;
 use p3_lookup::{
@@ -97,7 +99,7 @@ where
         Pcs = super::quotient_pcs::CandidatePcs,
         Challenger = super::profile::Challenger,
     >,
-    Val<SC>: PrimeField,
+    Val<SC>: PrimeField64,
     SymbolicExpressionExt<Val<SC>, SC::Challenge>: Algebra<SC::Challenge>,
     Domain<SC>: Send + Sync,
     SC::Pcs: Sync
@@ -789,11 +791,18 @@ where
                     // Compute quotient(x) = constraints(x) / Z_H(x) on the quotient domain.
                     let perm_vals: Vec<_> = lookup_terminals[i].iter().map(|t| t.0).collect();
                     let gpu_evaluation = super::quotient_pcs::gpu_quotient_eval_enabled();
+                    #[cfg(feature = "gpu-metal")]
+                    let metal_evaluation = crate::metal_compute::resident::gpu_quotient()
+                        .expect("validated Metal quotient policy");
+                    #[cfg(not(feature = "gpu-metal"))]
+                    let metal_evaluation = false;
                     let q_values = run
                         .measure(
                             crate::proving::Stage::Quotient,
                             if gpu_evaluation {
                                 crate::proving::Backend::OpenCl
+                            } else if metal_evaluation {
+                                crate::proving::Backend::Metal
                             } else {
                                 crate::proving::Backend::Cpu
                             },
@@ -816,6 +825,16 @@ where
                                         alpha,
                                     )
                                     .expect("GPU quotient evaluation failed; no silent fallback");
+                                }
+                                #[cfg(feature = "gpu-metal")]
+                                if metal_evaluation {
+                                    return metal::evaluate::<SC, _, _>(
+                                        pcs, airs[i], pub_vals[i], sym_layout,
+                                        trace_domains[i].cpu(), quotient_domain.cpu(),
+                                        &trace_on_quotient_domain, permutation_on_quotient_domain.as_ref(),
+                                        all_lookups[i], &perm_vals, &lookup_gadget,
+                                        &challenges_per_instance[i], preprocessed_on_quotient_domain.as_ref(), alpha,
+                                    ).expect("validated Metal quotient evaluation");
                                 }
                                 quotient_values(
                                     pcs,

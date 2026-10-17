@@ -63,26 +63,30 @@ code, benchmark tools and shared prover/pool changes. Start from the
 The `codex/mac-metal` and `v3` histories are retained in the merge; their measured
 results keep their original source and binary hashes.
 
-The optimization reports below also reference uncommitted Mac research code at
+The pending Mac source was captured in checkpoint `1604392` and integrated into
+`main` at `9733a24`. All six previously omitted Rust/Metal modules, the changed
+source/configuration files, benchmark helpers and Apple reports are now tracked.
+The [integration report](apple-main-integration-2026-10-06.html) records focused
+correctness checks and a minimal two-job, 18-thread comparison of the combined code.
+The shared Linux pool and native delivery source remain unchanged from `e9e3506`;
+their Linux runtime tests cannot execute on macOS.
+
+Historical evidence remains at
 `/Users/access/code/lattica/benchmark-results/apple-priorities-20261004/run-01`.
-That source has not yet been committed on the Mac or integrated into `main`.
-Capture it in the **next local Mac source commit** using the
-[checkpoint handoff](../lattica-prover-p3/scripts/apple-current-benchmark-README.txt)
-and [source-completeness checker](../lattica-prover-p3/scripts/check-apple-source-commit.py),
-then push the checkpoint branch for integration. The checker catches missing
-modules, unstaged edits and new benchmark helpers; it is not an automatic Git hook.
-Its recorded source archive
-SHA-256 is `f3dbb3598556a52677c95cbab13e0c11bd7d81adc09188e9028136e46f75e323`.
-Six measured files are absent from this checkout: `gpu_hash/prefix_storage.rs`,
-`gpu_quotient_prover/metal.rs` (under `src/block_v2/`), and
-`metal_compute/{backing.rs,diagnostics.rs,quotient.metal,resident.rs}` (under `src/`).
-These paths are relative to `lattica-prover-p3`. Keep the reports as historical
-evidence until the corresponding source is imported and validated.
+Its source archive SHA-256 remains
+`f3dbb3598556a52677c95cbab13e0c11bd7d81adc09188e9028136e46f75e323`.
+The [source-completeness checker](../lattica-prover-p3/scripts/check-apple-source-commit.py)
+still detects omitted modules, unstaged source edits and new benchmark helpers;
+it is not an automatic Git hook or a substitute for correctness tests.
 
 - [Next acceleration priorities](apple-acceleration-next-priorities-2026-10-04.html) — start here for exact Metal squaring, shared-buffer reuse, quotient temporary reuse, fair SME comparisons, targeted scheduling, and native Zig hashing. Each priority includes source locations, evidence, and correctness gates.
 - [Completed optimization comparison](apple-priorities-implementation-2026-10-04.html) — the supporting 18-thread research comparison: 254.03s to 204.57s, or 19.5% lower latency in one matched pair, with independent CPU audits.
 
-Both reports are standalone HTML with embedded evidence. Their recorded source hashes identify the measured implementation, which includes uncommitted research changes; publication of the reports does not imply that every measured optimization is committed or production-activated. Future validation starts with focused component checks; only a clear winner earns one fresh matched 18-thread comparison.
+These historical reports are standalone HTML with embedded evidence. Their original
+source hashes identify the implementation measured at that time; the new integration
+report pins the committed combined source. The implementation remains experimental
+and is not production-activated. Future validation starts with focused checks and
+uses a minimal matched comparison when a full-job measurement is needed.
 
 ## Architecture and roadmap
 

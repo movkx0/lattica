@@ -143,6 +143,7 @@ const BUNDLE_FILES: [&str; 5] = [ROOT_FILE, "height", "key.1", "key.2", "key.3"]
 enum RootKind {
     SubtreeEight,
     PaddedEight,
+    SubtreeTwelve,
 }
 
 impl RootKind {
@@ -150,6 +151,7 @@ impl RootKind {
         match command {
             "root-eight" => Ok(Self::SubtreeEight),
             "root-padded-eight" => Ok(Self::PaddedEight),
+            "root-twelve" => Ok(Self::SubtreeTwelve),
             _ => Err("unsupported externally selected root kind".into()),
         }
     }
@@ -157,18 +159,22 @@ impl RootKind {
         match self {
             Self::SubtreeEight => ROOT_FILE,
             Self::PaddedEight => "node.6.0",
+            Self::SubtreeTwelve => "node.4.0",
         }
     }
     fn label(self) -> &'static str {
         match self {
             Self::SubtreeEight => "level3-count8-subtree",
             Self::PaddedEight => "level6-count8-padded",
+            Self::SubtreeTwelve => "level4-count12-padded16",
         }
     }
     fn require_bundle(self, dir: &Path) -> Result<(), Error> {
         match self {
             Self::SubtreeEight => require_root_bundle(dir),
-            Self::PaddedEight => require_root_bundle_with_name(dir, self.file()),
+            Self::PaddedEight | Self::SubtreeTwelve => {
+                require_root_bundle_with_name(dir, self.file())
+            }
         }
     }
     fn expected(
@@ -180,6 +186,7 @@ impl RootKind {
         match self {
             Self::SubtreeEight => trusted_expected(pinned, chain, root),
             Self::PaddedEight => trusted_expected_at(pinned, chain, root, 6),
+            Self::SubtreeTwelve => trusted_expected_summary(pinned, chain, root, 4, 12),
         }
     }
 }
@@ -229,13 +236,23 @@ fn trusted_expected_at(
     root: commitment::Digest,
     level: u8,
 ) -> Result<[Val; programs::PUBLIC_VALUES], Error> {
+    trusted_expected_summary(pinned, chain, root, level, 8)
+}
+
+fn trusted_expected_summary(
+    pinned: [u8; 32],
+    chain: [u8; 32],
+    root: commitment::Digest,
+    level: u8,
+    count: u8,
+) -> Result<[Val; programs::PUBLIC_VALUES], Error> {
     let node = commitment::NodeSummary {
         context: commitment::Context {
             profile_id: pinned,
             chain_id: chain,
         },
         level,
-        count: 8,
+        count,
         root,
     };
     commitment::validate_summary(node)?;
@@ -298,14 +315,16 @@ fn audit_root(
     }
     println!(
         "grouped_artifact_audit=PASS kind={} proof_bytes={} native_mutation_rejections={} registry_policy_rejections=4 expected_statement_policy_rejections=2 bundle_files=5 inner_proofs_loaded=0 level6_qualified=false full_tree_security=UNREVIEWED production_ready=false",
-        kind.label(), bytes.len(), native_rejections + 1
+        kind.label(),
+        bytes.len(),
+        native_rejections + 1
     );
     Ok(())
 }
 
 fn run(args: &[String]) -> Result<(), Error> {
     if args.len() != 5 {
-        return Err("usage: block-v2-grouped-artifact-audit (root-eight|root-padded-eight) ROOT_ONLY_DIR EXTERNAL_PROFILE_HEX EXTERNAL_CHAIN_HEX EXTERNAL_EXPECTED_ROOT_HEX".into());
+        return Err("usage: block-v2-grouped-artifact-audit (root-eight|root-padded-eight|root-twelve) ROOT_ONLY_DIR EXTERNAL_PROFILE_HEX EXTERNAL_CHAIN_HEX EXTERNAL_EXPECTED_ROOT_HEX".into());
     }
     let kind = RootKind::parse(&args[0])?;
     audit_root(
@@ -330,7 +349,7 @@ fn main() {
 mod tests {
     use super::*;
     use lattica_prover_p3::block_v2::machine::{
-        backend::RegisteredProgram, MachineAir, ProgramBuilder,
+        MachineAir, ProgramBuilder, backend::RegisteredProgram,
     };
     use p3_field::PrimeField64;
     use std::path::PathBuf;
@@ -463,23 +482,27 @@ mod tests {
     fn cli_requires_external_profile_chain_and_root_arguments() {
         assert!(run(&[]).is_err());
         assert!(run(&["root-eight".into(), "dir".into(), "00".repeat(32)]).is_err());
-        assert!(run(&[
-            "root".into(),
-            "dir".into(),
-            "00".repeat(32),
-            "00".repeat(32),
-            "00".repeat(32)
-        ])
-        .is_err());
-        assert!(run(&[
-            "root-eight".into(),
-            "dir".into(),
-            "00".repeat(32),
-            "00".repeat(32),
-            "00".repeat(32),
-            "extra".into()
-        ])
-        .is_err());
+        assert!(
+            run(&[
+                "root".into(),
+                "dir".into(),
+                "00".repeat(32),
+                "00".repeat(32),
+                "00".repeat(32)
+            ])
+            .is_err()
+        );
+        assert!(
+            run(&[
+                "root-eight".into(),
+                "dir".into(),
+                "00".repeat(32),
+                "00".repeat(32),
+                "00".repeat(32),
+                "extra".into()
+            ])
+            .is_err()
+        );
     }
 
     #[test]
@@ -561,6 +584,21 @@ mod tests {
 
     #[test]
     fn root_kind_is_external_and_fixed_not_inferred_from_proof_or_header() {
+        assert_eq!(
+            RootKind::parse("root-twelve").unwrap(),
+            RootKind::SubtreeTwelve
+        );
+        let twelve = RootKind::SubtreeTwelve
+            .expected([1; 32], [2; 32], [3, 4, 5, 6])
+            .unwrap();
+        assert_eq!(
+            twelve,
+            trusted_expected_summary([1; 32], [2; 32], [3, 4, 5, 6], 4, 12).unwrap()
+        );
+        assert_ne!(
+            twelve,
+            trusted_expected_summary([1; 32], [2; 32], [3, 4, 5, 6], 4, 8).unwrap()
+        );
         assert_eq!(
             RootKind::parse("root-eight").unwrap(),
             RootKind::SubtreeEight

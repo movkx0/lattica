@@ -177,6 +177,7 @@ impl DeviceSession {
                     &output.storage.buffer,
                     &scratch.storage.buffer,
                     &roots.buffer,
+                    true,
                     spec.rows(),
                     spec.extension.degree(),
                     1,
@@ -184,6 +185,7 @@ impl DeviceSession {
                     false,
                     false,
                     false,
+                    None,
                 )
             })?;
             let mut event = compute::Event::empty();

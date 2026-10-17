@@ -73,6 +73,16 @@ impl CandidateMmcs {
         ),
         String,
     > {
+        self.finish_lde_commit_with_salts(output, salts, preprocessing, Vec::new())
+    }
+
+    pub(super) fn finish_lde_commit_with_salts(
+        &self,
+        output: engine::lde_execute::LdeCommitOutput,
+        salts: Vec<RowMajorMatrix<Val>>,
+        preprocessing: bool,
+        checkpoints: Vec<compact_salts::Checkpoints>,
+    ) -> Result<(<Self as Mmcs<Val>>::Commitment, ProverData<RowMajorMatrix<Val>>), String> {
         let cap = <Self as Mmcs<Val>>::Commitment::new(output.cap().to_vec());
         let owned = (!output.device_matrices.is_empty()).then(|| {
             OwnedInputs::new(
@@ -100,9 +110,9 @@ impl CandidateMmcs {
             },
             LdeRetention::HostPrefix(_) => {
                 let mut data = compact_data::CompactData::new(
-                    output.matrices,
+                    output.prefixes,
                     output.plan.output_height(),
-                    salts,
+                    compact_salts::retain(salts, checkpoints),
                     output.tree,
                 );
                 data.owned = owned;

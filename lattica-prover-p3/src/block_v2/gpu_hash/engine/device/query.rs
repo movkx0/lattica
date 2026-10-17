@@ -253,6 +253,7 @@ impl DeviceSession {
                             &a.buffer,
                             &b.buffer,
                             &inverse.buffer,
+                            true,
                             prefix.spec.rows(),
                             width,
                             1,
@@ -260,6 +261,7 @@ impl DeviceSession {
                             false,
                             false,
                             false,
+                            None,
                         )?;
                     }
                     let mut event = compute::Event::empty();
@@ -294,6 +296,7 @@ impl DeviceSession {
                             &a.buffer,
                             &b.buffer,
                             &forward.buffer,
+                            false,
                             plan.height,
                             width,
                             1,
@@ -301,6 +304,7 @@ impl DeviceSession {
                             true,
                             true,
                             false,
+                            None,
                         )?
                     } else {
                         false

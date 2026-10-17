@@ -684,7 +684,15 @@ fn compact_test_data(
         matrix.values.truncate((height >> bits) * matrix.width);
         matrix.values.shrink_to_fit();
     }
-    let mut data = super::compact_data::CompactData::new(matrices, height, salts, tree);
+    let mut data = super::compact_data::CompactData::new(
+        matrices
+            .into_iter()
+            .map(super::prefix_storage::host)
+            .collect(),
+        height,
+        salts.into_iter().map(super::compact_salts::SaltMatrix::Dense).collect(),
+        tree,
+    );
     data.owned = owned;
     ProverData::Compact(data)
 }

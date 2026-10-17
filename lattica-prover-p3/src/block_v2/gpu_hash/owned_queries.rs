@@ -63,7 +63,7 @@ impl CandidateMmcs {
                 (super::salt_data::SaltView::Host(salts), tree)
             }
             ProverData::DeviceOnly { salts, tree, .. } => (salts.view(), tree),
-            ProverData::Compact(d) => (super::salt_data::SaltView::Host(&d.salts), &d.tree),
+            ProverData::Compact(d) => (super::salt_data::SaltView::Compact(&d.salts), &d.tree),
             _ => return Err("owned PCS query requires retained salts and tree".into()),
         };
         salts.validate(session, height, dimensions.len())?;

@@ -15,7 +15,18 @@ inline ulong metal_mul_hi(ulong a, ulong b) {
 #define GP        0xFFFFFFFF00000001UL
 inline ulong gl_reduce128(ulong lo,ulong hi){ uint hh=(uint)(hi>>32),hl=(uint)(hi&0xFFFFFFFFUL);
  ulong t0=lo-(ulong)hh; if(lo<(ulong)hh)t0-=NEG_ORDER; ulong t1=(ulong)hl*NEG_ORDER; ulong t2=t0+t1; if(t2<t0)t2+=NEG_ORDER; return t2; }
+#if LATTICA_OPTIMIZED
+inline ulong gl_mul(ulong a,ulong b) {
+    ulong p0=ulong(uint(a))*uint(b), p1=ulong(uint(a))*uint(b>>32);
+    ulong p2=ulong(uint(a>>32))*uint(b), p3=ulong(uint(a>>32))*uint(b>>32);
+    ulong carry=(p0>>32)+ulong(uint(p1))+ulong(uint(p2));
+    ulong lo=ulong(uint(p0)) | (carry<<32);
+    ulong hi=p3+(p1>>32)+(p2>>32)+(carry>>32);
+    return gl_reduce128(lo,hi);
+}
+#else
 inline ulong gl_mul(ulong a,ulong b){ return gl_reduce128(a*b, metal_mul_hi(a,b)); }
+#endif
 inline ulong gl_add(ulong a,ulong b){ ulong s=a+b; ulong o1=(s<a)?NEG_ORDER:0UL; ulong s2=s+o1; ulong o2=(s2<s)?NEG_ORDER:0UL; return s2+o2; }
 inline ulong gl_neg(ulong b){ ulong c=(b>=GP)?(b-GP):b; return c==0UL?0UL:(GP-c); }
 inline ulong gl_sub(ulong a,ulong b){ return gl_add(a, gl_neg(b)); }
@@ -98,6 +109,99 @@ kernel void ntt_tile(
     }
   }
 }
+kernel void ntt_tile_cached(
+    device const ulong* in [[buffer(0)]],
+    device ulong* out [[buffer(1)]],
+    constant uint& w [[buffer(2)]],
+    constant uint& h [[buffer(3)]],
+    constant uint& s0 [[buffer(4)]],
+    constant uint& lt [[buffer(5)]],
+    constant uint& log_c [[buffer(6)]],
+    constant uint& fuse_bitrev [[buffer(7)]],
+    constant uint& log_h [[buffer(8)]],
+    constant uint& do_canon [[buffer(9)]],
+    constant uint& store_brev [[buffer(10)]],
+    constant ulong& post_c [[buffer(11)]],
+    constant ulong& post_b [[buffer(12)]],
+    device const ulong* wlens [[buffer(13)]],
+    device const ulong* tables [[buffer(14)]],
+    threadgroup ulong* tile [[threadgroup(0)]],
+    uint _gid [[thread_position_in_grid]],
+    uint _lid [[thread_index_in_threadgroup]],
+    uint _group [[threadgroup_position_in_grid]],
+    uint _gsize [[threads_per_threadgroup]]) {
+  const uint C=1u<<log_c, lid=_lid, wg=_gsize;
+  const uint tiles=h>>lt, g=(uint)_group;
+  const uint tidx=g%tiles, cg=g/tiles;
+  const uint lo=tidx&((1u<<s0)-1u), hi=tidx>>s0;
+  const uint row0=(hi<<(s0+lt))|lo, col0=cg<<log_c;
+  const uint n_el=(1u<<lt)<<log_c;
+  for(uint e=lid;e<n_el;e+=wg){
+    uint t=e>>log_c, col=col0+(e&(C-1u));
+    uint r=row0+(t<<s0);
+    uint sr=fuse_bitrev?brev(r,log_h):r;
+    tile[e]=(col<w)?in[(size_t)sr*w+col]:0UL;
+  }
+  threadgroup_barrier(mem_flags::mem_threadgroup);
+  for(uint k=1;k<=lt;k++){
+    uint hl=1u<<(k-1u);
+
+    for(uint b=lid;b<(n_el>>1);b+=wg){
+      uint t2=b>>log_c, lc=b&(C-1u);
+      uint j=t2&(hl-1u);
+      uint tl=((((t2>>(k-1u))<<k)|j)<<log_c)|lc, th=tl+(hl<<log_c);
+      ulong tw=tables[(1u<<(s0+k-1u))-1u+lo+(j<<s0)];
+      ulong u=tile[tl], v=gl_mul(tile[th],tw);
+      tile[tl]=gl_add(u,v); tile[th]=gl_sub(u,v);
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+  }
+  for(uint e=lid;e<n_el;e+=wg){
+    uint t=e>>log_c, col=col0+(e&(C-1u));
+    if(col<w){
+      uint r=row0+(t<<s0);
+      ulong x=tile[e];
+      if(post_c!=1UL||post_b!=1UL) x=gl_mul(x,tables[h-1u+r]);
+      uint orow=store_brev?brev(r,log_h):r;
+      out[(size_t)orow*w+col]=do_canon?gl_canon(x):x;
+    }
+  }
+}
+
+kernel void ntt_tables(device const ulong* roots [[buffer(0)]],
+    device ulong* table [[buffer(1)]], constant uint& h [[buffer(2)]],
+    constant ulong& c [[buffer(3)]], constant ulong& b [[buffer(4)]],
+    uint i [[thread_position_in_grid]]) {
+    if(i>=h) return;
+    if(i<h-1u) { uint stage=31u-clz(i+1u); uint j=i-((1u<<stage)-1u);
+        table[i]=gl_pow(roots[stage],j); }
+    table[h-1u+i]=gl_mul(c,gl_pow(b,i));
+}
+
+inline ulong gl_half(ulong x) {
+    ulong c=gl_canon(x);
+    return (c>>1) + ((c&1UL) ? 0x7fffffff80000001UL : 0UL);
+}
+inline ulong gl_diag8(ulong x, uint lane) {
+    switch(lane) {
+        case 0: return gl_neg(gl_add(x,x));
+        case 1: return x;
+        case 2: return gl_add(x,x);
+        case 3: return gl_half(x);
+        case 4: return gl_add(gl_add(x,x),x);
+        case 5: return gl_neg(gl_half(x));
+        case 6: return gl_neg(gl_add(gl_add(x,x),x));
+        default: { ulong twice=gl_add(x,x); return gl_neg(gl_add(twice,twice)); }
+    }
+}
+inline ulong gl_diagonal(ulong x, device const ulong* diag, uint lane) {
+#if LATTICA_SPECIALIZED_DIAGONAL
+    return gl_diag8(x,lane);
+#else
+    return gl_mul(x,diag[lane]);
+#endif
+}
+
 // ---- Poseidon2-Goldilocks width-8 (matches p3 `default_goldilocks_poseidon2_8`) ----
 inline ulong gl_pow7(ulong x){ ulong x2=gl_mul(x,x); ulong x3=gl_mul(x2,x); ulong x4=gl_mul(x2,x2); return gl_mul(x4,x3); }
 // apply_mat4 on x[0..4] (p3 external.rs; order matters — overwrite 0/2 after 1/3).
@@ -119,15 +223,828 @@ inline void extl(thread ulong* s){
 // internal linear layer (matmul_internal): s[i] = s[i]*diag[i] + sum(s).
 inline void intl(thread ulong* s,device const ulong* diag){
   ulong sum=0UL; for(int i=0;i<8;i++) sum=gl_add(sum,s[i]);
-  for(int i=0;i<8;i++) s[i]=gl_add(gl_mul(s[i],diag[i]),sum);
+  for(int i=0;i<8;i++) s[i]=gl_add(gl_diagonal(s[i],diag,uint(i)),sum);
 }
 // full permutation: extl; 4 full (rc+x^7 all lanes, extl); 22 partial (rc+x^7 lane0, intl); 4 full.
+#if LATTICA_OPTIMIZED
+inline void perm8(thread ulong* s,device const ulong* rci,device const ulong* rcp,device const ulong* rcf,device const ulong* diag){
+ulong x0=s[0];
+ulong x1=s[1];
+ulong x2=s[2];
+ulong x3=s[3];
+ulong x4=s[4];
+ulong x5=s[5];
+ulong x6=s[6];
+ulong x7=s[7];
+{
+{
+ulong t01=gl_add(x0,x1),t23=gl_add(x2,x3);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x1),t01233=gl_add(t0123,x3);
+x3=gl_add(t01233,gl_add(x0,x0));
+x1=gl_add(t01123,gl_add(x2,x2));
+x0=gl_add(t01123,t01);
+x2=gl_add(t01233,t23);
+}
+{
+ulong t01=gl_add(x4,x5),t23=gl_add(x6,x7);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x5),t01233=gl_add(t0123,x7);
+x7=gl_add(t01233,gl_add(x4,x4));
+x5=gl_add(t01123,gl_add(x6,x6));
+x4=gl_add(t01123,t01);
+x6=gl_add(t01233,t23);
+}
+ulong z0=gl_add(x0,x4);
+ulong z1=gl_add(x1,x5);
+ulong z2=gl_add(x2,x6);
+ulong z3=gl_add(x3,x7);
+x0=gl_add(x0,z0);
+x1=gl_add(x1,z1);
+x2=gl_add(x2,z2);
+x3=gl_add(x3,z3);
+x4=gl_add(x4,z0);
+x5=gl_add(x5,z1);
+x6=gl_add(x6,z2);
+x7=gl_add(x7,z3);
+}
+x0=gl_pow7(gl_add(x0,rci[0]));
+x1=gl_pow7(gl_add(x1,rci[1]));
+x2=gl_pow7(gl_add(x2,rci[2]));
+x3=gl_pow7(gl_add(x3,rci[3]));
+x4=gl_pow7(gl_add(x4,rci[4]));
+x5=gl_pow7(gl_add(x5,rci[5]));
+x6=gl_pow7(gl_add(x6,rci[6]));
+x7=gl_pow7(gl_add(x7,rci[7]));
+{
+{
+ulong t01=gl_add(x0,x1),t23=gl_add(x2,x3);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x1),t01233=gl_add(t0123,x3);
+x3=gl_add(t01233,gl_add(x0,x0));
+x1=gl_add(t01123,gl_add(x2,x2));
+x0=gl_add(t01123,t01);
+x2=gl_add(t01233,t23);
+}
+{
+ulong t01=gl_add(x4,x5),t23=gl_add(x6,x7);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x5),t01233=gl_add(t0123,x7);
+x7=gl_add(t01233,gl_add(x4,x4));
+x5=gl_add(t01123,gl_add(x6,x6));
+x4=gl_add(t01123,t01);
+x6=gl_add(t01233,t23);
+}
+ulong z0=gl_add(x0,x4);
+ulong z1=gl_add(x1,x5);
+ulong z2=gl_add(x2,x6);
+ulong z3=gl_add(x3,x7);
+x0=gl_add(x0,z0);
+x1=gl_add(x1,z1);
+x2=gl_add(x2,z2);
+x3=gl_add(x3,z3);
+x4=gl_add(x4,z0);
+x5=gl_add(x5,z1);
+x6=gl_add(x6,z2);
+x7=gl_add(x7,z3);
+}
+x0=gl_pow7(gl_add(x0,rci[8]));
+x1=gl_pow7(gl_add(x1,rci[9]));
+x2=gl_pow7(gl_add(x2,rci[10]));
+x3=gl_pow7(gl_add(x3,rci[11]));
+x4=gl_pow7(gl_add(x4,rci[12]));
+x5=gl_pow7(gl_add(x5,rci[13]));
+x6=gl_pow7(gl_add(x6,rci[14]));
+x7=gl_pow7(gl_add(x7,rci[15]));
+{
+{
+ulong t01=gl_add(x0,x1),t23=gl_add(x2,x3);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x1),t01233=gl_add(t0123,x3);
+x3=gl_add(t01233,gl_add(x0,x0));
+x1=gl_add(t01123,gl_add(x2,x2));
+x0=gl_add(t01123,t01);
+x2=gl_add(t01233,t23);
+}
+{
+ulong t01=gl_add(x4,x5),t23=gl_add(x6,x7);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x5),t01233=gl_add(t0123,x7);
+x7=gl_add(t01233,gl_add(x4,x4));
+x5=gl_add(t01123,gl_add(x6,x6));
+x4=gl_add(t01123,t01);
+x6=gl_add(t01233,t23);
+}
+ulong z0=gl_add(x0,x4);
+ulong z1=gl_add(x1,x5);
+ulong z2=gl_add(x2,x6);
+ulong z3=gl_add(x3,x7);
+x0=gl_add(x0,z0);
+x1=gl_add(x1,z1);
+x2=gl_add(x2,z2);
+x3=gl_add(x3,z3);
+x4=gl_add(x4,z0);
+x5=gl_add(x5,z1);
+x6=gl_add(x6,z2);
+x7=gl_add(x7,z3);
+}
+x0=gl_pow7(gl_add(x0,rci[16]));
+x1=gl_pow7(gl_add(x1,rci[17]));
+x2=gl_pow7(gl_add(x2,rci[18]));
+x3=gl_pow7(gl_add(x3,rci[19]));
+x4=gl_pow7(gl_add(x4,rci[20]));
+x5=gl_pow7(gl_add(x5,rci[21]));
+x6=gl_pow7(gl_add(x6,rci[22]));
+x7=gl_pow7(gl_add(x7,rci[23]));
+{
+{
+ulong t01=gl_add(x0,x1),t23=gl_add(x2,x3);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x1),t01233=gl_add(t0123,x3);
+x3=gl_add(t01233,gl_add(x0,x0));
+x1=gl_add(t01123,gl_add(x2,x2));
+x0=gl_add(t01123,t01);
+x2=gl_add(t01233,t23);
+}
+{
+ulong t01=gl_add(x4,x5),t23=gl_add(x6,x7);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x5),t01233=gl_add(t0123,x7);
+x7=gl_add(t01233,gl_add(x4,x4));
+x5=gl_add(t01123,gl_add(x6,x6));
+x4=gl_add(t01123,t01);
+x6=gl_add(t01233,t23);
+}
+ulong z0=gl_add(x0,x4);
+ulong z1=gl_add(x1,x5);
+ulong z2=gl_add(x2,x6);
+ulong z3=gl_add(x3,x7);
+x0=gl_add(x0,z0);
+x1=gl_add(x1,z1);
+x2=gl_add(x2,z2);
+x3=gl_add(x3,z3);
+x4=gl_add(x4,z0);
+x5=gl_add(x5,z1);
+x6=gl_add(x6,z2);
+x7=gl_add(x7,z3);
+}
+x0=gl_pow7(gl_add(x0,rci[24]));
+x1=gl_pow7(gl_add(x1,rci[25]));
+x2=gl_pow7(gl_add(x2,rci[26]));
+x3=gl_pow7(gl_add(x3,rci[27]));
+x4=gl_pow7(gl_add(x4,rci[28]));
+x5=gl_pow7(gl_add(x5,rci[29]));
+x6=gl_pow7(gl_add(x6,rci[30]));
+x7=gl_pow7(gl_add(x7,rci[31]));
+{
+{
+ulong t01=gl_add(x0,x1),t23=gl_add(x2,x3);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x1),t01233=gl_add(t0123,x3);
+x3=gl_add(t01233,gl_add(x0,x0));
+x1=gl_add(t01123,gl_add(x2,x2));
+x0=gl_add(t01123,t01);
+x2=gl_add(t01233,t23);
+}
+{
+ulong t01=gl_add(x4,x5),t23=gl_add(x6,x7);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x5),t01233=gl_add(t0123,x7);
+x7=gl_add(t01233,gl_add(x4,x4));
+x5=gl_add(t01123,gl_add(x6,x6));
+x4=gl_add(t01123,t01);
+x6=gl_add(t01233,t23);
+}
+ulong z0=gl_add(x0,x4);
+ulong z1=gl_add(x1,x5);
+ulong z2=gl_add(x2,x6);
+ulong z3=gl_add(x3,x7);
+x0=gl_add(x0,z0);
+x1=gl_add(x1,z1);
+x2=gl_add(x2,z2);
+x3=gl_add(x3,z3);
+x4=gl_add(x4,z0);
+x5=gl_add(x5,z1);
+x6=gl_add(x6,z2);
+x7=gl_add(x7,z3);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[0]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[1]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[2]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[3]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[4]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[5]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[6]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[7]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[8]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[9]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[10]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[11]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[12]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[13]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[14]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[15]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[16]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[17]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[18]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[19]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[20]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+{
+x0=gl_pow7(gl_add(x0,rcp[21]));
+ulong sum=0UL;
+sum=gl_add(sum,x0);
+sum=gl_add(sum,x1);
+sum=gl_add(sum,x2);
+sum=gl_add(sum,x3);
+sum=gl_add(sum,x4);
+sum=gl_add(sum,x5);
+sum=gl_add(sum,x6);
+sum=gl_add(sum,x7);
+x0=gl_add(gl_diagonal(x0,diag,0u),sum);
+x1=gl_add(gl_diagonal(x1,diag,1u),sum);
+x2=gl_add(gl_diagonal(x2,diag,2u),sum);
+x3=gl_add(gl_diagonal(x3,diag,3u),sum);
+x4=gl_add(gl_diagonal(x4,diag,4u),sum);
+x5=gl_add(gl_diagonal(x5,diag,5u),sum);
+x6=gl_add(gl_diagonal(x6,diag,6u),sum);
+x7=gl_add(gl_diagonal(x7,diag,7u),sum);
+}
+x0=gl_pow7(gl_add(x0,rcf[0]));
+x1=gl_pow7(gl_add(x1,rcf[1]));
+x2=gl_pow7(gl_add(x2,rcf[2]));
+x3=gl_pow7(gl_add(x3,rcf[3]));
+x4=gl_pow7(gl_add(x4,rcf[4]));
+x5=gl_pow7(gl_add(x5,rcf[5]));
+x6=gl_pow7(gl_add(x6,rcf[6]));
+x7=gl_pow7(gl_add(x7,rcf[7]));
+{
+{
+ulong t01=gl_add(x0,x1),t23=gl_add(x2,x3);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x1),t01233=gl_add(t0123,x3);
+x3=gl_add(t01233,gl_add(x0,x0));
+x1=gl_add(t01123,gl_add(x2,x2));
+x0=gl_add(t01123,t01);
+x2=gl_add(t01233,t23);
+}
+{
+ulong t01=gl_add(x4,x5),t23=gl_add(x6,x7);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x5),t01233=gl_add(t0123,x7);
+x7=gl_add(t01233,gl_add(x4,x4));
+x5=gl_add(t01123,gl_add(x6,x6));
+x4=gl_add(t01123,t01);
+x6=gl_add(t01233,t23);
+}
+ulong z0=gl_add(x0,x4);
+ulong z1=gl_add(x1,x5);
+ulong z2=gl_add(x2,x6);
+ulong z3=gl_add(x3,x7);
+x0=gl_add(x0,z0);
+x1=gl_add(x1,z1);
+x2=gl_add(x2,z2);
+x3=gl_add(x3,z3);
+x4=gl_add(x4,z0);
+x5=gl_add(x5,z1);
+x6=gl_add(x6,z2);
+x7=gl_add(x7,z3);
+}
+x0=gl_pow7(gl_add(x0,rcf[8]));
+x1=gl_pow7(gl_add(x1,rcf[9]));
+x2=gl_pow7(gl_add(x2,rcf[10]));
+x3=gl_pow7(gl_add(x3,rcf[11]));
+x4=gl_pow7(gl_add(x4,rcf[12]));
+x5=gl_pow7(gl_add(x5,rcf[13]));
+x6=gl_pow7(gl_add(x6,rcf[14]));
+x7=gl_pow7(gl_add(x7,rcf[15]));
+{
+{
+ulong t01=gl_add(x0,x1),t23=gl_add(x2,x3);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x1),t01233=gl_add(t0123,x3);
+x3=gl_add(t01233,gl_add(x0,x0));
+x1=gl_add(t01123,gl_add(x2,x2));
+x0=gl_add(t01123,t01);
+x2=gl_add(t01233,t23);
+}
+{
+ulong t01=gl_add(x4,x5),t23=gl_add(x6,x7);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x5),t01233=gl_add(t0123,x7);
+x7=gl_add(t01233,gl_add(x4,x4));
+x5=gl_add(t01123,gl_add(x6,x6));
+x4=gl_add(t01123,t01);
+x6=gl_add(t01233,t23);
+}
+ulong z0=gl_add(x0,x4);
+ulong z1=gl_add(x1,x5);
+ulong z2=gl_add(x2,x6);
+ulong z3=gl_add(x3,x7);
+x0=gl_add(x0,z0);
+x1=gl_add(x1,z1);
+x2=gl_add(x2,z2);
+x3=gl_add(x3,z3);
+x4=gl_add(x4,z0);
+x5=gl_add(x5,z1);
+x6=gl_add(x6,z2);
+x7=gl_add(x7,z3);
+}
+x0=gl_pow7(gl_add(x0,rcf[16]));
+x1=gl_pow7(gl_add(x1,rcf[17]));
+x2=gl_pow7(gl_add(x2,rcf[18]));
+x3=gl_pow7(gl_add(x3,rcf[19]));
+x4=gl_pow7(gl_add(x4,rcf[20]));
+x5=gl_pow7(gl_add(x5,rcf[21]));
+x6=gl_pow7(gl_add(x6,rcf[22]));
+x7=gl_pow7(gl_add(x7,rcf[23]));
+{
+{
+ulong t01=gl_add(x0,x1),t23=gl_add(x2,x3);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x1),t01233=gl_add(t0123,x3);
+x3=gl_add(t01233,gl_add(x0,x0));
+x1=gl_add(t01123,gl_add(x2,x2));
+x0=gl_add(t01123,t01);
+x2=gl_add(t01233,t23);
+}
+{
+ulong t01=gl_add(x4,x5),t23=gl_add(x6,x7);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x5),t01233=gl_add(t0123,x7);
+x7=gl_add(t01233,gl_add(x4,x4));
+x5=gl_add(t01123,gl_add(x6,x6));
+x4=gl_add(t01123,t01);
+x6=gl_add(t01233,t23);
+}
+ulong z0=gl_add(x0,x4);
+ulong z1=gl_add(x1,x5);
+ulong z2=gl_add(x2,x6);
+ulong z3=gl_add(x3,x7);
+x0=gl_add(x0,z0);
+x1=gl_add(x1,z1);
+x2=gl_add(x2,z2);
+x3=gl_add(x3,z3);
+x4=gl_add(x4,z0);
+x5=gl_add(x5,z1);
+x6=gl_add(x6,z2);
+x7=gl_add(x7,z3);
+}
+x0=gl_pow7(gl_add(x0,rcf[24]));
+x1=gl_pow7(gl_add(x1,rcf[25]));
+x2=gl_pow7(gl_add(x2,rcf[26]));
+x3=gl_pow7(gl_add(x3,rcf[27]));
+x4=gl_pow7(gl_add(x4,rcf[28]));
+x5=gl_pow7(gl_add(x5,rcf[29]));
+x6=gl_pow7(gl_add(x6,rcf[30]));
+x7=gl_pow7(gl_add(x7,rcf[31]));
+{
+{
+ulong t01=gl_add(x0,x1),t23=gl_add(x2,x3);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x1),t01233=gl_add(t0123,x3);
+x3=gl_add(t01233,gl_add(x0,x0));
+x1=gl_add(t01123,gl_add(x2,x2));
+x0=gl_add(t01123,t01);
+x2=gl_add(t01233,t23);
+}
+{
+ulong t01=gl_add(x4,x5),t23=gl_add(x6,x7);
+ulong t0123=gl_add(t01,t23);
+ulong t01123=gl_add(t0123,x5),t01233=gl_add(t0123,x7);
+x7=gl_add(t01233,gl_add(x4,x4));
+x5=gl_add(t01123,gl_add(x6,x6));
+x4=gl_add(t01123,t01);
+x6=gl_add(t01233,t23);
+}
+ulong z0=gl_add(x0,x4);
+ulong z1=gl_add(x1,x5);
+ulong z2=gl_add(x2,x6);
+ulong z3=gl_add(x3,x7);
+x0=gl_add(x0,z0);
+x1=gl_add(x1,z1);
+x2=gl_add(x2,z2);
+x3=gl_add(x3,z3);
+x4=gl_add(x4,z0);
+x5=gl_add(x5,z1);
+x6=gl_add(x6,z2);
+x7=gl_add(x7,z3);
+}
+s[0]=x0;
+s[1]=x1;
+s[2]=x2;
+s[3]=x3;
+s[4]=x4;
+s[5]=x5;
+s[6]=x6;
+s[7]=x7;
+}
+#else
 inline void perm8(thread ulong* s,device const ulong* rci,device const ulong* rcp,device const ulong* rcf,device const ulong* diag){
   extl(s);
   for(int r=0;r<4;r++){ for(int i=0;i<8;i++) s[i]=gl_pow7(gl_add(s[i],rci[r*8+i])); extl(s); }
   for(int r=0;r<22;r++){ s[0]=gl_pow7(gl_add(s[0],rcp[r])); intl(s,diag); }
   for(int r=0;r<4;r++){ for(int i=0;i<8;i++) s[i]=gl_pow7(gl_add(s[i],rcf[r*8+i])); extl(s); }
 }
+#endif
 // leaf hash (PaddingFreeSponge<8,4,4>): one thread per row, sponge over `w` elems, out[row*4..].
 // Padding-free: overwrite state[0..4] with each block, permute after any absorbed block.
 // Row-banded: `in` is a band of `band_h` rows (band-local), `out` is the full leaf-digest buffer;
@@ -392,4 +1309,190 @@ kernel void arithmetic_probe(device const ulong* a [[buffer(0)]],
     out[i*4+1] = gl_canon(gl_add(a[i], b[i]));
     out[i*4+2] = gl_canon(gl_sub(a[i], b[i]));
     out[i*4+3] = metal_mul_hi(a[i], b[i]);
+}
+kernel void ntt_tile_prefix(
+    device const ulong* in [[buffer(0)]],
+    device ulong* out [[buffer(1)]],
+    constant uint& w [[buffer(2)]],
+    constant uint& h [[buffer(3)]],
+    constant uint& s0 [[buffer(4)]],
+    constant uint& lt [[buffer(5)]],
+    constant uint& log_c [[buffer(6)]],
+    constant uint& fuse_bitrev [[buffer(7)]],
+    constant uint& log_h [[buffer(8)]],
+    constant uint& do_canon [[buffer(9)]],
+    constant uint& store_brev [[buffer(10)]],
+    constant ulong& post_c [[buffer(11)]],
+    constant ulong& post_b [[buffer(12)]],
+    device const ulong* wlens [[buffer(13)]],
+    device ulong* prefix [[buffer(14)]],
+    constant uint& prefix_width [[buffer(15)]],
+    constant uint& prefix_first [[buffer(16)]],
+    constant uint& prefix_height [[buffer(17)]],
+    threadgroup ulong* tile [[threadgroup(0)]],
+    uint _gid [[thread_position_in_grid]],
+    uint _lid [[thread_index_in_threadgroup]],
+    uint _group [[threadgroup_position_in_grid]],
+    uint _gsize [[threads_per_threadgroup]]) {
+  const uint C=1u<<log_c, lid=_lid, wg=_gsize;
+  const uint tiles=h>>lt, g=(uint)_group;
+  const uint tidx=g%tiles, cg=g/tiles;
+  const uint lo=tidx&((1u<<s0)-1u), hi=tidx>>s0;
+  const uint row0=(hi<<(s0+lt))|lo, col0=cg<<log_c;
+  const uint n_el=(1u<<lt)<<log_c;
+  for(uint e=lid;e<n_el;e+=wg){
+    uint t=e>>log_c, col=col0+(e&(C-1u));
+    uint r=row0+(t<<s0);
+    uint sr=fuse_bitrev?brev(r,log_h):r;
+    tile[e]=(col<w)?in[(size_t)sr*w+col]:0UL;
+  }
+  threadgroup_barrier(mem_flags::mem_threadgroup);
+  for(uint k=1;k<=lt;k++){
+    uint hl=1u<<(k-1u);
+    ulong outer=gl_pow(wlens[s0+k-1u],(ulong)lo);
+    for(uint b=lid;b<(n_el>>1);b+=wg){
+      uint t2=b>>log_c, lc=b&(C-1u);
+      uint j=t2&(hl-1u);
+      uint tl=((((t2>>(k-1u))<<k)|j)<<log_c)|lc, th=tl+(hl<<log_c);
+      ulong tw=gl_mul(outer,gl_pow(wlens[k-1u],(ulong)j));
+      ulong u=tile[tl], v=gl_mul(tile[th],tw);
+      tile[tl]=gl_add(u,v); tile[th]=gl_sub(u,v);
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+  }
+  for(uint e=lid;e<n_el;e+=wg){
+    uint t=e>>log_c, col=col0+(e&(C-1u));
+    if(col<w){
+      uint r=row0+(t<<s0);
+      ulong x=tile[e];
+      if(post_c!=1UL||post_b!=1UL) x=gl_mul(x,gl_mul(post_c,gl_pow(post_b,(ulong)r)));
+      uint orow=store_brev?brev(r,log_h):r;
+      out[(size_t)orow*w+col]=do_canon?gl_canon(x):x;
+      if(orow<prefix_height)
+        prefix[(size_t)orow*prefix_width+prefix_first+col]=gl_canon(x);
+    }
+  }
+}
+kernel void ntt_tile_cached_prefix(
+    device const ulong* in [[buffer(0)]],
+    device ulong* out [[buffer(1)]],
+    constant uint& w [[buffer(2)]],
+    constant uint& h [[buffer(3)]],
+    constant uint& s0 [[buffer(4)]],
+    constant uint& lt [[buffer(5)]],
+    constant uint& log_c [[buffer(6)]],
+    constant uint& fuse_bitrev [[buffer(7)]],
+    constant uint& log_h [[buffer(8)]],
+    constant uint& do_canon [[buffer(9)]],
+    constant uint& store_brev [[buffer(10)]],
+    constant ulong& post_c [[buffer(11)]],
+    constant ulong& post_b [[buffer(12)]],
+    device const ulong* wlens [[buffer(13)]],
+    device const ulong* tables [[buffer(14)]],
+    device ulong* prefix [[buffer(15)]],
+    constant uint& prefix_width [[buffer(16)]],
+    constant uint& prefix_first [[buffer(17)]],
+    constant uint& prefix_height [[buffer(18)]],
+    threadgroup ulong* tile [[threadgroup(0)]],
+    uint _gid [[thread_position_in_grid]],
+    uint _lid [[thread_index_in_threadgroup]],
+    uint _group [[threadgroup_position_in_grid]],
+    uint _gsize [[threads_per_threadgroup]]) {
+  const uint C=1u<<log_c, lid=_lid, wg=_gsize;
+  const uint tiles=h>>lt, g=(uint)_group;
+  const uint tidx=g%tiles, cg=g/tiles;
+  const uint lo=tidx&((1u<<s0)-1u), hi=tidx>>s0;
+  const uint row0=(hi<<(s0+lt))|lo, col0=cg<<log_c;
+  const uint n_el=(1u<<lt)<<log_c;
+  for(uint e=lid;e<n_el;e+=wg){
+    uint t=e>>log_c, col=col0+(e&(C-1u));
+    uint r=row0+(t<<s0);
+    uint sr=fuse_bitrev?brev(r,log_h):r;
+    tile[e]=(col<w)?in[(size_t)sr*w+col]:0UL;
+  }
+  threadgroup_barrier(mem_flags::mem_threadgroup);
+  for(uint k=1;k<=lt;k++){
+    uint hl=1u<<(k-1u);
+
+    for(uint b=lid;b<(n_el>>1);b+=wg){
+      uint t2=b>>log_c, lc=b&(C-1u);
+      uint j=t2&(hl-1u);
+      uint tl=((((t2>>(k-1u))<<k)|j)<<log_c)|lc, th=tl+(hl<<log_c);
+      ulong tw=tables[(1u<<(s0+k-1u))-1u+lo+(j<<s0)];
+      ulong u=tile[tl], v=gl_mul(tile[th],tw);
+      tile[tl]=gl_add(u,v); tile[th]=gl_sub(u,v);
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+  }
+  for(uint e=lid;e<n_el;e+=wg){
+    uint t=e>>log_c, col=col0+(e&(C-1u));
+    if(col<w){
+      uint r=row0+(t<<s0);
+      ulong x=tile[e];
+      if(post_c!=1UL||post_b!=1UL) x=gl_mul(x,tables[h-1u+r]);
+      uint orow=store_brev?brev(r,log_h):r;
+      out[(size_t)orow*w+col]=do_canon?gl_canon(x):x;
+      if(orow<prefix_height)
+        prefix[(size_t)orow*prefix_width+prefix_first+col]=gl_canon(x);
+    }
+  }
+}
+
+kernel void diagonal_probe(device const ulong* input [[buffer(0)]], device ulong* output [[buffer(1)]],
+    uint i [[thread_position_in_grid]]) {
+    for(uint lane=0;lane<8;lane++) output[(size_t)i*8+lane]=gl_canon(gl_diag8(input[i],lane));
+}
+kernel void prefix_scatter(device const ulong* src [[buffer(0)]], device ulong* dst [[buffer(1)]],
+    constant uint& width [[buffer(2)]], constant uint& first [[buffer(3)]],
+    constant uint& cols [[buffer(4)]], uint i [[thread_position_in_grid]]) {
+    dst[(i/cols)*width+first+i%cols]=gl_canon(src[i]);
+}
+// Exact cubic arithmetic modulo X^3-X-1. No floating point or tensor operations.
+inline ulong3 cubic_add(ulong3 a, ulong3 b) { return ulong3(gl_add(a.x,b.x),gl_add(a.y,b.y),gl_add(a.z,b.z)); }
+inline ulong3 cubic_neg(ulong3 a) { return ulong3(gl_neg(a.x),gl_neg(a.y),gl_neg(a.z)); }
+inline ulong3 cubic_scale(ulong3 a, ulong b) { return ulong3(gl_mul(a.x,b),gl_mul(a.y,b),gl_mul(a.z,b)); }
+inline ulong3 cubic_mul(ulong3 a, ulong3 b) {
+    ulong t0=gl_mul(a.x,b.x);
+    ulong t1=gl_add(gl_mul(a.x,b.y),gl_mul(a.y,b.x));
+    ulong t2=gl_add(gl_add(gl_mul(a.x,b.z),gl_mul(a.y,b.y)),gl_mul(a.z,b.x));
+    ulong t3=gl_add(gl_mul(a.y,b.z),gl_mul(a.z,b.y));
+    ulong t4=gl_mul(a.z,b.z);
+    return ulong3(gl_add(t0,t3),gl_add(gl_add(t1,t3),t4),gl_add(t2,t4));
+}
+kernel void quotient_eval(device const ulong* code [[buffer(0)]],
+    device const ulong* rows [[buffer(1)]], device ulong* output [[buffer(2)]],
+    constant uint& count [[buffer(3)]], constant uint& stride [[buffer(4)]],
+    device ulong* temps [[buffer(5)]], constant uint& rows_count [[buffer(6)]],
+    uint row [[thread_position_in_grid]]) {
+    ulong3 stack[32]; uint sp=0; ulong3 acc=ulong3(0);
+    device const ulong* input=rows+size_t(row)*stride;
+    for(uint pc=0;pc<count;pc++) {
+        device const ulong* i=code+size_t(pc)*4;
+        uint op=uint(i[0]); ulong3 c=ulong3(i[1],i[2],i[3]);
+        switch(op) {
+            // Typed word planes keep adjacent rows coalesced. Base expressions
+            // own one plane; extension expressions own three, without padding.
+            case 15: {size_t t=i[1]*rows_count+row;stack[sp++]=i[2]==1?ulong3(temps[t],0,0):ulong3(temps[t],temps[t+rows_count],temps[t+2*rows_count]);break;}
+            case 16: {size_t t=i[1]*rows_count+row;ulong3 v=stack[sp-1];temps[t]=v.x;if(i[2]==3){temps[t+rows_count]=v.y;temps[t+2*rows_count]=v.z;}break;}
+            case 0: stack[sp++]=c; break;
+            case 1: stack[sp++]=ulong3(input[i[1]],0,0); break;
+            case 2: stack[sp++]=ulong3(input[i[1]],input[i[1]+1],input[i[1]+2]); break;
+            case 3: sp--; stack[sp-1]=ulong3(gl_add(stack[sp-1].x,stack[sp].x),0,0); break;
+            case 4: sp--; stack[sp-1]=ulong3(gl_sub(stack[sp-1].x,stack[sp].x),0,0); break;
+            case 5: sp--; stack[sp-1]=ulong3(gl_mul(stack[sp-1].x,stack[sp].x),0,0); break;
+            case 6: stack[sp-1]=ulong3(gl_neg(stack[sp-1].x),0,0); break;
+            case 7: sp--; stack[sp-1]=cubic_add(stack[sp-1],stack[sp]); break;
+            case 8: sp--; stack[sp-1]=cubic_add(stack[sp-1],cubic_neg(stack[sp])); break;
+            case 9: sp--; stack[sp-1]=cubic_mul(stack[sp-1],stack[sp]); break;
+            case 10: stack[sp-1]=cubic_neg(stack[sp-1]); break;
+            case 11: acc=cubic_add(acc,cubic_scale(c,stack[--sp].x)); break;
+            case 13: sp--; stack[sp-1]=ulong3(gl_sub(stack[sp].x,stack[sp-1].x),0,0); break;
+            case 14: sp--; stack[sp-1]=cubic_add(stack[sp],cubic_neg(stack[sp-1])); break;
+            case 12: acc=cubic_add(acc,cubic_mul(c,stack[--sp])); break;
+        }
+    }
+    acc=cubic_scale(acc,input[stride-1]);
+    output[size_t(row)*3]=gl_canon(acc.x);
+    output[size_t(row)*3+1]=gl_canon(acc.y);
+    output[size_t(row)*3+2]=gl_canon(acc.z);
 }

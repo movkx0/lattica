@@ -145,6 +145,7 @@ impl SaltInput<'_> {
 /// device. Neither the allocation plan nor this output measures whole-job RSS.
 pub struct LdeCommitOutput {
     pub matrices: Vec<RowMajorMatrix<Val>>,
+    pub(crate) prefixes: Vec<super::super::prefix_storage::PrefixMatrix>,
     pub plan: LdeCommitPlan,
     pub(crate) tree: RetainedTree,
     pub(crate) device_matrices: Vec<super::device::DeviceMatrix>,
@@ -222,6 +223,7 @@ fn ntt_groups(
     height: usize,
     width: usize,
     max_column_bits: usize,
+    tile_log2: usize,
 ) -> Result<Vec<(usize, usize, usize)>, String> {
     if height < 2
         || !height.is_power_of_two()
@@ -229,6 +231,7 @@ fn ntt_groups(
         || width == 0
         || width > u32::MAX as usize
         || !(3..=4).contains(&max_column_bits)
+        || !(10..=12).contains(&tile_log2)
     {
         return Err("unsupported resident NTT geometry".into());
     }
@@ -238,7 +241,7 @@ fn ntt_groups(
         .ok_or("NTT column overflow")?
         .trailing_zeros()
         .min(max_column_bits as u32) as usize;
-    let cap = (12 - log_c).min(log_h);
+    let cap = (tile_log2 - log_c).min(log_h);
     let groups = log_h.div_ceil(cap);
     let (base, extra) = (log_h / groups, log_h % groups);
     let mut stage = 0;
@@ -250,6 +253,16 @@ fn ntt_groups(
             item
         })
         .collect())
+}
+
+/// The last NTT store may also retain canonical rows without a scatter pass.
+/// This destination is a separate allocation, and each output cell has one writer.
+#[derive(Clone, Copy)]
+pub(super) struct NttPrefix<'a> {
+    buffer: &'a Buffer<u64>,
+    width: usize,
+    first: usize,
+    height: usize,
 }
 
 pub(super) struct TransformBuffers {
@@ -317,7 +330,7 @@ impl Engine {
     fn lde_read_columns(
         &mut self,
         buffer: &Buffer<u64>,
-        output: &mut HostReadback,
+        output: &mut impl super::lde_readback::ColumnReadback,
         first: usize,
         columns: usize,
     ) -> Result<(), String> {
@@ -367,6 +380,7 @@ impl Engine {
         src: &Buffer<u64>,
         dst: &Buffer<u64>,
         roots: &Buffer<u64>,
+        inverse: bool,
         height: usize,
         width: usize,
         post_c: u64,
@@ -374,20 +388,47 @@ impl Engine {
         canonical: bool,
         bit_reversed: bool,
         opening: bool,
+        prefix: Option<NttPrefix<'_>>,
     ) -> Result<bool, String> {
+        #[cfg(feature = "gpu-metal")]
+        let tile_log2 = self.pq.ntt_tile_log2();
+        #[cfg(feature = "gpu")]
+        let tile_log2 = 12;
         let log_h = height.trailing_zeros() as usize;
         #[cfg(feature = "gpu")]
         let max_column_bits =
             crate::gpu::ntt_cache::max_column_bits(self.pq.device(), log_h, width);
         #[cfg(feature = "gpu-metal")]
         let max_column_bits = 4;
-        let groups = ntt_groups(height, width, max_column_bits)?;
+        let groups = ntt_groups(height, width, max_column_bits, tile_log2)?;
         if height
             .checked_mul(width)
             .is_none_or(|n| n > src.len() || n > dst.len())
             || roots.len() < log_h
         {
             return Err("resident NTT buffer bounds".into());
+        }
+        if let Some(p) = prefix {
+            if !bit_reversed
+                || !canonical
+                || p.height > height
+                || p.width > u32::MAX as usize
+                || p.first.checked_add(width).is_none_or(|n| n > p.width)
+                || p.height
+                    .checked_mul(p.width)
+                    .is_none_or(|n| n > p.buffer.len())
+            {
+                return Err("NTT prefix bounds or canonical layout".into());
+            }
+        }
+        #[cfg(feature = "gpu-metal")]
+        let tables = self.pq.ntt_tables(roots, inverse, height, post_c, post_b)?;
+        #[cfg(feature = "gpu")]
+        {
+            let _ = inverse;
+            if prefix.is_some() {
+                return Err("fused NTT prefix stores require Metal".into());
+            }
         }
         let mut in_dst = true;
         for (group, &(stage, count, log_c)) in groups.iter().enumerate() {
@@ -401,7 +442,11 @@ impl Engine {
                 in_dst = std::ptr::eq(output, dst);
             }
             let local_elements = 1usize << (count + log_c);
-            let workgroup = (local_elements / 2).clamp(32, 256);
+            #[cfg(feature = "gpu-metal")]
+            let max_group = self.pq.workgroup();
+            #[cfg(feature = "gpu")]
+            let max_group = 256;
+            let workgroup = (local_elements / 2).clamp(32, max_group);
             let workgroups = (height >> count) * width.div_ceil(1 << log_c);
             let mut event = Event::empty();
             #[cfg(feature = "gpu")]
@@ -412,10 +457,18 @@ impl Engine {
             );
             #[cfg(feature = "gpu-metal")]
             let power_words: Option<usize> = None;
+            #[cfg(feature = "gpu")]
             let kernel_name = if power_words.is_some() {
                 "ntt_tile_cached"
             } else {
                 "ntt_tile"
+            };
+            #[cfg(feature = "gpu-metal")]
+            let kernel_name = match (tables.is_some(), last && prefix.is_some()) {
+                (true, true) => "ntt_tile_cached_prefix",
+                (false, true) => "ntt_tile_prefix",
+                (true, false) => "ntt_tile_cached",
+                (false, false) => "ntt_tile",
             };
             // SAFETY: whole independent columns, bounded u32 row/column indexing,
             // <=32 KiB total local storage and distinct permutation buffers.
@@ -439,7 +492,24 @@ impl Engine {
                     .arg(u32::from(last && bit_reversed))
                     .arg(if last { post_c } else { 1 })
                     .arg(if last { post_b } else { 1 })
-                    .arg(roots)
+                    .arg(roots);
+                #[cfg(feature = "gpu-metal")]
+                let builder = if let Some(tables) = &tables {
+                    builder.arg(tables)
+                } else {
+                    builder
+                };
+                #[cfg(feature = "gpu-metal")]
+                let builder = if let Some(p) = prefix.filter(|_| last) {
+                    builder
+                        .arg(p.buffer)
+                        .arg(p.width as u32)
+                        .arg(p.first as u32)
+                        .arg(p.height as u32)
+                } else {
+                    builder
+                };
+                let builder = builder
                     .arg_local::<u64>(local_elements)
                     .global_work_size(workgroups * workgroup)
                     .local_work_size(workgroup);
@@ -616,11 +686,34 @@ impl Engine {
                     host_budget,
                     retention,
                     capture,
+                    false,
                 )
             })
         } else {
-            self.commit_inputs_inner(inputs, masks, cap_height, host_budget, retention, capture)
+            self.commit_inputs_inner(inputs, masks, cap_height, host_budget, retention, capture, false)
         }
+    }
+
+    fn coset_lde_commit_public(
+        &mut self,
+        inputs: &[LdeInput<'_>],
+        masks: Option<&[RowMajorMatrix<Val>]>,
+        cap_height: usize,
+        host_budget: usize,
+        retention_bits: usize,
+        public_preprocessing: bool,
+    ) -> Result<LdeCommitOutput, String> {
+        if !public_preprocessing {
+            return self.coset_lde_commit_with_masks(inputs, masks, cap_height, host_budget, retention_bits);
+        }
+        if masks.is_some() { return Err("public preprocessing cannot use private masks".into()); }
+        let shapes = validate_inputs(inputs)?;
+        let prepared: Vec<_> = inputs.iter().zip(shapes).map(|(input, shape)| CommitInput {
+            source: CommitSource::Host { evaluations: input.evaluations, shift: input.shift },
+            salts: SaltInput::Host(input.salts), shape,
+        }).collect();
+        self.commit_inputs_inner(&prepared, None, cap_height, host_budget,
+            LdeRetention::HostPrefix(retention_bits), None, true)
     }
 
     fn commit_inputs_inner(
@@ -631,7 +724,9 @@ impl Engine {
         host_budget: usize,
         retention: LdeRetention,
         capture: Option<&super::device::DeviceSession>,
+        public_preprocessing: bool,
     ) -> Result<LdeCommitOutput, String> {
+        let retention_bits = match retention { LdeRetention::HostPrefix(bits) => bits, LdeRetention::DeviceOnly => 0 };
         let started = Instant::now();
         let shapes: Vec<_> = inputs.iter().map(|input| input.shape).collect();
         let masked = masks.is_some()
@@ -658,6 +753,7 @@ impl Engine {
             )
             .ok_or("cached LDE accounting underflow")?;
         let old_workspace = self.workspace.as_ref().map_or(0, super::Workspace::bytes);
+        let execution_limits = self.lde_limits(&shapes)?;
         let capture_shapes = super::device_capture_shapes(&shapes, usize::from(masked))?;
         let device_specs = if capture.is_some() {
             super::device::capture_specs(&capture_shapes)?
@@ -678,7 +774,7 @@ impl Engine {
         let mut plan = LdeCommitPlan::new_with_retention(
             &shapes,
             cap_height,
-            self.limits,
+            execution_limits,
             self.max_alloc,
             self.mode.slots(),
             live.checked_add(device_bytes)
@@ -761,7 +857,7 @@ impl Engine {
         let hash_plan = plan_slots(
             height,
             width,
-            self.limits,
+            execution_limits,
             self.max_alloc,
             self.mode.slots(),
         )?;
@@ -806,6 +902,7 @@ impl Engine {
         // Must outlive all pending operations and drop BEFORE any owned buffer
         // above, on normal return, device error, or unwind.
         let fence = self.fence();
+        let mut prefixes = Vec::new();
         let mut matrices = Vec::with_capacity(shapes.len());
         buffers
             .sponge
@@ -825,7 +922,35 @@ impl Engine {
         })?;
         for (matrix_index, input) in inputs.iter().enumerate() {
             let shape = shapes[matrix_index];
-            let mut readback = if retention == LdeRetention::DeviceOnly {
+            #[cfg(feature = "gpu-metal")]
+            let shared = if crate::metal_compute::resident::enabled() && retention_bits > 0 {
+                Some(crate::metal_compute::resident::SharedWords::new(
+                    self.pq.queue(),
+                    plan.retained_height() * shape.width,
+                )?)
+            } else {
+                None
+            };
+            #[cfg(not(feature = "gpu-metal"))]
+            let shared: Option<()> = None;
+            #[cfg(feature = "gpu-metal")]
+            let mut public_readback = if public_preprocessing && retention_bits > 0
+                && std::env::var_os("LATTICA_APPLE_SHARED_PREPROCESSING_DIR").is_some() {
+                if masks.is_some() || shared.is_some() || plan.readback_layout != super::lde_readback::ReadbackLayout::Direct {
+                    return Err("shared public preprocessing requires direct host readback without masks".into());
+                }
+                let (CommitSource::Host { evaluations, shift }, SaltInput::Host(salts)) = (input.source, input.salts) else {
+                    return Err("shared preprocessing requires public host inputs".into());
+                };
+                let public_input = LdeInput { evaluations, salts, shift, added_bits: input.shape.added_bits };
+                super::super::shared_preprocessing::SharedReadback::for_public_input(
+                    &public_input, plan.retained_height(), plan.columns_per_tile())?
+            } else { None };
+            #[cfg(feature = "gpu-metal")]
+            let public_mapped = public_readback.is_some();
+            #[cfg(not(feature = "gpu-metal"))]
+            let public_mapped = { let _ = public_preprocessing; false };
+            let mut readback = if retention == LdeRetention::DeviceOnly || shared.is_some() || public_mapped {
                 None
             } else {
                 Some(
@@ -906,6 +1031,7 @@ impl Engine {
                     &buffers.a.buffer,
                     &buffers.b.buffer,
                     &buffers.inverse.buffer,
+                    true,
                     shape.height,
                     tile.columns,
                     normalization,
@@ -913,6 +1039,7 @@ impl Engine {
                     false,
                     false,
                     false,
+                    None,
                 )?;
                 if let Some(masks) = masks {
                     let CommitSource::Host {
@@ -983,10 +1110,23 @@ impl Engine {
                         tile.columns,
                     )?;
                 }
+                #[cfg(feature = "gpu-metal")]
+                let prefix = shared
+                    .as_ref()
+                    .filter(|_| self.pq.prefix_fusion())
+                    .map(|shared| NttPrefix {
+                        buffer: shared.buffer(),
+                        width: shape.width,
+                        first: tile.first_column,
+                        height: plan.retained_height(),
+                    });
+                #[cfg(feature = "gpu")]
+                let prefix = None;
                 let in_a = self.lde_ntt(
                     &buffers.b.buffer,
                     &buffers.a.buffer,
                     &buffers.forward.buffer,
+                    false,
                     height,
                     tile.columns,
                     1,
@@ -994,6 +1134,7 @@ impl Engine {
                     true,
                     true,
                     false,
+                    prefix,
                 )?;
                 let transformed = if in_a {
                     &buffers.a.buffer
@@ -1014,6 +1155,26 @@ impl Engine {
                 if let Some(readback) = &mut readback {
                     self.lde_read_columns(transformed, readback, tile.first_column, tile.columns)?;
                 }
+                #[cfg(feature = "gpu-metal")]
+                if let Some(readback) = &mut public_readback {
+                    self.lde_read_columns(transformed, readback, tile.first_column, tile.columns)?;
+                }
+                #[cfg(feature = "gpu-metal")]
+                if let Some(shared) = shared.as_ref().filter(|_| !self.pq.prefix_fusion()) {
+                    let kernel = self
+                        .pq
+                        .kernel_builder("prefix_scatter")
+                        .arg(transformed)
+                        .arg(shared.buffer())
+                        .arg(shape.width as u32)
+                        .arg(tile.first_column as u32)
+                        .arg(tile.columns as u32)
+                        .global_work_size(plan.retained_height() * tile.columns)
+                        .build()?;
+                    unsafe {
+                        kernel.cmd().enq()?;
+                    }
+                }
                 self.stats.lde_column_tiles += 1;
             }
             if let Some(readback) = readback {
@@ -1028,7 +1189,23 @@ impl Engine {
                     .stats
                     .lde_host_workspace_peak_bytes
                     .max(reorder.workspace_backing_bytes);
-                matrices.push(matrix);
+                if retention_bits > 0 {
+                    prefixes.push(super::super::prefix_storage::host(matrix));
+                } else {
+                    matrices.push(matrix);
+                }
+            }
+            #[cfg(feature = "gpu-metal")]
+            if let Some(readback) = public_readback {
+                prefixes.push(p3_matrix::dense::DenseMatrix::new(
+                    super::super::prefix_storage::PrefixStorage::Shared(readback.finish()?), shape.width));
+            }
+            #[cfg(feature = "gpu-metal")]
+            if let Some(shared) = shared {
+                prefixes.push(p3_matrix::dense::DenseMatrix::new(
+                    super::super::prefix_storage::PrefixStorage::Metal(shared.freeze()?),
+                    shape.width,
+                ));
             }
             // Reuse a transform buffer for bounded salt bands only AFTER its
             // transformed columns have been hashed, captured and optionally read back.
@@ -1111,6 +1288,10 @@ impl Engine {
         }
         self.stats.lde_wall_ns += started.elapsed().as_nanos();
         self.context_checkpoint("resident LDE complete")?;
+        #[cfg(feature = "gpu-metal")]
+        if crate::block_v2::apple_memory::reclaim_enabled() {
+            self.workspace = None;
+        }
         if buffers.bytes() <= self.lde_workspace_limit {
             // Scratch contains fresh attempt data. Scrub it before retaining
             // storage; no witness, salts, masks, or RNG state becomes a cache.
@@ -1132,6 +1313,7 @@ impl Engine {
         Ok(LdeCommitOutput {
             matrices,
             device_matrices,
+            prefixes,
             plan,
             cap_height,
             tree: RetainedTree {
@@ -1227,7 +1409,7 @@ mod tests {
         for log_h in 1..32 {
             for width in [1usize, 2, 3, 4, 7, 16, 35, 98, 204, 1024] {
                 for columns in [3, 4] {
-                    let groups = ntt_groups(1usize << log_h, width, columns).unwrap();
+                    let groups = ntt_groups(1usize << log_h, width, columns, 12).unwrap();
                     let mut stage = 0;
                     for (start, count, log_c) in groups {
                         assert_eq!(start, stage);
@@ -1238,11 +1420,120 @@ mod tests {
                 }
             }
         }
-        for (height, width) in [(0, 1), (1, 1), (3, 1), (8, 0), (8, usize::MAX)] {
-            assert!(ntt_groups(height, width, 4).is_err());
+        for invalid_tile in [0, 9, 13, usize::MAX] {
+            assert!(ntt_groups(1024, 4, 4, invalid_tile).is_err());
         }
-        assert!(ntt_groups(256, 16, 2).is_err());
-        assert!(ntt_groups(256, 16, usize::MAX).is_err());
+        for (height, width) in [(0, 1), (1, 1), (3, 1), (8, 0), (8, usize::MAX)] {
+            assert!(ntt_groups(height, width, 4, 12).is_err());
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "gpu-metal")]
+    #[ignore = "two component shapes, three samples each; Apple GPU and retained trees required"]
+    fn metal_priority_components() {
+        let _shutdown = super::super::TestShutdownGuard;
+        super::super::initialize_mode(
+            super::super::Limits {
+                managed_bytes: 512 << 20,
+                tile_bytes: 64 << 20,
+                staging_bytes: 8 << 20,
+            },
+            super::super::TransferMode::Serial,
+        )
+        .unwrap();
+        let snapshot = || {
+            ENGINE
+                .get()
+                .unwrap()
+                .lock()
+                .unwrap()
+                .as_mut()
+                .unwrap()
+                .snapshot()
+        };
+        for (height, width) in [(8192usize, 3usize), (131072, 7)] {
+            let evaluations = matrix(height, width, 17);
+            let salts = matrix(height << 3, 4, 29);
+            let inputs = [LdeInput {
+                evaluations: &evaluations,
+                salts: &salts,
+                added_bits: 3,
+                shift: Val::GENERATOR,
+            }];
+            let warmup = retained_lde_commit(&inputs, None, 2, 256 << 20, 1).unwrap();
+            let expected_cap = warmup.cap().to_vec();
+            drop(warmup);
+            for repeat in 1..=3 {
+                let before = snapshot();
+                let start = std::time::Instant::now();
+                let output = retained_lde_commit(&inputs, None, 2, 256 << 20, 1).unwrap();
+                assert_eq!(output.cap(), expected_cap);
+                drop(output);
+                let wall = start.elapsed().as_secs_f64();
+                let after = snapshot();
+                println!(
+                    "metal_priority_sample {}",
+                    serde_json::json!({
+                        "input_rows": height, "output_rows": height << 3, "columns": width, "repeat": repeat,
+                        "wall_seconds": wall, "ntt_gpu_seconds": (after.lde_transform_ns-before.lde_transform_ns) as f64/1e9,
+                        "sponge_gpu_seconds": (after.lde_sponge_ns-before.lde_sponge_ns) as f64/1e9,
+                        "host_reordered_bytes": after.lde_host_reordered_bytes-before.lde_host_reordered_bytes,
+                    })
+                );
+            }
+        }
+        super::super::report("priority components");
+    }
+
+    #[test]
+    #[cfg(feature = "gpu-metal")]
+    #[ignore = "short kernel screen; Apple GPU and retained trees required"]
+    fn metal_kernel_screen() {
+        let _shutdown = super::super::TestShutdownGuard;
+        super::super::initialize_mode(
+            super::super::Limits {
+                managed_bytes: 256 << 20,
+                tile_bytes: 32 << 20,
+                staging_bytes: 1 << 20,
+            },
+            super::super::TransferMode::Serial,
+        )
+        .unwrap();
+        let matrix = RowMajorMatrix::new(
+            (0..8192 * 32)
+                .map(|i| Val::from_u64(i as u64 * 7717 + 19))
+                .collect(),
+            32,
+        );
+        let salts = RowMajorMatrix::new(
+            (0..65536 * 4)
+                .map(|i| Val::from_u64(i as u64 * 1717 + 13))
+                .collect(),
+            4,
+        );
+        let inputs = [LdeInput {
+            evaluations: &matrix,
+            salts: &salts,
+            added_bits: 3,
+            shift: Val::GENERATOR,
+        }];
+        let warmup = coset_lde_commit(&inputs, 2, 128 << 20).unwrap();
+        drop(warmup);
+        let started = std::time::Instant::now();
+        let mut count = 0;
+        while count < 2 || (count < 10 && started.elapsed().as_secs_f64() < 2.0) {
+            let output = coset_lde_commit(&inputs, 2, 128 << 20).unwrap();
+            std::hint::black_box(output.cap());
+            drop(output);
+            count += 1;
+        }
+        println!(
+            "metal_kernel_screen iterations={count} seconds={} seconds_per_iteration={}",
+            started.elapsed().as_secs_f64(),
+            started.elapsed().as_secs_f64() / count as f64
+        );
+        super::super::report("kernel screening");
     }
 
     fn check_cpu_reference(inputs: &[LdeInput<'_>], cap_height: usize) -> LdeCommitOutput {
@@ -1491,6 +1782,44 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires GPU and retained trees; run serially"]
+    fn gpu_wide_lde_tiles_preserve_columns_caps_and_paths() {
+        let _shutdown = super::super::TestShutdownGuard;
+        // Match the 400-column preprocessing shape at a small row count. Vary
+        // only the allowance so the same data exercises 64/128/256-column tiles.
+        let evaluations = matrix(128, 400, 59);
+        let salts = matrix(2048, 4, 61);
+        let inputs = [LdeInput {
+            evaluations: &evaluations,
+            salts: &salts,
+            added_bits: 4,
+            shift: Val::GENERATOR,
+        }];
+        let mut reference_cap: Option<Vec<[Val; 4]>> = None;
+        for (managed_mib, columns) in [(3, 64), (6, 128), (12, 256)] {
+            super::super::initialize_mode(
+                super::super::Limits {
+                    managed_bytes: managed_mib * 1024 * 1024,
+                    tile_bytes: 64 * 1024,
+                    staging_bytes: 8 * 1024,
+                },
+                super::super::TransferMode::Serial,
+            )
+            .unwrap();
+            let output = check_cpu_reference(&inputs, 2);
+            assert_eq!(output.plan.columns_per_tile(), columns);
+            if let Some(cap) = &reference_cap {
+                assert_eq!(output.cap(), cap.as_slice());
+            } else {
+                reference_cap = Some(output.cap().to_vec());
+            }
+            println!("wide_lde_columns={columns} cpu_equivalence=PASS");
+            drop(output);
+            super::super::shutdown().unwrap();
+        }
+    }
+
+    #[test]
     #[ignore = "requires OpenCL GPU, LATTICA_V2_GPU_RETAIN_TREES=1; run serially in <=3 GiB service"]
     fn gpu_resident_lde_multigroup_ntt_and_unequal_input_heights_match_cpu() {
         let _shutdown = super::super::TestShutdownGuard;
@@ -1525,8 +1854,8 @@ mod tests {
                 shift: Val::GENERATOR.inverse(),
             },
         ];
-        assert!(ntt_groups(8192, 3, 4).unwrap().len() > 1);
-        assert!(ntt_groups(32768, 3, 4).unwrap().len() > 1);
+        assert!(ntt_groups(8192, 3, 4, 12).unwrap().len() > 1);
+        assert!(ntt_groups(32768, 3, 4, 12).unwrap().len() > 1);
         let output = check_cpu_reference(&inputs, 6);
         let before = ENGINE
             .get()
@@ -1787,4 +2116,13 @@ pub(crate) fn commit_owned_evaluations(
         retention,
         Some(session),
     )
+}
+
+/// Called only from the public preprocessing PCS entry point, never for traces.
+pub(crate) fn public_preprocessing_lde_commit(
+    inputs: &[LdeInput<'_>], cap_height: usize, host_budget: usize, retention_bits: usize,
+) -> Result<LdeCommitOutput, String> {
+    let mut slot = ENGINE.get().ok_or("GPU not initialized")?.lock().map_err(|_| "GPU engine poisoned")?;
+    slot.as_mut().ok_or("GPU shut down")?
+        .coset_lde_commit_public(inputs, None, cap_height, host_budget, retention_bits, true)
 }

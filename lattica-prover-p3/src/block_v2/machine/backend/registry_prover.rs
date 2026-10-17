@@ -28,6 +28,10 @@ impl RegistryProgram {
         self.prepared.air()
     }
 
+    pub(crate) fn analysis(&self) -> &super::super::analysis::MachineAnalysis {
+        self.prepared.analysis()
+    }
+
     pub(crate) fn preprocessing_cap(&self) -> &p3_batch_stark::Commitment<Config> {
         self.prepared.preprocessing_cap()
     }

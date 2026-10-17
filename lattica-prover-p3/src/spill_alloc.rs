@@ -93,8 +93,8 @@ struct Cfg {
     // Benchmark portability: anonymous RAM mappings substitute for Linux tmpfs.
     // Explicit opt-in; the existing file-backed streaming path remains the default.
     memory_backed: bool,
-    // Opt-in ceiling for controlled research jobs. A configured spill failure
-    // must fail closed rather than silently falling back to heap allocation.
+    // Optional ceiling for nonresident jobs. Resident workers use estimates
+    // only for scheduling and keep allocation accounting without a ceiling.
     max_bytes: Option<u64>,
 }
 static CFG: OnceLock<Cfg> = OnceLock::new();
@@ -109,6 +109,15 @@ fn cfg() -> &'static Cfg {
         let n = bytes.len().min(255);
         let mut buf = [0u8; 256];
         buf[..n].copy_from_slice(&bytes[..n]);
+        let max_bytes = std::env::var("LATTICA_SPILL_MAX_BYTES")
+            .ok()
+            .map(|v| v.parse().unwrap_or(0));
+        #[cfg(feature = "gpu-metal")]
+        let max_bytes = if crate::metal_compute::resident::enabled() {
+            None
+        } else {
+            max_bytes
+        };
         Cfg {
             dir: buf,
             dir_len: n,
@@ -117,9 +126,7 @@ fn cfg() -> &'static Cfg {
                 Ok("memory") => true,
                 _ => panic!("LATTICA_SPILL_BACKING must be file or memory"),
             },
-            max_bytes: std::env::var("LATTICA_SPILL_MAX_BYTES")
-                .ok()
-                .map(|v| v.parse().unwrap_or(0)),
+            max_bytes,
         }
     })
 }
@@ -207,6 +214,7 @@ unsafe fn write_hdr(base: *mut u8, magic: u64, fd: i64, total: u64) {
     h.write(magic);
     h.add(1).write(fd as u64);
     h.add(2).write(total);
+    h.add(3).write(0);
 }
 
 #[inline]
@@ -289,6 +297,8 @@ pub(crate) fn reserve_heap<T>(elements: usize, byte_limit: usize) -> Option<Vec<
         return Some(values);
     }
     let total = system_layout.size();
+    #[cfg(feature = "gpu-metal")]
+    let ticket = crate::metal_compute::backing::charge(total)?;
     // SAFETY: Header and capacity match SpillAlloc::dealloc. No uninitialized
     // element is exposed: callers initialize spare capacity before setting len.
     unsafe {
@@ -297,6 +307,8 @@ pub(crate) fn reserve_heap<T>(elements: usize, byte_limit: usize) -> Option<Vec<
             return None;
         }
         write_hdr(base, MAGIC_SYS, -1, total as u64);
+        #[cfg(feature = "gpu-metal")]
+        base.cast::<u64>().add(3).write(ticket.into_raw() as u64);
         Some(Vec::from_raw_parts(base.add(PAGE).cast::<T>(), 0, elements))
     }
 }
@@ -347,6 +359,10 @@ impl SpillAlloc {
             return std::ptr::null_mut();
         };
         let total = system_layout.size();
+        #[cfg(feature = "gpu-metal")]
+        let Some(ticket) = crate::metal_compute::backing::charge(total) else {
+            return std::ptr::null_mut();
+        };
         if ARMED.load(Ordering::Relaxed) > 0 {
             let limit = cfg().max_bytes;
             if MMAP_BYTES
@@ -367,6 +383,8 @@ impl SpillAlloc {
             }
             if let Some((base, fd)) = map_file(total) {
                 write_hdr(base, MAGIC_MMAP, fd, total as u64);
+                #[cfg(feature = "gpu-metal")]
+                base.cast::<u64>().add(3).write(ticket.into_raw() as u64);
                 MMAP_COUNT.fetch_add(1, Ordering::Relaxed);
                 let live = MMAP_BYTES.load(Ordering::Relaxed);
                 MMAP_PEAK.fetch_max(live, Ordering::Relaxed);
@@ -386,6 +404,8 @@ impl SpillAlloc {
             return base;
         }
         write_hdr(base, MAGIC_SYS, -1, total as u64);
+        #[cfg(feature = "gpu-metal")]
+        base.cast::<u64>().add(3).write(ticket.into_raw() as u64);
         base.add(PAGE)
     }
 }
@@ -410,6 +430,10 @@ unsafe impl GlobalAlloc for SpillAlloc {
         }
         let base = ptr.sub(PAGE);
         let (magic, fd, total) = read_hdr(base);
+        #[cfg(feature = "gpu-metal")]
+        if magic == MAGIC_MMAP || magic == MAGIC_SYS {
+            crate::metal_compute::backing::release(base.cast::<u64>().add(3).read() as usize);
+        }
         match magic {
             MAGIC_MMAP => {
                 let unmapped = libc::munmap(base as *mut libc::c_void, total as usize) == 0;
@@ -630,6 +654,8 @@ mod tests {
                     "--test-threads=1",
                 ])
                 .env(FLAG, mode)
+                .env("LATTICA_V2_METAL_PIPELINE", "reference")
+                .env("LATTICA_SPILL_BACKING", "memory")
                 .env(
                     "LATTICA_SPILL_MAX_BYTES",
                     if mode == "invalid" {
@@ -644,6 +670,41 @@ mod tests {
             }
             assert!(command.status().unwrap().success(), "mode={mode}");
         }
+    }
+
+    #[cfg(feature = "gpu-metal")]
+    #[test]
+    fn resident_spill_ignores_inherited_ceiling_in_subprocess() {
+        const FLAG: &str = "LATTICA_RESIDENT_SPILL_TEST";
+        if std::env::var_os(FLAG).is_some() {
+            let _scope = SpillScope::arm();
+            assert_eq!(cfg().max_bytes, None);
+            let layout = Layout::from_size_align(THRESHOLD, PAGE).unwrap();
+            let allocator = SpillAlloc;
+            unsafe {
+                let allocation = allocator.alloc(layout);
+                assert!(!allocation.is_null());
+                assert_eq!(spill_stats(), (1, (THRESHOLD + PAGE) as u64));
+                allocation.write(7);
+                assert_eq!(allocation.read(), 7);
+                allocator.dealloc(allocation, layout);
+            }
+            assert_eq!(spill_stats(), (0, 0));
+            return;
+        }
+        let status = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "spill_alloc::tests::resident_spill_ignores_inherited_ceiling_in_subprocess",
+                "--test-threads=1",
+            ])
+            .env(FLAG, "1")
+            .env("LATTICA_V2_METAL_PIPELINE", "resident")
+            .env("LATTICA_SPILL_BACKING", "memory")
+            .env("LATTICA_SPILL_MAX_BYTES", "1")
+            .status()
+            .unwrap();
+        assert!(status.success());
     }
 
     /// The allocator round-trips large armed (mmap) and unarmed (system-with-header) allocations without

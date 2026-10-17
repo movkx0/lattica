@@ -43,6 +43,7 @@ pub(super) struct Segment {
     pub end_ns: u64,
 }
 pub(super) struct Checkpoint {
+    pub elapsed_ns: u64,
     pub threads: usize,
     pub open_frames: usize,
     pub dropped: u64,
@@ -157,6 +158,7 @@ impl Timeline {
             self.boundary(id, now);
         }
         Checkpoint {
+            elapsed_ns: now,
             threads: self.threads.len(),
             open_frames: self
                 .threads

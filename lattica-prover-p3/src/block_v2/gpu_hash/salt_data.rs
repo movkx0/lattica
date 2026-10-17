@@ -13,6 +13,7 @@ pub enum SaltStore {
 #[derive(Clone, Copy)]
 pub(super) enum SaltView<'a> {
     Host(&'a [RowMajorMatrix<Val>]),
+    Compact(&'a [compact_salts::SaltMatrix]),
     Device(&'a [DeviceMatrix]),
     PublicDevice(&'a [PublicSalts]),
     Replay(&'a [ReplaySalts]),
@@ -138,6 +139,19 @@ impl SaltView<'_> {
         count: usize,
     ) -> Result<(), String> {
         match self {
+            Self::Compact(salts) => {
+                if salts.len() != count {
+                    return Err("owned PCS compact salt count mismatch".into());
+                }
+                for salt in salts {
+                    let compact_salts::SaltMatrix::Dense(salt) = salt else {
+                        return Err("host salt replay is not available in an owned GPU query".into());
+                    };
+                    if salt.width != 4 || height.checked_mul(4) != Some(salt.values.len()) {
+                        return Err("owned PCS compact salt geometry mismatch".into());
+                    }
+                }
+            }
             Self::Host(salts) => {
                 if salts.len() != count
                     || salts
@@ -210,6 +224,7 @@ impl SaltView<'_> {
     ) -> Result<Vec<Vec<Vec<Val>>>, String> {
         let count = match self {
             Self::Host(m) => m.len(),
+            Self::Compact(m) => m.len(),
             Self::Device(m) => m.len(),
             Self::PublicDevice(m) => m.len(),
             Self::Replay(m) => m.len(),
@@ -225,6 +240,18 @@ impl SaltView<'_> {
             .map(|_| Vec::with_capacity(count))
             .collect();
         match self {
+            Self::Compact(matrices) => {
+                for matrix in matrices {
+                    let compact_salts::SaltMatrix::Dense(m) = matrix else {
+                        return Err("host salt replay is not available in an owned GPU query".into());
+                    };
+                    for (row, &index) in rows.iter_mut().zip(indices) {
+                        let start = index.checked_mul(4).ok_or("salt row overflow")?;
+                        let end = start.checked_add(4).ok_or("salt row overflow")?;
+                        row.push(m.values.get(start..end).ok_or("salt row outside commitment")?.to_vec());
+                    }
+                }
+            }
             Self::Host(matrices) => {
                 for m in matrices {
                     for (row, &index) in rows.iter_mut().zip(indices) {
