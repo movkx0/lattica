@@ -690,7 +690,15 @@ impl Engine {
                 )
             })
         } else {
-            self.commit_inputs_inner(inputs, masks, cap_height, host_budget, retention, capture, false)
+            self.commit_inputs_inner(
+                inputs,
+                masks,
+                cap_height,
+                host_budget,
+                retention,
+                capture,
+                false,
+            )
         }
     }
 
@@ -704,16 +712,39 @@ impl Engine {
         public_preprocessing: bool,
     ) -> Result<LdeCommitOutput, String> {
         if !public_preprocessing {
-            return self.coset_lde_commit_with_masks(inputs, masks, cap_height, host_budget, retention_bits);
+            return self.coset_lde_commit_with_masks(
+                inputs,
+                masks,
+                cap_height,
+                host_budget,
+                retention_bits,
+            );
         }
-        if masks.is_some() { return Err("public preprocessing cannot use private masks".into()); }
+        if masks.is_some() {
+            return Err("public preprocessing cannot use private masks".into());
+        }
         let shapes = validate_inputs(inputs)?;
-        let prepared: Vec<_> = inputs.iter().zip(shapes).map(|(input, shape)| CommitInput {
-            source: CommitSource::Host { evaluations: input.evaluations, shift: input.shift },
-            salts: SaltInput::Host(input.salts), shape,
-        }).collect();
-        self.commit_inputs_inner(&prepared, None, cap_height, host_budget,
-            LdeRetention::HostPrefix(retention_bits), None, true)
+        let prepared: Vec<_> = inputs
+            .iter()
+            .zip(shapes)
+            .map(|(input, shape)| CommitInput {
+                source: CommitSource::Host {
+                    evaluations: input.evaluations,
+                    shift: input.shift,
+                },
+                salts: SaltInput::Host(input.salts),
+                shape,
+            })
+            .collect();
+        self.commit_inputs_inner(
+            &prepared,
+            None,
+            cap_height,
+            host_budget,
+            LdeRetention::HostPrefix(retention_bits),
+            None,
+            true,
+        )
     }
 
     fn commit_inputs_inner(
@@ -726,7 +757,10 @@ impl Engine {
         capture: Option<&super::device::DeviceSession>,
         public_preprocessing: bool,
     ) -> Result<LdeCommitOutput, String> {
-        let retention_bits = match retention { LdeRetention::HostPrefix(bits) => bits, LdeRetention::DeviceOnly => 0 };
+        let retention_bits = match retention {
+            LdeRetention::HostPrefix(bits) => bits,
+            LdeRetention::DeviceOnly => 0,
+        };
         let started = Instant::now();
         let shapes: Vec<_> = inputs.iter().map(|input| input.shape).collect();
         let masked = masks.is_some()
@@ -933,37 +967,61 @@ impl Engine {
             };
             #[cfg(not(feature = "gpu-metal"))]
             let shared: Option<()> = None;
-                        let mut public_readback = if public_preprocessing && retention_bits > 0
-                && std::env::var_os(crate::block_v2::worker_memory::env_name("SHARED_PREPROCESSING_DIR")).is_some() {
-                if masks.is_some() || shared.is_some() || plan.readback_layout != super::lde_readback::ReadbackLayout::Direct {
-                    return Err("shared public preprocessing requires direct host readback without masks".into());
+            let mut public_readback = if public_preprocessing
+                && retention_bits > 0
+                && std::env::var_os(crate::block_v2::worker_memory::env_name(
+                    "SHARED_PREPROCESSING_DIR",
+                ))
+                .is_some()
+            {
+                if masks.is_some()
+                    || shared.is_some()
+                    || plan.readback_layout != super::lde_readback::ReadbackLayout::Direct
+                {
+                    return Err(
+                        "shared public preprocessing requires direct host readback without masks"
+                            .into(),
+                    );
                 }
-                let (CommitSource::Host { evaluations, shift }, SaltInput::Host(salts)) = (input.source, input.salts) else {
+                let (CommitSource::Host { evaluations, shift }, SaltInput::Host(salts)) =
+                    (input.source, input.salts)
+                else {
                     return Err("shared preprocessing requires public host inputs".into());
                 };
-                let public_input = LdeInput { evaluations, salts, shift, added_bits: input.shape.added_bits };
+                let public_input = LdeInput {
+                    evaluations,
+                    salts,
+                    shift,
+                    added_bits: input.shape.added_bits,
+                };
                 super::super::shared_preprocessing::SharedReadback::for_public_input(
-                    &public_input, plan.retained_height(), plan.columns_per_tile())?
-            } else { None };
-            let public_mapped = public_readback.is_some();
-            let mut readback = if retention == LdeRetention::DeviceOnly || shared.is_some() || public_mapped {
-                None
+                    &public_input,
+                    plan.retained_height(),
+                    plan.columns_per_tile(),
+                )?
             } else {
-                Some(
-                    HostReadback::with_layout(
-                        plan.retained_height(),
-                        shape.width,
-                        plan.columns_per_tile(),
-                        if masked {
-                            super::lde_readback::OutputStorage::QuotientHeap
-                        } else {
-                            super::lde_readback::OutputStorage::Global
-                        },
-                        plan.readback_layout,
-                    )?
-                    .with_parallel_decode(parallel_readback),
-                )
+                None
             };
+            let public_mapped = public_readback.is_some();
+            let mut readback =
+                if retention == LdeRetention::DeviceOnly || shared.is_some() || public_mapped {
+                    None
+                } else {
+                    Some(
+                        HostReadback::with_layout(
+                            plan.retained_height(),
+                            shape.width,
+                            plan.columns_per_tile(),
+                            if masked {
+                                super::lde_readback::OutputStorage::QuotientHeap
+                            } else {
+                                super::lde_readback::OutputStorage::Global
+                            },
+                            plan.readback_layout,
+                        )?
+                        .with_parallel_decode(parallel_readback),
+                    )
+                };
             for tile in plan.tiles().filter(|t| t.matrix == matrix_index) {
                 buffers
                     .b
@@ -1151,7 +1209,7 @@ impl Engine {
                 if let Some(readback) = &mut readback {
                     self.lde_read_columns(transformed, readback, tile.first_column, tile.columns)?;
                 }
-                                if let Some(readback) = &mut public_readback {
+                if let Some(readback) = &mut public_readback {
                     self.lde_read_columns(transformed, readback, tile.first_column, tile.columns)?;
                 }
                 #[cfg(feature = "gpu-metal")]
@@ -1190,9 +1248,11 @@ impl Engine {
                     matrices.push(matrix);
                 }
             }
-                        if let Some(readback) = public_readback {
+            if let Some(readback) = public_readback {
                 prefixes.push(p3_matrix::dense::DenseMatrix::new(
-                    super::super::prefix_storage::PrefixStorage::Shared(readback.finish()?), shape.width));
+                    super::super::prefix_storage::PrefixStorage::Shared(readback.finish()?),
+                    shape.width,
+                ));
             }
             #[cfg(feature = "gpu-metal")]
             if let Some(shared) = shared {
@@ -1282,7 +1342,7 @@ impl Engine {
         }
         self.stats.lde_wall_ns += started.elapsed().as_nanos();
         self.context_checkpoint("resident LDE complete")?;
-                if crate::block_v2::worker_memory::reclaim_enabled() {
+        if crate::block_v2::worker_memory::reclaim_enabled() {
             self.workspace = None;
         }
         if buffers.bytes() <= self.lde_workspace_limit {
@@ -1402,16 +1462,17 @@ mod tests {
         for log_h in 1..32 {
             for width in [1usize, 2, 3, 4, 7, 16, 35, 98, 204, 1024] {
                 for columns in [3, 4] {
-                for tile_log2 in 10..=12 {
-                let groups = ntt_groups(1usize << log_h, width, columns, tile_log2).unwrap();
-                    let mut stage = 0;
-                    for (start, count, log_c) in groups {
-                        assert_eq!(start, stage);
-                    assert!(count > 0 && count + log_c <= tile_log2);
-                        stage += count;
+                    for tile_log2 in 10..=12 {
+                        let groups =
+                            ntt_groups(1usize << log_h, width, columns, tile_log2).unwrap();
+                        let mut stage = 0;
+                        for (start, count, log_c) in groups {
+                            assert_eq!(start, stage);
+                            assert!(count > 0 && count + log_c <= tile_log2);
+                            stage += count;
+                        }
+                        assert_eq!(stage, log_h);
                     }
-                    assert_eq!(stage, log_h);
-                }
                 }
             }
         }
@@ -2115,9 +2176,17 @@ pub(crate) fn commit_owned_evaluations(
 
 /// Called only from the public preprocessing PCS entry point, never for traces.
 pub(crate) fn public_preprocessing_lde_commit(
-    inputs: &[LdeInput<'_>], cap_height: usize, host_budget: usize, retention_bits: usize,
+    inputs: &[LdeInput<'_>],
+    cap_height: usize,
+    host_budget: usize,
+    retention_bits: usize,
 ) -> Result<LdeCommitOutput, String> {
-    let mut slot = ENGINE.get().ok_or("GPU not initialized")?.lock().map_err(|_| "GPU engine poisoned")?;
-    slot.as_mut().ok_or("GPU shut down")?
+    let mut slot = ENGINE
+        .get()
+        .ok_or("GPU not initialized")?
+        .lock()
+        .map_err(|_| "GPU engine poisoned")?;
+    slot.as_mut()
+        .ok_or("GPU shut down")?
         .coset_lde_commit_public(inputs, None, cap_height, host_budget, retention_bits, true)
 }

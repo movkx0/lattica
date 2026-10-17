@@ -40,7 +40,7 @@ impl TimingIdentity {
         bytes[..32].copy_from_slice(&self.fingerprints[5]);
         bytes[32..].copy_from_slice(&configuration);
         self.fingerprints[5] =
-            crate::block_v2::execution::launch::digest(0x4c545443464731, &bytes)?;
+            crate::block_v2::execution::identity::digest(0x4c545443464731, &bytes)?;
         Ok(self)
     }
 }

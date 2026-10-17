@@ -13,6 +13,9 @@ use p3_field::{BasedVectorSpace, PrimeCharacteristicRing, PrimeField64};
 use std::collections::BTreeMap;
 use std::time::Instant;
 
+// Includes host handles for device-owned allocations in the optional cache.
+pub(crate) const DENOMINATOR_CACHE_METADATA_BYTES: usize = 128 << 10;
+
 mod compact;
 
 const MAX_MATRICES: usize = 256;

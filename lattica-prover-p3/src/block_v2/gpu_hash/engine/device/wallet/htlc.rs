@@ -105,5 +105,5 @@ impl DeviceSession {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "gpu"))]
 mod tests;

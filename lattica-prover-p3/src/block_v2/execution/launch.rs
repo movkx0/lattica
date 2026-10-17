@@ -37,16 +37,7 @@ mod storage;
 pub use storage::LaunchStorage;
 pub const MAX_REQUEST_BYTES: usize = 4 * (1 << 20) + 65536;
 
-pub(super) fn digest(domain: u64, bytes: &[u8]) -> Result<[u8; 32], Error> {
-    let fields = [1, bytes.len() as u64]
-        .into_iter()
-        .chain(commitment::stream::words(bytes));
-    Ok(commitment::digest_bytes(commitment::stream::hash_fields(
-        domain,
-        2 + bytes.len().div_ceil(4),
-        fields,
-    )?)?)
-}
+pub(super) use super::identity::digest;
 pub(super) fn request_digest(bytes: &[u8]) -> Result<[u8; 32], Error> {
     if bytes.is_empty() || bytes.len() > MAX_REQUEST_BYTES {
         return Err("launch request byte bound".into());

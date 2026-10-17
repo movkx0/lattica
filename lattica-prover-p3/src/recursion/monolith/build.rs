@@ -766,10 +766,15 @@ fn fill_monolith_query_segment(
     };
 
     let (aux_preimage, aux_cap_entry): (Vec<Val>, [Val; 4]) = if air.is_lookup() {
-        let pre: Vec<Val> = (0..air.aux_base_w()).map(|cc| terms[air.trm_aux(cc)].2).collect();
+        let pre: Vec<Val> = (0..air.aux_base_w())
+            .map(|cc| terms[air.trm_aux(cc)].2)
+            .collect();
         let mut node = leaf_hash(t, M_INPUT_LEAF, &pre);
         let start = M_INPUT_LEAF + air.aux_leaf_blocks();
-        for (l, &(sib, bit)) in aux_paths.expect("lookup auxiliary paths")[q].iter().enumerate() {
+        for (l, &(sib, bit)) in aux_paths.expect("lookup auxiliary paths")[q]
+            .iter()
+            .enumerate()
+        {
             node = merge_block(t, start + l, node, sib, bit);
         }
         (pre, node)

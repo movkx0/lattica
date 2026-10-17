@@ -3,12 +3,12 @@
 //! upstream FRI prover are preserved. An explicit owned path also evaluates
 //! claimed values on device, with an optional resident binary FRI consumer.
 //! Not production-qualified. The CPU verifier and serialized proof are unchanged.
-use crate::block_v2::worker_memory::MEMORY_BACKEND;
 use super::batched_fri as prover;
 use super::gpu_hash::{reduce_openings, CandidateMmcs, OpeningMatrix, OpeningTerm};
 use super::profile::Challenger;
 use super::profile::{Challenge, ChallengeMmcs};
 use super::resident_pcs::ResidentInner;
+use crate::block_v2::worker_memory::MEMORY_BACKEND;
 use crate::config::Val;
 use p3_challenger::FieldChallenger;
 use p3_commit::{Mmcs, OpenedValues, Pcs};
@@ -30,11 +30,11 @@ use tracing::debug_span;
 mod field;
 use super::gpu_hash::FriExtensionMmcs;
 pub use field::OpeningField;
+mod commitment_storage;
 mod owned;
 mod owned_fri;
-mod storage;
-mod commitment_storage;
 mod runtime_storage;
+mod storage;
 #[cfg(test)]
 mod test_support;
 
@@ -84,12 +84,9 @@ pub(super) fn open_hiding<E: OpeningField>(
             .expect("retained commitment admission failed");
         let opening_allowance = if let Some(plan) = &retained {
             plan.report();
-            if let Some(runtime) = runtime_storage::Partition::new(
-                session,
-                challenger,
-                plan.opening_allowance,
-            )
-            .expect("opening runtime storage admission failed")
+            if let Some(runtime) =
+                runtime_storage::Partition::new(session, challenger, plan.opening_allowance)
+                    .expect("opening runtime storage admission failed")
             {
                 runtime.report();
                 runtime.opening_allowance
@@ -143,9 +140,13 @@ pub(super) fn open_hiding<E: OpeningField>(
         E::open_host(mmcs, fri, rounds, challenger)
     };
     if let Some(plan) = partition {
-        let random =
-            storage::split_hiding(&mut values, random_columns, unhidden_round, plan.hiding_bytes)
-                .expect("resident hiding output exceeds admitted partition");
+        let random = storage::split_hiding(
+            &mut values,
+            random_columns,
+            unhidden_round,
+            plan.hiding_bytes,
+        )
+        .expect("resident hiding output exceeds admitted partition");
         return (values, (random, proof));
     }
     let random_values = values
@@ -233,7 +234,9 @@ fn validate_shapes(
         opened_elements,
     )
     // Bound cache planning metadata and allocation handles as well as vectors.
-    .and_then(|bytes| bytes.checked_add(64 << 10))
+    .and_then(|bytes| {
+        bytes.checked_add(super::gpu_hash::engine::opening_reduce::DENOMINATOR_CACHE_METADATA_BYTES)
+    })
     .ok_or("opening host workspace overflow")?;
     if bytes > (4usize << 30) {
         return Err("opening host workspace allowance");
@@ -340,7 +343,9 @@ fn open(
     // for that point, and precompute 1/(z - X) for the largest subgroup (in bitrev order).
     let inv_denoms = compute_inverse_denominators(&mats_and_points, &coset);
     let reclaim = super::worker_memory::reclaim_enabled();
-    if reclaim { drop(coset); }
+    if reclaim {
+        drop(coset);
+    }
 
     // Precompute adjusted barycentric weights once per opening point.
     // adjusted[i] = 1/(z - x_i) - 1/z, reused across all matrices opened at z.
@@ -402,7 +407,9 @@ fn open(
         })
         .collect::<Vec<_>>();
 
-    if reclaim { drop(adjusted_weights); }
+    if reclaim {
+        drop(adjusted_weights);
+    }
 
     // Batch combination challenge
 
@@ -449,7 +456,7 @@ fn open(
         drop(requests);
         drop(inv_denoms);
         drop(mats_and_points);
-            super::worker_memory::checkpoint("opening host buffers released before FRI");
+        super::worker_memory::checkpoint("opening host buffers released before FRI");
     }
 
     let fri_proof = prove_fri_inputs(
@@ -495,14 +502,23 @@ fn prove_fri_inputs<E: OpeningField>(
 }
 
 fn opening_weights(
-    inv_denoms: &LinearMap<Challenge, Vec<Challenge>>, log_blowup: usize, compact: bool,
+    inv_denoms: &LinearMap<Challenge, Vec<Challenge>>,
+    log_blowup: usize,
+    compact: bool,
 ) -> LinearMap<Challenge, Vec<Challenge>> {
-    inv_denoms.iter().map(|(point, denoms)| {
-        // Denominators retain the full domain for GPU reduction. Interpolation
-        // consumes only the largest degree prefix for this opening point.
-        let used = if compact { denoms.len() >> log_blowup } else { denoms.len() };
-        (*point, compute_adjusted_weights(*point, &denoms[..used]))
-    }).collect()
+    inv_denoms
+        .iter()
+        .map(|(point, denoms)| {
+            // Denominators retain the full domain for GPU reduction. Interpolation
+            // consumes only the largest degree prefix for this opening point.
+            let used = if compact {
+                denoms.len() >> log_blowup
+            } else {
+                denoms.len()
+            };
+            (*point, compute_adjusted_weights(*point, &denoms[..used]))
+        })
+        .collect()
 }
 
 fn compute_inverse_denominators<F: TwoAdicField, EF: ExtensionField<F>>(
@@ -550,13 +566,24 @@ mod tests {
     #[test]
     fn opening_compact_weights_preserve_each_point_prefix() {
         let inv: LinearMap<Challenge, Vec<Challenge>> = [
-            (Challenge::from_u64(7), (0..128).map(|i| Challenge::from_u64(i + 11)).collect()),
-            (Challenge::from_u64(13), (0..64).map(|i| Challenge::from_u64(i + 3)).collect()),
-        ].into_iter().collect();
+            (
+                Challenge::from_u64(7),
+                (0..128).map(|i| Challenge::from_u64(i + 11)).collect(),
+            ),
+            (
+                Challenge::from_u64(13),
+                (0..64).map(|i| Challenge::from_u64(i + 3)).collect(),
+            ),
+        ]
+        .into_iter()
+        .collect();
         let full = opening_weights(&inv, 4, false);
         let compact = opening_weights(&inv, 4, true);
         for (point, denoms) in inv.iter() {
-            assert_eq!(compact.get(point).unwrap(), &full.get(point).unwrap()[..denoms.len() / 16]);
+            assert_eq!(
+                compact.get(point).unwrap(),
+                &full.get(point).unwrap()[..denoms.len() / 16]
+            );
         }
         assert_eq!(compact.iter().map(|(_, v)| v.len()).sum::<usize>(), 12);
         assert_eq!(inv.iter().map(|(_, v)| v.len()).sum::<usize>(), 192);

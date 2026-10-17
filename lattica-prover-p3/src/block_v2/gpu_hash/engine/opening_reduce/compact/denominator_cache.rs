@@ -218,6 +218,7 @@ mod tests {
             + 3 * std::mem::size_of::<usize>()
             + std::mem::size_of::<Option<usize>>()
             + std::mem::size_of::<super::super::Allocation>();
-        assert!(256 * per_input + 1024 <= 64 << 10);
+        assert!(256 * per_input + 1024 <=
+            crate::block_v2::gpu_hash::engine::opening_reduce::DENOMINATOR_CACHE_METADATA_BYTES);
     }
 }

@@ -6,8 +6,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "building the default-feature staticlib (no --features)…"
-cargo build --release --lib >/dev/null 2>&1
-LIB="$(ls target/release/liblattica_prover_p3.a 2>/dev/null || true)"
+cargo build --locked --release --lib >/dev/null 2>&1
+LIB="${CARGO_TARGET_DIR:-target}/release/liblattica_prover_p3.a"
 [ -n "$LIB" ] && [ -f "$LIB" ] || { echo "FAIL: staticlib not found under target/release/"; exit 1; }
 
 # The current development node seam. Any add/remove is a deliberate wire change — update this list in the SAME commit.
@@ -78,4 +78,4 @@ if [ "${RES:-0}" -ne 0 ]; then
   nm "$LIB" 2>/dev/null | grep -iE 'lattica_prover_p3[0-9]+(tip5|lookup|wrap|tree)' | head
   exit 1
 fi
-echo "OK: zero deep-tree research symbols in the default staticlib (feature-gated out; enable with --features tree,wrap,lookup,tip5)."
+echo "OK: zero deep-tree research symbols in the default staticlib (feature-gated out; enable with --features tree,lookup,tip5)."

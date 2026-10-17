@@ -9,6 +9,7 @@
 pub mod dag;
 #[cfg(target_os = "linux")]
 pub mod gpu_admission;
+mod identity;
 pub mod job;
 #[cfg(all(target_os = "linux", feature = "stream"))]
 pub mod native_worker;

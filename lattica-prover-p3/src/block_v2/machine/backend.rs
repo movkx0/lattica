@@ -850,8 +850,9 @@ impl PreparedProgram {
         // Hold the heavy phase for the entire owned proof. The host-trace path
         // hands it to the late phase only after retiring its trace prefixes.
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
-        let mut memory_phase = super::super::worker_memory::PhaseGuard::acquire("trace and quotient")
-            .expect("Worker proof phase admission");
+        let mut memory_phase =
+            super::super::worker_memory::PhaseGuard::acquire("trace and quotient")
+                .expect("Worker proof phase admission");
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         {
             super::gpu_backend::check_selected().map_err(|_| ExecutionError::GpuFailure)?;
@@ -956,8 +957,9 @@ impl PreparedProgram {
                                     {
                                         super::super::gpu_hash::engine::reclaim_scratch()
                                             .expect("Worker proof scratch retirement");
-                                        late_phase = super::super::worker_memory::PhaseGuard::acquire_late()
-                                            .expect("Worker late proof phase admission");
+                                        late_phase =
+                                            super::super::worker_memory::PhaseGuard::acquire_late()
+                                                .expect("Worker late proof phase admission");
                                         drop(memory_phase.take());
                                     }
                                     pcs.commit_quotient_evaluations(groups).expect(
