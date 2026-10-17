@@ -73,14 +73,12 @@ if [ "${V2:-0}" -ne 0 ]; then
 fi
 echo "OK: zero candidate block-v2 symbols in default staticlib."
 
-# ZERO deep-tree research symbols (tip5/lookup/wrap/tree — the W3–W7 wrap research, all feature-gated out of
-# the default build). Crate-ANCHORED (`lattica_prover_p3<len><module>`) so a dependency's own `lookup`/`tree`
-# symbol (hashbrown, p3, …) can't false-positive — only THIS crate's gated-out modules are checked. The v0/
-# legacy mangling embeds the crate name then the length-prefixed module, so a gated-out module emits none.
-RES="$(nm "$LIB" 2>/dev/null | grep -icE 'lattica_prover_p3[0-9]+(tip5|lookup|wrap|tree)' || true)"
+# Match full demangled module paths. A root helper such as tree_abi_admission
+# belongs to the existing non-recursive container ABI, not the research tree module.
+RES="$(nm -C "$LIB" 2>/dev/null | grep -cE 'lattica_prover_p3::(tip5|lookup|wrap|tree)::' || true)"
 if [ "${RES:-0}" -ne 0 ]; then
-  echo "FAIL: $RES deep-tree research symbols in the DEFAULT staticlib (wrap/tree/lookup/tip5 must be feature-gated out):"
-  nm "$LIB" 2>/dev/null | grep -iE 'lattica_prover_p3[0-9]+(tip5|lookup|wrap|tree)' | head
+  echo "FAIL: $RES deep-tree research symbols in the DEFAULT staticlib:"
+  nm -C "$LIB" 2>/dev/null | grep -E 'lattica_prover_p3::(tip5|lookup|wrap|tree)::' | head
   exit 1
 fi
-echo "OK: zero deep-tree research symbols in the default staticlib (feature-gated out; enable with --features tree,lookup,tip5)."
+echo "OK: zero deep-tree research symbols in the default staticlib (enable with --features tree,lookup,tip5)."
