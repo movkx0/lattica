@@ -2258,8 +2258,7 @@ mod tests {
             n_pub_f: 1,
             n_periodic_f: 0,
             is_zk: 1,
-            cap_height: cap_h,
-        };
+            cap_height: cap_h, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
 
         // pis in the geometry's order: challenges, index felts, final_poly[0], full trace cap, full quotient cap,
         // inner pub, per-round commit caps, (periodic — none for ConstAir), qwt weights (nqc>1), full random cap.
@@ -2328,6 +2327,7 @@ mod tests {
             &commit_data,
             &[],
             Some(&hiding),
+        None,
         );
         let hh = air.height();
         println!(
@@ -2503,8 +2503,7 @@ mod tests {
             n_pub_f: n_pub,
             n_periodic_f: n_periodic,
             is_zk: 1,
-            cap_height: proof.commitments.trace.roots().len().trailing_zeros() as usize,
-        };
+            cap_height: proof.commitments.trace.roots().len().trailing_zeros() as usize, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
         {
             // degree probe BEFORE proving (the R1 lesson): exceeding maxdeg 16 / log_nqc 4 does not error —
             // it silently corrupts the quotient (OodEvaluationMismatch on an honest trace) after a slow prove.
@@ -2628,6 +2627,7 @@ mod tests {
             &commit_data,
             &[],
             Some(&hiding),
+        None,
         );
         // fill the witnessed Lagrange selectors at ζ (HALVED domain), bound in-circuit to their ζ-defs.
         let (isf, isl, iv) = (cc(is_first), cc(is_last), cc(inv_van));
@@ -2720,8 +2720,7 @@ mod tests {
             n_pub_f: N_PUBLIC,
             n_periodic_f: N_PERIODIC,
             is_zk: 1,
-            cap_height: 2,
-        };
+            cap_height: 2, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
         let marks: [(&str, usize); 12] = [
             ("qt_terms", air.qt_terms()),
             ("z(0)", air.z(0)),
@@ -2924,8 +2923,7 @@ mod tests {
                 n_pub_f: 1,
                 n_periodic_f: 0,
                 is_zk: 1,
-                cap_height: 6,
-            };
+                cap_height: 6, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
             let layout = AirLayout::from_air::<Val>(&air);
             let cs = get_symbolic_constraints::<Val, MonolithAir>(&air, layout);
             let maxd = cs.iter().map(|c| c.degree_multiple()).max().unwrap();

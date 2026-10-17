@@ -77,7 +77,7 @@ impl Sim {
 /// (per-block input states, counts, ext-bind block per challenge, ext challenge values,
 /// index binds = (block, lane) per query, index felts).
 #[allow(clippy::type_complexity)]
-fn sim_full(
+pub(crate) fn sim_full( // W2-assemble (research): exposed to the wrap as the inner-proof witness-extraction seam
     config: &MyConfig,
     proof: &Proof<MyConfig>,
     pvs: &[Val],
@@ -153,6 +153,280 @@ fn sim_full(
         index_binds,
         index_felts,
     )
+}
+
+/// **Format-bridge Brick 2a — the LookupProof transcript sim.** The `sim_full` analogue for a `LookupProof`
+/// inner (what the deep-tree self-composition verifies): replays the SAME sponge (`Sim`) but over
+/// `verify_lookup`'s transcript, which differs from a p3 `Proof`'s in three ways the outer in-circuit
+/// transcript region must mirror:
+///   1. **preamble** — NO `degree_bits`/`base`/`preprocessed` absorbs; observe the trace cap felts directly;
+///   2. **lookup challenges** — after trace+pis, sample `2·|lookups|` ext challenges `(α_L,β)`;
+///   3. **aux round** — observe the LogUp aux cap felts before sampling α_stark, and interleave the aux
+///      opened values (`aux_local`/`aux_next`) into the opened-value absorb between trace and quotient.
+/// The FRI tail (α_fri, per-round β, final_poly, arities, query-PoW, index squeeze) is byte-identical to
+/// `sim_full`. Returns `sim_full`'s tuple plus the sampled `lookup_challenges` (as `[Val;2]` pairs). Additive
+/// — the p3-`Proof` path (`sim_full`) is untouched. Validated against a real-challenger ground truth by
+/// `lookup_transcript_sim_matches_challenger`.
+#[allow(clippy::type_complexity)]
+pub(crate) fn sim_full_lookup<A>(
+    air: &A,
+    proof: &crate::lookup::prover::LookupProof<crate::recursion::native_fri::PcsOpeningProof>,
+    pis: &[Val],
+) -> (Vec<[Val; W]>, Vec<u8>, Vec<usize>, Vec<[Val; 2]>, Vec<(usize, usize)>, Vec<Val>, Vec<[Val; 2]>, Vec<usize>, Vec<usize>)
+where
+    A: crate::lookup::prover::LookupAir,
+{
+    use p3_lookup::Lookups;
+    let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(air);
+    let mut s = Sim::new();
+
+    // (1) preamble: observe the trace cap felts, then the public values (no degree_bits/base/preproc absorbs).
+    for f in cap_felts(&proof.trace_commit) {
+        s.observe(f);
+    }
+    for &p in pis {
+        s.observe(p);
+    }
+    // (2) the LogUp challenges — 2 ext elements per lookup (α_L denominator + β tuple-combine). Their squeeze
+    // blocks (lc_binds) + first-squeeze lanes (lc_lanes) drive the in-circuit challenge-bind loop (they precede
+    // α_stark/ζ/α_fri/β in `binds`). These are squeezed CONSECUTIVELY, so several share a duplex block at
+    // descending lanes — captured per challenge via `sample_base` (c0 = lane L, c1 = lane L−1).
+    let mut lookup_challenges = Vec::new();
+    let mut lc_binds = Vec::new();
+    let mut lc_lanes = Vec::new();
+    for _ in 0..2 * lookups.len() {
+        let (c0, b, lane) = s.sample_base();
+        let (c1, _, _) = s.sample_base();
+        lookup_challenges.push([c0, c1]);
+        lc_binds.push(b);
+        lc_lanes.push(lane);
+    }
+    // (3) the aux (permutation) cap, then α_stark; then the quotient cap, then ζ.
+    for f in cap_felts(&proof.aux_commit) {
+        s.observe(f);
+    }
+    let (a_stark, b0) = s.sample_ext();
+    for f in cap_felts(&proof.quotient_commit) {
+        s.observe(f);
+    }
+    let (zeta, b1) = s.sample_ext();
+    // opened values in round order: trace {ζ,ζ_next}, AUX {ζ,ζ_next}, quotient chunks.
+    for &x in &proof.opened.trace_local {
+        s.observe_ext(x);
+    }
+    for &x in &proof.opened.trace_next {
+        s.observe_ext(x);
+    }
+    for &x in &proof.opened.aux_local {
+        s.observe_ext(x);
+    }
+    for &x in &proof.opened.aux_next {
+        s.observe_ext(x);
+    }
+    for c in &proof.opened.quotient_chunks {
+        for &x in c {
+            s.observe_ext(x);
+        }
+    }
+    let (a_fri, b2) = s.sample_ext();
+    let mut binds = vec![b0, b1, b2];
+    let mut chs = vec![a_stark, zeta, a_fri];
+    // FRI tail — identical to `sim_full` (the format bridge does not touch the commit phase).
+    let fri = &proof.opening_proof;
+    for comm in &fri.commit_phase_commits {
+        for f in cap_felts(comm) {
+            s.observe(f);
+        }
+        let (beta, bb) = s.sample_ext();
+        binds.push(bb);
+        chs.push(beta);
+    }
+    for &x in &fri.final_poly {
+        s.observe_ext(x);
+    }
+    let log_arities: Vec<usize> = fri.query_proofs[0].commit_phase_openings.iter().map(|o| o.log_arity as usize).collect();
+    for &la in &log_arities {
+        s.observe(Val::from_usize(la));
+    }
+    s.observe(fri.query_pow_witness);
+    let _ = s.sample_base();
+    let mut index_binds = Vec::new();
+    let mut index_felts = Vec::new();
+    for _ in 0..fri.query_proofs.len() {
+        let (f, blk, lane) = s.sample_base();
+        index_binds.push((blk, lane));
+        index_felts.push(f);
+    }
+    (s.block_inputs, s.counts, binds, chs, index_binds, index_felts, lookup_challenges, lc_binds, lc_lanes)
+}
+
+/// **Format-bridge Brick 2a — the LookupProof transcript sim is faithful.** `sim_full_lookup` (the sponge
+/// mirror the in-circuit transcript region will reproduce) derives the SAME `(α_L,β)`, α_stark, ζ, α_fri,
+/// per-round β, and query indices as the real `DuplexChallenger` running `verify_lookup`'s sequence. Ground
+/// truth is a from-scratch challenger replay here (non-circular; no `sim_full_lookup` internals reused). If
+/// the aux round / lookup-challenge / shorter-preamble sequencing were wrong, the squeezed challenges would
+/// diverge — this pins the deepest, riskiest piece of the format bridge before it drives an outer trace.
+#[test]
+fn lookup_transcript_sim_matches_challenger() {
+    use crate::lookup::prover::{balanced_main, prove_lookup_inner, LookupProof, RangeCheckAir};
+    use crate::recursion::native_fri::PcsOpeningProof;
+    use p3_challenger::{CanObserve, CanSample, FieldChallenger, GrindingChallenger};
+    use p3_lookup::Lookups;
+    use p3_uni_stark::StarkGenericConfig;
+    let air = RangeCheckAir;
+    let config = make_config(1, 4);
+    let pis: Vec<Val> = vec![];
+    let proof: LookupProof<PcsOpeningProof> = prove_lookup_inner(&air, balanced_main(1 << 6), &pis, false, &config);
+
+    let (_bi, _counts, _binds, chs, _index_binds, index_felts, lc, _lcb, _lcl) = sim_full_lookup(&air, &proof, &pis);
+
+    // Ground truth: the real challenger, mirroring `verify_lookup`'s sequence exactly.
+    let pair = |x: Challenge| -> [Val; 2] { x.as_basis_coefficients_slice().try_into().unwrap() };
+    let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(&air);
+    let mut ch = config.initialise_challenger();
+    ch.observe(proof.trace_commit.clone());
+    ch.observe_slice(&pis);
+    let lc_gt: Vec<[Val; 2]> = (0..2 * lookups.len()).map(|_| pair(ch.sample_algebra_element())).collect();
+    ch.observe(proof.aux_commit.clone());
+    let a_stark_gt = pair(ch.sample_algebra_element());
+    ch.observe(proof.quotient_commit.clone());
+    let zeta_gt = pair(ch.sample_algebra_element());
+    ch.observe_algebra_slice(&proof.opened.trace_local);
+    ch.observe_algebra_slice(&proof.opened.trace_next);
+    ch.observe_algebra_slice(&proof.opened.aux_local);
+    ch.observe_algebra_slice(&proof.opened.aux_next);
+    for c in &proof.opened.quotient_chunks {
+        ch.observe_algebra_slice(c);
+    }
+    let a_fri_gt = pair(ch.sample_algebra_element());
+    let fri = &proof.opening_proof;
+    let mut betas_gt = Vec::new();
+    for (comm, w) in fri.commit_phase_commits.iter().zip(&fri.commit_pow_witnesses) {
+        ch.observe(comm.clone());
+        assert!(ch.check_witness(0, *w), "commit pow (0 bits)");
+        betas_gt.push(pair(ch.sample_algebra_element::<Challenge>()));
+    }
+    ch.observe_algebra_slice(&fri.final_poly);
+    let arities: Vec<usize> = fri.query_proofs[0].commit_phase_openings.iter().map(|o| o.log_arity as usize).collect();
+    for &la in &arities {
+        ch.observe(Val::from_usize(la));
+    }
+    assert!(ch.check_witness(16, fri.query_pow_witness), "query pow (16 bits)");
+    let idx_gt: Vec<Val> = (0..fri.query_proofs.len()).map(|_| ch.sample()).collect();
+
+    assert_eq!(lc, lc_gt, "the lookup challenges (α_L,β) must match the challenger");
+    assert_eq!(chs[0], a_stark_gt, "α_stark must match");
+    assert_eq!(chs[1], zeta_gt, "ζ must match");
+    assert_eq!(chs[2], a_fri_gt, "α_fri must match");
+    assert_eq!(&chs[3..], &betas_gt[..], "the per-round β must match");
+    assert_eq!(index_felts, idx_gt, "the query index felts must match");
+}
+
+/// AA5 ordered-sponge-cap-bus feasibility seam (non-hiding): replay `sim_full`'s exact transcript schedule
+/// while recording, for every commitment-cap felt the sponge ABSORBS, the `(cap_id, entry, k, block, lane)`
+/// where it lands — `cap_id` 0=trace, 1=quotient, 2+r=commit-round r; `entry`/`k` = the `roots()[entry][k]`
+/// decomposition (entry-major, felt-minor, matching `cap_felts`); `(block, lane)` = the sponge block index
+/// and rate lane (`block_inputs[block][lane]` == the absorbed felt; in the AIR the block's input row is at
+/// `block·BLOCK`, so the ordered bus provides `cur[lane]` there). Captured BEFORE each observe as
+/// `(block_inputs.len(), input.len())` — the same block/lane rule `sample_base` uses. This is the position
+/// map the FS-anchor ordered bus (AA5) reads to bind the narrow-tall cap region to the FS-absorbed caps.
+#[allow(clippy::type_complexity)]
+pub(crate) fn sim_cap_positions(
+    config: &MyConfig,
+    proof: &Proof<MyConfig>,
+    pvs: &[Val],
+) -> (Vec<[Val; W]>, Vec<(usize, usize, usize, usize, usize)>) {
+    let (instance, commitment, _, _) = preamble_challenges(config, proof, pvs);
+    let mut s = Sim::new();
+    let mut positions: Vec<(usize, usize, usize, usize, usize)> = Vec::new();
+    // instance = [degree_bits, base_degree_bits, preprocessed_width, TRACE CAP (2^ch·4), pvs].
+    let trace_cap_len = cap_felts(&proof.commitments.trace).len();
+    for (i, &f) in instance.iter().enumerate() {
+        if (3..3 + trace_cap_len).contains(&i) {
+            let idx = i - 3;
+            positions.push((0, idx / 4, idx % 4, s.block_inputs.len(), s.input.len()));
+        }
+        s.observe(f);
+    }
+    let _ = s.sample_ext(); // α
+    // commitment = the QUOTIENT CAP felts.
+    for (i, &f) in commitment.iter().enumerate() {
+        positions.push((1, i / 4, i % 4, s.block_inputs.len(), s.input.len()));
+        s.observe(f);
+    }
+    let _ = s.sample_ext(); // ζ
+    for &x in &proof.opened_values.trace_local {
+        s.observe_ext(x);
+    }
+    if let Some(tn) = &proof.opened_values.trace_next {
+        for &x in tn {
+            s.observe_ext(x);
+        }
+    }
+    for c in &proof.opened_values.quotient_chunks {
+        for &x in c {
+            s.observe_ext(x);
+        }
+    }
+    let _ = s.sample_ext(); // α_fri
+    let fri = &proof.opening_proof;
+    for (r, comm) in fri.commit_phase_commits.iter().enumerate() {
+        for (i, &f) in cap_felts(comm).iter().enumerate() {
+            positions.push((2 + r, i / 4, i % 4, s.block_inputs.len(), s.input.len()));
+            s.observe(f);
+        }
+        let _ = s.sample_ext(); // β_r
+    }
+    (s.block_inputs, positions)
+}
+
+/// AA6 arith-openings-externalization feasibility seam (the [`sim_cap_positions`] analog for the OOD openings).
+/// The DEEP reduced-opening fold's `pz` (the inner's `opened_values`, the `2·n_terms`-COLUMN arith tile — the
+/// dominant inner-scaling WIDTH region, marginal ~4 of the self-composition B) is absorbed into the FS transcript
+/// right after ζ (before α_fri), EXACTLY like the caps. So the same ordered sponge-cap bus can re-anchor a
+/// narrow-tall openings region to the FS-absorbed openings — the columns→rows swap that drops the arith tile from
+/// `fused_w`. Replays the transcript preamble (→ ζ) then records, per absorbed opening felt, its
+/// `(opening_id, k, block, lane)` — `opening_id` enumerates `trace_local` (w_inner), then `trace_next` (w_inner),
+/// then the flattened `quotient_chunks`; `k` = the F_p² coefficient (0/1); `(block,lane)` captured BEFORE each
+/// observe (the `sample_base` rule). Returns `(block_inputs, positions, committed)` index-aligned
+/// (`committed[gi]` = that felt's value from `opened_values`, for the matches-native check).
+#[allow(clippy::type_complexity)]
+pub(crate) fn sim_opening_positions(
+    config: &MyConfig,
+    proof: &Proof<MyConfig>,
+    pvs: &[Val],
+) -> (Vec<[Val; W]>, Vec<(usize, usize, usize, usize)>, Vec<Val>) {
+    use p3_field::BasedVectorSpace;
+    let (instance, commitment, _, _) = preamble_challenges(config, proof, pvs);
+    let mut s = Sim::new();
+    for &f in &instance {
+        s.observe(f); // instance scalars + trace cap → α
+    }
+    let _ = s.sample_ext(); // α
+    for &f in &commitment {
+        s.observe(f); // quotient cap → ζ
+    }
+    let _ = s.sample_ext(); // ζ
+
+    // The openings absorb (ζ → α_fri), in the native order (native_verify): trace_local, trace_next, quotient.
+    let mut openings: Vec<Challenge> = Vec::new();
+    openings.extend_from_slice(&proof.opened_values.trace_local);
+    if let Some(tn) = &proof.opened_values.trace_next {
+        openings.extend_from_slice(tn);
+    }
+    for chunk in &proof.opened_values.quotient_chunks {
+        openings.extend_from_slice(chunk);
+    }
+    let mut positions: Vec<(usize, usize, usize, usize)> = Vec::new();
+    let mut committed: Vec<Val> = Vec::new();
+    for (oid, &x) in openings.iter().enumerate() {
+        for (k, &c) in x.as_basis_coefficients_slice().iter().enumerate() {
+            positions.push((oid, k, s.block_inputs.len(), s.input.len()));
+            committed.push(c);
+            s.observe(c);
+        }
+    }
+    (s.block_inputs, positions, committed)
 }
 
 // single-sourced from the module geometry (the tests' historical local names kept via aliasing)
@@ -1283,24 +1557,7 @@ fn run_monolith(n_queries: usize, column_window: bool) -> (u32, u64) {
         quot_paths.push(qpath);
         commit_data.push(cm);
     }
-    let air = MonolithAir {
-        counts: counts.clone(),
-        binds,
-        index_binds,
-        n_queries,
-        n_terms,
-        inner_counter: false,
-        column_window,
-        k_instances: 1,
-        fold: false,
-        fold_txstmt: false,
-        constraints: vec![],
-        w_inner_f: 1,
-        n_pub_f: 1,
-        n_periodic_f: 0,
-        is_zk: 0,
-        cap_height: 6,
-    };
+    let air = MonolithAir { counts: counts.clone(), binds, index_binds, n_queries, n_terms, inner_counter: false, column_window, k_instances: 1, fold: false, fold_txstmt: false, constraints: vec![], w_inner_f: 1, n_pub_f: 1, n_periodic_f: 0, is_zk: 0, cap_height: 6, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
     let mut pis = Vec::new();
     for ch in &chs {
         pis.push(ch[0]);
@@ -1324,22 +1581,8 @@ fn run_monolith(n_queries: usize, column_window: bool) -> (u32, u64) {
         // COLUMN-WINDOW: the inner-proof pis live in a held witness column window; NOTHING is public. The
         // internal binds (squeeze↦challenge, terminal↦cap, SB↦index, OOD↦pub) pin the window. This is the
         // tileable form the aggregator uses (per-instance witness data, only the tx-root public).
-        let trace = monolith_build_trace(
-            &air,
-            &block_inputs,
-            &per_query,
-            chs[2],
-            &index_felts,
-            &quot_paths,
-            &commit_data,
-            &pis,
-            None,
-        );
-        println!(
-            "column-window monolith @ {n_queries} queries: 2^{} rows (width {})",
-            hh.trailing_zeros(),
-            air.fused_w()
-        );
+        let trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &pis, None, None);
+        println!("column-window monolith @ {n_queries} queries: 2^{} rows (width {})", hh.trailing_zeros(), air.fused_w());
         let prf = prove(&config, &air, trace, &[]);
         assert!(
             verify(&config, &air, &prf, &[]).is_ok(),
@@ -1348,17 +1591,7 @@ fn run_monolith(n_queries: usize, column_window: bool) -> (u32, u64) {
         // tamper a challenge felt in the window ⇒ the squeeze↦window bind fails ⇒ reject.
         let mut bw = pis.clone();
         bw[0] += Val::ONE;
-        let bt = monolith_build_trace(
-            &air,
-            &block_inputs,
-            &per_query,
-            chs[2],
-            &index_felts,
-            &quot_paths,
-            &commit_data,
-            &bw,
-            None,
-        );
+        let bt = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &bw, None, None);
         let bp = prove(&config, &air, bt, &[]);
         assert!(
             verify(&config, &air, &bp, &[]).is_err(),
@@ -1368,23 +1601,8 @@ fn run_monolith(n_queries: usize, column_window: bool) -> (u32, u64) {
         println!("  -> peak RSS {} MiB", rss / (1 << 20));
         return (hh.trailing_zeros(), rss);
     }
-    let trace = monolith_build_trace(
-        &air,
-        &block_inputs,
-        &per_query,
-        chs[2],
-        &index_felts,
-        &quot_paths,
-        &commit_data,
-        &[],
-        None,
-    );
-    println!(
-        "monolith @ {n_queries} queries: 2^{} rows (width {}, {} transcript blocks)",
-        hh.trailing_zeros(),
-        air.fused_w(),
-        counts.len()
-    );
+    let trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None, None);
+    println!("monolith @ {n_queries} queries: 2^{} rows (width {}, {} transcript blocks)", hh.trailing_zeros(), air.fused_w(), counts.len());
     let prf = prove(&config, &air, trace, &pis);
     assert!(
         verify(&config, &air, &prf, &pis).is_ok(),
@@ -1513,8 +1731,7 @@ fn build_inner_window(
         n_pub_f: 1,
         n_periodic_f: 0,
         is_zk: 0,
-        cap_height: 6,
-    };
+        cap_height: 6, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
     let mut pis = Vec::new();
     for ch in &chs {
         pis.push(ch[0]);
@@ -1532,273 +1749,7 @@ fn build_inner_window(
     for ce in &ccap0 {
         pis.extend_from_slice(ce);
     }
-    let trace = monolith_build_trace(
-        &air,
-        &block_inputs,
-        &per_query,
-        chs[2],
-        &index_felts,
-        &quot_paths,
-        &commit_data,
-        &pis,
-        None,
-    );
-    let source = MonolithTraceSource::new(
-        &air,
-        &block_inputs,
-        &per_query,
-        chs[2],
-        &index_felts,
-        &quot_paths,
-        &commit_data,
-        &pis,
-        None,
-    );
-    let mut chunked = vec![Val::ZERO; trace.values.len()];
-    let mut next_row = 0usize;
-    for range in source.ranges() {
-        assert_eq!(
-            range.start_row, next_row,
-            "monolith source ranges are contiguous"
-        );
-        next_row += range.rows;
-        let start = range.start_row * range.width;
-        let end = start + range.felt_len();
-        source.emit_range(range, &mut chunked[start..end]);
-    }
-    assert_eq!(
-        next_row,
-        air.height(),
-        "monolith source ranges cover the full trace height"
-    );
-    assert_eq!(
-        chunked, trace.values,
-        "chunked monolith source must materialize the resident trace"
-    );
-    let q_segment = core::cmp::min(1, n_queries - 1);
-    let segment = monolith_build_query_segment(
-        &air,
-        q_segment,
-        &per_query[q_segment],
-        chs[2],
-        &index_felts,
-        &quot_paths,
-        &commit_data,
-        &pis,
-        None,
-    );
-    let segment_width = air.fused_w();
-    let segment_start = (air.tr() + q_segment * air.m_period()) * segment_width;
-    let segment_end = segment_start + air.m_period() * segment_width;
-    let ranges = monolith_trace_row_ranges(&air);
-    let range = ranges
-        .iter()
-        .find(|range| range.kind == MonolithTracePart::Query { q: q_segment })
-        .unwrap();
-    assert_eq!(range.start_row, air.tr() + q_segment * air.m_period());
-    assert_eq!(range.rows, air.m_period());
-    assert_eq!(range.width, segment_width);
-    assert_eq!(range.felt_len(), segment.values.len());
-    let chunk_matrix = source.emit_matrix(*range);
-    assert_eq!(chunk_matrix.dimensions(), range.dimensions());
-    let perm = default_goldilocks_poseidon2_8();
-    let mmcs_chunk = ValMmcs::new(
-        MyHash::new(perm.clone()),
-        MyCompress::new(perm.clone()),
-        0,
-        ChaCha20Rng::seed_from_u64(11),
-    );
-    let mmcs_resident = ValMmcs::new(
-        MyHash::new(perm.clone()),
-        MyCompress::new(perm),
-        0,
-        ChaCha20Rng::seed_from_u64(11),
-    );
-    let chunk_dims = chunk_matrix.dimensions();
-    let (chunk_commit, chunk_data) = mmcs_chunk.commit(vec![chunk_matrix]);
-    let resident_chunk = RowMajorMatrix::new(
-        trace.values[segment_start..segment_end].to_vec(),
-        segment_width,
-    );
-    let (resident_commit, resident_data) = mmcs_resident.commit(vec![resident_chunk]);
-    assert_eq!(
-        chunk_commit.roots(),
-        resident_commit.roots(),
-        "chunk source MMCS commitment matches resident chunk commitment"
-    );
-    let open_row = 0;
-    let chunk_opening = mmcs_chunk.open_batch(open_row, &chunk_data);
-    let resident_opening = mmcs_resident.open_batch(open_row, &resident_data);
-    assert_eq!(
-        chunk_opening.opened_values, resident_opening.opened_values,
-        "chunk source MMCS opening matches resident chunk opening"
-    );
-    mmcs_chunk
-        .verify_batch(
-            &chunk_commit,
-            &[chunk_dims],
-            open_row,
-            (&chunk_opening).into(),
-        )
-        .unwrap();
-    let dft = Dft::default();
-    let added_bits = 1;
-    let shift = Val::GENERATOR;
-    let resident_lde = dft
-        .coset_lde_batch(trace.clone(), added_bits, shift)
-        .bit_reverse_rows()
-        .to_row_major_matrix();
-    let mut striped_lde = vec![Val::ZERO; resident_lde.values.len()];
-    monolith_trace_coset_lde_stripes(&source, &dft, added_bits, shift, 17, |stripe, lde| {
-        assert_eq!(lde.dimensions(), stripe.dimensions());
-        for row in 0..stripe.height {
-            let dst = row * segment_width + stripe.start_col;
-            let src = row * stripe.width;
-            striped_lde[dst..dst + stripe.width]
-                .copy_from_slice(&lde.values[src..src + stripe.width]);
-        }
-    });
-    assert_eq!(
-        striped_lde, resident_lde.values,
-        "chunked monolith stripe LDE matches resident P3 LDE"
-    );
-    #[cfg(feature = "stream")]
-    {
-        let store = monolith_trace_coset_lde_store(&source, &dft, added_bits, shift, 17).unwrap();
-        let store_matrix = crate::stream_prove::StoreMatrix::new(&store);
-        assert_eq!(store_matrix.dimensions(), resident_lde.dimensions());
-        for row in [0, resident_lde.height() / 2, resident_lde.height() - 1] {
-            assert_eq!(
-                store_matrix
-                    .row(row)
-                    .unwrap()
-                    .into_iter()
-                    .collect::<Vec<_>>(),
-                resident_lde
-                    .row(row)
-                    .unwrap()
-                    .into_iter()
-                    .collect::<Vec<_>>(),
-                "mmap monolith LDE row {row} matches resident LDE"
-            );
-        }
-        let perm = default_goldilocks_poseidon2_8();
-        let mmcs_store = ValMmcs::new(
-            MyHash::new(perm.clone()),
-            MyCompress::new(perm.clone()),
-            0,
-            ChaCha20Rng::seed_from_u64(19),
-        );
-        let mmcs_resident_lde = ValMmcs::new(
-            MyHash::new(perm.clone()),
-            MyCompress::new(perm),
-            0,
-            ChaCha20Rng::seed_from_u64(19),
-        );
-        let store_dims = store_matrix.dimensions();
-        let (store_commit, store_data) = mmcs_store.commit(vec![store_matrix]);
-        let (resident_lde_commit, resident_lde_data) =
-            mmcs_resident_lde.commit(vec![resident_lde.clone()]);
-        assert_eq!(
-            store_commit.roots(),
-            resident_lde_commit.roots(),
-            "mmap monolith LDE MMCS commitment matches resident LDE commitment"
-        );
-        let open_row = resident_lde.height() - 1;
-        let store_opening = mmcs_store.open_batch(open_row, &store_data);
-        let resident_lde_opening = mmcs_resident_lde.open_batch(open_row, &resident_lde_data);
-        assert_eq!(
-            store_opening.opened_values, resident_lde_opening.opened_values,
-            "mmap monolith LDE MMCS opening matches resident LDE opening"
-        );
-        mmcs_store
-            .verify_batch(
-                &store_commit,
-                &[store_dims],
-                open_row,
-                (&store_opening).into(),
-            )
-            .unwrap();
-
-        let mut pcs_rng_source = ChaCha20Rng::seed_from_u64(29);
-        let mut mmcs_rng_source = ChaCha20Rng::seed_from_u64(31);
-        let hiding_added_bits = 0;
-        let num_random_codewords = crate::config::NUM_RANDOM_CODEWORDS;
-        let hiding_data = monolith_trace_hiding_commit(
-            &source,
-            &dft,
-            num_random_codewords,
-            hiding_added_bits,
-            shift,
-            segment_width + num_random_codewords,
-            0,
-            &mut pcs_rng_source,
-            &mut mmcs_rng_source,
-        )
-        .unwrap();
-        let mut pcs_rng_resident = ChaCha20Rng::seed_from_u64(29);
-        let mut randomized_trace = trace.clone().with_random_cols(
-            segment_width + 2 * num_random_codewords,
-            &mut pcs_rng_resident,
-        );
-        randomized_trace.width = segment_width + num_random_codewords;
-        let resident_hiding_lde_for_commit = dft
-            .coset_lde_batch(randomized_trace, hiding_added_bits, shift)
-            .bit_reverse_rows()
-            .to_row_major_matrix();
-        let hiding_store_matrix = crate::stream_prove::StoreMatrix::new(&hiding_data.store);
-        assert_eq!(
-            hiding_store_matrix.dimensions(),
-            resident_hiding_lde_for_commit.dimensions()
-        );
-        for row in [
-            0,
-            resident_hiding_lde_for_commit.height() / 2,
-            resident_hiding_lde_for_commit.height() - 1,
-        ] {
-            assert_eq!(
-                hiding_store_matrix
-                    .row(row)
-                    .unwrap()
-                    .into_iter()
-                    .collect::<Vec<_>>(),
-                resident_hiding_lde_for_commit
-                    .row(row)
-                    .unwrap()
-                    .into_iter()
-                    .collect::<Vec<_>>(),
-                "hiding mmap monolith LDE row {row} matches resident randomized LDE"
-            );
-        }
-        let perm = default_goldilocks_poseidon2_8();
-        let mmcs_resident_hiding = ValMmcs::new(
-            MyHash::new(perm.clone()),
-            MyCompress::new(perm),
-            0,
-            ChaCha20Rng::seed_from_u64(31),
-        );
-        let (resident_hiding_commit, resident_hiding_data) =
-            mmcs_resident_hiding.commit(vec![resident_hiding_lde_for_commit]);
-        let resident_hiding_cap: &[[Val; 4]] = resident_hiding_commit.as_ref();
-        assert_eq!(
-            hiding_data.cap(),
-            resident_hiding_cap,
-            "hiding mmap monolith LDE commitment matches resident randomized LDE commitment"
-        );
-        let open_row = crate::stream_prove::LeafSource::height(&hiding_data.store) - 1;
-        let (stream_row, _, _) = crate::stream_prove::stream_open(&hiding_data, open_row);
-        let resident_hiding_opening =
-            mmcs_resident_hiding.open_batch(open_row, &resident_hiding_data);
-        assert_eq!(
-            stream_row, resident_hiding_opening.opened_values[0],
-            "hiding mmap monolith LDE opening row matches resident randomized LDE opening"
-        );
-    }
-    assert_eq!(
-        segment.values,
-        trace.values[segment_start..segment_end],
-        "standalone query segment must match resident monolith trace rows"
-    );
+    let trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &pis, None, None);
     (trace.values, counts, binds, index_binds, n_terms, pvs[0])
 }
 
@@ -1810,7 +1761,7 @@ fn build_inner_window(
 /// The AIR-level composition is free: `eval`'s `pis` accessor already reads the window in column-window
 /// mode, so the symbolic epilogue reads pubs/periodic/qwt from the window transparently.
 #[allow(clippy::too_many_arguments)]
-fn build_symbolic_inner_window<A>(
+pub(crate) fn build_symbolic_inner_window<A>( // exposed for the deep-tree wrap's self-recursion demonstration (research)
     config: &MyConfig,
     inner: &A,
     proof: &Proof<MyConfig>,
@@ -1818,14 +1769,11 @@ fn build_symbolic_inner_window<A>(
     w_inner: usize,
     n_pub: usize,
     n_periodic: usize,
-) -> (
-    Vec<Val>,
-    Vec<u8>,
-    Vec<usize>,
-    Vec<(usize, usize)>,
-    usize,
-    Val,
-)
+    narrow_caps: bool, // AA5: drop the Merkle-cap slice from the pis window (caps sourced from the FS sponge)
+    narrow_arith: bool, // AA6: narrow the arith tile (drop inline z/inv/apow — the wrap externalizes the DEEP fold)
+    narrow_openings: bool, // AA6: drop pz too (the OOD openings leave the tile, sourced from the sponge-opening bus)
+    narrow_ov: bool, // W3 brick 4b: drop the ov opened-row carrier (px re-sourced from the leaf-hash rows via a bus)
+) -> (Vec<Val>, Vec<u8>, Vec<usize>, Vec<(usize, usize)>, usize, Val)
 where
     A: p3_air::Air<p3_uni_stark::SymbolicAirBuilder<Val>>,
 {
@@ -1883,20 +1831,8 @@ where
         n_pub_f: n_pub,
         n_periodic_f: n_periodic,
         is_zk: 0,
-        cap_height: proof.commitments.trace.roots().len().trailing_zeros() as usize,
-    };
-    let (
-        eo_local,
-        eo_next,
-        is_first,
-        is_last,
-        is_trans,
-        inv_van,
-        eo_quot,
-        eo_alpha,
-        _z,
-        eo_periodic,
-    ) = epilogue_openings(config, inner, proof, pvs);
+        cap_height: proof.commitments.trace.roots().len().trailing_zeros() as usize, narrow_arith, narrow_caps, narrow_openings, narrow_ov, lookup: None };
+    let (eo_local, eo_next, is_first, is_last, is_trans, inv_van, eo_quot, eo_alpha, _z, eo_periodic) = epilogue_openings(config, inner, proof, pvs);
     let cc = |x: Challenge| -> [Val; 2] { x.as_basis_coefficients_slice().try_into().unwrap() };
     // pis (identical order to run_symbolic_monolith; here they fill the WINDOW instead of public_values).
     let mut pis = Vec::new();
@@ -1910,18 +1846,22 @@ where
     let fp: [Val; 2] = final0.as_basis_coefficients_slice().try_into().unwrap();
     pis.push(fp[0]);
     pis.push(fp[1]);
-    for e in proof.commitments.trace.roots().iter() {
-        pis.extend_from_slice(e);
-    }
-    for e in proof.commitments.quotient_chunks.roots().iter() {
-        pis.extend_from_slice(e);
+    if !narrow_caps {
+        for e in proof.commitments.trace.roots().iter() {
+            pis.extend_from_slice(e);
+        }
+        for e in proof.commitments.quotient_chunks.roots().iter() {
+            pis.extend_from_slice(e);
+        }
     }
     for &pv in pvs {
         pis.push(pv);
     }
-    for cm in proof.opening_proof.commit_phase_commits.iter() {
-        for e in cm.roots().iter() {
-            pis.extend_from_slice(e);
+    if !narrow_caps {
+        for cm in proof.opening_proof.commit_phase_commits.iter() {
+            for e in cm.roots().iter() {
+                pis.extend_from_slice(e);
+            }
         }
     }
     for pv in &eo_periodic {
@@ -1942,17 +1882,7 @@ where
         "symbolic column-window pis layout matches pis_count"
     );
     // monolith_build_trace fills the pis window + the ζ-squaring chain (column-window branch).
-    let mut trace = monolith_build_trace(
-        &air,
-        &block_inputs,
-        &per_query,
-        chs[2],
-        &index_felts,
-        &quot_paths,
-        &commit_data,
-        &pis,
-        None,
-    );
+    let mut trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &pis, None, None);
     // witnessed Lagrange selectors at ζ (bound in-circuit to their ζ-defs via the halved-domain z_h chain).
     let (isf, isl, iv) = (cc(is_first), cc(is_last), cc(inv_van));
     let fw = air.fused_w();
@@ -2024,21 +1954,13 @@ where
         }
         // pz opened-trace columns (local/next at ζ) — read at q=0's super-tile arith head (M_TF row = tr).
         let tf_row = air.tr();
-        let rd_at = |row: usize, col: usize| -> Challenge {
-            Challenge::from_basis_coefficients_fn(|k| trace.values[row * fw + col + k])
-        };
-        for c in 0..air.w_inner() {
-            assert_eq!(
-                rd_at(tf_row, air.pz(air.trm_trace(c))),
-                eo_local[c],
-                "pz local[{c}] wrong (w_inner={})",
-                air.w_inner()
-            );
-            assert_eq!(
-                rd_at(tf_row, air.pz(air.trm_next(c))),
-                eo_next[c],
-                "pz next[{c}] wrong"
-            );
+        let rd_at = |row: usize, col: usize| -> Challenge { Challenge::from_basis_coefficients_fn(|k| trace.values[row * fw + col + k]) };
+        // NARROW-OPENINGS drops pz from the tile (it's sourced from the sponge-opening bus), so skip the pz check.
+        if !air.narrow_openings {
+            for c in 0..air.w_inner() {
+                assert_eq!(rd_at(tf_row, air.pz(air.trm_trace(c))), eo_local[c], "pz local[{c}] wrong (w_inner={})", air.w_inner());
+                assert_eq!(rd_at(tf_row, air.pz(air.trm_next(c))), eo_next[c], "pz next[{c}] wrong");
+            }
         }
         // selectors + accumulators present at the tf row?
         assert_eq!(
@@ -2124,24 +2046,7 @@ fn build_aggregator_trace(
         }
     }
     let (counts, binds, index_binds, n_terms) = params.unwrap();
-    let air = MonolithAir {
-        counts,
-        binds,
-        index_binds,
-        n_queries,
-        n_terms,
-        inner_counter: false,
-        column_window: true,
-        k_instances: k,
-        fold: true,
-        fold_txstmt: false,
-        constraints: vec![],
-        w_inner_f: 1,
-        n_pub_f: 1,
-        n_periodic_f: 0,
-        is_zk: 0,
-        cap_height: 6,
-    };
+    let air = MonolithAir { counts, binds, index_binds, n_queries, n_terms, inner_counter: false, column_window: true, k_instances: k, fold: true, fold_txstmt: false, constraints: vec![], w_inner_f: 1, n_pub_f: 1, n_periodic_f: 0, is_zk: 0, cap_height: 6, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
     let fw = air.fused_w();
     let w = air.fold_w();
     let inst_h = air.inst_h();
@@ -2216,24 +2121,7 @@ fn run_aggregator(k: usize, n_queries: usize) -> (u32, u64) {
         }
     }
     let (counts, binds, index_binds, n_terms) = params.unwrap();
-    let air = MonolithAir {
-        counts,
-        binds,
-        index_binds,
-        n_queries,
-        n_terms,
-        inner_counter: false,
-        column_window: true,
-        k_instances: k,
-        fold: true,
-        fold_txstmt: false,
-        constraints: vec![],
-        w_inner_f: 1,
-        n_pub_f: 1,
-        n_periodic_f: 0,
-        is_zk: 0,
-        cap_height: 6,
-    };
+    let air = MonolithAir { counts, binds, index_binds, n_queries, n_terms, inner_counter: false, column_window: true, k_instances: k, fold: true, fold_txstmt: false, constraints: vec![], w_inner_f: 1, n_pub_f: 1, n_periodic_f: 0, is_zk: 0, cap_height: 6, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
     let fw = air.fused_w();
     let w = air.fold_w();
     let inst_h = air.inst_h();
@@ -2577,15 +2465,7 @@ fn run_symbolic_aggregator(k: usize, n_queries: usize, cap_h: usize) -> (u32, u6
     for _i in 0..k {
         let proof = prove(&config, &JoinSplitAir, build_trace(&w), &pvs);
         let cap_height = proof.commitments.trace.roots().len().trailing_zeros() as usize;
-        let (tr, counts, binds, ib, nt, _pv0) = build_symbolic_inner_window(
-            &config,
-            &JoinSplitAir,
-            &proof,
-            &pvs,
-            WIDTH,
-            N_PUBLIC,
-            N_PERIODIC,
-        );
+        let (tr, counts, binds, ib, nt, _pv0) = build_symbolic_inner_window(&config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, false, false, false, false);
         insts.push(tr);
         if _i == 0 {
             params = Some((counts, binds, ib, nt, cap_height));
@@ -2612,19 +2492,9 @@ fn run_symbolic_aggregator(k: usize, n_queries: usize, cap_h: usize) -> (u32, u6
         n_pub_f: N_PUBLIC,
         n_periodic_f: N_PERIODIC,
         is_zk: 0,
-        cap_height,
-    };
-    let (fw, w_fold, inst_h, hh, fb) = (
-        air.fused_w(),
-        air.fold_w(),
-        air.inst_h(),
-        air.height(),
-        air.fold_sk_block(),
-    );
-    assert!(
-        fb * BLOCK >= air.tr() + n_queries * air.m_period(),
-        "fold blocks land in the instance tail slack"
-    );
+        cap_height, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
+    let (fw, w_fold, inst_h, hh, fb) = (air.fused_w(), air.fold_w(), air.inst_h(), air.height(), air.fold_sk_block());
+    assert!(fb * BLOCK >= air.tr() + n_queries * air.m_period(), "fold blocks land in the instance tail slack");
     let mut all = vec![Val::ZERO; hh * w_fold];
     let mut root = [Val::ZERO; 4];
     for i in 0..k {
@@ -2735,37 +2605,13 @@ fn phase8_joinsplit_window_monolith() {
     let w = demo_witness();
     let pvs = public_values(&w);
     let proof = prove(&config, &JoinSplitAir, build_trace(&w), &pvs);
-    let (tr, counts, binds, index_binds, n_terms, _pv0) = build_symbolic_inner_window(
-        &config,
-        &JoinSplitAir,
-        &proof,
-        &pvs,
-        WIDTH,
-        N_PUBLIC,
-        N_PERIODIC,
-    );
-    let constraints = get_symbolic_constraints::<Val, JoinSplitAir>(
-        &JoinSplitAir,
-        AirLayout::from_air::<Val>(&JoinSplitAir),
-    );
+    let (tr, counts, binds, index_binds, n_terms, _pv0) = build_symbolic_inner_window(&config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, false, false, false, false);
+    let constraints = get_symbolic_constraints::<Val, JoinSplitAir>(&JoinSplitAir, AirLayout::from_air::<Val>(&JoinSplitAir));
     let air = MonolithAir {
-        counts,
-        binds,
-        index_binds,
-        n_queries: 4,
-        n_terms,
-        inner_counter: false,
-        column_window: true,
-        k_instances: 1,
-        fold: false,
-        fold_txstmt: false,
-        constraints,
-        w_inner_f: WIDTH,
-        n_pub_f: N_PUBLIC,
-        n_periodic_f: N_PERIODIC,
-        is_zk: 0,
-        cap_height: proof.commitments.trace.roots().len().trailing_zeros() as usize,
-    };
+        counts, binds, index_binds, n_queries: 4, n_terms,
+        inner_counter: false, column_window: true, k_instances: 1, fold: false, fold_txstmt: false,
+        constraints, w_inner_f: WIDTH, n_pub_f: N_PUBLIC, n_periodic_f: N_PERIODIC, is_zk: 0,
+        cap_height: proof.commitments.trace.roots().len().trailing_zeros() as usize, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
     let fw = air.fused_w();
     let trace = RowMajorMatrix::new(tr, fw);
     let prf = prove(&config, &air, trace, &[]); // cw=true k=1: all pis in the window, nothing public
@@ -2795,27 +2641,13 @@ where
     use super::MonolithAir;
     use p3_matrix::dense::RowMajorMatrix;
     use p3_uni_stark::{get_symbolic_constraints, AirLayout};
-    let (tr, counts, binds, index_binds, n_terms, _pv0) =
-        build_symbolic_inner_window(config, inner, proof, pvs, w, np, nper);
+    let (tr, counts, binds, index_binds, n_terms, _pv0) = build_symbolic_inner_window(config, inner, proof, pvs, w, np, nper, false, false, false, false);
     let constraints = get_symbolic_constraints::<Val, A>(inner, AirLayout::from_air::<Val>(inner));
     let air = MonolithAir {
-        counts,
-        binds,
-        index_binds,
-        n_queries: proof.opening_proof.query_proofs.len(),
-        n_terms,
-        inner_counter: false,
-        column_window: true,
-        k_instances: 1,
-        fold: false,
-        fold_txstmt: false,
-        constraints,
-        w_inner_f: w,
-        n_pub_f: np,
-        n_periodic_f: nper,
-        is_zk: 0,
-        cap_height: proof.commitments.trace.roots().len().trailing_zeros() as usize,
-    };
+        counts, binds, index_binds, n_queries: proof.opening_proof.query_proofs.len(), n_terms,
+        inner_counter: false, column_window: true, k_instances: 1, fold: false, fold_txstmt: false,
+        constraints, w_inner_f: w, n_pub_f: np, n_periodic_f: nper, is_zk: 0,
+        cap_height: proof.commitments.trace.roots().len().trailing_zeros() as usize, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
     let fw = air.fused_w();
     let prf = prove(config, &air, RowMajorMatrix::new(tr, fw), &[]);
     (air.n_fold_acc(), verify(config, &air, &prf, &[]).is_ok())
@@ -2928,45 +2760,17 @@ fn phase8_joinsplit_aggregator_probe() {
     let pvs = public_values(&w);
     let proof = prove(&config, &JoinSplitAir, build_trace(&w), &pvs);
     let (counts, binds, index_binds, n_terms, cap_height) = {
-        let (_tr, counts, binds, ib, nt, _pv0) = build_symbolic_inner_window(
-            &config,
-            &JoinSplitAir,
-            &proof,
-            &pvs,
-            WIDTH,
-            N_PUBLIC,
-            N_PERIODIC,
-        );
-        (
-            counts,
-            binds,
-            ib,
-            nt,
-            proof.commitments.trace.roots().len().trailing_zeros() as usize,
-        )
+        let (_tr, counts, binds, ib, nt, _pv0) = build_symbolic_inner_window(&config, &JoinSplitAir, &proof, &pvs, WIDTH, N_PUBLIC, N_PERIODIC, false, false, false, false);
+        (counts, binds, ib, nt, proof.commitments.trace.roots().len().trailing_zeros() as usize)
     };
     let constraints = get_symbolic_constraints::<Val, JoinSplitAir>(
         &JoinSplitAir,
         AirLayout::from_air::<Val>(&JoinSplitAir),
     );
     let mk = |cw: bool, ki: usize, fold: bool| MonolithAir {
-        counts: counts.clone(),
-        binds: binds.clone(),
-        index_binds: index_binds.clone(),
-        n_queries,
-        n_terms,
-        inner_counter: false,
-        column_window: cw,
-        k_instances: ki,
-        fold,
-        fold_txstmt: false,
-        constraints: constraints.clone(),
-        w_inner_f: WIDTH,
-        n_pub_f: N_PUBLIC,
-        n_periodic_f: N_PERIODIC,
-        is_zk: 0,
-        cap_height,
-    };
+        counts: counts.clone(), binds: binds.clone(), index_binds: index_binds.clone(), n_queries, n_terms,
+        inner_counter: false, column_window: cw, k_instances: ki, fold, fold_txstmt: false,
+        constraints: constraints.clone(), w_inner_f: WIDTH, n_pub_f: N_PUBLIC, n_periodic_f: N_PERIODIC, is_zk: 0, cap_height, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
     for (tag, cw, ki, fold) in [
         ("plain       cw0 k1 f0", false, 1, false),
         ("R1 window    cw1 k1 f0", true, 1, false),
@@ -3018,23 +2822,10 @@ fn aggregator_ram_cap_curve() {
             .0
             .len();
         let air = MonolithAir {
-            counts,
-            binds,
-            index_binds,
-            n_queries: 96,
-            n_terms,
-            inner_counter: false,
-            column_window: true,
-            k_instances: 2,
-            fold: true,
-            fold_txstmt: true,
-            constraints: constraints.clone(),
-            w_inner_f: WIDTH,
-            n_pub_f: N_PUBLIC,
-            n_periodic_f: N_PERIODIC,
-            is_zk: 0,
-            cap_height,
-        };
+            counts, binds, index_binds, n_queries: 96, n_terms, inner_counter: false,
+            column_window: true, k_instances: 2, fold: true, fold_txstmt: true,
+            constraints: constraints.clone(), w_inner_f: WIDTH, n_pub_f: N_PUBLIC, n_periodic_f: N_PERIODIC,
+            is_zk: 0, cap_height, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
         let (rows, width) = (air.height() as u128, air.fold_w() as u128);
         let lde_gb = rows * width * 8 * 16 / (1 << 30);
         let ram_gb = lde_gb * 7 / 5; // ≈ 1.4× LDE, calibrated to the measured cap-2/q4 point
@@ -3107,24 +2898,7 @@ fn phase9_self_recursion_probe() {
         quot_paths.push(qpath);
         commit_data.push(cm);
     }
-    let inner = MonolithAir {
-        counts: counts.clone(),
-        binds,
-        index_binds,
-        n_queries: 4,
-        n_terms,
-        inner_counter: false,
-        column_window: false,
-        k_instances: 1,
-        fold: false,
-        fold_txstmt: false,
-        constraints: vec![],
-        w_inner_f: 1,
-        n_pub_f: 1,
-        n_periodic_f: 0,
-        is_zk: 0,
-        cap_height: 6,
-    };
+    let inner = MonolithAir { counts: counts.clone(), binds, index_binds, n_queries: 4, n_terms, inner_counter: false, column_window: false, k_instances: 1, fold: false, fold_txstmt: false, constraints: vec![], w_inner_f: 1, n_pub_f: 1, n_periodic_f: 0, is_zk: 0, cap_height: 6, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
     let mut pis = Vec::new();
     for ch in &chs {
         pis.push(ch[0]);
@@ -3142,17 +2916,7 @@ fn phase9_self_recursion_probe() {
     for ce in &ccap0 {
         pis.extend_from_slice(ce);
     }
-    let inner_trace = monolith_build_trace(
-        &inner,
-        &block_inputs,
-        &per_query,
-        chs[2],
-        &index_felts,
-        &quot_paths,
-        &commit_data,
-        &[],
-        None,
-    );
+    let inner_trace = monolith_build_trace(&inner, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None, None);
     let inner_prf = prove(&config, &inner, inner_trace, &pis);
     assert!(
         verify(&config, &inner, &inner_prf, &pis).is_ok(),
@@ -3169,27 +2933,9 @@ fn phase9_self_recursion_probe() {
     // (2) OUTER: the monolith verifying the INNER monolith proof. build_symbolic_inner_window does the witness
     // AND validates it (full-fold pre-check + window/pz/cap binds); if it returns, the self-recursion mechanism
     // works over MonolithAir-as-inner. NO outer prove — we only measure its geometry.
-    let (_otr, ocounts, obinds, oib, ont, _pv0) =
-        build_symbolic_inner_window(&config, &inner, &inner_prf, &pis, w_in, np_in, nper_in);
+    let (_otr, ocounts, obinds, oib, ont, _pv0) = build_symbolic_inner_window(&config, &inner, &inner_prf, &pis, w_in, np_in, nper_in, false, false, false, false);
     let cap_height = inner_prf.commitments.trace.roots().len().trailing_zeros() as usize;
-    let outer = MonolithAir {
-        counts: ocounts,
-        binds: obinds,
-        index_binds: oib,
-        n_queries: 4,
-        n_terms: ont,
-        inner_counter: false,
-        column_window: true,
-        k_instances: 1,
-        fold: false,
-        fold_txstmt: false,
-        constraints: inner_cs.clone(),
-        w_inner_f: w_in,
-        n_pub_f: np_in,
-        n_periodic_f: nper_in,
-        is_zk: 0,
-        cap_height,
-    };
+    let outer = MonolithAir { counts: ocounts, binds: obinds, index_binds: oib, n_queries: 4, n_terms: ont, inner_counter: false, column_window: true, k_instances: 1, fold: false, fold_txstmt: false, constraints: inner_cs.clone(), w_inner_f: w_in, n_pub_f: np_in, n_periodic_f: nper_in, is_zk: 0, cap_height, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
     let olayout = AirLayout::from_air::<Val>(&outer);
     let ocs = get_symbolic_constraints::<Val, MonolithAir>(&outer, olayout);
     let log_nqc = get_log_num_quotient_chunks::<Val, MonolithAir>(&outer, olayout, 0);
@@ -3312,24 +3058,7 @@ fn run_counter_monolith(n_queries: usize) -> (u32, u64) {
         quot_paths.push(qpath);
         commit_data.push(cm);
     }
-    let air = MonolithAir {
-        counts: counts.clone(),
-        binds,
-        index_binds,
-        n_queries,
-        n_terms,
-        inner_counter: true,
-        column_window: false,
-        k_instances: 1,
-        fold: false,
-        fold_txstmt: false,
-        constraints: vec![],
-        w_inner_f: 1,
-        n_pub_f: 1,
-        n_periodic_f: 0,
-        is_zk: 0,
-        cap_height: 6,
-    };
+    let air = MonolithAir { counts: counts.clone(), binds, index_binds, n_queries, n_terms, inner_counter: true, column_window: false, k_instances: 1, fold: false, fold_txstmt: false, constraints: vec![], w_inner_f: 1, n_pub_f: 1, n_periodic_f: 0, is_zk: 0, cap_height: 6, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
     let mut pis = Vec::new();
     for ch in &chs {
         pis.push(ch[0]);
@@ -3354,17 +3083,7 @@ fn run_counter_monolith(n_queries: usize) -> (u32, u64) {
             pis.extend_from_slice(e);
         }
     }
-    let trace = monolith_build_trace(
-        &air,
-        &block_inputs,
-        &per_query,
-        chs[2],
-        &index_felts,
-        &quot_paths,
-        &commit_data,
-        &[],
-        None,
-    );
+    let trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None, None);
     let hh = air.height();
     println!(
         "counter monolith @ {n_queries} queries: 2^{} rows (width {}, full caps + cap-mux)",
@@ -3453,28 +3172,8 @@ where
     );
     let layout = AirLayout::from_air::<Val>(inner);
     let constraints = get_symbolic_constraints::<Val, A>(inner, layout);
-    assert!(
-        !constraints.is_empty(),
-        "{label}: symbolic constraints extracted"
-    );
-    let air = MonolithAir {
-        counts: counts.clone(),
-        binds,
-        index_binds,
-        n_queries,
-        n_terms,
-        inner_counter: false,
-        column_window: false,
-        k_instances: 1,
-        fold: false,
-        fold_txstmt: false,
-        constraints,
-        w_inner_f: w_inner,
-        n_pub_f: n_pub,
-        n_periodic_f: n_periodic,
-        is_zk: 0,
-        cap_height: (proof.commitments.trace.roots().len().trailing_zeros() as usize),
-    };
+    assert!(!constraints.is_empty(), "{label}: symbolic constraints extracted");
+    let air = MonolithAir { counts: counts.clone(), binds, index_binds, n_queries, n_terms, inner_counter: false, column_window: false, k_instances: 1, fold: false, fold_txstmt: false, constraints, w_inner_f: w_inner, n_pub_f: n_pub, n_periodic_f: n_periodic, is_zk: 0, cap_height: (proof.commitments.trace.roots().len().trailing_zeros() as usize), narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
     // OOD openings + selectors + periodic-column values at ζ (verifier-computed publics).
     let (
         eo_local,
@@ -3576,17 +3275,7 @@ where
             "{label} PRE-CHECK: native symbolic fold == quot(ζ)"
         );
     }
-    let mut trace = monolith_build_trace(
-        &air,
-        &block_inputs,
-        &per_query,
-        chs[2],
-        &index_felts,
-        &quot_paths,
-        &commit_data,
-        &[],
-        None,
-    );
+    let mut trace = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None, None);
     // fill the witnessed Lagrange selectors at ζ (is_first/is_last/inv_van), bound in-circuit to their ζ-defs.
     let (isf, isl, iv) = (cc(is_first), cc(is_last), cc(inv_van));
     let fw = air.fused_w();
@@ -3787,8 +3476,7 @@ fn phase8_joinsplit_degree_probe() {
         n_pub_f: N_PUBLIC,
         n_periodic_f: N_PERIODIC,
         is_zk: 0,
-        cap_height: proof.commitments.trace.roots().len().trailing_zeros() as usize,
-    };
+        cap_height: proof.commitments.trace.roots().len().trailing_zeros() as usize, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
     let layout = AirLayout::from_air::<Val>(&air);
     let cs = get_symbolic_constraints::<Val, MonolithAir>(&air, layout);
     let maxd = cs.iter().map(|c| c.degree_multiple()).max().unwrap();
@@ -3986,8 +3674,7 @@ fn milestone_geom_air() -> super::MonolithAir {
         n_pub_f: 0,
         n_periodic_f: 0,
         is_zk: 0,
-        cap_height: 6,
-    }
+        cap_height: 6, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None }
 }
 
 /// Demonstrates the geometry is genuinely CONFIGURABLE across ALL its parameters — FRI depth AND the
@@ -4099,10 +3786,8 @@ fn monolith_is_zk_geometry_matches_layout() {
         n_pub_f: 0,
         n_periodic_f: 0,
         is_zk: 1,
-        cap_height: 6,
-    };
-    let (rt, it, qt, _leaf, _term, nb, n_terms, [rlb, ilb, qlb]) =
-        hiding_commit_layout(1, 4, 11, 6, 4);
+        cap_height: 6, narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None };
+    let (rt, it, qt, _leaf, _term, nb, n_terms, [rlb, ilb, qlb]) = hiding_commit_layout(1, 4, 11, 6, 4);
     assert_eq!(air.nqc(), 4, "hiding nqc solved from n_terms");
     assert_eq!(
         (
@@ -4381,6 +4066,809 @@ fn phase7_symbolic_epilogue_matches_oracle() {
         "tampered quotient ⇒ reject"
     );
     println!("Phase 7.5: in-circuit generic symbolic epilogue verifies Fibonacci from its constraint trees (data-driven)");
+}
+
+/// **Format bridge Brick 4 — assemble a lookup `MonolithAir` + trace + pis from a real `LookupProof`.**
+/// The `build_symbolic_inner_window` analogue for a `LookupProof` inner (`--features lookup`): swaps the p3
+/// per-query oracles for the LOOKUP oracles (`sim_full_lookup` + `multicol_query_terms_lookup` +
+/// `query_aux_merkle` + `query_fold_data_lookup`), populates the aux round's per-query Merkle path + the
+/// `2·|lookups|` lookup-challenge binds (prepended to `binds`/`chs` — they are squeezed first) + the LogUp
+/// `ext_constraints`, and builds the `MonolithAir` with `lookup: Some(..)` in PUBLIC-VALUES mode
+/// (`column_window: false`) so it proves directly (num_public_values == pis_count). Returns `(air, trace, pis)`.
+#[cfg(test)]
+#[allow(clippy::type_complexity)]
+fn build_lookup_monolith<A>(
+    config: &MyConfig,
+    inner: &A,
+    proof: &crate::lookup::prover::LookupProof<crate::recursion::native_fri::PcsOpeningProof>,
+    pis_inner: &[Val],
+) -> (super::MonolithAir, p3_matrix::dense::RowMajorMatrix<Val>, Vec<Val>)
+where
+    A: crate::lookup::prover::LookupAir,
+{
+    use super::{monolith_build_trace, LookupCfg, MonolithAir};
+    use crate::recursion::fri_fold::native_fold;
+    use crate::recursion::native_fri::{multicol_query_terms_lookup, query_aux_merkle, query_fold_data_lookup};
+    use p3_air::symbolic::AirLayout;
+    use p3_air::BaseAir;
+    use p3_field::{BasedVectorSpace, PrimeCharacteristicRing, PrimeField64};
+    use p3_lookup::{InteractionSymbolicBuilder, LogUpGadget, LookupProtocol, Lookups};
+
+    let cc = |x: Challenge| -> [Val; 2] { x.as_basis_coefficients_slice().try_into().unwrap() };
+    let flat = |g0: Challenge, g1: Challenge| -> [Val; 4] {
+        let (a, b) = (cc(g0), cc(g1));
+        [a[0], a[1], b[0], b[1]]
+    };
+    let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(inner);
+    let (block_inputs, counts, binds, chs, index_binds, index_felts, lookup_challenges, lc_binds, lc_lanes) =
+        sim_full_lookup(inner, proof, pis_inner);
+    let n_queries = proof.opening_proof.query_proofs.len();
+    let fri = &proof.opening_proof;
+    let log_global: usize = fri.query_proofs[0].commit_phase_openings.iter().map(|o| o.log_arity as usize).sum::<usize>() + 4;
+
+    // full binds/chs: the lookup challenges are squeezed FIRST, so they lead the challenge region.
+    let mut full_binds = lc_binds.clone();
+    full_binds.extend_from_slice(&binds);
+    let mut full_chs = lookup_challenges.clone();
+    full_chs.extend_from_slice(&chs);
+
+    // the inner's base + LogUp ext constraint trees, exactly as `combined_constraint_layout` builds them.
+    let layout = AirLayout {
+        permutation_width: lookups.len() + 1,
+        num_permutation_challenges: 2 * lookups.len(),
+        num_permutation_values: 1,
+        ..AirLayout::from_air::<Val>(inner)
+    };
+    let mut isb = InteractionSymbolicBuilder::<Val, Challenge>::new(layout);
+    inner.eval(&mut isb);
+    LogUpGadget::new().eval_all(&mut isb, &lookups);
+    let base = isb.base_constraints();
+    let ext = isb.extension_constraints();
+
+    // per-query witness data (reduced opening + the 4 Merkle rounds: trace, aux, quotient, commit phase).
+    let mut per_query = Vec::new();
+    let mut quot_paths = Vec::new();
+    let mut commit_data = Vec::new();
+    let mut aux_paths = Vec::new();
+    let mut n_terms = 0;
+    let mut final0 = Challenge::ZERO;
+    for q in 0..n_queries {
+        let (terms, _x, alpha, ro, _w, _aw) = multicol_query_terms_lookup(config, inner, proof, pis_inner, q);
+        let (_ro2, rounds, _folded, f0) = query_fold_data_lookup(config, inner, proof, pis_inner, q);
+        if q == 0 {
+            final0 = f0;
+        }
+        n_terms = terms.len();
+        let index = (index_felts[q].as_canonical_u64() as usize) & ((1 << log_global) - 1);
+        // trace round (input_proof[0], max height 2^log_global): path bits from the raw index.
+        let tb = &fri.query_proofs[q].input_proof[0];
+        let trace_path: Vec<([Val; 4], bool)> = tb.opening_proof.iter().enumerate().map(|(l, &s)| (s, (index >> l) & 1 == 1)).collect();
+        // aux round (input_proof[1]): the same shape (query_aux_merkle gives the authenticated path).
+        let (_al, aux_path, _ace) = query_aux_merkle(config, inner, proof, pis_inner, q);
+        // quotient round (input_proof[2], possibly reduced height): reduced index path.
+        let qb = &fri.query_proofs[q].input_proof[2];
+        let qdepth = qb.opening_proof.len();
+        let qcap_h = proof.quotient_commit.roots().len().trailing_zeros() as usize;
+        let qreduced = index >> ((log_global - qcap_h) - qdepth);
+        let quot_path: Vec<([Val; 4], bool)> = qb.opening_proof.iter().enumerate().map(|(l, &s)| (s, (qreduced >> l) & 1 == 1)).collect();
+        // commit phase: the bit-ordered fold group {e_r, sib_r} + its Merkle path (leaf/cap recomputed in build).
+        let mut e = ro;
+        let mut start = index;
+        let mut cm: Vec<([Val; 4], [Val; 4], Vec<([Val; 4], bool)>, [Val; 4])> = Vec::new();
+        for (r, step) in fri.query_proofs[q].commit_phase_openings.iter().enumerate() {
+            let la = step.log_arity as usize;
+            let (sibling, beta, bit, s) = rounds[r];
+            let (g0, g1) = if !bit { (e, sibling) } else { (sibling, e) };
+            let group = flat(g0, g1);
+            start >>= la;
+            let cpath: Vec<([Val; 4], bool)> = step.opening_proof.iter().enumerate().map(|(l, &sb)| (sb, (start >> l) & 1 == 1)).collect();
+            cm.push((group, [Val::ZERO; 4], cpath, [Val::ZERO; 4]));
+            e = native_fold(g0, g1, beta, s);
+        }
+        per_query.push(((index, terms, alpha, ro, rounds), Val::ZERO, trace_path));
+        quot_paths.push(quot_path);
+        commit_data.push(cm);
+        aux_paths.push(aux_path);
+    }
+
+    let air = MonolithAir {
+        counts: counts.clone(),
+        binds: full_binds,
+        index_binds: index_binds.clone(),
+        n_queries,
+        n_terms,
+        inner_counter: false,
+        column_window: false,
+        k_instances: 1,
+        fold: false,
+        fold_txstmt: false,
+        constraints: base,
+        w_inner_f: BaseAir::<Val>::width(inner),
+        n_pub_f: pis_inner.len(),
+        n_periodic_f: inner.periodic_columns().len(),
+        is_zk: 0,
+        cap_height: proof.trace_commit.roots().len().trailing_zeros() as usize,
+        narrow_arith: false,
+        narrow_caps: false,
+        narrow_openings: false,
+        narrow_ov: false,
+        lookup: Some(LookupCfg {
+            aux_ext_w: proof.aux_width,
+            n_lookup_challenges: 2 * lookups.len(),
+            lookup_bind_lanes: lc_lanes,
+            ext_constraints: ext,
+            lookups: lookups.to_vec(), // pis-mode ignores these (n_prod_acc = 0); populated for the shared field
+            fs_binds: Vec::new(),      // pis-mode: no FS-absorb binding (byte-identical)
+            fs_openings: 0,            // pis-mode: no FS-absorb opening bind (byte-identical)
+        }),
+    };
+    // sanity: n_terms decomposes as 2·W (trace) + 2·aux_base_w (aux) + 2·nqc (quotient).
+    assert_eq!(
+        n_terms,
+        2 * air.w_inner() + air.aux_terms() + 2 * air.nqc(),
+        "lookup n_terms = 2·W + 2·aux_base_w + 2·nqc"
+    );
+
+    // pis (public-values mode) — the same order as `pis_count`: challenges (lookup ‖ α_stark/ζ/α_fri/β),
+    // index felts, final_poly, trace cap, quotient cap, inner pubs, commit caps, periodic, qwt, AUX cap, terminal.
+    let mut pis = Vec::new();
+    for ch in &full_chs {
+        pis.push(ch[0]);
+        pis.push(ch[1]);
+    }
+    for f in &index_felts {
+        pis.push(*f);
+    }
+    let fp = cc(final0);
+    pis.push(fp[0]);
+    pis.push(fp[1]);
+    for e in proof.trace_commit.roots().iter() {
+        pis.extend_from_slice(e);
+    }
+    for e in proof.quotient_commit.roots().iter() {
+        pis.extend_from_slice(e);
+    }
+    for &pv in pis_inner {
+        pis.push(pv);
+    }
+    for cm in proof.opening_proof.commit_phase_commits.iter() {
+        for e in cm.roots().iter() {
+            pis.extend_from_slice(e);
+        }
+    }
+    // periodic-column values at ζ (none for RangeCheckAir; periodic inners not yet wired).
+    assert_eq!(air.n_periodic(), 0, "periodic-column lookup inners are not yet wired");
+    // quotient recompose weights zps_i (nqc>1): verifier-computed from ζ + the quotient sub-domains.
+    if air.qwt_len() > 0 {
+        let zps = crate::recursion::native_fri::lookup_quotient_recompose_weights(config, chs[1], proof.degree_bits, air.nqc().trailing_zeros() as usize);
+        for z in &zps {
+            let c = cc(*z);
+            pis.push(c[0]);
+            pis.push(c[1]);
+        }
+    }
+    for e in proof.aux_commit.roots().iter() {
+        pis.extend_from_slice(e);
+    }
+    let term = cc(proof.terminal.0);
+    pis.push(term[0]);
+    pis.push(term[1]);
+    assert_eq!(pis.len(), air.pis_count(), "lookup column pis layout matches pis_count");
+
+    let mut trace = monolith_build_trace(
+        &air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &[], None, Some(&aux_paths),
+    );
+    // fill the witnessed Lagrange selectors at ζ (is_first/is_last/inv_van), bound in-circuit to their ζ-defs.
+    let (is_first, is_last, inv_van) = crate::recursion::native_fri::lookup_selectors(config, chs[1], proof.degree_bits);
+    let (isf, isl, iv) = (cc(is_first), cc(is_last), cc(inv_van));
+    let fw = air.fused_w();
+    let sb = air.sel_base();
+    for r in 0..air.height() {
+        trace.values[r * fw + sb..r * fw + sb + 2].copy_from_slice(&isf);
+        trace.values[r * fw + sb + 2..r * fw + sb + 4].copy_from_slice(&isl);
+        trace.values[r * fw + sb + 4..r * fw + sb + 6].copy_from_slice(&iv);
+    }
+    (air, trace, pis)
+}
+
+/// **CANONICAL SELF-COMPOSITION assembler** — the merge of [`build_symbolic_inner_window`] (COLUMN-WINDOW +
+/// PERIODIC + FOLD_CHUNK, for a p3 `Proof`) and [`build_lookup_monolith`] (the LogUp aux round + ext
+/// constraints + lc-binds, for a `LookupProof`). Produces the outer `MonolithAir` that verifies an INNER
+/// `LookupProof` in COLUMN-WINDOW mode (the inner pis live in a witness window, so the degree-1 α_stark forces
+/// the chunked fold) — so a wrap (itself a LookupAir verifying a join-split) can verify ITS OWN proof. Unlike
+/// `build_lookup_monolith` this does NOT assert `n_periodic == 0` (the wrap has op/cap periodics), and it fills
+/// the FOLD_CHUNK accumulators over the base THEN ext constraints (the degree crux). Returns `(air, trace, pis)`.
+///
+/// `narrow_*` flags are threaded into the AIR (for the fused_w WIDTH measurement of the wrap-externalized
+/// geometry); the returned TRACE is only valid at the FULL geometry (`narrow_arith/openings=false`) — the
+/// narrow arith/openings epilogue is wrap-coupled (`OpeningsBci` + slack regions), so a bare `InlineBci` trace
+/// cannot be proven narrow (documented in the self-composition report).
+#[cfg(test)]
+#[allow(clippy::type_complexity, clippy::too_many_arguments)]
+pub(crate) fn build_symbolic_inner_window_lookup<A>(
+    config: &MyConfig,
+    inner: &A,
+    proof: &crate::lookup::prover::LookupProof<crate::recursion::native_fri::PcsOpeningProof>,
+    pis_inner: &[Val],
+    narrow_caps: bool,
+    narrow_arith: bool,
+    narrow_openings: bool,
+    narrow_ov: bool,
+    bind_fs: bool,     // F1 fix: bind the FS-absorbed caps/pis to the committed window pis (soundness); false = byte-identical
+    build_trace: bool, // false ⇒ AIR + pis + the native-fold diagnostic only (skip the height-sized trace, for compose)
+) -> (super::MonolithAir, p3_matrix::dense::RowMajorMatrix<Val>, Vec<Val>)
+where
+    A: crate::lookup::prover::LookupAir,
+{
+    use super::{monolith_build_trace, LookupCfg, MonolithAir};
+    use crate::lookup::prover::batched_constraints_at_point;
+    use crate::recursion::fri_fold::native_fold;
+    use crate::recursion::native_fri::{
+        eval_symbolic_ext_native, eval_symbolic_native, lookup_quotient_recompose_weights, lookup_selectors,
+        multicol_query_terms_lookup, query_aux_merkle, query_fold_data_lookup, Chal, MyPcs,
+    };
+    use p3_air::symbolic::AirLayout;
+    use p3_air::BaseAir;
+    use p3_commit::{Pcs, PolynomialSpace};
+    use p3_field::{BasedVectorSpace, ExtensionField, PrimeCharacteristicRing, PrimeField64};
+    use p3_lookup::{InteractionSymbolicBuilder, LogUpGadget, LookupProtocol, Lookups};
+    use p3_uni_stark::StarkGenericConfig;
+
+    let cc = |x: Challenge| -> [Val; 2] { x.as_basis_coefficients_slice().try_into().unwrap() };
+    let to_ext = |p: [Val; 2]| Challenge::from_basis_coefficients_fn(|i| p[i]);
+    let flat = |g0: Challenge, g1: Challenge| -> [Val; 4] {
+        let (a, b) = (cc(g0), cc(g1));
+        [a[0], a[1], b[0], b[1]]
+    };
+    let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(inner);
+    let (block_inputs, counts, binds, chs, index_binds, index_felts, lookup_challenges, lc_binds, lc_lanes) =
+        sim_full_lookup(inner, proof, pis_inner);
+    let n_queries = proof.opening_proof.query_proofs.len();
+    let fri = &proof.opening_proof;
+    let log_global: usize = fri.query_proofs[0].commit_phase_openings.iter().map(|o| o.log_arity as usize).sum::<usize>() + 4;
+
+    // the lookup challenges are squeezed FIRST, so they LEAD the challenge region (binds + chs).
+    let mut full_binds = lc_binds.clone();
+    full_binds.extend_from_slice(&binds);
+    let mut full_chs = lookup_challenges.clone();
+    full_chs.extend_from_slice(&chs);
+
+    // the inner's base + LogUp ext constraint trees (exactly `combined_constraint_layout`'s layout).
+    let layout = AirLayout {
+        permutation_width: lookups.len() + 1,
+        num_permutation_challenges: 2 * lookups.len(),
+        num_permutation_values: 1,
+        ..AirLayout::from_air::<Val>(inner)
+    };
+    let mut isb = InteractionSymbolicBuilder::<Val, Challenge>::new(layout);
+    inner.eval(&mut isb);
+    LogUpGadget::new().eval_all(&mut isb, &lookups);
+    let base = isb.base_constraints();
+    let ext = isb.extension_constraints();
+
+    // per-query witness data (reduced opening + the 4 Merkle rounds: trace, aux, quotient, commit phase) —
+    // identical to `build_lookup_monolith` (the per-query oracle data does not depend on column_window).
+    let mut per_query = Vec::new();
+    let mut quot_paths = Vec::new();
+    let mut commit_data = Vec::new();
+    let mut aux_paths = Vec::new();
+    let mut n_terms = 0;
+    let mut final0 = Challenge::ZERO;
+    for q in 0..n_queries {
+        let (terms, _x, alpha, ro, _w, _aw) = multicol_query_terms_lookup(config, inner, proof, pis_inner, q);
+        let (_ro2, rounds, _folded, f0) = query_fold_data_lookup(config, inner, proof, pis_inner, q);
+        if q == 0 {
+            final0 = f0;
+        }
+        n_terms = terms.len();
+        let index = (index_felts[q].as_canonical_u64() as usize) & ((1 << log_global) - 1);
+        let tb = &fri.query_proofs[q].input_proof[0];
+        let trace_path: Vec<([Val; 4], bool)> = tb.opening_proof.iter().enumerate().map(|(l, &s)| (s, (index >> l) & 1 == 1)).collect();
+        let (_al, aux_path, _ace) = query_aux_merkle(config, inner, proof, pis_inner, q);
+        let qb = &fri.query_proofs[q].input_proof[2];
+        let qdepth = qb.opening_proof.len();
+        let qcap_h = proof.quotient_commit.roots().len().trailing_zeros() as usize;
+        let qreduced = index >> ((log_global - qcap_h) - qdepth);
+        let quot_path: Vec<([Val; 4], bool)> = qb.opening_proof.iter().enumerate().map(|(l, &s)| (s, (qreduced >> l) & 1 == 1)).collect();
+        let mut e = ro;
+        let mut start = index;
+        let mut cm: Vec<([Val; 4], [Val; 4], Vec<([Val; 4], bool)>, [Val; 4])> = Vec::new();
+        for (r, step) in fri.query_proofs[q].commit_phase_openings.iter().enumerate() {
+            let la = step.log_arity as usize;
+            let (sibling, beta, bit, s) = rounds[r];
+            let (g0, g1) = if !bit { (e, sibling) } else { (sibling, e) };
+            let group = flat(g0, g1);
+            start >>= la;
+            let cpath: Vec<([Val; 4], bool)> = step.opening_proof.iter().enumerate().map(|(l, &sb)| (sb, (start >> l) & 1 == 1)).collect();
+            cm.push((group, [Val::ZERO; 4], cpath, [Val::ZERO; 4]));
+            e = native_fold(g0, g1, beta, s);
+        }
+        per_query.push(((index, terms, alpha, ro, rounds), Val::ZERO, trace_path));
+        quot_paths.push(quot_path);
+        commit_data.push(cm);
+        aux_paths.push(aux_path);
+    }
+
+    let mut air = MonolithAir {
+        counts: counts.clone(),
+        binds: full_binds,
+        index_binds: index_binds.clone(),
+        n_queries,
+        n_terms,
+        inner_counter: false,
+        column_window: true, // the self-composition mode (inner pis in the witness window ⇒ chunked fold)
+        k_instances: 1,
+        fold: false,
+        fold_txstmt: false,
+        constraints: base.clone(),
+        w_inner_f: BaseAir::<Val>::width(inner),
+        n_pub_f: pis_inner.len(),
+        n_periodic_f: inner.periodic_columns().len(), // the wrap HAS periodics (do NOT assert 0)
+        is_zk: 0,
+        cap_height: proof.trace_commit.roots().len().trailing_zeros() as usize,
+        narrow_arith,
+        narrow_caps,
+        narrow_openings,
+        narrow_ov,
+        lookup: Some(LookupCfg {
+            aux_ext_w: proof.aux_width,
+            n_lookup_challenges: 2 * lookups.len(),
+            lookup_bind_lanes: lc_lanes,
+            ext_constraints: ext.clone(),
+            lookups: lookups.to_vec(), // column-window: the outer product-chunks each fraction from these
+            fs_binds: Vec::new(),      // populated below when `bind_fs` (the F1 FS-absorb soundness bind)
+            fs_openings: if bind_fs { 2 * n_terms } else { 0 }, // F1 opened-value bind: the held pis-window opening region
+        }),
+    };
+    // F1 opened-value bind: the inner proof's opened values in the reduced-opening FOLD order (trace_local ‖
+    // trace_next ‖ aux_local ‖ aux_next ‖ quotient_chunks — EXACTLY `multicol_query_terms_lookup`'s term order
+    // AND `sim_full_lookup`'s absorb order), each an F_p² element ⇒ 2 base felts. Held in the pis window
+    // (`pw_opening`) so bind 1 (absorb row) pins the ABSORBED felt and bind 2 (arith head) pins the consumed
+    // `pz`, to the SAME slot ⇒ absorbed == pz. Used below (section 5 positions + the pis-window append), bind_fs only.
+    let opening_vals: Vec<Challenge> = {
+        let mut v = Vec::new();
+        v.extend_from_slice(&proof.opened.trace_local);
+        v.extend_from_slice(&proof.opened.trace_next);
+        v.extend_from_slice(&proof.opened.aux_local);
+        v.extend_from_slice(&proof.opened.aux_next);
+        for c in &proof.opened.quotient_chunks {
+            v.extend_from_slice(c);
+        }
+        v
+    };
+    assert_eq!(opening_vals.len(), n_terms, "F1 opened-value bind: opened-value count == reduced-opening fold term count");
+    // F1 FIX: record the (block, lane, committed-pis-index) of every FS-absorbed cap/pis felt so the AIR can
+    // bind each absorbed rate lane to its committed window value (closing the challenge-grinding forge). The
+    // replay mirrors `sim_full_lookup`'s absorb schedule EXACTLY; the committed pis indices reuse the SAME
+    // accessors the cap-mux binds against (`cap_base`/`qcap_base`/`aux_cap_base`/`commit_cap_base`/`pub_pi`),
+    // so the absorbed felt is tied to precisely the value the openings authenticate. Requires `!narrow_caps`
+    // (the caps must live in the pis window). The opened values (ζ→α_fri) are ALSO bound here (section 5): the
+    // absorbed opening felt is pinned to a HELD pis-window opening slot (`pw_opening`, appended under bind_fs) —
+    // bind 1 of the cross-row transitive bind whose bind 2 (`cur[pz(k)] == pw_opening`) lives in `eval_bci`.
+    if bind_fs {
+        assert!(!narrow_caps, "bind_fs needs the caps in the pis window (narrow_caps externalizes them to the sponge bus)");
+        assert!(!narrow_openings, "bind_fs binds the opened values to the `pz` tile (narrow_openings externalizes pz to the sponge-opening bus)");
+        let mut positions: Vec<(usize, usize, usize)> = Vec::new(); // (block, lane, committed pis index)
+        let mut s = Sim::new();
+        // (1) trace cap felts, then inner public values.
+        for (i, &f) in cap_felts(&proof.trace_commit).iter().enumerate() {
+            positions.push((s.block_inputs.len(), s.input.len(), air.cap_base() + i));
+            s.observe(f);
+        }
+        for (pi, &pv) in pis_inner.iter().enumerate() {
+            positions.push((s.block_inputs.len(), s.input.len(), air.pub_pi() + pi));
+            s.observe(pv);
+        }
+        // (2) the lookup challenges (squeeze-only — nothing absorbed).
+        for _ in 0..air.nlc() {
+            let _ = s.sample_base();
+            let _ = s.sample_base();
+        }
+        // (3) the aux (permutation) cap, then α_stark.
+        for (i, &f) in cap_felts(&proof.aux_commit).iter().enumerate() {
+            positions.push((s.block_inputs.len(), s.input.len(), air.aux_cap_base() + i));
+            s.observe(f);
+        }
+        let _ = s.sample_ext();
+        // (4) the quotient cap, then ζ.
+        for (i, &f) in cap_felts(&proof.quotient_commit).iter().enumerate() {
+            positions.push((s.block_inputs.len(), s.input.len(), air.qcap_base() + i));
+            s.observe(f);
+        }
+        let _ = s.sample_ext();
+        // (5) the opened values — bind 1 of the cross-row transitive bind: record each absorbed felt's
+        // (block, lane) AND map it to its HELD pis-window opening slot `pis_openings_base() + 2·gi + kk`
+        // (gi = the fold-term index in `opening_vals`, kk = the F_p² coefficient). `observe_ext` = `observe(c0);
+        // observe(c1)`, so unrolling to per-coefficient `observe` is byte-identical to the prior absorb schedule
+        // (α_fri/β unchanged) — it only ADDS the position recording. The window slot holds cc(opening_vals[gi]),
+        // and bind 2 pins `cur[pz(gi)]` to the same slot, so binding lane==slot ties absorbed to the folded pz.
+        for (gi, x) in opening_vals.iter().enumerate() {
+            for (kk, &c) in x.as_basis_coefficients_slice().iter().enumerate() {
+                positions.push((s.block_inputs.len(), s.input.len(), air.pis_openings_base() + 2 * gi + kk));
+                s.observe(c);
+            }
+        }
+        let _ = s.sample_ext(); // α_fri
+        // (6) the FRI commit-phase caps (each round observes its cap, then squeezes β_r).
+        for (r, comm) in proof.opening_proof.commit_phase_commits.iter().enumerate() {
+            for (i, &f) in cap_felts(comm).iter().enumerate() {
+                positions.push((s.block_inputs.len(), s.input.len(), air.commit_cap_base(r) + i));
+                s.observe(f);
+            }
+            let _ = s.sample_ext();
+        }
+        // group per absorbing block (one periodic one-hot each).
+        let mut by_block: std::collections::BTreeMap<usize, Vec<(usize, usize)>> = std::collections::BTreeMap::new();
+        for (blk, lane, idx) in positions {
+            by_block.entry(blk).or_default().push((lane, idx));
+        }
+        air.lookup.as_mut().unwrap().fs_binds = by_block.into_iter().collect();
+    }
+    assert_eq!(n_terms, 2 * air.w_inner() + air.aux_terms() + 2 * air.nqc(), "lookup n_terms = 2·W + 2·aux_base_w + 2·nqc");
+
+    // periodic-column values at ζ (verifier-computed publics), like `verify_lookup_proof_native`. is_zk=0 ⇒
+    // init_trace_domain == ext_trace_domain.
+    let pcs = config.pcs();
+    let degree = 1usize << proof.degree_bits;
+    let dom = <MyPcs as Pcs<Challenge, Chal>>::natural_domain_for_degree(pcs, degree);
+    let zeta = to_ext(chs[1]);
+    let periodic_at_zeta: Vec<Challenge> =
+        inner.periodic_columns().iter().map(|col| dom.evaluate_periodic_column_at(col, zeta)).collect();
+
+    // pis — the same order as `pis_count`, filling the WINDOW (column-window): challenges (lookup ‖ α_stark/ζ/
+    // α_fri/β), index felts, final_poly, [trace cap, quot cap], pubs, [commit caps], PERIODIC, qwt, [aux cap],
+    // terminal. The `[...]` cap slices are DROPPED under `narrow_caps` (pis_cap_stride/pis_commit_caps_len → 0).
+    let mut pis = Vec::new();
+    for ch in &full_chs {
+        pis.push(ch[0]);
+        pis.push(ch[1]);
+    }
+    for f in &index_felts {
+        pis.push(*f);
+    }
+    let fp = cc(final0);
+    pis.push(fp[0]);
+    pis.push(fp[1]);
+    if !narrow_caps {
+        for e in proof.trace_commit.roots().iter() {
+            pis.extend_from_slice(e);
+        }
+        for e in proof.quotient_commit.roots().iter() {
+            pis.extend_from_slice(e);
+        }
+    }
+    for &pv in pis_inner {
+        pis.push(pv);
+    }
+    if !narrow_caps {
+        for cm in proof.opening_proof.commit_phase_commits.iter() {
+            for e in cm.roots().iter() {
+                pis.extend_from_slice(e);
+            }
+        }
+    }
+    for pv in &periodic_at_zeta {
+        let c = cc(*pv);
+        pis.push(c[0]);
+        pis.push(c[1]);
+    }
+    if air.qwt_len() > 0 {
+        let zps = lookup_quotient_recompose_weights(config, chs[1], proof.degree_bits, air.nqc().trailing_zeros() as usize);
+        for z in &zps {
+            let c = cc(*z);
+            pis.push(c[0]);
+            pis.push(c[1]);
+        }
+    }
+    if !narrow_caps {
+        for e in proof.aux_commit.roots().iter() {
+            pis.extend_from_slice(e);
+        }
+    }
+    let term = cc(proof.terminal.0);
+    pis.push(term[0]);
+    pis.push(term[1]);
+    // F1 opened-value bind: APPEND the 2·n_terms opening felts LAST (so no offset above shifts), filling the held
+    // pis-window opening region (`pw_opening`). The trace-fill loop writes them into `pw(pis_openings_base()+j)`;
+    // bind 1 pins each absorbed felt to `pis[pis_openings_base()+2·gi+kk]`, bind 2 pins `cur[pz(gi)]` to the same.
+    if bind_fs {
+        for x in &opening_vals {
+            let c = cc(*x);
+            pis.push(c[0]);
+            pis.push(c[1]);
+        }
+    }
+    assert_eq!(pis.len(), air.pis_count(), "self-composition column-window lookup pis layout matches pis_count");
+
+    let fw = air.fused_w();
+    // monolith_build_trace fills the pis WINDOW (column-window) + the aux round (Some(&aux_paths)); the witnessed
+    // Lagrange selectors at ζ are bound in-circuit to their ζ-defs. Skipped (empty trace) when !build_trace.
+    let mut trace = if build_trace {
+        let mut t = monolith_build_trace(&air, &block_inputs, &per_query, chs[2], &index_felts, &quot_paths, &commit_data, &pis, None, Some(&aux_paths));
+        let (is_first, is_last, inv_van) = lookup_selectors(config, chs[1], proof.degree_bits);
+        let (isf, isl, iv) = (cc(is_first), cc(is_last), cc(inv_van));
+        let sb = air.sel_base();
+        for r in 0..air.height() {
+            t.values[r * fw + sb..r * fw + sb + 2].copy_from_slice(&isf);
+            t.values[r * fw + sb + 2..r * fw + sb + 4].copy_from_slice(&isl);
+            t.values[r * fw + sb + 4..r * fw + sb + 6].copy_from_slice(&iv);
+        }
+        t
+    } else {
+        p3_matrix::dense::RowMajorMatrix::new(Vec::new(), fw)
+    };
+
+    // witnessed constraint-fold accumulators (column-window: α_stark degree-1 ⇒ chunk the base+ext Horner every
+    // FOLD_CHUNK, mirroring the in-circuit epilogue EXACTLY). The reconstructed aux ext-rows / terminal / lookup
+    // challenges match `batched_constraints_at_point`. FULL geometry only (narrow arith/openings drop the tile).
+    if air.n_fold_acc() > 0 {
+        let d = <Challenge as BasedVectorSpace<Val>>::DIMENSION;
+        let sels = dom.selectors_at_point(zeta);
+        let alpha_stark = to_ext(chs[0]);
+        let local = &proof.opened.trace_local;
+        let next = &proof.opened.trace_next;
+        let aux_local: Vec<Challenge> = (0..proof.aux_width)
+            .map(|c| <Challenge as ExtensionField<Val>>::from_ext_basis_coefficients(&proof.opened.aux_local[c * d..(c + 1) * d]).unwrap())
+            .collect();
+        let aux_next: Vec<Challenge> = (0..proof.aux_width)
+            .map(|c| <Challenge as ExtensionField<Val>>::from_ext_basis_coefficients(&proof.opened.aux_next[c * d..(c + 1) * d]).unwrap())
+            .collect();
+        let pubs: Vec<Challenge> = pis_inner.iter().map(|&p| Challenge::from(p)).collect();
+        let lc: Vec<Challenge> = lookup_challenges.iter().map(|&p| to_ext(p)).collect();
+        let terminal = proof.terminal.0;
+        let n_c = base.len() + ext.len();
+        let mut folded = Challenge::ZERO;
+        let mut acc_i = 0usize;
+        let mut k = 0usize;
+        let store = |folded: Challenge, acc_i: usize, trace: &mut p3_matrix::dense::RowMajorMatrix<Val>| {
+            let fcc = cc(folded);
+            let col = air.fold_acc(acc_i);
+            for r in 0..air.height() {
+                trace.values[r * fw + col..r * fw + col + 2].copy_from_slice(&fcc);
+            }
+        };
+        for c in &base {
+            folded = folded * alpha_stark + eval_symbolic_native(c, local, next, &pubs, &periodic_at_zeta, sels.is_first_row, sels.is_last_row, sels.is_transition);
+            if (k + 1) % MonolithAir::FOLD_CHUNK == 0 && k + 1 < n_c {
+                if build_trace {
+                    store(folded, acc_i, &mut trace);
+                }
+                acc_i += 1;
+            }
+            k += 1;
+        }
+        for c in &ext {
+            folded = folded * alpha_stark
+                + eval_symbolic_ext_native(c, local, next, &pubs, &periodic_at_zeta, sels.is_first_row, sels.is_last_row, sels.is_transition, &aux_local, &aux_next, &lc, &[terminal]);
+            if (k + 1) % MonolithAir::FOLD_CHUNK == 0 && k + 1 < n_c {
+                if build_trace {
+                    store(folded, acc_i, &mut trace);
+                }
+                acc_i += 1;
+            }
+            k += 1;
+        }
+        // DIAGNOSTIC — the native full fold must reproduce the real lookup verifier's fold AND == quot(ζ)·Z_H.
+        let bref = batched_constraints_at_point(inner, &lookups, local, next, &aux_local, &aux_next, sels.is_first_row, sels.is_last_row, sels.is_transition, alpha_stark, &lc, &[terminal], pis_inner, &periodic_at_zeta);
+        assert_eq!(folded, bref, "self-composition native chunked fold == batched_constraints_at_point");
+    }
+
+    // LogUp PRODUCT-CHUNK native fill + soundness anchor (column-window). For each lookup, run the rational
+    // recurrence D_i=D_{i−1}·t_i, S_i=S_{i−1}·t_i+m_i·D_{i−1} (t_i = α_L − combined_e_i) and CROSS-CHECK that
+    // D·frac − S reproduces the generic ext fraction value (the exact thing the in-circuit product-chunk folds).
+    // This runs even without `build_trace` (a pure identity — the compose gate's degree measurement rides on it);
+    // the boundary partials are stored into the `prod_acc` columns only when the height-sized trace is built.
+    if air.n_prod_acc() > 0 {
+        let d = <Challenge as BasedVectorSpace<Val>>::DIMENSION;
+        let sels = dom.selectors_at_point(zeta);
+        let local = &proof.opened.trace_local;
+        let next = &proof.opened.trace_next;
+        let aux_local: Vec<Challenge> = (0..proof.aux_width)
+            .map(|c| <Challenge as ExtensionField<Val>>::from_ext_basis_coefficients(&proof.opened.aux_local[c * d..(c + 1) * d]).unwrap())
+            .collect();
+        let aux_next: Vec<Challenge> = (0..proof.aux_width)
+            .map(|c| <Challenge as ExtensionField<Val>>::from_ext_basis_coefficients(&proof.opened.aux_next[c * d..(c + 1) * d]).unwrap())
+            .collect();
+        let pubs: Vec<Challenge> = pis_inner.iter().map(|&p| Challenge::from(p)).collect();
+        let lc: Vec<Challenge> = lookup_challenges.iter().map(|&p| to_ext(p)).collect();
+        let terminal = proof.terminal.0;
+        let fw = air.fused_w();
+        for (j, lu) in lookups.iter().enumerate() {
+            let col = lu.column;
+            let (alpha_l, beta, frac) = (lc[2 * col], lc[2 * col + 1], aux_local[col + 1]);
+            let slot_base = air.prod_acc_lookup_base(j);
+            let n_sides = lu.elements.len();
+            let (mut dd, mut ss) = (Challenge::ONE, Challenge::ZERO);
+            let (mut s_slot, mut in_chunk) = (0usize, 0usize);
+            for (i, elem_tuple) in lu.elements.iter().enumerate() {
+                let mut comb = Challenge::ZERO;
+                for elem in elem_tuple {
+                    comb = comb * beta
+                        + eval_symbolic_native(elem, local, next, &pubs, &periodic_at_zeta, sels.is_first_row, sels.is_last_row, sels.is_transition);
+                }
+                let term = alpha_l - comb;
+                let m = eval_symbolic_native(&lu.multiplicities[i], local, next, &pubs, &periodic_at_zeta, sels.is_first_row, sels.is_last_row, sels.is_transition);
+                ss = ss * term + m * dd;
+                dd *= term;
+                in_chunk += 1;
+                if in_chunk == MonolithAir::PROD_CHUNK && i + 1 < n_sides {
+                    if build_trace {
+                        let d0 = air.prod_acc(slot_base + s_slot);
+                        let (dcc, scc) = (cc(dd), cc(ss));
+                        for r in 0..air.height() {
+                            trace.values[r * fw + d0..r * fw + d0 + 2].copy_from_slice(&dcc);
+                            trace.values[r * fw + d0 + 2..r * fw + d0 + 4].copy_from_slice(&scc);
+                        }
+                    }
+                    s_slot += 1;
+                    in_chunk = 0;
+                }
+            }
+            let semantic = dd * frac - ss;
+            let tree = eval_symbolic_ext_native(&ext[j], local, next, &pubs, &periodic_at_zeta, sels.is_first_row, sels.is_last_row, sels.is_transition, &aux_local, &aux_next, &lc, &[terminal]);
+            assert_eq!(semantic, tree, "self-composition product-chunk fraction[{j}] == the generic ext fold value");
+        }
+    }
+    (air, trace, pis)
+}
+
+/// **Format bridge Brick 4 (COMPOSE) — the lookup `MonolithAir` stays within the outer degree budget.** The
+/// fused verifier of a real `RangeCheckAir` `LookupProof` (base + LogUp OOD fold + aux Merkle round) composes at
+/// `log_nqc ≤ LOG_BLOWUP` — so the outer quotient commits at the recursion blowup (the self-composition gate).
+#[test]
+fn lookup_monolith_composes() {
+    use crate::config::LOG_BLOWUP;
+    use crate::lookup::prover::{balanced_main, prove_lookup_inner, LookupProof, RangeCheckAir};
+    use crate::recursion::native_fri::{make_config_cap, PcsOpeningProof};
+    use p3_air::symbolic::AirLayout;
+    use p3_uni_stark::get_log_num_quotient_chunks;
+    let inner = RangeCheckAir;
+    let config = make_config_cap(1, 2, 2); // small cap ⇒ short transcript (fast prove); reduced queries
+    let pis_inner: Vec<Val> = vec![];
+    let proof: LookupProof<PcsOpeningProof> = prove_lookup_inner(&inner, balanced_main(1 << 4), &pis_inner, false, &config);
+    let (air, _trace, _pis) = build_lookup_monolith(&config, &inner, &proof, &pis_inner);
+    let layout = AirLayout::from_air::<Val>(&air);
+    let log_nqc = get_log_num_quotient_chunks::<Val, super::MonolithAir>(&air, layout, 0);
+    println!("lookup MonolithAir (RangeCheck): 2^{} rows, fused_w = {}, log_nqc = {log_nqc} (budget {LOG_BLOWUP})", air.height().trailing_zeros(), air.fused_w());
+    assert!(log_nqc <= LOG_BLOWUP, "the lookup MonolithAir must compose within the outer degree budget");
+}
+
+/// **Format bridge Brick 4 (PROVE) — the lookup `MonolithAir` proves + verifies + rejects tampers.** Proves a
+/// real `RangeCheckAir` `LookupProof` end-to-end at reduced queries (accept-iff-verify), then rejects a
+/// tampered committed terminal (the LogUp balance check) and a tampered selected aux cap (the aux Merkle round).
+#[test]
+fn lookup_monolith_proves() {
+    use crate::lookup::prover::{balanced_main, prove_lookup_inner, LookupProof, RangeCheckAir};
+    use crate::recursion::native_fri::{lookup_transcript_challenges, make_config, make_config_cap, PcsOpeningProof};
+    use p3_field::PrimeField64;
+    let inner = RangeCheckAir;
+    let config = make_config_cap(1, 2, 2); // small cap + reduced queries ⇒ fast prove (research gate)
+    let pis_inner: Vec<Val> = vec![];
+    let proof: LookupProof<PcsOpeningProof> = prove_lookup_inner(&inner, balanced_main(1 << 4), &pis_inner, false, &config);
+    let (air, trace, pis) = build_lookup_monolith(&config, &inner, &proof, &pis_inner);
+    let outer = make_config(1, 4);
+    println!("lookup MonolithAir prove: 2^{} rows, width {}", air.height().trailing_zeros(), air.fused_w());
+    // fast pre-validation (no FRI): every constraint vanishes on the assembled trace.
+    p3_air::check_constraints(&air, &trace, &pis);
+    let prf = prove(&outer, &air, trace, &pis);
+    if let Err(e) = verify(&outer, &air, &prf, &pis) {
+        panic!("lookup MonolithAir rejected a valid LookupProof: {e:?}");
+    }
+    // tamper the committed terminal (must be 0) ⇒ the LogUp balance / OOD fold rejects.
+    let mut bad_term = pis.clone();
+    bad_term[air.term_pi()] += Val::ONE;
+    assert!(verify(&outer, &air, &prf, &bad_term).is_err(), "tampered LogUp terminal ⇒ reject");
+    // tamper the aux cap entry query 0 selects (index0 >> input_depth) ⇒ the aux cap-mux rejects.
+    let (_lc, _a, _z, _af, _b, idx) = lookup_transcript_challenges(&config, &inner, &proof, &pis_inner);
+    let log_global = proof.opening_proof.query_proofs[0].commit_phase_openings.len() + 4;
+    let sel0 = ((idx[0].as_canonical_u64() as usize) & ((1 << log_global) - 1)) >> air.input_depth();
+    let mut bad_aux = pis.clone();
+    bad_aux[air.aux_cap_base() + sel0 * 4] += Val::ONE;
+    assert!(verify(&outer, &air, &prf, &bad_aux).is_err(), "tampered selected aux cap ⇒ cap-mux reject");
+}
+
+/// **Format-bridge Brick 3 (in-circuit) — the LogUp OOD fold reproduces the native fold, IN CONSTRAINTS.**
+/// `LogupFoldCheckAir` (driving `eval_symbolic_ext_circuit`) α-Horner-folds the inner's base + LogUp ext
+/// constraint trees; `check_constraints` accepts iff the in-circuit fold equals the native
+/// `batched_constraints_at_point` value (fed as the public `expected`), and rejects a wrong one. This is the
+/// in-circuit port of the format bridge's LogUp OOD surface, validated against the native blueprint
+/// (`eval_symbolic_ext_native`). Fast (no prove) — the fold identity is what the port must preserve.
+#[test]
+fn lookup_epilogue_air_checks_logup_ood() {
+    use super::LogupFoldCheckAir;
+    use crate::lookup::prover::RangeCheckAir;
+    use crate::recursion::native_fri::{eval_symbolic_ext_native, eval_symbolic_native};
+    use p3_air::symbolic::AirLayout;
+    use p3_air::Air;
+    use p3_field::{BasedVectorSpace, PrimeCharacteristicRing};
+    use p3_lookup::{InteractionSymbolicBuilder, LogUpGadget, LookupProtocol, Lookups};
+
+    let air = RangeCheckAir;
+    let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(&air);
+    let layout = AirLayout {
+        permutation_width: lookups.len() + 1,
+        num_permutation_challenges: 2 * lookups.len(),
+        num_permutation_values: 1,
+        ..AirLayout::from_air::<Val>(&air)
+    };
+    let mut isb = InteractionSymbolicBuilder::<Val, Challenge>::new(layout);
+    air.eval(&mut isb);
+    LogUpGadget::new().eval_all(&mut isb, &lookups);
+    let base = isb.base_constraints();
+    let ext = isb.extension_constraints();
+
+    let (w, aux_w, n_lc) = (3usize, lookups.len() + 1, 2 * lookups.len());
+    let c = |n: u32| Challenge::from_u32(n);
+    let local = vec![c(3), c(5), c(7)];
+    let next = vec![c(11), c(13), c(17)];
+    let aux_local = vec![c(19), c(23)];
+    let aux_next = vec![c(29), c(31)];
+    let lc = vec![c(37), c(41)];
+    let terminal = c(43);
+    let alpha = c(47);
+    let (is_first, is_last, is_trans) = (c(2), c(3), c(5));
+
+    // Native expected fold (base then ext, α-Horner) — the ground truth the in-circuit fold must match.
+    let empty: &[Challenge] = &[]; // no public / periodic values for the RangeCheck inner
+    let mut expected = Challenge::ZERO;
+    for cst in &base {
+        expected = expected * alpha + eval_symbolic_native(cst, &local, &next, empty, empty, is_first, is_last, is_trans);
+    }
+    for cst in &ext {
+        expected = expected * alpha
+            + eval_symbolic_ext_native(cst, &local, &next, empty, empty, is_first, is_last, is_trans, &aux_local, &aux_next, &lc, &[terminal]);
+    }
+
+    // One-row trace (repeated): the OOD openings + selectors as F_p² pairs.
+    let cc = |x: Challenge| -> [Val; 2] { x.as_basis_coefficients_slice().try_into().unwrap() };
+    let width = 4 * w + 4 * aux_w + 6;
+    let mut row = vec![Val::ZERO; width];
+    let mut o = 0usize;
+    for (i, v) in local.iter().enumerate() {
+        row[o + 2 * i..o + 2 * i + 2].copy_from_slice(&cc(*v));
+    }
+    o += 2 * w;
+    for (i, v) in next.iter().enumerate() {
+        row[o + 2 * i..o + 2 * i + 2].copy_from_slice(&cc(*v));
+    }
+    o += 2 * w;
+    for (i, v) in aux_local.iter().enumerate() {
+        row[o + 2 * i..o + 2 * i + 2].copy_from_slice(&cc(*v));
+    }
+    o += 2 * aux_w;
+    for (i, v) in aux_next.iter().enumerate() {
+        row[o + 2 * i..o + 2 * i + 2].copy_from_slice(&cc(*v));
+    }
+    o += 2 * aux_w;
+    row[o..o + 2].copy_from_slice(&cc(is_first));
+    row[o + 2..o + 4].copy_from_slice(&cc(is_last));
+    row[o + 4..o + 6].copy_from_slice(&cc(is_trans));
+    let height = 4usize;
+    let mut vals = Vec::with_capacity(height * width);
+    for _ in 0..height {
+        vals.extend_from_slice(&row);
+    }
+    let trace = p3_matrix::dense::RowMajorMatrix::new(vals, width);
+
+    // Public: α, lookup challenges, terminal, expected fold.
+    let mut pubs = Vec::new();
+    pubs.extend_from_slice(&cc(alpha));
+    for v in &lc {
+        pubs.extend_from_slice(&cc(*v));
+    }
+    pubs.extend_from_slice(&cc(terminal));
+    pubs.extend_from_slice(&cc(expected));
+
+    let gadget = LogupFoldCheckAir { base: base.clone(), ext: ext.clone(), w, aux_w, n_lc };
+    // accept: the in-circuit LogUp fold matches the native fold.
+    p3_air::check_constraints(&gadget, &trace, &pubs);
+    // reject: a wrong expected fold ⇒ the constraint is violated.
+    let mut bad = pubs.clone();
+    let last = bad.len() - 2;
+    bad[last] += Val::ONE;
+    let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| p3_air::check_constraints(&gadget, &trace, &bad)));
+    assert!(caught.is_err(), "a wrong expected fold must be rejected by the in-circuit LogUp epilogue");
+    println!("Brick 3 in-circuit: LogUp OOD fold ({} base + {} ext) reproduces the native fold in constraints", base.len(), ext.len());
 }
 
 /// Phase 7.5 (DEGREE-2): the in-circuit generic symbolic epilogue verifies a NON-AFFINE inner — `MulAir`

@@ -3,9 +3,69 @@ use p3_field::{Field, PrimeCharacteristicRing, TwoAdicField};
 use p3_goldilocks::Goldilocks;
 
 use crate::poseidon2_air::{ext_linear, int_linear, periodic_table, pow7, BLOCK, W};
-use crate::recursion::native_fri::Val;
+use crate::recursion::native_fri::{Challenge, Val};
 
 use super::*;
+
+/// **Format bridge (`--features lookup`) — the LookupProof surface a `MonolithAir` verifies.** Present
+/// (`lookup: Some(..)`) iff the inner proof is a `LookupProof` (a p3 `Proof` PLUS a committed LogUp aux
+/// matrix opened at ζ/ζ_next, the `2·|lookups|` lookup challenges squeezed before α_stark, the LogUp
+/// fraction/accumulator ext constraints, and a committed terminal checked `== 0`). `None` = the exact p3
+/// `Proof` path every non-lookup construction uses, BYTE-IDENTICAL (the `pinned_constraint_fingerprints`
+/// guard covers it). The aux round is templated 1:1 on the is_zk=1 random round, but opens at TWO points
+/// (ζ + ζ_next) so its carrier px-binds into two DEEP-term regions (like the trace `ov`).
+#[allow(dead_code)]
+#[derive(Clone)]
+pub(crate) struct LookupCfg {
+    /// The LogUp aux (permutation) matrix EXTENSION width `= |lookups| + 1` (1 accumulator + |lookups|
+    /// fractions). The COMMITTED base width is `aux_ext_w · D` (each ext column flattens to `D=2` base
+    /// columns); the reconstructed ext rows fed to the LogUp OOD fold are `aux_ext_w` wide.
+    pub aux_ext_w: usize,
+    /// The number of lookup challenges `= 2·|lookups|` (`α_L` denominator + `β` tuple-combine per lookup),
+    /// squeezed from the sponge AFTER the trace commit + pis and BEFORE the aux commit / α_stark.
+    pub n_lookup_challenges: usize,
+    /// The sponge RATE-lane where each lookup challenge's FIRST base squeeze lands (its `c1` is at `lane−1`).
+    /// The lookup challenges are squeezed CONSECUTIVELY, so several share one duplex block at descending lanes
+    /// (e.g. lanes 3,1 for two ext challenges at RATE=4) — unlike α_stark/ζ/α_fri/β which each follow an observe
+    /// and land at lane RATE−1. The generic bind reads `cur[3]/cur[2]`; these lanes redirect the lookup binds.
+    pub lookup_bind_lanes: Vec<usize>,
+    /// The inner AIR's LogUp fraction/accumulator constraints as ext `SymbolicExpressionExt` trees (from
+    /// `InteractionSymbolicBuilder::extension_constraints()`), α-Horner-folded after the base constraints.
+    pub ext_constraints: Vec<p3_air::symbolic::SymbolicExpressionExt<Val, Challenge>>,
+    /// The inner AIR's LogUp lookups (element tuples + multiplicities per bus), in the SAME order as the first
+    /// `|lookups|` `ext_constraints` (the per-lookup fraction constraints). **Column-window only**: the outer
+    /// re-evaluates each fraction constraint SEMANTICALLY from these — `common_denom·frac − numerator` where
+    /// `common_denom = Π_i(α_L − e_i)` — with the running products PRODUCT-CHUNKED (witnessed every `PROD_CHUNK`
+    /// sides in `prod_acc` columns) so the ~N-sided product never exceeds a bounded degree. This is the
+    /// extension-field analogue of `FOLD_CHUNK` (which chunks the α-Horner SUM): in column-window mode `α_L` is a
+    /// degree-1 window column, so the naive `Π(α_L − e_i)` tree is degree ~N (the R5 blow-up) — chunking caps it.
+    /// The pis-mode fold (every RangeCheck test) ignores this and walks the `ext_constraints` tree verbatim.
+    pub lookups: Vec<p3_lookup::Lookup<Val>>,
+    /// **F1 FS-absorb binding (soundness fix — column-window only).** The FS transcript sponge ABSORBS the
+    /// inner proof's committed cap felts (trace/aux/quotient/commit-round) and inner public values into the
+    /// rate lanes `cur[0..RATE]` at each block's INPUT row, but those absorbed lanes are FREE WITNESSES —
+    /// they are NOT bound to the committed `pis` the openings authenticate against. Only the SQUEEZE outputs
+    /// are pinned (the challenge/index binds), so a malicious prover can absorb values ≠ the committed pis,
+    /// GRIND the FS challenges (α_L/α_stark/ζ/α_fri/β — landing hardest on the LogUp α_L, whose soundness is
+    /// pure challenge-after-commitment), and forge acceptance while the native verifier (recomputing the
+    /// challenge from the REAL committed caps) rejects. This binds each such absorbed felt to its committed
+    /// value: per distinct absorbing sponge block, `(block, Vec<(rate_lane, committed_pis_index)>)`; the AIR
+    /// asserts `cur[lane] == pis[idx]` at row `block·BLOCK`. Empty ⇒ NO binding (byte-identical — every
+    /// existing construction); populated ONLY by `build_symbolic_inner_window_lookup(bind_fs=true)`. Openings
+    /// (the ζ→α_fri absorbs) are the arith-tile `pz` columns, a CROSS-ROW bind bridged via `fs_openings`.
+    pub fs_binds: Vec<(usize, Vec<(usize, usize)>)>,
+    /// **F1 FS-absorb OPENED-VALUE binding (the LAST unbound absorb).** The transcript ALSO absorbs the inner
+    /// proof's opened values (`opened.{trace_local, trace_next, aux_local, aux_next, quotient_chunks}` — the
+    /// ζ→α_fri absorbs) to derive α_fri, but those absorbed felts are FREE WITNESSES, NOT tied to the arith-tile
+    /// `pz` columns the reduced-opening fold consumes — so a prover could absorb FAKE openings, grind α_fri, and
+    /// weaken FRI soundness. This is a CROSS-ROW bind (the absorb sits at a transcript row, `pz(k)` at the
+    /// super-tile arith head), bridged transitively through a HELD pis-window slot: this is the count of the
+    /// `2·n_terms` opening felts APPENDED to the pis window under `bind_fs` (`pw_opening`). bind 1 (via
+    /// `fs_binds`) pins each absorbed felt to its window slot at the absorb row; bind 2 (`eval_bci`, gated by the
+    /// arith-head selector) pins `cur[pz(k)]` to the SAME slot ⇒ absorbed == window == pz. 0 ⇒ absent
+    /// (byte-identical — every non-`bind_fs` build); `2·n_terms` under `build_symbolic_inner_window_lookup(bind_fs=true)`.
+    pub fs_openings: usize,
+}
 
 // =================================================================================================
 // Phase 4.D — THE MONOLITH: the transcript region + the super-tile region fused into ONE AIR. The transcript
@@ -18,6 +78,7 @@ use super::*;
 // =================================================================================================
 
 #[allow(dead_code)]
+#[derive(Clone)]
 pub(crate) struct MonolithAir {
     pub counts: Vec<u8>,
     pub binds: Vec<usize>,
@@ -82,13 +143,58 @@ pub(crate) struct MonolithAir {
     /// deeper per-query Merkle paths. Every existing construction passes 6 ⇒ all geometry methods reproduce
     /// the old CM_CAP_HEIGHT-const values byte-for-byte.
     pub cap_height: usize,
+    /// NARROW-ARITH mode (the deep-tree wrap's W5 size lever). When true the arith super-tile drops the
+    /// fold-only helper columns from each DEEP term — the reduced-opening fold is externalized to a narrow-tall
+    /// slack region (`src/wrap` `AssembledArithWrapAir`), so `inv(k)`/`apow(k)` are never read. The per-term
+    /// stride shrinks 9→5 felts (`[z, pz, px]` kept: `pz` is the epilogue's opening, `z`/`px` feed the wrap's
+    /// input binding). `false` = the exact 9-felt/term layout every non-wrap construction uses, byte-for-byte
+    /// (the `pinned_constraint_fingerprints` guard covers is_zk 0/1 at false). Set true ONLY by the wrap.
+    pub narrow_arith: bool,
+    /// NARROW-CAPS mode (the deep-tree wrap's AA5 cap-column width win; requires `column_window` + `full_cap`).
+    /// When true the Merkle-commitment CAP slice is DROPPED from the inner-proof `pis` window — the
+    /// `2^cap_height·4·(2+is_zk+cm_rounds)`-felt cap region (85% of `fused_w` in the self-composition regime) is
+    /// no longer mirrored into held OUTER columns. The caps still enter the FS transcript (the sponge absorbs
+    /// them into its own `cur[0..W]` state, independent of `pis`), and the cap-mux is externalized to a
+    /// narrow-tall region anchored to those FS-absorbed caps via the ordered sponge-cap bus (`src/wrap`
+    /// `SpongeCapBusAir`). So the pis-layout functions collapse the cap slice (`pub_pi`/`ccap`/`periodic`/`qwt`/
+    /// `pis_count` shift down; every reader follows via the functions), and the ONLY pis-cap readers — the
+    /// role-1 cap-mux (`emit_capmux`) — are externalized by `CapMuxBci`, so nothing reads the dropped slice.
+    /// `false` = the exact full-cap-in-pis layout every non-AA5 construction uses, byte-for-byte (the
+    /// `pinned_constraint_fingerprints` guard covers it). Set true ONLY by the AA5 caps wrap.
+    pub narrow_caps: bool,
+    /// NARROW-OPENINGS mode (the deep-tree wrap's AA6 B-lever — externalize the arith-tile OPENINGS narrow-tall).
+    /// Extends `narrow_arith`: on top of dropping `z`/`px`/`inv`/`apow`, this also drops the per-term OOD opening
+    /// `pz` from the arith tile (`arith_stride` 2 → 0 — the tile collapses to its DEEP/α header). The `2·n_terms`
+    /// `pz` felts (the inner proof's `opened_values`, the last inner-scaling columns) become ROWS bound to the
+    /// FS-absorbed opening stream via the ordered sponge-opening bus (`src/wrap` `SpongeCapBusAir`), and the
+    /// epilogue's `local`/`next`/`quot` recompose + the α-fold are re-sourced from that bus instead of reading
+    /// `cur[pz(k)]` on the single arith-head row (dissolving the 2c degree wall). `false` = the exact layout every
+    /// non-AA6 construction uses, byte-for-byte (`pinned_constraint_fingerprints` guards it). Requires
+    /// `narrow_arith`; set true ONLY by the AA6 openings wrap.
+    pub narrow_openings: bool,
+    /// NARROW-OV mode (the W3-completing B<1 lever — externalize the OPENED-ROW carrier narrow-tall). After
+    /// `narrow_openings` the ONLY region still scaling with the inner width is the `ov` opened-row carrier
+    /// (`input_leaf_felts = w_inner`, the authenticated input-Merkle LEAF PREIMAGE), which keeps the marginal
+    /// self-composition B at exactly 1.00 (the fixed-point boundary). This drops its `w_inner` felts from the
+    /// carrier region (`ov_carrier_w() → 0` in `carriers_base`/`qc`) — the last inner-scaling columns become ROWS
+    /// bound to the input-Merkle leaf hash + re-source `px` (`px_source`). The leaf-HASH width (`leaf_blocks`,
+    /// still `input_leaf_felts` felts) is UNCHANGED — only the carrier COLUMNS move. `false` = byte-for-byte the
+    /// existing layout (`pinned_constraint_fingerprints` guards it). Requires `narrow_openings`; the flag-on trace
+    /// (px re-source + the Merkle bus re-anchor) is the sound-brick work — this flag is the geometry/measurement.
+    pub narrow_ov: bool,
+    /// **Format bridge — the LookupProof config** (`--features lookup`). `Some` iff the inner is a
+    /// `LookupProof`; `None` = the exact p3-`Proof` path, BYTE-IDENTICAL (all `pinned_constraint_fingerprints`
+    /// shapes are `None`). See [`LookupCfg`].
+    pub lookup: Option<LookupCfg>,
 }
 
 #[allow(dead_code)]
 impl MonolithAir {
-    // symbolic (data-driven multi-column) mode iff the inner AIR's constraint trees are provided.
+    // symbolic (data-driven multi-column) mode iff the inner AIR's constraint trees are provided OR it is a
+    // LookupProof (which may have 0 BASE constraints — e.g. RangeCheckAir — yet is a multi-column inner whose
+    // LogUp ext constraints + aux round need the symbolic machinery). Byte-identical without lookup.
     pub(crate) fn symbolic(&self) -> bool {
-        !self.constraints.is_empty()
+        !self.constraints.is_empty() || self.is_lookup()
     }
     // inner trace width W (columns): the provided width in symbolic mode, else 1 (ConstAir/CounterAir).
     pub(crate) fn w_inner(&self) -> usize {
@@ -106,6 +212,67 @@ impl MonolithAir {
             1
         }
     }
+    // ---- FORMAT BRIDGE (`--features lookup`) — the LogUp aux-round geometry. All ZERO when `lookup` is None,
+    // so every non-lookup construction is byte-identical. `lookup` is is_zk=0 (the recursion config is
+    // non-hiding), so it never coexists with the is_zk=1 random round. ----
+    pub(crate) fn is_lookup(&self) -> bool {
+        self.lookup.is_some()
+    }
+    // number of lookup challenges (2·|lookups|), squeezed BEFORE α_stark ⇒ they occupy the first `nlc` slots
+    // of the transcript-bind / pis challenge region, so α_stark/ζ/α_fri/β shift right by `nlc`.
+    pub(crate) fn nlc(&self) -> usize {
+        self.lookup.as_ref().map_or(0, |l| l.n_lookup_challenges)
+    }
+    // reconstructed aux EXTENSION width (= |lookups|+1) fed to the LogUp OOD fold.
+    pub(crate) fn aux_ext_w(&self) -> usize {
+        self.lookup.as_ref().map_or(0, |l| l.aux_ext_w)
+    }
+    // committed aux BASE width (aux_ext_w · D=2 flattened columns) — the leaf preimage / px-carrier width.
+    pub(crate) fn aux_base_w(&self) -> usize {
+        self.aux_ext_w() * 2
+    }
+    // reduced-opening terms the aux round adds: it opens at ζ AND ζ_next, so 2·aux_base_w terms slotted
+    // between the trace and the quotient (0 without lookup ⇒ trm_quot_base / n_quot byte-identical).
+    pub(crate) fn aux_terms(&self) -> usize {
+        2 * self.aux_base_w()
+    }
+    // aux ζ / ζ_next reduced-opening term base — right after the trace ζ_next block (the OLD trm_quot_base).
+    pub(crate) fn trm_aux(&self, c: usize) -> usize {
+        self.trm_next_base() + self.trm_committed_w() + c
+    }
+    pub(crate) fn trm_aux_next(&self, c: usize) -> usize {
+        self.trm_aux(0) + self.aux_base_w() + c
+    }
+    // aux opened-row carrier (aux_base_w felts): the authenticated aux-leaf preimage, held within the
+    // super-tile, px-bound to BOTH its ζ term (trm_aux) and its ζ_next term (trm_aux_next). After the trace ov
+    // carrier (random_carriers = 0 in lookup mode). 0-width without lookup.
+    pub(crate) fn aux_carriers(&self) -> usize {
+        if self.is_lookup() {
+            self.aux_base_w()
+        } else {
+            0
+        }
+    }
+    pub(crate) fn ov_aux(&self, c: usize) -> usize {
+        self.ov() + self.ov_carrier_w() + self.random_carriers() + c
+    }
+    // aux-round leaf: the committed aux row hashed to the leaf (is_zk=0 ⇒ NO salt), mirroring the trace leaf.
+    pub(crate) fn aux_leaf_felts(&self) -> usize {
+        self.aux_base_w()
+    }
+    pub(crate) fn aux_leaf_blocks(&self) -> usize {
+        self.aux_leaf_felts().div_ceil(RATE)
+    }
+    // aux-round terminal block: leaf + input_depth path, prepended at M_INPUT_LEAF (like the random round).
+    pub(crate) fn m_aux_term(&self) -> usize {
+        M_INPUT_LEAF + (self.aux_leaf_blocks() - 1) + self.input_depth()
+    }
+    // pis slot for the aux Merkle cap (a FULL cap; the aux commitment varies per query so the cap-mux selects
+    // cap[index>>input_depth]). Placed after the random cap (absent at is_zk=0) — i.e. == random_cap_base in
+    // lookup mode. Its width is a full cap; 0 in the (mutually exclusive) is_zk path.
+    pub(crate) fn aux_cap_base(&self) -> usize {
+        self.random_cap_base() + if self.is_zk == 1 { self.pis_cap_stride() } else { 0 }
+    }
     // ---- RUNTIME super-tile geometry (the leaf-block / nqc dimensions vary per inner; the FRI depth stays
     // compile-time). All derived from the SAME formula as `commit_layout`/the compile-time consts, so at
     // leaf_blocks=1/nqc=1 (every current inner: W≤RATE, degree-≤2 ⇒ nqc=1) they EQUAL M_INPUT_TERM/…/M_PERIOD
@@ -120,6 +287,17 @@ impl MonolithAir {
             } else {
                 0
             }
+    }
+    /// The opened-row (`ov`) carrier WIDTH in `fused_w`: `input_leaf_felts()` normally, or 0 when `narrow_ov`
+    /// (the `w_inner` leaf felts are externalized narrow-tall). DISTINCT from `input_leaf_felts()`, which stays the
+    /// leaf-HASH preimage width (`leaf_blocks`) regardless — only the CARRIER columns move to rows. Byte-identical
+    /// when `!narrow_ov`.
+    pub(crate) fn ov_carrier_w(&self) -> usize {
+        if self.narrow_ov {
+            0
+        } else {
+            self.input_leaf_felts()
+        }
     }
     pub(crate) fn leaf_blocks(&self) -> usize {
         self.input_leaf_felts().div_ceil(RATE)
@@ -168,10 +346,13 @@ impl MonolithAir {
     pub(crate) fn m_random_term(&self) -> usize {
         M_INPUT_LEAF + (self.random_leaf_blocks() - 1) + self.input_depth()
     }
-    // first input-(trace-)leaf block: M_INPUT_LEAF (is_zk=0), else after the random-round region (is_zk=1).
+    // first input-(trace-)leaf block: M_INPUT_LEAF, else after the prepended random round (is_zk=1) or aux
+    // round (lookup). is_zk and lookup are mutually exclusive.
     pub(crate) fn m_input_leaf(&self) -> usize {
         if self.is_zk == 1 {
             self.m_random_term() + 1
+        } else if self.is_lookup() {
+            self.m_aux_term() + 1
         } else {
             M_INPUT_LEAF
         }
@@ -214,7 +395,7 @@ impl MonolithAir {
     // a NON-CONSTANT inner (counter or any symbolic multi-column) needs the full committed cap + the
     // index-selecting cap-mux (per-query cap entries differ), rather than ConstAir's single shared entry.
     pub(crate) fn full_cap(&self) -> bool {
-        self.inner_counter || self.symbolic() || self.is_zk == 1
+        self.inner_counter || self.symbolic() || self.is_zk == 1 || self.is_lookup()
     }
     // symbolic mode witnesses the three Lagrange selectors at ζ (is_first, is_last, inv_van = 3 ext = 6 felts),
     // bound to their ζ-definitions, so the constraint tree is evaluated with selector VALUES (no per-constraint
@@ -230,9 +411,9 @@ impl MonolithAir {
     pub(crate) fn sel(&self, i: usize) -> usize {
         self.sel_base() + i // 0,1 = is_first; 2,3 = is_last; 4,5 = inv_van
     }
-    // quotient DEEP terms = n_terms − the 2·W trace terms.
+    // quotient DEEP terms = n_terms − the 2·W trace terms − the 2·aux_base_w aux terms (lookup; 0 otherwise).
     pub(crate) fn n_quot(&self) -> usize {
-        self.n_terms - 2 * self.w_inner()
+        self.n_terms - 2 * self.w_inner() - self.aux_terms()
     }
 
     // ---- HIDING (is_zk=1) reduced-opening TERM offsets. is_zk=1 prepends a random round (RAND_PUB+CW terms) and
@@ -262,7 +443,8 @@ impl MonolithAir {
         self.trm_trace_base() + self.trm_committed_w()
     }
     pub(crate) fn trm_quot_base(&self) -> usize {
-        self.trm_next_base() + self.trm_committed_w()
+        // + the aux round's 2·aux_base_w ζ/ζ_next terms (0 without lookup ⇒ byte-identical).
+        self.trm_next_base() + self.trm_committed_w() + self.aux_terms()
     }
     // committed quotient-chunk width (2 F_p^2 components + CW codewords hiding).
     pub(crate) fn trm_chunk_w(&self) -> usize {
@@ -297,7 +479,7 @@ impl MonolithAir {
     }
     // HIDING (is_zk=1) random-round leaf-preimage carrier felt c, after the trace-leaf carriers.
     pub(crate) fn ov_random(&self, c: usize) -> usize {
-        self.ov() + self.input_leaf_felts() + c
+        self.ov() + self.ov_carrier_w() + c
     }
     // width of the random-round carrier region (0 for is_zk=0).
     pub(crate) fn random_carriers(&self) -> usize {
@@ -312,7 +494,7 @@ impl MonolithAir {
     // (nqc multi-matrix ‖ salt) preimages. (input_leaf_felts/quot_leaf_felts equal w_inner/2·nqc at is_zk=0,
     // so this is byte-for-byte there.)
     pub(crate) fn carriers_base(&self) -> usize {
-        self.ov() + self.input_leaf_felts() + self.random_carriers() + self.quot_leaf_felts()
+        self.ov() + self.ov_carrier_w() + self.random_carriers() + self.aux_carriers() + self.quot_leaf_felts()
     }
     pub(crate) fn nb(&self) -> usize {
         self.binds.len()
@@ -325,10 +507,27 @@ impl MonolithAir {
     // inner's degree_bits = cm_rounds. No field / no constructor change (db=6: nb=9 ⇒ cm_rounds=6, lg=10 —
     // exactly the old DP_LOG_HEIGHT=10 / CM_ROUNDS=6 / M_DEGREE_BITS=6 consts). ----
     pub(crate) fn cm_rounds(&self) -> usize {
-        self.nb() - 3
+        // nb = nlc (lookup challenges) + 3 (α_stark, ζ, α_fri) + cm_rounds (β_r); the lookup challenges are
+        // squeezed first so they do NOT count toward the FRI depth. nlc = 0 without lookup (byte-identical).
+        self.nb() - 3 - self.nlc()
     }
     pub(crate) fn lg(&self) -> usize {
         self.cm_rounds() + LOG_BLOWUP
+    }
+    // ---- transcript CHALLENGE indices (into the pis/binds challenge region). The lookup challenges occupy
+    // the first `nlc` slots (squeezed first), so α_stark/ζ/α_fri/β shift right by `nlc`. nlc = 0 without
+    // lookup ⇒ 0/1/2/3+r (the exact legacy indices, byte-identical). ----
+    pub(crate) fn ch_alpha_stark(&self) -> usize {
+        self.nlc()
+    }
+    pub(crate) fn ch_zeta(&self) -> usize {
+        self.nlc() + 1
+    }
+    pub(crate) fn ch_alpha_fri(&self) -> usize {
+        self.nlc() + 2
+    }
+    pub(crate) fn ch_beta(&self, r: usize) -> usize {
+        self.nlc() + 3 + r
     }
     // arith-tile column layout (was the QT_ACC/QT_ALPHA/QT_TERMS consts): the DEEP index bits + acc chain scale
     // with log_global, so the per-term region base is runtime.
@@ -341,15 +540,50 @@ impl MonolithAir {
     pub(crate) fn qt_terms(&self) -> usize {
         self.qt_alpha() + 2
     }
-    // arith (super-tile block 0) — the QT_* layout
+    // arith (super-tile block 0) — the QT_* layout. Per-term stride is 9 (FULL: `[z, pz, px, inv, apow]`), 2
+    // (NARROW-ARITH: `[pz]` only — `inv`/`apow` externalized to the fold region, `z` re-derived = ζ / ζ·g_trace,
+    // `px` sourced from the authenticated `ov`/`qc` leaf carrier), or 0 (NARROW-OPENINGS: even `pz` — the OOD
+    // opening — leaves the tile, externalized narrow-tall to the sponge-opening bus; the arith tile collapses to
+    // its DEEP/α header). See `narrow_arith` / `narrow_openings`. NARROW-OPENINGS requires NARROW-ARITH.
+    pub(crate) fn arith_stride(&self) -> usize {
+        if self.narrow_openings {
+            0
+        } else if self.narrow_arith {
+            2
+        } else {
+            9
+        }
+    }
+    // NARROW: `px(k)` is not stored — it's the authenticated leaf, so it's SOURCED from the `ov`/quotient-leaf
+    // carrier it is bound to (`px_bind` at the OOD region: trace ζ/ζ_next → `ov_c(c)`, quotient → `qc(i·stride+j)`).
+    // This inverts that binding. FULL never calls it (px is stored at `px(k)`).
+    pub(crate) fn px_source(&self, k: usize) -> usize {
+        for c in 0..self.trm_committed_w() {
+            if self.trm_trace(c) == k || self.trm_next(c) == k {
+                return self.ov_c(c);
+            }
+        }
+        let stride = self.quot_chunk_stride();
+        for c in 0..self.quot_leaf_felts() {
+            let (i, j) = (c / stride, c % stride);
+            if j < self.trm_chunk_w() && self.trm_quot(i, j) == k {
+                return self.qc(c);
+            }
+        }
+        panic!("narrow arith term {k} has no px carrier (px_source)");
+    }
+    // `z`/`inv`/`apow` exist only in FULL mode; never read when `narrow_arith` (z re-derived, inv/apow externalized).
     pub(crate) fn z(&self, k: usize) -> usize {
         self.qt_terms() + 9 * k
     }
     pub(crate) fn pz(&self, k: usize) -> usize {
-        self.z(k) + 2
+        // NARROW-ARITH/OPENINGS: `pz` is the block start (no `z`); FULL: `z + 2`. (Full: qt+9k+2 = z+2,
+        // byte-identical.) NARROW-OPENINGS (stride 0): the offset collapses to `qt_terms` for every term — a
+        // harmless in-tile index that is NEVER read (the epilogue re-sources every opening from the sponge bus).
+        self.qt_terms() + self.arith_stride() * k + if self.narrow_arith || self.narrow_openings { 0 } else { 2 }
     }
     pub(crate) fn px(&self, k: usize) -> usize {
-        self.z(k) + 4
+        self.pz(k) + 2
     }
     pub(crate) fn inv(&self, k: usize) -> usize {
         self.z(k) + 5
@@ -358,7 +592,7 @@ impl MonolithAir {
         self.z(k) + 7
     }
     pub(crate) fn tile_w(&self) -> usize {
-        self.qt_terms() + 9 * self.n_terms
+        self.qt_terms() + self.arith_stride() * self.n_terms
     }
     // index decomposition (SB) on the super-tile arith head + the fold-bit shift register
     pub(crate) fn sb_x(&self) -> usize {
@@ -380,9 +614,9 @@ impl MonolithAir {
         self.carry() + 2 // opened-value carrier (the input-Merkle leaf preimage)
     }
     pub(crate) fn qc(&self, i: usize) -> usize {
-        // quotient-leaf-preimage carriers, after the trace-leaf (+ random-leaf when is_zk=1) carriers. is_zk=0:
-        // ov + w_inner + i (2·nqc felts, unchanged); is_zk=1: after the trace + random leaf preimages.
-        self.ov() + self.input_leaf_felts() + self.random_carriers() + i
+        // quotient-leaf-preimage carriers, after the trace-leaf (+ random-leaf is_zk=1, + aux-leaf lookup)
+        // carriers. is_zk=0/no-lookup: ov + w_inner + i (2·nqc felts, unchanged).
+        self.ov() + self.ov_carrier_w() + self.random_carriers() + self.aux_carriers() + i
     }
     pub(crate) fn cg(&self, r: usize, k: usize) -> usize {
         self.carriers_base() + 4 * r + k // commit-phase group carriers: 6 rounds × 4 felts (the fold group {e_r, sib_r})
@@ -393,8 +627,9 @@ impl MonolithAir {
         self.carriers_base() + 4 * self.cm_rounds() + g // g: input 0..4, quotient 4..8, commit r 8+4r..8+4r+4
     }
     pub(crate) fn n_cap_c(&self) -> usize {
-        // cap-entry carriers: input + quotient + cm_rounds commit (2+R), plus the RANDOM round when is_zk=1.
-        (2 + self.is_zk + self.cm_rounds()) * 4
+        // cap-entry carriers: input + quotient + cm_rounds commit (2+R), plus the RANDOM round (is_zk=1) or the
+        // AUX round (lookup) — mutually exclusive, so at most one of the two extra groups.
+        (2 + self.is_zk + usize::from(self.is_lookup()) + self.cm_rounds()) * 4
     }
     // column-window: the inner-proof "pis" as a witness column window (held constant across the instance) so
     // the monolith can be tiled. Placed after all other columns.
@@ -432,7 +667,7 @@ impl MonolithAir {
     }
     // periodic column values at ζ (2 felts each): a pis region AFTER the commit caps (symbolic mode only).
     pub(crate) fn periodic_base(&self) -> usize {
-        self.ccap_base() + self.commit_caps_len()
+        self.ccap_base() + self.pis_commit_caps_len()
     }
     // quotient recompose weights zps_i (nqc F_p² publics = 2·nqc felts), a pis region AFTER the periodic values.
     // Present ONLY when nqc>1 (nqc=1 recomposes as the single chunk c0+c1·X with implicit weight 1, so no region
@@ -448,13 +683,33 @@ impl MonolithAir {
             0
         }
     }
+    // end of the aux Merkle cap pis slice (== pis_count without lookup; the terminal follows in lookup mode).
+    pub(crate) fn aux_cap_end(&self) -> usize {
+        self.aux_cap_base() + if self.is_lookup() { self.pis_cap_stride() } else { 0 }
+    }
+    // committed LogUp terminal pis slot (F_p² = 2 felts), lookup only — the epilogue folds it as the LogUp
+    // PermutationValue AND constrains it `== 0` (the terminal-sum balance). Placed last so no other region shifts.
+    pub(crate) fn term_pi(&self) -> usize {
+        self.aux_cap_end()
+    }
+    // F1 opened-value bind: the pis-index where the FS-absorbed opening region begins — appended AFTER the LogUp
+    // terminal, so NO existing pis offset shifts. Equals the pre-opening pis_count; `n_fs_openings()` felts follow.
+    pub(crate) fn pis_openings_base(&self) -> usize {
+        self.aux_cap_end() + if self.is_lookup() { 2 } else { 0 }
+    }
+    // F1 opened-value bind: 2·n_terms opening felts held in the pis window ONLY under bind_fs (0 otherwise ⇒
+    // byte-identical, and never present in pis-mode). See `LookupCfg::fs_openings`.
+    pub(crate) fn n_fs_openings(&self) -> usize {
+        self.lookup.as_ref().map_or(0, |l| l.fs_openings)
+    }
     pub(crate) fn pis_count(&self) -> usize {
-        self.random_cap_base()
-            + if self.is_zk == 1 {
-                self.cap_stride()
-            } else {
-                0
-            }
+        // + the random cap (is_zk=1) or the aux cap (lookup); + the LogUp terminal (2 felts, lookup only);
+        // + the FS-absorbed opening region (2·n_terms, bind_fs only — appended last so nothing above shifts).
+        self.pis_openings_base() + self.n_fs_openings()
+    }
+    // F1 opened-value bind: absolute column of the k-th FS-absorbed opening felt in the (held) pis window.
+    pub(crate) fn pw_opening(&self, k: usize) -> usize {
+        self.pw(self.pis_openings_base() + k)
     }
     // pis cap layout — the FULL cap (2^cap_height entries) for a non-constant inner (so the cap-mux can select
     // cap[index>>shift] by the index bits), a single shared entry (stride 4) for ConstAir. For ConstAir these
@@ -466,14 +721,32 @@ impl MonolithAir {
             4
         }
     }
+    // The pis-WINDOW cap-slice widths — 0 in `narrow_caps` mode (AA5: the caps are dropped from the pis window
+    // and sourced from the FS sponge via the ordered sponge-cap bus), the full cap widths otherwise. ONLY the pis
+    // layout (`qcap_base`/`pub_pi`/`periodic_base`/`pis_count`) uses these; the cap-mux / narrow-tall region use
+    // `cap_stride()`/`commit_cap_size()` directly (the real cap sizes, which `narrow_caps` never shrinks).
+    pub(crate) fn pis_cap_stride(&self) -> usize {
+        if self.narrow_caps {
+            0
+        } else {
+            self.cap_stride()
+        }
+    }
+    pub(crate) fn pis_commit_caps_len(&self) -> usize {
+        if self.narrow_caps {
+            0
+        } else {
+            self.commit_caps_len()
+        }
+    }
     pub(crate) fn cap_base(&self) -> usize {
         2 * self.nb() + self.ni() + 2 // after challenges + index felts + final_poly[0]
     }
     pub(crate) fn qcap_base(&self) -> usize {
-        self.cap_base() + self.cap_stride()
+        self.cap_base() + self.pis_cap_stride()
     }
     pub(crate) fn pub_pi(&self) -> usize {
-        self.qcap_base() + self.cap_stride()
+        self.qcap_base() + self.pis_cap_stride()
     }
     pub(crate) fn ccap_base(&self) -> usize {
         self.pub_pi() + self.n_pub() // after the n_pub inner public values
@@ -494,13 +767,9 @@ impl MonolithAir {
     }
     pub(crate) fn fused_w(&self) -> usize {
         // sel_base = pw_base (+ column-window window); + 3 witnessed Lagrange selectors (6 felts, symbolic);
-        // + the witnessed constraint-fold accumulators (column-window only — see fold_acc / FOLD_CHUNK).
-        self.sel_base()
-            + if self.symbolic() {
-                6 + 2 * self.n_fold_acc()
-            } else {
-                0
-            }
+        // + the witnessed constraint-fold accumulators (column-window only — see fold_acc / FOLD_CHUNK);
+        // + the witnessed LogUp product-chunk accumulators (column-window lookup only — see prod_acc / PROD_CHUNK).
+        self.sel_base() + if self.symbolic() { 6 + 2 * self.n_fold_acc() + 4 * self.n_prod_acc() } else { 0 }
     }
     // The α-Horner fold of the inner AIR's C_inner constraints (`folded = folded·α_stark + c_k`) is checked
     // against quotient(ζ) in ONE expression. In COLUMN-WINDOW mode α_stark is a degree-1 witness column (the
@@ -513,10 +782,11 @@ impl MonolithAir {
     pub(crate) const FOLD_CHUNK: usize = 7;
     pub(crate) fn n_fold_acc(&self) -> usize {
         if self.symbolic() && self.column_window {
-            self.constraints
-                .len()
-                .div_ceil(Self::FOLD_CHUNK)
-                .saturating_sub(1) // chunk boundaries = n_chunks − 1
+            // The chunked α-Horner fold spans the base constraints THEN (lookup) the LogUp ext constraints in one
+            // sequence (matching `batched_constraints_at_point`'s base-then-ext order), so the accumulators count
+            // over BOTH. Without lookup `ext=0` ⇒ byte-identical (the non-lookup join-split wrap is unaffected).
+            let n = self.constraints.len() + self.lookup.as_ref().map_or(0, |l| l.ext_constraints.len());
+            n.div_ceil(Self::FOLD_CHUNK).saturating_sub(1) // chunk boundaries = n_chunks − 1
         } else {
             0
         }
@@ -524,6 +794,48 @@ impl MonolithAir {
     // witnessed constraint-fold accumulator i (F_p² pair), after the 3 Lagrange selectors in the fused region.
     pub(crate) fn fold_acc(&self, i: usize) -> usize {
         self.sel_base() + 6 + 2 * i
+    }
+    // ---- LogUp PRODUCT-CHUNK (the deep-tree self-composition degree lever) — the extension-field twin of
+    // FOLD_CHUNK. In column-window mode the lookup challenge α_L is a degree-1 window column, so a fraction
+    // constraint's `common_denom = Π_i(α_L − e_i)` over an N-sided bus is degree ~N in the outer (the R5 blow-up;
+    // the ~77-sided opening/sponge bus measured deg-78 ⇒ log_nqc 7). Fix: evaluate each fraction SEMANTICALLY via
+    // the running rational recurrence `D_i = D_{i−1}·t_i`, `S_i = S_{i−1}·t_i + m_i·D_{i−1}` (D = common_denom,
+    // S = numerator, t_i = α_L − e_i), and WITNESS (D,S) every PROD_CHUNK sides — continuing the recurrence from
+    // that degree-1 column, capping the product degree at ≈ 1 + PROD_CHUNK. The final fraction value
+    // `D·frac − S` then folds into the α-Horner at bounded degree. pis-mode ignores this (α_L degree-0 ⇒ no
+    // blow-up), so every RangeCheck / non-column-window construction is byte-identical (0 accumulators).
+    pub(crate) const PROD_CHUNK: usize = 1;
+    // per-lookup number of witnessed (D,S) product-chunk boundaries: n_chunks − 1 (the last chunk's running
+    // value feeds the fraction constraint directly, like FOLD_CHUNK's final fold). 0 for a bus with ≤ PROD_CHUNK
+    // sides (the whole product stays low-degree inline).
+    pub(crate) fn n_prod_acc_for(&self, sides: usize) -> usize {
+        sides.div_ceil(Self::PROD_CHUNK).saturating_sub(1)
+    }
+    // total witnessed product-chunk (D,S) slots across all lookups (column-window lookup only; each slot = 4
+    // felts: D at prod_acc(s), S at prod_acc(s)+2). 0 in pis-mode / non-lookup ⇒ fused_w byte-identical.
+    pub(crate) fn n_prod_acc(&self) -> usize {
+        // Product-chunk reconstructs each fraction from the inner's trace/aux OPENINGS (local/next); under
+        // narrow_openings those are externalized to the sponge bus (empty here), so the lever does not apply.
+        if !self.column_window || self.narrow_openings {
+            return 0;
+        }
+        self.lookup
+            .as_ref()
+            .map_or(0, |l| l.lookups.iter().map(|lu| self.n_prod_acc_for(lu.elements.len())).sum())
+    }
+    // the product-chunk region base (after the fold_acc accumulators in the fused region).
+    pub(crate) fn prod_acc_base(&self) -> usize {
+        self.sel_base() + 6 + 2 * self.n_fold_acc()
+    }
+    // witnessed product-chunk slot s (D at the returned offset, S at +2 — an F_p² pair each).
+    pub(crate) fn prod_acc(&self, s: usize) -> usize {
+        self.prod_acc_base() + 4 * s
+    }
+    // the global product-chunk slot cursor at which lookup `j`'s boundaries begin (prefix sum over prior lookups).
+    pub(crate) fn prod_acc_lookup_base(&self, j: usize) -> usize {
+        self.lookup.as_ref().map_or(0, |l| {
+            l.lookups[..j].iter().map(|lu| self.n_prod_acc_for(lu.elements.len())).sum()
+        })
     }
     // aggregator fold columns (only when `fold`): 8 Poseidon lanes (the two merge permutations) + 4 lanes for
     // the global-persistent running root, appended after the column-window window.
@@ -777,10 +1089,41 @@ impl MonolithAir {
     pub(crate) fn p_random_last_carry(&self) -> usize {
         self.p_random_boundary() + 1
     }
-    // HIDING commit-leaf internal boundary (is_zk=1, 2-block salted commit leaf): a capacity-carry one-hot at
-    // each round's block-0→block-1 boundary. Appended after the random region. Absent at is_zk=0 (byte-for-byte).
-    pub(crate) fn commit_absorb_base(&self) -> usize {
+    // ---- FORMAT BRIDGE (lookup) — the aux-round leaf periodic selectors: the LogUp aux commitment opens as a
+    // THIRD input round (an UNSALTED leaf, blocks M_INPUT_LEAF..) + input_depth path, mirroring the trace leaf.
+    // Appended AFTER the random region so is_zk=0/no-lookup keeps p_inst_first/p_inst_last byte-for-byte. ----
+    pub(crate) fn aux_absorb_base(&self) -> usize {
         self.random_absorb_base() + self.n_random_periodic()
+    }
+    pub(crate) fn n_aux_periodic(&self) -> usize {
+        if self.is_lookup() {
+            2 // p_aux_leaf (head) + p_aux_term (terminal)
+                + (self.aux_leaf_blocks() - 1) // subsequent-block absorb heads
+                + usize::from(self.aux_leaf_blocks() > 1) // capacity-carry boundary
+                + usize::from(self.aux_leaf_blocks() > 1 && self.aux_leaf_felts() % RATE != 0) // short-final
+        } else {
+            0
+        }
+    }
+    pub(crate) fn p_aux_leaf(&self) -> usize {
+        self.aux_absorb_base()
+    }
+    pub(crate) fn p_aux_term(&self) -> usize {
+        self.aux_absorb_base() + 1
+    }
+    pub(crate) fn p_aux_absorb(&self, b: usize) -> usize {
+        self.aux_absorb_base() + 2 + (b - 1)
+    }
+    pub(crate) fn p_aux_boundary(&self) -> usize {
+        self.aux_absorb_base() + 2 + (self.aux_leaf_blocks() - 1)
+    }
+    pub(crate) fn p_aux_last_carry(&self) -> usize {
+        self.p_aux_boundary() + 1
+    }
+    // HIDING commit-leaf internal boundary (is_zk=1, 2-block salted commit leaf): a capacity-carry one-hot at
+    // each round's block-0→block-1 boundary. Appended after the random + aux regions. Absent at is_zk=0 (byte).
+    pub(crate) fn commit_absorb_base(&self) -> usize {
+        self.aux_absorb_base() + self.n_aux_periodic()
     }
     pub(crate) fn n_commit_absorb(&self) -> usize {
         if self.is_zk == 1 && self.cm_leaf_blocks() > 1 {
@@ -792,8 +1135,22 @@ impl MonolithAir {
     pub(crate) fn c_bnd(&self) -> usize {
         self.commit_absorb_base()
     }
-    pub(crate) fn p_inst_first(&self) -> usize {
+    // ---- F1 FS-absorb binding periodics: one one-hot per distinct sponge block that absorbs a committed
+    // cap/pis felt, firing at the block's INPUT row (blk·BLOCK). Appended AFTER the commit-absorb region so
+    // an EMPTY `fs_binds` (every non-`bind_fs` construction) keeps p_inst_first/p_inst_last byte-for-byte. ----
+    pub(crate) fn fs_bind_base(&self) -> usize {
         self.commit_absorb_base() + self.n_commit_absorb()
+    }
+    // the recorded (block, [(rate_lane, committed_pis_index)]) groups — one per absorbing block; empty
+    // (no columns, no constraints) unless the column-window lookup builder populated them with `bind_fs`.
+    pub(crate) fn fs_binds(&self) -> &[(usize, Vec<(usize, usize)>)] {
+        self.lookup.as_ref().map_or(&[][..], |l| l.fs_binds.as_slice())
+    }
+    pub(crate) fn n_fs_bind(&self) -> usize {
+        self.fs_binds().len()
+    }
+    pub(crate) fn p_inst_first(&self) -> usize {
+        self.fs_bind_base() + self.n_fs_bind()
     }
     pub(crate) fn p_inst_last(&self) -> usize {
         self.p_inst_first() + 1
@@ -1037,6 +1394,28 @@ impl MonolithAir {
                 }
             }
         }
+        // LOOKUP aux-round leaf one-hots: the LogUp aux commitment's UNSALTED leaf (blocks M_INPUT_LEAF..
+        // +aux_leaf_blocks) + input_depth path + terminal, mirroring the trace leaf. Appended AFTER the random
+        // region (aux_absorb_base = random_absorb_base + n_random_periodic); absent without lookup (byte-for-byte).
+        if self.is_lookup() {
+            cols.push(tiled(M_INPUT_LEAF * BLOCK)); // p_aux_leaf (aux leaf-hash head)
+            cols.push(tiled(self.m_aux_term() * BLOCK + BLOCK - 1)); // p_aux_term (aux terminal)
+            if self.aux_leaf_blocks() > 1 {
+                for b in 1..self.aux_leaf_blocks() {
+                    cols.push(tiled((M_INPUT_LEAF + b) * BLOCK)); // p_aux_absorb(b)
+                }
+                let mut aboundary = vec![Val::ZERO; h];
+                for q in 0..self.n_queries {
+                    for b in 1..self.aux_leaf_blocks() {
+                        aboundary[st_off(q, (M_INPUT_LEAF + b) * BLOCK - 1)] = Val::ONE;
+                    }
+                }
+                cols.push(aboundary); // p_aux_boundary
+                if self.aux_leaf_felts() % RATE != 0 {
+                    cols.push(tiled((M_INPUT_LEAF + self.aux_leaf_blocks() - 1) * BLOCK - 1)); // p_aux_last_carry
+                }
+            }
+        }
         // HIDING commit-leaf internal boundary (is_zk=1, 2-block salted commit leaf): a single UNION one-hot over
         // every round's block-0→block-1 boundary (block cm_leaf(r)'s last row) — the capacity carry.
         if self.is_zk == 1 && self.cm_leaf_blocks() > 1 {
@@ -1047,6 +1426,14 @@ impl MonolithAir {
                 }
             }
             cols.push(cbnd); // c_bnd (union)
+        }
+        // F1 FS-absorb binding one-hots (column-window lookup, `bind_fs`): one per distinct sponge block that
+        // absorbs a committed cap/pis felt, firing at that block's INPUT row (blk·BLOCK) where cur[0..RATE]
+        // holds the absorbed rate lanes. Empty (0 columns) unless populated ⇒ byte-identical.
+        for &(blk, _) in self.fs_binds() {
+            let mut col = vec![Val::ZERO; h];
+            col[blk * BLOCK] = Val::ONE;
+            cols.push(col);
         }
         cols
     }
@@ -1075,8 +1462,216 @@ impl BaseAir<Goldilocks> for MonolithAir {
     }
 }
 
+/// The B/C/I regions the deep-tree **wrap** swaps for lookups (`docs/wrap-construction-plan.md`). `InlineBci`
+/// = the monolith's inline high-degree forms (BYTE-IDENTICAL — guarded by the `pinned_constraint_fingerprints`
+/// pins); the wrap supplies a lookup form. Additive: `MonolithAir::eval` = `eval_bci` with `InlineBci`, so the
+/// audited monolith constraints are unchanged. RESEARCH plumbing; the lookup strategy is `--features lookup`.
+pub(crate) trait MonolithBci<AB: AirBuilder<F = Goldilocks>> {
+    /// **I (cap-mux):** bind each opening's cap carrier `cap_c[cg_off+k]` (k=0..4) to the index-selected
+    /// committed cap entry `pis[cbase + (index>>shift)·4 + k]`, gated by the arith-head `tf`. `openings` =
+    /// `(cg_off, shift, bits, cbase)` per opening (trace, quotient, `cm_rounds` commit rounds, [random]).
+    fn emit_capmux(
+        &self,
+        builder: &mut AB,
+        air: &MonolithAir,
+        cur: &[AB::Expr],
+        pis: &[AB::Expr],
+        one: &AB::Expr,
+        tf: &AB::Expr,
+        openings: &[(usize, usize, usize, usize)],
+    );
+
+    /// **B/C (OOD epilogue fold):** α-Horner-fold the inner constraints (`c_k = eval_symbolic_circuit(...)`,
+    /// chunked via `fold_acc` in column-window mode) and check `folded·inv_van == quot(ζ)`, gated by `tf`.
+    /// The `local/next/pubs/periodic` openings + `is_first/is_last/is_trans` selectors are verifier-derived
+    /// (the reused H region); only the fold + check (the degree crux) vary by strategy.
+    #[allow(clippy::too_many_arguments)]
+    fn emit_epilogue(
+        &self,
+        builder: &mut AB,
+        air: &MonolithAir,
+        cur: &[AB::Expr],
+        tf: &AB::Expr,
+        w: &AB::Expr,
+        local: &[(AB::Expr, AB::Expr)],
+        next: &[(AB::Expr, AB::Expr)],
+        pubs: &[(AB::Expr, AB::Expr)],
+        periodic: &[(AB::Expr, AB::Expr)],
+        is_first: &(AB::Expr, AB::Expr),
+        is_last: &(AB::Expr, AB::Expr),
+        is_trans: &(AB::Expr, AB::Expr),
+        alpha_stark: &(AB::Expr, AB::Expr),
+        inv_van: &(AB::Expr, AB::Expr),
+        quot: &(AB::Expr, AB::Expr),
+    );
+
+    /// **Super-tile arith (DEEP reduced-opening fold):** the FRI DEEP query check — decode the index bits into
+    /// the query point `x = GEN·Π g^bit`, bind α_fri, and fold `ro = Σ α^k·(pz_k − px_k)/(z_k − x)`, checking
+    /// `QT_E == ro`, gated by `tf`. The inline form lays every one of the `n_terms` terms in COLUMNS
+    /// (`9·n_terms`, the dominant inner-scaling width); a narrow-tall strategy instead witnesses `ro` from slack
+    /// ROWS (the deep-tree size lever — see `wrap::DeepFoldAir`).
+    fn emit_arith(&self, builder: &mut AB, air: &MonolithAir, cur: &[AB::Expr], tf: &AB::Expr, one: &AB::Expr, w: &AB::Expr);
+}
+
+/// The monolith's inline B/C/I — the cap-mux as a degree-`bits` product-mux (the current behavior, kept
+/// byte-identical). The wrap replaces this with a LogUp (degree 3, width 3, `--features lookup`).
+pub(crate) struct InlineBci;
+
+/// The super-tile arith **point derivation** (always inline — cheap, non-inner-scaling): decode the DEEP index
+/// bits into the query point `x = GEN·Π g^bit` (the qt_acc chain) and bind α_fri (`qt_alpha == carry`), gated
+/// by `tf`. Returns `(x, alpha)` for the reduced-opening fold. Shared by `InlineBci::emit_arith` and the
+/// narrow-tall wrap strategy, which reuses the SAME sound point but witnesses `ro` from slack ROWS instead of
+/// the `9·n_terms` inline COLUMNS.
+pub(crate) fn arith_point<AB: AirBuilder<F = Goldilocks>>(
+    builder: &mut AB,
+    air: &MonolithAir,
+    cur: &[AB::Expr],
+    tf: &AB::Expr,
+    one: &AB::Expr,
+) -> (AB::Expr, (AB::Expr, AB::Expr)) {
+    let g = Goldilocks::two_adic_generator(air.lg());
+    let carry = air.carry();
+    for i in 0..air.lg() {
+        let b = cur[QT_DBITS + i].clone();
+        builder.assert_zero(tf.clone() * (b.clone() * (one.clone() - b)));
+    }
+    let mut prev = one.clone();
+    for i in 0..air.lg() {
+        let ci = AB::Expr::from(g.exp_power_of_2(air.lg() - 1 - i));
+        let factor = one.clone() + cur[QT_DBITS + i].clone() * (ci - one.clone());
+        builder.assert_zero(tf.clone() * (cur[air.qt_acc() + i].clone() - prev * factor));
+        prev = cur[air.qt_acc() + i].clone();
+    }
+    let x = AB::Expr::from(<Goldilocks as Field>::GENERATOR) * cur[air.qt_acc() + air.lg() - 1].clone();
+    // air.qt_alpha() bound to the carried α_fri
+    builder.assert_zero(tf.clone() * (cur[air.qt_alpha()].clone() - cur[carry].clone()));
+    builder.assert_zero(tf.clone() * (cur[air.qt_alpha() + 1].clone() - cur[carry + 1].clone()));
+    let alpha = (cur[air.qt_alpha()].clone(), cur[air.qt_alpha() + 1].clone());
+    (x, alpha)
+}
+
+/// Bind the super-tile arith head's committed reduced opening `QT_E` to `ro` (the DEEP fold value), gated by
+/// `tf` — the O(1) output check. `InlineBci` passes `ro` computed from the `9·n_terms` inline columns; a
+/// narrow-tall strategy passes an `ro` witnessed from slack rows. Same binding either way.
+pub(crate) fn bind_reduced_opening<AB: AirBuilder<F = Goldilocks>>(builder: &mut AB, cur: &[AB::Expr], tf: &AB::Expr, ro: (AB::Expr, AB::Expr)) {
+    builder.assert_zero(tf.clone() * (cur[QT_E].clone() - ro.0));
+    builder.assert_zero(tf.clone() * (cur[QT_E + 1].clone() - ro.1));
+}
+
+impl<AB: AirBuilder<F = Goldilocks>> MonolithBci<AB> for InlineBci {
+    fn emit_capmux(
+        &self,
+        builder: &mut AB,
+        air: &MonolithAir,
+        cur: &[AB::Expr],
+        pis: &[AB::Expr],
+        one: &AB::Expr,
+        tf: &AB::Expr,
+        openings: &[(usize, usize, usize, usize)],
+    ) {
+        for &(cg_off, shift, bits, cbase) in openings {
+            for k in 0..4 {
+                let mut acc = AB::Expr::ZERO;
+                for e in 0..(1usize << bits) {
+                    let mut sel = AB::Expr::ONE;
+                    for j in 0..bits {
+                        let b = cur[air.sb_b(shift + j)].clone();
+                        sel = sel * if (e >> j) & 1 == 1 { b } else { one.clone() - b };
+                    }
+                    acc = acc + sel * pis[cbase + e * 4 + k].clone();
+                }
+                builder.assert_zero(tf.clone() * (cur[air.cap_c(cg_off + k)].clone() - acc));
+            }
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn emit_epilogue(
+        &self,
+        builder: &mut AB,
+        air: &MonolithAir,
+        cur: &[AB::Expr],
+        tf: &AB::Expr,
+        w: &AB::Expr,
+        local: &[(AB::Expr, AB::Expr)],
+        next: &[(AB::Expr, AB::Expr)],
+        pubs: &[(AB::Expr, AB::Expr)],
+        periodic: &[(AB::Expr, AB::Expr)],
+        is_first: &(AB::Expr, AB::Expr),
+        is_last: &(AB::Expr, AB::Expr),
+        is_trans: &(AB::Expr, AB::Expr),
+        alpha_stark: &(AB::Expr, AB::Expr),
+        inv_van: &(AB::Expr, AB::Expr),
+        quot: &(AB::Expr, AB::Expr),
+    ) {
+        let emul = |a: (AB::Expr, AB::Expr), b: (AB::Expr, AB::Expr)| -> (AB::Expr, AB::Expr) {
+            (
+                a.0.clone() * b.0.clone() + w.clone() * a.1.clone() * b.1.clone(),
+                a.0.clone() * b.1.clone() + a.1.clone() * b.0.clone(),
+            )
+        };
+        let gg = |o: usize| (cur[o].clone(), cur[o + 1].clone());
+        let chunked = air.column_window;
+        let mut folded = (AB::Expr::ZERO, AB::Expr::ZERO);
+        let mut acc_i = 0usize;
+        let n_c = air.constraints.len();
+        for (k, c) in air.constraints.iter().enumerate() {
+            let ci = eval_symbolic_circuit::<AB>(c, local, next, pubs, periodic, is_first, is_last, is_trans, w);
+            let fa = emul(folded.clone(), alpha_stark.clone());
+            folded = (fa.0 + ci.0, fa.1 + ci.1);
+            if chunked && (k + 1) % MonolithAir::FOLD_CHUNK == 0 && k + 1 < n_c {
+                let a = gg(air.fold_acc(acc_i)); // bind the witnessed partial fold, then Horner on from it
+                builder.assert_zero(tf.clone() * (a.0.clone() - folded.0.clone()));
+                builder.assert_zero(tf.clone() * (a.1.clone() - folded.1.clone()));
+                folded = a;
+                acc_i += 1;
+            }
+        }
+        let chk = emul(folded, inv_van.clone());
+        builder.assert_zero(tf.clone() * (chk.0 - quot.0.clone()));
+        builder.assert_zero(tf.clone() * (chk.1 - quot.1.clone()));
+    }
+
+    fn emit_arith(&self, builder: &mut AB, air: &MonolithAir, cur: &[AB::Expr], tf: &AB::Expr, one: &AB::Expr, w: &AB::Expr) {
+        let emul = |a: (AB::Expr, AB::Expr), b: (AB::Expr, AB::Expr)| -> (AB::Expr, AB::Expr) {
+            (a.0.clone() * b.0.clone() + w.clone() * a.1.clone() * b.1.clone(), a.0.clone() * b.1.clone() + a.1.clone() * b.0.clone())
+        };
+        let gg = |o: usize| (cur[o].clone(), cur[o + 1].clone());
+        let (x, alpha) = arith_point(builder, air, cur, tf, one);
+        builder.assert_zero(tf.clone() * (cur[air.apow(0)].clone() - one.clone()));
+        builder.assert_zero(tf.clone() * cur[air.apow(0) + 1].clone());
+        for k in 1..air.n_terms {
+            let prod = emul(gg(air.apow(k - 1)), alpha.clone());
+            builder.assert_zero(tf.clone() * (cur[air.apow(k)].clone() - prod.0));
+            builder.assert_zero(tf.clone() * (cur[air.apow(k) + 1].clone() - prod.1));
+        }
+        let mut ro = (AB::Expr::ZERO, AB::Expr::ZERO);
+        for k in 0..air.n_terms {
+            let z = gg(air.z(k));
+            let inv = gg(air.inv(k));
+            let z_m_x = (z.0 - x.clone(), z.1);
+            let chk = emul(inv.clone(), z_m_x);
+            builder.assert_zero(tf.clone() * (chk.0 - one.clone()));
+            builder.assert_zero(tf.clone() * chk.1);
+            let d = (cur[air.pz(k)].clone() - cur[air.px(k)].clone(), cur[air.pz(k) + 1].clone());
+            let t = emul(emul(gg(air.apow(k)), d), inv);
+            ro = (ro.0 + t.0, ro.1 + t.1);
+        }
+        bind_reduced_opening(builder, cur, tf, ro);
+    }
+}
+
 impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
     fn eval(&self, builder: &mut AB) {
+        self.eval_bci(builder, &InlineBci);
+    }
+}
+
+impl MonolithAir {
+    /// The monolith constraint system, parameterized over the B/C/I emission strategy (`bci`). `eval` calls
+    /// this with `InlineBci` (byte-identical); the wrap calls it with a lookup strategy.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn eval_bci<AB: AirBuilder<F = Goldilocks>, S: MonolithBci<AB>>(&self, builder: &mut AB, bci: &S) {
         let main = builder.main();
         let cur: Vec<AB::Expr> = main.current_slice().iter().map(|&x| x.into()).collect();
         let nxt: Vec<AB::Expr> = main.next_slice().iter().map(|&x| x.into()).collect();
@@ -1097,7 +1692,6 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
         let one = AB::Expr::ONE;
         let two = AB::Expr::TWO;
         let half = AB::Expr::from(Goldilocks::ONE.halve());
-        let g = Goldilocks::two_adic_generator(self.lg());
         let w = AB::Expr::from(Goldilocks::from_u64(MRO_W_EXT));
         let pow2 = |i: usize| AB::Expr::from(Goldilocks::from_u64(1u64 << i));
         let emul = |a: (AB::Expr, AB::Expr), b: (AB::Expr, AB::Expr)| -> (AB::Expr, AB::Expr) {
@@ -1175,26 +1769,58 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
         }
         for j in 0..self.nb() {
             let b = p[FT_BIND_START + j].clone();
-            builder.assert_zero(b.clone() * (cur[3].clone() - pis[2 * j].clone()));
-            builder.assert_zero(b * (cur[2].clone() - pis[2 * j + 1].clone()));
+            // The challenge's first squeeze lands at lane `L` (its second at `L−1`). Standard challenges
+            // (α_stark/ζ/α_fri/β) each follow an observe ⇒ fresh duplex ⇒ L = RATE−1 = 3 (cur[3]/cur[2],
+            // byte-identical). The CONSECUTIVE lookup challenges (first `nlc`) share a block at descending lanes,
+            // so LookupCfg.lookup_bind_lanes redirects them (e.g. the 2nd lands at lane 1 ⇒ cur[1]/cur[0]).
+            let lane = match &self.lookup {
+                Some(lk) if j < self.nlc() => lk.lookup_bind_lanes[j],
+                _ => 3,
+            };
+            builder.assert_zero(b.clone() * (cur[lane].clone() - pis[2 * j].clone()));
+            builder.assert_zero(b * (cur[lane - 1].clone() - pis[2 * j + 1].clone()));
         }
         let idx_start = FT_BIND_START + self.nb();
         for (k, &(_blk, lane)) in self.index_binds.iter().enumerate() {
             let b = p[idx_start + k].clone();
             builder.assert_zero(b * (cur[lane].clone() - pis[ext_pubs + k].clone()));
         }
+        // ---------- F1 FIX (soundness): bind the FS-ABSORBED committed felts to their committed window pis.
+        // The sponge absorbs the inner proof's cap felts (trace/aux/quotient/commit-round) + inner public
+        // values into cur[0..RATE] at each block's INPUT row, but those rate lanes are FREE WITNESSES — the
+        // squeeze-binds above pin only the OUTPUT challenges, NOT these inputs. A malicious prover could grind
+        // them (≠ the committed pis) to forge the FS challenges (α_L/α_stark/ζ/…) and forge acceptance while
+        // the native verifier — recomputing the challenge from the REAL committed caps — rejects. Each
+        // recorded (block, [(lane, idx)]) group fires its periodic one-hot at row block·BLOCK and asserts the
+        // absorbed rate lane == the committed window value. Empty `fs_binds` ⇒ no constraints (byte-identical).
+        for (i, (_blk, lanes)) in self.fs_binds().iter().enumerate() {
+            let oh = p[self.fs_bind_base() + i].clone();
+            for &(lane, idx) in lanes {
+                builder.assert_zero(oh.clone() * (cur[lane].clone() - pis[idx].clone()));
+            }
+        }
+        // ---------- F1 FIX (soundness, cross-row) — bind 2: pin the arith-tile `pz` (the reduced-opening fold's
+        // INPUT) to the SAME held window slot the FS-absorbed opened value is pinned to (bind 1, above, via
+        // `fs_binds` with idx = the opening slot). The absorb sits at a transcript row and `pz(k)` at the arith
+        // head, so no same-row equality reaches across; the constant pis window is the bridge. At the arith head
+        // (`tf`), `cur[pz(k)] == pw_opening(2k)`; combined with bind 1 (`absorbed == pw_opening(2k)`) this closes
+        // `absorbed == pz` transitively — the prover can no longer grind α_fri on fake openings. Degree 2 (tf ·
+        // (witness − witness)), the SAME shape as the challenge binds. Present ONLY under bind_fs (empty else ⇒
+        // byte-identical); requires the `pz` tile (FULL / narrow_arith — NOT narrow_openings, where pz is externalized).
+        if self.n_fs_openings() > 0 {
+            for k in 0..self.n_terms {
+                builder.assert_zero(tf.clone() * (cur[self.pz(k)].clone() - cur[self.pw_opening(2 * k)].clone()));
+                builder.assert_zero(tf.clone() * (cur[self.pz(k) + 1].clone() - cur[self.pw_opening(2 * k + 1)].clone()));
+            }
+        }
 
         // ---------- α_fri carrier (per-instance-persistent): held (except across instance boundaries); pinned
         // at α_fri's bind row ----------
         let carry = self.carry();
         let not_inst_last = one.clone() - p[self.p_inst_last()].clone();
-        builder
-            .when_transition()
-            .assert_zero(not_inst_last.clone() * (nxt[carry].clone() - cur[carry].clone()));
-        builder
-            .when_transition()
-            .assert_zero(not_inst_last.clone() * (nxt[carry + 1].clone() - cur[carry + 1].clone()));
-        let alpha_bind = p[FT_BIND_START + 2].clone();
+        builder.when_transition().assert_zero(not_inst_last.clone() * (nxt[carry].clone() - cur[carry].clone()));
+        builder.when_transition().assert_zero(not_inst_last.clone() * (nxt[carry + 1].clone() - cur[carry + 1].clone()));
+        let alpha_bind = p[FT_BIND_START + self.ch_alpha_fri()].clone();
         builder.assert_zero(alpha_bind.clone() * (cur[carry].clone() - cur[3].clone()));
         builder.assert_zero(alpha_bind * (cur[carry + 1].clone() - cur[2].clone()));
 
@@ -1215,52 +1841,13 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
         }
 
         // ---------- super-tile arith (block 0, gated by M_TF / P_ROUND / M_TL) ----------
-        for i in 0..self.lg() {
-            let b = cur[QT_DBITS + i].clone();
-            builder.assert_zero(tf.clone() * (b.clone() * (one.clone() - b)));
-        }
-        let mut prev = one.clone();
-        for i in 0..self.lg() {
-            let ci = AB::Expr::from(g.exp_power_of_2(self.lg() - 1 - i));
-            let factor = one.clone() + cur[QT_DBITS + i].clone() * (ci - one.clone());
-            builder.assert_zero(tf.clone() * (cur[self.qt_acc() + i].clone() - prev * factor));
-            prev = cur[self.qt_acc() + i].clone();
-        }
-        let x = AB::Expr::from(<Goldilocks as Field>::GENERATOR)
-            * cur[self.qt_acc() + self.lg() - 1].clone();
-        // self.qt_alpha() bound to the carried α_fri
-        builder.assert_zero(tf.clone() * (cur[self.qt_alpha()].clone() - cur[carry].clone()));
-        builder
-            .assert_zero(tf.clone() * (cur[self.qt_alpha() + 1].clone() - cur[carry + 1].clone()));
-        let alpha = gg(self.qt_alpha());
-        builder.assert_zero(tf.clone() * (cur[self.apow(0)].clone() - one.clone()));
-        builder.assert_zero(tf.clone() * cur[self.apow(0) + 1].clone());
-        for k in 1..self.n_terms {
-            let prod = emul(gg(self.apow(k - 1)), alpha.clone());
-            builder.assert_zero(tf.clone() * (cur[self.apow(k)].clone() - prod.0));
-            builder.assert_zero(tf.clone() * (cur[self.apow(k) + 1].clone() - prod.1));
-        }
-        let mut ro = (AB::Expr::ZERO, AB::Expr::ZERO);
-        for k in 0..self.n_terms {
-            let z = gg(self.z(k));
-            let inv = gg(self.inv(k));
-            let z_m_x = (z.0 - x.clone(), z.1);
-            let chk = emul(inv.clone(), z_m_x);
-            builder.assert_zero(tf.clone() * (chk.0 - one.clone()));
-            builder.assert_zero(tf.clone() * chk.1);
-            let d = (
-                cur[self.pz(k)].clone() - cur[self.px(k)].clone(),
-                cur[self.pz(k) + 1].clone(),
-            );
-            let t = emul(emul(gg(self.apow(k)), d), inv);
-            ro = (ro.0 + t.0, ro.1 + t.1);
-        }
-        builder.assert_zero(tf.clone() * (cur[QT_E].clone() - ro.0));
-        builder.assert_zero(tf.clone() * (cur[QT_E + 1].clone() - ro.1));
-        // β_r binding (per-round one-hots → public β_r = binds[3+r])
-        for r in 0..(self.nb() - 3) {
+        // Factored through the B/C/I strategy: `InlineBci` re-emits the `9·n_terms`-COLUMN inline fold verbatim
+        // (byte-identical); a narrow-tall strategy witnesses `ro` from slack ROWS (the deep-tree size lever).
+        bci.emit_arith(builder, self, &cur, &tf, &one, &w);
+        // β_r binding (per-round one-hots → public β_r = binds[ch_beta(r)], shifted past the lookup challenges)
+        for r in 0..self.cm_rounds() {
             let pr = p[self.p_round(r)].clone();
-            let bidx = 3 + r;
+            let bidx = self.ch_beta(r);
             builder.assert_zero(pr.clone() * (cur[QT_B].clone() - pis[2 * bidx].clone()));
             builder.assert_zero(pr * (cur[QT_B + 1].clone() - pis[2 * bidx + 1].clone()));
         }
@@ -1306,7 +1893,7 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
         }
         builder.assert_zero(tf.clone() * (cur[self.idx_rem()].clone() - qidx));
         let mut round_mask = AB::Expr::ZERO;
-        for r in 0..(self.nb() - 3) {
+        for r in 0..self.cm_rounds() {
             round_mask = round_mask + p[self.p_round(r)].clone();
         }
         builder.when_transition().assert_zero(
@@ -1350,8 +1937,8 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
         // openings QT_pz(0..3). Multiply through by Z_H·(ζ−1) to avoid inverses:
         //   z_h·α·(local−pub) + is_trans·(ζ−1)·(next−local) == z_h·(ζ−1)·(c0 + c1·X),   quotient(ζ)=c0+c1·X.
         {
-            let alpha_stark = (pis[0].clone(), pis[1].clone());
-            let zeta = (pis[2].clone(), pis[3].clone());
+            let alpha_stark = (pis[2 * self.ch_alpha_stark()].clone(), pis[2 * self.ch_alpha_stark() + 1].clone());
+            let zeta = (pis[2 * self.ch_zeta()].clone(), pis[2 * self.ch_zeta() + 1].clone());
             // S_6 = ζ^(2^degree_bits). In pis mode ζ is a degree-0 public constant ⇒ inline squaring (degree 0).
             // In column-window ζ is a degree-1 witness ⇒ use the witnessed squaring chain (S_{i+1}=S_i², bound
             // degree 2) so z_h stays degree 1 and the OOD constraint doesn't blow up.
@@ -1401,71 +1988,168 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
                 let biv = emul(inv_van.clone(), z_h.clone());
                 builder.assert_zero(tf.clone() * (biv.0 - one.clone()));
                 builder.assert_zero(tf.clone() * biv.1);
-                let local: Vec<(AB::Expr, AB::Expr)> =
-                    (0..w_in).map(|c| gg(self.pz(self.trm_trace(c)))).collect();
-                let next: Vec<(AB::Expr, AB::Expr)> =
-                    (0..w_in).map(|c| gg(self.pz(self.trm_next(c)))).collect();
-                // recompose quotient(ζ) from the nqc chunk-openings: Σ_i zps_i·(pz(2W+2i)+pz(2W+2i+1)·X). nqc=1 ⇒
-                // the single chunk c0+c1·X (implicit weight 1, byte-for-byte); nqc>1 ⇒ verifier-computed weights
-                // zps_i (the qwt pis region) — exactly p3's recompose_quotient_from_chunks (validated by the oracle).
-                let quot = {
-                    let mut acc = (AB::Expr::ZERO, AB::Expr::ZERO);
-                    for i in 0..self.nqc() {
-                        let d0 = gg(self.pz(self.trm_quot(i, 0)));
-                        let d1 = gg(self.pz(self.trm_quot(i, 1)));
-                        let chunk = (
-                            d0.0.clone() + w.clone() * d1.1.clone(),
-                            d0.1.clone() + d1.0.clone(),
-                        );
-                        let weighted = if self.nqc() == 1 {
-                            chunk
-                        } else {
-                            let zps = (
-                                pis[self.qwt_base() + 2 * i].clone(),
-                                pis[self.qwt_base() + 2 * i + 1].clone(),
-                            );
-                            emul(zps, chunk)
+                // NARROW-OPENINGS externalizes the OOD openings (local/next + the quot chunk-openings — the inner's
+                // `opened_values`) OFF the arith-head row to the sponge-opening bus, so the epilogue strategy
+                // (`OpeningsBci`/`OpTableBci`) sources `folded`+`quot` from its own bus-bound columns and IGNORES
+                // these. Pass empties + a zero quot when narrow; otherwise recompose from the committed `pz` columns
+                // exactly as before (byte-identical at false — `pinned_constraint_fingerprints` guards it).
+                let (local, next, quot): (Vec<(AB::Expr, AB::Expr)>, Vec<(AB::Expr, AB::Expr)>, (AB::Expr, AB::Expr)) =
+                    if self.narrow_openings {
+                        (Vec::new(), Vec::new(), (AB::Expr::ZERO, AB::Expr::ZERO))
+                    } else {
+                        let local: Vec<(AB::Expr, AB::Expr)> = (0..w_in).map(|c| gg(self.pz(self.trm_trace(c)))).collect();
+                        let next: Vec<(AB::Expr, AB::Expr)> = (0..w_in).map(|c| gg(self.pz(self.trm_next(c)))).collect();
+                        // recompose quotient(ζ) from the nqc chunk-openings: Σ_i zps_i·(pz(2W+2i)+pz(2W+2i+1)·X). nqc=1 ⇒
+                        // the single chunk c0+c1·X (implicit weight 1, byte-for-byte); nqc>1 ⇒ verifier-computed weights
+                        // zps_i (the qwt pis region) — exactly p3's recompose_quotient_from_chunks (validated by the oracle).
+                        let quot = {
+                            let mut acc = (AB::Expr::ZERO, AB::Expr::ZERO);
+                            for i in 0..self.nqc() {
+                                let d0 = gg(self.pz(self.trm_quot(i, 0)));
+                                let d1 = gg(self.pz(self.trm_quot(i, 1)));
+                                let chunk = (d0.0.clone() + w.clone() * d1.1.clone(), d0.1.clone() + d1.0.clone());
+                                let weighted = if self.nqc() == 1 {
+                                    chunk
+                                } else {
+                                    let zps = (pis[self.qwt_base() + 2 * i].clone(), pis[self.qwt_base() + 2 * i + 1].clone());
+                                    emul(zps, chunk)
+                                };
+                                acc = (acc.0 + weighted.0, acc.1 + weighted.1);
+                            }
+                            acc
                         };
-                        acc = (acc.0 + weighted.0, acc.1 + weighted.1);
-                    }
-                    acc
-                };
-                let pubs: Vec<(AB::Expr, AB::Expr)> = (0..self.n_pub())
-                    .map(|i| (pis[self.pub_pi() + i].clone(), AB::Expr::ZERO))
-                    .collect();
+                        (local, next, quot)
+                    };
+                let pubs: Vec<(AB::Expr, AB::Expr)> = (0..self.n_pub()).map(|i| (pis[self.pub_pi() + i].clone(), AB::Expr::ZERO)).collect();
                 // periodic column values at ζ (verifier-computed publics in the periodic pis region).
-                let periodic: Vec<(AB::Expr, AB::Expr)> = (0..self.n_periodic())
-                    .map(|i| {
-                        (
-                            pis[self.periodic_base() + 2 * i].clone(),
-                            pis[self.periodic_base() + 2 * i + 1].clone(),
-                        )
-                    })
-                    .collect();
-                // α-Horner fold of the inner constraints, CHUNKED in column-window mode (α_stark degree-1):
-                // witness the running fold every FOLD_CHUNK constraints and continue from that degree-1 column,
-                // so this stays ≈ base+FOLD_CHUNK instead of base+C_inner. pis-mode (α degree-0) folds inline.
-                let chunked = self.column_window;
-                let mut folded = (AB::Expr::ZERO, AB::Expr::ZERO);
-                let mut acc_i = 0usize;
-                let n_c = self.constraints.len();
-                for (k, c) in self.constraints.iter().enumerate() {
-                    let ci = eval_symbolic_circuit::<AB>(
-                        c, &local, &next, &pubs, &periodic, &is_first, &is_last, &is_trans, &w,
-                    );
-                    let fa = emul(folded.clone(), alpha_stark.clone());
-                    folded = (fa.0 + ci.0, fa.1 + ci.1);
-                    if chunked && (k + 1) % Self::FOLD_CHUNK == 0 && k + 1 < n_c {
-                        let a = gg(self.fold_acc(acc_i)); // bind the witnessed partial fold, then Horner on from it
-                        builder.assert_zero(tf.clone() * (a.0.clone() - folded.0.clone()));
-                        builder.assert_zero(tf.clone() * (a.1.clone() - folded.1.clone()));
-                        folded = a;
-                        acc_i += 1;
+                let periodic: Vec<(AB::Expr, AB::Expr)> = (0..self.n_periodic()).map(|i| (pis[self.periodic_base() + 2 * i].clone(), pis[self.periodic_base() + 2 * i + 1].clone())).collect();
+                if let Some(lk) = &self.lookup {
+                    // FORMAT BRIDGE — the LogUp OOD fold. The α-Horner fold continues past the base constraints
+                    // with the inner's LogUp fraction/accumulator EXT constraints (eval_symbolic_ext_circuit),
+                    // matching the native `batched_constraints_at_point` order (base then ext). The aux ext rows
+                    // are RECONSTRUCTED from the D=2 flattened base-column openings (pz(trm_aux(2c)),
+                    // pz(trm_aux(2c+1))) via aux_ext = d0 + d1·X — the same combine as the quotient chunk recompose.
+                    let combine = |d0: (AB::Expr, AB::Expr), d1: (AB::Expr, AB::Expr)| -> (AB::Expr, AB::Expr) {
+                        (d0.0 + w.clone() * d1.1, d0.1 + d1.0)
+                    };
+                    let aux_local: Vec<(AB::Expr, AB::Expr)> =
+                        (0..self.aux_ext_w()).map(|c| combine(gg(self.pz(self.trm_aux(2 * c))), gg(self.pz(self.trm_aux(2 * c + 1))))).collect();
+                    let aux_next: Vec<(AB::Expr, AB::Expr)> =
+                        (0..self.aux_ext_w()).map(|c| combine(gg(self.pz(self.trm_aux_next(2 * c))), gg(self.pz(self.trm_aux_next(2 * c + 1))))).collect();
+                    // the lookup challenges (α_L,β) are the first `nlc` transcript challenges (pis[0..2·nlc]).
+                    let challenges: Vec<(AB::Expr, AB::Expr)> =
+                        (0..self.nlc()).map(|i| (pis[2 * i].clone(), pis[2 * i + 1].clone())).collect();
+                    // the committed terminal (a claimed F_p² value): folded as the LogUp PermutationValue AND
+                    // constrained == 0 (the multiset-balance check `verify_terminal_sum`).
+                    let terminal = (pis[self.term_pi()].clone(), pis[self.term_pi() + 1].clone());
+                    // COLUMN-WINDOW: α_stark is a degree-1 witness, so folding all base+ext constraints inline
+                    // makes the fold expression degree ≈ base + (n_base+n_ext) — the R5 explosion (log_nqc ≫ 4).
+                    // CHUNK it exactly like the non-lookup epilogue (`emit_epilogue`): witness the running partial
+                    // fold every FOLD_CHUNK constraints (`fold_acc`, spanning base THEN ext in one sequence) and
+                    // continue the Horner from that degree-1 column. pis-mode (`column_window=false`, every existing
+                    // lookup test) folds α as a degree-0 constant ⇒ no chunking ⇒ byte-identical.
+                    let chunked = self.column_window;
+                    let n_c = self.constraints.len() + lk.ext_constraints.len();
+                    let mut folded = (AB::Expr::ZERO, AB::Expr::ZERO);
+                    let mut acc_i = 0usize;
+                    let mut k = 0usize;
+                    let chunk_fold = |builder: &mut AB, folded: &mut (AB::Expr, AB::Expr), acc_i: &mut usize, k: &mut usize| {
+                        if chunked && (*k + 1) % MonolithAir::FOLD_CHUNK == 0 && *k + 1 < n_c {
+                            let a = gg(self.fold_acc(*acc_i)); // bind the witnessed partial fold, then Horner on from it
+                            builder.assert_zero(tf.clone() * (a.0.clone() - folded.0.clone()));
+                            builder.assert_zero(tf.clone() * (a.1.clone() - folded.1.clone()));
+                            *folded = a;
+                            *acc_i += 1;
+                        }
+                        *k += 1;
+                    };
+                    for c in &self.constraints {
+                        let ci = eval_symbolic_circuit::<AB>(c, &local, &next, &pubs, &periodic, &is_first, &is_last, &is_trans, &w);
+                        let fa = emul(folded.clone(), alpha_stark.clone());
+                        folded = (fa.0 + ci.0, fa.1 + ci.1);
+                        chunk_fold(builder, &mut folded, &mut acc_i, &mut k);
                     }
+                    // The ext constraints are [frac_0..frac_{L−1} | acc_first, acc_trans, acc_last]: the first
+                    // `n_look` are the per-lookup fraction constraints (lookup j pins aux column j+1), the last 3
+                    // the shared accumulator constraints. In COLUMN-WINDOW mode the fraction constraints are the
+                    // deg-N blow-up (α_L degree-1 ⇒ common_denom = Π(α_L−e_i) degree ~N), so re-evaluate them
+                    // SEMANTICALLY with the PRODUCT-CHUNKED rational recurrence; the low-degree accumulator
+                    // constraints (and every pis-mode constraint) walk the generic tree verbatim.
+                    let n_look = lk.lookups.len();
+                    let prod_chunked = self.column_window && !self.narrow_openings;
+                    for (j, c) in lk.ext_constraints.iter().enumerate() {
+                        let ci = if prod_chunked && j < n_look {
+                            let lu = &lk.lookups[j];
+                            let col = lu.column;
+                            let alpha_l = challenges[2 * col].clone();
+                            let beta = challenges[2 * col + 1].clone();
+                            let frac = aux_local[col + 1].clone();
+                            let slot_base = self.prod_acc_lookup_base(j);
+                            let n_sides = lu.elements.len();
+                            // running common_denom D = Π t_i (init 1) and numerator S = Σ m_i ∏_{j≠i} t_j (init 0),
+                            // with t_i = α_L − combined_e_i. Witness (D,S) every PROD_CHUNK sides to cap the degree.
+                            let mut dd = (one.clone(), AB::Expr::ZERO);
+                            let mut ss = (AB::Expr::ZERO, AB::Expr::ZERO);
+                            let mut s_slot = 0usize;
+                            let mut in_chunk = 0usize;
+                            for (i, elem_tuple) in lu.elements.iter().enumerate() {
+                                // combined element = β-Horner over the tuple (F_p²): comb ← comb·β + e_{i,j}.
+                                let mut comb = (AB::Expr::ZERO, AB::Expr::ZERO);
+                                for elem in elem_tuple {
+                                    let ev = eval_symbolic_circuit::<AB>(elem, &local, &next, &pubs, &periodic, &is_first, &is_last, &is_trans, &w);
+                                    let cb = emul(comb.clone(), beta.clone());
+                                    comb = (cb.0 + ev.0, cb.1 + ev.1);
+                                }
+                                let term = (alpha_l.0.clone() - comb.0, alpha_l.1.clone() - comb.1);
+                                let mv = eval_symbolic_circuit::<AB>(&lu.multiplicities[i], &local, &next, &pubs, &periodic, &is_first, &is_last, &is_trans, &w);
+                                // S ← S·t + m·D ; D ← D·t (m is a base value, so emul lifts it as (m,0)).
+                                let st = emul(ss.clone(), term.clone());
+                                let md = emul(mv, dd.clone());
+                                ss = (st.0 + md.0, st.1 + md.1);
+                                dd = emul(dd, term);
+                                in_chunk += 1;
+                                if in_chunk == MonolithAir::PROD_CHUNK && i + 1 < n_sides {
+                                    let d0 = self.prod_acc(slot_base + s_slot);
+                                    let dcol = gg(d0);
+                                    let scol = gg(d0 + 2);
+                                    builder.assert_zero(tf.clone() * (dcol.0.clone() - dd.0));
+                                    builder.assert_zero(tf.clone() * (dcol.1.clone() - dd.1));
+                                    builder.assert_zero(tf.clone() * (scol.0.clone() - ss.0));
+                                    builder.assert_zero(tf.clone() * (scol.1.clone() - ss.1));
+                                    dd = dcol;
+                                    ss = scol;
+                                    s_slot += 1;
+                                    in_chunk = 0;
+                                }
+                            }
+                            // the fraction constraint value: common_denom·frac − numerator = D·frac − S.
+                            let df = emul(dd, frac);
+                            (df.0 - ss.0, df.1 - ss.1)
+                        } else {
+                            eval_symbolic_ext_circuit::<AB>(
+                                c, &local, &next, &pubs, &periodic, &is_first, &is_last, &is_trans, &aux_local,
+                                &aux_next, &challenges, &[terminal.clone()], &w,
+                            )
+                        };
+                        let fa = emul(folded.clone(), alpha_stark.clone());
+                        folded = (fa.0 + ci.0, fa.1 + ci.1);
+                        chunk_fold(builder, &mut folded, &mut acc_i, &mut k);
+                    }
+                    let chk = emul(folded, inv_van.clone());
+                    builder.assert_zero(tf.clone() * (chk.0 - quot.0.clone()));
+                    builder.assert_zero(tf.clone() * (chk.1 - quot.1.clone()));
+                    // the LogUp terminal must balance (Σ fractions == 0).
+                    builder.assert_zero(tf.clone() * terminal.0);
+                    builder.assert_zero(tf.clone() * terminal.1);
+                } else {
+                    // B/C (OOD epilogue fold) — routed through the strategy so the wrap can replace the inline
+                    // eval_symbolic_circuit + α-Horner with lookups (byte-identical under InlineBci; the reused
+                    // selector binds + openings above stay inline).
+                    bci.emit_epilogue(
+                        builder, self, &cur, &tf, &w, &local, &next, &pubs, &periodic, &is_first, &is_last,
+                        &is_trans, &alpha_stark, &inv_van, &quot,
+                    );
                 }
-                let chk = emul(folded, inv_van);
-                builder.assert_zero(tf.clone() * (chk.0 - quot.0));
-                builder.assert_zero(tf.clone() * (chk.1 - quot.1));
             } else {
                 // 1-COLUMN ConstAir/CounterAir: the 2-constraint form (1 first-row + 1 transition):
                 //   z_h·α·(local−pub) + is_trans·(ζ−1)·(next−local[−1]) == z_h·(ζ−1)·(c0+c1·X).
@@ -1514,22 +2198,26 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
                 builder.assert_zero(tf.clone() * (t1.1 + t2.1 - rhs.1));
             }
             // z-term binding: bind each opened point z to its transcript-derived value — ζ for the random,
-            // trace-ζ, and quotient terms; ζ·g_trace (the HALVED constraint-domain generator) for the trace-ζ_next
-            // block [trm_next_base, trm_quot_base). is_zk=0 ⇒ [0,W)→ζ, [W,2W)→ζ·g, [2W,·)→ζ (byte-for-byte). So
-            // each QT_pz(k) is genuinely the opening AT its point.
-            let g_trace = AB::Expr::from(Goldilocks::two_adic_generator(cdb));
-            for k in 0..self.n_terms {
-                let at_next = k >= self.trm_next_base() && k < self.trm_quot_base();
-                let (zx, zy) = if at_next {
-                    (
-                        zeta.0.clone() * g_trace.clone(),
-                        zeta.1.clone() * g_trace.clone(),
-                    )
-                } else {
-                    (zeta.0.clone(), zeta.1.clone())
-                };
-                builder.assert_zero(tf.clone() * (cur[self.z(k)].clone() - zx));
-                builder.assert_zero(tf.clone() * (cur[self.z(k) + 1].clone() - zy));
+            // trace-ζ, aux-ζ, and quotient terms; ζ·g_trace (the HALVED constraint-domain generator) for the
+            // trace-ζ_next block [trm_next_base, trm_next_base+W) AND the aux-ζ_next block [trm_aux_next(0),
+            // trm_quot_base). is_zk=0/no-lookup ⇒ [0,W)→ζ, [W,2W)→ζ·g, [2W,·)→ζ (byte-for-byte). So each
+            // QT_pz(k) is genuinely the opening AT its point.
+            // NARROW-ARITH: `z` is not stored (re-derived = ζ / ζ·g); the wrap binds the re-derived z via its
+            // input bus, so there is no z column to bind here. FULL: bind each stored z(k) to its ζ-value.
+            if !self.narrow_arith {
+                let g_trace = AB::Expr::from(Goldilocks::two_adic_generator(cdb));
+                for k in 0..self.n_terms {
+                    let trace_next = k >= self.trm_next_base() && k < self.trm_next_base() + self.trm_committed_w();
+                    let aux_next = self.is_lookup() && k >= self.trm_aux_next(0) && k < self.trm_quot_base();
+                    let at_next = trace_next || aux_next;
+                    let (zx, zy) = if at_next {
+                        (zeta.0.clone() * g_trace.clone(), zeta.1.clone() * g_trace.clone())
+                    } else {
+                        (zeta.0.clone(), zeta.1.clone())
+                    };
+                    builder.assert_zero(tf.clone() * (cur[self.z(k)].clone() - zx));
+                    builder.assert_zero(tf.clone() * (cur[self.z(k) + 1].clone() - zy));
+                }
             }
         }
 
@@ -1540,18 +2228,18 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
         // (trm_committed_w felts) feeds BOTH its ζ term px(trm_trace(c)) AND its ζ_next term px(trm_next(c))
         // (px-sharing — one authenticated value → two DEEP terms) and the leaf. The trailing HIDING_SALT felts
         // (is_zk=1) are the free leaf salt: held but not px-bound (authenticated by folding to the committed cap).
-        for c in 0..self.input_leaf_felts() {
-            let ovc = self.ov_c(c);
-            builder
-                .when_transition()
-                .assert_zero(hold.clone() * (nxt[ovc].clone() - cur[ovc].clone()));
-            if c < self.trm_committed_w() {
-                builder.assert_zero(
-                    tf.clone() * (cur[ovc].clone() - cur[self.px(self.trm_trace(c))].clone()),
-                ); // @ ζ
-                builder.assert_zero(
-                    tf.clone() * (cur[ovc].clone() - cur[self.px(self.trm_next(c))].clone()),
-                ); // @ ζ_next
+        // NARROW-OV: the ov opened-row carrier is externalized (its columns dropped, `ov_carrier_w()→0`) — the
+        // leaf-hash lanes instead PROVIDE px to the leaf-hash→px bus (the assembled wrap), so skip the carrier's
+        // hold-carry + px-bind here (they'd read the dropped `ov_c`). Byte-identical when `!narrow_ov`.
+        if !self.narrow_ov {
+            for c in 0..self.input_leaf_felts() {
+                let ovc = self.ov_c(c);
+                builder.when_transition().assert_zero(hold.clone() * (nxt[ovc].clone() - cur[ovc].clone()));
+                // NARROW: px is not stored (the wrap SOURCES it from this ov carrier); nothing to bind here.
+                if c < self.trm_committed_w() && !self.narrow_arith {
+                    builder.assert_zero(tf.clone() * (cur[ovc].clone() - cur[self.px(self.trm_trace(c))].clone())); // @ ζ
+                    builder.assert_zero(tf.clone() * (cur[ovc].clone() - cur[self.px(self.trm_next(c))].clone())); // @ ζ_next
+                }
             }
         }
         // HIDING random-round carrier (random_leaf_felts felts, is_zk=1): the random-polynomial committed row
@@ -1567,6 +2255,17 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
                 }
             }
         }
+        // LOOKUP aux-round carrier (aux_base_w felts): the committed LogUp aux row, held; px-bound to BOTH its ζ
+        // term px(trm_aux(c)) AND its ζ_next term px(trm_aux_next(c)) (aux opens at two points — like the trace
+        // ov, unlike the random round's single point). No salt (is_zk=0). Absent without lookup.
+        if self.is_lookup() && !self.narrow_arith {
+            for c in 0..self.aux_base_w() {
+                let ova = self.ov_aux(c);
+                builder.when_transition().assert_zero(hold.clone() * (nxt[ova].clone() - cur[ova].clone()));
+                builder.assert_zero(tf.clone() * (cur[ova].clone() - cur[self.px(self.trm_aux(c))].clone())); // @ ζ
+                builder.assert_zero(tf.clone() * (cur[ova].clone() - cur[self.px(self.trm_aux_next(c))].clone())); // @ ζ_next
+            }
+        }
         // quotient opened-value carriers (quot_leaf_felts felts): the multi-matrix concat over nqc chunks. Each
         // chunk's committed-row prefix (trm_chunk_w felts) is px-bound to its reduced-opening terms px(trm_quot(i,j))
         // (the nqc chunk-openings at the query row); the trailing HIDING_SALT per chunk (is_zk=1) is free salt. Held.
@@ -1578,10 +2277,9 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
                     .when_transition()
                     .assert_zero(hold.clone() * (nxt[qcj].clone() - cur[qcj].clone()));
                 let (i, j) = (c / stride, c % stride);
-                if j < self.trm_chunk_w() {
-                    builder.assert_zero(
-                        tf.clone() * (cur[qcj].clone() - cur[self.px(self.trm_quot(i, j))].clone()),
-                    );
+                // NARROW: px sourced from this qc carrier; nothing to bind.
+                if j < self.trm_chunk_w() && !self.narrow_arith {
+                    builder.assert_zero(tf.clone() * (cur[qcj].clone() - cur[self.px(self.trm_quot(i, j))].clone()));
                 }
             }
         }
@@ -1622,8 +2320,12 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
         // rest = 0 (fresh state). At W≤RATE this is the single-block milestone leaf (byte-for-byte).
         let leaf = p[self.m_leaf()].clone();
         let lc0 = core::cmp::min(self.input_leaf_felts(), RATE);
-        for c in 0..lc0 {
-            builder.assert_zero(leaf.clone() * (cur[c].clone() - cur[self.ov_c(c)].clone()));
+        // narrow_ov: the leaf-hash lanes cur[0..lc0] instead PROVIDE px to the leaf-hash→px bus (not bound to the
+        // dropped ov_c here). The capacity zeroing below (lanes lc0..W) is unchanged. Byte-identical when !narrow_ov.
+        if !self.narrow_ov {
+            for c in 0..lc0 {
+                builder.assert_zero(leaf.clone() * (cur[c].clone() - cur[self.ov_c(c)].clone()));
+            }
         }
         for i in lc0..W {
             builder.assert_zero(leaf.clone() * cur[i].clone());
@@ -1634,10 +2336,10 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
         for b in 1..self.leaf_blocks() {
             let ia = p[self.ia_in(b)].clone();
             let clen = core::cmp::min(RATE, self.input_leaf_felts() - b * RATE);
-            for k in 0..clen {
-                builder.assert_zero(
-                    ia.clone() * (cur[k].clone() - cur[self.ov_c(b * RATE + k)].clone()),
-                );
+            if !self.narrow_ov {
+                for k in 0..clen {
+                    builder.assert_zero(ia.clone() * (cur[k].clone() - cur[self.ov_c(b * RATE + k)].clone()));
+                }
             }
         }
         if self.leaf_blocks() > 1 {
@@ -1751,6 +2453,46 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
                 );
             }
         }
+        // LOOKUP aux-round leaf (blocks M_INPUT_LEAF..+aux_leaf_blocks): an UNSALTED PaddingFreeSponge over the
+        // committed LogUp aux row (aux_base_w felts), RATE/block — the SAME multi-block machinery as the trace
+        // leaf, then input_depth merges (via the generic merge link) to the aux cap. The aux terminal binds to
+        // the aux cap carrier (a full cap; the aux commitment varies per query). Mirrors the random round.
+        if self.is_lookup() {
+            let aleaf = p[self.p_aux_leaf()].clone();
+            let alc0 = core::cmp::min(self.aux_leaf_felts(), RATE);
+            for c in 0..alc0 {
+                builder.assert_zero(aleaf.clone() * (cur[c].clone() - cur[self.ov_aux(c)].clone()));
+            }
+            for i in alc0..W {
+                builder.assert_zero(aleaf.clone() * cur[i].clone());
+            }
+            for b in 1..self.aux_leaf_blocks() {
+                let ia = p[self.p_aux_absorb(b)].clone();
+                let clen = core::cmp::min(RATE, self.aux_leaf_felts() - b * RATE);
+                for k in 0..clen {
+                    builder.assert_zero(ia.clone() * (cur[k].clone() - cur[self.ov_aux(b * RATE + k)].clone()));
+                }
+            }
+            if self.aux_leaf_blocks() > 1 {
+                let bnd = p[self.p_aux_boundary()].clone();
+                for k in RATE..W {
+                    builder.when_transition().assert_zero(bnd.clone() * (nxt[k].clone() - cur[k].clone())); // capacity carry
+                }
+                if self.aux_leaf_felts() % RATE != 0 {
+                    let lc = p[self.p_aux_last_carry()].clone();
+                    let rem = self.aux_leaf_felts() - (self.aux_leaf_blocks() - 1) * RATE;
+                    for k in rem..RATE {
+                        builder.when_transition().assert_zero(lc.clone() * (nxt[k].clone() - cur[k].clone())); // short-final rate carry
+                    }
+                }
+            }
+            // aux terminal (block m_aux_term) == the query's index-selected aux cap entry, carried per super-tile
+            // in cap_c group (8 + 4·cm_rounds) and seeded at the arith head by the cap-mux below.
+            let aterm = p[self.p_aux_term()].clone();
+            for k in 0..4 {
+                builder.assert_zero(aterm.clone() * (cur[k].clone() - cur[self.cap_c(8 + 4 * self.cm_rounds() + k)].clone()));
+            }
+        }
         // commit-phase leaves (blocks CM_LEAF[r]): absorb the bit-ordered fold group carried in cg(r,·).
         for r in 0..self.cm_rounds() {
             let cl = p[self.c_leaf(r)].clone();
@@ -1811,6 +2553,12 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
                     }
                     if self.cm_leaf_blocks() > 1 {
                         term_sum = term_sum + p[self.c_bnd()].clone(); // commit-leaf block-0→block-1 boundary
+                    }
+                }
+                if self.is_lookup() {
+                    term_sum = term_sum + p[self.p_aux_term()].clone(); // aux-round terminal (not a merge)
+                    if self.aux_leaf_blocks() > 1 {
+                        term_sum = term_sum + p[self.p_aux_boundary()].clone(); // aux-leaf internal boundary
                     }
                 }
                 one.clone() - term_sum
@@ -1891,25 +2639,12 @@ impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for MonolithAir {
                     self.random_cap_base(),
                 ));
             }
-            for (cg_off, shift, bits, cbase) in openings {
-                for k in 0..4 {
-                    let mut acc = AB::Expr::ZERO;
-                    for e in 0..(1usize << bits) {
-                        let mut sel = AB::Expr::ONE;
-                        for j in 0..bits {
-                            let b = cur[self.sb_b(shift + j)].clone();
-                            sel = sel
-                                * if (e >> j) & 1 == 1 {
-                                    b
-                                } else {
-                                    one.clone() - b
-                                };
-                        }
-                        acc = acc + sel * pis[cbase + e * 4 + k].clone();
-                    }
-                    builder.assert_zero(tf.clone() * (cur[self.cap_c(cg_off + k)].clone() - acc));
-                }
+            // LOOKUP aux round: a full cap at max height (shift = input_depth), the SAME cap_c group
+            // (8 + 4·cm_rounds; is_zk ⟂ lookup), selecting cap[index>>input_depth] from the aux cap pis region.
+            if self.is_lookup() {
+                openings.push((8 + 4 * self.cm_rounds(), self.input_depth(), self.cap_height, self.aux_cap_base()));
             }
+            bci.emit_capmux(builder, self, &cur, &pis, &one, &tf, &openings);
         } else {
             // ConstAir: all cap entries equal → a single shared cap entry per opening (the validated path).
             let qcap = self.qcap_base();

@@ -734,6 +734,51 @@ where
         .collect()
 }
 
+/// **Format bridge — the LookupProof quotient recompose weights.** The `quotient_recompose_weights` analogue
+/// for a `LookupProof`: the `zps_i = Π_{j≠i}(Z_{H_j}(ζ))/(Z_{H_j}(first_i))` weights that recompose
+/// `quotient(ζ) = Σ_i zps_i·chunk_i`, a function ONLY of ζ + degree_bits + the quotient sub-domains (log_nqc
+/// from `combined_constraint_layout`), independent of the opened values — so it takes the transcript ζ + shape
+/// directly (no p3 `Proof`).
+#[cfg(test)]
+pub(crate) fn lookup_quotient_recompose_weights(config: &MyConfig, zeta_p: [Val; 2], degree_bits: usize, log_nqc: usize) -> Vec<Challenge> {
+    use p3_commit::PolynomialSpace;
+    use p3_field::BasedVectorSpace;
+    let zeta = Challenge::from_basis_coefficients_fn(|i| zeta_p[i]);
+    let pcs = config.pcs();
+    let (_, degree) = validate_degree_bits(None, degree_bits, 0, <MyPcs as Pcs<Challenge, Chal>>::log_max_lde_height(pcs)).unwrap();
+    let trace_domain = <MyPcs as Pcs<Challenge, Chal>>::natural_domain_for_degree(pcs, degree);
+    let nqc = 1usize << log_nqc;
+    let qd = trace_domain.create_disjoint_domain(1 << (degree_bits + log_nqc));
+    let qcd = qd.split_domains(nqc);
+    (0..nqc)
+        .map(|i| {
+            let mut zp = Challenge::ONE;
+            for j in 0..nqc {
+                if j != i {
+                    zp *= qcd[j].vanishing_poly_at_point(zeta) * qcd[j].vanishing_poly_at_point(qcd[i].first_point()).inverse();
+                }
+            }
+            zp
+        })
+        .collect()
+}
+
+/// **Format bridge — the LookupProof trace-domain Lagrange selectors at ζ.** The three witnessed selectors
+/// (`is_first_row`, `is_last_row`, `inv_vanishing`) the monolith epilogue binds to their ζ-definitions and folds
+/// the inner constraints with — computed from the SAME `natural_domain_for_degree(pcs, degree).selectors_at_point(ζ)`
+/// as `verify_lookup_proof_native` (is_zk=0). `is_transition = ζ − g^{-1}` is computed inline by the monolith.
+#[cfg(test)]
+pub(crate) fn lookup_selectors(config: &MyConfig, zeta_p: [Val; 2], degree_bits: usize) -> (Challenge, Challenge, Challenge) {
+    use p3_commit::PolynomialSpace;
+    use p3_field::BasedVectorSpace;
+    let zeta = Challenge::from_basis_coefficients_fn(|i| zeta_p[i]);
+    let pcs = config.pcs();
+    let (_, degree) = validate_degree_bits(None, degree_bits, 0, <MyPcs as Pcs<Challenge, Chal>>::log_max_lde_height(pcs)).unwrap();
+    let domain = <MyPcs as Pcs<Challenge, Chal>>::natural_domain_for_degree(pcs, degree);
+    let sels = domain.selectors_at_point(zeta);
+    (sels.is_first_row, sels.is_last_row, sels.inv_vanishing)
+}
+
 /// A `MerkleCap` commitment flattened to its felt sequence (roots in order) — EXACTLY the felts the
 /// challenger observes via `observe(cap)`. The monolith transcript region must absorb this same sequence.
 pub(crate) fn cap_felts(commit: &InputCommit) -> Vec<Val> {
@@ -1351,6 +1396,59 @@ pub(crate) fn eval_symbolic_native(
             eval_symbolic_native(x, local, next, pubs, periodic, is_first, is_last, is_trans)
                 * eval_symbolic_native(y, local, next, pubs, periodic, is_first, is_last, is_trans)
         }
+    }
+}
+
+/// **Format-bridge Brick 3 (native blueprint for the in-circuit LogUp OOD epilogue).** The extension-field twin
+/// of [`eval_symbolic_native`]: it walks a LogUp constraint's `SymbolicExpressionExt` tree (the fraction /
+/// accumulator constraints `LogUpGadget::eval_all` emits, over F_p²). The NEW leaf classes vs the base evaluator
+/// are exactly the format bridge's LogUp surface — extension **Permutation** variables (the aux trace columns,
+/// `offset` 0/1 = local/next), permutation **Challenge**s (`[α_L, β]`), and the committed **PermutationValue**
+/// (the terminal); a `Base` leaf is a lifted base sub-tree, evaluated by the existing base walker. This is the
+/// exact algorithm the outer in-circuit epilogue must witness to fold the inner's LogUp constraints. Validated
+/// (an algebraic identity, no proof) by `logup_ext_symbolic_evaluator_matches_batched`: the α-Horner fold of the
+/// base + ext constraint trees reproduces `batched_constraints_at_point` (the real lookup verifier's fold).
+#[cfg(test)]
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn eval_symbolic_ext_native(
+    e: &p3_air::symbolic::SymbolicExpressionExt<Val, Challenge>,
+    local: &[Challenge],
+    next: &[Challenge],
+    pubs: &[Challenge],
+    periodic: &[Challenge],
+    is_first: Challenge,
+    is_last: Challenge,
+    is_trans: Challenge,
+    perm_local: &[Challenge], // the LogUp aux (permutation) trace at ζ
+    perm_next: &[Challenge],  // …at ζ·g
+    challenges: &[Challenge], // the permutation challenges [α_L, β, …]
+    perm_values: &[Challenge], // the committed permutation values [terminal]
+) -> Challenge {
+    use p3_air::symbolic::{ExtEntry, ExtLeaf};
+    use p3_uni_stark::SymbolicExpr;
+    let rec = |x: &p3_air::symbolic::SymbolicExpressionExt<Val, Challenge>| {
+        eval_symbolic_ext_native(x, local, next, pubs, periodic, is_first, is_last, is_trans, perm_local, perm_next, challenges, perm_values)
+    };
+    match e {
+        SymbolicExpr::Leaf(leaf) => match leaf {
+            ExtLeaf::Base(be) => eval_symbolic_native(be, local, next, pubs, periodic, is_first, is_last, is_trans),
+            ExtLeaf::ExtVariable(v) => match v.entry {
+                ExtEntry::Permutation { offset } => {
+                    if offset == 0 {
+                        perm_local[v.index]
+                    } else {
+                        perm_next[v.index]
+                    }
+                }
+                ExtEntry::Challenge => challenges[v.index],
+                ExtEntry::PermutationValue => perm_values[v.index],
+            },
+            ExtLeaf::ExtConstant(c) => *c,
+        },
+        SymbolicExpr::Add { x, y, .. } => rec(x) + rec(y),
+        SymbolicExpr::Sub { x, y, .. } => rec(x) - rec(y),
+        SymbolicExpr::Neg { x, .. } => -rec(x),
+        SymbolicExpr::Mul { x, y, .. } => rec(x) * rec(y),
     }
 }
 
@@ -1991,10 +2089,536 @@ pub fn verify_proof(
     Ok(())
 }
 
+/// The PCS opening-proof type of the NON-salted recursion config (`make_config`) — the `Prf` a `LookupProof`
+/// carries when produced under this config (vs the salted lean `PcsProofLean`). Structurally the exact
+/// `FriProof` `verify_fri_native` consumes, since `MyPcs = TwoAdicFriPcs<.., InputMmcs, ChallengeMmcs>`.
+#[cfg(test)]
+pub(crate) type PcsOpeningProof = <MyPcs as Pcs<Challenge, Chal>>::Proof;
+
+/// **Format-bridge blueprint (Brick 1) — the native re-verifier for a `LookupProof`.** The proof-format
+/// analogue of [`verify_proof`]: it re-implements `verify_lookup`'s FRI-STARK verify from scratch (NO
+/// `pcs.verify` delegation) for the LogUp lookup-proof format, so the algorithm can be ported to the outer
+/// in-circuit monolith. The delta from [`verify_proof`] (a p3 `Proof`) is exactly the format bridge the
+/// deep-tree self-composition needs the outer to learn:
+///   1. **transcript** — the lookup preamble is SHORTER (no `degree_bits`/`base`/`preprocessed` observes;
+///      `verify_lookup` observes the trace commit directly), and it inserts the `2·|lookups|` lookup
+///      challenges `(α_L,β)` (sampled after trace+pis) and a THIRD committed round — the LogUp **aux**
+///      (permutation) commit, observed before the constraint-fold `α`;
+///   2. **reduced opening** — a THIRD input round (aux, opened at `{ζ, ζ_next}`, `aux_width·D` columns) joins
+///      the trace + quotient rounds in `open_input`'s DEEP fold (α-powers continue trace→aux→quotient);
+///   3. **OOD identity** — the fold is `batched_constraints_at_point` (base AIR **+** LogUp fraction /
+///      accumulator constraints), and the committed **terminal** is checked `== 0`.
+/// The FRI machinery (`open_input`/`verify_query`/`verify_fri_native`) is already round-generic, so the aux
+/// round drops in as a second trace-like round. Validated non-circularly by `native_lookup_proof_verify_*`
+/// (it never calls `verify_lookup`). Non-salted config (delta a in isolation); the salt (delta b) is
+/// orthogonal, handled by the hiding path. `A: LookupAir` carries the base + LogUp constraint surface.
+#[cfg(test)]
+#[allow(clippy::type_complexity)]
+pub(crate) fn verify_lookup_proof_native<A>(
+    config: &MyConfig,
+    air: &A,
+    proof: &crate::lookup::prover::LookupProof<PcsOpeningProof>,
+    pis: &[Val],
+) -> Result<(), String>
+where
+    A: crate::lookup::prover::LookupAir + BaseAir<Val>,
+{
+    use crate::lookup::prover::{batched_constraints_at_point, combined_constraint_layout};
+    use p3_field::{BasedVectorSpace, ExtensionField};
+    use p3_lookup::{LogUpGadget, LookupProtocol, Lookups};
+
+    let pcs = config.pcs();
+    let is_zk = 0usize; // the recursion config is non-hiding (TwoAdicFriPcs, ZK=false)
+    let degree_bits = proof.degree_bits;
+    let degree = 1usize << degree_bits;
+    let d = <Challenge as BasedVectorSpace<Val>>::DIMENSION;
+
+    let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(air);
+    let (_layout, log_num_quotient_chunks) = combined_constraint_layout(air, &lookups, is_zk);
+    let num_quotient_chunks = 1usize << (log_num_quotient_chunks + is_zk);
+
+    // Domains: ext (= init at is_zk=0) for trace/aux; the disjoint quotient domain split into chunks.
+    let ext_trace_domain = <MyPcs as Pcs<Challenge, Chal>>::natural_domain_for_degree(pcs, degree);
+    let init_trace_domain = <MyPcs as Pcs<Challenge, Chal>>::natural_domain_for_degree(pcs, degree >> is_zk);
+    let quotient_domain = ext_trace_domain.create_disjoint_domain(1 << (degree_bits + log_num_quotient_chunks));
+    let quotient_chunks_domains = quotient_domain.split_domains(num_quotient_chunks);
+
+    // Shape checks (catch a mis-shaped format bridge before the FRI verify).
+    let air_width = BaseAir::<Val>::width(air);
+    if proof.opened.trace_local.len() != air_width || proof.opened.trace_next.len() != air_width {
+        return Err("trace opening width".into());
+    }
+    if proof.opened.aux_local.len() != proof.aux_width * d || proof.opened.aux_next.len() != proof.aux_width * d {
+        return Err("aux opening width".into());
+    }
+    if proof.opened.quotient_chunks.len() != num_quotient_chunks
+        || proof.opened.quotient_chunks.iter().any(|c| c.len() != d)
+    {
+        return Err("quotient chunk shape".into());
+    }
+
+    // ── FS transcript — mirror `verify_lookup` EXACTLY (NB: no degree_bits/base/preprocessed preamble). ──
+    let mut challenger = config.initialise_challenger();
+    challenger.observe(proof.trace_commit.clone());
+    challenger.observe_slice(pis);
+    let lookup_challenges: Vec<Challenge> =
+        (0..2 * lookups.len()).map(|_| challenger.sample_algebra_element()).collect();
+    challenger.observe(proof.aux_commit.clone());
+    let alpha: Challenge = challenger.sample_algebra_element(); // the constraint-fold α (= α_stark)
+    challenger.observe(proof.quotient_commit.clone());
+    let zeta: Challenge = challenger.sample_algebra_element();
+
+    if init_trace_domain.vanishing_poly_at_point(zeta).is_zero() {
+        return Err("zeta in trace domain".into());
+    }
+    let zeta_next = init_trace_domain.next_point(zeta).ok_or("no next point")?;
+
+    // ── The THREE opening rounds (trace, aux, quotient) — the aux round is the format delta. ──
+    let coms: ComOpenings = vec![
+        (
+            proof.trace_commit.clone(),
+            vec![(ext_trace_domain, vec![(zeta, proof.opened.trace_local.clone()), (zeta_next, proof.opened.trace_next.clone())])],
+        ),
+        (
+            proof.aux_commit.clone(),
+            vec![(ext_trace_domain, vec![(zeta, proof.opened.aux_local.clone()), (zeta_next, proof.opened.aux_next.clone())])],
+        ),
+        (
+            proof.quotient_commit.clone(),
+            quotient_chunks_domains.iter().zip(&proof.opened.quotient_chunks).map(|(dm, v)| (*dm, vec![(zeta, v.clone())])).collect(),
+        ),
+    ];
+
+    // observe all opened evaluations — `TwoAdicFriPcs::verify` does this before `verify_fri` (round order).
+    for (_, round) in &coms {
+        for (_, mat) in round {
+            for (_, point) in mat {
+                challenger.observe_algebra_slice(point);
+            }
+        }
+    }
+
+    // ── MY native FRI verify (from scratch, no pcs.verify) over the 3 rounds. ──
+    let n_queries = proof.opening_proof.query_proofs.len();
+    let (_perm, input_mmcs, params) = build_mmcs_and_params(4, n_queries);
+    verify_fri_native(&params, &proof.opening_proof, &mut challenger, &coms, &input_mmcs)?;
+
+    // ── OOD identity: recompose Q(ζ), reconstruct the aux ext-rows, fold base+LogUp, check + terminal. ──
+    let quotient_at_zeta =
+        recompose_quotient_from_chunks::<MyConfig>(&quotient_chunks_domains, &proof.opened.quotient_chunks, zeta);
+    let aux_local: Vec<Challenge> = (0..proof.aux_width)
+        .map(|c| <Challenge as ExtensionField<Val>>::from_ext_basis_coefficients(&proof.opened.aux_local[c * d..(c + 1) * d]).unwrap())
+        .collect();
+    let aux_next: Vec<Challenge> = (0..proof.aux_width)
+        .map(|c| <Challenge as ExtensionField<Val>>::from_ext_basis_coefficients(&proof.opened.aux_next[c * d..(c + 1) * d]).unwrap())
+        .collect();
+
+    let sels = init_trace_domain.selectors_at_point(zeta);
+    let periodic_at_zeta: Vec<Challenge> = air
+        .periodic_columns()
+        .iter()
+        .map(|col| init_trace_domain.evaluate_periodic_column_at(col, zeta))
+        .collect();
+    let folded = batched_constraints_at_point(
+        air,
+        &lookups,
+        &proof.opened.trace_local,
+        &proof.opened.trace_next,
+        &aux_local,
+        &aux_next,
+        sels.is_first_row,
+        sels.is_last_row,
+        sels.is_transition,
+        alpha,
+        &lookup_challenges,
+        &[proof.terminal.0],
+        pis,
+        &periodic_at_zeta,
+    );
+    if folded * sels.inv_vanishing != quotient_at_zeta {
+        return Err("OOD constraint identity folded·Z_H^{-1} != Q(ζ)".into());
+    }
+
+    // The LogUp terminal must balance (Σ fractions == 0).
+    LogUpGadget::new()
+        .verify_terminal_sum(&[Some(proof.terminal.clone())])
+        .map_err(|_| "non-zero LogUp terminal (imbalanced multiset)".to_string())?;
+    Ok(())
+}
+
+/// **Format-bridge Brick 2b — the LookupProof ground-truth transcript challenges.** The
+/// `full_transcript_challenges` analogue for a `LookupProof`: the real challenger running `verify_lookup`'s
+/// sequence, returning `(lookup_challenges, α_stark, ζ, α_fri, βs, index_felts)` — the values the per-query
+/// oracles (`multicol_query_terms_lookup`, `query_fold_data_lookup`) build on. Mirrors `sim_full_lookup`'s
+/// transcript (the sponge mirror), so the two agree by construction; `verify_lookup_proof_native` re-derives
+/// the same live sequence and accepts, closing the loop.
+#[cfg(test)]
+#[allow(clippy::type_complexity)]
+pub(crate) fn lookup_transcript_challenges<A>(
+    config: &MyConfig,
+    air: &A,
+    proof: &crate::lookup::prover::LookupProof<PcsOpeningProof>,
+    pis: &[Val],
+) -> (Vec<[Val; 2]>, [Val; 2], [Val; 2], [Val; 2], Vec<[Val; 2]>, Vec<Val>)
+where
+    A: crate::lookup::prover::LookupAir,
+{
+    use p3_challenger::{CanObserve, CanSample, FieldChallenger, GrindingChallenger};
+    use p3_field::BasedVectorSpace;
+    use p3_lookup::Lookups;
+    let pair = |x: Challenge| -> [Val; 2] { x.as_basis_coefficients_slice().try_into().unwrap() };
+    let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(air);
+    let mut ch = config.initialise_challenger();
+    ch.observe(proof.trace_commit.clone());
+    ch.observe_slice(pis);
+    let lookup_challenges: Vec<[Val; 2]> =
+        (0..2 * lookups.len()).map(|_| pair(ch.sample_algebra_element())).collect();
+    ch.observe(proof.aux_commit.clone());
+    let alpha_stark: Challenge = ch.sample_algebra_element();
+    ch.observe(proof.quotient_commit.clone());
+    let zeta: Challenge = ch.sample_algebra_element();
+    ch.observe_algebra_slice(&proof.opened.trace_local);
+    ch.observe_algebra_slice(&proof.opened.trace_next);
+    ch.observe_algebra_slice(&proof.opened.aux_local);
+    ch.observe_algebra_slice(&proof.opened.aux_next);
+    for c in &proof.opened.quotient_chunks {
+        ch.observe_algebra_slice(c);
+    }
+    let alpha_fri: Challenge = ch.sample_algebra_element();
+    let fri = &proof.opening_proof;
+    let mut betas = Vec::new();
+    for (comm, w) in fri.commit_phase_commits.iter().zip(&fri.commit_pow_witnesses) {
+        ch.observe(comm.clone());
+        assert!(ch.check_witness(0, *w), "commit pow (0 bits)");
+        betas.push(pair(ch.sample_algebra_element::<Challenge>()));
+    }
+    ch.observe_algebra_slice(&fri.final_poly);
+    let log_arities: Vec<usize> = fri.query_proofs[0].commit_phase_openings.iter().map(|o| o.log_arity as usize).collect();
+    for &la in &log_arities {
+        ch.observe(Val::from_usize(la));
+    }
+    assert!(ch.check_witness(16, fri.query_pow_witness), "query pow");
+    let index_felts: Vec<Val> = (0..fri.query_proofs.len()).map(|_| ch.sample()).collect();
+    (lookup_challenges, pair(alpha_stark), pair(zeta), pair(alpha_fri), betas, index_felts)
+}
+
+/// **Format-bridge Brick 2b — the LookupProof per-query reduced opening (the DEEP terms).** The
+/// `multicol_query_terms` analogue: the reduced opening `ro = Σ α^k (p_z − p_x)/(z − x)` over the **THREE**
+/// input rounds — trace `{ζ, ζ_next}`, the LogUp **aux** `{ζ, ζ_next}` (the format delta), then the quotient
+/// chunks at `ζ`. The aux round is committed at the SAME domain as the trace, so it slots straight after the
+/// trace terms sharing the trace's DEEP point `x` and continuing the single α-power chain — exactly how
+/// `open_input` accumulates rounds in order (the aux is just a second trace-like round). Asserts px-sharing
+/// in BOTH the trace and aux regions (each committed column's ζ / ζ_next openings reuse one authenticated
+/// row value). Returns `(terms, x, α_fri, ro, trace_width, aux_base_width)`.
+#[cfg(test)]
+#[allow(clippy::type_complexity)]
+pub(crate) fn multicol_query_terms_lookup<A>(
+    config: &MyConfig,
+    air: &A,
+    proof: &crate::lookup::prover::LookupProof<PcsOpeningProof>,
+    pis: &[Val],
+    q: usize,
+) -> (Vec<(Challenge, Challenge, Val)>, Val, Challenge, Challenge, usize, usize)
+where
+    A: crate::lookup::prover::LookupAir,
+{
+    use crate::lookup::prover::combined_constraint_layout;
+    use p3_field::{BasedVectorSpace, PrimeField64};
+    use p3_lookup::Lookups;
+    let to_ext = |p: [Val; 2]| Challenge::from_basis_coefficients_fn(|i| p[i]);
+    let (_lc, _a_stark, zeta_p, alpha_p, _betas, index_felts) = lookup_transcript_challenges(config, air, proof, pis);
+    let zeta = to_ext(zeta_p);
+    let alpha = to_ext(alpha_p);
+    let width = BaseAir::<Val>::width(air);
+    let aux_bw = proof.opened.aux_local.len(); // aux_width · D committed base columns
+    let pcs = config.pcs();
+    let degree_bits = proof.degree_bits;
+    let degree = 1usize << degree_bits;
+    let ext_trace_domain = <MyPcs as Pcs<Challenge, Chal>>::natural_domain_for_degree(pcs, degree);
+    let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(air);
+    let (_layout, log_nqc) = combined_constraint_layout(air, &lookups, 0);
+    let nqc = 1usize << log_nqc;
+    let qd = ext_trace_domain.create_disjoint_domain(1 << (degree_bits + log_nqc));
+    let qcd = qd.split_domains(nqc);
+    let zeta_next = ext_trace_domain.next_point(zeta).unwrap();
+    let coms: ComOpenings = vec![
+        (proof.trace_commit.clone(), vec![(ext_trace_domain, vec![(zeta, proof.opened.trace_local.clone()), (zeta_next, proof.opened.trace_next.clone())])]),
+        (proof.aux_commit.clone(), vec![(ext_trace_domain, vec![(zeta, proof.opened.aux_local.clone()), (zeta_next, proof.opened.aux_next.clone())])]),
+        (proof.quotient_commit.clone(), qcd.iter().zip(&proof.opened.quotient_chunks).map(|(d, v)| (*d, vec![(zeta, v.clone())])).collect()),
+    ];
+    let fri = &proof.opening_proof;
+    let log_global: usize = fri.query_proofs[0].commit_phase_openings.iter().map(|o| o.log_arity as usize).sum::<usize>() + 4;
+    let index = (index_felts[q].as_canonical_u64() as usize) & ((1 << log_global) - 1);
+    let input_proof = &fri.query_proofs[q].input_proof;
+    let mut terms = Vec::new();
+    let mut alpha_pow = Challenge::ONE;
+    let mut ro = Challenge::ZERO;
+    let mut x_out = Val::ZERO;
+    for (batch_opening, (_, mats)) in input_proof.iter().zip(coms.iter()) {
+        for (mat_opening, (mat_domain, mat_pts)) in batch_opening.opened_values.iter().zip(mats.iter()) {
+            let log_height = log2_strict(mat_domain.size()) + 4;
+            let bits_reduced = log_global - log_height;
+            let rev = reverse_bits_len(index >> bits_reduced, log_height);
+            let x = Val::GENERATOR * Val::two_adic_generator(log_height).exp_u64(rev as u64);
+            x_out = x;
+            for (z, ps_at_z) in mat_pts.iter() {
+                let inv = (*z - x).inverse();
+                for (&p_x, &p_z) in mat_opening.iter().zip(ps_at_z.iter()) {
+                    terms.push((*z, p_z, p_x));
+                    ro += alpha_pow * (p_z - p_x) * inv;
+                    alpha_pow *= alpha;
+                }
+            }
+        }
+    }
+    // px-sharing: trace columns 0..w share px across {ζ, ζ_next}; the aux columns (next 2·aux_bw terms) too.
+    for c in 0..width {
+        assert_eq!(terms[c].2, terms[width + c].2, "trace column {c}: ζ / ζ_next share the authenticated p_x");
+    }
+    for c in 0..aux_bw {
+        assert_eq!(terms[2 * width + c].2, terms[2 * width + aux_bw + c].2, "aux column {c}: ζ / ζ_next share the authenticated p_x");
+    }
+    (terms, x_out, alpha, ro, width, aux_bw)
+}
+
+/// **Format-bridge Brick 2b — the aux-round input-Merkle oracle.** The `query_input_merkle` analogue for the
+/// LogUp aux commit: the aux row is `input_proof[1]` (round order trace=0, **aux=1**, quotient=2 — the format
+/// delta), committed at the trace's `2^log_global` height, so the authentication mirrors the trace exactly
+/// (leaf = `MyHash(row)`, binary path by index bit, cap entry `roots()[index >> depth]`). Returns
+/// `(leaf, path, cap_entry)`.
+#[cfg(test)]
+#[allow(clippy::type_complexity)]
+pub(crate) fn query_aux_merkle<A>(
+    config: &MyConfig,
+    air: &A,
+    proof: &crate::lookup::prover::LookupProof<PcsOpeningProof>,
+    pis: &[Val],
+    q: usize,
+) -> ([Val; 4], Vec<([Val; 4], bool)>, [Val; 4])
+where
+    A: crate::lookup::prover::LookupAir,
+{
+    use p3_field::PrimeField64;
+    use p3_symmetric::CryptographicHasher;
+    let (_lc, _a_stark, _zeta, _a_fri, _betas, index_felts) = lookup_transcript_challenges(config, air, proof, pis);
+    let fri = &proof.opening_proof;
+    let log_global: usize = fri.query_proofs[0].commit_phase_openings.iter().map(|o| o.log_arity as usize).sum::<usize>() + 4;
+    let index = (index_felts[q].as_canonical_u64() as usize) & ((1 << log_global) - 1);
+    let batch = &fri.query_proofs[q].input_proof[1]; // AUX batch (round 1, between trace and quotient)
+    let row = &batch.opened_values[0];
+    let hasher = MyHash::new(default_goldilocks_poseidon2_8());
+    let leaf: [Val; 4] = hasher.hash_iter(row.iter().copied());
+    let siblings = &batch.opening_proof;
+    let path: Vec<([Val; 4], bool)> = siblings.iter().enumerate().map(|(lvl, &s)| (s, (index >> lvl) & 1 == 1)).collect();
+    let depth = siblings.len();
+    let cap = proof.aux_commit.roots();
+    let cap_entry = cap[index >> depth];
+    (leaf, path, cap_entry)
+}
+
+/// **Format-bridge Brick 2b — the LookupProof commit-phase fold chain.** The `query_fold_data` analogue: seed
+/// the FRI fold with the 3-round reduced opening `ro` (`multicol_query_terms_lookup`) and fold down the commit
+/// phase at the LookupProof-transcript βs, returning `(ro, rounds, folded_eval, final0)`. `folded_eval ==
+/// final0` per query certifies the whole 3-round DEEP reduced opening (aux included) is correct — the same
+/// accept condition `phase3_fold_chain_matches_native` checks for a p3 `Proof`.
+#[cfg(test)]
+#[allow(clippy::type_complexity)]
+pub(crate) fn query_fold_data_lookup<A>(
+    config: &MyConfig,
+    air: &A,
+    proof: &crate::lookup::prover::LookupProof<PcsOpeningProof>,
+    pis: &[Val],
+    q: usize,
+) -> (Challenge, Vec<(Challenge, Challenge, bool, Val)>, Challenge, Challenge)
+where
+    A: crate::lookup::prover::LookupAir,
+{
+    use p3_field::{BasedVectorSpace, PrimeField64};
+    let to_ext = |p: [Val; 2]| Challenge::from_basis_coefficients_fn(|i| p[i]);
+    let (_lc, _a_stark, _zeta, _a_fri, betas_p, index_felts) = lookup_transcript_challenges(config, air, proof, pis);
+    let betas: Vec<Challenge> = betas_p.iter().map(|&p| to_ext(p)).collect();
+    let (_terms, _x, _alpha, ro, _w, _aw) = multicol_query_terms_lookup(config, air, proof, pis, q);
+    let fri = &proof.opening_proof;
+    let log_global: usize = fri.query_proofs[0].commit_phase_openings.iter().map(|o| o.log_arity as usize).sum::<usize>() + 4;
+    let mut start = (index_felts[q].as_canonical_u64() as usize) & ((1 << log_global) - 1);
+    let mut e = ro;
+    let mut log_current = log_global;
+    let mut rounds = Vec::new();
+    for (r, step) in fri.query_proofs[q].commit_phase_openings.iter().enumerate() {
+        let la = step.log_arity as usize;
+        let bit = start % (1usize << la);
+        let sibling = step.sibling_values[0];
+        let log_folded = log_current - la;
+        start >>= la;
+        let s = Val::two_adic_generator(log_folded + la).exp_u64(reverse_bits_len(start, log_folded) as u64);
+        let (e0, e1) = if bit == 0 { (e, sibling) } else { (sibling, e) };
+        e = crate::recursion::fri_fold::native_fold(e0, e1, betas[r], s);
+        rounds.push((sibling, betas[r], bit == 1, s));
+        log_current = log_folded;
+    }
+    (ro, rounds, e, fri.final_poly[0])
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use p3_uni_stark::verify;
+
+    /// **Format-bridge Brick 2b — the per-query LookupProof oracles are faithful.** The reduced opening +
+    /// commit-phase fold reach `final_poly[0]` for every query (certifying the 3-round DEEP opening WITH the
+    /// aux round is correct — the phase3 accept condition), and the aux leaf authenticates to the aux commit's
+    /// cap (the Merkle round the in-circuit build lays into the super-tile). Non-circular: it does not call
+    /// `verify_lookup`.
+    #[test]
+    fn native_lookup_per_query_oracles_are_faithful() {
+        use crate::lookup::prover::{balanced_main, prove_lookup_inner, LookupProof, RangeCheckAir};
+        use p3_symmetric::PseudoCompressionFunction;
+        let air = RangeCheckAir;
+        let config = make_config(1, 4);
+        let pis: Vec<Val> = vec![];
+        let proof: LookupProof<PcsOpeningProof> = prove_lookup_inner(&air, balanced_main(1 << 6), &pis, false, &config);
+        let compress = MyCompress::new(default_goldilocks_poseidon2_8());
+
+        for q in 0..proof.opening_proof.query_proofs.len() {
+            // (1) the 3-round DEEP reduced opening (aux included) folds to final_poly[0].
+            let (_ro, _rounds, folded, final0) = query_fold_data_lookup(&config, &air, &proof, &pis, q);
+            assert_eq!(folded, final0, "q{q}: 3-round reduced opening + fold must reach final_poly[0]");
+
+            // (2) the aux leaf authenticates up its path to a cap entry of the aux commitment.
+            let (leaf, path, cap_entry) = query_aux_merkle(&config, &air, &proof, &pis, q);
+            let mut node = leaf;
+            for (sib, right) in &path {
+                node = if *right { compress.compress([*sib, node]) } else { compress.compress([node, *sib]) };
+            }
+            assert_eq!(node, cap_entry, "q{q}: the aux leaf must authenticate to its aux-commit cap entry");
+            assert!(proof.aux_commit.roots().contains(&cap_entry), "q{q}: the cap entry must be in the aux commitment");
+        }
+    }
+
+    /// **Format-bridge Brick 3 (native blueprint) — the LogUp OOD constraint evaluator is faithful.** The
+    /// α-Horner fold of the inner's symbolic constraint trees — base (`eval_symbolic_native`) then the LogUp
+    /// extension constraints (`eval_symbolic_ext_native`, the NEW evaluator over the aux / challenge / terminal
+    /// leaf classes) — reproduces `batched_constraints_at_point`, the fold the real lookup verifier's OOD check
+    /// uses. This is an algebraic identity (evaluated at an arbitrary point, no proof), pinning the exact
+    /// LogUp-constraint algebra the outer in-circuit epilogue must witness — the genuinely-new soundness surface
+    /// of the format bridge. Non-circular: it re-folds the extracted trees rather than calling the verifier.
+    #[test]
+    fn logup_ext_symbolic_evaluator_matches_batched() {
+        use crate::lookup::prover::{batched_constraints_at_point, RangeCheckAir};
+        use p3_air::symbolic::AirLayout;
+        use p3_air::Air;
+        use p3_field::PrimeCharacteristicRing;
+        use p3_lookup::{InteractionSymbolicBuilder, LogUpGadget, LookupProtocol, Lookups};
+        let air = RangeCheckAir;
+        let lookups: Lookups<Val> = Lookups::from_air::<Challenge, _>(&air);
+
+        // Extract the base + ext constraint trees exactly as `combined_constraint_layout` builds them.
+        let layout = AirLayout {
+            permutation_width: lookups.len() + 1,
+            num_permutation_challenges: 2 * lookups.len(),
+            num_permutation_values: 1,
+            ..AirLayout::from_air::<Val>(&air)
+        };
+        let mut isb = InteractionSymbolicBuilder::<Val, Challenge>::new(layout);
+        air.eval(&mut isb);
+        LogUpGadget::new().eval_all(&mut isb, &lookups);
+        let base = isb.base_constraints();
+        let ext = isb.extension_constraints();
+        assert!(!ext.is_empty(), "the LogUp fraction/accumulator constraints must be present as ext trees");
+
+        // An arbitrary OOD point (the identity is algebraic — it need not be a valid trace row).
+        let c = |n: u32| Challenge::from_u32(n);
+        let trace_local = vec![c(3), c(5), c(7)];
+        let trace_next = vec![c(11), c(13), c(17)];
+        let aux_local = vec![c(19), c(23)]; // aux_width = |lookups|+1 = 2 (reconstructed ext rows)
+        let aux_next = vec![c(29), c(31)];
+        let lookup_challenges = vec![c(37), c(41)]; // [α_L, β]
+        let terminal = c(43);
+        let alpha = c(47); // the constraint-fold α
+        let (is_first, is_last, is_trans) = (c(2), c(3), c(5));
+        let pubs_ext: Vec<Challenge> = vec![];
+        let periodic: Vec<Challenge> = vec![];
+
+        // Ground truth — the real lookup verifier's fold.
+        let folded_gt = batched_constraints_at_point(
+            &air, &lookups, &trace_local, &trace_next, &aux_local, &aux_next, is_first, is_last, is_trans, alpha,
+            &lookup_challenges, &[terminal], &[], &periodic,
+        );
+
+        // Reproduce via the symbolic evaluators: base constraints then ext, α-Horner (matches the folder order).
+        let mut acc = Challenge::ZERO;
+        for cst in &base {
+            acc = acc * alpha + eval_symbolic_native(cst, &trace_local, &trace_next, &pubs_ext, &periodic, is_first, is_last, is_trans);
+        }
+        for cst in &ext {
+            acc = acc * alpha
+                + eval_symbolic_ext_native(
+                    cst, &trace_local, &trace_next, &pubs_ext, &periodic, is_first, is_last, is_trans,
+                    &aux_local, &aux_next, &lookup_challenges, &[terminal],
+                );
+        }
+        println!(
+            "Brick 3 blueprint: LogUp OOD fold — {} base + {} ext constraint trees reproduce batched_constraints_at_point",
+            base.len(),
+            ext.len()
+        );
+        assert_eq!(acc, folded_gt, "the symbolic base+ext α-Horner fold must equal batched_constraints_at_point");
+    }
+
+    /// **Format-bridge blueprint (Brick 1), validated non-circularly.** The native re-verifier
+    /// [`verify_lookup_proof_native`] accepts a real `LookupProof` (produced under the NON-salted recursion
+    /// config) and rejects every tamper of the format's novel surface — WITHOUT ever calling `verify_lookup`.
+    /// This pins the exact algorithm the outer in-circuit monolith must witness to verify a merged-wrap
+    /// `LookupProof` (the deep-tree self-composition step): the lookup transcript (aux commit + `(α_L,β)`),
+    /// the 3-round DEEP reduced opening (aux joins trace + quotient), and the OOD identity over the base **+
+    /// LogUp** constraints with the terminal check.
+    ///
+    /// - **accept** — a balanced range-check proof verifies (the whole transcript + 3-round FRI + OOD + terminal
+    ///   line up from scratch; FRI is exquisitely transcript-sensitive, so acceptance certifies the aux round is
+    ///   sequenced correctly).
+    /// - **forge_aux ⇒ reject** — a single corrupted committed aux fraction breaks `folded·Z_H^{-1} = Q(ζ)`:
+    ///   proves the LogUp fraction/accumulator constraints are actually enforced through the quotient (the OOD
+    ///   half of the bridge).
+    /// - **tampered trace opening ⇒ reject** — the reduced opening / FRI binds every opened value.
+    /// - **swapped aux commit ⇒ reject** — the aux commit is bound into the transcript (changing it diverges
+    ///   `α`/`ζ`/`α_fri` ⇒ the FRI fold misses `final_poly`).
+    #[test]
+    fn native_lookup_proof_verify_agrees_and_rejects_tampers() {
+        use crate::lookup::prover::{balanced_main, prove_lookup_inner, RangeCheckAir};
+        let air = RangeCheckAir;
+        let config = make_config(1, 4); // arity-2 FRI, 4 queries (fast); non-salted, is_zk=0
+        let main_rows = 1usize << 6;
+        let pis: Vec<Val> = vec![];
+
+        // accept a good proof (non-circular: no verify_lookup call anywhere).
+        let proof = prove_lookup_inner(&air, balanced_main(main_rows), &pis, false, &config);
+        if let Err(e) = verify_lookup_proof_native(&config, &air, &proof, &pis) {
+            panic!("native lookup verify rejected a valid LookupProof: {e}");
+        }
+
+        // forge_aux ⇒ the LogUp constraints no longer vanish on H ⇒ OOD mismatch ⇒ reject.
+        let forged = prove_lookup_inner(&air, balanced_main(main_rows), &pis, true, &config);
+        assert!(
+            verify_lookup_proof_native(&config, &air, &forged, &pis).is_err(),
+            "a forged aux (broken LogUp fraction) must be rejected by the OOD identity"
+        );
+
+        // tamper a trace opened value ⇒ the reduced opening / FRI must catch it.
+        let mut bad_open = prove_lookup_inner(&air, balanced_main(main_rows), &pis, false, &config);
+        bad_open.opened.trace_local[0] += Challenge::ONE;
+        assert!(
+            verify_lookup_proof_native(&config, &air, &bad_open, &pis).is_err(),
+            "a tampered trace opening must be rejected"
+        );
+
+        // swap the aux commit for the trace commit ⇒ the transcript diverges ⇒ FRI reject.
+        let mut bad_aux = prove_lookup_inner(&air, balanced_main(main_rows), &pis, false, &config);
+        bad_aux.aux_commit = bad_aux.trace_commit.clone();
+        assert!(
+            verify_lookup_proof_native(&config, &air, &bad_aux, &pis).is_err(),
+            "a swapped aux commit (transcript divergence) must be rejected"
+        );
+    }
 
     #[test]
     #[ignore = "slow: COMPLETE native FRI verify (the wiring) vs p3::verify"]

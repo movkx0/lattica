@@ -830,6 +830,7 @@ where
     let constraints = get_symbolic_constraints::<Val, A>(inner, AirLayout::from_air::<Val>(inner));
     let cap_height = proof.commitments.trace.roots().len().trailing_zeros() as usize;
     let air = MonolithAir {
+        narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None,
         counts: counts.clone(),
         binds: binds.clone(),
         index_binds: index_binds.clone(),
@@ -914,7 +915,7 @@ where
         &commit_data,
         &pis,
         None,
-    );
+     None,);
 
     let (is_first_f, is_last_f, inv_van_f) = (cc(is_first), cc(is_last), cc(inv_van));
     let width = air.fused_w();
@@ -1164,6 +1165,7 @@ where
             get_symbolic_constraints::<Val, A>(inner, AirLayout::from_air::<Val>(inner));
         let cap_height = proof.commitments.trace.roots().len().trailing_zeros() as usize;
         let shape_air = MonolithAir {
+        narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None,
             counts: counts.clone(),
             binds: binds.clone(),
             index_binds: index_binds.clone(),
@@ -1228,6 +1230,7 @@ where
     let constraints = get_symbolic_constraints::<Val, A>(inner, AirLayout::from_air::<Val>(inner));
     let cap_height = proof.commitments.trace.roots().len().trailing_zeros() as usize;
     let air = MonolithAir {
+        narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None,
         counts: counts.clone(),
         binds: binds.clone(),
         index_binds: index_binds.clone(),
@@ -1564,6 +1567,7 @@ fn plan_production_inner_shape(
         hiding_multicol_query_terms(config, &JoinSplitAir, &input.proof, input.public_values, 0);
     let cap_height = input.proof.commitments.trace.roots().len().trailing_zeros() as usize;
     let air = MonolithAir {
+        narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None,
         counts: counts.clone(),
         binds: binds.clone(),
         index_binds: index_binds.clone(),
@@ -1651,6 +1655,7 @@ fn plan_production_aggregate_from_parsed(
     let (counts, binds, index_binds, n_terms, cap_height, inner_trace, inner_query_segment) =
         params.ok_or(AggregationError::Empty)?;
     let air = MonolithAir {
+        narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None,
         counts,
         binds,
         index_binds,
@@ -1729,6 +1734,7 @@ fn build_instance(
         AirLayout::from_air::<Val>(&JoinSplitAir),
     );
     let air = MonolithAir {
+        narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None,
         counts,
         binds,
         index_binds,
@@ -1881,6 +1887,7 @@ fn build_production_instance(
         AirLayout::from_air::<Val>(&JoinSplitAir),
     );
     let air = MonolithAir {
+        narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None,
         counts,
         binds,
         index_binds,
@@ -2055,6 +2062,7 @@ fn build_production_store_instance(
         AirLayout::from_air::<Val>(&JoinSplitAir),
     );
     let air = MonolithAir {
+        narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None,
         counts,
         binds,
         index_binds,
@@ -2576,7 +2584,7 @@ mod tests {
             &window.commit_data,
             &window.pub_window,
             Some(&window.hiding_witnesses),
-        );
+         None,);
         window.apply_selector_window(window.air.fused_w(), &mut resident.values);
 
         let mut streamed = vec![Val::ZERO; resident.values.len()];
@@ -2783,6 +2791,7 @@ mod tests {
     fn production_outer_shape_preflight_rejects_bad_trace_height() {
         let instance = AggregateInstance {
             air: MonolithAir {
+        narrow_arith: false, narrow_caps: false, narrow_openings: false, narrow_ov: false, lookup: None,
                 counts: Vec::new(),
                 binds: Vec::new(),
                 index_binds: Vec::new(),

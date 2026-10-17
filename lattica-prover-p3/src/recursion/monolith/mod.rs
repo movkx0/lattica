@@ -49,7 +49,7 @@ mod gadgets;
 #[cfg(test)]
 mod lineage;
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests; // W2-assemble (research): expose the witness-extraction helper `sim_full` to the wrap
 
 pub(crate) use air::*;
 #[allow(unused_imports)]

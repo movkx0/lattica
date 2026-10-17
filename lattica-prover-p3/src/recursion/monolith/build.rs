@@ -149,6 +149,7 @@ pub(crate) struct MonolithTraceSource<'a> {
     commit_data: &'a [Vec<CommitRoundData>],
     pub_window: &'a [Val],
     hiding: Option<&'a [HidingWitness]>,
+    aux_paths: Option<&'a [Vec<([Val; 4], bool)>]>,
 }
 
 #[allow(dead_code)]
@@ -446,6 +447,7 @@ impl<'a> MonolithTraceSource<'a> {
             commit_data,
             pub_window,
             hiding,
+            aux_paths: None,
         }
     }
 
@@ -532,6 +534,7 @@ impl<'a> MonolithTraceSource<'a> {
                     self.quot_paths,
                     self.commit_data,
                     self.hiding,
+                    self.aux_paths,
                 );
             }
             MonolithTracePart::Padding => {
@@ -584,6 +587,7 @@ pub(crate) fn monolith_build_query_segment(
         quot_paths,
         commit_data,
         hiding,
+        None,
     );
     fill_monolith_global_columns(air, &mut segment, alpha_fri, pub_window);
     RowMajorMatrix::new(segment, w)
@@ -599,6 +603,7 @@ fn fill_monolith_query_segment(
     quot_paths: &[Vec<([Val; 4], bool)>],
     commit_data: &[Vec<CommitRoundData>],
     hiding: Option<&[HidingWitness]>,
+    aux_paths: Option<&[Vec<([Val; 4], bool)>]>,
 ) {
     use crate::recursion::fri_fold::native_fold;
     use p3_field::{BasedVectorSpace, PrimeField64};
@@ -651,17 +656,23 @@ fn fill_monolith_query_segment(
     let mut apow = Challenge::ONE;
     for (k, &(z, pz, px)) in terms.iter().enumerate() {
         let (zc, pzc) = (c(z), c(pz));
-        t[base0 + air.z(k)] = zc[0];
-        t[base0 + air.z(k) + 1] = zc[1];
-        t[base0 + air.pz(k)] = pzc[0];
-        t[base0 + air.pz(k) + 1] = pzc[1];
-        t[base0 + air.px(k)] = px;
-        let inv = c((z - Challenge::from(x)).inverse());
-        t[base0 + air.inv(k)] = inv[0];
-        t[base0 + air.inv(k) + 1] = inv[1];
-        let ap = c(apow);
-        t[base0 + air.apow(k)] = ap[0];
-        t[base0 + air.apow(k) + 1] = ap[1];
+        if !air.narrow_arith {
+            t[base0 + air.z(k)] = zc[0];
+            t[base0 + air.z(k) + 1] = zc[1];
+        }
+        if !air.narrow_openings {
+            t[base0 + air.pz(k)] = pzc[0];
+            t[base0 + air.pz(k) + 1] = pzc[1];
+        }
+        if !air.narrow_arith {
+            t[base0 + air.px(k)] = px;
+            let inv = c((z - Challenge::from(x)).inverse());
+            t[base0 + air.inv(k)] = inv[0];
+            t[base0 + air.inv(k) + 1] = inv[1];
+            let ap = c(apow);
+            t[base0 + air.apow(k)] = ap[0];
+            t[base0 + air.apow(k) + 1] = ap[1];
+        }
         apow *= *alpha;
     }
 
@@ -754,6 +765,17 @@ fn fill_monolith_query_segment(
         [Val::ZERO; 4]
     };
 
+    let (aux_preimage, aux_cap_entry): (Vec<Val>, [Val; 4]) = if air.is_lookup() {
+        let pre: Vec<Val> = (0..air.aux_base_w()).map(|cc| terms[air.trm_aux(cc)].2).collect();
+        let mut node = leaf_hash(t, M_INPUT_LEAF, &pre);
+        let start = M_INPUT_LEAF + air.aux_leaf_blocks();
+        for (l, &(sib, bit)) in aux_paths.expect("lookup auxiliary paths")[q].iter().enumerate() {
+            node = merge_block(t, start + l, node, sib, bit);
+        }
+        (pre, node)
+    } else {
+        (Vec::new(), [Val::ZERO; 4])
+    };
     let trace_cap_entry = {
         let mut node = leaf_hash(t, air.m_input_leaf(), &input_preimage);
         let start = air.m_input_leaf() + air.leaf_blocks();
@@ -786,12 +808,19 @@ fn fill_monolith_query_segment(
     }
 
     for r in 0..air.m_period() {
-        for (cc, &v) in input_preimage.iter().enumerate() {
-            t[r * w + air.ov_c(cc)] = v;
+        if !air.narrow_ov {
+            for (cc, &v) in input_preimage.iter().enumerate() {
+                t[r * w + air.ov_c(cc)] = v;
+            }
         }
         if air.is_zk == 1 {
             for (cc, &v) in random_preimage.iter().enumerate() {
                 t[r * w + air.ov_random(cc)] = v;
+            }
+        }
+        if air.is_lookup() {
+            for (cc, &v) in aux_preimage.iter().enumerate() {
+                t[r * w + air.ov_aux(cc)] = v;
             }
         }
         for (cc, &qv) in quot_preimage.iter().enumerate() {
@@ -811,6 +840,9 @@ fn fill_monolith_query_segment(
                 }
                 if air.is_zk == 1 {
                     t[r * w + air.cap_c(8 + 4 * air.cm_rounds() + k)] = random_cap_entry[k];
+                }
+                if air.is_lookup() {
+                    t[r * w + air.cap_c(8 + 4 * air.cm_rounds() + k)] = aux_cap_entry[k];
                 }
             }
         }
@@ -832,7 +864,7 @@ fn fill_monolith_global_columns(
     if air.column_window {
         use p3_field::BasedVectorSpace;
         let cc = |x: Challenge| -> [Val; 2] { x.as_basis_coefficients_slice().try_into().unwrap() };
-        let zeta = Challenge::from_basis_coefficients_fn(|k| pub_window[2 + k]);
+        let zeta = Challenge::from_basis_coefficients_fn(|k| pub_window[2 * air.nlc() + 2 + k]);
         let mut sch_vals = vec![[Val::ZERO; 2]; air.cm_rounds()];
         let mut s = zeta;
         for sv in sch_vals.iter_mut() {
@@ -862,9 +894,10 @@ pub(crate) fn monolith_build_trace(
     quot_paths: &[Vec<([Val; 4], bool)>],
     commit_data: &[Vec<CommitRoundData>],
     pub_window: &[Val], // column-window mode: inner-proof pis values (empty otherwise)
-    hiding: Option<&[HidingWitness]>, // is_zk=1 only: per-query salts + random-round path (None is_zk=0)
+    hiding: Option<&[HidingWitness]>, // is_zk=1 only
+    aux_paths: Option<&[Vec<([Val; 4], bool)>]>,
 ) -> RowMajorMatrix<Val> {
-    let source = MonolithTraceSource::new(
+    let mut source = MonolithTraceSource::new(
         air,
         block_inputs,
         per_query,
@@ -875,6 +908,7 @@ pub(crate) fn monolith_build_trace(
         pub_window,
         hiding,
     );
+    source.aux_paths = aux_paths;
     let w = source.width();
     let mut t = vec![Val::ZERO; source.height() * w];
     for range in source.ranges() {

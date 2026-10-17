@@ -54,6 +54,30 @@ pub type Dft = Radix2DitParallel<Val>;
 pub type MyPcs = HidingFriPcs<Val, Dft, ValMmcs, ChallengeMmcs, ChaCha20Rng>;
 pub type MyConfig = StarkConfig<MyPcs, Challenge, Challenger>;
 
+/// **Lean (non-hiding) PCS/config for RESEARCH proves — ~2× less prover RAM.** `TwoAdicFriPcs` has `ZK = false`,
+/// so it commits the trace at `N` rows, not the hiding PCS's `2N` (`is_zk` interleaves random rows). The dominant
+/// prover allocation is the trace re-evaluated on the quotient domain (`width × 2^(degree_bits + is_zk + log_nqc)`);
+/// dropping `is_zk` from 1 to 0 HALVES it (and the committed trace/quotient LDEs). Zero-knowledge is NOT needed for
+/// the recursion-wrap SOUNDNESS proves (they prove a verifier ran, not a private witness), so this is safe there.
+/// Same MMCS (salted Merkle) + FRI parameters as production — only the ZK trace-doubling is dropped.
+#[cfg(feature = "lookup")]
+pub type MyPcsLean = p3_fri::TwoAdicFriPcs<Val, Dft, ValMmcs, ChallengeMmcs>;
+#[cfg(feature = "lookup")]
+pub type MyConfigLean = StarkConfig<MyPcsLean, Challenge, Challenger>;
+
+/// A lean (non-hiding, `is_zk = 0`) config for heavy research proves — halves the quotient-domain LDE vs
+/// [`make_config`]. Use for the recursion-wrap proves (Brick 4d, Step 6) that OOM under hiding.
+#[cfg(feature = "lookup")]
+pub fn make_config_lean() -> MyConfigLean {
+    let perm = default_goldilocks_poseidon2_8();
+    let val_mmcs =
+        ValMmcs::new(MyHash::new(perm.clone()), MyCompress::new(perm.clone()), CAP_HEIGHT, ChaCha20Rng::from_rng(&mut rand::rng()));
+    let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
+    let fri = production_fri(challenge_mmcs);
+    let pcs = MyPcsLean::new(Dft::default(), val_mmcs, fri);
+    MyConfigLean::new(pcs, Challenger::new(perm))
+}
+
 // --- production parameters (C-04; consensus + wire pinned) --------------------------------------
 /// FRI rate: LDE blowup 2^4 (supports formal constraint degree ≤ 16 + 1 hiding).
 pub const LOG_BLOWUP: usize = 4;
@@ -296,6 +320,29 @@ pub mod gpu {
             ChaCha20Rng::from_rng(&mut rand::rng()),
         );
         MyConfigGpu::new(pcs, Challenger::new(perm))
+    }
+
+    /// **The LEAN (non-hiding) config with GPU LDE** — the Tier-1 "with GPU support" research-prove path. It is
+    /// `super::make_config_lean` with ONLY the `Dft` swapped to [`GpuDft`]: the ~2× lean RAM saving (`is_zk = 0`,
+    /// `TwoAdicFriPcs`) PLUS the GPU LDE compute offload. The `Dft` appears in neither the wire `Proof` nor `verify`,
+    /// so `TwoAdicFriPcs::Proof` is Dft-independent ⇒ a GPU-lean proof has the SAME type as a CPU-lean one and
+    /// verifies under the CPU `verify_lookup_lean` (byte-identical). Note the GPU DFT accelerates LDE *compute*; the
+    /// host-RAM win comes from the lean `is_zk=0` + the narrow-tall width merge, orthogonal to the DFT backend.
+    #[cfg(feature = "lookup")]
+    pub type MyPcsLeanGpu = p3_fri::TwoAdicFriPcs<Val, GpuDft, ValMmcs, ChallengeMmcs>;
+    #[cfg(feature = "lookup")]
+    pub type MyConfigLeanGpu = StarkConfig<MyPcsLeanGpu, Challenge, Challenger>;
+
+    /// A lean (non-hiding) config with GPU LDE — mirror of [`super::make_config_lean`], `GpuDft` for `Dft`.
+    #[cfg(feature = "lookup")]
+    pub fn make_config_lean_gpu() -> MyConfigLeanGpu {
+        let perm = default_goldilocks_poseidon2_8();
+        let val_mmcs =
+            ValMmcs::new(MyHash::new(perm.clone()), MyCompress::new(perm.clone()), CAP_HEIGHT, ChaCha20Rng::from_rng(&mut rand::rng()));
+        let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
+        let fri = production_fri(challenge_mmcs);
+        let pcs = MyPcsLeanGpu::new(GpuDft, val_mmcs, fri);
+        MyConfigLeanGpu::new(pcs, Challenger::new(perm))
     }
 
     /// Prove `air` over `trace` with `pis`, GPU-accelerated LDE. Returns wire-compatible postcard bytes
