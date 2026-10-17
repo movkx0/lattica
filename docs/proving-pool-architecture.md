@@ -37,7 +37,7 @@ distinct from proposed network services and protocol changes.
 [Block proving v2](block-proving-v2.md) controls candidate construction and release
 gates; [SPEC.md](../SPEC.md) controls protocol requirements. The
 [distributed roadmap](distributed-proving.md),
-[throughput plan](high-throughput-proving-plan.md) and
+[throughput plan](archive/high-throughput-proving-plan.md) and
 [GPU implementation plan](dag-gpu-implementation.md) retain their respective
 service, performance and implementation roles. This guide introduces no runtime
 API, allocated network format or consensus activation. Recorded tests apply to
@@ -161,7 +161,7 @@ the coordinator for the remaining critical path.
 ### Research cadence
 
 Scheduling should be event driven. Block cadence is a separate protocol choice.
-The [throughput proposal](high-throughput-proving-plan.md#5-proposed-capacity-and-cadence-specification)
+The [throughput proposal](archive/high-throughput-proving-plan.md#5-proposed-capacity-and-cadence-specification)
 keeps the nominal 90-second PoW interval and evaluates transaction blocks every
 second height instead of every eighth. That gives an expected three-minute
 transaction cadence; PoW arrivals remain variable.
@@ -181,7 +181,7 @@ assumption does not establish a new payout rule. The proposed 512-input profile'
 initial useful-rate qualification target is 100 user transactions per minute.
 
 For the three-minute research cycle, the
-[critical-path target](high-throughput-proving-plan.md#critical-path-budget) is
+[critical-path target](archive/high-throughput-proving-plan.md#critical-path-budget) is
 **60 seconds from sealing to a host-ready root and body**, including final
 verification. Measure durable application as well. This target does not replace
 the current qualification contract's 180-second complete post-seal gate or its

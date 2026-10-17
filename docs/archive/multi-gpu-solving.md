@@ -161,7 +161,7 @@ remain running. The benchmark controller was preserved before the final
 cleanup-timeout and worker-ancestor checks; the GPU binary is unchanged, and
 the actual worker parents were unlimited during these measurements.
 
-See [the complete evidence](evidence/block-v2-multi-gpu-2026-10-04.json) for
+See [the complete evidence](../evidence/block-v2-multi-gpu-2026-10-04.json) for
 binary/input hashes, per-worker budgets, actual resource use, proof hashes,
 qualification records, and cold/cached timings. Local frozen artifacts are in
 `lattica-prover-p3/target/block-v2-multi-gpu-20261003-e`; the comparison records

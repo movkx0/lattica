@@ -3,7 +3,7 @@
 > **Historical plan:** The port is complete and Plonky3 is now the live proof stack. Retained as implementation history.
 
 > **⚠ Historical / reference-only — not the v1 audit artifact.** The port (M1–M6) is complete; this is
-> the milestone record. Start at [`AUDITORS.md`](AUDITORS.md); current state is `remediation-status.md`.
+> the milestone record. Start at [`AUDITORS.md`](../AUDITORS.md); current state is `remediation-status.md`.
 
 **Decision (see `docs/framework-decision.md`):** the production spend circuit is built on **Plonky3**
 — transparent, FRI/post-quantum, **zero-knowledge** (hiding PCS), **stable** Rust, **proven-security**

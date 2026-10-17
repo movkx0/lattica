@@ -3,13 +3,13 @@
 > **Document role:** Normative parameter rationale for the production CPU proof family. Research recursion profiles are documented separately.
 
 > **⚠ Reference-only — not the v1 audit artifact.** Design guidance that predates the Plonky3 cutover;
-> the live soundness/parameter accounting is `soundness-budget.md`. Start at [`AUDITORS.md`](AUDITORS.md).
+> the live soundness/parameter accounting is `soundness-budget.md`. Start at [`AUDITORS.md`](../AUDITORS.md).
 
 **Status:** design guidance · **Audience:** protocol engineers / reviewers
 
 This document records the cryptographic parameters of the Lattica reference and the values
 recommended for a production deployment, with the rationale for each. It accompanies
-[`soundness.md`](./soundness.md), which argues why the construction is sound at these parameters
+[`soundness.md`](soundness.md), which argues why the construction is sound at these parameters
 and catalogues what remains before they can be trusted with value.
 
 > **Headline:** the current PoC parameters give only **~50-bit conjectured soundness**, and the

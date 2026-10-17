@@ -6,7 +6,7 @@
 > [Block-proving v2](block-proving-v2.md) controls the existing candidate profile
 > and release gates; [SPEC.md](../SPEC.md) controls protocol requirements.
 
-The companion [throughput engineering plan](high-throughput-proving-plan.md)
+The companion [throughput engineering plan](archive/high-throughput-proving-plan.md)
 details subtree locality, transfer accounting, capability-aware workers and
 hardware choices. It proposes evaluating 512 and then 4,096 total transactions
 at a nominal three-minute transaction cadence. The 12-minute examples below
@@ -57,7 +57,7 @@ verification needs the public block body, one final proof and an approved
 verifier/profile. No direct witness batches, in-block proof containers, multiple
 final roots, curve/SNARK wraps or reduced-security fallback are introduced.
 
-The [wallet-owned local GPU service](gpu-acceleration.md#wallet-owned-local-gpu-workers-linuxopencl)
+The [wallet-owned local GPU service](archive/gpu-acceleration-2026-10-17.md#wallet-owned-local-gpu-workers-linuxopencl)
 is an implementation option inside that wallet privacy boundary. Its resource
 assignment contains public metadata, while the wallet application retains its
 private inputs locally. This separate admission contract does not add private

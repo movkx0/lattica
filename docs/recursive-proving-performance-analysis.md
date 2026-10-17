@@ -42,7 +42,7 @@ Four user transactions/minute equals approximately **0.067 TPS**, **240/hour**, 
 | First expansion proposal | 512 total / 3 minutes | 169.3/min with four reserved issuance slots | 100 user/min, about 1.7 TPS | Research proposal |
 | Second expansion proposal | 4,096 total / 3 minutes | 1,364/min with four reserved issuance slots | 1,000 user/min, about 16.7 TPS | Research proposal |
 
-The expansion proposals come from the [high-throughput plan](high-throughput-proving-plan.md). Their four issuance slots are a sizing reservation, not an approved payout policy. They require new proof profiles, security analysis, encodings and host-chain decisions. Neither is necessary merely to raise the current nominal ceiling above four user transactions/minute, and neither is demonstrated production throughput.
+The expansion proposals come from the [high-throughput plan](archive/high-throughput-proving-plan.md). Their four issuance slots are a sizing reservation, not an approved payout policy. They require new proof profiles, security analysis, encodings and host-chain decisions. Neither is necessary merely to raise the current nominal ceiling above four user transactions/minute, and neither is demonstrated production throughput.
 
 ### Headroom and customer experience
 
@@ -258,7 +258,7 @@ The next funded work should be: establish the four-per-minute mixed-workload ben
 
 This assessment uses the inspected working tree at HEAD `eda5ee1b4a750ea58774acdb22271daafdbdd389` and evidence dated through 2026-10-02, including newer cache and opening-upload investigations. The candidate `src/block_v2/` tree inside the prover and `docs/evidence/` were untracked alongside other working changes; HEAD alone does not reproduce the inspected implementation. Each experiment's preserved source, binary and fixture pins control its scope.
 
-No new proof benchmarks or independent security audit were performed for this rewrite. Older roadmap descriptions of missing GPU or local execution features must be checked against current code; normative profile and release requirements still control. [Documentation authority rules](README.md#authority-rules) and [audit status](audit-readiness-status.md) define those boundaries.
+No new proof benchmarks or independent security audit were performed for this rewrite. Older roadmap descriptions of missing GPU or local execution features must be checked against current code; normative profile and release requirements still control. [Documentation authority rules](archive/documentation-map-2026-10-17.md#authority-rules) and [audit status](audit-readiness-status.md) define those boundaries.
 
 ### Pipeline and resource details
 
@@ -294,4 +294,4 @@ The proposed EPYC 7763 with the same eight DDR4-2400 RDIMMs remains an alternati
 - A useful worker-capacity model is `(3600 / mean_attempt_seconds) * available_fraction * valid_fraction * (1 - stale_or_duplicate_fraction)`. Self-reported compute and accepted job counts of different costs are not interchangeable capacity measures.
 - Cost and energy denominators use accepted user transactions and, once defined, settled user transactions. Root throughput across independent candidates is not automatically single-chain confirmed throughput.
 
-Engineering follow-up should use the [distributed-proving roadmap](distributed-proving.md), [DAG/GPU implementation plan](dag-gpu-implementation.md) and [throughput engineering plan](high-throughput-proving-plan.md). This brief changes no proof parameters, protocol limits, backend defaults, payment mechanism or activation status.
+Engineering follow-up should use the [distributed-proving roadmap](distributed-proving.md), [DAG/GPU implementation plan](dag-gpu-implementation.md) and [throughput engineering plan](archive/high-throughput-proving-plan.md). This brief changes no proof parameters, protocol limits, backend defaults, payment mechanism or activation status.

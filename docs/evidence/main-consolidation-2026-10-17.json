@@ -1,0 +1,368 @@
+{
+  "schema": "lattica-main-consolidation-v1",
+  "date": "2026-10-17",
+  "source_commit": "ac9c18f61c79ba6175d984fc21629e59dce6f78f",
+  "purpose": "Branch integration and correctness checks; no throughput qualification.",
+  "branches": {
+    "origin": "510d02bc0618e3fb4bd658bbe2deca82af789ccc",
+    "origin/checkpoint/apple-source-20261006": "16043929fb81a4642713c40d753119886827e582",
+    "origin/checkpoint/gpu-proving-2026-10-11": "3a296ac1518d319b8cefc52f9c39d38564709bee",
+    "origin/claude/lattica-root-layout-setup-rxpq2t": "61da35fdbeae33d4e62566044937665558a55429",
+    "origin/codex/mac-metal": "d13324f85523cc37538cda9be4ce185a9b3f9c55",
+    "origin/main": "510d02bc0618e3fb4bd658bbe2deca82af789ccc",
+    "origin/tree-tip5-research": "d0d175e241587058cb0ba04b8a5f72a6ac55addc",
+    "origin/v3": "fa9c17214c8a733261b329b696abaaa009c0c4b3",
+    "origin/verify-htlc-soundness": "5b8714f57cb16c15b343267ddbf3ecd820b5f158",
+    "origin/worktree-agent-ab0958c463d290bfb": "b79ce88b34b88a79ec057de08359bb8d2ebec65d",
+    "source": "3a296ac1518d319b8cefc52f9c39d38564709bee",
+    "source/checkpoint/gpu-proving-2026-10-11": "3a296ac1518d319b8cefc52f9c39d38564709bee",
+    "source/claude/lattica-root-layout-setup-rxpq2t": "61da35fdbeae33d4e62566044937665558a55429",
+    "source/codex/persistent-local-gpu-pool": "29a4b7c364ff76e9b201cf87e8dd79e674507348",
+    "source/linux-memory-concurrency": "5de617f962e1cfc5513e207af72476ebc604e658",
+    "source/main": "e9e35067fc3b419a54d790a71663071455f203f1",
+    "source/tree-tip5-research": "d0d175e241587058cb0ba04b8a5f72a6ac55addc",
+    "source/v3": "fa9c17214c8a733261b329b696abaaa009c0c4b3",
+    "source/verify-htlc-soundness": "5b8714f57cb16c15b343267ddbf3ecd820b5f158",
+    "source/worktree-agent-ab0958c463d290bfb": "b79ce88b34b88a79ec057de08359bb8d2ebec65d"
+  },
+  "dirty_source_snapshots": {
+    "gpu": "4193c2a",
+    "linux_concurrency": "95ae919"
+  },
+  "source_tree_preservation": "Both contributor working trees verified against their saved content/mode manifests before main checkout.",
+  "rust": {
+    "version": "1.96.0",
+    "test_binary_sha256": "bc80bda6a6aac366ed7c326e949a8c65f3db65067848f68a9a8b9a9df89f46bd",
+    "test_build": {
+      "profile": "release",
+      "opt_level": 0,
+      "lto": false,
+      "codegen_units": 256,
+      "jobs": 1
+    },
+    "test_groups": [
+      {
+        "filter": "block_v2::gpu_hash::",
+        "passed": 170,
+        "ignored": 134
+      },
+      {
+        "filter": "block_v2::worker_memory::",
+        "passed": 6,
+        "ignored": 0
+      },
+      {
+        "filter": "block_v2::execution::scheduler::",
+        "passed": 32,
+        "ignored": 0
+      },
+      {
+        "filter": "recursion::monolith::tests::monolith_query_segment_matches_resident_trace",
+        "passed": 1,
+        "ignored": 0
+      },
+      {
+        "filter": "recursion::monolith::tests::lookup_monolith_composes",
+        "passed": 1,
+        "ignored": 0
+      },
+      {
+        "filter": "recursion::monolith::tests::geometry_matches_milestone",
+        "passed": 1,
+        "ignored": 0
+      },
+      {
+        "filter": "recursion::monolith::tests::hiding_super_tile_layout_matches_witness",
+        "passed": 1,
+        "ignored": 0
+      },
+      {
+        "filter": "recursion::monolith::tests::phase7_general_epilogue_matches_oracle",
+        "passed": 0,
+        "ignored": 1
+      },
+      {
+        "filter": "recursion::monolith::tests::phase7_symbolic_epilogue_matches_oracle",
+        "passed": 0,
+        "ignored": 1
+      },
+      {
+        "filter": "tip5::",
+        "passed": 7,
+        "ignored": 0
+      },
+      {
+        "filter": "lookup::",
+        "passed": 35,
+        "ignored": 2
+      },
+      {
+        "filter": "constraint_fingerprint::",
+        "passed": 1,
+        "ignored": 0
+      }
+    ],
+    "passed": 255
+  },
+  "python_unit_test_scripts_passed": 71,
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 5080",
+    "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "driver": "615.78.08",
+    "managed_bytes_per_test": 268435456,
+    "passed_tests": [
+      "gpu_resident_matches_all_cpu_commitment_streams_across_active_clones",
+      "gpu_owned_opening_randomization_prefixes_preserve_rng_across_clones",
+      "gpu_owned_opening_admission_preserves_masks_and_salts"
+    ],
+    "base_commitment_test_run": "gpu-parity-01",
+    "owned_opening_test_run": "gpu-parity-02"
+  },
+  "default_abi": {
+    "exports": 17,
+    "recursive_research_symbols": 0,
+    "block_v2_symbols": 0,
+    "tip5_lookup_wrap_tree_symbols": 0
+  },
+  "documentation": {
+    "markdown_documents_checked": 58,
+    "broken_local_links": 0,
+    "historical_evidence_preserved": true
+  },
+  "limitations": [
+    "Metal was cross-compiled on Linux; no Metal runtime test was possible.",
+    "The optional lookup_monolith_proves test exceeded its 120-second deadline in the unoptimized build. Focused lookup composition and trace tests passed; the full research proof is not newly qualified.",
+    "No full-capacity GPU throughput campaign or cross-hardware speed comparison was performed.",
+    "Validation binaries were built without optimization and must not be used for performance claims."
+  ],
+  "corrected_findings": [
+    "Raised denominator-cache host metadata reservation to include modern device allocation handles.",
+    "Moved scheduler identity hashing out of the Linux-only launch module.",
+    "Gated OpenCL-only wallet tests on the implemented backend.",
+    "Updated portable synthetic test fixtures and the default ABI isolation checker."
+  ],
+  "checks": [
+    {
+      "id": "python-scripts-04",
+      "command": [
+        "python3",
+        "/tmp/lattica-integration-control-20261017/python_tests.py"
+      ],
+      "result": {
+        "exit": 0,
+        "seconds": 34.69865781800763
+      },
+      "cgroup": {
+        "memory.max": "3221225472",
+        "memory.peak": "467247104",
+        "memory.swap.max": "0",
+        "memory.swap.peak": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "cpu.max": "400000 100000"
+      },
+      "output_sha256": "c3fde71bf1010da0d3671c65ebe006e1cd43e13947e9b12309cfdd5856c4e00f"
+    },
+    {
+      "id": "focused-rust-02",
+      "command": [
+        "python3",
+        "/tmp/lattica-integration-control-20261017/rust_tests.py"
+      ],
+      "result": {
+        "exit": 0,
+        "seconds": 23.697061808998114
+      },
+      "cgroup": {
+        "memory.max": "3221225472",
+        "memory.peak": "982192128",
+        "memory.swap.max": "0",
+        "memory.swap.peak": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "cpu.max": "400000 100000"
+      },
+      "output_sha256": "58ef15298d8146d89cc6f5c6afadea0e863f2f007d12dabd35c0755eb6abb7fd"
+    },
+    {
+      "id": "gpu-parity-02",
+      "command": [
+        "python3",
+        "/tmp/lattica-integration-control-20261017/gpu_tests.py"
+      ],
+      "result": {
+        "exit": 0,
+        "seconds": 1.0583051409921609
+      },
+      "cgroup": {
+        "memory.max": "3221225472",
+        "memory.peak": "148557824",
+        "memory.swap.max": "0",
+        "memory.swap.peak": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "cpu.max": "400000 100000"
+      },
+      "output_sha256": "3e01be2881f63dc66490d2762cba5db43877a48aca7a4a086c1bda4da34cb6db"
+    },
+    {
+      "id": "metal-cross-check-03",
+      "command": [
+        "cargo",
+        "check",
+        "--offline",
+        "--locked",
+        "--release",
+        "--target",
+        "aarch64-apple-darwin",
+        "--no-default-features",
+        "--features",
+        "block-v2-host,stream,gpu-metal",
+        "--all-targets"
+      ],
+      "result": {
+        "exit": 0,
+        "seconds": 8.925267472994165
+      },
+      "cgroup": {
+        "memory.max": "3221225472",
+        "memory.peak": "992436224",
+        "memory.swap.max": "0",
+        "memory.swap.peak": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "cpu.max": "400000 100000"
+      },
+      "output_sha256": "246c82e0d0730d5ec297ec22c0e2b92f751f7046a705f13c2c573e311c08a566"
+    },
+    {
+      "id": "cpu-capacity-check-01",
+      "command": [
+        "cargo",
+        "check",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "--features",
+        "block-v2-host,block-v2-capacity-128,stream,tree",
+        "--all-targets"
+      ],
+      "result": {
+        "exit": 0,
+        "seconds": 18.18427325099765
+      },
+      "cgroup": {
+        "memory.max": "3221225472",
+        "memory.peak": "1028902912",
+        "memory.swap.max": "0",
+        "memory.swap.peak": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "cpu.max": "400000 100000"
+      },
+      "output_sha256": "d0f7f61795a16407f5116c3aa1de1bc92eea18142f05b2dd4fc192363aa6b319"
+    },
+    {
+      "id": "final-cpu64-check-01",
+      "command": [
+        "cargo",
+        "check",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "--features",
+        "block-v2-host,stream",
+        "--all-targets"
+      ],
+      "result": {
+        "exit": 0,
+        "seconds": 10.621189368001069
+      },
+      "cgroup": {
+        "memory.max": "3221225472",
+        "memory.peak": "929271808",
+        "memory.swap.max": "0",
+        "memory.swap.peak": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "cpu.max": "400000 100000"
+      },
+      "output_sha256": "ea1994e344f4b327f3e169a5383f0c7cf5ad26b496dbc44974cbcef7ecd941db"
+    },
+    {
+      "id": "default-abi-build-03",
+      "command": [
+        "bash",
+        "scripts/check-abi-symbols.sh"
+      ],
+      "result": {
+        "exit": 0,
+        "seconds": 1.061728998000035
+      },
+      "cgroup": {
+        "memory.max": "6442450944",
+        "memory.peak": "28876800",
+        "memory.swap.max": "0",
+        "memory.swap.peak": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "cpu.max": "400000 100000"
+      },
+      "output_sha256": "9b11b63c9e7fa37bbebe9b76251fc7a396fed1a96fbb47b98c3053820c639e76"
+    },
+    {
+      "id": "zig-tests-64-01",
+      "command": [
+        "zig",
+        "build",
+        "--build-file",
+        "../build.zig",
+        "test",
+        "-j2",
+        "--cache-dir",
+        "/home/access/code/lattica/.tools/main-integration-20261017/zig-cache",
+        "--global-cache-dir",
+        "/home/access/code/lattica/.tools/main-integration-20261017/zig-global-cache"
+      ],
+      "result": {
+        "exit": 0,
+        "seconds": 18.129771575011546
+      },
+      "cgroup": {
+        "memory.max": "3221225472",
+        "memory.peak": "366616576",
+        "memory.swap.max": "0",
+        "memory.swap.peak": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "cpu.max": "400000 100000"
+      },
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "zig-tests-128-01",
+      "command": [
+        "zig",
+        "build",
+        "--build-file",
+        "../build.zig",
+        "test",
+        "-Dblock-capacity=128",
+        "-j2",
+        "--summary",
+        "all",
+        "--cache-dir",
+        "/home/access/code/lattica/.tools/main-integration-20261017/zig-cache",
+        "--global-cache-dir",
+        "/home/access/code/lattica/.tools/main-integration-20261017/zig-global-cache"
+      ],
+      "result": {
+        "exit": 0,
+        "seconds": 14.323596065005404
+      },
+      "cgroup": {
+        "memory.max": "3221225472",
+        "memory.peak": "167841792",
+        "memory.swap.max": "0",
+        "memory.swap.peak": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+        "cpu.max": "400000 100000"
+      },
+      "output_sha256": "08ccb2f110e65d6a41802534c93c8537896156d90b7c3fcd403c33f25cbdd631"
+    }
+  ]
+}

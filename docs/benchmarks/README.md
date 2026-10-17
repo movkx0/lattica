@@ -12,7 +12,7 @@ It is a standalone HTML5 report: no server, package install, network connection
 or original benchmark directory is needed.
 
 The purpose is to measure useful transaction throughput and development against
-the [P0–P5 engineering roadmap](../high-throughput-proving-plan.md#8-engineering-project-plan).
+the [P0–P5 engineering roadmap](../archive/high-throughput-proving-plan.md#8-engineering-project-plan).
 Apple silicon and Linux/OpenCL are development tracks. There is no hardware
 leaderboard.
 

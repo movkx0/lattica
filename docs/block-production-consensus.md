@@ -67,7 +67,7 @@ new host/proof profile; they are not changes to the recorded cadence or capacity
 Proof-worker compensation is a separate service/economic design and does not
 change the PoW reward split below.
 
-The companion [throughput engineering plan](high-throughput-proving-plan.md)
+The companion [throughput engineering plan](archive/high-throughput-proving-plan.md)
 proposes evaluating 512 and then 4,096 total transactions every second height
 slot, retaining the nominal 90-second PoW interval. This would give an expected
 three-minute transaction cadence. It requires new reward/emission, capacity,

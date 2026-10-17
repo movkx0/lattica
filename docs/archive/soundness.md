@@ -1,9 +1,9 @@
 # Lattica — Soundness Argument and Gap Analysis
 
-> **Historical analysis:** Superseded for production parameters by [`soundness-budget.md`](soundness-budget.md); retained for the design record.
+> **Historical analysis:** Superseded for production parameters by [`soundness-budget.md`](../soundness-budget.md); retained for the design record.
 
 > **⚠ Historical / reference-only — not the v1 audit artifact.** Superseded for the production stack by
-> `soundness-budget.md` (the C-04 ~103/127-bit accounting). Start at [`AUDITORS.md`](AUDITORS.md).
+> `soundness-budget.md` (the C-04 ~103/127-bit accounting). Start at [`AUDITORS.md`](../AUDITORS.md).
 
 **Status:** written argument for the *implemented* construction + design for the remaining work
 **Scope:** the zero-knowledge FRI-STARK in `src/stark.zig` and its use in `src/circuit.zig`
@@ -11,7 +11,7 @@
 This document gives a written soundness, completeness, and zero-knowledge argument for the proof
 system as implemented, states its assumptions, and is explicit about what is **not** yet proven
 or built (the R1/R3 gaps). It is an engineering argument, **not** a formal proof, and the system
-has **not** been externally audited. See [`parameters.md`](./parameters.md) for the numeric
+has **not** been externally audited. See [`parameters.md`](parameters.md) for the numeric
 parameters referenced here.
 
 ---

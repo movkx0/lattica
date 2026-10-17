@@ -1,0 +1,104 @@
+# Comparing GPU performance
+
+Use a clean checkout of `main`, then pin one commit for the entire comparison. Rebuild and requalify after changing source, driver, proof capacity, or resource settings. The branch consolidation does not establish a new throughput result.
+
+## Supported runners
+
+| Hardware | Workflow | Current boundary |
+|---|---|---|
+| NVIDIA on Linux | OpenCL plus the typed systemd controllers below | Requires `nvidia-smi`, OpenCL inventory, cgroups, and a systemd user session. |
+| Apple Silicon | [Native Metal recipe](../lattica-prover-p3/scripts/apple-current-benchmark-README.txt) | Run correctness qualification on the Mac before timing. Its eight-input screen differs from the Linux typed workload. |
+| AMD or Intel OpenCL | Backend development | The Linux admission controller currently joins NVIDIA UUIDs to OpenCL devices. Portable inventory/admission and device qualification are still needed. |
+
+Do not bypass resource admission to run another vendor. A backend compiling is not hardware qualification.
+
+## Freeze the comparison
+
+Record the commit, dirty-tree status, CPU/RAM, GPU model/UUID/VRAM, driver/OpenCL runtime, power mode, and toolchain versions. Use AC power where applicable and stop other compute workloads.
+
+From the repository root:
+
+```sh
+git switch main
+git pull --ff-only origin main
+git rev-parse HEAD
+git status --short
+rustc --version
+nvidia-smi --query-gpu=uuid,name,memory.total,driver_version --format=csv
+```
+
+Keep the proof profile, fixture, CPU thread budget, memory budgets, and timing boundary identical across devices. If GPU-specific budgets differ, report them explicitly. Preserve successful and failed attempt directories; use a fresh path every time.
+
+## Linux: build separate binaries
+
+Requirements: Rust 1.96, Python 3, an OpenCL ICD and development loader, NVIDIA management tools, and a working `systemctl --user`. The example builds the default 64-entry candidate profile. Builds are outside timing and use bounded resources; adjust the build cap to fit the host.
+
+```sh
+cd lattica-prover-p3
+systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 -p CPUQuota=200% \
+  env CARGO_BUILD_JOBS=1 cargo build --locked --release --no-default-features \
+  --features block-v2-wide-lanes,stream --bin block-v2-paired-probe \
+  --target-dir target/bench-cpu
+systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 -p CPUQuota=200% \
+  env CARGO_BUILD_JOBS=1 cargo build --locked --release --no-default-features \
+  --features block-v2-wide-lanes,stream,gpu --bin block-v2-paired-probe \
+  --target-dir target/bench-gpu
+
+cpu_binary="$PWD/target/bench-cpu/release/block-v2-paired-probe"
+gpu_binary="$PWD/target/bench-gpu/release/block-v2-paired-probe"
+"$cpu_binary" capacity
+"$gpu_binary" capacity
+sha256sum "$cpu_binary" "$gpu_binary"
+```
+
+For the separate 128-entry profile, add `block-v2-capacity-128` to **both** feature lists, use separate target directories, and pass `--block-capacity 128` to preparation and runs. Regenerate fixtures and keys. Capacities 256 and 512 are not supported primary profiles.
+
+## Prepare public inputs and run one device
+
+The preparation controller can generate a synthetic public fixture from a fresh checkout. It does not depend on ignored benchmark artifacts. Preparation and registration can be substantial; their resource checks must pass before work starts.
+
+```sh
+benchmark_dir="$PWD/benchmark-results/gpu-comparison-$(date -u +%Y%m%dT%H%M%SZ)"
+python3 scripts/block-v2-typed-cpu-prepare.py \
+  --construction paired --block-capacity 64 --cpu-binary "$cpu_binary" \
+  --evidence "$benchmark_dir/preparation"
+```
+
+Set `gpu_uuid` to the exact UUID from `nvidia-smi`, then run the compact bootstrap screen:
+
+```sh
+gpu_uuid=GPU-REPLACE_WITH_DEVICE_UUID
+python3 scripts/block-v2-typed-gpu-run.py \
+  --construction paired --ram-admission compact --block-capacity 64 \
+  --gpu-binary "$gpu_binary" --cpu-binary "$cpu_binary" \
+  --fixture "$benchmark_dir/preparation/fixture" --gpu-uuid "$gpu_uuid" \
+  --count 4 --scratch /tmp --evidence "$benchmark_dir/device-a-count4-r1"
+```
+
+This exercises GPU-assisted recursive aggregation and a separate CPU root audit. It is not an assertion that every prover stage ran on the GPU. The controller retains assignments, source/binary pins, outputs, telemetry, and audit results. Admission failures stop the attempt; do not remove the limits to obtain a timing.
+
+Repeat with a new evidence path and another UUID while retaining the same binaries and public fixture. Start with count 4, then use 8, 16, 32, and 64 as resources permit. Qualify each count/device combination before making a full-capacity claim. Use at least three successful repeats per setting for a performance comparison and retain variation, not just the fastest run.
+
+Persistent device-owned proving, preseal work, recovery, and durable native delivery use the more extensive [pool workflow](../lattica-prover-p3/scripts/block-v2-pool-README.txt) and `block-v2-typed-shared-gpu-run.py --help`. Qualify that execution mode separately from this bootstrap screen.
+
+## Starting settings
+
+Use one worker per GPU. Keep the controller's admission model: managed buffers, maximum allocation, driver/context allowance, free-memory headroom, host RAM, and scratch all matter. Additional VRAM does not by itself imply higher throughput.
+
+The retained RTX 5080 [128-entry experiment](evidence/block-v2-parallel-aggregation-128-2026-10-17.json) measured 602.367 seconds sequentially versus 732.593 seconds with two workers on one device: 17.8% lower throughput with concurrency. That single-block experiment excluded wallet generation, key preparation, and audits. The [VRAM experiment](evidence/block-v2-gpu-vram-comparison-2026-10-16.json) also found no useful speedup from its larger memory settings. These observations guide the starting point, not another GPU's tuning.
+
+## Report the same timing boundary
+
+For each run, retain:
+
+- Commit and binary hashes, device/runtime identity, capacity, fixture hash, and all settings.
+- Total entries, user transactions, issuance entries, and fresh recursive proofs.
+- Preparation/registration, aggregation, CPU audit, and durable-delivery durations separately.
+- Host RAM and GPU memory peaks, scratch use, errors, retries, and audit outcome.
+- Median and range across repeats, with the number of attempts and failures.
+
+`transactions/hour = verified user transactions × 3600 / elapsed seconds`.
+
+If elapsed time covers only aggregation, label the result **aggregation throughput**. End-to-end delivered throughput must include the declared wallet/preparation boundary, final audit, and durable host acceptance. Do not count issuance as user payments or recursive proofs as transactions. Apple and Linux reports with different workloads or timing boundaries cannot establish a hardware speed ratio.
+
+Historical evidence stays in [evidence/](evidence) and the [benchmark report](benchmarks/README.md). The [archive](archive/README.md) retains older commands and progress logs for provenance.

@@ -14,9 +14,9 @@ redetected, all workers are stopped, and resource accounting recorded zero
 memory-limit or OOM events. The original interrupted 32-input attempt and the
 observer launch failure remain retained.
 
-The [capacity qualification](evidence/block-v2-vram16-capacity-qualification-2026-10-06-r1.json)
+The [capacity qualification](../evidence/block-v2-vram16-capacity-qualification-2026-10-06-r1.json)
 contains the complete results and provenance. The
-[r41 readiness snapshot](evidence/block-v2-throughput-readiness-2026-10-06-r41.json)
+[r41 readiness snapshot](../evidence/block-v2-throughput-readiness-2026-10-06-r41.json)
 preserves the remaining gates. Capacity is established for this fixture;
 complete cold-start, post-seal timing and sustained delivered throughput are
 still unqualified. The four-of-five native cache comparison remains incomplete,
@@ -24,13 +24,13 @@ and the cache remains opt-in.
 
 Next, use the retained full-size quotient/opening profiles to choose a declared
 latency comparison and execute the
-[current-source Metal recipe](../lattica-prover-p3/scripts/apple-current-benchmark-README.txt)
+[current-source Metal recipe](../../lattica-prover-p3/scripts/apple-current-benchmark-README.txt)
 on the Mac. GPU resource calibration, concurrent execution and complete timing
 boundaries need their own evidence. No further workstation experiment was
 started for this publication.
 
 The deployment target remains four useful user transactions/minute, measured
-by the gated [two-hour development pilot](benchmarks/README.md#two-hour-throughput-pilot).
+by the gated [two-hour development pilot](../benchmarks/README.md#two-hour-throughput-pilot).
 It has not started. The larger capacity/cadence and remote-fleet proposals below
 remain later research work. Apple Silicon and Linux/OpenCL measurements track
 transaction throughput and development milestones within their declared scopes.
@@ -41,7 +41,7 @@ The merged baseline is revision `094cade`. Both NVIDIA GPUs completed an
 eight-wallet run with seven fresh recursive proofs and an independent CPU root
 audit. The recorded worker times were **224.395 s** and **257.327 s**. These are
 calibration observations with different device budgets; they do not establish a
-matched speedup. The [baseline JSON](evidence/block-v2-merged-baseline-2026-10-04.json)
+matched speedup. The [baseline JSON](../evidence/block-v2-merged-baseline-2026-10-04.json)
 retains source and binary hashes, resource limits, results and profiles.
 
 The direct-readback candidate removes the second host matrix used during the
@@ -66,7 +66,7 @@ Sequential pairs took 410.973–450.391 s; concurrent pairs took
 controller startup, fixture copying, worker execution, CPU audits and cleanup.
 All memory-limit and OOM counters stayed at zero, and all 20 root hashes were
 distinct. These jobs reuse public wallet proofs and do not measure delivered
-transactions. The [candidate JSON](evidence/block-v2-direct-readback-2026-10-04.json)
+transactions. The [candidate JSON](../evidence/block-v2-direct-readback-2026-10-04.json)
 retains device-specific budgets, checks and results.
 
 Five further alternating banded/direct pairs passed **10 independent CPU root
@@ -81,21 +81,21 @@ Mixed roots still need their own qualifications. Removing the reorder buffer
 reduces the admission model's peak; later phases still dominate measured
 whole-job memory, so the removed allocation is not a claimed whole-job RAM saving.
 
-The [Mac benchmark package](evidence/block-v2-apple-benchmark-package-2026-10-04.json)
+The [Mac benchmark package](../evidence/block-v2-apple-benchmark-package-2026-10-04.json)
 is prepared: pinned merged proof sources, the public fixture, nine fresh Metal
 trials, hardware qualification, independent CPU root audits and portable JSON
 export. Its instructions are in
-[`apple-benchmark-package-README.txt`](../lattica-prover-p3/scripts/apple-benchmark-package-README.txt).
+[`apple-benchmark-package-README.txt`](../../lattica-prover-p3/scripts/apple-benchmark-package-README.txt).
 Mac execution remains pending. The three settings measure quotient control,
 deferred timing, and compact prover data with deferred timing on the same Mac.
 
-The [mixed-root research tooling](evidence/block-v2-typed-tooling-2026-10-04.json)
+The [mixed-root research tooling](../evidence/block-v2-typed-tooling-2026-10-04.json)
 prepares 64 distinct public transactions under a shared anchor, groups wrappers
 by type while preserving tree order, pads to depth six, and exposes an independent
 CPU root/body audit. Rust and Zig agree at all nine required counts. The CPU
 reference plans **127 recursive proofs for 64 transactions**.
 
-The first [mixed GPU root](evidence/block-v2-typed-gpu-2026-10-04.json) passed:
+The first [mixed GPU root](../evidence/block-v2-typed-gpu-2026-10-04.json) passed:
 **four ordered inputs** (JoinSplit, HTLC redeem, HTLC refund and issuance),
 **15 fresh recursive proofs**, **515.810 seconds**, and a **1,683,948-byte root**.
 A separate CPU process audited the root, public body, expected policy and five
@@ -109,7 +109,7 @@ observed context peak was 209,713,424 bytes across 66 samples; this observation
 does not qualify a smaller allowance. CPU fixture/key preparation separately
 took 280.000 seconds. Other counts, devices, budgets, concurrent mixed jobs and
 durable host application remain unqualified. Instructions are in
-[`typed-benchmark-README.txt`](../lattica-prover-p3/scripts/typed-benchmark-README.txt).
+[`typed-benchmark-README.txt`](typed-benchmark-2026-10-17.txt).
 
 Corrected profiling now includes the adapted quotient, FRI and opening modules.
 Four canonical empty proofs took **141.927 seconds** and four padding merges took
@@ -119,14 +119,14 @@ polynomial span was 132.439 seconds and GPU opening span was 108.367 seconds;
 these inclusive phase spans overlap with other work and must not be summed.
 Batch inversion, SIMD evaluation and Rayon parallelism already exist.
 
-The [finalizer compiler prototype](evidence/block-v2-typed-finalizer-2026-10-04.json)
+The [finalizer compiler prototype](../evidence/block-v2-typed-finalizer-2026-10-04.json)
 uses a separate six-key research registry. Its constraint checks cover every
 count from 1 through 32 and reject altered child statements using a real inner
 proof. The finalizer has **129,983 active rows** and fits the current 262,144-row
 shared height. For count four, its plan uses **eight recursive proofs instead of
 fifteen**.
 
-The first [finalizer GPU qualification](evidence/block-v2-typed-finalizer-gpu-2026-10-04.json)
+The first [finalizer GPU qualification](../evidence/block-v2-typed-finalizer-gpu-2026-10-04.json)
 now passes. All six registry keys were prepared on the CPU, and the separate
 finalizer executable produced **eight fresh recursive proofs in 249.370 seconds**
 for the same four public inputs: three user transactions and one issuance.
@@ -149,7 +149,7 @@ counts and concurrent mixed jobs remain unqualified. Compact admission on each
 device is qualified below. The
 full-64 construction still needs 127 recursive proofs.
 
-The [five-pair comparison](evidence/block-v2-typed-comparison-2026-10-04.json)
+The [five-pair comparison](../evidence/block-v2-typed-comparison-2026-10-04.json)
 is complete. All ten fresh roots passed independent CPU audits, covering
 **115 recursive proofs**. Reference median worker time was **439.256 seconds**;
 finalizer median was **252.768 seconds**. The median reduction calculated within
@@ -160,7 +160,7 @@ counters were zero, and six mutations of a reference root were rejected.
 This establishes a count-four aggregation milestone on the laptop GPU. It does
 not include wallet proving or durable host application.
 
-The [compact-memory qualification](evidence/block-v2-typed-compact-multi-gpu-2026-10-04-r2.json)
+The [compact-memory qualification](../evidence/block-v2-typed-compact-multi-gpu-2026-10-04-r2.json)
 now passes on each GPU. Compact GPU storage was already enabled; the change
 replaces the full retained-LDE admission bound with the bound for that storage
 mode while retaining the phase memory model and resource margins. The new
@@ -192,7 +192,7 @@ application. This single pair established correctness and supplied one timing
 observation. The repeated calibrated comparison below is now complete. Each GPU produced an
 independent root. Both earlier admission failures remain in the evidence.
 
-[Exact-profile context calibration](evidence/block-v2-typed-calibrated-multi-gpu-2026-10-04.json)
+[Exact-profile context calibration](../evidence/block-v2-typed-calibrated-multi-gpu-2026-10-04.json)
 now passes on both GPUs, sequentially and concurrently. Each device supplied
 76 context samples from two prior audited roots. The laptop peak was about
 **200 MiB** and the desktop peak about **266 MiB**. Applying the existing
@@ -207,7 +207,7 @@ it does not establish a performance change caused by lowering the allowance.
 The controller and comparison runner passed **34 Python tests**. The prover
 binaries are unchanged, and their 156 captured source files were revalidated.
 
-[Repeated calibrated fleet qualification](evidence/block-v2-typed-calibrated-repetitions-2026-10-04.json)
+[Repeated calibrated fleet qualification](../evidence/block-v2-typed-calibrated-repetitions-2026-10-04.json)
 has passed all **five alternating matched pairs**. All **20 roots** passed
 independent CPU audits, covering **160 fresh recursive proofs**, with zero worker
 or parent memory-event deltas. Input, binary, resource-assignment and artifact
@@ -228,7 +228,7 @@ transaction throughput remains unmeasured. The report now selects this repeated
 mixed-root comparison and withholds rates for incomplete campaigns. Its
 **40 Python report tests** passed.
 
-[The paired typed compiler](evidence/block-v2-typed-pairs-compiler-2026-10-04.json)
+[The paired typed compiler](../evidence/block-v2-typed-pairs-compiler-2026-10-04.json)
 now passes interpreter and geometry checks under a separate twelve-key registry.
 All sixteen ordered combinations of the four fixture types passed, including
 HTLC redeem/refund, forged left/right proofs, count-one padding and registry
@@ -241,7 +241,7 @@ active rows**, leaving only 2,085 rows of margin. The proof plan changes
 count-four from **8 to 4 proofs** and full-64 from **127 to 63**. These compiler checks preceded the first paired GPU qualification below. The six-key fleet
 qualification above remains specific to that earlier construction.
 
-[The first paired GPU root](evidence/block-v2-typed-paired-gpu-2026-10-05.json)
+[The first paired GPU root](../evidence/block-v2-typed-paired-gpu-2026-10-05.json)
 now passes its independent CPU audit. The new session, probe, worker profile and
 key format use twelve trusted keys. **50 Rust tests and 53 Python tests passed**;
 Rust and Zig agree on native commitments and plans for all nine required counts.
@@ -257,7 +257,7 @@ Rayon threads, a 38.75 GiB worker cap, 7 GiB managed GPU memory and a provisiona
 **133.366 seconds**. Wallet proving, registry preparation and durable host
 application are excluded. This first run established correctness for one assignment.
 
-[The five-pair finalizer/paired comparison](evidence/block-v2-typed-paired-comparison-2026-10-05.json)
+[The five-pair finalizer/paired comparison](../evidence/block-v2-typed-paired-comparison-2026-10-05.json)
 now passes on the laptop GPU: **10 independently CPU-audited roots and 60 fresh
 recursive proofs**. Median worker time fell from **238.312 seconds** with eight
 finalizer proofs to **135.675 seconds** with four paired proofs. The median
@@ -273,7 +273,7 @@ windows and withholds both rates if a trial, source pin or run mapping is incomp
 This qualification does not transfer the six-key fleet's context measurements
 to paired proving.
 
-[Paired per-device calibration](evidence/block-v2-typed-paired-calibration-2026-10-05.json)
+[Paired per-device calibration](../evidence/block-v2-typed-paired-calibration-2026-10-05.json)
 now passes on both GPUs. The desktop GPU produced four fresh proofs in
 **171.875 seconds**, with an independent CPU audit, a 1,683,948-byte root,
 **15.762 GiB** peak charged RAM and zero memory events. This standalone run used
@@ -289,7 +289,7 @@ records. **34 controller tests pass**; both earlier preparation failures remain 
 The new fixed paired fleet assignment uses **12 / 11 Rayon threads**, **7 / 6 GiB
 managed GPU memory**, **18 GiB RAM and 14.25 GiB spill per worker**, and a
 37.5 GiB fleet cap with no swap. Live admission passed with 46.208 GiB available
-RAM. [Five alternating sequential/concurrent pairs](evidence/block-v2-typed-paired-repetitions-2026-10-05.json)
+RAM. [Five alternating sequential/concurrent pairs](../evidence/block-v2-typed-paired-repetitions-2026-10-05.json)
 completed with **20 independently CPU-audited roots and 80 fresh proofs**.
 Median two-root elapsed time was **316.521 seconds sequential / 197.872 seconds
 concurrent**. The median reduction within pairs was **37.486%**
@@ -299,15 +299,15 @@ issuance, wallet proving, registration and durable host application. All worker
 and parent memory-event deltas were zero. Each GPU proves an independent root;
 these results cover count four and the exact pinned assignment above.
 
-[Paired phase profiling](evidence/block-v2-typed-paired-phase-profile-2026-10-05.json)
+[Paired phase profiling](../evidence/block-v2-typed-paired-phase-profile-2026-10-05.json)
 identifies quotient computation and opening work as optimization targets. The
 median FRI query span was **12.021 seconds**, including transforms, transfers and
 proof assembly. Inclusive phase spans overlap and cannot be summed.
 
 The opt-in query-gather implementation passed GPU reconstruction checks on both
-cards and a [full-size count-four root qualification](evidence/block-v2-query-gather-gpu-2026-10-05.json)
+cards and a [full-size count-four root qualification](../evidence/block-v2-query-gather-gpu-2026-10-05.json)
 on the laptop GPU, including seven rejection tests. Its
-[five matched row/gather pairs](evidence/block-v2-query-gather-comparison-2026-10-05.json)
+[five matched row/gather pairs](../evidence/block-v2-query-gather-comparison-2026-10-05.json)
 produced **10 CPU-audited roots and 40 fresh proofs**, with zero memory events.
 Median worker time was **133.599 seconds rows / 133.298 seconds gather**. The
 median within-pair reduction was **0.225%**, ranging from **−0.668% to 0.918%**;
@@ -321,13 +321,13 @@ solving-time improvement, so **row readback remains the default**. The Metal
 implementation remains untested on a Mac. The controller and report now pin the
 query mode and reject incomplete or inconsistent comparisons.
 
-The [count-matrix controller](evidence/block-v2-typed-count-matrix-tooling-2026-10-05.json)
+The [count-matrix controller](../evidence/block-v2-typed-count-matrix-tooling-2026-10-05.json)
 is implemented and frozen. It revalidated both existing count-four roots and
 runs new counts serially with conservative admission based on the actual GPU,
 CPU capacity, available RAM and spill space. It does not transfer count-four
 context calibration to other counts. **155 controller and report tests pass**.
 
-The [completed count matrix](evidence/block-v2-typed-count-matrix-2026-10-05.json)
+The [completed count matrix](../evidence/block-v2-typed-count-matrix-2026-10-05.json)
 passes **all 18 count/device combinations**: counts **1, 2, 3, 4, 8, 16, 32, 63
 and 64** on each GPU. Final analysis revalidated **16 new CPU-audited roots and
 380 new recursive proofs**, plus two retained count-four roots containing eight
@@ -348,7 +348,7 @@ repeated timing comparison. The count-64 fixture rates are **1.702 / 1.308 usefu
 inputs per minute**, excluding issuance. Neither run qualifies the **600-second
 complete cold-full-64 target** or delivered transaction throughput.
 
-The [count-level phase analysis](evidence/block-v2-count-phase-analysis-2026-10-05.json)
+The [count-level phase analysis](../evidence/block-v2-count-phase-analysis-2026-10-05.json)
 validates profiling counters for all 18 roots. **Eight count-analysis tests and
 six phase-analysis tests pass.** At count 64, preprocessing ran only three times:
 **20.835 / 26.805 seconds**. The existing one-program cache already reuses setup
@@ -358,7 +358,7 @@ can overlap other reported work and must not be summed. These observations
 prioritize quotient and opening work over more preprocessing caching for full
 trees; they do not establish a new optimization's speedup.
 
-The [native host validation](evidence/block-v2-host-validation-2026-10-05-r4.json)
+The [native host validation](../evidence/block-v2-host-validation-2026-10-05-r4.json)
 now passes all **11 steps**: 13 Python persistence tests, seven native application
 tests, four complete-body codec tests, a genesis fixture test, the full Zig
 regression suite, four Rust ABI tests, library/probe builds, bridge linkage, two
@@ -368,7 +368,7 @@ and Rust leaf statements produce the same ordered root. The ciphertext API now
 exposes read-only slices; chain application still makes owned copies. The earlier
 compiler and tagged-union test failures remain retained with their source archives.
 
-The [positive native journal qualification](evidence/block-v2-native-host-qualification-2026-10-05.json)
+The [positive native journal qualification](../evidence/block-v2-native-host-qualification-2026-10-05.json)
 passes **55 checks using real proofs**. Two matching count-four recursive roots
 passed independent CPU audits in **132.709 / 132.906 seconds**. Native application
 then verified exact supply, notes, nullifiers and events; retained complete
@@ -378,7 +378,7 @@ injected ENOSPC/EIO cases and two writers released together. One warm commit,
 including history replay, took **0.109 seconds**; this is not a full-process
 throughput measurement.
 
-The [multi-height delivery qualification](evidence/block-v2-native-delivery-2026-10-05.json)
+The [multi-height delivery qualification](../evidence/block-v2-native-delivery-2026-10-05.json)
 now passes **41 checks** with **four independently CPU-audited roots**: three
 consecutive blocks at heights **10, 11 and 12**, plus an alternative height-11
 branch. Exact supply, notes, nullifiers and events survive fresh-process restart,
@@ -400,7 +400,7 @@ This bounded journal replays at most 128 blocks per commit. Sustained arrival-dr
 delivery, proving-worker termination through that backend, and physical power-loss
 recovery remain unqualified. The two-hour pilot has not started.
 
-[Typed scheduler and recovery evidence](evidence/block-v2-typed-local-dag-2026-10-05.json)
+[Typed scheduler and recovery evidence](../evidence/block-v2-typed-local-dag-2026-10-05.json)
 now covers all counts 1–64, all nine ordered type pairs, odd-tail padding and
 depth-six finalization. All 153 enabled execution tests and six paired-probe tests
 pass; 46 opt-in execution tests remain unrun. CPU diagnostics checked the nine
@@ -412,7 +412,7 @@ also rejects an operation tag that differs from the verified inputs.
 That artifact replay produced no new proofs or native commits. The journal was
 reopened within the diagnostic process.
 
-The [typed GPU worker qualification](evidence/block-v2-typed-worker-2026-10-05.json)
+The [typed GPU worker qualification](../evidence/block-v2-typed-worker-2026-10-05.json)
 adds separate typed packets, cached preprocessing and persistent resource
 reservations. Idle caches keep their RAM, managed VRAM and spill reservations
 with zero CPU slots. Jobs drain GPU queues before reconciliation; workspace
@@ -443,7 +443,7 @@ standalone and fleet allocations differ, so these observations do not establish
 a matched speedup. The initial capacity-check failure remains retained; it
 produced no proofs. No new wallet proofs or native blocks were produced.
 
-[Completed-journal recovery](evidence/block-v2-typed-recovery-2026-10-05.json)
+[Completed-journal recovery](../evidence/block-v2-typed-recovery-2026-10-05.json)
 now passes in two fresh CPU processes against one dedicated eight-input GPU
 journal. The new GPU run produced **eight fresh recursive proofs in 314.562 s**,
 including its independent CPU root audit, with zero memory-limit/OOM events.
@@ -456,7 +456,7 @@ logs, hashes and the corrected controller failure are retained. Nine CPU probe
 tests, twelve GPU probe tests and five controller tests pass. Active worker
 termination and native arrival integration remain open.
 
-[Persistent GPU child dispatch](evidence/block-v2-typed-process-2026-10-05.json)
+[Persistent GPU child dispatch](../evidence/block-v2-typed-process-2026-10-05.json)
 now passes for **one eight-input root on the laptop GPU**. A separate DAG owner
 CPU-verified each returned node while one child reused preprocessing across all
 eight jobs. The worker window, including independent root audit, was **250.478 s**;
@@ -475,7 +475,7 @@ is a dispatch milestone; it does not establish a matched speedup or active-worke
 recovery. The follow-up qualification below extends the device and concurrency
 scope while retaining that first trial and its monitoring limitation.
 
-[Desktop and concurrent persistent-child qualification](evidence/block-v2-typed-process-concurrent-2026-10-05.json)
+[Desktop and concurrent persistent-child qualification](../evidence/block-v2-typed-process-concurrent-2026-10-05.json)
 adds **three CPU-audited roots and 24 fresh recursive proofs**, using the same
 frozen binary. The standalone desktop root took **291.247 s**, with **15.966 GiB**
 peak charged RAM. The concurrent laptop/desktop roots took **303.486 / 342.703 s**;
@@ -498,7 +498,7 @@ resource assignments differ, so these results do not establish a matched
 speedup. Each GPU in that trial owned an independent candidate DAG. The shared-owner
 qualification below extends the dispatch scope.
 
-[One shared DAG across both GPUs](evidence/block-v2-typed-shared-owner-2026-10-05.json)
+[One shared DAG across both GPUs](../evidence/block-v2-typed-shared-owner-2026-10-05.json)
 now passes an **eight-input root in 237.679 seconds**, followed by a separate
 **0.144-second CPU root audit**. The fleet execution window was **238.269 seconds**.
 One coordinator dispatched eight fresh recursive proofs to two independently
@@ -516,7 +516,7 @@ At that fixture milestone, native arrival/application integration and
 active-worker/coordinator recovery remained open. The native trials below
 extend application qualification to two consecutive blocks.
 
-[Native shared-owner application](evidence/block-v2-native-shared-owner-2026-10-05.json)
+[Native shared-owner application](../evidence/block-v2-native-shared-owner-2026-10-05.json)
 now passes **two consecutive local native blocks at heights 10 and 11**, each
 with four fresh synthetic transactions. The coordinator binds every GPU
 assignment and its durable DAG to the CPU-verified native head, complete body,
@@ -549,7 +549,7 @@ explicit prepared batches and local native application. Durable arrival intake,
 incremental pre-seal dispatch, recovery during active proving and sustained
 transaction throughput remain open.
 
-[Durable native intake](evidence/block-v2-native-arrival-intake-2026-10-05.json)
+[Durable native intake](../evidence/block-v2-native-arrival-intake-2026-10-05.json)
 
 now passes one sealed count-four selection through the shared GPU owner. The
 bounded SQLite store retains transaction bytes, exact retry receipts, duplicate
@@ -581,7 +581,7 @@ storage and an explicit prepared selection. Candidate assembly from pending
 arrivals, pre-seal dispatch, active proving recovery and sustained throughput
 remain open.
 
-[Pending candidate assembly](evidence/block-v2-native-pending-candidate-2026-10-05.json)
+[Pending candidate assembly](../evidence/block-v2-native-pending-candidate-2026-10-05.json)
 now passes from durable transaction bytes through native application. The new
 native preflight checks current state and independently configured issuance
 policy, then exports the body-derived public statements. The portable CPU
@@ -616,7 +616,7 @@ remains unmeasured.
 That milestone qualified current-head FIFO assembly. The following qualification
 extends it to deferred arrivals and selection under independent issuance policy.
 
-[Deferred-arrival qualification](evidence/block-v2-native-deferred-arrivals-2026-10-05.json)
+[Deferred-arrival qualification](../evidence/block-v2-native-deferred-arrivals-2026-10-05.json)
 now passes a complete count-four application at native height **11**. The intake
 keeps every original body, proof, request ID, receipt timestamp and retry response.
 The builder scans unclaimed arrivals from both current and prior heads, checks
@@ -655,7 +655,7 @@ services exited. Selection is bounded by `--scan-limit` (default 256, maximum
 cases; broader arrival/capacity behavior remains part of later qualification.
 Pre-seal dispatch, active proving recovery and sustained throughput remain open.
 
-[Pre-seal subtree qualification](evidence/block-v2-native-preseal-arrivals-2026-10-05.json)
+[Pre-seal subtree qualification](../evidence/block-v2-native-preseal-arrivals-2026-10-05.json)
 
 now proves complete subtrees before sealing and reuses them in a larger native
 candidate. The host independently authorized issuance at positions **3 and 7**.
@@ -693,7 +693,7 @@ or establish matched speedup. Active proving recovery, larger shared workloads,
 full-64 timing gates, and sustained throughput remain open. Repeated Apple
 Silicon execution is still pending.
 
-[Retained resource admission](evidence/block-v2-throughput-resources-2026-10-05-r23.json)
+[Retained resource admission](../evidence/block-v2-throughput-resources-2026-10-05-r23.json)
 used **52.771 GiB available RAM** at the sealed-intake admission, **12/11 Rayon
 threads**, **22.5 GiB RAM** and **14.25 GiB spill per worker**, plus **one thread
 and 1.25 GiB RAM** for the owner. The physical fleet cap was **46.5 GiB**, including
@@ -701,7 +701,7 @@ and 1.25 GiB RAM** for the owner. The physical fleet cap was **46.5 GiB**, inclu
 context allowances of **7.25/7 GiB** for the laptop/desktop GPU. No swap was
 allowed. Larger counts still need qualification under shared allocations.
 
-The [active-worker failover qualification](evidence/block-v2-native-active-failover-2026-10-05.json)
+The [active-worker failover qualification](../evidence/block-v2-native-active-failover-2026-10-05.json)
 now passes for a four-transaction native candidate. After the laptop GPU's first
 subtree was accepted, the harness sent SIGKILL to the exact supervised desktop
 worker. The coordinator revoked its launch, confirmed process and cgroup exit,
@@ -720,7 +720,7 @@ Startup, dispatch and normal-close errors still abort; all-worker failure fails
 closed. Worker replacement, resource-exhaustion recovery, and reorg/stale-result
 recovery during proving remain open. Coordinator restart is qualified below.
 
-The [coordinator restart qualification](evidence/block-v2-native-coordinator-recovery-2026-10-05.json)
+The [coordinator restart qualification](../evidence/block-v2-native-coordinator-recovery-2026-10-05.json)
 now passes for one interruption during native count-four proving. The harness
 killed the exact coordinator service after the laptop subtree was accepted while
 the desktop job remained active. Recovery confirmed old process/cgroup exit,
@@ -745,7 +745,7 @@ The later receipt and initialized startup/dispatch/export trials below extend
 that coverage. Automatic supervision, initialization of an existing recovery
 journal, resource exhaustion and active reorg recovery remain open.
 
-The [cached-root continuation qualification](evidence/block-v2-native-cached-recovery-2026-10-05.json)
+The [cached-root continuation qualification](../evidence/block-v2-native-cached-recovery-2026-10-05.json)
 now passes through four journal epochs. After one accepted subtree, cached-only
 recovery correctly rejected the incomplete cache without starting a GPU worker.
 Ordinary GPU recovery resumed from that rejected CPU-only epoch, reused the
@@ -770,7 +770,7 @@ passed **23 CPU probe, 28 GPU probe, 21 controller and 31 typed-report tests**.
 The complete recovery gate remains blocked for the remaining interruption,
 resource-exhaustion and reorg cases.
 
-The [native application and intake receipt recovery qualification](evidence/block-v2-native-application-recovery-2026-10-05.json)
+The [native application and intake receipt recovery qualification](../evidence/block-v2-native-application-recovery-2026-10-05.json)
 now passes. The owner was killed after publishing the native head, before saving
 its receipt. Cached recovery recognized the exact block, parent and proof,
 reconstructed the receipt, and was killed again just before and just after the
@@ -792,7 +792,7 @@ recovered an already-published block and applied zero new blocks. The report
 suppresses its proving-throughput rate. The complete interruption interval
 includes the observer repair gap; no matched speedup is claimed.
 
-The [r27 resource admission](evidence/block-v2-throughput-resources-2026-10-05-r27.json)
+The [r27 resource admission](../evidence/block-v2-throughput-resources-2026-10-05-r27.json)
 assigned **20.25 GiB RAM and 14.25 GiB spill per GPU worker**, **12/11 Rayon
 threads**, **7/5.75 GiB managed VRAM** and **7.25/6.25 GiB driver/context allowance**
 to the laptop/desktop GPUs. The fleet cap was **41.75 GiB**, including the
@@ -802,7 +802,7 @@ accounting records** and the persistent fleet counters show zero memory events.
 Validation passed **75 focused storage/controller tests** and **31 typed-report
 tests**. The complete recovery and throughput gates remain open.
 
-The [startup, dispatch and proof-export recovery qualification](evidence/block-v2-native-startup-recovery-2026-10-06.json)
+The [startup, dispatch and proof-export recovery qualification](../evidence/block-v2-native-startup-recovery-2026-10-06.json)
 now passes for an initialized, sealed count-four candidate. The coordinator was
 killed before the first worker launch, after the worker recorded its identity
 but before readiness, and after job dispatch. Recovery fenced future startup,
@@ -824,7 +824,7 @@ Its corrected continuation used the same journal and generated no further proofs
 both attempts are retained. The report now matches an unexported proof to its
 original internal artifact and pins both that artifact and the journal.
 
-The [r28 admission](evidence/block-v2-throughput-resources-2026-10-06-r28.json)
+The [r28 admission](../evidence/block-v2-throughput-resources-2026-10-06-r28.json)
 used **21 GiB RAM and 14.25 GiB spill per GPU worker**, **12/11 Rayon threads**,
 **7/6 GiB managed VRAM**, and **7.25/6.5 GiB context allowance** on the laptop/desktop
 GPUs. The fleet cap was **43.25 GiB**, including the **1.25 GiB, one-thread owner**.
@@ -838,7 +838,7 @@ launch-store creation. The new-candidate bootstrap cases are qualified below. Th
 injected an I/O error; a SIGKILL at that instruction remains untested. The full
 recovery and throughput gates remain blocked.
 
-The [new-candidate bootstrap qualification](evidence/block-v2-native-bootstrap-recovery-2026-10-06.json)
+The [new-candidate bootstrap qualification](../evidence/block-v2-native-bootstrap-recovery-2026-10-06.json)
 now passes **four earlier coordinator SIGKILL boundaries**: before owner entry,
 after owner admission but before the Rust prover, during coordinator metadata
 publication, and after candidate sealing but before worker startup intents.
@@ -864,7 +864,7 @@ execution and **162.073 s** for the invocation. Earlier attempts and wallet/regi
 preparation are outside that phase, so these measurements do not satisfy the
 complete cold or post-seal gates.
 
-The [r29 allocation](evidence/block-v2-throughput-resources-2026-10-06-r29.json)
+The [r29 allocation](../evidence/block-v2-throughput-resources-2026-10-06-r29.json)
 used **20.75 GiB RAM and 14.25 GiB spill per worker**, **12/11 Rayon threads**,
 **7/6 GiB managed VRAM** and **7.25/6.5 GiB context allowance**. The fleet cap was
 **43 GiB**, with a **1.25 GiB, one-thread owner**. All **23 observed processes**
@@ -875,7 +875,7 @@ and 26 report regression tests**.
 
 The r29 trial covers new candidates after durable controller admission.
 
-The [existing-journal recovery qualification](evidence/block-v2-native-recovery-initialization-2026-10-06.json)
+The [existing-journal recovery qualification](../evidence/block-v2-native-recovery-initialization-2026-10-06.json)
 now passes **four interruptions while initializing recovery**, starting with a
 journal containing one accepted recursive proof. Recovery records its generation
 before changing the journal and commits the new generation and sealed candidate
@@ -890,7 +890,7 @@ The final phase took **114.515 seconds proving**, **129.186 seconds in the owner
 Earlier attempts and wallet/registry preparation are outside this phase. Complete
 cold and post-seal throughput measurements remain pending.
 
-The [r30 resource record](evidence/block-v2-throughput-resources-2026-10-06-r30.json)
+The [r30 resource record](../evidence/block-v2-throughput-resources-2026-10-06-r30.json)
 retains **20.75 GiB RAM and 14.25 GiB spill per worker**, **12/11 Rayon threads**,
 **7/6 GiB managed VRAM**, and **7.25/6.5 GiB driver/context allowance**. Its
 **42.75 GiB fleet cap** includes the **1.25 GiB, one-thread owner**. All **25 recorded
@@ -905,7 +905,7 @@ Validation passed **38 journal tests** (six opt-in tests skipped), **18 bootstra
 **25 controller**, **28 CPU probe**, **33 GPU probe**, **34 typed-report** and
 **26 report regression tests**.
 
-The [controller admission qualification](evidence/block-v2-native-controller-admission-2026-10-06.json)
+The [controller admission qualification](../evidence/block-v2-native-controller-admission-2026-10-06.json)
 now passes **four pre-admission interruptions**, **one interruption after handoff
 but before owner launch**, and **one controller crash after accepted work**.
 Normal CLI runs use a dedicated controller service. Its immutable request pins
@@ -930,7 +930,7 @@ and **46.072 seconds for the controller service**. No separate full invocation
 duration was measured for that continuation. Independent native and intake replay
 confirmed one application after both continuations.
 
-The [r31 resource record](evidence/block-v2-throughput-resources-2026-10-06-r31.json)
+The [r31 resource record](../evidence/block-v2-throughput-resources-2026-10-06-r31.json)
 records **20.75 GiB RAM and 14.25 GiB spill per GPU worker**, **12/11 Rayon
 threads**, **7/6 GiB managed VRAM**, and **7.25/6.5 GiB driver/context allowance**.
 The **42.75 GiB fleet cap** includes a **1.25 GiB, one-thread owner**. The separate
@@ -948,7 +948,7 @@ cached checker's receipt-save error remain retained with their corrections.
 Resource exhaustion, active reorg/stale results, all-worker failure, automatic
 supervision/replacement, and complete transaction throughput remain open.
 
-The [worker failure qualification](evidence/block-v2-native-worker-failure-2026-10-06.json)
+The [worker failure qualification](../evidence/block-v2-native-worker-failure-2026-10-06.json)
 now passes a **worker cgroup OOM** and **loss of both GPU workers followed by
 explicit controller recovery**. In the OOM trial, after one proof was accepted,
 the other active worker's cgroup cap was lowered from **20.75 GiB to 1 GiB**.
@@ -976,7 +976,7 @@ attempt is outside these final-phase times. Each candidate contains **three user
 transactions and one issuance**; independent replay and two exact retries left
 one native history entry and one intake application event per journal.
 
-The [r32 resource record](evidence/block-v2-throughput-resources-2026-10-06-r32.json)
+The [r32 resource record](../evidence/block-v2-throughput-resources-2026-10-06-r32.json)
 retains **20.75 GiB RAM and 14.25 GiB spill per GPU worker**, **12/11 Rayon
 threads**, **7/6 GiB managed VRAM**, and **7.25/6.5 GiB context allowances**.
 The OOM trial's fleet cap was **43 GiB**; the all-worker trial and recovery used
@@ -996,7 +996,7 @@ explicit recovery after all workers are lost. Active reorg/stale results,
 VRAM/spill exhaustion, automatic supervision/replacement, and complete throughput
 remain pending.
 
-The [r33 reorg qualification](evidence/block-v2-native-reorg-cancellation-2026-10-06.json)
+The [r33 reorg qualification](../evidence/block-v2-native-reorg-cancellation-2026-10-06.json)
 now passes active cancellation and rejection of a stale audited root. Each isolated
 native journal published a different, previously verified block, then rolled back
 to its original state. Generation advanced to two, so restoring the state did not
@@ -1027,7 +1027,7 @@ after root audit and GPU drain delegates the final application check to native
 compare-and-swap. This also prevents the owner's own publication from triggering
 false cancellation.
 
-The [r33 resource record](evidence/block-v2-throughput-resources-2026-10-06-r33.json)
+The [r33 resource record](../evidence/block-v2-throughput-resources-2026-10-06-r33.json)
 retains **20.75 GiB RAM / 14.25 GiB spill per worker**, **12/11 Rayon threads**,
 **7/6 GiB managed VRAM**, and **7.25/6.5 GiB context allowances**. Reorg fleets were
 capped at **42.75 GiB**; the replacement fleet used **43 GiB**. All **28 recorded
@@ -1042,7 +1042,7 @@ The corrected checker reused completed outcomes. These are count-four correctnes
 and recovery measurements using existing wallet proofs; complete transaction
 throughput remains unqualified.
 
-The [r34 resource-failure qualification](evidence/block-v2-native-resource-exhaustion-2026-10-06.json)
+The [r34 resource-failure qualification](../evidence/block-v2-native-resource-exhaustion-2026-10-06.json)
 passes real spill exhaustion and physical GPU VRAM allocation failure. Each
 count-four trial retained accepted proofs, confirmed the failed process and GPU
 context had exited, retried unfinished work on the surviving GPU, and applied
@@ -1068,10 +1068,10 @@ in the first GPU test attempt, and the completed spill trial's observer assertio
 failure are retained. The corrected observer validated that completed trial
 without repeating its proving. Existing wallet proofs were used; candidate
 preparation and wallet proving are outside these intervals. The
-[r34 readiness snapshot](evidence/block-v2-throughput-readiness-2026-10-06-r34.json)
+[r34 readiness snapshot](../evidence/block-v2-throughput-readiness-2026-10-06-r34.json)
 still blocks the two-hour pilot and complete transaction-throughput claims.
 
-The [r35 supervision qualification](evidence/block-v2-native-supervision-2026-10-06.json)
+The [r35 supervision qualification](../evidence/block-v2-native-supervision-2026-10-06.json)
 adds automatic recovery for sealed native candidates. Killing both GPU workers
 after one accepted proof triggered a replacement fleet with identical device and
 resource assignments. It reused that proof, generated three more, passed CPU audit
@@ -1088,7 +1088,7 @@ terminal, and 18 accounting records have zero host memory-limit/OOM events.
 Validation passed 148 Python tests. The report retains full and final-attempt
 timings separately, along with the failed original attempt and source pins.
 
-The [r35 readiness snapshot](evidence/block-v2-throughput-readiness-2026-10-06-r35-r2.json)
+The [r35 readiness snapshot](../evidence/block-v2-throughput-readiness-2026-10-06-r35-r2.json)
 passes the five required recovery cases. It still blocks the pilot on typed GPU
 context/geometry qualification and complete cold/post-seal timing. These count-four
 fault trials use retained wallet proofs and do not establish sustained throughput.
@@ -1096,7 +1096,7 @@ Automatic cached-root recovery and active reorg through the supervisor have
 component coverage; separate real native injections remain pending. Supervision
 currently accepts sealed candidates only.
 
-The [r36 fixed-allocation qualification](evidence/block-v2-native-fixed-allocation-2026-10-06.json)
+The [r36 fixed-allocation qualification](../evidence/block-v2-native-fixed-allocation-2026-10-06.json)
 passes one native count-eight cycle on each GPU alone, with both GPUs, and with
 staged prefix reuse. It preserves identical complete fixture hashes and each
 GPU's CPU/RAM/spill/VRAM limits. One-GPU arms retain their share of the two-worker
@@ -1127,12 +1127,12 @@ Single-GPU runs cover the complete count-eight geometry on each device. Across
 all arms, context peaks were 209,713,424 bytes on the laptop GPU and 278,919,440
 bytes on the desktop GPU. These support a 512 MiB candidate allowance with the
 planner's margin; a run under that smaller allowance remains required before
-promotion. The [r36 readiness snapshot](evidence/block-v2-throughput-readiness-2026-10-06-r36.json)
+promotion. The [r36 readiness snapshot](../evidence/block-v2-throughput-readiness-2026-10-06-r36.json)
 keeps timing, larger-count and context qualification gates blocked.
 
 ### Five matched cycles and reduced contexts — 2026-10-06
 
-The [completed campaign](evidence/block-v2-native-context-repetitions-2026-10-06.json)
+The [completed campaign](../evidence/block-v2-native-context-repetitions-2026-10-06.json)
 passes all five predeclared cycles: **20 audited roots and 20 isolated native
 applications**, with 160 fresh recursive proofs, 15 reused proofs and no fresh
 wallet proofs. Each arm uses the same complete fixture: six user transactions
@@ -1173,13 +1173,13 @@ indentation. All ten complete single-GPU trials also import through the current
 profile selector. The two failed validation attempts are retained.
 
 The report now retains **809 runs, 383 CPU-audited records and zero transaction
-campaigns**. The [r37 readiness snapshot](evidence/block-v2-throughput-readiness-2026-10-06-r37.json)
+campaigns**. The [r37 readiness snapshot](../evidence/block-v2-throughput-readiness-2026-10-06-r37.json)
 keeps larger shared geometries and complete cold/post-seal contract boundaries
 open. The next binary needs its own qualification.
 
 ### Opening denominator cache: build and physical checks — 2026-10-06
 
-The [experimental cache](evidence/block-v2-opening-denominator-cache-2026-10-06-r1.json)
+The [experimental cache](../evidence/block-v2-opening-denominator-cache-2026-10-06-r1.json)
 is opt-in and now passes **9 compact-opening/planner tests, 28 CPU controller
 tests and 33 GPU controller tests**. Both GPUs also passed the two physical tests:
 real-LDE CPU/GPU equivalence with exact upload savings and capacity fallback,
@@ -1197,7 +1197,7 @@ and solving-time comparisons remain open.
 
 ### Opening denominator cache: native and resource qualification — 2026-10-06
 
-The [ten-arm qualification](evidence/block-v2-opening-cache-native-qualification-2026-10-06-r1.json)
+The [ten-arm qualification](../evidence/block-v2-opening-cache-native-qualification-2026-10-06-r1.json)
 passed **10 independent CPU root audits, 80 fresh recursive proofs and 10 replay
 checks**. Both modes completed conservative-context roots on each GPU, then roots
 with separately derived context allowances, then shared execution. The new binary
@@ -1219,7 +1219,7 @@ These results qualify correctness and resources. They do not establish a matched
 solving-time improvement. The report labels that scope, retains cache counters and
 exact pipeline/seal boundaries, and passes **76 focused report tests**. It now
 contains **819 runs, 393 CPU-audited records and zero transaction campaigns**.
-The [r38 readiness snapshot](evidence/block-v2-throughput-readiness-2026-10-06-r38.json)
+The [r38 readiness snapshot](../evidence/block-v2-throughput-readiness-2026-10-06-r38.json)
 keeps larger workloads and complete timing gates open. The cache remains opt-in.
 
 ### Paused checkpoint and partial cache comparison — 2026-10-06
@@ -1228,7 +1228,7 @@ The user paused workstation experiments to record the current work and transfer
 committed sources to the Apple Silicon development machine. No further proving
 trial, larger-count campaign or pilot was started for this handoff.
 
-The [predeclared five-pair comparison](evidence/block-v2-opening-cache-comparison-campaign-2026-10-06-r1.json)
+The [predeclared five-pair comparison](../evidence/block-v2-opening-cache-comparison-campaign-2026-10-06-r1.json)
 completed nine arms: four complete baseline/cache pairs and the fifth baseline.
 The final cache arm prepared its candidate, then failed admission because the
 current host RAM/spill capacity could not admit the fixed comparison limits.
@@ -1236,7 +1236,7 @@ It started no GPU worker and applied no native block. A host snapshot was not
 saved at the point of failure, so the exact memory shortfall is unknown.
 The attempt is retained and was not replaced.
 
-The [partial results JSON](evidence/block-v2-opening-cache-native-comparison-2026-10-06-partial-r1.json)
+The [partial results JSON](../evidence/block-v2-opening-cache-native-comparison-2026-10-06-partial-r1.json)
 contains all nine successful arms, the unpaired baseline, failure, phase spans,
 proof hashes, exact timing boundaries and resource accounting. The following
 observations use only the four complete pairs:
@@ -1259,9 +1259,9 @@ show zero memory-limit/OOM events. The observer peaked at 314,224,640 bytes.
 The offline report exposes the partial comparison and downloadable JSON alongside
 its 819 indexed runs and 393 indexed CPU-audited records. The additional nine
 arms are retained together in the partial comparison document. The
-[r39 readiness snapshot](evidence/block-v2-throughput-readiness-2026-10-06-r41.json)
+[r39 readiness snapshot](../evidence/block-v2-throughput-readiness-2026-10-06-r41.json)
 records the pause and preserves all open gates. Mac execution is externally
-pending. The [current-source Mac handoff](../lattica-prover-p3/scripts/apple-current-benchmark-README.txt)
+pending. The [current-source Mac handoff](../../lattica-prover-p3/scripts/apple-current-benchmark-README.txt)
 uses a new package pinned to the selected Git commit and the repository's public
 fixture; the original 094cade package remains reproducible.
 
@@ -1288,12 +1288,12 @@ readiness. The count matrix uses existing wallets and registered keys, so it
 cannot satisfy the complete cold or post-seal timing gates by itself.
 
 > **PROPOSED / NOT IMPLEMENTED — 2026-10-01.** This extends the
-> [distributed proving roadmap](distributed-proving.md) with a bandwidth model,
+> [distributed proving roadmap](../distributed-proving.md) with a bandwidth model,
 > hardware-aware pool design and a proposed capacity/cadence experiment.
 > It does not change consensus, activate a profile or establish a measured
-> throughput result. Existing [v2 gates](block-proving-v2.md) remain in force.
+> throughput result. Existing [v2 gates](block-proving-v2-2026-10-17.md) remain in force.
 
-The selected [execution DAG and GPU implementation plan](dag-gpu-implementation.md)
+The selected [execution DAG and GPU implementation plan](dag-gpu-implementation-2026-10-17.md)
 sets the implementation priority: build a minimal local proof DAG alongside a
 GPU pipeline that retains intermediate arrays. Complete the remote pool after
 the local execution and performance prerequisites pass. The bandwidth models
@@ -1366,12 +1366,12 @@ completed pair, not repeat qualification. The wider-lane source checkpoint at
 - `src/node.zig` already uses `std.AutoHashMap` for anchors, nullifiers and a
   commitment index. Adding a hash table is not a missing cryptographic speedup.
 
-References: [retention experiment](evidence/block-v2-retention-matched-2026-10-01.json),
-[grouped pilot](evidence/block-v2-eight-matched-pilot-2026-10-01.json),
-[fusion pair](evidence/block-v2-quotient-fusion-matched-2026-10-01.json),
-[repeated-series status](evidence/block-v2-eight-repeated-series-2026-10-01.json),
-[GPU engine](../lattica-prover-p3/src/block_v2/gpu_hash/engine.rs),
-[node indexes](../src/node.zig).
+References: [retention experiment](../evidence/block-v2-retention-matched-2026-10-01.json),
+[grouped pilot](../evidence/block-v2-eight-matched-pilot-2026-10-01.json),
+[fusion pair](../evidence/block-v2-quotient-fusion-matched-2026-10-01.json),
+[repeated-series status](../evidence/block-v2-eight-repeated-series-2026-10-01.json),
+[GPU engine](../../lattica-prover-p3/src/block_v2/gpu_hash/engine.rs),
+[node indexes](../../src/node.zig).
 
 ## 2. Reduce network traffic at the correct boundary
 
@@ -1756,7 +1756,7 @@ quietly than a rack server; almost all wall power becomes room heat.
 
 Planning assumption: **4–6 engineers**, covering prover/GPU performance,
 distributed systems, protocol/host integration and validation, plus independent
-cryptographic review. The [implementation plan](dag-gpu-implementation.md) defines
+cryptographic review. The [implementation plan](dag-gpu-implementation-2026-10-17.md) defines
 interfaces and evidence gates. GPU pipeline work begins after P0 and runs
 alongside the minimal local DAG; it does not wait for P3's remote pool.
 

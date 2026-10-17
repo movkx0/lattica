@@ -2,12 +2,12 @@
 
 > **Research specification:** Parameters for experimental recursive aggregation; not part of the production C ABI or audit boundary.
 
-> **SUPERSEDED PARAMETER ROADMAP:** [Block-proving v2](block-proving-v2.md) specifies a separate,
+> **SUPERSEDED PARAMETER ROADMAP:** [Block-proving v2](../block-proving-v2.md) specifies a separate,
 > **CANDIDATE / INACTIVE** cubic-extension binary-FRI profile (q128/lb4/cap6/cw4/pow16), not the
 > quadratic/q96 experiments below. It is unfrozen pending complete-tree soundness
 > and full-depth qualification. The bounded engine has a real two-level recursive
 > proof and root-only verification after inner-artifact deletion; see the
-> [current measurements](bounded-execution-engine.md). Depth-six/64-transaction
+> [current measurements](../bounded-execution-engine.md). Depth-six/64-transaction
 > performance and security gates remain open. Historical v1 parameters are unchanged.
 
 **Status: historical design + measurement, on branch `v3`.** Companion to `docs/recursion-design.md`
@@ -81,7 +81,7 @@ reduced queries (the correctness milestone, done: `phase8_joinsplit_monolith` /
 The numbered proposal below records the q96/legacy-root design, not the active roadmap. In
 particular, its per-proof security claim, unchanged-node seam, and multiple-root block rule must not
 be carried into v2. The new target is one final proof for an ordered64 commitment, under the bounded
-workstation gates in [block-proving-v2.md](block-proving-v2.md).
+workstation gates in [block-proving-v2.md](../block-proving-v2.md).
 
 1. **Every level is q96 / lb4** (proven-100), per §1 — no reduced-query intermediate levels. The
    reduced-query monoliths are correctness milestones only.
@@ -147,7 +147,7 @@ concern §3.4 raised.
 **Consequence for the approved v2 direction:** implement and validate a bounded, fixed-width,
 low-degree **uniform recursive verifier**, substantially different from the inner-specific monolith.
 The candidate bounded engine now implements that alternative and demonstrates a
-two-level recursive proof; [current evidence](bounded-execution-engine.md) records
+two-level recursive proof; [current evidence](../bounded-execution-engine.md) records
 the measurements and remaining full-depth/security gates. The formerly suggested curve/SNARK wrap is
 excluded by the post-quantum hash/FRI requirement. A flat depth-one aggregate or multiple roots in a
 block is not an approved production fallback. The R5 measurements establish the limitation of naive

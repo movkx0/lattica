@@ -4,7 +4,7 @@
 
 ## Current direction — candidate/inactive block-proving v2
 
-The [bounded execution engine](bounded-execution-engine.md) provides the
+The [bounded execution engine](bounded-execution-engine-2026-10-17.md) provides the
 single-table lookup AIR, full candidate proof-verifier compilers, and constrained
 wrapper/empty/merge programs. On 2026-09-30 it completed four real wallet proofs →
 four wrappers → two sibling merges → final merge. The **1,913,373-byte** root
@@ -20,7 +20,7 @@ failed trials. It demonstrates two-level recursion, not 64-transaction throughpu
 a three-minute finalization window, full-tree security, or live-network readiness.
 The execution-only probe still intentionally exits 2; it does not test recursion.
 
-[Block-proving v2](block-proving-v2.md) is the authoritative approved architecture and milestone
+[Block-proving v2](block-proving-v2-2026-10-17.md) is the authoritative approved architecture and milestone
 ledger. It supersedes the historical roadmap recommendations below: no direct witness batches or
 individual-proof containers in blocks, no multiple-root fallback, and no curve/SNARK wrap. The target
 uses wallet-local witnesses, public-only aggregation, a new ordered64 Merkle root, and a separate
@@ -28,15 +28,15 @@ cubic-extension binary-FRI candidate profile. Historical v1 parameters and encod
 
 **Phase A: two-level implementation demonstrated; full feasibility gate open.**
 The earlier
-[leaf/legacy-geometry diagnostic](block-proving-v2.md#phase-a-diagnostic-reproduction--experimental-not-an-aggregate-benchmark)
+[leaf/legacy-geometry diagnostic](block-proving-v2-2026-10-17.md#phase-a-diagnostic-reproduction--experimental-not-an-aggregate-benchmark)
 still exits 2 / `BLOCKED`: it tests the inherited monolith, whose trace-commit
 lower bound exceeds the scratch budget, not the new recursive runner. Current
 evidence is in the
-[two-level report](bounded-execution-engine.md#completed-two-level-recursive-proof-2026-09-30).
+[two-level report](bounded-execution-engine-2026-10-17.md#completed-two-level-recursive-proof-2026-09-30).
 Common-height empty/padding proofs, depth-six/64-transaction measurements,
 complete-tree soundness/zero knowledge, HTLC/issuance, coordinator integration,
 and production activation remain later gates. Five
-[bounded GPU-hashing trials](bounded-execution-engine.md#gpu-hashing-experiment-2026-09-30)
+[bounded GPU-hashing trials](bounded-execution-engine-2026-10-17.md#gpu-hashing-experiment-2026-09-30)
 passed in 23.396 minutes median and 24.488 minutes worst, with CPU root-only
 verification repeated after shared wallet-proof pruning. **No passed
 64-transaction performance gate is claimed.**
@@ -49,7 +49,7 @@ budgets. Older batch-root compatibility is not compatibility with the new v2 com
 
 ## Latest candidate continuation — 2026-10-01
 
-The latest [compact-node-codec checkpoint](evidence/block-v2-fixed-node-codec-2026-10-01.json)
+The latest [compact-node-codec checkpoint](../evidence/block-v2-fixed-node-codec-2026-10-01.json)
 resolves the wide23 envelope blocker at **1,683,948 bytes** under unchanged
 2 MiB limits. Default/wallet encoding remains unchanged; the opt-in registry
 binds `LBV2RC02`, codec revision two and program manifest six. Default/wide
@@ -67,7 +67,7 @@ Padded/depth-six/64-transaction qualification, full-tree security and activation
 remain open.
 
 
-The [completed retention comparison](evidence/block-v2-retention-matched-2026-10-01.json)
+The [completed retention comparison](../evidence/block-v2-retention-matched-2026-10-01.json)
 contains five matched pairs with identical public wallet inputs and serial GPU
 transfers. Retention reduced median four-transaction/seven-proof time from
 **19.627 to 17.642 minutes (10.114%)**. Its worst observed final merge was
@@ -81,7 +81,7 @@ completed four paired wrappers and three merges at height 524,288, with separate
 reproduced research keys and a native-Zig-derived expected statement. Its
 1,914,091-byte root passed fresh CPU replay after pruning 14 local inner artifacts
 (33.133 minutes total; 280.993-second final merge).
-The later [same-eight CPU pilot](evidence/block-v2-eight-matched-pilot-2026-10-01.json)
+The later [same-eight CPU pilot](../evidence/block-v2-eight-matched-pilot-2026-10-01.json)
 used identical wallet-proof bytes and measured **69.941 minutes single / 33.552
 minutes grouped**, a **52.028%** reduction in that one pair. Its grouped final
 merge was slower: **287.332 versus 264.760 seconds**. Both roots passed recorded
@@ -89,20 +89,20 @@ post-local-pruning CPU audits; the shared fixture is preserved for the repeated
 series and final post-shared-pruning replay. This is not repeated qualification,
 a padded level-six block or either production latency gate. Full-tree soundness/ZK,
 padding, mixed workloads and activation remain open. See also the original
-[grouped evidence](evidence/block-v2-grouped-integration-2026-10-01.json).
+[grouped evidence](../evidence/block-v2-grouped-integration-2026-10-01.json).
 
-The separate [quotient-fusion candidate](evidence/block-v2-quotient-fusion-2026-10-01.json)
+The separate [quotient-fusion candidate](../evidence/block-v2-quotient-fusion-2026-10-01.json)
 passed exact full-size key reproduction and a complete eight-wallet/seven-proof
 CPU run. Its **1,913,701-byte** root passed the preserved CPU auditor after all
 14 local inner artifacts were pruned, followed by an additional independent
 CPU-only replay. Recursive commands took **28.983 minutes**, with a **252.026-second**
-final merge. The completed [same-binary matched comparison](evidence/block-v2-quotient-fusion-matched-2026-10-01.json)
+final merge. The completed [same-binary matched comparison](../evidence/block-v2-quotient-fusion-matched-2026-10-01.json)
 measured **32.198 minutes off / 28.983 minutes on**, a **9.983%** reduction in
 one pair. Final merge was **270.047 / 252.026 seconds**. Both roots passed
 additional CPU-only replay; retained spill was identical and worker memory
 essentially unchanged. Fusion remains opt-in, not repeat- or depth-six-qualified;
 neither the three-minute finalization gate nor complete-tree security is qualified.
-The [original five-pair single/grouped series](evidence/block-v2-eight-repeated-series-2026-10-01.json)
+The [original five-pair single/grouped series](../evidence/block-v2-eight-repeated-series-2026-10-01.json)
 passed read-only input/source/pilot-integrity preflight and started its first
 pair with the original non-fused binaries. Shared and registration wallet
 fixtures remain retained for final pruning and fresh root replay.
@@ -442,7 +442,7 @@ Production rollout is sequenced so each step has a verifier-facing acceptance ga
 ## 4. Historical roadmap — superseded by the v2 milestones
 
 The list below preserves the earlier q96/legacy-root plan, not the approved implementation order.
-Use [block-proving-v2.md](block-proving-v2.md) for complete-tree soundness, bounded recursion,
+Use [block-proving-v2.md](block-proving-v2-2026-10-17.md) for complete-tree soundness, bounded recursion,
 standalone root verification, and new commitment/profile/host interfaces. No item here authorizes
 deployment of an excluded fallback.
 
@@ -480,7 +480,7 @@ batch audit remains evidence for its named artifact, not a production fallback w
 
 ## 7. See also
 
-- [Block-proving v2](block-proving-v2.md) — authoritative architecture, inactive candidate profile, partial foundation evidence, and unmet recursive/benchmark gates.
+- [Block-proving v2](block-proving-v2-2026-10-17.md) — authoritative architecture, inactive candidate profile, partial foundation evidence, and unmet recursive/benchmark gates.
 - `docs/recursion-design.md` — feasibility + what recursion buys (client-side proving, distribution, tree scaling).
 - `docs/recursion-verifier-audit.md` — the built verifier's constraint self-audit (§0).
 - `docs/recursion-aggregation-params.md` — aggregation-tree soundness parameters + the R5 wrap (§5).

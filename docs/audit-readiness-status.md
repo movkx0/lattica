@@ -319,7 +319,7 @@ Performance promotion is withheld. Repeated comparison, full64/deadline
 qualification and complete-tree security review remain open; activation is unchanged.
 
 
-The latest [bounded-execution checkpoint](bounded-execution-engine.md#current-measurement-and-implementation-checkpoint--2026-10-01)
+The latest [bounded-execution checkpoint](archive/bounded-execution-engine-2026-10-17.md#current-measurement-and-implementation-checkpoint--2026-10-01)
 now includes five completed matched retention-off/on pairs with serial transfers
 held fixed. Retention reduced median recursive proving time from **19.627 to
 17.642 minutes (10.114%)**, improving total time in all five pairs. Final-merge
@@ -399,7 +399,7 @@ unchanged, with no recursion/v2 acceptance symbols.
 Earlier A1 diagnostic evidence, predating the verifier/program implementation:
 
 The gated `block-v2` cubic-profile JoinSplit probe and checked resource lower-bound instrumentation
-are implemented, with no C ABI. The [reproduction command](block-proving-v2.md#phase-a-diagnostic-reproduction--experimental-not-an-aggregate-benchmark)
+are implemented, with no C ABI. The [reproduction command](archive/block-proving-v2-2026-10-17.md#phase-a-diagnostic-reproduction--experimental-not-an-aggregate-benchmark)
 proves a candidate leaf and separately inspects legacy q96/F_p² geometry; it completed with exit 2 /
 `BLOCKED`, without allocating or creating an aggregate. The binary/all-features compile checks,
 targeted candidate tests (13 passed), the Rust library regression (112 passed / 19 intentionally ignored),
@@ -407,7 +407,7 @@ the default ABI gate (12 externs, zero recursion/`block_v2` symbols), and Zig/Re
 passed. These are uncommitted-worktree checks, not independent audit. The legacy trace-commit lower bound is
 about 24.44× the 128 GiB scratch budget; this excludes inherited-backend reuse within the budget,
 not the possibility of a redesigned fixed-width verifier. Leaf smoke observations and conditional composition accounting
-are in the [evidence ledger](block-proving-v2.md#evidence-ledger--implementation-checks-captured-2026-09-29).
+are in the [evidence ledger](archive/block-proving-v2-2026-10-17.md#evidence-ledger--implementation-checks-captured-2026-09-29).
 A leaf probe, resource estimate, or composition-loss helper is not a passed recursive gate.
 
 The target is wallet-local witnesses, public-only aggregation, and one final proof ≤2 MiB for up to
