@@ -1,0 +1,371 @@
+{
+  "schema": "lattica-cuda-transcript-benchmark-v1",
+  "recorded_at": "2026-10-18T20:29:46.462315+00:00",
+  "implementation_commit": "39da1e0",
+  "benchmark_commit": "a02373ba8c096a1c830e25a69a76b2f1603c8974",
+  "qualification": "cuda-transcript-2026-10-18.json",
+  "artifact_directory": "lattica-prover-p3/benchmark-results/cuda-transcript-20261018/benchmark",
+  "identity": {
+    "commit": "a02373ba8c096a1c830e25a69a76b2f1603c8974",
+    "source_clean": true,
+    "binary_sha256": "258f68eeb97edd38389fb1ccb2c4bdd9ab3c2513a7f61726dc6036d1416a5f1f",
+    "source_files_pinned": 727,
+    "platform": "Linux-7.2.9-2-cachyos-x86_64-with-glibc2.44",
+    "gpu_before": "name, uuid, driver_version, memory.total [MiB], memory.used [MiB], temperature.gpu, pstate\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08, 16303 MiB, 1381 MiB, 38, P0\n",
+    "cgroup_limits": {
+      "memory.max": "3221225472",
+      "memory.swap.max": "0",
+      "cpu.max": "400000 100000",
+      "pids.max": "96"
+    },
+    "rayon_threads": 4,
+    "scope": "Native transcript primitive microbenchmark, debug host; not transaction throughput"
+  },
+  "method": {
+    "build": "cargo test --offline --locked --no-default-features --features gpu-cuda,block-v2-capacity-128 --lib --no-run -j 2",
+    "test": "cuda_compute::transcript::tests::benchmark::cuda_transcript_primitive_benchmark",
+    "environment": {
+      "LATTICA_CUDA_TRANSCRIPT_BENCHMARK": "1",
+      "LATTICA_GPU_DEVICE_UUID": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "RAYON_NUM_THREADS": "4"
+    },
+    "host_build": "debug",
+    "gpu_build": "NVRTC native sm_120 kernels",
+    "warmups_per_case": 2,
+    "measurements_per_case": 5,
+    "cases": 8,
+    "timing": "Host elapsed wall time, including synchronized GPU work and operation scratch allocation/cleanup; resident output cleanup follows timing.",
+    "excluded": "CUDA context/engine preparation, input setup for resident operations, CPU audits and resident-result audit readback.",
+    "pairing": "Public and resident cases alternate order on the same deterministic input for each iteration. Grinding uses seven deterministic states including two warmups; varying witness positions produce varying work.",
+    "audit": "Unchanged CPU challenger checks every sampled output, grinding witness validity, and subsequent transcript samples. Allocation/live-byte counts return to baseline after each case.",
+    "pins": "All 727 source files and the test executable match their opening hashes at completion; committed sources are clean."
+  },
+  "summary": {
+    "elapsed_seconds": 0.3638951819993963,
+    "cpu_audited": 56,
+    "measured": 40,
+    "warmups": 16,
+    "preparation": {
+      "debug_host": true,
+      "identity": {
+        "compute_capability": 120,
+        "driver_api": 13040,
+        "global_bytes": 16703946752,
+        "max_grid_x": 2147483647,
+        "max_threads": 1024,
+        "max_threads_per_multiprocessor": 1536,
+        "multiprocessors": 84,
+        "name": "NVIDIA GeForce RTX 5080",
+        "ordinal": 0,
+        "pci": "0000:01:00.0",
+        "shared_bytes": 49152,
+        "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      },
+      "includes_nvrtc_and_public_constants": true,
+      "milliseconds": 13.305848000000001
+    },
+    "groups": [
+      {
+        "case": "resident_exchange",
+        "observations": 64,
+        "samples": 32,
+        "bits": null,
+        "measured": 5,
+        "warmups": 2,
+        "milliseconds": {
+          "median": 0.373839,
+          "min": 0.372538,
+          "max": 0.374279
+        },
+        "commands": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "uploaded_bytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "downloaded_bytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "case": "public_exchange",
+        "observations": 64,
+        "samples": 32,
+        "bits": null,
+        "measured": 5,
+        "warmups": 2,
+        "milliseconds": {
+          "median": 0.411191,
+          "min": 0.40976100000000004,
+          "max": 0.418711
+        },
+        "commands": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "uploaded_bytes": [
+          512,
+          512,
+          512,
+          512,
+          512
+        ],
+        "downloaded_bytes": [
+          256,
+          256,
+          256,
+          256,
+          256
+        ]
+      },
+      {
+        "case": "resident_exchange",
+        "observations": 1024,
+        "samples": 256,
+        "bits": null,
+        "measured": 5,
+        "warmups": 2,
+        "milliseconds": {
+          "median": 4.712366,
+          "min": 4.709986,
+          "max": 5.137528
+        },
+        "commands": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "uploaded_bytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "downloaded_bytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "case": "public_exchange",
+        "observations": 1024,
+        "samples": 256,
+        "bits": null,
+        "measured": 5,
+        "warmups": 2,
+        "milliseconds": {
+          "median": 4.766709,
+          "min": 4.760739,
+          "max": 5.344368
+        },
+        "commands": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "uploaded_bytes": [
+          8192,
+          8192,
+          8192,
+          8192,
+          8192
+        ],
+        "downloaded_bytes": [
+          2048,
+          2048,
+          2048,
+          2048,
+          2048
+        ]
+      },
+      {
+        "case": "grind",
+        "observations": null,
+        "samples": null,
+        "bits": 0,
+        "measured": 5,
+        "warmups": 2,
+        "milliseconds": {
+          "median": 0.00028000000000000003,
+          "min": 0.00023,
+          "max": 0.0007800000000000001
+        },
+        "commands": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "uploaded_bytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "downloaded_bytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "case": "grind",
+        "observations": null,
+        "samples": null,
+        "bits": 8,
+        "measured": 5,
+        "warmups": 2,
+        "milliseconds": {
+          "median": 0.212391,
+          "min": 0.20958000000000002,
+          "max": 0.26248299999999997
+        },
+        "commands": [
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "uploaded_bytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "downloaded_bytes": [
+          16,
+          16,
+          16,
+          16,
+          16
+        ]
+      },
+      {
+        "case": "grind",
+        "observations": null,
+        "samples": null,
+        "bits": 16,
+        "measured": 5,
+        "warmups": 2,
+        "milliseconds": {
+          "median": 0.341928,
+          "min": 0.215661,
+          "max": 0.399551
+        },
+        "commands": [
+          3,
+          3,
+          6,
+          3,
+          6
+        ],
+        "uploaded_bytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "downloaded_bytes": [
+          16,
+          16,
+          32,
+          16,
+          32
+        ]
+      },
+      {
+        "case": "grind",
+        "observations": null,
+        "samples": null,
+        "bits": 20,
+        "measured": 5,
+        "warmups": 2,
+        "milliseconds": {
+          "median": 3.1632190000000002,
+          "min": 0.344127,
+          "max": 9.913518
+        },
+        "commands": [
+          6,
+          159,
+          72,
+          12,
+          216
+        ],
+        "uploaded_bytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "downloaded_bytes": [
+          32,
+          848,
+          384,
+          64,
+          1152
+        ]
+      }
+    ]
+  },
+  "resources": {
+    "memory_peak_bytes": 117891072,
+    "gpu_after": "name, uuid, driver_version, memory.total [MiB], memory.used [MiB], temperature.gpu, pstate\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08, 16303 MiB, 1381 MiB, 38, P0\n"
+  },
+  "interpretation": [
+    "The resident exchanges perform no host upload or download inside their timed region; public exchanges include observation uploads and sample downloads.",
+    "The 64-observation/32-sample medians are 0.373839 ms resident and 0.411191 ms public; the 1024-observation/256-sample medians are 4.712366 ms and 4.766709 ms.",
+    "Eight-, sixteen- and twenty-bit grinding medians are 0.212391 ms, 0.341928 ms and 3.163219 ms. Twenty-bit samples span 0.344127 to 9.913518 ms because witness positions differ.",
+    "Zero-bit grinding issues no GPU commands or transfers. Nonzero grinding downloads two public status words per candidate batch and performs no host upload."
+  ],
+  "limitations": [
+    "This measures native CUDA transcript primitives with debug host orchestration, not an optimized complete prover or transaction throughput.",
+    "Resident input uploads and final audit readback are outside the timed region, so resident/public latency differences are not an end-to-end proof speedup.",
+    "No CPU performance baseline or OpenCL transcript timing is measured; CPU execution only supplies independent correctness audits.",
+    "The small deterministic sample set is a checkpoint measurement, not a statistically broad production workload.",
+    "Only the desktop RTX 5080 executes here; V100, laptop RTX 5080, Intel and AMD execution comparisons remain unmeasured."
+  ],
+  "artifact_hashes": {
+    "identity.json": "f1b017cbfdca05ff1ed371181cd2e859062b97798d311095cb8bf8cd0e4c5a50",
+    "source-pins.json": "d68bf41508b6949dc32cf630b2ba0d2a010e14880e680860000fe0146c7d3acb",
+    "build.log": "d1e50102dac4fbd8bf76c85d41470b5c6a255deba3c09545ecb5671677448cb4",
+    "benchmark.log": "3660e4c0d6c085acb8e700f447fd06c4fef0623adb6835217ff49b04cdb7e00f",
+    "samples.json": "c64df9969227e44c5a35209a51404cf3302d620824975a5635ba602aa394a36f",
+    "summary.json": "fa0d7ce64b4354a60698b0d7b4ce38292565f1b53ce3bda2e173d0041548e762",
+    "resources.json": "4db44bc6de95a3875564969970b56ce4bc3889b41de218b0a408c6261ef577c7",
+    "progress.json": "b3fadb44b873c807b84367d43b373f270f956680e6c8ec40102416fe988c4a1c",
+    "run.py": "123029b805d6966d7f4db93a453a996ed6accc128607c73a8bd97c69fad60587",
+    "controller.log": "fd2ab7109f766c47f1e6cf9d0b4a3f4c43ee3745035e053dfda4195c4d05b13b"
+  }
+}

@@ -183,6 +183,17 @@ Resident result readback and cleanup follow timing. The ordinary debug test
 build measures debug host orchestration with NVRTC-compiled kernels, not release
 proof throughput. Command and byte counters accompany every measurement.
 
+The [post-push transcript benchmark at `a02373b`](evidence/cuda-transcript-benchmark-2026-10-18.json)
+completed 40 measurements and 16 warmups on the desktop RTX 5080; every sample
+passed its CPU audit. Observing 64 fields and sampling 32 took a median
+0.374 ms with resident buffers and 0.411 ms through the public host API.
+The 1,024-field/256-sample case took 4.712/4.767 ms. Resident cases issued no
+transfers within timing, but their input upload and audit readback were outside
+that region. Grinding medians were 0.212, 0.342 and 3.163 ms at 8, 16 and 20 bits;
+the 20-bit samples ranged from 0.344 to 9.914 ms as witness positions varied.
+These measurements establish primitive costs under debug host orchestration,
+not CPU/GPU proof speedups or complete transaction throughput.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)
