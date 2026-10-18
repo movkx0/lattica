@@ -67,8 +67,17 @@ pub(crate) fn program<F: FriExtension>() -> Program
 where
     SymbolicExpressionExt<Val, F>: Algebra<F>,
 {
+    program_with_main_width::<F>(3)
+}
+
+pub(crate) fn program_with_main_width<F: FriExtension>(main_width: usize) -> Program
+where
+    SymbolicExpressionExt<Val, F>: Algebra<F>,
+{
+    assert!(main_width >= 3);
     let air = ExtensionAir(constant::<F>());
     let layout = AirLayout {
+        main_width,
         permutation_width: 2,
         num_permutation_challenges: 2,
         num_permutation_values: 1,

@@ -11,7 +11,7 @@ use p3_air::symbolic::{AirLayout, SymbolicExpressionExt};
 use p3_field::{Algebra, Field, PrimeCharacteristicRing, PrimeField64, TwoAdicField};
 use p3_symmetric::{CryptographicHasher, PseudoCompressionFunction};
 
-fn runtime(managed: usize, allocation: usize) -> Runtime {
+pub(super) fn runtime(managed: usize, allocation: usize) -> Runtime {
     Runtime::new(
         &std::env::var("LATTICA_GPU_DEVICE_UUID").unwrap(),
         Limits {
@@ -23,7 +23,7 @@ fn runtime(managed: usize, allocation: usize) -> Runtime {
     .unwrap()
 }
 
-fn simple(extension: Extension, iterations: usize) -> Program {
+pub(super) fn simple(extension: Extension, iterations: usize) -> Program {
     let mut instructions = vec![1, 0, 0, 0, 0, 0, 1, 7, 0, 0];
     for _ in 0..iterations {
         instructions.extend_from_slice(&[8, 0, 0, 1, 0, 10, 0, 0, 0, 0]);
@@ -43,7 +43,7 @@ fn simple(extension: Extension, iterations: usize) -> Program {
     }
 }
 
-fn matrix(
+pub(super) fn matrix(
     runtime: &Runtime,
     log: u32,
     width: usize,
@@ -77,7 +77,7 @@ fn matrix(
     )
 }
 
-fn scalars(runtime: &Runtime, words: &[u64]) -> Buffer {
+pub(super) fn scalars(runtime: &Runtime, words: &[u64]) -> Buffer {
     let buffer = runtime.allocate(words.len()).unwrap();
     buffer.write(0, words).unwrap();
     buffer
@@ -177,6 +177,54 @@ fn shared_quotient_validation_rejects_bad_bounds_lifetimes_and_fold_order() {
         .unwrap();
 }
 
+/// Independent field expression for the fixture AIR, without GPU bytecode.
+pub(super) fn oracle<F: FriExtension>(
+    log_trace: u32,
+    log_quotient: u32,
+    shift: u64,
+    main_width: usize,
+    main_values: &[Val],
+    pre_values: &[Val],
+    permutation_values: &[Val],
+    public: [Val; 2],
+    challenges: [F; 2],
+    terminal: F,
+    alpha: F,
+) -> Vec<F> {
+    let root = Val::two_adic_generator(log_quotient as usize);
+    let last = Val::two_adic_generator(log_trace as usize).inverse();
+    let height = 1usize << log_quotient;
+    let expected: Vec<F> = (0..height)
+        .map(|row| {
+            let next = (row + (1usize << (log_quotient - log_trace))) % height;
+            let m = &main_values[row * main_width..row * main_width + 3];
+            let n = &main_values[next * main_width..next * main_width + 3];
+            let pr = &pre_values[row * 2..row * 2 + 2];
+            let pn = &pre_values[next * 2..next * 2 + 2];
+            let x = Val::new(shift) * root.exp_u64(row as u64);
+            let z = x.exp_power_of_2(log_trace as usize) - Val::ONE;
+            let q_at = |r: usize, col: usize| {
+                F::from_basis_coefficients_fn(|i| {
+                    permutation_values[(r * 2 + col) * F::DIMENSION + i]
+                })
+            };
+            [
+                F::from(-(m[0] + public[0]) * (n[1] - pn[0])),
+                -(q_at(next, 0) + challenges[0]) * (q_at(row, 1) - terminal + constant::<F>()),
+                F::from(z / (x - Val::ONE) * (pr[0] - m[2])),
+                (challenges[1] * q_at(row, 0) + constant::<F>()) * (z / (x - last)),
+                F::from((x - last) * (n[0] - m[1])),
+                (q_at(next, 1) + terminal) * (challenges[0] + F::from(m[0])),
+                F::from(public[1] - n[2]),
+            ]
+            .into_iter()
+            .fold(F::ZERO, |acc, constraint| acc * alpha + constraint)
+                / F::from(z)
+        })
+        .collect();
+    expected
+}
+
 fn conformance<F: FriExtension>()
 where
     SymbolicExpressionExt<Val, F>: Algebra<F>,
@@ -247,38 +295,19 @@ where
         let parameters = scalars(&runtime, &parameter_words);
         for alpha in [F::ZERO, F::ONE, constant::<F>()] {
             let alpha_buffer = scalars(&runtime, &words(alpha));
-            let root = Val::two_adic_generator(log_quotient as usize);
-            let last = Val::two_adic_generator(log_trace as usize).inverse();
-            let height = 1usize << log_quotient;
-            let expected: Vec<F> = (0..height)
-                .map(|row| {
-                    let next = (row + (1usize << (log_quotient - log_trace))) % height;
-                    let m = &main_values[row * 3..row * 3 + 3];
-                    let n = &main_values[next * 3..next * 3 + 3];
-                    let pr = &pre_values[row * 2..row * 2 + 2];
-                    let pn = &pre_values[next * 2..next * 2 + 2];
-                    let x = Val::new(shift) * root.exp_u64(row as u64);
-                    let z = x.exp_power_of_2(log_trace as usize) - Val::ONE;
-                    let q_at = |r: usize, col: usize| {
-                        F::from_basis_coefficients_fn(|i| {
-                            permutation_values[(r * 2 + col) * F::DIMENSION + i]
-                        })
-                    };
-                    [
-                        F::from(-(m[0] + public[0]) * (n[1] - pn[0])),
-                        -(q_at(next, 0) + challenges[0])
-                            * (q_at(row, 1) - terminal + constant::<F>()),
-                        F::from(z / (x - Val::ONE) * (pr[0] - m[2])),
-                        (challenges[1] * q_at(row, 0) + constant::<F>()) * (z / (x - last)),
-                        F::from((x - last) * (n[0] - m[1])),
-                        (q_at(next, 1) + terminal) * (challenges[0] + F::from(m[0])),
-                        F::from(public[1] - n[2]),
-                    ]
-                    .into_iter()
-                    .fold(F::ZERO, |acc, constraint| acc * alpha + constraint)
-                        / F::from(z)
-                })
-                .collect();
+            let expected = oracle(
+                log_trace,
+                log_quotient,
+                shift,
+                3,
+                &main_values,
+                &pre_values,
+                &permutation_values,
+                public,
+                challenges,
+                terminal,
+                alpha,
+            );
             assert!(expected.iter().any(|value| *value != F::ZERO));
             let expected_words: Vec<u64> = expected.iter().copied().flat_map(words).collect();
             let mut layer: Vec<[Val; 4]> = expected
@@ -512,7 +541,14 @@ fn cuda_machine_logup_quotient_matches_upstream_batch_stark() {
         .prepare(program.clone(), Specialization::Generic)
         .unwrap();
     let prepared = evaluator.prepare(program, Specialization::Prefer).unwrap();
-    eprintln!("cuda_machine_quotient specialized={} instructions={} registers={} local_bytes={} preparation_ns={}", prepared.specialized.is_some(), prepared.program.instruction_count(), prepared.program.registers, prepared.local_bytes, prepared.preparation_ns);
+    eprintln!(
+        "cuda_machine_quotient specialized={} instructions={} registers={} local_bytes={} preparation_ns={}",
+        prepared.specialized.is_some(),
+        prepared.program.instruction_count(),
+        prepared.program.registers,
+        prepared.local_bytes,
+        prepared.preparation_ns
+    );
     let (main, cpu_main) = matrix(
         &runtime,
         6,

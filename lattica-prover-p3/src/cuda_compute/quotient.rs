@@ -7,8 +7,11 @@ use crate::{
 };
 use std::{sync::Arc, time::Instant};
 
+mod partition;
+
 pub(super) const SOURCE: &str = concat!(
-    include_str!("field.cuh"), include_str!("quotient_helpers.cu"),
+    include_str!("field.cuh"),
+    include_str!("quotient_helpers.cu"),
     "\n#define QUOTIENT_DEGREE 2\n#define QUOTIENT_ALPHA quotient_alpha_2\n#define QUOTIENT_EVALUATE quotient_evaluate_2\n",
     include_str!("quotient.cu"),
     "\n#define QUOTIENT_DEGREE 3\n#define QUOTIENT_ALPHA quotient_alpha_3\n#define QUOTIENT_EVALUATE quotient_evaluate_3\n",
@@ -49,6 +52,8 @@ pub(crate) struct Quotients {
     alpha: [Kernel; 2],
     domain: Kernel,
     gather: Kernel,
+    partition: Kernel,
+    scatter: Kernel,
     zero: Buffer,
 }
 
@@ -151,6 +156,8 @@ impl Quotients {
             ],
             domain: module.kernel("quotient_domain")?,
             gather: module.kernel("quotient_gather")?,
+            partition: module.kernel("quotient_partition")?,
+            scatter: module.kernel("quotient_scatter")?,
             zero: runtime.allocate(1)?,
         };
         for kernel in &result.evaluate {
@@ -239,22 +246,13 @@ impl Quotients {
         })
     }
 
-    fn input_domain(
+    fn input_specs(
         &self,
         program: &Program,
         inputs: QuotientInputs<'_>,
-        log_trace: u32,
-    ) -> Result<MatrixSpec> {
-        let domain = inputs
-            .main
-            .or(inputs.preprocessed)
-            .or(inputs.permutation)
-            .ok_or("CUDA quotient has no input matrices")?
-            .spec;
-        if log_trace > domain.log_rows || domain.log_rows > 31 {
-            return Err("CUDA quotient trace/domain mismatch".into());
-        }
-        for (matrix, width, extension) in [
+    ) -> Result<[Option<MatrixSpec>; 3]> {
+        let mut specs = [None; 3];
+        for (slot, (matrix, width, extension)) in specs.iter_mut().zip([
             (inputs.main, program.layout.main_width, Extension::Base),
             (
                 inputs.preprocessed,
@@ -266,24 +264,67 @@ impl Quotients {
                 program.layout.permutation_width,
                 program.extension,
             ),
-        ] {
+        ]) {
             match (matrix, width) {
                 (None, 0) => (),
                 (Some(matrix), width)
                     if width != 0
                         && matrix.spec.columns == width
-                        && matrix.spec.extension == extension
-                        && matrix.spec.log_rows == domain.log_rows
-                        && matrix.spec.shift == domain.shift =>
+                        && matrix.spec.extension == extension =>
                 {
                     self.check_owner(&matrix.buffer)?;
+                    *slot = Some(matrix.spec);
                 }
                 _ => {
-                    return Err("CUDA quotient matrix differs from its AIR layout or domain".into())
+                    return Err("CUDA quotient matrix differs from its AIR layout or domain".into());
                 }
             }
         }
+        if specs.iter().all(Option::is_none) {
+            return Err("CUDA quotient has no input matrices".into());
+        }
+        Ok(specs)
+    }
+
+    fn input_domain(
+        &self,
+        program: &Program,
+        inputs: QuotientInputs<'_>,
+        log_trace: u32,
+    ) -> Result<MatrixSpec> {
+        let specs = self.input_specs(program, inputs)?;
+        let domain = specs.into_iter().flatten().next().unwrap();
+        if log_trace > domain.log_rows
+            || domain.log_rows > 31
+            || specs
+                .into_iter()
+                .flatten()
+                .any(|spec| spec.log_rows != domain.log_rows || spec.shift != domain.shift)
+        {
+            return Err("CUDA quotient trace/domain mismatch".into());
+        }
         Ok(domain)
+    }
+
+    fn parameters<'a>(
+        &'a self,
+        prepared: &PreparedQuotient,
+        alpha: &Buffer,
+        parameters: Option<&'a Buffer>,
+    ) -> Result<&'a Buffer> {
+        self.check_owner(&prepared.code)?;
+        self.check_owner(alpha)?;
+        if alpha.len() != prepared.program.extension.degree() {
+            return Err("CUDA quotient alpha has the wrong extension width".into());
+        }
+        match (parameters, prepared.program.parameter_words) {
+            (None, 0) => Ok(&self.zero),
+            (Some(buffer), words) if words != 0 && buffer.len() == words => {
+                self.check_owner(buffer)?;
+                Ok(buffer)
+            }
+            _ => Err("CUDA quotient parameters differ from program shape".into()),
+        }
     }
 
     /// All selectors, alpha powers, constraints and division execute on CUDA.
@@ -296,21 +337,9 @@ impl Quotients {
         alpha: &Buffer,
         parameters: Option<&Buffer>,
     ) -> Result<Matrix> {
-        self.check_owner(&prepared.code)?;
-        self.check_owner(alpha)?;
+        let parameters = self.parameters(prepared, alpha, parameters)?;
         let program = &prepared.program;
         let degree = program.extension.degree();
-        if alpha.len() != degree {
-            return Err("CUDA quotient alpha has the wrong extension width".into());
-        }
-        let parameters = match (parameters, program.parameter_words) {
-            (None, 0) => &self.zero,
-            (Some(buffer), words) if words != 0 && buffer.len() == words => {
-                self.check_owner(buffer)?;
-                buffer
-            }
-            _ => return Err("CUDA quotient parameters differ from program shape".into()),
-        };
         let domain = self.input_domain(program, inputs, log_trace)?;
         let output_spec = MatrixSpec::new(
             domain.log_rows,

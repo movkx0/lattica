@@ -2,6 +2,26 @@ extern "C" __global__ void quotient_domain(u64 *status, u32 log_rows, u64 shift)
     status[0] = gl_canon(gl_pow(shift, 1ULL << log_rows)) == 1 ? 1 : 0;
 }
 
+// Public domain descriptors only. The first word rejects a quotient domain
+// intersecting the trace subgroup; each remaining word names one component
+// coset. No host field arithmetic is needed to schedule reconstruction.
+extern "C" __global__ void quotient_partition(
+    u64 *parameters, u32 log_rows, u32 cosets, u64 shift, u64 root) {
+    const u32 coset = blockIdx.x * blockDim.x + threadIdx.x;
+    if (coset >= cosets) return;
+    if (coset == 0)
+        parameters[0] = gl_canon(gl_pow(shift, 1ULL << log_rows)) == 1 ? 1 : 0;
+    parameters[1 + coset] = gl_canon(gl_mul(shift, gl_pow(root, coset)));
+}
+
+extern "C" __global__ void quotient_scatter(
+    const u64 *input, u64 *output, u32 rows, u32 degree, u32 coset, u32 cosets) {
+    const u64 i = (u64)blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= (u64)rows * degree) return;
+    const u64 row = i / degree, coefficient = i % degree;
+    output[(row * cosets + coset) * degree + coefficient] = input[i];
+}
+
 // Concatenate current/next main, preprocessing and permutation rows into the
 // exact shared AIR bytecode layout. Each input may have a different row order.
 extern "C" __global__ void quotient_gather(

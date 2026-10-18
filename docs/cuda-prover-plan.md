@@ -18,9 +18,9 @@ device selection, shared OpenCL/CUDA leases, bounded allocations, private-buffer
 cleanup, NVRTC compilation, kernel launches and completion events. Native CUDA
 now implements base/quadratic/cubic field arithmetic, tiled coset transforms,
 query reconstruction from device prefixes, Poseidon2 commitments, and resident
-quadratic/cubic quotient evaluation. Commitment
-fragments preserve padding-free absorption across column boundaries; fresh salts
-remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
+quadratic/cubic quotient evaluation with partitioned prefix reconstruction.
+Commitment fragments preserve padding-free absorption across column boundaries;
+fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
 roots and the query memory planner are shared with OpenCL. Intermediate
 polynomials remain on the device; explicit transfer counters check this boundary.
@@ -31,8 +31,8 @@ alpha powers, selectors, constraints and vanishing-polynomial division execute
 on CUDA, with only a public domain-validity word read back per evaluation.
 
 Wallet and recursive proofs are not yet routed through CUDA. Cached twiddle
-tuning, quotient reconstruction from partitioned prefixes, a bounded program
-cache keyed by content and toolchain identity, PCS/backend integration, complete
+tuning, a bounded program cache keyed by content and toolchain identity,
+PCS/backend integration, complete
 proof-stage coverage, controller admission and pool integration remain
 outstanding. Prepared quotient handles already support reuse without retaining
 witnesses or sampled parameters; there is no cross-worker cache yet. Use the
@@ -95,6 +95,25 @@ completed 56 four-entry trials with full stage coverage and independent CPU root
 audits. Event batching reduced median aggregation time from 23.892 to 23.402
 seconds (2.05%); combined tuning increased it by 25.82%. Optional candidates
 remain disabled by default while wider-workload qualification is outstanding.
+
+The [partition qualification](evidence/cuda-partition-2026-10-18.json) covers
+whole-operation byte admission and reconstruction of up to 256 component cosets.
+Main, preprocessing and permutation prefixes may have different heights and row
+orders. A single coset aliases compatible inputs; larger domains expand one
+component at a time and scatter into a resident quotient. Only public domain
+status and component shifts are downloaded. A 64-column case whose full main
+LDE needs a 4 MiB allocation succeeds with a 2 MiB managed budget and a 512 KiB
+allocation ceiling, including a resident commitment checked against the CPU.
+This remains an experimental primitive, not an integrated CUDA prover.
+
+The opt-in `cuda_partitioned_quotient_benchmark` test compares materialized and
+partitioned cubic quotient evaluation on the same inputs. Set
+`LATTICA_CUDA_PARTITION_BENCHMARK=1` and run that test with `--ignored
+--test-threads=1 --nocapture` in the bounded CUDA service described above. It
+reports cold preparation separately, then two warmups and five alternating pairs
+for each case, with an independent CPU audit of every output. The benchmark
+prints its build profile; debug-host timings are exploratory and do not qualify
+production performance. It does not measure recursive proofs or transactions.
 
 ## Implementation sequence
 

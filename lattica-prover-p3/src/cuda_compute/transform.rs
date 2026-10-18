@@ -78,7 +78,7 @@ fn geometry(
     ))
 }
 
-fn storage_plan(
+pub(super) fn storage_plan(
     input: MatrixSpec,
     log_rows: u32,
     live: usize,
