@@ -334,6 +334,19 @@ opening reductions, FRI/final polynomials, remaining proof stages, backend selec
 and worker integration still precede complete native CUDA proof qualification.
 No complete-proof speedup or transaction-throughput result is established here.
 
+The opt-in `cuda_hidden_commitment_benchmark` compares one-, two- and four-column
+tiles for quadratic and wide cubic traces, with two warmups and five measurements
+per geometry. Set `LATTICA_CUDA_HIDDEN_BENCHMARK=1` and run that test filter with
+`--ignored --test-threads=1 --nocapture` in the bounded CUDA service above. Each
+result is checked against upstream CPU commitment/opening construction and CPU
+verification, outside the timed regions. It reports hiding preparation, commitment
+including cap readback, and queries separately. Runtime/kernel preparation and
+trace uploads precede these timings; result cleanup follows them. The 16 MiB
+managed budget and 4 MiB allocation ceiling stay fixed across geometries. Normal
+debug test builds measure debug host orchestration with NVRTC-compiled kernels;
+the results do not measure complete proofs or transaction throughput. Exclude
+this opt-in test from general `--include-ignored` correctness/sanitizer runs.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)
