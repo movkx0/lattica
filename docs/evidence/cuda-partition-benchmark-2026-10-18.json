@@ -1,0 +1,359 @@
+{
+  "schema": "lattica-cuda-partition-microbenchmark-v1",
+  "completed_at": "2026-10-18T19:37:56.762604+00:00",
+  "identity": {
+    "source_commit": "968e40308a5ec5137e42555abf1d6a278bad6936",
+    "binary_sha256": "dc86b323c65ff98c444f43a32f52df78c6a5f8879505c01bf44f47f44878a389",
+    "source_files": 720,
+    "gpu_before": "name, uuid, driver_version, memory.free [MiB], utilization.gpu [%], clocks.current.sm [MHz], clocks.current.memory [MHz], power.draw [W], temperature.gpu\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08, 14661 MiB, 1 %, 420 MHz, 15001 MHz, 29.81 W, 36\n",
+    "limits": {
+      "memory.max": "3221225472",
+      "memory.swap.max": "0",
+      "cpu.max": "400000 100000",
+      "pids.max": "96"
+    },
+    "toolkit": "CUDA 12.9.1 / NVRTC 12.9.86",
+    "build_profile": "debug",
+    "command": [
+      "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-20418b545592f1a1",
+      "cuda_partitioned_quotient_benchmark",
+      "--ignored",
+      "--test-threads=1",
+      "--nocapture"
+    ]
+  },
+  "setup": {
+    "build_profile": "debug",
+    "cold_seconds": 0.108638415,
+    "kind": "setup",
+    "local_bytes_per_thread": 24,
+    "managed_bytes": 33554432,
+    "max_allocation_bytes": 8388608,
+    "program_preparation_ns": 7870092,
+    "scope": "CUDA cubic quotient reconstruction/evaluation; not complete proving or transactions",
+    "specialized_source_bytes": 17968
+  },
+  "cases": {
+    "sixteen_cosets": {
+      "case": "sixteen_cosets",
+      "cosets": 16,
+      "kind": "case",
+      "log_quotient": 13,
+      "log_trace": 8,
+      "main_width": 64,
+      "materialized_main_bytes": 4194304,
+      "partition_plan_peak_bytes": 1327272,
+      "prefix_logs": [
+        8,
+        9,
+        7
+      ],
+      "materialized": {
+        "median_seconds": 0.001094675,
+        "samples": [
+          {
+            "case": "sixteen_cosets",
+            "commands": 21,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 288032,
+            "downloaded_bytes": 8,
+            "kind": "sample",
+            "pair": 1,
+            "seconds": 0.001070813,
+            "uploaded_bytes": 504,
+            "variant": "materialized"
+          },
+          {
+            "case": "sixteen_cosets",
+            "commands": 21,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 285280,
+            "downloaded_bytes": 8,
+            "kind": "sample",
+            "pair": 2,
+            "seconds": 0.001115985,
+            "uploaded_bytes": 504,
+            "variant": "materialized"
+          },
+          {
+            "case": "sixteen_cosets",
+            "commands": 21,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 284608,
+            "downloaded_bytes": 8,
+            "kind": "sample",
+            "pair": 3,
+            "seconds": 0.001089394,
+            "uploaded_bytes": 504,
+            "variant": "materialized"
+          },
+          {
+            "case": "sixteen_cosets",
+            "commands": 21,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 281152,
+            "downloaded_bytes": 8,
+            "kind": "sample",
+            "pair": 4,
+            "seconds": 0.001094675,
+            "uploaded_bytes": 504,
+            "variant": "materialized"
+          },
+          {
+            "case": "sixteen_cosets",
+            "commands": 21,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 286432,
+            "downloaded_bytes": 8,
+            "kind": "sample",
+            "pair": 5,
+            "seconds": 0.001113485,
+            "uploaded_bytes": 504,
+            "variant": "materialized"
+          }
+        ]
+      },
+      "partitioned": {
+        "median_seconds": 0.013318165,
+        "samples": [
+          {
+            "case": "sixteen_cosets",
+            "commands": 285,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 3279680,
+            "downloaded_bytes": 264,
+            "kind": "sample",
+            "pair": 1,
+            "seconds": 0.012838075,
+            "uploaded_bytes": 6384,
+            "variant": "partitioned"
+          },
+          {
+            "case": "sixteen_cosets",
+            "commands": 285,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 3250464,
+            "downloaded_bytes": 264,
+            "kind": "sample",
+            "pair": 2,
+            "seconds": 0.013318165,
+            "uploaded_bytes": 6384,
+            "variant": "partitioned"
+          },
+          {
+            "case": "sixteen_cosets",
+            "commands": 285,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 3269248,
+            "downloaded_bytes": 264,
+            "kind": "sample",
+            "pair": 3,
+            "seconds": 0.013339706,
+            "uploaded_bytes": 6384,
+            "variant": "partitioned"
+          },
+          {
+            "case": "sixteen_cosets",
+            "commands": 285,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 3256320,
+            "downloaded_bytes": 264,
+            "kind": "sample",
+            "pair": 4,
+            "seconds": 0.013340666,
+            "uploaded_bytes": 6384,
+            "variant": "partitioned"
+          },
+          {
+            "case": "sixteen_cosets",
+            "commands": 285,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 3280416,
+            "downloaded_bytes": 264,
+            "kind": "sample",
+            "pair": 5,
+            "seconds": 0.012853226,
+            "uploaded_bytes": 6384,
+            "variant": "partitioned"
+          }
+        ]
+      },
+      "partition_reduction_percent": -1116.6318770411308
+    },
+    "maximum_cosets": {
+      "case": "maximum_cosets",
+      "cosets": 256,
+      "kind": "case",
+      "log_quotient": 13,
+      "log_trace": 4,
+      "main_width": 64,
+      "materialized_main_bytes": 4194304,
+      "partition_plan_peak_bytes": 269352,
+      "prefix_logs": [
+        4,
+        5,
+        3
+      ],
+      "materialized": {
+        "median_seconds": 0.001038472,
+        "samples": [
+          {
+            "case": "maximum_cosets",
+            "commands": 21,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 239328,
+            "downloaded_bytes": 8,
+            "kind": "sample",
+            "pair": 1,
+            "seconds": 0.001028882,
+            "uploaded_bytes": 408,
+            "variant": "materialized"
+          },
+          {
+            "case": "maximum_cosets",
+            "commands": 21,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 245888,
+            "downloaded_bytes": 8,
+            "kind": "sample",
+            "pair": 2,
+            "seconds": 0.001088155,
+            "uploaded_bytes": 408,
+            "variant": "materialized"
+          },
+          {
+            "case": "maximum_cosets",
+            "commands": 21,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 235840,
+            "downloaded_bytes": 8,
+            "kind": "sample",
+            "pair": 3,
+            "seconds": 0.001034882,
+            "uploaded_bytes": 408,
+            "variant": "materialized"
+          },
+          {
+            "case": "maximum_cosets",
+            "commands": 21,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 240064,
+            "downloaded_bytes": 8,
+            "kind": "sample",
+            "pair": 4,
+            "seconds": 0.001062943,
+            "uploaded_bytes": 408,
+            "variant": "materialized"
+          },
+          {
+            "case": "maximum_cosets",
+            "commands": 21,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 235360,
+            "downloaded_bytes": 8,
+            "kind": "sample",
+            "pair": 5,
+            "seconds": 0.001038472,
+            "uploaded_bytes": 408,
+            "variant": "materialized"
+          }
+        ]
+      },
+      "partitioned": {
+        "median_seconds": 0.175408036,
+        "samples": [
+          {
+            "case": "maximum_cosets",
+            "commands": 4349,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 26317632,
+            "downloaded_bytes": 4104,
+            "kind": "sample",
+            "pair": 1,
+            "seconds": 0.176882766,
+            "uploaded_bytes": 55216,
+            "variant": "partitioned"
+          },
+          {
+            "case": "maximum_cosets",
+            "commands": 4349,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 26285760,
+            "downloaded_bytes": 4104,
+            "kind": "sample",
+            "pair": 2,
+            "seconds": 0.176037042,
+            "uploaded_bytes": 55216,
+            "variant": "partitioned"
+          },
+          {
+            "case": "maximum_cosets",
+            "commands": 4349,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 26281760,
+            "downloaded_bytes": 4104,
+            "kind": "sample",
+            "pair": 3,
+            "seconds": 0.175408036,
+            "uploaded_bytes": 55216,
+            "variant": "partitioned"
+          },
+          {
+            "case": "maximum_cosets",
+            "commands": 4349,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 26308192,
+            "downloaded_bytes": 4104,
+            "kind": "sample",
+            "pair": 4,
+            "seconds": 0.175222468,
+            "uploaded_bytes": 55216,
+            "variant": "partitioned"
+          },
+          {
+            "case": "maximum_cosets",
+            "commands": 4349,
+            "copied_bytes": 0,
+            "cpu_audit": "passed",
+            "device_ns": 26382976,
+            "downloaded_bytes": 4104,
+            "kind": "sample",
+            "pair": 5,
+            "seconds": 0.174855524,
+            "uploaded_bytes": 55216,
+            "variant": "partitioned"
+          }
+        ]
+      },
+      "partition_reduction_percent": -16790.97404648368
+    }
+  },
+  "scope": "CPU-audited CUDA cubic quotient reconstruction and evaluation, not recursive proofs or transaction throughput.",
+  "measured_samples": 20,
+  "audited_warmups": 8,
+  "wall_seconds": 1.873767824999959,
+  "memory_peak_bytes": 130613248,
+  "gpu_after": "name, uuid, driver_version, memory.free [MiB], utilization.gpu [%], clocks.current.sm [MHz], clocks.current.memory [MHz], power.draw [W], temperature.gpu\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08, 14661 MiB, 22 %, 2902 MHz, 15001 MHz, 53.41 W, 37\n",
+  "timing_boundary": "Resident input prefixes, prepared public program and parameters. Includes expansion/evaluation and scratch retirement; excludes result download, CPU audit and final-result retirement. Host orchestration uses the debug test executable; exploratory timings only.",
+  "log_sha256": "6e34d6737a3b9f1f7c0e6c7eaf7b1736b0c3a5c01b5050939082601d7b641610",
+  "interpretation": "Partitioning reduces the required expanded-input storage but is much slower for these small admitted workloads. Prefer full materialization when admitted; future partition selection and scratch reuse require separate qualification. Debug-host results are exploratory, not production throughput."
+}

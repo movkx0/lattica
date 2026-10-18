@@ -115,6 +115,18 @@ for each case, with an independent CPU audit of every output. The benchmark
 prints its build profile; debug-host timings are exploratory and do not qualify
 production performance. It does not measure recursive proofs or transactions.
 
+The [post-push microbenchmark at `968e403`](evidence/cuda-partition-benchmark-2026-10-18.json)
+completed 20 measured samples and eight warmups, all independently CPU-audited.
+With 16 cosets, median materialized/partitioned times were 1.09/13.32 ms; with
+256 cosets, they were 1.04/175.41 ms. The measured command counts grew from 21
+to 285 and 4,349, respectively. Partition byte plans required about 1.27 MiB and
+263 KiB including retained inputs and public code; the full main LDE alone needs
+4 MiB. These are small synthetic AIR workloads using debug host orchestration.
+They demonstrate a memory/latency tradeoff, not a proving speedup. Future CUDA
+backend admission should favor materialization when it fits. Adaptive component
+sizes and scratch/command reuse need qualification before partitioning is used
+as a performance optimization.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)
