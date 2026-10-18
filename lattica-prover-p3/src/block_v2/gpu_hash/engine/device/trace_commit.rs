@@ -1,73 +1,6 @@
 //! GPU input and coefficient scaling for reference-compatible trace hiding.
 use super::*;
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn trace_commit_layout_accounts_for_reference_hiding_and_rejects_bad_geometry() {
-        let spec = MatrixSpec::new(10, 17, Extension::Cubic, RowOrder::Natural, 1).unwrap();
-        let shape = TraceCommitShape::new(spec, 4).unwrap();
-        assert_eq!(
-            (shape.height, shape.width, shape.trace_width),
-            (2048, 55, 51)
-        );
-        assert_eq!(shape.random_words, 1024 * (51 + 8));
-        assert_eq!(shape.allocation_bytes(), [1024 * 59 * 8, 8]);
-        let quadratic = TraceCommitShape::new(
-            MatrixSpec {
-                extension: Extension::Quadratic,
-                ..spec
-            },
-            4,
-        )
-        .unwrap();
-        assert_eq!(
-            (quadratic.height, quadratic.width, quadratic.trace_width),
-            (2048, 38, 34)
-        );
-        assert_eq!(quadratic.random_words, 1024 * 42);
-        assert_eq!(quadratic.allocation_bytes(), [1024 * 42 * 8, 8]);
-        for invalid in [
-            MatrixSpec {
-                order: RowOrder::BitReversed,
-                ..spec
-            },
-            MatrixSpec { shift: 7, ..spec },
-            MatrixSpec {
-                log_rows: 31,
-                ..spec
-            },
-        ] {
-            assert!(TraceCommitShape::new(invalid, 4).is_err());
-        }
-        let base = TraceCommitShape::new(
-            MatrixSpec::new(10, 17, Extension::Base, RowOrder::Natural, 1).unwrap(),
-            4,
-        )
-        .unwrap();
-        assert_eq!((base.height, base.width, base.trace_width), (2048, 21, 17));
-        assert_eq!(base.random_words, 1024 * 25);
-        assert_eq!(base.allocation_bytes(), [1024 * 25 * 8, 8]);
-        let preprocessing = TraceCommitShape::preprocessing(
-            MatrixSpec::new(10, 17, Extension::Base, RowOrder::Natural, 1).unwrap(),
-        )
-        .unwrap();
-        assert_eq!((preprocessing.height, preprocessing.width), (2048, 17));
-        assert_eq!(preprocessing.random_columns, 0);
-        assert_eq!(preprocessing.random_words, 0);
-        assert_eq!(preprocessing.allocation_bytes(), [0, 8]);
-        assert!(TraceCommitShape::preprocessing(spec).is_err());
-        for random_columns in [0, 3, 5, usize::MAX] {
-            assert!(TraceCommitShape::new(spec, random_columns).is_err());
-        }
-        assert!(TraceCommitShape::new(
-            MatrixSpec::new(0, u32::MAX as usize, Extension::Cubic, RowOrder::Natural, 1).unwrap(),
-            4
-        )
-        .is_err());
-    }
-}
+pub(crate) use crate::gpu_hiding::TraceCommitShape;
 
 pub(crate) const KERNEL_SRC: &str = r#"
 __kernel void device_trace_normalization(__global ulong *parameter, uint height) {
@@ -98,98 +31,6 @@ __kernel void device_preprocessing_columns(__global const ulong *trace, __global
     output[i] = (row & 1) == 0 ? trace[(row / 2) * width + column] : 0;
 }
 "#;
-
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct TraceCommitShape {
-    pub height: usize,
-    pub width: usize,
-    pub trace_width: usize,
-    pub random_columns: usize,
-    pub random_words: usize,
-}
-
-impl TraceCommitShape {
-    pub(crate) fn new(spec: MatrixSpec, random_columns: usize) -> Result<Self, String> {
-        Self::plan(spec, random_columns, false)
-    }
-    pub(crate) fn preprocessing(spec: MatrixSpec) -> Result<Self, String> {
-        Self::plan(spec, 0, true)
-    }
-    fn plan(spec: MatrixSpec, random_columns: usize, preprocessing: bool) -> Result<Self, String> {
-        if (preprocessing && spec.extension != Extension::Base)
-            || spec.order != RowOrder::Natural
-            || spec.shift != 1
-            || spec.log_rows >= 31
-            || random_columns
-                != if preprocessing {
-                    0
-                } else {
-                    crate::block_v2::profile::NUM_RANDOM_CODEWORDS
-                }
-        {
-            return Err("unsupported device trace commitment geometry".into());
-        }
-        let trace_width = spec
-            .columns
-            .checked_mul(spec.extension.degree())
-            .ok_or("trace width overflow")?;
-        let width = trace_width
-            .checked_add(random_columns)
-            .filter(|n| *n <= u32::MAX as usize)
-            .ok_or("hidden trace width overflow")?;
-        let random_words = if preprocessing {
-            0
-        } else {
-            trace_width
-                .checked_add(2 * random_columns)
-                .filter(|n| *n <= u32::MAX as usize)
-                .and_then(|n| n.checked_mul(spec.rows()))
-                .filter(|n| n.checked_mul(8).is_some())
-                .ok_or("trace hiding samples overflow")?
-        };
-        let height = spec.rows() * 2;
-        MatrixSpec::new(
-            spec.log_rows + 1,
-            width,
-            Extension::Base,
-            RowOrder::Natural,
-            1,
-        )?;
-        Ok(Self {
-            height,
-            width,
-            trace_width,
-            random_columns,
-            random_words,
-        })
-    }
-    pub(crate) fn allocation_bytes(self) -> [usize; 2] {
-        [self.random_words * 8, 8]
-    }
-    pub(crate) fn storage_plan(
-        self,
-        location: SampleLocation,
-        live: usize,
-        managed: usize,
-        max_allocation: usize,
-    ) -> Result<CommitInputStorage, String> {
-        CommitInputStorage::new(
-            [self.random_words, 0],
-            1,
-            location,
-            live,
-            managed,
-            max_allocation,
-        )
-    }
-    pub(crate) fn lde_shape(self) -> super::super::lde_plan::InputShape {
-        super::super::lde_plan::InputShape {
-            height: self.height,
-            width: self.width,
-            added_bits: crate::block_v2::profile::LOG_BLOWUP,
-        }
-    }
-}
 
 pub(crate) struct TraceCommitInput {
     trace: DeviceMatrix,
@@ -470,6 +311,32 @@ impl TraceCommitInput {
                 &event,
             )?;
             Ok(())
+        }
+    }
+}
+
+impl TraceCommitShape {
+    pub(crate) fn storage_plan(
+        self,
+        location: SampleLocation,
+        live: usize,
+        managed: usize,
+        max_allocation: usize,
+    ) -> Result<CommitInputStorage, String> {
+        CommitInputStorage::new(
+            [self.random_words, 0],
+            1,
+            location,
+            live,
+            managed,
+            max_allocation,
+        )
+    }
+    pub(crate) fn lde_shape(self) -> super::super::lde_plan::InputShape {
+        super::super::lde_plan::InputShape {
+            height: self.height,
+            width: self.width,
+            added_bits: crate::block_v2::profile::LOG_BLOWUP,
         }
     }
 }

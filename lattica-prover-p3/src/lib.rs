@@ -46,6 +46,11 @@ mod gpu_constants;
 mod transcript_limits;
 #[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 mod gpu_random;
+#[cfg(all(
+    feature = "block-v2",
+    any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda")
+))]
+mod gpu_hiding;
 #[cfg(feature = "gpu")]
 pub mod gpu_pcs; // GPU-hiding PCS wrapper: quotient randomization pipeline device-side
 #[cfg(any(feature = "block-v2", all(feature = "stream", test)))]

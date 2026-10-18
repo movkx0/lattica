@@ -7,6 +7,8 @@ mod commitment;
 mod compiler;
 mod device;
 mod field;
+#[cfg(feature = "block-v2")]
+mod hiding;
 mod kernel;
 mod matrix;
 mod query;
@@ -24,6 +26,8 @@ pub(crate) use buffer::Buffer;
 pub(crate) use commitment::{Commitments, RetainedTree};
 pub(crate) use device::{inventory, Identity, Runtime};
 pub(crate) use field::{FieldOperation, FieldProgram, FieldSpan};
+#[cfg(feature = "block-v2")]
+pub(crate) use hiding::{Hiding, QuotientHidingInput, TraceHidingInput};
 pub(crate) use kernel::{Argument, Completion, Kernel, Launch, Module};
 pub(crate) use matrix::Matrix;
 pub(crate) use query::QueryRows;

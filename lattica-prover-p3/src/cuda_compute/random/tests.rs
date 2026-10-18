@@ -374,3 +374,40 @@ fn cuda_random_kernels_compile_for_volta_and_blackwell() {
             .is_empty());
     }
 }
+
+#[test]
+#[ignore = "requires CUDA; run serially with an explicit device UUID"]
+fn cuda_random_batches_are_atomic_across_stream_aliases() {
+    let runtime = runtime(4 << 20, 2 << 20);
+    let engine = Randoms::new(&runtime).unwrap();
+    let mut cpu = ChaCha20Rng::from_seed([37; 32]);
+    let random = engine.import(cpu.clone()).unwrap();
+    let requests = [257, 511, 17];
+    let results = std::thread::scope(|scope| {
+        let jobs: Vec<_> = (0..2)
+            .map(|_| {
+                let alias = random.clone();
+                scope.spawn(move || {
+                    alias
+                        .sample_fields_batch(&requests, &[])
+                        .unwrap()
+                        .iter()
+                        .flat_map(|s| s.read_for_test(s.len() * 8).unwrap())
+                        .collect::<Vec<_>>()
+                })
+            })
+            .collect();
+        jobs.into_iter()
+            .map(|j| j.join().unwrap())
+            .collect::<Vec<_>>()
+    });
+    let expected: Vec<Vec<u64>> = (0..2)
+        .map(|_| {
+            (0..requests.iter().sum::<usize>())
+                .map(|_| cpu.random::<Val>().as_canonical_u64())
+                .collect()
+        })
+        .collect();
+    assert!(results == expected || results == [expected[1].clone(), expected[0].clone()]);
+    assert_eq!(*random.0.position.lock().unwrap(), cpu.get_word_pos());
+}

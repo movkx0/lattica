@@ -32,7 +32,10 @@ Goldilocks samples on CUDA, and supplies fresh salt matrices to commitments.
 It shares byte admission with OpenCL. An explicit proof RNG adapter retires
 every stream in a failed proof group. Bounded private salt recipes now support
 CUDA regeneration, commitments and requested query rows without changing the
-active RNG cursor. Complete hiding PCS integration remains outstanding.
+active RNG cursor. Native trace/preprocessing hiding and quotient
+randomization now generate bounded LDE column tiles from resident random
+samples. Shared protocol geometry preserves the existing OpenCL behavior.
+Complete hiding PCS integration remains outstanding.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -278,6 +281,33 @@ replay, stream exhaustion, query block boundaries and the 4,096-query limit.
 Three OpenCL replay device tests and the existing sampler, quotient, scalar,
 streaming and cross-platform build checks also passed. No complete native CUDA
 proof or throughput qualification is implied.
+
+Native polynomial hiding now interleaves trace/random rows and zero-padded
+preprocessing on CUDA, then generates LDE column tiles on the generator coset.
+Quotient hiding preserves the CPU draw order, normalizes each partition on the
+device, and balances the final mask across the complete uniform partition.
+Prepared inputs admit sampling and LDE storage peaks before random draws;
+multiple quotient sample requests hold one cursor lock. Consumer errors and
+unwinds retire the shared RNG family. Coefficients have a distinct internal
+type so they cannot be mistaken for evaluation matrices.
+The [hiding qualification](evidence/cuda-hiding-2026-10-18.json) records 43
+successful checks, including 82 native CUDA tests, three shared hiding checks,
+and memory/race/synchronization checks across 81 native tests plus both
+adapters. Upstream CPU PCS comparisons cover base/quadratic/cubic traces,
+preprocessing, quadratic/cubic quotients, shifted domains, both row orders,
+and every chunk in 2-, 4-, 16- and 32-way partitions. Independent recomposition
+recovers the original quotient. A 13.75 MiB full trace LDE is evaluated in
+column tiles within a 4 MiB managed budget and 1 MiB allocation ceiling.
+A hidden LDE and replayed salts feed a CPU-audited CUDA commitment without
+private intermediate transfers. Relevant OpenCL hiding/storage regressions,
+CPU/OpenCL builds, Metal cross-compilation, standalone CUDA and streaming
+resource checks pass. Qualification records preserve initial harness filter
+and backend-selection errors alongside successful retries on identical pinned
+source and executables.
+This remains a polynomial-hiding checkpoint. Streaming commitment absorption
+across tiles, retained prefixes, complete PCS/opening/FRI integration and the
+remaining native proof stages are still required before complete CUDA proofs
+or transaction throughput can be qualified.
 
 ## Implementation sequence
 

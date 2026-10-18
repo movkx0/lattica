@@ -339,6 +339,50 @@ impl Randoms {
 }
 
 impl DeviceRandom {
+    pub(super) fn check_runtime(&self, runtime: &Runtime) -> Result<()> {
+        if !Arc::ptr_eq(&self.0.slot.0.runtime.state, &runtime.state) {
+            return Err("CUDA random stream belongs to another runtime".into());
+        }
+        self.check_live()
+    }
+
+    /// Cover downstream consumers as well as sampling with the proof-family
+    /// retirement guard. Callers validate public shapes and budgets first.
+    pub(super) fn with_attempt<T>(&self, f: impl FnOnce() -> Result<T>) -> Result<T> {
+        self.check_live()?;
+        let mut attempt = Attempt {
+            failed: &self.0.failed,
+            started: true,
+            complete: false,
+        };
+        let result = f()?;
+        self.check_live()?;
+        attempt.complete = true;
+        Ok(result)
+    }
+
+    /// Reserve one contiguous draw sequence for polynomial hiding. Holding the
+    /// cursor across all requests prevents another alias from interleaving the
+    /// random-column draws and quotient masks. No consumer runs under this lock.
+    pub(super) fn sample_fields_batch(
+        &self,
+        requests: &[usize],
+        pending: &[usize],
+    ) -> Result<Vec<RandomWords>> {
+        let mut position = self
+            .0
+            .position
+            .lock()
+            .map_err(|_| "CUDA random cursor poisoned")?;
+        self.preflight_at(*position, requests, pending, true)?;
+        self.with_attempt(|| {
+            requests
+                .iter()
+                .map(|&count| self.sample_at(&mut position, count, Fault::None))
+                .collect()
+        })
+    }
+
     pub(crate) fn check_live(&self) -> Result<()> {
         if self.0.failed.load(Ordering::Acquire) {
             return Err("CUDA random family retired; use fresh proof configuration".into());
