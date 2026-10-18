@@ -25,6 +25,17 @@ pub mod tree; // Phase-0 research: wrap-feasibility model (0a) — the deep-tree
 pub mod gpu; // opt-in OpenCL LDE acceleration (additive, prove-only; --features gpu)
 #[cfg(all(feature = "gpu", feature = "gpu-metal"))]
 compile_error!("select one GPU transport: gpu or gpu-metal, with --no-default-features for Metal");
+#[cfg(all(feature = "gpu-cuda", any(feature = "gpu", feature = "gpu-metal")))]
+compile_error!("gpu-cuda is a separate transport; build with --no-default-features");
+#[cfg(all(feature = "gpu-cuda", not(target_os = "linux")))]
+compile_error!("gpu-cuda currently requires Linux");
+#[cfg(feature = "gpu-cuda")]
+pub(crate) mod cuda_compute;
+#[cfg(all(
+    any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"),
+    any(target_os = "linux", target_os = "macos")
+))]
+mod gpu_lease;
 #[cfg(all(feature = "gpu-metal", not(target_os = "macos")))]
 compile_error!("gpu-metal requires macOS");
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]

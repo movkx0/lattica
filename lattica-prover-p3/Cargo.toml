@@ -137,6 +137,7 @@ postcard = { version = "1", features = ["alloc"] }
 serde = { version = "1", default-features = false, features = ["alloc", "derive"] }
 # GPU-accelerated proving: OpenCL DFT/LDE, included by the default `gpu` feature.
 ocl = { version = "0.19", optional = true }
+cudarc = { version = "=0.19.10", optional = true, default-features = false, features = ["std", "driver", "nvrtc", "dynamic-loading", "cuda-12090"] }
 rayon = { version = "1", optional = true } # parallelize the GPU leaf-buffer marshalling
 libc = { version = "0.2", optional = true } # streaming allocator and research filesystem safeguards
 p3-util = { version = "0.6.1", optional = true } # streaming FRI fork: p3's exact log2_strict_usize / reverse_slice_index_bits
@@ -160,6 +161,9 @@ default = ["gpu"]
 # Enable GPU (OpenCL) acceleration of the LDE. Proving calls select the GPU backend explicitly.
 # Requires an OpenCL runtime + a GPU when used; the wire format and verifier are unchanged.
 gpu = ["dep:ocl", "dep:rayon", "dep:libc", "dep:p3-util"]
+# Native CUDA transport. Separate from the OpenCL default; proof integration is
+# qualified incrementally and must never advertise unavailable GPU stages.
+gpu-cuda = ["dep:cudarc", "dep:rayon", "dep:libc", "dep:p3-util"]
 # Opt-in performance candidates; production selection requires GPU qualification.
 gpu-tuning = ["gpu", "block-v2"]
 gpu-metal = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-metal", "dep:rayon", "dep:libc", "dep:p3-util"]

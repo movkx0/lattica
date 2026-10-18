@@ -786,43 +786,7 @@ fn job_lease() -> Result<JobLease, String> {
     Err("bounded GPU requires Linux OpenCL or macOS Metal".into())
 }
 #[cfg(any(target_os = "linux", all(target_os = "macos", feature = "gpu-metal")))]
-fn lease_file(name: &str, shared: bool) -> Result<File, String> {
-    use std::os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt};
-    let uid = unsafe { libc::geteuid() };
-    // A fixed location: differing TMPDIR values must not bypass job serialization.
-    let dir = std::path::Path::new("/tmp").join(format!("lattica-v2-gpu-lease-{uid}"));
-    match std::fs::DirBuilder::new().mode(0o700).create(&dir) {
-        Ok(()) => (),
-        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => (),
-        Err(e) => return Err(e.to_string()),
-    }
-    let meta = std::fs::symlink_metadata(&dir).map_err(|e| e.to_string())?;
-    if !meta.is_dir() || meta.uid() != uid || meta.mode() & 0o777 != 0o700 {
-        return Err("GPU lease directory must be private and owned by the current user".into());
-    }
-    let file = std::fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .mode(0o600)
-        .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
-        .open(dir.join(name))
-        .map_err(|e| e.to_string())?;
-    let meta = file.metadata().map_err(|e| e.to_string())?;
-    if !meta.is_file() || meta.uid() != uid || meta.mode() & 0o777 != 0o600 {
-        return Err("invalid GPU lease file".into());
-    }
-    use std::os::fd::AsRawFd;
-    let operation = if shared { libc::LOCK_SH } else { libc::LOCK_EX };
-    if unsafe { libc::flock(file.as_raw_fd(), operation | libc::LOCK_NB) } != 0 {
-        return Err(format!(
-            "GPU lease busy: {}",
-            std::io::Error::last_os_error()
-        ));
-    }
-    Ok(file)
-}
+use crate::gpu_lease::lease_file;
 
 fn allocation(
     pq: &ProQue,

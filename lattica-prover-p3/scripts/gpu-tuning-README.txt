@@ -60,8 +60,7 @@ Then run the hardware tests serially in the usual <=3 GiB, zero-swap test
 service. With an already compiled test binary, Cargo can select the tests via:
 
   cargo test --offline --lib --features gpu-tuning,block-v2-capacity-128 \
-    gpu_tuning_ -- --ignored --test-threads=1 --nocapture \
-    --skip gpu_tuning_event_batches_preserve_receipts_on_completion_errors_and_unwind
+    gpu_tuning_ -- --ignored --test-threads=1 --nocapture
 
 These tests cover partial warps, noncanonical field inputs, leaf offsets and
 guard words, streamed sponge boundaries, Merkle compression, padded row scaling,
@@ -96,7 +95,9 @@ Proof benchmark qualification (V100 four-input screen recorded separately)
    throughput, and historical qualification records do not qualify this image.
 
 The V100 evidence includes three numerical GPU tests, full GPU-stage receipts,
-five paired four-input comparisons and independent CPU audits. One event test
-was excluded because its one-word output buffer receives two words; the command
-above skips it until that test buffer is corrected. Full 128-entry qualification and production
-activation remain outstanding until the gates above pass.
+five paired four-input comparisons and independent CPU audits. The event test
+was excluded there after its allocation was misread: MatrixSpec::new(1, 1, ...)
+reserves two words, since the first argument is log_rows. The current test adds
+two explicit guard words and the command above includes it. Full 128-entry
+qualification and production activation remain outstanding until the gates
+above pass.

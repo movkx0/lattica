@@ -159,6 +159,7 @@ mod tests {
     #[test]
     #[ignore = "requires OpenCL GPU; run serially with gpu-tuning enabled"]
     fn gpu_tuning_event_batches_preserve_receipts_on_completion_errors_and_unwind() {
+        use p3_field::{Field, PrimeCharacteristicRing, PrimeField64};
         use std::panic::{catch_unwind, AssertUnwindSafe};
         let _shutdown = super::super::super::TestShutdownGuard;
         crate::block_v2::gpu_hash::initialize_quotient_test_engine(super::super::super::Limits {
@@ -172,8 +173,13 @@ mod tests {
         session
             .with_engine(|engine| {
                 engine.tuning.events = true;
-                let spec = MatrixSpec::new(1, 1, Extension::Base, RowOrder::Natural, 1)?;
+                // The parameter kernel writes two words. Retain two additional
+                // guard words so completion and failure paths also check bounds.
+                let spec = MatrixSpec::new(0, 4, Extension::Base, RowOrder::Natural, 1)?;
                 let output = session.allocate(engine, spec)?;
+                const GUARD: u64 = 0xa5a5_936c_d18e_72b4;
+                output.storage.buffer.write(&[GUARD; 4][..]).enq()
+                    .map_err(|e| e.to_string())?;
                 let kernel = engine
                     .pq
                     .kernel_builder("device_transform_parameters")
@@ -236,6 +242,13 @@ mod tests {
                     assert!(after.1 >= before.1);
                     assert_eq!(after.2 - before.2, u64::from(failure != 0));
                     assert_eq!(other.session.test_receipt(Stage::Transform), untouched);
+                    let mut words = [0u64; 4];
+                    output.storage.buffer.read(&mut words[..]).enq()
+                        .map_err(|e| e.to_string())?;
+                    assert_eq!(
+                        words,
+                        [Val::from_u64(8).inverse().as_canonical_u64(), 7, GUARD, GUARD]
+                    );
                 }
                 let before = session.session.test_receipt(Stage::Transform);
                 // User events have no device profiling timestamps. Completion alone
