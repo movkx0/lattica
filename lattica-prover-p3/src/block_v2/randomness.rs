@@ -11,14 +11,21 @@ pub(crate) mod resources;
 
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 use super::gpu_hash::device::{DeviceRandom, DeviceSession};
-#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 use std::sync::atomic::{AtomicBool, Ordering};
+#[cfg(feature = "gpu-cuda")]
+mod cuda;
 
 enum State {
     Host(ChaCha20Rng),
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     Device {
         stream: DeviceRandom,
+        failure: Failure,
+    },
+    #[cfg(feature = "gpu-cuda")]
+    Cuda {
+        stream: crate::cuda_compute::DeviceRandom,
         failure: Failure,
     },
     Retired,
@@ -90,6 +97,14 @@ impl ProofRng {
                 }
             }
             State::Retired => return Err("proof random stream is retired".into()),
+            #[cfg(feature = "gpu-cuda")]
+            State::Cuda { stream, failure } => {
+                failure.check()?;
+                State::Cuda {
+                    stream: stream.snapshot()?,
+                    failure: failure.clone(),
+                }
+            }
         };
         Ok(Self(Arc::new(Mutex::new(snapshot))))
     }
@@ -121,15 +136,22 @@ impl ProofRng {
         Ok(())
     }
 
-    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
     pub(crate) fn is_device(&self) -> Result<bool, String> {
         match &*self.0.lock().map_err(|_| "proof random stream poisoned")? {
             State::Host(_) => Ok(false),
+            #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             State::Device { failure, .. } => {
                 failure.check()?;
                 Ok(true)
             }
             State::Retired => Err("proof random stream is retired".into()),
+            #[cfg(feature = "gpu-cuda")]
+            State::Cuda { stream, failure } => {
+                failure.check()?;
+                stream.check_live()?;
+                Ok(true)
+            }
         }
     }
 
@@ -148,10 +170,16 @@ impl ProofRng {
         }
     }
 
-    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
     pub(crate) fn begin(&self) -> Result<FailureGuard, String> {
         match &*self.0.lock().map_err(|_| "proof random stream poisoned")? {
+            #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             State::Device { failure, .. } => failure.begin(),
+            #[cfg(feature = "gpu-cuda")]
+            State::Cuda { stream, failure } => {
+                stream.check_live()?;
+                failure.begin()
+            }
             _ => Err("device random expansion is not selected".into()),
         }
     }
@@ -172,10 +200,10 @@ impl TryRng for ProofRng {
 }
 impl TryCryptoRng for ProofRng {}
 
-#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 #[derive(Clone, Default)]
 pub(crate) struct Failure(Arc<AtomicBool>);
-#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 impl Failure {
     pub(crate) fn check(&self) -> Result<(), String> {
         if self.0.load(Ordering::Acquire) {
@@ -192,18 +220,18 @@ impl Failure {
         })
     }
 }
-#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 pub(crate) struct FailureGuard {
     failure: Failure,
     completed: bool,
 }
-#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 impl FailureGuard {
     pub(crate) fn complete(mut self) {
         self.completed = true;
     }
 }
-#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 impl Drop for FailureGuard {
     fn drop(&mut self) {
         if !self.completed {

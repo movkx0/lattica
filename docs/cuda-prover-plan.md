@@ -27,6 +27,11 @@ Native scalar kernels derive challenge powers, lookup bus prefixes/pairs,
 next-row points and coset shifts. The CUDA lookup adapter samples alpha/beta
 directly into device storage, then derives per-instance challenge pairs without
 host readback. It shares the bounded bus mapping and domain metadata with OpenCL.
+Native ChaCha20 sampling now imports a seed and cursor, generates ordered
+Goldilocks samples on CUDA, and supplies fresh salt matrices to commitments.
+It shares byte admission with OpenCL. An explicit proof RNG adapter retires
+every stream in a failed proof group; complete hiding PCS and salt replay
+integration remain outstanding.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -215,6 +220,29 @@ the chain uploads one public bus ID and downloads only the quotient-domain
 validity word. Scalar failures and unwinds retire the shared transcript family.
 This establishes native stage composition, not complete CUDA proof construction;
 the default backend, proof profile and worker admission remain unchanged.
+
+The [randomness qualification](evidence/cuda-random-2026-10-18.json) passed 33
+checks, including 64 native CUDA tests, nine challenger tests and three proof
+RNG tests. Memory, race and synchronization checks passed across 63 native tests
+and both adapters; the deliberate missing-kernel test ran separately. Six
+OpenCL sampler/planner host tests, six sampler device tests and the existing
+proof RNG, scalar, quotient and streaming regressions passed. CPU/OpenCL library,
+Apple Metal cross-compilation and standalone CUDA checks also passed. Native
+sampling matches `rand_chacha` at odd offsets, counter and batch boundaries;
+dense rejection preserves order. A failed proof retires all stream aliases,
+and fresh salt matrices feed CPU-audited CUDA commitments without sample
+transfers. Complete hiding PCS and salt replay remain unimplemented. The final
+streaming test build needed a 6 GiB host cap; GPU checks retained the 3 GiB cap.
+
+The opt-in `cuda_random_primitive_benchmark` compares CUDA field expansion with
+CPU expansion plus upload, producing identical device-resident outputs. Set
+`LATTICA_CUDA_RANDOM_BENCHMARK=1` and run that filter with `--ignored
+--test-threads=1 --nocapture` in the bounded CUDA test service. Four request sizes
+from 256 to 1,048,593 fields each receive two warmups and five alternating pairs;
+every result is independently CPU-audited. Timing includes allocation, expansion,
+transfers and temporary-buffer cleanup, but excludes engine/seed preparation,
+result readback and result cleanup. The build profile and transfer counters are
+printed. Debug-host measurements do not establish production proof throughput.
 
 ## Implementation sequence
 

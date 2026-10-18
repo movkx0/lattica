@@ -10,6 +10,7 @@ mod field;
 mod kernel;
 mod matrix;
 mod query;
+mod random;
 mod scalars;
 #[cfg(feature = "block-v2")]
 mod quotient;
@@ -26,6 +27,7 @@ pub(crate) use field::{FieldOperation, FieldProgram, FieldSpan};
 pub(crate) use kernel::{Argument, Completion, Kernel, Launch, Module};
 pub(crate) use matrix::Matrix;
 pub(crate) use query::QueryRows;
+pub(crate) use random::{DeviceRandom, Randoms, RandomWords};
 pub(crate) use scalars::{DomainValues, Scalars};
 #[cfg(feature = "block-v2")]
 pub(crate) use quotient::{

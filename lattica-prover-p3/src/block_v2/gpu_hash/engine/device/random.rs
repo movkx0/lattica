@@ -13,69 +13,11 @@ mod replay;
 pub(crate) use replay::salt_replay_workspace_bytes;
 pub use replay::ReplaySalts;
 
-const STREAM_WORDS: u128 = 1 << 68; // rand_chacha positions count u32 words.
-const MAX_OUTPUT_WORDS: usize = 1 << 28;
-const BATCH_WORDS: usize = 1 << 20;
-// Keep the Rust admission bound within the OpenCL offset scan's local array.
-const _: () = assert!(TILE_WORDS == 256 && BATCH_WORDS <= TILE_WORDS * 4096);
-const TILE_WORDS: usize = 256;
-// Two words per lane for counts/scatter; their local arrays use at most 1 KiB.
-// The offset scan has a separate 16 KiB local array plus compiler overhead.
+pub(super) use crate::gpu_random::{
+    Plan, BATCH_WORDS, MAX_OUTPUT_WORDS, MAX_REJECTIONS, STREAM_WORDS, TILE_WORDS,
+};
 #[cfg(feature = "gpu")]
 const COMPACTION_LANES: usize = TILE_WORDS / 2;
-// Fail explicitly instead of letting a faulty/adversarial stream retry forever.
-// Rejected words never enter a proof; the complete attempt must be retired.
-const MAX_REJECTIONS: u64 = 1024;
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct Plan {
-    output_words: usize,
-    batch_words: usize,
-    raw_words: usize,
-    tiles: usize,
-    peak_bytes: usize,
-}
-
-impl Plan {
-    fn new(
-        count: usize,
-        position: u128,
-        live: usize,
-        limit: usize,
-        max_alloc: usize,
-    ) -> Result<Self, String> {
-        if count == 0
-            || count > MAX_OUTPUT_WORDS
-            || position > STREAM_WORDS
-            || (count as u128) * 2 > STREAM_WORDS - position
-        {
-            return Err("GPU random request exceeds bounded stream or output length".into());
-        }
-        let batch_words = count.min(BATCH_WORDS);
-        // A request can start at any u32 position, including an odd word.
-        let raw_words = (batch_words * 2 + 15).div_ceil(16) * 8;
-        let tiles = batch_words.div_ceil(TILE_WORDS);
-        let mut peak_bytes = live;
-        for words in [count, raw_words, tiles, tiles, 1] {
-            let bytes = words
-                .checked_mul(8)
-                .ok_or("GPU random allocation overflow")?;
-            peak_bytes = peak_bytes
-                .checked_add(bytes)
-                .ok_or("GPU random live-byte overflow")?;
-            if bytes > max_alloc || peak_bytes > limit {
-                return Err("GPU random output and scratch exceed admission".into());
-            }
-        }
-        Ok(Self {
-            output_words: count,
-            batch_words,
-            raw_words,
-            tiles,
-            peak_bytes,
-        })
-    }
-}
 
 /// Wipes secret state and samples before their reservations are released.
 /// It owns its queue so cleanup works during unwinding and engine shutdown.
