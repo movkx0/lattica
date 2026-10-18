@@ -17,11 +17,15 @@ mod scalars;
 
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 use super::gpu_hash::device::{DeviceSession, DeviceTranscript, TranscriptAttempt};
+#[cfg(feature = "gpu-cuda")]
+use crate::cuda_compute::{Transcript as CudaTranscript, TranscriptAttempt, Transcripts};
 
 enum Backend {
     Cpu(CpuChallenger),
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     Gpu(DeviceTranscript),
+    #[cfg(feature = "gpu-cuda")]
+    Cuda(CudaTranscript),
 }
 
 pub struct CandidateChallenger {
@@ -33,6 +37,15 @@ impl CandidateChallenger {
     /// permutations used by independent reference callers.
     pub fn new(permutation: Perm) -> Self {
         CpuChallenger::new(permutation).into()
+    }
+
+    /// Explicit partial-backend integration. Selecting a CUDA transcript alone
+    /// does not advertise complete CUDA proving or GPU-required stage coverage.
+    #[cfg(feature = "gpu-cuda")]
+    pub(crate) fn new_cuda(engine: &std::sync::Arc<Transcripts>) -> Result<Self, String> {
+        Ok(Self {
+            inner: Backend::Cuda(engine.start()?),
+        })
     }
 
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
@@ -55,14 +68,18 @@ impl CandidateChallenger {
             Backend::Cpu(_) => false,
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Backend::Gpu(_) => true,
+            #[cfg(feature = "gpu-cuda")]
+            Backend::Cuda(_) => true,
         }
     }
 
     pub(crate) fn backend_name(&self) -> &'static str {
-        if self.is_gpu() {
-            "opencl"
-        } else {
-            "cpu"
+        match &self.inner {
+            Backend::Cpu(_) => "cpu",
+            #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+            Backend::Gpu(_) => "opencl",
+            #[cfg(feature = "gpu-cuda")]
+            Backend::Cuda(_) => "cuda",
         }
     }
 
@@ -88,11 +105,14 @@ impl CandidateChallenger {
         }
     }
 
-    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
     pub(crate) fn begin_attempt(&self) -> Result<Option<TranscriptAttempt>, String> {
         match &self.inner {
             Backend::Cpu(_) => Ok(None),
+            #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Backend::Gpu(gpu) => gpu.begin_attempt().map(Some),
+            #[cfg(feature = "gpu-cuda")]
+            Backend::Cuda(gpu) => gpu.begin_attempt().map(Some),
         }
     }
 
@@ -110,6 +130,27 @@ impl CandidateChallenger {
                 let result =
                     storage::observe_batches(values, |words| gpu.observe_scoped(words, &mut scope));
                 checked(gpu, result);
+            }
+            #[cfg(feature = "gpu-cuda")]
+            Backend::Cuda(gpu) => {
+                // Fixed host backing for public observations; no transcript
+                // state or private prover data is reconstructed here.
+                let mut batch = [0u64; crate::transcript_limits::BATCH_WORDS];
+                let mut used = 0;
+                checked_cuda(gpu, gpu.check_live());
+                for value in values {
+                    batch[used] = value.as_canonical_u64();
+                    used += 1;
+                    if used == batch.len() {
+                        let result = gpu.observe(&batch);
+                        checked_cuda(gpu, result);
+                        used = 0;
+                    }
+                }
+                if used != 0 {
+                    let result = gpu.observe(&batch[..used]);
+                    checked_cuda(gpu, result);
+                }
             }
         }
     }
@@ -134,8 +175,29 @@ impl CandidateChallenger {
                 }
                 output
             }
+            #[cfg(feature = "gpu-cuda")]
+            Backend::Cuda(gpu) => {
+                if count == 0 {
+                    checked_cuda(gpu, gpu.check_live());
+                    return Vec::new();
+                }
+                let result = gpu.sample_bits(bits, count);
+                // CUDA has already masked canonical public samples.
+                checked_cuda(gpu, result)
+                    .into_iter()
+                    .map(|word| word as usize)
+                    .collect()
+            }
         }
     }
+}
+
+#[cfg(feature = "gpu-cuda")]
+fn checked_cuda<T>(gpu: &CudaTranscript, result: Result<T, String>) -> T {
+    result.unwrap_or_else(|error| {
+        gpu.retire();
+        panic!("CUDA transcript failed; no CPU fallback: {error}")
+    })
 }
 
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
@@ -163,6 +225,8 @@ impl Clone for CandidateChallenger {
                 Backend::Cpu(cpu) => Backend::Cpu(cpu.clone()),
                 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
                 Backend::Gpu(gpu) => Backend::Gpu(checked(gpu, gpu.snapshot())),
+                #[cfg(feature = "gpu-cuda")]
+                Backend::Cuda(gpu) => Backend::Cuda(checked_cuda(gpu, gpu.snapshot())),
             },
         }
     }
@@ -221,6 +285,12 @@ impl<A: BasedVectorSpace<Val>> CanSample<A> for CandidateChallenger {
                 // assembles the existing public field/extension representation.
                 A::from_basis_coefficients_fn(|i| Val::new(words[i]))
             }
+            #[cfg(feature = "gpu-cuda")]
+            Backend::Cuda(gpu) => {
+                let result = gpu.sample_fields(A::DIMENSION);
+                let words = checked_cuda(gpu, result);
+                A::from_basis_coefficients_fn(|i| Val::new(words[i]))
+            }
         }
     }
 }
@@ -256,6 +326,11 @@ impl GrindingChallenger for CandidateChallenger {
             Backend::Gpu(gpu) => {
                 let result = gpu.grind(bits);
                 Val::new(checked(gpu, result))
+            }
+            #[cfg(feature = "gpu-cuda")]
+            Backend::Cuda(gpu) => {
+                let result = gpu.grind(bits);
+                Val::new(checked_cuda(gpu, result))
             }
         }
     }

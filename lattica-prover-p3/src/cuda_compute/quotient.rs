@@ -188,18 +188,7 @@ impl Quotients {
     }
 
     fn admit_private(&self, bytes: usize) -> Result<bool> {
-        let identity = self.runtime.identity();
-        let backing = bytes
-            .div_ceil(256)
-            .checked_mul(256)
-            .and_then(|n| n.checked_mul(identity.multiprocessors as usize))
-            .and_then(|n| n.checked_mul(identity.max_threads_per_multiprocessor as usize))
-            .ok_or("CUDA quotient private memory size overflow")?;
-        // This comes from the separately reserved >=4 GiB context allowance.
-        Ok(bytes <= 512
-            && backing <= 128 << 20
-            && identity.multiprocessors > 0
-            && identity.max_threads_per_multiprocessor > 0)
+        super::kernel::private_memory_fits(self.runtime.identity(), bytes)
     }
 
     fn check_owner(&self, buffer: &Buffer) -> Result<()> {

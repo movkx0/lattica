@@ -19,6 +19,10 @@ cleanup, NVRTC compilation, kernel launches and completion events. Native CUDA
 now implements base/quadratic/cubic field arithmetic, tiled coset transforms,
 query reconstruction from device prefixes, Poseidon2 commitments, and resident
 quadratic/cubic quotient evaluation with partitioned prefix reconstruction.
+Resident Poseidon2 transcripts now support observation, sampling, bounded
+snapshots and deterministic grinding. An explicit CUDA challenger adapter
+produces a mixed proof accepted by the unchanged CPU verifier; it does not
+select CUDA for the other proving stages.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -147,6 +151,26 @@ metadata includes hit, miss, eviction and retained-byte counters. Cache tables
 and handle overhead are conservatively charged with retained programs. The real
 machine AIR/LogUp oracle now exercises this cached preparation path. This is a
 correctness/resource checkpoint; no complete-proof speedup is claimed.
+
+The [transcript qualification](evidence/cuda-transcript-2026-10-18.json) passed
+50 native CUDA tests, five challenger tests and four shared planner tests.
+Memory, race and synchronization checks passed across 49 native tests and three
+challenger device tests per tool. Three OpenCL challenger device tests and the
+existing CPU/OpenCL/Metal build and quotient regression checks also passed.
+The device owns the duplex state; public sampling can read back bounded values,
+while resident samples feed native commitments without host transfers. Shared
+family retirement prevents continuation after a failed or abandoned attempt.
+Whole-operation admission covers grinding scratch before state mutation, and
+each grinding batch downloads only two public status words. Zero-bit grinding
+does not change state; zero-bit sampling still consumes a sample.
+
+The integration test preserves the production hiding PCS, security parameters
+and Postcard format, verifies using the original CPU proof type, and rejects
+altered public inputs. Only its challenger runs on CUDA. Native scalar
+derivations, randomness/hiding, witness/preprocessing/lookup, openings/FRI/final
+polynomials, complete PCS/backend selection, stage receipts, worker admission
+and pool integration remain outstanding. This checkpoint does not establish
+complete CUDA proving or transaction throughput.
 
 ## Implementation sequence
 

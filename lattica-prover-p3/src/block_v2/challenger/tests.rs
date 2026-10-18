@@ -96,6 +96,115 @@ fn cpu_adapter_conversion_preserves_pending_state() {
     exercise(reference, actual);
 }
 
+#[cfg(feature = "gpu-cuda")]
+fn cuda_runtime() -> crate::cuda_compute::Runtime {
+    crate::cuda_compute::Runtime::new(
+        &std::env::var("LATTICA_GPU_DEVICE_UUID").unwrap(),
+        crate::cuda_compute::Limits {
+            managed_bytes: 4 << 20,
+            max_allocation_bytes: 2 << 20,
+            ..crate::cuda_compute::Limits::default()
+        },
+    )
+    .unwrap()
+}
+
+#[cfg(feature = "gpu-cuda")]
+#[test]
+#[ignore = "requires CUDA and NVRTC; run serially"]
+fn cuda_adapter_preserves_upstream_observations_sampling_and_grinding() {
+    let runtime = cuda_runtime();
+    let engine = Transcripts::new(&runtime).unwrap();
+    let actual = CandidateChallenger::new_cuda(&engine).unwrap();
+    assert!(actual.is_gpu());
+    assert_eq!(actual.backend_name(), "cuda");
+    exercise(cpu(), actual);
+    assert!(runtime.snapshot().completed_commands > 0);
+}
+
+#[cfg(feature = "gpu-cuda")]
+#[test]
+#[ignore = "requires CUDA and NVRTC; run serially"]
+fn cuda_adapter_trait_failures_retire_forks_without_cpu_fallback() {
+    let runtime = cuda_runtime();
+    let engine = Transcripts::new(&runtime).unwrap();
+    let mut actual = CandidateChallenger::new_cuda(&engine).unwrap();
+    let mut fork = actual.clone();
+    let before = runtime.snapshot();
+    let failed = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| actual.sample_bits(64)));
+    assert!(failed.is_err());
+    assert_eq!(runtime.snapshot(), before);
+    let failed = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        <CandidateChallenger as CanSample<Val>>::sample(&mut fork)
+    }));
+    assert!(failed.is_err());
+    assert_eq!(runtime.snapshot(), before);
+}
+
+#[cfg(feature = "gpu-cuda")]
+#[test]
+#[ignore = "requires CUDA and NVRTC; transcript-only mixed proof, not full GPU proving"]
+fn cuda_transcript_proof_verifies_with_unchanged_cpu_verifier_and_profile() {
+    use p3_air::{Air, AirBuilder, BaseAir, WindowAccess};
+    use p3_matrix::dense::RowMajorMatrix;
+    use p3_uni_stark::{StarkConfig, StarkGenericConfig};
+    struct MultiplicationAir;
+    impl BaseAir<Val> for MultiplicationAir {
+        fn width(&self) -> usize {
+            3
+        }
+        fn num_public_values(&self) -> usize {
+            1
+        }
+    }
+    impl<AB: AirBuilder<F = Val>> Air<AB> for MultiplicationAir {
+        fn eval(&self, builder: &mut AB) {
+            let main = builder.main();
+            let row = main.current_slice();
+            builder.assert_eq(row[0] * row[1], row[2]);
+            let public = builder.public_values()[0];
+            builder.when_first_row().assert_eq(row[2], public);
+        }
+    }
+    let runtime = cuda_runtime();
+    let engine = Transcripts::new(&runtime).unwrap();
+    let challenger = CandidateChallenger::new_cuda(&engine).unwrap();
+    let attempt = challenger.begin_attempt().unwrap().unwrap();
+    let verifier = crate::config::make_config();
+    // The ordinary production PCS, hiding randomness and security parameters
+    // remain unchanged. Only the challenger executes on CUDA in this test.
+    type Config = StarkConfig<crate::config::MyPcs, crate::config::Challenge, CandidateChallenger>;
+    let prover = Config::new(verifier.pcs().clone(), challenger);
+    let values = (0..32)
+        .flat_map(|row| {
+            let left = Val::from_usize(row + 2);
+            let right = Val::from_usize(row + 5);
+            [left, right, left * right]
+        })
+        .collect();
+    let proof = p3_uni_stark::prove(
+        &prover,
+        &MultiplicationAir,
+        RowMajorMatrix::new(values, 3),
+        &[Val::new(10)],
+    );
+    attempt.complete();
+    let encoded = postcard::to_allocvec(&proof).unwrap();
+    let (proof, rest): (p3_uni_stark::Proof<crate::config::MyConfig>, &[u8]) =
+        postcard::take_from_bytes(&encoded).unwrap();
+    assert!(rest.is_empty());
+    assert_eq!(postcard::to_allocvec(&proof).unwrap(), encoded);
+    let before = runtime.snapshot();
+    p3_uni_stark::verify(&verifier, &MultiplicationAir, &proof, &[Val::new(10)]).unwrap();
+    assert!(p3_uni_stark::verify(&verifier, &MultiplicationAir, &proof, &[Val::new(11)]).is_err());
+    assert_eq!(
+        runtime.snapshot(),
+        before,
+        "independent verification must not touch CUDA"
+    );
+    assert!(before.completed_commands > 0);
+}
+
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 #[test]
 fn cpu_adapter_does_not_initialize_a_device_or_require_an_attempt() {

@@ -14,6 +14,7 @@ mod query;
 mod quotient;
 #[cfg(test)]
 mod tests;
+mod transcript;
 mod transform;
 
 pub(crate) use budget::{Limits, Snapshot};
@@ -28,6 +29,7 @@ pub(crate) use query::QueryRows;
 pub(crate) use quotient::{
     CacheLimits, CacheSnapshot, PreparedQuotient, QuotientInputs, Quotients, Specialization,
 };
+pub(crate) use transcript::{Transcript, TranscriptAttempt, Transcripts};
 pub(crate) use transform::Transforms;
 
 type Result<T> = std::result::Result<T, String>;

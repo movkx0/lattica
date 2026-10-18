@@ -116,16 +116,21 @@ pub(crate) struct Commitments {
     paths: Kernel,
 }
 
+pub(super) fn poseidon_constants(runtime: &Runtime) -> Result<Buffer> {
+    let (initial, internal, final_rounds, diagonal) = crate::gpu_constants::poseidon2_consts();
+    let constants = runtime.allocate(CONSTANT_WORDS)?;
+    let mut first = 0;
+    for words in [&initial, &internal, &final_rounds, &diagonal] {
+        constants.write(first, words)?;
+        first += words.len();
+    }
+    Ok(constants)
+}
+
 impl Commitments {
     pub(crate) fn new(runtime: &Runtime) -> Result<Self> {
         let module = runtime.compile(SOURCE)?;
-        let (initial, internal, final_rounds, diagonal) = crate::gpu_constants::poseidon2_consts();
-        let constants = runtime.allocate(CONSTANT_WORDS)?;
-        let mut first = 0;
-        for words in [&initial, &internal, &final_rounds, &diagonal] {
-            constants.write(first, words)?;
-            first += words.len();
-        }
+        let constants = poseidon_constants(runtime)?;
         Ok(Self {
             runtime: runtime.clone(),
             constants,

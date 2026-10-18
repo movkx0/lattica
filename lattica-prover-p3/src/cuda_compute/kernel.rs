@@ -18,6 +18,21 @@ struct NativeModule {
     state: Arc<State>,
 }
 
+/// Local-memory backing comes from the separately reserved context allowance.
+/// Keep every native primitive within the same per-thread and occupancy bound.
+pub(super) fn private_memory_fits(identity: &super::Identity, bytes: usize) -> Result<bool> {
+    let backing = bytes
+        .div_ceil(256)
+        .checked_mul(256)
+        .and_then(|n| n.checked_mul(identity.multiprocessors as usize))
+        .and_then(|n| n.checked_mul(identity.max_threads_per_multiprocessor as usize))
+        .ok_or("CUDA private memory size overflow")?;
+    Ok(bytes <= 512
+        && backing <= 128 << 20
+        && identity.multiprocessors > 0
+        && identity.max_threads_per_multiprocessor > 0)
+}
+
 // Calls bind the owning context and serialize on its stream. The raw module
 // remains alive through every Kernel and drains outstanding work on retirement.
 unsafe impl Send for NativeModule {}

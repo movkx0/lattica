@@ -42,6 +42,8 @@ mod gpu_lease;
 compile_error!("gpu-metal requires macOS");
 #[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 mod gpu_constants;
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
+mod transcript_limits;
 #[cfg(feature = "gpu")]
 pub mod gpu_pcs; // GPU-hiding PCS wrapper: quotient randomization pipeline device-side
 #[cfg(any(feature = "block-v2", all(feature = "stream", test)))]
