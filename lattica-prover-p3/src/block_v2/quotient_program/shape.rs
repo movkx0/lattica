@@ -1,4 +1,4 @@
-//! Integer-only evaluator geometry, shared by admission and runtime planning.
+//! Backend-independent evaluator geometry, shared by admission and runtime planning.
 use super::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -90,6 +90,20 @@ enum Slot {
 }
 
 impl Kernel {
+    /// Static per-thread local memory reported by the CUDA driver. Used to
+    /// bound public specialization spills within the reserved context memory.
+    pub(crate) fn local_bytes(&self) -> Result<usize> {
+        let _guard = self.module.inner.state.enter()?;
+        let bytes = unsafe {
+            result::function::get_function_attribute(
+                self.raw,
+                sys::CUfunction_attribute::CU_FUNC_ATTRIBUTE_LOCAL_SIZE_BYTES,
+            )
+            .map_err(error)?
+        };
+        usize::try_from(bytes).map_err(|_| "negative CUDA kernel local-memory size".into())
+    }
+
     /// Enqueue on the owning runtime's in-order stream.
     ///
     /// # Safety

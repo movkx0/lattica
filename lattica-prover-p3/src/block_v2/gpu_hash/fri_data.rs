@@ -9,16 +9,7 @@ use p3_field::PrimeCharacteristicRing;
 pub(crate) type FriExtensionMmcs<F> =
     crate::block_v2::extension_mmcs::CandidateExtensionMmcs<Val, F, CandidateMmcs>;
 
-/// Only the two pinned Goldilocks extension bases implemented by the kernels.
-pub trait FriExtension: p3_field::ExtensionField<Val> {
-    const DEVICE_EXTENSION: Extension;
-}
-impl FriExtension for crate::config::Challenge {
-    const DEVICE_EXTENSION: Extension = Extension::Quadratic;
-}
-impl FriExtension for Challenge {
-    const DEVICE_EXTENSION: Extension = Extension::Cubic;
-}
+pub use crate::block_v2::pcs_field::FriExtension;
 
 pub(crate) struct FriData {
     leaves: DeviceMatrix,

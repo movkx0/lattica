@@ -44,6 +44,8 @@ pub mod pcs_field;
 pub mod perf;
 pub mod profile;
 pub mod quotient_pcs;
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
+pub(crate) mod quotient_program;
 mod randomness;
 pub mod recursive;
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]

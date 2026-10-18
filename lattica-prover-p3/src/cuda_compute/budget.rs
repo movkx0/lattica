@@ -62,6 +62,10 @@ pub(crate) struct Snapshot {
     pub uploaded_bytes: u64,
     pub downloaded_bytes: u64,
     pub copied_bytes: u64,
+    /// Host allocations retained by immutable public quotient programs. These
+    /// have a separate aggregate allowance; device code buffers count above.
+    pub public_program_bytes: usize,
+    pub public_programs: usize,
 }
 
 pub(super) enum Transfer {
@@ -79,6 +83,7 @@ enum Kind {
     Allocation(usize),
     Module,
     Command,
+    PublicProgram(usize),
 }
 
 pub(super) struct Reservation {
@@ -118,6 +123,18 @@ impl Budget {
     fn reserve(self: &Arc<Self>, kind: Kind) -> Result<Reservation> {
         let mut state = self.state.lock().map_err(|_| "CUDA accounting poisoned")?;
         match kind {
+            Kind::PublicProgram(bytes) => {
+                let next = state
+                    .public_program_bytes
+                    .checked_add(bytes)
+                    .filter(|n| *n <= 64 << 20)
+                    .ok_or("CUDA public program host allowance exhausted")?;
+                if bytes == 0 || state.public_programs == 32 {
+                    return Err("CUDA public program count or size allowance".into());
+                }
+                state.public_program_bytes = next;
+                state.public_programs += 1;
+            }
             Kind::Allocation(bytes) => {
                 if bytes == 0
                     || bytes > self.limits.max_allocation_bytes
@@ -163,6 +180,9 @@ impl Budget {
     pub fn command(self: &Arc<Self>) -> Result<Reservation> {
         self.reserve(Kind::Command)
     }
+    pub fn public_program(self: &Arc<Self>, bytes: usize) -> Result<Reservation> {
+        self.reserve(Kind::PublicProgram(bytes))
+    }
 
     pub fn completed(&self, ns: u64) -> Result<()> {
         let mut state = self.state.lock().map_err(|_| "CUDA accounting poisoned")?;
@@ -184,6 +204,10 @@ impl Drop for Reservation {
     fn drop(&mut self) {
         let mut state = self.budget.state.lock().unwrap_or_else(|p| p.into_inner());
         match self.kind {
+            Kind::PublicProgram(bytes) => {
+                state.public_program_bytes -= bytes;
+                state.public_programs -= 1;
+            }
             Kind::Allocation(bytes) => {
                 state.live_bytes -= bytes;
                 state.allocations -= 1;
@@ -197,6 +221,22 @@ impl Drop for Reservation {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn public_programs_charge_retained_host_capacity_and_count() {
+        let budget = Budget::new(Limits::default()).unwrap();
+        assert!(budget.public_program(0).is_err());
+        assert!(budget.public_program(usize::MAX).is_err());
+        let full = budget.public_program(64 << 20).unwrap();
+        assert!(budget.public_program(1).is_err());
+        drop(full);
+        let entries: Vec<_> = (0..32).map(|_| budget.public_program(1).unwrap()).collect();
+        assert!(budget.public_program(1).is_err());
+        assert_eq!(budget.snapshot().public_programs, 32);
+        assert_eq!(budget.snapshot().public_program_bytes, 32);
+        drop(entries);
+        assert_eq!(budget.snapshot().public_program_bytes, 0);
+        assert_eq!(budget.snapshot().public_programs, 0);
+    }
 
     #[test]
     fn reservations_cover_aggregate_limits_and_release_on_failure() {

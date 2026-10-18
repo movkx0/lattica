@@ -2,11 +2,9 @@
 //! symbolic builder supplies the constraints, including the LogUp gadget and
 //! global emission order. No witness or challenge values enter this program.
 use crate::{
-    block_v2::{
-        gpu_hash::{device::Extension, FriExtension},
-        profile::Challenge,
-    },
+    block_v2::{pcs_field::FriExtension, profile::Challenge},
     config::Val,
+    gpu_matrix::Extension,
 };
 use p3_air::symbolic::{
     AirLayout, BaseEntry, BaseLeaf, ExtEntry, ExtLeaf, SymbolicExpression, SymbolicExpressionExt,
@@ -18,6 +16,11 @@ use p3_field::PrimeField64;
 use p3_lookup::{InteractionSymbolicBuilder, Lookup, LookupProtocol};
 use std::{collections::HashMap, sync::Arc};
 mod shape;
+#[cfg(any(feature = "gpu", feature = "gpu-cuda"))]
+pub(crate) mod specialize;
+#[cfg(test)]
+pub(crate) mod test_support;
+mod validation;
 pub(crate) use shape::ProgramShape;
 
 pub(crate) const WORDS_PER_INSTRUCTION: usize = 5;

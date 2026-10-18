@@ -5,6 +5,21 @@
 use crate::config::Val;
 use p3_field::{ExtensionField, TwoAdicField};
 
+/// Extension bases implemented by the GPU arithmetic and public AIR bytecode.
+/// This identity contains no runtime handles or backend-specific proof policy.
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
+pub trait FriExtension: ExtensionField<Val> {
+    const DEVICE_EXTENSION: crate::gpu_matrix::Extension;
+}
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
+impl FriExtension for crate::config::Challenge {
+    const DEVICE_EXTENSION: crate::gpu_matrix::Extension = crate::gpu_matrix::Extension::Quadratic;
+}
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
+impl FriExtension for super::profile::Challenge {
+    const DEVICE_EXTENSION: crate::gpu_matrix::Extension = crate::gpu_matrix::Extension::Cubic;
+}
+
 pub(crate) type ProvingConfig<E> =
     p3_uni_stark::StarkConfig<super::quotient_pcs::CandidatePcs<E>, E, super::profile::Challenger>;
 

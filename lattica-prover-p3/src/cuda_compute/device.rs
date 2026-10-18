@@ -22,6 +22,8 @@ pub(crate) struct Identity {
     pub max_threads: u32,
     pub max_grid_x: u32,
     pub shared_bytes: u32,
+    pub multiprocessors: u32,
+    pub max_threads_per_multiprocessor: u32,
 }
 
 pub(crate) fn inventory() -> Result<Vec<Identity>> {
@@ -84,6 +86,12 @@ pub(crate) fn inventory() -> Result<Vec<Identity>> {
                 as u32,
             shared_bytes: attribute(
                 sys::CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK,
+            )? as u32,
+            multiprocessors: attribute(
+                sys::CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT,
+            )? as u32,
+            max_threads_per_multiprocessor: attribute(
+                sys::CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_MULTIPROCESSOR,
             )? as u32,
         });
     }

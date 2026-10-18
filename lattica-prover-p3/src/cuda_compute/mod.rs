@@ -10,6 +10,8 @@ mod field;
 mod kernel;
 mod matrix;
 mod query;
+#[cfg(feature = "block-v2")]
+mod quotient;
 #[cfg(test)]
 mod tests;
 mod transform;
@@ -22,6 +24,8 @@ pub(crate) use field::{FieldOperation, FieldProgram, FieldSpan};
 pub(crate) use kernel::{Argument, Completion, Kernel, Launch, Module};
 pub(crate) use matrix::Matrix;
 pub(crate) use query::QueryRows;
+#[cfg(feature = "block-v2")]
+pub(crate) use quotient::{PreparedQuotient, QuotientInputs, Quotients, Specialization};
 pub(crate) use transform::Transforms;
 
 type Result<T> = std::result::Result<T, String>;

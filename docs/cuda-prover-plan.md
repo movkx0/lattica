@@ -17,18 +17,26 @@ The opt-in `gpu-cuda` feature provides an experimental Linux transport: explicit
 device selection, shared OpenCL/CUDA leases, bounded allocations, private-buffer
 cleanup, NVRTC compilation, kernel launches and completion events. Native CUDA
 now implements base/quadratic/cubic field arithmetic, tiled coset transforms,
-query reconstruction from device prefixes, and Poseidon2 commitments. Commitment
+query reconstruction from device prefixes, Poseidon2 commitments, and resident
+quadratic/cubic quotient evaluation. Commitment
 fragments preserve padding-free absorption across column boundaries; fresh salts
 remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
 roots and the query memory planner are shared with OpenCL. Intermediate
 polynomials remain on the device; explicit transfer counters check this boundary.
+The public AIR compiler and its 64-instruction specialization/liveness pass are
+shared between OpenCL and CUDA. CUDA prepares immutable public program handles;
+unsupported specialization shapes retain GPU interpretation. Current/next rows,
+alpha powers, selectors, constraints and vanishing-polynomial division execute
+on CUDA, with only a public domain-validity word read back per evaluation.
 
 Wallet and recursive proofs are not yet routed through CUDA. Cached twiddle
-tuning, quotient compilation, commitment integration into the PCS, complete
+tuning, quotient reconstruction from partitioned prefixes, a bounded program
+cache keyed by content and toolchain identity, PCS/backend integration, complete
 proof-stage coverage, controller admission and pool integration remain
-outstanding. Use the existing OpenCL backend for proof benchmarks at this
-checkpoint.
+outstanding. Prepared quotient handles already support reuse without retaining
+witnesses or sampled parameters; there is no cross-worker cache yet. Use the
+existing OpenCL backend for proof benchmarks at this checkpoint.
 
 Install the pinned development components with
 `python3 lattica-prover-p3/scripts/setup-cuda-toolchain.py --prefix .tools/cuda-12.9.1`.
@@ -38,7 +46,7 @@ Run the resulting test executable in a bounded 3 GiB, four-thread, zero-swap
 service with `LD_LIBRARY_PATH` pointing to the toolchain's `lib` directory and
 `LATTICA_GPU_DEVICE_UUID` selecting the device. The filter
 `cuda_compute:: --include-ignored --test-threads=1` covers arithmetic, transforms,
-query reconstruction, salted commitments, host limits and device lifecycle
+query reconstruction, salted commitments, quotient evaluation, host limits and device lifecycle
 checks. The separate
 `gpu_matrix:: --test-threads=1` filter checks shared roots and planner boundaries.
 These tests do not establish a complete CUDA prover or transaction throughput.
@@ -66,6 +74,21 @@ could return before the nonblocking compute stream consumed their results.
 Explicit completion now precedes compute and private-buffer retirement, with
 a larger-buffer regression covering initialization, uploads and device copies.
 These correctness results do not qualify complete CUDA proofs or performance.
+
+The [quotient qualification](evidence/cuda-quotient-2026-10-18.json) passed all
+30 CUDA host/device tests, four shared planner tests, 33 OpenCL host tests and
+two OpenCL device comparisons. The CUDA comparisons cover both field extensions,
+mixed physical row orders, 16,384-row tile boundaries, generic fallback and
+specialized register reuse. The real machine AIR with LogUp matched the upstream
+CPU Batch-STARK quotient evaluator. Quotient outputs were consumed by CUDA
+commitments before any polynomial readback. Compute Sanitizer found zero memory
+errors, leaks, race hazards or synchronization errors across 29 tests; the
+intentional missing-kernel test passed separately. CPU/OpenCL libraries, Apple
+Metal cross-compilation and standalone CUDA builds passed. Public programs have
+a 16 MiB per-entry and 64 MiB aggregate retained host allowance, with at most 32
+live prepared handles per runtime. The first OpenCL device check required a
+retry with `LATTICA_V2_GPU_RETAIN_TREES=1`; that setup failure is retained in the
+evidence. V100 execution and complete CUDA proofs remain unqualified.
 
 The [OpenCL comparison at `bce8830`](evidence/gpu-tuning-rtx5080-2026-10-18.json)
 completed 56 four-entry trials with full stage coverage and independent CPU root

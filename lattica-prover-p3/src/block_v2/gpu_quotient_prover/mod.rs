@@ -19,7 +19,7 @@ mod opened_values;
 pub(crate) mod uni;
 pub(super) use input::ProvingInstance;
 pub(crate) mod lookup_program;
-pub(crate) mod program;
+pub(crate) use super::quotient_program as program;
 #[cfg(test)]
 mod tests;
 use p3_air::Air;
