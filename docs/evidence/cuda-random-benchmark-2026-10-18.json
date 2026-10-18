@@ -1,0 +1,115 @@
+{
+  "schema": "lattica-cuda-random-benchmark-v1",
+  "recorded_at": "2026-10-18T21:22:38.089017+00:00",
+  "artifact_directory": "lattica-prover-p3/benchmark-results/cuda-random-benchmark-20261018",
+  "identity": {
+    "commit": "9329a9c8d2eee1aaaba7cdf32a6692acaa36b05b",
+    "binary_sha256": "3f063258307a758031c1bd2506a8ccd71db2367ecdc47bac392952e364eb89f0",
+    "source_pins_sha256": "ca0c36d8200f764034851930effba9026860674534d33c6619816cf51bad2414",
+    "build_profile": "debug host; NVRTC kernels",
+    "gpu": "name, uuid, driver_version, memory.free [MiB], temperature.gpu, clocks.current.graphics [MHz], clocks.current.memory [MHz], power.limit [W]\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08, 14259 MiB, 38, 465 MHz, 15001 MHz, 360.00 W\n",
+    "qualification_source_matches_committed_blobs": true,
+    "cgroup_limits": {
+      "memory.max": "3221225472",
+      "memory.swap.max": "0",
+      "cpu.max": "400000 100000",
+      "pids.max": "96"
+    }
+  },
+  "results": {
+    "status": "passed",
+    "commit": "9329a9c8d2eee1aaaba7cdf32a6692acaa36b05b",
+    "measured_samples": 40,
+    "warmups": 16,
+    "cpu_audited_samples": 56,
+    "seconds": 4.202862692000053,
+    "memory_peak_bytes": 134914048,
+    "medians": [
+      {
+        "fields": 256,
+        "case": "cpu_generate_upload",
+        "samples": 5,
+        "median_ms": 0.087223,
+        "min_ms": 0.085263,
+        "max_ms": 0.140444
+      },
+      {
+        "fields": 256,
+        "case": "cuda_generate_resident",
+        "samples": 5,
+        "median_ms": 0.154335,
+        "min_ms": 0.14679499999999998,
+        "max_ms": 0.337701
+      },
+      {
+        "fields": 4096,
+        "case": "cpu_generate_upload",
+        "samples": 5,
+        "median_ms": 1.039054,
+        "min_ms": 1.0333530000000002,
+        "max_ms": 1.089425
+      },
+      {
+        "fields": 4096,
+        "case": "cuda_generate_resident",
+        "samples": 5,
+        "median_ms": 0.159056,
+        "min_ms": 0.155975,
+        "max_ms": 0.174706
+      },
+      {
+        "fields": 65536,
+        "case": "cpu_generate_upload",
+        "samples": 5,
+        "median_ms": 16.246434,
+        "min_ms": 16.168822,
+        "max_ms": 16.317936000000003
+      },
+      {
+        "fields": 65536,
+        "case": "cuda_generate_resident",
+        "samples": 5,
+        "median_ms": 0.178565,
+        "min_ms": 0.16895500000000002,
+        "max_ms": 0.208287
+      },
+      {
+        "fields": 1048593,
+        "case": "cpu_generate_upload",
+        "samples": 5,
+        "median_ms": 258.909168,
+        "min_ms": 256.476739,
+        "max_ms": 259.8889
+      },
+      {
+        "fields": 1048593,
+        "case": "cuda_generate_resident",
+        "samples": 5,
+        "median_ms": 0.357341,
+        "min_ms": 0.349201,
+        "max_ms": 0.8023760000000001
+      }
+    ]
+  },
+  "method": [
+    "Two warmups and five measurements per request size and mode. Paired mode order alternates; each pair uses the same public test seed, stream ID 17 and initial u32 word offset 15.",
+    "Both modes produce device-resident field samples. CPU mode includes host generation, device allocation and upload. CUDA mode includes device allocation, expansion, stable rejection compaction, status readback and temporary-buffer cleanup.",
+    "Engine/NVRTC preparation, seed import, independent CPU oracle generation, result audit readback and result cleanup are outside the timed operation. Both modes retain the same imported key while timed.",
+    "Every output and final stream position matches the CPU oracle. Every iteration returns device allocations to the initial baseline. CUDA modes upload no samples and read only one public accepted-count word per batch.",
+    "The controller checked all 741 qualified source hashes against committed Git blobs and matched the qualified executable hash before execution; it rechecked source, binary and commit after execution."
+  ],
+  "limitations": [
+    "The Rust host and CPU reference are built without optimization; CUDA kernels are compiled by NVRTC. These figures cannot establish an optimized CPU-versus-GPU speedup.",
+    "This measures only random-field generation and device storage, not a complete wallet proof, recursive aggregation or transactions per hour.",
+    "Results are from one desktop RTX 5080 on driver 615.78.08. V100 and other devices remain unmeasured."
+  ],
+  "artifact_hashes": {
+    "benchmark.log": "df43aede64e8058cda843dd2693794050528b2832e7936d1a0520996d3107207",
+    "controller.log": "7a41c60e60d59d1cb57df8001fa9d01c9bb4c533ca9f11fa8e031ff904ec9bae",
+    "identity.json": "d33ae7660f47cc460457c0d045c859bfb6fbdec25b23f4b6978ca940c6e88b62",
+    "progress.json": "a19e46f286fac4f9ccd970faa079f2713d33f8025d8e27bd216d9e0489ebd583",
+    "records.json": "7f248c508f0712038a9663b1ddc8e1284041c44d698b8b087992d104232ff49c",
+    "results.json": "0c2ffd3ea33dcd34d63b83350fd1713d63ab845c8920772402e793fb8a7c41e7",
+    "run.py": "21d71797a0d549192be3230b7e94488630764740b0915ed42f2dc4825e38ec90"
+  }
+}

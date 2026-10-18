@@ -244,6 +244,15 @@ transfers and temporary-buffer cleanup, but excludes engine/seed preparation,
 result readback and result cleanup. The build profile and transfer counters are
 printed. Debug-host measurements do not establish production proof throughput.
 
+The [post-push sampler benchmark at `9329a9c`](evidence/cuda-random-benchmark-2026-10-18.json)
+completed 40 measurements and 16 warmups, with every output CPU-audited. Median
+CUDA times were 0.154, 0.159, 0.179 and 0.357 ms for 256, 4,096, 65,536 and
+1,048,593 fields. CPU generation plus upload took 0.087, 1.039, 16.246 and
+258.909 ms in the same debug-host build. The CPU code is unoptimized, so these
+figures do not establish an optimized CPU/GPU speedup. CUDA uploaded no samples;
+its only downloads were one 8-byte status word per batch. Complete proof and
+transaction throughput remain unmeasured for the native backend.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)
