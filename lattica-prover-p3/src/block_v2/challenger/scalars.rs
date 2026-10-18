@@ -14,57 +14,9 @@ fn lookup_count(lookups: &[&[Lookup<Val>]]) -> Result<usize, String> {
     Ok(count)
 }
 
-/// Host work is restricted to deterministic names, indices and tuple lengths.
 fn bus_layout(lookups: &[&[Lookup<Val>]]) -> Result<(Vec<Vec<usize>>, usize, usize), String> {
-    let count = lookup_count(lookups)?;
-    let mut width = 1;
-    for contexts in lookups {
-        for lookup in *contexts {
-            for tuple in &lookup.elements {
-                width = width.max(tuple.len());
-            }
-        }
-    }
-    if width > u32::MAX as usize {
-        return Err("GPU lookup message width exceeds admission".into());
-    }
-    // Sorted borrowed names give bounded storage and logarithmic lookup without
-    // a growable hash table. IDs are still assigned in original encounter order.
-    let mut globals = storage::exact::<(&str, usize)>(count)?;
-    for lookup in lookups.iter().flat_map(|contexts| contexts.iter()) {
-        if let Kind::Global(name) = &lookup.kind {
-            globals.push((name.as_str(), usize::MAX));
-        }
-    }
-    globals.sort_unstable_by(|a, b| a.0.cmp(b.0));
-    globals.dedup_by(|a, b| a.0 == b.0);
-    let mut ids = storage::exact(lookups.len())?;
-    let mut next = 0;
-    for contexts in lookups {
-        let mut instance = storage::exact(contexts.len())?;
-        for lookup in *contexts {
-            let id = match &lookup.kind {
-                Kind::Global(name) => {
-                    let index = globals
-                        .binary_search_by(|entry| entry.0.cmp(name.as_str()))
-                        .map_err(|_| "GPU lookup name missing from admitted table")?;
-                    if globals[index].1 == usize::MAX {
-                        globals[index].1 = next;
-                        next += 1;
-                    }
-                    globals[index].1
-                }
-                Kind::Local => {
-                    let id = next;
-                    next += 1;
-                    id
-                }
-            };
-            instance.push(id);
-        }
-        ids.push(instance);
-    }
-    Ok((ids, width, next))
+    lookup_count(lookups)?;
+    super::lookup_layout::bus_layout(lookups)
 }
 
 fn words(value: Challenge) -> [u64; 3] {

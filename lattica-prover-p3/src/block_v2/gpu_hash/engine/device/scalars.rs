@@ -17,45 +17,11 @@ pub(super) fn storage_plan(
     let plan = MemoryPlan::new(&specs, live, limits.managed_bytes, max_allocation)?;
     Ok((specs, plan))
 }
-use p3_field::{coset::TwoAdicMultiplicativeCoset, PrimeField64};
+pub(crate) use crate::gpu_matrix::DomainSpec;
+use p3_field::PrimeField64;
 
 pub(crate) const MAX_SCALARS: usize = crate::block_v2::challenger::resources::SCALAR_OUTPUTS;
 const MAX_COSETS: usize = crate::block_v2::challenger::resources::PARTITION_COSETS;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct DomainSpec {
-    log_size: usize,
-    shift: u64,
-}
-impl DomainSpec {
-    pub(crate) fn new(shift: u64, log_size: usize) -> Result<Self, String> {
-        if shift == 0
-            || shift >= GOLDILOCKS_MODULUS
-            || log_size > 32
-            || log_size >= usize::BITS as usize
-        {
-            return Err("invalid owned prover domain".into());
-        }
-        Ok(Self { log_size, shift })
-    }
-    pub(crate) fn log_size(self) -> usize {
-        self.log_size
-    }
-    pub(crate) fn size(self) -> usize {
-        1usize << self.log_size
-    }
-    pub(crate) fn shift(self) -> Val {
-        Val::new(self.shift)
-    }
-}
-impl From<TwoAdicMultiplicativeCoset<Val>> for DomainSpec {
-    fn from(domain: TwoAdicMultiplicativeCoset<Val>) -> Self {
-        Self {
-            log_size: domain.log_size(),
-            shift: domain.shift().as_canonical_u64(),
-        }
-    }
-}
 
 pub(crate) const KERNEL_SRC: &str = r#"
 __kernel void device_prover_scalars(__global const ulong *input,
@@ -198,9 +164,10 @@ impl DeviceSession {
         domain: DomainSpec,
         log_size: usize,
     ) -> Result<DomainSpec, String> {
-        DomainSpec::new(domain.shift, log_size)?;
+        DomainSpec::new(domain.shift_word(), log_size)?;
         let mut scope = self.reserve_transcript_host(host_storage::Plan::scalar(2, 1)?)?;
-        let words = self.prover_scalars_scoped(&[domain.shift, 7], 3, 1, 0, 1, &mut scope)?;
+        let words =
+            self.prover_scalars_scoped(&[domain.shift_word(), 7], 3, 1, 0, 1, &mut scope)?;
         DomainSpec::new(words[0], log_size)
     }
 
@@ -214,13 +181,18 @@ impl DeviceSession {
         }
         let mut scope = self.reserve_transcript_host(host_storage::Plan::domains(chunks)?)?;
         let mut output = host_storage::exact(chunks)?;
-        let root = Val::TWO_ADIC_GENERATORS[domain.log_size].as_canonical_u64();
-        for shift in
-            self.prover_scalars_scoped(&[domain.shift, root], 2, chunks, 0, chunks, &mut scope)?
-        {
+        let root = Val::TWO_ADIC_GENERATORS[domain.log_size()].as_canonical_u64();
+        for shift in self.prover_scalars_scoped(
+            &[domain.shift_word(), root],
+            2,
+            chunks,
+            0,
+            chunks,
+            &mut scope,
+        )? {
             output.push(DomainSpec::new(
                 shift,
-                domain.log_size - chunks.ilog2() as usize,
+                domain.log_size() - chunks.ilog2() as usize,
             )?);
         }
         Ok(output)

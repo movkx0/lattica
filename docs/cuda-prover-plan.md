@@ -23,6 +23,10 @@ Resident Poseidon2 transcripts now support observation, sampling, bounded
 snapshots and deterministic grinding. An explicit CUDA challenger adapter
 produces a mixed proof accepted by the unchanged CPU verifier; it does not
 select CUDA for the other proving stages.
+Native scalar kernels derive challenge powers, lookup bus prefixes/pairs,
+next-row points and coset shifts. The CUDA lookup adapter samples alpha/beta
+directly into device storage, then derives per-instance challenge pairs without
+host readback. It shares the bounded bus mapping and domain metadata with OpenCL.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -166,8 +170,8 @@ does not change state; zero-bit sampling still consumes a sample.
 
 The integration test preserves the production hiding PCS, security parameters
 and Postcard format, verifies using the original CPU proof type, and rejects
-altered public inputs. Only its challenger runs on CUDA. Native scalar
-derivations, randomness/hiding, witness/preprocessing/lookup, openings/FRI/final
+altered public inputs. Only its challenger runs on CUDA. Randomness/hiding,
+witness/preprocessing/lookup evaluation, openings/FRI/final
 polynomials, complete PCS/backend selection, stage receipts, worker admission
 and pool integration remain outstanding. This checkpoint does not establish
 complete CUDA proving or transaction throughput.
@@ -193,6 +197,24 @@ that region. Grinding medians were 0.212, 0.342 and 3.163 ms at 8, 16 and 20 bit
 the 20-bit samples ranged from 0.344 to 9.914 ms as witness positions varied.
 These measurements establish primitive costs under debug host orchestration,
 not CPU/GPU proof speedups or complete transaction throughput.
+
+The [scalar qualification](evidence/cuda-scalars-2026-10-18.json) passed 56 native
+CUDA tests, nine challenger tests, four shared planner tests and the OpenCL
+scalar/lookup/quotient regressions. Memory, race and synchronization checks passed
+across 55 native tests and all nine challenger tests per tool. CPU/OpenCL library,
+Apple Metal cross-compilation and standalone CUDA checks also passed. Three
+streaming tests preserved the existing lookup metadata allocation accounting.
+
+CUDA now derives base/quadratic/cubic powers, lookup bus prefixes and mapped
+challenge pairs, next-row points and domain shifts. Prepared lookup work admits
+its output, public ID map and upcoming sample before consuming the transcript.
+Empty lookup batches consume no samples. A test chains the resident challenge
+pairs and quotient alpha into specialized quotient evaluation and a Merkle
+commitment, then checks both against independent CPU oracles. Before that audit,
+the chain uploads one public bus ID and downloads only the quotient-domain
+validity word. Scalar failures and unwinds retire the shared transcript family.
+This establishes native stage composition, not complete CUDA proof construction;
+the default backend, proof profile and worker admission remain unchanged.
 
 ## Implementation sequence
 

@@ -128,7 +128,12 @@ impl std::fmt::Debug for Transcript {
     }
 }
 
-fn admission(words: &[usize], live: usize, allocations: usize, limits: Limits) -> Result<usize> {
+pub(super) fn admission(
+    words: &[usize],
+    live: usize,
+    allocations: usize,
+    limits: Limits,
+) -> Result<usize> {
     if live > limits.managed_bytes
         || words.len() > 3
         || allocations
@@ -235,6 +240,28 @@ impl Transcript {
             family: self.slot.0.clone(),
             complete: false,
         })
+    }
+
+    pub(crate) fn check_scalars(&self, scalars: &super::Scalars) -> Result<()> {
+        if !Arc::ptr_eq(&self.engine.runtime.state, &scalars.runtime.state) {
+            return Err("CUDA scalar engine belongs to another transcript runtime".into());
+        }
+        self.check_live()
+    }
+
+    /// Scalar derivation cannot mutate or observe the duplex state. Any failure
+    /// still retires this attempt family, including unwinds after a device write.
+    pub(crate) fn derive_scalars<T>(
+        &self,
+        scalars: &super::Scalars,
+        operation: impl FnOnce() -> Result<T>,
+    ) -> Result<T> {
+        self.check_scalars(scalars)?;
+        let mut execution = Execution::new(&self.slot.0)?;
+        execution.begin();
+        let result = operation()?;
+        execution.finish();
+        Ok(result)
     }
 
     pub(crate) fn snapshot(&self) -> Result<Self> {

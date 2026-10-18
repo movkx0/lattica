@@ -1,7 +1,7 @@
 use super::*;
 use crate::block_v2::profile::Challenge;
 use p3_commit::PolynomialSpace;
-use p3_field::BasedVectorSpace;
+use p3_field::{coset::TwoAdicMultiplicativeCoset, BasedVectorSpace};
 use p3_lookup::Challenges;
 
 fn ext(c: [u64; 3]) -> Challenge {

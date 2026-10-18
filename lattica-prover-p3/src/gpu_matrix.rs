@@ -1,8 +1,10 @@
 //! Backend-independent field matrix geometry and allocation planning.
 //! This metadata contains no witness values or runtime handles.
 
+mod domain;
 pub(crate) mod query;
 pub(crate) mod roots;
+pub(crate) use domain::DomainSpec;
 
 pub(crate) const GOLDILOCKS_MODULUS: u64 = 0xffff_ffff_0000_0001;
 

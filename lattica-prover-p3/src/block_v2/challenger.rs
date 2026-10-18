@@ -15,6 +15,11 @@ pub(crate) mod storage;
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 mod scalars;
 
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
+mod lookup_layout;
+#[cfg(feature = "gpu-cuda")]
+mod cuda_scalars;
+
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 use super::gpu_hash::device::{DeviceSession, DeviceTranscript, TranscriptAttempt};
 #[cfg(feature = "gpu-cuda")]
