@@ -331,6 +331,34 @@ impl Hiding {
 }
 
 impl HiddenCommitment {
+    /// Evaluate an original matrix's retained prefix without exposing its private
+    /// storage. A failed consumer or unwind retires all participating RNG streams.
+    pub(crate) fn with_opening<T>(
+        &self,
+        engine: &crate::cuda_compute::Openings,
+        matrix: usize,
+        extension: Extension,
+        points: crate::cuda_compute::FieldSpan<'_>,
+        count: usize,
+        consume: impl FnOnce(&crate::cuda_compute::DeviceOpening) -> Result<T>,
+    ) -> Result<T> {
+        check_families(&self.families)?;
+        let input = self
+            .matrices
+            .get(matrix)
+            .ok_or("CUDA opening matrix index exceeds batch")?;
+        engine.preflight(&input.prefix, extension, points, count)?;
+        let mut attempt = Attempt {
+            families: &self.families,
+            complete: false,
+        };
+        let opening = engine.evaluate(&input.prefix, extension, points, count)?;
+        let result = consume(&opening)?;
+        check_families(&self.families)?;
+        attempt.complete = true;
+        Ok(result)
+    }
+
     pub(crate) fn specs(&self) -> impl ExactSizeIterator<Item = MatrixSpec> + '_ {
         self.matrices.iter().map(|m| m.spec)
     }

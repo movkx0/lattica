@@ -1,4 +1,5 @@
 mod benchmark;
+mod opening;
 use super::*;
 use crate::{
     config::{self, Challenge, Challenger, Dft, MyCompress, MyHash, MyPcs, Val, ValMmcs},

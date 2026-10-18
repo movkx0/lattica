@@ -37,8 +37,10 @@ randomization now generate bounded LDE column tiles from resident random
 samples. Shared protocol geometry preserves the existing OpenCL behavior.
 Hidden LDE tiles now stream into mixed-height MMCS commitments. Only low-coset
 evaluation prefixes, Merkle nodes and private salt recipes remain resident;
-requested rows are reconstructed and salted on CUDA. Out-of-domain openings,
-opening reductions and FRI integration remain outstanding.
+requested rows are reconstructed and salted on CUDA. Native out-of-domain
+evaluation now consumes resident challenge points, and column-compressed opening
+reductions produce resident FRI inputs. FRI/final-polynomial work and complete
+PCS integration remain outstanding.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -363,6 +365,41 @@ tile width: 614,368 and 2,998,240 bytes. Wider tiles require more scratch, and t
 two-case comparison does not qualify a default geometry change. These debug-host
 primitive timings do not establish complete proof performance or transactions
 per hour; native PCS and remaining proof-stage integration are still unfinished.
+
+The [opening qualification](evidence/cuda-openings-2026-10-18.json) records native
+quadratic/cubic out-of-domain evaluation and opening reductions. Evaluation copies
+resident challenge points into private storage and processes bit-reversed coset
+prefixes in bounded row tiles. Only a domain-validity word is downloaded before
+explicit claimed-value reads. Prefixes, copied points and values remain resident
+for reduction; input challenge buffers can be reused without changing them.
+
+Reduction combines columns with CUDA alpha powers before extending one
+extension-field vector. It preserves point/matrix order and advances the alpha
+power cursor across appended matrices. The output domain retains its actual
+coset shift. Separate admission covers compression, transform and denominator
+tile peaks; scratch is released between phases. Appending consumes the previous
+accumulator, so errors cannot expose partial output. Hidden commitments provide a
+scoped opening consumer that retires all participating RNG families on errors or
+unwinds after private work, while early admission failures preserve them.
+
+Independent CPU polynomial comparisons cover both extensions, shifted domains,
+duplicate points, 131,072-row prefixes, 32 points, multiple matrices, zero/one
+alpha, single-row constants and nonzero alpha offsets. A 65-column case reduces a
+full-width LDE of 1,064,960 bytes using a 256 KiB managed budget and 128 KiB
+allocation ceiling. Invalid geometry, allocation counts, memory pressure, alpha
+cursor overflow, points on either coset, consumer failures and unwinds are covered.
+All 103 native tests
+pass; 102 run under each sanitizer, and 14 opening tests also pass with `stream`.
+CPU/OpenCL builds, relevant OpenCL regressions, Apple Metal cross-compilation and
+standalone CUDA checks pass. Kernels compile for compute_70 and compute_120;
+execution remains qualified only on the desktop RTX 5080.
+
+These are opening/reduction primitives and hidden-prefix integration, not a
+complete native CUDA PCS or prover. Denominators are inverted on CUDA; batch
+inversion and denominator reuse remain optimization candidates. No opening-stage
+speedup or complete transaction-throughput result is claimed. FRI folding and its
+commitment/query orchestration, final polynomials, complete PCS orchestration, remaining proof
+stages, backend selection and worker integration are still required.
 
 ## Implementation sequence
 
