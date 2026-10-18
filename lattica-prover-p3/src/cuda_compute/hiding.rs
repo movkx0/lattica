@@ -8,7 +8,9 @@ use crate::{
     gpu_hiding::{QuotientCommitShape, TraceCommitShape},
     gpu_matrix::{roots, Extension, MatrixSpec, RowOrder},
 };
+mod batch;
 mod plan;
+pub(crate) use batch::{HiddenCommitment, HiddenOpenings, HidingInput};
 use plan::TilePlan;
 #[cfg(test)]
 mod tests;
@@ -24,6 +26,7 @@ pub(crate) struct Hiding {
     quotient_parameters: Kernel,
     quotient_columns: Kernel,
     quotient_coefficients: Kernel,
+    retain_prefix: Kernel,
 }
 
 pub(crate) struct TraceHidingInput {
@@ -61,12 +64,14 @@ impl Hiding {
             quotient_parameters: module.kernel("hiding_quotient_parameters")?,
             quotient_columns: module.kernel("hiding_quotient_columns")?,
             quotient_coefficients: module.kernel("hiding_quotient_coefficients")?,
+            retain_prefix: module.kernel("hiding_retain_prefix")?,
         };
         for kernel in [
             &result.trace_columns,
             &result.quotient_parameters,
             &result.quotient_columns,
             &result.quotient_coefficients,
+            &result.retain_prefix,
         ] {
             if !super::kernel::private_memory_fits(runtime.identity(), kernel.local_bytes()?)? {
                 return Err("CUDA hiding kernel exceeds private memory allowance".into());

@@ -22,6 +22,34 @@ impl std::fmt::Debug for ReplaySalts {
 }
 
 impl DeviceRandom {
+    pub(crate) fn preflight_salt_recipes(
+        &self,
+        specs: &[MatrixSpec],
+        pending: &[usize],
+    ) -> Result<()> {
+        if specs.is_empty() || specs.len() > MAX_REPLAY_MATRICES {
+            return Err("salt replay batch requires 1..256 matrices".into());
+        }
+        for &spec in specs {
+            validate_salt_replay_spec(spec)?;
+        }
+        if self
+            .0
+            .slot
+            .0
+            .states
+            .load(Ordering::Acquire)
+            .checked_add(specs.len())
+            .is_none_or(|n| n > MAX_STREAM_STATES)
+        {
+            return Err("CUDA salt replay exceeds the stream-state allowance".into());
+        }
+        self.preflight_salt_replay(
+            &specs.iter().map(|s| s.words()).collect::<Vec<_>>(),
+            pending,
+        )
+    }
+
     pub(crate) fn preflight_salt_replay(
         &self,
         requests: &[usize],
@@ -77,7 +105,7 @@ impl DeviceRandom {
     }
 
     /// Discover exact rejection boundaries while retaining no sample matrices.
-    /// The whole batch is atomic with respect to active-stream clones.
+    /// Same-height convenience form; draw ordering is shared with mixed batches.
     pub(crate) fn prepare_salt_replay(
         &self,
         spec: MatrixSpec,
@@ -87,12 +115,34 @@ impl DeviceRandom {
         if count == 0 || count > MAX_REPLAY_MATRICES {
             return Err("salt replay batch requires 1..256 matrices".into());
         }
+        self.prepare_salt_replay_specs(&vec![spec; count])
+    }
+
+    /// Capture a mixed-height batch in caller order, before Merkle height
+    /// sorting. The cursor lock spans every matrix, and all recipe slots are
+    /// admitted before the first draw.
+    pub(crate) fn prepare_salt_replay_specs(
+        &self,
+        specs: &[MatrixSpec],
+    ) -> Result<Vec<ReplaySalts>> {
+        let count = specs.len();
+        if count == 0 || count > MAX_REPLAY_MATRICES {
+            return Err("salt replay batch requires 1..256 matrices".into());
+        }
+        for &spec in specs {
+            validate_salt_replay_spec(spec)?;
+        }
         let mut position = self
             .0
             .position
             .lock()
             .map_err(|_| "CUDA random cursor poisoned")?;
-        self.preflight_at(*position, &vec![spec.words(); count], &[], false)?;
+        self.preflight_at(
+            *position,
+            &specs.iter().map(|s| s.words()).collect::<Vec<_>>(),
+            &[],
+            false,
+        )?;
         let mut slots = Vec::new();
         slots
             .try_reserve_exact(count)
@@ -109,7 +159,7 @@ impl DeviceRandom {
             started: false,
             complete: false,
         };
-        for slot in slots {
+        for (slot, &spec) in slots.into_iter().zip(specs) {
             let (samples, recipe) = self.draw_salt_at(&mut position, spec, slot)?;
             attempt.started = true;
             drop(samples);

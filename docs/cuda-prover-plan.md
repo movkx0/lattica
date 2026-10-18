@@ -35,7 +35,10 @@ CUDA regeneration, commitments and requested query rows without changing the
 active RNG cursor. Native trace/preprocessing hiding and quotient
 randomization now generate bounded LDE column tiles from resident random
 samples. Shared protocol geometry preserves the existing OpenCL behavior.
-Complete hiding PCS integration remains outstanding.
+Hidden LDE tiles now stream into mixed-height MMCS commitments. Only low-coset
+evaluation prefixes, Merkle nodes and private salt recipes remain resident;
+requested rows are reconstructed and salted on CUDA. Out-of-domain openings,
+opening reductions and FRI integration remain outstanding.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -308,6 +311,28 @@ This remains a polynomial-hiding checkpoint. Streaming commitment absorption
 across tiles, retained prefixes, complete PCS/opening/FRI integration and the
 remaining native proof stages are still required before complete CUDA proofs
 or transaction throughput can be qualified.
+
+The [hidden commitment qualification](evidence/cuda-hidden-commitments-2026-10-18.json)
+records 36 successful checks, including 89 native CUDA tests, 88 tests under each
+sanitizer and seven commitment/query tests with the `stream` feature. Mixed-height
+streaming preserves partial-rate sponge absorption and stable matrix ordering.
+Salt recipes are captured in original input order before height sorting. Hidden
+batches include preprocessing, base/quadratic/cubic traces and complete quotient
+partitions; caps and Postcard-encoded openings match upstream CPU implementations.
+The unchanged CPU verifier accepts native openings and rejects altered values,
+salts and paths. Queries preserve duplicates and original matrix order.
+
+A 13.75 MiB full LDE commits and answers queries within an 8 MiB managed GPU budget
+and 2 MiB allocation ceiling. Retained storage is exactly evaluation prefixes plus
+Merkle nodes; full LDEs and salt matrices are not retained. Aggregate host/device
+admission rejects insufficient budgets before private work, and injected failures
+retire all participating RNG families. CPU/OpenCL builds and relevant device
+regressions, Apple Metal cross-compilation and standalone CUDA checks pass.
+
+This is a native commitment and MMCS-query checkpoint. Out-of-domain openings,
+opening reductions, FRI/final polynomials, remaining proof stages, backend selection
+and worker integration still precede complete native CUDA proof qualification.
+No complete-proof speedup or transaction-throughput result is established here.
 
 ## Implementation sequence
 

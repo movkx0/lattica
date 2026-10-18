@@ -44,6 +44,27 @@ extern "C" __global__ void commitment_finalize(
     for (u32 i = 0; i < 4; ++i) tree[row * 4 + i] = gl_canon(s[i]);
 }
 
+// Finalize a streamed height group, optionally injecting its row digest into
+// the already-compressed parent layer. No intermediate digest is downloaded.
+extern "C" __global__ void commitment_finalize_at(const u64 *states, u64 *tree,
+    u64 first, u32 rows, u32 pending, u32 inject, const u64 *constants) {
+    const u64 row = (u64)blockIdx.x * blockDim.x + threadIdx.x;
+    if (row >= rows) return;
+    u64 s[8];
+    #pragma unroll
+    for (u32 i = 0; i < 8; ++i) s[i] = states[row * 8 + i];
+    if (pending) poseidon_permute(s, constants);
+    if (inject) {
+        #pragma unroll
+        for (u32 i = 0; i < 4; ++i) s[4 + i] = s[i];
+        #pragma unroll
+        for (u32 i = 0; i < 4; ++i) s[i] = tree[first + row * 4 + i];
+        poseidon_permute(s, constants);
+    }
+    #pragma unroll
+    for (u32 i = 0; i < 4; ++i) tree[first + row * 4 + i] = gl_canon(s[i]);
+}
+
 // Adjacent, non-overlapping regions in one retained allocation. Each output
 // thread reads its two children and owns a separate four-word parent digest.
 extern "C" __global__ void commitment_compress(

@@ -1,9 +1,11 @@
 //! Exact device-resident Poseidon2 commitments. The caller supplies salts as
 //! per-attempt matrix fragments; no randomness or field arithmetic runs here.
 mod replay;
+mod stream;
 use super::{Argument, Buffer, Kernel, Launch, Limits, Matrix, Result, Runtime};
 use crate::gpu_matrix::{Extension, MatrixSpec};
 use std::sync::Arc;
+pub(crate) use stream::ColumnSink;
 
 pub(super) const SOURCE: &str = concat!(
     include_str!("field.cuh"),
@@ -96,6 +98,9 @@ pub(crate) struct RetainedTree {
 }
 
 impl RetainedTree {
+    pub(super) fn cap_bytes(&self) -> usize {
+        self.layout.cap_words * 8
+    }
     pub(crate) fn cap(&self, host_bytes: usize) -> Result<Vec<u64>> {
         let mut words = host_words(self.layout.cap_words, host_bytes)?;
         self.storage.read(self.layout.cap_first, &mut words)?;
@@ -113,6 +118,7 @@ pub(crate) struct Commitments {
     permutation: Kernel,
     absorb: Kernel,
     finalize: Kernel,
+    finalize_at: Kernel,
     compress: Kernel,
     paths: Kernel,
 }
@@ -129,18 +135,33 @@ pub(super) fn poseidon_constants(runtime: &Runtime) -> Result<Buffer> {
 }
 
 impl Commitments {
+    pub(super) fn check_runtime(&self, runtime: &Runtime) -> Result<()> {
+        if !Arc::ptr_eq(&self.runtime.state, &runtime.state) {
+            return Err("CUDA commitment engine belongs to another runtime".into());
+        }
+        drop(self.runtime.state.enter()?);
+        Ok(())
+    }
     pub(crate) fn new(runtime: &Runtime) -> Result<Self> {
         let module = runtime.compile(SOURCE)?;
         let constants = poseidon_constants(runtime)?;
-        Ok(Self {
+        let result = Self {
             runtime: runtime.clone(),
             constants,
             permutation: module.kernel("poseidon_permutation")?,
             absorb: module.kernel("commitment_absorb")?,
             finalize: module.kernel("commitment_finalize")?,
+            finalize_at: module.kernel("commitment_finalize_at")?,
             compress: module.kernel("commitment_compress")?,
             paths: module.kernel("commitment_paths")?,
-        })
+        };
+        if !super::kernel::private_memory_fits(
+            runtime.identity(),
+            result.finalize_at.local_bytes()?,
+        )? {
+            return Err("CUDA streamed finalization exceeds private memory allowance".into());
+        }
+        Ok(result)
     }
 
     fn check_owner(&self, buffer: &Buffer) -> Result<()> {

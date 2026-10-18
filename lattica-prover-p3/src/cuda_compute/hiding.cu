@@ -1,3 +1,12 @@
+// Copy the low-coset (physical bit-reversed) prefix while each LDE column tile
+// is resident. Prefixes are evaluations, not polynomial coefficients.
+extern "C" __global__ void hiding_retain_prefix(const u64 *tile, u64 *prefix,
+    u32 rows, u32 columns, u32 prefix_columns, u32 first) {
+    const u64 i = (u64)blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= (u64)rows * columns) return;
+    prefix[(i / columns) * prefix_columns + first + i % columns] = tile[i];
+}
+
 // Reference HidingFriPcs draw order and uniform quotient partition. These
 // kernels only consume resident randomness; no host field arithmetic occurs.
 extern "C" __global__ void hiding_trace_columns(const u64 *trace,

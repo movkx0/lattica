@@ -23,11 +23,11 @@ mod transform;
 
 pub(crate) use budget::{Limits, Snapshot};
 pub(crate) use buffer::Buffer;
-pub(crate) use commitment::{Commitments, RetainedTree};
+pub(crate) use commitment::{ColumnSink, Commitments, RetainedTree};
 pub(crate) use device::{inventory, Identity, Runtime};
 pub(crate) use field::{FieldOperation, FieldProgram, FieldSpan};
 #[cfg(feature = "block-v2")]
-pub(crate) use hiding::{Hiding, QuotientHidingInput, TraceHidingInput};
+pub(crate) use hiding::{HiddenCommitment, HiddenOpenings, Hiding, HidingInput, QuotientHidingInput, TraceHidingInput};
 pub(crate) use kernel::{Argument, Completion, Kernel, Launch, Module};
 pub(crate) use matrix::Matrix;
 pub(crate) use query::QueryRows;
