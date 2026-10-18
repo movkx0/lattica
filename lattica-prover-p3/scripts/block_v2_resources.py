@@ -14,6 +14,7 @@ import subprocess
 
 MIB = 1 << 20
 GIB = 1 << 30
+OWNED_QUOTIENT_WORKSPACE_BYTES = 128 * MIB
 WORKER_PROTOCOL_HOST_BYTES = 8 * MIB
 # Decoded children survive the prover call. This shared decoder allowance stays
 # outside cached session budgets, including on Empty jobs before reuse.
@@ -852,9 +853,10 @@ def owned_quotient_reservation(profile):
     mask_bytes = (quotient // chunks) * (chunks - 1) * 7 * 8
     commit_live = (cache_entries * prefix * columns[1] * 8 + quotient * 3 * 8
                    + random_bytes + mask_bytes + chunks * 3 * 8)
-    managed = max(prefixes + output, commit_live) + 64 * MIB
+    managed = max(prefixes + output + OWNED_QUOTIENT_WORKSPACE_BYTES,
+                  commit_live + 64 * MIB)
     largest = max(prefix * max(widest, 3) * 8, quotient * 3 * 8,
-                  random_bytes, mask_bytes, 64 * MIB)
+                  random_bytes, mask_bytes, OWNED_QUOTIENT_WORKSPACE_BYTES)
     if gpu_lookup(profile):
         random_samples = lookup_random_sample_bytes(profile)
         rows = prefix // 2

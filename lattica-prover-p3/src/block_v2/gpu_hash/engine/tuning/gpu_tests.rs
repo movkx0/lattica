@@ -334,3 +334,96 @@ fn gpu_tuning_ntt_powers_match_independent_cpu_dft() {
         }
     });
 }
+
+#[test]
+#[ignore = "requires V100 OpenCL GPU; run serially with gpu-tuning enabled"]
+fn gpu_tuning_expanded_ntt_cache_matches_cpu_for_orders_scaling_and_in_place_stages() {
+    use p3_dft::{Radix2DitParallel, TwoAdicSubgroupDft};
+    use p3_matrix::{dense::RowMajorMatrix, Matrix};
+    on_gpu(|engine| {
+        let expanded =
+            crate::gpu::ntt_cache::local_word_limit(engine.pq.device(), engine.pq.program())
+                .unwrap();
+        assert!(
+            expanded > 4096,
+            "this test must exercise the expanded V100 cache"
+        );
+        for (log_rows, width) in [(8u32, 15usize), (8, 16), (8, 17), (16, 17)] {
+            let rows = 1usize << log_rows;
+            let input = words(rows * width);
+            for inverse in [false, true] {
+                let values = RowMajorMatrix::new(
+                    input.iter().map(|&word| Val::from_u64(word)).collect(),
+                    width,
+                );
+                let cpu = Radix2DitParallel::<Val>::default();
+                let expected = if inverse {
+                    cpu.idft_batch(values)
+                } else {
+                    cpu.dft_batch(values).to_row_major_matrix()
+                };
+                let roots = buffer(
+                    engine,
+                    &(1..=log_rows)
+                        .map(|log| {
+                            let root = Val::two_adic_generator(log as usize);
+                            (if inverse { root.inverse() } else { root }).as_canonical_u64()
+                        })
+                        .collect::<Vec<_>>(),
+                );
+                let scale = if inverse {
+                    Val::from_usize(rows).inverse()
+                } else {
+                    Val::ONE
+                };
+                for shift in [Val::ONE, Val::from_u64(7)] {
+                    let expected: Vec<_> = expected
+                        .values
+                        .iter()
+                        .enumerate()
+                        .map(|(i, &value)| {
+                            (value * shift.exp_u64((i / width) as u64)).as_canonical_u64()
+                        })
+                        .collect();
+                    for local_words in [4096, expanded] {
+                        engine.ntt_local_words = local_words;
+                        for reversed in [false, true] {
+                            let mut initial = input.clone();
+                            initial.extend_from_slice(&[99; 5]);
+                            let source = buffer(engine, &initial);
+                            let output = buffer(engine, &vec![99; rows * width + 5]);
+                            let in_output = engine
+                                .lde_ntt(
+                                    &source,
+                                    &output,
+                                    &roots,
+                                    inverse,
+                                    rows,
+                                    width,
+                                    scale.as_canonical_u64(),
+                                    shift.as_canonical_u64(),
+                                    true,
+                                    reversed,
+                                    false,
+                                    None,
+                                )
+                                .unwrap();
+                            let actual = read(if in_output { &output } else { &source });
+                            for row in 0..rows {
+                                let stored = if reversed {
+                                    row.reverse_bits() >> (usize::BITS - log_rows)
+                                } else {
+                                    row
+                                };
+                                assert_eq!(&actual[stored * width..(stored + 1) * width],
+                                    &expected[row * width..(row + 1) * width],
+                                    "log={log_rows} width={width} inverse={inverse} reversed={reversed} local={local_words}");
+                            }
+                            assert_eq!(&actual[rows * width..], &[99; 5]);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}

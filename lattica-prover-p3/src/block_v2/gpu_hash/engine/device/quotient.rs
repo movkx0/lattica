@@ -507,52 +507,58 @@ impl DeviceSession {
             device_ns += self.session.record_event(engine, crate::proving::Stage::Quotient, "quotient_alpha", &event)?;
             let pre = preprocessed.unwrap_or(main);
             let perm = permutation.unwrap_or(main);
+            // Matrix heights and admitted tile sizes are powers of two, so every
+            // tile has the same shape. Reuse the kernels and invariant arguments;
+            // OpenCL captures each tile's offsets when its command is enqueued.
+            let rows = plan.rows;
+            let gather = engine.pq.kernel_builder("device_quotient_gather")
+                .arg(&main.storage.buffer).arg(&pre.storage.buffer).arg(&perm.storage.buffer)
+                .arg(&input.buffer).arg(program.layout.main_width as u32)
+                .arg(program.layout.preprocessed_width as u32)
+                .arg((program.layout.permutation_width * program.extension.degree()) as u32)
+                .arg(u32::from(main.spec.order == RowOrder::BitReversed))
+                .arg(u32::from(pre.spec.order == RowOrder::BitReversed))
+                .arg(u32::from(perm.spec.order == RowOrder::BitReversed))
+                .arg(domain.log_rows).arg(1u32 << (domain.log_rows - log_trace))
+                .arg(0u32).arg(rows as u32).global_work_size(rows * program.row_words)
+                .build().map_err(|e| e.to_string())?;
+            let mut quotient = engine.pq.kernel_builder(if program.extension == Extension::Quadratic {
+                "quadratic_quotient"
+            } else {
+                "cubic_quotient"
+            });
+            if let Some(compiled) = &prepared.specialized {
+                quotient.program(&compiled.program).name("specialized_quotient");
+            }
+            if let Some(local) = super::super::quotient::row_workgroup(engine.pq.device(), rows) {
+                quotient.local_work_size(local);
+            }
+            let quotient = quotient
+                .arg(&prepared.code.buffer).arg(program.instruction_count() as u32)
+                .arg(&input.buffer).arg(program.row_words as u32)
+                .arg(&params.buffer).arg(&weights.buffer).arg(&scratch.buffer)
+                .arg(&result.storage.buffer).arg(rows as u32).arg(0u32)
+                .arg(0u32).arg(log_trace).arg(domain.shift)
+                .arg(super::super::fri_fold::root(domain.log_rows))
+                .arg(super::super::fri_fold::inverse_root(log_trace))
+                .global_work_size(rows).build().map_err(|e| e.to_string())?;
             let mut batch = super::event_batch::EventBatch::new(engine, &self.session, crate::proving::Stage::Quotient);
-            for first in (0..spec.rows()).step_by(plan.rows) {
-                let rows = plan.rows.min(spec.rows() - first);
+            for first in (0..spec.rows()).step_by(rows) {
+                gather.set_arg(12, first as u32).map_err(|e| e.to_string())?;
+                quotient.set_arg(9, first as u32).map_err(|e| e.to_string())?;
+                quotient.set_arg(10, first as u32).map_err(|e| e.to_string())?;
                 let mut event = compute::Event::empty();
                 // SAFETY: matrix shapes and orders were checked above; zero-width
                 // optional matrices have no corresponding instructions or reads.
                 unsafe {
-                    batch.engine.pq.kernel_builder("device_quotient_gather")
-                        .arg(&main.storage.buffer).arg(&pre.storage.buffer).arg(&perm.storage.buffer)
-                        .arg(&input.buffer).arg(program.layout.main_width as u32)
-                        .arg(program.layout.preprocessed_width as u32)
-                        .arg((program.layout.permutation_width * program.extension.degree()) as u32)
-                        .arg(u32::from(main.spec.order == RowOrder::BitReversed))
-                        .arg(u32::from(pre.spec.order == RowOrder::BitReversed))
-                        .arg(u32::from(perm.spec.order == RowOrder::BitReversed))
-                        .arg(domain.log_rows).arg(1u32 << (domain.log_rows - log_trace))
-                        .arg(first as u32).arg(rows as u32).global_work_size(rows * program.row_words)
-                        .build().map_err(|e| e.to_string())?.cmd().enew(&mut event)
-                        .enq().map_err(|e| e.to_string())?;
+                    gather.cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
                 }
                 batch.record("device_quotient_gather", event)?;
                 let mut event = compute::Event::empty();
                 // SAFETY: compiler bounds input/parameter/register indices; each
                 // tile writes a disjoint slice of the full output allocation.
-                let mut kernel = batch.engine.pq.kernel_builder(if program.extension == Extension::Quadratic {
-                    "quadratic_quotient"
-                } else {
-                    "cubic_quotient"
-                });
-                if let Some(compiled) = &prepared.specialized {
-                    kernel.program(&compiled.program).name("specialized_quotient");
-                }
-                if let Some(local) = super::super::quotient::row_workgroup(batch.engine.pq.device(), rows) {
-                    kernel.local_work_size(local);
-                }
                 unsafe {
-                    kernel
-                        .arg(&prepared.code.buffer).arg(program.instruction_count() as u32)
-                        .arg(&input.buffer).arg(program.row_words as u32)
-                        .arg(&params.buffer).arg(&weights.buffer).arg(&scratch.buffer)
-                        .arg(&result.storage.buffer).arg(rows as u32).arg(first as u32)
-                        .arg(first as u32).arg(log_trace).arg(domain.shift)
-                        .arg(super::super::fri_fold::root(domain.log_rows))
-                        .arg(super::super::fri_fold::inverse_root(log_trace))
-                        .global_work_size(rows).build().map_err(|e| e.to_string())?
-                        .cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
+                    quotient.cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
                 }
                 batch.record("device_extension_quotient", event)?;
             }

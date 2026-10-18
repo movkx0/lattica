@@ -41,7 +41,7 @@ class OwnedAdmission(unittest.TestCase):
         self.assertEqual(budget['cpu']['allowed_cpus'], [0, 1, 2, 3])
         self.assertEqual(budget['cpu']['coordinator_capacity'], '4')
         self.assertEqual(budget['witness_reservation']['host_bytes'], 2057936284)
-        self.assertEqual(budget['owned_quotient_reservation']['managed_bytes'], 5460983808)
+        self.assertEqual(budget['owned_quotient_reservation']['managed_bytes'], 5528092672)
         self.assertFalse(O.R.workload_failures(budget, self.profile))
         self.assertFalse(self.profile['complete_lifetime_qualified'])
         self.assertTrue(self.profile['owned_request_backing_includes_spill'])

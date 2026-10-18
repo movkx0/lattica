@@ -15,7 +15,7 @@ const MAX_DEVICE_TILE_ROWS: usize = 16 * 1024;
 // The owned-quotient reservation in block_v2_resources.py includes this
 // allowance beside live matrices. Charge parameters/status and row storage
 // together; a larger row cap must not borrow another component's allowance.
-pub(super) const DEVICE_WORKSPACE_BYTES: usize = 64 << 20;
+pub(super) const DEVICE_WORKSPACE_BYTES: usize = 128 << 20;
 
 #[cfg(feature = "gpu")]
 pub(super) mod specialized;
@@ -339,9 +339,31 @@ mod tests {
             let workspace = (plan.static_words.iter().sum::<usize>()
                 + plan.tile_words.iter().sum::<usize>())
                 * 8;
-            assert!(workspace <= 64 << 20);
-            assert_eq!(plan.rows, 2048);
+            assert!(workspace <= 128 << 20);
+            assert_eq!(plan.rows, 4096);
         }
+    }
+
+    #[test]
+    fn wide_device_quotients_use_more_rows_only_with_admitted_tile_space() {
+        let mut program = program();
+        program.row_words = 800;
+        program.registers = 128;
+        let limits = Limits {
+            managed_bytes: 512 << 20,
+            tile_bytes: 128 << 20,
+            staging_bytes: 64,
+        };
+        let wide = Plan::for_device(&program, 1 << 19, 256 << 20, limits, 256 << 20).unwrap();
+        assert_eq!(wide.rows, 8192);
+        assert!(wide.peak <= (256 + 128) << 20);
+        let narrow = Plan::for_device(&program, 1 << 19, 256 << 20,
+            Limits { tile_bytes: 64 << 20, ..limits }, 256 << 20).unwrap();
+        assert_eq!(narrow.rows, 4096);
+        let pressured = Plan::for_device(&program, 1 << 19, (512 - 64) << 20,
+            limits, 256 << 20).unwrap();
+        assert_eq!(pressured.rows, 4096);
+        assert!(pressured.peak <= limits.managed_bytes);
     }
 }
 

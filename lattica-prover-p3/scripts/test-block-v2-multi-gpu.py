@@ -883,7 +883,7 @@ class ResourceTests(unittest.TestCase):
                                    main_columns=10, preprocessing_columns=8,
                                    permutation_columns_upper_bound=7)
         reserved = R.owned_quotient_reservation(profile)
-        self.assertGreater(reserved['managed_bytes'], 64 * R.MIB)
+        self.assertGreater(reserved['managed_bytes'], 128 * R.MIB)
         budget = R.plan(host(), [device()], 1, profile)['GPU-a']
         budget['unit'] = 'lattica-v2-owned-test.service'
         self.assertEqual(S.environment(budget, Path('/tmp/test'))['LATTICA_V2_GPU_QUOTIENT_RESIDENT'], '1')

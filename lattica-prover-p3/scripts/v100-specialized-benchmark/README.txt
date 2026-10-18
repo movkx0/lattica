@@ -141,3 +141,75 @@ This is one optimized concurrency sample, compared with the earlier three-run
 median of 245.237 seconds and 234.87 inputs/hour (10.74% higher throughput).
 Worker limits were unchanged: 11.25 GiB managed GPU memory, 4 GiB context reserve
 and two Rayon threads each, with the normal device admission and leases active.
+
+V100 OpenCL quotient and NTT follow-up
+
+A further three-pair comparison on 2026-10-18 uses ec1c937 as the baseline.
+The owned quotient workspace allowance increases from 64 to 128 MiB, with the
+same bound in the runtime and Python admission planner. The measured recursive
+program consequently uses 8192 rows per tile instead of 4096. Smaller configured
+budgets still shrink tiles. Gather and quotient kernel objects are reused within
+each operation; only row offsets change between enqueues.
+
+On V100 devices, the owned NTT path admits cached twiddles against the reported
+48 KiB local-memory allowance after subtracting the compiled kernels' static
+usage. The measured driver permits 6143 u64 words of dynamic local storage.
+The tile and its power cache must fit together. Other devices and the generic
+GPU DFT retain the previous 32 KiB preference. Exact field arithmetic is
+unchanged. Work-groups of 64/128, coalesced gathers, combined selector inverses
+and 128-instruction specialization blocks did not provide useful full-prover
+gains in screening; the final quotient geometry retains work-groups of 32 and
+64-instruction blocks.
+
+Median warmed results from three alternating pairs per workload:
+
+  Workload                         Baseline       Optimized      Inputs/hour
+  Four-input root                  52.546 s       46.063 s       274.05 -> 312.61
+  Two concurrent eight-input roots 218.455 s      186.047 s      263.67 -> 309.60
+
+Throughput improved 14.07% for the four-input root and
+17.42% for the concurrent workload. Four-input time ranges were
+52.544..52.998 seconds baseline and 45.943..46.224 optimized.
+Concurrent ranges were 217.817..219.773 and 182.201..188.749 seconds,
+respectively. The single-root timer excludes GPU initialization; concurrent
+latency is the union of both complete worker launch-to-exit windows. CPU-only
+root audits are outside both timers. Builds and cold specialized compilation
+are excluded. Every sample used fresh recursive proofs and empty optional
+tuning selections, with four total Rayon threads.
+
+Median GPU board energy fell from 1.578470 to 1.453293 Wh per
+four-input worker (7.93%), and from 6.749635 to
+6.178027 Wh per concurrent pair (8.47%). Optimized median average
+board power was 112.21 W and 119.68 W respectively. Energy windows
+include process initialization and shutdown; CPU and system energy are excluded.
+Clock settings, driver settings and the 250 W power limit were unchanged.
+
+Whole-run peak managed allocation stayed at 12.694 GiB for the single
+worker and 9.241 GiB per concurrent worker. The added quotient workspace
+fits below the existing whole-run peak. Maximum sampled total VRAM in the
+concurrent runs was 17.293 GiB baseline and 17.020 GiB optimized; sampled
+peaks are not a bound on shorter transients. The original managed/context
+limits remain 16/4 GiB for the single worker and 11.25/4 GiB per concurrent
+worker. No proving-window memory-limit events occurred.
+
+All 18 benchmark roots passed independent CPU verification. All 102 fresh
+recursive proofs had complete GPU-stage coverage and specialized quotient
+execution. Focused checks passed: 15 Rust planner/source tests, nine GPU test
+executions and 90 Python resource tests. GPU checks cover both NTT directions,
+scaling, row orders, in-place stages, query reconstruction, both extension
+degrees and queued kernel reuse across multiple tiles. All 614 library/source
+pins match the correctness build and both measured optimized binaries.
+
+One optimized concurrent attempt was rejected by the existing 54 GiB free-host
+memory guard before launching any GPU worker. Its artifacts were preserved and
+a fresh attempt was used. Clean cached pages for completed benchmark/build
+artifacts were released with file-specific POSIX advisories outside timing;
+file contents, the driver compiler cache and resource limits were preserved.
+Later concurrent samples applied the same completed-artifact cache advisory.
+
+Evidence for this campaign is under
+/workspace/code/benchmark-v100-opencl-20261018: evidence/final-comparison.json,
+source and binary manifests, raw power/resource samples, and CPU audit logs.
+This is aggregation of existing wallet proofs on the measured V100; wallet
+proof generation, full-block finalization, other GPUs and production deployment
+are outside this qualification.

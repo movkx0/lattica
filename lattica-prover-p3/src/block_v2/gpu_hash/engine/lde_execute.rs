@@ -450,10 +450,11 @@ impl Engine {
             let workgroups = (height >> count) * width.div_ceil(1 << log_c);
             let mut event = Event::empty();
             #[cfg(feature = "gpu")]
-            let power_words = crate::gpu::ntt_cache::power_words(
+            let power_words = crate::gpu::ntt_cache::power_words_with_limit(
                 count,
                 log_c,
                 last && (post_c != 1 || post_b != 1),
+                self.ntt_local_words,
             );
             #[cfg(feature = "gpu-metal")]
             let power_words: Option<usize> = None;
@@ -473,7 +474,7 @@ impl Engine {
                 (false, false) => "ntt_tile",
             };
             // SAFETY: whole independent columns, bounded u32 row/column indexing,
-            // <=32 KiB total local storage and distinct permutation buffers.
+            // admitted tile/cache local storage and distinct permutation buffers.
             unsafe {
                 // OpenCL mutates its builder; the Metal wrapper consumes it.
                 #[cfg(feature = "gpu")]

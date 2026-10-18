@@ -658,6 +658,8 @@ struct Engine {
     #[cfg(feature = "gpu")]
     nvidia_shuffle: bool,
     #[cfg(feature = "gpu")]
+    ntt_local_words: usize,
+    #[cfg(feature = "gpu")]
     event_receipts: device::EventReceipts,
     copy_queue: Queue,
     mode: TransferMode,
@@ -1114,11 +1116,17 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
             tuning.events, tuning.commitment, tuning.scale, tuning.ntt,
             !device::public_hash::nvidia::source_prefix(pq.device()).is_empty());
     }
+    #[cfg(feature = "gpu")]
+    let ntt_local_words = crate::gpu::ntt_cache::local_word_limit(
+        pq.device(), pq.program(),
+    )?;
     let engine = Engine {
         #[cfg(feature = "gpu")]
         tuning,
         #[cfg(feature = "gpu")]
         nvidia_shuffle: !device::public_hash::nvidia::source_prefix(pq.device()).is_empty(),
+        #[cfg(feature = "gpu")]
+        ntt_local_words,
         #[cfg(feature = "gpu")]
         event_receipts: device::EventReceipts::default(),
         #[cfg(feature = "gpu-metal")]
