@@ -66,6 +66,13 @@ impl SessionStats {
 }
 
 impl Session {
+    #[cfg(all(test, feature = "gpu-tuning"))]
+    pub(super) fn test_receipt(&self, stage: Stage) -> (u64, u128, u64) {
+        let stats = self.stats.lock().unwrap();
+        let counter = stats.arithmetic.counters[index(stage)];
+        (counter.calls, counter.device_ns, stats.arithmetic.errors)
+    }
+
     pub(super) fn record_execution(&self, stage: Stage, calls: u64, device_ns: u128) {
         if let Ok(mut stats) = self.stats.lock() {
             stats.record_execution(stage, calls, device_ns);
@@ -87,7 +94,7 @@ impl Session {
         Ok(ns)
     }
 
-    fn observation_failed(&self) {
+    pub(super) fn observation_failed(&self) {
         if let Ok(mut stats) = self.stats.lock() {
             stats.arithmetic.errors = stats.arithmetic.errors.saturating_add(1);
         }

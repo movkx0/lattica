@@ -459,7 +459,9 @@ impl Engine {
             let power_words: Option<usize> = None;
             #[cfg(feature = "gpu")]
             let kernel_name = if power_words.is_some() {
-                "ntt_tile_cached"
+                if self.nvidia_shuffle && self.tuning.ntt_powers(height, width) {
+                    "ntt_tile_cached_tuned"
+                } else { "ntt_tile_cached" }
             } else {
                 "ntt_tile"
             };
@@ -572,8 +574,7 @@ impl Engine {
         let mut event = Event::empty();
         // SAFETY: each work item owns one bounded eight-word row state.
         unsafe {
-            self.pq
-                .kernel_builder("lde_absorb")
+            self.commitment_builder("lde_absorb", rows)?
                 .arg(input)
                 .arg(sponge)
                 .arg(row0 as u32)
@@ -584,7 +585,6 @@ impl Engine {
                 .arg(&self.constants[1].buffer)
                 .arg(&self.constants[2].buffer)
                 .arg(&self.constants[3].buffer)
-                .global_work_size(rows)
                 .build()
                 .map_err(|e| e.to_string())?
                 .cmd()
@@ -1311,8 +1311,7 @@ impl Engine {
         let mut event = Event::empty();
         // SAFETY: full-height states and leaf workspace were jointly admitted.
         unsafe {
-            self.pq
-                .kernel_builder("lde_leaf_finalize")
+            self.commitment_builder("lde_leaf_finalize", height)?
                 .arg(&buffers.sponge.buffer)
                 .arg(&self.workspace.as_ref().unwrap().a.buffer)
                 .arg(height as u32)
@@ -1321,7 +1320,6 @@ impl Engine {
                 .arg(&self.constants[1].buffer)
                 .arg(&self.constants[2].buffer)
                 .arg(&self.constants[3].buffer)
-                .global_work_size(height)
                 .build()
                 .map_err(|e| e.to_string())?
                 .cmd()

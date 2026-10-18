@@ -293,20 +293,42 @@ impl PreparedWitness {
                         .cmd().enew(&mut event).enq().map_err(|e|e.to_string())?; }
                 session.session.record_event(engine, crate::proving::Stage::WitnessTrace, "device_witness_public", &event)?;
 }
-                for wave in &self.schedule.waves {
-                    let mut event=compute::Event::empty();
-                    // SAFETY: every instruction uses validated SSA addresses.
-                    // Each wave reads only preceding waves/publics and writes
-                    // disjoint wires; the in-order queue enforces dependencies.
-                    unsafe { engine.pq.kernel_builder("device_witness_wave")
-                        .arg(&self.metadata.buffer).arg(wave.start as u32).arg(wave.len() as u32)
+                let build_wave = |engine: &Engine, start: u32, len: usize| {
+                    engine.pq.kernel_builder("device_witness_wave")
+                        .arg(&self.metadata.buffer).arg(start).arg(len as u32)
                         .arg(&input.buffer).arg(&wires.buffer).arg(&status.buffer)
                         .arg(&engine.constants[0].buffer).arg(&engine.constants[1].buffer)
                         .arg(&engine.constants[2].buffer).arg(&engine.constants[3].buffer)
-                        .global_work_size(wave.len()).build().map_err(|e|e.to_string())?
-                        .cmd().enew(&mut event).enq().map_err(|e|e.to_string())?; }
-                    session.session.record_event(engine, crate::proving::Stage::WitnessTrace, "device_witness_wave",&event)?;
+                        .global_work_size(len).build().map_err(|e| e.to_string())
+                };
+                let cached_wave = if engine.tuning.events && !self.schedule.waves.is_empty() {
+                    Some(build_wave(engine, 0, 1)?)
+                } else {
+                    None
+                };
+                let mut batch = super::event_batch::EventBatch::new(
+                    engine, &session.session, crate::proving::Stage::WitnessTrace);
+                for wave in &self.schedule.waves {
+                    let uncached;
+                    let kernel = if let Some(kernel) = &cached_wave {
+                        kernel.set_arg(1, wave.start as u32).map_err(|e| e.to_string())?;
+                        kernel.set_arg(2, wave.len() as u32).map_err(|e| e.to_string())?;
+                        kernel
+                    } else {
+                        uncached = build_wave(batch.engine, wave.start as u32, wave.len())?;
+                        &uncached
+                    };
+                    let mut event = compute::Event::empty();
+                    // SAFETY: each wave reads preceding SSA values and writes
+                    // disjoint wires. The in-order queue preserves dependencies;
+                    // enqueue captures arguments before the next set_arg call.
+                    unsafe {
+                        kernel.cmd().global_work_size(wave.len()).enew(&mut event)
+                            .enq().map_err(|e| e.to_string())?;
+                    }
+                    batch.record("device_witness_wave", event)?;
                 }
+                batch.finish()?;
                 let mut status_word=[0u64;1];
                 status.buffer.read(&mut status_word[..]).enq().map_err(|e|e.to_string())?;
                 fence.finish()?;

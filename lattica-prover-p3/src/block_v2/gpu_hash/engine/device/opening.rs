@@ -326,41 +326,44 @@ impl DeviceSession {
                     .arg(spec.rows() as u32).arg(spec.shift).global_work_size(count)
                     .build().map_err(|e| e.to_string())?.cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
             }
-            let mut ns = self.session.record_event(engine, crate::proving::Stage::Opening, "device_opening_parameters", &event)?;
+            let mut ns = 0u128;
+            let mut batch = super::event_batch::EventBatch::new(engine, &self.session, crate::proving::Stage::Opening);
+            batch.record("device_opening_parameters", event)?;
             for first in (0..spec.rows()).step_by(plan.rows) {
                 let rows = plan.rows.min(spec.rows() - first);
-                ns += invert_denominators(&self.session,engine, &data.points.buffer, &inverse.buffer, &status.buffer,
+                ns += invert_denominators(&self.session,batch.engine, &data.points.buffer, &inverse.buffer, &status.buffer,
                     extension, count, first, rows, spec.log_rows, spec.shift)?;
                 let blocks = rows.div_ceil(128);
                 let mut event = compute::Event::empty();
                 // SAFETY: each group reduces 128 rows for one point/column; padding is zero.
                 unsafe {
-                    engine.pq.kernel_builder(opening_kernel!(extension, device_opening_dot)).arg(&prefix.storage.buffer)
+                    batch.engine.pq.kernel_builder(opening_kernel!(extension, device_opening_dot)).arg(&prefix.storage.buffer)
                         .arg(&inverse.buffer).arg(&parameters.buffer).arg(&partial.buffer)
                         .arg(spec.columns as u32).arg(count as u32).arg(first as u32).arg(rows as u32)
                         .global_work_size(blocks * count * spec.columns * 128).local_work_size(128usize)
                         .build().map_err(|e| e.to_string())?.cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
                 }
-                ns += self.session.record_event(engine, crate::proving::Stage::Opening, "device_opening_dot", &event)?;
+                batch.record("device_opening_dot", event)?;
                 let mut event = compute::Event::empty();
                 // SAFETY: every output element has one owner, reading the checked partial blocks.
                 unsafe {
-                    engine.pq.kernel_builder(opening_kernel!(extension, device_opening_accumulate)).arg(&partial.buffer)
+                    batch.engine.pq.kernel_builder(opening_kernel!(extension, device_opening_accumulate)).arg(&partial.buffer)
                         .arg(&data.values.buffer).arg(spec.columns as u32).arg(count as u32).arg(blocks as u32)
                         .global_work_size(count * spec.columns).build().map_err(|e| e.to_string())?
                         .cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
                 }
-                ns += self.session.record_event(engine, crate::proving::Stage::Opening, "device_opening_accumulate", &event)?;
+                batch.record("device_opening_accumulate", event)?;
             }
             let mut event = compute::Event::empty();
             // SAFETY: matching point/column shapes, scaling only the completed sums.
             unsafe {
-                engine.pq.kernel_builder(opening_kernel!(extension, device_opening_scale)).arg(&data.values.buffer)
+                batch.engine.pq.kernel_builder(opening_kernel!(extension, device_opening_scale)).arg(&data.values.buffer)
                     .arg(&parameters.buffer).arg(spec.columns as u32).arg(count as u32)
                     .global_work_size(count * spec.columns).build().map_err(|e| e.to_string())?
                     .cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
             }
-            ns += self.session.record_event(engine, crate::proving::Stage::Opening, "device_opening_scale", &event)?;
+            batch.record("device_opening_scale", event)?;
+            ns += batch.finish()?;
             let mut failed = [0u64];
             status.buffer.read(&mut failed[..]).enq().map_err(|e| e.to_string())?;
             fence.finish()?;

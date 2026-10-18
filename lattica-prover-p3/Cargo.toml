@@ -160,6 +160,8 @@ default = ["gpu"]
 # Enable GPU (OpenCL) acceleration of the LDE. Proving calls select the GPU backend explicitly.
 # Requires an OpenCL runtime + a GPU when used; the wire format and verifier are unchanged.
 gpu = ["dep:ocl", "dep:rayon", "dep:libc", "dep:p3-util"]
+# Opt-in performance candidates; production selection requires GPU qualification.
+gpu-tuning = ["gpu", "block-v2"]
 gpu-metal = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-metal", "dep:rayon", "dep:libc", "dep:p3-util"]
 # Enable the RESEARCH in-circuit recursive STARK verifier (`src/recursion`: the monolith + aggregator). OFF by
 # default — it is NOT on any production path (zero default `lattica_*` externs reach it) and is NOT audited;

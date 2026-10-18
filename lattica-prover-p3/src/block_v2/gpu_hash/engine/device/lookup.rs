@@ -303,6 +303,7 @@ impl DeviceSession {
             let uploaded = ((public_values.len().max(1) + challenge_words.len()) * 8) as u64;
             let mut device_ns = 0u128;
             let pre = preprocessed.unwrap_or(main);
+            let mut batch = super::event_batch::EventBatch::new(engine, &self.session, crate::proving::Stage::Lookup);
             for first in (0..spec.rows()).step_by(plan.rows) {
                 let rows = plan.rows.min(spec.rows() - first);
                 if program.expression_words != 0 {
@@ -310,7 +311,7 @@ impl DeviceSession {
                     // SAFETY: shapes/row orders and all compiler offsets are
                     // bounded above; one subgroup step selects the next row.
                     unsafe {
-                        engine.pq.kernel_builder("device_quotient_gather")
+                        batch.engine.pq.kernel_builder("device_quotient_gather")
                             .arg(&main.storage.buffer).arg(&pre.storage.buffer).arg(&main.storage.buffer)
                             .arg(&input.buffer).arg(program.layout.main_width as u32)
                             .arg(program.layout.preprocessed_width as u32).arg(0u32)
@@ -320,11 +321,11 @@ impl DeviceSession {
                             .global_work_size(rows * program.row_words).build().map_err(|e| e.to_string())?
                             .cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
                     }
-                    device_ns += self.session.record_event(engine, crate::proving::Stage::Lookup, "device_lookup_gather", &event)?;
+                    batch.record("device_lookup_gather", event)?;
                     let mut event = compute::Event::empty();
                     // SAFETY: scratch slots and stores were checked by the compiler.
                     unsafe {
-                        engine.pq.kernel_builder("device_lookup_expressions")
+                        batch.engine.pq.kernel_builder("device_lookup_expressions")
                             .arg(&prepared.code.buffer).arg((program.instructions.len() / 5) as u32)
                             .arg(&input.buffer).arg(program.row_words as u32).arg(&public.buffer)
                             .arg(&scratch.buffer).arg(&expressions.buffer).arg(program.expression_words as u32)
@@ -332,7 +333,7 @@ impl DeviceSession {
                             .global_work_size(rows).build().map_err(|e| e.to_string())?
                             .cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
                     }
-                    device_ns += self.session.record_event(engine, crate::proving::Stage::Lookup, "device_lookup_expressions", &event)?;
+                    batch.record("device_lookup_expressions", event)?;
                 }
                 let count = rows * program.tuple_count();
                 if count != 0 {
@@ -340,7 +341,7 @@ impl DeviceSession {
                     // SAFETY: each tuple reads its bounded scalar output slice
                     // and its own pair of extension challenges, writing one element.
                     unsafe {
-                        engine.pq.kernel_builder("device_lookup_denominators")
+                        batch.engine.pq.kernel_builder("device_lookup_denominators")
                             .arg(&expressions.buffer).arg(program.expression_words as u32)
                             .arg(&prepared.tuples.buffer).arg(program.tuple_count() as u32)
                             .arg(&challenge.buffer).arg(&inverses.buffer).arg(rows as u32)
@@ -348,23 +349,23 @@ impl DeviceSession {
                             .global_work_size(count).build().map_err(|e| e.to_string())?
                             .cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
                     }
-                    device_ns += self.session.record_event(engine, crate::proving::Stage::Lookup, "device_lookup_denominators", &event)?;
+                    batch.record("device_lookup_denominators", event)?;
                     let mut event = compute::Event::empty();
                     // SAFETY: 128 lanes cooperatively invert a bounded block;
                     // padded lanes use one, and zero denominators set status.
                     unsafe {
-                        engine.pq.kernel_builder("device_lookup_batch_inverse")
+                        batch.engine.pq.kernel_builder("device_lookup_batch_inverse")
                             .arg(&inverses.buffer).arg(count as u32).arg(&status.buffer)
                             .arg(D as u32)
                             .global_work_size(count.div_ceil(128) * 128).local_work_size(128usize)
                             .build().map_err(|e| e.to_string())?.cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
                     }
-                    device_ns += self.session.record_event(engine, crate::proving::Stage::Lookup, "device_lookup_batch_inverse", &event)?;
+                    batch.record("device_lookup_batch_inverse", event)?;
                 }
                 let mut event = compute::Event::empty();
                 // SAFETY: each row writes its fraction columns and one total.
                 unsafe {
-                    engine.pq.kernel_builder("device_lookup_fractions")
+                    batch.engine.pq.kernel_builder("device_lookup_fractions")
                         .arg(&inverses.buffer).arg(&expressions.buffer).arg(program.expression_words as u32)
                         .arg(&prepared.tuples.buffer).arg(&prepared.boundaries.buffer)
                         .arg(program.lookup_count() as u32).arg(program.tuple_count() as u32)
@@ -373,8 +374,9 @@ impl DeviceSession {
                             .global_work_size(rows).build().map_err(|e| e.to_string())?
                         .cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
                 }
-                device_ns += self.session.record_event(engine, crate::proving::Stage::Lookup, "device_lookup_fractions", &event)?;
+                batch.record("device_lookup_fractions", event)?;
             }
+            device_ns += batch.finish()?;
             let mut failed = [0u64];
             status.buffer.read(&mut failed[..]).enq().map_err(|e| e.to_string())?;
             fence.finish()?;

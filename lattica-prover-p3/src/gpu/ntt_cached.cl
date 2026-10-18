@@ -1,3 +1,15 @@
+#ifdef LATTICA_TUNED_NTT
+// Square powers are already present in the public root table.
+inline ulong cached_root_power(__global const ulong *roots, uint order, uint exponent) {
+    ulong result = 1UL;
+    while (exponent) {
+        if (exponent & 1u) result = gl_mul(result, roots[order - 1u]);
+        exponent >>= 1;
+        --order;
+    }
+    return result;
+}
+#endif
 // Shared twiddle and row-scale powers; host admission includes all local storage.
 __kernel void ntt_tile_cached(__global const ulong* in, __global ulong* out,
     const uint w, const uint h, const uint s0, const uint lt, const uint log_c,
@@ -11,12 +23,32 @@ __kernel void ntt_tile_cached(__global const ulong* in, __global ulong* out,
     const uint row0=(hi<<(s0+lt))|lo, col0=cg<<log_c;
     const uint rows=1u<<lt, n_el=rows<<log_c, inner=rows>>1;
     for(uint e=lid;e<inner;e+=wg)
+#ifdef LATTICA_TUNED_NTT
+        powers[e]=cached_root_power(wlens,lt,e);
+#else
         powers[e]=gl_pow(wlens[lt-1u],(ulong)e);
+#endif
     for(uint e=lid;e<lt;e+=wg)
+#ifdef LATTICA_TUNED_NTT
+        powers[inner+e]=cached_root_power(wlens,s0+e+1u,lo);
+#else
         powers[inner+e]=gl_pow(wlens[s0+e],(ulong)lo);
+#endif
     if(post_c!=1UL || post_b!=1UL) {
+#ifdef LATTICA_TUNED_NTT
+        if(lid==0u) {
+            powers[inner+lt]=gl_mul(post_c,gl_pow(post_b,(ulong)row0));
+            powers[inner+lt+1u]=gl_pow(post_b,1UL<<s0);
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+        const ulong origin=powers[inner+lt], step=powers[inner+lt+1u];
+        barrier(CLK_LOCAL_MEM_FENCE);
+        for(uint t=lid;t<rows;t+=wg)
+            powers[inner+lt+t]=gl_mul(origin,gl_pow(step,(ulong)t));
+#else
         for(uint t=lid;t<rows;t+=wg)
             powers[inner+lt+t]=gl_mul(post_c,gl_pow(post_b,(ulong)(row0+(t<<s0))));
+#endif
     }
     for(uint e=lid;e<n_el;e+=wg) {
         const uint t=e>>log_c, col=col0+(e&(C-1u));

@@ -195,19 +195,22 @@ impl DeviceSession {
                 } else {
                     source
                 };
+                let shared = engine.nvidia_shuffle
+                    && engine.tuning.shared_scale(input.spec.rows(), spec.rows(), width);
+                let mut scale = engine.pq.kernel_builder(if shared {
+                    "device_transform_scale_shared"
+                } else { "device_transform_scale" });
+                scale.arg(coefficients).arg(&output.storage.buffer).arg(&parameters.buffer)
+                    .arg(width as u32).arg(input.spec.rows() as u32).arg(spec.rows() as u32);
+                if shared {
+                    // At most 256 covered rows; 2 KiB of bounded workgroup SRAM.
+                    scale.arg_local::<u64>(256).local_work_size(256)
+                        .global_work_size(spec.words.div_ceil(256) * 256);
+                } else { scale.global_work_size(spec.words); }
                 let mut event = compute::Event::empty();
                 // SAFETY: input extent is bounded by output; each lane owns one word.
                 unsafe {
-                    engine
-                        .pq
-                        .kernel_builder("device_transform_scale")
-                        .arg(coefficients)
-                        .arg(&output.storage.buffer)
-                        .arg(&parameters.buffer)
-                        .arg(width as u32)
-                        .arg(input.spec.rows() as u32)
-                        .arg(spec.rows() as u32)
-                        .global_work_size(spec.words)
+                    scale
                         .build()
                         .map_err(|e| e.to_string())?
                         .cmd()

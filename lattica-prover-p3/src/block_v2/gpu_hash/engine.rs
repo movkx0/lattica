@@ -5,6 +5,8 @@ use crate::block_v2::worker_memory::MEMORY_BACKEND;
 use crate::config::Val;
 pub mod device;
 mod capacity;
+#[cfg(feature = "gpu")]
+mod tuning;
 pub(crate) mod fri_fold;
 pub mod lde_execute;
 pub mod lde_plan;
@@ -651,6 +653,12 @@ impl Drop for QueueFence {
 
 struct Engine {
     pq: ProQue,
+    #[cfg(feature = "gpu")]
+    tuning: tuning::Tuning,
+    #[cfg(feature = "gpu")]
+    nvidia_shuffle: bool,
+    #[cfg(feature = "gpu")]
+    event_receipts: device::EventReceipts,
     copy_queue: Queue,
     mode: TransferMode,
     device_selection: [Option<std::ffi::OsString>; 2],
@@ -858,6 +866,8 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
 // True means this call created the engine; a failed later setup step may then
 // retire it without tearing down an engine borrowed from an earlier caller.
 fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, String> {
+    #[cfg(feature = "gpu")]
+    let tuning = tuning::Tuning::from_env()?;
     // An assignment can constrain tiling below the device's hardware limit.
     // Read it before acquiring a lease or creating any context, and bind it
     // to an existing engine just like its aggregate memory allowance.
@@ -884,6 +894,10 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
         .map_err(|_| "GPU initialization poisoned")?;
     if let Some(engine) = ENGINE.get() {
         if let Some(engine) = engine.lock().map_err(|_| "GPU engine poisoned")?.as_ref() {
+            #[cfg(feature = "gpu")]
+            if engine.tuning != tuning {
+                return Err("GPU tuning cannot change after initialization".into());
+            }
             #[cfg(feature = "gpu-metal")]
             engine.pq.check_memory_mode()?;
             return if engine.limits == limits
@@ -984,6 +998,7 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
                     device::COMPILER_FOLDING_KERNEL_SRC,
                     device::PUBLIC_HASH_KERNEL_SRC,
                     device::EVALUATIONS_KERNEL_SRC,
+                    &tuning::kernel_source(!device::public_hash::nvidia::source_prefix(device).is_empty()),
                 ]
                 .join("\n"),
             )
@@ -1093,7 +1108,19 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
         limits.staging_bytes,
         timeline_enabled
     );
+    #[cfg(feature = "gpu")]
+    if tuning != tuning::Tuning::default() {
+        eprintln!("bounded_gpu_tuning events={} commitment={} scale={} ntt={} nvidia_supported={} production_qualified=false",
+            tuning.events, tuning.commitment, tuning.scale, tuning.ntt,
+            !device::public_hash::nvidia::source_prefix(pq.device()).is_empty());
+    }
     let engine = Engine {
+        #[cfg(feature = "gpu")]
+        tuning,
+        #[cfg(feature = "gpu")]
+        nvidia_shuffle: !device::public_hash::nvidia::source_prefix(pq.device()).is_empty(),
+        #[cfg(feature = "gpu")]
+        event_receipts: device::EventReceipts::default(),
         #[cfg(feature = "gpu-metal")]
         _backend_transfer_lease: backend_transfer_lease,
         pq,
@@ -1419,6 +1446,36 @@ fn event_range(event: &Event) -> Result<(u64, u64), String> {
 }
 
 impl Engine {
+    #[cfg(feature = "gpu")]
+    fn commitment_builder(&self, name: &'static str, rows: usize)
+        -> Result<compute::builders::KernelBuilder<'_>, String>
+    {
+        let cooperative = self.tuning.commitment && self.nvidia_shuffle;
+        let selected = if cooperative {
+            match name {
+                "leaf_hash" => "leaf_hash_shuffle",
+                "compress_layer" => "compress_layer_shuffle",
+                "lde_absorb" => "lde_absorb_shuffle",
+                "lde_leaf_finalize" => "lde_leaf_finalize_shuffle",
+                _ => return Err("unknown cooperative commitment kernel".into()),
+            }
+        } else { name };
+        let mut builder = self.pq.kernel_builder(selected);
+        if cooperative {
+            let global = rows.checked_add(15).and_then(|n| (n / 16).checked_mul(128))
+                .ok_or("cooperative commitment launch overflow")?;
+            builder.global_work_size(global).local_work_size(128);
+        } else { builder.global_work_size(rows); }
+        Ok(builder)
+    }
+
+    #[cfg(feature = "gpu-metal")]
+    fn commitment_builder(&self, name: &'static str, rows: usize)
+        -> Result<crate::metal_compute::KernelBuilder<'_>, String>
+    {
+        Ok(self.pq.kernel_builder(name).global_work_size(rows))
+    }
+
     fn download_buffer(
         &mut self,
         source: &Buffer<u64>,
@@ -1571,8 +1628,7 @@ impl Engine {
             // SAFETY: the same bounded, distinct ping-pong buffers as the host
             // tree path; each retained copy finishes before its source is reused.
             unsafe {
-                self.pq
-                    .kernel_builder("compress_layer")
+                self.commitment_builder("compress_layer", n)?
                     .arg(src)
                     .arg(dst)
                     .arg(n as u32)
@@ -1580,7 +1636,6 @@ impl Engine {
                     .arg(&self.constants[1].buffer)
                     .arg(&self.constants[2].buffer)
                     .arg(&self.constants[3].buffer)
-                    .global_work_size(n)
                     .build()
                     .map_err(|e| e.to_string())?
                     .cmd()
@@ -1821,8 +1876,7 @@ impl Engine {
             // SAFETY: plan checks u32 geometry and every buffer/offset; input is
             // filled synchronously, the in-order queue completes before reuse.
             unsafe {
-                self.pq
-                    .kernel_builder("leaf_hash")
+                self.commitment_builder("leaf_hash", nr)?
                     .arg(&w.input[0].buffer)
                     .arg(&w.a.buffer)
                     .arg(row0 as u32)
@@ -1832,7 +1886,6 @@ impl Engine {
                     .arg(&self.constants[1].buffer)
                     .arg(&self.constants[2].buffer)
                     .arg(&self.constants[3].buffer)
-                    .global_work_size(nr)
                     .build()
                     .map_err(|e| e.to_string())?
                     .cmd()
@@ -1918,8 +1971,7 @@ impl Engine {
             // SAFETY: the input and output ranges are admitted. The cross-queue
             // event orders the whole in-order upload stream before this kernel.
             unsafe {
-                self.pq
-                    .kernel_builder("leaf_hash")
+                self.commitment_builder("leaf_hash", nr)?
                     .arg(&w.input[slot].buffer)
                     .arg(&w.a.buffer)
                     .arg(row0 as u32)
@@ -1929,7 +1981,6 @@ impl Engine {
                     .arg(&self.constants[1].buffer)
                     .arg(&self.constants[2].buffer)
                     .arg(&self.constants[3].buffer)
-                    .global_work_size(nr)
                     .build()
                     .map_err(|e| e.to_string())?
                     .cmd()
@@ -2000,8 +2051,7 @@ impl Engine {
             let mut event = Event::empty();
             // SAFETY: distinct ping-pong buffers, n output rows, previous layer complete.
             unsafe {
-                self.pq
-                    .kernel_builder("compress_layer")
+                self.commitment_builder("compress_layer", n)?
                     .arg(src)
                     .arg(dst)
                     .arg(n as u32)
@@ -2009,7 +2059,6 @@ impl Engine {
                     .arg(&self.constants[1].buffer)
                     .arg(&self.constants[2].buffer)
                     .arg(&self.constants[3].buffer)
-                    .global_work_size(n)
                     .build()
                     .map_err(|e| e.to_string())?
                     .cmd()

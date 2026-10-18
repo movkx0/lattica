@@ -1,0 +1,149 @@
+{
+  "schema": "lattica-gpu-tuning-implementation-v1",
+  "recorded_at": "2026-10-18T04:04:49.442961+00:00",
+  "status": "implementation host-validated; GPU correctness and benchmark qualification pending",
+  "base_commit": "d8e6f1bec132f6917b2c4a7f2d391178a92beb7e",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "cargo_feature": "gpu-tuning",
+  "selection_environment": "LATTICA_V2_GPU_TUNING",
+  "candidates": [
+    "events",
+    "commitment",
+    "scale",
+    "ntt"
+  ],
+  "default_candidate_selection": [],
+  "production_activated": false,
+  "gpu_runtime_tests_executed": 0,
+  "fresh_gpu_proofs": 0,
+  "gpu_benchmark_repetitions": 0,
+  "new_hardware_tests_pending": 4,
+  "hardware_blocker": "nvidia-smi cannot communicate with the NVIDIA driver; user requested completion with GPU validation pending",
+  "pending": [
+    "run hardware arithmetic and failure-path tests",
+    "independent CPU verification of fresh root proofs",
+    "complete 16-stage GPU coverage checks",
+    "five alternating benchmark pairs per candidate",
+    "combined 128-entry workload validation",
+    "GPU memory/context admission verification",
+    "performance-based production selection"
+  ],
+  "checks": [
+    {
+      "name": "opencl-syntax",
+      "command": [
+        "python3",
+        "scripts/check-gpu-tuning-kernels.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.049,
+      "log": "lattica-prover-p3/benchmark-results/gpu-tuning-20261017/opencl-syntax.log",
+      "log_sha256": "3622191034ed2a1dff0c7dbbe637c9cf800ff55f9603cd8ecfd1a7135e4b823c"
+    },
+    {
+      "name": "test-engine-tuning-final",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "--lib",
+        "--features",
+        "gpu-tuning,block-v2-capacity-128",
+        "block_v2::gpu_hash::engine::",
+        "-j",
+        "2",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 8.601,
+      "tests": {
+        "passed": 147,
+        "failed": 0,
+        "ignored": 75
+      },
+      "log": "lattica-prover-p3/benchmark-results/gpu-tuning-20261017/test-engine-tuning-final.log",
+      "log_sha256": "d6603d24ca38522128f997b1a1e81907aff193b1cdc9954f5be6c9be7d60c54a"
+    },
+    {
+      "name": "check-default-final",
+      "command": [
+        "cargo",
+        "check",
+        "--offline",
+        "--tests",
+        "--features",
+        "block-v2-capacity-128",
+        "-j",
+        "2"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.539,
+      "log": "lattica-prover-p3/benchmark-results/gpu-tuning-20261017/check-default-final.log",
+      "log_sha256": "4cb7f507962e9f59dc73f4d78272601bfa02b131b694c0b8c913b6878eb2ac8a"
+    },
+    {
+      "name": "check-cpu-final",
+      "command": [
+        "cargo",
+        "check",
+        "--offline",
+        "--tests",
+        "--no-default-features",
+        "--features",
+        "block-v2-capacity-128",
+        "-j",
+        "2"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.029,
+      "log": "lattica-prover-p3/benchmark-results/gpu-tuning-20261017/check-cpu-final.log",
+      "log_sha256": "aa9f421e9e73824f17573dd62f2d8b1eb9534e1a10e3fadc551f9128c05868c2"
+    },
+    {
+      "name": "test-engine-streaming",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "--lib",
+        "--features",
+        "gpu-tuning,block-v2-host,block-v2-capacity-128,stream",
+        "block_v2::gpu_hash::engine::",
+        "-j",
+        "2",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "tests": {
+        "passed": 158,
+        "failed": 0,
+        "ignored": 76
+      },
+      "log": "lattica-prover-p3/benchmark-results/gpu-tuning-20261017/test-engine-streaming.log",
+      "log_sha256": "753a6ad05e8f32ff4ad71cd801bf142fe76bf652a7b5b73d306029d016dee6ff"
+    }
+  ],
+  "source_sha256": {
+    "lattica-prover-p3/Cargo.toml": "136350f42b771f5f27c5d3ee323b8d59061c83618141b8a8beea72605f5c47a7",
+    "lattica-prover-p3/scripts/check-gpu-tuning-kernels.py": "eb039fa87dce1928f7825f26a4cc0ec196a524e5a9093f1e0d603d634d30bca2",
+    "lattica-prover-p3/scripts/gpu-tuning-README.txt": "5d1b204366cfe696bb40a29c4168a0c7cdc58595c695d1f086098b610cfeae42",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine.rs": "788bcf8a948bfd726a8f206af97941bf235333ed55e2e5a1890df213e5442e87",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/commitment_shuffle.cl": "b86ae85689bdfb16afa33f69af95385edcfc3312b1a81ead5c7bde34fc34de52",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device.rs": "c6b1f0ff7d232effe98ff52cb81954f3eaabc57cb73882efeb83ccec8f7beb67",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/event_batch.rs": "d205f0dfbb7f62fdfa86682cc25b9a2f83a6d23bfc65f5de933774c62954733c",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/lookup.rs": "220267feae8c81d2c7e23bcbf7f644c1bf1d6aa1e525f20c9cbef0a40f7d3eb4",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/observation.rs": "c6ea6cb5498002fd1f59cbc28a369d04ce61b3cca6a0592803907331b66aa091",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/opening.rs": "c56eb132c1acc15f078ae80bfab1f0c010be310bfd75e5f8ada6da3f38d1d8da",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/quotient.rs": "cec6bebba1c193b8626d99fbf5b650f5f262bf3ac6d3a83322f81bfa373f1785",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transform.rs": "0f534a6538df2257df309aca4883bb1b09bdc8644b914869b9a06ee8bc871080",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/witness.rs": "3b15961eb1c431265bdfc5deb92183be4f8fe66df49efe13ba065a9fec17d62f",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_execute.rs": "5aac841d12a12b8e2557a007a7ab0aa65d83daa519de69b9f2c0167d91fd8a7b",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/scale_shared.cl": "26d03d146d57e0b708c7919f83ad29dae4563b3f4cf50b1f2e78aeb421d6bf2e",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/tuning.rs": "ac045ffe6d5ff46b71a70b06d79e41858e23734877fa36f138d0dedb004b6d12",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/tuning/gpu_tests.rs": "b06ebb1be1fff37b9c1c2e1f67d257aee97f43e59028b44466036ddb233a5055",
+    "lattica-prover-p3/src/gpu/ntt_cached.cl": "a0461647097137b1e1cf2032c3fed4a3536854c8bb6e5c6e4a80878164fd3a2a"
+  },
+  "usage": "lattica-prover-p3/scripts/gpu-tuning-README.txt"
+}

@@ -8,6 +8,10 @@ use std::sync::{Arc, Mutex};
 
 mod host_storage;
 mod observation;
+#[cfg(feature = "gpu")]
+mod event_batch;
+#[cfg(feature = "gpu")]
+pub(super) use event_batch::EventReceipts;
 pub(crate) use host_storage::HostScope;
 pub(crate) use observation::ExecutionObservation;
 mod commit_storage;
@@ -716,9 +720,7 @@ impl DeviceSession {
                 // SAFETY: planner checked the height, eight-word states, four-word
                 // leaves and all live allocations. Fence precedes buffer release.
                 unsafe {
-                    engine
-                        .pq
-                        .kernel_builder("lde_leaf_finalize")
+                    engine.commitment_builder("lde_leaf_finalize", height)?
                         .arg(&sponge.buffer)
                         .arg(&engine.workspace.as_ref().unwrap().a.buffer)
                         .arg(height as u32)
@@ -727,7 +729,6 @@ impl DeviceSession {
                         .arg(&engine.constants[1].buffer)
                         .arg(&engine.constants[2].buffer)
                         .arg(&engine.constants[3].buffer)
-                        .global_work_size(height)
                         .build()
                         .map_err(|e| e.to_string())?
                         .cmd()

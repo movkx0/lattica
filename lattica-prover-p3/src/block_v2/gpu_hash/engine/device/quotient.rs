@@ -507,13 +507,14 @@ impl DeviceSession {
             device_ns += self.session.record_event(engine, crate::proving::Stage::Quotient, "quotient_alpha", &event)?;
             let pre = preprocessed.unwrap_or(main);
             let perm = permutation.unwrap_or(main);
+            let mut batch = super::event_batch::EventBatch::new(engine, &self.session, crate::proving::Stage::Quotient);
             for first in (0..spec.rows()).step_by(plan.rows) {
                 let rows = plan.rows.min(spec.rows() - first);
                 let mut event = compute::Event::empty();
                 // SAFETY: matrix shapes and orders were checked above; zero-width
                 // optional matrices have no corresponding instructions or reads.
                 unsafe {
-                    engine.pq.kernel_builder("device_quotient_gather")
+                    batch.engine.pq.kernel_builder("device_quotient_gather")
                         .arg(&main.storage.buffer).arg(&pre.storage.buffer).arg(&perm.storage.buffer)
                         .arg(&input.buffer).arg(program.layout.main_width as u32)
                         .arg(program.layout.preprocessed_width as u32)
@@ -526,11 +527,11 @@ impl DeviceSession {
                         .build().map_err(|e| e.to_string())?.cmd().enew(&mut event)
                         .enq().map_err(|e| e.to_string())?;
                 }
-                device_ns += self.session.record_event(engine, crate::proving::Stage::Quotient, "device_quotient_gather", &event)?;
+                batch.record("device_quotient_gather", event)?;
                 let mut event = compute::Event::empty();
                 // SAFETY: compiler bounds input/parameter/register indices; each
                 // tile writes a disjoint slice of the full output allocation.
-                let mut kernel = engine.pq.kernel_builder(if program.extension == Extension::Quadratic {
+                let mut kernel = batch.engine.pq.kernel_builder(if program.extension == Extension::Quadratic {
                     "quadratic_quotient"
                 } else {
                     "cubic_quotient"
@@ -538,7 +539,7 @@ impl DeviceSession {
                 if let Some(compiled) = &prepared.specialized {
                     kernel.program(&compiled.program).name("specialized_quotient");
                 }
-                if let Some(local) = super::super::quotient::row_workgroup(engine.pq.device(), rows) {
+                if let Some(local) = super::super::quotient::row_workgroup(batch.engine.pq.device(), rows) {
                     kernel.local_work_size(local);
                 }
                 unsafe {
@@ -553,8 +554,9 @@ impl DeviceSession {
                         .global_work_size(rows).build().map_err(|e| e.to_string())?
                         .cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
                 }
-                device_ns += self.session.record_event(engine, crate::proving::Stage::Quotient, "device_extension_quotient", &event)?;
+                batch.record("device_extension_quotient", event)?;
             }
+            device_ns += batch.finish()?;
             fence.finish()?;
             drop(fence);
             if let Some(compiled) = &prepared.specialized {
