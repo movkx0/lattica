@@ -172,6 +172,17 @@ polynomials, complete PCS/backend selection, stage receipts, worker admission
 and pool integration remain outstanding. This checkpoint does not establish
 complete CUDA proving or transaction throughput.
 
+The opt-in `cuda_transcript_primitive_benchmark` test measures public and
+resident observation/sampling plus bounded grinding at 0, 8, 16 and 20 bits.
+Set `LATTICA_CUDA_TRANSCRIPT_BENCHMARK=1` and run that filter with `--ignored
+--test-threads=1 --nocapture` using the bounded CUDA test process above. It emits
+two warmups and five measurements for each case, auditing every sample against
+the unchanged CPU challenger. Kernel preparation, resident input uploads and
+CPU audits are outside operation timing; the public case includes its transfers.
+Resident result readback and cleanup follow timing. The ordinary debug test
+build measures debug host orchestration with NVRTC-compiled kernels, not release
+proof throughput. Command and byte counters accompany every measurement.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)

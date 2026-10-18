@@ -8,6 +8,8 @@ use p3_challenger::{CanObserve, CanSample, CanSampleBits, GrindingChallenger};
 use p3_field::{PrimeCharacteristicRing, PrimeField64};
 use p3_symmetric::Permutation;
 
+mod benchmark;
+
 fn runtime(managed: usize, allocation: usize) -> Runtime {
     Runtime::new(
         &std::env::var("LATTICA_GPU_DEVICE_UUID").unwrap(),
