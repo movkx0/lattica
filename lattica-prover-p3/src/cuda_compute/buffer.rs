@@ -1,4 +1,9 @@
-use super::{budget::Reservation, cleanup, device::State, error, Result, Runtime};
+use super::{
+    budget::{Reservation, Transfer},
+    cleanup,
+    device::State,
+    error, Result, Runtime,
+};
 use cudarc::driver::{result, sys};
 use std::{ops::Range, sync::Arc};
 
@@ -80,7 +85,8 @@ impl Buffer {
             .map_err(|e| {
                 state.fail();
                 error(e)
-            })
+            })?;
+        state.budget.transferred(Transfer::Upload, words.len() * 8)
     }
 
     pub(crate) fn read(&self, first: usize, words: &mut [u64]) -> Result<()> {
@@ -95,7 +101,10 @@ impl Buffer {
             .map_err(|e| {
                 state.fail();
                 error(e)
-            })
+            })?;
+        state
+            .budget
+            .transferred(Transfer::Download, words.len() * 8)
     }
 
     pub(crate) fn copy_from(
@@ -132,7 +141,8 @@ impl Buffer {
         .map_err(|e| {
             state.fail();
             error(e)
-        })
+        })?;
+        state.budget.transferred(Transfer::Copy, words * 8)
     }
 }
 

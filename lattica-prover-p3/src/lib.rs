@@ -31,6 +31,8 @@ compile_error!("gpu-cuda is a separate transport; build with --no-default-featur
 compile_error!("gpu-cuda currently requires Linux");
 #[cfg(feature = "gpu-cuda")]
 pub(crate) mod cuda_compute;
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
+mod gpu_matrix;
 #[cfg(all(
     any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"),
     any(target_os = "linux", target_os = "macos")

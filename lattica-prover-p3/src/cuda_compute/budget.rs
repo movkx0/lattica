@@ -58,6 +58,16 @@ pub(crate) struct Snapshot {
     pub pending_commands: usize,
     pub completed_commands: u64,
     pub device_ns: u128,
+    /// Explicit u64 buffer transfers; excludes public module/driver metadata.
+    pub uploaded_bytes: u64,
+    pub downloaded_bytes: u64,
+    pub copied_bytes: u64,
+}
+
+pub(super) enum Transfer {
+    Upload,
+    Download,
+    Copy,
 }
 
 pub(super) struct Budget {
@@ -77,6 +87,22 @@ pub(super) struct Reservation {
 }
 
 impl Budget {
+    pub fn transferred(&self, kind: Transfer, bytes: usize) -> Result<()> {
+        let mut state = self.state.lock().map_err(|_| "CUDA accounting poisoned")?;
+        let counter = match kind {
+            Transfer::Upload => &mut state.uploaded_bytes,
+            Transfer::Download => &mut state.downloaded_bytes,
+            Transfer::Copy => &mut state.copied_bytes,
+        };
+        *counter = counter
+            .checked_add(
+                bytes
+                    .try_into()
+                    .map_err(|_| "CUDA transfer size overflow")?,
+            )
+            .ok_or("CUDA transfer accounting overflow")?;
+        Ok(())
+    }
     pub fn new(limits: Limits) -> Result<Arc<Self>> {
         limits.validate()?;
         Ok(Arc::new(Self {

@@ -90,6 +90,7 @@ pub(crate) fn inventory() -> Result<Vec<Identity>> {
     Ok(devices)
 }
 
+#[derive(Clone)]
 pub(crate) struct Runtime {
     pub(super) state: Arc<State>,
 }

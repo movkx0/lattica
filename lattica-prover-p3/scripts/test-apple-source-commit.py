@@ -79,6 +79,14 @@ class SourceCheckpoint(unittest.TestCase):
         self.assertEqual(C.check(self.root), [])
         self.assertEqual(self.git('rev-parse', 'HEAD'), before)
 
+    def test_cuda_kernels_and_headers_are_part_of_source_completeness(self):
+        names = [f'{C.CRATE}/src/cuda_compute/field{suffix}' for suffix in ('.cu', '.cuh')]
+        for name in names:
+            self.write(name, '// CUDA source\n')
+        with self.assertRaisesRegex(C.IncompleteSource, 'New source files omitted'):
+            C.check(self.root)
+        self.assertEqual(C.check(self.root, stage=True), sorted(names))
+
     def test_stage_records_source_deletions(self):
         old = f'{C.CRATE}/src/old_helper.rs'
         self.write(old, '// obsolete\n')

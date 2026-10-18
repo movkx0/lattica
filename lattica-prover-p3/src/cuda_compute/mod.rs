@@ -5,14 +5,22 @@ mod budget;
 mod buffer;
 mod compiler;
 mod device;
+mod field;
 mod kernel;
+mod matrix;
+mod query;
 #[cfg(test)]
 mod tests;
+mod transform;
 
 pub(crate) use budget::{Limits, Snapshot};
 pub(crate) use buffer::Buffer;
 pub(crate) use device::{inventory, Identity, Runtime};
+pub(crate) use field::{FieldOperation, FieldProgram, FieldSpan};
 pub(crate) use kernel::{Argument, Completion, Kernel, Launch, Module};
+pub(crate) use matrix::Matrix;
+pub(crate) use query::QueryRows;
+pub(crate) use transform::Transforms;
 
 type Result<T> = std::result::Result<T, String>;
 

@@ -94,6 +94,27 @@ A separate V100 power repeat took 57.503 seconds for aggregation. The full worke
 
 ## Report the same timing boundary
 
+The [RTX 5080 four-entry comparison at `bce8830`](evidence/gpu-tuning-rtx5080-2026-10-18.json)
+completed 56 trials: a warmup for each selection and five alternating pairs per
+candidate. Each trial aggregated three user transactions and one issuance entry
+through four fresh recursive proofs, using the 64-entry capacity build. All roots
+passed independent CPU verification with complete sixteen-stage GPU coverage.
+
+| OpenCL candidate | Baseline median | Candidate median | Aggregation time change |
+|---|---:|---:|---:|
+| Event batching | 23.892 s | 23.402 s | −2.05% |
+| Cooperative commitments | 23.865 s | 30.758 s | +28.89% |
+| Shared scales | 23.851 s | 23.944 s | +0.39% |
+| Cached NTT powers | 23.873 s | 23.801 s | −0.30% |
+| All four candidates | 23.880 s | 30.047 s | +25.82% |
+
+Workers retained four CPU threads, 3 GiB host RAM, zero swap, 7 GiB managed GPU
+memory, a 4 GiB context reserve, 1 GiB free-memory headroom, and a 1 GiB allocation
+limit. These are aggregation timings, excluding preparation and independent CPU
+audit. Full-capacity and end-to-end throughput remain unqualified; all candidates
+remain opt-in. The separate [CUDA arithmetic/transform checks](evidence/cuda-algebra-2026-10-18.json)
+validate native primitives and do not yet measure CUDA proof generation.
+
 For each run, retain:
 
 - Commit and binary hashes, device/runtime identity, capacity, fixture hash, and all settings.

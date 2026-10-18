@@ -6,37 +6,7 @@ use p3_field::{BasedVectorSpace, PrimeField64};
 
 const TILE_ROWS: usize = 8192;
 
-// The pinned Goldilocks two-adic root (Plonky3 0.6.1). Build inverse roots
-// at compile time; a fold needs only a lookup, never a host field inversion.
-const INVERSE_ROOTS: [u64; 33] = {
-    const P: u128 = 0xffff_ffff_0000_0001;
-    let mut root = 0x1856_29dc_da58_878cu128;
-    let mut exponent = P - 2;
-    let mut inverse = 1u128;
-    while exponent != 0 {
-        if exponent & 1 != 0 {
-            inverse = inverse * root % P;
-        }
-        root = root * root % P;
-        exponent >>= 1;
-    }
-    let mut roots = [0u64; 33];
-    roots[32] = inverse as u64;
-    let mut i = 32;
-    while i > 0 {
-        roots[i - 1] = (roots[i] as u128 * roots[i] as u128 % P) as u64;
-        i -= 1;
-    }
-    roots
-};
-
-pub(super) fn inverse_root(log_rows: u32) -> u64 {
-    INVERSE_ROOTS[log_rows as usize]
-}
-
-pub(super) fn root(log_rows: u32) -> u64 {
-    Val::TWO_ADIC_GENERATORS[log_rows as usize].as_canonical_u64()
-}
+pub(super) use crate::gpu_matrix::roots::{inverse_root, root};
 pub(super) const KERNEL_SRC: &str = r#"
 __kernel void fri_fold_two(__global const ulong *input, __global ulong *output,
     uint rows, uint row_start, uint log_rows, ulong g_inv,
@@ -169,18 +139,6 @@ mod tests {
     use p3_fri::{FriFoldingStrategy, TwoAdicFriFolding};
     use p3_matrix::dense::RowMajorMatrixView;
 
-    #[test]
-    fn immutable_transform_roots_match_all_reference_domains() {
-        use p3_field::{Field, TwoAdicField};
-        for bits in 0..=32 {
-            let expected = Val::two_adic_generator(bits);
-            assert_eq!(root(bits as u32), expected.as_canonical_u64());
-            assert_eq!(
-                inverse_root(bits as u32),
-                expected.inverse().as_canonical_u64()
-            );
-        }
-    }
     #[test]
     #[ignore = "requires OpenCL GPU; run serially in a bounded service"]
     fn gpu_fri_fold_matches_cpu_on_domains_challenges_and_tile_boundaries() {

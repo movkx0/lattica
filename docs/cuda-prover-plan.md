@@ -15,10 +15,16 @@ progress.
 
 The opt-in `gpu-cuda` feature provides an experimental Linux transport: explicit
 device selection, shared OpenCL/CUDA leases, bounded allocations, private-buffer
-cleanup, NVRTC compilation, kernel launches and completion events. It does not
-route wallet or recursive proofs through CUDA. Field arithmetic, proof-stage
-coverage, controller admission and pool integration remain outstanding. Use the
-existing OpenCL backend for proof benchmarks at this checkpoint.
+cleanup, NVRTC compilation, kernel launches and completion events. Native CUDA
+now implements base/quadratic/cubic field arithmetic, tiled coset transforms,
+and query reconstruction from device prefixes. Matrix geometry, immutable roots
+and the query memory planner are shared with OpenCL. Intermediate polynomials
+remain on the device; explicit transfer counters check this boundary.
+
+Wallet and recursive proofs are not yet routed through CUDA. Cached twiddle
+tuning, commitments, quotient compilation, complete proof-stage coverage,
+controller admission and pool integration remain outstanding. Use the existing
+OpenCL backend for proof benchmarks at this checkpoint.
 
 Install the pinned development components with
 `python3 lattica-prover-p3/scripts/setup-cuda-toolchain.py --prefix .tools/cuda-12.9.1`.
@@ -27,17 +33,27 @@ This leaves the system driver unchanged. From the prover crate, build with
 Run the resulting test executable in a bounded 3 GiB, four-thread, zero-swap
 service with `LD_LIBRARY_PATH` pointing to the toolchain's `lib` directory and
 `LATTICA_GPU_DEVICE_UUID` selecting the device. The filter
-`cuda_compute:: --include-ignored --test-threads=1` covers host limits and device
-lifecycle checks. These tests qualify transport primitives only; they do not
-establish a complete CUDA prover or transaction throughput.
+`cuda_compute:: --include-ignored --test-threads=1` covers arithmetic, transforms,
+query reconstruction, host limits and device lifecycle checks. The separate
+`gpu_matrix:: --test-threads=1` filter checks shared roots and planner boundaries.
+These tests do not establish a complete CUDA prover or transaction throughput.
 
-On 2026-10-18, the desktop RTX 5080 passed seven CUDA host/device tests and the
-shared lease-name test. Compute Sanitizer reported zero errors and zero leaked
-allocations for the six tests that do not deliberately request a missing kernel;
-the missing-kernel recovery test passed separately. The OpenCL checks passed
-148 host tests, four tuning device tests and the CPU-oracle query reconstruction
-test. CPU-only and aarch64 Apple Metal library builds also checked successfully.
-Metal execution and V100 CUDA execution have not been tested in this checkpoint.
+The [2026-10-18 algebra qualification](evidence/cuda-algebra-2026-10-18.json)
+passed 15 CUDA host/device tests and four shared planner/root tests on the desktop
+RTX 5080. Compute Sanitizer reported zero memory errors and leaks across 14 tests;
+the deliberate missing-kernel test passed outside memcheck. Transform/query race
+and synchronization checks also passed. OpenCL regression coverage passed 144
+host tests and six device tests. CPU-only and aarch64 Apple Metal library builds
+checked successfully. NVRTC compiled the field and transform kernels for both
+Volta and Blackwell; V100 CUDA execution and Metal execution remain untested.
+The evidence records source and executable hashes for the implementation under
+test, including its uncommitted source files at qualification time.
+
+The [OpenCL comparison at `bce8830`](evidence/gpu-tuning-rtx5080-2026-10-18.json)
+completed 56 four-entry trials with full stage coverage and independent CPU root
+audits. Event batching reduced median aggregation time from 23.892 to 23.402
+seconds (2.05%); combined tuning increased it by 25.82%. Optional candidates
+remain disabled by default while wider-workload qualification is outstanding.
 
 ## Implementation sequence
 

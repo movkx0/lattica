@@ -21,7 +21,7 @@ ROOTS = ('src', f'{CRATE}/src', f'{CRATE}/scripts', f'{CRATE}/tests', 'scripts',
 CONFIGS = ('build.zig', 'build.zig.zon', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml',
            f'{CRATE}/Cargo.toml', f'{CRATE}/Cargo.lock', f'{CRATE}/build.rs',
            f'{CRATE}/rust-toolchain.toml', f'{CRATE}/.cargo/config.toml')
-SUFFIXES = {'.rs', '.metal', '.zig', '.py', '.js', '.mjs', '.sh', '.c', '.h',
+SUFFIXES = {'.rs', '.metal', '.cu', '.cuh', '.zig', '.py', '.js', '.mjs', '.sh', '.c', '.h',
             '.cpp', '.hpp', '.s', '.json', '.toml', '.lock'}
 EXCLUDED_PARTS = {'target', '.git', '.venv', 'venv', '__pycache__', 'node_modules', 'benchmark-results'}
 

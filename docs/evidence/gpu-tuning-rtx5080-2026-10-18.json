@@ -1,0 +1,299 @@
+{
+  "schema": "lattica-gpu-tuning-comparison-v1",
+  "recorded_at": "2026-10-18T18:17:08.711468+00:00",
+  "commit": "bce8830af9661f08b70ef446fbd92b935762bb9a",
+  "backend": "OpenCL",
+  "gpu": "NVIDIA GeForce RTX 5080",
+  "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+  "driver": "615.78.08",
+  "block_capacity": 64,
+  "construction": "paired",
+  "entries": 4,
+  "user_transactions": 3,
+  "issuance_entries": 1,
+  "fresh_recursive_proofs_per_trial": 4,
+  "completed_trials": 56,
+  "warmups": 6,
+  "paired_repetitions_per_candidate": 5,
+  "all_roots_independently_cpu_verified": true,
+  "all_gpu_proofs_have_complete_16_stage_coverage": true,
+  "worker_host_memory_bytes": 3221225472,
+  "worker_cpu_threads": 4,
+  "worker_swap_bytes": 0,
+  "gpu_limits": {
+    "managed_bytes": 7516192768,
+    "context_bytes": 4294967296,
+    "headroom_bytes": 1073741824,
+    "max_allocation_bytes": 1073741824
+  },
+  "timing_scope": "Fresh recursive aggregation; preparation and independent CPU audit excluded and recorded separately.",
+  "comparisons": {
+    "events": {
+      "paired_repetitions": 5,
+      "pairs": [
+        {
+          "pair": 1,
+          "baseline_seconds": 23.946633693,
+          "candidate_seconds": 23.547457409,
+          "candidate_change_percent": -1.6669411204827678
+        },
+        {
+          "pair": 2,
+          "baseline_seconds": 23.908294969,
+          "candidate_seconds": 23.510637798,
+          "candidate_change_percent": -1.6632602681019626
+        },
+        {
+          "pair": 3,
+          "baseline_seconds": 23.743597278,
+          "candidate_seconds": 23.348110556,
+          "candidate_change_percent": -1.665656291965678
+        },
+        {
+          "pair": 4,
+          "baseline_seconds": 23.884787976,
+          "candidate_seconds": 23.304167304,
+          "candidate_change_percent": -2.4309224456311673
+        },
+        {
+          "pair": 5,
+          "baseline_seconds": 23.892088479999998,
+          "candidate_seconds": 23.402184587,
+          "candidate_change_percent": -2.050485847690098
+        }
+      ],
+      "baseline_median_aggregation_seconds": 23.892088479999998,
+      "candidate_median_aggregation_seconds": 23.402184587,
+      "median_aggregation_reduction_percent": 2.050485847690098,
+      "baseline_median_process_seconds": 24.04402100200241,
+      "candidate_median_process_seconds": 23.555524646002596,
+      "baseline_aggregation_range_seconds": [
+        23.743597278,
+        23.946633693
+      ],
+      "baseline_aggregation_only_user_transactions_per_hour": 452.0324796654194,
+      "candidate_aggregation_range_seconds": [
+        23.304167304,
+        23.547457409
+      ],
+      "candidate_aggregation_only_user_transactions_per_hour": 461.4953770597741
+    },
+    "commitment": {
+      "paired_repetitions": 5,
+      "pairs": [
+        {
+          "pair": 1,
+          "baseline_seconds": 23.882577599,
+          "candidate_seconds": 30.768947063,
+          "candidate_change_percent": 28.834280702968762
+        },
+        {
+          "pair": 2,
+          "baseline_seconds": 23.844351491,
+          "candidate_seconds": 30.758478311,
+          "candidate_change_percent": 28.996917037604163
+        },
+        {
+          "pair": 3,
+          "baseline_seconds": 23.864825281,
+          "candidate_seconds": 30.653539275,
+          "candidate_change_percent": 28.446527112875366
+        },
+        {
+          "pair": 4,
+          "baseline_seconds": 23.901265027,
+          "candidate_seconds": 30.661484213,
+          "candidate_change_percent": 28.28393885580256
+        },
+        {
+          "pair": 5,
+          "baseline_seconds": 23.849024663,
+          "candidate_seconds": 30.772974909,
+          "candidate_change_percent": 29.032425199098366
+        }
+      ],
+      "baseline_median_aggregation_seconds": 23.864825281,
+      "candidate_median_aggregation_seconds": 30.758478311,
+      "median_aggregation_reduction_percent": -28.88624973713252,
+      "baseline_median_process_seconds": 24.018662693000806,
+      "candidate_median_process_seconds": 30.917882839999947,
+      "baseline_aggregation_range_seconds": [
+        23.844351491,
+        23.901265027
+      ],
+      "baseline_aggregation_only_user_transactions_per_hour": 452.54888199824484,
+      "candidate_aggregation_range_seconds": [
+        30.653539275,
+        30.772974909
+      ],
+      "candidate_aggregation_only_user_transactions_per_hour": 351.122701545923
+    },
+    "scale": {
+      "paired_repetitions": 5,
+      "pairs": [
+        {
+          "pair": 1,
+          "baseline_seconds": 23.988505052,
+          "candidate_seconds": 23.944333563,
+          "candidate_change_percent": -0.18413606393665738
+        },
+        {
+          "pair": 2,
+          "baseline_seconds": 23.850904847,
+          "candidate_seconds": 23.959138569,
+          "candidate_change_percent": 0.45379293865077663
+        },
+        {
+          "pair": 3,
+          "baseline_seconds": 23.84886639,
+          "candidate_seconds": 23.951375891,
+          "candidate_change_percent": 0.42982965866664724
+        },
+        {
+          "pair": 4,
+          "baseline_seconds": 23.844108452,
+          "candidate_seconds": 23.916512423,
+          "candidate_change_percent": 0.3036556017422587
+        },
+        {
+          "pair": 5,
+          "baseline_seconds": 23.946092067,
+          "candidate_seconds": 23.841659299,
+          "candidate_change_percent": -0.43611612161099655
+        }
+      ],
+      "baseline_median_aggregation_seconds": 23.850904847,
+      "candidate_median_aggregation_seconds": 23.944333563,
+      "median_aggregation_reduction_percent": -0.39171979679317737,
+      "baseline_median_process_seconds": 24.010682232001272,
+      "candidate_median_process_seconds": 24.098015220999514,
+      "baseline_aggregation_range_seconds": [
+        23.844108452,
+        23.988505052
+      ],
+      "baseline_aggregation_only_user_transactions_per_hour": 452.81300937135893,
+      "candidate_aggregation_range_seconds": [
+        23.841659299,
+        23.959138569
+      ],
+      "candidate_aggregation_only_user_transactions_per_hour": 451.04617222208714
+    },
+    "ntt": {
+      "paired_repetitions": 5,
+      "pairs": [
+        {
+          "pair": 1,
+          "baseline_seconds": 23.967084735,
+          "candidate_seconds": 23.825916961,
+          "candidate_change_percent": -0.589006863207886
+        },
+        {
+          "pair": 2,
+          "baseline_seconds": 23.921957055,
+          "candidate_seconds": 23.800578851,
+          "candidate_change_percent": -0.5073924500446747
+        },
+        {
+          "pair": 3,
+          "baseline_seconds": 23.830754765000002,
+          "candidate_seconds": 23.863277092,
+          "candidate_change_percent": 0.13647208122742338
+        },
+        {
+          "pair": 4,
+          "baseline_seconds": 23.849330118,
+          "candidate_seconds": 23.762337371,
+          "candidate_change_percent": -0.36475970842612115
+        },
+        {
+          "pair": 5,
+          "baseline_seconds": 23.873102404,
+          "candidate_seconds": 23.782797696,
+          "candidate_change_percent": -0.37826967970812087
+        }
+      ],
+      "baseline_median_aggregation_seconds": 23.873102404,
+      "candidate_median_aggregation_seconds": 23.800578851,
+      "median_aggregation_reduction_percent": 0.3037877179626558,
+      "baseline_median_process_seconds": 24.026632403001713,
+      "candidate_median_process_seconds": 23.958106754002074,
+      "baseline_aggregation_range_seconds": [
+        23.830754765000002,
+        23.967084735
+      ],
+      "baseline_aggregation_only_user_transactions_per_hour": 452.3919772651933,
+      "candidate_aggregation_range_seconds": [
+        23.762337371,
+        23.863277092
+      ],
+      "candidate_aggregation_only_user_transactions_per_hour": 453.77047623975034
+    },
+    "events,commitment,scale,ntt": {
+      "paired_repetitions": 5,
+      "pairs": [
+        {
+          "pair": 1,
+          "baseline_seconds": 23.890832691,
+          "candidate_seconds": 30.105165918,
+          "candidate_change_percent": 26.011371421729578
+        },
+        {
+          "pair": 2,
+          "baseline_seconds": 23.857289946,
+          "candidate_seconds": 30.043009645,
+          "candidate_change_percent": 25.92800654643139
+        },
+        {
+          "pair": 3,
+          "baseline_seconds": 23.865789103,
+          "candidate_seconds": 30.03857375,
+          "candidate_change_percent": 25.864573848195384
+        },
+        {
+          "pair": 4,
+          "baseline_seconds": 23.880066951,
+          "candidate_seconds": 30.10718934,
+          "candidate_change_percent": 26.07665381247699
+        },
+        {
+          "pair": 5,
+          "baseline_seconds": 23.953090586,
+          "candidate_seconds": 30.046990996,
+          "candidate_change_percent": 25.440977597946123
+        }
+      ],
+      "baseline_median_aggregation_seconds": 23.880066951,
+      "candidate_median_aggregation_seconds": 30.046990996,
+      "median_aggregation_reduction_percent": -25.824567651564955,
+      "baseline_median_process_seconds": 24.032684922000044,
+      "candidate_median_process_seconds": 30.198574276997533,
+      "baseline_aggregation_range_seconds": [
+        23.857289946,
+        23.953090586
+      ],
+      "baseline_aggregation_only_user_transactions_per_hour": 452.2600385568743,
+      "candidate_aggregation_range_seconds": [
+        30.03857375,
+        30.10718934
+      ],
+      "candidate_aggregation_only_user_transactions_per_hour": 359.4369899281345
+    }
+  },
+  "production_qualified": false,
+  "cuda_proving_measured": false,
+  "end_to_end_delivered_throughput_measured": false,
+  "pending": [
+    "128-entry comparison under matching capacity profile",
+    "performance-based production selection"
+  ],
+  "evidence_directory": "lattica-prover-p3/benchmark-results/gpu-tuning-20261018T173634Z-bce8830",
+  "artifacts": {
+    "manifest.json": "7cbec01070fce279b88bcfb092fa77725c70c2c8d56969adb15cb5f1d4c5cb1e",
+    "summary.json": "f6f4094d5daf30fdd3ec6fd69316d29a9d4793fbc4de5ef46bdb4241b355625c",
+    "trials.json": "c5ed72ff1383aab18e971b2ec44e0526a74e889a6bc26f174bce563b217d5b85",
+    "stages.json": "753a6d1edc3d0a35ad88a6a8504fac7fd9a9463c1a6f70481d83683bf8bd92ab",
+    "source-pins.json": "0df4fb2c80cd3eadda38d8907988ad713d7b6f027dc7a832313125d6788975ef",
+    "build-configuration.json": "3456d98a728203bc90c8251d3be54c4bd63366d7b95b9a83ef50ae8a23f11d7a",
+    "measurement-adapter.json": "df7ab33989cf0825a745e592c70284d877eca8d87db199eca034fc5bf1d4edf2"
+  }
+}
