@@ -5,8 +5,13 @@ use crate::block_v2::worker_memory::MEMORY_BACKEND;
 use crate::config::Val;
 pub mod device;
 mod capacity;
+mod retained_queries;
 #[cfg(feature = "gpu")]
 mod tuning;
+#[cfg(feature = "gpu")]
+mod ntt_tables;
+#[cfg(feature = "gpu")]
+mod profiling;
 pub(crate) mod fri_fold;
 pub mod lde_execute;
 pub mod lde_plan;
@@ -516,6 +521,10 @@ struct DeviceInterval {
     kind: &'static str,
     start: u64,
     end: u64,
+    // Zero means unavailable (Metal or synthetic intervals). Never substitute
+    // host-clock values for timestamps in the device's clock domain.
+    queued: u64,
+    submitted: u64,
 }
 struct DeviceTimeline {
     enabled: bool,
@@ -545,7 +554,16 @@ impl DeviceTimeline {
         #[cfg(feature = "gpu")]
         {
             let (start, end) = event_range(event)?;
-            self.record_interval(kind, start, end)
+            let submission = if self.enabled { Some(event_submission(event, start)?) } else { None };
+            let before = self.events.len();
+            let duration = self.record_interval(kind, start, end)?;
+            if self.events.len() > before {
+                if let Some((queued, submitted)) = submission {
+                    self.events[before].queued = queued;
+                    self.events[before].submitted = submitted;
+                }
+            }
+            Ok(duration)
         }
         #[cfg(feature = "gpu-metal")]
         {
@@ -615,7 +633,7 @@ impl DeviceTimeline {
         if self.enabled {
             if self.events.len() < MAX_DEVICE_EVENTS {
                 host_storage::prepare_timeline(&mut self.events)?;
-                self.events.push(DeviceInterval { kind, start, end });
+                self.events.push(DeviceInterval { kind, start, end, queued: 0, submitted: 0 });
             } else {
                 self.dropped += 1;
             }
@@ -659,6 +677,8 @@ struct Engine {
     nvidia_shuffle: bool,
     #[cfg(feature = "gpu")]
     ntt_local_words: usize,
+    #[cfg(feature = "gpu")]
+    ntt_tables: ntt_tables::Cache,
     #[cfg(feature = "gpu")]
     event_receipts: device::EventReceipts,
     copy_queue: Queue,
@@ -834,6 +854,7 @@ fn allocation(
     elements: usize,
     flags: compute::flags::MemFlags,
 ) -> Result<Allocation, String> {
+    let _span = tracing::info_span!(target: "lattica_block_v2_perf", "GPU buffer allocation").entered();
     let bytes = elements.checked_mul(8).ok_or("GPU buffer size overflow")?;
     if bytes == 0 || bytes > max_alloc {
         return Err("GPU per-allocation limit exceeded".into());
@@ -869,7 +890,7 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
 // retire it without tearing down an engine borrowed from an earlier caller.
 fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, String> {
     #[cfg(feature = "gpu")]
-    let tuning = tuning::Tuning::from_env()?;
+    let mut tuning = tuning::Tuning::from_env()?;
     // An assignment can constrain tiling below the device's hardware limit.
     // Read it before acquiring a lease or creating any context, and bind it
     // to an existing engine just like its aggregate memory allowance.
@@ -897,8 +918,11 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
     if let Some(engine) = ENGINE.get() {
         if let Some(engine) = engine.lock().map_err(|_| "GPU engine poisoned")?.as_ref() {
             #[cfg(feature = "gpu")]
-            if engine.tuning != tuning {
-                return Err("GPU tuning cannot change after initialization".into());
+            {
+                tuning.apply_defaults(engine.pq.device(), limits, assigned_max_alloc)?;
+                if engine.tuning != tuning {
+                    return Err("GPU tuning cannot change after initialization".into());
+                }
             }
             #[cfg(feature = "gpu-metal")]
             engine.pq.check_memory_mode()?;
@@ -927,6 +951,7 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
     #[cfg(feature = "gpu")]
     let (index, pq, max_alloc, global, device_name) = {
         let (platform, device, identity) = crate::gpu_device::select()?;
+        tuning.apply_defaults(device, limits, assigned_max_alloc)?;
         let index = identity.opencl_index;
         use compute::core::{DeviceInfo, DeviceInfoResult};
         let max_alloc = match device
@@ -962,14 +987,14 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
             "bounded_gpu_identity {}",
             serde_json::to_string(&identity).map_err(|e| e.to_string())?
         );
-        let pq = ProQue::builder()
-            .platform(platform)
-            .device(device)
-            .src(
+        let mut program = compute::Program::builder();
+        program.src(
                 [
                     device::public_hash::nvidia::source_prefix(device),
+                    if tuning.hash_unroll { "#define LATTICA_HASH_UNROLL 1\n" } else { "" },
                     crate::gpu::KERNEL_SRC,
                     RETAINED_PATH_KERNEL,
+                    retained_queries::KERNEL_SRC,
                     lde_execute::KERNEL_SRC,
                     opening_reduce::KERNEL_SRC,
                     fri_fold::KERNEL_SRC,
@@ -1003,11 +1028,17 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
                     &tuning::kernel_source(!device::public_hash::nvidia::source_prefix(device).is_empty()),
                 ]
                 .join("\n"),
-            )
+            );
+        if switch("LATTICA_PROFILE_TIMELINE")? && !device::public_hash::nvidia::source_prefix(device).is_empty() {
+            program.cmplr_opt("-cl-nv-verbose");
+        }
+        let pq = ProQue::builder()
+            .platform(platform).device(device).prog_bldr(program)
             .queue_properties(compute::flags::QUEUE_PROFILING_ENABLE)
             .dims(1)
             .build()
             .map_err(|e| e.to_string())?;
+        profiling::program(pq.program(), device)?;
         let device_name = device.name().map_err(|e| e.to_string())?;
         (index, pq, max_alloc, global, device_name)
     };
@@ -1112,8 +1143,10 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
     );
     #[cfg(feature = "gpu")]
     if tuning != tuning::Tuning::default() {
-        eprintln!("bounded_gpu_tuning events={} commitment={} scale={} ntt={} nvidia_supported={} production_qualified=false",
-            tuning.events, tuning.commitment, tuning.scale, tuning.ntt,
+        eprintln!("bounded_gpu_tuning events={} events256={} paths={} public_cache={} tables={} quotient256={} hash32={} hash_unroll={} commitment={} scale={} ntt={} nvidia_supported={} production_qualified=false",
+            tuning.events, tuning.events256, tuning.paths, tuning.public_cache,
+            tuning.tables, tuning.quotient256, tuning.hash32, tuning.hash_unroll,
+            tuning.commitment, tuning.scale, tuning.ntt,
             !device::public_hash::nvidia::source_prefix(pq.device()).is_empty());
     }
     #[cfg(feature = "gpu")]
@@ -1127,6 +1160,8 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
         nvidia_shuffle: !device::public_hash::nvidia::source_prefix(pq.device()).is_empty(),
         #[cfg(feature = "gpu")]
         ntt_local_words,
+        #[cfg(feature = "gpu")]
+        ntt_tables: ntt_tables::Cache::default(),
         #[cfg(feature = "gpu")]
         event_receipts: device::EventReceipts::default(),
         #[cfg(feature = "gpu-metal")]
@@ -1434,6 +1469,7 @@ fn retained_peak(
 #[cfg(feature = "gpu")]
 fn event_range(event: &Event) -> Result<(u64, u64), String> {
     use compute::enums::{ProfilingInfo, ProfilingInfoResult};
+    let _span = tracing::info_span!(target: "lattica_block_v2_perf", "GPU event completion and timing").entered();
     event.wait_for().map_err(|e| e.to_string())?;
     let start = match event
         .profiling_info(ProfilingInfo::Start)
@@ -1451,6 +1487,23 @@ fn event_range(event: &Event) -> Result<(u64, u64), String> {
     };
     end.checked_sub(start).ok_or("nonmonotonic GPU clock")?;
     Ok((start, end))
+}
+
+#[cfg(feature = "gpu")]
+fn event_submission(event: &Event, start: u64) -> Result<(u64, u64), String> {
+    use compute::enums::{ProfilingInfo, ProfilingInfoResult};
+    let queued = match event.profiling_info(ProfilingInfo::Queued).map_err(|e| e.to_string())? {
+        ProfilingInfoResult::Queued(n) => n,
+        _ => return Err("missing GPU queued timestamp".into()),
+    };
+    let submitted = match event.profiling_info(ProfilingInfo::Submit).map_err(|e| e.to_string())? {
+        ProfilingInfoResult::Submit(n) => n,
+        _ => return Err("missing GPU submitted timestamp".into()),
+    };
+    if queued > submitted || submitted > start {
+        return Err("nonmonotonic GPU submission timestamps".into());
+    }
+    Ok((queued, submitted))
 }
 
 impl Engine {
@@ -1473,7 +1526,12 @@ impl Engine {
             let global = rows.checked_add(15).and_then(|n| (n / 16).checked_mul(128))
                 .ok_or("cooperative commitment launch overflow")?;
             builder.global_work_size(global).local_work_size(128);
-        } else { builder.global_work_size(rows); }
+        } else {
+            builder.global_work_size(rows);
+            if self.tuning.hash32 && self.nvidia_shuffle && rows % 32 == 0 {
+                builder.local_work_size(32);
+            }
+        }
         Ok(builder)
     }
 
@@ -2123,6 +2181,13 @@ impl Engine {
     }
 }
 
+#[cfg(feature = "gpu")]
+pub(crate) fn public_compilation_cache_enabled() -> Result<bool, String> {
+    let slot = ENGINE.get().ok_or("GPU hashing was not initialized")?.lock()
+        .map_err(|_| "GPU engine poisoned")?;
+    Ok(slot.as_ref().ok_or("GPU hashing was shut down")?.tuning.public_cache)
+}
+
 pub(super) fn hash_rows(
     height: usize,
     width: usize,
@@ -2294,10 +2359,12 @@ pub fn report(label: &str) -> Option<Snapshot> {
         );
         for event in e.timeline.events.drain(..) {
             println!(
-                "gpu_timeline_interval label={label:?} kind={} start_ns={} end_ns={} clock={}",
+                "gpu_timeline_interval label={label:?} kind={} start_ns={} end_ns={} queued_ns={} submitted_ns={} clock={}",
                 event.kind,
                 event.start,
                 event.end,
+                event.queued,
+                event.submitted,
                 if cfg!(feature = "gpu-metal") {
                     "metal_device"
                 } else {
@@ -2985,6 +3052,26 @@ mod tests {
             assert_eq!(e.open_retained(&tree, index).unwrap(), expected);
         }
         assert!(e.open_retained(&tree, 512).is_err());
+        #[cfg(feature = "gpu")]
+        {
+            use compute::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
+            let indices = [511usize, 0, 255, 511, 64];
+            let expected: Vec<Vec<_>> = indices.iter().map(|&index|
+                host[..tree.layout.path_len].iter().enumerate()
+                    .map(|(level, layer)| layer[(index >> level) ^ 1]).collect()).collect();
+            let before = e.snapshot().managed_live_bytes;
+            assert_eq!(e.open_retained_many(&tree, &indices).unwrap(), expected);
+            assert_eq!(e.snapshot().managed_live_bytes, before);
+            assert!(e.open_retained_many(&tree, &[0, 512]).is_err());
+            assert!(e.open_retained_many(&tree, &[]).is_err());
+            assert!(e.open_retained_many(&tree, &[0; 257]).is_err());
+            e.fail_retained_query_after_enqueue = true;
+            assert!(e.open_retained_many(&tree, &indices).is_err());
+            assert!(matches!(e.injected_event.take().unwrap().info(EventInfo::CommandExecutionStatus).unwrap(),
+                EventInfoResult::CommandExecutionStatus(CommandExecutionStatus::Complete)));
+            assert_eq!(e.snapshot().managed_live_bytes, before);
+            assert_eq!(e.open_retained_many(&tree, &indices).unwrap(), expected);
+        }
         drop(tree);
         assert_eq!(counters(&e.accounting).retained_live, 0);
         assert!(e.snapshot().managed_peak_bytes <= limits.managed_bytes);

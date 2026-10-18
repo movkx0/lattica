@@ -171,9 +171,17 @@ inline void intl(ulong* s,__global const ulong* diag){
 // full permutation: extl; 4 full (rc+x^7 all lanes, extl); 22 partial (rc+x^7 lane0, intl); 4 full.
 inline void perm8(ulong* s,__global const ulong* rci,__global const ulong* rcp,__global const ulong* rcf,__global const ulong* diag){
   extl(s);
-  for(int r=0;r<4;r++){ for(int i=0;i<8;i++) s[i]=gl_pow7(gl_add(s[i],rci[r*8+i])); extl(s); }
+  for(int r=0;r<4;r++){
+#ifdef LATTICA_HASH_UNROLL
+#pragma unroll 8
+#endif
+    for(int i=0;i<8;i++) s[i]=gl_pow7(gl_add(s[i],rci[r*8+i])); extl(s); }
   for(int r=0;r<22;r++){ s[0]=gl_pow7(gl_add(s[0],rcp[r])); intl(s,diag); }
-  for(int r=0;r<4;r++){ for(int i=0;i<8;i++) s[i]=gl_pow7(gl_add(s[i],rcf[r*8+i])); extl(s); }
+  for(int r=0;r<4;r++){
+#ifdef LATTICA_HASH_UNROLL
+#pragma unroll 8
+#endif
+    for(int i=0;i<8;i++) s[i]=gl_pow7(gl_add(s[i],rcf[r*8+i])); extl(s); }
 }
 // leaf hash (PaddingFreeSponge<8,4,4>): one thread per row, sponge over `w` elems, out[row*4..].
 // Padding-free: overwrite state[0..4] with each block, permute after any absorbed block.

@@ -416,6 +416,14 @@ impl DeviceCommitment {
         stats.queries += 1;
         Ok(path)
     }
+
+    pub(crate) fn open_many(&self, indices: &[usize]) -> Result<Vec<Vec<[Val; 4]>>, String> {
+        let paths = self.tree.open_many(indices, self.cap_height)?;
+        let mut stats = self.session.stats.lock().unwrap();
+        stats.downloaded_bytes += paths.iter().map(|p| p.len() as u64 * 32).sum::<u64>();
+        stats.queries += indices.len() as u64;
+        Ok(paths)
+    }
 }
 
 impl DeviceSession {

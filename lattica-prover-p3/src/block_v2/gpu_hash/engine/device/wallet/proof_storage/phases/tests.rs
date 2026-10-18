@@ -16,6 +16,7 @@ fn cold(limits: Limits) -> Plan {
         baseline: engine::CONSTANT_BYTES + limits.staging_bytes + engine::transport_bytes(limits),
         initial_hash: limits.tile_bytes,
         initial_lde: 0,
+        quotient_limits: engine::quotient::phase_limits(limits, false),
     }
 }
 
@@ -53,6 +54,42 @@ fn witness_staging_checks_the_request_host_allowance() {
         );
         assert!(plan.phases.is_empty());
     }
+}
+
+#[test]
+#[cfg(feature = "gpu")]
+fn larger_quotient_allowance_is_included_in_wallet_phase_admission() {
+    let shape = geometry(
+        crate::joinsplit_air::JoinSplitAir,
+        crate::joinsplit_air::HEIGHT,
+        Extension::Cubic,
+    );
+    let limits = Limits::default();
+    let mut original = cold(limits);
+    original.build(shape, limits, 1, 0, true).unwrap();
+    let mut wider = cold(limits);
+    wider.quotient_limits = engine::quotient::phase_limits(limits, true);
+    wider.build(shape, limits, 1, 0, true).unwrap();
+    assert_eq!(
+        engine::quotient::workspace_bytes(wider.quotient_limits),
+        256 << 20
+    );
+    for phase in &wider.phases {
+        assert!(phase.bytes <= limits.managed_bytes);
+        if phase.name == "quotient_evaluation" {
+            let previous = original
+                .phases
+                .iter()
+                .find(|p| p.name == phase.name && p.chunks == phase.chunks)
+                .unwrap();
+            assert!(phase.bytes >= previous.bytes + (128 << 20));
+        }
+    }
+    assert_eq!(wider.initial_lde, original.initial_lde);
+    assert!(wider
+        .quotient_tiles
+        .iter()
+        .all(|tile| tile.peak <= limits.managed_bytes));
 }
 
 #[test]

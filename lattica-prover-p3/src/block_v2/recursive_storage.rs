@@ -45,6 +45,9 @@ pub(super) fn registry_backing(registry: &Registry) -> Result<usize, Error> {
 pub(super) fn admit_session(registry: &Registry) -> Result<usize, Error> {
     let retained = core::mem::size_of::<ProverSession>()
         .checked_add(registry_backing(registry)?)
+        // Optional input binding retains a second public cap set and a bounded
+        // compilation receipt beside the existing authenticated program.
+        .and_then(|bytes| bytes.checked_add(2 * REGISTRY_HOST_BYTES))
         .ok_or("legacy session storage overflow")?;
     if retained as u64 > SESSION_HOST_BYTES {
         return Err("legacy session exceeds retained storage allowance".into());

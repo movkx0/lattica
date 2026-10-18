@@ -15,7 +15,11 @@ __kernel void ntt_tile_cached(__global const ulong* in, __global ulong* out,
     const uint w, const uint h, const uint s0, const uint lt, const uint log_c,
     const uint fuse_bitrev, const uint log_h, const uint do_canon,
     const uint store_brev, const ulong post_c, const ulong post_b,
-    __global const ulong* wlens, __local ulong* tile, __local ulong* powers) {
+    __global const ulong* wlens, __local ulong* tile, __local ulong* powers
+#ifdef LATTICA_NTT_TABLES
+    , __global const ulong* table
+#endif
+    ) {
     const uint C=1u<<log_c, lid=get_local_id(0), wg=get_local_size(0);
     const uint tiles=h>>lt, g=(uint)get_group_id(0);
     const uint tidx=g%tiles, cg=g/tiles;
@@ -23,13 +27,17 @@ __kernel void ntt_tile_cached(__global const ulong* in, __global ulong* out,
     const uint row0=(hi<<(s0+lt))|lo, col0=cg<<log_c;
     const uint rows=1u<<lt, n_el=rows<<log_c, inner=rows>>1;
     for(uint e=lid;e<inner;e+=wg)
-#ifdef LATTICA_TUNED_NTT
+#if defined(LATTICA_NTT_TABLES)
+        powers[e]=table[e];
+#elif defined(LATTICA_TUNED_NTT)
         powers[e]=cached_root_power(wlens,lt,e);
 #else
         powers[e]=gl_pow(wlens[lt-1u],(ulong)e);
 #endif
     for(uint e=lid;e<lt;e+=wg)
-#ifdef LATTICA_TUNED_NTT
+#if defined(LATTICA_NTT_TABLES)
+        powers[inner+e]=table[inner+(size_t)lo*lt+e];
+#elif defined(LATTICA_TUNED_NTT)
         powers[inner+e]=cached_root_power(wlens,s0+e+1u,lo);
 #else
         powers[inner+e]=gl_pow(wlens[s0+e],(ulong)lo);

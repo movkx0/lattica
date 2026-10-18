@@ -1257,7 +1257,10 @@ pub(super) fn four_dispatch(args: &[String]) -> Result<(), Error> {
     if args.len() != 5 { return Err("usage: describe DIR | register DIR MODE | aggregate/verify-root DIR PROFILE CHAIN ROOT".into()); }
     let expected = ExternalExpected::parse(&args[2], &args[3], &args[4])?;
     match args[0].as_str() {
-        "aggregate" => four::aggregate(Path::new(&args[1]), expected, None),
+        "aggregate" => {
+            let profiler = Profiler::from_env()?;
+            four::aggregate(Path::new(&args[1]), expected, profiler.as_ref())
+        }
         "verify-root" => four::verify_root(Path::new(&args[1]), expected),
         _ => Err("unknown benchmark action".into()),
     }

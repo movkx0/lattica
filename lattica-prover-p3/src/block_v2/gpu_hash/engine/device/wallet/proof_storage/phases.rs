@@ -52,6 +52,7 @@ pub(crate) struct Plan {
     baseline: usize,
     initial_hash: usize,
     initial_lde: usize,
+    quotient_limits: Limits,
 }
 
 impl Plan {
@@ -64,6 +65,14 @@ impl Plan {
         let baseline = live
             .checked_sub(sum(&[initial_hash, initial_lde])?)
             .ok_or("wallet cached workspace exceeds live bytes")?;
+        #[cfg(feature = "gpu")]
+        let baseline = if engine.tuning.tables {
+            baseline
+                .checked_add(engine::ntt_tables::MAX_BYTES - engine.ntt_tables.bytes())
+                .ok_or("wallet public table cache reservation overflow")?
+        } else {
+            baseline
+        };
         let mut plan = Self {
             phases: Vec::new(),
             quotient_tiles: Vec::new(),
@@ -77,6 +86,10 @@ impl Plan {
             baseline,
             initial_hash,
             initial_lde,
+            #[cfg(feature = "gpu")]
+            quotient_limits: engine.quotient_limits(),
+            #[cfg(not(feature = "gpu"))]
+            quotient_limits: engine::quotient::phase_limits(engine.limits, false),
         };
         plan.build(
             g,
@@ -178,7 +191,7 @@ impl Plan {
             program,
             h * 2,
             sum(&[self.baseline, program.instruction_words * 8])?,
-            limits,
+            self.quotient_limits,
             self.max_allocation,
         )?;
         let hidden = h * 2;
@@ -411,7 +424,7 @@ impl Plan {
             // transform scratch, full output and one coset output are bounded
             // together; no complete full-width quotient-domain matrix is used.
             let code = program.instruction_words * 8;
-            let quotient_workspace = engine::quotient::DEVICE_WORKSPACE_BYTES;
+            let quotient_workspace = engine::quotient::workspace_bytes(self.quotient_limits);
             let periodic_input = if g.periodic_columns == 0 {
                 None
             } else {
@@ -443,7 +456,7 @@ impl Plan {
                     cache_limit,
                 ])?,
                 cache_limit,
-                limits,
+                self.quotient_limits,
                 self.max_allocation,
             )?;
             self.inputs.push(inputs::InputPlan {
@@ -497,7 +510,7 @@ impl Plan {
                 program,
                 h * chunks,
                 live,
-                limits,
+                self.quotient_limits,
                 self.max_allocation,
             )?;
             self.quotient_tiles.push(QuotientTile {

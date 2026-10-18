@@ -16,6 +16,36 @@ const MAX_DEVICE_TILE_ROWS: usize = 16 * 1024;
 // allowance beside live matrices. Charge parameters/status and row storage
 // together; a larger row cap must not borrow another component's allowance.
 pub(super) const DEVICE_WORKSPACE_BYTES: usize = 128 << 20;
+const MAX_DEVICE_WORKSPACE_BYTES: usize = 256 << 20;
+
+pub(super) fn phase_limits(limits: Limits, wide: bool) -> Limits {
+    let tile_bytes = if wide && limits.tile_bytes >= DEVICE_WORKSPACE_BYTES {
+        MAX_DEVICE_WORKSPACE_BYTES
+    } else {
+        limits.tile_bytes.min(DEVICE_WORKSPACE_BYTES)
+    };
+    Limits {
+        tile_bytes,
+        ..limits
+    }
+}
+
+pub(super) fn workspace_bytes(limits: Limits) -> usize {
+    if limits.tile_bytes >= MAX_DEVICE_WORKSPACE_BYTES {
+        MAX_DEVICE_WORKSPACE_BYTES
+    } else {
+        DEVICE_WORKSPACE_BYTES
+    }
+}
+
+#[cfg(feature = "gpu")]
+impl Engine {
+    /// Only owned quotient rows may use this phase-specific allowance. Transfer
+    /// pools, LDE geometry and all aggregate/allocation limits are unchanged.
+    pub(super) fn quotient_limits(&self) -> Limits {
+        phase_limits(self.limits, self.tuning.quotient256)
+    }
+}
 
 #[cfg(feature = "gpu")]
 pub(super) mod specialized;
@@ -122,7 +152,7 @@ impl Plan {
             })
             .ok_or("GPU quotient row size overflow")?;
         let workspace_rows = if resident {
-            DEVICE_WORKSPACE_BYTES
+            workspace_bytes(limits)
                 .checked_sub(static_bytes)
                 .ok_or("GPU quotient parameters exceed admitted device workspace")?
         } else {
@@ -357,13 +387,73 @@ mod tests {
         let wide = Plan::for_device(&program, 1 << 19, 256 << 20, limits, 256 << 20).unwrap();
         assert_eq!(wide.rows, 8192);
         assert!(wide.peak <= (256 + 128) << 20);
-        let narrow = Plan::for_device(&program, 1 << 19, 256 << 20,
-            Limits { tile_bytes: 64 << 20, ..limits }, 256 << 20).unwrap();
+        let narrow = Plan::for_device(
+            &program,
+            1 << 19,
+            256 << 20,
+            Limits {
+                tile_bytes: 64 << 20,
+                ..limits
+            },
+            256 << 20,
+        )
+        .unwrap();
         assert_eq!(narrow.rows, 4096);
-        let pressured = Plan::for_device(&program, 1 << 19, (512 - 64) << 20,
-            limits, 256 << 20).unwrap();
+        let pressured =
+            Plan::for_device(&program, 1 << 19, (512 - 64) << 20, limits, 256 << 20).unwrap();
         assert_eq!(pressured.rows, 4096);
         assert!(pressured.peak <= limits.managed_bytes);
+        let large = Plan::for_device(
+            &program,
+            1 << 19,
+            128 << 20,
+            Limits {
+                tile_bytes: MAX_DEVICE_WORKSPACE_BYTES,
+                ..limits
+            },
+            256 << 20,
+        )
+        .unwrap();
+        assert_eq!(large.rows, 16384);
+        assert!(large.peak <= (128 + 256) << 20);
+        let capped = Plan::for_device(
+            &program,
+            1 << 19,
+            128 << 20,
+            Limits {
+                tile_bytes: MAX_DEVICE_WORKSPACE_BYTES,
+                ..limits
+            },
+            128 << 20,
+        )
+        .unwrap();
+        assert_eq!(capped.rows, 8192);
+        assert_eq!(
+            phase_limits(limits, true).tile_bytes,
+            MAX_DEVICE_WORKSPACE_BYTES
+        );
+        assert_eq!(
+            phase_limits(
+                Limits {
+                    tile_bytes: 64 << 20,
+                    ..limits
+                },
+                true
+            )
+            .tile_bytes,
+            64 << 20
+        );
+        assert_eq!(
+            phase_limits(
+                Limits {
+                    tile_bytes: 512 << 20,
+                    ..limits
+                },
+                false
+            )
+            .tile_bytes,
+            DEVICE_WORKSPACE_BYTES
+        );
     }
 }
 

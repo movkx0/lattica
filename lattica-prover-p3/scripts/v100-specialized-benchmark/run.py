@@ -16,6 +16,7 @@ OUT = None
 UUID = None
 GIB = 1 << 30
 import monitor as E
+from coverage import require_gpu_stages
 C = E
 
 
@@ -157,10 +158,7 @@ def sample(name, tuning):
               'hiding','commitment','opening','fri_fold','fri_query','final_polynomial','scalar','transcript','grinding'}
     full = [r for r in reports if r['entry_point'] in ('block_v2_recursive_wrap_pair','block_v2_recursive_merge')]
     if len(full)!=3: raise RuntimeError('missing recursive request reports')
-    for r in full:
-        observed = {o['stage'] for o in r['observations'] if o['backend']=='open_cl' and o['device_calls']>0}
-        if not stages.issubset(observed):
-            raise RuntimeError('recursive request is missing device receipts: '+str(stages-observed))
+    result['gpu_stage_coverage'] = require_gpu_stages(full, stages)
     special = [line for line in text.splitlines() if line.startswith('bounded_gpu_quotient_specialization selected=true')]
     rejected = [line for line in text.splitlines() if line.startswith('bounded_gpu_quotient_specialization selected=false')]
     executions = [line for line in text.splitlines() if line.startswith('bounded_gpu_quotient_specialized_execution ')]

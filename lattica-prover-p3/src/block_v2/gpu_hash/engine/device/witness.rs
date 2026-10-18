@@ -326,6 +326,7 @@ impl PreparedWitness {
                         kernel.cmd().global_work_size(wave.len()).enew(&mut event)
                             .enq().map_err(|e| e.to_string())?;
                     }
+                    batch.engine.timeline.launch("device_witness_wave", wave.len(), None, wave.len() * 8);
                     batch.record("device_witness_wave", event)?;
                 }
                 batch.finish()?;

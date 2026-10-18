@@ -14,7 +14,9 @@ struct Limits {
 const LIMITS: Limits = Limits {
     threads: 128,
     depth: 64,
-    events: 65_536,
+    // OpenCL records many small synchronous witness kernels. Keep diagnostics
+    // bounded, but allow a complete node trace (about 100k entered segments).
+    events: if cfg!(feature = "gpu") { 262_144 } else { 65_536 },
 };
 
 struct Frame {

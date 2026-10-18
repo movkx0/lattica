@@ -124,6 +124,37 @@ fn binding_matches_all_nine_ordered_pair_compilers() {
 }
 
 #[test]
+fn legacy_binding_matches_compiler_for_distinct_fresh_inputs() {
+    let wallet = wallets().into_iter().next().unwrap();
+    let caps: Caps<3> = core::array::from_fn(|i| caps()[i].clone());
+    for height in [2048, 1 << 21] {
+        let prefix = prefix(height, 3);
+        let shape = Shape::legacy_pair(&prefix, height).unwrap();
+        let mut previous: Option<Compiled> = None;
+        for seed in [17u64, 53] {
+            let public: [Vec<Val>; 2] = core::array::from_fn(|slot|
+                (0..wallet.public.len()).map(|i| Val::from_u64(seed * 1000 + (slot * 100 + i) as u64)).collect());
+            let proofs = [colored(&wallet.proof, seed), colored(&wallet.proof, seed + 1)];
+            let inputs = [(public[0].as_slice(), &proofs[0]), (public[1].as_slice(), &proofs[1])];
+            let compiled = wrapper_pair_with_registry(height, &caps, [&public[0], &public[1]],
+                [&proofs[0], &proofs[1]], Some(&prefix)).unwrap();
+            let count = compiled.witness.len();
+            assert_eq!(bind(&shape, &caps, inputs, count, count * 8).unwrap(), compiled.witness);
+            check_witness(&shape, &caps, inputs, &compiled.witness, count * 8).unwrap();
+            assert!(bind(&shape, &caps, inputs, count, count * 8 - 1).is_err());
+            assert!(bind(&shape, &caps, inputs, count - 1, count * 8).is_err());
+            if let Some(old) = previous.take() {
+                assert_eq!(old.program, compiled.program);
+                assert_ne!(old.witness, compiled.witness);
+            }
+            previous = Some(compiled);
+        }
+    }
+    assert!(Shape::legacy_pair(&prefix(2048, 12), 2048).is_err());
+    assert!(Shape::legacy_pair(&prefix(2048, 3), 4096).is_err());
+}
+
+#[test]
 fn binding_matches_all_full_size_pair_compilers() {
     order_cases(1 << 21);
 }

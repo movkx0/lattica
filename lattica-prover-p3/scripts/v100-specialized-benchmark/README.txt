@@ -49,8 +49,8 @@ Build and prepare, from lattica-prover-p3
 
 Builds must fit the existing container memory allowance and are outside timing.
 Use separate CPU and GPU binaries from the same pinned source. The GPU feature
-enables gpu-tuning in the library, but optional tuning selections remain empty
-unless explicitly requested. Source, controller, adapter, fixture and binary
+enables gpu-tuning in the library. An empty tuning selection uses device
+defaults; see the pass-two V100 defaults below. Source, controller, adapter, fixture and binary
 hashes are checked before each sample; changed inputs require fresh preparation.
 
 Run one sample, the paired comparison, or a power measurement
@@ -66,6 +66,8 @@ For an individual tuning sample, add --tuning events, commitment, scale, ntt,
 or a comma-separated combination to run.py sample, with a fresh --name.
 compare.py runs warmups, one screen per candidate and five alternating pairs
 of baseline versus events,commitment,scale,ntt. It writes comparison.json.
+This preserves the original experiment. The pass-two qualification uses frozen
+baseline and candidate binaries, as described below.
 Successful existing samples can be revalidated; failed attempts are preserved.
 Use a fresh evidence directory for another campaign.
 
@@ -91,7 +93,7 @@ See ../../../docs/gpu-benchmarking.md for the historical comparison. Raw
 measurements and machine-specific evidence remain local; each new invocation
 retains its own telemetry and audit records under --evidence.
 The five-pair baseline median was 57.697 seconds; the combined candidates took
-64.822 seconds, 12.35% slower. All optional tuning remains opt-in.
+64.822 seconds, 12.35% slower. At that revision all tuning remained opt-in.
 
 The separate power repeat took 57.503 seconds for aggregation and 58.051 seconds
 for the metered worker: 106.895 W average, 207.022 W sampled peak, 1.723706 Wh.
@@ -213,3 +215,202 @@ source and binary manifests, raw power/resource samples, and CPU audit logs.
 This is aggregation of existing wallet proofs on the measured V100; wallet
 proof generation, full-block finalization, other GPUs and production deployment
 are outside this qualification.
+
+Pass-two OpenCL implementation
+
+On NVIDIA V100-PCIE-32GB, an empty tuning selection now enables 64-event batches,
+batched retained-tree paths, and authenticated public compilation/input-layout
+reuse in the legacy recursive session. The first binding is checked against the
+original compiler witness. Subsequent calls validate the complete registry caps,
+profile, height, mode and input count before binding fresh, verified children.
+Cache entries contain public metadata, never witnesses or prover randomness.
+All 16 actual GPU stages are still required for every newly generated proof.
+
+Path batches preserve input order and duplicates, accept at most 256 indices,
+and charge at most 1 MiB scratch against the existing managed-memory limit.
+Tight budgets fall back to individual paths. Failure and unwind paths fence
+commands before releasing storage. Event batches likewise retain individual
+stage receipts and drain before releasing their owners.
+
+Standalone runs with at least 11 GiB managed memory use a 256 MiB owned-quotient
+workspace, allowing 16384 rows for the measured program. Smaller configured
+tiles and device allocation limits still constrain it. An externally assigned
+worker retains its existing 128 MiB workspace profile. Experimental admission
+profiles may explicitly set geometry.gpu_quotient_workspace_bytes to 256 MiB.
+Both the Rust phase planner and Python reservation model account for the choice.
+
+Explicit LATTICA_V2_GPU_TUNING selections replace device defaults and require
+the gpu-tuning feature. `reference` disables these new defaults for research.
+The measured combination is events,public_cache,paths,quotient256. Additional
+opt-in experiments are events256, tables, hash32 and hash_unroll. The public NTT
+table cache is context-owned, limited to 32 entries / 64 MiB, keyed by actual
+roots, direction and stage geometry, and falls back to the existing GPU kernel
+under pressure. Experimental admission profiles must reserve that cache with
+geometry.gpu_ntt_table_cache_bytes=67108864. It is disabled by default.
+
+Set both LATTICA_PROFILE=1 and LATTICA_PROFILE_TIMELINE=1 for diagnostics. The
+adapter installs the host profiler, and OpenCL events include queued, submitted,
+start and end timestamps. Launch geometry, kernel work-group preferences,
+static local/private memory and NVIDIA compiler build logs are also recorded.
+Host spans cover circuit construction, compilation, preprocessing, allocation
+and event waits. OpenCL host timelines allow 262144 segments per checkpoint;
+loss counts remain visible and the report rejects incomplete traces.
+
+  python3 scripts/v100-specialized-benchmark/profile.py \
+    /path/to/four.log /path/to/worker-0.log /path/to/worker-1.log \
+    --output /path/to/profiles.json
+
+Device execution is the union of recorded intervals, not their sum. Queue waits
+overlap and are reported as nonadditive distributions. Uncovered intervals
+include host work and unrecorded commands; they do not establish GPU idle time.
+Host spans measure wall time rather than CPU time. Worker clock domains stay
+separate. Driver-reported private memory is not a spill-traffic or occupancy
+measurement. The installed Nsight tools do not provide OpenCL tracing or Volta GPU
+metrics on this instance, so these are native OpenCL diagnostics.
+
+Exploratory screens (one sample each, not the final qualification):
+
+  Four-input selection                    Aggregation seconds
+  Warmed control                          46.446
+  Public compilation/input-layout cache   43.635
+  Event batches of 64 / 256                45.081 / 45.080
+  Batched Merkle paths                    45.452
+  Public NTT table cache                   45.892
+  Quotient workspace 256 MiB               44.019
+  Hash work-group 32                      46.604
+  Bounded hash lane unrolling              46.141
+  Combined selected changes               39.561
+
+The concurrent screen took 188.439 seconds for the frozen c325074 baseline,
+151.529 for the selected combination and 161.964 without wider quotient tiles.
+Every screen generated fresh proofs and passed independent CPU root audits.
+The first candidate control took 73.355 seconds with cold compilation and was
+excluded; the warmed control above was used to interpret the screens.
+
+A separate hash microbenchmark checked widths 16/64/200, work-groups selected by
+the driver or 32/64/128/256 items, constant-memory round data, bounded unrolling,
+and local staging for coalesced reads. The first four rows were checked against
+an independent Python field/hash oracle; all rows were compared with the
+reference GPU output.
+Microbenchmark gains did not justify enabling the hash changes in the prover.
+Full permutation unrolling crashed this driver's OpenCL compiler twice during
+program build; those attempts are preserved and that variant was discarded.
+The retained hash experiment only unrolls fixed eight-lane loops. Relaxed
+floating-point compiler options and reduced precision are inapplicable to the
+exact integer field arithmetic and were not introduced.
+
+The pass-two campaign lives at /workspace/code/benchmark-v100-pass2-20261018.
+Its controllers preserve the original four/eight-input adapters and CPU-only
+auditors, pin both workload binaries and all shared library sources, and retain
+fresh proof artifacts, resource telemetry, NVML power/energy readings and root
+audit logs. The frozen baseline is c325074b074f120379270209ba833c98d4d68539.
+The optimized binaries use identical library sources to the correctness build.
+
+On this instance, repeat an individual frozen-binary measurement with a fresh
+name (run the commands sequentially so the GPU admission guard remains valid):
+
+  cd /workspace/code/benchmark-v100-pass2-20261018
+  python3 release_cache.py
+  python3 run.py sample final replay-four-01
+  python3 release_cache.py
+  python3 concurrent.py final replay-concurrent-01
+
+Use baseline in place of final for the frozen control. The advisory only drops
+clean cached pages of completed benchmark/build artifacts; it does not delete
+files, clear the driver's compiler cache or change system limits. Builds must
+finish before a timed sample begins. The final experiment uses an empty tuning
+selection in both binaries, five alternating pairs per workload, independent
+CPU verification of every root, and a gate requiring both medians to improve,
+at least 5% less time in one workload, and at least four paired wins out of five
+in each. An inconclusive campaign extends once to ten pairs with an 80% paired
+win requirement. Diagnostic runs, warmups and exploratory screens are excluded.
+
+Re-evaluate the preserved five-pair evidence from lattica-prover-p3:
+
+  python3 scripts/v100-specialized-benchmark/qualification.py \
+    /workspace/code/benchmark-v100-pass2-20261018 --candidate final --pairs 5 \
+    --output /tmp/v100-pass2-rechecked.json
+
+The output path must be new. The checker rejects changed binaries, incomplete
+samples, reused root hashes, missing GPU-stage/CPU-audit receipts and memory
+pressure events. Campaign controller/build hashes are in campaign-manifest.json;
+the controller refuses changes while measuring or resuming that campaign.
+
+Final pass-two measurements
+
+Five alternating pairs per workload passed the qualification gate. The selected
+defaults won all five pairs in each workload. Median warmed measurements:
+
+  Workload                         c325074        Optimized      Inputs/hour
+  Four-input root                  46.166 s        39.455 s       311.92 -> 364.97
+  Two concurrent eight-input roots 188.984 s       150.045 s       304.79 -> 383.89
+
+Time fell 14.54% and 20.60%, respectively; throughput rose 17.01% and 25.95%.
+Four-input ranges were 46.029..46.359 seconds baseline and 39.300..39.460 seconds
+optimized. Concurrent ranges were 187.182..191.015 and 146.866..152.166 seconds.
+These are aggregation rates for already-proved wallet transactions. Wallet
+proving, full-block finalization, other devices and production deployment are
+outside the measurement. Four-input timing excludes GPU initialization;
+concurrent timing includes both worker lifetimes. CPU audits are outside both.
+
+Median GPU board energy fell from 1.457514 to 1.376451 Wh per four-input worker
+(5.56%), and from 6.262108 to 5.789860 Wh per concurrent cohort (7.54%). Median
+average board power increased from 112.223 to 123.899 W and from 119.206 to
+138.915 W, respectively. Energy covers launch through exit, including context
+initialization and shutdown, and excludes the CPU audit and idle observation
+periods. It is GPU board energy, not CPU or complete-system energy. The power
+limit remained 250 W; clocks and resource samples are retained with every run.
+
+Peak managed allocation did not increase: approximately 12.694 GiB for a
+four-input worker and 9.241 GiB per concurrent worker. The larger quotient
+workspace did not set the whole-run peak. Limits stayed at 16 GiB managed plus
+4 GiB context for the single worker, or 11.25 GiB managed plus 4 GiB context per
+concurrent worker with 1 GiB shared headroom. Rayon threads remained four for a
+single worker and two for each concurrent worker.
+
+The final paired series generated 170 fresh recursive proofs. All 30 roots
+passed independent CPU verification and every proof retained all 16 GPU-stage
+receipts. No memory-pressure events were recorded. Focused validation passed
+46 Rust test executions (including 10 GPU executions), 108 Python tests, GPU
+library compilation both with and without gpu-tuning, and source completeness
+through an isolated temporary index. All 619 library/source pins match the
+correctness build and both frozen optimized binaries.
+
+The primary evidence is evidence/qualification-5-pairs.json under the campaign
+directory. evidence/final-build.json and eight/final-build.json pin the binaries;
+evidence/final-source.tar.gz preserves the optimized source snapshot, including
+new modules. evidence/campaign-manifest.json pins the measurement controllers.
+Diagnostics and cold runs are retained separately and excluded from these
+medians. The defaults remain limited to the measured V100 model; experimental
+NTT tables, 256-event batches, hash work-group changes and hash unrolling remain
+explicit opt-ins because the full-prover screens did not justify promotion.
+
+Complete diagnostics contain 62563 recorded events for the initial four-input
+run and 141478 / 141481 for the two concurrent workers, with no dropped host,
+GPU or performance-span records and submission metadata on every GPU event.
+The first diagnostic included 118.994 seconds of cold specialized compilation.
+A separate warmed four-input diagnostic contains 62560 events, also with zero
+drops. It recorded 24.988 seconds of execution-interval union within a 41.663
+second device span. The remaining 16.675 seconds are uncovered intervals, not
+measured GPU idle time. Hash absorption, LDE NTT and quotient event durations
+were 8.621, 7.607 and 3.100 seconds, respectively. Inclusive host circuit
+construction was 5.630 seconds, public input binding 0.001 seconds and warmed
+specialized compilation 0.323 seconds. These overlapping diagnostic measures
+are excluded from the qualification medians.
+
+See evidence/final-profiles.json and evidence/warm-four-profile.json for the
+trace summaries. Active-worker telemetry retained the same 877 MHz memory
+clock, with sampled SM clocks from 1230 to 1380 MHz in both arms under the
+unchanged power policy. Maximum sampled temperatures were 55 C for the
+optimized four-input runs and 58 C for optimized concurrent runs. No clocks
+or power settings were changed for this experiment.
+
+evidence/final-controller-source.tar.gz preserves the exact campaign scripts,
+eight-input adapter, build manifests and supporting benchmark modules.
+evidence/final-integrity.json records successful revalidation of the source,
+binary, controller and qualification hashes. evidence/final-review.patch also
+preserves every changed/new source file and this final documentation. To rebuild,
+apply that patch to the pinned c325074 checkout and restore the frozen adapters
+from the archives; retain the separately pinned public fixtures and CPU auditor.
+Use fresh campaign directories and labels
+when changing source or controls; do not overwrite this evidence.

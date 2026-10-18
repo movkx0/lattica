@@ -31,6 +31,29 @@ def calibration(uuid='GPU-a', overhead=600 * R.MIB):
 
 
 class ResourceTests(unittest.TestCase):
+    def test_optional_opencl_workspace_reservations_preserve_historical_defaults(self):
+        profile = json.loads(Path(__file__).with_name(
+            'block-v2-multi-gpu-direct-readback-workload.json').read_text())
+        g = profile['geometry']
+        g.update(gpu_quotient_eval=True, gpu_quotient_resident=True,
+                 degree_prefix_rows=32, retained_quotient_rows=256,
+                 main_columns=10, preprocessing_columns=8, permutation_columns_upper_bound=13)
+        base = R.owned_quotient_reservation(profile)
+        g['gpu_quotient_workspace_bytes'] = 256 * R.MIB
+        enlarged = R.owned_quotient_reservation(profile)
+        self.assertEqual(enlarged['managed_bytes'], base['managed_bytes'] + 128 * R.MIB)
+        self.assertGreaterEqual(enlarged['max_allocation_bytes'], 256 * R.MIB)
+        g['gpu_ntt_table_cache_bytes'] = 64 * R.MIB
+        self.assertEqual(R.owned_quotient_reservation(profile)['managed_bytes'],
+                         enlarged['managed_bytes'] + 64 * R.MIB)
+        for key in ['gpu_quotient_workspace_bytes', 'gpu_ntt_table_cache_bytes']:
+            saved = g[key]
+            for invalid in [True, -1, 1, 1024 * R.MIB, '64']:
+                g[key] = invalid
+                with self.assertRaises(ValueError):
+                    R.owned_quotient_reservation(profile)
+            g[key] = saved
+
     def test_caller_stack_cannot_be_lent_to_the_prover(self):
         self.assertEqual(R.CALLER_STACK_HOST_BYTES, 8585216)
         profile = json.loads(Path(__file__).with_name(

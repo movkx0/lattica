@@ -15,6 +15,9 @@ import subprocess
 MIB = 1 << 20
 GIB = 1 << 30
 OWNED_QUOTIENT_WORKSPACE_BYTES = 128 * MIB
+# Public OpenCL NTT tables are context-owned, independently capped and charged
+# against the same managed limit. Experimental profiles opt into this reserve.
+OPENCL_NTT_TABLE_BYTES = 64 * MIB
 WORKER_PROTOCOL_HOST_BYTES = 8 * MIB
 # Decoded children survive the prover call. This shared decoder allowance stays
 # outside cached session budgets, including on Empty jobs before reuse.
@@ -826,6 +829,12 @@ def owned_quotient_reservation(profile):
     if not gpu_quotient_resident(profile):
         return {'managed_bytes': 0, 'max_allocation_bytes': 0}
     geometry = profile['geometry']
+    workspace = geometry.get('gpu_quotient_workspace_bytes', OWNED_QUOTIENT_WORKSPACE_BYTES)
+    table_cache = geometry.get('gpu_ntt_table_cache_bytes', 0)
+    if type(workspace) is not int or workspace not in (128 * MIB, 256 * MIB):
+        raise ValueError('unsupported owned quotient workspace allowance')
+    if type(table_cache) is not int or table_cache not in (0, OPENCL_NTT_TABLE_BYTES):
+        raise ValueError('unsupported public NTT table cache allowance')
     prefix = geometry.get('degree_prefix_rows')
     quotient = geometry.get('retained_quotient_rows')
     if any(type(n) is not int or n < 1 or n > 1 << 31 or n & (n - 1)
@@ -853,10 +862,10 @@ def owned_quotient_reservation(profile):
     mask_bytes = (quotient // chunks) * (chunks - 1) * 7 * 8
     commit_live = (cache_entries * prefix * columns[1] * 8 + quotient * 3 * 8
                    + random_bytes + mask_bytes + chunks * 3 * 8)
-    managed = max(prefixes + output + OWNED_QUOTIENT_WORKSPACE_BYTES,
+    managed = max(prefixes + output + workspace,
                   commit_live + 64 * MIB)
     largest = max(prefix * max(widest, 3) * 8, quotient * 3 * 8,
-                  random_bytes, mask_bytes, OWNED_QUOTIENT_WORKSPACE_BYTES)
+                  random_bytes, mask_bytes, workspace)
     if gpu_lookup(profile):
         random_samples = lookup_random_sample_bytes(profile)
         rows = prefix // 2
@@ -895,7 +904,8 @@ def owned_quotient_reservation(profile):
             managed = max(managed, opening_live + height * 48,
                           retained + height * 216 + 128 * MIB + query_scratch)
             largest = max(largest, height * 32)
-    return {'managed_bytes': managed, 'max_allocation_bytes': largest}
+    return {'managed_bytes': managed + table_cache,
+            'max_allocation_bytes': max(largest, table_cache)}
 
 
 def workload_failures(budget, profile):

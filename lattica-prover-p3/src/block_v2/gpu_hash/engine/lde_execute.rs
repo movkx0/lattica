@@ -425,11 +425,19 @@ impl Engine {
         let tables = self.pq.ntt_tables(roots, inverse, height, post_c, post_b)?;
         #[cfg(feature = "gpu")]
         {
-            let _ = inverse;
             if prefix.is_some() {
                 return Err("fused NTT prefix stores require Metal".into());
             }
         }
+        #[cfg(feature = "gpu")]
+        let table_roots = if self.tuning.tables {
+            let mut values = [0u64; 32];
+            // Metadata identifies public powers only; no proving values are
+            // read back. The in-order blocking read also covers root uploads.
+            roots.read(&mut values[..log_h]).enq().map_err(|e| e.to_string())?;
+            self.stats.downloaded_bytes += (log_h * 8) as u64;
+            Some(values)
+        } else { None };
         let mut in_dst = true;
         for (group, &(stage, count, log_c)) in groups.iter().enumerate() {
             let last = group + 1 == groups.len();
@@ -459,7 +467,17 @@ impl Engine {
             #[cfg(feature = "gpu-metal")]
             let power_words: Option<usize> = None;
             #[cfg(feature = "gpu")]
-            let kernel_name = if power_words.is_some() {
+            let table = if power_words.is_some() {
+                if let Some(roots_values) = table_roots {
+                    self.ntt_table(roots, super::ntt_tables::Key {
+                        roots: roots_values, log_height: log_h as u32, inverse, stage, count,
+                    })?
+                } else { None }
+            } else { None };
+            #[cfg(feature = "gpu")]
+            let kernel_name = if table.is_some() {
+                "ntt_tile_tables"
+            } else if power_words.is_some() {
                 if self.nvidia_shuffle && self.tuning.ntt_powers(height, width) {
                     "ntt_tile_cached_tuned"
                 } else { "ntt_tile_cached" }
@@ -520,6 +538,8 @@ impl Engine {
                 if let Some(words) = power_words {
                     builder.arg_local::<u64>(words);
                 }
+                #[cfg(feature = "gpu")]
+                if let Some(table) = &table { builder.arg(table); }
                 let kernel = builder.build().map_err(|e| e.to_string())?;
                 let command = kernel.cmd().enew(&mut event);
                 #[cfg(test)]
@@ -546,6 +566,8 @@ impl Engine {
                 }
                 return Err("injected error after resident NTT enqueue".into());
             }
+            #[cfg(feature = "gpu")]
+            self.timeline.launch(kernel_name, workgroups * workgroup, Some(workgroup), height * width * 8);
             self.stats.lde_transform_ns += self
                 .timeline
                 .record(if opening { "opening_ntt" } else { "lde_ntt" }, &event)?;
@@ -592,6 +614,17 @@ impl Engine {
                 .enew(&mut event)
                 .enq()
                 .map_err(|e| e.to_string())?;
+        }
+        #[cfg(feature = "gpu")]
+        {
+            let cooperative = self.tuning.commitment && self.nvidia_shuffle;
+            let (name, global, local) = if cooperative {
+                ("lde_absorb_shuffle", rows.div_ceil(16) * 128, Some(128))
+            } else {
+                ("lde_absorb", rows, (self.tuning.hash32 && self.nvidia_shuffle
+                    && rows % 32 == 0).then_some(32))
+            };
+            self.timeline.launch(name, global, local, rows * columns * 8);
         }
         let ns = self.timeline.record("lde_absorb", &event)?;
         self.stats.lde_sponge_ns += ns;

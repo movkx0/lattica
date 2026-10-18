@@ -81,13 +81,13 @@ pub(crate) fn compile_in_reported<T>(
         profile::public_scope_capabilities(Stage::Preprocessing),
     )?;
     let (result, report) = operate_in(run, Stage::Preprocessing, |hash| {
-        let prefix = super::machine::programs::RegistryPrefix::with_backend(
+        let prefix = tracing::info_span!(target: "lattica_block_v2_perf", "registry prefix preparation").in_scope(|| super::machine::programs::RegistryPrefix::with_backend(
             height,
             key_count,
             &mut |d, f| hash.hash(d, f),
             hash.compiler_constants(),
-        )?;
-        body(&prefix)
+        ))?;
+        tracing::info_span!(target: "lattica_block_v2_perf", "recursive circuit construction").in_scope(|| body(&prefix))
     })?;
     Ok((result?, report))
 }

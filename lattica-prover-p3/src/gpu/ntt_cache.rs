@@ -25,8 +25,8 @@ pub(crate) fn local_word_limit(
         _ => return Err("GPU local memory response".into()),
     };
     let mut static_bytes = 0usize;
-    for name in ["ntt_tile_cached", "ntt_tile_cached_tuned"] {
-        if name.ends_with("_tuned") && !cfg!(feature = "gpu-tuning") {
+    for name in ["ntt_tile_cached", "ntt_tile_cached_tuned", "ntt_tile_tables"] {
+        if name != "ntt_tile_cached" && !cfg!(feature = "gpu-tuning") {
             continue;
         }
         let kernel =

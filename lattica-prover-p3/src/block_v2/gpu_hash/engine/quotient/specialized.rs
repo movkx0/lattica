@@ -301,12 +301,15 @@ pub(in crate::block_v2::gpu_hash::engine) fn prepare(
         return Ok(None);
     };
     let started = std::time::Instant::now();
-    let compiled = ocl::Program::builder()
-        .devices(device)
-        .src(&source)
-        .cmplr_opt("-cl-std=CL1.2")
-        .build(engine.pq.context())
+    let _span = tracing::info_span!(target: "lattica_block_v2_perf", "specialized OpenCL compilation").entered();
+    let mut builder = ocl::Program::builder();
+    builder.devices(device).src(&source).cmplr_opt("-cl-std=CL1.2");
+    if super::super::switch("LATTICA_PROFILE_TIMELINE")? {
+        builder.cmplr_opt("-cl-nv-verbose");
+    }
+    let compiled = builder.build(engine.pq.context())
         .map_err(|e| e.to_string())?;
+    super::super::profiling::program(&compiled, device)?;
     let kernel = ocl::core::create_kernel(compiled.as_core(), "specialized_quotient")
         .map_err(|e| e.to_string())?;
     let private_bytes = match ocl::core::get_kernel_work_group_info(

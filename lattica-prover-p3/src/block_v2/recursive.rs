@@ -22,6 +22,8 @@ use super::{
 use crate::joinsplit_air as js;
 
 pub type Error = Box<dyn std::error::Error>;
+#[path = "recursive_binding.rs"]
+mod binding;
 #[path = "recursive_checked_registry.rs"]
 mod checked_registry;
 pub(crate) use checked_registry::CheckedRegistryRef;
@@ -310,6 +312,7 @@ pub fn register(
 struct CachedProgram {
     mode: u64,
     registered: RegistryProgram,
+    binding: Option<binding::Binding>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -376,15 +379,24 @@ impl ProverSession {
         compiled: Compiled,
         public: [Val; PUBLIC_VALUES],
     ) -> Result<NodeProof, Error> {
+        self.check_public(run, mode, &public)?;
+        self.prove_compiled(run, mode, compiled, public)
+    }
+
+    fn check_public(&self, run: &crate::proving::Run, mode: u64, public: &[Val; PUBLIC_VALUES]) -> Result<(), Error> {
         if !(1..=3).contains(&mode)
             || public[programs::MODE] != Val::from_u64(mode)
-            || statements::derive_in(run, "statement_check", |hash| hash.summary(&public, 3))?
+            || statements::derive_in(run, "statement_check", |hash| hash.summary(public, 3))?
                 .context
                 .profile_id
                 != self.expected_profile
         {
             return Err("prover-session statement/profile/mode".into());
         }
+        Ok(())
+    }
+
+    fn prove_compiled(&mut self, run: &crate::proving::Run, mode: u64, compiled: Compiled, public: [Val; PUBLIC_VALUES]) -> Result<NodeProof, Error> {
         let Compiled { program, witness } = compiled;
         let program = program
             .pad_to(self.registry.height)
@@ -430,20 +442,24 @@ impl ProverSession {
             if registered.preprocessing_cap().roots() != self.registry.caps[(mode - 1) as usize] {
                 return Err("compiled program differs from registered key".into());
             }
-            self.cached = Some(CachedProgram { mode, registered });
+            self.cached = Some(CachedProgram { mode, registered, binding: None });
             self.stats.setups += 1;
         }
         println!(
             "proof_start mode={mode} setup_ms={} preprocessing_cache_hit={hit}",
             started.elapsed().as_millis()
         );
+        self.prove_cached(run, mode, public, &witness)
+    }
+
+    fn prove_cached(&self, run: &crate::proving::Run, mode: u64, public: [Val; PUBLIC_VALUES], witness: &[Val]) -> Result<NodeProof, Error> {
         let started = std::time::Instant::now();
         let registered = &self.cached.as_ref().unwrap().registered;
         // RegisteredProgram::prove constructs fresh salt/hiding RNGs per call.
         let proof = registered
             .prove_in_run(
                 &public,
-                &witness,
+                witness,
                 run.child(
                     "proof",
                     "block_v2_registered_program",
@@ -532,6 +548,9 @@ impl ProverSession {
                 let right = hash.summary(&right.public, 3)?;
                 hash.merge(left, right)
             })?;
+            if binding::enabled()? {
+                return self.prove_bound(run, binding::Inputs::Merge([left, right]), programs::statement(node, programs::MERGE));
+            }
             let compiled =
                 tracing::info_span!(target: "lattica_block_v2_perf", "merge compilation")
                     .in_scope(|| {
@@ -1049,6 +1068,9 @@ impl ConstructionSession {
             }
             verify_wallet(left)?;
             verify_wallet(right)?;
+            if binding::enabled()? {
+                return self.session.prove_bound(run, binding::Inputs::Pair([left, right]), programs::statement(node, programs::WRAPPER));
+            }
             let compiled = tracing::info_span!(
                 target: "lattica_block_v2_perf",
                 "paired wrapper compilation"

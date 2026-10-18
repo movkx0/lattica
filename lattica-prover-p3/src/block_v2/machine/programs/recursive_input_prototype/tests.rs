@@ -130,6 +130,12 @@ fn binding_matches_all_typed_recursive_registry_compilers() {
 }
 
 #[test]
+fn legacy_merge_binding_matches_compiler_and_rejects_wrong_budgets() {
+    order_cases::<3>(2048, false);
+    order_cases::<3>(1 << 18, false);
+}
+
+#[test]
 fn trusted_prefix_rejects_foreign_height_and_registry_size() {
     let prefix = RegistryPrefix::with_hash(2048, 12, &mut |d, f| {
         commitment::hash_fields(d, f).map_err(|_| CompileError::Shape("test hash"))

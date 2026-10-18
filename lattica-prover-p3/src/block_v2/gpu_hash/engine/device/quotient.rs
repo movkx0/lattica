@@ -258,6 +258,12 @@ impl DeviceSession {
         let storage = self.with_engine(|engine| {
             let live = engine.accounting.lock().unwrap().live;
             let cache = engine.lde_workspace.as_ref().map_or(0, |w| w.bytes());
+            // Admission covers the larger evaluator without changing the
+            // transform limits used by other operations.
+            #[cfg(feature = "gpu")]
+            let limits = engine.quotient_limits();
+            #[cfg(not(feature = "gpu"))]
+            let limits = engine.limits;
             PartitionStorage::new(
                 &specs,
                 log_trace,
@@ -266,7 +272,7 @@ impl DeviceSession {
                 program.shape(),
                 live,
                 cache,
-                engine.limits,
+                limits,
                 engine.max_alloc,
             )
         })?;
@@ -459,7 +465,7 @@ impl DeviceSession {
             engine.lde_workspace = None;
             let live = engine.accounting.lock().unwrap().live;
             let prospective_live = live.checked_add(spec.bytes()).ok_or("device quotient output overflow")?;
-            let plan = Plan::for_device(program, spec.rows(), prospective_live, engine.limits, engine.max_alloc)?;
+            let plan = Plan::for_device(program, spec.rows(), prospective_live, engine.quotient_limits(), engine.max_alloc)?;
             let result = self.allocate(engine, spec)?;
             let alloc = |words| allocation(&engine.pq, &engine.accounting, engine.limits,
                 engine.max_alloc, words, compute::flags::MEM_READ_WRITE);
@@ -553,6 +559,8 @@ impl DeviceSession {
                 unsafe {
                     gather.cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
                 }
+                batch.engine.timeline.launch("device_quotient_gather", rows * program.row_words,
+                    None, plan.tile_words[0] * 8);
                 batch.record("device_quotient_gather", event)?;
                 let mut event = compute::Event::empty();
                 // SAFETY: compiler bounds input/parameter/register indices; each
@@ -560,6 +568,11 @@ impl DeviceSession {
                 unsafe {
                     quotient.cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
                 }
+                batch.engine.timeline.launch(if prepared.specialized.is_some() { "specialized_quotient" }
+                    else if program.extension == Extension::Quadratic { "quadratic_quotient" }
+                    else { "cubic_quotient" }, rows,
+                    super::super::quotient::row_workgroup(batch.engine.pq.device(), rows),
+                    plan.tile_words.iter().sum::<usize>() * 8);
                 batch.record("device_extension_quotient", event)?;
             }
             device_ns += batch.finish()?;

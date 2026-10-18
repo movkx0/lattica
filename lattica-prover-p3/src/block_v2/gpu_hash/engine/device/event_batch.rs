@@ -3,7 +3,7 @@
 use super::*;
 use crate::proving::Stage;
 
-pub(in crate::block_v2::gpu_hash::engine) const CAPACITY: usize = 64;
+pub(in crate::block_v2::gpu_hash::engine) const CAPACITY: usize = 256;
 
 pub(in crate::block_v2::gpu_hash::engine) struct PendingEvents<T> {
     entries: [Option<(&'static str, T)>; CAPACITY],
@@ -66,7 +66,8 @@ impl<'a> EventBatch<'a> {
             return Ok(());
         }
         self.engine.event_receipts.push(label, event)?;
-        if self.engine.event_receipts.len == CAPACITY {
+        let limit = if self.engine.tuning.events256 { CAPACITY } else { 64 };
+        if self.engine.event_receipts.len == limit {
             self.drain()?;
         }
         Ok(())
@@ -232,7 +233,8 @@ mod tests {
                     }
                     assert_eq!(engine.event_receipts.len, 0);
                     let after = session.session.test_receipt(Stage::Transform);
-                    assert_eq!(after.0 - before.0, if failure == 0 { 130 } else { 5 });
+                    assert_eq!(after.0 - before.0,
+                        if failure == 0 { (2 * CAPACITY + 2) as u64 } else { 5 });
                     assert!(after.1 >= before.1);
                     assert_eq!(after.2 - before.2, u64::from(failure != 0));
                     assert_eq!(other.session.test_receipt(Stage::Transform), untouched);

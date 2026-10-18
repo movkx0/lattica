@@ -101,12 +101,12 @@ impl CandidateMmcs {
             retained_value_bytes += indices.len() * width * 8;
         }
         let salt_rows = salts.gather(session, indices, host_peak - retained_value_bytes)?;
-        indices
-            .iter()
+        let paths = tree.open_many(indices, self.cap_height)?;
+        paths
+            .into_iter()
             .zip(values)
             .zip(salt_rows)
-            .map(|((&index, values), salt_rows)| {
-                let path = tree.open(index, self.cap_height)?;
+            .map(|((path, values), salt_rows)| {
                 Ok(BatchOpening::new(values, (salt_rows, path)))
             })
             .collect()

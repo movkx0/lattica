@@ -180,6 +180,11 @@ pub(crate) struct Shape {
 }
 
 impl Shape {
+    pub(crate) fn legacy_pair(prefix: &RegistryPrefix<'_>, height: usize) -> Result<Self, CompileError> {
+        prefix.fields(height, 3)?;
+        let wallet = UniShape::from_mode(WRAPPER, compiler_constants(Some(prefix)))?;
+        Ok(Self { wallets: [wallet; 2] })
+    }
     pub(crate) fn from_prefix(
         prefix: &RegistryPrefix<'_>,
         height: usize,
@@ -195,9 +200,9 @@ impl Shape {
             ],
         })
     }
-    fn visit(
+    fn visit<const N: usize>(
         &self,
-        caps: &typed_pairs::Caps,
+        caps: &Caps<N>,
         wallets: [Wallet<'_>; 2],
         emit: &mut impl FnMut(&[Val]) -> Result<(), CompileError>,
     ) -> Result<(), CompileError> {
@@ -212,9 +217,9 @@ impl Shape {
     }
 }
 
-pub(crate) fn bind(
+pub(crate) fn bind<const N: usize>(
     shape: &Shape,
-    caps: &typed_pairs::Caps,
+    caps: &Caps<N>,
     wallets: [Wallet<'_>; 2],
     expected_values: usize,
     limit_bytes: usize,
@@ -261,9 +266,9 @@ pub(crate) fn bind(
     Ok(output)
 }
 
-pub(crate) fn check_witness(
+pub(crate) fn check_witness<const N: usize>(
     shape: &Shape,
-    caps: &typed_pairs::Caps,
+    caps: &Caps<N>,
     wallets: [Wallet<'_>; 2],
     witness: &[Val],
     limit_bytes: usize,

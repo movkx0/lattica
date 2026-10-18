@@ -228,7 +228,7 @@ pub(crate) fn bind<const N: usize>(
     expected_values: usize,
     limit_bytes: usize,
 ) -> Result<Vec<Val>, CompileError> {
-    if !matches!(N, 5 | 6 | 12) || !matches!(children.len(), 1 | 2) {
+    if !matches!(N, 3 | 5 | 6 | 12) || !matches!(children.len(), 1 | 2) {
         return Err(ERROR);
     }
     check_caps(caps)?;
@@ -291,7 +291,7 @@ pub(crate) fn check_witness<const N: usize>(
     witness: &[Val],
     limit_bytes: usize,
 ) -> Result<(), CompileError> {
-    if !matches!(N, 5 | 6 | 12)
+    if !matches!(N, 3 | 5 | 6 | 12)
         || !matches!(children.len(), 1 | 2)
         || witness
             .len()
