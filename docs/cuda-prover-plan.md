@@ -17,14 +17,18 @@ The opt-in `gpu-cuda` feature provides an experimental Linux transport: explicit
 device selection, shared OpenCL/CUDA leases, bounded allocations, private-buffer
 cleanup, NVRTC compilation, kernel launches and completion events. Native CUDA
 now implements base/quadratic/cubic field arithmetic, tiled coset transforms,
-and query reconstruction from device prefixes. Matrix geometry, immutable roots
-and the query memory planner are shared with OpenCL. Intermediate polynomials
-remain on the device; explicit transfer counters check this boundary.
+query reconstruction from device prefixes, and Poseidon2 commitments. Commitment
+fragments preserve padding-free absorption across column boundaries; fresh salts
+remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
+path reads that preserve query order and duplicates. Matrix geometry, immutable
+roots and the query memory planner are shared with OpenCL. Intermediate
+polynomials remain on the device; explicit transfer counters check this boundary.
 
 Wallet and recursive proofs are not yet routed through CUDA. Cached twiddle
-tuning, commitments, quotient compilation, complete proof-stage coverage,
-controller admission and pool integration remain outstanding. Use the existing
-OpenCL backend for proof benchmarks at this checkpoint.
+tuning, quotient compilation, commitment integration into the PCS, complete
+proof-stage coverage, controller admission and pool integration remain
+outstanding. Use the existing OpenCL backend for proof benchmarks at this
+checkpoint.
 
 Install the pinned development components with
 `python3 lattica-prover-p3/scripts/setup-cuda-toolchain.py --prefix .tools/cuda-12.9.1`.
@@ -34,7 +38,8 @@ Run the resulting test executable in a bounded 3 GiB, four-thread, zero-swap
 service with `LD_LIBRARY_PATH` pointing to the toolchain's `lib` directory and
 `LATTICA_GPU_DEVICE_UUID` selecting the device. The filter
 `cuda_compute:: --include-ignored --test-threads=1` covers arithmetic, transforms,
-query reconstruction, host limits and device lifecycle checks. The separate
+query reconstruction, salted commitments, host limits and device lifecycle
+checks. The separate
 `gpu_matrix:: --test-threads=1` filter checks shared roots and planner boundaries.
 These tests do not establish a complete CUDA prover or transaction throughput.
 
@@ -48,6 +53,19 @@ checked successfully. NVRTC compiled the field and transform kernels for both
 Volta and Blackwell; V100 CUDA execution and Metal execution remain untested.
 The evidence records source and executable hashes for the implementation under
 test, including its uncommitted source files at qualification time.
+
+The [commitment qualification](evidence/cuda-commitments-2026-10-18.json) adds
+independent CPU oracles for Poseidon2, salted leaves, partial-rate absorption,
+Merkle caps and paths, plus bounded readback and allocation rejection tests.
+All 22 CUDA tests and four shared planner tests passed on the RTX 5080.
+Memory, race and synchronization checks passed across 21 tests; the intentional
+missing-kernel API-error test passed outside the sanitizer runs. CPU-only,
+OpenCL, Apple Metal cross-compilation and standalone CUDA builds also passed.
+The new tests exposed a default-stream ordering gap: legacy clears and copies
+could return before the nonblocking compute stream consumed their results.
+Explicit completion now precedes compute and private-buffer retirement, with
+a larger-buffer regression covering initialization, uploads and device copies.
+These correctness results do not qualify complete CUDA proofs or performance.
 
 The [OpenCL comparison at `bce8830`](evidence/gpu-tuning-rtx5080-2026-10-18.json)
 completed 56 four-entry trials with full stage coverage and independent CPU root

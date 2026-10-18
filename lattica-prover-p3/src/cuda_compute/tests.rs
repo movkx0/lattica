@@ -49,6 +49,72 @@ fn launch(kernel: &Kernel, output: &Buffer) -> Completion {
 }
 
 #[test]
+#[ignore = "requires CUDA and NVRTC; run serially"]
+fn cuda_buffer_initialization_and_transfers_complete_before_compute() {
+    // Device memset, pageable HtoD and DtoD copies can be asynchronous to the
+    // host even through the legacy APIs. Exercise each immediately before a
+    // dependent kernel on the runtime's nonblocking stream, using large enough
+    // buffers that relying on incidental DMA completion is not sufficient.
+    let count = 1 << 18;
+    let runtime = Runtime::new(
+        &std::env::var("LATTICA_GPU_DEVICE_UUID").unwrap(),
+        Limits {
+            managed_bytes: 16 << 20,
+            max_allocation_bytes: 4 << 20,
+            ..Limits::default()
+        },
+    )
+    .unwrap();
+    let field = FieldProgram::new(&runtime).unwrap();
+    let output = runtime.allocate(count).unwrap();
+    let mut observed = vec![0; count];
+    let consume = |source: &Buffer| {
+        field
+            .apply(
+                FieldOperation::Canonicalize,
+                crate::gpu_matrix::Extension::Base,
+                count,
+                FieldSpan {
+                    buffer: source,
+                    first: 0,
+                },
+                None,
+                FieldSpan {
+                    buffer: &output,
+                    first: 0,
+                },
+            )
+            .unwrap()
+            .finish()
+            .unwrap();
+    };
+    for iteration in 0..4 {
+        let input = runtime.allocate(count).unwrap();
+        consume(&input);
+        output.read(0, &mut observed).unwrap();
+        assert!(observed.iter().all(|&word| word == 0));
+        let words: Vec<_> = (0..count)
+            .map(|i| (i as u64 * 31337) ^ (iteration + 1))
+            .collect();
+        input.write(0, &words).unwrap();
+        consume(&input);
+        output.read(0, &mut observed).unwrap();
+        assert_eq!(observed, words);
+        let copied = runtime.allocate(count).unwrap();
+        copied.copy_from(0, &input, 0, count).unwrap();
+        consume(&copied);
+        output.read(0, &mut observed).unwrap();
+        assert_eq!(observed, words);
+        // Both private allocations are cleared and retired before the next
+        // iteration can receive the allocator's recycled storage.
+    }
+    drop(output);
+    drop(field);
+    assert_eq!(runtime.snapshot().live_bytes, 0);
+    assert_eq!(runtime.snapshot().modules, 0);
+}
+
+#[test]
 #[ignore = "requires an assigned CUDA GPU and NVRTC 12.9; run serially"]
 fn cuda_runtime_buffers_modules_events_and_leases() {
     let runtime = runtime(1);

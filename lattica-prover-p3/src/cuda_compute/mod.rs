@@ -4,6 +4,7 @@
 mod budget;
 mod buffer;
 mod compiler;
+mod commitment;
 mod device;
 mod field;
 mod kernel;
@@ -15,6 +16,7 @@ mod transform;
 
 pub(crate) use budget::{Limits, Snapshot};
 pub(crate) use buffer::Buffer;
+pub(crate) use commitment::{Commitments, RetainedTree};
 pub(crate) use device::{inventory, Identity, Runtime};
 pub(crate) use field::{FieldOperation, FieldProgram, FieldSpan};
 pub(crate) use kernel::{Argument, Completion, Kernel, Launch, Module};

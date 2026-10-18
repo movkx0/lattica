@@ -46,7 +46,12 @@ impl Runtime {
                 state: self.state.clone(),
             }),
         };
-        let initialized = unsafe { result::memset_d8_sync(pointer, 0, bytes).map_err(error) };
+        // CUDA's legacy "synchronous" device memset may return before the
+        // device operation completes. Our compute stream is nonblocking, so it
+        // does not inherit default-stream dependencies. Finish initialization
+        // before a caller can launch on that stream or expose private storage.
+        let initialized = unsafe { result::memset_d8_sync(pointer, 0, bytes).map_err(error) }
+            .and_then(|()| self.state.context.synchronize().map_err(error));
         drop(guard);
         initialized?;
         Ok(allocated)
@@ -81,7 +86,10 @@ impl Buffer {
         let _guard = state.enter()?;
         state.drain()?;
         // The blocking copy keeps the borrowed host slice alive through DMA.
+        // Pageable host copies may return after staging but before DMA. Drain
+        // that default-stream transfer before the nonblocking compute stream.
         unsafe { result::memcpy_htod_sync(self.pointer() + (range.start * 8) as u64, words) }
+            .and_then(|()| state.context.synchronize())
             .map_err(|e| {
                 state.fail();
                 error(e)
@@ -138,6 +146,7 @@ impl Buffer {
                 words * 8,
             )
         }
+        .and_then(|()| state.context.synchronize())
         .map_err(|e| {
             state.fail();
             error(e)
@@ -155,6 +164,10 @@ impl Drop for Allocation {
         cleanup(
             unsafe { result::memset_d8_sync(self.pointer, 0, self.words * 8).map_err(error) },
             "buffer clear",
+        );
+        cleanup(
+            self.state.context.synchronize().map_err(error),
+            "buffer clear completion",
         );
         cleanup(
             unsafe { result::free_sync(self.pointer).map_err(error) },
