@@ -87,6 +87,26 @@ fn query_geometry_rejects_incompatible_profiles_and_indices() {
 }
 
 #[test]
+fn query_plan_batches_tall_prefixes_and_shrinks_under_pressure() {
+    // Full-size recursive PCS domains used to force one transform per column.
+    let input = spec(19, 98);
+    for queries in [1, 128, 256] {
+        let wide = QueryPlan::new(input, 23, queries, 3 << 30, 1 << 30, 1 << 20).unwrap();
+        assert_eq!(wide.columns, 16);
+        assert!(wide.workspace_bytes <= PREFERRED_SCRATCH);
+        let exact = QueryPlan::new(input, 23, queries, wide.workspace_bytes, 1 << 30, 1 << 20).unwrap();
+        assert_eq!(exact.columns, 16);
+        let below = QueryPlan::new(input, 23, queries, wide.workspace_bytes - 1, 1 << 30, 1 << 20).unwrap();
+        assert_eq!(below.columns, 15);
+    }
+    // The larger preference must not become a minimum memory requirement.
+    let narrow = QueryPlan::new(input, 23, 128, 256 << 20, 1 << 30, 1 << 20).unwrap();
+    assert_eq!(narrow.columns, 1);
+    assert!(narrow.workspace_bytes <= 256 << 20);
+    assert!(QueryPlan::new(input, 23, 128, 128 << 20, 1 << 30, 1 << 20).is_err());
+}
+
+#[test]
 #[cfg(feature = "gpu")]
 #[ignore = "requires OpenCL GPU; run serially in a <=3 GiB zero-swap service"]
 fn owned_query_tiles_match_cpu_without_prefix_transfers_and_release_scratch() {
@@ -182,7 +202,7 @@ fn owned_query_tiles_match_cpu_without_prefix_transfers_and_release_scratch() {
                 after.query_reconstructions - before.query_reconstructions,
                 1
             );
-            if width == 97 || width == 65 {
+            if width == 65 {
                 assert!(after.query_reconstruction_tiles - before.query_reconstruction_tiles > 1);
             }
             for (&index, row) in indices.iter().zip(rows.chunks_exact(width)) {

@@ -14,9 +14,11 @@ __kernel void device_query_prefix(__global const ulong *input,
 }
 "#;
 
-// Prefer <=64 MiB of scratch. A domain too tall for one column may use
-// exactly one column's larger working set, still bounded by log_rows <=25.
-pub(super) const PREFERRED_SCRATCH: usize = 64 << 20;
+// Fit sixteen columns of two 2^23-row transform buffers, plus roots, indices
+// and gathered rows. A strict 2 GiB cap loses one column to that bookkeeping
+// and misses the existing sixteen-column NVIDIA NTT geometry. All workspace
+// bytes remain charged; tiles shrink to the managed/allocation allowance.
+pub(super) const PREFERRED_SCRATCH: usize = (2 << 30) + (64 << 10);
 const HOST_METADATA: usize = 8 << 10;
 
 #[derive(Debug)]
