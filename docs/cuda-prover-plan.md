@@ -31,12 +31,12 @@ alpha powers, selectors, constraints and vanishing-polynomial division execute
 on CUDA, with only a public domain-validity word read back per evaluation.
 
 Wallet and recursive proofs are not yet routed through CUDA. Cached twiddle
-tuning, a bounded program cache keyed by content and toolchain identity,
-PCS/backend integration, complete
-proof-stage coverage, controller admission and pool integration remain
-outstanding. Prepared quotient handles already support reuse without retaining
-witnesses or sampled parameters; there is no cross-worker cache yet. Use the
-existing OpenCL backend for proof benchmarks at this checkpoint.
+tuning, PCS/backend integration, complete proof-stage coverage, controller
+admission and pool integration remain outstanding. Prepared quotient handles
+support reuse without retaining witnesses or sampled parameters. A bounded
+public program cache now supports repeated preparation within an evaluator;
+disk and cross-worker caches remain absent. Use the existing OpenCL backend
+for complete proof benchmarks at this checkpoint.
 
 Install the pinned development components with
 `python3 lattica-prover-p3/scripts/setup-cuda-toolchain.py --prefix .tools/cuda-12.9.1`.
@@ -126,6 +126,27 @@ They demonstrate a memory/latency tradeoff, not a proving speedup. Future CUDA
 backend admission should favor materialization when it fits. Adaptive component
 sizes and scratch/command reuse need qualification before partitioning is used
 as a performance optimization.
+
+The [program-cache qualification](evidence/cuda-cache-2026-10-18.json) covers
+public AIR reuse across proof attempts. `prepare_cached(profile, program, mode)`
+keys the entire bytecode/layout, profile, specialization policy, generator and
+kernel sources, compiler options, target, driver API and the loaded NVRTC library
+instance. This identity is intentionally local to one evaluator/process; disk
+or distributed reuse will need toolchain binary hashes including NVRTC builtins.
+The default cache holds at most eight entries, 32 MiB of retained public host
+storage and 8 MiB of device IR buffers, reduced for smaller runtime allowances.
+These are additional cache ceilings within the existing runtime budgets, not
+extra memory reservations. Native modules remain subject to the runtime module
+limit and its separate context allowance.
+
+Concurrent preparation of the same program compiles one copy. Cache hits allocate no device buffers and issue no uploads or GPU launches. Eviction plans all required releases before
+retiring the least recently used unpinned entries; impossible requests preserve
+existing entries. Active handles retain their allocations and host charges after
+cache retirement, and failed runtimes reject hits as well as misses. Public
+metadata includes hit, miss, eviction and retained-byte counters. Cache tables
+and handle overhead are conservatively charged with retained programs. The real
+machine AIR/LogUp oracle now exercises this cached preparation path. This is a
+correctness/resource checkpoint; no complete-proof speedup is claimed.
 
 ## Implementation sequence
 

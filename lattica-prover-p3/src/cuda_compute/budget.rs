@@ -3,6 +3,9 @@ use super::Result;
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
 
+pub(super) const MAX_PUBLIC_PROGRAM_BYTES: usize = 64 << 20;
+pub(super) const MAX_PUBLIC_PROGRAMS: usize = 32;
+
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Limits {
     pub managed_bytes: usize,
@@ -127,9 +130,9 @@ impl Budget {
                 let next = state
                     .public_program_bytes
                     .checked_add(bytes)
-                    .filter(|n| *n <= 64 << 20)
+                    .filter(|n| *n <= MAX_PUBLIC_PROGRAM_BYTES)
                     .ok_or("CUDA public program host allowance exhausted")?;
-                if bytes == 0 || state.public_programs == 32 {
+                if bytes == 0 || state.public_programs == MAX_PUBLIC_PROGRAMS {
                     return Err("CUDA public program count or size allowance".into());
                 }
                 state.public_program_bytes = next;

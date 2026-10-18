@@ -7,7 +7,9 @@ use crate::{
 };
 use std::{sync::Arc, time::Instant};
 
+mod cache;
 mod partition;
+pub(crate) use cache::{CacheLimits, CacheSnapshot};
 
 pub(super) const SOURCE: &str = concat!(
     include_str!("field.cuh"),
@@ -21,7 +23,7 @@ const WORKSPACE_BYTES: usize = 64 << 20;
 const MAX_TILE_ROWS: usize = 16 * 1024;
 const MAX_PROGRAM_HOST_BYTES: usize = 16 << 20;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Specialization {
     Generic,
     Prefer,
@@ -36,6 +38,7 @@ pub(crate) struct PreparedQuotient {
     pub(crate) preparation_ns: u128,
     pub(crate) source_bytes: usize,
     pub(crate) local_bytes: usize,
+    host_bytes: usize,
     _host_reservation: super::budget::Reservation,
 }
 
@@ -55,6 +58,7 @@ pub(crate) struct Quotients {
     partition: Kernel,
     scatter: Kernel,
     zero: Buffer,
+    cache: cache::ProgramCache,
 }
 
 #[derive(Debug)]
@@ -143,6 +147,20 @@ fn launch(items: usize) -> Result<Launch> {
 
 impl Quotients {
     pub(crate) fn new(runtime: &Runtime) -> Result<Self> {
+        let defaults = CacheLimits::default();
+        Self::with_cache_limits(
+            runtime,
+            CacheLimits {
+                device_bytes: defaults
+                    .device_bytes
+                    .min(runtime.state.budget.limits.managed_bytes),
+                ..defaults
+            },
+        )
+    }
+
+    pub(crate) fn with_cache_limits(runtime: &Runtime, limits: CacheLimits) -> Result<Self> {
+        limits.validate(runtime.state.budget.limits)?;
         let module = runtime.compile(SOURCE)?;
         let result = Self {
             runtime: runtime.clone(),
@@ -159,6 +177,7 @@ impl Quotients {
             partition: module.kernel("quotient_partition")?,
             scatter: module.kernel("quotient_scatter")?,
             zero: runtime.allocate(1)?,
+            cache: cache::ProgramCache::new(runtime, limits)?,
         };
         for kernel in &result.evaluate {
             if !result.admit_private(kernel.local_bytes()?)? {
@@ -196,19 +215,7 @@ impl Quotients {
         mode: Specialization,
     ) -> Result<PreparedQuotient> {
         program.validate_quotient()?;
-        let host_bytes = program
-            .instructions
-            .capacity()
-            .checked_mul(8)
-            .and_then(|n| {
-                n.checked_add(
-                    std::mem::size_of::<Program>()
-                        + 2 * std::mem::size_of::<usize>()
-                        + std::mem::size_of::<PreparedQuotient>(),
-                )
-            })
-            .filter(|bytes| *bytes <= MAX_PROGRAM_HOST_BYTES)
-            .ok_or("CUDA quotient public program exceeds host allowance")?;
+        let host_bytes = cache::program_host_bytes(&program)?;
         let host_reservation = self.runtime.state.budget.public_program(host_bytes)?;
         let started = Instant::now();
         let code = self.runtime.allocate(program.instructions.len())?;
@@ -242,6 +249,7 @@ impl Quotients {
             preparation_ns: started.elapsed().as_nanos(),
             source_bytes,
             local_bytes,
+            host_bytes,
             _host_reservation: host_reservation,
         })
     }

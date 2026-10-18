@@ -537,10 +537,19 @@ fn cuda_machine_logup_quotient_matches_upstream_batch_stark() {
     assert!(!lookups.is_empty());
     let program = Arc::new(Program::compile(&air, layout, &lookups, &gadget).unwrap());
     program.validate_quotient().unwrap();
+    let profile = crate::block_v2::profile::CANDIDATE_PROFILE_ID;
     let generic = evaluator
-        .prepare(program.clone(), Specialization::Generic)
+        .prepare_cached(profile, program.clone(), Specialization::Generic)
         .unwrap();
-    let prepared = evaluator.prepare(program, Specialization::Prefer).unwrap();
+    let prepared = evaluator
+        .prepare_cached(profile, program.clone(), Specialization::Prefer)
+        .unwrap();
+    let before_hit = runtime.snapshot();
+    let again = evaluator
+        .prepare_cached(profile, program, Specialization::Prefer)
+        .unwrap();
+    assert!(Arc::ptr_eq(&prepared, &again));
+    assert_eq!(runtime.snapshot(), before_hit);
     eprintln!(
         "cuda_machine_quotient specialized={} instructions={} registers={} local_bytes={} preparation_ns={}",
         prepared.specialized.is_some(),

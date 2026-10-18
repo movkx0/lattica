@@ -3,8 +3,8 @@
 //! primitives; compiling this feature alone does not claim CUDA proof coverage.
 mod budget;
 mod buffer;
-mod compiler;
 mod commitment;
+mod compiler;
 mod device;
 mod field;
 mod kernel;
@@ -25,7 +25,9 @@ pub(crate) use kernel::{Argument, Completion, Kernel, Launch, Module};
 pub(crate) use matrix::Matrix;
 pub(crate) use query::QueryRows;
 #[cfg(feature = "block-v2")]
-pub(crate) use quotient::{PreparedQuotient, QuotientInputs, Quotients, Specialization};
+pub(crate) use quotient::{
+    CacheLimits, CacheSnapshot, PreparedQuotient, QuotientInputs, Quotients, Specialization,
+};
 pub(crate) use transform::Transforms;
 
 type Result<T> = std::result::Result<T, String>;
