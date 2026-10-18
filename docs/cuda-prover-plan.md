@@ -347,6 +347,23 @@ debug test builds measure debug host orchestration with NVRTC-compiled kernels;
 the results do not measure complete proofs or transaction throughput. Exclude
 this opt-in test from general `--include-ignored` correctness/sanitizer runs.
 
+The [post-push benchmark at `a0c68db`](evidence/cuda-hidden-commitment-benchmark-2026-10-18.json)
+completed 30 measurements and 12 warmups on the desktop RTX 5080, all CPU-audited.
+Median commitment times, including cap readback, were:
+
+| Trace case | One column | Two columns | Four columns |
+|---|---:|---:|---:|
+| Quadratic, 256 rows and 18 flattened input columns | 5.709 ms | 3.351 ms | 2.278 ms |
+| Cubic, 1,024 rows and 51 flattened input columns | 18.423 ms | 11.141 ms | 6.120 ms |
+
+Four-column tiles reduced commitment commands from 199 to 71 and from 465 to 151,
+respectively. Query medians stayed around 0.77–0.78 ms for 33 quadratic queries and
+1.35–1.37 ms for four cubic queries. Retained commitment storage was independent of
+tile width: 614,368 and 2,998,240 bytes. Wider tiles require more scratch, and this
+two-case comparison does not qualify a default geometry change. These debug-host
+primitive timings do not establish complete proof performance or transactions
+per hour; native PCS and remaining proof-stage integration are still unfinished.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)
