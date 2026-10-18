@@ -1,9 +1,12 @@
 GPU tuning candidates (OpenCL)
 
 These implementations are experimental and disabled by default. GPU correctness
-tests and proof benchmarks are pending: the implementation host has no working
-NVIDIA driver/device. Host tests and OpenCL syntax checks do not qualify them for
-production. Proof formats, cryptographic parameters and worker budgets are unchanged.
+tests and proof benchmarks were initially pending on the implementation host.
+The subsequent V100 four-input screen is described in
+scripts/v100-specialized-benchmark/README.txt (crate root). All four optional
+candidates together were 12.35% slower than the specialized-quotient baseline.
+The 128-entry workload and production activation remain unqualified. Proof
+formats, cryptographic parameters and worker budgets are unchanged.
 
 Host validation on 2026-10-18 passed 147 engine tests in the tuning build and
 158 with the streaming/host features, plus default and CPU-only build checks.
@@ -57,7 +60,8 @@ Then run the hardware tests serially in the usual <=3 GiB, zero-swap test
 service. With an already compiled test binary, Cargo can select the tests via:
 
   cargo test --offline --lib --features gpu-tuning,block-v2-capacity-128 \
-    gpu_tuning_ -- --ignored --test-threads=1 --nocapture
+    gpu_tuning_ -- --ignored --test-threads=1 --nocapture \
+    --skip gpu_tuning_event_batches_preserve_receipts_on_completion_errors_and_unwind
 
 These tests cover partial warps, noncanonical field inputs, leaf offsets and
 guard words, streamed sponge boundaries, Merkle compression, padded row scaling,
@@ -66,7 +70,7 @@ session isolation, enqueue errors, missing profiling timestamps and unwinds.
 Numerical expectations come from the CPU field/permutation or an independent
 DFT, not from the original GPU kernel.
 
-Proof benchmark qualification (still pending)
+Proof benchmark qualification (V100 four-input screen recorded separately)
 
 1. Rebuild the bounded typed benchmark adapter against this source with
    gpu-tuning. Historical binaries cannot execute these candidates. Preserve
@@ -91,5 +95,8 @@ Proof benchmark qualification (still pending)
    inconclusive candidates opt-in. Kernel timings alone do not establish proof
    throughput, and historical qualification records do not qualify this image.
 
-GPU proof correctness, measured throughput, repeated workload comparisons and
-production activation are deliberately outstanding until those gates pass.
+The V100 evidence includes three numerical GPU tests, full GPU-stage receipts,
+five paired four-input comparisons and independent CPU audits. One event test
+was excluded because its one-word output buffer receives two words; the command
+above skips it until that test buffer is corrected. Full 128-entry qualification and production
+activation remain outstanding until the gates above pass.

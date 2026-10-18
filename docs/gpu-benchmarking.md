@@ -7,6 +7,7 @@ Use a clean checkout of `main`, then pin one commit for the entire comparison. R
 | Hardware | Workflow | Current boundary |
 |---|---|---|
 | NVIDIA on Linux | OpenCL plus the typed systemd controllers below | Requires `nvidia-smi`, OpenCL inventory, cgroups, and a systemd user session. |
+| V100 in a bounded Linux container | [Four-input specialized-kernel and power harness](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt) | Research screen using an existing 56..64 GiB, zero-swap cgroup and sampled watchdogs; separate from the typed systemd runner. |
 | Apple Silicon | [Native Metal recipe](../lattica-prover-p3/scripts/apple-current-benchmark-README.txt) | Run correctness qualification on the Mac before timing. Its eight-input screen differs from the Linux typed workload. |
 | AMD or Intel OpenCL | Backend development | The Linux admission controller currently joins NVIDIA UUIDs to OpenCL devices. Portable inventory/admission and device qualification are still needed. |
 
@@ -86,6 +87,10 @@ Persistent device-owned proving, preseal work, recovery, and durable native deli
 Use one worker per GPU. Keep the controller's admission model: managed buffers, maximum allocation, driver/context allowance, free-memory headroom, host RAM, and scratch all matter. Additional VRAM does not by itself imply higher throughput.
 
 The retained RTX 5080 [128-entry experiment](evidence/block-v2-parallel-aggregation-128-2026-10-17.json) measured 602.367 seconds sequentially versus 732.593 seconds with two workers on one device: 17.8% lower throughput with concurrency. That single-block experiment excluded wallet generation, key preparation, and audits. The [VRAM experiment](evidence/block-v2-gpu-vram-comparison-2026-10-16.json) also found no useful speedup from its larger memory settings. These observations guide the starting point, not another GPU's tuning.
+
+The V100 [four-input specialized-kernel comparison](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt) at `152adf1` measured a 57.697-second baseline median across five alternating pairs. Enabling all four optional tuning candidates increased the median to 64.822 seconds, 12.35% slower. Both arms required all 16 GPU proving stages and an independent CPU audit for every root. This four-input result does not establish a hardware speed ratio against the RTX 5080's 128-entry workload.
+
+A separate V100 power repeat took 57.503 seconds for aggregation. The full worker, including initialization and shutdown, used 1.723706 Wh over 58.051 seconds: 106.895 W average and 207.022 W sampled peak, against a 26.460 W idle baseline. Energy came from the NVML hardware counter; board power was sampled every 100 ms. CPU/system power, wallet proving and full-block finalization are excluded. The harness retains raw telemetry, audit logs and source/binary hashes in each run's local evidence directory.
 
 ## Report the same timing boundary
 
