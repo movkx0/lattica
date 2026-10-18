@@ -1,5 +1,6 @@
 //! Exact device-resident Poseidon2 commitments. The caller supplies salts as
 //! per-attempt matrix fragments; no randomness or field arithmetic runs here.
+mod replay;
 use super::{Argument, Buffer, Kernel, Launch, Limits, Matrix, Result, Runtime};
 use crate::gpu_matrix::{Extension, MatrixSpec};
 use std::sync::Arc;

@@ -1,6 +1,8 @@
 //! Immutable, session-owned salt replay. Original draws advance atomically;
 //! only a device-key reference and checked stream positions remain retained.
 use super::*;
+pub(crate) use crate::gpu_random::salt_replay_workspace_bytes;
+use crate::gpu_random::{validate_salt_replay_spec as validate_spec, MAX_REPLAY_MATRICES};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 /// This is private proof material. It cannot be imported as public preprocessing
@@ -11,23 +13,6 @@ pub struct ReplaySalts {
     end: u128,
     spec: MatrixSpec,
     failed: AtomicBool,
-}
-
-fn validate_spec(spec: MatrixSpec) -> Result<(), String> {
-    if spec.extension() != Extension::Base
-        || spec.columns() != 4
-        || spec.rows() > 1 << 25
-        || spec.order() != RowOrder::BitReversed
-        || spec.shift() != 1
-    {
-        return Err("salt replay requires bounded bit-reversed four-column base geometry".into());
-    }
-    Ok(())
-}
-
-/// One output and its sampling scratch, regardless of retained recipe count.
-pub(crate) fn salt_replay_workspace_bytes(words: usize) -> Result<usize, String> {
-    Ok(Plan::new(words, 0, 0, usize::MAX, usize::MAX)?.peak_bytes)
 }
 
 impl DeviceRandom {
@@ -45,7 +30,7 @@ impl DeviceRandom {
         count: usize,
     ) -> Result<Vec<ReplaySalts>, String> {
         validate_spec(spec)?;
-        if count == 0 || count > 256 {
+        if count == 0 || count > MAX_REPLAY_MATRICES {
             return Err("salt replay batch requires 1..256 matrices".into());
         }
         self.preflight_salt_replay(&vec![spec.words(); count], &[])?;

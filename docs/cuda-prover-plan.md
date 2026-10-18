@@ -30,8 +30,9 @@ host readback. It shares the bounded bus mapping and domain metadata with OpenCL
 Native ChaCha20 sampling now imports a seed and cursor, generates ordered
 Goldilocks samples on CUDA, and supplies fresh salt matrices to commitments.
 It shares byte admission with OpenCL. An explicit proof RNG adapter retires
-every stream in a failed proof group; complete hiding PCS and salt replay
-integration remain outstanding.
+every stream in a failed proof group. Bounded private salt recipes now support
+CUDA regeneration, commitments and requested query rows without changing the
+active RNG cursor. Complete hiding PCS integration remains outstanding.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -231,8 +232,9 @@ Apple Metal cross-compilation and standalone CUDA checks also passed. Native
 sampling matches `rand_chacha` at odd offsets, counter and batch boundaries;
 dense rejection preserves order. A failed proof retires all stream aliases,
 and fresh salt matrices feed CPU-audited CUDA commitments without sample
-transfers. Complete hiding PCS and salt replay remain unimplemented. The final
-streaming test build needed a 6 GiB host cap; GPU checks retained the 3 GiB cap.
+transfers. At that checkpoint, complete hiding PCS and salt replay remained
+unimplemented. The final streaming test build needed a 6 GiB host cap; GPU
+checks retained the 3 GiB cap.
 
 The opt-in `cuda_random_primitive_benchmark` compares CUDA field expansion with
 CPU expansion plus upload, producing identical device-resident outputs. Set
@@ -252,6 +254,30 @@ CUDA times were 0.154, 0.159, 0.179 and 0.357 ms for 256, 4,096, 65,536 and
 figures do not establish an optimized CPU/GPU speedup. CUDA uploaded no samples;
 its only downloads were one 8-byte status word per batch. Complete proof and
 transaction throughput remain unmeasured for the native backend.
+
+Native private salt replay now captures exact start/end positions under the
+active cursor lock. Preparing up to 256 recipes retains no sample matrices;
+each recipe occupies a slot within the existing 4,096-state engine allowance.
+Regeneration uses an independent local cursor and the original private key.
+Runtime ownership, stream retirement and rejection boundaries remain checked.
+The commitment consumer admits both sampling and hashing peaks before replay;
+the query consumer gathers only requested physical rows, preserving order and
+duplicates. Requested rows and public status words are the only downloads.
+Canonical salt recipes bind to the input's public coset through a metadata-only
+view, preserving their values on shifted domains.
+Failures or unwinds after private work retire the whole proof RNG family,
+including recipes that escaped the adapter. Complete hiding PCS, polynomial
+randomization and remaining proof-stage integration are still outstanding.
+
+The [salt replay qualification](evidence/cuda-salt-replay-2026-10-18.json)
+passed 34 checks, including 73 native CUDA tests, nine challenger tests and four
+proof RNG tests. Memory, race and synchronization checks passed across 72 native
+tests and both adapters; the deliberate missing-kernel test ran separately.
+CPU oracles cover shifts 1, 7 and 13, all three field extensions, concurrent
+replay, stream exhaustion, query block boundaries and the 4,096-query limit.
+Three OpenCL replay device tests and the existing sampler, quotient, scalar,
+streaming and cross-platform build checks also passed. No complete native CUDA
+proof or throughput qualification is implied.
 
 ## Implementation sequence
 

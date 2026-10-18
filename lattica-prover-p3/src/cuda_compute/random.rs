@@ -12,6 +12,8 @@ use std::sync::{
 };
 
 pub(super) const SOURCE: &str = concat!(include_str!("field.cuh"), include_str!("random.cu"));
+mod replay;
+pub(crate) use replay::ReplaySalts;
 const MAX_STREAM_STATES: usize = 4096;
 const LANES: u32 = 128;
 const _: () = assert!(TILE_WORDS == 256 && BATCH_WORDS / TILE_WORDS == 4096);
@@ -85,6 +87,7 @@ pub(crate) struct Randoms {
     counts: Kernel,
     offsets: Kernel,
     scatter: Kernel,
+    gather: Kernel,
     states: AtomicUsize,
 }
 struct Slot(Arc<Randoms>);
@@ -173,6 +176,7 @@ impl Randoms {
             counts: module.kernel("device_random_counts")?,
             offsets: module.kernel("device_random_offsets")?,
             scatter: module.kernel("device_random_scatter")?,
+            gather: module.kernel("device_random_gather")?,
             states: AtomicUsize::new(0),
         };
         for kernel in [
@@ -180,6 +184,7 @@ impl Randoms {
             &result.counts,
             &result.offsets,
             &result.scatter,
+            &result.gather,
         ] {
             if !super::kernel::private_memory_fits(runtime.identity(), kernel.local_bytes()?)? {
                 return Err("CUDA random kernel exceeds private memory allowance".into());
@@ -366,6 +371,15 @@ impl DeviceRandom {
             .position
             .lock()
             .map_err(|_| "CUDA random cursor poisoned")?;
+        self.preflight_at(*position, requests, pending, true)
+    }
+    fn preflight_at(
+        &self,
+        position: u128,
+        requests: &[usize],
+        pending: &[usize],
+        retain_outputs: bool,
+    ) -> Result<()> {
         self.check_live()?;
         if pending.len() > 512 {
             return Err("CUDA random pending allocation count exceeds allowance".into());
@@ -376,13 +390,14 @@ impl DeviceRandom {
         FieldStoragePlan::new(
             requests.iter().copied(),
             pending,
-            true,
-            *position,
+            retain_outputs,
+            position,
             state.live_bytes,
             limits.managed_bytes,
             limits.max_allocation_bytes,
         )?;
-        engine.admit_allocations(requests.len() + pending.len() + 4)
+        let outputs = if retain_outputs { requests.len() } else { 1 };
+        engine.admit_allocations(outputs + pending.len() + 4)
     }
     pub(crate) fn sample_matrix(&self, spec: MatrixSpec) -> Result<Matrix> {
         if spec.extension() != Extension::Base || spec.rows() > 1 << 25 || spec.columns() > 4096 {
@@ -404,6 +419,11 @@ impl DeviceRandom {
             .position
             .lock()
             .map_err(|_| "CUDA random cursor poisoned")?;
+        self.sample_at(&mut position, count, _fault)
+    }
+    // The active caller holds its cursor lock. Replay callers use an independent
+    // local cursor; every path still shares the same proof-family failure flag.
+    fn sample_at(&self, position: &mut u128, count: usize, _fault: Fault) -> Result<RandomWords> {
         self.check_live()?;
         let engine = &self.0.slot.0;
         let runtime = &engine.runtime;

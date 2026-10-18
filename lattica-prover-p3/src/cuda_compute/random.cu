@@ -36,6 +36,14 @@ extern "C" __global__ void device_random_chacha20(const u64 *seed,
         raw[block * 8 + i] = (u64)x[2*i] | ((u64)x[2*i+1] << 32);
 }
 #undef RANDOM_QR
+// Only bounded, validated public physical row indices enter this kernel.
+extern "C" __global__ void device_random_gather(const u64 *salts,
+    const u64 *indices, u64 *output, u32 queries) {
+    u32 at = blockIdx.x * blockDim.x + threadIdx.x;
+    if (at < queries * 4U)
+        output[at] = salts[indices[at / 4U] * 4ULL + at % 4U];
+}
+
 __device__ __forceinline__ u32 random_u32(const u64 *raw, u32 at) {
     return (u32)(raw[at >> 1] >> (32U * (at & 1U)));
 }

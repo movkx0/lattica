@@ -1,4 +1,25 @@
 //! Backend-independent bounds and byte admission for exact ChaCha20 field sampling.
+use crate::gpu_matrix::{Extension, MatrixSpec, RowOrder};
+
+pub(crate) const MAX_REPLAY_MATRICES: usize = 256;
+
+pub(crate) fn validate_salt_replay_spec(spec: MatrixSpec) -> Result<(), String> {
+    if spec.extension() != Extension::Base
+        || spec.columns() != 4
+        || spec.rows() > 1 << 25
+        || spec.order() != RowOrder::BitReversed
+        || spec.shift() != 1
+    {
+        return Err("salt replay requires bounded bit-reversed four-column base geometry".into());
+    }
+    Ok(())
+}
+
+/// One output and its sampling scratch, regardless of retained recipe count.
+pub(crate) fn salt_replay_workspace_bytes(words: usize) -> Result<usize, String> {
+    Ok(Plan::new(words, 0, 0, usize::MAX, usize::MAX)?.peak_bytes)
+}
+
 pub(crate) const STREAM_WORDS: u128 = 1 << 68; // rand_chacha positions count u32 words.
 pub(crate) const MAX_OUTPUT_WORDS: usize = 1 << 28;
 pub(crate) const BATCH_WORDS: usize = 1 << 20;

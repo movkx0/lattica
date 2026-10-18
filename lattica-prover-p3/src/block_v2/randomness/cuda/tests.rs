@@ -112,3 +112,34 @@ fn cuda_proof_rng_failed_import_cannot_revert_to_cpu() {
             .is_err()
     );
 }
+
+#[test]
+#[ignore = "requires CUDA and NVRTC; run serially"]
+fn cuda_proof_failure_retires_escaped_salt_replay_recipes() {
+    use crate::gpu_matrix::{Extension, MatrixSpec, RowOrder};
+    let runtime = runtime();
+    let engine = Randoms::new(&runtime).unwrap();
+    let failure = Failure::default();
+    let rng = ProofRng::new(ChaCha20Rng::from_seed([113; 32]));
+    rng.activate_cuda(&engine, &failure).unwrap();
+    let (samples, recipe) = rng
+        .with_cuda(|r| {
+            r.sample_salt_with_replay(MatrixSpec::new(
+                4,
+                4,
+                Extension::Base,
+                RowOrder::BitReversed,
+                1,
+            )?)
+        })
+        .unwrap();
+    drop(samples);
+    let snapshot = rng.snapshot().unwrap();
+    assert!(recipe.query_rows(&[0, 15], 64).is_ok());
+    drop(snapshot.begin().unwrap());
+    let before = runtime.snapshot();
+    assert!(recipe.materialize().is_err());
+    assert!(recipe.query_rows(&[0, 15], 64).is_err());
+    assert!(rng.with_cuda(|r| r.sample_fields(1)).is_err());
+    assert_eq!(runtime.snapshot(), before);
+}
