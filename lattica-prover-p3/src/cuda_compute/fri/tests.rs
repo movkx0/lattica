@@ -138,14 +138,45 @@ fn final_coefficients<F: ExtensionField<Val>>(extension: Extension) {
         let original = upload(&runtime, extension, log, 13, &values);
         let vector = fri.rescale(&original).unwrap();
         let before = runtime.snapshot();
-        let result = fri
-            .final_polynomial(
-                &vector,
-                log_blowup as usize,
-                log_final as usize,
-                expected.len() * extension.degree() * 8,
-            )
+        let mut capabilities = crate::proving::Capabilities::cpu(
+            crate::proving::Profile::LegacyQuadratic,
+            false,
+            false,
+        )
+        .scoped(
+            crate::proving::CoverageScope::Operation,
+            &[crate::proving::Stage::FinalPolynomial],
+        );
+        capabilities.set(
+            crate::proving::Stage::FinalPolynomial,
+            crate::proving::Backend::Cuda,
+        );
+        let run = crate::proving::Run::new(
+            "cuda_final_polynomial",
+            crate::proving::Request {
+                policy: crate::proving::Policy::GpuRequired,
+                emit_report: false,
+            },
+            capabilities,
+        )
+        .unwrap();
+        let result = runtime
+            .reported(&run, || {
+                fri.final_polynomial(
+                    &vector,
+                    log_blowup as usize,
+                    log_final as usize,
+                    expected.len() * extension.degree() * 8,
+                )
+            })
             .unwrap();
+        let report = run.finish(true).unwrap();
+        assert!(report.stage_coverage_complete);
+        assert_eq!(report.observations.len(), 1);
+        assert_eq!(
+            report.observations[0].device_calls,
+            runtime.snapshot().completed_commands - before.completed_commands
+        );
         assert_eq!(runtime.snapshot().downloaded_bytes, before.downloaded_bytes);
         assert_eq!(
             runtime.snapshot().uploaded_bytes - before.uploaded_bytes,

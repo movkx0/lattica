@@ -110,6 +110,7 @@ pub(super) struct State {
     pub budget: Arc<Budget>,
     queue: Mutex<()>,
     failed: AtomicBool,
+    pub(super) reporting: Mutex<Option<Arc<super::reporting::Ledger>>>,
     // Last field: the driver context is retired before releasing device leases.
     _lease: SingleDeviceLease,
 }
@@ -152,6 +153,7 @@ impl Runtime {
                 budget,
                 queue: Mutex::new(()),
                 failed: AtomicBool::new(false),
+                reporting: Mutex::new(None),
                 _lease: lease,
             }),
         })
@@ -190,6 +192,7 @@ impl State {
         if self.failed.load(Ordering::Acquire) {
             return Err("CUDA runtime has a failed or abandoned command".into());
         }
+        self.check_reporting_thread()?;
         self.context.bind_to_thread().map_err(error)?;
         self.context.check_err().map_err(error)?;
         Ok(guard)

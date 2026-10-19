@@ -60,7 +60,9 @@ pub(crate) struct FieldProgram {
 impl FieldProgram {
     pub(crate) fn new(runtime: &Runtime) -> Result<Self> {
         Ok(Self {
-            kernel: runtime.compile(SOURCE)?.kernel("field_apply")?,
+            kernel: runtime
+                .compile(SOURCE)?
+                .kernel_for_stage("field_apply", crate::proving::Stage::Scalar)?,
         })
     }
 

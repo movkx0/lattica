@@ -65,7 +65,16 @@ impl Module {
         Ok(Kernel {
             raw,
             module: self.clone(),
+            stage: None,
         })
+    }
+
+    pub(super) fn kernel_for_stage(
+        &self,
+        name: &str,
+        stage: crate::proving::Stage,
+    ) -> Result<Kernel> {
+        Ok(self.kernel(name)?.with_stage(stage))
     }
 }
 
@@ -80,9 +89,11 @@ impl Drop for NativeModule {
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct Kernel {
     raw: sys::CUfunction,
     module: Module,
+    stage: Option<crate::proving::Stage>,
 }
 unsafe impl Send for Kernel {}
 unsafe impl Sync for Kernel {}
@@ -105,6 +116,11 @@ enum Slot {
 }
 
 impl Kernel {
+    pub(super) fn with_stage(mut self, stage: crate::proving::Stage) -> Self {
+        self.stage = Some(stage);
+        self
+    }
+
     /// Static per-thread local memory reported by the CUDA driver. Used to
     /// bound public specialization spills within the reserved context memory.
     pub(crate) fn local_bytes(&self) -> Result<usize> {
@@ -160,8 +176,9 @@ impl Kernel {
                 Slot::U64(value) => (value as *mut u64).cast(),
             };
         }
-        let reservation = state.budget.command()?;
         let guard = state.enter()?;
+        let reporting = state.reporting_ticket(self.stage)?;
+        let reservation = state.budget.command()?;
         let start = result::event::create(sys::CUevent_flags::CU_EVENT_DEFAULT).map_err(error)?;
         let end = match result::event::create(sys::CUevent_flags::CU_EVENT_DEFAULT) {
             Ok(event) => event,
@@ -179,6 +196,7 @@ impl Kernel {
             completed: false,
             _reservation: reservation,
             state: state.clone(),
+            reporting,
         };
         let queued = (|| -> Result<()> {
             result::event::record(start, state.stream.cu_stream()).map_err(error)?;
@@ -210,9 +228,14 @@ pub(crate) struct Completion {
     completed: bool,
     _reservation: Reservation,
     state: Arc<State>,
+    reporting: Option<super::reporting::Ticket>,
 }
 
 impl Completion {
+    pub(super) fn is_reported(&self) -> bool {
+        self.reporting.is_some()
+    }
+
     pub(crate) fn finish(mut self) -> Result<u64> {
         {
             let _guard = self.state.enter()?;
@@ -229,6 +252,9 @@ impl Completion {
             }
             let ns = (milliseconds as f64 * 1e6).round() as u64;
             self.state.budget.completed(ns)?;
+            if let Some(ticket) = &mut self.reporting {
+                ticket.complete(ns)?;
+            }
             self.completed = true;
             Ok(ns)
         }

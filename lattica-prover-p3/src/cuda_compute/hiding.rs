@@ -70,12 +70,22 @@ impl Hiding {
         let result = Self {
             runtime: runtime.clone(),
             transforms: Transforms::new(runtime)?,
-            trace_columns: module.kernel("hiding_trace_columns")?,
-            randomization_columns: module.kernel("hiding_randomization_columns")?,
-            quotient_parameters: module.kernel("hiding_quotient_parameters")?,
-            quotient_columns: module.kernel("hiding_quotient_columns")?,
-            quotient_coefficients: module.kernel("hiding_quotient_coefficients")?,
-            retain_prefix: module.kernel("hiding_retain_prefix")?,
+            trace_columns: module
+                .kernel_for_stage("hiding_trace_columns", crate::proving::Stage::Hiding)?,
+            randomization_columns: module.kernel_for_stage(
+                "hiding_randomization_columns",
+                crate::proving::Stage::Hiding,
+            )?,
+            quotient_parameters: module
+                .kernel_for_stage("hiding_quotient_parameters", crate::proving::Stage::Hiding)?,
+            quotient_columns: module
+                .kernel_for_stage("hiding_quotient_columns", crate::proving::Stage::Hiding)?,
+            quotient_coefficients: module.kernel_for_stage(
+                "hiding_quotient_coefficients",
+                crate::proving::Stage::Hiding,
+            )?,
+            retain_prefix: module
+                .kernel_for_stage("hiding_retain_prefix", crate::proving::Stage::Hiding)?,
         };
         for kernel in [
             &result.trace_columns,

@@ -87,7 +87,10 @@ fn parameters<F: StarkField>() -> FriParameters {
 impl Starks {
     pub(crate) fn new(runtime: &Runtime) -> Result<Self> {
         let module = runtime.compile(SOURCE)?;
-        let periodic_expand = module.kernel("stark_periodic_expand")?;
+        let periodic_expand = module.kernel_for_stage(
+            "stark_periodic_expand",
+            crate::proving::Stage::Preprocessing,
+        )?;
         if !super::kernel::private_memory_fits(runtime.identity(), periodic_expand.local_bytes()?)?
         {
             return Err("CUDA periodic kernel exceeds private-memory admission".into());

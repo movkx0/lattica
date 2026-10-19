@@ -172,11 +172,16 @@ impl Randoms {
         let module = runtime.compile(SOURCE)?;
         let result = Self {
             runtime: runtime.clone(),
-            chacha: module.kernel("device_random_chacha20")?,
-            counts: module.kernel("device_random_counts")?,
-            offsets: module.kernel("device_random_offsets")?,
-            scatter: module.kernel("device_random_scatter")?,
-            gather: module.kernel("device_random_gather")?,
+            chacha: module
+                .kernel_for_stage("device_random_chacha20", crate::proving::Stage::Randomness)?,
+            counts: module
+                .kernel_for_stage("device_random_counts", crate::proving::Stage::Randomness)?,
+            offsets: module
+                .kernel_for_stage("device_random_offsets", crate::proving::Stage::Randomness)?,
+            scatter: module
+                .kernel_for_stage("device_random_scatter", crate::proving::Stage::Randomness)?,
+            gather: module
+                .kernel_for_stage("device_random_gather", crate::proving::Stage::Randomness)?,
             states: AtomicUsize::new(0),
         };
         for kernel in [

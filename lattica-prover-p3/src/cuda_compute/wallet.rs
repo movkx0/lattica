@@ -5,6 +5,9 @@ use crate::gpu_matrix::MemoryPlan;
 use crate::gpu_wallet::{self, InputWords, Plan};
 use crate::proving::{Backend, Run, Stage};
 
+mod prove;
+pub(crate) use prove::{HtlcProver, JoinSplitProver, WalletProof, WalletProver};
+
 #[cfg(test)]
 mod tests;
 
@@ -35,14 +38,23 @@ impl Wallets {
     pub(crate) fn new(runtime: &Runtime) -> Result<Self> {
         let module = runtime.compile(&source())?;
         let joinsplit = [
-            module.kernel("device_joinsplit_regions")?,
-            module.kernel("device_joinsplit_columns")?,
-            module.kernel("device_joinsplit_public")?,
+            module.kernel_for_stage(
+                "device_joinsplit_regions",
+                crate::proving::Stage::WitnessTrace,
+            )?,
+            module.kernel_for_stage(
+                "device_joinsplit_columns",
+                crate::proving::Stage::WitnessTrace,
+            )?,
+            module.kernel_for_stage(
+                "device_joinsplit_public",
+                crate::proving::Stage::PublicValues,
+            )?,
         ];
         let htlc = [
-            module.kernel("device_htlc_regions")?,
-            module.kernel("device_htlc_columns")?,
-            module.kernel("device_htlc_public")?,
+            module.kernel_for_stage("device_htlc_regions", crate::proving::Stage::WitnessTrace)?,
+            module.kernel_for_stage("device_htlc_columns", crate::proving::Stage::WitnessTrace)?,
+            module.kernel_for_stage("device_htlc_public", crate::proving::Stage::PublicValues)?,
         ];
         for kernel in joinsplit.iter().chain(&htlc) {
             if !super::kernel::private_memory_fits(runtime.identity(), kernel.local_bytes()?)? {
@@ -106,6 +118,7 @@ impl Wallets {
         kernels: &[Kernel; 3],
         run: &Run,
     ) -> Result<NativeWalletTrace> {
+        self.runtime.check_report_run(run)?;
         for stage in [Stage::WitnessTrace, Stage::PublicValues] {
             run.check_device_stage(stage, Backend::Cuda)
                 .map_err(super::error)?;
@@ -202,12 +215,19 @@ impl Wallets {
 }
 
 fn record(run: &Run, stage: Stage, completion: Result<super::Completion>) -> Result<()> {
+    let reported = completion
+        .as_ref()
+        .is_ok_and(|completion| completion.is_reported());
     let ns = completion
         .and_then(super::Completion::finish)
         .map_err(|error| {
             run.observation_failed();
             error
         })?;
-    run.observe_device(stage, Backend::Cuda, 1, u128::from(ns))
-        .map_err(super::error)
+    if reported {
+        Ok(())
+    } else {
+        run.observe_device(stage, Backend::Cuda, 1, u128::from(ns))
+            .map_err(super::error)
+    }
 }

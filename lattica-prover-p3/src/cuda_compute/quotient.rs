@@ -165,17 +165,19 @@ impl Quotients {
         let result = Self {
             runtime: runtime.clone(),
             evaluate: [
-                module.kernel("quotient_evaluate_2")?,
-                module.kernel("quotient_evaluate_3")?,
+                module.kernel_for_stage("quotient_evaluate_2", crate::proving::Stage::Quotient)?,
+                module.kernel_for_stage("quotient_evaluate_3", crate::proving::Stage::Quotient)?,
             ],
             alpha: [
-                module.kernel("quotient_alpha_2")?,
-                module.kernel("quotient_alpha_3")?,
+                module.kernel_for_stage("quotient_alpha_2", crate::proving::Stage::Scalar)?,
+                module.kernel_for_stage("quotient_alpha_3", crate::proving::Stage::Scalar)?,
             ],
-            domain: module.kernel("quotient_domain")?,
-            gather: module.kernel("quotient_gather")?,
-            partition: module.kernel("quotient_partition")?,
-            scatter: module.kernel("quotient_scatter")?,
+            domain: module.kernel_for_stage("quotient_domain", crate::proving::Stage::Scalar)?,
+            gather: module.kernel_for_stage("quotient_gather", crate::proving::Stage::Quotient)?,
+            partition: module
+                .kernel_for_stage("quotient_partition", crate::proving::Stage::Quotient)?,
+            scatter: module
+                .kernel_for_stage("quotient_scatter", crate::proving::Stage::Quotient)?,
             zero: runtime.allocate(1)?,
             cache: cache::ProgramCache::new(runtime, limits)?,
         };
@@ -219,7 +221,10 @@ impl Quotients {
                     Some(source) => {
                         source_bytes = source.len();
                         let module = self.runtime.compile(&source)?;
-                        let kernel = module.kernel("specialized_quotient")?;
+                        let kernel = module.kernel_for_stage(
+                            "specialized_quotient",
+                            crate::proving::Stage::Quotient,
+                        )?;
                         let bytes = kernel.local_bytes()?;
                         if self.admit_private(bytes)? {
                             local_bytes = bytes;

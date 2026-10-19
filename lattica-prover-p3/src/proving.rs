@@ -383,6 +383,36 @@ pub struct Run {
 }
 
 impl Run {
+    /// Process-local identity for a CUDA attempt. This never enters a report or
+    /// worker payload; the borrowing scope keeps the underlying state alive.
+    #[cfg(feature = "gpu-cuda")]
+    pub(crate) fn cuda_report_identity(&self) -> usize {
+        Arc::as_ptr(&self.state) as usize
+    }
+
+    #[cfg(feature = "gpu-cuda")]
+    pub(crate) fn cuda_inventory(&self) -> Result<[bool; 16], Error> {
+        if self.state.lock().map_err(|_| Error::Finished)?.finished {
+            return Err(Error::Finished);
+        }
+        let mut stages = [false; 16];
+        for (index, stage) in Stage::ARITHMETIC.into_iter().enumerate() {
+            if self
+                .capabilities
+                .stages
+                .iter()
+                .any(|s| s.stage == stage && s.backend == Backend::Cuda)
+            {
+                self.check_device_stage(stage, Backend::Cuda)?;
+                stages[index] = true;
+            }
+        }
+        if !stages.iter().any(|&enabled| enabled) {
+            return Err(Error::MissingInventory);
+        }
+        Ok(stages)
+    }
+
     pub fn new(
         entry_point: &'static str,
         request: Request,

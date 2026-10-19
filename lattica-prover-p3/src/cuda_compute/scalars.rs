@@ -63,10 +63,11 @@ impl Scalars {
         let module = runtime.compile(SOURCE)?;
         let result = Self {
             runtime: runtime.clone(),
-            powers: module.kernel("scalar_powers")?,
-            lookup: module.kernel("scalar_lookup")?,
-            next: module.kernel("scalar_next_points")?,
-            domains: module.kernel("scalar_domain_shifts")?,
+            powers: module.kernel_for_stage("scalar_powers", crate::proving::Stage::Scalar)?,
+            lookup: module.kernel_for_stage("scalar_lookup", crate::proving::Stage::Scalar)?,
+            next: module.kernel_for_stage("scalar_next_points", crate::proving::Stage::Scalar)?,
+            domains: module
+                .kernel_for_stage("scalar_domain_shifts", crate::proving::Stage::Scalar)?,
         };
         for kernel in [
             &result.powers,

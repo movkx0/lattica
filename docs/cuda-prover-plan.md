@@ -52,7 +52,10 @@ periodic columns, and returns the existing proof encoding. Both pinned field
 profiles and real JoinSplit/HTLC AIRs pass the unchanged CPU verifier. Native
 wallet generation now also constructs JoinSplit and HTLC traces/public values
 from raw witness packets and feeds them directly into this prover. The existing
-stage ledger recognizes CUDA completion receipts for witness/public generation.
+stage ledger now binds observed CUDA completions to each wallet proof attempt,
+covering all fourteen arithmetic stages in the single-wallet protocol. Typed
+JoinSplit and HTLC preparation binds the actual AIR and runtime; each proof uses
+fresh private randomness and finalizes its report before returning its artifact.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -639,11 +642,38 @@ correcting the controller's expected count. The successful streaming GPU checks
 were preserved. The first streaming service's memory peak was not captured
 because that count assertion preceded the controller's resource finalizer.
 
-Public wallet request routing, batch wallet traces, recursive batch/lookup
-orchestration, remaining STARK execution receipts, whole-request admission and
-worker/pool integration remain unfinished. The wallet operation report covers
-only witness/public generation; it does not qualify a complete GPU-required
-request. No end-to-end CUDA performance or transaction throughput is claimed.
+At that checkpoint, only witness/public generation had operation receipts;
+complete wallet request coverage was still pending.
+
+[Attempt-bound wallet reports](evidence/cuda-reporting-2026-10-18.json) bind
+actual native kernel completions to their requests. The runtime binds a ledger
+while its queue is quiescent, checks the
+submitting thread, and captures a stage ticket for each admitted launch. Only an
+observed CUDA completion event can complete that ticket. Unlabelled kernels,
+unadmitted stages, abandoned completions and escaping pending work fail the
+attempt. Completed partial receipts survive errors and unwinds. An abandoned
+command retires its runtime, and an old completion cannot satisfy another run.
+
+An internal typed wallet API prepares the fixed JoinSplit or HTLC AIR once and
+proves raw witnesses with fresh mask, commitment and FRI randomness. It returns
+the unchanged proof format, bounded public statement and a finalized report for
+all fourteen required wallet stages. Public preparation remains outside the
+private proof attempt; single-wallet proofs have no lookup or preprocessed
+commitment. Final-polynomial extraction and interpolation use the same loaded
+CUDA functions with their correct stage attribution. Existing standalone wallet
+operation reports continue to work without duplicating encompassing receipts.
+
+All fifty qualification checks passed: 152 native tests, 151 under each CUDA
+sanitizer, 82 streaming tests, CPU/OpenCL/standalone-CUDA checks and Metal
+cross-compilation. All 794 source pins match the staged source blobs. A release
+benchmark binary is built from the same source for execution after the commit
+is pushed.
+
+Public request routing, batch wallet traces, recursive batch/lookup orchestration,
+whole-request admission and worker/pool integration remain unfinished. The new
+opt-in CPU/CUDA benchmark measures raw witness to serialized wallet proof, with
+independent CPU verification outside timing; it does not measure recursive
+aggregation, block processing or distributed transaction throughput.
 
 ## Implementation sequence
 

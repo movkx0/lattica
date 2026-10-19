@@ -175,11 +175,18 @@ impl Transcripts {
         let result = Self {
             runtime: runtime.clone(),
             constants: super::commitment::poseidon_constants(runtime)?,
-            observe: module.kernel("transcript_observe")?,
-            sample: module.kernel("transcript_sample")?,
-            candidates: module.kernel("transcript_grind_candidates")?,
-            reduce: module.kernel("transcript_grind_reduce")?,
-            commit: module.kernel("transcript_grind_commit")?,
+            observe: module
+                .kernel_for_stage("transcript_observe", crate::proving::Stage::Transcript)?,
+            sample: module
+                .kernel_for_stage("transcript_sample", crate::proving::Stage::Transcript)?,
+            candidates: module.kernel_for_stage(
+                "transcript_grind_candidates",
+                crate::proving::Stage::Grinding,
+            )?,
+            reduce: module
+                .kernel_for_stage("transcript_grind_reduce", crate::proving::Stage::Grinding)?,
+            commit: module
+                .kernel_for_stage("transcript_grind_commit", crate::proving::Stage::Grinding)?,
         };
         for kernel in [
             &result.observe,

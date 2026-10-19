@@ -155,15 +155,42 @@ impl Openings {
         let module = runtime.compile(SOURCE)?;
         let kernels = |degree: usize| -> Result<Kernels> {
             let result = Kernels {
-                parameters: module.kernel(&format!("opening_parameters_{degree}"))?,
-                inverses: module.kernel(&format!("opening_inverses_{degree}"))?,
-                dot: module.kernel(&format!("opening_dot_{degree}"))?,
-                accumulate: module.kernel(&format!("opening_accumulate_{degree}"))?,
-                scale: module.kernel(&format!("opening_scale_{degree}"))?,
-                weights: module.kernel(&format!("opening_weights_{degree}"))?,
-                terms: module.kernel(&format!("opening_terms_{degree}"))?,
-                compress: module.kernel(&format!("opening_compress_{degree}"))?,
-                reduce: module.kernel(&format!("opening_reduce_{degree}"))?,
+                parameters: module.kernel_for_stage(
+                    &format!("opening_parameters_{degree}"),
+                    crate::proving::Stage::Opening,
+                )?,
+                inverses: module.kernel_for_stage(
+                    &format!("opening_inverses_{degree}"),
+                    crate::proving::Stage::Opening,
+                )?,
+                dot: module.kernel_for_stage(
+                    &format!("opening_dot_{degree}"),
+                    crate::proving::Stage::Opening,
+                )?,
+                accumulate: module.kernel_for_stage(
+                    &format!("opening_accumulate_{degree}"),
+                    crate::proving::Stage::Opening,
+                )?,
+                scale: module.kernel_for_stage(
+                    &format!("opening_scale_{degree}"),
+                    crate::proving::Stage::Opening,
+                )?,
+                weights: module.kernel_for_stage(
+                    &format!("opening_weights_{degree}"),
+                    crate::proving::Stage::Opening,
+                )?,
+                terms: module.kernel_for_stage(
+                    &format!("opening_terms_{degree}"),
+                    crate::proving::Stage::Opening,
+                )?,
+                compress: module.kernel_for_stage(
+                    &format!("opening_compress_{degree}"),
+                    crate::proving::Stage::Opening,
+                )?,
+                reduce: module.kernel_for_stage(
+                    &format!("opening_reduce_{degree}"),
+                    crate::proving::Stage::Opening,
+                )?,
             };
             for kernel in [
                 &result.parameters,

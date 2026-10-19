@@ -148,12 +148,17 @@ impl Commitments {
         let result = Self {
             runtime: runtime.clone(),
             constants,
-            permutation: module.kernel("poseidon_permutation")?,
-            absorb: module.kernel("commitment_absorb")?,
-            finalize: module.kernel("commitment_finalize")?,
-            finalize_at: module.kernel("commitment_finalize_at")?,
-            compress: module.kernel("commitment_compress")?,
-            paths: module.kernel("commitment_paths")?,
+            permutation: module
+                .kernel_for_stage("poseidon_permutation", crate::proving::Stage::Commitment)?,
+            absorb: module
+                .kernel_for_stage("commitment_absorb", crate::proving::Stage::Commitment)?,
+            finalize: module
+                .kernel_for_stage("commitment_finalize", crate::proving::Stage::Commitment)?,
+            finalize_at: module
+                .kernel_for_stage("commitment_finalize_at", crate::proving::Stage::Commitment)?,
+            compress: module
+                .kernel_for_stage("commitment_compress", crate::proving::Stage::Commitment)?,
+            paths: module.kernel_for_stage("commitment_paths", crate::proving::Stage::FriQuery)?,
         };
         if !super::kernel::private_memory_fits(
             runtime.identity(),

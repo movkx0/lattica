@@ -115,6 +115,23 @@ audit. Full-capacity and end-to-end throughput remain unqualified; all candidate
 remain opt-in. The separate [CUDA arithmetic/transform checks](evidence/cuda-algebra-2026-10-18.json)
 validate native primitives and do not yet measure CUDA proof generation.
 
+The native CUDA wallet screen is the ignored release test
+`cuda_compute::wallet::tests::benchmark::cuda_wallet_request_benchmark`.
+Build the library tests with `--release --no-default-features --features
+gpu-cuda,block-v2-capacity-128 --lib --no-run -j 1`. After correctness
+qualification, run that exact test with `--ignored --exact --test-threads=1
+--nocapture`, `LATTICA_CUDA_WALLET_BENCHMARK=1`, an explicit
+`LATTICA_GPU_DEVICE_UUID`, and `RAYON_NUM_THREADS=4`. Use bounded services:
+6 GiB RAM and one compiler job for the build; 3 GiB RAM, zero swap and four
+assigned CPU threads for execution. Keep GPU tests serial.
+
+This screen measures fresh raw witness through serialized proof for JoinSplit,
+HTLC redeem and HTLC refund. It records one warmup and five alternating CPU/CUDA
+pairs per case, with independent CPU verification outside timing. CUDA public
+preparation is recorded separately, and every CUDA sample requires a complete
+fourteen-stage report. It measures wallet proof latency; recursive aggregation,
+block processing and durable delivery remain separate workloads.
+
 For each run, retain:
 
 - Commit and binary hashes, device/runtime identity, capacity, fixture hash, and all settings.

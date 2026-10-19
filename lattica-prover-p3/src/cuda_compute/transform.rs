@@ -97,6 +97,7 @@ pub(super) fn storage_plan(
     )
 }
 
+#[derive(Clone)]
 pub(crate) struct Transforms {
     pub(super) runtime: Runtime,
     ntt: Kernel,
@@ -107,15 +108,32 @@ pub(crate) struct Transforms {
 }
 
 impl Transforms {
+    /// Reuse loaded functions while attributing final coefficient work to its
+    /// protocol stage. Query reconstruction keeps its own attribution.
+    pub(super) fn for_final_polynomial(&self) -> Self {
+        let mut result = self.clone();
+        result.ntt = result
+            .ntt
+            .with_stage(crate::proving::Stage::FinalPolynomial);
+        result.parameters = result
+            .parameters
+            .with_stage(crate::proving::Stage::FinalPolynomial);
+        result.scale = result
+            .scale
+            .with_stage(crate::proving::Stage::FinalPolynomial);
+        result
+    }
+
     pub(crate) fn new(runtime: &Runtime) -> Result<Self> {
         let module = runtime.compile(SOURCE)?;
         Ok(Self {
             runtime: runtime.clone(),
-            ntt: module.kernel("ntt_tile")?,
-            parameters: module.kernel("transform_parameters")?,
-            scale: module.kernel("transform_scale")?,
-            prefix: module.kernel("query_prefix")?,
-            gather: module.kernel("gather_rows")?,
+            ntt: module.kernel_for_stage("ntt_tile", crate::proving::Stage::Transform)?,
+            parameters: module
+                .kernel_for_stage("transform_parameters", crate::proving::Stage::Transform)?,
+            scale: module.kernel_for_stage("transform_scale", crate::proving::Stage::Transform)?,
+            prefix: module.kernel_for_stage("query_prefix", crate::proving::Stage::FriQuery)?,
+            gather: module.kernel_for_stage("gather_rows", crate::proving::Stage::FriQuery)?,
         })
     }
 

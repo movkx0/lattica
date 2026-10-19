@@ -83,19 +83,34 @@ impl Fri {
         let module = runtime.compile(SOURCE)?;
         let folds = |degree| -> Result<[Kernel; 4]> {
             Ok([
-                module.kernel(&format!("fri_fold_{degree}_1"))?,
-                module.kernel(&format!("fri_fold_{degree}_2"))?,
-                module.kernel(&format!("fri_fold_{degree}_3"))?,
-                module.kernel(&format!("fri_fold_{degree}_4"))?,
+                module.kernel_for_stage(
+                    &format!("fri_fold_{degree}_1"),
+                    crate::proving::Stage::FriFold,
+                )?,
+                module.kernel_for_stage(
+                    &format!("fri_fold_{degree}_2"),
+                    crate::proving::Stage::FriFold,
+                )?,
+                module.kernel_for_stage(
+                    &format!("fri_fold_{degree}_3"),
+                    crate::proving::Stage::FriFold,
+                )?,
+                module.kernel_for_stage(
+                    &format!("fri_fold_{degree}_4"),
+                    crate::proving::Stage::FriFold,
+                )?,
             ])
         };
         let result = Self {
             runtime: runtime.clone(),
             transforms: Transforms::new(runtime)?,
-            copy: module.kernel("fri_copy")?,
-            gather: module.kernel("fri_gather")?,
+            copy: module.kernel_for_stage("fri_copy", crate::proving::Stage::Scalar)?,
+            gather: module.kernel_for_stage("fri_gather", crate::proving::Stage::FriQuery)?,
             folds: [folds(2)?, folds(3)?],
-            mixes: [module.kernel("fri_mix_2")?, module.kernel("fri_mix_3")?],
+            mixes: [
+                module.kernel_for_stage("fri_mix_2", crate::proving::Stage::FriFold)?,
+                module.kernel_for_stage("fri_mix_3", crate::proving::Stage::FriFold)?,
+            ],
         };
         for kernel in result
             .folds
@@ -178,7 +193,7 @@ impl Fri {
         drop(self.runtime.state.enter()?);
         self.allocations(1)?;
         let owned = self.runtime.allocate(extension.degree())?;
-        self.copy_span(beta, &owned, extension.degree())?;
+        self.copy_span(&self.copy, beta, &owned, extension.degree())?;
         Ok(FriRound {
             engine: self,
             beta: owned,
@@ -187,7 +202,13 @@ impl Fri {
         })
     }
 
-    fn copy_span(&self, source: FieldSpan<'_>, destination: &Buffer, words: usize) -> Result<()> {
+    fn copy_span(
+        &self,
+        kernel: &Kernel,
+        source: FieldSpan<'_>,
+        destination: &Buffer,
+        words: usize,
+    ) -> Result<()> {
         if words == 0
             || words > u32::MAX as usize
             || words > destination.len()
@@ -201,7 +222,7 @@ impl Fri {
         // Each lane owns one destination word, with the complete source span
         // checked above. Kernel launch also checks runtime ownership.
         unsafe {
-            self.copy.launch(
+            kernel.launch(
                 super::transform::linear_launch(words)?,
                 &[
                     Argument::Buffer(source.buffer),
@@ -284,6 +305,10 @@ impl Fri {
         let coefficients = self.runtime.allocate(shape.output.words())?;
         if log_final_len == 0 {
             self.copy_span(
+                &self
+                    .copy
+                    .clone()
+                    .with_stage(crate::proving::Stage::FinalPolynomial),
                 FieldSpan {
                     buffer: &input.matrix.buffer,
                     first: 0,
@@ -292,11 +317,12 @@ impl Fri {
                 shape.output.words(),
             )?;
         } else {
-            let roots = self.transforms.roots(log_final_len as u32, true)?;
-            let parameters = self.transforms.parameters(shape.output, 1)?;
+            let transforms = self.transforms.for_final_polynomial();
+            let roots = transforms.roots(log_final_len as u32, true)?;
+            let parameters = transforms.parameters(shape.output, 1)?;
             // The first 2^log_final_len physical rows evaluate the smaller
             // subgroup. Natural-order inverse NTT leaves the source untouched.
-            self.transforms.ntt(
+            transforms.ntt(
                 &input.matrix.buffer,
                 &coefficients,
                 &roots,
@@ -305,7 +331,7 @@ impl Fri {
                 RowOrder::BitReversed,
                 RowOrder::Natural,
             )?;
-            self.transforms.scale(
+            transforms.scale(
                 &coefficients,
                 &coefficients,
                 &parameters,

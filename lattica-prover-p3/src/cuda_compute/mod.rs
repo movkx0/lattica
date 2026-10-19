@@ -19,6 +19,7 @@ mod query;
 #[cfg(feature = "block-v2")]
 mod quotient;
 mod random;
+mod reporting;
 mod scalars;
 #[cfg(feature = "block-v2")]
 mod stark;

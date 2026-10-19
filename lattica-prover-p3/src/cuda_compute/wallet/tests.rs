@@ -1,4 +1,6 @@
 use super::*;
+mod benchmark;
+mod reporting;
 use crate::config::{Challenge, Val};
 use crate::cuda_compute::{Limits, Randoms, Specialization, StarkRandomness, Starks};
 use crate::proving::{Capabilities, CoverageScope, Policy, Profile, Request};
