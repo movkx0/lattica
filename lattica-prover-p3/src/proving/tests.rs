@@ -265,7 +265,7 @@ fn gpu_wall_envelopes_alone_never_complete_stage_coverage() {
 }
 
 #[test]
-#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 fn lost_device_observations_prevent_a_coverage_claim() {
     for lose_observation in [false, true] {
         // Synthetic receipts test ledger semantics, not GPU execution.
@@ -306,7 +306,7 @@ fn lost_device_observations_prevent_a_coverage_claim() {
 }
 
 #[test]
-#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 fn device_observation_overflow_keeps_prior_receipts_and_invalidates_coverage() {
     for (calls, ns) in [(u64::MAX, 1), (1, u128::MAX)] {
         let run = Run::new("counter_overflow", Request::compatible(), legacy_cpu()).unwrap();
@@ -325,7 +325,7 @@ fn device_observation_overflow_keeps_prior_receipts_and_invalidates_coverage() {
     }
 }
 
-#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 fn transform_inventory() -> Capabilities {
     let mut capabilities = legacy_cpu();
     capabilities
@@ -336,7 +336,7 @@ fn transform_inventory() -> Capabilities {
 }
 
 #[test]
-#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 fn strict_completion_rejects_partial_unlisted_and_interrupted_work() {
     for fault in ["missing", "unlisted", "interrupted"] {
         let run = Run::new(
@@ -381,7 +381,7 @@ fn strict_completion_rejects_partial_unlisted_and_interrupted_work() {
 }
 
 #[test]
-#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 fn compatible_completion_reports_unlisted_cpu_work_without_rejecting_output() {
     let run = Run::new(
         "compatible_fault",
@@ -398,7 +398,7 @@ fn compatible_completion_reports_unlisted_cpu_work_without_rejecting_output() {
 }
 
 #[test]
-#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 fn strict_completion_allows_host_serialization_and_preserves_failed_outcomes() {
     let run = Run::new(
         "host_serialization",
@@ -425,7 +425,7 @@ fn strict_completion_allows_host_serialization_and_preserves_failed_outcomes() {
 }
 
 #[test]
-#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 fn complete_component_receipts_do_not_complete_a_whole_request() {
     let mut capabilities = legacy_cpu();
     for stage in &mut capabilities.stages {
@@ -532,3 +532,40 @@ fn strict_native_completion_withholds_outputs_without_receipts_and_releases_buff
     gpu_hash::shutdown().unwrap();
 }
 mod entrypoints;
+
+#[test]
+fn cuda_wall_envelopes_do_not_establish_device_coverage() {
+    let mut capabilities = legacy_cpu().scoped(CoverageScope::Operation, &[Stage::WitnessTrace]);
+    capabilities.set(Stage::WitnessTrace, Backend::Cuda);
+    let run = Run::new("cuda_envelope", request(Policy::GpuRequired), capabilities).unwrap();
+    run.measure(Stage::WitnessTrace, Backend::Cuda, || ())
+        .unwrap();
+    assert!(matches!(
+        run.finish(true),
+        Err(Error::IncompleteCoverage { .. })
+    ));
+}
+
+#[test]
+#[cfg(feature = "gpu-cuda")]
+fn cuda_receipts_obey_policy_and_scoped_inventory() {
+    // Synthetic observations exercise enforcement only, not GPU correctness.
+    let mut capabilities = legacy_cpu().scoped(CoverageScope::Operation, &[Stage::WitnessTrace]);
+    capabilities.set(Stage::WitnessTrace, Backend::Cuda);
+    assert!(Run::new(
+        "cuda_cpu_required",
+        request(Policy::CpuRequired),
+        capabilities.clone()
+    )
+    .is_err());
+    let run = Run::new("cuda_receipts", request(Policy::GpuRequired), capabilities).unwrap();
+    assert!(run
+        .check_device_stage(Stage::WitnessTrace, Backend::Cpu)
+        .is_err());
+    run.observe_device(Stage::WitnessTrace, Backend::Cuda, 2, 200)
+        .unwrap();
+    let report = run.finish(true).unwrap();
+    assert!(report.stage_coverage_complete);
+    assert_eq!(report.observations[0].device_calls, 2);
+    assert_eq!(report.observations[0].device_ns, 200);
+}

@@ -367,7 +367,10 @@ pub const PI_HASHLOCK: usize = PI_HEIGHT + 1; // SHA256(preimage) = the redeemed
 pub const N_PUBLIC: usize = PI_HASHLOCK + DIGEST;
 
 /// Shared layout for the owned GPU witness writer; the AIR remains authoritative.
-#[cfg(all(feature = "block-v2", any(feature = "gpu", feature = "gpu-metal")))]
+#[cfg(all(
+    feature = "block-v2",
+    any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda")
+))]
 pub(crate) fn device_trace_geometry() -> [u64; 41] {
     [
         HEIGHT,
@@ -629,8 +632,7 @@ impl BaseAir<Goldilocks> for HtlcAir {
 
 impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for HtlcAir {
     fn eval(&self, builder: &mut AB) {
-        let pis: [AB::Expr; N_PUBLIC] =
-            core::array::from_fn(|i| builder.public_values()[i].into());
+        let pis: [AB::Expr; N_PUBLIC] = core::array::from_fn(|i| builder.public_values()[i].into());
         eval_spend(builder, &pis, AB::Expr::ZERO);
     }
 }

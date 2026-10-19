@@ -49,8 +49,10 @@ randomization-polynomial commitments sample their original rows and masking
 columns directly, preserving the upstream polynomial degree. Native single-AIR
 STARK orchestration now consumes resident traces and public values, with static
 periodic columns, and returns the existing proof encoding. Both pinned field
-profiles and real JoinSplit/HTLC AIRs pass the unchanged CPU verifier. These
-wallet fixtures still construct their witness traces and public values on CPU.
+profiles and real JoinSplit/HTLC AIRs pass the unchanged CPU verifier. Native
+wallet generation now also constructs JoinSplit and HTLC traces/public values
+from raw witness packets and feeds them directly into this prover. The existing
+stage ledger recognizes CUDA completion receipts for witness/public generation.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -600,9 +602,48 @@ periodic geometry; that failure is preserved, and the final qualification
 reruns all checks on the corrected source.
 
 This single-AIR interface rejects preprocessed commitments and lookup/permutation
-layouts. Wallet witness/public generation, recursive batch/lookup orchestration,
-execution receipts, backend selection and worker/pool integration still require
-implementation. No full-request GPU coverage or transaction throughput is claimed.
+layouts. At this checkpoint, wallet witness/public generation, recursive
+batch/lookup orchestration, execution receipts, backend selection and worker/pool
+integration remained outstanding. No full-request GPU coverage or transaction
+throughput is claimed.
+
+[Native wallet generation](evidence/cuda-wallet-2026-10-18.json) shares raw input
+encoding, AIR-owned geometry and integer kernel bodies with OpenCL. A CUDA adapter
+compiles those bodies against the native Goldilocks and Poseidon2 operations.
+Three completed kernels write
+trace regions, accumulator columns, and the public statement/validity result.
+Only the raw packet and layout metadata are uploaded; generation downloads one
+8-byte validity word. The resulting trace and public values stay resident and
+feed native STARK proving without a CPU trace builder.
+
+The shared plan admits all five device allocations before packing private
+inputs. Host staging retains its exact-capacity allowance and scrubbing guard;
+device scratch and unsuccessful outputs are scrubbed and released on drop.
+CPU-required policy rejection and insufficient host, allocation-size or
+allocation-count allowances issue no wallet work. The existing stage ledger
+now accepts `cuda` observations with actual completion-event timings. Witness
+generation reports two witness calls and one public-value call under operation
+scope. Wall-clock envelopes, missing/lost/overflowed observations and partial
+component reports cannot establish complete GPU-required coverage.
+
+Independent CPU oracles cover JoinSplit range/field boundaries and minting,
+plus plain HTLC, redeem, refund and timeout boundaries. Sixteen invalid witness
+cases exercise asset/path/conservation/range/mode/ownership/timeout/mint checks.
+Three full native proofs, from raw JoinSplit, HTLC redeem and HTLC refund inputs,
+pass the unchanged production CPU verifier and reject altered public statements.
+All 49 qualification checks passed: 142 native tests, 141 under each CUDA
+sanitizer, 72 with `stream`, and the CPU/OpenCL/Metal/standalone-CUDA build and
+regression checks. All 789 source pins match the staged Git blobs. The streaming
+host-report suite has one extra test; its 21 passing tests were rerun after
+correcting the controller's expected count. The successful streaming GPU checks
+were preserved. The first streaming service's memory peak was not captured
+because that count assertion preceded the controller's resource finalizer.
+
+Public wallet request routing, batch wallet traces, recursive batch/lookup
+orchestration, remaining STARK execution receipts, whole-request admission and
+worker/pool integration remain unfinished. The wallet operation report covers
+only witness/public generation; it does not qualify a complete GPU-required
+request. No end-to-end CUDA performance or transaction throughput is claimed.
 
 ## Implementation sequence
 

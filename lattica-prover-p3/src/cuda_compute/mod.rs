@@ -26,6 +26,8 @@ mod stark;
 mod tests;
 mod transcript;
 mod transform;
+#[cfg(feature = "block-v2")]
+mod wallet;
 
 pub(crate) use budget::{Limits, Snapshot};
 pub(crate) use buffer::Buffer;
@@ -71,3 +73,6 @@ fn cleanup(result: Result<()>, operation: &str) {
         std::process::abort();
     }
 }
+
+#[cfg(feature = "block-v2")]
+pub(crate) use wallet::{NativeWalletTrace, Wallets};

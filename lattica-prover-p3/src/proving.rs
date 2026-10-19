@@ -36,7 +36,9 @@ impl Policy {
         match self {
             Self::Compatible => true,
             Self::CpuRequired => backend == Backend::Cpu,
-            Self::GpuRequired => matches!(backend, Backend::OpenCl | Backend::Metal),
+            Self::GpuRequired => {
+                matches!(backend, Backend::OpenCl | Backend::Metal | Backend::Cuda)
+            }
         }
     }
 }
@@ -47,6 +49,7 @@ pub enum Backend {
     Cpu,
     OpenCl,
     Metal,
+    Cuda,
     Mixed,
     Unknown,
 }
@@ -459,10 +462,10 @@ impl Run {
         timer.completed = true;
         Ok(value)
     }
-    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
     pub(crate) fn check_device_stage(&self, stage: Stage, backend: Backend) -> Result<(), Error> {
         if stage == Stage::UpstreamProver
-            || !matches!(backend, Backend::OpenCl | Backend::Metal)
+            || !matches!(backend, Backend::OpenCl | Backend::Metal | Backend::Cuda)
             || !self.request.policy.allows(backend)
         {
             return Err(Error::StageRejected {
@@ -477,7 +480,7 @@ impl Run {
     /// Record successful device operations from session counters, including
     /// operations completed before a later proof failure. No wall time is
     /// inferred from a whole-proof envelope or a capability declaration.
-    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
     pub(crate) fn observe_device(
         &self,
         stage: Stage,
@@ -528,7 +531,7 @@ impl Run {
         Ok(())
     }
 
-    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    #[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
     pub(crate) fn observation_failed(&self) {
         if let Ok(mut state) = self.state.lock() {
             state.observation_errors = state.observation_errors.saturating_add(1);
@@ -550,7 +553,7 @@ impl Run {
                     o.stage == s.stage
                         && o.backend == s.backend
                         && o.completed_calls > 0
-                        && (!matches!(s.backend, Backend::OpenCl | Backend::Metal)
+                        && (!matches!(s.backend, Backend::OpenCl | Backend::Metal | Backend::Cuda)
                             || o.device_calls > 0)
                 })
             })

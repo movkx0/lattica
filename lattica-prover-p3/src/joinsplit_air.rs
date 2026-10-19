@@ -184,7 +184,10 @@ pub const WIDTH: usize = 19;
 
 /// Public layout metadata for the device witness writer. Keep the CPU AIR's
 /// geometry authoritative rather than duplicating its column/region constants.
-#[cfg(all(feature = "block-v2", any(feature = "gpu", feature = "gpu-metal")))]
+#[cfg(all(
+    feature = "block-v2",
+    any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda")
+))]
 pub(crate) fn device_trace_geometry() -> [u64; 28] {
     [
         HEIGHT,
@@ -405,8 +408,7 @@ impl BaseAir<Goldilocks> for JoinSplitAir {
 
 impl<AB: AirBuilder<F = Goldilocks>> Air<AB> for JoinSplitAir {
     fn eval(&self, builder: &mut AB) {
-        let pis: [AB::Expr; N_PUBLIC] =
-            core::array::from_fn(|i| builder.public_values()[i].into());
+        let pis: [AB::Expr; N_PUBLIC] = core::array::from_fn(|i| builder.public_values()[i].into());
         eval_spend(builder, &pis, AB::Expr::ZERO);
     }
 }
