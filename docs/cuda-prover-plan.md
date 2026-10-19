@@ -802,6 +802,17 @@ are preserved in the evidence.
 Full-size race instrumentation was interrupted during preparation and remains
 unqualified; its partial log is retained alongside the completed checks.
 
+The [post-push release benchmark at `830a6eb`](evidence/cuda-recursion-benchmark-2026-10-19.json)
+completed one warmup and three measured runs, followed by independent CPU audits
+of all four artifacts. Median outer proving time was 4.790 seconds (range
+4.789–4.791); public preparation took 0.597 seconds separately. Each run uses a
+fresh process and private randomness. The proving timer covers raw serialized
+inner-proof witness inputs through native `BatchProof` construction; it excludes
+module startup, inner proof generation, public program compilation/preparation,
+final Postcard serialization and independent CPU verification. No CPU/OpenCL
+proving comparison, production aggregation throughput or transaction rate is
+inferred from these single-verifier samples.
+
 The two `cuda_compute::batch_stark::recursive_tests::` tests are deliberately
 excluded from the small correctness suite. Set `LATTICA_CUDA_RECURSIVE_ARTIFACTS`
 to a fresh absolute directory and run `cuda_recursive_wallet_produces_native_outer_proof`
