@@ -11,7 +11,7 @@ pub(super) const SOURCE: &str = concat!(include_str!("field.cuh"), include_str!(
 mod commitment;
 pub(crate) use commitment::{FriLayer, FriLayerOpenings};
 #[cfg(feature = "block-v2")]
-mod protocol;
+pub(super) mod protocol;
 #[cfg(feature = "block-v2")]
 pub(crate) use protocol::{FriField, FriParameters, NativeFriProof};
 

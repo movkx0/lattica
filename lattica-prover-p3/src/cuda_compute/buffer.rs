@@ -27,8 +27,11 @@ impl Runtime {
         let bytes = words
             .checked_mul(8)
             .ok_or("CUDA allocation size overflow")?;
-        let reservation = self.state.budget.allocation(bytes)?;
         let guard = self.state.enter()?;
+        // The submitting thread owns the accounting change as well as the
+        // native allocation. A rejected cross-thread call cannot consume a
+        // reservation between whole-request admission and its first draw.
+        let reservation = self.state.budget.allocation(bytes)?;
         let required = bytes
             .checked_add(self.state.budget.limits.headroom_bytes)
             .ok_or("CUDA allocation admission overflow")?;

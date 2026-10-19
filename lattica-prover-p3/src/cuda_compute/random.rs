@@ -168,6 +168,17 @@ fn accepted_words(value: u64, count: usize) -> Result<usize> {
 }
 
 impl Randoms {
+    pub(super) fn admit_states(&self, additional: usize) -> Result<()> {
+        if self
+            .states
+            .load(Ordering::Acquire)
+            .checked_add(additional)
+            .is_none_or(|n| n > MAX_STREAM_STATES)
+        {
+            return Err("CUDA request exceeds random stream-state allowance".into());
+        }
+        Ok(())
+    }
     pub(crate) fn new(runtime: &Runtime) -> Result<Arc<Self>> {
         let module = runtime.compile(SOURCE)?;
         let result = Self {
@@ -198,6 +209,7 @@ impl Randoms {
         Ok(Arc::new(result))
     }
     fn slot(self: &Arc<Self>) -> Result<Slot> {
+        let _queue = self.runtime.state.enter()?;
         self.states
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
                 (n < MAX_STREAM_STATES).then(|| n + 1)

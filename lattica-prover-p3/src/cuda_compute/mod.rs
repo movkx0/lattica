@@ -27,6 +27,7 @@ mod reporting;
 mod scalars;
 #[cfg(feature = "block-v2")]
 mod stark;
+mod storage;
 #[cfg(test)]
 mod tests;
 mod transcript;
@@ -38,8 +39,8 @@ mod witness;
 
 #[cfg(feature = "block-v2")]
 pub(crate) use batch_stark::{
-    BatchStarks, MachineInputs, NativeBatchProof, PreparedBatch, RegisteredKey, RegisteredMachine,
-    RegisteredProof,
+    BatchStarks, MachineInputs, NativeBatchProof, PreparedBatch, ProofPlan, RegisteredKey,
+    RegisteredMachine, RegisteredProof,
 };
 pub(crate) use budget::{Limits, Snapshot};
 pub(crate) use buffer::Buffer;

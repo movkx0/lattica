@@ -11,7 +11,7 @@ use crate::{
 use p3_commit::{OpenedValues, Pcs};
 use p3_field::{ExtensionField, PrimeCharacteristicRing};
 
-mod storage;
+pub(super) mod storage;
 #[cfg(test)]
 mod tests;
 

@@ -62,17 +62,9 @@ fn mul(a: u64, b: u64) -> Result<u64, String> {
     a.checked_mul(b)
         .ok_or_else(|| "GPU witness resource overflow".into())
 }
+#[cfg(test)]
 fn bytes<T>(capacity: usize) -> Result<u64, String> {
     mul(capacity as u64, std::mem::size_of::<T>() as u64)
-}
-fn hint_heap(op: &Op) -> Result<u64, String> {
-    match op {
-        Op::SelectHint { entries, bits, .. } => add(
-            bytes::<Wire>(entries.capacity())?,
-            bytes::<Wire>(bits.capacity())?,
-        ),
-        _ => Ok(0),
-    }
 }
 
 impl Bounds {
@@ -89,28 +81,7 @@ impl Bounds {
     ) -> Result<Self, String> {
         let layout = gpu_program::Layout::new(program)
             .map_err(|e| format!("invalid GPU witness layout: {e:?}"))?;
-        // Pinned Rust ArcInner stores two AtomicUsize counters followed by
-        // the aligned payload. MachineAir owns the program through this Arc;
-        // its allocation persists with the cached registered program.
-        let source_layout = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
-            .extend(std::alloc::Layout::new::<Program>())
-            .map_err(|_| "GPU source Arc layout overflow")?
-            .0
-            .pad_to_align();
-        let mut source = add(
-            source_layout.size() as u64,
-            bytes::<Op>(program.operations.capacity())?,
-        )?;
-        source = add(source, bytes::<Row>(program.rows.capacity())?)?;
-        source = add(source, bytes::<u32>(program.references.capacity())?)?;
-        for op in &program.operations {
-            source = add(source, hint_heap(op)?)?;
-        }
-        for row in &program.rows {
-            if let Row::Alu(ops) | Row::Cubic(ops) = row {
-                source = add(source, bytes::<u32>(ops.capacity())?)?;
-            }
-        }
+        let source = program.source_host_bytes()? as u64;
         let bounds = Self {
             rows: program.height as u64,
             main_columns: air::WIDTH as u64,

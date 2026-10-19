@@ -101,6 +101,37 @@ impl PartitionPlan {
     }
 }
 
+impl PreparedQuotient {
+    pub(in crate::cuda_compute) fn partition_storage(
+        &self,
+        inputs: [Option<MatrixSpec>; 3],
+        log_trace: u32,
+        log_quotient: u32,
+        live: usize,
+        limits: Limits,
+    ) -> Result<(MatrixSpec, usize, usize)> {
+        let plan = PartitionPlan::new(
+            &self.program,
+            inputs,
+            log_trace,
+            log_quotient,
+            7,
+            live,
+            limits,
+        )?;
+        let expansions = inputs
+            .into_iter()
+            .flatten()
+            .filter(|s| plan.cosets > 1 || s.log_rows != plan.part_log)
+            .count();
+        // Result (unless directly returned), retained expansions, and the five
+        // evaluation buffers. A transform needs five buffers before releasing
+        // its scratch, so its peak count cannot exceed this bound.
+        let allocations = usize::from(plan.cosets > 1) + expansions + 5;
+        Ok((plan.output, plan.peak_bytes, allocations))
+    }
+}
+
 impl Quotients {
     /// Reconstruct one component coset at a time, then interleave its quotient
     /// into the natural row order of the full domain. Prepared code, challenges,

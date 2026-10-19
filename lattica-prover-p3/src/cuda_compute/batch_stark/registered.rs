@@ -9,7 +9,7 @@ use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 
 // Bound the handle, provenance inventory, report staging and both cap views.
-// The source program remains borrowed and separately admitted by its caller.
+// Borrowed source capacities are charged by batch preparation and proof plans.
 const REGISTERED_HOST: usize = (16 << 10) + 2 * CAP_BYTES;
 const PREPROCESSING: [Stage; 5] = [
     Stage::Preprocessing,
@@ -42,6 +42,7 @@ pub(crate) struct RegisteredMachine {
 pub(crate) struct RegisteredProof {
     pub proof: NativeBatchProof,
     pub report: Report,
+    pub admission: ProofPlan,
 }
 
 fn capabilities(scope: CoverageScope, stages: &[Stage]) -> Capabilities {
@@ -125,15 +126,15 @@ impl BatchStarks {
         if host_bytes < REGISTERED_HOST {
             return Err("CUDA registered metadata exceeds host allowance".into());
         }
-        let host = self.runtime.state.budget.public_program(REGISTERED_HOST)?;
         let result = self.runtime.reported(&run, || {
+            let host = self.runtime.state.budget.public_program(REGISTERED_HOST)?;
             let prepared = self.prepare(&[air], host_bytes, mode)?;
             if prepared.preprocessing_cap()?.roots() != approved.cap {
                 return Err("CUDA preprocessing commitment differs from approved registry".into());
             }
-            Ok(prepared)
+            Ok((prepared, host))
         });
-        let (prepared, report) = finish(run, result)?;
+        let ((prepared, host), report) = finish(run, result)?;
         let preprocessing_receipt =
             CachedScope::preprocessing(&report).map_err(super::super::error)?;
         if preprocessing_receipt.retained_host_bytes()? > REGISTERED_HOST - 2 * CAP_BYTES {
@@ -208,9 +209,15 @@ impl RegisteredMachine {
         run.cuda_require_capabilities(&self.proof_capabilities())
             .map_err(super::super::error)?;
         let inputs = [input];
-        self.engine
-            .preflight_proof(&self.prepared, &inputs, host_bytes)?;
         let result = self.engine.runtime.reported(&run, || {
+            // The reporting guard excludes submissions from other threads.
+            // Read the live snapshot here, and admit the complete lifecycle
+            // before generating or importing any private seed material.
+            let pcs_host = self
+                .engine
+                .preflight_proof(&self.prepared, &inputs, host_bytes)?;
+            let mut admission = self.engine.proof_plan(&self.prepared, pcs_host, 3)?;
+            admission.host_peak_bytes += host_bytes - pcs_host;
             let fresh = || {
                 self.engine
                     .randoms
@@ -219,7 +226,7 @@ impl RegisteredMachine {
             let masks = fresh()?;
             let commitments = fresh()?;
             let fri = fresh()?;
-            self.engine.prove_impl(
+            let proof = self.engine.prove_impl(
                 &self.prepared,
                 &inputs,
                 StarkRandomness {
@@ -229,10 +236,15 @@ impl RegisteredMachine {
                 },
                 host_bytes,
                 fault,
-            )
+            )?;
+            Ok((proof, admission))
         });
-        let (proof, report) = finish(run, result)?;
-        Ok(RegisteredProof { proof, report })
+        let ((proof, admission), report) = finish(run, result)?;
+        Ok(RegisteredProof {
+            proof,
+            report,
+            admission,
+        })
     }
 }
 

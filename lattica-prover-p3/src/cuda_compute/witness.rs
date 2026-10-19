@@ -45,6 +45,26 @@ pub(crate) struct PreparedWitness {
     _host: Reservation,
 }
 
+impl PreparedWitness {
+    /// Unique allocations used by generation, in execution order. Public
+    /// metadata already belongs to the caller's starting runtime snapshot.
+    pub(super) fn generation_words(&self) -> Result<[usize; 5]> {
+        let p = &self.schedule;
+        let spec = MatrixSpec::new(
+            p.height.ilog2(),
+            p.trace_width,
+            Extension::Base,
+            RowOrder::Natural,
+            1,
+        )?;
+        let inputs = p
+            .publics
+            .checked_add(p.witnesses)
+            .ok_or("CUDA machine input overflow")?;
+        Ok([spec.words(), p.wires.max(1), inputs.max(1), 1, p.publics])
+    }
+}
+
 pub(crate) struct ExecutionTrace {
     pub(crate) trace: Matrix,
     pub(crate) public: Option<Buffer>,
@@ -228,13 +248,7 @@ impl Witnesses {
             RowOrder::Natural,
             1,
         )?;
-        let sizes = [
-            spec.words(),
-            p.wires.max(1),
-            input_words.max(1),
-            1,
-            p.publics,
-        ];
+        let sizes = prepared.generation_words()?;
         self.admit(&sizes[..if p.publics == 0 { 4 } else { 5 }])?;
         let output = self.runtime.allocate(spec.words())?;
         let wires = self.runtime.allocate(p.wires.max(1))?;

@@ -107,6 +107,14 @@ fn cuda_recursive_registered_wallet_produces_authenticated_outer_proof() {
         serde_json::to_string(&output.report).unwrap()
     );
     assert!(output.report.stage_coverage_complete && output.report.succeeded);
+    eprintln!(
+        "LATTICA_CUDA_REQUEST_ADMISSION {}",
+        serde_json::to_string(&output.admission).unwrap()
+    );
+    assert!(runtime.snapshot().peak_bytes <= output.admission.managed_peak_bytes);
+    assert!(runtime.snapshot().peak_allocations <= output.admission.allocation_peak);
+    assert!(output.admission.managed_peak_bytes <= MANAGED);
+    assert!(output.admission.host_peak_bytes <= HOST);
     let outer = output.proof;
     drop(prepared);
     assert_eq!(crate::proving::cpu_witness_oracle_calls(), calls);

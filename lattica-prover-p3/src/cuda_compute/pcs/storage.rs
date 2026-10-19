@@ -1,14 +1,24 @@
-//! Admission covers captured openings, reduction peaks and the coexistence of
-//! returned public/masking openings with FRI proof assembly. FRI device stages
-//! retain their own allocation checks and the outer attempt retires on errors.
+//! Pure opening/host admission shared by live PCS and whole-request planning.
 use super::*;
+use crate::cuda_compute::fri::protocol::storage as fri_storage;
+use crate::cuda_compute::{
+    hiding::{query_host_bytes, OpeningShape},
+    opening::{reduce::ReductionPlan, EvaluationPlan},
+    storage::Schedule,
+    Limits, Snapshot,
+};
 
-pub(super) struct Plan {
+pub(in crate::cuda_compute) type RoundShape = Vec<(OpeningShape, usize)>;
+
+pub(in crate::cuda_compute) struct Plan {
     pub matrices: usize,
     pub heights: Vec<usize>,
     pub fri_host_bytes: usize,
-    #[cfg(test)]
     pub host_peak: usize,
+    pub device_peak: usize,
+    pub allocation_peak: usize,
+    pub initial: Vec<(usize, usize)>,
+    pub fri: fri_storage::Plan,
 }
 
 fn add(total: &mut usize, bytes: usize) -> Result<()> {
@@ -18,42 +28,38 @@ fn add(total: &mut usize, bytes: usize) -> Result<()> {
     Ok(())
 }
 
-impl PcsOpenings {
-    pub(super) fn plan<F: FriField>(
-        &self,
+impl Plan {
+    pub(in crate::cuda_compute) fn new<F: FriField>(
         params: FriParameters,
-        rounds: &[OpeningRound<'_>],
+        rounds: &[RoundShape],
         public_preprocessing: bool,
+        state: Snapshot,
+        limits: Limits,
         host_bytes: usize,
-    ) -> Result<Plan> {
+    ) -> Result<Self> {
         if rounds.is_empty() || rounds.len() > 256 {
             return Err("CUDA PCS commitment count exceeds admission".into());
         }
+        let mut schedule = Schedule::new(state, limits)?;
+        schedule.phase("pcs_evaluation");
         let mut height_counts = [0usize; 26];
         let mut matrices = 0;
         let mut point_count = 0;
         let mut value_bytes = 0;
-        let mut captured_bytes = 0;
-        let mut captured_allocations = 0;
-        let mut originals = vector(rounds.len())?;
+        let mut initial = vector(rounds.len())?;
         for (batch, round) in rounds.iter().enumerate() {
-            round.commitment.check_runtime(&self.runtime)?;
-            if round.points.is_empty()
-                || round.points.len() != round.commitment.specs().len()
-                || round.points.len() > 256
-            {
-                return Err("CUDA PCS matrix/point shape differs from its commitment".into());
+            if round.is_empty() || round.len() > 256 {
+                return Err("CUDA PCS matrix count exceeds admission".into());
             }
-            originals.push(round.commitment);
-            for (matrix, points) in round.points.iter().enumerate() {
-                let shape = round.commitment.opening_shape(matrix)?;
+            let mut shapes = vector(round.len())?;
+            for &(shape, points) in round {
                 let spec = shape.lde;
                 let random_columns = if public_preprocessing && batch == PREPROCESSED_ROUND {
                     0
                 } else {
                     crate::config::NUM_RANDOM_CODEWORDS
                 };
-                if !(1..=32).contains(&points.count)
+                if !(1..=32).contains(&points)
                     || spec.log_rows > 25
                     || shape
                         .prefix
@@ -66,33 +72,43 @@ impl PcsOpenings {
                     || spec.shift != 7
                     || shape.random_columns != random_columns
                     || shape.random_columns >= spec.columns
+                    || shape.prefix.columns != spec.columns
                 {
-                    return Err("CUDA PCS opening or hiding geometry is unsupported".into());
+                    return Err("CUDA PCS opening or hiding geometry unsupported".into());
                 }
                 let height = spec.log_rows as usize;
                 height_counts[height] += 1;
                 if height_counts[height] > 256 {
                     return Err("CUDA PCS reductions exceed matrices per height".into());
                 }
-                round.commitment.preflight_retained_opening(
-                    &self.openings,
-                    matrix,
+                let plan = EvaluationPlan::new(
+                    shape.prefix,
                     F::EXTENSION,
-                    points.values,
-                    points.count,
-                    captured_bytes,
-                    captured_allocations,
+                    points,
+                    schedule.state,
+                    limits,
                 )?;
-                let values = points.count * spec.columns * F::DIMENSION * 8;
-                add(&mut value_bytes, values)?;
-                add(
-                    &mut captured_bytes,
-                    values + points.count * F::DIMENSION * 8,
-                )?;
-                add(&mut captured_allocations, 2)?;
+                schedule.peak(plan.peak, 6)?;
+                // Each immutable opening retains its copied points and values.
+                schedule.hold([points * F::DIMENSION, points * spec.columns * F::DIMENSION])?;
+                add(&mut value_bytes, points * spec.columns * F::DIMENSION * 8)?;
                 add(&mut matrices, 1)?;
-                add(&mut point_count, points.count)?;
+                add(&mut point_count, points)?;
+                shapes.push(shape);
             }
+            let height = shapes
+                .iter()
+                .map(|s| s.lde.log_rows as usize)
+                .max()
+                .unwrap();
+            initial.push((
+                query_host_bytes(
+                    &shapes,
+                    height - params.cap_height.min(height),
+                    params.num_queries,
+                )?,
+                shapes.len(),
+            ));
         }
         let mut heights = vector(26)?;
         for (height, &count) in height_counts.iter().enumerate().rev() {
@@ -100,11 +116,8 @@ impl PcsOpenings {
                 heights.push(height);
             }
         }
-        let fri_host_bytes = self
-            .fri
-            .proof_host_bytes::<F>(params, &heights, &originals)?;
-        // Includes raw/typed opening coexistence and all nested vector and
-        // retained-handle metadata, even as execution releases handles early.
+        let fri = fri_storage::Plan::new(params, &heights, F::DIMENSION, &initial, host_bytes)?;
+        let fri_host_bytes = fri.host_peak;
         let mut opened_host = value_bytes
             .checked_mul(2)
             .ok_or("CUDA PCS opening host bytes overflow")?;
@@ -118,26 +131,15 @@ impl PcsOpenings {
         if host_peak > host_bytes {
             return Err("CUDA PCS openings and FRI exceed aggregate host allowance".into());
         }
-
-        // Conservatively admit reductions with every evaluated opening, every
-        // accumulator and alpha simultaneously live, before mutating the transcript.
-        let limits = self.runtime.state.budget.limits;
-        let mut reduction_bytes = captured_bytes;
-        let mut reduction_allocations = captured_allocations;
-        add(&mut reduction_bytes, F::DIMENSION * 8)?;
-        add(&mut reduction_allocations, 1)?;
+        // Match live PCS admission: all captures, accumulators and alpha are
+        // charged simultaneously, even though execution releases captures early.
+        schedule.phase("pcs_reduction");
+        schedule.hold([F::DIMENSION])?;
         for &height in &heights {
-            let bytes = (1usize << height) * F::DIMENSION * 8;
-            if bytes > limits.max_allocation_bytes || F::DIMENSION * 8 > limits.max_allocation_bytes
-            {
-                return Err("CUDA PCS reduction vector exceeds allocation allowance".into());
-            }
-            add(&mut reduction_bytes, bytes + F::DIMENSION * 8)?;
-            add(&mut reduction_allocations, 2)?;
+            schedule.hold([(1usize << height) * F::DIMENSION, F::DIMENSION])?;
         }
         for round in rounds {
-            for (matrix, points) in round.points.iter().enumerate() {
-                let shape = round.commitment.opening_shape(matrix)?;
+            for &(shape, points) in round {
                 let output = MatrixSpec::new(
                     shape.lde.log_rows,
                     1,
@@ -145,21 +147,73 @@ impl PcsOpenings {
                     RowOrder::BitReversed,
                     shape.lde.shift,
                 )?;
-                self.openings.preflight_reduction(
-                    shape.prefix,
-                    output,
-                    points.count,
-                    reduction_bytes,
-                    reduction_allocations,
-                )?;
+                let plan =
+                    ReductionPlan::new(shape.prefix, output, points, schedule.state, limits)?;
+                schedule.peak(plan.peak, 7)?;
             }
         }
-        Ok(Plan {
+        Ok(Self {
             matrices,
             heights,
             fri_host_bytes,
-            #[cfg(test)]
             host_peak,
+            initial,
+            fri,
+            device_peak: schedule.phases.iter().map(|p| p.peak_bytes).max().unwrap(),
+            allocation_peak: schedule
+                .phases
+                .iter()
+                .map(|p| p.peak_allocations)
+                .max()
+                .unwrap(),
         })
+    }
+}
+
+impl PcsOpenings {
+    pub(super) fn plan<F: FriField>(
+        &self,
+        params: FriParameters,
+        rounds: &[OpeningRound<'_>],
+        public_preprocessing: bool,
+        host_bytes: usize,
+    ) -> Result<Plan> {
+        if rounds.is_empty() || rounds.len() > 256 {
+            return Err("CUDA PCS commitment count exceeds admission".into());
+        }
+        let mut shapes = vector(rounds.len())?;
+        for round in rounds {
+            round.commitment.check_runtime(&self.runtime)?;
+            if round.points.len() != round.commitment.specs().len()
+                || round.points.is_empty()
+                || round.points.len() > 256
+            {
+                return Err("CUDA PCS matrix/point shape differs from its commitment".into());
+            }
+            let mut shape = vector(round.points.len())?;
+            for (matrix, points) in round.points.iter().enumerate() {
+                // Also authenticate resident point ownership/ranges. The pure
+                // schedule below adds all previous retained evaluations.
+                round.commitment.preflight_retained_opening(
+                    &self.openings,
+                    matrix,
+                    F::EXTENSION,
+                    points.values,
+                    points.count,
+                    0,
+                    0,
+                )?;
+                shape.push((round.commitment.opening_shape(matrix)?, points.count));
+            }
+            shapes.push(shape);
+        }
+        Plan::new::<F>(
+            params,
+            &shapes,
+            public_preprocessing,
+            self.runtime.snapshot(),
+            self.runtime.state.budget.limits,
+            host_bytes,
+        )
     }
 }

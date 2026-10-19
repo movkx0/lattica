@@ -54,6 +54,9 @@ impl BatchStarks {
         for family in [random.masks, random.commitments, random.fri] {
             family.check_runtime(&self.runtime)?;
         }
+        // Raw internal callers already own their three keys. Registered callers
+        // additionally check this schedule before importing those keys.
+        self.proof_plan(prepared, pcs_host, 0)?;
         let mut transcript = self.transcripts.start()?;
         let transcript_guard = transcript.begin_attempt()?;
         let preparation_guard = prepared.preprocessing.begin_attempt(&self.runtime)?;
@@ -75,8 +78,8 @@ impl BatchStarks {
     }
 
     /// Validate borrowed inputs and known host payloads before importing private
-    /// seeds. Device stages retain their existing allocation/peak admission;
-    /// this is not a whole-request device reservation.
+    /// seeds. The complete device schedule is checked separately after this
+    /// validation; individual stages retain their allocation checks as well.
     pub(super) fn preflight_proof(
         &self,
         prepared: &PreparedBatch,
@@ -110,6 +113,7 @@ impl BatchStarks {
         let pcs_host = input_bytes
             .checked_mul(8)
             .and_then(|n| n.checked_add(self.runtime.snapshot().public_program_bytes))
+            .and_then(|n| n.checked_add(prepared.source_host_bytes))
             .and_then(|n| n.checked_add(PROOF_HEADERS))
             .and_then(|n| host_bytes.checked_sub(n))
             .filter(|&n| n > 0)

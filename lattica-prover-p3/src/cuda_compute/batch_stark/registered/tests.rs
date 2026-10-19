@@ -106,6 +106,18 @@ fn cuda_registered_machine_authenticates_setup_and_returns_fresh_verified_proofs
         let mut encoded = Vec::new();
         for _ in 0..2 {
             let output = prepared.prove(input(publics), request(), HOST).unwrap();
+            assert!(
+                runtime.snapshot().peak_bytes
+                    <= output.admission.managed_peak_bytes.max(before.peak_bytes)
+            );
+            assert!(
+                runtime.snapshot().peak_allocations
+                    <= output
+                        .admission
+                        .allocation_peak
+                        .max(before.peak_allocations)
+            );
+            assert!(output.admission.host_peak_bytes <= HOST);
             let report = &output.report;
             assert!(report.succeeded && report.stage_coverage_complete);
             assert_eq!(report.capabilities.scope(), CoverageScope::RegisteredProof);
@@ -297,6 +309,68 @@ fn cuda_registered_proof_rejects_invalid_requests_before_importing_private_seeds
         assert!(prepared.prove_in_run(input(true), run, HOST).is_err());
     }
     assert_eq!(runtime.snapshot(), before);
+    let pcs_host = engine
+        .preflight_proof(&prepared.prepared, &[input(true)], HOST)
+        .unwrap();
+    let plan = engine.proof_plan(&prepared.prepared, pcs_host, 3).unwrap();
+    let minimum_host = HOST - pcs_host + plan.host_peak_bytes;
+    let exact_pcs = engine
+        .preflight_proof(&prepared.prepared, &[input(true)], minimum_host)
+        .unwrap();
+    engine.proof_plan(&prepared.prepared, exact_pcs, 3).unwrap();
+    assert!(prepared
+        .prove(input(true), request(), minimum_host - 1)
+        .is_err());
+    assert!(engine
+        .plan_at(
+            &prepared.prepared,
+            pcs_host,
+            3,
+            before,
+            Limits {
+                max_allocations: before.allocations + 4,
+                ..runtime.state.budget.limits
+            }
+        )
+        .is_err());
+    assert!(engine
+        .plan_at(
+            &prepared.prepared,
+            pcs_host,
+            3,
+            before,
+            Limits {
+                max_allocation_bytes: 1024,
+                ..runtime.state.budget.limits
+            }
+        )
+        .is_err());
+    assert_eq!(runtime.snapshot(), before);
+    // Leave enough room for seeds and the transcript, but not even one whole
+    // opening/commitment workspace. Rejection must not import those seeds or
+    // enqueue private work, and the authenticated preparation stays reusable.
+    let mut filler = Vec::new();
+    let limits = runtime.state.budget.limits;
+    let mut remaining = limits.managed_bytes - runtime.snapshot().live_bytes - 4096;
+    while remaining != 0 {
+        let bytes = remaining.min(limits.max_allocation_bytes);
+        filler.push(runtime.allocate(bytes / 8).unwrap());
+        remaining -= bytes;
+    }
+    let full = runtime.snapshot();
+    assert!(prepared.prove(input(true), request(), HOST).is_err());
+    assert_eq!(runtime.snapshot(), full);
+    drop(filler);
+    let held = engine
+        .randoms
+        .import(ChaCha20Rng::from_seed([15; 32]))
+        .unwrap();
+    let slots: Vec<_> = (0..4090).map(|_| held.snapshot().unwrap()).collect();
+    let full = runtime.snapshot();
+    assert!(prepared.prove(input(true), request(), HOST).is_err());
+    assert_eq!(runtime.snapshot(), full);
+    drop(slots);
+    drop(held);
     let proof = prepared.prove(input(true), request(), HOST).unwrap();
     verify_batch(
         &cpu,

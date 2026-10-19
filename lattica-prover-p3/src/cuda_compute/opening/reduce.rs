@@ -24,13 +24,13 @@ fn admit(words: &[usize], state: Snapshot, limits: Limits) -> Result<usize> {
     Ok(peak)
 }
 
-struct ReductionPlan {
+pub(in crate::cuda_compute) struct ReductionPlan {
     rows: usize,
-    peak: usize,
+    pub peak: usize,
 }
 
 impl ReductionPlan {
-    fn new(
+    pub(in crate::cuda_compute) fn new(
         prefix: MatrixSpec,
         output: MatrixSpec,
         count: usize,

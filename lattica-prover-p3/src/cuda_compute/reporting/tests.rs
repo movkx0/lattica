@@ -153,7 +153,9 @@ fn cuda_receipts_reject_unlabelled_and_unadmitted_commands_even_if_error_is_caug
 #[test]
 #[ignore = "requires CUDA; serial bounded service"]
 fn cuda_receipts_enforce_run_and_thread_binding_and_reject_nested_scopes() {
+    use rand::SeedableRng;
     let runtime = runtime();
+    let randoms = crate::cuda_compute::Randoms::new(&runtime).unwrap();
     let (_module, kernel, output) = kernel(&runtime);
     let owner = run(&[Stage::Scalar]);
     let other = run(&[Stage::Scalar]);
@@ -164,10 +166,19 @@ fn cuda_receipts_enforce_run_and_thread_binding_and_reject_nested_scopes() {
             assert!(runtime.check_report_run(&other).is_err());
             runtime.check_report_run(&owner)?;
             let foreign = runtime.clone();
+            let before = runtime.snapshot();
             assert!(std::thread::spawn(move || foreign.allocate(1))
                 .join()
                 .unwrap()
                 .is_err());
+            let foreign_randoms = randoms.clone();
+            assert!(std::thread::spawn(
+                move || foreign_randoms.import(rand_chacha::ChaCha20Rng::from_seed([7; 32]))
+            )
+            .join()
+            .unwrap()
+            .is_err());
+            assert_eq!(runtime.snapshot(), before);
             launch(&kernel, &output)?.finish()
         })
         .unwrap();

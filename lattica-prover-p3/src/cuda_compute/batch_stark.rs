@@ -26,7 +26,9 @@ use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 use std::sync::Arc;
 
+mod admission;
 mod prove;
+pub(crate) use admission::ProofPlan;
 mod registered;
 pub(crate) use registered::{RegisteredKey, RegisteredMachine, RegisteredProof};
 #[cfg(test)]
@@ -97,6 +99,7 @@ pub(crate) struct PreparedBatch {
     preprocessing: HiddenCommitment,
     bus_ids: Vec<Vec<usize>>,
     message_width: usize,
+    source_host_bytes: usize,
     _host: Reservation,
 }
 impl PreparedBatch {
@@ -141,8 +144,8 @@ impl BatchStarks {
         })
     }
 
-    /// Source program storage is caller-owned and separately admitted. CPU
-    /// work compiles public metadata only; preprocessing expansion runs on CUDA.
+    /// Charge borrowed source capacities along with compilation/preparation.
+    /// Constructing the source before this entry point remains caller-admitted.
     pub(crate) fn prepare(
         &self,
         airs: &[&MachineAir],
@@ -152,6 +155,14 @@ impl BatchStarks {
         if airs.is_empty() || airs.len() > MAX_INSTANCES {
             return Err("CUDA machine batch requires 1..8 instances".into());
         }
+        let source_host_bytes = airs.iter().try_fold(0usize, |total, air| {
+            total
+                .checked_add(air.program().source_host_bytes()?)
+                .ok_or_else(|| "CUDA batch source size overflow".to_string())
+        })?;
+        let host_bytes = host_bytes
+            .checked_sub(source_host_bytes)
+            .ok_or("CUDA source exceeds preparation host allowance")?;
         let host_peak = (symbolic::HOST_BYTES as usize)
             .checked_add(airs.len() * symbolic::LOOKUP_RETAINED_HOST_BYTES as usize)
             .and_then(|n| n.checked_add(self.runtime.snapshot().public_program_bytes))
@@ -230,6 +241,7 @@ impl BatchStarks {
             params.cap_height,
         )?;
         Ok(PreparedBatch {
+            source_host_bytes,
             runtime: self.runtime.clone(),
             instances,
             preprocessing,

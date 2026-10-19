@@ -51,6 +51,25 @@ pub(crate) struct PreparedLookup {
     _host: Reservation,
 }
 
+impl PreparedLookup {
+    pub(super) fn generation_plan(
+        &self,
+        spec: MatrixSpec,
+        live: usize,
+        limits: super::Limits,
+    ) -> Result<Plan> {
+        Plan::new(
+            &self.program,
+            spec,
+            live,
+            limits.managed_bytes,
+            TILE_BYTES,
+            InputStorage::Resident,
+            limits.max_allocation_bytes,
+        )
+    }
+}
+
 pub(crate) struct LookupWitness {
     pub(crate) trace: Matrix,
     terminal: Buffer,
@@ -245,15 +264,7 @@ impl Lookups {
             1,
         )?;
         let limits = self.runtime.state.budget.limits;
-        let plan = Plan::new(
-            program,
-            spec,
-            self.runtime.snapshot().live_bytes,
-            limits.managed_bytes,
-            TILE_BYTES,
-            InputStorage::Resident,
-            limits.max_allocation_bytes,
-        )?;
+        let plan = prepared.generation_plan(spec, self.runtime.snapshot().live_bytes, limits)?;
         self.allocations(7 + plan.scan_rows.len(), &[])?;
         let output = self.runtime.allocate(spec.words())?;
         let status = self.runtime.allocate(1)?;

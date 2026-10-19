@@ -56,6 +56,7 @@ pub(crate) struct Snapshot {
     pub live_bytes: usize,
     pub peak_bytes: usize,
     pub allocations: usize,
+    pub peak_allocations: usize,
     pub modules: usize,
     /// Each pending command owns two CUDA timing events.
     pub pending_commands: usize,
@@ -153,6 +154,7 @@ impl Budget {
                 state.live_bytes = next;
                 state.peak_bytes = state.peak_bytes.max(next);
                 state.allocations += 1;
+                state.peak_allocations = state.peak_allocations.max(state.allocations);
             }
             Kind::Module => {
                 if state.modules == self.limits.max_modules {

@@ -7,6 +7,45 @@ use crate::{
 };
 const MAX_INPUTS: usize = 256;
 const MAX_QUERIES: usize = 256;
+/// Shared host geometry for a future commitment and an already retained one.
+pub(in crate::cuda_compute) fn query_host_bytes(
+    shapes: &[OpeningShape],
+    path_len: usize,
+    queries: usize,
+) -> Result<usize> {
+    if !(1..=MAX_QUERIES).contains(&queries)
+        || shapes.is_empty()
+        || shapes.len() > MAX_INPUTS
+        || path_len > 31
+    {
+        return Err("CUDA hidden query count exceeds admission".into());
+    }
+    let output = shapes.iter().try_fold(
+        queries * path_len * 4 * 8 + HOST_METADATA,
+        |total, matrix| {
+            total
+                .checked_add(queries * (matrix.lde.columns + 4) * 8)
+                .ok_or("CUDA hidden query output overflow")
+        },
+    )?;
+    // Bound raw output and reconstruction staging using the largest possible
+    // tile. A tighter device allowance can only shrink that host workspace.
+    let mut temporary = 0;
+    for matrix in shapes {
+        let plan = QueryPlan::new(
+            matrix.prefix,
+            matrix.lde.log_rows,
+            queries,
+            usize::MAX,
+            usize::MAX,
+            usize::MAX,
+        )?;
+        temporary = temporary.max(plan.host_peak_bytes - queries * matrix.lde.columns * 8);
+    }
+    output
+        .checked_add(temporary)
+        .ok_or_else(|| "CUDA hidden query staging overflow".into())
+}
 const HOST_METADATA: usize = (64 << 10)
     + MAX_INPUTS * (std::mem::size_of::<RetainedSalts>() - std::mem::size_of::<ReplaySalts>())
     + (1 << 10); // bounded transient public replay leases
@@ -590,35 +629,19 @@ impl HiddenCommitment {
 
     /// Raw query outputs and the same staging allowance used by `open`.
     pub(crate) fn query_host_bytes(&self, queries: usize) -> Result<usize> {
-        if !(1..=MAX_QUERIES).contains(&queries) {
-            return Err("CUDA hidden query count exceeds admission".into());
-        }
-        let output = self.matrices.iter().try_fold(
-            queries * self.tree.path_len() * 4 * 8 + HOST_METADATA,
-            |total, matrix| {
-                total
-                    .checked_add(queries * (matrix.spec.columns + 4) * 8)
-                    .ok_or_else(|| "CUDA hidden query output overflow".to_string())
-            },
-        )?;
-        // `open` retains every matrix output while a reconstruction tile is
-        // staged. Ask the shared planner for its largest possible tile; an
-        // actual device budget can only reduce that temporary host storage.
-        let mut temporary = 0;
-        for matrix in &self.matrices {
-            let plan = QueryPlan::new(
-                matrix.prefix.spec,
-                matrix.spec.log_rows,
-                queries,
-                usize::MAX,
-                usize::MAX,
-                usize::MAX,
-            )?;
-            temporary = temporary.max(plan.host_peak_bytes - queries * matrix.spec.columns * 8);
-        }
-        output
-            .checked_add(temporary)
-            .ok_or_else(|| "CUDA hidden query staging overflow".into())
+        query_host_bytes(
+            &self
+                .matrices
+                .iter()
+                .map(|m| OpeningShape {
+                    prefix: m.prefix.spec,
+                    lde: m.spec,
+                    random_columns: m.random_columns,
+                })
+                .collect::<Vec<_>>(),
+            self.tree.path_len(),
+            queries,
+        )
     }
 
     /// Evaluate an original matrix's retained prefix without exposing its private

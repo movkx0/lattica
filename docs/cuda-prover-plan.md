@@ -79,6 +79,16 @@ Native registered-machine handles now authenticate preparation against a caller'
 approved cap and public program schema. Setup and proof components have separate
 CUDA inventories and complete execution receipts; cached setup records provenance
 without replaying device observations. Production request routing is still absent.
+
+Registered proofs now admit their complete device allocation schedule before
+importing private seeds. The planner uses the public program and existing
+component geometry, including retained FRI layers during initial commitment
+queries. It checks managed bytes, individual allocations, allocation counts,
+random-stream slots and known host payloads under the runtime's submission
+scope. Borrowed source capacities are charged during preparation and proving.
+Source construction before entry, production request routing and worker-level
+process accounting remain separate integration work.
+
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -874,10 +884,10 @@ and charges its additional host metadata within the existing runtime allowance.
 
 Cached setup can be attached to an enclosing request without inventing new
 device work. It cannot replace missing fresh stages or required child components,
-and a failed runtime cannot supply a cached success. The API remains a component
-interface: source/program construction admission, whole-request device planning,
-production wrapper/merge requests, public dispatch and worker/pool routing remain
-unfinished. It does not change the existing CPU/OpenCL worker routes.
+and a failed runtime cannot supply a cached success. At that checkpoint,
+source/program construction admission, whole-request device planning, production
+wrapper/merge requests, public dispatch and worker/pool routing remained
+unfinished. It did not change the existing CPU/OpenCL worker routes.
 
 All 183 native tests passed in debug and release builds. The 20 affected
 registered, batch and runtime-reporting tests also passed under memory, race and
@@ -905,6 +915,40 @@ approved public preparation took 0.591 seconds separately. This timer includes
 fresh private-seed import and report finalization, which earlier raw-engine
 timers excluded. It measures one registered wallet-verifier program per fresh
 process, without a paired baseline, production aggregation or transaction rate.
+
+The [request-admission qualification](evidence/cuda-request-admission-2026-10-19.json)
+adds a pure allocation schedule for the complete registered cubic proof, from
+witness generation through FRI query egress. It reuses component planners and
+models retained prefixes, trees, folded vectors and scratch separately. The
+registered entry point checks the schedule under its runtime submission scope
+before importing any private seeds. Runtime allocation and RNG-slot accounting
+now also reject foreign threads before changing their reservations.
+
+The full-size 262,144-row fixture predicts and measures exactly 7,430,812,728
+managed bytes and 99 live allocations at peak, within the existing 7 GiB managed
+and 1 GiB individual-allocation limits. Initial commitment queries are the
+largest byte peak because all FRI layers remain retained. Returned admission
+reports list each phase, known host payloads and required RNG slots. Shared
+source-capacity accounting includes spare and nested allocations; OpenCL uses
+the same helper.
+
+All 184 native tests passed in debug and release, including planned-versus-actual
+peaks for single and mixed-height proofs. Tests reject insufficient managed,
+individual-allocation, allocation-count, host and RNG-slot allowances before
+private work, preserve preparation, and check the exact host boundary. Twenty
+focused tests passed memcheck, racecheck, synccheck and `stream`; twenty host
+reporting tests passed in both builds. The CPU-only source test and seventeen
+OpenCL resource tests also passed. All GPU qualification builds use the same
+830-file source manifest. The unchanged independent CPU auditor rebuilt the
+preprocessing cap, accepted the new full-size registered proof, and rejected
+altered inner proofs, outer proofs and public values.
+
+This admits a registered proof using already prepared public data. Source
+construction before the API call and complete process-RSS accounting still
+belong to the caller/controller. Production wrapper/merge requests, public
+dispatch and worker/pool routing remain unfinished. Focused sanitizer coverage
+does not qualify full-size recursive instrumentation. No proof format, security
+parameter or production backend selection changes.
 
 ## Implementation sequence
 

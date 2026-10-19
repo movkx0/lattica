@@ -11,7 +11,7 @@ use p3_field::{ExtensionField, PrimeCharacteristicRing};
 use p3_fri::{CommitPhaseProofStep, FriProof, QueryProof};
 use p3_merkle_tree::MerkleCap;
 
-mod storage;
+pub(in crate::cuda_compute) mod storage;
 #[cfg(test)]
 mod tests;
 

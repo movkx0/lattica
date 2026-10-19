@@ -3,14 +3,14 @@
 use super::*;
 
 #[derive(Clone, Copy, Debug)]
-pub(super) struct Layer {
+pub(in crate::cuda_compute) struct Layer {
     pub input_log: usize,
     pub log_arity: usize,
     pub cap_bytes: usize,
     pub query_bytes: usize,
 }
 
-pub(super) struct Plan {
+pub(in crate::cuda_compute) struct Plan {
     pub layers: Vec<Layer>,
     pub final_bytes: usize,
     pub host_peak: usize,

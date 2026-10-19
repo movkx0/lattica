@@ -12,6 +12,7 @@ mod construction;
 pub(super) use compiler_memo::CompilerMemo;
 mod manifest;
 mod proof_inputs;
+mod storage;
 use construction::{Budget as ConstructionBudget, Map as ConstructionMap, Set as ConstructionSet};
 pub use proof_inputs::ProofInputs;
 

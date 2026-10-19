@@ -108,9 +108,20 @@ fn prove_case(logs: &[u32], publics: bool) {
     let mut encoded = Vec::new();
     for seed in [41, 51] {
         let streams = randoms(&engine, seed);
+        let pcs_host = engine
+            .preflight_proof(&prepared, &inputs, 64 << 20)
+            .unwrap();
+        let admission = engine.proof_plan(&prepared, pcs_host, 0).unwrap();
         let proof = engine
             .prove(&prepared, &inputs, random(&streams), 64 << 20)
             .unwrap();
+        assert!(
+            runtime.snapshot().peak_bytes <= admission.managed_peak_bytes.max(before.peak_bytes)
+        );
+        assert!(
+            runtime.snapshot().peak_allocations
+                <= admission.allocation_peak.max(before.peak_allocations)
+        );
         verify_batch(&cpu, &airs, &proof, &pv, &data.common).unwrap();
         assert_eq!(proof.degree_bits, degree);
         assert!(proof

@@ -9,8 +9,9 @@ use crate::{
     gpu_matrix::{roots, Extension, MatrixSpec, RowOrder},
 };
 mod batch;
-mod plan;
+pub(super) mod plan;
 mod randomization;
+pub(super) use batch::query_host_bytes;
 pub(crate) use batch::{
     CommittedMatrix, HiddenCommitment, HiddenOpenings, HidingInput, OpeningShape, RetainedOpening,
 };

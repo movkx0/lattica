@@ -12,7 +12,7 @@ pub(super) const SOURCE: &str = concat!(
     include_str!("opening.cu"),
     include_str!("opening_reduce.cu")
 );
-mod reduce;
+pub(super) mod reduce;
 pub(crate) use reduce::OpeningAccumulator;
 const MAX_POINTS: usize = 32;
 const MAX_WIDTH: usize = 4096;
@@ -20,15 +20,15 @@ const MAX_LOG: u32 = 25;
 const TILE_BYTES: usize = 64 << 20;
 
 #[derive(Debug)]
-struct EvaluationPlan {
+pub(super) struct EvaluationPlan {
     rows: usize,
     inverse_words: usize,
     partial_words: usize,
-    peak: usize,
+    pub peak: usize,
 }
 
 impl EvaluationPlan {
-    fn new(
+    pub(super) fn new(
         spec: MatrixSpec,
         extension: Extension,
         count: usize,

@@ -3,7 +3,7 @@ use super::*;
 /// Prepared inputs bind the maximum column tile and output domain before any
 /// random draws. Sampling and transforming are separate admitted stage peaks.
 #[derive(Clone, Copy, Debug)]
-pub(super) struct TilePlan {
+pub(in crate::cuda_compute) struct TilePlan {
     pub input_log: u32,
     pub output_log: u32,
     pub width: usize,
