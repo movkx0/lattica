@@ -1202,6 +1202,20 @@ throughput result is inferred from qualification. Public wallet routing, live
 failure/recovery, multiple workers, V100 execution and larger workloads remain
 outstanding.
 
+The [post-push Python launcher benchmark at `df2b9be`](evidence/cuda-python-pool-benchmark-2026-10-19.json)
+completed one warmup and three measured trials. Median whole-launcher duration
+was **53.239 seconds** (53.194–53.336), or about **270 aggregate inputs per
+hour** for the same four-input fixture. This interval includes controller
+preparation, fresh worker startup, four fresh recursive jobs with collection
+verification, shutdown, observed exit, accounting and public artifact cache
+retirement. Additional independent CPU audits followed outside the interval.
+All sixteen proofs passed those audits; all 96 stage reports had complete CUDA
+coverage, all altered roots/statements were rejected, and no device owners or
+qualification services remained. Shared fleet settings stayed unchanged.
+Wallet generation, network/consensus, native block application and steady-state
+pool reuse are excluded. These samples do not grant pool timing approval or
+establish a matched CPU/OpenCL speedup.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)
