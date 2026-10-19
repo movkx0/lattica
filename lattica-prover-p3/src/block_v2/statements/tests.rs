@@ -129,6 +129,39 @@ fn cpu_statements_preserve_reference_roots_errors_and_partial_reports() {
     assert_eq!(report.observations[0].device_ns, 0);
 }
 
+#[cfg(feature = "gpu-cuda")]
+#[test]
+#[ignore = "requires CUDA/NVRTC; run serially"]
+fn cuda_statements_preserve_reference_roots_errors_and_component_reports() {
+    use crate::cuda_compute::{Limits, PublicArithmetic, Runtime};
+    let runtime = Runtime::new(
+        &std::env::var("LATTICA_GPU_DEVICE_UUID").unwrap(),
+        Limits::default(),
+    )
+    .unwrap();
+    let context = PublicArithmetic::new(&runtime, 1 << 16).unwrap();
+    let run = Run::new(
+        "cuda_statement_conformance",
+        Request {
+            policy: Policy::GpuRequired,
+            emit_report: false,
+        },
+        PublicArithmetic::capabilities(Stage::PublicValues).unwrap(),
+    )
+    .unwrap();
+    let before = runtime.snapshot();
+    let (_, report) = operate_cuda_in(&context, run, Stage::PublicValues, conformance).unwrap();
+    assert!(report.succeeded && report.stage_coverage_complete);
+    assert_eq!(report.observations.len(), 1);
+    let observation = &report.observations[0];
+    assert_eq!(observation.backend, Backend::Cuda);
+    assert_eq!(observation.stage, Stage::PublicValues);
+    assert_eq!(
+        observation.completed_calls,
+        runtime.snapshot().completed_commands - before.completed_commands
+    );
+}
+
 #[test]
 fn incomplete_gpu_policy_rejects_before_statement_derivation() {
     assert!(derive_reported(

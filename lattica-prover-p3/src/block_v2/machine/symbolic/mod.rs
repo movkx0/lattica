@@ -339,8 +339,8 @@ pub(crate) fn prepare_machine(
                 log_chunks,
             })
         })?,
-        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
-        Constants::Device(..) => {
+        #[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
+        _ => {
             let unpacked = lookups(air, constants)?;
             let degree = batch(air, &unpacked, constants)?.max_degree();
             let degree = if let Some(hint) = air.max_constraint_degree() {
@@ -378,8 +378,8 @@ where
 {
     match constants {
         Constants::Cpu(run) => Constants::cpu_work(run, || native_uni(air)),
-        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
-        Constants::Device(..) => {
+        #[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
+        _ => {
             let constraints = uni(air, constants)?;
             if !constraints.extension.is_empty() {
                 return Err(CompileError::Unsupported("uni extension constraints"));

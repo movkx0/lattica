@@ -10,14 +10,16 @@ use crate::proving::{Backend, Report, Request, Run, Stage};
 use p3_field::PrimeField64;
 use p3_goldilocks::Goldilocks as Val;
 
-enum HashBackend {
-    Cpu,
+enum HashBackend<'a> {
+    Cpu(core::marker::PhantomData<&'a ()>),
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     Device(super::gpu_hash::device::DeviceSession),
+    #[cfg(feature = "gpu-cuda")]
+    Cuda(&'a crate::cuda_compute::PublicArithmetic),
 }
 
 pub(crate) struct Derivation<'a> {
-    backend: HashBackend,
+    backend: HashBackend<'a>,
     run: &'a Run,
     stage: Stage,
 }
@@ -165,10 +167,10 @@ fn operate_in<T>(
         let backend = if super::quotient_pcs::gpu_witness_enabled() {
             HashBackend::Device(super::gpu_hash::device::DeviceSession::new()?)
         } else {
-            HashBackend::Cpu
+            HashBackend::Cpu(core::marker::PhantomData)
         };
         #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
-        let backend = HashBackend::Cpu;
+        let backend = HashBackend::Cpu(core::marker::PhantomData);
         // One immutable selection and scoped public session per derivation. No
         // device handles escape into a job packet or a subsequent private proof.
         body(&mut Derivation {
@@ -181,23 +183,102 @@ fn operate_in<T>(
     Ok((result, report))
 }
 
+/// An explicit native component boundary. Production selection is unchanged;
+/// a caller must supply both its CUDA context and a matching scoped Run.
+#[cfg(feature = "gpu-cuda")]
+pub(crate) fn operate_cuda_in<T>(
+    context: &crate::cuda_compute::PublicArithmetic,
+    run: Run,
+    stage: Stage,
+    body: impl FnOnce(&mut Derivation<'_>) -> Result<T, Error>,
+) -> Result<(T, Report), Error> {
+    let capabilities = crate::cuda_compute::PublicArithmetic::capabilities(stage)?;
+    run.cuda_require_capabilities(&capabilities)?;
+    let result = context.reported(&run, || {
+        body(&mut Derivation {
+            backend: HashBackend::Cuda(context),
+            run: &run,
+            stage,
+        })
+        .map_err(|error| error.to_string())
+    });
+    match result {
+        Ok(value) => {
+            let report = run.finish(true)?;
+            if !report.succeeded || !report.stage_coverage_complete {
+                return Err("CUDA public component lacks complete execution receipts".into());
+            }
+            Ok((value, report))
+        }
+        Err(error) => {
+            let _ = run.finish(false);
+            Err(error.into())
+        }
+    }
+}
+
+#[cfg(feature = "gpu-cuda")]
+pub(crate) fn derive_cuda_in<T>(
+    context: &crate::cuda_compute::PublicArithmetic,
+    request: &Run,
+    id: &'static str,
+    body: impl FnOnce(&mut Derivation<'_>) -> Result<T, Error>,
+) -> Result<T, Error> {
+    let run = request.child(
+        id,
+        "cuda_block_v2_statement",
+        crate::cuda_compute::PublicArithmetic::capabilities(Stage::PublicValues)?,
+    )?;
+    Ok(operate_cuda_in(context, run, Stage::PublicValues, body)?.0)
+}
+
+#[cfg(feature = "gpu-cuda")]
+pub(crate) fn compile_cuda_in_reported<T>(
+    context: &crate::cuda_compute::PublicArithmetic,
+    request: &Run,
+    height: usize,
+    key_count: usize,
+    body: impl FnOnce(&super::machine::programs::RegistryPrefix) -> Result<T, Error>,
+) -> Result<(T, Report), Error> {
+    let run = request.child(
+        "registry",
+        "cuda_block_v2_registry_compilation",
+        crate::cuda_compute::PublicArithmetic::capabilities(Stage::Preprocessing)?,
+    )?;
+    operate_cuda_in(context, run, Stage::Preprocessing, |hash| {
+        let prefix = super::machine::programs::RegistryPrefix::with_backend(
+            height,
+            key_count,
+            &mut |d, f| hash.hash(d, f),
+            hash.compiler_constants(),
+        )?;
+        body(&prefix)
+    })
+}
+
 impl Derivation<'_> {
     fn compiler_constants(&self) -> super::machine::compiler_constants::Constants<'_> {
         use super::machine::compiler_constants::Constants;
         match &self.backend {
-            HashBackend::Cpu => Constants::cpu_reported(self.run),
+            HashBackend::Cpu(_) => Constants::cpu_reported(self.run),
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             HashBackend::Device(session) => Constants::device(session, self.run),
+            #[cfg(feature = "gpu-cuda")]
+            HashBackend::Cuda(session) => Constants::cuda(session, self.run),
         }
     }
 
     fn hash(&self, domain: u64, fields: &[u64]) -> Result<Digest, Error> {
         match &self.backend {
-            HashBackend::Cpu => Ok(self.run.measure(self.stage, Backend::Cpu, || {
+            HashBackend::Cpu(_) => Ok(self.run.measure(self.stage, Backend::Cpu, || {
                 commitment::hash_fields(domain, fields)
             })??),
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             HashBackend::Device(session) => {
+                Ok(session.hash_public_fields_reported(domain, fields, self.run, self.stage)?)
+            }
+            #[cfg(feature = "gpu-cuda")]
+            HashBackend::Cuda(session) => {
                 Ok(session.hash_public_fields_reported(domain, fields, self.run, self.stage)?)
             }
         }
@@ -244,11 +325,17 @@ impl Derivation<'_> {
         modes: u64,
     ) -> Result<NodeSummary, Error> {
         let node = match &self.backend {
-            HashBackend::Cpu => self.run.measure(self.stage, Backend::Cpu, || {
+            HashBackend::Cpu(_) => self.run.measure(self.stage, Backend::Cpu, || {
                 recursive::decode_summary(public, modes)
             })??,
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             HashBackend::Device(session) => {
+                let words = public.map(|value| value.as_canonical_u64());
+                session.validate_public_summary_reported(&words, modes, self.run, self.stage)?;
+                recursive::summary_from_validated_words(&words)
+            }
+            #[cfg(feature = "gpu-cuda")]
+            HashBackend::Cuda(session) => {
                 let words = public.map(|value| value.as_canonical_u64());
                 session.validate_public_summary_reported(&words, modes, self.run, self.stage)?;
                 recursive::summary_from_validated_words(&words)

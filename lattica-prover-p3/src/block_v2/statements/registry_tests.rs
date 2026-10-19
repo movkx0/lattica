@@ -89,6 +89,181 @@ fn cpu_registry_prefix_preserves_exact_program_witness_and_profile_binding() {
     matches_reference::<12>(request, Backend::Cpu);
 }
 
+#[cfg(feature = "gpu-cuda")]
+#[test]
+#[ignore = "requires CUDA/NVRTC; run serially"]
+fn cuda_registry_compilation_preserves_programs_and_request_component_boundaries() {
+    use crate::{
+        cuda_compute::{Limits, PublicArithmetic, Runtime},
+        proving::{Capabilities, CoverageScope, Profile},
+    };
+    let runtime = Runtime::new(
+        &std::env::var("LATTICA_GPU_DEVICE_UUID").unwrap(),
+        Limits::default(),
+    )
+    .unwrap();
+    let context = PublicArithmetic::new(&runtime, 1 << 16).unwrap();
+    let mut capabilities = Capabilities::cpu(Profile::BlockV2Cubic, true, true);
+    for stage in Stage::ARITHMETIC {
+        capabilities.set(stage, Backend::Cuda);
+    }
+    let request = Run::request(
+        "cuda_public_request",
+        Request {
+            policy: Policy::GpuRequired,
+            emit_report: false,
+        },
+        capabilities,
+        &[
+            ("statement", CoverageScope::Statement),
+            ("registry", CoverageScope::RegistryCompilation),
+            ("statement_check", CoverageScope::Statement),
+            ("preprocessing", CoverageScope::Preprocessing),
+            ("proof", CoverageScope::RegisteredProof),
+        ],
+    )
+    .unwrap();
+    let caps = caps::<12>();
+    let height = 2048;
+    let reference = programs::empty(height, &caps).unwrap();
+    let node = commitment::empty_subtree(
+        Context {
+            profile_id: programs::profile_id(height, &caps).unwrap(),
+            chain_id: [0x21; 32],
+        },
+        5,
+    )
+    .unwrap();
+    assert_eq!(
+        derive_cuda_in(&context, &request, "statement", |derive| derive
+            .empty(node.context, node.level))
+        .unwrap(),
+        node
+    );
+    let (compiled, report) = compile_cuda_in_reported(&context, &request, height, 12, |prefix| {
+        wrong_prefix_rejects(prefix, height * 2);
+        Ok(programs::empty_with_registry(height, &caps, Some(prefix))?)
+    })
+    .unwrap();
+    assert_eq!(compiled.program, reference.program);
+    assert_eq!(compiled.witness, reference.witness);
+    let public = programs::statement(node, programs::EMPTY);
+    compiled
+        .program
+        .evaluate(&public, &compiled.witness)
+        .unwrap();
+    assert_eq!(
+        derive_cuda_in(&context, &request, "statement_check", |derive| derive
+            .summary(&public, 12))
+        .unwrap(),
+        node
+    );
+    assert!(report.succeeded && report.stage_coverage_complete);
+    assert_eq!(report.observations.len(), 1);
+    assert_eq!(report.observations[0].backend, Backend::Cuda);
+    assert_eq!(report.observations[0].stage, Stage::Preprocessing);
+    // Public work cannot satisfy the missing private proof/setup components.
+    assert!(request.finish(true).is_err());
+}
+
+#[cfg(feature = "gpu-cuda")]
+#[test]
+#[ignore = "opt-in public component benchmark; requires CUDA/NVRTC"]
+fn cuda_public_component_benchmark() {
+    use crate::cuda_compute::{Limits, PublicArithmetic, Runtime};
+    use std::time::Instant;
+    assert_eq!(
+        std::env::var("LATTICA_CUDA_PUBLIC_BENCHMARK").as_deref(),
+        Ok("1")
+    );
+    let start = Instant::now();
+    let runtime = Runtime::new(
+        &std::env::var("LATTICA_GPU_DEVICE_UUID").unwrap(),
+        Limits::default(),
+    )
+    .unwrap();
+    let context = PublicArithmetic::new(&runtime, 1 << 16).unwrap();
+    let preparation_seconds = start.elapsed().as_secs_f64();
+    let caps = caps::<12>();
+    let height = 2048;
+    let expected_program = programs::empty(height, &caps).unwrap();
+    let node = commitment::empty_subtree(
+        Context {
+            profile_id: programs::profile_id(height, &caps).unwrap(),
+            chain_id: [0x21; 32],
+        },
+        5,
+    )
+    .unwrap();
+    let public = programs::statement(node, programs::EMPTY);
+    for case in ["statement", "registry_compilation"] {
+        for iteration in 0..4 {
+            let stage = if case == "statement" {
+                Stage::PublicValues
+            } else {
+                Stage::Preprocessing
+            };
+            let run = Run::new(
+                "cuda_public_component_benchmark",
+                Request {
+                    policy: Policy::GpuRequired,
+                    emit_report: false,
+                },
+                PublicArithmetic::capabilities(stage).unwrap(),
+            )
+            .unwrap();
+            let before = runtime.snapshot();
+            let start = Instant::now();
+            let (output, report) = operate_cuda_in(&context, run, stage, |hash| {
+                if case == "statement" {
+                    let derived = hash.empty(node.context, node.level)?;
+                    let decoded = hash.summary(&public, 12)?;
+                    Ok((Some((derived, decoded)), None))
+                } else {
+                    let prefix = RegistryPrefix::with_backend(
+                        height,
+                        12,
+                        &mut |d, f| hash.hash(d, f),
+                        hash.compiler_constants(),
+                    )?;
+                    Ok((
+                        None,
+                        Some(programs::empty_with_registry(height, &caps, Some(&prefix))?),
+                    ))
+                }
+            })
+            .unwrap();
+            let seconds = start.elapsed().as_secs_f64();
+            let after = runtime.snapshot();
+            // Unchanged CPU reference checks are outside the measured region.
+            if let Some((derived, decoded)) = output.0 {
+                assert_eq!(derived, node);
+                assert_eq!(decoded, node);
+            }
+            if let Some(compiled) = output.1 {
+                assert_eq!(compiled.program, expected_program.program);
+                assert_eq!(compiled.witness, expected_program.witness);
+                compiled
+                    .program
+                    .evaluate(&public, &compiled.witness)
+                    .unwrap();
+            }
+            assert_eq!(after.live_bytes, before.live_bytes);
+            println!(
+                "cuda_public_component_benchmark {}",
+                serde_json::json!({
+                    "case":case, "warmup":iteration==0, "iteration":iteration, "seconds":seconds,
+                    "preparation_seconds":preparation_seconds, "cpu_reference_checked":true,
+                    "completed_commands":after.completed_commands-before.completed_commands,
+                    "uploaded_bytes":after.uploaded_bytes-before.uploaded_bytes,
+                    "downloaded_bytes":after.downloaded_bytes-before.downloaded_bytes,
+                    "peak_managed_bytes":after.peak_bytes, "report":report,
+                })
+            );
+        }
+    }
+}
+
 fn wrong_prefix_rejects(prefix: &RegistryPrefix, height: usize) {
     let wallet = unused_wallet();
     let batch = template::batch(&programs::shape(height).unwrap()).unwrap();

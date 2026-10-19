@@ -1,6 +1,46 @@
 use super::*;
 use crate::block_v2::machine::symbolic;
 
+#[cfg(feature = "gpu-cuda")]
+#[test]
+#[ignore = "requires CUDA/NVRTC; run serially"]
+fn cuda_symbolic_constraints_match_cpu_fingerprints_degrees_and_lookup_layouts() {
+    use crate::cuda_compute::{Limits, PublicArithmetic, Runtime};
+    use crate::proving::Policy;
+    let runtime = Runtime::new(
+        &std::env::var("LATTICA_GPU_DEVICE_UUID").unwrap(),
+        Limits::default(),
+    )
+    .unwrap();
+    let context = PublicArithmetic::new(&runtime, 1 << 16).unwrap();
+    let run = Run::new(
+        "cuda_symbolic_conformance",
+        Request {
+            policy: Policy::GpuRequired,
+            emit_report: false,
+        },
+        PublicArithmetic::capabilities(Stage::Preprocessing).unwrap(),
+    )
+    .unwrap();
+    let before = runtime.snapshot();
+    let (_, report) = operate_cuda_in(&context, run, Stage::Preprocessing, |derive| {
+        symbolic::reject_geometry(derive.compiler_constants());
+        assert_eq!(runtime.snapshot(), before);
+        symbolic::conformance(derive.compiler_constants());
+        Ok(())
+    })
+    .unwrap();
+    assert!(report.succeeded && report.stage_coverage_complete);
+    assert_eq!(report.observations.len(), 1);
+    let observation = &report.observations[0];
+    assert_eq!(observation.stage, Stage::Preprocessing);
+    assert_eq!(observation.backend, Backend::Cuda);
+    assert_eq!(
+        observation.completed_calls,
+        runtime.snapshot().completed_commands - before.completed_commands
+    );
+}
+
 #[cfg(feature = "gpu")]
 #[test]
 #[ignore = "requires selected GPU witness backend and <=3 GiB zero-swap service"]

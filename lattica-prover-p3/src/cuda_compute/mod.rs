@@ -19,6 +19,8 @@ mod matrix;
 mod opening;
 #[cfg(feature = "block-v2")]
 mod pcs;
+#[cfg(feature = "block-v2")]
+mod public;
 mod query;
 #[cfg(feature = "block-v2")]
 mod quotient;
@@ -62,6 +64,8 @@ pub(crate) use matrix::Matrix;
 pub(crate) use opening::{DeviceOpening, OpeningAccumulator, Openings};
 #[cfg(feature = "block-v2")]
 pub(crate) use pcs::{NativeHidingProof, OpeningPoints, OpeningRound, PcsOpenings};
+#[cfg(feature = "block-v2")]
+pub(crate) use public::PublicArithmetic;
 pub(crate) use query::QueryRows;
 #[cfg(feature = "block-v2")]
 pub(crate) use quotient::{

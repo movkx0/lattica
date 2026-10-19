@@ -89,6 +89,13 @@ scope. Borrowed source capacities are charged during preparation and proving.
 Source construction before entry, production request routing and worker-level
 process accounting remain separate integration work.
 
+An explicit CUDA public-arithmetic context now supports recursive statements and
+registry compilation: protocol hashes, summary validation, compiler constants,
+constant folding and symbolic AIR preparation. Its statement and registry child
+components bind actual completions to their own inventories. CPU/OpenCL defaults
+are unchanged. Connecting these components to registered wrapper/merge proving,
+the typed-session cache and worker admission is still outstanding.
+
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -958,6 +965,30 @@ Every sample matched its predicted 7,430,812,728-byte and 99-allocation peaks,
 and all four artifacts passed independent CPU audits. These are registered
 single-wallet verifier timings, without a paired baseline or a production
 transaction-throughput claim.
+
+[Public-arithmetic qualification](evidence/cuda-public-arithmetic-2026-10-19.json)
+adds native protocol hashing, summary validation, compiler constants and base/cubic
+folding. Explicit statement/registry child APIs use the existing symbolic compiler
+and bounded folding cache. CPU references confirm statement roots, registry
+programs/witnesses, machine and wallet AIR fingerprints, lookup layouts, quotient
+degrees and registration templates. Wrong component, run and thread assignments
+reject before work. Public receipts cannot satisfy missing setup/proof components.
+
+All 192 native tests passed in debug and release. Eleven focused tests passed
+memcheck, racecheck, synccheck and the `stream` build; 34 host checks passed in both
+builds. CPU-only and OpenCL builds each passed 12 statement tests. Metal
+cross-compilation and standalone CUDA checks passed. All three CUDA executables
+use the same 835-file source manifest, matched to staged Git blobs. The first
+development run exposed two missing component-scope rejections; the corrected
+guard passed every final check. At the exact resource boundary, public arithmetic
+uses 33,552 managed bytes and three allocations, including its retained constants,
+within a separate 64 KiB host workspace envelope. Caller-owned source/input/output
+storage still needs separate admission. Periodic execution was checked through
+4,096 values; the 65,536-value admission ceiling was not exercised here.
+
+Production wrapper/merge proving, typed-session cache integration, public dispatch
+and worker/pool routing remain unfinished. This checkpoint does not qualify a
+complete recursive request or a transaction-throughput rate.
 
 ## Implementation sequence
 

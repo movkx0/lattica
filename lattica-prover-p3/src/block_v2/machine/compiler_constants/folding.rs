@@ -55,6 +55,8 @@ impl<'a> Folding<'a> {
             Constants::Cpu(_) => None,
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Constants::Device(..) => Some(Box::new([None; CACHE_ENTRIES])),
+            #[cfg(feature = "gpu-cuda")]
+            Constants::Cuda(..) => Some(Box::new([None; CACHE_ENTRIES])),
         };
         Self {
             constants,
@@ -128,6 +130,14 @@ impl Constants<'_> {
                 .compiler_fold(
                     [a[0], a[1], a[2], b[0], b[1], b[2]].map(|v| v.as_canonical_u64()),
                     operation as u32,
+                    run,
+                )
+                .map_err(CompileError::Backend),
+            #[cfg(feature = "gpu-cuda")]
+            Self::Cuda(session, run) => session
+                .compiler_fold(
+                    [a[0], a[1], a[2], b[0], b[1], b[2]].map(|v| v.as_canonical_u64()),
+                    operation,
                     run,
                 )
                 .map_err(CompileError::Backend),

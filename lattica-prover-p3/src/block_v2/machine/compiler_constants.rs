@@ -15,6 +15,8 @@ pub(crate) enum Constants<'a> {
         &'a crate::block_v2::gpu_hash::device::DeviceSession,
         &'a Run,
     ),
+    #[cfg(feature = "gpu-cuda")]
+    Cuda(&'a crate::cuda_compute::PublicArithmetic, &'a Run),
 }
 
 pub(crate) fn selector_count(first: u64, last: u64) -> Result<usize, CompileError> {
@@ -51,6 +53,11 @@ impl<'a> Constants<'a> {
         Self::Device(session, run)
     }
 
+    #[cfg(feature = "gpu-cuda")]
+    pub(crate) fn cuda(session: &'a crate::cuda_compute::PublicArithmetic, run: &'a Run) -> Self {
+        Self::Cuda(session, run)
+    }
+
     pub(crate) fn cpu_work<T>(
         run: Option<&Run>,
         body: impl FnOnce() -> T,
@@ -71,6 +78,10 @@ impl<'a> Constants<'a> {
             Self::Cpu(run) => Self::cpu_work(run, || Val::two_adic_generator(log_height).inverse()),
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Self::Device(session, run) => session
+                .compiler_inverse_generator(log_height, run)
+                .map_err(CompileError::Backend),
+            #[cfg(feature = "gpu-cuda")]
+            Self::Cuda(session, run) => session
                 .compiler_inverse_generator(log_height, run)
                 .map_err(CompileError::Backend),
         }
@@ -100,6 +111,10 @@ impl<'a> Constants<'a> {
             }),
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Self::Device(session, run) => session
+                .compiler_selectors_into(first, last, output, run)
+                .map_err(CompileError::Backend),
+            #[cfg(feature = "gpu-cuda")]
+            Self::Cuda(session, run) => session
                 .compiler_selectors_into(first, last, output, run)
                 .map_err(CompileError::Backend),
         }
@@ -135,6 +150,10 @@ impl<'a> Constants<'a> {
             Self::Device(session, run) => session
                 .compiler_periodic_into(column, log_height, output, run)
                 .map_err(CompileError::Backend),
+            #[cfg(feature = "gpu-cuda")]
+            Self::Cuda(session, run) => session
+                .compiler_periodic_into(column, log_height, output, run)
+                .map_err(CompileError::Backend),
         }
     }
 
@@ -167,6 +186,10 @@ impl<'a> Constants<'a> {
             }),
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             Self::Device(session, run) => session
+                .compiler_quotient_into(chunks, log_height, output, run)
+                .map_err(CompileError::Backend),
+            #[cfg(feature = "gpu-cuda")]
+            Self::Cuda(session, run) => session
                 .compiler_quotient_into(chunks, log_height, output, run)
                 .map_err(CompileError::Backend),
         }
