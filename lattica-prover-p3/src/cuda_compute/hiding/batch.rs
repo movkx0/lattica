@@ -7,10 +7,14 @@ use crate::{
 };
 const MAX_INPUTS: usize = 256;
 const MAX_QUERIES: usize = 256;
-const HOST_METADATA: usize = 64 << 10;
+const HOST_METADATA: usize = (64 << 10)
+    + MAX_INPUTS * (std::mem::size_of::<RetainedSalts>() - std::mem::size_of::<ReplaySalts>())
+    + (1 << 10); // bounded transient public replay leases
 
 mod quotient;
+mod salts;
 pub(crate) use quotient::CommittedMatrix;
+use salts::{RetainedSalts, SaltSource};
 
 #[derive(Clone, Copy)]
 enum Fault {
@@ -79,7 +83,7 @@ struct RetainedInput {
     prefix: Matrix,
     spec: MatrixSpec,
     random_columns: usize,
-    salts: ReplaySalts,
+    salts: RetainedSalts,
 }
 pub(crate) struct HiddenCommitment {
     runtime: Runtime,
@@ -166,6 +170,33 @@ impl Attempt<'_> {
 }
 
 impl Hiding {
+    /// Only sealed machine preprocessing traces may opt into reusable public
+    /// salts. Arbitrary witness matrices keep the private commitment interface.
+    pub(crate) fn commit_preprocessing(
+        &self,
+        commitments: &Commitments,
+        traces: &[(&crate::cuda_compute::PreprocessingTrace, u32, usize)],
+        randoms: &std::sync::Arc<crate::cuda_compute::Randoms>,
+        cap_height: usize,
+    ) -> Result<HiddenCommitment> {
+        if traces.is_empty() || traces.len() > MAX_INPUTS {
+            return Err("CUDA public preprocessing requires 1..256 traces".into());
+        }
+        let inputs = traces
+            .iter()
+            .map(|(trace, log, columns)| self.prepare_preprocessing(trace.matrix(), *log, *columns))
+            .collect::<Result<Vec<_>>>()?;
+        let inputs: Vec<_> = inputs.iter().map(HidingInput::Trace).collect();
+        let salts = randoms.public_preprocessing()?;
+        self.commit_with_salts(
+            commitments,
+            &inputs,
+            SaltSource::Public(&salts),
+            cap_height,
+            Fault::None,
+        )
+    }
+
     pub(crate) fn commit_batch(
         &self,
         commitments: &Commitments,
@@ -181,6 +212,23 @@ impl Hiding {
         commitments: &Commitments,
         inputs: &[HidingInput<'_>],
         salts: &DeviceRandom,
+        cap_height: usize,
+        _fault: Fault,
+    ) -> Result<HiddenCommitment> {
+        self.commit_with_salts(
+            commitments,
+            inputs,
+            SaltSource::Private(salts),
+            cap_height,
+            _fault,
+        )
+    }
+
+    fn commit_with_salts(
+        &self,
+        commitments: &Commitments,
+        inputs: &[HidingInput<'_>],
+        salts: SaltSource<'_>,
         cap_height: usize,
         _fault: Fault,
     ) -> Result<HiddenCommitment> {
@@ -223,7 +271,7 @@ impl Hiding {
             }
         }
         salts.check_runtime(&self.runtime)?;
-        families.push(salts.clone());
+        families.extend(salts.family());
         let prefixes = sources
             .iter()
             .map(|s| s.prefix_spec())
@@ -261,7 +309,7 @@ impl Hiding {
                     .ok_or_else(|| "CUDA hiding storage overflow".to_owned())
             })
             .collect::<Result<Vec<_>>>()?;
-        salts.preflight_salt_recipes(&salt_specs, &pending)?;
+        salts.preflight(&salt_specs, &pending)?;
 
         // All public shapes, sampler peaks, tile peaks and recipe slots have
         // been checked. Errors from here retire every participating family.
@@ -269,7 +317,7 @@ impl Hiding {
             families: &families,
             complete: false,
         };
-        let recipes = salts.prepare_salt_replay_specs(&salt_specs)?;
+        let recipes = salts.prepare(&salt_specs)?;
         let prefixes = prefixes
             .into_iter()
             .map(|spec| {
@@ -527,6 +575,7 @@ impl HiddenCommitment {
         if !std::sync::Arc::ptr_eq(&self.runtime.state, &runtime.state) {
             return Err("CUDA hidden commitment belongs to another runtime".into());
         }
+        drop(self.runtime.state.enter()?);
         check_families(&self.families)
     }
 

@@ -252,7 +252,7 @@ fn cuda_machine_batch_rejects_inputs_before_private_work() {
 
 #[test]
 #[ignore = "requires CUDA; serial bounded service"]
-fn cuda_machine_batch_failures_retire_all_families_and_allow_fresh_retry() {
+fn cuda_machine_batch_failures_retire_private_families_and_reuse_public_preparation() {
     let runtime = runtime();
     let engine = BatchStarks::new(&runtime).unwrap();
     let air = air(4, true);
@@ -260,6 +260,12 @@ fn cuda_machine_batch_failures_retire_all_families_and_allow_fresh_retry() {
         public: &[12],
         witness: &[3, 4],
     }];
+    let prepared = engine
+        .prepare(&[&air], 1 << 30, Specialization::Generic)
+        .unwrap();
+    let cpu = cpu();
+    let data = ProverData::from_airs_and_degrees(&cpu, &[air.clone()], &[5]);
+    let expected_cap = &data.common.preprocessed.as_ref().unwrap().commitment;
     for fault in [
         prove::Fault::None,
         prove::Fault::AfterTrace,
@@ -268,9 +274,6 @@ fn cuda_machine_batch_failures_retire_all_families_and_allow_fresh_retry() {
         prove::Fault::PanicAfterQuotient,
         prove::Fault::AfterPcs,
     ] {
-        let prepared = engine
-            .prepare(&[&air], 1 << 30, Specialization::Generic)
-            .unwrap();
         let streams = randoms(&engine, 41);
         let before = runtime.snapshot();
         let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -288,7 +291,7 @@ fn cuda_machine_batch_failures_retire_all_families_and_allow_fresh_retry() {
         for stream in &streams {
             assert!(stream.check_live().is_err());
         }
-        assert!(prepared.preprocessing_cap().is_err());
+        assert_eq!(&prepared.preprocessing_cap().unwrap(), expected_cap);
         assert_eq!(runtime.snapshot().live_bytes, before.live_bytes);
         assert_eq!(runtime.snapshot().allocations, before.allocations);
         let before = runtime.snapshot();
@@ -296,24 +299,22 @@ fn cuda_machine_batch_failures_retire_all_families_and_allow_fresh_retry() {
             .prove(&prepared, &input, random(&streams), 64 << 20)
             .is_err());
         assert_eq!(runtime.snapshot(), before);
+        // Retry every failure (including PCS failure and unwind) with the SAME
+        // public buffers and fresh private streams. No preparation runs here.
+        let fresh = randoms(&engine, 51);
+        let proof = engine
+            .prove(&prepared, &input, random(&fresh), 64 << 20)
+            .unwrap();
+        verify_batch(
+            &cpu,
+            &[air.clone()],
+            &proof,
+            &[vec![Val::from_u64(12)]],
+            &data.common,
+        )
+        .unwrap();
+        assert_eq!(&prepared.preprocessing_cap().unwrap(), expected_cap);
     }
-    let prepared = engine
-        .prepare(&[&air], 1 << 30, Specialization::Generic)
-        .unwrap();
-    let streams = randoms(&engine, 51);
-    let proof = engine
-        .prove(&prepared, &input, random(&streams), 64 << 20)
-        .unwrap();
-    let cpu = cpu();
-    let data = ProverData::from_airs_and_degrees(&cpu, &[air.clone()], &[5]);
-    verify_batch(
-        &cpu,
-        &[air],
-        &proof,
-        &[vec![Val::from_u64(12)]],
-        &data.common,
-    )
-    .unwrap();
 }
 
 #[test]
@@ -382,7 +383,7 @@ fn cuda_machine_batch_records_all_sixteen_arithmetic_stages() {
 
 #[test]
 #[ignore = "requires CUDA; serial bounded service"]
-fn cuda_committed_batch_quotient_admits_all_prefixes_and_retires_every_family() {
+fn cuda_committed_batch_quotient_admits_all_prefixes_and_retires_private_families() {
     let runtime = runtime();
     let engine = BatchStarks::new(&runtime).unwrap();
     let air = air(4, true);
@@ -501,9 +502,9 @@ fn cuda_committed_batch_quotient_admits_all_prefixes_and_retires_every_family() 
     for stream in main_random.iter().chain(&perm_random) {
         assert!(stream.check_live().is_ok());
     }
-    assert!(prepared.preprocessing_cap().is_ok());
-    // Once extraction starts, a bad evaluator parameter layout fails closed for
-    // all three commitments, including their separate salt/masking families.
+    let public_cap = prepared.preprocessing_cap().unwrap();
+    // Once extraction starts, a bad evaluator parameter layout retires every
+    // private salt/masking family. Immutable public preprocessing survives.
     let before = runtime.snapshot();
     assert!(evaluate(inputs, 9).is_err());
     assert_eq!(runtime.snapshot().live_bytes, before.live_bytes);
@@ -513,5 +514,5 @@ fn cuda_committed_batch_quotient_admits_all_prefixes_and_retires_every_family() 
         assert!(streams[1].check_live().is_err());
         assert!(streams[2].check_live().is_ok()); // unrelated FRI family
     }
-    assert!(prepared.preprocessing_cap().is_err());
+    assert_eq!(prepared.preprocessing_cap().unwrap(), public_cap);
 }

@@ -13,7 +13,7 @@ use std::sync::{
 
 pub(super) const SOURCE: &str = concat!(include_str!("field.cuh"), include_str!("random.cu"));
 mod replay;
-pub(crate) use replay::ReplaySalts;
+pub(crate) use replay::{PublicPreprocessingSalts, PublicReplaySalts, ReplaySalts};
 const MAX_STREAM_STATES: usize = 4096;
 const LANES: u32 = 128;
 const _: () = assert!(TILE_WORDS == 256 && BATCH_WORDS / TILE_WORDS == 4096);

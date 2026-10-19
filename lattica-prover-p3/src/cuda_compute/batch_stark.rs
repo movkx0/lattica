@@ -20,15 +20,17 @@ use crate::{
 use p3_air::{symbolic::AirLayout, BaseAir};
 use p3_field::{BasedVectorSpace, PrimeCharacteristicRing};
 use p3_lookup::LogUpGadget;
+#[cfg(test)]
 use rand::SeedableRng;
+#[cfg(test)]
 use rand_chacha::ChaCha20Rng;
 use std::sync::Arc;
 
 mod prove;
 #[cfg(test)]
-mod tests;
-#[cfg(test)]
 mod recursive_tests;
+#[cfg(test)]
+mod tests;
 
 pub(crate) type NativeBatchProof = p3_batch_stark::BatchProof<super::NativeStarkConfig<Challenge>>;
 type Cap = <ValMmcs as p3_commit::Mmcs<Val>>::Commitment;
@@ -85,8 +87,8 @@ impl Instance {
 }
 
 /// Public preparation is bound to one runtime and to the compiled programs.
-/// Successful proofs may reuse it. A failed consuming attempt retires its salt
-/// family; callers must prepare afresh before retrying that public commitment.
+/// Both successful and failed proofs may reuse it while the runtime remains
+/// healthy. Private proof randomness is never retained in this public handle.
 pub(crate) struct PreparedBatch {
     runtime: Runtime,
     instances: Vec<Instance>,
@@ -215,20 +217,16 @@ impl BatchStarks {
         let (bus_ids, message_width, _) = bus_layout(&refs)?;
         drop(refs);
         drop(lookups);
-        let mut inputs = vector(instances.len())?;
-        for instance in &instances {
-            inputs.push(self.hiding.prepare_preprocessing(
-                instance.preprocessing.matrix(),
-                instance.log_lde(params),
-                16,
-            )?);
-        }
-        let borrowed: Vec<_> = inputs.iter().map(HidingInput::Trace).collect();
-        // Exact production public seed, distinct from every private proof RNG.
-        let salts = self.randoms.import(ChaCha20Rng::from_seed([0; 32]))?;
-        let preprocessing =
-            self.hiding
-                .commit_batch(&self.commitments, &borrowed, &salts, params.cap_height)?;
+        let inputs: Vec<_> = instances
+            .iter()
+            .map(|instance| (&instance.preprocessing, instance.log_lde(params), 16))
+            .collect();
+        let preprocessing = self.hiding.commit_preprocessing(
+            &self.commitments,
+            &inputs,
+            &self.randoms,
+            params.cap_height,
+        )?;
         Ok(PreparedBatch {
             runtime: self.runtime.clone(),
             instances,

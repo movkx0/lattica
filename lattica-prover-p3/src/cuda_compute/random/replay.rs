@@ -5,6 +5,8 @@ use crate::gpu_matrix::GOLDILOCKS_MODULUS;
 use crate::gpu_random::{validate_salt_replay_spec, MAX_REPLAY_MATRICES};
 
 const MAX_QUERIES: usize = 4096;
+mod public;
+pub(crate) use public::{PublicPreprocessingSalts, PublicReplaySalts};
 
 /// Private proof material: no serialization or conversion to public salts.
 /// Each recipe consumes a bounded RNG state slot until its last owner retires.
@@ -172,6 +174,45 @@ impl DeviceRandom {
 }
 
 impl ReplaySalts {
+    // Only the fixed-public-seed wrapper may fork failure ownership. These are
+    // deliberately private to random: ordinary private snapshots still share
+    // their original proof family's failure flag.
+    fn preflight_public_lease(&self) -> Result<()> {
+        self.random.check_live()?;
+        if self
+            .random
+            .0
+            .slot
+            .0
+            .states
+            .load(Ordering::Acquire)
+            .checked_add(2)
+            .is_none_or(|n| n > MAX_STREAM_STATES)
+        {
+            return Err("CUDA public salt lease exceeds stream-state allowance".into());
+        }
+        Ok(())
+    }
+
+    fn public_lease(&self) -> Result<Self> {
+        self.preflight_public_lease()?;
+        let source = &self.random.0;
+        let random = DeviceRandom(Arc::new(Stream {
+            key: source.key.clone(),
+            stream: source.stream,
+            position: Mutex::new(self.start),
+            failed: Arc::new(AtomicBool::new(false)),
+            slot: source.slot.0.slot()?,
+        }));
+        Ok(Self {
+            random,
+            start: self.start,
+            end: self.end,
+            spec: self.spec,
+            _slot: source.slot.0.slot()?,
+        })
+    }
+
     pub(crate) fn spec(&self) -> MatrixSpec {
         self.spec
     }

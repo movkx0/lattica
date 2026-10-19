@@ -71,6 +71,10 @@ connects these stages to the hiding PCS, preserving the upstream transcript and
 proof encoding. Real JoinSplit verifier programs also pass independent CPU
 verification against CPU-rebuilt preprocessing commitments. Production wrapper
 and merge programs, public routing and recursive workers remain outstanding.
+Public preprocessing now survives failed private proof attempts on a healthy
+runtime. Each salt replay uses an isolated temporary consumer; failed private
+randomness still retires across every alias. The public path accepts only
+deterministic machine preprocessing and the production fixed public seed.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -762,13 +766,12 @@ arithmetic stages without invoking the CPU witness oracle.
 
 The quotient bridge admits main, preprocessing and extension-valued permutation
 prefix extractions together and keeps every commitment's randomness guard active
-until evaluation finishes. Injected failures/unwinds retire all participating
-families and release temporary allocations. Successful proofs reuse prepared
-public metadata; after a failed consuming attempt the caller prepares afresh
-before retrying. The initial interface admits at most eight machine instances,
-also bounded by the existing 256-matrix PCS and runtime resource limits. Complete
-request admission and a reusable public-preprocessing lifetime remain future
-integration work.
+until evaluation finishes. At this initial checkpoint, injected failures/unwinds
+retired all participating families and released temporary allocations; failed
+attempts required fresh public preparation. The reusable public lifetime is
+qualified below. The interface admits at most eight machine instances, also
+bounded by the existing 256-matrix PCS and runtime resource limits. Complete
+request admission remains future integration work.
 
 All 175 native CUDA tests passed. Each of the seven new batch/quotient integration
 tests also passed under memcheck, racecheck and synccheck, and with the `stream`
@@ -824,6 +827,29 @@ against the same directory in a separate 24 GiB CPU service. Both tests require
 their full module path with `--exact`. Use four Rayon threads and zero swap in
 both services. Archive the executables, artifacts and logs together; a successful
 producer alone does not authenticate its preprocessing cap or qualify its proof.
+
+The [public preprocessing qualification](evidence/cuda-public-preprocessing-2026-10-19.json)
+separates the lifetime of deterministic public salts from private proof
+randomness. Public recipes share their resident public key and retain immutable
+stream boundaries. Each materialization or query obtains two bounded temporary
+RNG state slots and an independent failure flag, without uploading another key
+or advancing or locking the original cursor. Private replay recipes keep their
+shared retirement behavior. Runtime failure still rejects public reuse.
+The commitment interface accepts only sealed machine preprocessing traces;
+callers cannot turn arbitrary private seeds or recipes into reusable public salts.
+Host metadata admission charges the added representation and temporary leases
+within the existing limits. This enables retries with the same prepared handle
+and fresh private streams; authenticated registered requests, whole-request
+admission, cache reporting and worker integration remain unfinished.
+
+All 177 native CUDA tests passed. The 25 affected replay, hiding and batch tests
+also passed under memory, race and synchronization checking, and with the
+`stream` feature. A fresh real recursive wallet-verifier proof passed independent
+CPU reconstruction and registered verification, including rejection of altered
+proofs and public inputs. The qualification pins 823 source files and preserves
+the debug, stream and release executables plus the unchanged CPU reference.
+Full-size recursive race instrumentation remains incomplete; the focused
+sanitizer results cover their recorded smaller shapes.
 
 ## Implementation sequence
 
