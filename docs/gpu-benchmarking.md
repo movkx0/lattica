@@ -132,6 +132,20 @@ preparation is recorded separately, and every CUDA sample requires a complete
 fourteen-stage report. It measures wallet proof latency; recursive aggregation,
 block processing and durable delivery remain separate workloads.
 
+The [RTX 5080 wallet screen on `7f8489f`](evidence/cuda-wallet-benchmark-2026-10-18.json)
+verified all 36 proofs. Five measured pairs per case, using four Rayon threads
+and a four-core CPU quota on the Ryzen 9 9950X3D2, produced these medians:
+
+| Wallet case | CPU | CUDA | CPU/CUDA latency ratio |
+|---|---:|---:|---:|
+| JoinSplit | 929 ms | 94 ms | 9.85 |
+| HTLC redeem | 1,009 ms | 98 ms | 10.28 |
+| HTLC refund | 1,000 ms | 112 ms | 8.94 |
+
+Public engine preparation took 342 ms with existing compiler/driver caches.
+Desktop GPU clients remained active. GPU reports contain all fourteen wallet
+stages; this screen does not qualify recursive or delivered-transaction throughput.
+
 For each run, retain:
 
 - Commit and binary hashes, device/runtime identity, capacity, fixture hash, and all settings.

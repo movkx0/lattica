@@ -665,9 +665,18 @@ operation reports continue to work without duplicating encompassing receipts.
 
 All fifty qualification checks passed: 152 native tests, 151 under each CUDA
 sanitizer, 82 streaming tests, CPU/OpenCL/standalone-CUDA checks and Metal
-cross-compilation. All 794 source pins match the staged source blobs. A release
-benchmark binary is built from the same source for execution after the commit
-is pushed.
+cross-compilation. All 794 source pins match the staged source blobs.
+
+The [release wallet benchmark](evidence/cuda-wallet-benchmark-2026-10-18.json)
+ran after source commit `7f8489f` was pushed. All 36 proofs passed independent CPU
+verification. With four Rayon threads and a four-core CPU quota, five measured
+pairs per case gave median CPU/CUDA times of 929/94 ms for JoinSplit, 1,009/98 ms
+for HTLC redeem and 1,000/112 ms for HTLC refund. The resulting latency ratios
+are 9.85, 10.28 and 8.94. These are raw-witness-to-serialized-wallet-proof
+measurements on the Ryzen 9 9950X3D2 and desktop RTX 5080. Existing compiler and
+driver caches were retained, desktop GPU clients were present, and public
+preparation took 342 ms separately from the repeated requests. The comparison
+does not establish recursive aggregation or complete-block throughput.
 
 Public request routing, batch wallet traces, recursive batch/lookup orchestration,
 whole-request admission and worker/pool integration remain unfinished. The new

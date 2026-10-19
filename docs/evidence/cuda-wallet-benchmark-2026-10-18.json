@@ -1,0 +1,4580 @@
+{
+  "schema": "lattica-cuda-wallet-benchmark-v1",
+  "recorded_at": "2026-10-19T03:24:30.141284+00:00",
+  "qualification_evidence": "cuda-reporting-2026-10-18.json",
+  "identity": {
+    "commit": "7f8489f2171abcd0375cccea477d79833cc455cc",
+    "binary": "/home/access/code/lattica/.tools/target-cuda-wallet-benchmark/release/deps/lattica_prover_p3-a7f64b25d0d5db25",
+    "binary_sha256": "2464f5582b1fdd122a9126b74698295dff7b29ac1e6757dbf4e1b81db6dfe37d",
+    "source_files_pinned": 794,
+    "command": [
+      "/home/access/code/lattica/.tools/target-cuda-wallet-benchmark/release/deps/lattica_prover_p3-a7f64b25d0d5db25",
+      "cuda_compute::wallet::tests::benchmark::cuda_wallet_request_benchmark",
+      "--ignored",
+      "--exact",
+      "--test-threads=1",
+      "--nocapture"
+    ],
+    "cpu": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           48 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  32\nOn-line CPU(s) list:                     0-31\nVendor ID:                               AuthenticAMD\nModel name:                              AMD Ryzen 9 9950X3D2 16-Core Processor\nCPU family:                              26\nModel:                                   68\nThread(s) per core:                      2\nCore(s) per socket:                      16\nSocket(s):                               1\nStepping:                                0\nMicrocode version:                       0xb40403b\nFrequency boost:                         enabled\nCPU(s) scaling MHz:                      53%\nCPU max MHz:                             5665.0801\nCPU min MHz:                             614.2860\nBogoMIPS:                                8600.01\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good amd_lbr_v2 nopl xtopology nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpuid_fault cpb cat_l3 cdp_l3 hw_pstate ssbd mba perfmon_v2 ibrs ibpb stibp ibrs_enhanced vmmcall fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local user_shstk avx_vnni avx512_bf16 clzero irperf xsaveerptr rdpru wbnoinvd cppc arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif x2avic v_spec_ctrl vnmi avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid bus_lock_detect movdiri movdir64b overflow_recov succor smca fsrm avx512_vp2intersect flush_l1d amd_lbr_pmc_freeze\nVirtualization:                          AMD-V\nL1d cache:                               768 KiB (16 instances)\nL1i cache:                               512 KiB (16 instances)\nL2 cache:                                16 MiB (16 instances)\nL3 cache:                                192 MiB (2 instances)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-31\nVulnerability Gather data sampling:      Not affected\nVulnerability Ghostwrite:                Not affected\nVulnerability Indirect target selection: Not affected\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Not affected\nVulnerability Old microcode:             Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Not affected\nVulnerability Spec rstack overflow:      Mitigation; IBPB on VMEXIT only\nVulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Enhanced / Automatic IBRS; IBPB conditional; STIBP always-on; PBRSB-eIBRS Not affected; BHI Not affected\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Not affected\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Mitigation; IBPB on VMEXIT",
+    "gpu_before": "uuid, name, driver_version, memory.total [MiB], memory.free [MiB], power.limit [W], clocks.current.graphics [MHz], clocks.current.memory [MHz], temperature.gpu\nGPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, NVIDIA GeForce RTX 5080, 615.78.08, 16303 MiB, 13987 MiB, 360.00 W, 225 MHz, 405 MHz, 36",
+    "limits": {
+      "memory.max": "3221225472",
+      "memory.swap.max": "0",
+      "cpu.max": "400000 100000",
+      "pids.max": "96"
+    },
+    "environment": {
+      "LATTICA_GPU_DEVICE_UUID": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "LATTICA_CUDA_WALLET_BENCHMARK": "1",
+      "RAYON_NUM_THREADS": "4"
+    },
+    "timing_boundary": "Fresh raw wallet witness through serialized proof, including final CUDA report; CPU verification excluded and required for every sample.",
+    "limitations": [
+      "Four assigned CPU threads; not full-host throughput.",
+      "Wallet proofs only; no recursion, block processing, worker pool or transaction-throughput claim.",
+      "Board energy is not measured.",
+      "Initialization uses the existing compiler and driver cache state; caches are not cleared.",
+      "Desktop GPU clients were present; the GPU was not isolated from the desktop.",
+      "Managed GPU memory high water is cumulative across the benchmark process, including public preparation; it is not a separate per-sample peak.",
+      "Fresh randomness and grinding make individual durations variable. Five measured pairs are a performance screen, not a capacity or distributed-throughput qualification."
+    ],
+    "background_gpu_clients_before": [
+      {
+        "application": "kwin_wayland",
+        "gpu_memory": "48 MiB"
+      },
+      {
+        "application": "Discord",
+        "gpu_memory": "795 MiB"
+      },
+      {
+        "application": "brave",
+        "gpu_memory": "155 MiB"
+      }
+    ]
+  },
+  "profile": "Production legacy quadratic wallet STARK, unchanged CPU verifier; block-v2-capacity-128 is a build feature, not an aggregation workload in this screen.",
+  "warmups_per_backend_per_case": 1,
+  "measured_pairs_per_case": 5,
+  "cpu_verified_proofs": 36,
+  "measured_proofs": 30,
+  "ranges": [
+    {
+      "case": "joinsplit",
+      "backend": "cpu",
+      "samples": 5,
+      "seconds": {
+        "minimum": 0.927326699,
+        "median": 0.928823611,
+        "maximum": 0.945153585
+      },
+      "proof_bytes": {
+        "minimum": 458029,
+        "maximum": 458315
+      }
+    },
+    {
+      "case": "joinsplit",
+      "backend": "cuda",
+      "samples": 5,
+      "seconds": {
+        "minimum": 0.093670238,
+        "median": 0.094268423,
+        "maximum": 0.114460948
+      },
+      "proof_bytes": {
+        "minimum": 458119,
+        "maximum": 458417
+      }
+    },
+    {
+      "case": "htlc_redeem",
+      "backend": "cpu",
+      "samples": 5,
+      "seconds": {
+        "minimum": 0.994698892,
+        "median": 1.008880698,
+        "maximum": 1.02151573
+      },
+      "proof_bytes": {
+        "minimum": 474174,
+        "maximum": 474511
+      }
+    },
+    {
+      "case": "htlc_redeem",
+      "backend": "cuda",
+      "samples": 5,
+      "seconds": {
+        "minimum": 0.097610531,
+        "median": 0.098151694,
+        "maximum": 0.110000853
+      },
+      "proof_bytes": {
+        "minimum": 474102,
+        "maximum": 474453
+      }
+    },
+    {
+      "case": "htlc_refund",
+      "backend": "cpu",
+      "samples": 5,
+      "seconds": {
+        "minimum": 0.992543115,
+        "median": 0.999974352,
+        "maximum": 1.002849351
+      },
+      "proof_bytes": {
+        "minimum": 474110,
+        "maximum": 474541
+      }
+    },
+    {
+      "case": "htlc_refund",
+      "backend": "cuda",
+      "samples": 5,
+      "seconds": {
+        "minimum": 0.097853842,
+        "median": 0.11184846,
+        "maximum": 0.130434767
+      },
+      "proof_bytes": {
+        "minimum": 474031,
+        "maximum": 474401
+      }
+    }
+  ],
+  "stage_medians": [
+    {
+      "case": "joinsplit",
+      "median_completed_commands": 1517,
+      "median_device_seconds": 0.040307072,
+      "stages": [
+        {
+          "stage": "public_values",
+          "median_device_ns": 6432
+        },
+        {
+          "stage": "witness_trace",
+          "median_device_ns": 1590944
+        },
+        {
+          "stage": "transform",
+          "median_device_ns": 14850112
+        },
+        {
+          "stage": "quotient",
+          "median_device_ns": 355072
+        },
+        {
+          "stage": "randomness",
+          "median_device_ns": 2089632
+        },
+        {
+          "stage": "hiding",
+          "median_device_ns": 676512
+        },
+        {
+          "stage": "commitment",
+          "median_device_ns": 10824000
+        },
+        {
+          "stage": "opening",
+          "median_device_ns": 2118560
+        },
+        {
+          "stage": "fri_fold",
+          "median_device_ns": 73696
+        },
+        {
+          "stage": "fri_query",
+          "median_device_ns": 172576
+        },
+        {
+          "stage": "final_polynomial",
+          "median_device_ns": 2688
+        },
+        {
+          "stage": "scalar",
+          "median_device_ns": 165440
+        },
+        {
+          "stage": "transcript",
+          "median_device_ns": 7163744
+        },
+        {
+          "stage": "grinding",
+          "median_device_ns": 227552
+        }
+      ]
+    },
+    {
+      "case": "htlc_redeem",
+      "median_completed_commands": 1524,
+      "median_device_seconds": 0.043116864,
+      "stages": [
+        {
+          "stage": "public_values",
+          "median_device_ns": 6880
+        },
+        {
+          "stage": "witness_trace",
+          "median_device_ns": 2199520
+        },
+        {
+          "stage": "transform",
+          "median_device_ns": 16030528
+        },
+        {
+          "stage": "quotient",
+          "median_device_ns": 492864
+        },
+        {
+          "stage": "randomness",
+          "median_device_ns": 2096704
+        },
+        {
+          "stage": "hiding",
+          "median_device_ns": 683424
+        },
+        {
+          "stage": "commitment",
+          "median_device_ns": 11432832
+        },
+        {
+          "stage": "opening",
+          "median_device_ns": 2136608
+        },
+        {
+          "stage": "fri_fold",
+          "median_device_ns": 73184
+        },
+        {
+          "stage": "fri_query",
+          "median_device_ns": 176096
+        },
+        {
+          "stage": "final_polynomial",
+          "median_device_ns": 2880
+        },
+        {
+          "stage": "scalar",
+          "median_device_ns": 243808
+        },
+        {
+          "stage": "transcript",
+          "median_device_ns": 7428448
+        },
+        {
+          "stage": "grinding",
+          "median_device_ns": 121056
+        }
+      ]
+    },
+    {
+      "case": "htlc_refund",
+      "median_completed_commands": 1524,
+      "median_device_seconds": 0.046608224,
+      "stages": [
+        {
+          "stage": "public_values",
+          "median_device_ns": 8512
+        },
+        {
+          "stage": "witness_trace",
+          "median_device_ns": 2718400
+        },
+        {
+          "stage": "transform",
+          "median_device_ns": 16388960
+        },
+        {
+          "stage": "quotient",
+          "median_device_ns": 1526592
+        },
+        {
+          "stage": "randomness",
+          "median_device_ns": 2345696
+        },
+        {
+          "stage": "hiding",
+          "median_device_ns": 1006304
+        },
+        {
+          "stage": "commitment",
+          "median_device_ns": 12209120
+        },
+        {
+          "stage": "opening",
+          "median_device_ns": 2148096
+        },
+        {
+          "stage": "fri_fold",
+          "median_device_ns": 75008
+        },
+        {
+          "stage": "fri_query",
+          "median_device_ns": 181280
+        },
+        {
+          "stage": "final_polynomial",
+          "median_device_ns": 3168
+        },
+        {
+          "stage": "scalar",
+          "median_device_ns": 261760
+        },
+        {
+          "stage": "transcript",
+          "median_device_ns": 7555872
+        },
+        {
+          "stage": "grinding",
+          "median_device_ns": 122208
+        }
+      ]
+    }
+  ],
+  "result": {
+    "preparation": {
+      "identity": {
+        "compute_capability": 120,
+        "driver_api": 13040,
+        "global_bytes": 16703946752,
+        "max_grid_x": 2147483647,
+        "max_threads": 1024,
+        "max_threads_per_multiprocessor": 1536,
+        "multiprocessors": 84,
+        "name": "NVIDIA GeForce RTX 5080",
+        "ordinal": 0,
+        "pci": "0000:01:00.0",
+        "shared_bytes": 49152,
+        "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+      },
+      "limits": {
+        "managed_bytes": 268435456,
+        "max_allocation_bytes": 67108864,
+        "proof_host_bytes": 67108864
+      },
+      "seconds": 0.341818557,
+      "snapshot": {
+        "allocations": 12,
+        "completed_commands": 14,
+        "copied_bytes": 0,
+        "device_ns": 278688,
+        "downloaded_bytes": 0,
+        "live_bytes": 2548424,
+        "modules": 17,
+        "peak_bytes": 5366680,
+        "pending_commands": 0,
+        "public_program_bytes": 59920,
+        "public_programs": 2,
+        "uploaded_bytes": 1834752
+      }
+    },
+    "samples": [
+      {
+        "backend": "cpu",
+        "case": "joinsplit",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 0,
+        "peak_managed_bytes": 5366680,
+        "proof_bytes": 458456,
+        "report": null,
+        "seconds": 0.938551062,
+        "uploaded_bytes": 0,
+        "warmup": true
+      },
+      {
+        "backend": "cuda",
+        "case": "joinsplit",
+        "completed_commands": 1523,
+        "cpu_verified": true,
+        "device_ns": 53260928,
+        "downloaded_bytes": 388672,
+        "iteration": 0,
+        "peak_managed_bytes": 87579352,
+        "proof_bytes": 458140,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 147732091,
+          "entry_point": "cuda_joinsplit",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 11776,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 1544320,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 530,
+              "completed_calls": 530,
+              "device_calls": 530,
+              "device_ns": 18307360,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 1367392,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 3106432,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 156,
+              "completed_calls": 156,
+              "device_calls": 156,
+              "device_ns": 1871968,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 168,
+              "completed_calls": 168,
+              "device_calls": 168,
+              "device_ns": 12627424,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2933696,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 144416,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 3142688,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 5088,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 295296,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7411616,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 12,
+              "completed_calls": 12,
+              "device_calls": 12,
+              "device_ns": 491456,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.14817904,
+        "uploaded_bytes": 76736,
+        "warmup": true
+      },
+      {
+        "backend": "cuda",
+        "case": "joinsplit",
+        "completed_commands": 1517,
+        "cpu_verified": true,
+        "device_ns": 45289248,
+        "downloaded_bytes": 388640,
+        "iteration": 1,
+        "peak_managed_bytes": 87579352,
+        "proof_bytes": 458259,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 114014078,
+          "entry_point": "cuda_joinsplit",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 13696,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 2548992,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 530,
+              "completed_calls": 530,
+              "device_calls": 530,
+              "device_ns": 15527968,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 1431552,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2462496,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 156,
+              "completed_calls": 156,
+              "device_calls": 156,
+              "device_ns": 1326688,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 168,
+              "completed_calls": 168,
+              "device_calls": 168,
+              "device_ns": 11824032,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2109888,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 73376,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 164544,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 3104,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 280576,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7294304,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 6,
+              "completed_calls": 6,
+              "device_calls": 6,
+              "device_ns": 228032,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.114460948,
+        "uploaded_bytes": 76736,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "joinsplit",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 1,
+        "peak_managed_bytes": 87579352,
+        "proof_bytes": 458274,
+        "report": null,
+        "seconds": 0.945153585,
+        "uploaded_bytes": 0,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "joinsplit",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 2,
+        "peak_managed_bytes": 87579352,
+        "proof_bytes": 458315,
+        "report": null,
+        "seconds": 0.928264218,
+        "uploaded_bytes": 0,
+        "warmup": false
+      },
+      {
+        "backend": "cuda",
+        "case": "joinsplit",
+        "completed_commands": 1517,
+        "cpu_verified": true,
+        "device_ns": 40307072,
+        "downloaded_bytes": 388640,
+        "iteration": 2,
+        "peak_managed_bytes": 87579352,
+        "proof_bytes": 458119,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 94208381,
+          "entry_point": "cuda_joinsplit",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 6624,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 1590848,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 530,
+              "completed_calls": 530,
+              "device_calls": 530,
+              "device_ns": 14849664,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 355072,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2092768,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 156,
+              "completed_calls": 156,
+              "device_calls": 156,
+              "device_ns": 669696,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 168,
+              "completed_calls": 168,
+              "device_calls": 168,
+              "device_ns": 10819968,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2118560,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 73536,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 172608,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 2432,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 164576,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7161472,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 6,
+              "completed_calls": 6,
+              "device_calls": 6,
+              "device_ns": 229248,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.09467764,
+        "uploaded_bytes": 76736,
+        "warmup": false
+      },
+      {
+        "backend": "cuda",
+        "case": "joinsplit",
+        "completed_commands": 1514,
+        "cpu_verified": true,
+        "device_ns": 40195872,
+        "downloaded_bytes": 388624,
+        "iteration": 3,
+        "peak_managed_bytes": 87579352,
+        "proof_bytes": 458417,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 93816125,
+          "entry_point": "cuda_joinsplit",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 6432,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 1589408,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 530,
+              "completed_calls": 530,
+              "device_calls": 530,
+              "device_ns": 14848544,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 354272,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2075136,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 156,
+              "completed_calls": 156,
+              "device_calls": 156,
+              "device_ns": 664832,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 168,
+              "completed_calls": 168,
+              "device_calls": 168,
+              "device_ns": 10824000,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2132352,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 73984,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 172576,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 2688,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 165440,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7165696,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 3,
+              "completed_calls": 3,
+              "device_calls": 3,
+              "device_ns": 120512,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.094268423,
+        "uploaded_bytes": 76736,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "joinsplit",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 3,
+        "peak_managed_bytes": 87579352,
+        "proof_bytes": 458120,
+        "report": null,
+        "seconds": 0.928823611,
+        "uploaded_bytes": 0,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "joinsplit",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 4,
+        "peak_managed_bytes": 87579352,
+        "proof_bytes": 458029,
+        "report": null,
+        "seconds": 0.927326699,
+        "uploaded_bytes": 0,
+        "warmup": false
+      },
+      {
+        "backend": "cuda",
+        "case": "joinsplit",
+        "completed_commands": 1514,
+        "cpu_verified": true,
+        "device_ns": 40212352,
+        "downloaded_bytes": 388624,
+        "iteration": 4,
+        "peak_managed_bytes": 87579352,
+        "proof_bytes": 458173,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 93219630,
+          "entry_point": "cuda_joinsplit",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 5728,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 1591296,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 530,
+              "completed_calls": 530,
+              "device_calls": 530,
+              "device_ns": 14850112,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 355104,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2089632,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 156,
+              "completed_calls": 156,
+              "device_calls": 156,
+              "device_ns": 679008,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 168,
+              "completed_calls": 168,
+              "device_calls": 168,
+              "device_ns": 10826208,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2114624,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 73696,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 172992,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 2912,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 162304,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7163744,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 3,
+              "completed_calls": 3,
+              "device_calls": 3,
+              "device_ns": 124992,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.093670238,
+        "uploaded_bytes": 76736,
+        "warmup": false
+      },
+      {
+        "backend": "cuda",
+        "case": "joinsplit",
+        "completed_commands": 1517,
+        "cpu_verified": true,
+        "device_ns": 40315584,
+        "downloaded_bytes": 388640,
+        "iteration": 5,
+        "peak_managed_bytes": 87579352,
+        "proof_bytes": 458136,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 93710861,
+          "entry_point": "cuda_joinsplit",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 6272,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 1590944,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 530,
+              "completed_calls": 530,
+              "device_calls": 530,
+              "device_ns": 14855776,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 353824,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2077280,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 156,
+              "completed_calls": 156,
+              "device_calls": 156,
+              "device_ns": 676512,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 168,
+              "completed_calls": 168,
+              "device_calls": 168,
+              "device_ns": 10821280,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2133920,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 74976,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 168000,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 2336,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 167488,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7159424,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 6,
+              "completed_calls": 6,
+              "device_calls": 6,
+              "device_ns": 227552,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.094158959,
+        "uploaded_bytes": 76736,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "joinsplit",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 5,
+        "peak_managed_bytes": 87579352,
+        "proof_bytes": 458279,
+        "report": null,
+        "seconds": 0.934716625,
+        "uploaded_bytes": 0,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "htlc_redeem",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 0,
+        "peak_managed_bytes": 87579352,
+        "proof_bytes": 474407,
+        "report": null,
+        "seconds": 0.990072141,
+        "uploaded_bytes": 0,
+        "warmup": true
+      },
+      {
+        "backend": "cuda",
+        "case": "htlc_redeem",
+        "completed_commands": 1524,
+        "cpu_verified": true,
+        "device_ns": 53379968,
+        "downloaded_bytes": 402264,
+        "iteration": 0,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474323,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 129878054,
+          "entry_point": "cuda_htlc",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 8384,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 2757056,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 537,
+              "completed_calls": 537,
+              "device_calls": 537,
+              "device_ns": 20890752,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 1817312,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2573184,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 158,
+              "completed_calls": 158,
+              "device_calls": 158,
+              "device_ns": 995232,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 169,
+              "completed_calls": 169,
+              "device_calls": 169,
+              "device_ns": 12133632,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2481312,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 98272,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 1658496,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 3136,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 282208,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7551360,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 3,
+              "completed_calls": 3,
+              "device_calls": 3,
+              "device_ns": 129632,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.130338343,
+        "uploaded_bytes": 77344,
+        "warmup": true
+      },
+      {
+        "backend": "cuda",
+        "case": "htlc_redeem",
+        "completed_commands": 1524,
+        "cpu_verified": true,
+        "device_ns": 46128064,
+        "downloaded_bytes": 402264,
+        "iteration": 1,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474102,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 109535184,
+          "entry_point": "cuda_htlc",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 8928,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 2746944,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 537,
+              "completed_calls": 537,
+              "device_calls": 537,
+              "device_ns": 16355712,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 1646496,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2308000,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 158,
+              "completed_calls": 158,
+              "device_calls": 158,
+              "device_ns": 963904,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 169,
+              "completed_calls": 169,
+              "device_calls": 169,
+              "device_ns": 11830304,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2143776,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 74144,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 174432,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 2272,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 261760,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7490336,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 3,
+              "completed_calls": 3,
+              "device_calls": 3,
+              "device_ns": 121056,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.110000853,
+        "uploaded_bytes": 77344,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "htlc_redeem",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 1,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474328,
+        "report": null,
+        "seconds": 1.02151573,
+        "uploaded_bytes": 0,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "htlc_redeem",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 2,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474174,
+        "report": null,
+        "seconds": 0.994698892,
+        "uploaded_bytes": 0,
+        "warmup": false
+      },
+      {
+        "backend": "cuda",
+        "case": "htlc_redeem",
+        "completed_commands": 1524,
+        "cpu_verified": true,
+        "device_ns": 43112320,
+        "downloaded_bytes": 402264,
+        "iteration": 2,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474320,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 97139222,
+          "entry_point": "cuda_htlc",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 6560,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 2198176,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 537,
+              "completed_calls": 537,
+              "device_calls": 537,
+              "device_ns": 16030880,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 498720,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2084160,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 158,
+              "completed_calls": 158,
+              "device_calls": 158,
+              "device_ns": 683424,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 169,
+              "completed_calls": 169,
+              "device_calls": 169,
+              "device_ns": 11429856,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2135328,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 73184,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 181920,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 2880,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 240800,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7425152,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 3,
+              "completed_calls": 3,
+              "device_calls": 3,
+              "device_ns": 121280,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.097610531,
+        "uploaded_bytes": 77344,
+        "warmup": false
+      },
+      {
+        "backend": "cuda",
+        "case": "htlc_redeem",
+        "completed_commands": 1524,
+        "cpu_verified": true,
+        "device_ns": 43129216,
+        "downloaded_bytes": 402264,
+        "iteration": 3,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474453,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 97212295,
+          "entry_point": "cuda_htlc",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 6208,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 2198624,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 537,
+              "completed_calls": 537,
+              "device_calls": 537,
+              "device_ns": 16017568,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 489376,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2102176,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 158,
+              "completed_calls": 158,
+              "device_calls": 158,
+              "device_ns": 688224,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 169,
+              "completed_calls": 169,
+              "device_calls": 169,
+              "device_ns": 11432832,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2139936,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 72512,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 178528,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 3552,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 246304,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7431232,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 3,
+              "completed_calls": 3,
+              "device_calls": 3,
+              "device_ns": 122144,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.098374003,
+        "uploaded_bytes": 77344,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "htlc_redeem",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 3,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474511,
+        "report": null,
+        "seconds": 1.008880698,
+        "uploaded_bytes": 0,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "htlc_redeem",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 4,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474315,
+        "report": null,
+        "seconds": 1.002810008,
+        "uploaded_bytes": 0,
+        "warmup": false
+      },
+      {
+        "backend": "cuda",
+        "case": "htlc_redeem",
+        "completed_commands": 1524,
+        "cpu_verified": true,
+        "device_ns": 43103456,
+        "downloaded_bytes": 402264,
+        "iteration": 4,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474280,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 97193345,
+          "entry_point": "cuda_htlc",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 7488,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 2204448,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 537,
+              "completed_calls": 537,
+              "device_calls": 537,
+              "device_ns": 16026208,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 492000,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2096704,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 158,
+              "completed_calls": 158,
+              "device_calls": 158,
+              "device_ns": 671520,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 169,
+              "completed_calls": 169,
+              "device_calls": 169,
+              "device_ns": 11438368,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2129344,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 73888,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 176096,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 2368,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 237440,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7426752,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 3,
+              "completed_calls": 3,
+              "device_calls": 3,
+              "device_ns": 120832,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.097652704,
+        "uploaded_bytes": 77344,
+        "warmup": false
+      },
+      {
+        "backend": "cuda",
+        "case": "htlc_redeem",
+        "completed_commands": 1524,
+        "cpu_verified": true,
+        "device_ns": 43116864,
+        "downloaded_bytes": 402264,
+        "iteration": 5,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474315,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 97693345,
+          "entry_point": "cuda_htlc",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 6880,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 2199520,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 537,
+              "completed_calls": 537,
+              "device_calls": 537,
+              "device_ns": 16030528,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 492864,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2095264,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 158,
+              "completed_calls": 158,
+              "device_calls": 158,
+              "device_ns": 682720,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 169,
+              "completed_calls": 169,
+              "device_calls": 169,
+              "device_ns": 11430048,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2136608,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 72224,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 174304,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 3008,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 243808,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7428448,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 3,
+              "completed_calls": 3,
+              "device_calls": 3,
+              "device_ns": 120640,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.098151694,
+        "uploaded_bytes": 77344,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "htlc_redeem",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 5,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474480,
+        "report": null,
+        "seconds": 1.011838081,
+        "uploaded_bytes": 0,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "htlc_refund",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 0,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474423,
+        "report": null,
+        "seconds": 0.997387745,
+        "uploaded_bytes": 0,
+        "warmup": true
+      },
+      {
+        "backend": "cuda",
+        "case": "htlc_refund",
+        "completed_commands": 1524,
+        "cpu_verified": true,
+        "device_ns": 53127296,
+        "downloaded_bytes": 402264,
+        "iteration": 0,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474088,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 129491308,
+          "entry_point": "cuda_htlc",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 10464,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 2733088,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 537,
+              "completed_calls": 537,
+              "device_calls": 537,
+              "device_ns": 20820832,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 1649824,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2559552,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 158,
+              "completed_calls": 158,
+              "device_calls": 158,
+              "device_ns": 997248,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 169,
+              "completed_calls": 169,
+              "device_calls": 169,
+              "device_ns": 12145280,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2486848,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 100320,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 1641184,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 4768,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 269088,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7579936,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 3,
+              "completed_calls": 3,
+              "device_calls": 3,
+              "device_ns": 128864,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.129957498,
+        "uploaded_bytes": 77344,
+        "warmup": true
+      },
+      {
+        "backend": "cuda",
+        "case": "htlc_refund",
+        "completed_commands": 1524,
+        "cpu_verified": true,
+        "device_ns": 46608224,
+        "downloaded_bytes": 402264,
+        "iteration": 1,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474031,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 111390161,
+          "entry_point": "cuda_htlc",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 8512,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 2718400,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 537,
+              "completed_calls": 537,
+              "device_calls": 537,
+              "device_ns": 16388960,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 1526592,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2345696,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 158,
+              "completed_calls": 158,
+              "device_calls": 158,
+              "device_ns": 1006304,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 169,
+              "completed_calls": 169,
+              "device_calls": 169,
+              "device_ns": 12281408,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2137152,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 73152,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 180576,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 2464,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 261760,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7555872,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 3,
+              "completed_calls": 3,
+              "device_calls": 3,
+              "device_ns": 121376,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.11184846,
+        "uploaded_bytes": 77344,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "htlc_refund",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 1,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474110,
+        "report": null,
+        "seconds": 1.002539208,
+        "uploaded_bytes": 0,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "htlc_refund",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 2,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474519,
+        "report": null,
+        "seconds": 0.998652948,
+        "uploaded_bytes": 0,
+        "warmup": false
+      },
+      {
+        "backend": "cuda",
+        "case": "htlc_refund",
+        "completed_commands": 1524,
+        "cpu_verified": true,
+        "device_ns": 43144128,
+        "downloaded_bytes": 402264,
+        "iteration": 2,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474231,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 97385882,
+          "entry_point": "cuda_htlc",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 7680,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 2199584,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 537,
+              "completed_calls": 537,
+              "device_calls": 537,
+              "device_ns": 16024256,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 497312,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2121760,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 158,
+              "completed_calls": 158,
+              "device_calls": 158,
+              "device_ns": 679200,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 169,
+              "completed_calls": 169,
+              "device_calls": 169,
+              "device_ns": 11425376,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2148096,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 74464,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 179808,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 2176,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 235840,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7426816,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 3,
+              "completed_calls": 3,
+              "device_calls": 3,
+              "device_ns": 121760,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.097853842,
+        "uploaded_bytes": 77344,
+        "warmup": false
+      },
+      {
+        "backend": "cuda",
+        "case": "htlc_refund",
+        "completed_commands": 1524,
+        "cpu_verified": true,
+        "device_ns": 43114528,
+        "downloaded_bytes": 402264,
+        "iteration": 3,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474193,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 97794779,
+          "entry_point": "cuda_htlc",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 6432,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 2192128,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 537,
+              "completed_calls": 537,
+              "device_calls": 537,
+              "device_ns": 16009504,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 497760,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2120128,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 158,
+              "completed_calls": 158,
+              "device_calls": 158,
+              "device_ns": 689856,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 169,
+              "completed_calls": 169,
+              "device_calls": 169,
+              "device_ns": 11402720,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2144960,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 75008,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 181280,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 3168,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 241728,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7427648,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 3,
+              "completed_calls": 3,
+              "device_calls": 3,
+              "device_ns": 122208,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.098248678,
+        "uploaded_bytes": 77344,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "htlc_refund",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 3,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474167,
+        "report": null,
+        "seconds": 1.002849351,
+        "uploaded_bytes": 0,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "htlc_refund",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 4,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474210,
+        "report": null,
+        "seconds": 0.999974352,
+        "uploaded_bytes": 0,
+        "warmup": false
+      },
+      {
+        "backend": "cuda",
+        "case": "htlc_refund",
+        "completed_commands": 1530,
+        "cpu_verified": true,
+        "device_ns": 53592192,
+        "downloaded_bytes": 402296,
+        "iteration": 4,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474401,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 129971468,
+          "entry_point": "cuda_htlc",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 12064,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 2746176,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 537,
+              "completed_calls": 537,
+              "device_calls": 537,
+              "device_ns": 20835264,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 1677760,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2570208,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 158,
+              "completed_calls": 158,
+              "device_calls": 158,
+              "device_ns": 1020960,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 169,
+              "completed_calls": 169,
+              "device_calls": 169,
+              "device_ns": 12256896,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2490752,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 100320,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 1682496,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 4672,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 280192,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7563808,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 9,
+              "completed_calls": 9,
+              "device_calls": 9,
+              "device_ns": 350624,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.130434767,
+        "uploaded_bytes": 77344,
+        "warmup": false
+      },
+      {
+        "backend": "cuda",
+        "case": "htlc_refund",
+        "completed_commands": 1524,
+        "cpu_verified": true,
+        "device_ns": 53263616,
+        "downloaded_bytes": 402264,
+        "iteration": 5,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474205,
+        "report": {
+          "capabilities": {
+            "max_log_fri_arity": 4,
+            "profile": "legacy_quadratic",
+            "scope": "proof_request",
+            "stages": [
+              {
+                "backend": "cuda",
+                "stage": "public_values"
+              },
+              {
+                "backend": "cuda",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transform"
+              },
+              {
+                "backend": "cuda",
+                "stage": "quotient"
+              },
+              {
+                "backend": "cuda",
+                "stage": "randomness"
+              },
+              {
+                "backend": "cuda",
+                "stage": "hiding"
+              },
+              {
+                "backend": "cuda",
+                "stage": "commitment"
+              },
+              {
+                "backend": "cuda",
+                "stage": "opening"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "cuda",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "cuda",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "cuda",
+                "stage": "scalar"
+              },
+              {
+                "backend": "cuda",
+                "stage": "transcript"
+              },
+              {
+                "backend": "cuda",
+                "stage": "grinding"
+              }
+            ]
+          },
+          "completion_rejected": false,
+          "components": [],
+          "elapsed_ns": 128830961,
+          "entry_point": "cuda_htlc",
+          "observation_errors": 0,
+          "observations": [
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 9248,
+              "inclusive_ns": 0,
+              "stage": "public_values"
+            },
+            {
+              "backend": "cuda",
+              "calls": 2,
+              "completed_calls": 2,
+              "device_calls": 2,
+              "device_ns": 2738368,
+              "inclusive_ns": 0,
+              "stage": "witness_trace"
+            },
+            {
+              "backend": "cuda",
+              "calls": 537,
+              "completed_calls": 537,
+              "device_calls": 537,
+              "device_ns": 20867072,
+              "inclusive_ns": 0,
+              "stage": "transform"
+            },
+            {
+              "backend": "cuda",
+              "calls": 25,
+              "completed_calls": 25,
+              "device_calls": 25,
+              "device_ns": 1600640,
+              "inclusive_ns": 0,
+              "stage": "quotient"
+            },
+            {
+              "backend": "cuda",
+              "calls": 302,
+              "completed_calls": 302,
+              "device_calls": 302,
+              "device_ns": 2572640,
+              "inclusive_ns": 0,
+              "stage": "randomness"
+            },
+            {
+              "backend": "cuda",
+              "calls": 158,
+              "completed_calls": 158,
+              "device_calls": 158,
+              "device_ns": 1028352,
+              "inclusive_ns": 0,
+              "stage": "hiding"
+            },
+            {
+              "backend": "cuda",
+              "calls": 169,
+              "completed_calls": 169,
+              "device_calls": 169,
+              "device_ns": 12209120,
+              "inclusive_ns": 0,
+              "stage": "commitment"
+            },
+            {
+              "backend": "cuda",
+              "calls": 216,
+              "completed_calls": 216,
+              "device_calls": 216,
+              "device_ns": 2493344,
+              "inclusive_ns": 0,
+              "stage": "opening"
+            },
+            {
+              "backend": "cuda",
+              "calls": 4,
+              "completed_calls": 4,
+              "device_calls": 4,
+              "device_ns": 94176,
+              "inclusive_ns": 0,
+              "stage": "fri_fold"
+            },
+            {
+              "backend": "cuda",
+              "calls": 45,
+              "completed_calls": 45,
+              "device_calls": 45,
+              "device_ns": 1663680,
+              "inclusive_ns": 0,
+              "stage": "fri_query"
+            },
+            {
+              "backend": "cuda",
+              "calls": 1,
+              "completed_calls": 1,
+              "device_calls": 1,
+              "device_ns": 4928,
+              "inclusive_ns": 0,
+              "stage": "final_polynomial"
+            },
+            {
+              "backend": "cuda",
+              "calls": 21,
+              "completed_calls": 21,
+              "device_calls": 21,
+              "device_ns": 282848,
+              "inclusive_ns": 0,
+              "stage": "scalar"
+            },
+            {
+              "backend": "cuda",
+              "calls": 40,
+              "completed_calls": 40,
+              "device_calls": 40,
+              "device_ns": 7567904,
+              "inclusive_ns": 0,
+              "stage": "transcript"
+            },
+            {
+              "backend": "cuda",
+              "calls": 3,
+              "completed_calls": 3,
+              "device_calls": 3,
+              "device_ns": 131296,
+              "inclusive_ns": 0,
+              "stage": "grinding"
+            }
+          ],
+          "policy": "gpu_required",
+          "schema": "lattica-proving-stages-v1",
+          "stage_coverage_complete": true,
+          "succeeded": true
+        },
+        "seconds": 0.12929522,
+        "uploaded_bytes": 77344,
+        "warmup": false
+      },
+      {
+        "backend": "cpu",
+        "case": "htlc_refund",
+        "completed_commands": 0,
+        "cpu_verified": true,
+        "device_ns": 0,
+        "downloaded_bytes": 0,
+        "iteration": 5,
+        "peak_managed_bytes": 124915200,
+        "proof_bytes": 474541,
+        "report": null,
+        "seconds": 0.992543115,
+        "uploaded_bytes": 0,
+        "warmup": false
+      }
+    ],
+    "summary": [
+      {
+        "case": "joinsplit",
+        "median_seconds": {
+          "cpu": 0.928823611,
+          "cuda": 0.094268423
+        },
+        "cpu_over_cuda_latency_ratio": 9.852966470012975
+      },
+      {
+        "case": "htlc_redeem",
+        "median_seconds": {
+          "cpu": 1.008880698,
+          "cuda": 0.098151694
+        },
+        "cpu_over_cuda_latency_ratio": 10.278790481191288
+      },
+      {
+        "case": "htlc_refund",
+        "median_seconds": {
+          "cpu": 0.999974352,
+          "cuda": 0.11184846
+        },
+        "cpu_over_cuda_latency_ratio": 8.940439162059093
+      }
+    ],
+    "benchmark_log_sha256": "5e2be17c7dd7708771f0de035568d87d936dda666bd869eee5b9b59d52fba908",
+    "elapsed_seconds": 20.833551130999695,
+    "memory_peak_bytes": 404500480
+  },
+  "artifact_root": "lattica-prover-p3/benchmark-results/cuda-reporting-20261018/benchmark",
+  "artifact_sha256": {
+    "lattica-prover-p3/benchmark-results/cuda-reporting-20261018/benchmark/benchmark.log": "5e2be17c7dd7708771f0de035568d87d936dda666bd869eee5b9b59d52fba908",
+    "lattica-prover-p3/benchmark-results/cuda-reporting-20261018/benchmark/build-controller.log": "2c4f6fc357dfadbc99d5e2631fc7402aab2d6a1f712c8205cfd683e82b170758",
+    "lattica-prover-p3/benchmark-results/cuda-reporting-20261018/benchmark/build.jsonl": "704aca0301e9b453b6f95753adbbc92f5d58ad757230a9e4619db9087f2cfcab",
+    "lattica-prover-p3/benchmark-results/cuda-reporting-20261018/benchmark/build.py": "3f7e575f79a8c7bce70069683682bd0f57f7dde8fb87e6da353ebf2feec7f483",
+    "lattica-prover-p3/benchmark-results/cuda-reporting-20261018/benchmark/build.stderr": "bbcfd18dcdd0469ba90e459775f0278b09ce13e523759742300406112baf4aee",
+    "lattica-prover-p3/benchmark-results/cuda-reporting-20261018/benchmark/controller.log": "636eaa867440f4ba56c15ffdd1b4ded47a18f8458e44ddc47271998b32e9b1d7",
+    "lattica-prover-p3/benchmark-results/cuda-reporting-20261018/benchmark/identity.json": "e6e6f55edaf2c421a46ea5cbb730831bf534555a3155c31b701ea24360df704d",
+    "lattica-prover-p3/benchmark-results/cuda-reporting-20261018/benchmark/progress.json": "b00c850718f6cf512ffd0b285bcbe6d9939aede74b63d16474ed974e8c395419",
+    "lattica-prover-p3/benchmark-results/cuda-reporting-20261018/benchmark/results.json": "9a0e5128cac2b8a5e53d22d6e6c68587df3c213ba496f286ee561ec439b94693",
+    "lattica-prover-p3/benchmark-results/cuda-reporting-20261018/benchmark/run-identity.json": "bab75ff6bbe1cb486a87a1c157d69cdc7d5c92a57f41ba2d692f934257fcbeb1",
+    "lattica-prover-p3/benchmark-results/cuda-reporting-20261018/benchmark/run.py": "afbd596a5ab66d5807ec7e56cddfc95adf7b83ca6d7e90c2be5d36cfa182b346",
+    "lattica-prover-p3/benchmark-results/cuda-reporting-20261018/benchmark/write-evidence.py": "ed7ade6eff2f2ef1735f3764531e89499370924860d741ef2392eb8d9bb628ef"
+  }
+}
