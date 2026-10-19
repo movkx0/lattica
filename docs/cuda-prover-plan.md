@@ -442,6 +442,22 @@ result downloads and final-result cleanup are excluded; intermediate allocations
 completion and cleanup are included. Debug-host primitive timings do not measure
 complete proofs or transactions.
 
+The [post-push folding benchmark at `f932572`](evidence/cuda-fri-benchmark-2026-10-18.json)
+completed 40 measurements and 16 warmups, all CPU-audited. Median elapsed times
+on the desktop RTX 5080 were:
+
+| Extension | Input rows | Four binary folds | One arity-16 fold |
+|---|---:|---:|---:|
+| Quadratic | 65,536 | 0.194 ms | 0.072 ms |
+| Quadratic | 262,144 | 0.300 ms | 0.072 ms |
+| Cubic | 65,536 | 0.354 ms | 0.074 ms |
+| Cubic | 262,144 | 0.340 ms | 0.077 ms |
+
+The fused path issued one kernel command instead of four; both arms issued zero
+uploads/downloads within timing. These small debug-host measurements include
+submission and allocation overhead and do not qualify a production setting
+change or establish whole-proof speedups.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)
