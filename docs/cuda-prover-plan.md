@@ -1050,6 +1050,18 @@ execution remain unqualified. Full-size proofs run in a 3 GiB, zero-swap,
 four-thread service; sanitizer coverage uses smaller focused cases. Correctness
 durations are not production throughput measurements.
 
+The [post-push four-entry benchmark at `6e105f7`](evidence/cuda-typed-session-benchmark-2026-10-19.json)
+completed one warmup and three release trials on the desktop RTX 5080. Median
+aggregation time was 41.441 seconds (40.636–41.483), equivalent to about 347
+aggregated transactions per hour for this case. Each trial used a fresh session
+with one cache slot: two pair wrappers, one merge and one finalizer, including
+their public compilation, preprocessing and input/output CPU verification.
+Every root passed the archived independent CPU auditor; changed statements and
+proofs were rejected. The interval excludes initial device/session construction
+and artifact handling; total process duration is also recorded. Wallet proving, network/consensus processing and pool
+scheduling are excluded. This is a baseline for the experimental CUDA path;
+there is no matched CPU/OpenCL comparison or production throughput claim.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)
