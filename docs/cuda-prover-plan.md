@@ -1105,6 +1105,20 @@ CLI/pool backend inventory, CUDA failure/recovery qualification, multi-device
 concurrency, broader transaction counts, V100 execution and matched performance
 comparisons remain outstanding. Qualification durations are not benchmark rates.
 
+The [post-push native worker benchmark at `0f77696`](evidence/cuda-native-worker-benchmark-2026-10-19.json)
+completed one warmup and three measured four-input trials on the desktop RTX
+5080. Each trial started a fresh supervised worker with one cache slot and
+produced four recursive proofs. Median worker startup through independently
+verified results, durable acceptance, shutdown and observed exit was 51.995
+seconds (50.076–53.438), equivalent to about 277 aggregated inputs per hour for
+this case. This interval excludes initial coordinator fixture preparation and
+final artifact writing. The median sum of job dispatch/collection intervals was
+46.910 seconds; the median whole producer process took 53.302 seconds. Every root
+passed the archived CPU audit and rejected changed statements and proof bytes.
+All device owners were released. Wallet proving, network/consensus processing,
+pool scheduling and steady-state worker reuse are excluded. These intervals differ
+from the earlier typed-session benchmark; no CPU/OpenCL speedup is established.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)

@@ -1,0 +1,456 @@
+{
+  "schema": "lattica-cuda-native-worker-benchmark-v1",
+  "date": "2026-10-19",
+  "status": "passed",
+  "source_commit": "0f776961129288098e9dc482c33b32515a2e453e",
+  "device": "NVIDIA GeForce RTX 5080 desktop",
+  "device_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+  "driver": "615.78.08",
+  "features": "gpu-cuda,block-v2-host,stream",
+  "source_files": 843,
+  "inputs_per_trial": 4,
+  "recursive_proofs_per_trial": 4,
+  "warmups": 1,
+  "measured_trials": 3,
+  "session": "Fresh supervised worker per trial; one cache slot, four different programs, no cache hits",
+  "qualification": "docs/evidence/cuda-native-worker-2026-10-19.json",
+  "intervals": {
+    "worker": "From immediately before supervised worker launch through four independently verified and durably accepted job results, clean shutdown and observed process exit. Excludes initial coordinator fixture preparation and final artifact writing.",
+    "job_dispatch_collect": "Sum of four worker.execute intervals: dispatch, worker input verification, GPU compilation/preprocessing/proving, worker output verification/serialization and response collection. Excludes outer coordinator verification, journal acceptance and process startup/shutdown.",
+    "producer_process": "Whole parent test process, including fixture preparation, mutation probes, artifact handling and the worker interval. Excludes the separate archived CPU auditor."
+  },
+  "excludes": [
+    "Wallet proving",
+    "Network/consensus and native block application",
+    "Pool scheduling, concurrency or steady-state worker reuse",
+    "No matched CPU/OpenCL baseline or speedup claim"
+  ],
+  "median_worker_seconds": 51.99523925,
+  "aggregated_inputs_per_hour_worker_window": 276.9484323509484,
+  "median_job_dispatch_collect_seconds": 46.909617574,
+  "aggregated_inputs_per_hour_job_windows": 306.9732976885598,
+  "median_producer_process_seconds": 53.302050828933716,
+  "trials": [
+    {
+      "case": "warmup",
+      "measured": false,
+      "worker_start_to_verified_results_and_exit_seconds": 50.78629309,
+      "job_dispatch_collect_seconds": 45.484847224999996,
+      "jobs": [
+        {
+          "mode": 4,
+          "seconds": 11.0894941
+        },
+        {
+          "mode": 8,
+          "seconds": 11.47251776
+        },
+        {
+          "mode": 3,
+          "seconds": 12.447241918
+        },
+        {
+          "mode": 12,
+          "seconds": 10.475593447
+        }
+      ],
+      "producer_process_seconds": 52.06947374343872,
+      "worker_memory_peak_bytes": 1257844736,
+      "shutdown": {
+        "allocations": 0,
+        "completed_commands": 143428,
+        "copied_bytes": 6208,
+        "device_ns": 32368693548,
+        "downloaded_bytes": 10577144,
+        "live_bytes": 0,
+        "modules": 0,
+        "peak_allocations": 100,
+        "peak_bytes": 7450300432,
+        "pending_commands": 0,
+        "public_program_bytes": 0,
+        "public_programs": 0,
+        "uploaded_bytes": 1798948160
+      },
+      "proof_sha256": "ab884fd959572c18a61c4ce3c50a1eeb4dd2fe28fed4b612ba4e5028a0ec4b54",
+      "gpu_before": "name, uuid, driver_version, memory.free [MiB], temperature.gpu, power.draw [W], clocks.current.graphics [MHz]\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08, 13897 MiB, 34, 8.69 W, 225 MHz\n",
+      "gpu_after": "name, uuid, driver_version, memory.free [MiB], temperature.gpu, power.draw [W], clocks.current.graphics [MHz]\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08, 13896 MiB, 41, 131.60 W, 2902 MHz\n",
+      "cpu_audit_checks": [
+        {
+          "case": "valid",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-wallet-recovery-ownership-20261015/cpu-build-01/production-image",
+            "audit-root",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/body.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup/root.bin"
+          ],
+          "exit_code": 0,
+          "expected_success": true,
+          "elapsed_seconds": 0.06362009048461914
+        },
+        {
+          "case": "changed-statement",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-wallet-recovery-ownership-20261015/cpu-build-01/production-image",
+            "audit-root",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup-audit/changed-expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/body.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup/root.bin"
+          ],
+          "exit_code": 1,
+          "expected_success": false,
+          "elapsed_seconds": 0.0032958984375
+        },
+        {
+          "case": "changed-proof",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-wallet-recovery-ownership-20261015/cpu-build-01/production-image",
+            "audit-root",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/body.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup-audit/changed-proof.bin"
+          ],
+          "exit_code": 1,
+          "expected_success": false,
+          "elapsed_seconds": 0.03149533271789551
+        }
+      ]
+    },
+    {
+      "case": "benchmark-01",
+      "measured": true,
+      "worker_start_to_verified_results_and_exit_seconds": 53.438063922,
+      "job_dispatch_collect_seconds": 48.418103052,
+      "jobs": [
+        {
+          "mode": 4,
+          "seconds": 12.242911252
+        },
+        {
+          "mode": 8,
+          "seconds": 11.005223421
+        },
+        {
+          "mode": 3,
+          "seconds": 14.683433709
+        },
+        {
+          "mode": 12,
+          "seconds": 10.48653467
+        }
+      ],
+      "producer_process_seconds": 54.70379304885864,
+      "worker_memory_peak_bytes": 1265221632,
+      "shutdown": {
+        "allocations": 0,
+        "completed_commands": 143425,
+        "copied_bytes": 6208,
+        "device_ns": 32409089686,
+        "downloaded_bytes": 10577128,
+        "live_bytes": 0,
+        "modules": 0,
+        "peak_allocations": 100,
+        "peak_bytes": 7450300432,
+        "pending_commands": 0,
+        "public_program_bytes": 0,
+        "public_programs": 0,
+        "uploaded_bytes": 1798948160
+      },
+      "proof_sha256": "2dbd597b12d8bc68d1550223ec316467f05c0643f0e129c7c0d5b7713870ecaf",
+      "gpu_before": "name, uuid, driver_version, memory.free [MiB], temperature.gpu, power.draw [W], clocks.current.graphics [MHz]\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08, 13896 MiB, 41, 102.84 W, 2902 MHz\n",
+      "gpu_after": "name, uuid, driver_version, memory.free [MiB], temperature.gpu, power.draw [W], clocks.current.graphics [MHz]\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08, 13897 MiB, 42, 136.36 W, 2887 MHz\n",
+      "cpu_audit_checks": [
+        {
+          "case": "valid",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-wallet-recovery-ownership-20261015/cpu-build-01/production-image",
+            "audit-root",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/body.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01/root.bin"
+          ],
+          "exit_code": 0,
+          "expected_success": true,
+          "elapsed_seconds": 0.06352686882019043
+        },
+        {
+          "case": "changed-statement",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-wallet-recovery-ownership-20261015/cpu-build-01/production-image",
+            "audit-root",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01-audit/changed-expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/body.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01/root.bin"
+          ],
+          "exit_code": 1,
+          "expected_success": false,
+          "elapsed_seconds": 0.0033266544342041016
+        },
+        {
+          "case": "changed-proof",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-wallet-recovery-ownership-20261015/cpu-build-01/production-image",
+            "audit-root",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/body.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01-audit/changed-proof.bin"
+          ],
+          "exit_code": 1,
+          "expected_success": false,
+          "elapsed_seconds": 0.031415462493896484
+        }
+      ]
+    },
+    {
+      "case": "benchmark-02",
+      "measured": true,
+      "worker_start_to_verified_results_and_exit_seconds": 50.075751851,
+      "job_dispatch_collect_seconds": 45.057215841,
+      "jobs": [
+        {
+          "mode": 4,
+          "seconds": 11.071963917
+        },
+        {
+          "mode": 8,
+          "seconds": 10.991212253
+        },
+        {
+          "mode": 3,
+          "seconds": 12.495807676
+        },
+        {
+          "mode": 12,
+          "seconds": 10.498231995
+        }
+      ],
+      "producer_process_seconds": 51.345030546188354,
+      "worker_memory_peak_bytes": 1257918464,
+      "shutdown": {
+        "allocations": 0,
+        "completed_commands": 143404,
+        "copied_bytes": 6208,
+        "device_ns": 32412971558,
+        "downloaded_bytes": 10577096,
+        "live_bytes": 0,
+        "modules": 0,
+        "peak_allocations": 100,
+        "peak_bytes": 7450300432,
+        "pending_commands": 0,
+        "public_program_bytes": 0,
+        "public_programs": 0,
+        "uploaded_bytes": 1798948160
+      },
+      "proof_sha256": "b8f829e7415f02b118523f5deced5035481aaf4d6d98fe973981089d365cc946",
+      "gpu_before": "name, uuid, driver_version, memory.free [MiB], temperature.gpu, power.draw [W], clocks.current.graphics [MHz]\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08, 13897 MiB, 42, 85.62 W, 2887 MHz\n",
+      "gpu_after": "name, uuid, driver_version, memory.free [MiB], temperature.gpu, power.draw [W], clocks.current.graphics [MHz]\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08, 13899 MiB, 43, 142.84 W, 2887 MHz\n",
+      "cpu_audit_checks": [
+        {
+          "case": "valid",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-wallet-recovery-ownership-20261015/cpu-build-01/production-image",
+            "audit-root",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/body.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02/root.bin"
+          ],
+          "exit_code": 0,
+          "expected_success": true,
+          "elapsed_seconds": 0.06359028816223145
+        },
+        {
+          "case": "changed-statement",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-wallet-recovery-ownership-20261015/cpu-build-01/production-image",
+            "audit-root",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02-audit/changed-expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/body.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02/root.bin"
+          ],
+          "exit_code": 1,
+          "expected_success": false,
+          "elapsed_seconds": 0.0033245086669921875
+        },
+        {
+          "case": "changed-proof",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-wallet-recovery-ownership-20261015/cpu-build-01/production-image",
+            "audit-root",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/body.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02-audit/changed-proof.bin"
+          ],
+          "exit_code": 1,
+          "expected_success": false,
+          "elapsed_seconds": 0.03146839141845703
+        }
+      ]
+    },
+    {
+      "case": "benchmark-03",
+      "measured": true,
+      "worker_start_to_verified_results_and_exit_seconds": 51.99523925,
+      "job_dispatch_collect_seconds": 46.909617574,
+      "jobs": [
+        {
+          "mode": 4,
+          "seconds": 10.977820539
+        },
+        {
+          "mode": 8,
+          "seconds": 11.431575664
+        },
+        {
+          "mode": 3,
+          "seconds": 14.039650224
+        },
+        {
+          "mode": 12,
+          "seconds": 10.460571147
+        }
+      ],
+      "producer_process_seconds": 53.302050828933716,
+      "worker_memory_peak_bytes": 1247367168,
+      "shutdown": {
+        "allocations": 0,
+        "completed_commands": 143416,
+        "copied_bytes": 6208,
+        "device_ns": 32177354072,
+        "downloaded_bytes": 10577120,
+        "live_bytes": 0,
+        "modules": 0,
+        "peak_allocations": 100,
+        "peak_bytes": 7450300432,
+        "pending_commands": 0,
+        "public_program_bytes": 0,
+        "public_programs": 0,
+        "uploaded_bytes": 1798948160
+      },
+      "proof_sha256": "88290e245eb72744adf76c36bc26aabc58a9734501768ade5eee3d4711195811",
+      "gpu_before": "name, uuid, driver_version, memory.free [MiB], temperature.gpu, power.draw [W], clocks.current.graphics [MHz]\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08, 13899 MiB, 43, 99.20 W, 2895 MHz\n",
+      "gpu_after": "name, uuid, driver_version, memory.free [MiB], temperature.gpu, power.draw [W], clocks.current.graphics [MHz]\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08, 13898 MiB, 43, 142.57 W, 2887 MHz\n",
+      "cpu_audit_checks": [
+        {
+          "case": "valid",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-wallet-recovery-ownership-20261015/cpu-build-01/production-image",
+            "audit-root",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/body.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03/root.bin"
+          ],
+          "exit_code": 0,
+          "expected_success": true,
+          "elapsed_seconds": 0.06356692314147949
+        },
+        {
+          "case": "changed-statement",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-wallet-recovery-ownership-20261015/cpu-build-01/production-image",
+            "audit-root",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03-audit/changed-expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/body.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03/root.bin"
+          ],
+          "exit_code": 1,
+          "expected_success": false,
+          "elapsed_seconds": 0.0033142566680908203
+        },
+        {
+          "case": "changed-proof",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-wallet-recovery-ownership-20261015/cpu-build-01/production-image",
+            "audit-root",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/body.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03-audit/changed-proof.bin"
+          ],
+          "exit_code": 1,
+          "expected_success": false,
+          "elapsed_seconds": 0.03142261505126953
+        }
+      ]
+    }
+  ],
+  "artifact_files": {
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup/bootstrap.json": "f754de0034b0b5cacbcbf78c556d882d19ef91a9c1f382e4dd7de96549e41998",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup/budget.json": "146ff5f36c6add253e09c035263c78b78910236843c28c505dd523801e0a9d12",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup/execution.json": "871cd975dfb064874d73d9b483f40b5ac306e5bc9ed365cbb9dfa7ee9fc00d41",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup/result.json": "9b706b9a55eef142bce0206f8c82df7b420df69d80183e5601d7f38fdf3211a1",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup/root.bin": "ab884fd959572c18a61c4ce3c50a1eeb4dd2fe28fed4b612ba4e5028a0ec4b54",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup/service-identity.json": "0235f38c4e351ea2dac8e777d29bccc64aac770a3f0e06c8daec106ab6ded6da",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup/test.log": "8a08979e549274a941eccfc7c10ef18216a681ece49bc08671a1940a20e68ecb",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup/worker-observations.json": "4e270360f748e97ed2ae5f7d4ce230dfefb01c0b63327db532a818695749301a",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup/worker.log": "feec5a96204f8c1568cefb616c7a49af0d46f8baaab3daf43ef9402175dbe8aa",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup-audit/changed-expected.json": "47918a3adb501eb53335ec63281af8aeea6bd65e4b9a73d1bfd6c816f4bf97d0",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup-audit/changed-proof.bin": "75788247767b9686a3edc07508e6dc90fe5de6df1fafa94ba6ac6867c93685b8",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup-audit/changed-proof.log": "fa08b0ab983c8f24eab74c32c526b08f34e161ccc3319ad932fd1825e0dbfa76",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup-audit/changed-statement.log": "ed4d243c0e9d0e394bd62a6cdd7ce2de632b0e321ca95d84a2c185134cb2e75b",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup-audit/result.json": "5647c4a4e810165792e17ffb7c7a9aa5cf47655906848fe90f3aed6c1ababef7",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/warmup-audit/valid.log": "418e7645b4dde67b3abe8ee5aa542476e64aafd2e29ad64bc6b37671dc3594e4",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01/bootstrap.json": "466ca7bc3d9b6c8e93f3bf4b432c0e6b328449565fd1b67f742db5773c6fc6d2",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01/budget.json": "f9e8e42e84f1023fc67ce78117cc1b83bf99a3db78838927c4784c65b7dd7ef9",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01/execution.json": "495be29ec03f712b7f8d7f6715a360e506ff5826564dec04a8c0124750d4bb31",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01/result.json": "7e7ebc451f4c6610b4b84d21a029d878f9c3ce443ecff7b366f972b0af70e227",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01/root.bin": "2dbd597b12d8bc68d1550223ec316467f05c0643f0e129c7c0d5b7713870ecaf",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01/service-identity.json": "b9d01af0765d15478d9e4b2c2728859bff1ed2b1cfe814764dedf1175382229e",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01/test.log": "d67b0e8016b1f72e83dd745d31aa629d0499b791043a666bf480dcc2014acd72",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01/worker-observations.json": "250ef908e148d58c07726dca657b92697d00eef2d88a289279492a9c52975545",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01/worker.log": "9bd713b02331959c41e99fa44fa0d03f2731b56c655dfe2a6344539eb3e14d50",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01-audit/changed-expected.json": "47918a3adb501eb53335ec63281af8aeea6bd65e4b9a73d1bfd6c816f4bf97d0",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01-audit/changed-proof.bin": "1ae517bfb5a882c37565374213e15a8c5014025030e30ffc1cf0891d43d3fe6a",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01-audit/changed-proof.log": "fa08b0ab983c8f24eab74c32c526b08f34e161ccc3319ad932fd1825e0dbfa76",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01-audit/changed-statement.log": "ed4d243c0e9d0e394bd62a6cdd7ce2de632b0e321ca95d84a2c185134cb2e75b",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01-audit/result.json": "b69de2fc69a005d48d72499bb4761b4bcb966420861ce808d3e435dd908ee408",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-01-audit/valid.log": "418e7645b4dde67b3abe8ee5aa542476e64aafd2e29ad64bc6b37671dc3594e4",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02/bootstrap.json": "478740306a2b904a45466041c426542be28f5362835d2433744fa40a33ab71a3",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02/budget.json": "4692fcde2bb2ca0744820a5838462f9faac0f4a85af5d1ebf0608e97a919449f",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02/execution.json": "2b4ce5f6bda3db2dd2216ce403f7b563ec53ca39dfcc3ae365900c3c084c3503",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02/result.json": "91ecbc540c6607401a7113ab4ca4dbee47a27742590f4aa0e0c68f0bb1cd5f3e",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02/root.bin": "b8f829e7415f02b118523f5deced5035481aaf4d6d98fe973981089d365cc946",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02/service-identity.json": "f91131aef9c87b3487f39419481afcdd6fc67729d83c35cbe594a4cde920ce97",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02/test.log": "64995d0e822eb23ec6ccd78effeea89b70ccff2578acc691372bf1f9ddc72846",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02/worker-observations.json": "95ff699e9f8e0fa5dcf92d1743e84ef596f1d2d59df8dfcc2489bffe0be2fcba",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02/worker.log": "ec0ebfa5b10a8cb2a6cf904fb477f74993286fe4fbbb14dcc19c88be7ffffcec",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02-audit/changed-expected.json": "47918a3adb501eb53335ec63281af8aeea6bd65e4b9a73d1bfd6c816f4bf97d0",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02-audit/changed-proof.bin": "4566afa4ef8bd0156ba69ca83d3f15452bd365cea6834e32ca7975037918414c",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02-audit/changed-proof.log": "fa08b0ab983c8f24eab74c32c526b08f34e161ccc3319ad932fd1825e0dbfa76",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02-audit/changed-statement.log": "ed4d243c0e9d0e394bd62a6cdd7ce2de632b0e321ca95d84a2c185134cb2e75b",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02-audit/result.json": "342c24d026503cfbf120ef9e868e28445165dbd6c3dc40ba4ef357f3b6dff16c",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-02-audit/valid.log": "418e7645b4dde67b3abe8ee5aa542476e64aafd2e29ad64bc6b37671dc3594e4",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03/bootstrap.json": "85132dcb28612522385780a728d9aa856fb39e7fe1aa9a0d379c1917d9ed1bb0",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03/budget.json": "818eb35d7133cfc2bf71e32d1c757422796358ac6d15144a3408702c67a4c4ae",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03/execution.json": "63ee7568cc31007fc7e5e513e99848c438e1eb8a056082645ba867685a0b30b3",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03/result.json": "cb6f8fb8236452dc868f84653f753c7b39c08c588b3971a386a2c2cf816bbac8",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03/root.bin": "88290e245eb72744adf76c36bc26aabc58a9734501768ade5eee3d4711195811",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03/service-identity.json": "9cd831b285a2acfb0d7574d6080dba952d0d55804c1b1c3b6ed4221c5c21b760",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03/test.log": "3ab113b418e47c19d73392d360551f494cd063367e62e1e1a5daa6531479d451",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03/worker-observations.json": "82695d2ce120a95151b06417022b05cf5263a2db123d1b50c0bbc680464c3187",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03/worker.log": "06f80020f26f367bc508bc8627f9da228a573e79f4c5c8f6e56c92e6e74d6821",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03-audit/changed-expected.json": "47918a3adb501eb53335ec63281af8aeea6bd65e4b9a73d1bfd6c816f4bf97d0",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03-audit/changed-proof.bin": "af8bfaa72093efb978ce22c284a69a6babb81314d0dd690c56dbaad2ad28b694",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03-audit/changed-proof.log": "fa08b0ab983c8f24eab74c32c526b08f34e161ccc3319ad932fd1825e0dbfa76",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03-audit/changed-statement.log": "ed4d243c0e9d0e394bd62a6cdd7ce2de632b0e321ca95d84a2c185134cb2e75b",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03-audit/result.json": "7c855ba8c1947618a38f19170d7a039eef4a74a1fbb1cdb674b972abffc5bcba",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-03-audit/valid.log": "418e7645b4dde67b3abe8ee5aa542476e64aafd2e29ad64bc6b37671dc3594e4",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark.py": "647a57c98a9e1346234bc744b58324400d9293a1c13115b945ed353dda1c55af",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-run.py": "e0a1a94bab77903669234100a78be760e9ab01cc16b9066ffed873979ecf2321",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/audit.py": "1e61799be21baa867d6973b1352925cc6dd897ef6aee33b10f7113817fe365d5",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/make-benchmark-evidence.py": "52a792da2ac0b73ea850a63978d09f3abdc926ae0b5bd514e93a88fab646b636",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/benchmark-progress.json": "4f17b0cf680a7a1d24581c17cada72452b0e3ff00f123fe3ceaf16a657f371e0",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/source-pins.json": "709b2ce9bc56142219fa8f0af515ab5b0f8eb100e1aa8a2be16101342fef35a9",
+    "lattica-prover-p3/benchmark-results/cuda-native-worker-20261019/qualification-01/wide-release": "c1ae863c6db83364266969e916c2de9043065cb2c93d4b46a1ffdb935f30eb0f"
+  }
+}
