@@ -898,6 +898,14 @@ service. Its fresh `LATTICA_CUDA_RECURSIVE_ARTIFACTS` directory must already con
 this program. Afterward, run the existing CPU artifact-audit test against the new
 outputs; the approved program cap alone does not authenticate the new proof.
 
+The [post-push registered benchmark at `c28140d`](evidence/cuda-registered-benchmark-2026-10-19.json)
+completed one warmup and three measurements, with independent CPU audits of all
+four proofs. Median registered proving time was 4.814 seconds (range 4.810–4.817);
+approved public preparation took 0.591 seconds separately. This timer includes
+fresh private-seed import and report finalization, which earlier raw-engine
+timers excluded. It measures one registered wallet-verifier program per fresh
+process, without a paired baseline, production aggregation or transaction rate.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)
