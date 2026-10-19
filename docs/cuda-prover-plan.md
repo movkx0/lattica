@@ -1157,6 +1157,21 @@ OpenCL metadata or reuse OpenCL context/timing approvals. Public wallet routing,
 failure/recovery, multiple GPUs, V100 execution and broader workloads remain
 outstanding; CUDA remains opt-in.
 
+The [post-push CLI benchmark at `2eb4fce`](evidence/cuda-cli-worker-benchmark-2026-10-19.json)
+completed one warmup and three measured trials after the builds and correctness
+checks finished. Each trial used a fresh supervised CLI worker, one cache slot,
+four fresh preparations and four recursive proofs. Median startup through
+verified/durably accepted results, shutdown, observed exit and startup-fence
+reconciliation was **54.106 seconds** (52.439–54.514), or about **266 aggregated
+inputs per hour** for this four-input fixture. Median summed dispatch/collection
+intervals were 49.302 seconds; median whole producer time was 55.008 seconds.
+Every trial, including warmup, passed the archived CPU root audit and rejected
+altered statements and proof bytes. All device owners retired before release.
+The count includes three non-issuance inputs and one issuance input. Wallet
+proving, network/consensus, Python pool scheduling and steady-state reuse are
+excluded. These startup and reconciliation boundaries differ from the earlier
+typed-session/native-ABI measurements; no matched speedup comparison is claimed.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)
