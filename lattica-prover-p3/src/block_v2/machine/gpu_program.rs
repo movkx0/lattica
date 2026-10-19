@@ -4,6 +4,7 @@
 use super::{air, program::*};
 use p3_field::PrimeField64;
 
+pub(crate) mod kernels;
 mod schedule;
 pub(crate) use schedule::WitnessSchedule;
 

@@ -62,6 +62,12 @@ stage ledger now binds observed CUDA completions to each wallet proof attempt,
 covering all fourteen arithmetic stages in the single-wallet protocol. Typed
 JoinSplit and HTLC preparation binds the actual AIR and runtime; each proof uses
 fresh private randomness and finalizes its report before returning its artifact.
+Native recursive-machine execution now also constructs witness traces and
+deterministic preprocessing from immutable public program metadata and raw
+inputs. Dependency waves, base/cubic arithmetic, Poseidon2 traces and execution
+checks run on CUDA. Generated traces, preprocessing and public values feed the
+native lookup stage directly. Complete recursive batch-STARK orchestration
+remains outstanding.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -714,7 +720,25 @@ Public preparation took 247 ms separately. These single-wallet proofs contain
 no lookup or recursive stage, so this screen does not measure the new lookup
 component or recursive transaction throughput.
 
-Public request routing, batch wallet traces, recursive batch/lookup orchestration,
+[Native recursive-machine witnesses](evidence/cuda-witness-2026-10-19.json)
+reuse the existing bounded program compiler and shared OpenCL execution kernels.
+Preparation uploads immutable metadata once and retains only the compact launch
+schedule, charged to the runtime's public-program allowance. Each invocation
+admits its trace, wires, input/status storage and public output before private
+transfers. All thirteen existing opcodes and preprocessing rows match the CPU
+AIR across empty, padded, branching and dependent-hash programs. Failed
+execution checks release private storage and permit fresh valid attempts.
+
+The generated main trace, preprocessing and public values feed native LogUp
+without intermediate readback; only the two eight-byte status flags return
+before the independent CPU audit. All seventeen qualification checks passed:
+168 native tests, all six new witness tests under each sanitizer, twelve
+streaming witness/compiler tests, the affected OpenCL comparisons and
+CPU/OpenCL/Metal/standalone-CUDA build checks. All 806 source pins match the
+staged Git blobs. These are component correctness results; complete recursive
+proof orchestration and performance qualification remain unfinished.
+
+Public request routing, batch wallet traces, recursive batch-STARK orchestration,
 whole-request admission and worker/pool integration remain unfinished. The new
 opt-in CPU/CUDA benchmark measures raw witness to serialized wallet proof, with
 independent CPU verification outside timing; it does not measure recursive

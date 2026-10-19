@@ -11,7 +11,7 @@ pub(crate) mod compiler_constants;
 mod fingerprint;
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 pub(crate) mod gpu_backend;
-#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 pub(crate) mod gpu_program;
 pub mod merkle;
 pub mod program;

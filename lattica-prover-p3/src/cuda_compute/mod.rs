@@ -31,6 +31,8 @@ mod transcript;
 mod transform;
 #[cfg(feature = "block-v2")]
 mod wallet;
+#[cfg(feature = "block-v2")]
+mod witness;
 
 pub(crate) use budget::{Limits, Snapshot};
 pub(crate) use buffer::Buffer;
@@ -79,5 +81,7 @@ fn cleanup(result: Result<()>, operation: &str) {
     }
 }
 
+#[cfg(feature = "block-v2")]
+pub(crate) use witness::{ExecutionTrace, PreparedWitness, PreprocessingTrace, Witnesses};
 #[cfg(feature = "block-v2")]
 pub(crate) use wallet::{NativeWalletTrace, Wallets};

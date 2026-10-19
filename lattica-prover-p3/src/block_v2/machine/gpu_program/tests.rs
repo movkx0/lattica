@@ -194,6 +194,7 @@ fn row_indices_and_families_reject_before_compiler_allocation() {
 }
 
 #[test]
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 #[ignore = "requires OpenCL GPU; serial <=3 GiB zero-swap service"]
 fn gpu_witness_and_preprocessing_match_cpu_across_programs_and_fresh_sessions() {
     use crate::block_v2::gpu_hash::{self as engine, device::DeviceSession, Limits};
@@ -316,6 +317,7 @@ fn gpu_witness_and_preprocessing_match_cpu_across_programs_and_fresh_sessions() 
 }
 
 #[test]
+#[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 #[ignore = "requires OpenCL GPU; serial <=3 GiB zero-swap service"]
 fn gpu_witness_failures_are_explicit_bounded_and_do_not_poison_reuse() {
     use crate::block_v2::gpu_hash::{
