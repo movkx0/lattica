@@ -129,6 +129,7 @@ fn validate_plan(plan: &Plan) -> Result<Vec<(Resources, Resources)>, Error> {
 // Historical service windows are normally expired at recovery. Their shape
 // and immutable workflow binding remain mandatory; only the new launch is live.
 fn validate_plan_shape(plan: &Plan) -> Result<Vec<(Resources, Resources)>, Error> {
+    fleet_slice(plan)?;
     let calibration = plan.pool_calibration.is_some();
     let bounded = plan.pool_scheduling.is_some();
     let qualified = bounded && !calibration;
@@ -282,11 +283,59 @@ fn validate_plan_shape(plan: &Plan) -> Result<Vec<(Resources, Resources)>, Error
     Ok(resources)
 }
 
-fn coordinator_fleet_parent(parent: &Path, bounded: bool) -> Result<&Path, Error> {
+fn checked_fleet_slice(name: &str, bounded: bool) -> Result<&str, Error> {
+    if name == "lattica-v2-multi.slice" {
+        return Ok(name);
+    }
+    let suffix = name
+        .strip_prefix("lattica-v2-multi-")
+        .and_then(|s| s.strip_suffix(".slice"));
+    if !bounded
+        || name.len() > 100
+        || name.ends_with("-coordinator.slice")
+        || suffix.is_none_or(|s| {
+            s.split('-').any(|part| {
+                part.is_empty()
+                    || !part
+                        .bytes()
+                        .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
+            })
+        })
+    {
+        return Err("invalid dedicated bounded fleet slice".into());
+    }
+    Ok(name)
+}
+
+fn fleet_slice(plan: &Plan) -> Result<&str, Error> {
+    let mut selected = None;
+    for worker in &plan.workers {
+        let name = match worker.assignment.get("slice") {
+            None => "lattica-v2-multi.slice",
+            Some(value) => value.as_str().ok_or("invalid assigned fleet slice")?,
+        };
+        let name = checked_fleet_slice(name, plan.pool_workflow.is_some())?;
+        if selected.is_some_and(|previous| previous != name) {
+            return Err("workers must share their independently assigned fleet slice".into());
+        }
+        selected = Some(name);
+    }
+    Ok(selected.unwrap_or("lattica-v2-multi.slice"))
+}
+
+fn coordinator_fleet_parent<'a>(
+    parent: &'a Path,
+    bounded: bool,
+    slice: &str,
+) -> Result<&'a Path, Error> {
     if !bounded {
         return Ok(parent);
     }
-    if parent.file_name().and_then(|v| v.to_str()) != Some("lattica-v2-multi-coordinator.slice")
+    let controls = format!(
+        "{}-coordinator.slice",
+        slice.strip_suffix(".slice").ok_or("invalid fleet slice")?
+    );
+    if parent.file_name().and_then(|v| v.to_str()) != Some(controls.as_str())
         || std::fs::read_to_string(parent.join("memory.max"))?.trim() != (1u64 << 30).to_string()
         || std::fs::read_to_string(parent.join("memory.swap.max"))?.trim() != "0"
     {
@@ -331,11 +380,12 @@ fn require_coordinator(plan: &Plan) -> Result<(), Error> {
     let parent = group
         .parent()
         .ok_or("shared coordinator fleet slice missing")?;
-    let fleet = coordinator_fleet_parent(parent, plan.pool_workflow.is_some())?;
+    let slice = fleet_slice(plan)?;
+    let fleet = coordinator_fleet_parent(parent, plan.pool_workflow.is_some(), slice)?;
     if !plan.coordinator_unit.starts_with("lattica-v2-multi-owner-")
         || !plan.coordinator_unit.ends_with(".service")
         || group.file_name().and_then(|v| v.to_str()) != Some(plan.coordinator_unit.as_str())
-        || fleet.file_name().and_then(|v| v.to_str()) != Some("lattica-v2-multi.slice")
+        || fleet.file_name().and_then(|v| v.to_str()) != Some(slice)
         || std::fs::read_to_string(fleet.join("memory.max"))?
             .trim()
             .parse::<u64>()?
@@ -993,6 +1043,51 @@ mod tests {
     use super::*;
 
     #[test]
+    fn dedicated_fleets_bind_every_assignment_and_keep_control_limits() {
+        let name = "lattica-v2-multi-cuda-pool-test.slice";
+        assert!(checked_fleet_slice(name, false).is_err());
+        for bad in [
+            "other.slice",
+            "../lattica-v2-multi-x.slice",
+            "lattica-v2-multi-.slice",
+            "lattica-v2-multi-x--y.slice",
+            "lattica-v2-multi-coordinator.slice",
+        ] {
+            assert!(checked_fleet_slice(bad, true).is_err());
+        }
+        let mut assigned = plan();
+        assigned.workers[0].assignment["slice"] = json!(name);
+        assert!(fleet_slice(&assigned).is_err());
+        assigned.pool_workflow = Some(pool_timing::Workflow {
+            schema_version: 1,
+            boot_id: "scope-only-test".into(),
+            started_monotonic_ms: 0,
+            deadline_monotonic_ms: pool_timing::CANDIDATE_MS,
+        });
+        assert!(fleet_slice(&assigned).is_err());
+        assigned.workers[1].assignment["slice"] = json!(name);
+        assert_eq!(fleet_slice(&assigned).unwrap(), name);
+        let directory =
+            std::env::temp_dir().join(format!("lattica-private-fleet-{}", std::process::id()));
+        let fleet = directory.join(name);
+        let controls = fleet.join("lattica-v2-multi-cuda-pool-test-coordinator.slice");
+        std::fs::create_dir_all(&controls).unwrap();
+        std::fs::write(controls.join("memory.max"), (1u64 << 30).to_string()).unwrap();
+        std::fs::write(controls.join("memory.swap.max"), "0").unwrap();
+        for group in [&controls, &fleet] {
+            std::fs::write(group.join("cpu.max"), "400000 100000").unwrap();
+        }
+        assert_eq!(
+            coordinator_fleet_parent(&controls, true, name).unwrap(),
+            fleet
+        );
+        assert!(coordinator_fleet_parent(&controls, true, "lattica-v2-multi.slice").is_err());
+        std::fs::write(controls.join("memory.max"), (2u64 << 30).to_string()).unwrap();
+        assert!(coordinator_fleet_parent(&controls, true, name).is_err());
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
     fn bounded_control_processes_share_one_host_and_cpu_allowance() {
         let directory =
             std::env::temp_dir().join(format!("lattica-native-budget-{}", std::process::id()));
@@ -1004,18 +1099,24 @@ mod tests {
         for group in [&controls, &fleet] {
             std::fs::write(group.join("cpu.max"), "400000 100000").unwrap();
         }
-        assert_eq!(coordinator_fleet_parent(&controls, true).unwrap(), fleet);
-        assert_eq!(coordinator_fleet_parent(&fleet, false).unwrap(), fleet);
-        assert!(coordinator_fleet_parent(&fleet, true).is_err());
+        assert_eq!(
+            coordinator_fleet_parent(&controls, true, "lattica-v2-multi.slice").unwrap(),
+            fleet
+        );
+        assert_eq!(
+            coordinator_fleet_parent(&fleet, false, "lattica-v2-multi.slice").unwrap(),
+            fleet
+        );
+        assert!(coordinator_fleet_parent(&fleet, true, "lattica-v2-multi.slice").is_err());
         std::fs::write(controls.join("memory.max"), (2u64 << 30).to_string()).unwrap();
-        assert!(coordinator_fleet_parent(&controls, true).is_err());
+        assert!(coordinator_fleet_parent(&controls, true, "lattica-v2-multi.slice").is_err());
         std::fs::write(controls.join("memory.max"), (1u64 << 30).to_string()).unwrap();
         std::fs::write(controls.join("memory.swap.max"), "1").unwrap();
-        assert!(coordinator_fleet_parent(&controls, true).is_err());
+        assert!(coordinator_fleet_parent(&controls, true, "lattica-v2-multi.slice").is_err());
         std::fs::write(controls.join("memory.swap.max"), "0").unwrap();
         for group in [&controls, &fleet] {
             std::fs::write(group.join("cpu.max"), "max 100000").unwrap();
-            assert!(coordinator_fleet_parent(&controls, true).is_err());
+            assert!(coordinator_fleet_parent(&controls, true, "lattica-v2-multi.slice").is_err());
             std::fs::write(group.join("cpu.max"), "400000 100000").unwrap();
         }
         std::fs::remove_dir_all(directory).unwrap();

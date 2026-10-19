@@ -93,8 +93,11 @@ def regular(path, limit):
 
 
 def fingerprints(binding):
+    backend = binding.get('backend', 'opencl')
+    if backend not in ('opencl', 'cuda'):
+        raise ValueError('unsupported pool timing backend')
     values = [
-        'lattica/nvidia/opencl/gpu-required/native-pool/v1',
+        f'lattica/nvidia/{backend}/gpu-required/native-pool/v1',
         {'embedded_kernels_executable_sha256': binding['executable_sha256']},
         binding['device'], binding['drivers'], binding['settings'],
     ]
@@ -115,15 +118,27 @@ def binding(binary, device, budget, profile, environment):
     if (stable_environment.get('LATTICA_PROVING_POLICY') != 'gpu-required'
             or stable_environment.get('LATTICA_PROVING_REPORT') != '1'):
         raise ValueError('qualified pool requires GPU arithmetic and stage reports')
-    nv, cl = device['nvidia'], device['opencl']
+    import block_v2_resources as R
+    backend = R.device_backend(device)
+    nv = device['nvidia']
+    if budget.get('backend', 'opencl') != backend or profile.get('backend', 'opencl') != backend:
+        raise ValueError('pool timing workload and backend differ')
     if budget['gpu']['uuid'] != device['uuid'] or nv['uuid'] != device['uuid']:
         raise ValueError('pool timing device differs from the worker assignment')
-    return {
+    result = {
         'executable_sha256': digest(binary),
         'device': {key: nv[key] for key in ['uuid', 'name', 'total_bytes', 'pci']},
-        'drivers': {'nvidia': nv['driver'], 'opencl': cl['driver']},
+        'drivers': R.device_drivers(device),
         'settings': {'budget': stable_budget, 'profile': profile, 'environment': stable_environment},
     }
+    if backend == 'cuda':
+        import block_v2_cuda_cli as Cuda
+        Cuda.runtime_pins(budget.get('cuda_runtime'))
+        if environment.get('LD_LIBRARY_PATH') != budget['cuda_runtime']['library_directory']:
+            raise ValueError('CUDA timing runtime environment differs from assignment')
+        result['backend'] = 'cuda'
+        result['device']['compute_capability'] = R.cuda_identity(device)['compute_capability']
+    return result
 
 
 def approvals(values, uuids):

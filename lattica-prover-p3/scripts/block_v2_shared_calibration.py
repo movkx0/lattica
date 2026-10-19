@@ -29,7 +29,9 @@ def source_profile(config, shared):
         workloads = [Path(path) for path in config['pins']
                      if Path(path).name == 'block-v2-multi-gpu-direct-readback-workload.json']
     mode = config.get('workload_profile', {}).get('typed_ram_admission', 'compact')
-    profiles = [shared.T.resource_profile(path, 'paired', mode) for path in workloads]
+    recorded = config.get('workload_profile', {})
+    profiles = [shared.T.resource_profile(path, 'paired', mode,
+                 shared.T.Capacity.configured(recorded), recorded.get('backend', 'opencl')) for path in workloads]
     if not profiles or any(profile != profiles[0] for profile in profiles):
         raise ValueError('shared calibration workload pins are missing or ambiguous')
     if config.get('workload_profile', profiles[0]) != profiles[0]:

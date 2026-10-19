@@ -180,7 +180,16 @@ def detect_host(scratch, worker_cgroup=None):
 
 
 def detect_gpus(binary):
-    opencl = command_json([str(binary), '--gpu-inventory'])
+    inventory = command_json([str(binary), '--gpu-inventory'])
+    backend = 'opencl'
+    if isinstance(inventory, dict):
+        if (set(inventory) != {'schema', 'backend', 'devices'}
+                or inventory['schema'] != 'lattica-gpu-inventory-v1'
+                or inventory['backend'] != 'cuda'):
+            raise ValueError('unsupported GPU inventory envelope')
+        backend, inventory = 'cuda', inventory['devices']
+    if not isinstance(inventory, list) or len(inventory) > 64:
+        raise ValueError('GPU inventory must be a bounded device list')
     fields = 'uuid,name,memory.total,memory.free,driver_version,pci.bus_id'
     text = subprocess.check_output(['nvidia-smi', '--query-gpu=' + fields, '--format=csv,noheader,nounits'], text=True, timeout=10)
     nvidia = {}
@@ -189,14 +198,61 @@ def detect_gpus(binary):
         nvidia[uuid.lower()] = {'uuid': uuid, 'name': name, 'total_bytes': int(total) * MIB,
                                 'free_bytes': int(free) * MIB, 'driver': driver, 'pci': pci}
     devices = []
-    for cl in opencl:
+    for cl in inventory:
+        if not isinstance(cl, dict) or 'uuid' not in cl or (cl['uuid'] is not None and not isinstance(cl['uuid'], str)):
+            raise ValueError('invalid GPU inventory identity')
         if not cl['uuid'] or cl['uuid'].lower() not in nvidia:
+            if backend == 'cuda':
+                raise ValueError('CUDA UUID is absent from NVIDIA inventory')
             continue
         nv = nvidia[cl['uuid'].lower()]
-        devices.append({'uuid': nv['uuid'], 'opencl': cl, 'nvidia': nv})
+        device = {'uuid': nv['uuid'], backend: cl, 'nvidia': nv}
+        if backend == 'cuda':
+            device['backend'] = 'cuda'
+            cuda_identity(device)
+        devices.append(device)
     if len({d['uuid'] for d in devices}) != len(devices):
-        raise ValueError('duplicate OpenCL UUID; selection is ambiguous')
+        raise ValueError('duplicate GPU UUID; selection is ambiguous')
     return devices
+
+
+def device_backend(device):
+    backend = device.get('backend', 'opencl')
+    if (backend not in ('cuda', 'opencl') or backend not in device
+            or ('cuda' in device and 'opencl' in device)):
+        raise ValueError('GPU metadata and explicit backend differ')
+    return backend
+
+
+def pci_identity(value):
+    try:
+        domain, bus, address = value.split(':')
+        slot, function = address.split('.')
+        parts = tuple(int(p, 16) for p in [domain, bus, slot, function])
+        if not all(0 <= p < limit for p, limit in zip(parts, [1 << 32, 256, 32, 8])):
+            raise ValueError()
+        return parts
+    except (AttributeError, TypeError, ValueError):
+        raise ValueError('invalid GPU PCI identity') from None
+
+
+def cuda_identity(device):
+    if device_backend(device) != 'cuda':
+        raise ValueError('CUDA resource model requires CUDA inventory')
+    cuda, nv = device['cuda'], device['nvidia']
+    if (not isinstance(cuda.get('uuid'), str) or cuda['uuid'].lower() != device['uuid'].lower()
+            or nv['uuid'] != device['uuid'] or pci_identity(cuda.get('pci')) != pci_identity(nv.get('pci'))
+            or any(type(cuda.get(k)) is not int or cuda[k] <= 0 for k in
+                   ('global_bytes', 'compute_capability', 'driver_api'))):
+        raise ValueError('CUDA/NVIDIA device identity or geometry differs')
+    return cuda
+
+
+def device_drivers(device):
+    if device_backend(device) == 'cuda':
+        cuda = cuda_identity(device)
+        return {'nvidia': device['nvidia']['driver'], 'cuda_driver_api': cuda['driver_api']}
+    return {name: device[name]['driver'] for name in ('nvidia', 'opencl')}
 
 
 @dataclass(frozen=True)
@@ -239,6 +295,23 @@ class HostBudget:
 
 
 def gpu_budget(device, calibration=None):
+    if device_backend(device) == 'cuda':
+        cuda, nv = cuda_identity(device), device['nvidia']
+        if calibration is not None:
+            raise ValueError('OpenCL context calibration cannot admit CUDA')
+        if cuda['compute_capability'] < 70 or cuda['driver_api'] < 12090:
+            raise ValueError('CUDA prover requires SM 7+ and a CUDA 12.9-compatible driver')
+        usable = min(cuda['global_bytes'], nv['total_bytes'])
+        available = min(usable, nv['free_bytes'])
+        headroom = up(max(512 * MIB, (usable + 19) // 20))
+        context = 4 * GIB
+        managed = down(available - headroom - context)
+        if managed <= 0:
+            raise ValueError('GPU has no admitted CUDA managed capacity')
+        # CUDA supplies no OpenCL-style allocation maximum. The planner sets a
+        # ceiling within the observed capacity; native allocation can still fail.
+        return GpuBudget(VERSION, device['uuid'], usable, available, headroom,
+                         context, managed, managed + context, managed, True)
     cl, nv = device['opencl'], device['nvidia']
     usable = min(cl['global_bytes'], nv['total_bytes'])
     available = min(cl['global_bytes'], nv['free_bytes'])
@@ -942,6 +1015,8 @@ def workload_fits(budget, profile):
 
 
 def plan(host, devices, slots, profile, calibrations=None):
+    if any(device_backend(device) != 'opencl' for device in devices):
+        raise ValueError('CUDA requires its explicit maintained owned CLI planner')
     calibrations = calibrations or {}
     shared = shared_budgets(host, [d['uuid'] for d in devices[:slots]], profile.get('pool_allocation'))
     budgets = {}

@@ -214,6 +214,11 @@ def proving_environment(source=None):
 
 
 def environment(budget, directory):
+    if budget.get('backend', 'opencl') == 'cuda':
+        import block_v2_cuda_cli as Cuda
+        return Cuda.environment(budget, directory)
+    if budget.get('backend', 'opencl') != 'opencl':
+        raise ValueError('unsupported worker GPU backend')
     gpu, cpu, host = (budget[k] for k in ('gpu', 'cpu', 'host'))
     # Owned admission binds the allocator's cached directory byte-for-byte to
     # the assignment before Rayon starts. Its explicit one-worker experiment

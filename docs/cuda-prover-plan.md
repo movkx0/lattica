@@ -74,8 +74,10 @@ typed sessions now also prove maintained pair wrappers, merges and finalizers
 against an independently approved registry. The explicit native public-worker
 service now routes these sessions through the existing local worker protocol;
 The maintained paired Rust CLI now exposes CUDA inventory and an admitted,
-fenced persistent worker service. Python pool planning and public wallet
-routing remain outstanding.
+fenced persistent worker service. The Python shared launcher now qualifies
+explicit single-worker CUDA calibration with separate resource and timing
+identities. Timing-approved pool operation and public wallet routing remain
+outstanding.
 Public preprocessing now survives failed private proof attempts on a healthy
 runtime. Each salt replay uses an isolated temporary consumer; failed private
 randomness still retires across every alias. The public path accepts only
@@ -119,12 +121,12 @@ alpha powers, selectors, constraints and vanishing-polynomial division execute
 on CUDA, with only a public domain-validity word read back per evaluation.
 
 Public wallet requests are not yet routed through CUDA.
-Cached twiddle tuning, public wallet backend selection, Python controller admission and pool
-integration remain outstanding. Prepared quotient handles
+Cached twiddle tuning, public wallet backend selection, approved pool operation
+and concurrency qualification remain outstanding. Prepared quotient handles
 support reuse without retaining witnesses or sampled parameters. A bounded
 public program cache now supports repeated preparation within an evaluator;
 disk and cross-worker caches remain absent. Use the existing OpenCL backend
-for maintained end-to-end controller runs at this checkpoint.
+for previously qualified end-to-end delivery workflows.
 
 Install the pinned development components with
 `python3 lattica-prover-p3/scripts/setup-cuda-toolchain.py --prefix .tools/cuda-12.9.1`.
@@ -1171,6 +1173,34 @@ The count includes three non-issuance inputs and one issuance input. Wallet
 proving, network/consensus, Python pool scheduling and steady-state reuse are
 excluded. These startup and reconciliation boundaries differ from the earlier
 typed-session/native-ABI measurements; no matched speedup comparison is claimed.
+
+The [Python pool qualification](evidence/cuda-python-pool-2026-10-19.json)
+connects `block-v2-typed-shared-gpu-run.py --gpu-backend cuda` to the maintained
+CUDA worker. It requires `--owned-public-gpu`, a pinned `--cuda-library-path`,
+and explicit calibration or independently approved CUDA timings. CUDA inventory,
+construction budgets, runtime libraries and timing identities remain distinct
+from OpenCL. `--fleet-slice` selects a dedicated bounded hierarchy without
+changing the shared fleet's settings.
+
+All 259 Python checks passed, along with 63 CUDA admission/recovery tests and
+60 CPU regressions; CUDA/CPU builds and the OpenCL compile check passed. The
+first live attempt exposed separate Python module instances retaining different
+fleet settings. It started no GPU worker; its shared settings were restored.
+A scope propagation fix and regression test preceded a fresh qualification.
+
+The successful run preserved the 3/1/4 GiB worker/coordinator/fleet limits and
+600/150/180-second workflow/dispatch/service limits. All four fresh recursive
+proofs passed independent CPU verification. The unchanged archived CPU auditor
+accepted the final root and rejected altered statements and proof bytes. All
+24 reports had complete CUDA coverage and no observation errors. Managed VRAM
+peaked at 7,450,300,432 bytes and worker RAM at 1,271,300,096 bytes. No memory
+limit or OOM events occurred; every CUDA owner retired and all qualification
+services exited. All 1,043 source pins remained unchanged during the final run.
+
+Calibration remains `approved_for_pool_import: false`; no timing approval or
+throughput result is inferred from qualification. Public wallet routing, live
+failure/recovery, multiple workers, V100 execution and larger workloads remain
+outstanding.
 
 ## Implementation sequence
 

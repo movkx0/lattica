@@ -31,7 +31,21 @@ PoolSeal = importlib.import_module('block_v2_pool_seal')
 PoolHandoff = importlib.import_module('block_v2_pool_handoff')
 PoolCalibration = importlib.import_module('block_v2_pool_calibration')
 Owned = importlib.import_module('block_v2_owned_cli')
+Cuda = importlib.import_module('block_v2_cuda_cli')
+PoolScope = importlib.import_module('block_v2_pool_scope')
 PublicCache = importlib.import_module('block_v2_public_artifact_cache')
+
+
+def configure_fleet_scope(name):
+    # The legacy comparison loader and bootstrap import separate GPU modules.
+    # Every launcher must target the same explicitly selected hierarchy.
+    for gpu in (G, Bootstrap.G, Controller.G):
+        PoolScope.configure(name, gpu, PoolTiming)
+
+
+def select_fleet_scope(args):
+    PoolScope.select(args, G, PoolTiming)
+    configure_fleet_scope(G.SLICE)
 
 
 def read(path):
@@ -96,6 +110,7 @@ def launch_worker(path):
     config = read(path)
     T.check_pins(config["pins"])
     budget, directory = config["budget"], Path(config["directory"])
+    configure_fleet_scope(budget.get('slice'))
     if read(directory / "budget.json") != budget:
         raise ValueError("shared worker budget changed")
     command = properties(budget["unit"], budget["host"]["worker_bytes"],
@@ -550,6 +565,7 @@ def release_native_cache(native):
 
 def owner(path):
     config = read(path)
+    configure_fleet_scope(config.get('fleet_slice'))
     Bootstrap.enter(path)
     preseal = config.get('preseal_only', False)
     pool_mode = config.get("pool_requests") is not None
@@ -751,6 +767,9 @@ def run(args, control=None):
     preseal = getattr(args, 'preseal', False)
     calibration_mode = PoolCalibration.check_mode(args)
     owned = Owned.check_mode(args)
+    select_fleet_scope(args)
+    backend = getattr(args, 'gpu_backend', 'opencl')
+    cuda_runtime = Cuda.runtime(args.cuda_library_path) if backend == 'cuda' else None
     pool_requests = getattr(args, 'pool_requests', None)
     timing_approvals = PoolTiming.approvals(getattr(args, 'pool_timing_approval', []), args.gpu_uuid)
     qualified_pool = bool(timing_approvals)
@@ -810,11 +829,15 @@ def run(args, control=None):
     scripts.append(Path(PoolHandoff.__file__).resolve())
     scripts.append(Path(PoolCalibration.__file__).resolve())
     scripts.append(Path(Owned.__file__).resolve())
+    scripts.append(Path(Cuda.__file__).resolve())
+    scripts.append(Path(PoolScope.__file__).resolve())
     scripts.append(Path(PublicCache.__file__).resolve())
     if owned:
-        scripts.append(Owned.workload_path(block_capacity))
-    workload = getattr(args, "workload", None) or (Owned.workload_path(block_capacity) if owned else Path(__file__).with_name("block-v2-multi-gpu-direct-readback-workload.json"))
+        scripts.append(Owned.workload_path(block_capacity, backend))
+    workload = getattr(args, "workload", None) or (Owned.workload_path(block_capacity, backend) if owned else Path(__file__).with_name("block-v2-multi-gpu-direct-readback-workload.json"))
     pins = dict(T.pin(path) for path in [gpu, cpu, *inputs, *scripts, workload])
+    if cuda_runtime is not None:
+        pins.update(Cuda.runtime_pins(cuda_runtime))
     pins.update(workflow_pins)
     if calibration_mode:
         pins.update(PoolCalibration.load(args.pool_calibration)[1])
@@ -895,7 +918,7 @@ def run(args, control=None):
         T.execute_logged([cpu, "plan", source, expected], proof_plan, T.clean_environment())
         T.validate_plan(read(proof_plan), "paired", block_capacity)
         pins.update(dict(T.pin(p) for p in [expected, proof_plan]))
-        profile = T.resource_profile(workload, "paired", "owned" if owned else "compact", block_capacity)
+        profile = T.resource_profile(workload, "paired", "owned" if owned else "compact", block_capacity, backend)
         check_recovery_profile(profile, recovery)
         calibrations = None
         if getattr(args, 'calibration_trial', []):
@@ -915,6 +938,8 @@ def run(args, control=None):
         else:
             inventory = {device["uuid"]: device for device in R.detect_gpus(str(gpu))}
             devices = [inventory[uuid] for uuid in args.gpu_uuid]
+            if any(R.device_backend(device) != backend for device in devices):
+                raise ValueError('selected GPU binary inventory differs from explicit backend')
             host, devices, budgets = admit_recovery(host, devices, profile, recovery, out,
                 getattr(args, 'recovery_admission_timeout', 120), assignment=fixed, calibrations=calibrations)
         first = next(iter(budgets.values()))
@@ -937,6 +962,8 @@ def run(args, control=None):
                   "coordinator_threads": coordinator_threads, "fleet_plan": str(out / "fleet-plan.json"), "workers": [],
                   "preseal_only": preseal, "reuse_preseal": reuse, "allow_worker_failover": failover}
         config['pool_prefix_handoff'] = handoff
+        if getattr(args, 'fleet_slice', None) is not None:
+            config['fleet_slice'] = G.SLICE
         config['context_calibrations'] = calibrations
         if sealed_clock is not None:
             PoolSeal.check(sealed_clock, workflow)
@@ -983,6 +1010,8 @@ def run(args, control=None):
         for index, device in enumerate(devices):
             uuid = device["uuid"]
             budget = budgets[uuid]
+            if cuda_runtime is not None:
+                budget['cuda_runtime'] = copy.deepcopy(cuda_runtime)
             budget['proving_environment'] = G.proving_environment(budget.get('proving_environment'))
             if bounded_pool:
                 budget['proving_environment'] = {'LATTICA_PROVING_POLICY': 'gpu-required', 'LATTICA_PROVING_REPORT': '1'}
@@ -1101,6 +1130,14 @@ def run(args, control=None):
                 break
             time.sleep(0.5)
         result = read(owner_dir / "result.json")
+        if backend == 'cuda':
+            quiescent_fleet(owner_unit, report['attempts'])
+            for worker in config['workers']:
+                completed = T.public_events(Path(worker['directory']) / 'prove.log', 'typed_gpu_work_complete')
+                if len(completed) != 1:
+                    raise ValueError('CUDA worker lacks one retirement receipt')
+                expected_count = result['calibration_result']['fresh_proofs'] if calibration_mode else None
+                Cuda.validate_completion(completed[0], worker['budget'], expected_count)
         if calibration_mode:
             if result.get('status') != 'succeeded' or result.get('pool_calibration') is not True:
                 raise ValueError('bounded CLI calibration owner failed')
@@ -1275,6 +1312,12 @@ def argument_parser():
                       help='bounded explicit live-sample request for one maintained CLI worker; no automatic timing approval')
     parser.add_argument('--owned-public-gpu', action='store_true',
                         help='explicit 3/1/4 GiB owned public GPU qualification profile for a bounded worker')
+    parser.add_argument('--gpu-backend', choices=('opencl', 'cuda'), default='opencl',
+                        help='explicit worker backend; CUDA requires owned admission')
+    parser.add_argument('--cuda-library-path', type=Path,
+                        help='CUDA 12.9 NVRTC library directory, pinned and passed to each worker')
+    parser.add_argument('--fleet-slice',
+                        help='dedicated lattica-v2-multi-*.slice for a bounded owned fleet')
     parser.add_argument("--owner", type=Path)
     parser.add_argument("--launch-worker", type=Path)
     parser.add_argument("--gpu-binary", type=Path)
@@ -1338,11 +1381,12 @@ def main():
     calibration_mode = PoolCalibration.check_mode(args)
     owned = Owned.check_mode(args)
     scripts = set(Path(__file__).resolve().parent.glob('*.py')) | {Path(__file__).resolve()}
+    select_fleet_scope(args)
     paths = [args.gpu_binary.resolve(strict=True), args.cpu_binary.resolve(strict=True),
              *T.fixture_files(args.fixture.resolve(strict=True), args.count, 'paired'), *scripts,
              Path(__file__).with_name('block-v2-multi-gpu-direct-readback-workload.json')]
     if owned:
-        paths.append(Owned.workload_path(T.Capacity.select(args.count, args.block_capacity)))
+        paths.append(Owned.workload_path(T.Capacity.select(args.count, args.block_capacity), args.gpu_backend))
     if args.host_config:
         paths.append(args.host_config.resolve(strict=True))
     if args.resource_assignment:
@@ -1350,6 +1394,9 @@ def main():
     if args.workload:
         paths.append(args.workload.resolve(strict=True))
     pins = dict(T.pin(path) for path in paths)
+    if args.gpu_backend == 'cuda':
+        args.cuda_library_path = args.cuda_library_path.resolve(strict=True)
+        pins.update(Cuda.runtime_pins(Cuda.runtime(args.cuda_library_path)))
     if calibration_mode:
         pins.update(PoolCalibration.load(args.pool_calibration)[1])
     if args.calibration_trial:

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "name": "typed-paired-cuda-owned-depth-seven-bootstrap-v1",
+  "backend": "cuda",
+  "block_capacity": 128,
+  "height": 262144,
+  "page_bytes": 4096,
+  "geometry": {
+    "main_trace_columns": 94,
+    "preprocessing_columns": 200,
+    "permutation_trace_columns_upper_bound": 51,
+    "quotient_matrices": 16,
+    "log_blowup": 4
+  },
+  "cuda": {
+    "version": 1,
+    "program_host_bytes": 1073741824,
+    "wires": 16777216,
+    "input_values": 1048576
+  },
+  "complete_lifetime_qualified": false,
+  "native_per_program_admission_required": true
+}

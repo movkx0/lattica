@@ -93,12 +93,14 @@ def fixture_files(source, count, construction="reference"):
     return paths
 
 
-def resource_profile(path, construction="reference", ram_admission="full", block_capacity=64):
+def resource_profile(path, construction="reference", ram_admission="full", block_capacity=64, backend='opencl'):
     Capacity.validate(block_capacity)
     if ram_admission == 'owned':
         if construction != 'paired':
             raise ValueError('owned CLI qualification requires paired construction')
-        return importlib.import_module('block_v2_owned_cli').resource_profile(path, block_capacity=block_capacity)
+        return importlib.import_module('block_v2_owned_cli').resource_profile(path, block_capacity=block_capacity, backend=backend)
+    if backend != 'opencl':
+        raise ValueError('CUDA resource profiles require explicit owned admission')
     if ram_admission not in ("full", "compact"):
         raise ValueError("unknown typed RAM admission model")
     profile = json.loads(path.read_text())
@@ -173,8 +175,12 @@ def resource_signature(budget):
         "host": copy.deepcopy(budget["host"]),
         "gpu": {key: value for key, value in budget["gpu"].items()
                 if key != "available_bytes"},
-        "drivers": {name: device[name]["driver"] for name in ("nvidia", "opencl")},
+        "drivers": R.device_drivers(device),
     }
+    if R.device_backend(device) == 'cuda':
+        if budget.get('backend') != 'cuda':
+            raise ValueError('CUDA resource signature requires explicit CUDA assignment')
+        signature.update(backend='cuda', cuda=copy.deepcopy(budget['cuda']))
     return json.loads(json.dumps(signature))
 
 

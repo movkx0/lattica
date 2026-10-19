@@ -143,9 +143,23 @@ fn stable_assignment(assignment: &serde_json::Value) -> serde_json::Value {
     if let Some(fields) = gpu.as_object_mut() {
         fields.remove("available_bytes");
     }
-    json!({"cpu":assignment["cpu"],"host":assignment["host"],"gpu":gpu,
+    let mut result = json!({"cpu":assignment["cpu"],"host":assignment["host"],"gpu":gpu,
         "drivers":[assignment["detected_gpu"]["nvidia"]["driver"],
-                   assignment["detected_gpu"]["opencl"]["driver"]]})
+                   assignment["detected_gpu"]["opencl"]["driver"]]});
+    result["slice"] = assignment
+        .get("slice")
+        .cloned()
+        .unwrap_or_else(|| json!("lattica-v2-multi.slice"));
+    if assignment["backend"] == "cuda" {
+        result["backend"] = json!("cuda");
+        result["cuda"] = assignment["cuda"].clone();
+        result["cuda_runtime"] = assignment["cuda_runtime"].clone();
+        result["drivers"] = json!([
+            assignment["detected_gpu"]["nvidia"]["driver"],
+            assignment["detected_gpu"]["cuda"]["driver_api"]
+        ]);
+    }
+    result
 }
 
 fn compatible(previous: &Plan, current: &Plan) -> Result<(), Error> {
@@ -203,7 +217,12 @@ pub(super) fn restore(
             .checked_sub(plan.coordinator_shared_bytes)
             .ok_or("recovery shared RAM exceeds coordinator assignment")?,
     )?;
-    let origin = admission::trace(source, plan, &prepared.expected, prepared.selection.root().id())?;
+    let origin = admission::trace(
+        source,
+        plan,
+        &prepared.expected,
+        prepared.selection.root().id(),
+    )?;
     let previous = &origin.plan;
     let state = &origin.state;
     let old = &origin.coordinator;
@@ -469,6 +488,29 @@ pub(super) fn export(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cuda_recovery_binds_construction_runtime_driver_and_fleet() {
+        let value = json!({"backend":"cuda", "cuda":{"input_values":1048576},
+            "cuda_runtime":{"libraries":{"nvrtc":"first"}}, "slice":"lattica-v2-multi-cuda-test.slice",
+            "gpu":{"available_bytes":10}, "detected_gpu":{"nvidia":{"driver":"first"},
+                "cuda":{"driver_api":12090}}});
+        let original = stable_assignment(&value);
+        for (pointer, changed) in [
+            ("/backend", json!("opencl")),
+            ("/cuda/input_values", json!(100)),
+            ("/cuda_runtime/libraries/nvrtc", json!("second")),
+            ("/detected_gpu/cuda/driver_api", json!(13000)),
+            ("/slice", json!("lattica-v2-multi.slice")),
+        ] {
+            let mut altered = value.clone();
+            *altered.pointer_mut(pointer).unwrap() = changed;
+            assert_ne!(stable_assignment(&altered), original, "{pointer}");
+        }
+        let mut live = value;
+        live["gpu"]["available_bytes"] = json!(20);
+        assert_eq!(stable_assignment(&live), original);
+    }
 
     #[test]
     fn startup_identity_can_precede_ready_without_losing_assignment_binding() {

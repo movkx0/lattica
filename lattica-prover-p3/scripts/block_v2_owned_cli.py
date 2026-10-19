@@ -16,12 +16,22 @@ import block_v2_capacity as Capacity
 WORKLOAD = Path(__file__).with_name('block-v2-typed-owned-gpu-workload.json')
 
 
-def workload_path(block_capacity=64):
+def workload_path(block_capacity=64, backend='opencl'):
+    if backend == 'cuda':
+        import block_v2_cuda_cli as Cuda
+        return Cuda.workload_path(block_capacity)
+    if backend != 'opencl':
+        raise ValueError('unsupported owned GPU backend')
     Capacity.validate(block_capacity)
     return WORKLOAD if block_capacity == 64 else WORKLOAD.with_name('block-v2-typed-owned-gpu-workload-128.json')
 
 
-def resource_profile(path, block_capacity=64):
+def resource_profile(path, block_capacity=64, backend='opencl'):
+    if backend == 'cuda':
+        import block_v2_cuda_cli as Cuda
+        return Cuda.resource_profile(path, block_capacity)
+    if backend != 'opencl':
+        raise ValueError('unsupported owned GPU backend')
     supported = json.loads(workload_path(block_capacity).read_text())
     supplied = json.loads(Path(path).read_text())
     # A different lifecycle/geometry needs a separately reviewed model. JSON
@@ -36,6 +46,14 @@ def resource_profile(path, block_capacity=64):
 
 def check_mode(args):
     enabled = getattr(args, 'owned_public_gpu', False)
+    backend = getattr(args, 'gpu_backend', 'opencl')
+    if backend not in ('cuda', 'opencl'):
+        raise ValueError('unsupported GPU backend')
+    if backend == 'cuda' and (not enabled or not getattr(args, 'cuda_library_path', None)
+                              or getattr(args, 'calibration_trial', [])):
+        raise ValueError('CUDA requires owned admission, an explicit library directory and no OpenCL context calibration')
+    if backend != 'cuda' and getattr(args, 'cuda_library_path', None):
+        raise ValueError('CUDA library selection requires the CUDA backend')
     if enabled and (len(args.gpu_uuid) != 1 or not (
             getattr(args, 'pool_calibration', None) or getattr(args, 'pool_timing_approval', []))):
         raise ValueError('owned CLI qualification requires one bounded calibration or approved pool worker')
@@ -43,6 +61,12 @@ def check_mode(args):
 
 
 def plan_budgets(host, devices, profile, assignment=None, calibrations=None, *, resource_signature, slice_name):
+    if profile.get('backend') == 'cuda':
+        import block_v2_cuda_cli as Cuda
+        return Cuda.plan_budgets(host, devices, profile, assignment, calibrations,
+                                 resource_signature=resource_signature, slice_name=slice_name)
+    if any(R.device_backend(device) != 'opencl' for device in devices):
+        raise ValueError('owned workload and selected GPU backend differ')
     if json.dumps(profile, sort_keys=True) != json.dumps(resource_profile(workload_path(Capacity.configured(profile)), Capacity.configured(profile)), sort_keys=True):
         raise ValueError('owned CLI planner requires its supported complete profile')
     if len(devices) != 1 or calibrations is not None:
