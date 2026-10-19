@@ -1,0 +1,454 @@
+{
+  "schema": 1,
+  "recorded_at": "2026-10-19T18:37:17.774736+00:00",
+  "source_commit": "74becfa0ad810cc241dd8d7dfbfaf96186623ce0",
+  "qualification_evidence": "docs/evidence/cuda-public-arithmetic-2026-10-19.json",
+  "qualification_sha256": "e1b3e8af6560231fd26490227f62024affeb875ee0c720d1490a81ccad0fd817",
+  "artifact_root": "lattica-prover-p3/benchmark-results/cuda-public-arithmetic-20261019/qualification-01/benchmark-01",
+  "scope": "Release public-arithmetic component latency on a reused native CUDA context; one warmup and three measurements per case.",
+  "workloads": {
+    "statement": "Derive an empty subtree at level 5 and validate its public summary, including recomputation of its empty root.",
+    "registry_compilation": "Construct a 12-key registry prefix and compile the maintained empty program at declared registry height 2048, using shape-only zero caps. No registry approval or proof is produced."
+  },
+  "timing_boundary": {
+    "included": [
+      "public statement or registry program construction",
+      "device allocation/transfer/launch/completion",
+      "component reporting and scratch cleanup"
+    ],
+    "excluded": [
+      "initial runtime/kernel/constant preparation",
+      "fixture/reference construction",
+      "Run creation",
+      "CPU reference checks",
+      "proof generation",
+      "proof verification",
+      "worker IPC and full request processing"
+    ]
+  },
+  "preparation_seconds_single_observation": 0.0955535,
+  "execution": {
+    "commit": "74becfa0ad810cc241dd8d7dfbfaf96186623ce0",
+    "command": [
+      "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-public-arithmetic-20261019/qualification-01/release",
+      "block_v2::statements::registry_tests::cuda_public_component_benchmark",
+      "--exact",
+      "--ignored",
+      "--test-threads=1",
+      "--nocapture"
+    ],
+    "executable_sha256": "0c83b1db83d1595dd6f43bce52d620a2f921acede426c6ee7c3ded1d83ac2fe8",
+    "source_manifest_sha256": "737149f562ed6fbd1fa3a7dfb940a640053be395e36edfd91ed09fdfea863ae3",
+    "environment": {
+      "RAYON_NUM_THREADS": "4",
+      "LD_LIBRARY_PATH": "/home/access/code/lattica/.tools/cuda-12.9.1/lib",
+      "LATTICA_GPU_DEVICE_UUID": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+      "LATTICA_CUDA_PUBLIC_BENCHMARK": "1"
+    },
+    "started": 1792434984.3301227,
+    "gpu_before": "name, uuid, driver_version, memory.free [MiB], temperature.gpu, power.draw [W], clocks.current.graphics [MHz]\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08, 13593 MiB, 38, 29.30 W, 307 MHz\n",
+    "exit_code": 0,
+    "elapsed_seconds": 0.6788432598114014,
+    "gpu_after": "name, uuid, driver_version, memory.free [MiB], temperature.gpu, power.draw [W], clocks.current.graphics [MHz]\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08, 13593 MiB, 39, 46.29 W, 2902 MHz\n",
+    "cgroup": {
+      "memory.max": "3221225472",
+      "memory.swap.max": "0",
+      "memory.peak": "118513664",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+      "cpu.max": "400000 100000",
+      "pids.max": "96"
+    }
+  },
+  "summary": {
+    "statement": {
+      "measured_samples": 3,
+      "warmups": 1,
+      "median_seconds": 0.001413199,
+      "min_seconds": 0.001395357,
+      "max_seconds": 0.001422199
+    },
+    "registry_compilation": {
+      "measured_samples": 3,
+      "warmups": 1,
+      "median_seconds": 0.119469504,
+      "min_seconds": 0.119410072,
+      "max_seconds": 0.119588239
+    }
+  },
+  "samples": [
+    {
+      "case": "statement",
+      "completed_commands": 13,
+      "cpu_reference_checked": true,
+      "downloaded_bytes": 392,
+      "iteration": 0,
+      "peak_managed_bytes": 33552,
+      "preparation_seconds": 0.0955535,
+      "report": {
+        "capabilities": {
+          "max_log_fri_arity": 1,
+          "profile": "block_v2_cubic",
+          "scope": "statement",
+          "stages": [
+            {
+              "backend": "cuda",
+              "stage": "public_values"
+            }
+          ]
+        },
+        "completion_rejected": false,
+        "components": [],
+        "elapsed_ns": 1524893,
+        "entry_point": "cuda_public_component_benchmark",
+        "observation_errors": 0,
+        "observations": [
+          {
+            "backend": "cuda",
+            "calls": 13,
+            "completed_calls": 13,
+            "device_calls": 13,
+            "device_ns": 656288,
+            "inclusive_ns": 0,
+            "stage": "public_values"
+          }
+        ],
+        "policy": "gpu_required",
+        "schema": "lattica-proving-stages-v1",
+        "stage_coverage_complete": true,
+        "succeeded": true
+      },
+      "seconds": 0.001525633,
+      "uploaded_bytes": 1320,
+      "warmup": true
+    },
+    {
+      "case": "statement",
+      "completed_commands": 13,
+      "cpu_reference_checked": true,
+      "downloaded_bytes": 392,
+      "iteration": 1,
+      "peak_managed_bytes": 33552,
+      "preparation_seconds": 0.0955535,
+      "report": {
+        "capabilities": {
+          "max_log_fri_arity": 1,
+          "profile": "block_v2_cubic",
+          "scope": "statement",
+          "stages": [
+            {
+              "backend": "cuda",
+              "stage": "public_values"
+            }
+          ]
+        },
+        "completion_rejected": false,
+        "components": [],
+        "elapsed_ns": 1422059,
+        "entry_point": "cuda_public_component_benchmark",
+        "observation_errors": 0,
+        "observations": [
+          {
+            "backend": "cuda",
+            "calls": 13,
+            "completed_calls": 13,
+            "device_calls": 13,
+            "device_ns": 654560,
+            "inclusive_ns": 0,
+            "stage": "public_values"
+          }
+        ],
+        "policy": "gpu_required",
+        "schema": "lattica-proving-stages-v1",
+        "stage_coverage_complete": true,
+        "succeeded": true
+      },
+      "seconds": 0.001422199,
+      "uploaded_bytes": 1320,
+      "warmup": false
+    },
+    {
+      "case": "statement",
+      "completed_commands": 13,
+      "cpu_reference_checked": true,
+      "downloaded_bytes": 392,
+      "iteration": 2,
+      "peak_managed_bytes": 33552,
+      "preparation_seconds": 0.0955535,
+      "report": {
+        "capabilities": {
+          "max_log_fri_arity": 1,
+          "profile": "block_v2_cubic",
+          "scope": "statement",
+          "stages": [
+            {
+              "backend": "cuda",
+              "stage": "public_values"
+            }
+          ]
+        },
+        "completion_rejected": false,
+        "components": [],
+        "elapsed_ns": 1413149,
+        "entry_point": "cuda_public_component_benchmark",
+        "observation_errors": 0,
+        "observations": [
+          {
+            "backend": "cuda",
+            "calls": 13,
+            "completed_calls": 13,
+            "device_calls": 13,
+            "device_ns": 657664,
+            "inclusive_ns": 0,
+            "stage": "public_values"
+          }
+        ],
+        "policy": "gpu_required",
+        "schema": "lattica-proving-stages-v1",
+        "stage_coverage_complete": true,
+        "succeeded": true
+      },
+      "seconds": 0.001413199,
+      "uploaded_bytes": 1320,
+      "warmup": false
+    },
+    {
+      "case": "statement",
+      "completed_commands": 13,
+      "cpu_reference_checked": true,
+      "downloaded_bytes": 392,
+      "iteration": 3,
+      "peak_managed_bytes": 33552,
+      "preparation_seconds": 0.0955535,
+      "report": {
+        "capabilities": {
+          "max_log_fri_arity": 1,
+          "profile": "block_v2_cubic",
+          "scope": "statement",
+          "stages": [
+            {
+              "backend": "cuda",
+              "stage": "public_values"
+            }
+          ]
+        },
+        "completion_rejected": false,
+        "components": [],
+        "elapsed_ns": 1395307,
+        "entry_point": "cuda_public_component_benchmark",
+        "observation_errors": 0,
+        "observations": [
+          {
+            "backend": "cuda",
+            "calls": 13,
+            "completed_calls": 13,
+            "device_calls": 13,
+            "device_ns": 648896,
+            "inclusive_ns": 0,
+            "stage": "public_values"
+          }
+        ],
+        "policy": "gpu_required",
+        "schema": "lattica-proving-stages-v1",
+        "stage_coverage_complete": true,
+        "succeeded": true
+      },
+      "seconds": 0.001395357,
+      "uploaded_bytes": 1320,
+      "warmup": false
+    },
+    {
+      "case": "registry_compilation",
+      "completed_commands": 65,
+      "cpu_reference_checked": true,
+      "downloaded_bytes": 1920,
+      "iteration": 0,
+      "peak_managed_bytes": 33552,
+      "preparation_seconds": 0.0955535,
+      "report": {
+        "capabilities": {
+          "max_log_fri_arity": 1,
+          "profile": "block_v2_cubic",
+          "scope": "registry_compilation",
+          "stages": [
+            {
+              "backend": "cuda",
+              "stage": "preprocessing"
+            }
+          ]
+        },
+        "completion_rejected": false,
+        "components": [],
+        "elapsed_ns": 119875821,
+        "entry_point": "cuda_public_component_benchmark",
+        "observation_errors": 0,
+        "observations": [
+          {
+            "backend": "cuda",
+            "calls": 65,
+            "completed_calls": 65,
+            "device_calls": 65,
+            "device_ns": 110045023,
+            "inclusive_ns": 0,
+            "stage": "preprocessing"
+          }
+        ],
+        "policy": "gpu_required",
+        "schema": "lattica-proving-stages-v1",
+        "stage_coverage_complete": true,
+        "succeeded": true
+      },
+      "seconds": 0.119876281,
+      "uploaded_bytes": 226744,
+      "warmup": true
+    },
+    {
+      "case": "registry_compilation",
+      "completed_commands": 65,
+      "cpu_reference_checked": true,
+      "downloaded_bytes": 1920,
+      "iteration": 1,
+      "peak_managed_bytes": 33552,
+      "preparation_seconds": 0.0955535,
+      "report": {
+        "capabilities": {
+          "max_log_fri_arity": 1,
+          "profile": "block_v2_cubic",
+          "scope": "registry_compilation",
+          "stages": [
+            {
+              "backend": "cuda",
+              "stage": "preprocessing"
+            }
+          ]
+        },
+        "completion_rejected": false,
+        "components": [],
+        "elapsed_ns": 119409732,
+        "entry_point": "cuda_public_component_benchmark",
+        "observation_errors": 0,
+        "observations": [
+          {
+            "backend": "cuda",
+            "calls": 65,
+            "completed_calls": 65,
+            "device_calls": 65,
+            "device_ns": 109430719,
+            "inclusive_ns": 0,
+            "stage": "preprocessing"
+          }
+        ],
+        "policy": "gpu_required",
+        "schema": "lattica-proving-stages-v1",
+        "stage_coverage_complete": true,
+        "succeeded": true
+      },
+      "seconds": 0.119410072,
+      "uploaded_bytes": 226744,
+      "warmup": false
+    },
+    {
+      "case": "registry_compilation",
+      "completed_commands": 65,
+      "cpu_reference_checked": true,
+      "downloaded_bytes": 1920,
+      "iteration": 2,
+      "peak_managed_bytes": 33552,
+      "preparation_seconds": 0.0955535,
+      "report": {
+        "capabilities": {
+          "max_log_fri_arity": 1,
+          "profile": "block_v2_cubic",
+          "scope": "registry_compilation",
+          "stages": [
+            {
+              "backend": "cuda",
+              "stage": "preprocessing"
+            }
+          ]
+        },
+        "completion_rejected": false,
+        "components": [],
+        "elapsed_ns": 119587999,
+        "entry_point": "cuda_public_component_benchmark",
+        "observation_errors": 0,
+        "observations": [
+          {
+            "backend": "cuda",
+            "calls": 65,
+            "completed_calls": 65,
+            "device_calls": 65,
+            "device_ns": 109735779,
+            "inclusive_ns": 0,
+            "stage": "preprocessing"
+          }
+        ],
+        "policy": "gpu_required",
+        "schema": "lattica-proving-stages-v1",
+        "stage_coverage_complete": true,
+        "succeeded": true
+      },
+      "seconds": 0.119588239,
+      "uploaded_bytes": 226744,
+      "warmup": false
+    },
+    {
+      "case": "registry_compilation",
+      "completed_commands": 65,
+      "cpu_reference_checked": true,
+      "downloaded_bytes": 1920,
+      "iteration": 3,
+      "peak_managed_bytes": 33552,
+      "preparation_seconds": 0.0955535,
+      "report": {
+        "capabilities": {
+          "max_log_fri_arity": 1,
+          "profile": "block_v2_cubic",
+          "scope": "registry_compilation",
+          "stages": [
+            {
+              "backend": "cuda",
+              "stage": "preprocessing"
+            }
+          ]
+        },
+        "completion_rejected": false,
+        "components": [],
+        "elapsed_ns": 119469244,
+        "entry_point": "cuda_public_component_benchmark",
+        "observation_errors": 0,
+        "observations": [
+          {
+            "backend": "cuda",
+            "calls": 65,
+            "completed_calls": 65,
+            "device_calls": 65,
+            "device_ns": 109591904,
+            "inclusive_ns": 0,
+            "stage": "preprocessing"
+          }
+        ],
+        "policy": "gpu_required",
+        "schema": "lattica-proving-stages-v1",
+        "stage_coverage_complete": true,
+        "succeeded": true
+      },
+      "seconds": 0.119469504,
+      "uploaded_bytes": 226744,
+      "warmup": false
+    }
+  ],
+  "artifact_sha256": {
+    "lattica-prover-p3/benchmark-results/cuda-public-arithmetic-20261019/qualification-01/run-benchmark.py": "5a12961d932d944ee9c392cb98369ef225d7374e8ed29f437962f93ae3194c64",
+    "lattica-prover-p3/benchmark-results/cuda-public-arithmetic-20261019/qualification-01/source-pins.json": "737149f562ed6fbd1fa3a7dfb940a640053be395e36edfd91ed09fdfea863ae3",
+    "lattica-prover-p3/benchmark-results/cuda-public-arithmetic-20261019/qualification-01/release": "0c83b1db83d1595dd6f43bce52d620a2f921acede426c6ee7c3ded1d83ac2fe8",
+    "lattica-prover-p3/benchmark-results/cuda-public-arithmetic-20261019/qualification-01/benchmark-01/benchmark.log": "eebaea2037f94be68944235dcc3758730c3758b29acf9d6ee759115aa1940cdd",
+    "lattica-prover-p3/benchmark-results/cuda-public-arithmetic-20261019/qualification-01/benchmark-01/execution.json": "e57f6c7657d26832a36a788287060f1f1abf32c1f1c2245d33a4cc39a7f5b90c",
+    "lattica-prover-p3/benchmark-results/cuda-public-arithmetic-20261019/qualification-01/benchmark-01/samples.json": "a9c6425279c305e70b0748f7b1515647c05b35913d2e3e1eeeac95343b70fa26"
+  },
+  "limitations": [
+    "No paired CPU/OpenCL timing baseline or speedup claim.",
+    "Synthetic public registry metadata is not an authenticated production registry fixture.",
+    "No complete recursive aggregation or transaction-throughput rate.",
+    "No V100 device measurement."
+  ]
+}

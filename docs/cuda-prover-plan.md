@@ -990,6 +990,15 @@ Production wrapper/merge proving, typed-session cache integration, public dispat
 and worker/pool routing remain unfinished. This checkpoint does not qualify a
 complete recursive request or a transaction-throughput rate.
 
+The [post-push public-component benchmark at `74becfa`](evidence/cuda-public-arithmetic-benchmark-2026-10-19.json)
+completed one warmup and three release measurements per case, all checked against
+CPU references. Deriving and validating a level-five empty statement took a
+median 1.413 ms (1.395–1.422 ms). Compiling an empty program with a 12-key,
+2,048-height registry prefix took 119.470 ms (119.410–119.588 ms). The context's
+initial preparation took 95.554 ms separately. These public fixtures use zero
+registry caps and produce no proof or registry approval. No complete aggregation
+rate or CPU/OpenCL speedup is inferred from these component timings.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)
