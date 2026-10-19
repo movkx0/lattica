@@ -85,14 +85,29 @@ fn registry_prefix_with_constants<E: From<CompileError>>(
     let a = analysis::analyze_prepared(&air, &prepared)
         .map_err(|_| CompileError::Shape("registered AIR geometry"))?;
     let constraints = prepared.constraints;
-    let air_id = hash(
-        AIR_DOMAIN,
-        &fingerprint::encode(
+    #[cfg(feature = "gpu-cuda")]
+    let encoded = if matches!(constants, Constants::Cuda(..)) {
+        fingerprint::bounded::encode(
             &constraints.base,
             &constraints.extension,
             &constraints.order,
-        ),
-    )?;
+            fingerprint::bounded::HOST_BYTES,
+        )
+        .map_err(CompileError::Backend)?
+    } else {
+        fingerprint::encode(
+            &constraints.base,
+            &constraints.extension,
+            &constraints.order,
+        )
+    };
+    #[cfg(not(feature = "gpu-cuda"))]
+    let encoded = fingerprint::encode(
+        &constraints.base,
+        &constraints.extension,
+        &constraints.order,
+    );
+    let air_id = hash(AIR_DOMAIN, &encoded)?;
     Ok(registry_fields(height, &air, &a, air_id))
 }
 

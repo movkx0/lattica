@@ -69,8 +69,10 @@ checks run on CUDA. Generated traces, preprocessing and public values feed the
 native lookup stage directly. Native machine batch-STARK orchestration now
 connects these stages to the hiding PCS, preserving the upstream transcript and
 proof encoding. Real JoinSplit verifier programs also pass independent CPU
-verification against CPU-rebuilt preprocessing commitments. Production wrapper
-and merge programs, public routing and recursive workers remain outstanding.
+verification against CPU-rebuilt preprocessing commitments. Explicit native
+typed sessions now also prove maintained pair wrappers, merges and finalizers
+against an independently approved registry. Public routing and recursive workers
+remain outstanding.
 Public preprocessing now survives failed private proof attempts on a healthy
 runtime. Each salt replay uses an isolated temporary consumer; failed private
 randomness still retires across every alias. The public path accepts only
@@ -92,9 +94,12 @@ process accounting remain separate integration work.
 An explicit CUDA public-arithmetic context now supports recursive statements and
 registry compilation: protocol hashes, summary validation, compiler constants,
 constant folding and symbolic AIR preparation. Its statement and registry child
-components bind actual completions to their own inventories. CPU/OpenCL defaults
-are unchanged. Connecting these components to registered wrapper/merge proving,
-the typed-session cache and worker admission is still outstanding.
+components bind actual completions to their own inventories. Explicit CUDA typed
+sessions connect these components to registered proving and the existing binding
+cache. They enforce program-construction limits, authenticate cached programs
+against the registry, and independently CPU-verify returned proofs. CPU/OpenCL
+defaults and public worker routing are unchanged; worker admission remains
+outstanding.
 
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
@@ -107,9 +112,9 @@ unsupported specialization shapes retain GPU interpretation. Current/next rows,
 alpha powers, selectors, constraints and vanishing-polynomial division execute
 on CUDA, with only a public domain-validity word read back per evaluation.
 
-Wallet requests and recursive proofs are not yet routed through CUDA. Cached
-twiddle tuning, backend integration, complete proof-stage coverage, controller
-admission and pool integration remain outstanding. Prepared quotient handles
+Public wallet requests and recursive workers are not yet routed through CUDA.
+Cached twiddle tuning, public backend selection, controller admission and pool
+integration remain outstanding. Prepared quotient handles
 support reuse without retaining witnesses or sampled parameters. A bounded
 public program cache now supports repeated preparation within an evaluator;
 disk and cross-worker caches remain absent. Use the existing OpenCL backend
@@ -998,6 +1003,52 @@ median 1.413 ms (1.395–1.422 ms). Compiling an empty program with a 12-key,
 initial preparation took 95.554 ms separately. These public fixtures use zero
 registry caps and produce no proof or registry approval. No complete aggregation
 rate or CPU/OpenCL speedup is inferred from these component timings.
+
+[Typed-session qualification](evidence/cuda-typed-session-2026-10-19.json)
+connects explicit CUDA selection to the maintained recursive session. Its five
+request components cover statement derivation, registry compilation, statement
+checking, approved preprocessing and registered proving. The default CPU/OpenCL
+constructors retain their existing selection. Proof fields move directly into
+the existing application proof type, without another serialization/allocation.
+
+Construction has explicit program, wire and input ceilings. Preparation reserves
+caller input backing and the independent verifier allowance; retained source
+capacities and idle-cache storage are admitted separately. Cache hits reuse only
+approved public programs and input layouts, with fresh witness binding and private
+randomness. A complete cached setup can account for preprocessing only alongside
+a fresh, completely reported registered proof. Cached receipts never manufacture
+device events or substitute for fresh lookup, witness or other proof arithmetic.
+
+The wide machine can exceed the fixed 8 MiB specialized PTX limit. Valid oversized
+specializations now select the existing CUDA interpreter; compiler errors still
+fail. Committed quotient reconstruction extracts each source when needed and
+releases it after expansion, with the same lifetime schedule used for admission.
+This fits the full-size case within the unchanged 7 GiB managed-device and 1 GiB
+individual-allocation limits, without CPU proving fallback.
+
+The independently pinned twelve-key, 262,144-row registry covers four existing
+wallet proofs: JoinSplit, HTLC redeem, HTLC refund and issuance. Both pair wrappers,
+the merge and finalizer pass with fresh preparation and cached bindings; cached
+parents consume different child proof bytes. Both roots pass the unchanged archived
+CPU auditor, including altered-statement/proof rejection. No CPU witness-oracle
+calls occur. The five-, six- and twelve-key empty-request families also pass cache
+reuse, rebuilding and rejection checks. Full-size validation uses
+`gpu-cuda,block-v2-host,stream`, whose fixture has capacity 64; do not add the
+capacity-128 feature to that fixture build.
+
+All 194 native tests pass in the capacity-128 debug and wide/stream release
+builds. Thirteen focused batch/partition tests pass memcheck, racecheck and
+synccheck with no reported errors, leaks or hazards. Three typed CUDA tests,
+41 CPU regressions and 57 host checks in each CUDA build and OpenCL also pass;
+the Metal cross-compilation check passes. All 839 pinned source files match the
+staged Git blobs. Full-size peak managed storage is 7,450,300,432 bytes, and all
+device allocations, modules and retained public program charges are released.
+
+The entry point remains crate-private and explicit. Public API dispatch, worker
+process admission, multi-device pool routing, broader transaction counts and V100
+execution remain unqualified. Full-size proofs run in a 3 GiB, zero-swap,
+four-thread service; sanitizer coverage uses smaller focused cases. Correctness
+durations are not production throughput measurements.
 
 ## Implementation sequence
 

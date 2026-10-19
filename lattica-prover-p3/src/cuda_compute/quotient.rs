@@ -220,17 +220,21 @@ impl Quotients {
                     None => None, // Shapes outside the bounded compiler envelope use GPU IR.
                     Some(source) => {
                         source_bytes = source.len();
-                        let module = self.runtime.compile(&source)?;
-                        let kernel = module.kernel_for_stage(
-                            "specialized_quotient",
-                            crate::proving::Stage::Quotient,
-                        )?;
-                        let bytes = kernel.local_bytes()?;
-                        if self.admit_private(bytes)? {
-                            local_bytes = bytes;
-                            Some(kernel)
-                        } else {
-                            None
+                        match self.runtime.compile_optional(&source)? {
+                            None => None, // Valid PTX outside the fixed image allowance uses GPU IR.
+                            Some(module) => {
+                                let kernel = module.kernel_for_stage(
+                                    "specialized_quotient",
+                                    crate::proving::Stage::Quotient,
+                                )?;
+                                let bytes = kernel.local_bytes()?;
+                                if self.admit_private(bytes)? {
+                                    local_bytes = bytes;
+                                    Some(kernel)
+                                } else {
+                                    None
+                                }
+                            }
                         }
                     }
                 }

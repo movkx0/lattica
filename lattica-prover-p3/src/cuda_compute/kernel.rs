@@ -40,17 +40,29 @@ unsafe impl Sync for NativeModule {}
 
 impl Runtime {
     pub(crate) fn compile(&self, source: &str) -> Result<Module> {
+        self.compile_optional(source)?
+            .ok_or_else(|| "CUDA compiled image exceeds its allowance".into())
+    }
+
+    pub(super) fn compile_optional(&self, source: &str) -> Result<Option<Module>> {
         let reservation = self.state.budget.module()?;
-        let image = compiler::compile(source, self.identity().compute_capability)?;
+        let Some(image) = compiler::compile_optional(source, self.identity().compute_capability)?
+        else {
+            // An oversized image is usable as a fallback signal only while
+            // the device context remains healthy, just like a loaded module.
+            drop(self.state.enter()?);
+            // No device module was loaded; release its reservation on this exit.
+            return Ok(None);
+        };
         let _guard = self.state.enter()?;
         let raw = unsafe { result::module::load_data(image.as_ptr().cast()).map_err(error)? };
-        Ok(Module {
+        Ok(Some(Module {
             inner: Arc::new(NativeModule {
                 raw,
                 _reservation: reservation,
                 state: self.state.clone(),
             }),
-        })
+        }))
     }
 }
 

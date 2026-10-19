@@ -8,7 +8,7 @@ use programs::recursive_inputs::{self, Shape};
 
 pub(super) struct Entry {
     pub(super) mode: u64,
-    pub(super) registered: RegistryProgram,
+    pub(super) registered: backend::Prepared,
     pub(super) binding: Option<Binding>,
 }
 
@@ -135,14 +135,15 @@ impl<const N: usize> Session<N> {
         };
         let active =
             storage::active_memory_bytes(self.worker_memory_bytes, self.cache_reserve_bytes)?;
-        let assigned_values = None;
+        let assigned_values = self.backend.input_values();
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
-        let assigned_values = if super::super::quotient_pcs::gpu_witness_enabled() {
-            super::super::machine::gpu_backend::resources::construction_bounds()?
-                .map(|b| b.input_values)
-        } else {
-            assigned_values
-        };
+        let assigned_values =
+            if assigned_values.is_none() && super::super::quotient_pcs::gpu_witness_enabled() {
+                super::super::machine::gpu_backend::resources::construction_bounds()?
+                    .map(|b| b.input_values)
+            } else {
+                assigned_values
+            };
         let limit = input_limit(active, assigned_values)?;
         let index = self.cached.iter().position(|entry| entry.mode == mode);
         if let Some(index) = index {
@@ -166,11 +167,8 @@ impl<const N: usize> Session<N> {
                 return self.prove_cached(run, public, &witness);
             }
         }
-        let ((compiled, shape), report) = super::super::statements::compile_in_reported(
-            run,
-            self.registry.height,
-            N,
-            |prefix| {
+        let ((compiled, shape), report) =
+            self.compile_in_reported(run, self.registry.height, N, |prefix| {
                 let shape = Shape::from_prefix(prefix, self.registry.height, N)?;
                 let compiled = operation.compile(&self.registry, children, prefix)?;
                 recursive_inputs::check_witness(
@@ -184,8 +182,7 @@ impl<const N: usize> Session<N> {
                     return Err("recursive compiler input count".into());
                 }
                 Ok((compiled, shape))
-            },
-        )?;
+            })?;
         let compilation = CachedScope::registry_compilation(&report)?;
         if compilation.retained_host_bytes()? > storage::COMPILATION_RECEIPT_BYTES {
             return Err("cached compilation receipt storage".into());
@@ -220,14 +217,15 @@ impl<const N: usize> Session<N> {
         };
         let active =
             storage::active_memory_bytes(self.worker_memory_bytes, self.cache_reserve_bytes)?;
-        let assigned_values = None;
+        let assigned_values = self.backend.input_values();
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
-        let assigned_values = if super::super::quotient_pcs::gpu_witness_enabled() {
-            super::super::machine::gpu_backend::resources::construction_bounds()?
-                .map(|b| b.input_values)
-        } else {
-            assigned_values
-        };
+        let assigned_values =
+            if assigned_values.is_none() && super::super::quotient_pcs::gpu_witness_enabled() {
+                super::super::machine::gpu_backend::resources::construction_bounds()?
+                    .map(|b| b.input_values)
+            } else {
+                assigned_values
+            };
         let limit = input_limit(active, assigned_values)?;
         let caps: &typed_pairs::Caps = self.registry.caps.as_slice().try_into()?;
         let inputs = wallets.map(|wallet| (wallet.public.as_slice(), &wallet.proof));
@@ -247,11 +245,8 @@ impl<const N: usize> Session<N> {
                 return self.prove_cached(run, public, &witness);
             }
         }
-        let ((compiled, shape), report) = super::super::statements::compile_in_reported(
-            run,
-            self.registry.height,
-            N,
-            |prefix| {
+        let ((compiled, shape), report) =
+            self.compile_in_reported(run, self.registry.height, N, |prefix| {
                 let shape = paired_inputs::Shape::from_prefix(prefix, self.registry.height, mode)?;
                 let compiled = typed_pairs::wrapper_pair_with_registry(
                     self.registry.height,
@@ -266,8 +261,7 @@ impl<const N: usize> Session<N> {
                     return Err("paired compiler input count".into());
                 }
                 Ok((compiled, shape))
-            },
-        )?;
+            })?;
         let compilation = CachedScope::registry_compilation(&report)?;
         if compilation.retained_host_bytes()? > storage::COMPILATION_RECEIPT_BYTES {
             return Err("cached paired compilation receipt storage".into());

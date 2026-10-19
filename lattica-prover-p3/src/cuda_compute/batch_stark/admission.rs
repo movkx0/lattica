@@ -207,7 +207,8 @@ impl BatchStarks {
             )?;
             let plan = i
                 .lookup
-                .generation_plan(spec, schedule.state.live_bytes, limits)?;
+                .generation_plan(spec, schedule.state.live_bytes, limits)
+                .map_err(|error| format!("CUDA request lookup admission: {error}"))?;
             schedule.peak(plan.peak, 7 + plan.scan_rows.len())?;
             permutations.push(schedule.hold([spec.words()])?);
             schedule.hold([3])?; // terminal remains live until final proof assembly
@@ -254,16 +255,17 @@ impl BatchStarks {
                     7,
                 )?,
             ];
-            let extracted = schedule.hold(specs.iter().map(|s| s.words()))?;
-            let (spec, peak, allocations) = i.quotient.partition_storage(
-                specs.map(Some),
-                i.log_rows,
-                i.log_rows + 1 + i.log_chunks as u32,
-                schedule.state.live_bytes,
-                limits,
-            )?;
+            let (spec, peak, allocations) = i
+                .quotient
+                .extracted_partition_storage(
+                    specs.map(Some),
+                    i.log_rows,
+                    i.log_rows + 1 + i.log_chunks as u32,
+                    schedule.state.live_bytes,
+                    limits,
+                )
+                .map_err(|error| format!("CUDA request quotient admission: {error}"))?;
             schedule.peak(peak, allocations)?;
-            schedule.release(extracted);
             quotient_inputs.push(schedule.hold([spec.words()])?);
             let shape =
                 QuotientCommitShape::new(spec, i.chunks(), crate::config::NUM_RANDOM_CODEWORDS)?;
@@ -331,7 +333,8 @@ impl BatchStarks {
             .collect();
         schedule.phase("pcs_openings");
         let pcs =
-            PcsPlan::new::<Challenge>(params, &rounds, true, schedule.state, limits, pcs_host)?;
+            PcsPlan::new::<Challenge>(params, &rounds, true, schedule.state, limits, pcs_host)
+                .map_err(|error| format!("CUDA request PCS admission: {error}"))?;
         schedule.peak(
             pcs.device_peak,
             pcs.allocation_peak - schedule.state.allocations,

@@ -367,6 +367,8 @@ pub struct Report {
 struct State {
     observations: Vec<Observation>,
     components: Vec<ComponentObservation>,
+    /// Authenticated setup provenance, never a synthetic device observation.
+    cached_preprocessing: bool,
     finished: bool,
     observation_errors: u64,
 }
@@ -448,6 +450,7 @@ impl Run {
             state: Arc::new(Mutex::new(State {
                 observations: Vec::new(),
                 components: Vec::new(),
+                cached_preprocessing: false,
                 finished: false,
                 observation_errors: 0,
             })),
@@ -587,11 +590,25 @@ impl Run {
     pub fn finish(self, succeeded: bool) -> Result<Report, Error> {
         let mut state = self.state.lock().unwrap();
         state.finished = true;
+        // A composed request can reuse numerical preprocessing only alongside
+        // a fresh, fully accounted registered proof. Cache-only requests and
+        // missing/failed components still cannot complete the parent inventory.
+        let reused_preprocessing = self.capabilities.scope == CoverageScope::ProofRequest
+            && state.cached_preprocessing
+            && state.components.iter().any(|component| {
+                component.scope == CoverageScope::RegisteredProof
+                    && !component.cached
+                    && component.succeeded
+                    && component.stage_coverage_complete
+            });
         let missing: Vec<_> = self
             .capabilities
             .stages
             .iter()
             .filter(|s| {
+                if s.stage == Stage::Preprocessing && reused_preprocessing {
+                    return false;
+                }
                 !state.observations.iter().any(|o| {
                     o.stage == s.stage
                         && o.backend == s.backend

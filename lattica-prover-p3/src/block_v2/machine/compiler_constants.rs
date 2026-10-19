@@ -7,6 +7,42 @@ use p3_field::{Field, PrimeCharacteristicRing, TwoAdicField};
 mod folding;
 pub(crate) use folding::{FoldOperation, Folding};
 
+/// Explicit construction assignment for a runtime-local backend. These are
+/// requested payload limits, not a measurement of process RSS.
+#[cfg(feature = "gpu-cuda")]
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct ConstructionLimits {
+    pub program_host_bytes: usize,
+    pub wires: usize,
+    /// Public and witness values together. Growth may retain two backing arrays.
+    pub input_values: usize,
+}
+
+#[cfg(feature = "gpu-cuda")]
+impl ConstructionLimits {
+    pub(crate) fn validate(self) -> Result<Self, String> {
+        if self.program_host_bytes == 0
+            || self.wires == 0
+            || self.wires > super::program::MAX_WIRES
+            || self.input_values == 0
+            || self.input_values > self.wires
+        {
+            return Err("invalid CUDA program construction limits".into());
+        }
+        self.workspace_bytes()?;
+        Ok(self)
+    }
+
+    pub(crate) fn workspace_bytes(self) -> Result<usize, String> {
+        self.input_values
+            .checked_mul(16)
+            .and_then(|n| n.checked_add(self.program_host_bytes))
+            .and_then(|n| n.checked_add(super::symbolic::HOST_BYTES as usize))
+            .and_then(|n| n.checked_add(1 << 20))
+            .ok_or_else(|| "CUDA construction host allowance overflow".into())
+    }
+}
+
 #[derive(Clone, Copy)]
 pub(crate) enum Constants<'a> {
     Cpu(Option<&'a Run>),

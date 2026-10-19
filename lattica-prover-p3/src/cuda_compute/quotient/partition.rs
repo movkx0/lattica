@@ -25,6 +25,31 @@ impl PartitionPlan {
         live: usize,
         limits: Limits,
     ) -> Result<Self> {
+        Self::with_sources(
+            program,
+            inputs,
+            log_trace,
+            log_quotient,
+            shift,
+            live,
+            limits,
+            false,
+        )
+    }
+
+    /// Extracted sources are produced one at a time from retained commitments.
+    /// Only the current extraction coexists with its transform workspace; each
+    /// completed expansion survives until the component quotient is evaluated.
+    fn with_sources(
+        program: &Program,
+        inputs: [Option<MatrixSpec>; 3],
+        log_trace: u32,
+        log_quotient: u32,
+        shift: u64,
+        live: usize,
+        limits: Limits,
+        extracted: bool,
+    ) -> Result<Self> {
         if log_trace > log_quotient || log_quotient > 31 || inputs.iter().all(Option::is_none) {
             return Err("invalid CUDA quotient partition domain".into());
         }
@@ -37,6 +62,9 @@ impl PartitionPlan {
         for input in inputs.into_iter().flatten() {
             if input.log_rows > log_quotient || input.shift != shift {
                 return Err("CUDA quotient prefixes must fit and share the base coset".into());
+            }
+            if extracted && input.order != RowOrder::BitReversed {
+                return Err("CUDA committed quotient requires bit-reversed prefixes".into());
             }
             part_log = part_log.max(input.log_rows);
             row_words = row_words
@@ -68,13 +96,29 @@ impl PartitionPlan {
         let mut retained = base;
         let mut expansion_peak_bytes = base;
         for input in inputs.into_iter().flatten() {
-            if cosets == 1 && input.log_rows == part_log {
+            let alias = cosets == 1 && input.log_rows == part_log;
+            if alias && !extracted {
                 continue;
             }
+            let working = if extracted {
+                if input.bytes() > limits.max_allocation_bytes {
+                    return Err("CUDA quotient extraction exceeds allocation limit".into());
+                }
+                retained
+                    .checked_add(input.bytes())
+                    .filter(|&bytes| bytes <= limits.managed_bytes)
+                    .ok_or("CUDA quotient extraction exceeds managed allowance")?
+            } else {
+                retained
+            };
             // Later cosets transform even full-height prefixes to a new shift.
             // The shared transform planner charges both work buffers and roots.
-            let plan = super::super::transform::storage_plan(input, part_log, retained, limits)?;
-            expansion_peak_bytes = expansion_peak_bytes.max(plan.peak_bytes);
+            let peak = if alias {
+                working
+            } else {
+                super::super::transform::storage_plan(input, part_log, working, limits)?.peak_bytes
+            };
+            expansion_peak_bytes = expansion_peak_bytes.max(peak);
             let expanded = MatrixSpec::new(
                 part_log,
                 input.columns,
@@ -110,7 +154,30 @@ impl PreparedQuotient {
         live: usize,
         limits: Limits,
     ) -> Result<(MatrixSpec, usize, usize)> {
-        let plan = PartitionPlan::new(
+        self.partition_storage_impl(inputs, log_trace, log_quotient, live, limits, false)
+    }
+
+    pub(in crate::cuda_compute) fn extracted_partition_storage(
+        &self,
+        inputs: [Option<MatrixSpec>; 3],
+        log_trace: u32,
+        log_quotient: u32,
+        live: usize,
+        limits: Limits,
+    ) -> Result<(MatrixSpec, usize, usize)> {
+        self.partition_storage_impl(inputs, log_trace, log_quotient, live, limits, true)
+    }
+
+    fn partition_storage_impl(
+        &self,
+        inputs: [Option<MatrixSpec>; 3],
+        log_trace: u32,
+        log_quotient: u32,
+        live: usize,
+        limits: Limits,
+        extracted: bool,
+    ) -> Result<(MatrixSpec, usize, usize)> {
+        let plan = PartitionPlan::with_sources(
             &self.program,
             inputs,
             log_trace,
@@ -118,16 +185,17 @@ impl PreparedQuotient {
             7,
             live,
             limits,
+            extracted,
         )?;
         let expansions = inputs
             .into_iter()
             .flatten()
-            .filter(|s| plan.cosets > 1 || s.log_rows != plan.part_log)
+            .filter(|s| extracted || plan.cosets > 1 || s.log_rows != plan.part_log)
             .count();
         // Result (unless directly returned), retained expansions, and the five
         // evaluation buffers. A transform needs five buffers before releasing
         // its scratch, so its peak count cannot exceed this bound.
-        let allocations = usize::from(plan.cosets > 1) + expansions + 5;
+        let allocations = usize::from(plan.cosets > 1) + expansions + 5 + usize::from(extracted);
         Ok((plan.output, plan.peak_bytes, allocations))
     }
 }
@@ -161,6 +229,87 @@ impl Quotients {
             self.runtime.snapshot().live_bytes,
             self.runtime.state.budget.limits,
         )?;
+        self.evaluate_partitioned_plan(
+            prepared,
+            log_trace,
+            alpha,
+            parameters,
+            &plan,
+            |index, log, shift| {
+                [inputs.main, inputs.preprocessed, inputs.permutation][index]
+                    .map(|input| {
+                        if input.spec.log_rows == log && input.spec.shift == shift {
+                            Ok(input.clone())
+                        } else {
+                            transforms.lde(input, log, shift, RowOrder::BitReversed)
+                        }
+                    })
+                    .transpose()
+            },
+        )
+    }
+
+    pub(in crate::cuda_compute) fn evaluate_partitioned_extracted(
+        &self,
+        prepared: &PreparedQuotient,
+        log_trace: u32,
+        log_quotient: u32,
+        inputs: [Option<MatrixSpec>; 3],
+        alpha: &Buffer,
+        parameters: Option<&Buffer>,
+        mut extract: impl FnMut(usize, u32, u64) -> Result<Matrix>,
+    ) -> Result<Matrix> {
+        self.parameters(prepared, alpha, parameters)?;
+        let plan = PartitionPlan::with_sources(
+            &prepared.program,
+            inputs,
+            log_trace,
+            log_quotient,
+            7,
+            self.runtime.snapshot().live_bytes,
+            self.runtime.state.budget.limits,
+            true,
+        )?;
+        self.evaluate_partitioned_plan(
+            prepared,
+            log_trace,
+            alpha,
+            parameters,
+            &plan,
+            |index, log, shift| {
+                inputs[index]
+                    .map(|spec| {
+                        let output = extract(index, log, shift)?;
+                        let expected = MatrixSpec::new(
+                            log,
+                            spec.columns,
+                            spec.extension,
+                            RowOrder::BitReversed,
+                            shift,
+                        )?;
+                        if output.spec != expected {
+                            return Err(
+                                "CUDA extracted quotient matrix differs from planned domain".into(),
+                            );
+                        }
+                        Ok(output)
+                    })
+                    .transpose()
+            },
+        )
+    }
+
+    fn evaluate_partitioned_plan(
+        &self,
+        prepared: &PreparedQuotient,
+        log_trace: u32,
+        alpha: &Buffer,
+        parameters: Option<&Buffer>,
+        plan: &PartitionPlan,
+        mut expand: impl FnMut(usize, u32, u64) -> Result<Option<Matrix>>,
+    ) -> Result<Matrix> {
+        let shift = plan.output.shift;
+        let log_quotient = plan.output.log_rows;
         let (shifts, result) = if plan.cosets == 1 {
             // Public identity mapping: avoid duplicate output or input storage.
             (vec![shift], None)
@@ -194,16 +343,9 @@ impl Quotients {
             (words, Some(self.runtime.allocate(plan.output.words())?))
         };
         for (coset, part_shift) in shifts.into_iter().enumerate() {
-            let expand = |input: &Matrix| -> Result<Matrix> {
-                if input.spec.log_rows == plan.part_log && input.spec.shift == part_shift {
-                    Ok(input.clone())
-                } else {
-                    transforms.lde(input, plan.part_log, part_shift, RowOrder::BitReversed)
-                }
-            };
-            let main = inputs.main.map(expand).transpose()?;
-            let preprocessed = inputs.preprocessed.map(expand).transpose()?;
-            let permutation = inputs.permutation.map(expand).transpose()?;
+            let main = expand(0, plan.part_log, part_shift)?;
+            let preprocessed = expand(1, plan.part_log, part_shift)?;
+            let permutation = expand(2, plan.part_log, part_shift)?;
             let values = self.evaluate(
                 prepared,
                 log_trace,

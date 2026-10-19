@@ -106,6 +106,20 @@ impl Budget {
         }
         #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
         let _ = constants;
+        #[cfg(feature = "gpu-cuda")]
+        if let Constants::Cuda(context, _) = constants {
+            if let Some(bounds) = context.construction_limits() {
+                result.limit = Some(bounds.program_host_bytes);
+                result.wire_limit = bounds.wires;
+                result.input_limit = bounds
+                    .input_values
+                    .checked_sub(publics)
+                    .ok_or(ExecutionError::TooLarge)?;
+                if publics > result.wire_limit {
+                    return Err(ExecutionError::TooLarge);
+                }
+            }
+        }
         Ok(result)
     }
 

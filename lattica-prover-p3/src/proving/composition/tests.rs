@@ -170,6 +170,124 @@ fn cached_preprocessing_is_explicit_without_replaying_device_events() {
 }
 
 #[test]
+fn cached_setup_covers_preprocessing_only_with_a_fresh_complete_proof() {
+    for backend in [Backend::OpenCl, Backend::Metal, Backend::Cuda] {
+        let mut caps = Capabilities::cpu(Profile::BlockV2Cubic, true, false).scoped(
+            CoverageScope::ProofRequest,
+            &[Stage::Preprocessing, Stage::WitnessTrace],
+        );
+        caps.set(Stage::Preprocessing, backend);
+        caps.set(Stage::WitnessTrace, backend);
+        let setup = Run::new(
+            "setup",
+            required(),
+            caps.clone()
+                .scoped(CoverageScope::Preprocessing, &[Stage::Preprocessing]),
+        )
+        .unwrap();
+        setup
+            .observe_device(Stage::Preprocessing, backend, 5, 7)
+            .unwrap();
+        let cached = CachedScope::preprocessing(&setup.finish(true).unwrap()).unwrap();
+        for outcome in [None, Some(false), Some(true)] {
+            let run = Run::request(
+                "request",
+                required(),
+                caps.clone(),
+                &[
+                    ("setup", CoverageScope::Preprocessing),
+                    ("proof", CoverageScope::RegisteredProof),
+                ],
+            )
+            .unwrap();
+            run.reuse_preprocessing("setup", &cached).unwrap();
+            if let Some(succeeded) = outcome {
+                let proof = run
+                    .child(
+                        "proof",
+                        "proof",
+                        caps.clone()
+                            .scoped(CoverageScope::RegisteredProof, &[Stage::WitnessTrace]),
+                    )
+                    .unwrap();
+                proof
+                    .observe_device(Stage::WitnessTrace, backend, 2, 11)
+                    .unwrap();
+                proof.finish(succeeded).unwrap();
+            }
+            let report = run.finish(true);
+            if outcome == Some(true) {
+                let report = report.unwrap();
+                assert!(report.succeeded && report.stage_coverage_complete);
+                assert_eq!(report.observations.len(), 1);
+                assert_eq!(report.observations[0].stage, Stage::WitnessTrace);
+                assert_eq!(report.observations[0].device_calls, 2);
+                assert_eq!(report.observations[0].device_ns, 11);
+                assert!(report.components[0].cached);
+            } else {
+                assert!(matches!(report, Err(Error::IncompleteCoverage { .. })));
+            }
+        }
+    }
+}
+
+#[test]
+fn cached_setup_never_substitutes_fresh_non_preprocessing_arithmetic() {
+    let mut caps = Capabilities::cpu(Profile::BlockV2Cubic, true, true).scoped(
+        CoverageScope::ProofRequest,
+        &[Stage::Preprocessing, Stage::Lookup, Stage::WitnessTrace],
+    );
+    for stage in [Stage::Preprocessing, Stage::Lookup, Stage::WitnessTrace] {
+        caps.set(stage, Backend::Cuda);
+    }
+    let setup = Run::new(
+        "setup",
+        required(),
+        caps.clone().scoped(
+            CoverageScope::Preprocessing,
+            &[Stage::Preprocessing, Stage::Lookup],
+        ),
+    )
+    .unwrap();
+    for stage in [Stage::Preprocessing, Stage::Lookup] {
+        setup.observe_device(stage, Backend::Cuda, 1, 7).unwrap();
+    }
+    let cached = CachedScope::preprocessing(&setup.finish(true).unwrap()).unwrap();
+    let run = Run::request(
+        "request",
+        required(),
+        caps.clone(),
+        &[
+            ("setup", CoverageScope::Preprocessing),
+            ("proof", CoverageScope::RegisteredProof),
+        ],
+    )
+    .unwrap();
+    run.reuse_preprocessing("setup", &cached).unwrap();
+    let proof = run
+        .child(
+            "proof",
+            "proof",
+            caps.scoped(CoverageScope::RegisteredProof, &[Stage::WitnessTrace]),
+        )
+        .unwrap();
+    proof
+        .observe_device(Stage::WitnessTrace, Backend::Cuda, 1, 7)
+        .unwrap();
+    proof.finish(true).unwrap();
+    let Error::IncompleteCoverage { missing, .. } = run.finish(true).unwrap_err() else {
+        panic!("cached setup hid missing lookup arithmetic");
+    };
+    assert_eq!(
+        missing,
+        [StageCapability {
+            stage: Stage::Lookup,
+            backend: Backend::Cuda
+        }]
+    );
+}
+
+#[test]
 fn failed_and_unwound_children_preserve_work_without_json_reports() {
     for unwind in [false, true] {
         let run = parent(&[("setup", CoverageScope::Preprocessing)]);

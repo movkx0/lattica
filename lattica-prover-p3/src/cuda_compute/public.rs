@@ -31,6 +31,7 @@ pub(crate) struct PublicArithmetic {
     constants: Kernel,
     periodic: Kernel,
     fold: Kernel,
+    construction: Option<crate::block_v2::machine::compiler_constants::ConstructionLimits>,
     _host: Reservation,
 }
 
@@ -48,6 +49,15 @@ impl PublicArithmetic {
     }
 
     pub(crate) fn new(runtime: &Runtime, host_bytes: usize) -> Result<Self> {
+        Self::with_construction(runtime, host_bytes, None)
+    }
+
+    pub(crate) fn with_construction(
+        runtime: &Runtime,
+        host_bytes: usize,
+        construction: Option<crate::block_v2::machine::compiler_constants::ConstructionLimits>,
+    ) -> Result<Self> {
+        let construction = construction.map(|limits| limits.validate()).transpose()?;
         drop(runtime.state.enter()?);
         if host_bytes < HOST_BYTES {
             return Err("CUDA public arithmetic exceeds host allowance".into());
@@ -71,8 +81,15 @@ impl PublicArithmetic {
             constants: module.kernel_for_stage("public_constants", Stage::Preprocessing)?,
             periodic: module.kernel_for_stage("public_periodic", Stage::Preprocessing)?,
             fold: module.kernel_for_stage("public_fold", Stage::Preprocessing)?,
+            construction,
             _host: host,
         })
+    }
+
+    pub(crate) fn construction_limits(
+        &self,
+    ) -> Option<crate::block_v2::machine::compiler_constants::ConstructionLimits> {
+        self.construction
     }
 
     /// Bind completions to this exact component. No context or device handle is

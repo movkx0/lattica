@@ -1,7 +1,7 @@
 //! Scoped extraction of committed main/preprocessing/permutation prefixes.
 //! Private aliases never escape the participating randomness-family guards.
 use super::*;
-use crate::cuda_compute::{PreparedQuotient, QuotientInputs, Quotients};
+use crate::cuda_compute::{PreparedQuotient, Quotients};
 
 #[derive(Clone, Copy)]
 pub(crate) struct CommittedMatrix<'a> {
@@ -66,8 +66,8 @@ impl CommittedMatrix<'_> {
 
 impl Hiding {
     /// Ordered main, preprocessing and permutation inputs. Validate and admit
-    /// every extraction before launching; guard every family until evaluation
-    /// completes, including error and unwind paths.
+    /// the complete extraction/expansion schedule before launching; guard every
+    /// family until evaluation completes, including error and unwind paths.
     pub(crate) fn evaluate_committed_quotient(
         &self,
         quotients: &Quotients,
@@ -90,34 +90,44 @@ impl Hiding {
         let specs = inputs.map(|i| i.map(|i| i.spec(&self.runtime)).transpose());
         let [main, prep, perm] = specs;
         let specs = [main?, prep?, perm?];
-        plan::admit(
-            specs.iter().flatten().map(|s| s.words()),
-            self.runtime.snapshot(),
-            self.runtime.state.budget.limits,
+        let state = self.runtime.snapshot();
+        let limits = self.runtime.state.budget.limits;
+        let (_, _, allocations) = prepared.extracted_partition_storage(
+            specs,
+            log_trace,
+            log_quotient,
+            state.live_bytes,
+            limits,
         )?;
+        if state
+            .allocations
+            .checked_add(allocations)
+            .is_none_or(|n| n > limits.max_allocations)
+        {
+            return Err("CUDA committed quotient exceeds allocation count".into());
+        }
         let mut guards = Vec::with_capacity(3);
         for input in inputs.iter().flatten() {
             guards.push(input.commitment.begin_attempt(&self.runtime)?);
         }
-        let mut matrices = [None, None, None];
-        for i in 0..3 {
-            if let (Some(input), Some(spec)) = (inputs[i], specs[i]) {
-                matrices[i] = Some(input.extract(self, spec)?);
-            }
-        }
-        let result = quotients.evaluate_partitioned(
-            &self.transforms,
+        let result = quotients.evaluate_partitioned_extracted(
             prepared,
             log_trace,
             log_quotient,
-            GENERATOR,
-            QuotientInputs {
-                main: matrices[0].as_ref(),
-                preprocessed: matrices[1].as_ref(),
-                permutation: matrices[2].as_ref(),
-            },
+            specs,
             alpha,
             parameters,
+            |index, log, shift| {
+                let input = inputs[index]
+                    .unwrap()
+                    .extract(self, specs[index].unwrap())?;
+                if input.spec.log_rows == log && input.spec.shift == shift {
+                    Ok(input)
+                } else {
+                    self.transforms
+                        .lde(&input, log, shift, RowOrder::BitReversed)
+                }
+            },
         )?;
         for input in inputs.iter().flatten() {
             check_families(&input.commitment.families)?;

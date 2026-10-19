@@ -42,7 +42,7 @@ impl Session<12> {
     ) -> Result<NodeProof, Error> {
         left.check_session(self)?;
         right.check_session(self)?;
-        super::super::statements::request("block_v2_typed_merge", |run| {
+        self.backend.clone().request("block_v2_typed_merge", |run| {
             self.merge_proof(run, &left.node, &right.node)
         })
     }
@@ -52,9 +52,11 @@ impl Session<12> {
         child: VerifiedNodeInput,
     ) -> Result<NodeProof, Error> {
         child.check_session(self)?;
-        super::super::statements::request("block_v2_typed_finalize", |run| {
-            self.finalize_proof(run, typed_pairs::FINALIZE, &child.node)
-        })
+        self.backend
+            .clone()
+            .request("block_v2_typed_finalize", |run| {
+                self.finalize_proof(run, typed_pairs::FINALIZE, &child.node)
+            })
     }
 }
 

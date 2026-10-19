@@ -250,9 +250,21 @@ impl Run {
         component.succeeded = true;
         component.stage_coverage_complete =
             cached.complete && compatible_inventory(&self.capabilities, &cached.capabilities);
+        if component.stage_coverage_complete
+            && cached
+                .capabilities
+                .stages
+                .iter()
+                .any(|stage| stage.stage == Stage::Preprocessing)
+        {
+            state.cached_preprocessing = true;
+        }
         Ok(())
     }
 }
 
-#[cfg(all(test, any(feature = "gpu", feature = "gpu-metal")))]
+#[cfg(all(
+    test,
+    any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda")
+))]
 mod tests;

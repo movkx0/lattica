@@ -15,6 +15,48 @@ use p3_matrix::{dense::RowMajorMatrix, Matrix as _};
 use p3_symmetric::{CryptographicHasher, PseudoCompressionFunction};
 
 #[test]
+fn extracted_partition_admission_releases_each_source_before_the_next_expansion() {
+    let program = program_with_main_width::<crate::block_v2::profile::Challenge>(64);
+    let inputs = [
+        (64, Extension::Base),
+        (2, Extension::Base),
+        (2, Extension::Cubic),
+    ]
+    .map(|(width, extension)| {
+        Some(MatrixSpec::new(19, width, extension, RowOrder::BitReversed, 7).unwrap())
+    });
+    let live = 2 << 30;
+    let source_bytes = inputs
+        .iter()
+        .flatten()
+        .map(|spec| spec.bytes())
+        .sum::<usize>();
+    let limits = Limits {
+        managed_bytes: 7 << 30,
+        max_allocation_bytes: 1 << 30,
+        ..Limits::default()
+    };
+    let extracted =
+        PartitionPlan::with_sources(&program, inputs, 18, 21, 7, live, limits, true).unwrap();
+    let retained =
+        PartitionPlan::new(&program, inputs, 18, 21, 7, live + source_bytes, limits).unwrap();
+    assert!(extracted.peak_bytes < retained.peak_bytes);
+    let bounded = Limits {
+        managed_bytes: extracted.peak_bytes,
+        ..limits
+    };
+    assert!(PartitionPlan::with_sources(&program, inputs, 18, 21, 7, live, bounded, true).is_ok());
+    assert!(PartitionPlan::new(&program, inputs, 18, 21, 7, live + source_bytes, bounded).is_err());
+    let alias =
+        PartitionPlan::with_sources(&program, inputs, 18, 19, 7, live, limits, true).unwrap();
+    assert_eq!(alias.expansion_peak_bytes, live + source_bytes);
+    assert!(alias.evaluation_peak_bytes > alias.expansion_peak_bytes);
+    let mut invalid = inputs;
+    invalid[0].as_mut().unwrap().order = RowOrder::Natural;
+    assert!(PartitionPlan::with_sources(&program, invalid, 18, 21, 7, live, limits, true).is_err());
+}
+
+#[test]
 fn partition_admission_charges_all_retained_storage_and_aliases_one_coset() {
     let p = simple(Extension::Cubic, 1);
     let input = MatrixSpec::new(3, 1, Extension::Base, RowOrder::Natural, 7).unwrap();
