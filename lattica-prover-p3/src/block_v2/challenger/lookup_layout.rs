@@ -33,7 +33,7 @@ fn lookup_count(lookups: &[&[Lookup<Val>]]) -> Result<usize, String> {
 }
 
 /// Host work is restricted to deterministic names, indices and tuple lengths.
-pub(super) fn bus_layout(
+pub(crate) fn bus_layout(
     lookups: &[&[Lookup<Val>]],
 ) -> Result<(Vec<Vec<usize>>, usize, usize), String> {
     let count = lookup_count(lookups)?;

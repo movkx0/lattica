@@ -138,7 +138,7 @@ impl Program {
         )
     }
 
-    pub(super) fn from_constraints<F: FriExtension>(
+    pub(crate) fn from_constraints<F: FriExtension>(
         layout: AirLayout,
         constraints: &crate::block_v2::machine::symbolic::Constraints<F>,
     ) -> Result<Self, String> {

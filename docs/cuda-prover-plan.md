@@ -66,8 +66,10 @@ Native recursive-machine execution now also constructs witness traces and
 deterministic preprocessing from immutable public program metadata and raw
 inputs. Dependency waves, base/cubic arithmetic, Poseidon2 traces and execution
 checks run on CUDA. Generated traces, preprocessing and public values feed the
-native lookup stage directly. Complete recursive batch-STARK orchestration
-remains outstanding.
+native lookup stage directly. Native machine batch-STARK orchestration now
+connects these stages to the hiding PCS, preserving the upstream transcript and
+proof encoding. Qualification with actual registered inner-verifier programs
+and integration with recursive workers remain outstanding.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -738,8 +740,44 @@ CPU/OpenCL/Metal/standalone-CUDA build checks. All 806 source pins match the
 staged Git blobs. These are component correctness results; complete recursive
 proof orchestration and performance qualification remain unfinished.
 
-Public request routing, batch wallet traces, recursive batch-STARK orchestration,
-whole-request admission and worker/pool integration remain unfinished. The new
+[Native machine batch proofs](evidence/cuda-batch-stark-2026-10-19.json) now
+consume raw public/witness packets for one or more immutable `MachineAir`
+programs. CUDA generates the witnesses, preprocessing, lookup challenges and
+traces, quotient polynomials, commitments, openings and FRI proof. Main and
+lookup witness rows are released once their committed prefixes suffice.
+Structural transcript integers use the cubic extension encoding; all instances
+share one sampled lookup challenge pair and the existing deterministic bus map.
+Opening rounds retain the upstream random/main/quotient/preprocessing/permutation
+order. Proof parameters and the wire format are unchanged.
+
+Independent CPU setup reconstructs the preprocessing root from each program.
+The unchanged CPU batch verifier accepts single and mixed-height native proofs;
+the application's existing registered verifier also accepts single-instance
+Postcard artifacts with the independently authenticated cap. These fixtures
+execute arithmetic and Poseidon2 machine programs, not recursive verifier
+programs. Tampered statements, permutation/preprocessing openings, terminals
+and instance order are rejected. An operation report records all sixteen CUDA
+arithmetic stages without invoking the CPU witness oracle.
+
+The quotient bridge admits main, preprocessing and extension-valued permutation
+prefix extractions together and keeps every commitment's randomness guard active
+until evaluation finishes. Injected failures/unwinds retire all participating
+families and release temporary allocations. Successful proofs reuse prepared
+public metadata; after a failed consuming attempt the caller prepares afresh
+before retrying. The initial interface admits at most eight machine instances,
+also bounded by the existing 256-matrix PCS and runtime resource limits. Complete
+request admission and a reusable public-preprocessing lifetime remain future
+integration work.
+
+All 175 native CUDA tests passed. Each of the seven new batch/quotient integration
+tests also passed under memcheck, racecheck and synccheck, and with the `stream`
+feature. CPU/OpenCL/standalone-CUDA checks, Metal cross-compilation and affected
+OpenCL regressions passed. The qualification pins 810 source files to staged Git
+blobs and preserves the tested executables. This is correctness evidence; test
+durations do not establish native recursive throughput.
+
+Public request routing, batch wallet traces, actual recursive verifier execution,
+whole-request admission and worker/pool integration remain unfinished. The
 opt-in CPU/CUDA benchmark measures raw witness to serialized wallet proof, with
 independent CPU verification outside timing; it does not measure recursive
 aggregation, block processing or distributed transaction throughput.

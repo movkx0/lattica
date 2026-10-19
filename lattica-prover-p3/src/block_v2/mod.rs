@@ -6,6 +6,8 @@
 //! calculations and leaf proofs do not satisfy that gate. Historical v1 is unchanged.
 
 mod challenger;
+#[cfg(feature = "gpu-cuda")]
+pub(crate) use challenger::lookup_layout::bus_layout as lookup_bus_layout;
 pub mod codec;
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 pub(crate) mod worker_memory;

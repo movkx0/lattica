@@ -16,7 +16,7 @@ pub(crate) mod storage;
 mod scalars;
 
 #[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
-mod lookup_layout;
+pub(crate) mod lookup_layout;
 #[cfg(feature = "gpu-cuda")]
 mod cuda_scalars;
 

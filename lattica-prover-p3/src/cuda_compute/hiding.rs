@@ -12,7 +12,7 @@ mod batch;
 mod plan;
 mod randomization;
 pub(crate) use batch::{
-    HiddenCommitment, HiddenOpenings, HidingInput, OpeningShape, RetainedOpening,
+    CommittedMatrix, HiddenCommitment, HiddenOpenings, HidingInput, OpeningShape, RetainedOpening,
 };
 use plan::TilePlan;
 #[cfg(test)]

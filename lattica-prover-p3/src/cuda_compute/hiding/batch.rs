@@ -9,6 +9,9 @@ const MAX_INPUTS: usize = 256;
 const MAX_QUERIES: usize = 256;
 const HOST_METADATA: usize = 64 << 10;
 
+mod quotient;
+pub(crate) use quotient::CommittedMatrix;
+
 #[derive(Clone, Copy)]
 enum Fault {
     None,
