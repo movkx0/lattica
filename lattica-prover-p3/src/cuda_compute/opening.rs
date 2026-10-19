@@ -120,6 +120,21 @@ pub(crate) struct DeviceOpening {
 }
 
 impl DeviceOpening {
+    pub(crate) fn words(&self) -> usize {
+        self.values.len()
+    }
+
+    pub(crate) fn observe(&self, transcript: &mut super::Transcript) -> Result<()> {
+        for first in (0..self.values.len()).step_by(crate::transcript_limits::BATCH_WORDS) {
+            transcript.observe_resident(
+                &self.values,
+                first,
+                (self.values.len() - first).min(crate::transcript_limits::BATCH_WORDS),
+            )?;
+        }
+        Ok(())
+    }
+
     /// Point-major, then column-major flattened extension coefficients.
     pub(crate) fn values(&self, host_bytes: usize) -> Result<Vec<u64>> {
         if self.values.len() * 8 > host_bytes {
@@ -181,17 +196,38 @@ impl Openings {
         points: FieldSpan<'_>,
         count: usize,
     ) -> Result<EvaluationPlan> {
+        self.plan_with_retained(prefix, extension, points, count, 0, 0)
+    }
+
+    fn plan_with_retained(
+        &self,
+        prefix: &Matrix,
+        extension: Extension,
+        points: FieldSpan<'_>,
+        count: usize,
+        retained_bytes: usize,
+        retained_allocations: usize,
+    ) -> Result<EvaluationPlan> {
         if !Arc::ptr_eq(&self.runtime.state, prefix.buffer.owner())
             || !Arc::ptr_eq(&self.runtime.state, points.buffer.owner())
         {
             return Err("CUDA opening inputs belong to another runtime".into());
         }
         drop(self.runtime.state.enter()?);
+        let mut state = self.runtime.snapshot();
+        state.live_bytes = state
+            .live_bytes
+            .checked_add(retained_bytes)
+            .ok_or("CUDA retained opening bytes overflow")?;
+        state.allocations = state
+            .allocations
+            .checked_add(retained_allocations)
+            .ok_or("CUDA retained opening allocation count overflow")?;
         let plan = EvaluationPlan::new(
             prefix.spec,
             extension,
             count,
-            self.runtime.snapshot(),
+            state,
             self.runtime.state.budget.limits,
         )?;
         if prefix.buffer.len() != prefix.spec.words()
@@ -213,6 +249,26 @@ impl Openings {
         count: usize,
     ) -> Result<()> {
         self.plan(prefix, extension, points, count).map(|_| ())
+    }
+
+    pub(super) fn preflight_with_retained(
+        &self,
+        prefix: &Matrix,
+        extension: Extension,
+        points: FieldSpan<'_>,
+        count: usize,
+        retained_bytes: usize,
+        retained_allocations: usize,
+    ) -> Result<()> {
+        self.plan_with_retained(
+            prefix,
+            extension,
+            points,
+            count,
+            retained_bytes,
+            retained_allocations,
+        )
+        .map(|_| ())
     }
 
     pub(crate) fn evaluate(

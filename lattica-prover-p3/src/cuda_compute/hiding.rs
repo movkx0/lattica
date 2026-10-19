@@ -10,7 +10,9 @@ use crate::{
 };
 mod batch;
 mod plan;
-pub(crate) use batch::{HiddenCommitment, HiddenOpenings, HidingInput};
+pub(crate) use batch::{
+    HiddenCommitment, HiddenOpenings, HidingInput, OpeningShape, RetainedOpening,
+};
 use plan::TilePlan;
 #[cfg(test)]
 mod tests;

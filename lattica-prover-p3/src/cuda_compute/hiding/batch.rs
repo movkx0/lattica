@@ -95,6 +95,39 @@ pub(crate) struct HiddenOpenings {
     pub path_len: usize,
 }
 
+#[derive(Clone, Copy)]
+pub(crate) struct OpeningShape {
+    pub prefix: MatrixSpec,
+    pub lde: MatrixSpec,
+    pub random_columns: usize,
+}
+
+/// An immutable evaluated opening can outlive its initial evaluation, but
+/// every consumer must still belong to the original commitment's live family.
+pub(crate) struct RetainedOpening<'a> {
+    owner: &'a HiddenCommitment,
+    opening: crate::cuda_compute::DeviceOpening,
+    shape: OpeningShape,
+}
+
+impl RetainedOpening<'_> {
+    pub(crate) fn shape(&self) -> OpeningShape {
+        self.shape
+    }
+
+    pub(crate) fn with<T>(
+        &self,
+        consume: impl FnOnce(&crate::cuda_compute::DeviceOpening) -> Result<T>,
+    ) -> Result<T> {
+        check_families(&self.owner.families)?;
+        let attempt = self.owner.begin_attempt(&self.owner.runtime)?;
+        let result = consume(&self.opening)?;
+        check_families(&self.owner.families)?;
+        attempt.complete();
+        Ok(result)
+    }
+}
+
 fn check_families(families: &[DeviceRandom]) -> Result<()> {
     for family in families {
         if let Err(error) = family.check_live() {
@@ -336,6 +369,64 @@ impl Hiding {
 }
 
 impl HiddenCommitment {
+    pub(crate) fn opening_shape(&self, matrix: usize) -> Result<OpeningShape> {
+        let input = self
+            .matrices
+            .get(matrix)
+            .ok_or("CUDA PCS matrix index exceeds commitment")?;
+        Ok(OpeningShape {
+            prefix: input.prefix.spec,
+            lde: input.spec,
+            random_columns: input.random_columns,
+        })
+    }
+
+    pub(crate) fn preflight_retained_opening(
+        &self,
+        engine: &crate::cuda_compute::Openings,
+        matrix: usize,
+        extension: Extension,
+        points: crate::cuda_compute::FieldSpan<'_>,
+        count: usize,
+        retained_bytes: usize,
+        retained_allocations: usize,
+    ) -> Result<()> {
+        check_families(&self.families)?;
+        let input = self
+            .matrices
+            .get(matrix)
+            .ok_or("CUDA PCS matrix index exceeds commitment")?;
+        engine.preflight_with_retained(
+            &input.prefix,
+            extension,
+            points,
+            count,
+            retained_bytes,
+            retained_allocations,
+        )
+    }
+
+    pub(crate) fn retain_opening(
+        &self,
+        engine: &crate::cuda_compute::Openings,
+        matrix: usize,
+        extension: Extension,
+        points: crate::cuda_compute::FieldSpan<'_>,
+        count: usize,
+    ) -> Result<RetainedOpening<'_>> {
+        self.preflight_retained_opening(engine, matrix, extension, points, count, 0, 0)?;
+        let attempt = self.begin_attempt(&self.runtime)?;
+        let opening = engine.evaluate(&self.matrices[matrix].prefix, extension, points, count)?;
+        check_families(&self.families)?;
+        let result = RetainedOpening {
+            owner: self,
+            opening,
+            shape: self.opening_shape(matrix)?,
+        };
+        attempt.complete();
+        Ok(result)
+    }
+
     pub(crate) fn check_runtime(&self, runtime: &Runtime) -> Result<()> {
         if !std::sync::Arc::ptr_eq(&self.runtime.state, &runtime.state) {
             return Err("CUDA hidden commitment belongs to another runtime".into());

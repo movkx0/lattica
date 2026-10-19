@@ -41,8 +41,11 @@ requested rows are reconstructed and salted on CUDA. Native out-of-domain
 evaluation now consumes resident challenge points, and column-compressed opening
 reductions produce resident FRI inputs. Native FRI folding, salted layer queries
 and final-polynomial extraction are implemented. Native FRI protocol orchestration
-now generates authenticated proofs accepted by the unchanged CPU FRI verifier;
-complete PCS integration remains outstanding.
+now generates authenticated proofs accepted by the unchanged CPU FRI verifier.
+The native hiding PCS opening wrapper evaluates each matrix once, observes
+resident claims before sampling alpha, reduces them on CUDA, and returns the
+existing public/masking opening and authenticated FRI proof format. The remaining
+PCS commitment operations and integration into complete proving remain outstanding.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -497,6 +500,39 @@ These are complete FRI proofs over synthetic committed inputs, not complete
 wallet or recursive STARK proofs. The native hiding PCS opening wrapper,
 remaining proof stages and backend/worker integration are still unfinished;
 no complete-prover speedup or transaction-throughput result is claimed.
+
+The [hiding PCS opening qualification](evidence/cuda-pcs-openings-2026-10-18.json)
+connects native hidden commitments to complete PCS opening proofs. Each matrix
+is evaluated once into a scoped retained opening. All claimed values, including
+masking columns, are observed on CUDA before alpha is sampled. CUDA reductions
+then feed authenticated FRI; bounded proof egress separates public values from
+the masking suffix using the existing hiding PCS format. Public preprocessing
+uses the upstream round index and has no masking suffix.
+
+Admission includes all captured points/evaluations, reduction accumulators and
+scratch, and aggregate host storage for both opened values and the FRI proof.
+Invalid public shapes and insufficient admission leave transcript and RNG state
+untouched. Failures after execution begins retire every original randomness/salt
+family, FRI salts and transcript snapshots. Retained openings cannot be consumed
+after their source family retires, and intermediate allocations are released.
+
+Six new tests use four commitment rounds, eight matrices at three LDE heights,
+four quotient chunks, offset/repeated opening points and both public/private
+preprocessing. Unchanged CPU PCS verification accepts quadratic and cubic
+proofs with production FRI parameters. Four zero-PoW cases match upstream proof
+bytes exactly; tampered masking values/shapes, authenticated rows and public
+claims are rejected. Tests also cover host boundaries, device pressure, invalid
+points, failed consumers and unwinds. All 40 qualification checks passed:
+126 native tests, 125 under each sanitizer, and 35 PCS/opening/FRI tests with
+`stream`, alongside CPU/OpenCL/Metal build and regression checks. All 774 source
+files match the staged source.
+
+This checkpoint opens existing native commitments. The separate STARK
+randomization-polynomial commitment, remaining proof stages, complete
+PCS/backend wiring, execution receipts and worker integration still need
+implementation. It does not qualify full wallet/recursive STARK proving or
+establish transaction throughput. CUDA execution remains qualified only on the
+desktop RTX 5080.
 
 ## Implementation sequence
 

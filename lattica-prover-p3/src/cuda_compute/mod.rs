@@ -13,6 +13,8 @@ mod hiding;
 mod kernel;
 mod matrix;
 mod opening;
+#[cfg(feature = "block-v2")]
+mod pcs;
 mod query;
 mod random;
 mod scalars;
@@ -36,6 +38,8 @@ pub(crate) use hiding::{HiddenCommitment, HiddenOpenings, Hiding, HidingInput, Q
 pub(crate) use kernel::{Argument, Completion, Kernel, Launch, Module};
 pub(crate) use matrix::Matrix;
 pub(crate) use opening::{DeviceOpening, OpeningAccumulator, Openings};
+#[cfg(feature = "block-v2")]
+pub(crate) use pcs::{NativeHidingProof, OpeningPoints, OpeningRound, PcsOpenings};
 pub(crate) use query::QueryRows;
 pub(crate) use random::{DeviceRandom, Randoms, RandomWords, ReplaySalts};
 pub(crate) use scalars::{DomainValues, Scalars};

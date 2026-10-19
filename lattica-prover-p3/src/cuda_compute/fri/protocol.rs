@@ -106,6 +106,54 @@ enum Fault {
 }
 
 impl Fri {
+    /// Admission for a caller that will produce the reduced vectors later.
+    pub(crate) fn proof_host_bytes<F: FriField>(
+        &self,
+        params: FriParameters,
+        heights: &[usize],
+        originals: &[&HiddenCommitment],
+    ) -> Result<usize> {
+        self.protocol_plan::<F>(params, heights, originals, usize::MAX)
+            .map(|(plan, _)| plan.host_peak)
+    }
+
+    fn protocol_plan<F: FriField>(
+        &self,
+        params: FriParameters,
+        heights: &[usize],
+        originals: &[&HiddenCommitment],
+        host_bytes: usize,
+    ) -> Result<(storage::Plan, Vec<(usize, usize)>)> {
+        if heights.is_empty()
+            || heights.len() > 26
+            || heights.iter().any(|&h| h > 25)
+            || originals.is_empty()
+            || originals.len() > 256
+        {
+            return Err("CUDA FRI protocol geometry exceeds admission".into());
+        }
+        let mut initial = vector(originals.len())?;
+        let mut authenticated_heights = [false; 26];
+        for data in originals {
+            data.check_runtime(&self.runtime)?;
+            for spec in data.specs() {
+                if !heights.contains(&(spec.log_rows as usize)) {
+                    return Err("CUDA FRI reduction omits a committed input height".into());
+                }
+                authenticated_heights[spec.log_rows as usize] = true;
+            }
+            initial.push((
+                data.query_host_bytes(params.num_queries)?,
+                data.specs().len(),
+            ));
+        }
+        if heights.iter().any(|&h| !authenticated_heights[h]) {
+            return Err("CUDA FRI reduction has no authenticated input".into());
+        }
+        let plan = storage::Plan::new(params, heights, F::DIMENSION, &initial, host_bytes)?;
+        Ok((plan, initial))
+    }
+
     /// Inputs are opening reductions, one per distinct committed height. The
     /// caller has observed original commitments/claims and sampled alpha.
     /// This method authenticates every original input query itself; callers
@@ -158,25 +206,7 @@ impl Fri {
             }
             heights.push(input.log_rows() as usize);
         }
-        let mut initial = vector(originals.len())?;
-        let mut authenticated_heights = [false; 26];
-        for data in originals {
-            data.check_runtime(&self.runtime)?;
-            for spec in data.specs() {
-                if !heights.contains(&(spec.log_rows as usize)) {
-                    return Err("CUDA FRI reduction omits a committed input height".into());
-                }
-                authenticated_heights[spec.log_rows as usize] = true;
-            }
-            initial.push((
-                data.query_host_bytes(params.num_queries)?,
-                data.specs().len(),
-            ));
-        }
-        if heights.iter().any(|&h| !authenticated_heights[h]) {
-            return Err("CUDA FRI reduction has no authenticated input".into());
-        }
-        let plan = storage::Plan::new(params, &heights, F::DIMENSION, &initial, host_bytes)?;
+        let (plan, initial) = self.protocol_plan::<F>(params, &heights, originals, host_bytes)?;
         let mut attempts = vector(originals.len())?;
         for data in originals {
             attempts.push(data.begin_attempt(&self.runtime)?);

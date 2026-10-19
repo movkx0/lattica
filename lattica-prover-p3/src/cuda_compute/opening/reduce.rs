@@ -106,6 +106,33 @@ pub(crate) struct OpeningAccumulator<'a> {
 }
 
 impl Openings {
+    pub(crate) fn preflight_reduction(
+        &self,
+        prefix: MatrixSpec,
+        output: MatrixSpec,
+        points: usize,
+        retained_bytes: usize,
+        retained_allocations: usize,
+    ) -> Result<()> {
+        let mut state = self.runtime.snapshot();
+        state.live_bytes = state
+            .live_bytes
+            .checked_add(retained_bytes)
+            .ok_or("CUDA PCS reduction bytes overflow")?;
+        state.allocations = state
+            .allocations
+            .checked_add(retained_allocations)
+            .ok_or("CUDA PCS reduction allocation count overflow")?;
+        ReductionPlan::new(
+            prefix,
+            output,
+            points,
+            state,
+            self.runtime.state.budget.limits,
+        )
+        .map(|_| ())
+    }
+
     pub(crate) fn accumulator(
         &self,
         log_rows: u32,
