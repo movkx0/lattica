@@ -390,4 +390,6 @@ impl FriRound<'_> {
 }
 
 #[cfg(test)]
+mod benchmark;
+#[cfg(test)]
 mod tests;

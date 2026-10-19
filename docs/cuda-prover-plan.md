@@ -430,6 +430,18 @@ transcript orchestration, proof assembly, complete PCS integration, remaining
 proof stages, backend selection and worker integration are still required.
 No full native CUDA FRI proof or transaction-throughput result is claimed.
 
+The opt-in `cuda_fri_folding_benchmark` compares one arity-16 fold with four
+binary folds using beta, beta squared, beta to the fourth and beta to the eighth.
+Both arms compute the same algebraic result; this does not change FRI rounds
+or security parameters. Set `LATTICA_CUDA_FRI_BENCHMARK=1` and run the exact
+test with `--ignored --test-threads=1 --nocapture` in a bounded CUDA service.
+It covers both extensions at 65,536 and 262,144 rows, with two warmups and five
+alternating measurement pairs per case. Every result is audited against the
+upstream CPU fold outside timing. Preparation, fixture uploads, challenge copies,
+result downloads and final-result cleanup are excluded; intermediate allocations,
+completion and cleanup are included. Debug-host primitive timings do not measure
+complete proofs or transactions.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)
