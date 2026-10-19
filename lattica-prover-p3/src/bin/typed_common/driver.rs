@@ -11,6 +11,9 @@ pub fn coordinator_storage_probe() -> Result<(), Error> {
 #[cfg(feature = "gpu")]
 #[path = "gpu.rs"]
 mod typed_gpu;
+#[cfg(feature = "gpu-cuda")]
+#[path = "cuda.rs"]
+mod typed_gpu;
 use lattica_prover_p3::block_v2::{
     codec,
     commitment::{self, Context, Entry, Kind, NodeSummary},
@@ -765,7 +768,7 @@ fn run(args: &[String]) -> Result<(), Error> {
 
 /// CPU-only wallet authentication and native-body agreement, without a DAG or OS worker.
 fn verify_wallet_inputs(dir: &Path, pinned: &Path, out: &Path) -> Result<(), Error> {
-    if !PAIRED || cfg!(any(feature = "gpu", feature = "gpu-metal")) {
+    if !PAIRED || cfg!(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda")) {
         return Err("wallet input verification requires a CPU-only paired probe".into());
     }
     let expected: Expected = read_json(pinned)?;
@@ -854,12 +857,12 @@ fn run_inner(args: &[String], gpu: bool) -> Result<(), Error> {
             Path::new(dir), Path::new(pinned), Path::new(request), Path::new(nodes), Path::new(out)),
         #[cfg(all(target_os = "linux", feature = "stream"))]
         ["execution-plan", dir, pinned, out] => execution::plan(Path::new(dir), Path::new(pinned), Path::new(out)),
-        #[cfg(all(target_os = "linux", feature = "stream", feature = "gpu"))]
+        #[cfg(all(target_os = "linux", feature = "stream", any(feature = "gpu", feature = "gpu-cuda")))]
         ["prove-fleet-gpu", dir, pinned, plan, out] => execution::prove_fleet(
             Path::new(dir), Path::new(pinned), Path::new(plan), Path::new(out)),
         #[cfg(all(target_os = "linux", feature = "stream"))]
         ["execution-audit", dir, pinned, nodes, head, out] => execution::audit(Path::new(dir), Path::new(pinned), Path::new(nodes), head, Path::new(out)),
-        #[cfg(all(target_os = "linux", feature = "stream", not(any(feature = "gpu", feature = "gpu-metal"))))]
+        #[cfg(all(target_os = "linux", feature = "stream", not(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))))]
         ["audit-pool-journal", dir, pinned, runtime, assignment, root, head, epoch, out] => execution::audit_pool_journal(
             Path::new(dir), Path::new(pinned), Path::new(runtime), Path::new(assignment),
             Path::new(root), head, epoch.parse()?, Path::new(out)),
@@ -905,10 +908,10 @@ pub(crate) fn main() {
                     | "--gpu-inventory"
             )
         ) {
-            #[cfg(feature = "gpu")]
+            #[cfg(any(feature = "gpu", feature = "gpu-cuda"))]
             return typed_gpu::run(&args);
-            #[cfg(not(feature = "gpu"))]
-            return Err("typed GPU qualification requires a build with the gpu feature".into());
+            #[cfg(not(any(feature = "gpu", feature = "gpu-cuda")))]
+            return Err("typed GPU qualification requires a gpu or gpu-cuda build".into());
         }
         let available = std::thread::available_parallelism()?.get();
         let requested = std::env::var("RAYON_NUM_THREADS")

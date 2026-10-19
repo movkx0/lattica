@@ -44,10 +44,12 @@ pub(crate) use batch_stark::{
     BatchStarks, MachineInputs, NativeBatchProof, PreparedBatch, ProofPlan, RegisteredKey,
     RegisteredMachine, RegisteredProof,
 };
-pub(crate) use budget::{Limits, Snapshot};
+pub(crate) use budget::Limits;
+pub use budget::Snapshot;
 pub(crate) use buffer::Buffer;
 pub(crate) use commitment::{ColumnSink, Commitments, RetainedTree};
-pub(crate) use device::{inventory, Identity, Runtime};
+pub use device::Identity;
+pub(crate) use device::{inventory, Runtime};
 pub(crate) use field::{FieldOperation, FieldProgram, FieldSpan};
 pub(crate) use fri::{FinalPolynomial, Fri, FriLayer, FriLayerOpenings, FriRound, FriVector};
 #[cfg(feature = "block-v2")]

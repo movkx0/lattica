@@ -403,7 +403,7 @@ fn assignment() -> serde_json::Value {
            "gpu": {"managed_bytes": 2000}, "cpu": {"rayon_threads": 4}})
 }
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "gpu", feature = "gpu-cuda"))]
 #[test]
 fn prepared_cli_config_cannot_substitute_resources_cache_or_executable() {
     let mut base = bootstrap();
@@ -434,6 +434,7 @@ fn prepared_cli_config_cannot_substitute_resources_cache_or_executable() {
         .unwrap()
         .check_admitted_assignment(&assigned)
         .is_err());
+    #[cfg(feature = "gpu")]
     assert!(!crate::block_v2::gpu_hash::is_enabled());
 }
 

@@ -39,10 +39,10 @@ fn prepare(dir: &Path, pinned: &Path) -> Result<Prepared, Error> {
 
 fn prepare_for_backend(dir: &Path, pinned: &Path, gpu: bool) -> Result<Prepared, Error> {
     // The parent CPU command dispatcher also rejects active GPU/quotient env.
-    if cfg!(any(feature = "gpu", feature = "gpu-metal")) && !gpu {
+    if cfg!(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda")) && !gpu {
         return Err("execution diagnostics require a CPU-only unfused probe".into());
     }
-    if gpu && !cfg!(any(feature = "gpu", feature = "gpu-metal")) {
+    if gpu && !cfg!(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda")) {
         return Err("typed GPU execution requires a GPU build".into());
     }
     if !PAIRED {
@@ -115,12 +115,12 @@ mod proving;
 mod recovery;
 pub(super) use fleet::prove as prove_fleet;
 pub(super) use fleet::{audit_pool_calibration, audit_preseal};
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "gpu", feature = "gpu-cuda"))]
 pub(super) use process::serve_owned as serve_owned_process;
 pub(super) use process::{prove as prove_process, serve as serve_process};
 
 pub(super) use recovery::recover;
-#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+#[cfg(not(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda")))]
 pub(super) use recovery::audit_pool_journal;
 
 pub(super) fn prove(

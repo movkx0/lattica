@@ -25,6 +25,19 @@ mod cuda;
 #[cfg(feature = "gpu-cuda")]
 pub(crate) use cuda::serve;
 
+#[cfg(feature = "gpu-cuda")]
+pub use crate::cuda_compute::{Identity as CudaDevice, Snapshot as CudaSnapshot};
+#[cfg(feature = "gpu-cuda")]
+pub use cuda::serve_owned as serve_owned_cuda;
+
+/// Bounded CUDA discovery for an explicit controller inventory request. This
+/// creates no worker runtime and confers no resource or timing approval.
+/// Workers must enter their startup fence before calling any device discovery.
+#[cfg(feature = "gpu-cuda")]
+pub fn cuda_inventory() -> Result<Vec<CudaDevice>, Error> {
+    Ok(crate::cuda_compute::inventory()?)
+}
+
 #[path = "native_worker_decode.rs"]
 mod decode;
 

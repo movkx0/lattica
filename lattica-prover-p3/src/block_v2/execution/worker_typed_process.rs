@@ -98,7 +98,7 @@ impl Config {
     /// A trusted preparation callback must retain the independently admitted
     /// resources and current executable, even when it uses another identity
     /// encoding than the native bootstrap.
-    #[cfg(feature = "gpu")]
+    #[cfg(any(feature = "gpu", feature = "gpu-cuda"))]
     pub(crate) fn check_admitted_assignment(
         &self,
         assignment: &serde_json::Value,
@@ -863,10 +863,11 @@ pub(crate) fn serve_cuda(
     runtime: crate::cuda_compute::Runtime,
     limits: crate::block_v2::typed_recursive::CudaLimits,
     host_output_bytes: u64,
-) -> Result<u64, Error> {
+) -> Result<(u64, crate::cuda_compute::Snapshot), Error> {
     let worker_runtime = runtime.clone();
     let mut runtime = Some(runtime);
-    serve_with(
+    let mut stats = None;
+    let count = serve_with(
         socket,
         config,
         launches,
@@ -877,6 +878,7 @@ pub(crate) fn serve_cuda(
                 .ok_or("CUDA worker already retired")?
                 .retire()?;
             eprintln!("typed_cuda_shutdown {}", serde_json::to_string(&snapshot)?);
+            stats = Some(snapshot);
             Ok(())
         },
         move |registry, pin, resources| {
@@ -889,7 +891,11 @@ pub(crate) fn serve_cuda(
                 host_output_bytes,
             )
         },
-    )
+    )?;
+    Ok((
+        count,
+        stats.ok_or("missing CUDA worker retirement telemetry")?,
+    ))
 }
 
 fn serve_with(

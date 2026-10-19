@@ -95,3 +95,49 @@ pub(in super::super) fn serve_owned(
         Ok((config, policy))
     })
 }
+
+#[cfg(feature = "gpu-cuda")]
+pub(in super::super) fn serve_owned(
+    dir: &Path,
+    pinned: &Path,
+    launches: &Path,
+    worker_bytes: u64,
+    arguments: &[String],
+) -> Result<
+    (
+        u64,
+        lattica_prover_p3::block_v2::execution::native_worker::CudaSnapshot,
+        u64,
+    ),
+    Error,
+> {
+    use lattica_prover_p3::block_v2::execution::{
+        native_worker, policy_context::PolicyContext, startup,
+    };
+    let socket = UnixStream::from(std::io::stdin().as_fd().try_clone_to_owned()?);
+    let mut limit = 0;
+    let (count, stats) = native_worker::serve_owned_cuda(socket, launches, |assignment| {
+        super::super::typed_gpu::validate_owned_assignment(assignment, worker_bytes)?;
+        limit = assignment["pool_job_limit"]
+            .as_u64()
+            .ok_or("missing CUDA job bound")?;
+        // Admission and Rayon setup precede this callback. Discovery remains
+        // inside serve_owned_cuda, after this exact one-use fence is consumed.
+        startup::enter_until_process_exit(
+            Path::new(
+                assignment["startup_guard"]
+                    .as_str()
+                    .ok_or("missing CUDA startup fence")?,
+            ),
+            arguments,
+            assignment,
+        )?;
+        super::super::typed_gpu::require_owned_geometry(dir)?;
+        let prepared = prepare_for_backend(dir, pinned, true)?;
+        let config = assigned_config(&prepared, assignment)?;
+        let policy =
+            PolicyContext::new(prepared.selection.root().id().to_bytes(), prepared.policies)?;
+        Ok((config, policy))
+    })?;
+    Ok((count, stats, limit))
+}

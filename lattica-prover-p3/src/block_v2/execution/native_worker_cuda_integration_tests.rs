@@ -76,6 +76,18 @@ fn native_cuda_service_child() {
 #[test]
 #[ignore = "pinned mixed-wallet fixture and isolated systemd fleet; run serially"]
 fn native_cuda_service_proves_mixed_jobs_and_releases_after_observed_exit() {
+    service_fixture(None);
+}
+
+#[test]
+#[ignore = "external maintained CUDA CLI and pinned fixture in an isolated systemd fleet"]
+fn maintained_cuda_cli_proves_mixed_jobs_and_consumes_startup_fence() {
+    service_fixture(Some(PathBuf::from(
+        std::env::var_os("LATTICA_CUDA_CLI_BINARY").unwrap(),
+    )));
+}
+
+fn service_fixture(cli: Option<PathBuf>) {
     let out = PathBuf::from(std::env::var_os("LATTICA_CUDA_WORKER_TEST_DIR").unwrap());
     let fixture = PathBuf::from(std::env::var_os("LATTICA_FULL_SIZE_FIXTURE").unwrap());
     let expected: Value =
@@ -125,7 +137,9 @@ fn native_cuda_service_proves_mixed_jobs_and_releases_after_observed_exit() {
             .collect(),
     )
     .unwrap();
-    let binary = std::env::current_exe().unwrap();
+    let binary = cli
+        .clone()
+        .unwrap_or_else(|| std::env::current_exe().unwrap());
     let bootstrap = Bootstrap::new(
         registry,
         approved,
@@ -151,6 +165,17 @@ fn native_cuda_service_proves_mixed_jobs_and_releases_after_observed_exit() {
     budget["host"]["fleet_bytes"] = json!(4u64 << 30);
     budget["host"]["scratch_path"] = json!(scratch);
     budget["host"]["scratch_device"] = json!(fs::metadata(&scratch).unwrap().dev());
+    if cli.is_some() {
+        budget["workload_kind"] = json!(if cfg!(feature = "block-v2-capacity-128") {
+            "typed-paired-cuda-owned-depth-seven-bootstrap-v1"
+        } else {
+            "typed-paired-cuda-owned-depth-six-bootstrap-v1"
+        });
+        budget["typed_ram_admission"] = json!("owned");
+        budget["qualification_capacity_test"] = json!(true);
+        budget["pool_job_limit"] = json!(4);
+        budget["startup_guard"] = json!(out.join("startup"));
+    }
     fs::write(
         out.join("budget.json"),
         serde_json::to_vec_pretty(&budget).unwrap(),
@@ -192,17 +217,36 @@ fn native_cuda_service_proves_mixed_jobs_and_releases_after_observed_exit() {
     owner
         .attach(selection.root().id(), [7; 32], 600_000, 0)
         .unwrap();
-    let mut worker = ProcessWorker::prepare(
-        &mut owner,
-        bootstrap.config(&budget).unwrap(),
-        WorkerId(1),
-        WorkerId(2),
-        0,
-    )
-    .unwrap();
+    let config = if cli.is_some() {
+        Config::from_assignment(
+            bootstrap.registry.clone(),
+            pin,
+            chain,
+            bootstrap.executable,
+            process::configuration_digest(
+                &serde_json::to_vec(&json!({"expected":expected, "assignment":budget})).unwrap(),
+            )
+            .unwrap(),
+            &budget,
+        )
+        .unwrap()
+    } else {
+        bootstrap.config(&budget).unwrap()
+    };
+    let mut worker =
+        ProcessWorker::prepare(&mut owner, config, WorkerId(1), WorkerId(2), 0).unwrap();
     let mut launches =
         LaunchStore::create(&bootstrap.launches, LaunchLimits { records: 16 }).unwrap();
-    let args: Vec<OsString> = [
+    let args: Vec<OsString> = if cli.is_some() {
+        vec![
+            "serve-shared-process-gpu".into(),
+            fixture.as_os_str().to_owned(),
+            fixture.join("expected.json").into_os_string(),
+            bootstrap.launches.as_os_str().to_owned(),
+            (3u64 << 30).to_string().into(),
+        ]
+    } else {
+        [
         "--exact",
         "block_v2::execution::native_worker::cuda::tests::integration::native_cuda_service_child",
         "--ignored",
@@ -210,7 +254,29 @@ fn native_cuda_service_proves_mixed_jobs_and_releases_after_observed_exit() {
         "--test-threads=1",
     ]
     .map(OsString::from)
-    .into();
+    .into()
+    };
+    let intent = cli.as_ref().map(|_| {
+        use crate::block_v2::execution::startup::{self, Intent};
+        let intent = Intent {
+            schema_version: 1,
+            unit: unit.clone(),
+            executable: bootstrap.executable,
+            arguments: args
+                .iter()
+                .map(|a| a.to_str().unwrap().to_owned())
+                .collect(),
+            assignment: budget.clone(),
+        };
+        startup::create(&out.join("startup"), &intent).unwrap();
+        startup::authorize(
+            &out.join("startup"),
+            &intent,
+            worker.execution_digest().unwrap(),
+        )
+        .unwrap();
+        intent
+    });
     let log = fs::File::create(out.join("worker.log")).unwrap();
     let mut launch = Command::new("/usr/bin/systemd-run");
     launch
@@ -330,6 +396,33 @@ fn native_cuda_service_proves_mixed_jobs_and_releases_after_observed_exit() {
             Resources { threads: 0, ..peak }
         );
     }
+    if cli.is_some() {
+        // Sample while the exact supervised worker still exists. This is a
+        // pre-shutdown observation; the cgroup remains enforced through exit.
+        let identity = serde_json::to_value(worker.service_identity().unwrap()).unwrap();
+        let group = PathBuf::from("/sys/fs/cgroup")
+            .join(identity["group"].as_str().unwrap().trim_start_matches('/'));
+        let mut observation = serde_json::Map::new();
+        for key in [
+            "memory.max",
+            "memory.swap.max",
+            "memory.peak",
+            "memory.events",
+            "cpu.max",
+            "pids.max",
+        ] {
+            observation.insert(
+                key.to_owned(),
+                json!(fs::read_to_string(group.join(key)).unwrap().trim()),
+            );
+        }
+        observation.insert("boundary".into(), json!("before_stop"));
+        fs::write(
+            out.join("worker-observations.json"),
+            serde_json::to_vec_pretty(&observation).unwrap(),
+        )
+        .unwrap();
+    }
     worker.close(&mut owner, now()).unwrap();
     assert_eq!(owner.resource_use().unwrap(), Resources::default());
     let observations: Value =
@@ -345,8 +438,59 @@ fn native_cuda_service_proves_mixed_jobs_and_releases_after_observed_exit() {
             <= 3u64 << 30
     );
     let log = fs::read_to_string(out.join("worker.log")).unwrap();
-    assert!(log
-        .contains("native_cuda_completed jobs=4 cpu_witness_oracles=0 descriptor_preserved=true"));
+    if let Some(intent) = intent {
+        use crate::block_v2::execution::startup;
+        let started = startup::inspect_started(&out.join("startup"), &intent)
+            .unwrap()
+            .unwrap();
+        let retired = startup::reconcile(&out.join("startup"), &intent).unwrap();
+        assert!(retired.future_start_fenced && retired.process_and_service_quiescent);
+        assert_eq!(retired.started.unwrap().identity, started.identity);
+        let report: Value = log
+            .lines()
+            .filter_map(|line| serde_json::from_str::<Value>(line).ok())
+            .find(|report| report["event"] == "typed_gpu_work_complete")
+            .unwrap();
+        assert_eq!(report["backend"], "cuda");
+        assert_eq!(report["recursive_proofs"], 4);
+        let reports: Vec<Value> = log
+            .lines()
+            .filter_map(|line| line.strip_prefix("proving_stage_report "))
+            .map(|value| serde_json::from_str(value).unwrap())
+            .collect();
+        assert_eq!(
+            reports
+                .iter()
+                .filter(|r| r["capabilities"]["scope"] == "proof_request")
+                .count(),
+            4
+        );
+        assert_eq!(
+            reports
+                .iter()
+                .filter(|r| r["capabilities"]["scope"] == "registered_proof")
+                .count(),
+            4
+        );
+        for report in &reports {
+            assert_eq!(report["policy"], "gpu_required");
+            assert_eq!(report["succeeded"], true);
+            assert_eq!(report["stage_coverage_complete"], true);
+            assert_eq!(report["observation_errors"], 0);
+            for stage in report["capabilities"]["stages"].as_array().unwrap() {
+                assert_eq!(stage["backend"], "cuda");
+            }
+        }
+        fs::write(
+            out.join("cli-report.json"),
+            serde_json::to_vec_pretty(&report).unwrap(),
+        )
+        .unwrap();
+    } else {
+        assert!(log.contains(
+            "native_cuda_completed jobs=4 cpu_witness_oracles=0 descriptor_preserved=true"
+        ));
+    }
     let shutdown: Value = serde_json::from_str(
         log.lines()
             .find_map(|line| line.strip_prefix("typed_cuda_shutdown "))
@@ -367,6 +511,7 @@ fn native_cuda_service_proves_mixed_jobs_and_releases_after_observed_exit() {
         out.join("result.json"),
         serde_json::to_vec_pretty(&json!({
             "jobs": records, "seconds_including_startup_shutdown": start.elapsed().as_secs_f64(),
+            "entry": if cli.is_some() { "maintained_cli" } else { "native_abi" },
             "independent_parent_verified": 4, "altered_statements_rejected": 4,
             "observed_exit": true, "workspace_released": true, "shutdown": shutdown,
         }))

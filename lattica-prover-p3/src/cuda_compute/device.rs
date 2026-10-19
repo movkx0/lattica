@@ -11,7 +11,7 @@ use std::{
 };
 
 #[derive(Clone, Debug, Serialize)]
-pub(crate) struct Identity {
+pub struct Identity {
     pub ordinal: usize,
     pub uuid: String,
     pub pci: String,

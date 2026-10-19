@@ -73,7 +73,9 @@ verification against CPU-rebuilt preprocessing commitments. Explicit native
 typed sessions now also prove maintained pair wrappers, merges and finalizers
 against an independently approved registry. The explicit native public-worker
 service now routes these sessions through the existing local worker protocol;
-CLI/pool inventory selection and public wallet routing remain outstanding.
+The maintained paired Rust CLI now exposes CUDA inventory and an admitted,
+fenced persistent worker service. Python pool planning and public wallet
+routing remain outstanding.
 Public preprocessing now survives failed private proof attempts on a healthy
 runtime. Each salt replay uses an isolated temporary consumer; failed private
 randomness still retires across every alias. The public path accepts only
@@ -116,13 +118,13 @@ unsupported specialization shapes retain GPU interpretation. Current/next rows,
 alpha powers, selectors, constraints and vanishing-polynomial division execute
 on CUDA, with only a public domain-validity word read back per evaluation.
 
-Public wallet requests and recursive workers are not yet routed through CUDA.
-Cached twiddle tuning, public backend selection, controller admission and pool
+Public wallet requests are not yet routed through CUDA.
+Cached twiddle tuning, public wallet backend selection, Python controller admission and pool
 integration remain outstanding. Prepared quotient handles
 support reuse without retaining witnesses or sampled parameters. A bounded
 public program cache now supports repeated preparation within an evaluator;
 disk and cross-worker caches remain absent. Use the existing OpenCL backend
-for complete proof benchmarks at this checkpoint.
+for maintained end-to-end controller runs at this checkpoint.
 
 Install the pinned development components with
 `python3 lattica-prover-p3/scripts/setup-cuda-toolchain.py --prefix .tools/cuda-12.9.1`.
@@ -1118,6 +1120,42 @@ passed the archived CPU audit and rejected changed statements and proof bytes.
 All device owners were released. Wallet proving, network/consensus processing,
 pool scheduling and steady-state worker reuse are excluded. These intervals differ
 from the earlier typed-session benchmark; no CPU/OpenCL speedup is established.
+
+The [maintained CUDA CLI qualification](evidence/cuda-cli-worker-2026-10-19.json)
+adds explicit CUDA selection to `block-v2-paired-probe`. Its
+`--gpu-inventory` output uses a versioned CUDA envelope with UUID, PCI identity,
+compute capability and driver API version. It does not imply resource or timing
+approval. The CUDA build accepts `serve-shared-process-gpu` for its explicit
+`typed-paired-cuda-owned-depth-six-bootstrap-v1` workload (depth seven in the
+128-capacity build), with owned admission, a bounded job count and an absolute
+startup fence. Legacy OpenCL tuning switches are rejected. Release mode,
+`LATTICA_PROVING_POLICY=gpu-required` and `LATTICA_PROVING_REPORT=1` are required.
+
+`native_worker::serve_owned_cuda` admits the actual process, allocator, stacks
+and construction limits before trusted CLI preparation. The CLI consumes the
+existing startup fence before device discovery, independently verifies the
+registry and wallet inputs, and drops preparation backing before GPU setup.
+The worker retains the existing job packets, launch tokens and result rules.
+Retirement returns CUDA telemetry only after every device owner has gone;
+the coordinator still waits for observed process exit before releasing memory.
+
+The four-entry mixed fixture passed through the maintained executable with all
+four returned proofs verified and altered statements rejected. Its 24 stage
+reports have complete CUDA coverage. The unchanged native ABI also passed its
+four-job regression. Both roots passed the archived CPU auditor, which rejected
+altered roots and expected statements. Qualification passed 85 host/protocol/
+admission tests, three CLI checks, 80 CPU release regressions and six CUDA
+lifecycle checks. OpenCL CLI and Apple Metal library compilation also passed.
+Managed VRAM peaked at 7,450,300,432 bytes; the CLI worker's cgroup peak sampled
+before STOP was 1,236,631,552 bytes, within its enforced 3 GiB limit. All 845
+source/build input pins remained unchanged. These correctness runs overlapped
+builds and do not establish throughput.
+
+The Python planner still needs explicit CUDA budgets, NVRTC environment
+propagation and timing identities. The new inventory must not be treated as
+OpenCL metadata or reuse OpenCL context/timing approvals. Public wallet routing,
+failure/recovery, multiple GPUs, V100 execution and broader workloads remain
+outstanding; CUDA remains opt-in.
 
 ## Implementation sequence
 

@@ -52,7 +52,7 @@ impl Limits {
 }
 
 #[derive(Clone, Copy, Default, Debug, Serialize, PartialEq, Eq)]
-pub(crate) struct Snapshot {
+pub struct Snapshot {
     pub live_bytes: usize,
     pub peak_bytes: usize,
     pub allocations: usize,

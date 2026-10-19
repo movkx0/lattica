@@ -122,6 +122,49 @@ pub(crate) fn serve(socket: std::os::unix::net::UnixStream, bytes: &[u8]) -> Res
         settings.session,
         settings.host_output_bytes,
     )
+    .map(|(count, _)| count)
+}
+
+/// Serve the unchanged worker protocol after independently trusted CLI
+/// preparation. Actual process/allocator admission precedes the callback;
+/// device discovery and initialization follow it. The callback must consume
+/// any enclosing startup fence before returning. Only Config and fixed policy
+/// slots survive preparation. An error is not evidence of process quiescence.
+pub fn serve_owned(
+    socket: std::os::unix::net::UnixStream,
+    launches: &std::path::Path,
+    prepare: impl FnOnce(&serde_json::Value) -> Result<(Config, PolicyContext), Error>,
+) -> Result<(u64, crate::cuda_compute::Snapshot), Error> {
+    if Request::from_env()?.policy != Policy::GpuRequired || cfg!(debug_assertions) {
+        return Err("CUDA public worker requires release mode and gpu-required".into());
+    }
+    let admission = Admission::from_env()?;
+    let settings = Settings::from_assignment(admission.assignment())?;
+    transport::absolute_path(launches)?;
+    let metadata = std::fs::symlink_metadata(launches)?;
+    if !metadata.is_dir() || metadata.file_type().is_symlink() {
+        return Err("public CUDA worker launch directory is not a directory".into());
+    }
+    socket.peer_addr()?;
+    admission.initialize_rayon()?;
+    let (config, policy) = prepare(admission.assignment())?;
+    config.check_admitted_assignment(admission.assignment())?;
+    let runtime = Runtime::new(
+        admission.assignment()["gpu"]["uuid"]
+            .as_str()
+            .ok_or("missing CUDA UUID")?,
+        settings.device,
+    )?;
+    drop(admission);
+    process::serve_cuda(
+        socket,
+        config,
+        launches,
+        |artifact| policy.policy(artifact),
+        runtime,
+        settings.session,
+        settings.host_output_bytes,
+    )
 }
 
 #[cfg(test)]
