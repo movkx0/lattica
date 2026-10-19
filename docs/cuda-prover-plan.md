@@ -950,6 +950,15 @@ dispatch and worker/pool routing remain unfinished. Focused sanitizer coverage
 does not qualify full-size recursive instrumentation. No proof format, security
 parameter or production backend selection changes.
 
+The [post-push benchmark at `3cc135f`](evidence/cuda-request-admission-benchmark-2026-10-19.json)
+completed one warmup and three measured registered proofs. Median proving time,
+including resource admission, seed import and report finalization, was 4.789
+seconds (range 4.789–4.792); separate approved preparation took 0.593 seconds.
+Every sample matched its predicted 7,430,812,728-byte and 99-allocation peaks,
+and all four artifacts passed independent CPU audits. These are registered
+single-wallet verifier timings, without a paired baseline or a production
+transaction-throughput claim.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)
