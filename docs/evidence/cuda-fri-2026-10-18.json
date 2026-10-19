@@ -1,0 +1,913 @@
+{
+  "schema": "lattica-cuda-fri-primitives-qualification-v1",
+  "recorded_at": "2026-10-19T00:06:52.887774+00:00",
+  "base_commit": "916f8249103f5b2b09817b7da52d37d5d5c49265",
+  "built_from_dirty_worktree": true,
+  "artifact_directory": "lattica-prover-p3/benchmark-results/cuda-fri-20261018",
+  "source_files_pinned": 767,
+  "source_matches_staged_git_blobs": true,
+  "identity": {
+    "base_commit": "916f8249103f5b2b09817b7da52d37d5d5c49265",
+    "dirty_worktree": true,
+    "cuda_binary_sha256": "b14c38901cc12b3367dce752234d5d54bceab953d5d4d10f1820a76ba24f270b",
+    "opencl_binary_sha256_before_rebuild": "4428d9bf1581af33e748edf89520da256854fff0d19f5ca7417fb5f422ae2e91",
+    "gpu": "name, uuid, driver_version\nNVIDIA GeForce RTX 5080, GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c, 615.78.08\n",
+    "cgroup_limits": {
+      "memory.max": "3221225472",
+      "memory.swap.max": "0",
+      "cpu.max": "400000 100000",
+      "pids.max": "96"
+    },
+    "opencl_binary_sha256": "036ea00329bea56d90efd4dc9dbcfacd143e47e1d7a4c10d92fcece4fb658ee2"
+  },
+  "stream_identity": {
+    "command": [
+      "cargo",
+      "test",
+      "--offline",
+      "--locked",
+      "--no-default-features",
+      "--features",
+      "gpu-cuda,block-v2-capacity-128,stream",
+      "--lib",
+      "--no-run",
+      "-j",
+      "1",
+      "--message-format=json"
+    ],
+    "exit_code": 0,
+    "executable": "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-945df91351ebb8d0",
+    "sha256": "df4f254b8ab2f0902a5eb7cc0013cf161fbf3f92ba1f0896a73be9110d1a3e01",
+    "source_files_pinned": 767,
+    "memory_peak_bytes": 3004018688,
+    "limits": {
+      "memory.max": "6442450944",
+      "memory.swap.max": "0",
+      "cpu.max": "400000 100000",
+      "pids.max": "96"
+    }
+  },
+  "environment": {
+    "LATTICA_GPU_DEVICE_UUID": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "LATTICA_V2_GPU_RETAIN_TREES": "1",
+    "RAYON_NUM_THREADS": "4",
+    "cuda_library_directory": ".tools/cuda-12.9.1/lib",
+    "rust_toolchain_directory": ".tools/rust-1.96.0",
+    "cargo_home": ".tools/cargo-1.96.0",
+    "host_build_profile": "debug",
+    "test_threads": 1,
+    "additional_environment_recorded_per_check": true
+  },
+  "checks_count": 38,
+  "counts": {
+    "cuda-tests": 113,
+    "cuda-challenger-tests": 9,
+    "cuda-randomness-tests": 4,
+    "shared-hiding-tests": 3,
+    "shared-matrix-tests": 4,
+    "cuda-memcheck": 112,
+    "cuda-racecheck": 112,
+    "cuda-synccheck": 112,
+    "cuda-challenger-memcheck": 9,
+    "cuda-challenger-racecheck": 9,
+    "cuda-challenger-synccheck": 9,
+    "cuda-randomness-memcheck": 4,
+    "cuda-randomness-racecheck": 4,
+    "cuda-randomness-synccheck": 4,
+    "opencl-challenger-host-tests": 6,
+    "opencl-challenger-device-tests": 3,
+    "opencl-quotient-host-tests": 26,
+    "opencl-specialization-host-tests": 7,
+    "opencl-quadratic-device": 1,
+    "opencl-cubic-device": 1,
+    "opencl-scalar-host-tests": 1,
+    "opencl-scalar-device-tests": 2,
+    "opencl-lookup-adapter-device-tests": 2,
+    "opencl-random-host-tests": 6,
+    "opencl-random-device-tests": 6,
+    "opencl-randomness-host-tests": 4,
+    "opencl-randomness-device-tests": 1,
+    "opencl-replay-device-tests": 3,
+    "opencl-fri-storage-host": 4,
+    "opencl-fri-storage-device": 1,
+    "opencl-fri-general-device-retry": 1,
+    "cuda-stream-fri": 10
+  },
+  "resources": {
+    "qualification": {
+      "main_memory_peak_bytes": 3221225472,
+      "retry_memory_peak_bytes": 192565248,
+      "limits": {
+        "memory.max": "3221225472",
+        "memory.swap.max": "0",
+        "cpu.max": "400000 100000",
+        "pids.max": "96"
+      }
+    },
+    "stream_tests": {
+      "memory_peak_bytes": 192565248,
+      "limits": {
+        "memory.max": "3221225472",
+        "memory.swap.max": "0",
+        "cpu.max": "400000 100000",
+        "pids.max": "96"
+      }
+    }
+  },
+  "bounds": {
+    "max_log_rows": 25,
+    "arities": [
+      2,
+      4,
+      8,
+      16
+    ],
+    "max_queries": 4096,
+    "max_final_coefficients": 65536,
+    "cap_heights_tested": [
+      0,
+      6
+    ],
+    "device_execution": "RTX 5080 desktop",
+    "nvrtc_compile_targets": [
+      "compute_70",
+      "compute_120"
+    ]
+  },
+  "coverage": [
+    "Quadratic and cubic folds and beta^arity input mixing match upstream TwoAdicFriFolding for every supported arity, zero/one/nontrivial challenges and tile boundary sizes.",
+    "Explicit subgroup rescaling preserves source data/domain metadata; final coefficients through log length 16 and their transcript observations match independent CPU transforms.",
+    "Salted layer caps and Postcard MMCS query openings match independent CPU ExtensionMmcs; ordered duplicate queries and cap heights zero/six are verified.",
+    "Aggregate host/device admission, allocation-count limits, memory pressure, the 4096-query bound, salt replay, family retirement after failures/unwinds and early admission preserving randomness.",
+    "Shared FRI storage and arithmetic regressions on OpenCL; CPU-only, OpenCL, Apple Metal cross-compilation, standalone CUDA and CUDA with stream build/tests."
+  ],
+  "limitations": [
+    "FRI protocol scheduling, full proof assembly, complete PCS and native CUDA prover/backend/worker integration remain unfinished.",
+    "No complete CUDA proof, production performance or transaction-throughput qualification.",
+    "V100 CUDA execution and Apple Metal execution were unavailable; target compilation is not execution qualification.",
+    "Intentional missing-kernel API-error test runs outside compute-sanitizer; all four opt-in benchmarks are excluded from correctness runs."
+  ],
+  "qualification_note": "Frozen qualification and stream checks used the same 767 source files. The OpenCL general-FRI test initially stopped before GPU work because its launcher omitted LATTICA_V2_GPU_HASH=1; a focused retry with that setting passed. Both logs are preserved. The original 3 GiB main service memory peak reached its enforced limit during compilation; all build commands and GPU checks succeeded apart from that setup-only failure. Stream build used a separate 6 GiB single-job service. Development runs 01/02 exposed and corrected test-harness transcript batching and private-field access; runs 03/04 passed before freezing.",
+  "checks": [
+    {
+      "name": "cuda-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-69e0fcd366c97f19",
+        "cuda_compute::",
+        "--include-ignored",
+        "--test-threads=1",
+        "--nocapture",
+        "--skip",
+        "cuda_partitioned_quotient_benchmark",
+        "--skip",
+        "cuda_transcript_primitive_benchmark",
+        "--skip",
+        "cuda_random_primitive_benchmark",
+        "--skip",
+        "cuda_hidden_commitment_benchmark"
+      ],
+      "exit_code": 0,
+      "seconds": 37.89553713100031,
+      "log_sha256": "dee1e46617ac0271b8f6979cee790b474101da47a8194ade2964ad44dea18781",
+      "tests_passed": 113
+    },
+    {
+      "name": "cuda-challenger-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-69e0fcd366c97f19",
+        "block_v2::challenger::",
+        "--include-ignored",
+        "--test-threads=1",
+        "--nocapture",
+        "--skip",
+        "cuda_partitioned_quotient_benchmark",
+        "--skip",
+        "cuda_transcript_primitive_benchmark",
+        "--skip",
+        "cuda_random_primitive_benchmark",
+        "--skip",
+        "cuda_hidden_commitment_benchmark"
+      ],
+      "exit_code": 0,
+      "seconds": 14.450091740000062,
+      "log_sha256": "dc0010fbb708f67ed1e0788d271a4a0ba73f19a1e129748ca0669c64f5545b6b",
+      "tests_passed": 9
+    },
+    {
+      "name": "cuda-randomness-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-69e0fcd366c97f19",
+        "block_v2::randomness::",
+        "--include-ignored",
+        "--test-threads=1",
+        "--nocapture",
+        "--skip",
+        "cuda_partitioned_quotient_benchmark",
+        "--skip",
+        "cuda_transcript_primitive_benchmark",
+        "--skip",
+        "cuda_random_primitive_benchmark",
+        "--skip",
+        "cuda_hidden_commitment_benchmark"
+      ],
+      "exit_code": 0,
+      "seconds": 0.505128593002155,
+      "log_sha256": "2250eef4db1b02164e2e14894a90cb4e0ee23b8079be2b99c0e374ec042ba901",
+      "tests_passed": 4
+    },
+    {
+      "name": "shared-hiding-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-69e0fcd366c97f19",
+        "gpu_hiding::",
+        "--test-threads=1",
+        "--skip",
+        "cuda_hidden_commitment_benchmark"
+      ],
+      "exit_code": 0,
+      "seconds": 0.0019434299974818714,
+      "log_sha256": "2e99d6b1eec8629c79db11e042bf4a2602ab0d98b42b678335b4afa8b676d3ab",
+      "tests_passed": 3
+    },
+    {
+      "name": "shared-matrix-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-69e0fcd366c97f19",
+        "gpu_matrix::",
+        "--test-threads=1",
+        "--skip",
+        "cuda_hidden_commitment_benchmark"
+      ],
+      "exit_code": 0,
+      "seconds": 0.0012175099982414395,
+      "log_sha256": "e7fe51faf1eba1eb077c7fa371efeacadb5bf9e0cd02e67ca989920e7f1860e4",
+      "tests_passed": 4
+    },
+    {
+      "name": "cuda-memcheck",
+      "command": [
+        "/home/access/code/lattica/.tools/cuda-12.9.1/bin/compute-sanitizer",
+        "--tool",
+        "memcheck",
+        "--leak-check",
+        "full",
+        "--error-exitcode",
+        "99",
+        "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-69e0fcd366c97f19",
+        "cuda_compute::",
+        "--include-ignored",
+        "--test-threads=1",
+        "--nocapture",
+        "--skip",
+        "cuda_partitioned_quotient_benchmark",
+        "--skip",
+        "cuda_transcript_primitive_benchmark",
+        "--skip",
+        "cuda_random_primitive_benchmark",
+        "--skip",
+        "cuda_runtime_missing_kernel_rejects_lookup",
+        "--skip",
+        "cuda_hidden_commitment_benchmark"
+      ],
+      "exit_code": 0,
+      "seconds": 61.55403845400724,
+      "log_sha256": "5e161d01528e2ce9bee18085d9e144c226d1a7d375e9e318738a860283e674d6",
+      "tests_passed": 112
+    },
+    {
+      "name": "cuda-racecheck",
+      "command": [
+        "/home/access/code/lattica/.tools/cuda-12.9.1/bin/compute-sanitizer",
+        "--tool",
+        "racecheck",
+        "--error-exitcode",
+        "99",
+        "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-69e0fcd366c97f19",
+        "cuda_compute::",
+        "--include-ignored",
+        "--test-threads=1",
+        "--nocapture",
+        "--skip",
+        "cuda_partitioned_quotient_benchmark",
+        "--skip",
+        "cuda_transcript_primitive_benchmark",
+        "--skip",
+        "cuda_random_primitive_benchmark",
+        "--skip",
+        "cuda_runtime_missing_kernel_rejects_lookup",
+        "--skip",
+        "cuda_hidden_commitment_benchmark"
+      ],
+      "exit_code": 0,
+      "seconds": 131.4264751899973,
+      "log_sha256": "9ab52c73018e1d48e90333bc1197f7c588c66ac402bd5d46302448c851a616bc",
+      "tests_passed": 112
+    },
+    {
+      "name": "cuda-synccheck",
+      "command": [
+        "/home/access/code/lattica/.tools/cuda-12.9.1/bin/compute-sanitizer",
+        "--tool",
+        "synccheck",
+        "--error-exitcode",
+        "99",
+        "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-69e0fcd366c97f19",
+        "cuda_compute::",
+        "--include-ignored",
+        "--test-threads=1",
+        "--nocapture",
+        "--skip",
+        "cuda_partitioned_quotient_benchmark",
+        "--skip",
+        "cuda_transcript_primitive_benchmark",
+        "--skip",
+        "cuda_random_primitive_benchmark",
+        "--skip",
+        "cuda_runtime_missing_kernel_rejects_lookup",
+        "--skip",
+        "cuda_hidden_commitment_benchmark"
+      ],
+      "exit_code": 0,
+      "seconds": 37.93772794999677,
+      "log_sha256": "b1136ddb993230a0534a5ab7b00d0e1ab0db82bbd3b066c8bfe3f88ed3f20d14",
+      "tests_passed": 112
+    },
+    {
+      "name": "cuda-challenger-memcheck",
+      "command": [
+        "/home/access/code/lattica/.tools/cuda-12.9.1/bin/compute-sanitizer",
+        "--tool",
+        "memcheck",
+        "--leak-check",
+        "full",
+        "--error-exitcode",
+        "99",
+        "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-69e0fcd366c97f19",
+        "block_v2::challenger::",
+        "--include-ignored",
+        "--test-threads=1",
+        "--nocapture",
+        "--skip",
+        "cuda_partitioned_quotient_benchmark",
+        "--skip",
+        "cuda_transcript_primitive_benchmark",
+        "--skip",
+        "cuda_random_primitive_benchmark",
+        "--skip",
+        "cuda_hidden_commitment_benchmark"
+      ],
+      "exit_code": 0,
+      "seconds": 15.158031769002264,
+      "log_sha256": "0fdfdeebb96c420ae4b54269e87a6619b38519b6b2cabc59de54cc15990a37f6",
+      "tests_passed": 9
+    },
+    {
+      "name": "cuda-challenger-racecheck",
+      "command": [
+        "/home/access/code/lattica/.tools/cuda-12.9.1/bin/compute-sanitizer",
+        "--tool",
+        "racecheck",
+        "--error-exitcode",
+        "99",
+        "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-69e0fcd366c97f19",
+        "block_v2::challenger::",
+        "--include-ignored",
+        "--test-threads=1",
+        "--nocapture",
+        "--skip",
+        "cuda_partitioned_quotient_benchmark",
+        "--skip",
+        "cuda_transcript_primitive_benchmark",
+        "--skip",
+        "cuda_random_primitive_benchmark",
+        "--skip",
+        "cuda_hidden_commitment_benchmark"
+      ],
+      "exit_code": 0,
+      "seconds": 15.426166718003515,
+      "log_sha256": "c6be2ae760a9376547b41541171870adbd9926f3dd9a728bc8c271695e194bad",
+      "tests_passed": 9
+    },
+    {
+      "name": "cuda-challenger-synccheck",
+      "command": [
+        "/home/access/code/lattica/.tools/cuda-12.9.1/bin/compute-sanitizer",
+        "--tool",
+        "synccheck",
+        "--error-exitcode",
+        "99",
+        "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-69e0fcd366c97f19",
+        "block_v2::challenger::",
+        "--include-ignored",
+        "--test-threads=1",
+        "--nocapture",
+        "--skip",
+        "cuda_partitioned_quotient_benchmark",
+        "--skip",
+        "cuda_transcript_primitive_benchmark",
+        "--skip",
+        "cuda_random_primitive_benchmark",
+        "--skip",
+        "cuda_hidden_commitment_benchmark"
+      ],
+      "exit_code": 0,
+      "seconds": 14.683986335003283,
+      "log_sha256": "9970ac2bee9ae42857b0c0ab44f58c9122aac79ca1e5260195e7ca4f8f385c41",
+      "tests_passed": 9
+    },
+    {
+      "name": "cuda-randomness-memcheck",
+      "command": [
+        "/home/access/code/lattica/.tools/cuda-12.9.1/bin/compute-sanitizer",
+        "--tool",
+        "memcheck",
+        "--leak-check",
+        "full",
+        "--error-exitcode",
+        "99",
+        "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-69e0fcd366c97f19",
+        "block_v2::randomness::",
+        "--include-ignored",
+        "--test-threads=1",
+        "--nocapture",
+        "--skip",
+        "cuda_partitioned_quotient_benchmark",
+        "--skip",
+        "cuda_transcript_primitive_benchmark",
+        "--skip",
+        "cuda_random_primitive_benchmark",
+        "--skip",
+        "cuda_hidden_commitment_benchmark"
+      ],
+      "exit_code": 0,
+      "seconds": 0.7801665409933776,
+      "log_sha256": "c87204eef519788f8d319785d4e80c8686cb748b588a0f0ccc6ff05eb994c48f",
+      "tests_passed": 4
+    },
+    {
+      "name": "cuda-randomness-racecheck",
+      "command": [
+        "/home/access/code/lattica/.tools/cuda-12.9.1/bin/compute-sanitizer",
+        "--tool",
+        "racecheck",
+        "--error-exitcode",
+        "99",
+        "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-69e0fcd366c97f19",
+        "block_v2::randomness::",
+        "--include-ignored",
+        "--test-threads=1",
+        "--nocapture",
+        "--skip",
+        "cuda_partitioned_quotient_benchmark",
+        "--skip",
+        "cuda_transcript_primitive_benchmark",
+        "--skip",
+        "cuda_random_primitive_benchmark",
+        "--skip",
+        "cuda_hidden_commitment_benchmark"
+      ],
+      "exit_code": 0,
+      "seconds": 0.8710053269969649,
+      "log_sha256": "eb20032d650ef38225c8018d7841d514c787fe5becbf6f33e6d64d813a936482",
+      "tests_passed": 4
+    },
+    {
+      "name": "cuda-randomness-synccheck",
+      "command": [
+        "/home/access/code/lattica/.tools/cuda-12.9.1/bin/compute-sanitizer",
+        "--tool",
+        "synccheck",
+        "--error-exitcode",
+        "99",
+        "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-69e0fcd366c97f19",
+        "block_v2::randomness::",
+        "--include-ignored",
+        "--test-threads=1",
+        "--nocapture",
+        "--skip",
+        "cuda_partitioned_quotient_benchmark",
+        "--skip",
+        "cuda_transcript_primitive_benchmark",
+        "--skip",
+        "cuda_random_primitive_benchmark",
+        "--skip",
+        "cuda_hidden_commitment_benchmark"
+      ],
+      "exit_code": 0,
+      "seconds": 0.5948351659972104,
+      "log_sha256": "39362718cb8f7c61a2a457aa08365daa2c79cd6b6a5d32203d553959902479ac",
+      "tests_passed": 4
+    },
+    {
+      "name": "opencl-build",
+      "command": [
+        "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--no-default-features",
+        "--features",
+        "gpu,block-v2-capacity-128",
+        "--lib",
+        "--no-run",
+        "-j",
+        "2",
+        "--target-dir",
+        "/home/access/code/lattica/.tools/target-gpu-tuning"
+      ],
+      "exit_code": 0,
+      "seconds": 19.94338752800104,
+      "log_sha256": "9ec8f67249663f15684ff60693c5093672e99be5f0b9e0b9620e8b4b10a438a2"
+    },
+    {
+      "name": "opencl-challenger-host-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "block_v2::challenger::",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "seconds": 11.50840708999749,
+      "log_sha256": "4c4394bbe7ef3947e23b8af0257031930c386c9312518cadc92b572c432d1892",
+      "tests_passed": 6
+    },
+    {
+      "name": "opencl-challenger-device-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "block_v2::challenger::tests::gpu_",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "seconds": 2.160287013000925,
+      "log_sha256": "be8342f24d9b85107ff727298273ca1431604ea5a4df9fac3150a16019cef3f6",
+      "tests_passed": 3
+    },
+    {
+      "name": "opencl-quotient-host-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "block_v2::gpu_quotient_prover::",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "seconds": 0.12123382800200488,
+      "log_sha256": "633000f199322ea63dfa7eb675b1e3dd6019bf45113bd5d56fe13145b4fedfe5",
+      "tests_passed": 26
+    },
+    {
+      "name": "opencl-specialization-host-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "block_v2::gpu_hash::engine::quotient::",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "seconds": 0.008416329001192935,
+      "log_sha256": "bb58ea30998b5180db0e7c1f2c9b8784d135cf73b63d969a1b405d67561dba83",
+      "tests_passed": 7
+    },
+    {
+      "name": "opencl-quadratic-device",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "quadratic_quotients_match_cpu_with_owned_partitioned_inputs_and_commitments",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "seconds": 1.3774947150013759,
+      "log_sha256": "2256b1dc8c6099c4f8e86c4bec952506b4e3167808b7753859224f0510ecb073",
+      "tests_passed": 1
+    },
+    {
+      "name": "opencl-cubic-device",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "cubic_quotients_match_cpu_with_owned_partitioned_inputs_and_commitments",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "seconds": 1.4153245449997485,
+      "log_sha256": "41b5edb06c38d53a93e09cd9d0a03fadeb1ed5a0c7dda588335987b7d941b14e",
+      "tests_passed": 1
+    },
+    {
+      "name": "cpu-check",
+      "command": [
+        "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+        "check",
+        "--offline",
+        "--locked",
+        "--no-default-features",
+        "--lib",
+        "-j",
+        "2",
+        "--features",
+        "block-v2-capacity-128"
+      ],
+      "exit_code": 0,
+      "seconds": 0.34795321200363105,
+      "log_sha256": "58a2930c5a556ae8b28e6be04463436084378c59eda552c2580262346774a889"
+    },
+    {
+      "name": "opencl-check",
+      "command": [
+        "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+        "check",
+        "--offline",
+        "--locked",
+        "--no-default-features",
+        "--lib",
+        "-j",
+        "2",
+        "--features",
+        "gpu,block-v2-capacity-128",
+        "--target-dir",
+        "/home/access/code/lattica/.tools/target-gpu-tuning"
+      ],
+      "exit_code": 0,
+      "seconds": 2.861279772994749,
+      "log_sha256": "a12be6e555a2ede63bb4f5167a9a99b6738046be59e4835e8dc1ff07de9adc87"
+    },
+    {
+      "name": "metal-check",
+      "command": [
+        "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+        "check",
+        "--offline",
+        "--locked",
+        "--no-default-features",
+        "--lib",
+        "-j",
+        "2",
+        "--features",
+        "gpu-metal,block-v2-capacity-128",
+        "--target",
+        "aarch64-apple-darwin"
+      ],
+      "exit_code": 0,
+      "seconds": 3.2155606909946073,
+      "log_sha256": "670634a8de88c1fe6ab1ae92a60782ee9a9e32009201809d830622612aea1ccc"
+    },
+    {
+      "name": "cuda-standalone-check",
+      "command": [
+        "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+        "check",
+        "--offline",
+        "--locked",
+        "--no-default-features",
+        "--lib",
+        "-j",
+        "2",
+        "--features",
+        "gpu-cuda",
+        "--tests"
+      ],
+      "exit_code": 0,
+      "seconds": 1.656040424000821,
+      "log_sha256": "4760149aae08b71c915b7225e19b2537bff1370e58ae90a32e0f1574a8cbc057"
+    },
+    {
+      "name": "opencl-scalar-host-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "block_v2::gpu_hash::engine::device::scalars::",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "seconds": 0.0014026379940332845,
+      "log_sha256": "efb3fe5594f8df52d99ea1de85b30737535a7b82b249104edac30b42b213d871",
+      "tests_passed": 1
+    },
+    {
+      "name": "opencl-scalar-device-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "block_v2::gpu_hash::engine::device::scalars::tests::gpu_",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "seconds": 0.5036521419970086,
+      "log_sha256": "1cf5340760e5ecd107e36b3332eadfc08feb427504154fc634f619d992f8e281",
+      "tests_passed": 2
+    },
+    {
+      "name": "opencl-lookup-adapter-device-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "block_v2::challenger::scalars::tests::gpu_",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "seconds": 0.33702019000338623,
+      "log_sha256": "1b042b08c0e123ef5ed0c9cdd9073b52291a1a6260b03759824f325c1485cbc3",
+      "tests_passed": 2
+    },
+    {
+      "name": "opencl-random-host-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "block_v2::gpu_hash::engine::device::random::",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "seconds": 0.0018042249939753674,
+      "log_sha256": "d23eca25251ee9ae3ba36a67833cb6d36e52ae054febedeeaa324b74af35eb6b",
+      "tests_passed": 6
+    },
+    {
+      "name": "opencl-random-device-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "block_v2::gpu_hash::engine::device::random::tests::gpu_",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "seconds": 3.1240853019990027,
+      "log_sha256": "1ddee1a9b7f824e98d582ff705737edc436400d401e84e881cfb678937224743",
+      "tests_passed": 6
+    },
+    {
+      "name": "opencl-randomness-host-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "block_v2::randomness::",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "seconds": 0.0017543029971420765,
+      "log_sha256": "f1c479b53cd6c4b34fb35f1af54bfcbcf4e1a5fc9c82f98a8ababe24fc1f06c8",
+      "tests_passed": 4
+    },
+    {
+      "name": "opencl-randomness-device-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "block_v2::randomness::tests::gpu_",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "seconds": 0.22143792499991832,
+      "log_sha256": "cf2b5b4650323abfdb3f7dbc8a531ca05cdd3c837f85c83d99662b0a15b8c98c",
+      "tests_passed": 1
+    },
+    {
+      "name": "opencl-replay-device-tests",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "block_v2::gpu_hash::engine::device::random::replay::tests::gpu_",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "seconds": 0.5326840669949888,
+      "log_sha256": "b29dec20e2e9fb9cc4fd738b16fb8525baf7920495918af4dc31dad7e7d4018b",
+      "tests_passed": 3
+    },
+    {
+      "name": "source-completeness-tests",
+      "command": [
+        "python3",
+        "scripts/test-apple-source-commit.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.11177499699988402,
+      "log_sha256": "007c93b65462b77b5a22b3be85d97aa45d1a13939fe47ca4ba98c41b5c846be4"
+    },
+    {
+      "name": "opencl-fri-storage-host",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "block_v2::gpu_hash::engine::device::fri::storage::tests::",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "seconds": 0.0011227069990127347,
+      "log_sha256": "4f75d53e02f69eebf96d5d7b32d3676378936e85ebf88c13e852f6caaedd2e25",
+      "tests_passed": 4
+    },
+    {
+      "name": "opencl-fri-storage-device",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "--ignored",
+        "--exact",
+        "block_v2::gpu_hash::engine::device::fri::storage::tests::gpu_fri_storage_rejects_before_device_work_and_preserves_gather_order",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "seconds": 0.15167049099545693,
+      "log_sha256": "d603e0be099713eac9684f77b2551891bb1db482780571a54afc7f566d32624b",
+      "tests_passed": 1
+    },
+    {
+      "name": "opencl-fri-general-device-retry",
+      "command": [
+        "/home/access/code/lattica/.tools/target-gpu-tuning/debug/deps/lattica_prover_p3-c63c0824e7c3a07c",
+        "block_v2::gpu_hash::engine::device::fri::general::tests::gpu_general_fri_arithmetic_matches_cpu_for_both_extensions_and_all_arities",
+        "--ignored",
+        "--exact",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "tests_passed": 1,
+      "seconds": 0.6647499969985802,
+      "log_sha256": "d3a53a9af902d3bf199c28bacd8b05da727878e9f20120563c1022e6e520806a",
+      "environment_additions": {
+        "LATTICA_V2_GPU_HASH": "1"
+      }
+    },
+    {
+      "name": "cuda-stream-fri",
+      "command": [
+        "/home/access/code/lattica/.tools/target-cuda/debug/deps/lattica_prover_p3-945df91351ebb8d0",
+        "cuda_compute::fri::",
+        "--include-ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "tests_passed": 10,
+      "seconds": 4.540765757003101,
+      "log_sha256": "dde530fc5185b8815f894522c70b7d7e0fb6a86b329b681fd10dcd83939018ed"
+    }
+  ],
+  "artifact_hashes": {
+    "qualified/build.log": "ab068fa1c561cc6e340268cd0e3f7ae8189035469fe75f3fd3afa94b2dc56262",
+    "qualified/checks.json": "4c17a31704f108e413259d425c782f68621e74042fb8083514cc9dbf076a2319",
+    "qualified/controller.log": "d0f37a6ab4c0dd636bea3a634f57f036297551e340ecda0c18f6b94d305f153a",
+    "qualified/cpu-check.log": "58a2930c5a556ae8b28e6be04463436084378c59eda552c2580262346774a889",
+    "qualified/cuda-challenger-memcheck.log": "0fdfdeebb96c420ae4b54269e87a6619b38519b6b2cabc59de54cc15990a37f6",
+    "qualified/cuda-challenger-racecheck.log": "c6be2ae760a9376547b41541171870adbd9926f3dd9a728bc8c271695e194bad",
+    "qualified/cuda-challenger-synccheck.log": "9970ac2bee9ae42857b0c0ab44f58c9122aac79ca1e5260195e7ca4f8f385c41",
+    "qualified/cuda-challenger-tests.log": "dc0010fbb708f67ed1e0788d271a4a0ba73f19a1e129748ca0669c64f5545b6b",
+    "qualified/cuda-memcheck.log": "5e161d01528e2ce9bee18085d9e144c226d1a7d375e9e318738a860283e674d6",
+    "qualified/cuda-racecheck.log": "9ab52c73018e1d48e90333bc1197f7c588c66ac402bd5d46302448c851a616bc",
+    "qualified/cuda-randomness-memcheck.log": "c87204eef519788f8d319785d4e80c8686cb748b588a0f0ccc6ff05eb994c48f",
+    "qualified/cuda-randomness-racecheck.log": "eb20032d650ef38225c8018d7841d514c787fe5becbf6f33e6d64d813a936482",
+    "qualified/cuda-randomness-synccheck.log": "39362718cb8f7c61a2a457aa08365daa2c79cd6b6a5d32203d553959902479ac",
+    "qualified/cuda-randomness-tests.log": "2250eef4db1b02164e2e14894a90cb4e0ee23b8079be2b99c0e374ec042ba901",
+    "qualified/cuda-standalone-check.log": "4760149aae08b71c915b7225e19b2537bff1370e58ae90a32e0f1574a8cbc057",
+    "qualified/cuda-synccheck.log": "b1136ddb993230a0534a5ab7b00d0e1ab0db82bbd3b066c8bfe3f88ed3f20d14",
+    "qualified/cuda-tests.log": "dee1e46617ac0271b8f6979cee790b474101da47a8194ade2964ad44dea18781",
+    "qualified/finish.log": "96e4fdf73aa26a91bcce8d08b52769d8fbdbd5fec8c28af91045b373496a16a4",
+    "qualified/finish.py": "ae7d75fe86546a59f7fb7173cf953c1915ed6e1aadf90e67561f3ac5c3b62f43",
+    "qualified/identity.json": "d46c7f3a1c118618c267383d539d23f63b1c1aaeb48def469270b16c45292d3f",
+    "qualified/metal-check.log": "670634a8de88c1fe6ab1ae92a60782ee9a9e32009201809d830622612aea1ccc",
+    "qualified/opencl-build.log": "9ec8f67249663f15684ff60693c5093672e99be5f0b9e0b9620e8b4b10a438a2",
+    "qualified/opencl-challenger-device-tests.log": "be8342f24d9b85107ff727298273ca1431604ea5a4df9fac3150a16019cef3f6",
+    "qualified/opencl-challenger-host-tests.log": "4c4394bbe7ef3947e23b8af0257031930c386c9312518cadc92b572c432d1892",
+    "qualified/opencl-check.log": "a12be6e555a2ede63bb4f5167a9a99b6738046be59e4835e8dc1ff07de9adc87",
+    "qualified/opencl-cubic-device.log": "41b5edb06c38d53a93e09cd9d0a03fadeb1ed5a0c7dda588335987b7d941b14e",
+    "qualified/opencl-fri-general-device-retry.log": "d3a53a9af902d3bf199c28bacd8b05da727878e9f20120563c1022e6e520806a",
+    "qualified/opencl-fri-general-device.log": "0f012fb93b17dc883685fe8bb7e4e396f7ae132b3045185fe5b951c7bc2019c0",
+    "qualified/opencl-fri-storage-device.log": "d603e0be099713eac9684f77b2551891bb1db482780571a54afc7f566d32624b",
+    "qualified/opencl-fri-storage-host.log": "4f75d53e02f69eebf96d5d7b32d3676378936e85ebf88c13e852f6caaedd2e25",
+    "qualified/opencl-lookup-adapter-device-tests.log": "1b042b08c0e123ef5ed0c9cdd9073b52291a1a6260b03759824f325c1485cbc3",
+    "qualified/opencl-quadratic-device.log": "2256b1dc8c6099c4f8e86c4bec952506b4e3167808b7753859224f0510ecb073",
+    "qualified/opencl-quotient-host-tests.log": "633000f199322ea63dfa7eb675b1e3dd6019bf45113bd5d56fe13145b4fedfe5",
+    "qualified/opencl-random-device-tests.log": "1ddee1a9b7f824e98d582ff705737edc436400d401e84e881cfb678937224743",
+    "qualified/opencl-random-host-tests.log": "d23eca25251ee9ae3ba36a67833cb6d36e52ae054febedeeaa324b74af35eb6b",
+    "qualified/opencl-randomness-device-tests.log": "cf2b5b4650323abfdb3f7dbc8a531ca05cdd3c837f85c83d99662b0a15b8c98c",
+    "qualified/opencl-randomness-host-tests.log": "f1c479b53cd6c4b34fb35f1af54bfcbcf4e1a5fc9c82f98a8ababe24fc1f06c8",
+    "qualified/opencl-replay-device-tests.log": "b29dec20e2e9fb9cc4fd738b16fb8525baf7920495918af4dc31dad7e7d4018b",
+    "qualified/opencl-scalar-device-tests.log": "1cf5340760e5ecd107e36b3332eadfc08feb427504154fc634f619d992f8e281",
+    "qualified/opencl-scalar-host-tests.log": "efb3fe5594f8df52d99ea1de85b30737535a7b82b249104edac30b42b213d871",
+    "qualified/opencl-specialization-host-tests.log": "bb58ea30998b5180db0e7c1f2c9b8784d135cf73b63d969a1b405d67561dba83",
+    "qualified/progress.json": "6aebe1b26f600beeb4cb0fe405d04c93bc86fbc6facf1321a58e633976871eba",
+    "qualified/qualify.py": "402e0e87cd5deb89d40698d5858228d669f831a7e654ca04017bdcf012313ff6",
+    "qualified/resources.json": "80a4f518c765d20fd8266c07733f46cd8cd2d256ebff1fd2139ca021a3d9d1d4",
+    "qualified/shared-hiding-tests.log": "2e99d6b1eec8629c79db11e042bf4a2602ab0d98b42b678335b4afa8b676d3ab",
+    "qualified/shared-matrix-tests.log": "e7fe51faf1eba1eb077c7fa371efeacadb5bf9e0cd02e67ca989920e7f1860e4",
+    "qualified/source-completeness-tests.log": "007c93b65462b77b5a22b3be85d97aa45d1a13939fe47ca4ba98c41b5c846be4",
+    "qualified/source-pins.json": "e2b8d2f620c7bdb5a0ea3c7825a65e4ba7950e47e44defc7fdf7ff6ee24004d1",
+    "stream/build-controller.log": "3dd846048cbec019ef32dfcc4c0863a18f791ad45d12ec57b9c05f231aed853a",
+    "stream/build.jsonl": "1b91a00da0e13e757d5ce53480e5342cc80e29d45a82fe019f2a77d976d238d6",
+    "stream/build.py": "a0a8e0446b107209f8efaaebb84ac62c82a0aeca09bb5afb3b916e0dc218e84a",
+    "stream/build.stderr": "a8a361401de9c80af1ad251a432cbabdf45978385e8b0ecace3b4cb2325cb862",
+    "stream/checks.json": "3ae10b10b56ee72040375a70d247aaff79715945661ece750dd499b86c5278a1",
+    "stream/fri.log": "dde530fc5185b8815f894522c70b7d7e0fb6a86b329b681fd10dcd83939018ed",
+    "stream/identity.json": "00aea2d1552ac324074d2303135b8007ee9dfc10af0410bfb77375d46f5038ca",
+    "stream/resources.json": "530bf9a7338a0fb00f59f19da5d543b90cda4a2e7bfa43cee2cbc8a27d0de725",
+    "stream/test.py": "fed1b2577a9122a221575fa03e0632acb5cda793e74b41bfee822989e328db29"
+  }
+}

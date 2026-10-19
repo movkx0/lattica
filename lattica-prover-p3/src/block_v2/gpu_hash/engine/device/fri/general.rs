@@ -46,15 +46,7 @@ __kernel void device_fri_mix_general(__global const ulong *folded,__global const
 "#;
 
 pub(super) fn vector(spec: MatrixSpec) -> Result<(), String> {
-    if !matches!(spec.extension, Extension::Quadratic | Extension::Cubic)
-        || spec.columns != 1
-        || spec.log_rows > 25
-        || spec.order != RowOrder::BitReversed
-        || spec.shift != 1
-    {
-        return Err("FRI requires a quadratic/cubic bit-reversed subgroup vector".into());
-    }
-    Ok(())
+    crate::gpu_fri::vector(spec)
 }
 
 fn challenge(spec: MatrixSpec, log_arity: usize, beta: &[u64]) -> Result<[u64; 3], String> {

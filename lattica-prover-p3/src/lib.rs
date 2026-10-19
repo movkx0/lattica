@@ -33,6 +33,8 @@ compile_error!("gpu-cuda currently requires Linux");
 pub(crate) mod cuda_compute;
 #[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 mod gpu_matrix;
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
+mod gpu_fri;
 #[cfg(all(
     any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"),
     any(target_os = "linux", target_os = "macos")

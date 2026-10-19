@@ -7,6 +7,7 @@ mod commitment;
 mod compiler;
 mod device;
 mod field;
+mod fri;
 #[cfg(feature = "block-v2")]
 mod hiding;
 mod kernel;
@@ -27,6 +28,7 @@ pub(crate) use buffer::Buffer;
 pub(crate) use commitment::{ColumnSink, Commitments, RetainedTree};
 pub(crate) use device::{inventory, Identity, Runtime};
 pub(crate) use field::{FieldOperation, FieldProgram, FieldSpan};
+pub(crate) use fri::{FinalPolynomial, Fri, FriLayer, FriLayerOpenings, FriRound, FriVector};
 #[cfg(feature = "block-v2")]
 pub(crate) use hiding::{HiddenCommitment, HiddenOpenings, Hiding, HidingInput, QuotientHidingInput, TraceHidingInput};
 pub(crate) use kernel::{Argument, Completion, Kernel, Launch, Module};

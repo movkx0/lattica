@@ -39,8 +39,9 @@ Hidden LDE tiles now stream into mixed-height MMCS commitments. Only low-coset
 evaluation prefixes, Merkle nodes and private salt recipes remain resident;
 requested rows are reconstructed and salted on CUDA. Native out-of-domain
 evaluation now consumes resident challenge points, and column-compressed opening
-reductions produce resident FRI inputs. FRI/final-polynomial work and complete
-PCS integration remain outstanding.
+reductions produce resident FRI inputs. Native FRI folding, salted layer queries
+and final-polynomial extraction are implemented; FRI protocol orchestration and
+complete PCS integration remain outstanding.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -397,9 +398,37 @@ execution remains qualified only on the desktop RTX 5080.
 These are opening/reduction primitives and hidden-prefix integration, not a
 complete native CUDA PCS or prover. Denominators are inverted on CUDA; batch
 inversion and denominator reuse remain optimization candidates. No opening-stage
-speedup or complete transaction-throughput result is claimed. FRI folding and its
-commitment/query orchestration, final polynomials, complete PCS orchestration, remaining proof
-stages, backend selection and worker integration are still required.
+speedup or complete transaction-throughput result is claimed.
+
+The [FRI primitive qualification](evidence/cuda-fri-2026-10-18.json) adds native
+quadratic/cubic folding at arities 2, 4, 8 and 16, lower-height input mixing,
+salted layer commitments, bounded queries and final-polynomial extraction.
+An explicit rescaled view treats source values as evaluations of
+`g(X) = f(shift * X)` on the unit subgroup, matching Plonky3 without changing
+the source matrix's domain metadata. Each round owns an immutable device copy
+of beta, shared by folding and its `beta^arity` input mixing. Final coefficients
+remain resident for transcript absorption before bounded proof egress.
+
+Layer commitments retain values, trees and replayable salt recipes. Query
+admission covers aggregate host outputs, index staging and device scratch;
+query order and duplicates are preserved. Early admission failures preserve
+randomness, while failures and unwinds after private work retire the salt
+family. Shared FRI geometry now serves CUDA and the existing OpenCL path.
+Independent CPU comparisons cover all arities and both extensions, final
+polynomials through 65,536 coefficients, shifted domains, unchanged source
+data, matching transcripts, and byte-identical Postcard MMCS openings at cap
+heights 0 and 6. The 4,096-query limit and constrained-memory failures are tested.
+All 38 qualification checks passed: 113 native tests, 112 under each CUDA
+sanitizer, ten FRI tests with `stream`, shared OpenCL regressions and the
+CPU/OpenCL/Metal/CUDA build checks. The OpenCL arithmetic launcher needed its
+explicit GPU enable setting; the failed setup and successful retry are recorded.
+Execution is qualified on the desktop RTX 5080; NVRTC target compilation also
+passed for Volta, but V100 execution and Metal execution remain untested.
+
+These are FRI arithmetic and layer-storage primitives. FRI round scheduling,
+transcript orchestration, proof assembly, complete PCS integration, remaining
+proof stages, backend selection and worker integration are still required.
+No full native CUDA FRI proof or transaction-throughput result is claimed.
 
 ## Implementation sequence
 
