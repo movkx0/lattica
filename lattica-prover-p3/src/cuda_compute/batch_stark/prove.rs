@@ -50,6 +50,39 @@ impl BatchStarks {
         host_bytes: usize,
         fault: Fault,
     ) -> Result<NativeBatchProof> {
+        let pcs_host = self.preflight_proof(prepared, inputs, host_bytes)?;
+        for family in [random.masks, random.commitments, random.fri] {
+            family.check_runtime(&self.runtime)?;
+        }
+        let mut transcript = self.transcripts.start()?;
+        let transcript_guard = transcript.begin_attempt()?;
+        let preparation_guard = prepared.preprocessing.begin_attempt(&self.runtime)?;
+        let result = random.masks.with_attempt(|| {
+            random.commitments.with_attempt(|| {
+                random.fri.with_attempt(|| {
+                    self.prove_inner(prepared, inputs, random, pcs_host, &mut transcript, fault)
+                })
+            })
+        })?;
+        prepared.preprocessing.check_runtime(&self.runtime)?;
+        transcript.check_live()?;
+        for family in [random.masks, random.commitments, random.fri] {
+            family.check_live()?;
+        }
+        preparation_guard.complete();
+        transcript_guard.complete();
+        Ok(result)
+    }
+
+    /// Validate borrowed inputs and known host payloads before importing private
+    /// seeds. Device stages retain their existing allocation/peak admission;
+    /// this is not a whole-request device reservation.
+    pub(super) fn preflight_proof(
+        &self,
+        prepared: &PreparedBatch,
+        inputs: &[MachineInputs<'_>],
+        host_bytes: usize,
+    ) -> Result<usize> {
         if !Arc::ptr_eq(&prepared.runtime.state, &self.runtime.state)
             || inputs.len() != prepared.instances.len()
         {
@@ -81,28 +114,8 @@ impl BatchStarks {
             .and_then(|n| host_bytes.checked_sub(n))
             .filter(|&n| n > 0)
             .ok_or("CUDA batch headers exceed host allowance")?;
-        for family in [random.masks, random.commitments, random.fri] {
-            family.check_runtime(&self.runtime)?;
-        }
         prepared.preprocessing.check_runtime(&self.runtime)?;
-        let mut transcript = self.transcripts.start()?;
-        let transcript_guard = transcript.begin_attempt()?;
-        let preparation_guard = prepared.preprocessing.begin_attempt(&self.runtime)?;
-        let result = random.masks.with_attempt(|| {
-            random.commitments.with_attempt(|| {
-                random.fri.with_attempt(|| {
-                    self.prove_inner(prepared, inputs, random, pcs_host, &mut transcript, fault)
-                })
-            })
-        })?;
-        prepared.preprocessing.check_runtime(&self.runtime)?;
-        transcript.check_live()?;
-        for family in [random.masks, random.commitments, random.fri] {
-            family.check_live()?;
-        }
-        preparation_guard.complete();
-        transcript_guard.complete();
-        Ok(result)
+        Ok(pcs_host)
     }
 
     fn prove_inner(

@@ -391,6 +391,19 @@ impl Run {
     }
 
     #[cfg(feature = "gpu-cuda")]
+    pub(crate) fn cuda_require_capabilities(&self, expected: &Capabilities) -> Result<(), Error> {
+        if self.capabilities.scope != expected.scope
+            || self.capabilities.profile != expected.profile
+            || self.capabilities.max_log_fri_arity != expected.max_log_fri_arity
+            || self.capabilities.stages != expected.stages
+        {
+            return Err(Error::ComponentRejected);
+        }
+        self.cuda_inventory()?;
+        Ok(())
+    }
+
+    #[cfg(feature = "gpu-cuda")]
     pub(crate) fn cuda_inventory(&self) -> Result<[bool; 16], Error> {
         if self.state.lock().map_err(|_| Error::Finished)?.finished {
             return Err(Error::Finished);

@@ -75,6 +75,10 @@ Public preprocessing now survives failed private proof attempts on a healthy
 runtime. Each salt replay uses an isolated temporary consumer; failed private
 randomness still retires across every alias. The public path accepts only
 deterministic machine preprocessing and the production fixed public seed.
+Native registered-machine handles now authenticate preparation against a caller's
+approved cap and public program schema. Setup and proof components have separate
+CUDA inventories and complete execution receipts; cached setup records provenance
+without replaying device observations. Production request routing is still absent.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -816,7 +820,7 @@ final Postcard serialization and independent CPU verification. No CPU/OpenCL
 proving comparison, production aggregation throughput or transaction rate is
 inferred from these single-verifier samples.
 
-The two `cuda_compute::batch_stark::recursive_tests::` tests are deliberately
+The full-size `cuda_compute::batch_stark::recursive_tests::` tests are deliberately
 excluded from the small correctness suite. Set `LATTICA_CUDA_RECURSIVE_ARTIFACTS`
 to a fresh absolute directory and run `cuda_recursive_wallet_produces_native_outer_proof`
 with `--exact --ignored --test-threads=1 --nocapture` in the bounded 3 GiB GPU
@@ -857,6 +861,42 @@ Median outer proving time was 4.821 seconds (range 4.821–4.825); public prepar
 took 0.592 seconds separately. These fresh-process, single-verifier samples do
 not measure retry savings or persistent-worker throughput, and include no paired
 baseline from which to infer a speedup or regression.
+
+The [registered-interface qualification](evidence/cuda-registered-2026-10-19.json)
+adds a runtime-bound machine handle that checks the approved cubic profile,
+height, public/witness input counts and preprocessing cap. Only authenticated
+preparation with complete CUDA receipts can produce the handle. Each proof
+attempt imports fresh private seeds after checking input encoding and known host
+payloads. Setup and proof inventories are checked against their exact component
+scope, profile and stage list; even compatible policy cannot return a partially
+reported native result. The handle retains public preprocessing and provenance,
+and charges its additional host metadata within the existing runtime allowance.
+
+Cached setup can be attached to an enclosing request without inventing new
+device work. It cannot replace missing fresh stages or required child components,
+and a failed runtime cannot supply a cached success. The API remains a component
+interface: source/program construction admission, whole-request device planning,
+production wrapper/merge requests, public dispatch and worker/pool routing remain
+unfinished. It does not change the existing CPU/OpenCL worker routes.
+
+All 183 native tests passed in debug and release builds. The 20 affected
+registered, batch and runtime-reporting tests also passed under memory, race and
+synchronization checking and with the `stream` feature; 20 host reporting tests
+passed in both builds. The full-size registered fixture authenticates its
+262,144-row wallet-verifier program against a cap from the earlier independent
+CPU qualification before proving. Its five-stage setup and fifteen-stage proof
+reports compose into sixteen distinct CUDA stages. A separate CPU audit rebuilds
+the cap and verifies the new inner/outer artifacts, including tampering checks.
+The evidence distinguishes the earlier sanitizer build from the final 826-file
+source manifest; only exports and the additional full-size test changed between
+those builds. Full-size recursive race checking is still incomplete.
+
+Run `cuda_compute::batch_stark::recursive_tests::registered::cuda_recursive_registered_wallet_produces_authenticated_outer_proof`
+with `--exact --ignored --test-threads=1 --nocapture` in the same bounded GPU
+service. Its fresh `LATTICA_CUDA_RECURSIVE_ARTIFACTS` directory must already contain
+`approved-cap.postcard` from a successful independent CPU preprocessing audit of
+this program. Afterward, run the existing CPU artifact-audit test against the new
+outputs; the approved program cap alone does not authenticate the new proof.
 
 ## Implementation sequence
 

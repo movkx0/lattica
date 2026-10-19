@@ -27,6 +27,8 @@ use rand_chacha::ChaCha20Rng;
 use std::sync::Arc;
 
 mod prove;
+mod registered;
+pub(crate) use registered::{RegisteredKey, RegisteredMachine, RegisteredProof};
 #[cfg(test)]
 mod recursive_tests;
 #[cfg(test)]

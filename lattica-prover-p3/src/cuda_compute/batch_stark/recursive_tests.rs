@@ -18,6 +18,8 @@ use crate::{
 use p3_field::PrimeField64;
 use std::{io::Write, path::PathBuf, time::Instant};
 
+mod registered;
+
 const MANAGED: usize = 7 << 30;
 const ALLOCATION: usize = 1 << 30;
 const HOST: usize = 1 << 30;

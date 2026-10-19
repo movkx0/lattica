@@ -1,9 +1,9 @@
 //! Native CUDA primitives for the bounded prover. No OpenCL dependency and no
 //! CPU kernel fallback. Proof-stage integration must explicitly select these
 //! primitives; compiling this feature alone does not claim CUDA proof coverage.
-mod budget;
 #[cfg(feature = "block-v2")]
 mod batch_stark;
+mod budget;
 mod buffer;
 mod commitment;
 mod compiler;
@@ -36,9 +36,12 @@ mod wallet;
 #[cfg(feature = "block-v2")]
 mod witness;
 
-pub(crate) use budget::{Limits, Snapshot};
 #[cfg(feature = "block-v2")]
-pub(crate) use batch_stark::{BatchStarks, MachineInputs, NativeBatchProof, PreparedBatch};
+pub(crate) use batch_stark::{
+    BatchStarks, MachineInputs, NativeBatchProof, PreparedBatch, RegisteredKey, RegisteredMachine,
+    RegisteredProof,
+};
+pub(crate) use budget::{Limits, Snapshot};
 pub(crate) use buffer::Buffer;
 pub(crate) use commitment::{ColumnSink, Commitments, RetainedTree};
 pub(crate) use device::{inventory, Identity, Runtime};
@@ -86,6 +89,6 @@ fn cleanup(result: Result<()>, operation: &str) {
 }
 
 #[cfg(feature = "block-v2")]
-pub(crate) use witness::{ExecutionTrace, PreparedWitness, PreprocessingTrace, Witnesses};
-#[cfg(feature = "block-v2")]
 pub(crate) use wallet::{NativeWalletTrace, Wallets};
+#[cfg(feature = "block-v2")]
+pub(crate) use witness::{ExecutionTrace, PreparedWitness, PreprocessingTrace, Witnesses};
