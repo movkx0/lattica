@@ -851,6 +851,13 @@ the debug, stream and release executables plus the unchanged CPU reference.
 Full-size recursive race instrumentation remains incomplete; the focused
 sanitizer results cover their recorded smaller shapes.
 
+The [post-push release benchmark at `0deed40`](evidence/cuda-public-preprocessing-benchmark-2026-10-19.json)
+completed one warmup and three measured proofs, all independently CPU-audited.
+Median outer proving time was 4.821 seconds (range 4.821–4.825); public preparation
+took 0.592 seconds separately. These fresh-process, single-verifier samples do
+not measure retry savings or persistent-worker throughput, and include no paired
+baseline from which to infer a speedup or regression.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)
