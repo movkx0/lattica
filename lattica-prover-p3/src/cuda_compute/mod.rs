@@ -30,6 +30,8 @@ pub(crate) use device::{inventory, Identity, Runtime};
 pub(crate) use field::{FieldOperation, FieldProgram, FieldSpan};
 pub(crate) use fri::{FinalPolynomial, Fri, FriLayer, FriLayerOpenings, FriRound, FriVector};
 #[cfg(feature = "block-v2")]
+pub(crate) use fri::{FriField, FriParameters, NativeFriProof};
+#[cfg(feature = "block-v2")]
 pub(crate) use hiding::{HiddenCommitment, HiddenOpenings, Hiding, HidingInput, QuotientHidingInput, TraceHidingInput};
 pub(crate) use kernel::{Argument, Completion, Kernel, Launch, Module};
 pub(crate) use matrix::Matrix;

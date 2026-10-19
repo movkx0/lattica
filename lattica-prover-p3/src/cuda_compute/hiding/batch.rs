@@ -106,7 +106,7 @@ fn check_families(families: &[DeviceRandom]) -> Result<()> {
     }
     Ok(())
 }
-struct Attempt<'a> {
+pub(crate) struct Attempt<'a> {
     families: &'a [DeviceRandom],
     complete: bool,
 }
@@ -117,6 +117,11 @@ impl Drop for Attempt<'_> {
                 family.retire();
             }
         }
+    }
+}
+impl Attempt<'_> {
+    pub(crate) fn complete(mut self) {
+        self.complete = true;
     }
 }
 
@@ -331,6 +336,55 @@ impl Hiding {
 }
 
 impl HiddenCommitment {
+    pub(crate) fn check_runtime(&self, runtime: &Runtime) -> Result<()> {
+        if !std::sync::Arc::ptr_eq(&self.runtime.state, &runtime.state) {
+            return Err("CUDA hidden commitment belongs to another runtime".into());
+        }
+        check_families(&self.families)
+    }
+
+    /// Scope a complete consumer, including later transcript/query failures.
+    pub(crate) fn begin_attempt(&self, runtime: &Runtime) -> Result<Attempt<'_>> {
+        self.check_runtime(runtime)?;
+        Ok(Attempt {
+            families: &self.families,
+            complete: false,
+        })
+    }
+
+    /// Raw query outputs and the same staging allowance used by `open`.
+    pub(crate) fn query_host_bytes(&self, queries: usize) -> Result<usize> {
+        if !(1..=MAX_QUERIES).contains(&queries) {
+            return Err("CUDA hidden query count exceeds admission".into());
+        }
+        let output = self.matrices.iter().try_fold(
+            queries * self.tree.path_len() * 4 * 8 + HOST_METADATA,
+            |total, matrix| {
+                total
+                    .checked_add(queries * (matrix.spec.columns + 4) * 8)
+                    .ok_or_else(|| "CUDA hidden query output overflow".to_string())
+            },
+        )?;
+        // `open` retains every matrix output while a reconstruction tile is
+        // staged. Ask the shared planner for its largest possible tile; an
+        // actual device budget can only reduce that temporary host storage.
+        let mut temporary = 0;
+        for matrix in &self.matrices {
+            let plan = QueryPlan::new(
+                matrix.prefix.spec,
+                matrix.spec.log_rows,
+                queries,
+                usize::MAX,
+                usize::MAX,
+                usize::MAX,
+            )?;
+            temporary = temporary.max(plan.host_peak_bytes - queries * matrix.spec.columns * 8);
+        }
+        output
+            .checked_add(temporary)
+            .ok_or_else(|| "CUDA hidden query staging overflow".into())
+    }
+
     /// Evaluate an original matrix's retained prefix without exposing its private
     /// storage. A failed consumer or unwind retires all participating RNG streams.
     pub(crate) fn with_opening<T>(

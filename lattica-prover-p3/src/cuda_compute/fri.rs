@@ -10,6 +10,10 @@ use std::sync::Arc;
 pub(super) const SOURCE: &str = concat!(include_str!("field.cuh"), include_str!("fri.cu"));
 mod commitment;
 pub(crate) use commitment::{FriLayer, FriLayerOpenings};
+#[cfg(feature = "block-v2")]
+mod protocol;
+#[cfg(feature = "block-v2")]
+pub(crate) use protocol::{FriField, FriParameters, NativeFriProof};
 
 pub(crate) struct Fri {
     runtime: Runtime,

@@ -223,6 +223,13 @@ impl Transcripts {
 }
 
 impl Transcript {
+    pub(crate) fn check_runtime(&self, runtime: &Runtime) -> Result<()> {
+        if !Arc::ptr_eq(&self.engine.runtime.state, &runtime.state) {
+            return Err("CUDA transcript belongs to another runtime".into());
+        }
+        self.check_live()
+    }
+
     pub(crate) fn check_live(&self) -> Result<()> {
         let execution = Execution::new(&self.slot.0)?;
         drop(self.engine.runtime.state.enter()?);

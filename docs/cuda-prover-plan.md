@@ -40,8 +40,9 @@ evaluation prefixes, Merkle nodes and private salt recipes remain resident;
 requested rows are reconstructed and salted on CUDA. Native out-of-domain
 evaluation now consumes resident challenge points, and column-compressed opening
 reductions produce resident FRI inputs. Native FRI folding, salted layer queries
-and final-polynomial extraction are implemented; FRI protocol orchestration and
-complete PCS integration remain outstanding.
+and final-polynomial extraction are implemented. Native FRI protocol orchestration
+now generates authenticated proofs accepted by the unchanged CPU FRI verifier;
+complete PCS integration remains outstanding.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -425,10 +426,10 @@ explicit GPU enable setting; the failed setup and successful retry are recorded.
 Execution is qualified on the desktop RTX 5080; NVRTC target compilation also
 passed for Volta, but V100 execution and Metal execution remain untested.
 
-These are FRI arithmetic and layer-storage primitives. FRI round scheduling,
-transcript orchestration, proof assembly, complete PCS integration, remaining
-proof stages, backend selection and worker integration are still required.
-No full native CUDA FRI proof or transaction-throughput result is claimed.
+This primitive checkpoint did not yet include FRI round scheduling, transcript
+orchestration or complete proof assembly. The subsequent protocol checkpoint
+below adds those operations; complete PCS integration, remaining proof stages,
+backend selection and worker integration are still required.
 
 The opt-in `cuda_fri_folding_benchmark` compares one arity-16 fold with four
 binary folds using beta, beta squared, beta to the fourth and beta to the eighth.
@@ -457,6 +458,45 @@ The fused path issued one kernel command instead of four; both arms issued zero
 uploads/downloads within timing. These small debug-host measurements include
 submission and allocation overhead and do not qualify a production setting
 change or establish whole-proof speedups.
+
+The [native FRI protocol qualification](evidence/cuda-fri-protocol-2026-10-18.json)
+adds round scheduling, cap observation, commit PoW, resident beta sampling,
+lower-height input mixing, resident final-coefficient absorption, arity binding,
+query PoW/index sampling and assembly into the existing Plonky3 proof type.
+Original input queries come from retained CUDA hidden commitments. The protocol
+requires the reduced-height set to match the original commitments and includes
+their salted MMCS openings in every query proof. Host work schedules public
+geometry and serializes bounded proof outputs; intermediate polynomials and
+challenge arithmetic remain on CUDA.
+
+An aggregate host plan covers raw query batches, reconstruction staging,
+typed proof arrays and their coexistence. Individual device stages retain
+their allocation preflights. A complete protocol attempt owns transcript and
+randomness retirement guards for every input and FRI salt stream. Public shape
+and aggregate-host admission failures preserve those states. Failures after
+entering the protocol attempt retire all participating families and release
+intermediate storage.
+
+Independent CPU verification accepts synthetic hidden-input FRI proofs using
+the wallet parameters (96 queries, arity up to 16) and the existing cubic
+recursive parameters (128 queries, binary folding), both with blowup 16,
+16-bit query PoW, cap height 6 and four random codewords. Additional test-only
+settings cover all arities, nonconstant final polynomials and commit PoW.
+Five zero-PoW cases match upstream Postcard proof bytes exactly. Tampering with
+original values, salts, siblings, arities, final coefficients or opening claims
+is rejected. A zero-polynomial case exercises no fold layers and duplicate
+authenticated queries. Invalid parameters, missing original heights, aggregate
+host rejection, downstream errors and unwinds are also tested.
+All 38 checks passed: 120 native tests, 119 under each CUDA sanitizer, 17 FRI
+tests with `stream`, and the existing CPU/OpenCL/Metal build and regression
+checks. Source hashes for all 771 files matched the staged commit. Execution
+remains qualified only on the desktop RTX 5080; V100, multiple-device ownership
+rejection and Metal execution still require their own hardware checks.
+
+These are complete FRI proofs over synthetic committed inputs, not complete
+wallet or recursive STARK proofs. The native hiding PCS opening wrapper,
+remaining proof stages and backend/worker integration are still unfinished;
+no complete-prover speedup or transaction-throughput result is claimed.
 
 ## Implementation sequence
 
