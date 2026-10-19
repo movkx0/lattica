@@ -386,6 +386,82 @@ impl Hiding {
 }
 
 impl HiddenCommitment {
+    /// Consume the unmasked trace columns inside the commitment family's
+    /// guard. No retained private prefix or independently reusable alias is
+    /// exposed to the caller; only the completed quotient leaves this scope.
+    pub(crate) fn evaluate_quotient(
+        &self,
+        hiding: &Hiding,
+        quotients: &crate::cuda_compute::Quotients,
+        prepared: &crate::cuda_compute::PreparedQuotient,
+        matrix: usize,
+        width: usize,
+        log_trace: u32,
+        log_quotient: u32,
+        periodic: Option<&Matrix>,
+        alpha: &Buffer,
+        parameters: Option<&Buffer>,
+    ) -> Result<Matrix> {
+        self.check_runtime(&hiding.runtime)?;
+        let input = self
+            .matrices
+            .get(matrix)
+            .ok_or("CUDA quotient matrix index exceeds commitment")?;
+        if width == 0 || width != input.spec.columns - input.random_columns {
+            return Err("CUDA quotient width differs from committed trace columns".into());
+        }
+        let spec = MatrixSpec::new(
+            input.prefix.spec.log_rows,
+            width,
+            Extension::Base,
+            RowOrder::BitReversed,
+            GENERATOR,
+        )?;
+        plan::admit(
+            [spec.words()],
+            hiding.runtime.snapshot(),
+            hiding.runtime.state.budget.limits,
+        )?;
+        let attempt = self.begin_attempt(&hiding.runtime)?;
+        let trace = Matrix {
+            spec,
+            buffer: hiding.runtime.allocate(spec.words())?,
+        };
+        // The same column-copy kernel preserves the prefix's physical row
+        // order and omits only the validated masking suffix.
+        unsafe {
+            hiding.randomization_columns.launch(
+                crate::cuda_compute::transform::linear_launch(spec.words())?,
+                &[
+                    Argument::Buffer(&input.prefix.buffer),
+                    Argument::Buffer(&trace.buffer),
+                    Argument::U32(spec.rows() as u32),
+                    Argument::U32(input.prefix.spec.columns as u32),
+                    Argument::U32(0),
+                    Argument::U32(width as u32),
+                ],
+            )?
+        }
+        .finish()?;
+        let output = quotients.evaluate_partitioned(
+            &hiding.transforms,
+            prepared,
+            log_trace,
+            log_quotient,
+            GENERATOR,
+            crate::cuda_compute::QuotientInputs {
+                main: Some(&trace),
+                preprocessed: periodic,
+                permutation: None,
+            },
+            alpha,
+            parameters,
+        )?;
+        check_families(&self.families)?;
+        attempt.complete();
+        Ok(output)
+    }
+
     pub(crate) fn opening_shape(&self, matrix: usize) -> Result<OpeningShape> {
         let input = self
             .matrices

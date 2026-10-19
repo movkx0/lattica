@@ -20,6 +20,8 @@ mod query;
 mod quotient;
 mod random;
 mod scalars;
+#[cfg(feature = "block-v2")]
+mod stark;
 #[cfg(test)]
 mod tests;
 mod transcript;
@@ -50,6 +52,10 @@ pub(crate) use quotient::{
 };
 pub(crate) use random::{DeviceRandom, RandomWords, Randoms, ReplaySalts};
 pub(crate) use scalars::{DomainValues, Scalars};
+#[cfg(feature = "block-v2")]
+pub(crate) use stark::{
+    NativeStarkConfig, NativeStarkProof, PreparedStark, StarkRandomness, Starks,
+};
 pub(crate) use transcript::{Transcript, TranscriptAttempt, Transcripts};
 pub(crate) use transform::Transforms;
 

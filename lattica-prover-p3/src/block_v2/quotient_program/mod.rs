@@ -147,7 +147,7 @@ impl Program {
 
     /// Periodic polynomials are evaluated as an uncommitted auxiliary input.
     /// This lowering never changes the AIR layout observed by the verifier.
-    pub(super) fn from_periodic_constraints<F: FriExtension>(
+    pub(crate) fn from_periodic_constraints<F: FriExtension>(
         mut layout: AirLayout,
         constraints: &crate::block_v2::machine::symbolic::Constraints<F>,
     ) -> Result<Self, String> {

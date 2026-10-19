@@ -46,8 +46,11 @@ The native hiding PCS opening wrapper evaluates each matrix once, observes
 resident claims before sampling alpha, reduces them on CUDA, and returns the
 existing public/masking opening and authenticated FRI proof format. Native
 randomization-polynomial commitments sample their original rows and masking
-columns directly, preserving the upstream polynomial degree. Integration of
-these PCS operations into complete proving remains outstanding.
+columns directly, preserving the upstream polynomial degree. Native single-AIR
+STARK orchestration now consumes resident traces and public values, with static
+periodic columns, and returns the existing proof encoding. Both pinned field
+profiles and real JoinSplit/HTLC AIRs pass the unchanged CPU verifier. These
+wallet fixtures still construct their witness traces and public values on CPU.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -59,8 +62,8 @@ unsupported specialization shapes retain GPU interpretation. Current/next rows,
 alpha powers, selectors, constraints and vanishing-polynomial division execute
 on CUDA, with only a public domain-validity word read back per evaluation.
 
-Wallet and recursive proofs are not yet routed through CUDA. Cached twiddle
-tuning, PCS/backend integration, complete proof-stage coverage, controller
+Wallet requests and recursive proofs are not yet routed through CUDA. Cached
+twiddle tuning, backend integration, complete proof-stage coverage, controller
 admission and pool integration remain outstanding. Prepared quotient handles
 support reuse without retaining witnesses or sampled parameters. A bounded
 public program cache now supports repeated preparation within an evaluator;
@@ -557,12 +560,49 @@ encoding. All 41 checks passed: 129 native tests, 128 under each sanitizer,
 38 tests with `stream`, and existing cross-backend checks. All 776 source files
 match the staged source.
 
-Complete STARK orchestration, remaining witness/public/lookup operations,
-execution receipts, backend selection and worker/pool integration remain
-unfinished. In particular, the complete prover must preserve the upstream
-trace, quotient and randomization commitment/transcript order; the PCS fixtures
-alone do not establish that integration. No end-to-end CUDA performance or
-transaction-throughput result is claimed.
+At that checkpoint, complete STARK orchestration, remaining witness/public/lookup
+operations, execution receipts, backend selection and worker/pool integration
+remained unfinished. The single-AIR integration below preserves the upstream
+trace, quotient and randomization commitment/transcript order. No end-to-end
+CUDA performance or transaction-throughput result is claimed.
+
+The [single-AIR STARK qualification](evidence/cuda-stark-2026-10-18.json) covers
+native orchestration with a bounded public AIR program, optional periodic columns
+and a shape-bound quotient handle. Proving accepts resident
+trace and public-value buffers. Hiding, trace commitments, quotient evaluation,
+quotient commitments, randomization commitments, challenge sampling and complete
+PCS openings execute on CUDA. Opening rounds follow the upstream random, trace,
+quotient order and assemble the unchanged `p3-uni-stark` proof type. Public AIR
+compilation, proof assembly and independent verification remain host work.
+
+Periodic tables use the allocation-free borrowed-source interface shared with
+OpenCL. Their geometry is admitted before filling staging storage; expansion
+and interpolation execute on CUDA. The retained trace commitment supplies
+unmasked quotient inputs through a guarded CUDA column copy. Private prefixes
+do not escape as independently reusable aliases. Header and shape failures
+preserve input state. Later errors and unwinds retire all three randomness
+families and the fresh transcript, and release intermediate device storage.
+Caps and assembly metadata have a separate host allowance within the request's
+proof-output limit; whole-request worker accounting remains outstanding.
+
+Qualification includes production-parameter quadratic and cubic proofs, six
+deterministic full-proof encoding comparisons covering periodic/next-row modes,
+and real JoinSplit/HTLC proofs accepted by the production CPU verifier. Tampered
+public inputs, openings and degree metadata are rejected. Failure checks cover
+trace, quotient and PCS boundaries, a real late PCS output-budget rejection,
+unwinds, invalid witnesses and reuse of public preparation with fresh randomness.
+All 43 checks passed: 138 native tests, 137 under each CUDA sanitizer, 47 with
+`stream`, and the CPU/OpenCL/Metal/standalone-CUDA build and regression checks.
+The OpenCL device regression also covers periodic expansion and wallet batch
+generation. All 782 source pins match the staged Git blobs. The first OpenCL
+build exposed two fields whose visibility needed to move with the shared
+periodic geometry; that failure is preserved, and the final qualification
+reruns all checks on the corrected source.
+
+This single-AIR interface rejects preprocessed commitments and lookup/permutation
+layouts. Wallet witness/public generation, recursive batch/lookup orchestration,
+execution receipts, backend selection and worker/pool integration still require
+implementation. No full-request GPU coverage or transaction throughput is claimed.
 
 ## Implementation sequence
 

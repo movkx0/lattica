@@ -2,6 +2,7 @@
 //! This metadata contains no witness values or runtime handles.
 
 mod domain;
+pub(crate) mod periodic;
 pub(crate) mod query;
 pub(crate) mod roots;
 pub(crate) use domain::DomainSpec;
