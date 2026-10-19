@@ -27,6 +27,8 @@ use std::sync::Arc;
 mod prove;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod recursive_tests;
 
 pub(crate) type NativeBatchProof = p3_batch_stark::BatchProof<super::NativeStarkConfig<Challenge>>;
 type Cap = <ValMmcs as p3_commit::Mmcs<Val>>::Commitment;

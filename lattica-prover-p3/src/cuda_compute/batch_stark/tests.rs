@@ -22,7 +22,7 @@ fn runtime() -> Runtime {
 fn rng(seed: u8) -> ChaCha20Rng {
     ChaCha20Rng::from_seed([seed; 32])
 }
-fn cpu() -> super::super::NativeStarkConfig<Challenge> {
+pub(super) fn cpu() -> super::super::NativeStarkConfig<Challenge> {
     let permutation = p3_goldilocks::default_goldilocks_poseidon2_8();
     let mmcs = ValMmcs::new(
         crate::config::MyHash::new(permutation.clone()),

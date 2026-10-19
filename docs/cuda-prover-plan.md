@@ -68,8 +68,9 @@ inputs. Dependency waves, base/cubic arithmetic, Poseidon2 traces and execution
 checks run on CUDA. Generated traces, preprocessing and public values feed the
 native lookup stage directly. Native machine batch-STARK orchestration now
 connects these stages to the hiding PCS, preserving the upstream transcript and
-proof encoding. Qualification with actual registered inner-verifier programs
-and integration with recursive workers remain outstanding.
+proof encoding. Real JoinSplit verifier programs also pass independent CPU
+verification against CPU-rebuilt preprocessing commitments. Production wrapper
+and merge programs, public routing and recursive workers remain outstanding.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -96,7 +97,7 @@ This leaves the system driver unchanged. From the prover crate, build with
 Run the resulting test executable in a bounded 3 GiB, four-thread, zero-swap
 service with `LD_LIBRARY_PATH` pointing to the toolchain's `lib` directory and
 `LATTICA_GPU_DEVICE_UUID` selecting the device. The filter
-`cuda_compute:: --include-ignored --test-threads=1` covers arithmetic, transforms,
+`cuda_compute:: --include-ignored --skip benchmark --skip recursive_tests --test-threads=1` covers arithmetic, transforms,
 query reconstruction, salted commitments, quotient evaluation, host limits and device lifecycle
 checks. The separate
 `gpu_matrix:: --test-threads=1` filter checks shared roots and planner boundaries.
@@ -776,11 +777,42 @@ OpenCL regressions passed. The qualification pins 810 source files to staged Git
 blobs and preserves the tested executables. This is correctness evidence; test
 durations do not establish native recursive throughput.
 
-Public request routing, batch wallet traces, actual recursive verifier execution,
+Public request routing, batch wallet traces, production wrapper/merge execution,
 whole-request admission and worker/pool integration remain unfinished. The
 opt-in CPU/CUDA benchmark measures raw witness to serialized wallet proof, with
 independent CPU verification outside timing; it does not measure recursive
 aggregation, block processing or distributed transaction throughput.
+
+The [real-recursion qualification](evidence/cuda-recursion-2026-10-19.json)
+generates a fresh context-bound cubic JoinSplit proof on CUDA, compiles its
+existing verifier, and proves that verifier with the native machine batch engine.
+The program has 171,669 active rows in a 262,144-row domain. The inner and outer
+operations record all fourteen and sixteen required CUDA arithmetic stages,
+respectively, without invoking the CPU witness oracle. Only final proof artifacts
+and public statements cross into the independent audit process. That process
+rebuilds the public preprocessing cap on CPU and uses the unchanged registered
+CPU verifier. It also rejects altered inner proofs, public inputs and outer proofs.
+This is a single recursive verifier proof, not the production block aggregation
+workflow or a transaction-throughput measurement.
+Five fresh outer proofs passed separate CPU audits, covering normal, memory-
+checked, synchronization-checked, stream-feature and release runs. Memory checking
+reported zero errors and leaks; synchronization checking reported zero errors.
+Peak managed device storage was 6.92 GiB. Three executables and 821 source hashes
+are preserved in the evidence.
+Full-size race instrumentation was interrupted during preparation and remains
+unqualified; its partial log is retained alongside the completed checks.
+
+The two `cuda_compute::batch_stark::recursive_tests::` tests are deliberately
+excluded from the small correctness suite. Set `LATTICA_CUDA_RECURSIVE_ARTIFACTS`
+to a fresh absolute directory and run `cuda_recursive_wallet_produces_native_outer_proof`
+with `--exact --ignored --test-threads=1 --nocapture` in the bounded 3 GiB GPU
+service. Its managed/device-allocation limits are 7 GiB/1 GiB, with the existing
+4 GiB context reserve and 1 GiB headroom. Then run
+`cuda_recursive_wallet_artifacts_pass_independent_cpu_audit` from a release build
+against the same directory in a separate 24 GiB CPU service. Both tests require
+their full module path with `--exact`. Use four Rayon threads and zero swap in
+both services. Archive the executables, artifacts and logs together; a successful
+producer alone does not authenticate its preprocessing cap or qualify its proof.
 
 ## Implementation sequence
 
