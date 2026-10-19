@@ -706,6 +706,14 @@ CPU/OpenCL/standalone-CUDA checks and Metal cross-compilation. All 802 source
 pins match the staged Git blobs. The exact test and release executables are
 retained with the ignored raw evidence. V100 execution remains untested.
 
+The [post-push wallet regression screen](evidence/cuda-wallet-benchmark-2026-10-19.json)
+at `cf24fed` verified all 36 proofs on CPU. Five measured pairs per case gave
+median CPU/CUDA times of 933/94 ms for JoinSplit, 990/98 ms for HTLC redeem and
+996/98 ms for HTLC refund, using four CPU threads and the desktop RTX 5080.
+Public preparation took 247 ms separately. These single-wallet proofs contain
+no lookup or recursive stage, so this screen does not measure the new lookup
+component or recursive transaction throughput.
+
 Public request routing, batch wallet traces, recursive batch/lookup orchestration,
 whole-request admission and worker/pool integration remain unfinished. The new
 opt-in CPU/CUDA benchmark measures raw witness to serialized wallet proof, with
