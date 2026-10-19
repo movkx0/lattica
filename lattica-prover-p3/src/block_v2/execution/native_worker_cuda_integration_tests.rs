@@ -25,6 +25,9 @@ use std::{
     time::Instant,
 };
 
+#[path = "native_worker_cuda_recovery_tests.rs"]
+mod recovery;
+
 #[test]
 #[ignore = "child of the bounded native CUDA integration fixture"]
 fn native_cuda_service_child() {
@@ -76,18 +79,32 @@ fn native_cuda_service_child() {
 #[test]
 #[ignore = "pinned mixed-wallet fixture and isolated systemd fleet; run serially"]
 fn native_cuda_service_proves_mixed_jobs_and_releases_after_observed_exit() {
-    service_fixture(None);
+    service_fixture(None, false);
 }
 
 #[test]
 #[ignore = "external maintained CUDA CLI and pinned fixture in an isolated systemd fleet"]
 fn maintained_cuda_cli_proves_mixed_jobs_and_consumes_startup_fence() {
-    service_fixture(Some(PathBuf::from(
-        std::env::var_os("LATTICA_CUDA_CLI_BINARY").unwrap(),
-    )));
+    service_fixture(
+        Some(PathBuf::from(
+            std::env::var_os("LATTICA_CUDA_CLI_BINARY").unwrap(),
+        )),
+        false,
+    );
 }
 
-fn service_fixture(cli: Option<PathBuf>) {
+#[test]
+#[ignore = "interrupts a real CUDA worker, recovers the durable journal and completes its mixed DAG"]
+fn maintained_cuda_cli_recovers_after_interrupted_gpu_work() {
+    service_fixture(
+        Some(PathBuf::from(
+            std::env::var_os("LATTICA_CUDA_CLI_BINARY").unwrap(),
+        )),
+        true,
+    );
+}
+
+fn service_fixture(cli: Option<PathBuf>, interrupt: bool) {
     let out = PathBuf::from(std::env::var_os("LATTICA_CUDA_WORKER_TEST_DIR").unwrap());
     let fixture = PathBuf::from(std::env::var_os("LATTICA_FULL_SIZE_FIXTURE").unwrap());
     let expected: Value =
@@ -234,7 +251,7 @@ fn service_fixture(cli: Option<PathBuf>) {
         bootstrap.config(&budget).unwrap()
     };
     let mut worker =
-        ProcessWorker::prepare(&mut owner, config, WorkerId(1), WorkerId(2), 0).unwrap();
+        ProcessWorker::prepare(&mut owner, config.clone(), WorkerId(1), WorkerId(2), 0).unwrap();
     let mut launches =
         LaunchStore::create(&bootstrap.launches, LaunchLimits { records: 16 }).unwrap();
     let args: Vec<OsString> = if cli.is_some() {
@@ -292,7 +309,11 @@ fn service_fixture(cli: Option<PathBuf>) {
             "--property=CPUQuota=400%",
             "--property=AllowedCPUs=0-3",
             "--property=TasksMax=96",
-            "--property=RuntimeMaxSec=600",
+            if interrupt {
+                "--property=RuntimeMaxSec=180"
+            } else {
+                "--property=RuntimeMaxSec=600"
+            },
             "--property=KillMode=control-group",
             "--property=LimitCORE=0",
             "--property=LimitSTACK=8M",
@@ -336,6 +357,7 @@ fn service_fixture(cli: Option<PathBuf>) {
         .stderr(Stdio::from(log));
     let start = Instant::now();
     let now = || u64::try_from(start.elapsed().as_millis()).unwrap();
+    let launch_arguments = launch.get_args().map(OsString::from).collect();
     worker.start_supervised(launch, &unit, &args).unwrap();
     fs::write(
         out.join("service-identity.json"),
@@ -343,6 +365,27 @@ fn service_fixture(cli: Option<PathBuf>) {
     )
     .unwrap();
     worker.heartbeat().unwrap();
+    if interrupt {
+        recovery::run(recovery::Case {
+            out,
+            fixture,
+            bootstrap,
+            policy,
+            selection,
+            config,
+            budget,
+            owner,
+            worker,
+            launches,
+            arguments: args,
+            launch_arguments,
+            intent: intent.expect("recovery qualification uses the maintained CLI"),
+            peak,
+            jobs,
+            start,
+        });
+        return;
+    }
     let mut records = vec![];
     while records.len() < 4 {
         let ready = owner.ready().unwrap();

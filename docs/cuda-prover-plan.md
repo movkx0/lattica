@@ -107,7 +107,9 @@ against the registry, and independently CPU-verify returned proofs. CPU/OpenCL
 defaults are unchanged. CUDA native workers require explicit backend and
 construction assignments, retain the existing OS/allocator admission and
 single-use launch tokens, and release workspace reservations only after observed
-process exit.
+process exit. A live CUDA worker interruption test now preserves an accepted
+proof across durable journal reopening and finishes the remaining DAG in a fresh
+worker. Full controller/host-node recovery remains unqualified.
 
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
@@ -1215,6 +1217,32 @@ qualification services remained. Shared fleet settings stayed unchanged.
 Wallet generation, network/consensus, native block application and steady-state
 pool reuse are excluded. These samples do not grant pool timing approval or
 establish a matched CPU/OpenCL speedup.
+
+The [CUDA worker recovery qualification](evidence/cuda-worker-recovery-2026-10-19.json)
+adds a live maintained-CLI test without changing production code. The parent
+accepts one mixed-DAG proof, dispatches the next job, observes its CUDA
+preprocessing, then sends SIGKILL to that exact supervised worker. Socket failure
+leaves reservations charged; replacement is refused until the supervisor has
+observed exit, revoked the old launch and released its workspace. Reopening the
+durable journal independently reverifies the accepted proof. A fresh worker
+with a new execution digest produces the other three proofs; stale attempts
+and the old startup authorization remain rejected.
+
+All 85 native-worker/protocol regressions and the normal four-job integration
+passed. Both final roots passed the unchanged archived CPU auditor, which also
+rejected altered statements and proof bytes. The recovery case completed within
+the original 150-second dispatch window and 600-second candidate deadline,
+using 180-second service caps and the same 3/1/4 GiB worker/coordinator/fleet
+limits. The fleet peaked at 1,309,380,608 bytes with no limit or OOM events. All
+four accepted proofs had complete CUDA coverage; the interrupted attempt
+produced no accepted result. The replacement emitted a zero-owner retirement
+receipt, and both GPU processes exited. All 1,044 source pins remained unchanged.
+
+This qualifies one worker failure boundary and typed journal recovery on the
+RTX 5080. Coordinator-process death, Python controller/host-node recovery,
+multiple GPUs and broader failure/workload cases remain open. The unchanged
+production CLI retains its separately recorded benchmark; fault-injection
+durations are not throughput measurements or pool timing approval.
 
 ## Implementation sequence
 
