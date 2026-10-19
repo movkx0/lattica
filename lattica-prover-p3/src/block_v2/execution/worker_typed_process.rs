@@ -838,11 +838,71 @@ impl Drop for ProcessWorker {
 /// Run in the trusted child, using independently read policy and assignment.
 /// The inherited socket is the only dispatcher; stdout remains a normal log.
 pub fn serve(
+    socket: UnixStream,
+    config: Config,
+    launches: &Path,
+    policy: impl FnMut(ArtifactRef) -> Result<Policy, Error>,
+    shutdown: impl FnMut() -> Result<(), Error>,
+) -> Result<u64, Error> {
+    serve_with(
+        socket,
+        config,
+        launches,
+        policy,
+        shutdown,
+        TypedWorker::from_checked,
+    )
+}
+
+#[cfg(feature = "gpu-cuda")]
+pub(crate) fn serve_cuda(
+    socket: UnixStream,
+    config: Config,
+    launches: &Path,
+    policy: impl FnMut(ArtifactRef) -> Result<Policy, Error>,
+    runtime: crate::cuda_compute::Runtime,
+    limits: crate::block_v2::typed_recursive::CudaLimits,
+    host_output_bytes: u64,
+) -> Result<u64, Error> {
+    let worker_runtime = runtime.clone();
+    let mut runtime = Some(runtime);
+    serve_with(
+        socket,
+        config,
+        launches,
+        policy,
+        || {
+            let snapshot = runtime
+                .take()
+                .ok_or("CUDA worker already retired")?
+                .retire()?;
+            eprintln!("typed_cuda_shutdown {}", serde_json::to_string(&snapshot)?);
+            Ok(())
+        },
+        move |registry, pin, resources| {
+            TypedWorker::from_checked_cuda(
+                registry,
+                pin,
+                resources,
+                &worker_runtime,
+                limits,
+                host_output_bytes,
+            )
+        },
+    )
+}
+
+fn serve_with(
     mut socket: UnixStream,
     config: Config,
     launches: &Path,
     mut policy: impl FnMut(ArtifactRef) -> Result<Policy, Error>,
     mut shutdown: impl FnMut() -> Result<(), Error>,
+    construct: impl FnOnce(
+        crate::block_v2::typed_recursive::CheckedRegistry,
+        RegistryPin,
+        Resources,
+    ) -> Result<TypedWorker, Error>,
 ) -> Result<u64, Error> {
     configure(&socket)?;
     if running_image_fingerprint()? != config.executable {
@@ -866,7 +926,7 @@ pub fn serve(
     let mut ready = [0; 36];
     ready[..4].copy_from_slice(&std::process::id().to_le_bytes());
     ready[4..].copy_from_slice(&digest);
-    let mut worker = TypedWorker::from_checked(registry, config.pin, config.peak)?;
+    let mut worker = construct(registry, config.pin, config.peak)?;
     worker
         .session
         .as_mut()
@@ -955,6 +1015,13 @@ pub fn serve(
         worker.drain()?;
         #[cfg(target_env = "gnu")]
         crate::spill_alloc::host_backing::report("job_drained", completed);
+        #[cfg(feature = "gpu-cuda")]
+        if let Some(runtime) = &worker.cuda {
+            eprintln!(
+                "typed_cuda_memory {}",
+                serde_json::to_string(&runtime.snapshot())?
+            );
+        }
         #[cfg(feature = "gpu")]
         if let Some(memory) = memory {
             eprintln!(

@@ -32,7 +32,7 @@ impl Default for Limits {
 }
 
 impl Limits {
-    pub(super) fn validate(self) -> Result<usize> {
+    pub(crate) fn validate(self) -> Result<usize> {
         if self.managed_bytes == 0
             || self.max_allocation_bytes == 0
             || self.max_allocation_bytes > self.managed_bytes

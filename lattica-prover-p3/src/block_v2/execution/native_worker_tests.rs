@@ -604,7 +604,7 @@ fn assignment_resources_and_cache_keep_existing_semantics() {
     }
 }
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "gpu", feature = "gpu-cuda"))]
 #[test]
 fn socket_duplication_preserves_ownership_and_rejects_other_descriptors() {
     use std::{

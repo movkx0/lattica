@@ -125,7 +125,7 @@ pub(super) fn check_buffers(packet: usize, result: usize) -> Result<(), Error> {
 /// prover RAM. Retained allocator capacity may coexist with fresh allocations;
 /// subtract it even for the first job so cached sessions keep one fixed budget.
 /// Session construction subtracts its own fixed storage allowance afterwards.
-pub(super) fn session_memory_bytes(total: u64, threads: u32) -> Result<u64, Error> {
+pub(crate) fn session_memory_bytes(total: u64, threads: u32) -> Result<u64, Error> {
     check_buffers(MAX_JOB_BYTES, packet::MAX_RESULT_BYTES)?;
     let stacks = crate::block_v2::execution::worker_budget::rayon_stack_host_bytes(threads)?;
     let session = total

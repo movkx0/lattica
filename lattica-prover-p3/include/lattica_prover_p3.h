@@ -90,8 +90,16 @@ int32_t lattica_gpu_initialize_from_env(void);
  */
 int32_t lattica_gpu_public_worker_initialize_from_env(void);
 /* Blocking startup + typed public-worker service + teardown, once in a fresh
- * Linux process. Do not call initialize first. Uses the same release/features,
- * owned GPU switches and independently enforced assignment as public startup.
+ * Linux process. Do not call initialize first. OpenCL uses the same release
+ * features, owned GPU switches and enforced assignment as public startup.
+ * The opt-in gpu-cuda,block-v2,stream build also supports this complete service
+ * in release mode with LATTICA_PROVING_POLICY=gpu-required. Its independently
+ * supplied assignment must select backend="cuda" and contain the version-1
+ * cuda construction bounds (program_host_bytes, wires, input_values), plus
+ * explicit GPU managed, per-allocation, context, headroom and host-output bytes.
+ * It uses the same OS/allocator admission and protocol identity. CUDA runtime
+ * ownership stays inside this call; separate initialize/drain/shutdown exports
+ * remain unavailable in CUDA builds. OpenCL rejects a CUDA assignment.
  * bootstrap is the bounded local execution::native_worker::Bootstrap encoding
  * (1..65536 bytes), supplied by a trusted host independently of worker packets.
  * Its registry, profile, executable, policy context and launch directory are

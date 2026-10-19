@@ -28,6 +28,23 @@ fn runtime(max_pending: usize) -> Runtime {
     .unwrap()
 }
 
+#[test]
+#[ignore = "requires explicit CUDA device; run serially"]
+fn cuda_worker_retirement_requires_exclusive_drained_ownership() {
+    let runtime = runtime(1);
+    let uuid = runtime.identity().uuid.clone();
+    let alias = runtime.clone();
+    assert!(alias.retire().is_err());
+    assert!(crate::gpu_lease::SingleDeviceLease::acquire(&uuid).is_err());
+    let buffer = runtime.allocate(1).unwrap();
+    assert!(runtime.clone().retire().is_err());
+    drop(buffer);
+    let snapshot = runtime.retire().unwrap();
+    assert_eq!(snapshot.live_bytes, 0);
+    assert_eq!(snapshot.modules, 0);
+    assert!(crate::gpu_lease::SingleDeviceLease::acquire(&uuid).is_ok());
+}
+
 fn launch(kernel: &Kernel, output: &Buffer) -> Completion {
     // The kernel writes exactly 17 u64 words, within the 18-word allocation;
     // the final word is a guard. Scalar widths match the CUDA signature.

@@ -251,6 +251,23 @@ impl<const N: usize> Session<N> {
     }
 }
 
+impl Session<12> {
+    pub(crate) fn from_checked_cuda(
+        registry: super::super::CheckedRegistry,
+        worker_memory_bytes: u64,
+        runtime: &Runtime,
+        limits: Limits,
+    ) -> Result<Self, Error> {
+        let mut session = Self::from_checked(registry, worker_memory_bytes)?;
+        session.backend = Backend::Cuda(Context::new(
+            runtime,
+            storage::active_memory_bytes(worker_memory_bytes, 0)?,
+            limits,
+        )?);
+        Ok(session)
+    }
+}
+
 #[cfg(all(test, feature = "block-v2-host", feature = "stream"))]
 mod full_size_tests;
 #[cfg(test)]

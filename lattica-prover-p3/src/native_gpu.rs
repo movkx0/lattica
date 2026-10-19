@@ -1,9 +1,15 @@
 //! Process-local native lifecycle for the explicitly selected owned GPU prover.
 
-#[cfg(any(test, all(feature = "block-v2", feature = "gpu")))]
+#[cfg(any(
+    test,
+    all(feature = "block-v2", any(feature = "gpu", feature = "gpu-cuda"))
+))]
 use std::sync::Mutex;
 
-#[cfg(any(test, all(feature = "block-v2", feature = "gpu")))]
+#[cfg(any(
+    test,
+    all(feature = "block-v2", any(feature = "gpu", feature = "gpu-cuda"))
+))]
 const OK: i32 = 0;
 const REJECTED: i32 = 1;
 pub(crate) const PUBLIC_WORKER_BOOTSTRAP_MAX_BYTES: usize = 64 << 10;
@@ -14,10 +20,16 @@ pub(crate) const PUBLIC_WORKER_BOOTSTRAP_MAX_BYTES: usize = 64 << 10;
     target_os = "linux"
 )))]
 const UNAVAILABLE: i32 = 2;
-#[cfg(any(test, all(feature = "block-v2", feature = "gpu")))]
+#[cfg(any(
+    test,
+    all(feature = "block-v2", any(feature = "gpu", feature = "gpu-cuda"))
+))]
 static LIFECYCLE: Mutex<()> = Mutex::new(());
 
-#[cfg(any(test, all(feature = "block-v2", feature = "gpu")))]
+#[cfg(any(
+    test,
+    all(feature = "block-v2", any(feature = "gpu", feature = "gpu-cuda"))
+))]
 fn call(operation: impl FnOnce() -> Result<(), String> + std::panic::UnwindSafe) -> i32 {
     std::panic::catch_unwind(|| {
         let _guard = LIFECYCLE
@@ -68,6 +80,8 @@ pub extern "C" fn lattica_gpu_public_worker_initialize_from_env() -> i32 {
 /// The caller retains its connected Unix stream descriptor. Success requires
 /// a clean protocol STOP and GPU teardown; no wallet or registry authority is
 /// granted. Call once in a fresh process, without prior GPU initialization.
+/// CUDA builds select this owned service only with an explicit `cuda` worker
+/// assignment; the standalone initialize/drain/shutdown exports stay unavailable.
 ///
 /// Worker admission includes 65,537 bytes for the qualified caller's bootstrap
 /// buffer (including its EOF probe) and 65,536 bytes for retained launch-path
@@ -129,7 +143,7 @@ pub unsafe extern "C" fn lattica_gpu_public_worker_serve(
     }
     #[cfg(all(
         feature = "block-v2",
-        feature = "gpu",
+        any(feature = "gpu", feature = "gpu-cuda"),
         feature = "stream",
         target_os = "linux"
     ))]
@@ -146,7 +160,7 @@ pub unsafe extern "C" fn lattica_gpu_public_worker_serve(
     });
     #[cfg(not(all(
         feature = "block-v2",
-        feature = "gpu",
+        any(feature = "gpu", feature = "gpu-cuda"),
         feature = "stream",
         target_os = "linux"
     )))]

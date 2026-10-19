@@ -49,9 +49,25 @@ fn unavailable_backend_exports_reject_explicitly() {
 fn unavailable_public_worker_startup_rejects_explicitly() {
     assert_eq!(lattica_gpu_public_worker_initialize_from_env(), UNAVAILABLE);
     let mut completed = 123;
+    #[cfg(not(all(
+        feature = "block-v2",
+        feature = "gpu-cuda",
+        feature = "stream",
+        target_os = "linux"
+    )))]
     assert_eq!(
         unsafe { lattica_gpu_public_worker_serve(0, b"{}".as_ptr(), 2, &mut completed) },
         UNAVAILABLE
+    );
+    #[cfg(all(
+        feature = "block-v2",
+        feature = "gpu-cuda",
+        feature = "stream",
+        target_os = "linux"
+    ))]
+    assert_eq!(
+        unsafe { lattica_gpu_public_worker_serve(0, b"{}".as_ptr(), 2, &mut completed) },
+        REJECTED
     );
     assert_eq!(completed, 0);
 }

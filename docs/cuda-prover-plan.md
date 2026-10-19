@@ -71,8 +71,9 @@ connects these stages to the hiding PCS, preserving the upstream transcript and
 proof encoding. Real JoinSplit verifier programs also pass independent CPU
 verification against CPU-rebuilt preprocessing commitments. Explicit native
 typed sessions now also prove maintained pair wrappers, merges and finalizers
-against an independently approved registry. Public routing and recursive workers
-remain outstanding.
+against an independently approved registry. The explicit native public-worker
+service now routes these sessions through the existing local worker protocol;
+CLI/pool inventory selection and public wallet routing remain outstanding.
 Public preprocessing now survives failed private proof attempts on a healthy
 runtime. Each salt replay uses an isolated temporary consumer; failed private
 randomness still retires across every alias. The public path accepts only
@@ -80,7 +81,8 @@ deterministic machine preprocessing and the production fixed public seed.
 Native registered-machine handles now authenticate preparation against a caller's
 approved cap and public program schema. Setup and proof components have separate
 CUDA inventories and complete execution receipts; cached setup records provenance
-without replaying device observations. Production request routing is still absent.
+without replaying device observations. CUDA remains opt-in rather than the default
+application backend.
 
 Registered proofs now admit their complete device allocation schedule before
 importing private seeds. The planner uses the public program and existing
@@ -88,8 +90,8 @@ component geometry, including retained FRI layers during initial commitment
 queries. It checks managed bytes, individual allocations, allocation counts,
 random-stream slots and known host payloads under the runtime's submission
 scope. Borrowed source capacities are charged during preparation and proving.
-Source construction before entry, production request routing and worker-level
-process accounting remain separate integration work.
+The native recursive worker additionally admits source construction, retained
+inputs, cached state and process resources before creating its CUDA runtime.
 
 An explicit CUDA public-arithmetic context now supports recursive statements and
 registry compilation: protocol hashes, summary validation, compiler constants,
@@ -98,8 +100,10 @@ components bind actual completions to their own inventories. Explicit CUDA typed
 sessions connect these components to registered proving and the existing binding
 cache. They enforce program-construction limits, authenticate cached programs
 against the registry, and independently CPU-verify returned proofs. CPU/OpenCL
-defaults and public worker routing are unchanged; worker admission remains
-outstanding.
+defaults are unchanged. CUDA native workers require explicit backend and
+construction assignments, retain the existing OS/allocator admission and
+single-use launch tokens, and release workspace reservations only after observed
+process exit.
 
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
@@ -1044,9 +1048,9 @@ the Metal cross-compilation check passes. All 839 pinned source files match the
 staged Git blobs. Full-size peak managed storage is 7,450,300,432 bytes, and all
 device allocations, modules and retained public program charges are released.
 
-The entry point remains crate-private and explicit. Public API dispatch, worker
-process admission, multi-device pool routing, broader transaction counts and V100
-execution remain unqualified. Full-size proofs run in a 3 GiB, zero-swap,
+That session-level qualification covered the explicit crate-private entry point.
+Public API dispatch, worker admission and multi-device routing were separate
+integration gates. Full-size proofs run in a 3 GiB, zero-swap,
 four-thread service; sanitizer coverage uses smaller focused cases. Correctness
 durations are not production throughput measurements.
 
@@ -1061,6 +1065,45 @@ proofs were rejected. The interval excludes initial device/session construction
 and artifact handling; total process duration is also recorded. Wallet proving, network/consensus processing and pool
 scheduling are excluded. This is a baseline for the experimental CUDA path;
 there is no matched CPU/OpenCL comparison or production throughput claim.
+
+The [native CUDA worker qualification](evidence/cuda-native-worker-2026-10-19.json)
+connects the existing `lattica_gpu_public_worker_serve` ABI to an owned CUDA
+runtime. A release `gpu-cuda,block-v2-host,stream` build requires
+`LATTICA_PROVING_POLICY=gpu-required`, an independently supplied assignment with
+`backend: "cuda"`, and version-1 `cuda` construction bounds:
+`program_host_bytes`, `wires`, and `input_values`. The existing `gpu` assignment
+also supplies managed bytes, maximum allocation bytes, context bytes, headroom
+bytes, host-output bytes and UUID. The host-output allowance caps the session
+after protocol, input, allocator, stack and cache reservations. OpenCL rejects
+assignments selecting another backend; its existing assignments remain valid.
+
+CUDA reuses the public worker's actual cgroup, stack, Rayon, allocator, spill and
+private-data admission before GPU initialization. The complete assignment stays
+bound to the unchanged handshake identity. Jobs retain their existing registry
+approval, single-use launch tokens, bounded proof packets and independent CPU
+verification. The worker keeps its CUDA fence through a poisoned session and
+requires exclusive, drained runtime ownership before reporting clean shutdown.
+The coordinator still requires observed process exit before releasing resources.
+Separate global initialize/drain/shutdown exports remain unavailable for CUDA;
+device ownership is confined to this complete service call.
+
+The pinned twelve-key mixed fixture runs two pair wrappers, a merge and finalizer
+through a real supervised process and inherited socket. The Rust test caller
+invokes the existing native ABI; a separately linked C caller is not qualified by
+this test. All four outputs pass independent coordinator verification and reject
+changed statements. The root also passes the archived CPU executable, which
+rejects changed proof bytes and expected statements. No CPU witness-oracle calls
+occur. All 81 host checks, 77 CPU release regressions and six CUDA lifecycle tests
+pass; OpenCL and Apple Metal build checks pass. Peak managed device storage is
+7,450,300,432 bytes and worker cgroup memory peaks at 1,260,298,240 bytes within the
+unchanged 3 GiB, zero-swap limit. All device allocations, modules, commands and
+public-program charges reach zero before shutdown succeeds. The 843 source and
+header pins are checked against the staged Git contents before committing.
+
+This qualifies explicit native recursive service routing. Public wallet routing,
+CLI/pool backend inventory, CUDA failure/recovery qualification, multi-device
+concurrency, broader transaction counts, V100 execution and matched performance
+comparisons remain outstanding. Qualification durations are not benchmark rates.
 
 ## Implementation sequence
 

@@ -33,6 +33,13 @@ impl Prepared {
             );
         }
         let admission = Admission::from_env().map_err(|e| e.to_string())?;
+        if admission
+            .assignment()
+            .get("backend")
+            .is_some_and(|v| v.as_str() != Some("opencl"))
+        {
+            return Err("OpenCL public worker received a different backend assignment".into());
+        }
         gpu_startup::preflight()?;
         Ok(Self { request, admission })
     }

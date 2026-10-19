@@ -18,6 +18,13 @@ use std::path::PathBuf;
 pub const MAX_BOOTSTRAP_BYTES: usize = crate::native_gpu::PUBLIC_WORKER_BOOTSTRAP_MAX_BYTES;
 const VERSION: u32 = 1;
 
+#[cfg(feature = "gpu-cuda")]
+#[path = "native_worker_cuda.rs"]
+mod cuda;
+
+#[cfg(feature = "gpu-cuda")]
+pub(crate) use cuda::serve;
+
 #[path = "native_worker_decode.rs"]
 mod decode;
 
@@ -36,7 +43,7 @@ pub struct Bootstrap {
     policy_context: Vec<u8>,
 }
 
-#[cfg(any(test, feature = "gpu"))]
+#[cfg(any(test, feature = "gpu", feature = "gpu-cuda"))]
 struct WorkerBootstrap {
     config: Config,
     policy: PolicyContext,
@@ -117,7 +124,7 @@ impl Bootstrap {
 
     // The independently checked assignment must cover decoding before the
     // bootstrap can allocate. Registry approval still happens in into_worker.
-    #[cfg(any(test, feature = "gpu"))]
+    #[cfg(any(test, feature = "gpu", feature = "gpu-cuda"))]
     fn parse_for_worker(bytes: &[u8], assignment: &serde_json::Value) -> Result<Self, Error> {
         decode::admit(assignment)?;
         Self::parse_fields(bytes)
@@ -193,7 +200,7 @@ impl Bootstrap {
         Ok((config, policy))
     }
 
-    #[cfg(any(test, feature = "gpu"))]
+    #[cfg(any(test, feature = "gpu", feature = "gpu-cuda"))]
     fn into_worker(self, assignment: &serde_json::Value) -> Result<WorkerBootstrap, Error> {
         let (peak, _) = super::worker_budget::resources(assignment)?;
         super::worker::typed::storage::admit_startup(peak.ram_bytes, peak.threads)?;
@@ -357,7 +364,7 @@ pub fn serve_owned(
 
 /// Duplicate a connected Unix stream without consuming the caller's descriptor.
 /// A regular file, pipe, listener or non-Unix socket rejects before GPU setup.
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "gpu", feature = "gpu-cuda"))]
 pub(crate) fn duplicate_socket(
     fd: std::os::fd::RawFd,
 ) -> Result<std::os::unix::net::UnixStream, Error> {

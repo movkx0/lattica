@@ -35,7 +35,7 @@ pub(super) fn layout() -> Result<(), Error> {
     Ok(())
 }
 
-#[cfg(any(test, feature = "gpu"))]
+#[cfg(any(test, feature = "gpu", feature = "gpu-cuda"))]
 pub(super) fn admit(assignment: &serde_json::Value) -> Result<(), Error> {
     layout()?;
     let (peak, _) = execution::worker_budget::resources(assignment)?;

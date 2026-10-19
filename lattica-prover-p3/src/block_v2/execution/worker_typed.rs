@@ -50,6 +50,9 @@ pub struct TypedWorker {
     resources: Resources,
     request_resources: Resources,
     session: Option<Session<12>>,
+    // Retain the fence even when a failed proving call poisons the session.
+    #[cfg(feature = "gpu-cuda")]
+    cuda: Option<crate::cuda_compute::Runtime>,
 }
 
 impl TypedWorker {
@@ -83,6 +86,39 @@ impl TypedWorker {
             resources,
             request_resources: resources,
             session: Some(session),
+            #[cfg(feature = "gpu-cuda")]
+            cuda: None,
+        })
+    }
+
+    #[cfg(feature = "gpu-cuda")]
+    fn from_checked_cuda(
+        registry: crate::block_v2::typed_recursive::CheckedRegistry,
+        pin: RegistryPin,
+        resources: Resources,
+        runtime: &crate::cuda_compute::Runtime,
+        limits: crate::block_v2::typed_recursive::CudaLimits,
+        host_output_bytes: u64,
+    ) -> Result<Self, Error> {
+        resources.validate_capacity()?;
+        storage::admit_startup(resources.ram_bytes, resources.threads)?;
+        pin.check_typed_approved(&registry.as_ref())?;
+        if resources.vram_bytes != runtime.limits().managed_bytes as u64 {
+            return Err("CUDA worker device allowance differs from assignment".into());
+        }
+        let session = Session::from_checked_cuda(
+            registry,
+            storage::session_memory_bytes(resources.ram_bytes, resources.threads)?
+                .min(host_output_bytes),
+            runtime,
+            limits,
+        )?;
+        Ok(Self {
+            pin,
+            resources,
+            request_resources: resources,
+            session: Some(session),
+            cuda: Some(runtime.clone()),
         })
     }
 
@@ -95,6 +131,10 @@ impl TypedWorker {
     }
 
     fn drain(&self) -> Result<(), Error> {
+        #[cfg(feature = "gpu-cuda")]
+        if let Some(runtime) = &self.cuda {
+            return runtime.finish().map_err(Into::into);
+        }
         drain_backend(self.resources)
     }
 
@@ -291,6 +331,10 @@ impl TypedWorker {
     /// Drops retained preprocessing. This does not establish GPU/OS termination.
     pub fn close(&mut self) {
         self.session = None;
+        #[cfg(feature = "gpu-cuda")]
+        {
+            self.cuda = None;
+        }
     }
 }
 

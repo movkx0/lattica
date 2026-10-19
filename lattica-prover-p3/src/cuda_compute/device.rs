@@ -165,6 +165,9 @@ impl Runtime {
     pub(crate) fn snapshot(&self) -> Snapshot {
         self.state.budget.snapshot()
     }
+    pub(crate) fn limits(&self) -> Limits {
+        self.state.budget.limits
+    }
     pub(crate) fn finish(&self) -> Result<()> {
         let _guard = self.state.enter()?;
         self.state.stream.synchronize().map_err(|e| {
@@ -172,6 +175,26 @@ impl Runtime {
             error(e)
         })?;
         self.state.context.check_err().map_err(error)
+    }
+
+    /// Retire a worker's sole runtime only after every session, module, buffer
+    /// and command owner has gone. Process/cgroup exit is still required before
+    /// the coordinator may release its physical workspace reservation.
+    pub(crate) fn retire(self) -> Result<Snapshot> {
+        self.finish()?;
+        let snapshot = self.snapshot();
+        if Arc::strong_count(&self.state) != 1
+            || snapshot.live_bytes != 0
+            || snapshot.allocations != 0
+            || snapshot.modules != 0
+            || snapshot.pending_commands != 0
+            || snapshot.public_program_bytes != 0
+            || snapshot.public_programs != 0
+        {
+            return Err("CUDA worker still has retained device owners".into());
+        }
+        drop(self);
+        Ok(snapshot)
     }
 }
 
