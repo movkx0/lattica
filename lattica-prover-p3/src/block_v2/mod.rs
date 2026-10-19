@@ -31,6 +31,8 @@ pub mod host;
 pub mod leaf;
 #[cfg(feature = "gpu")]
 pub(crate) mod legacy_wallet;
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
+pub(crate) mod lookup_program;
 pub mod machine;
 #[cfg(feature = "gpu")]
 pub(crate) mod native_gpu;

@@ -11,6 +11,8 @@ mod fri;
 #[cfg(feature = "block-v2")]
 mod hiding;
 mod kernel;
+#[cfg(feature = "block-v2")]
+mod lookup;
 mod matrix;
 mod opening;
 #[cfg(feature = "block-v2")]
@@ -44,6 +46,8 @@ pub(crate) use hiding::{
     TraceHidingInput,
 };
 pub(crate) use kernel::{Argument, Completion, Kernel, Launch, Module};
+#[cfg(feature = "block-v2")]
+pub(crate) use lookup::{LookupWitness, Lookups, PreparedLookup};
 pub(crate) use matrix::Matrix;
 pub(crate) use opening::{DeviceOpening, OpeningAccumulator, Openings};
 #[cfg(feature = "block-v2")]

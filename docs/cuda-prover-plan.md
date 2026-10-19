@@ -27,6 +27,12 @@ Native scalar kernels derive challenge powers, lookup bus prefixes/pairs,
 next-row points and coset shifts. The CUDA lookup adapter samples alpha/beta
 directly into device storage, then derives per-instance challenge pairs without
 host readback. It shares the bounded bus mapping and domain metadata with OpenCL.
+Native LogUp witness generation now consumes those resident challenge pairs,
+main/preprocessed traces and public values. Expression evaluation, denominator
+inversion, fractions and hierarchical prefix scans run on CUDA; the permutation
+trace and terminal sum stay resident. Only an eight-byte validity status is
+read back. The lookup compiler, integer kernels and memory planner are shared
+with OpenCL.
 Native ChaCha20 sampling now imports a seed and cursor, generates ordered
 Goldilocks samples on CUDA, and supplies fresh salt matrices to commitments.
 It shares byte admission with OpenCL. An explicit proof RNG adapter retires
@@ -677,6 +683,28 @@ measurements on the Ryzen 9 9950X3D2 and desktop RTX 5080. Existing compiler and
 driver caches were retained, desktop GPU clients were present, and public
 preparation took 342 ms separately from the repeated requests. The comparison
 does not establish recursive aggregation or complete-block throughput.
+
+[Native LogUp witnesses](evidence/cuda-lookup-2026-10-19.json) add bounded
+quadratic and cubic lookup generation. The prepared program belongs to its
+runtime and charges retained vector capacities to the existing public-program
+allowance. Generation admits the output, scan levels, terminal and tile scratch
+before private work. Resident public values and challenges are counted once;
+OpenCL retains its existing uploaded-input accounting.
+
+CPU differential tests cover both physical row orders, current/next rows,
+preprocessing, public values, signed multiplicities, empty entries and heights
+through 32,768. Partial-block inversion and scan tests check suffix and parent
+guards. Active zero denominators reject; zero multiplicity bypasses inversion.
+A resident transcript-to-lookup-to-transcript test checks the next challenge
+against the unchanged CPU reference, with complete component-stage receipts
+and no intermediate polynomial readback. This is a prerequisite component for
+recursive proving; it does not implement recursive batch-STARK orchestration.
+
+All 53 qualification checks passed: 162 native tests, 161 under each CUDA
+sanitizer, 92 streaming tests, the OpenCL lookup comparisons and planner checks,
+CPU/OpenCL/standalone-CUDA checks and Metal cross-compilation. All 802 source
+pins match the staged Git blobs. The exact test and release executables are
+retained with the ignored raw evidence. V100 execution remains untested.
 
 Public request routing, batch wallet traces, recursive batch/lookup orchestration,
 whole-request admission and worker/pool integration remain unfinished. The new

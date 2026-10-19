@@ -2,7 +2,10 @@
 //! inversion, fraction columns, and a hierarchical exclusive prefix scan.
 
 use super::*;
-use crate::block_v2::gpu_quotient_prover::lookup_program::LookupProgram;
+use crate::block_v2::lookup_program::{
+    plan::{InputStorage, Plan},
+    LookupProgram,
+};
 
 pub(crate) struct PreparedLookup {
     program: Arc<LookupProgram>,
@@ -10,14 +13,6 @@ pub(crate) struct PreparedLookup {
     tuples: Allocation,
     boundaries: Allocation,
     context: Arc<JobLease>,
-}
-
-struct Plan {
-    rows: usize,
-    parameters: [usize; 3],
-    tile: [usize; 4],
-    scan_rows: Vec<usize>,
-    peak: usize,
 }
 
 #[cfg(test)]
@@ -59,7 +54,16 @@ mod tests {
                 (15, vec![32768, 256, 2]),
             ] {
                 let spec = MatrixSpec::new(log, 2, extension, RowOrder::Natural, 1).unwrap();
-                let plan = Plan::new(&program, spec, 4096, limits, 32 << 20).unwrap();
+                let plan = Plan::new(
+                    &program,
+                    spec,
+                    4096,
+                    limits.managed_bytes,
+                    limits.tile_bytes,
+                    InputStorage::Uploaded,
+                    32 << 20,
+                )
+                .unwrap();
                 assert_eq!(plan.scan_rows, levels);
                 assert!(
                     plan.rows.is_power_of_two() && plan.rows <= 1024 && plan.rows <= spec.rows()
@@ -74,88 +78,32 @@ mod tests {
                             * 8
                 );
                 assert!(plan.peak <= limits.managed_bytes);
-                assert!(Plan::new(&program, spec, 0, limits, spec.bytes() - 1).is_err());
+                assert!(Plan::new(
+                    &program,
+                    spec,
+                    0,
+                    limits.managed_bytes,
+                    limits.tile_bytes,
+                    InputStorage::Uploaded,
+                    spec.bytes() - 1
+                )
+                .is_err());
                 let insufficient = super::super::super::Limits {
                     managed_bytes: plan.peak - plan.tile.iter().sum::<usize>() * 8,
                     ..limits
                 };
-                assert!(Plan::new(&program, spec, 4096, insufficient, 32 << 20).is_err());
+                assert!(Plan::new(
+                    &program,
+                    spec,
+                    4096,
+                    insufficient.managed_bytes,
+                    insufficient.tile_bytes,
+                    InputStorage::Uploaded,
+                    32 << 20
+                )
+                .is_err());
             }
         }
-    }
-}
-
-impl Plan {
-    fn new(
-        program: &LookupProgram,
-        output: MatrixSpec,
-        live: usize,
-        limits: super::super::Limits,
-        max_alloc: usize,
-    ) -> Result<Self, String> {
-        let degree = output.extension.degree();
-        if !matches!(output.extension, Extension::Quadratic | Extension::Cubic) {
-            return Err("lookup output requires a quadratic or cubic extension".into());
-        }
-        let height = output.rows();
-        let parameters = [
-            program.layout.num_public_values.max(1),
-            program.lookup_count() * 2 * degree,
-            1,
-        ];
-        let mut scan_rows = vec![height];
-        while *scan_rows.last().unwrap() > 128 {
-            scan_rows.push(scan_rows.last().unwrap().div_ceil(128));
-        }
-        let mut static_words = vec![output.words(), degree]; // Full trace plus terminal.
-        static_words.extend(parameters);
-        static_words.extend(scan_rows.iter().map(|rows| rows * degree));
-        let mut peak = live;
-        for words in static_words {
-            let bytes = words
-                .checked_mul(8)
-                .ok_or("lookup allocation size overflow")?;
-            if bytes > max_alloc {
-                return Err("lookup allocation exceeds device limit".into());
-            }
-            peak = peak
-                .checked_add(bytes)
-                .ok_or("lookup memory plan overflow")?;
-        }
-        let per_row = program
-            .row_words
-            .max(1)
-            .checked_add(program.registers.max(1))
-            .and_then(|n| n.checked_add(program.expression_words.max(1)))
-            .and_then(|n| n.checked_add((program.tuple_count() * degree).max(1)))
-            .and_then(|n| n.checked_mul(8))
-            .ok_or("lookup row workspace overflow")?;
-        let free = limits
-            .managed_bytes
-            .checked_sub(peak)
-            .ok_or("lookup exceeds aggregate GPU budget")?;
-        let capacity = (free.min(limits.tile_bytes).min(max_alloc).min(64 << 20) / per_row)
-            .min(height)
-            .min(1024);
-        if capacity == 0 {
-            return Err("lookup budget cannot fit one row".into());
-        }
-        let rows = 1usize << capacity.ilog2();
-        let tile = [
-            program.row_words,
-            program.registers,
-            program.expression_words,
-            program.tuple_count() * degree,
-        ]
-        .map(|words| (words * rows).max(1));
-        peak += tile.iter().sum::<usize>() * 8;
-        Ok(Self {
-            rows,
-            parameters,
-            tile,
-            scan_rows,
-            peak,
-        })
     }
 }
 
@@ -282,7 +230,7 @@ impl DeviceSession {
             engine.fence().finish()?;
             engine.lde_workspace = None;
             let plan = Plan::new(program, spec, engine.accounting.lock().unwrap().live,
-                engine.limits, engine.max_alloc)?;
+                engine.limits.managed_bytes, engine.limits.tile_bytes, InputStorage::Uploaded, engine.max_alloc)?;
             let output = self.allocate(engine, spec)?;
             let alloc = |words| allocation(&engine.pq, &engine.accounting, engine.limits, engine.max_alloc,
                 words, compute::flags::MEM_READ_WRITE);
