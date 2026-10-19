@@ -1,5 +1,37 @@
 mod benchmark;
 mod opening;
+
+#[test]
+#[ignore = "requires CUDA; serial bounded service"]
+fn cuda_randomization_commitment_failures_retire_samples_and_salts() {
+    let runtime = runtime(32 << 20, 8 << 20);
+    let hiding = Hiding::new(&runtime).unwrap();
+    let commitments = Commitments::new(&runtime).unwrap();
+    let randoms = Randoms::new(&runtime).unwrap();
+    for fault in [Fault::AfterTile, Fault::PanicAfterTile] {
+        let private = randoms.import(rng(31)).unwrap();
+        let salts = randoms.import(rng(71)).unwrap();
+        let prepared = hiding
+            .prepare_randomization(4, 13, Extension::Cubic, &private, 8, 2)
+            .unwrap();
+        let inputs = [HidingInput::Randomization(&prepared)];
+        let before = runtime.snapshot();
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            hiding.commit_batch_impl(&commitments, &inputs, &salts, 6, fault)
+        }));
+        assert!(result.is_err() || result.unwrap().is_err());
+        assert_eq!(runtime.snapshot().live_bytes, before.live_bytes);
+        assert_eq!(runtime.snapshot().allocations, before.allocations);
+        assert!(private.check_live().is_err());
+        assert!(salts.check_live().is_err());
+        let before = runtime.snapshot();
+        assert!(hiding
+            .with_randomization_lde(&prepared, 0, 2, RowOrder::Natural, |_| Ok(()))
+            .is_err());
+        assert_eq!(runtime.snapshot(), before);
+    }
+}
+
 use super::*;
 use crate::{
     config::{self, Challenge, Challenger, Dft, MyCompress, MyHash, MyPcs, Val, ValMmcs},

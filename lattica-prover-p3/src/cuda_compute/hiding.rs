@@ -10,6 +10,7 @@ use crate::{
 };
 mod batch;
 mod plan;
+mod randomization;
 pub(crate) use batch::{
     HiddenCommitment, HiddenOpenings, HidingInput, OpeningShape, RetainedOpening,
 };
@@ -25,6 +26,7 @@ pub(crate) struct Hiding {
     runtime: Runtime,
     transforms: Transforms,
     trace_columns: Kernel,
+    randomization_columns: Kernel,
     quotient_parameters: Kernel,
     quotient_columns: Kernel,
     quotient_coefficients: Kernel,
@@ -38,6 +40,12 @@ pub(crate) struct TraceHidingInput {
     shape: TraceCommitShape,
     plan: TilePlan,
 }
+pub(crate) struct RandomizationInput {
+    samples: Matrix,
+    family: DeviceRandom,
+    plan: TilePlan,
+}
+
 pub(crate) struct QuotientHidingInput {
     quotient: Matrix,
     random: RandomWords,
@@ -63,6 +71,7 @@ impl Hiding {
             runtime: runtime.clone(),
             transforms: Transforms::new(runtime)?,
             trace_columns: module.kernel("hiding_trace_columns")?,
+            randomization_columns: module.kernel("hiding_randomization_columns")?,
             quotient_parameters: module.kernel("hiding_quotient_parameters")?,
             quotient_columns: module.kernel("hiding_quotient_columns")?,
             quotient_coefficients: module.kernel("hiding_quotient_coefficients")?,
@@ -70,6 +79,7 @@ impl Hiding {
         };
         for kernel in [
             &result.trace_columns,
+            &result.randomization_columns,
             &result.quotient_parameters,
             &result.quotient_columns,
             &result.quotient_coefficients,

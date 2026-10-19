@@ -44,8 +44,10 @@ and final-polynomial extraction are implemented. Native FRI protocol orchestrati
 now generates authenticated proofs accepted by the unchanged CPU FRI verifier.
 The native hiding PCS opening wrapper evaluates each matrix once, observes
 resident claims before sampling alpha, reduces them on CUDA, and returns the
-existing public/masking opening and authenticated FRI proof format. The remaining
-PCS commitment operations and integration into complete proving remain outstanding.
+existing public/masking opening and authenticated FRI proof format. Native
+randomization-polynomial commitments sample their original rows and masking
+columns directly, preserving the upstream polynomial degree. Integration of
+these PCS operations into complete proving remains outstanding.
 Commitment fragments preserve padding-free absorption across column boundaries;
 fresh salts remain explicit caller inputs. Merkle nodes stay on the GPU, with bounded cap and
 path reads that preserve query order and duplicates. Matrix geometry, immutable
@@ -533,6 +535,34 @@ PCS/backend wiring, execution receipts and worker integration still need
 implementation. It does not qualify full wallet/recursive STARK proving or
 establish transaction throughput. CUDA execution remains qualified only on the
 desktop RTX 5080.
+
+The [randomization commitment qualification](evidence/cuda-randomization-2026-10-18.json)
+adds the separate STARK randomization-polynomial commitment. Native ChaCha20
+produces `extension degree + 4` base-field columns on the requested input coset.
+Bounded column tiles interpolate those evaluations and extend them to the
+commitment coset without trace row interleaving or another hiding draw. The
+existing streamed commitment path retains the original-degree prefix, Merkle
+nodes and salt recipes. The source randomness and commitment salts participate
+in the same failure retirement guards as trace and quotient commitments.
+
+Direct comparisons cover quadratic and cubic profiles, three input heights,
+coset shifts 1, 7 and 13, partial column tiles, and continued RNG/salt cursors
+across successive batches. Tiles and caps match the unchanged CPU PCS. Resource
+and geometry rejection preserve the RNG cursor; errors and unwinds release
+scratch and retire affected source/salt families. The six complete PCS opening
+tests now use actual randomization polynomials in round zero, alongside trace,
+quotient and preprocessing commitments. Production-parameter proofs still pass
+CPU verification, and all four deterministic zero-PoW proofs match upstream
+encoding. All 41 checks passed: 129 native tests, 128 under each sanitizer,
+38 tests with `stream`, and existing cross-backend checks. All 776 source files
+match the staged source.
+
+Complete STARK orchestration, remaining witness/public/lookup operations,
+execution receipts, backend selection and worker/pool integration remain
+unfinished. In particular, the complete prover must preserve the upstream
+trace, quotient and randomization commitment/transcript order; the PCS fixtures
+alone do not establish that integration. No end-to-end CUDA performance or
+transaction-throughput result is claimed.
 
 ## Implementation sequence
 

@@ -24,17 +24,20 @@ enum Fault {
 /// accidentally omit the balancing final chunk through this interface.
 pub(crate) enum HidingInput<'a> {
     Trace(&'a TraceHidingInput),
+    Randomization(&'a RandomizationInput),
     Quotient(&'a QuotientHidingInput),
 }
 #[derive(Clone, Copy)]
 enum Source<'a> {
     Trace(&'a TraceHidingInput),
+    Randomization(&'a RandomizationInput),
     Quotient(&'a QuotientHidingInput, usize),
 }
 impl Source<'_> {
     fn plan(self) -> TilePlan {
         match self {
             Self::Trace(p) => p.plan,
+            Self::Randomization(p) => p.plan,
             Self::Quotient(p, _) => p.plan,
         }
     }
@@ -44,6 +47,7 @@ impl Source<'_> {
     fn random_columns(self) -> usize {
         match self {
             Self::Trace(p) => p.shape.random_columns,
+            Self::Randomization(_) => crate::config::NUM_RANDOM_CODEWORDS,
             Self::Quotient(p, _) => p.shape.random_columns,
         }
     }
@@ -183,7 +187,7 @@ impl Hiding {
         let count = inputs.iter().try_fold(0usize, |total, input| {
             total
                 .checked_add(match input {
-                    HidingInput::Trace(_) => 1,
+                    HidingInput::Trace(_) | HidingInput::Randomization(_) => 1,
                     HidingInput::Quotient(p) => p.shape.chunks,
                 })
                 .filter(|&n| n <= MAX_INPUTS)
@@ -200,6 +204,12 @@ impl Hiding {
                         families.push(family.clone());
                     }
                     sources.push(Source::Trace(p));
+                }
+                HidingInput::Randomization(p) => {
+                    self.transforms.check_owner(&p.samples)?;
+                    p.family.check_runtime(&self.runtime)?;
+                    families.push(p.family.clone());
+                    sources.push(Source::Randomization(p));
                 }
                 HidingInput::Quotient(p) => {
                     self.transforms.check_owner(&p.quotient)?;
@@ -285,6 +295,13 @@ impl Hiding {
                     Source::Trace(input) => {
                         self.with_trace_lde(input, first, columns, RowOrder::BitReversed, consume)?
                     }
+                    Source::Randomization(input) => self.with_randomization_lde(
+                        input,
+                        first,
+                        columns,
+                        RowOrder::BitReversed,
+                        consume,
+                    )?,
                     Source::Quotient(input, chunk) => self.with_quotient_lde(
                         input,
                         chunk,

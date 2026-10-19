@@ -127,7 +127,28 @@ fn fixture<F: FriField + TwoAdicField>(
     let mut cpu_data = Vec::new();
     let mut caps = Vec::new();
     for batch in 0..4 {
-        let (native, cap, expected) = if batch == 2 {
+        let (native, cap, expected) = if batch == 0 {
+            let mut prepared = Vec::new();
+            let mut domains = Vec::new();
+            for log in [3, 5] {
+                prepared.push(
+                    hiding
+                        .prepare_randomization(log, 1, F::EXTENSION, &private, log + 4, 2)
+                        .unwrap(),
+                );
+                domains.push(Domain::new(Val::ONE, log as usize).unwrap());
+            }
+            let inputs: Vec<_> = prepared.iter().map(HidingInput::Randomization).collect();
+            let native = hiding
+                .commit_batch(&commitments, &inputs, &input_salts, 6)
+                .unwrap();
+            let (cap, data) =
+                <Cpu<F> as Pcs<F, Challenger>>::get_opt_randomization_poly_commitment(
+                    &cpu, domains,
+                )
+                .unwrap();
+            (native, cap, data)
+        } else if batch == 2 {
             let (quotient, cpu_quotient) = upload(runtime, 5, 1, F::EXTENSION, 13);
             let prepared = hiding
                 .prepare_quotient(&quotient, 4, &private, 8, 2)
@@ -153,7 +174,6 @@ fn fixture<F: FriField + TwoAdicField>(
             (native, cap, data)
         } else {
             let shapes = match batch {
-                0 => vec![(2, 1, Extension::Base), (4, 2, F::EXTENSION)],
                 1 => vec![(3, 3, F::EXTENSION)],
                 _ => vec![(2, 2, Extension::Base)],
             };

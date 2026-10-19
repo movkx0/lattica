@@ -75,3 +75,12 @@ extern "C" __global__ void hiding_quotient_coefficients(const u64 *coefficients,
     output[i] = gl_canon(gl_sub(scaled, hidden));
     output[elements + i] = gl_canon(gl_mul(parameters[3 * chunk + 2], hidden));
 }
+
+// Direct randomization polynomials already include their masking columns.
+// Copy the selected natural-order columns without changing their row layout.
+extern "C" __global__ void hiding_randomization_columns(const u64 *samples,
+    u64 *output, u32 rows, u32 width, u32 first, u32 columns) {
+    const u64 i = (u64)blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= (u64)rows * columns) return;
+    output[i] = gl_canon(samples[(i / columns) * width + first + i % columns]);
+}
