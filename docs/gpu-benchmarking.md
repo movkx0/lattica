@@ -7,6 +7,7 @@ Use a clean checkout of `main`, then pin one commit for the entire comparison. R
 | Hardware | Workflow | Current boundary |
 |---|---|---|
 | NVIDIA on Linux | OpenCL plus the typed systemd controllers below | Requires `nvidia-smi`, OpenCL inventory, cgroups, and a systemd user session. |
+| NVIDIA on Linux, native CUDA | [CUDA implementation and qualification](cuda-prover-plan.md) | Opt-in CUDA workers and private wallet assignments; RTX 5080 qualification does not qualify other devices or pool concurrency. |
 | V100 in a bounded Linux container | [Four-input specialized-kernel and power harness](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt) | Research screen using an existing 56..64 GiB, zero-swap cgroup and sampled watchdogs; separate from the typed systemd runner. |
 | Apple Silicon | [Native Metal recipe](../lattica-prover-p3/scripts/apple-current-benchmark-README.txt) | Run correctness qualification on the Mac before timing. Its eight-input screen differs from the Linux typed workload. |
 | AMD or Intel OpenCL | Backend development | The Linux admission controller currently joins NVIDIA UUIDs to OpenCL devices. Portable inventory/admission and device qualification are still needed. |
@@ -93,6 +94,15 @@ The V100 [four-input specialized-kernel comparison](../lattica-prover-p3/scripts
 A separate V100 power repeat took 57.503 seconds for aggregation. The full worker, including initialization and shutdown, used 1.723706 Wh over 58.051 seconds: 106.895 W average and 207.022 W sampled peak, against a 26.460 W idle baseline. Energy came from the NVML hardware counter; board power was sampled every 100 ms. CPU/system power, wallet proving and full-block finalization are excluded. The harness retains raw telemetry, audit logs and source/binary hashes in each run's local evidence directory.
 
 ## Report the same timing boundary
+
+The [native CUDA wallet benchmark at `6fc3570`](evidence/cuda-wallet-batch-routing-benchmark-2026-10-19.json)
+measured eight-entry JoinSplit and HTLC batches at 0.335 and 0.597 seconds median
+on the RTX 5080, using a persistent private CUDA context. It includes C ABI
+admission, witness decoding, proving, serialization and output copies; setup and
+independent CPU audits are outside timing. All 44 saved outputs passed those
+audits and tamper checks. These wallet batch and legacy tree measurements
+exclude recursive aggregation and complete transaction processing, so compare
+them only with the same workload and timing boundary.
 
 The [RTX 5080 four-entry comparison at `bce8830`](evidence/gpu-tuning-rtx5080-2026-10-18.json)
 completed 56 trials: a warmup for each selection and five alternating pairs per

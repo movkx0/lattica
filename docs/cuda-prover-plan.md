@@ -1333,6 +1333,20 @@ OpenCL checks, CUDA without streaming, Apple Metal cross-compilation and the
 production CUDA library/CLI build passed. These are correctness checks, not
 throughput measurements; Metal and V100 execution were not tested.
 
+The [post-push benchmark at `6fc3570`](evidence/cuda-wallet-batch-routing-benchmark-2026-10-19.json)
+measures the production C ABI in one persistent CUDA context, with one warmup
+and three measurements per case. Eight-entry JoinSplit and HTLC batches took
+0.335 and 0.597 seconds median; three-leaf legacy trees took about 0.276 seconds.
+These intervals include admission, witness decoding, proving, serialization and
+caller output copies. Context startup/shutdown, caller buffer preparation,
+artifact writes and independent CPU audits are excluded. All 44 outputs passed
+the CPU-only auditor and tamper checks; all 60 STARK and 12 tree-root reports
+completed their required CUDA stages. Managed GPU memory peaked at
+1,664,976,672 bytes and host RAM at 298,131,456 bytes; all services and CUDA
+owners retired. These wallet measurements exclude recursive aggregation and
+network/block processing, and do not establish sustained transaction throughput
+or a speedup over CPU/OpenCL.
+
 Full 64-entry batch proofs, larger tree containers, complete host/node workflows,
 timing-approved pools, concurrency and multi-GPU qualification, V100 execution,
 and matched CPU/OpenCL performance comparisons remain outstanding. Earlier
