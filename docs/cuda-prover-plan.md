@@ -1347,10 +1347,27 @@ owners retired. These wallet measurements exclude recursive aggregation and
 network/block processing, and do not establish sustained transaction throughput
 or a speedup over CPU/OpenCL.
 
-Full 64-entry batch proofs, larger tree containers, complete host/node workflows,
-timing-approved pools, concurrency and multi-GPU qualification, V100 execution,
-and matched CPU/OpenCL performance comparisons remain outstanding. Earlier
-1,024-statement tree-root arithmetic tests do not qualify containers of that size.
+The [larger wallet qualification at `0b135b7`](evidence/cuda-wallet-capacity-2026-10-19.json)
+adds 16-, 32-, 63- and 64-entry JoinSplit/HTLC batches and 64-leaf legacy
+containers through the production C ABI. The 63-entry case exercises padding to
+the maximum 64-tile shape. Across two suites, all 88 outputs passed independent
+CPU verification and tamper checks; 608 STARK reports and 24 tree-root reports
+completed their required CUDA stages. Every service and CUDA owner retired.
+The managed GPU allowance stayed at 7 GiB with a 1 GiB per-allocation ceiling;
+the larger suite peaked at 5,356,793,392 managed bytes. No crate source or proof
+parameters changed for these runs.
+
+With one warmup and three measurements per case, 64-entry JoinSplit and HTLC
+batches took 2.529 and 4.671 seconds median. The two repeated 64-leaf container
+cases took 6.172 and 6.076 seconds median. Timing has the same C ABI boundary as
+the smaller wallet benchmark above. These results qualify those wallet shapes;
+they do not qualify full recursive blocks or establish an optimal batch size.
+
+Full 64-entry and 128-entry recursive block workloads, legacy containers beyond
+64 leaves, complete host/node workflows, timing-approved pools, concurrency and
+multi-GPU qualification, V100 execution, and matched CPU/OpenCL performance
+comparisons remain outstanding. Earlier 1,024-statement tree-root arithmetic
+tests do not qualify containers of that size.
 
 ## Implementation sequence
 

@@ -1,0 +1,1132 @@
+{
+  "schema": "lattica-cuda-wallet-capacity-qualification-v1",
+  "date": "2026-10-19",
+  "status": "passed",
+  "source_commit": "0b135b75f144ef84f3bc5e2cadbfcd8f6a305ed8",
+  "source_qualification": "docs/evidence/cuda-wallet-batch-routing-2026-10-19.json",
+  "source_pins_verified": 852,
+  "source_unchanged": true,
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 5080",
+    "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "driver": "615.78.08"
+  },
+  "boundary": "One persistent private CUDA context. Each timer includes production C ABI admission, witness decoding, proving, serialization and caller output copies. Caller input/output preparation, context startup/shutdown, artifact writes and independent CPU verification are excluded. The matching public batch shape is warmed before measured trials.",
+  "warmups_per_case": 1,
+  "trials_per_case": 3,
+  "case_order": "Each suite uses a fresh process. Fixed case order, one warmup then three measurements per case; public batch kind/padded height may evict the previous cached shape.",
+  "qualified_new_batch_counts": [
+    16,
+    32,
+    63,
+    64
+  ],
+  "qualified_new_legacy_tree_counts": [
+    64
+  ],
+  "resources": {
+    "host_limit_bytes": 3221225472,
+    "host_output_limit_bytes": 536870912,
+    "managed_gpu_limit_bytes": 7516192768,
+    "max_gpu_allocation_bytes": 1073741824,
+    "context_gpu_reserve_bytes": 4294967296,
+    "gpu_headroom_bytes": 1073741824,
+    "rayon_threads": 4,
+    "cpu_quota_percent": 400,
+    "swap_limit_bytes": 0,
+    "stack_limit_bytes": 8388608,
+    "tasks_max": 96,
+    "shared_fleet_settings_changed": false,
+    "cgroup_observation_boundary": "Last live sample; final exited cgroups were already removed. Successful exit, memory peaks and inactive service state were recorded."
+  },
+  "aggregate": {
+    "saved_outputs": 88,
+    "independent_cpu_accepted": 88,
+    "altered_statements_rejected": 88,
+    "altered_proofs_rejected": 88,
+    "altered_counts_rejected": 24,
+    "altered_leaf_orders_rejected": 16,
+    "distinct_proof_hashes": 88,
+    "complete_cuda_stark_reports": 608,
+    "complete_cuda_tree_root_reports": 24,
+    "failed_reports": 0,
+    "retired_services": 10
+  },
+  "driver_build": {
+    "compiler": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "flags": [
+      "--edition=2021",
+      "-C",
+      "opt-level=3",
+      "-C",
+      "target-cpu=x86-64-v3",
+      "-C",
+      "debuginfo=0"
+    ],
+    "extern_rlib": "/home/access/code/lattica/.tools/target-cuda/release/liblattica_prover_p3.rlib",
+    "dependency_directory": "/home/access/code/lattica/.tools/target-cuda/release/deps",
+    "boundary": "Each standalone driver links the previously qualified production rlib without rebuilding or changing crate source."
+  },
+  "runs": [
+    {
+      "name": "capacity-01",
+      "pins": {
+        "commit": "0b135b75f144ef84f3bc5e2cadbfcd8f6a305ed8",
+        "source_manifest_sha256": "d7218dad7aa1cc077eac7f672537a135f8b8e8c4f6de72f2b61916791ec6c433",
+        "images": {
+          "/home/access/code/lattica/.tools/target-cuda/release/liblattica_prover_p3.a": "8515b705cd893c6f06b5b107b17b7ed409d65af1b4105cde30b78d6bfc04ac83",
+          "/home/access/code/lattica/.tools/target-cuda/release/liblattica_prover_p3.rlib": "cfbe477a7c6252b31ad78b9e4b0e5ef27be01abe72c22e5d5041bc795d51a616",
+          "/home/access/code/lattica/.tools/target-cuda/release/block-v2-paired-probe": "221d194a1f990bec2e49437c829df42da292efd97f6863bd1d8ff6fd095f7d2c"
+        },
+        "driver_and_audit": {
+          "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/driver": "a26d2f90e09ac83f2cfa1185967975c9812031d6031e62dc0a19da9b5734b140",
+          "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/driver.rs": "868a81c5b75554e35892f9f9e39887bf04db491460a0d2f77a5b0d8ec360ae0b",
+          "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/run.py": "e23455b5870d73454b1bb5d469e8a6094e13030fe9a69caa66b4899dc535aa40",
+          "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/qualification-01/cpu-tests": "07eda7536eb6523ad6a60521c85767398d384b67ff8745ed352634f8ed546887"
+        }
+      },
+      "resource_assignment": {
+        "schema": "lattica-wallet-local-cuda-v1",
+        "service": "lattica-wallet-cuda-batch-bench-20261019-c01-live.service",
+        "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "host_bytes": 3221225472,
+        "threads": 4,
+        "managed_gpu_bytes": 7516192768,
+        "context_gpu_bytes": 4294967296,
+        "host_output_bytes": 536870912,
+        "cuda": {
+          "max_allocation_bytes": 1073741824,
+          "headroom_bytes": 1073741824
+        }
+      },
+      "cases": [
+        {
+          "index": 0,
+          "kind": 0,
+          "count": 1,
+          "api": "abi",
+          "seconds": [
+            0.099239053,
+            0.099111467,
+            0.099013122
+          ],
+          "median_seconds": 0.099111467,
+          "serial_inputs_per_hour": 36322.739527203245,
+          "kind_name": "joinsplit_batch",
+          "warmup_seconds": 0.135538921,
+          "measured_proof_bytes": [
+            486429,
+            486652,
+            486603
+          ]
+        },
+        {
+          "index": 1,
+          "kind": 0,
+          "count": 3,
+          "api": "abi",
+          "seconds": [
+            0.2001677,
+            0.200360439,
+            0.200422412
+          ],
+          "median_seconds": 0.200360439,
+          "serial_inputs_per_hour": 53902.85654145527,
+          "kind_name": "joinsplit_batch",
+          "warmup_seconds": 0.236117993,
+          "measured_proof_bytes": [
+            539012,
+            538837,
+            538867
+          ]
+        },
+        {
+          "index": 2,
+          "kind": 1,
+          "count": 1,
+          "api": "abi",
+          "seconds": [
+            0.171197943,
+            0.170416029,
+            0.170337776
+          ],
+          "median_seconds": 0.170416029,
+          "serial_inputs_per_hour": 21124.773421401576,
+          "kind_name": "htlc_batch",
+          "warmup_seconds": 0.218287493,
+          "measured_proof_bytes": [
+            658249,
+            658245,
+            658228
+          ]
+        },
+        {
+          "index": 3,
+          "kind": 1,
+          "count": 3,
+          "api": "abi",
+          "seconds": [
+            0.353440842,
+            0.353762467,
+            0.35430591
+          ],
+          "median_seconds": 0.353762467,
+          "serial_inputs_per_hour": 30528.959421803214,
+          "kind_name": "htlc_batch",
+          "warmup_seconds": 0.404093237,
+          "measured_proof_bytes": [
+            710802,
+            710631,
+            710528
+          ]
+        },
+        {
+          "index": 4,
+          "kind": 0,
+          "count": 16,
+          "api": "abi",
+          "seconds": [
+            0.65138729,
+            0.619695935,
+            0.620715922
+          ],
+          "median_seconds": 0.620715922,
+          "serial_inputs_per_hour": 92796.07298360876,
+          "kind_name": "joinsplit_batch",
+          "warmup_seconds": 0.657232204,
+          "measured_proof_bytes": [
+            604543,
+            604698,
+            604290
+          ]
+        },
+        {
+          "index": 5,
+          "kind": 1,
+          "count": 16,
+          "api": "abi",
+          "seconds": [
+            1.121968335,
+            1.119643969,
+            1.1208914110000001
+          ],
+          "median_seconds": 1.1208914110000001,
+          "serial_inputs_per_hour": 51387.67184290611,
+          "kind_name": "htlc_batch",
+          "warmup_seconds": 1.166436315,
+          "measured_proof_bytes": [
+            776134,
+            775998,
+            776008
+          ]
+        },
+        {
+          "index": 6,
+          "kind": 0,
+          "count": 32,
+          "api": "abi",
+          "seconds": [
+            1.1990503000000001,
+            1.253925734,
+            1.2018336569999999
+          ],
+          "median_seconds": 1.2018336569999999,
+          "serial_inputs_per_hour": 95853.53125120544,
+          "kind_name": "joinsplit_batch",
+          "warmup_seconds": 1.241035293,
+          "measured_proof_bytes": [
+            630967,
+            631116,
+            631197
+          ]
+        },
+        {
+          "index": 7,
+          "kind": 1,
+          "count": 32,
+          "api": "abi",
+          "seconds": [
+            2.19490594,
+            2.192594994,
+            2.1973907
+          ],
+          "median_seconds": 2.19490594,
+          "serial_inputs_per_hour": 52485.16480847466,
+          "kind_name": "htlc_batch",
+          "warmup_seconds": 2.244030978,
+          "measured_proof_bytes": [
+            802910,
+            802845,
+            802758
+          ]
+        },
+        {
+          "index": 8,
+          "kind": 2,
+          "count": 1,
+          "api": "abi",
+          "seconds": [
+            0.093548176,
+            0.094270558,
+            0.093680102
+          ],
+          "median_seconds": 0.093680102,
+          "serial_inputs_per_hour": 38428.65158280891,
+          "kind_name": "joinsplit_legacy_tree",
+          "warmup_seconds": 0.093750854,
+          "measured_proof_bytes": [
+            458520,
+            458230,
+            458208
+          ]
+        },
+        {
+          "index": 9,
+          "kind": 2,
+          "count": 64,
+          "api": "abi",
+          "seconds": [
+            6.087914479,
+            6.171509296,
+            6.342297114
+          ],
+          "median_seconds": 6.171509296,
+          "serial_inputs_per_hour": 37332.84500589368,
+          "kind_name": "joinsplit_legacy_tree",
+          "warmup_seconds": 6.243989279,
+          "measured_proof_bytes": [
+            29337186,
+            29337573,
+            29337414
+          ]
+        },
+        {
+          "index": 10,
+          "kind": 2,
+          "count": 64,
+          "api": "abi",
+          "seconds": [
+            6.467166149,
+            6.076369373,
+            6.068106445
+          ],
+          "median_seconds": 6.076369373,
+          "serial_inputs_per_hour": 37917.378924291406,
+          "kind_name": "joinsplit_legacy_tree",
+          "warmup_seconds": 6.111523899,
+          "measured_proof_bytes": [
+            29336136,
+            29336191,
+            29335467
+          ]
+        }
+      ],
+      "context_setup_seconds": 0.342981128,
+      "context_shutdown_seconds": 0.044584098,
+      "stage_reports": {
+        "complete": 560,
+        "stark_proofs": 548,
+        "tree_root_operations": 12,
+        "failed": 0
+      },
+      "independent_cpu_audit": {
+        "accepted_outputs_including_warmup": 44,
+        "altered_statements_rejected": 44,
+        "altered_proofs_rejected": 44,
+        "altered_counts_rejected": 12,
+        "altered_leaf_orders_rejected": 8,
+        "distinct_proof_hashes": 44
+      },
+      "retirement": {
+        "live_bytes": 0,
+        "peak_bytes": 3755280928,
+        "allocations": 0,
+        "peak_allocations": 143,
+        "modules": 0,
+        "pending_commands": 0,
+        "completed_commands": 961371,
+        "device_ns": 38980460861,
+        "uploaded_bytes": 59860472,
+        "downloaded_bytes": 218278000,
+        "copied_bytes": 196992,
+        "public_program_bytes": 0,
+        "public_programs": 0
+      },
+      "services": {
+        "live": {
+          "unit": "lattica-wallet-cuda-batch-bench-20261019-c01-live.service",
+          "result": "success",
+          "exit_status": 0,
+          "host_peak_bytes": 564088832,
+          "last_observed_live_cgroup": {
+            "elapsed_seconds": 74.52589114099919,
+            "counters": {
+              "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+              "memory.peak": "564088832\n",
+              "cgroup.events": "populated 1\nfrozen 0\n"
+            }
+          },
+          "retired": true
+        },
+        "warmup-audit": {
+          "unit": "lattica-cuda-batch-bench-20261019-c01-warmup-audit.service",
+          "result": "success",
+          "exit_status": 0,
+          "host_peak_bytes": 96595968,
+          "last_observed_live_cgroup": {
+            "elapsed_seconds": 3.025566914000592,
+            "counters": {
+              "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+              "memory.peak": "96595968\n",
+              "cgroup.events": "populated 1\nfrozen 0\n"
+            }
+          },
+          "retired": true
+        },
+        "trial-01-audit": {
+          "unit": "lattica-cuda-batch-bench-20261019-c01-trial-01-audit.service",
+          "result": "success",
+          "exit_status": 0,
+          "host_peak_bytes": 96477184,
+          "last_observed_live_cgroup": {
+            "elapsed_seconds": 3.021477035999851,
+            "counters": {
+              "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+              "memory.peak": "96477184\n",
+              "cgroup.events": "populated 1\nfrozen 0\n"
+            }
+          },
+          "retired": true
+        },
+        "trial-02-audit": {
+          "unit": "lattica-cuda-batch-bench-20261019-c01-trial-02-audit.service",
+          "result": "success",
+          "exit_status": 0,
+          "host_peak_bytes": 95797248,
+          "last_observed_live_cgroup": {
+            "elapsed_seconds": 3.022486394000225,
+            "counters": {
+              "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+              "memory.peak": "95797248\n",
+              "cgroup.events": "populated 1\nfrozen 0\n"
+            }
+          },
+          "retired": true
+        },
+        "trial-03-audit": {
+          "unit": "lattica-cuda-batch-bench-20261019-c01-trial-03-audit.service",
+          "result": "success",
+          "exit_status": 0,
+          "host_peak_bytes": 96288768,
+          "last_observed_live_cgroup": {
+            "elapsed_seconds": 3.022240084999794,
+            "counters": {
+              "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+              "memory.peak": "96288768\n",
+              "cgroup.events": "populated 1\nfrozen 0\n"
+            }
+          },
+          "retired": true
+        }
+      },
+      "artifact_files": {
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/driver.rs": "868a81c5b75554e35892f9f9e39887bf04db491460a0d2f77a5b0d8ec360ae0b",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/budget.json": "ff0e30ea1819184fbd57fb801836fcb20d02957906f791659f1283a15ac40ad5",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/command.json": "90afd8ebfbc66fb1f283d76d95e09188ae1e50bf362cfafda99aef69469b1948",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/result.json": "6a3801032016ec4cf257dcafc3fc192485f0aac43e74d5881f1f7e74bb5a6d93",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/retired.json": "2db20387e7cd4030899693ab8ebd3f08a0efc7df12142bc6e35319d175752030",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/test.log": "0526ed306e59c38560d6e1fe53b8a7a13d4ab7694e6b61b3bc76b08d77f81f4b",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/0.proof": "2a501c1425f87b2426670ba5269b2f0b9046ef46a1552d69f7668b69fb6359f9",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/0.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/0.sample.json": "e6b42fb16b8e6f9235eade8dadcd87a87cd7e176e1f7f8ce21ce292ec36a9f50",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/1.proof": "d0fc1c5d188ec684641355131c2c83645bdb649201a74186cc562293ffae3180",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/1.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/1.sample.json": "f4251944c0786928dd2367132d75b6daa14abb7e63fc1bb28656a4bffea9065a",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/10.proof": "d2495ccebb81700f0e37d77b1ab710537ecc71f58f73881c98ac6fccf08a9c97",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/10.root": "b696349a172bf8e3473f44dcc59a4fd771182c62929dd1a126f357ed6fdf0b9e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/10.sample.json": "750ed5220d50b23dd74e842265abb8760b28bcbaa204e3e46318bfc8b23e2825",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/2.proof": "31beeb5acab487bcf7ae772097451bc0009ab78f16093dfc40d39823eaddd50c",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/2.root": "0febd698f93b8fd6f9f9ee76d7b7601687cec6d20397097375b82d9612f09832",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/2.sample.json": "78aa91fdb1510a7956b396a81090c9a093b73300ce7266661cfea41fa0a97a28",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/3.proof": "9588c867cf20943a5cb700c80c63d560d87cb091afcea448e07afd8995d10dca",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/3.root": "9f0d7a725cc41d7ae31e0f6be470621574dfda889d7f27b2a46f3d190f8230db",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/3.sample.json": "d56a9feaa85b74f522202534ca24ca26f32287a38bde8116932b6f9eb6ee3bae",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/4.proof": "c2e2a44b1ee0930d576af65d9fd30ff0857955bf51a38744d207abd9285faefb",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/4.root": "427a9bc0d76be2f30473a905845484f4a8cce92ac2bbb5f2d48b56f7cfa1aa3d",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/4.sample.json": "a76b62b7d0f6de7678e37fa2e934df4213cbf12c7b719e38faf1edbe2f85fcfe",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/5.proof": "cf1e4359771441f38e64ab65e0ee95e3b43e450a95cf0c7fc48144f92b5589fe",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/5.root": "e6ae3d699e578a9a0340122e7f58b32cfc9add42c831b9a3965690bc7eefc168",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/5.sample.json": "11bc37768fe1cf560b270045585755fe1327d96bb540227c7af8cbf183110465",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/6.proof": "9af99d82e54dc75a56a4bd97ff09c53d507c2906ec13b5403028ba0f383011a5",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/6.root": "38e60b3022b1adb2f6eedd604b4f3ad55ffc25beacb2cfde6b8f8448fafa7121",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/6.sample.json": "01b72744a366a646eb7df8573d1ab1d760196dd9b9bed2f98db67703e1a06f9d",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/7.proof": "ed76f9b31cf28152908e3a67abc21da1407c02b786da2e2fc7ba189fa7dcd729",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/7.root": "25b0127186999f65a5b6cdb86cd8c217b7c14c9967f409dbb5be5f023d86f7f9",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/7.sample.json": "d6d9ff50dcc6b91db2b85123030835f21e37e8035194eaa8b827a398752b6c71",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/8.proof": "1e691eadb2adfc56b8eceb6d14cb4d241327753f32cff2890e3bd31e61a02e0c",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/8.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/8.sample.json": "72b815ea43d53653929fb3ccd84a4bb006cc3a289259ca9a58321d77580a2377",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/9.proof": "5aa7f1ad65d876857592c55707352fba5830d233832e87e30f84bd1e73535734",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/9.root": "b696349a172bf8e3473f44dcc59a4fd771182c62929dd1a126f357ed6fdf0b9e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/9.sample.json": "cd2ce52557e5c0085d17e1753ac80e9afd694a6f261242e645d6b04afa722f48",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-01/cases.json": "006270a086ebdf86f845779a4851c57f6acbb8cc9daf98dd23286f605aff042f",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/0.proof": "57eef00ab747378bbcf7000cd1762647577450cbfd4d891463de110f4ba7d84e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/0.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/0.sample.json": "9d76a0263f2146b09fef5fb0077b994cdd4924138f2fba364b88e3ba48748e2b",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/1.proof": "91ccaa1be36178663310970df4b0880a8568443af9bd9296a67aced98b15ec45",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/1.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/1.sample.json": "08e0b3ba5219327fa26ad11389398ebdaa58d48c651e650b1c579377f4200221",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/10.proof": "d6a35500137eb192718a93dc5c89cc6df687100eb4cb17d6ad8d62fb17032dac",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/10.root": "b696349a172bf8e3473f44dcc59a4fd771182c62929dd1a126f357ed6fdf0b9e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/10.sample.json": "b9ef6e221823aa5e0ed87652dccde007c7beaa5a5fb7ad65445b2b0834f595ad",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/2.proof": "2ff3153eaae89aea4d052496aa40a11e84042f360b851467ae437ecb993694f5",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/2.root": "0febd698f93b8fd6f9f9ee76d7b7601687cec6d20397097375b82d9612f09832",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/2.sample.json": "4a35ad00ecf618936d71efae72387f562e4367eb432591f44d8b3a35aaefd28b",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/3.proof": "dfc4ac6f6d53f765ea56c761371a6416d9e03573f0f58ceda0229551bbaeb252",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/3.root": "9f0d7a725cc41d7ae31e0f6be470621574dfda889d7f27b2a46f3d190f8230db",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/3.sample.json": "828599e0f774bcceb2c7db4b77bfc1081a9474a71bd9b3cb7f0563ceb480fab3",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/4.proof": "fc2f6a19996835ddf8d12ac9c616790ee9f191f32b41e47fe618f5ef5cd54b7a",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/4.root": "427a9bc0d76be2f30473a905845484f4a8cce92ac2bbb5f2d48b56f7cfa1aa3d",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/4.sample.json": "c8c1bb23d3598517dccee82f7e7232e9ef1234f6f0411d3f26f2c0af6d59522c",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/5.proof": "79d018f10cac4cfe055d600125b4febc3a365c93a2be61dd83a760e71a56bac7",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/5.root": "e6ae3d699e578a9a0340122e7f58b32cfc9add42c831b9a3965690bc7eefc168",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/5.sample.json": "93aa7c641c0c963d5429f80f169e26719422d53058c6a36ed3bf633eff6add36",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/6.proof": "d00c3e188fb7ad5c3700fd3366e20170fe788bf2312784337a43965b96d5247a",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/6.root": "38e60b3022b1adb2f6eedd604b4f3ad55ffc25beacb2cfde6b8f8448fafa7121",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/6.sample.json": "1ec48676c9c47409c7023e95b22eb458d1f4351a7c60ae17001a5225aa45292d",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/7.proof": "e7390c72a069783ce9c6a1f62ce23666fe64dac01588807d47d2a38e322ad91e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/7.root": "25b0127186999f65a5b6cdb86cd8c217b7c14c9967f409dbb5be5f023d86f7f9",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/7.sample.json": "88f2d8994eeecdb319fd6f3174fc9eb52fbb27d1ef350ffd8557acee267f9ffc",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/8.proof": "9dce60ade4da268474279185a27f2b1ea5c22e2f2131f66253912e9c5b2e8aed",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/8.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/8.sample.json": "a2bc13f30cc77f6808d2f85058209bbbb2626f129a7cce7191ea394acd41de95",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/9.proof": "68b0de9c1007866055097e5e452a4a050d30dd756d015aeaf6699f74693e8196",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/9.root": "b696349a172bf8e3473f44dcc59a4fd771182c62929dd1a126f357ed6fdf0b9e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/9.sample.json": "5be0bae10386dad28f80a5cf762f4d442e63447a1b784bec4f507259abdeb080",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-02/cases.json": "006270a086ebdf86f845779a4851c57f6acbb8cc9daf98dd23286f605aff042f",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/0.proof": "b35c219ab48ff5cd4c077fa2b45dbfe52b80265182b72dd4e23d14a2d127b5f5",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/0.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/0.sample.json": "78659168983f31d743d50f9ada802ebbfcc4a43b956576c58f16b1dcdbae6347",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/1.proof": "2dc0a4aa81c7e93951ccd8c9bf0198b3dd52cbffdee39ba70fc1aab6f7dd7083",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/1.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/1.sample.json": "06300004f26ef9544b6716112741924b387f2201dfec7908ea533f6cc2ff2169",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/10.proof": "975d2b8e5ab10e9ad29a44a2fe421a1d25a4f59c99cd40e60df73150a6716ca1",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/10.root": "b696349a172bf8e3473f44dcc59a4fd771182c62929dd1a126f357ed6fdf0b9e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/10.sample.json": "aa44d219938451d2af40a28f6b184ad4c9f110084eecbe6cd4aaabde6cd08ff0",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/2.proof": "0b16acff7c562b5283d9562187cbd98346029f182dbe87ac6c76e6df25b98825",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/2.root": "0febd698f93b8fd6f9f9ee76d7b7601687cec6d20397097375b82d9612f09832",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/2.sample.json": "fb449bdfac3ed6ad77d74482f17acb29261224b4dcf71c76fe5ebeba0efd181c",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/3.proof": "a38514aacfd093d59edae0f21c471ac3d1eda77ccde984c362b2e6c96d6eb8ee",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/3.root": "9f0d7a725cc41d7ae31e0f6be470621574dfda889d7f27b2a46f3d190f8230db",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/3.sample.json": "27db437b6692d1280d8fd0a1b6a3ad7734643941fdac60b73cea17f7961778ae",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/4.proof": "7936b81703b6f893ca33e72fc73d43048a468ca723c2fdbd6b2fe54164bf6335",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/4.root": "427a9bc0d76be2f30473a905845484f4a8cce92ac2bbb5f2d48b56f7cfa1aa3d",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/4.sample.json": "da2b6716a0d14f6eb8386880e6f0c373bec52c614b9a031cfb4444efc6077f59",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/5.proof": "9bf7b8cbc9fe34460ea68a343ed9d14f060e9391f4f25358dcab62a3e7ae3063",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/5.root": "e6ae3d699e578a9a0340122e7f58b32cfc9add42c831b9a3965690bc7eefc168",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/5.sample.json": "48cd0047574684e020ac0d02c4c9dc11a0a6042efcce58c1c2c9e643a3d60890",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/6.proof": "97f80ec28b76b0847151ad954c0b8c79f3048394a73535e207347e2b40bf4e5d",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/6.root": "38e60b3022b1adb2f6eedd604b4f3ad55ffc25beacb2cfde6b8f8448fafa7121",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/6.sample.json": "f49dba72e216a0835a645d0c4df6e2e74583dbdd7da217256f2cf5efdce13590",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/7.proof": "7e9fea8f0407a96e656d98a6d2e6826a6e482209f7819d65545744703108c46d",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/7.root": "25b0127186999f65a5b6cdb86cd8c217b7c14c9967f409dbb5be5f023d86f7f9",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/7.sample.json": "cffb3693ed216848de0d137df05230282d97560b437763af9c8b9ef3c6ec6372",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/8.proof": "84ff40adbfae5c3067d590eb28208f6e4b231d5f56d5f785525e85d39e726e41",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/8.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/8.sample.json": "eaa9b7c5a220b228d2e8be645c6f3b660d9c6b000f8d9f3629a60628a42d1adb",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/9.proof": "a399be272cbae2494a9524e4cf4f849f8748c741d6614de60d1d382c20493700",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/9.root": "b696349a172bf8e3473f44dcc59a4fd771182c62929dd1a126f357ed6fdf0b9e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/9.sample.json": "9cc3e50d35cbdcfb691d111d31c9548c0b6b1441e4ce6d065f8b043b42f98bf8",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/trial-03/cases.json": "006270a086ebdf86f845779a4851c57f6acbb8cc9daf98dd23286f605aff042f",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/0.proof": "c2e9fb4649cbbea313bf9ecc5afcb24025cfff567302afc62c46473d4f24724d",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/0.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/0.sample.json": "fb2b10eb3514586a26271ca0b7df509bedae48f595076eb219ab80cd94a2addb",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/1.proof": "b2c001efe9ea43ff74c3b1b9756ccedb2ab9e39c00ba539cab19f84d7e9cf446",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/1.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/1.sample.json": "de87e364a8361b2a6996397f7ef830f7434e4e425fa3050ad8e28420de8bc474",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/10.proof": "6dac02e138c79cc2fc4a6a12d4a1e679089e2263da941544514aafb7f9e6a843",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/10.root": "b696349a172bf8e3473f44dcc59a4fd771182c62929dd1a126f357ed6fdf0b9e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/10.sample.json": "dc29006cc7dd3971b23a88e3089534489a58131a72c968365e7cd687b2ee88c7",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/2.proof": "aa38926ffeaae4f5c684b16dc28c1ae6d26847c8c236984e30aa6cce565c875d",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/2.root": "0febd698f93b8fd6f9f9ee76d7b7601687cec6d20397097375b82d9612f09832",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/2.sample.json": "84bc4670b9793bebf3bb7ef032c6d2465e8d713117d47234681d42bcb30289a2",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/3.proof": "b60ec450dfd68daf6557f3b488d7df035f8276b1b8e0fed3f9bf35fb183891c8",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/3.root": "9f0d7a725cc41d7ae31e0f6be470621574dfda889d7f27b2a46f3d190f8230db",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/3.sample.json": "41a457aa0dd82a6b50046e18cb6dc13aae352b3623f29b8e54262bd6cba635c8",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/4.proof": "c896fdf9f1ebaa84cca4277a6891333ba4223034e24b74e4298b30af0548d4c1",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/4.root": "427a9bc0d76be2f30473a905845484f4a8cce92ac2bbb5f2d48b56f7cfa1aa3d",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/4.sample.json": "7137d5d16e0ac660a89d9936740229f7db7758472b53579a035f7c574f076550",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/5.proof": "f4ce44abba0879e02aad09980c3e51a6528dc119e343ca7a52b7a16ff01f4f20",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/5.root": "e6ae3d699e578a9a0340122e7f58b32cfc9add42c831b9a3965690bc7eefc168",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/5.sample.json": "dcee612435d210030e86c96cfa29df88604262aeaf85287c434a23e2f81ce4d2",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/6.proof": "b5c2a9dff5d2bb7d71edf5f2cdab4f7980493b4c94bf1684ea346b7512b4c3aa",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/6.root": "38e60b3022b1adb2f6eedd604b4f3ad55ffc25beacb2cfde6b8f8448fafa7121",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/6.sample.json": "d3bcda27b3a665914faa7c0f2f666207dcc58d28887bbb4c86db31fef9092c08",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/7.proof": "58f8c1318a5b6f8e9c916ab27fb25d01a35e0b2678026d2e164e947aecc09cd2",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/7.root": "25b0127186999f65a5b6cdb86cd8c217b7c14c9967f409dbb5be5f023d86f7f9",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/7.sample.json": "b541569077a1e856736678cc32783913205031020e86253127e1b702986f79bd",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/8.proof": "3d63818825e855aae1afd23bda8dfe643934e3a36f6a408739c97ea983c1a477",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/8.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/8.sample.json": "68224b358421737f99669d574b1ec93a13aeab09c76e00148ea828d60cb2ee42",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/9.proof": "e668b694be8c7c706953c3d6cfd3ae3506b0799d2cafa661d112006e566eafc5",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/9.root": "b696349a172bf8e3473f44dcc59a4fd771182c62929dd1a126f357ed6fdf0b9e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/9.sample.json": "a4cc643e91d49f90075b5debb93af90f18fbd5d7cd43c258f9d00e3cca23ffa5",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/live/warmup/cases.json": "006270a086ebdf86f845779a4851c57f6acbb8cc9daf98dd23286f605aff042f",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/pins.json": "122e90612f7afabae92a9a6c1355db660ee9f296d925d1923197c08d07395ab9",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/result.json": "2762cb52e260558c9c1f3864d78db032efc0fbf5ebfc4c8d2fd75465d632ecff",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/run.py": "e23455b5870d73454b1bb5d469e8a6094e13030fe9a69caa66b4899dc535aa40",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/trial-01-audit/command.json": "2e70e5cd21f2c1177eff09541909d2a5e27900ef776700a361812b14f54e1010",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/trial-01-audit/result.json": "b9299bd23c6bc402d4d0726cd7b6f9452c1b53c2a0b34cc6344058110152bb3a",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/trial-01-audit/retired.json": "29b43336e45db24ed5b7353f6b72b381d71c9184d01c76f885e6cdda5f4c831b",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/trial-01-audit/test.log": "dd27b01a8251a1a669bd9e761a4469a165376c295763667afa29896bb9094836",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/trial-02-audit/command.json": "f4cbce422ce2e291500faaded0061d71ee115de569c17f7225ecc5e10b5a2bce",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/trial-02-audit/result.json": "7c8ca6d48d0e60196867cd290b1366e777a8c1baa308c7f076ca84806c76b9f6",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/trial-02-audit/retired.json": "e3300d19cccd49dff3d1a7fac86c2e28e9ae614346d3d1bf6a9290f14efa79d5",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/trial-02-audit/test.log": "0ea3f102c0b53229e86c9ed5e0fa9377e0f21e30e8e39270e2531defa9b820dc",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/trial-03-audit/command.json": "b8bc88c5ef0c2f9fbc842cb7ba6e55cbbac5226e1ee538c0c25bc6f1ecda1642",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/trial-03-audit/result.json": "2f40d649e7145c7124e12c988eec8979bccbcc401ec893da761d7ece4a3d50f8",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/trial-03-audit/retired.json": "0fcdc75df59ff9b28b0d521bae77230f2b46c3b47e21a5bc74aedfd3d025c8a2",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/trial-03-audit/test.log": "a5760b636563b2ae675bdd830d3cd4660dc07ede9e2d91f428e53b9387e5e384",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/warmup-audit/command.json": "28b687a96a18b3568cfe61b5ba6cfa74b94200071ca284916ad7da1ef1ab1c2c",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/warmup-audit/result.json": "1ce10237023e66d5809224fdf7e7699769cce91b4c2f1e709cd1965c44138b42",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/warmup-audit/retired.json": "633abb378f7dc1668257d6789d1ffab5aeabd2829ff09931c4d715cf0980a02a",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-01/warmup-audit/test.log": "190379b8c4fd09711387999bc2552592ba1f5a269596cf1f516b08422af38df5"
+      }
+    },
+    {
+      "name": "capacity-02",
+      "pins": {
+        "commit": "0b135b75f144ef84f3bc5e2cadbfcd8f6a305ed8",
+        "source_manifest_sha256": "d7218dad7aa1cc077eac7f672537a135f8b8e8c4f6de72f2b61916791ec6c433",
+        "images": {
+          "/home/access/code/lattica/.tools/target-cuda/release/liblattica_prover_p3.a": "8515b705cd893c6f06b5b107b17b7ed409d65af1b4105cde30b78d6bfc04ac83",
+          "/home/access/code/lattica/.tools/target-cuda/release/liblattica_prover_p3.rlib": "cfbe477a7c6252b31ad78b9e4b0e5ef27be01abe72c22e5d5041bc795d51a616",
+          "/home/access/code/lattica/.tools/target-cuda/release/block-v2-paired-probe": "221d194a1f990bec2e49437c829df42da292efd97f6863bd1d8ff6fd095f7d2c"
+        },
+        "driver_and_audit": {
+          "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/driver": "c2c9762ee559bf322b8d218381fbd7b5fb44c228e7f096bb45a8b70aeef49e0a",
+          "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/driver.rs": "80e7b1c317967a6396225c12ab6d81e6a4b41f64e7aa418e888b15deb053acca",
+          "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/run.py": "f767bccc39763d77faa899cf1a7109d97b75fea984a728a5b442081022353b80",
+          "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/qualification-01/cpu-tests": "07eda7536eb6523ad6a60521c85767398d384b67ff8745ed352634f8ed546887"
+        }
+      },
+      "resource_assignment": {
+        "schema": "lattica-wallet-local-cuda-v1",
+        "service": "lattica-wallet-cuda-batch-bench-20261019-c02-live.service",
+        "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "host_bytes": 3221225472,
+        "threads": 4,
+        "managed_gpu_bytes": 7516192768,
+        "context_gpu_bytes": 4294967296,
+        "host_output_bytes": 536870912,
+        "cuda": {
+          "max_allocation_bytes": 1073741824,
+          "headroom_bytes": 1073741824
+        }
+      },
+      "cases": [
+        {
+          "index": 0,
+          "kind": 0,
+          "count": 1,
+          "api": "abi",
+          "seconds": [
+            0.099512319,
+            0.097853375,
+            0.097672577
+          ],
+          "median_seconds": 0.097853375,
+          "serial_inputs_per_hour": 36789.737707054046,
+          "kind_name": "joinsplit_batch",
+          "warmup_seconds": 0.139068845,
+          "measured_proof_bytes": [
+            486907,
+            486690,
+            486766
+          ]
+        },
+        {
+          "index": 1,
+          "kind": 0,
+          "count": 3,
+          "api": "abi",
+          "seconds": [
+            0.199637736,
+            0.200023233,
+            0.200329666
+          ],
+          "median_seconds": 0.200023233,
+          "serial_inputs_per_hour": 53993.72781860795,
+          "kind_name": "joinsplit_batch",
+          "warmup_seconds": 0.236868299,
+          "measured_proof_bytes": [
+            538871,
+            539029,
+            538842
+          ]
+        },
+        {
+          "index": 2,
+          "kind": 1,
+          "count": 1,
+          "api": "abi",
+          "seconds": [
+            0.170280173,
+            0.170153327,
+            0.169447885
+          ],
+          "median_seconds": 0.170153327,
+          "serial_inputs_per_hour": 21157.38824195897,
+          "kind_name": "htlc_batch",
+          "warmup_seconds": 0.21639844,
+          "measured_proof_bytes": [
+            658287,
+            658231,
+            658349
+          ]
+        },
+        {
+          "index": 3,
+          "kind": 1,
+          "count": 3,
+          "api": "abi",
+          "seconds": [
+            0.352069718,
+            0.351808456,
+            0.352746719
+          ],
+          "median_seconds": 0.352069718,
+          "serial_inputs_per_hour": 30675.7424675757,
+          "kind_name": "htlc_batch",
+          "warmup_seconds": 0.397021433,
+          "measured_proof_bytes": [
+            710492,
+            710550,
+            710483
+          ]
+        },
+        {
+          "index": 4,
+          "kind": 0,
+          "count": 63,
+          "api": "abi",
+          "seconds": [
+            2.514427879,
+            2.519347605,
+            2.519644353
+          ],
+          "median_seconds": 2.519347605,
+          "serial_inputs_per_hour": 90023.30585500924,
+          "kind_name": "joinsplit_batch",
+          "warmup_seconds": 2.557794109,
+          "measured_proof_bytes": [
+            663844,
+            664231,
+            664016
+          ]
+        },
+        {
+          "index": 5,
+          "kind": 1,
+          "count": 63,
+          "api": "abi",
+          "seconds": [
+            4.667510477,
+            4.768142855,
+            4.66586576
+          ],
+          "median_seconds": 4.667510477,
+          "serial_inputs_per_hour": 48591.21390677062,
+          "kind_name": "htlc_batch",
+          "warmup_seconds": 4.7195188009999995,
+          "measured_proof_bytes": [
+            835614,
+            835570,
+            835501
+          ]
+        },
+        {
+          "index": 6,
+          "kind": 0,
+          "count": 64,
+          "api": "abi",
+          "seconds": [
+            2.5285157209999998,
+            2.524751168,
+            2.56124477
+          ],
+          "median_seconds": 2.5285157209999998,
+          "serial_inputs_per_hour": 91120.651569008,
+          "kind_name": "joinsplit_batch",
+          "warmup_seconds": 2.607907472,
+          "measured_proof_bytes": [
+            663899,
+            663982,
+            664007
+          ]
+        },
+        {
+          "index": 7,
+          "kind": 1,
+          "count": 64,
+          "api": "abi",
+          "seconds": [
+            4.671289048,
+            4.669919071,
+            4.671732693
+          ],
+          "median_seconds": 4.671289048,
+          "serial_inputs_per_hour": 49322.57405450967,
+          "kind_name": "htlc_batch",
+          "warmup_seconds": 4.722904516,
+          "measured_proof_bytes": [
+            835829,
+            835955,
+            835403
+          ]
+        },
+        {
+          "index": 8,
+          "kind": 2,
+          "count": 1,
+          "api": "abi",
+          "seconds": [
+            0.094962449,
+            0.093804469,
+            0.093849111
+          ],
+          "median_seconds": 0.093849111,
+          "serial_inputs_per_hour": 38359.44700637601,
+          "kind_name": "joinsplit_legacy_tree",
+          "warmup_seconds": 0.094593394,
+          "measured_proof_bytes": [
+            458346,
+            458479,
+            458476
+          ]
+        },
+        {
+          "index": 9,
+          "kind": 2,
+          "count": 3,
+          "api": "abi",
+          "seconds": [
+            0.278498865,
+            0.278954486,
+            0.277428819
+          ],
+          "median_seconds": 0.278498865,
+          "serial_inputs_per_hour": 38779.33218866081,
+          "kind_name": "joinsplit_legacy_tree",
+          "warmup_seconds": 0.279472408,
+          "measured_proof_bytes": [
+            1375413,
+            1374779,
+            1375381
+          ]
+        },
+        {
+          "index": 10,
+          "kind": 2,
+          "count": 3,
+          "api": "abi",
+          "seconds": [
+            0.279772603,
+            0.279187797,
+            0.279253231
+          ],
+          "median_seconds": 0.279253231,
+          "serial_inputs_per_hour": 38674.574905813715,
+          "kind_name": "joinsplit_legacy_tree",
+          "warmup_seconds": 0.278263056,
+          "measured_proof_bytes": [
+            1375195,
+            1375162,
+            1375074
+          ]
+        }
+      ],
+      "context_setup_seconds": 0.336609647,
+      "context_shutdown_seconds": 0.044714227,
+      "stage_reports": {
+        "complete": 72,
+        "stark_proofs": 60,
+        "tree_root_operations": 12,
+        "failed": 0
+      },
+      "independent_cpu_audit": {
+        "accepted_outputs_including_warmup": 44,
+        "altered_statements_rejected": 44,
+        "altered_proofs_rejected": 44,
+        "altered_counts_rejected": 12,
+        "altered_leaf_orders_rejected": 8,
+        "distinct_proof_hashes": 44
+      },
+      "retirement": {
+        "live_bytes": 0,
+        "peak_bytes": 5356793392,
+        "allocations": 0,
+        "peak_allocations": 143,
+        "modules": 0,
+        "pending_commands": 0,
+        "completed_commands": 410706,
+        "device_ns": 51691108401,
+        "uploaded_bytes": 24516504,
+        "downloaded_bytes": 29459888,
+        "copied_bytes": 25216,
+        "public_program_bytes": 0,
+        "public_programs": 0
+      },
+      "services": {
+        "live": {
+          "unit": "lattica-wallet-cuda-batch-bench-20261019-c02-live.service",
+          "result": "success",
+          "exit_status": 0,
+          "host_peak_bytes": 203390976,
+          "last_observed_live_cgroup": {
+            "elapsed_seconds": 63.94723558300029,
+            "counters": {
+              "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+              "memory.peak": "201760768\n",
+              "cgroup.events": "populated 1\nfrozen 0\n"
+            }
+          },
+          "retired": true
+        },
+        "warmup-audit": {
+          "unit": "lattica-cuda-batch-bench-20261019-c02-warmup-audit.service",
+          "result": "success",
+          "exit_status": 0,
+          "host_peak_bytes": 11821056,
+          "last_observed_live_cgroup": {
+            "elapsed_seconds": 0.0028269369995541638,
+            "counters": {
+              "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+              "memory.peak": "1572864\n",
+              "cgroup.events": "populated 1\nfrozen 0\n"
+            }
+          },
+          "retired": true
+        },
+        "trial-01-audit": {
+          "unit": "lattica-cuda-batch-bench-20261019-c02-trial-01-audit.service",
+          "result": "success",
+          "exit_status": 0,
+          "host_peak_bytes": 12378112,
+          "last_observed_live_cgroup": {
+            "elapsed_seconds": 0.0034109019998140866,
+            "counters": {
+              "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+              "memory.peak": "1310720\n",
+              "cgroup.events": "populated 1\nfrozen 0\n"
+            }
+          },
+          "retired": true
+        },
+        "trial-02-audit": {
+          "unit": "lattica-cuda-batch-bench-20261019-c02-trial-02-audit.service",
+          "result": "success",
+          "exit_status": 0,
+          "host_peak_bytes": 11673600,
+          "last_observed_live_cgroup": {
+            "elapsed_seconds": 0.0028848789997937274,
+            "counters": {
+              "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+              "memory.peak": "1835008\n",
+              "cgroup.events": "populated 1\nfrozen 0\n"
+            }
+          },
+          "retired": true
+        },
+        "trial-03-audit": {
+          "unit": "lattica-cuda-batch-bench-20261019-c02-trial-03-audit.service",
+          "result": "success",
+          "exit_status": 0,
+          "host_peak_bytes": 11821056,
+          "last_observed_live_cgroup": {
+            "elapsed_seconds": 0.0032709659999454743,
+            "counters": {
+              "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+              "memory.peak": "1572864\n",
+              "cgroup.events": "populated 1\nfrozen 0\n"
+            }
+          },
+          "retired": true
+        }
+      },
+      "artifact_files": {
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/driver.rs": "80e7b1c317967a6396225c12ab6d81e6a4b41f64e7aa418e888b15deb053acca",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/budget.json": "5004c30d1392a4da0a18ea4a52b1e7dc3a6130e85e1047340e18a968f872d218",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/command.json": "7e8c710f34c96ef1cbe03ade49494ddd42af8139ca3ad455ffb4072f92061d02",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/result.json": "605dfd9bee9e564c8017ab5bcec811b06c42e83ca2a61cb35a8397d47905ca6f",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/retired.json": "59a54e6ba6ca23ad9ee703edbed5fd6ef358053b092106267f203c251eb10d06",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/test.log": "19cfb499ad38f5e4922f62615c67f3d61866c82f8fc718847ebe827152f44155",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/0.proof": "3d7b85d9062e39a8b84c802e039bed0997e8163159c097fccb4d7b7950c85032",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/0.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/0.sample.json": "f814cbec2e44c4754e938e20ea13b50b3bf2ef87c5db09725593d98121af8a3b",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/1.proof": "5a0428deefc29588085e1f3adeae01b6a2286f23bd5416fd87d839379ef561e3",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/1.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/1.sample.json": "c6a036939a783d4e9499eb0edd2cfecfa3f74faaedf85d1960c42389b8631c11",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/10.proof": "772297cc0a42d401badabac4eca905f16cce27262b502151a472ac7293cde009",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/10.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/10.sample.json": "3f248aa26ca7d9e980d746c45d1e9a054dc5e5d9de447db7d8dec2391a9c7353",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/2.proof": "9881210f4d4e0535ce268f7a23bf8c36747374c5868dc3c6c452c7f3799182f9",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/2.root": "0febd698f93b8fd6f9f9ee76d7b7601687cec6d20397097375b82d9612f09832",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/2.sample.json": "e1224c4b0c7c7430032998eec627df95b3c8075c92f2303a49d9bf751f6fb62e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/3.proof": "e5dc659803b2347c8d534c35752058ab550239d686467ea9105158737338dd21",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/3.root": "9f0d7a725cc41d7ae31e0f6be470621574dfda889d7f27b2a46f3d190f8230db",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/3.sample.json": "ad099daef6ced56f96797935cefc48ae0fdb2414547e2f532594b356c6f8e224",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/4.proof": "beb19121300aefe7ce466d71da0fbaa7041c6763d979b315377de5c36667d88e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/4.root": "e4cc964f47993ae00fafdfd2b03e34841b1b8f056d570bc2086187c6ce4cd0ea",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/4.sample.json": "098ac9d5febf9c13ef4e3744f8525a202388c2a69ccf57fa2dcdf4ccecec6e4d",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/5.proof": "711d35fab61d0a8b81bb6e7eb53c38b136cef88b2bb22ce86b38d31008fa959f",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/5.root": "765261b84659a5aa9b79dc154c2892d6223942ade1f220edcb1c57e4e295069f",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/5.sample.json": "d17d045e89c880523cdfa0a50d5eb3ea00a40994a1b1067ed7dbd65aafd1e6ac",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/6.proof": "9b7a2b1ae2b8901f1c11e9eb6eab0e262dda0d540c9adfd218d934acbfd4b1f3",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/6.root": "b696349a172bf8e3473f44dcc59a4fd771182c62929dd1a126f357ed6fdf0b9e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/6.sample.json": "e895c88663d7b0fc234bc582add78063c12bda5a0abb0b38114c3f61ec0a3178",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/7.proof": "f634f4ec76e73846f72bc4f26c767b907b62a11a37cc53fb849d6db6699e7ee9",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/7.root": "9b854f53d6002f593ad7217eb665d58bce0ead714f72980bbe81ea4a2fcaf3d7",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/7.sample.json": "036f319a830c6baf6431a8e2604d7268e149dfd77b5ba75846b0edd835ff208e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/8.proof": "f5404e17a493ba9bde48d63535ac65d975ba4423b8e237342217ce7cf8721657",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/8.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/8.sample.json": "b4efdb6d1ce3ef33e2ebe7f8e6c22a5779e1602410163c3f8155ee6e7e6c7ce8",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/9.proof": "cefec77b9c08f4e7f83a7a9b2f699272a9cee819bac18371d2d1fe821ab7c358",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/9.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/9.sample.json": "910e19cf9e8a5a6c5d4ad83d6ace4344869efb91d65cfbd629faf5db99098358",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-01/cases.json": "3494265a7a7db311f073ee306db7cdb223f8818840b4c7a7e66429b0b24c3739",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/0.proof": "9daf10e835d55f2d7db8ab0360c9761d264a77095614de02dd408e0c01e4b532",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/0.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/0.sample.json": "bbb17bd80158558b7da1abc57ebff6c9430ded1d5c938b5676ad1f27b8297194",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/1.proof": "8a579361e495eec0928b5ba8be35ef1f381e6768311ebd1a7c6ce0281ba1f616",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/1.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/1.sample.json": "13499e6506cf84b7d387e7ac9c9be6db5a3e969b8b34e3f95aa2e5cf5db39f4b",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/10.proof": "8daf6da0c27967f12ca2547a1f2816b3d2140a4fa0f3aad45efbc98a563a45b0",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/10.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/10.sample.json": "4bc05b2fc79f1852672b0ce3d558b532d2f01dd3762b2cb4608cedc9a0c65093",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/2.proof": "3dda61586d30ab8e0f28af95ebc2065b435dd110b30a46af138e6f2f57d6ee96",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/2.root": "0febd698f93b8fd6f9f9ee76d7b7601687cec6d20397097375b82d9612f09832",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/2.sample.json": "056361cf79ee4eed4fb7b9e8238f897ac9eadce5bfb92979eee7e68a5c8850f8",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/3.proof": "4cf89b80f904dee9627ea6b32ee22de2439b6805825f6354dcfe86ae24b9a01a",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/3.root": "9f0d7a725cc41d7ae31e0f6be470621574dfda889d7f27b2a46f3d190f8230db",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/3.sample.json": "53f80d860c8bace6b3feef5918bd6559252b2ab4e9a9674867a476acb15a6ec1",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/4.proof": "7801e1069912455468b6f899003d10730f0ce6f58ba69c02dab1804e16c8e511",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/4.root": "e4cc964f47993ae00fafdfd2b03e34841b1b8f056d570bc2086187c6ce4cd0ea",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/4.sample.json": "6a7104cce80025f7393891180289b2af42ec14e4a5ab41404331b0857da08246",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/5.proof": "cd5739c36997f9194209ddaf171143246991ad9c86a8b72bfcf849ddf59e9319",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/5.root": "765261b84659a5aa9b79dc154c2892d6223942ade1f220edcb1c57e4e295069f",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/5.sample.json": "c42ad088e3e7ac03094373724847cdc9bd077830402f6b14a2c011ab99a1a71d",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/6.proof": "c56615b39116e96cad963eada3f6467255297272158dcb7e881f20df2ff0eeaa",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/6.root": "b696349a172bf8e3473f44dcc59a4fd771182c62929dd1a126f357ed6fdf0b9e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/6.sample.json": "80a0d35408f6deb03f5281dd8b54eedee2c9b32682a889dbf1fc07312914ff02",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/7.proof": "f4d560168db1438bb539dd0fc248619b16d6d0048fe85181b00743cf1029811c",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/7.root": "9b854f53d6002f593ad7217eb665d58bce0ead714f72980bbe81ea4a2fcaf3d7",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/7.sample.json": "41c24ebe48f45d443fa6e29c7b80973a17d87cf17d1dd2522c851063e6658dcc",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/8.proof": "146201662cee34ff3ec4088f7a12aa131712f6e016a91def1ab3b6c2311ea9cb",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/8.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/8.sample.json": "81723543a7078d82fdb54de76e149f7e29493917a2ea35151952711759b031b8",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/9.proof": "b6c8b1a5ba0e54c8622117264319fc04b97b4c2503eb6f53b79834a688653884",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/9.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/9.sample.json": "0187bc1945e288ceaa458c627cad9bcb2c151598be52b64588111a38f9041d07",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-02/cases.json": "3494265a7a7db311f073ee306db7cdb223f8818840b4c7a7e66429b0b24c3739",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/0.proof": "5992502259bc176f522d74a65754ab7e9539212d4831c4c9591f42e8b7034b9b",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/0.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/0.sample.json": "7507459fec60c8c3788efaa3b005d43c352d9cf29ddcebf2b1c5c5137bb6d28d",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/1.proof": "3f897dbfe2a6f3ccea8c7d3e4092ec6ad1d6d4fb7ccb29428ad93532e7497bca",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/1.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/1.sample.json": "e7bc784e447255c745cea71b981006dc7ecfc669c790bd8f51a01ddbf89be33f",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/10.proof": "7a4e828fa10cdf7fe95f54e8af89ffa50602dd23ecaa2fbe0fb2f780fd4c9050",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/10.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/10.sample.json": "8cfb17b5c86455684cb1deb23ec00922b86f3bc8729170230153dc57dbc2e0d4",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/2.proof": "83f376973ce981f995b4f371aeb2496efbade28559394a2fb06a64d02e66a391",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/2.root": "0febd698f93b8fd6f9f9ee76d7b7601687cec6d20397097375b82d9612f09832",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/2.sample.json": "8297db4a1b739ad5d6ea8bdf56c98d77ee80b9c0bb265f70495f33ab22889c1c",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/3.proof": "e999fde60b1cb8c68e311f80d59b451cea8e0a1b8c4091663518e342e72636d8",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/3.root": "9f0d7a725cc41d7ae31e0f6be470621574dfda889d7f27b2a46f3d190f8230db",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/3.sample.json": "703fff2232e28aa4813a30f26b1802a16721cfbc24879fe5740360be536eab2a",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/4.proof": "9e1aaf25a07ff9eed618b4194af790da423f74329523b58871abef646635e2b4",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/4.root": "e4cc964f47993ae00fafdfd2b03e34841b1b8f056d570bc2086187c6ce4cd0ea",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/4.sample.json": "e2b1054cef6a3bdd7c55129a8ac5f141741d8d607145a77ddd95b0ece34e4bff",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/5.proof": "10e4c0eee3f4e47f268962fd44f8cf14208a0b3ce02387460d5d1d93a00bcbdb",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/5.root": "765261b84659a5aa9b79dc154c2892d6223942ade1f220edcb1c57e4e295069f",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/5.sample.json": "bf3b30d57ebd35b7ed475dadd6de26ef1f4bf140e1bf82147478fd81605fea8a",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/6.proof": "630fe387f046ec6aef7e6d12cc4b53e17ce2a2078528ee95a212fae6d4ff4687",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/6.root": "b696349a172bf8e3473f44dcc59a4fd771182c62929dd1a126f357ed6fdf0b9e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/6.sample.json": "b1a5b9c8d0112bb16e706deeeb358541e6496a8fae51482d4805f18657ca5cbd",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/7.proof": "d98a89b60f1eecfab150cb1a0c0aa489fb9b4974b44f9b35f57a8decd9cedae6",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/7.root": "9b854f53d6002f593ad7217eb665d58bce0ead714f72980bbe81ea4a2fcaf3d7",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/7.sample.json": "9cfd213698c465dac5890cee5169495024d6a51ac8218f1381a0f2697a9c9141",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/8.proof": "6eff265e9cdf18c04dc938e0d63cd1d536704dbbda0595c2d51e420beff63f43",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/8.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/8.sample.json": "2862742cb23008410eacc11d64d27197567784cf2b946b22171f86be62f08cbd",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/9.proof": "bfff624793b92dc860002d946b106151398dd5297c54d001ea9ab37e796efb39",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/9.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/9.sample.json": "6bfba3e348afa9c77033a7632a43c23b1c80d2c25f01b0d9ff03706f1691ac19",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/trial-03/cases.json": "3494265a7a7db311f073ee306db7cdb223f8818840b4c7a7e66429b0b24c3739",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/0.proof": "629d8207378e03bca1ed0efa16d278c2adcffea4fa5ffa619e6cf6419d87c06a",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/0.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/0.sample.json": "59d4dc6b8221d01d0453b120631014a9017778bfc955edda801fab55c01dad40",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/1.proof": "60803f8cc14185d2b0703d9b1658d038226d54dbb4b5d75450c5654be7ed459f",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/1.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/1.sample.json": "8985029b7eda0a81e8f0c21c2c306266075aa9c059f994d5c6d27e090a369fde",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/10.proof": "0419ac1b097e045743c5dbcc6f28bfd2f8f7d78b3651fd1aeab1af66f9ab56b4",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/10.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/10.sample.json": "3ab78e2409320472311bda5d46a253704de0362d9d43b004c7500143dad99f7b",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/2.proof": "387d3578d5b6e6dcc1876538d00bdd78ad44fb53065acb30c55d90651311a768",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/2.root": "0febd698f93b8fd6f9f9ee76d7b7601687cec6d20397097375b82d9612f09832",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/2.sample.json": "ed92a2132c51879b089e4073e5fa6aab5a0dca736b9065db77ce287ab879483c",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/3.proof": "1ef4d085b135dad172f291308936457ee67d48f65446d06636406e9c74b0750b",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/3.root": "9f0d7a725cc41d7ae31e0f6be470621574dfda889d7f27b2a46f3d190f8230db",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/3.sample.json": "a60fc53cce7f106f495287a0377b872a18ecaa26fb2a658a0412b70f42751a17",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/4.proof": "04678b283e6a2867844c5b80c2db9334d7b4e2818bed4da5b5de07c655b4535f",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/4.root": "e4cc964f47993ae00fafdfd2b03e34841b1b8f056d570bc2086187c6ce4cd0ea",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/4.sample.json": "9e8491e0b1dfdb2c5e5b88fb4731b5f2f5384693a19a24c7e06afa3d404691aa",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/5.proof": "44b77eda0c467e894ce605f7ad9c08dac32a77d3ba4fff47629916e04027063b",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/5.root": "765261b84659a5aa9b79dc154c2892d6223942ade1f220edcb1c57e4e295069f",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/5.sample.json": "a424547df9046a5b49beda30525d6713f7390e67e1a328d748fe667db7d187eb",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/6.proof": "578c0c5b2c89a1c56295eb4c8c0dbfe7f1855e992af0e46024458785f2c6f62a",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/6.root": "b696349a172bf8e3473f44dcc59a4fd771182c62929dd1a126f357ed6fdf0b9e",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/6.sample.json": "f536061d4eb4e938f447d8981d878c3f4a4603d1e4da202089fa0ffd21828b3c",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/7.proof": "d4df7b750b31f47b262c6b412f42760170328c27eb390b1ebc9f915b4329f514",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/7.root": "9b854f53d6002f593ad7217eb665d58bce0ead714f72980bbe81ea4a2fcaf3d7",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/7.sample.json": "10ac9b5b4bd87eb4e50be35d6628f5f6f1290e5ade888290d2668553fb1326c7",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/8.proof": "b1603112f63bc1260ce8748bc99c1a34008b226c15e7d617e28109cf39ce2995",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/8.root": "c61ca80511da93ac9c48dd2e27bc45e39a527f4a053fbaa184d5c75126808a35",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/8.sample.json": "847dfb47ce680bf2cd6f4e65526031672d500ed990ac51c3de82bbbfabc5054f",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/9.proof": "feba641a9433b6d810834867842f6dbdd5ab5384f625531dadf6d01ab6a25f99",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/9.root": "28a18e85ad6a3b1538dc9801f893f9e8940b8779570345033a9b0f83839918da",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/9.sample.json": "a5d73297c60f8f121eba6ee945567e071b251206928504cddb41521fd203870d",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/live/warmup/cases.json": "3494265a7a7db311f073ee306db7cdb223f8818840b4c7a7e66429b0b24c3739",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/pins.json": "af7808eb2d2240e7ac2a6da951134b9c12809cecf22f1391af0205e4ce500158",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/result.json": "27088004f4d598d71c359ee294af0b11b8889e695807750839221444d0f395aa",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/run.py": "f767bccc39763d77faa899cf1a7109d97b75fea984a728a5b442081022353b80",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/trial-01-audit/command.json": "c7cb194246a358f596bcf4ca365a0690d89bb7a1fd6157ea2d48fed684e94aef",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/trial-01-audit/result.json": "76d445c15a2cfe0fc50ecd71da8c53c57eced9e1dca5f8b685c0686d72f8e139",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/trial-01-audit/retired.json": "2738294e40875db3fa3a6b00044fbc503d77393dcc4a616f4064b49cfc32db21",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/trial-01-audit/test.log": "249784b03f390ee509c54aeecb0878a4362f5c3ffa39c4adc7f46674d8488c38",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/trial-02-audit/command.json": "893e72e1b01d9a4a3f42a82b37d1975de1cbfd59d0b0c371b3912c7ec289bdec",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/trial-02-audit/result.json": "a0fdb00ee383cebc2219121ed3d7c62fc969538a3e4f2604a34b146433117352",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/trial-02-audit/retired.json": "b7101375b413780dbf4a4ea3cc988cd993ec2521a07876f6b391c593a9334efa",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/trial-02-audit/test.log": "18c0d3675ae7b4ea12f8c04408c723878e0d8ed5ee21a93fb51d59ffa1ae525c",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/trial-03-audit/command.json": "c5cff2678703e22e98f458d5da88eb1b706bc556b00bd6dbc0fffe3c241ebbb9",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/trial-03-audit/result.json": "c8b28beb3117bf7c6f95e9e6e7c5e5ba6da57dc3dfda74ecb60bfebf5ae6595f",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/trial-03-audit/retired.json": "b273167019d572ae33fa9dd6d30fd8b69233b2d0d951e74de36acb9a5804add9",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/trial-03-audit/test.log": "a634c50bef74a62518af88f0d3134b0830ed3c4120c65533a8de5c39503761a6",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/warmup-audit/command.json": "3e93e0e6555c297de8f78f46217970181a6b183b29fa80ed8c7a55e42b9bab29",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/warmup-audit/result.json": "62950dd7a51b3a79245a7fdcddf06ad64c6f15535215e74a3d8ecf2ff10334b7",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/warmup-audit/retired.json": "8a143b07b12f359b76444cd62baaca3d85eba4eed6812763a83e3c135f5b7928",
+        "lattica-prover-p3/benchmark-results/cuda-wallet-batch-routing-20261019/capacity-02/warmup-audit/test.log": "71615aa28dc0da2d0906751cefcb8b3f11049092f0597af5e0da8f8512c131ae"
+      }
+    }
+  ],
+  "limitations": [
+    "Wallet batch and legacy LJSTREE1 container qualification only; not full 64-entry or 128-entry recursive block aggregation.",
+    "LJSTREE1 remains a container of independently proved leaves, not recursion.",
+    "The 63-entry cases test padding to the 64-tile limit; these cases do not exhaust all counts or witness distributions.",
+    "Current timing excludes CPU verification, input/output preparation, startup/shutdown, network/consensus and complete node/host processing.",
+    "Serial input-rate extrapolations are not measured sustained transaction throughput or pool timing approval. Separate fixed-order screens do not establish an optimal batch size or a speedup over another backend.",
+    "Larger tree containers, multi-GPU concurrency, V100 execution and matched CPU/OpenCL comparisons remain open.",
+    "No new sanitizer run accompanies these larger production API tests; prior primitive sanitizer coverage is recorded separately."
+  ],
+  "evidence_builder_sha256": "de3d55950318358418fd7fd40d302fe2cb8f1e97995c0f7d8ba3591eb4a798d9"
+}

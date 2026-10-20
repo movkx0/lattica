@@ -104,6 +104,22 @@ audits and tamper checks. These wallet batch and legacy tree measurements
 exclude recursive aggregation and complete transaction processing, so compare
 them only with the same workload and timing boundary.
 
+The [larger CUDA wallet screen at `0b135b7`](evidence/cuda-wallet-capacity-2026-10-19.json)
+used the same production library and resource limits. All 88 outputs passed
+independent CPU verification and tamper checks, including padded 63-entry
+batches and 64-leaf legacy containers. Selected batch medians were:
+
+| Wallet batch entries | JoinSplit | HTLC |
+|---|---:|---:|
+| 16 | 0.621 s | 1.121 s |
+| 32 | 1.202 s | 2.195 s |
+| 64 | 2.529 s | 4.671 s |
+
+Managed GPU memory peaked at 4.99 GiB under the existing 7 GiB allowance.
+These are direct wallet batch proofs; full recursive block workloads remain
+separate qualification tasks. Choosing a batch size needs a matched comparison
+because the 32- and 64-entry measurements came from separate fixed-order runs.
+
 The [RTX 5080 four-entry comparison at `bce8830`](evidence/gpu-tuning-rtx5080-2026-10-18.json)
 completed 56 trials: a warmup for each selection and five alternating pairs per
 candidate. Each trial aggregated three user transactions and one issuance entry
