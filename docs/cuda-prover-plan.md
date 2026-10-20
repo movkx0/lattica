@@ -1274,6 +1274,23 @@ device owners. Managed VRAM peaked at 141,570,328 bytes and service RAM at
 event counters were unavailable; systemd retained the service peak and exit
 status. These correctness timings do not establish transaction throughput.
 
+The [post-push recursive benchmark `d072390`](evidence/cuda-wallet-routing-benchmark-2026-10-19.json)
+used the maintained CUDA CLI with one warmup and three measured runs of the
+four-input, capacity-64 fixture. Measured times were 50.58, 49.69 and 49.64
+seconds, with a 49.69-second median. That extrapolates to about 290 aggregate
+inputs per hour for serial runs. The fixture includes one issuance input;
+wallet generation, network/consensus and native block processing are excluded.
+The interval includes a fresh worker, parent CPU verification, shutdown,
+observed exit and test harness overhead. Additional archived CPU root audits
+run outside the interval. All sixteen recursive proofs passed parent
+verification; all four roots passed the archived CPU auditor, which rejected
+altered statements and proofs. All 96 CUDA stage reports were complete.
+Managed GPU memory peaked at 7,450,300,432 bytes and worker RAM at 1,286,955,008
+bytes. Workers retired, workspaces were released and shared resource settings
+were unchanged. This is neither steady-state pool throughput nor a matched
+CPU/OpenCL comparison. The earlier Python launcher measurement has a different
+boundary and cannot establish a speedup here; pool timing approval remains open.
+
 This checkpoint does not qualify CUDA batch/tree wallet APIs, node/block
 processing, multi-GPU concurrency, V100 execution, or matched CPU/OpenCL speedup.
 Those requirements and the remaining implementation sequence stay open.

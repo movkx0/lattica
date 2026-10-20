@@ -1,0 +1,588 @@
+{
+  "schema": "lattica-cuda-wallet-routing-benchmark-v1",
+  "date": "2026-10-19",
+  "status": "passed",
+  "source_commit": "d072390f6111590cc13bb224dfac663c432327a0",
+  "qualification": "docs/evidence/cuda-wallet-routing-2026-10-19.json",
+  "source_manifest_sha256": "25767ff3d5ee3b52def87a028da312619263f639f8a68a00a4b695e8651ec2e3",
+  "source_pin_count": 843,
+  "all_source_pins_match_commit_and_worktree": true,
+  "features": [
+    "gpu-cuda",
+    "block-v2-host",
+    "stream"
+  ],
+  "build_profile": "release x86-64-v3",
+  "images": {
+    "test_executable_sha256": "48355778567ef3ad7773d6ef96d5e3669482ffce8336993baae68d5dd38f339e",
+    "production_cli_sha256": "e329620f455657db7fe7b7caab73fca611867a20d51af26dab639563395fed49",
+    "production_static_library_sha256": "185424f273324eb4869d1ce7d6564fecc9c556f7d1316ae2b58e47872e4e3fad",
+    "production_static_library_path": "/home/access/code/lattica/.tools/target-cuda/release/liblattica_prover_p3.a"
+  },
+  "independent_cpu_auditor": {
+    "path": "lattica-prover-p3/benchmark-results/gpu-wallet-recovery-ownership-20261015/cpu-build-01/production-image",
+    "sha256": "95a7b0e65bff3f88e9d75b89343f88d952829f8631106d10c884683c9a6c712a"
+  },
+  "nvrtc": {
+    "/home/access/code/lattica/.tools/cuda-12.9.1/lib/libnvrtc.so": {
+      "target": "/home/access/code/lattica/.tools/cuda-12.9.1/lib/libnvrtc.so.12.9.86",
+      "sha256": "c3430e8b6b0d8d3a74f5f839118a85e13e3ad6e4d6203ea1b6a27a0c0b4fe10a"
+    },
+    "/home/access/code/lattica/.tools/cuda-12.9.1/lib/libnvrtc-builtins.so.12.9": {
+      "target": "/home/access/code/lattica/.tools/cuda-12.9.1/lib/libnvrtc-builtins.so.12.9.86",
+      "sha256": "6507cf33450cfb22970c2c1e7aa8e7c0a33e39d864720277b05f61a92791e2e8"
+    }
+  },
+  "device": {
+    "ordinal": 0,
+    "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "pci": "0000:01:00.0",
+    "name": "NVIDIA GeForce RTX 5080",
+    "global_bytes": 16703946752,
+    "compute_capability": 120,
+    "driver_api": 13040,
+    "max_threads": 1024,
+    "max_grid_x": 2147483647,
+    "shared_bytes": 49152,
+    "multiprocessors": 84,
+    "max_threads_per_multiprocessor": 1536
+  },
+  "driver_version": "615.78.08",
+  "artifacts_directory": "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01",
+  "fixture": {
+    "qualification": "docs/evidence/gpu-native-tree-cache-2026-10-15.json",
+    "profile_capacity": 64,
+    "inputs": 4,
+    "composition": {
+      "joinsplit": 1,
+      "htlc": 2,
+      "issuance": 1
+    },
+    "recursive_jobs": {
+      "wrap_pair": 2,
+      "merge": 1,
+      "finalize": 1
+    },
+    "files_sha256": {
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/height.json": "54faea9b3eeffce2a5ea906fdd1232a52a55d57d993e5406a572b9a9ea2827d8",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/key.1": "bc68bed8feb00e4ca638a2f84eb9afd9c56c44a064974766a3c9482be725c9f0",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/key.2": "d9a0b7e354406eceb01ce26e530d15147a89a4842cfa0e8e5656f0bb038cc4cd",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/key.3": "ac70358e4477dbf9bf46d740c940ed029a66b591ab3a3a6f54e4e3c248bf7269",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/key.4": "62c9573357982e487f966d384e8c6d38f7c083d45f2854984795412747ac6764",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/key.5": "476209a443fecc18b31e57b6c962b2f02c616aecfb0b0070a5b8f56127eb9cef",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/key.6": "a55860e4e11c89160be7efef8e1e2e60976eb5108c2424c84d858a5509e11630",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/key.7": "8ecaa4b2c6e9be402908a9e07a980dd878dd61feba1b1a70e3856fe14f95d507",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/key.8": "82aa68c5eed6ae83a2fd8399bb503bd9f756403a1f4ce74faad416ba05c2b22c",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/key.9": "8e21e13a1a88fc493c187296093013996977b60f159ac3345d181847053c1caf",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/key.10": "225622034e0200a2b48b78ef18e16131d0960565678b961b57565095fafaa675",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/key.11": "4c0de103d134ed60d93eca2c70c22bc709aacde012fdd1db07b3724a9f07d1e1",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/key.12": "8ea9ca74ed22aa0c5568b02dcea9f3fe7f04104edd8a1bc1faf9c6a27945250f",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/genesis.bin": "679c6c4181a461755a2f74f588343eb45df65255f25608a38756881104169349",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/complete-body.0": "6b2891053511faafd8b3e20dbc8312121ef1d9cfdd389f7deb5d6342b06bd023",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/wallet.0": "7b1f370811039fce4b3855377fd5bf147cb1122c7c2d429fb93f58aed667ee5e",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/complete-body.1": "58796634e5047b55407f17f2ad7120468fc66ac658491a1bef20bbda5589e1b6",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/wallet.1": "24d543267d8510a9983bf535f9aae7a9718e7ad0c93a824e10d323877939743c",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/complete-body.2": "bc7f3fc040776480d77592559fa43b79a8c1298deb612afcb27b4cfc5ac16341",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/wallet.2": "36e3e66afaa1421885045f283a03cfb417a909357c5337d088e5541f10e83480",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/complete-body.3": "f7a172ed5514f22ddfe8a9662f5b9ce55c724d77beb3bc7d8deb205971f56a0b",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/wallet.3": "b7fecc753e79dd658455db57594e859595ae75e9ca2a79712222b23edcaac1fe",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/complete-body.bin": "b73ebbbb876dd77435adcda58965c8a7daeaf0e7e15d4178731a85208a5af0bf",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/body.json": "0dad7167aa5730326b181f4d6ebd3aed639cfd9b3b7d56a299f838be596cd0dd",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/native-expected.bin": "16504f928fd0467f10f6195b698e139e0fbdfe9a7d8a6c5bbf6793ee34c044f8",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/expected.json": "72e76de4eed96e2444fd8d4875563dcd9918c68b95d3dba58430f435174c2cf1",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/public-check-1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/host-registry.bin": "3b9b74f3b632f369c905b132d61b97d7cdc73bcbd664bf13344ae3d372367947",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/public-check-2.log": "ba5254ce3e541fcf64a8bf52a478920f94c5e44ac1c214266fa78136b34746a3",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/public-check-3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/rust-expected.bin": "16504f928fd0467f10f6195b698e139e0fbdfe9a7d8a6c5bbf6793ee34c044f8",
+      "lattica-prover-p3/benchmark-results/gpu-native-tree-cache-20261015/qualify-wallets-01/audit/fixture/manifest.json": "ce3997d1d7416ea7c2349cb3e051a6e3662cb70ebc95bf7e810aa5b78d1d5b79"
+    }
+  },
+  "measurement": {
+    "entry_point": "maintained block-v2-paired-probe CLI through the native CUDA integration harness",
+    "boundary": "wall time of the integration test process: fresh CLI worker, four recursive jobs, independent parent CPU verification, shutdown, observed exit and harness overhead",
+    "additional_cpu_root_audit": "outside the measured interval",
+    "warmups": 1,
+    "measured_repetitions": 3,
+    "seconds": [
+      50.582189296000024,
+      49.68774480299999,
+      49.63565410199999
+    ],
+    "median_seconds": 49.68774480299999,
+    "serial_aggregate_inputs_per_hour": 289.809892904026,
+    "serial_non_issuance_inputs_per_hour": 217.35741967801948,
+    "throughput_interpretation": "serial extrapolations for the fixed fixture; not end-to-end transaction or steady-state pool throughput",
+    "timing_approved": false
+  },
+  "resources": {
+    "worker_ram_limit_bytes": 3221225472,
+    "coordinator_ram_limit_bytes": 1073741824,
+    "dedicated_slice_ram_limit_bytes": 4294967296,
+    "swap_limit_bytes": 0,
+    "rayon_threads": 4,
+    "cpu_quota_percent": 400,
+    "worker_tasks_max": 96,
+    "managed_gpu_limit_bytes": 7516192768,
+    "max_gpu_allocation_bytes": 1073741824,
+    "gpu_context_reserve_bytes": 4294967296,
+    "gpu_headroom_bytes": 1073741824,
+    "program_host_limit_bytes": 1073741824,
+    "program_input_values_limit": 1048576,
+    "program_wires_limit": 16777216,
+    "worker_ram_peak_bytes_including_warmup": 1286955008,
+    "managed_gpu_peak_bytes": 7450300432,
+    "dedicated_slice": "lattica-v2-multi-cuda-wallet-bench-q01.slice",
+    "dedicated_slice_ram_peak_bytes": 1434636288,
+    "dedicated_slice_memory_events_after_exit": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "shared_fleet_settings_unchanged": true,
+    "worker_event_observation_boundary": "before_stop; worker cgroups no longer exist at final observation"
+  },
+  "runs": [
+    {
+      "name": "warmup",
+      "measured": false,
+      "seconds": 49.38138738900011,
+      "inner_worker_startup_verification_shutdown_seconds": 48.738515852,
+      "worker_ram_peak_bytes": 1286955008,
+      "worker_memory_events_before_stop": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "coordinator_ram_peak_bytes": 98299904,
+      "coordinator_memory_events_before_exit": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "spill_peak_bytes": 831496192,
+      "cuda_shutdown": {
+        "allocations": 0,
+        "completed_commands": 143407,
+        "copied_bytes": 6208,
+        "device_ns": 32230031570,
+        "downloaded_bytes": 10577112,
+        "live_bytes": 0,
+        "modules": 0,
+        "peak_allocations": 100,
+        "peak_bytes": 7450300432,
+        "pending_commands": 0,
+        "public_program_bytes": 0,
+        "public_programs": 0,
+        "uploaded_bytes": 1798948160
+      },
+      "parent_verified_recursive_proofs": 4,
+      "parent_rejected_altered_statements": 4,
+      "complete_cuda_reports": 24,
+      "independent_cpu_root_audit": [
+        {
+          "case": "valid",
+          "exit_code": 0,
+          "expected_success": true
+        },
+        {
+          "case": "changed-statement",
+          "exit_code": 1,
+          "expected_success": false
+        },
+        {
+          "case": "changed-proof",
+          "exit_code": 1,
+          "expected_success": false
+        }
+      ],
+      "root_sha256": "f5deaabd42a129840fa5121c2135fd00554a7ec51c70dda20200f6ab4fff6ec0",
+      "worker_identity": {
+        "pid": 19512,
+        "start_ticks": 123236,
+        "boot_id": "ab075080-66ef-4a5a-b5b2-b80665a2f3ad",
+        "invocation_id": "cecfd38b-47f1-4a75-9193-855fc9abad24",
+        "unit": "lattica-v2-multi-persistent-762fba0dda8811ed9c087511c77bb3d66accfe8e2c51342b4a0cfed836a29c1c.service"
+      },
+      "worker_exit_observed": true,
+      "workspace_released_after_observed_exit": true,
+      "original_worker_absent_at_final_check": true
+    },
+    {
+      "name": "trial-01",
+      "measured": true,
+      "seconds": 50.582189296000024,
+      "inner_worker_startup_verification_shutdown_seconds": 49.919957872,
+      "worker_ram_peak_bytes": 1232162816,
+      "worker_memory_events_before_stop": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "coordinator_ram_peak_bytes": 60755968,
+      "coordinator_memory_events_before_exit": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "spill_peak_bytes": 831496192,
+      "cuda_shutdown": {
+        "allocations": 0,
+        "completed_commands": 143416,
+        "copied_bytes": 6208,
+        "device_ns": 33338252154,
+        "downloaded_bytes": 10577120,
+        "live_bytes": 0,
+        "modules": 0,
+        "peak_allocations": 100,
+        "peak_bytes": 7450300432,
+        "pending_commands": 0,
+        "public_program_bytes": 0,
+        "public_programs": 0,
+        "uploaded_bytes": 1798948160
+      },
+      "parent_verified_recursive_proofs": 4,
+      "parent_rejected_altered_statements": 4,
+      "complete_cuda_reports": 24,
+      "independent_cpu_root_audit": [
+        {
+          "case": "valid",
+          "exit_code": 0,
+          "expected_success": true
+        },
+        {
+          "case": "changed-statement",
+          "exit_code": 1,
+          "expected_success": false
+        },
+        {
+          "case": "changed-proof",
+          "exit_code": 1,
+          "expected_success": false
+        }
+      ],
+      "root_sha256": "a948efe840d179656977381d718caaf009cada0f92a7639904e46cf58ff953fa",
+      "worker_identity": {
+        "pid": 19918,
+        "start_ticks": 128217,
+        "boot_id": "ab075080-66ef-4a5a-b5b2-b80665a2f3ad",
+        "invocation_id": "e1399b32-f9a8-4496-b3af-7e291fcbffd6",
+        "unit": "lattica-v2-multi-persistent-24eb83544f8c28df807fe0653b56a6a63c915afd602f033705263b675421e85b.service"
+      },
+      "worker_exit_observed": true,
+      "workspace_released_after_observed_exit": true,
+      "original_worker_absent_at_final_check": true
+    },
+    {
+      "name": "trial-02",
+      "measured": true,
+      "seconds": 49.68774480299999,
+      "inner_worker_startup_verification_shutdown_seconds": 49.02108929,
+      "worker_ram_peak_bytes": 1253253120,
+      "worker_memory_events_before_stop": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "coordinator_ram_peak_bytes": 70119424,
+      "coordinator_memory_events_before_exit": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "spill_peak_bytes": 831496192,
+      "cuda_shutdown": {
+        "allocations": 0,
+        "completed_commands": 143401,
+        "copied_bytes": 6208,
+        "device_ns": 32288663202,
+        "downloaded_bytes": 10577080,
+        "live_bytes": 0,
+        "modules": 0,
+        "peak_allocations": 100,
+        "peak_bytes": 7450300432,
+        "pending_commands": 0,
+        "public_program_bytes": 0,
+        "public_programs": 0,
+        "uploaded_bytes": 1798948160
+      },
+      "parent_verified_recursive_proofs": 4,
+      "parent_rejected_altered_statements": 4,
+      "complete_cuda_reports": 24,
+      "independent_cpu_root_audit": [
+        {
+          "case": "valid",
+          "exit_code": 0,
+          "expected_success": true
+        },
+        {
+          "case": "changed-statement",
+          "exit_code": 1,
+          "expected_success": false
+        },
+        {
+          "case": "changed-proof",
+          "exit_code": 1,
+          "expected_success": false
+        }
+      ],
+      "root_sha256": "90fe2a5e7400eabf85d9597be85f53c5270fac04530ca957c93956abaca4bdec",
+      "worker_identity": {
+        "pid": 20460,
+        "start_ticks": 133318,
+        "boot_id": "ab075080-66ef-4a5a-b5b2-b80665a2f3ad",
+        "invocation_id": "6766d0c7-3d8e-4cb6-8ba0-06d83798713c",
+        "unit": "lattica-v2-multi-persistent-4daec4cc5f2d4f6bfe374e50c6cf29e69c1e116ac265a6a52543b9edad8380f2.service"
+      },
+      "worker_exit_observed": true,
+      "workspace_released_after_observed_exit": true,
+      "original_worker_absent_at_final_check": true
+    },
+    {
+      "name": "trial-03",
+      "measured": true,
+      "seconds": 49.63565410199999,
+      "inner_worker_startup_verification_shutdown_seconds": 49.006729513,
+      "worker_ram_peak_bytes": 1253302272,
+      "worker_memory_events_before_stop": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "coordinator_ram_peak_bytes": 67096576,
+      "coordinator_memory_events_before_exit": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "spill_peak_bytes": 831496192,
+      "cuda_shutdown": {
+        "allocations": 0,
+        "completed_commands": 143404,
+        "copied_bytes": 6208,
+        "device_ns": 32267624182,
+        "downloaded_bytes": 10577096,
+        "live_bytes": 0,
+        "modules": 0,
+        "peak_allocations": 100,
+        "peak_bytes": 7450300432,
+        "pending_commands": 0,
+        "public_program_bytes": 0,
+        "public_programs": 0,
+        "uploaded_bytes": 1798948160
+      },
+      "parent_verified_recursive_proofs": 4,
+      "parent_rejected_altered_statements": 4,
+      "complete_cuda_reports": 24,
+      "independent_cpu_root_audit": [
+        {
+          "case": "valid",
+          "exit_code": 0,
+          "expected_success": true
+        },
+        {
+          "case": "changed-statement",
+          "exit_code": 1,
+          "expected_success": false
+        },
+        {
+          "case": "changed-proof",
+          "exit_code": 1,
+          "expected_success": false
+        }
+      ],
+      "root_sha256": "8c59a75ea8fb01ccdd4e20ade706f3695d156a59915d61a9e6633d497e008b0f",
+      "worker_identity": {
+        "pid": 20930,
+        "start_ticks": 138330,
+        "boot_id": "ab075080-66ef-4a5a-b5b2-b80665a2f3ad",
+        "invocation_id": "788175f5-3585-4328-9fac-fab5e376f6bd",
+        "unit": "lattica-v2-multi-persistent-3c60b673494a5e8bf0b61d202aabcfffb04627cf091a808ab80872050f344f1e.service"
+      },
+      "worker_exit_observed": true,
+      "workspace_released_after_observed_exit": true,
+      "original_worker_absent_at_final_check": true
+    }
+  ],
+  "validation": {
+    "parent_verified_recursive_proofs": 16,
+    "parent_rejected_altered_statements": 16,
+    "independently_cpu_verified_roots": 4,
+    "independent_cpu_rejections": {
+      "altered_statements": 4,
+      "altered_proofs": 4
+    },
+    "complete_cuda_reports": 96,
+    "report_entry_counts_per_run": {
+      "cuda_block_v2_statement": 8,
+      "cuda_block_v2_registry_compilation": 4,
+      "cuda_typed_preprocessing": 4,
+      "cuda_typed_registered_program": 4,
+      "block_v2_typed_wrap_pair": 2,
+      "block_v2_typed_merge": 1,
+      "block_v2_typed_finalize": 1
+    },
+    "source_images_fixtures_and_nvrtc_pins_unchanged": true,
+    "all_eight_producer_and_auditor_services_exited_successfully": true,
+    "all_workers_retired_and_workspaces_released": true,
+    "final_retirement_observation_utc": "2026-10-20T00:11:35.017502+00:00",
+    "original_workers_absent_from_nvidia_compute_processes": true,
+    "dedicated_slice_populated_after_exit": false
+  },
+  "limitations": [
+    "Wallet generation, network/consensus and native node/block processing are excluded.",
+    "One fresh worker per run; no steady-state pool or multi-GPU throughput claim.",
+    "The fixture includes one issuance input; four aggregate inputs are not four non-issuance user transactions.",
+    "No matched CPU/OpenCL comparison, performance activation, or pool timing approval.",
+    "The earlier Python-launcher benchmark used a different timing boundary and is not a speedup baseline.",
+    "CUDA batch/tree wallet APIs, larger workloads, V100 execution and broader host/node integration remain unqualified."
+  ],
+  "artifact_files": {
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/benchmark.py": "79b24e04dd0244afce25bd5946e21920fda0d1efcb2cdc8d3de38f276ab306e1",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/produce.py": "fc273d7a6e1a63a32ce596612670a26b1f81bbf632920f4cfaad8453ceded8da",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/audit.py": "934ef2bc8efa1e8d2320a161fb743ecf66c678693a8b76d46be519638c021ed2",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/source-pins.json": "25767ff3d5ee3b52def87a028da312619263f639f8a68a00a4b695e8651ec2e3",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/build-result.json": "e1ee781128446337ce3ee17b678d0cd50972d1000686e5242d0ce5e9c833a14a",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/progress.json": "db1e0a64c5d0eb4deabb8fee9b8f2fdd6d5a9d9380747e4714c028f2b72e95f5",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/result.json": "8aff8448c564f57db1bdea1c60b0ed3cf6f093c622a951a292165b2f6f7aa228",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/shared-limits-before.txt": "b30b6aabc86d437d2be9a7db38df61b8b007df961ad7e9a4b0d9872c0c3761b1",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/shared-limits-after.txt": "b30b6aabc86d437d2be9a7db38df61b8b007df961ad7e9a4b0d9872c0c3761b1",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/retirement-after.json": "50108afbabf5029a2b0e63a24428546bfb5f8f09767a44c038ca1c8a7f70fd96",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup-result.json": "df3026c85bb74a16aa840ab629fed0e1b0c390a9cc4456fd490caf15c6d23bfa",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup-command.json": "0111723e97182f572cc8294d10264732bc3fceba9154b6c2079f581b593863da",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup-producer-service.log": "42893ab590183957464f6747fb3e71b5a005ca54f140f36fdf5123e88ed2d0d7",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup-audit-service.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/result.json": "53c868a58ed2872b7f9bab8cf54da556886619e570612b13568f11739675b643",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/cli-report.json": "0a9ca6fcd930c8deb67295d4d205dde001884cc31b41cf5e70a25d6736bf3808",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/worker-observations.json": "b32f46ecda64fd66672c84e224b223bc73a531d7704c0c0be2537050d5b162f9",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/service-identity.json": "9b051860eecfc7121de36539a92274bb8c17fa78bbd173ccec556243ff49e725",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/budget.json": "614a2a1d48ef9313b1e803406d9254c3d0d613a122a9d89b3e15f1f67cc5b89a",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/bootstrap.json": "626de4e885fac22e861c2916455e7144920ee2d133e8de4a6021d72be241128f",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/test.log": "e258124f98a6f9cc336aa986b8f60ad280d2c5b3c1fa45fd4edc538e0a2bda05",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/worker.log": "1ea5f0d5aefc46d668cdd93f82973c6f086594e45d7b92f78c38980d200a3615",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/root.bin": "f5deaabd42a129840fa5121c2135fd00554a7ec51c70dda20200f6ab4fff6ec0",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/artifacts/n-4db7da4019b8e9ec28cfe6e8b6e0543864066cb7d9f545abd1b0782b8ea39acf.proof": "61af93eb7ebc1748be05faca320f8c59ea2c66f2e876ae04c061230264b80281",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/artifacts/n-b47c5b7bdf936ed5271e205e73ad1e47320726d4693a0d880c845ffeeeb8f312.proof": "46587c682ff3bac3fd42e64191e35c98a6898b6b123c90b433523ad870411076",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/artifacts/n-c1ea8cc9b7a7e3f1d2ba52c39e63b340f6e026d0610bbdd52a8d52c9052ff176.proof": "f5deaabd42a129840fa5121c2135fd00554a7ec51c70dda20200f6ab4fff6ec0",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/artifacts/n-e0da57f68f4b767f26863ffe2c194548d894b808ea2fca9cb214df555db68260.proof": "27bfec551bec7cb70d2f1bd1054b0d03bec071e5b11f7b55d3f6a3c20a8e5bc0",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/artifacts/w-0336e641cc59a07f4beb892c1932775b2216e9b7f1ad462db8185662aa1a72b2.proof": "24d543267d8510a9983bf535f9aae7a9718e7ad0c93a824e10d323877939743c",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/artifacts/w-4fb93bfea390245a9fbc3710459ca2f7db53a9540925ef29804bf3c0195d6e6c.proof": "36e3e66afaa1421885045f283a03cfb417a909357c5337d088e5541f10e83480",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/artifacts/w-cadcdc132622fb318cd2b41364d02559ed08986321053e8aea7c09dcf6536df9.proof": "7b1f370811039fce4b3855377fd5bf147cb1122c7c2d429fb93f58aed667ee5e",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup/artifacts/w-f74aa03798be70537a0843c7f867d84177f6c20b3d6215989f13da40515fc12f.proof": "b7fecc753e79dd658455db57594e859595ae75e9ca2a79712222b23edcaac1fe",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup-audit/result.json": "40d87f0014710b926d45caf805045f2a2088d6c9c161f55ec23061fcce7797bd",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup-audit/valid.log": "418e7645b4dde67b3abe8ee5aa542476e64aafd2e29ad64bc6b37671dc3594e4",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup-audit/changed-statement.log": "ed4d243c0e9d0e394bd62a6cdd7ce2de632b0e321ca95d84a2c185134cb2e75b",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/warmup-audit/changed-proof.log": "fa08b0ab983c8f24eab74c32c526b08f34e161ccc3319ad932fd1825e0dbfa76",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01-result.json": "03104d8ebbad262735257d031b3ca9d4bc5ddaf8f84e3acbc9afcd14e8bbbef3",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01-command.json": "1cee9e5d8b4ba547e3b1ca2225f6a8e6ad47fc92ce25cc104e538f364f7bd295",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01-producer-service.log": "4d5ec2ad03234a45c41b69653b3fc4b3b1482a9469bf7ac463bcdd02a2044fa7",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01-audit-service.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/result.json": "ec755cc9009b71b5bc4c5ac1a4cedeada238b5199d4b380d3431aaae01e3664c",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/cli-report.json": "292351515c0d4e2370f9354a98413a8fd306c34173e791bf9f16813655b47d9f",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/worker-observations.json": "f0650cf24af47ff37ad52d221dfb9a3aec0dceba3ee0e7470846b34baf5a5614",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/service-identity.json": "4d58628b1179c2a02deb00e8d11d03945ced400843ce836523ff7ec64fc793e7",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/budget.json": "3e2044e6e4e34aeb5a646da70b883b1ffa80dfe87f51fec64a5db6866d2ced73",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/bootstrap.json": "317779916f6c76a29a7dbd1efdaaf9d2b7a62ae173eb2ddeb6d6bd3986933221",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/test.log": "340cc813ee30e2cb3a0cd395f2efb2ec3f4803434d1bb21ca9d0cfbc94327f4d",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/worker.log": "632ccb4bbec4f74d45f51697f437fd57c2b3b79fe9a3126be4df2d0d21f690c7",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/root.bin": "a948efe840d179656977381d718caaf009cada0f92a7639904e46cf58ff953fa",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/artifacts/n-06df4e92d43af97be42c3425da42b8e28a942d87da95a4c9bb8cb1b2a5dc3717.proof": "a948efe840d179656977381d718caaf009cada0f92a7639904e46cf58ff953fa",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/artifacts/n-0b9ee389cea45ed2c868a461b017d68e6cf2e852f4dcdb76311855f2b0fbc6b4.proof": "54d7f146fadb83c7be465d74bb79693957099435d0518d2cd6687877ea4a9ef5",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/artifacts/n-60117faa4ad8e8f14a78479787c1a72004519e7a761b5e85a586c7bfa2a3f814.proof": "eb1cdb6f5d4bdf1f2b87a446e7204450be2fbb2bce39145d1b48a2cd6d57de81",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/artifacts/n-c03f0bcc386cd04470a70aa2b977c9d9bff8a02c511245deac9313ba2f35feda.proof": "e3024aa7265cb5b41a2a315167979b930ab019306c5986058f67b2062d658567",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/artifacts/w-0336e641cc59a07f4beb892c1932775b2216e9b7f1ad462db8185662aa1a72b2.proof": "24d543267d8510a9983bf535f9aae7a9718e7ad0c93a824e10d323877939743c",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/artifacts/w-4fb93bfea390245a9fbc3710459ca2f7db53a9540925ef29804bf3c0195d6e6c.proof": "36e3e66afaa1421885045f283a03cfb417a909357c5337d088e5541f10e83480",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/artifacts/w-cadcdc132622fb318cd2b41364d02559ed08986321053e8aea7c09dcf6536df9.proof": "7b1f370811039fce4b3855377fd5bf147cb1122c7c2d429fb93f58aed667ee5e",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01/artifacts/w-f74aa03798be70537a0843c7f867d84177f6c20b3d6215989f13da40515fc12f.proof": "b7fecc753e79dd658455db57594e859595ae75e9ca2a79712222b23edcaac1fe",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01-audit/result.json": "f5c04efcc9bb053cd5fa3034c262206ba9fd64e1337ba6e48597453064d4e520",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01-audit/valid.log": "418e7645b4dde67b3abe8ee5aa542476e64aafd2e29ad64bc6b37671dc3594e4",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01-audit/changed-statement.log": "ed4d243c0e9d0e394bd62a6cdd7ce2de632b0e321ca95d84a2c185134cb2e75b",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-01-audit/changed-proof.log": "fa08b0ab983c8f24eab74c32c526b08f34e161ccc3319ad932fd1825e0dbfa76",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02-result.json": "ff089608703a566cd1754ee4332bf4b0f09be172e9ba6ef7b73ec1d9e69bbcb1",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02-command.json": "cdf83db4ce2d6bf1ceb0f710fa76f429b7b3a95a7df736493deec560e3ac8361",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02-producer-service.log": "ebbda55a093850d1f3d33b56b76264f2c8dac9609bb763abb4beea77a6e8d437",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02-audit-service.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/result.json": "2270499c4f4bf79932205f7b7d8c364157fc81c91868f9db1ce1c92e4a754c5d",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/cli-report.json": "691a4ecb7831743dbc336e3d43f2f539587d777be8e088dedf66e8f99630a8af",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/worker-observations.json": "94935d47934818bf2522f9c9036e4dd399b79c541af092406dbaf12772a675c0",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/service-identity.json": "7007783484f7aa7e816471533f1dcf699350fd9f1fffa1356f83325f062d1df6",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/budget.json": "a2f88deae5c15f90b50cbbec2db8d2d628372e48fdd9563d0270769d9736aa5d",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/bootstrap.json": "310a8d54e0d8d8253dbd0fe2bfe7b003796a1ba5ddb8674ec4dfeddb2f77ffba",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/test.log": "a60f7015082747be44d9e75dd2bb0c84d0763e1a8fc5f3a18323ab0b825131a6",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/worker.log": "4478db2c906ffd26ed7ca5efa6a14e4a03e70cdda51e9a2666d4d9ba527543ea",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/root.bin": "90fe2a5e7400eabf85d9597be85f53c5270fac04530ca957c93956abaca4bdec",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/artifacts/n-17b0ead6077246bc5e1464f9959b2677d6ea775c750cab623368c11b9c906005.proof": "0ea75082b84256f1d1eb918603403c704e0a8f926adc49dd0f3eb39c826640fc",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/artifacts/n-1b3d120293facabb749ef59ce700e01f8a2ef64e891d680947af4ab1cf014b91.proof": "932035e2e47f73503ab8b3965718fed635dd056f195a22d3b7315832f84ab646",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/artifacts/n-b7eb68de06556629a78be6f23488579b157bf2ec61e1d03a51989db9ae67181d.proof": "90fe2a5e7400eabf85d9597be85f53c5270fac04530ca957c93956abaca4bdec",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/artifacts/n-fbcbcccde2eb66b0160ca48b172ce3af3b3b56265e895c73ec4c6c0e352e6738.proof": "a04e1e2718f0f5357d6d332a5b2b1b0138574394a9a3283fd641d4166b9ea4cb",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/artifacts/w-0336e641cc59a07f4beb892c1932775b2216e9b7f1ad462db8185662aa1a72b2.proof": "24d543267d8510a9983bf535f9aae7a9718e7ad0c93a824e10d323877939743c",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/artifacts/w-4fb93bfea390245a9fbc3710459ca2f7db53a9540925ef29804bf3c0195d6e6c.proof": "36e3e66afaa1421885045f283a03cfb417a909357c5337d088e5541f10e83480",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/artifacts/w-cadcdc132622fb318cd2b41364d02559ed08986321053e8aea7c09dcf6536df9.proof": "7b1f370811039fce4b3855377fd5bf147cb1122c7c2d429fb93f58aed667ee5e",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02/artifacts/w-f74aa03798be70537a0843c7f867d84177f6c20b3d6215989f13da40515fc12f.proof": "b7fecc753e79dd658455db57594e859595ae75e9ca2a79712222b23edcaac1fe",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02-audit/result.json": "f769acee8e81aa3caad6725524c9ddbc1ad3c0729040e8b024c128ac482d39a7",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02-audit/valid.log": "418e7645b4dde67b3abe8ee5aa542476e64aafd2e29ad64bc6b37671dc3594e4",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02-audit/changed-statement.log": "ed4d243c0e9d0e394bd62a6cdd7ce2de632b0e321ca95d84a2c185134cb2e75b",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-02-audit/changed-proof.log": "fa08b0ab983c8f24eab74c32c526b08f34e161ccc3319ad932fd1825e0dbfa76",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03-result.json": "0c699684bfee2fd932baef9d95b4cf97f29744d1b21e08f2451347fa1d1db9f9",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03-command.json": "59a1594f031af70872e4c46e9a448c73ccb7df12f228422cd3ad81d994cff2f2",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03-producer-service.log": "d2fb5bf394065dfc313254b92adf7f8aa48bdd828ec3cc815a1b6a6d4f7a8412",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03-audit-service.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/result.json": "393fdf6f1032c1f0ba33c5c3456fe81131b4784a97ce72389dcaf41ca088e388",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/cli-report.json": "9ff050bf1cf2d2344f69cb09268591b1fb32a53efcce78f5c7d2c51884ccd7bf",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/worker-observations.json": "258a80a84045beeb85d6d1a93d66250fb0416dd76632cb076bd1380f1ee7aefc",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/service-identity.json": "128cc691e6c0f9e22c1269be057fbdb676e7aed31712774bf9b3b5ded8d1feb0",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/budget.json": "cee5b3ca05f5688b34cc4f739ead086d0e72d3e49eb160097df4140a17824eeb",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/bootstrap.json": "7a2c5cc1d1cba6fc28fe016637a9fa358615a5be382e22ba605de243fcc8d0ed",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/test.log": "7ac65b0e07ae8fc4e36505ab334fd53f0163e86db84dfb298825d89106792f73",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/worker.log": "52b34f0dfddb1a4b1618160cb33490ab5ca630883429caffc99f8066c0dde5ef",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/root.bin": "8c59a75ea8fb01ccdd4e20ade706f3695d156a59915d61a9e6633d497e008b0f",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/artifacts/n-2642ee20f7353d9af0696f682f56eef800ced7c4a5a8bff3d048baa3a26a73de.proof": "2812785b5624fc7fa2d80264d1b61e33aed99123a2313c1c71d29bcdb24b93e2",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/artifacts/n-8385cdeb58f7215929d6f89bd92b7bf3c6a1070accf5e82deda4c120bc0a813b.proof": "8c59a75ea8fb01ccdd4e20ade706f3695d156a59915d61a9e6633d497e008b0f",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/artifacts/n-874894d187c5b0f89795955dd4f66bf50d935d72f8ff16b91f73ebd569b6cd68.proof": "ca3395ea24e25deae473c34eea69dd5dac25bcb53b596037d4b22be93e211389",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/artifacts/n-cacd867578c358ac984dbdc28291ef9f6052de16e76a1fab5916ae6f88b513a8.proof": "b3a8fd088cc841384e56e7405606a6ce8006e698547ac4745ec1cafc032b4c92",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/artifacts/w-0336e641cc59a07f4beb892c1932775b2216e9b7f1ad462db8185662aa1a72b2.proof": "24d543267d8510a9983bf535f9aae7a9718e7ad0c93a824e10d323877939743c",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/artifacts/w-4fb93bfea390245a9fbc3710459ca2f7db53a9540925ef29804bf3c0195d6e6c.proof": "36e3e66afaa1421885045f283a03cfb417a909357c5337d088e5541f10e83480",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/artifacts/w-cadcdc132622fb318cd2b41364d02559ed08986321053e8aea7c09dcf6536df9.proof": "7b1f370811039fce4b3855377fd5bf147cb1122c7c2d429fb93f58aed667ee5e",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03/artifacts/w-f74aa03798be70537a0843c7f867d84177f6c20b3d6215989f13da40515fc12f.proof": "b7fecc753e79dd658455db57594e859595ae75e9ca2a79712222b23edcaac1fe",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03-audit/result.json": "905eb93ae89ab38096b1f223619db4040588863b778605e6b4be88aca3e9a1bb",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03-audit/valid.log": "418e7645b4dde67b3abe8ee5aa542476e64aafd2e29ad64bc6b37671dc3594e4",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03-audit/changed-statement.log": "ed4d243c0e9d0e394bd62a6cdd7ce2de632b0e321ca95d84a2c185134cb2e75b",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-routing-20261019/benchmark-01/trial-03-audit/changed-proof.log": "fa08b0ab983c8f24eab74c32c526b08f34e161ccc3319ad932fd1825e0dbfa76"
+  }
+}
