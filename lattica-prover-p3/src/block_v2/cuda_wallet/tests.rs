@@ -115,7 +115,7 @@ fn public_assignment_cannot_admit_private_wallets_under_compatible_policy() {
     let witness = crate::joinsplit_air::demo_witness();
     let before = crate::proving::cpu_witness_oracle_calls();
     assert!(crate::wallet_abi_admission().is_none());
-    assert!(crate::batch_abi_admission().is_none());
+    assert!(crate::batch_abi_admission(crate::batch_common::BatchKind::JoinSplit, 1).is_none());
     assert!(crate::tree_abi_admission(1).is_none());
     let request = Request::from_env().unwrap();
     assert!(super::super::leaf::admit_wallet_request(request).is_err());

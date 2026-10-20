@@ -16,6 +16,10 @@ use std::{
     sync::{Arc, Mutex},
     thread::ThreadId,
 };
+mod batch;
+mod tree;
+pub(crate) use batch::{batch_abi_admission, prove_htlc_batch_with_public, prove_joinsplit_batch_with_public};
+pub(crate) use tree::{prove_joinsplit_tree, tree_abi_admission};
 
 enum State {
     Unselected,
@@ -27,6 +31,8 @@ enum State {
 static STATE: Mutex<State> = Mutex::new(State::Unselected);
 
 struct Engines {
+    prover: Arc<wallet::WalletProver>,
+    batch: Option<wallet::BatchProver>,
     joinsplit: wallet::JoinSplitProver,
     htlc: wallet::HtlcProver,
     context_joinsplit: wallet::ContextJoinSplitProver,
@@ -169,6 +175,8 @@ impl Session {
             // Only public code/tables persist between private proof attempts.
             let prover = wallet::WalletProver::new(&runtime)?;
             Ok(Engines {
+                prover: prover.clone(),
+                batch: None,
                 joinsplit: prover.prepare_joinsplit(settings.host_bytes)?,
                 htlc: prover.prepare_htlc(settings.host_bytes)?,
                 context_joinsplit: prover.prepare_context_joinsplit(settings.host_bytes)?,

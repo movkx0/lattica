@@ -67,9 +67,11 @@ extern "C" {
  * Startup pins host allocator limits before CUDA creation. Keep the calling
  * stack within 8 MiB and the admitted Rayon/thread contract fixed. Only one
  * caller may own private input admission at a time; nested wrappers retain it.
- * Legacy single-wallet and context-bound research leaf proofs are supported.
- * Batch and LJSTREE1 calls reject before private decoding. Public recursive
- * assignments grant no wallet access. CUDA requires a fresh process after
+ * Legacy single-wallet, batch, LJSTREE1 and context-bound research leaf proofs
+ * use this private assignment. Batch setup retains one public AIR shape at a
+ * time; tree admission reserves container and statement storage before private
+ * decoding. Public recursive assignments grant no wallet access. CUDA requires
+ * a fresh process after
  * failed startup or shutdown; backend selection survives environment removal.
  *
  * Initialization never chooses a partial proving path or CPU fallback. Repeated

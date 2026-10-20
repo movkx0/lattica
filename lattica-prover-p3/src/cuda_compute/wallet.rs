@@ -8,6 +8,7 @@ use crate::proving::{Backend, Run, Stage};
 mod prove;
 mod batch;
 mod tree;
+pub(crate) use prove::BatchProver;
 pub(crate) use prove::{capabilities, ContextHtlcProver, ContextJoinSplitProver, HtlcProver, IssuanceProver, JoinSplitProver, WalletProof, WalletProver};
 
 #[cfg(test)]
@@ -97,6 +98,9 @@ impl Wallets {
         for stage in [Stage::WitnessTrace, Stage::PublicValues] {
             run.check_device_stage(stage, Backend::Cuda).map_err(super::error)?;
         }
+        self.admit_memory(specs)
+    }
+    fn admit_memory(&self, specs: &[crate::gpu_matrix::MatrixSpec]) -> Result<()> {
         let before = self.runtime.snapshot();
         let limits = self.runtime.state.budget.limits;
         let _plan = MemoryPlan::new(

@@ -122,9 +122,9 @@ unsupported specialization shapes retain GPU interpretation. Current/next rows,
 alpha powers, selectors, constraints and vanishing-polynomial division execute
 on CUDA, with only a public domain-validity word read back per evaluation.
 
-Native single-wallet and context-bound research requests now route through CUDA
-under their own private-wallet assignment. CUDA batch/tree wallet routing,
-cached twiddle tuning, approved pool operation
+Native single-wallet, batch, legacy tree and context-bound research requests now
+route through CUDA under their own private-wallet assignment. Larger batch/tree
+workloads, cached twiddle tuning, approved pool operation
 and concurrency qualification remain outstanding. Prepared quotient handles
 support reuse without retaining witnesses or sampled parameters. A bounded
 public program cache now supports repeated preparation within an evaluator;
@@ -1258,8 +1258,8 @@ admission precedes CUDA creation. A single caller retains admission from private
 decoding through native output export; nested wrappers share that ownership.
 Shutdown refuses live callers and retires every prepared handle before the
 runtime. Startup failure or completed shutdown requires a fresh process; removing the
-environment cannot downgrade proving to CPU. Public recursive assignments and
-unsupported CUDA batch/tree requests reject before private decoding. Final
+environment cannot downgrade proving to CPU. At this checkpoint, public recursive
+assignments and unsupported CUDA batch/tree requests rejected before private decoding. Final
 proof and host-export serializers use exact bounded allocations.
 
 All 56 CUDA host regressions, 22 CPU regressions and three existing CUDA wallet
@@ -1303,12 +1303,40 @@ auditor accepted all nine maintained wallet proofs and rejected their tampered
 variants. Compute Sanitizer reported zero memory errors and leaks. CPU, OpenCL,
 CUDA without streaming and Apple Metal compilation passed; Volta and Blackwell
 kernel compilation also passed. These are internal arithmetic components.
-Native batch/tree API routing, batch proof orchestration and bounded container
-serialization remain to be connected and qualified.
+At this arithmetic checkpoint, native batch/tree API routing, batch proof
+orchestration and bounded container serialization were not yet connected.
 
 This checkpoint does not qualify CUDA batch/tree wallet APIs, node/block
 processing, multi-GPU concurrency, V100 execution, or matched CPU/OpenCL speedup.
 Those requirements and the remaining implementation sequence stay open.
+
+The [native batch/tree routing qualification](evidence/cuda-wallet-batch-routing-2026-10-19.json)
+connects the maintained Rust and C APIs to CUDA batch proofs and bounded
+`LJSTREE1` containers. JoinSplit and HTLC batches retain the existing AIRs,
+security parameters and proof encoding, including empty Rust batches. A tree
+contains individually proved legacy leaves and a CUDA-folded public root; it
+does not perform recursive aggregation. One prepared public batch shape is
+cached at a time. Admission reserves decoded witness backing and tree storage
+before native decoding, and remains owned through serialization and output copies.
+
+On the RTX 5080, eleven saved artifacts covered batch counts 0, 1, 3 and 8 and
+tree counts 1 and 3. An independent CPU-only auditor accepted all eleven and
+rejected altered statements, proofs, tree counts and leaf order. Their accepted
+case intervals contain fifteen complete STARK proof reports and three complete
+tree-root operation reports. Deliberate invalid-witness and failed-export cases
+are accounted for separately. No CPU witness-oracle calls occurred during
+proving. Managed GPU memory peaked at 1,664,976,672 bytes under the dedicated
+7 GiB allowance; runtime shutdown retired all CUDA owners and cached programs.
+Five host admission tests, CPU ABI/security regressions and the original nine
+wallet outputs and independent audits passed. CUDA and CPU release builds,
+OpenCL checks, CUDA without streaming, Apple Metal cross-compilation and the
+production CUDA library/CLI build passed. These are correctness checks, not
+throughput measurements; Metal and V100 execution were not tested.
+
+Full 64-entry batch proofs, larger tree containers, complete host/node workflows,
+timing-approved pools, concurrency and multi-GPU qualification, V100 execution,
+and matched CPU/OpenCL performance comparisons remain outstanding. Earlier
+1,024-statement tree-root arithmetic tests do not qualify containers of that size.
 
 ## Implementation sequence
 

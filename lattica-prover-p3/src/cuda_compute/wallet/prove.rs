@@ -13,6 +13,8 @@ use p3_field::PrimeCharacteristicRing;
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 use std::sync::Arc;
+mod batch;
+pub(crate) use batch::BatchProver;
 
 pub(crate) struct WalletProver {
     runtime: Runtime,
@@ -39,6 +41,17 @@ pub(crate) struct WalletProof<F: StarkField = Challenge> {
 }
 
 impl WalletProver {
+    pub(crate) fn joinsplit_tree_root(
+        &self,
+        statements: &[u64],
+        count: usize,
+        host_bytes: usize,
+        run: &Run,
+    ) -> Result<[u64; 4]> {
+        self.runtime.reported(run, || {
+            self.wallets.joinsplit_tree_root(statements, count, host_bytes, run)
+        })
+    }
     pub(crate) fn new(runtime: &Runtime) -> Result<Arc<Self>> {
         Ok(Arc::new(Self {
             runtime: runtime.clone(),

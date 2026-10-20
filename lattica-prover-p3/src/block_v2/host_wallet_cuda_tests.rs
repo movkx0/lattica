@@ -1,6 +1,8 @@
 //! Saved outputs contain only public fixtures. The CPU-only audit runs in a
 //! separate process without any GPU feature or private-wallet assignment.
 use super::*;
+#[path = "host_wallet_cuda_batch_tests.rs"]
+mod batch;
 
 fn directory() -> std::path::PathBuf {
     let path =
@@ -144,7 +146,7 @@ fn native_cuda_wallet_routes_are_admitted_audited_and_retired() {
     std::env::set_var("LATTICA_WALLET_WORKER_BUDGET", &original);
     assert_eq!(probe.calls(), 0);
     assert_eq!(snapshot(), baseline);
-    // Unsupported batch/tree routes must not borrow the single-wallet permit.
+    // Oversized batch/tree requests must reject before private decoding.
     type Batch = unsafe extern "C" fn(
         *const u8,
         usize,
@@ -156,10 +158,10 @@ fn native_cuda_wallet_routes_are_admitted_audited_and_retired() {
         usize,
         *mut usize,
     ) -> i32;
-    for (call, input) in [
-        (crate::lattica_batch_prove as Batch, &legacy[0]),
-        (crate::lattica_htlc_batch_prove as Batch, &legacy[1]),
-        (crate::lattica_joinsplit_tree_prove as Batch, &legacy[0]),
+    for (call, input, count) in [
+        (crate::lattica_batch_prove as Batch, &legacy[0], crate::batch_common::MAX_BATCH_TILES + 1),
+        (crate::lattica_htlc_batch_prove as Batch, &legacy[1], crate::batch_common::MAX_BATCH_TILES + 1),
+        (crate::lattica_joinsplit_tree_prove as Batch, &legacy[0], crate::MAX_TREE_TX + 1),
     ] {
         let mut proof = [0xa5; 8];
         let mut public = [0xa5; 32];
@@ -170,7 +172,7 @@ fn native_cuda_wallet_routes_are_admitted_audited_and_retired() {
                 call(
                     input.as_ptr(),
                     input.len(),
-                    1,
+                    count,
                     proof.as_mut_ptr(),
                     proof.len(),
                     &mut proof_len,
@@ -313,5 +315,5 @@ fn native_cuda_wallet_routes_are_admitted_audited_and_retired() {
         .unwrap(),
     )
     .unwrap();
-    eprintln!("native_cuda_wallet_qualified proofs=9 private_decode_pinned=true concurrent_call_rejected=true cpu_witness_oracle_calls=0 unsupported_batch_tree_rejected=true retired=true");
+    eprintln!("native_cuda_wallet_qualified proofs=9 private_decode_pinned=true concurrent_call_rejected=true cpu_witness_oracle_calls=0 oversized_batch_tree_rejected=true retired=true");
 }

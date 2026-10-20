@@ -26,6 +26,12 @@ const DIGEST: usize = 4;
 /// `sel · (cur[DIGEST+k] − 0)` — the Debug-rendered constraint fnv distinguishes them.
 pub(crate) type FoldChunk = [Option<usize>; DIGEST];
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum BatchKind {
+    JoinSplit,
+    Htlc,
+}
+
 /// Shared AIR layout for device-owned batch trace assembly. Chunk entries are
 /// the same staged columns constrained by `eval_txroot_fold`.
 #[cfg(all(feature = "block-v2", any(feature = "gpu", feature = "gpu-cuda")))]

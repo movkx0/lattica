@@ -280,6 +280,8 @@ unsafe fn write_out2(
     b_cap: usize,
     b_len: *mut usize,
 ) -> i32 {
+    #[cfg(all(test, feature = "block-v2", feature = "gpu-cuda"))]
+    block_v2::cuda_wallet::tests::output_boundary();
     if a.len() > a_cap || b.len() > b_cap {
         return 2;
     }
@@ -347,7 +349,10 @@ fn wallet_abi_admission() -> Option<WalletAbiAdmission> {
 fn tree_abi_admission(count: usize) -> Option<WalletAbiAdmission> {
     std::panic::catch_unwind(|| {
         #[cfg(all(feature = "block-v2", feature = "gpu-cuda"))]
-        if block_v2::cuda_wallet::is_selected() { return None; }
+        if block_v2::cuda_wallet::is_selected() {
+            return block_v2::cuda_wallet::tree_abi_admission(count).ok()
+                .map(|_context| WalletAbiAdmission::Cuda { _context });
+        }
         #[cfg(all(feature = "block-v2", feature = "gpu"))]
         if block_v2::legacy_wallet::is_selected() {
             return block_v2::legacy_wallet::tree_abi_admission(count)
@@ -360,10 +365,27 @@ fn tree_abi_admission(count: usize) -> Option<WalletAbiAdmission> {
     .unwrap_or(None)
 }
 
-fn batch_abi_admission() -> Option<WalletAbiAdmission> {
-    #[cfg(all(feature = "block-v2", feature = "gpu-cuda"))]
-    if block_v2::cuda_wallet::is_selected() { return None; }
-    wallet_abi_admission()
+fn batch_abi_admission(kind: batch_common::BatchKind, count: usize) -> Option<WalletAbiAdmission> {
+    std::panic::catch_unwind(|| {
+        #[cfg(all(feature = "block-v2", feature = "gpu-cuda"))]
+        if block_v2::cuda_wallet::is_selected() {
+            return block_v2::cuda_wallet::batch_abi_admission(kind, count).ok()
+                .map(|_context| WalletAbiAdmission::Cuda { _context });
+        }
+        let _ = (kind, count);
+        wallet_abi_admission()
+    }).unwrap_or(None)
+}
+
+fn decode_wallet_witnesses<W>(
+    bytes: &[u8], count: usize, width: usize, parse: impl Fn(&[u8]) -> Option<W>,
+) -> Option<Vec<W>> {
+    if width == 0 || count.checked_mul(width)? != bytes.len() { return None; }
+    let mut witnesses = Vec::new();
+    witnesses.try_reserve_exact(count).ok()?;
+    if witnesses.capacity() != count { return None; }
+    for record in bytes.chunks_exact(width) { witnesses.push(parse(record)?); }
+    Some(witnesses)
 }
 
 fn build_joinsplit_proof(witness: &joinsplit_air::Witness) -> Option<(Vec<u8>, Vec<u8>)> {
@@ -411,6 +433,13 @@ fn build_htlc_proof(witness: &htlc_air::Witness) -> Option<(Vec<u8>, Vec<u8>)> {
 fn build_joinsplit_batch_proof(
     witnesses: &[joinsplit_air::Witness],
 ) -> Option<(Vec<u8>, [Goldilocks; 4])> {
+    #[cfg(all(feature = "block-v2", feature = "gpu-cuda"))]
+    if block_v2::cuda_wallet::is_selected() {
+        let output = block_v2::cuda_wallet::prove_joinsplit_batch_with_public(
+            witnesses, proving::Request::from_env().ok()?,
+        ).ok()?;
+        return Some((output.proof, output.public.try_into().ok()?));
+    }
     #[cfg(all(feature = "block-v2", feature = "gpu"))]
     if block_v2::legacy_wallet::is_selected() {
         let output = block_v2::legacy_wallet::prove_joinsplit_batch_with_public(
@@ -425,6 +454,13 @@ fn build_joinsplit_batch_proof(
 }
 
 fn build_htlc_batch_proof(witnesses: &[htlc_air::Witness]) -> Option<(Vec<u8>, [Goldilocks; 4])> {
+    #[cfg(all(feature = "block-v2", feature = "gpu-cuda"))]
+    if block_v2::cuda_wallet::is_selected() {
+        let output = block_v2::cuda_wallet::prove_htlc_batch_with_public(
+            witnesses, proving::Request::from_env().ok()?,
+        ).ok()?;
+        return Some((output.proof, output.public.try_into().ok()?));
+    }
     #[cfg(all(feature = "block-v2", feature = "gpu"))]
     if block_v2::legacy_wallet::is_selected() {
         let output = block_v2::legacy_wallet::prove_htlc_batch_with_public(
@@ -873,18 +909,13 @@ pub unsafe extern "C" fn lattica_batch_prove(
     if witness_len != n_tx.checked_mul(JS_WITNESS_LEN).unwrap_or(usize::MAX) {
         return 1; // exactly n_tx concatenated join-split witness records
     }
-    let Some(_admission) = batch_abi_admission() else {
+    let Some(_admission) = batch_abi_admission(batch_common::BatchKind::JoinSplit, n_tx) else {
         return 1;
     };
     let wb = slice::from_raw_parts(witness_ptr, witness_len);
-    let mut ws = Vec::with_capacity(n_tx);
-    for i in 0..n_tx {
-        match parse_joinsplit_witness(&wb[i * JS_WITNESS_LEN..(i + 1) * JS_WITNESS_LEN]) {
-            Some(w) => ws.push(w),
-            None => return 1,
-        }
-    }
-    // build_trace / public_values assert the relation per tile; isolate any panic as a clean error.
+    let Some(ws) = decode_wallet_witnesses(wb, n_tx, JS_WITNESS_LEN, parse_joinsplit_witness) else {
+        return 1;
+    };
     let built = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         build_joinsplit_batch_proof(&ws)
     }));
@@ -933,6 +964,11 @@ fn prove_joinsplit_tree_to_bytes(
 ) -> Option<(Vec<u8>, [Goldilocks; DIGEST])> {
     if ws.is_empty() || ws.len() > MAX_TREE_TX {
         return None;
+    }
+    #[cfg(all(feature = "block-v2", feature = "gpu-cuda"))]
+    if block_v2::cuda_wallet::is_selected() {
+        let output = block_v2::cuda_wallet::prove_joinsplit_tree(ws, proving::Request::from_env().ok()?).ok()?;
+        return Some((output.proof, output.root));
     }
     #[cfg(all(feature = "block-v2", feature = "gpu"))]
     if block_v2::legacy_wallet::is_selected() {
@@ -1102,13 +1138,9 @@ pub unsafe extern "C" fn lattica_joinsplit_tree_prove(
         return 1;
     };
     let wb = slice::from_raw_parts(witness_ptr, witness_len);
-    let mut ws = Vec::with_capacity(n_tx);
-    for i in 0..n_tx {
-        match parse_joinsplit_witness(&wb[i * JS_WITNESS_LEN..(i + 1) * JS_WITNESS_LEN]) {
-            Some(w) => ws.push(w),
-            None => return 1,
-        }
-    }
+    let Some(ws) = decode_wallet_witnesses(wb, n_tx, JS_WITNESS_LEN, parse_joinsplit_witness) else {
+        return 1;
+    };
     let built = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         prove_joinsplit_tree_to_bytes(&ws)
     }));
@@ -1236,17 +1268,13 @@ pub unsafe extern "C" fn lattica_htlc_batch_prove(
     if witness_len != n_tx.checked_mul(HTLC_WITNESS_LEN).unwrap_or(usize::MAX) {
         return 1;
     }
-    let Some(_admission) = batch_abi_admission() else {
+    let Some(_admission) = batch_abi_admission(batch_common::BatchKind::Htlc, n_tx) else {
         return 1;
     };
     let wb = slice::from_raw_parts(witness_ptr, witness_len);
-    let mut ws = Vec::with_capacity(n_tx);
-    for i in 0..n_tx {
-        match parse_htlc_witness(&wb[i * HTLC_WITNESS_LEN..(i + 1) * HTLC_WITNESS_LEN]) {
-            Some(w) => ws.push(w),
-            None => return 1,
-        }
-    }
+    let Some(ws) = decode_wallet_witnesses(wb, n_tx, HTLC_WITNESS_LEN, parse_htlc_witness) else {
+        return 1;
+    };
     let built =
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| build_htlc_batch_proof(&ws)));
     let (proof, root) = match built {

@@ -406,6 +406,11 @@ pub fn prove_batch_to_bytes_with_request(
     ws: &[Witness],
     request: crate::proving::Request,
 ) -> Result<(Vec<u8>, crate::proving::Report), crate::proving::Error> {
+    #[cfg(all(feature = "block-v2", feature = "gpu-cuda"))]
+    if crate::block_v2::cuda_wallet::is_selected() {
+        let output = crate::block_v2::cuda_wallet::prove_htlc_batch_with_public(ws, request)?;
+        return Ok((output.proof, output.report));
+    }
     #[cfg(all(feature = "block-v2", feature = "gpu"))]
     if crate::block_v2::legacy_wallet::is_selected() {
         let output = crate::block_v2::legacy_wallet::prove_htlc_batch_with_public(ws, request)?;
