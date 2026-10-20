@@ -193,7 +193,7 @@ const fn fold_chunks() -> [crate::batch_common::FoldChunk; FOLD_SK_BLOCKS] {
 #[cfg(test)]
 use crate::config::make_config;
 
-#[cfg(all(feature = "block-v2", feature = "gpu"))]
+#[cfg(all(feature = "block-v2", any(feature = "gpu", feature = "gpu-cuda")))]
 pub(crate) fn device_batch_geometry() -> crate::batch_common::DeviceBatchGeometry<'static> {
     const CHUNKS: [crate::batch_common::FoldChunk; FOLD_SK_BLOCKS] = fold_chunks();
     crate::batch_common::DeviceBatchGeometry {

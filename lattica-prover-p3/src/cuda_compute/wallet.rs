@@ -6,6 +6,8 @@ use crate::gpu_wallet::{self, InputWords, Plan};
 use crate::proving::{Backend, Run, Stage};
 
 mod prove;
+mod batch;
+mod tree;
 pub(crate) use prove::{capabilities, ContextHtlcProver, ContextJoinSplitProver, HtlcProver, IssuanceProver, JoinSplitProver, WalletProof, WalletProver};
 
 #[cfg(test)]
@@ -18,6 +20,7 @@ fn source() -> String {
         include_str!("wallet.cuh"),
         gpu_wallet::joinsplit_kernels::KERNEL_SRC,
         gpu_wallet::htlc_kernels::KERNEL_SRC,
+        gpu_wallet::batch_kernels::KERNEL_SRC,
     ]
     .join("\n")
 }
@@ -27,6 +30,8 @@ pub(crate) struct Wallets {
     constants: [Buffer; 4],
     joinsplit: [Kernel; 3],
     htlc: [Kernel; 3],
+    batch: [Kernel; 3],
+    tree: Kernel,
 }
 
 pub(crate) struct NativeWalletTrace {
@@ -56,7 +61,13 @@ impl Wallets {
             module.kernel_for_stage("device_htlc_columns", crate::proving::Stage::WitnessTrace)?,
             module.kernel_for_stage("device_htlc_public", crate::proving::Stage::PublicValues)?,
         ];
-        for kernel in joinsplit.iter().chain(&htlc) {
+        let batch = [
+            module.kernel_for_stage("device_wallet_batch_copy", Stage::WitnessTrace)?,
+            module.kernel_for_stage("device_wallet_batch_fold", Stage::WitnessTrace)?,
+            module.kernel_for_stage("device_wallet_batch_public", Stage::PublicValues)?,
+        ];
+        let tree = module.kernel_for_stage("device_wallet_tree_root", Stage::PublicValues)?;
+        for kernel in joinsplit.iter().chain(&htlc).chain(&batch).chain([&tree]) {
             if !super::kernel::private_memory_fits(runtime.identity(), kernel.local_bytes()?)? {
                 return Err("CUDA wallet kernel exceeds private-memory admission".into());
             }
@@ -77,7 +88,27 @@ impl Wallets {
             ],
             joinsplit,
             htlc,
+            batch,
+            tree,
         })
+    }
+    fn admit(&self, specs: &[crate::gpu_matrix::MatrixSpec], run: &Run) -> Result<()> {
+        self.runtime.check_report_run(run)?;
+        for stage in [Stage::WitnessTrace, Stage::PublicValues] {
+            run.check_device_stage(stage, Backend::Cuda).map_err(super::error)?;
+        }
+        let before = self.runtime.snapshot();
+        let limits = self.runtime.state.budget.limits;
+        let _plan = MemoryPlan::new(
+            specs,
+            before.live_bytes,
+            limits.managed_bytes,
+            limits.max_allocation_bytes,
+        )?;
+        if before.allocations.checked_add(specs.len()).is_none_or(|n| n > limits.max_allocations) {
+            return Err("CUDA wallet exceeds allocation-count admission".into());
+        }
+        Ok(())
     }
 
     pub(crate) fn joinsplit(
@@ -118,30 +149,10 @@ impl Wallets {
         kernels: &[Kernel; 3],
         run: &Run,
     ) -> Result<NativeWalletTrace> {
-        self.runtime.check_report_run(run)?;
-        for stage in [Stage::WitnessTrace, Stage::PublicValues] {
-            run.check_device_stage(stage, Backend::Cuda)
-                .map_err(super::error)?;
-        }
         if geometry.len() != plan.geometry_words {
-            return Err("CUDA wallet geometry length differs from admitted layout".into());
+            return Err("CUDA wallet geometry differs from admitted layout".into());
         }
-        let specs = plan.specs()?;
-        let before = self.runtime.snapshot();
-        let limits = self.runtime.state.budget.limits;
-        MemoryPlan::new(
-            &specs,
-            before.live_bytes,
-            limits.managed_bytes,
-            limits.max_allocation_bytes,
-        )?;
-        if before
-            .allocations
-            .checked_add(specs.len())
-            .is_none_or(|n| n > limits.max_allocations)
-        {
-            return Err("CUDA wallet exceeds allocation-count admission".into());
-        }
+        self.admit(&plan.specs()?, run)?;
         // Exact-capacity staging is scrubbed by InputWords on every exit path.
         // All five device allocations are admitted before packing private inputs.
         let words = inputs()?;

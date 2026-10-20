@@ -7,6 +7,11 @@ use p3_field::PrimeField64;
 pub(crate) mod htlc;
 pub(crate) mod htlc_kernels;
 pub(crate) mod joinsplit_kernels;
+#[cfg(any(feature = "gpu", feature = "gpu-cuda"))]
+pub(crate) mod batch;
+pub(crate) mod batch_kernels;
+#[cfg(any(feature = "gpu", feature = "gpu-cuda"))]
+pub(crate) mod tree;
 
 pub(crate) const INPUT_WORDS: usize = js::N_IN * (9 + js::DEPTH * 5) + js::M_OUT * 10 + 6;
 pub(crate) const GEOMETRY_WORDS: usize = 28;

@@ -1,4 +1,5 @@
 use super::*;
+mod batch;
 mod benchmark;
 mod reporting;
 use crate::config::{Challenge, Val};

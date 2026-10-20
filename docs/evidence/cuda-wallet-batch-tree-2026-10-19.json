@@ -1,0 +1,417 @@
+{
+  "schema": "lattica-cuda-wallet-batch-tree-primitives-v1",
+  "date": "2026-10-19",
+  "status": "passed",
+  "source_base_commit": "86293b9b2322ad72b866562c5995da9da8c7eac2",
+  "source_at_validation": "uncommitted source; final source manifest and staged blobs verified before commit",
+  "source_manifest_base_qualification": "docs/evidence/cuda-wallet-routing-2026-10-19.json",
+  "source_manifest_base_rule": "Apply source_changes to the referenced source_files map; null removes the old path.",
+  "source_changes": {
+    "lattica-prover-p3/src/batch_common.rs": "12e31772a121a4e58ba9c18d52b25c09d49aeaeb282bbae2516ae3e01bc96f51",
+    "lattica-prover-p3/src/batch_htlc_air.rs": "49ca75918985a57bca97c672de9754e7200d4becfd7c2567d83d598930fd8f5b",
+    "lattica-prover-p3/src/batch_joinsplit_air.rs": "e75c6014f8ce6545638b137b53a53ac1498ef8b1e6a2e2c6b63570f876c42d7f",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device.rs": "2e62276ecde5ab109b3a0b9dd28ad6cce60b1abb8bae5f4b38b271b23db81c13",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/batch.rs": "a5ead5c79606d58f6b17373002a10de12b5ad2bdcbde3dd2fbc9b5f03692bc54",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet/tree.rs": "3572bd373b690e7d4d5ed642e5d0483db36e544135e59dc68ad091f151f117a9",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet_batch_kernels.rs": null,
+    "lattica-prover-p3/src/cuda_compute/wallet.cuh": "368173b07c31d6ac87487f1b42a7519935d144927c3418c91bb6edc298dbd3fb",
+    "lattica-prover-p3/src/cuda_compute/wallet.rs": "acd8e44888a5b6120f3511044a2eaaf5774af8fae92bf537b8f8fad70c9f0837",
+    "lattica-prover-p3/src/cuda_compute/wallet/batch.rs": "2ca7ffa40841b8eb6f54a7160828749ca5f7ac3a66c864b7e2c8100ebaaebfd9",
+    "lattica-prover-p3/src/cuda_compute/wallet/tests.rs": "195d47d4de5e918b09b33548e83022caf33a04f4913056f2528b7afc28fdb6e3",
+    "lattica-prover-p3/src/cuda_compute/wallet/tests/batch.rs": "cab813005e62f128698fd922113b4219f0ce9eafa6ed2f739011f6af4ed02e36",
+    "lattica-prover-p3/src/cuda_compute/wallet/tree.rs": "c16e0b535ac9d306ab0aecfafc52ee54965d8edadffe4defe996e2808d1332a2",
+    "lattica-prover-p3/src/gpu_wallet.rs": "5fd815cf08d44e2baf89262fc4a2b518880af69ee3cb8895ff91f9b2393fa34b",
+    "lattica-prover-p3/src/gpu_wallet/batch.rs": "337567be7b26c60e781b9ef94d94caf61353ee7ca3139162f235d78733b5e8fe",
+    "lattica-prover-p3/src/gpu_wallet/batch_kernels.rs": "72ecd3d58162b9763e3188db4583929ff6902ea60d9a46af845d64f3216fc175",
+    "lattica-prover-p3/src/gpu_wallet/tree.rs": "fef17f9de01d681a973c7cd9a4180fb315ea541ad51683cce38ad349c58e0be4"
+  },
+  "source_manifest_sha256": "c2eb94b3e41218348ed224bcae20655b25e4155e4eab01b4a4be430ebc663f50",
+  "source_pin_count": 848,
+  "source_changes_after_cuda_tests": {
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device.rs": {
+      "before": "99dca9223addab13db2e60dd063fd1bc52eb3dd2a691b14459be6cee3420f4be",
+      "after": "2e62276ecde5ab109b3a0b9dd28ad6cce60b1abb8bae5f4b38b271b23db81c13"
+    }
+  },
+  "final_cuda_image_equivalence": {
+    "sha256": "1f2dc24af3bac4d604d49ff656e9834833127e3033e691d4b1e6ec0eaa287b9a",
+    "identical_to_qualified_image": true,
+    "changed_file_absent_from_rustc_dependency_file": true,
+    "dependency_file_sha256": "d537bc0168be83255d62d4d128bb49ea8ae74c0b1aeb39b3728f5d38477470b8"
+  },
+  "features": [
+    "gpu-cuda",
+    "block-v2-host",
+    "stream"
+  ],
+  "profile": "release x86-64-v3",
+  "device": {
+    "ordinal": 0,
+    "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "pci": "0000:01:00.0",
+    "name": "NVIDIA GeForce RTX 5080",
+    "global_bytes": 16703946752,
+    "compute_capability": 120,
+    "driver_api": 13040,
+    "max_threads": 1024,
+    "max_grid_x": 2147483647,
+    "shared_bytes": 49152,
+    "multiprocessors": 84,
+    "max_threads_per_multiprocessor": 1536
+  },
+  "driver_version": "615.78.08",
+  "nvrtc": {
+    "/home/access/code/lattica/.tools/cuda-12.9.1/lib/libnvrtc.so": {
+      "target": "/home/access/code/lattica/.tools/cuda-12.9.1/lib/libnvrtc.so.12.9.86",
+      "sha256": "c3430e8b6b0d8d3a74f5f839118a85e13e3ad6e4d6203ea1b6a27a0c0b4fe10a"
+    },
+    "/home/access/code/lattica/.tools/cuda-12.9.1/lib/libnvrtc-builtins.so.12.9": {
+      "target": "/home/access/code/lattica/.tools/cuda-12.9.1/lib/libnvrtc-builtins.so.12.9.86",
+      "sha256": "6507cf33450cfb22970c2c1e7aa8e7c0a33e39d864720277b05f61a92791e2e8"
+    }
+  },
+  "shared_opencl_kernel_bytes_unchanged": true,
+  "coverage": {
+    "new_components": [
+      "device-owned JoinSplit batch trace and root",
+      "device-owned HTLC batch trace and root",
+      "LJSTREE1 public root folding"
+    ],
+    "batch_counts_per_air": [
+      0,
+      1,
+      3,
+      4,
+      5,
+      8
+    ],
+    "batch_trace_comparison": "every field element and final public root against CPU construction",
+    "tree_leaf_counts": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      7,
+      8,
+      31,
+      32,
+      33,
+      63,
+      64,
+      65,
+      127,
+      128,
+      129,
+      1023,
+      1024
+    ],
+    "tree_comparison": "CPU statement hashes, ordered root folding, and canonical dummy padding",
+    "batch_readback_during_generation": "one eight-byte validity word per generated real or dummy frame; no trace or public statement readback",
+    "tree_readback_bytes_per_operation": 40,
+    "host_admission": [
+      "padding through MAX_BATCH_TILES=64",
+      "oversized counts",
+      "malformed geometry",
+      "combined geometry and private-input staging",
+      "tree staging through MAX_TREE_TX=1024"
+    ],
+    "recovery": "invalid second wallet releases prior batch storage; the same CUDA runtime then succeeds",
+    "retirement": "primitive tests assert released allocations and clean runtime retirement",
+    "scope": "operation arithmetic; batch/tree public API proving and serialization are not yet routed through CUDA"
+  },
+  "validation": {
+    "host-planners": {
+      "tests_passed": 2,
+      "result": "success",
+      "service_ram_peak_bytes": 2359296,
+      "binary_sha256": "1f2dc24af3bac4d604d49ff656e9834833127e3033e691d4b1e6ec0eaa287b9a",
+      "resources": "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/host-planners/result.json",
+      "command": "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/host-planners/command.json"
+    },
+    "primitives": {
+      "tests_passed": 3,
+      "result": "success",
+      "service_ram_peak_bytes": 424009728,
+      "binary_sha256": "1f2dc24af3bac4d604d49ff656e9834833127e3033e691d4b1e6ec0eaa287b9a",
+      "resources": "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/primitives/result.json",
+      "command": "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/primitives/command.json"
+    },
+    "wallet-receipts": {
+      "tests_passed": 3,
+      "result": "success",
+      "service_ram_peak_bytes": 157331456,
+      "binary_sha256": "1f2dc24af3bac4d604d49ff656e9834833127e3033e691d4b1e6ec0eaa287b9a",
+      "resources": "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/wallet-receipts/result.json",
+      "command": "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/wallet-receipts/command.json"
+    },
+    "native-live": {
+      "tests_passed": 1,
+      "result": "success",
+      "service_ram_peak_bytes": 161951744,
+      "binary_sha256": "1f2dc24af3bac4d604d49ff656e9834833127e3033e691d4b1e6ec0eaa287b9a",
+      "resources": "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/result.json",
+      "command": "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/command.json"
+    },
+    "cpu-audit": {
+      "tests_passed": 1,
+      "result": "success",
+      "service_ram_peak_bytes": 8572928,
+      "binary_sha256": "ea7677964888b3fefaa0d03b0dfbb4be7c1bb41c6eaecd9e38de88204a513616",
+      "resources": "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/cpu-audit/result.json",
+      "command": "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/cpu-audit/command.json"
+    },
+    "memcheck": {
+      "tests_passed": 3,
+      "result": "success",
+      "service_ram_peak_bytes": 260415488,
+      "binary_sha256": "979adf037f4e3434a976b7f0912b0a05ce3b062e31b2a73397a1bf1cd5f57547",
+      "resources": "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/memcheck/result.json",
+      "command": "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/memcheck/command.json"
+    }
+  },
+  "existing_wallet_regression": {
+    "accepted_proofs": 9,
+    "complete_cuda_reports": 9,
+    "arithmetic_stages_per_proof": 14,
+    "independent_cpu_auditor_sha256": "ea7677964888b3fefaa0d03b0dfbb4be7c1bb41c6eaecd9e38de88204a513616",
+    "independent_cpu_audit": "passed after producer measurements.json was written",
+    "altered_statements_rejected": 9,
+    "altered_proofs_rejected": 9,
+    "altered_contexts_rejected": 5,
+    "cpu_witness_oracle_calls_during_proving": 0,
+    "partial_invalid_witness_reports": 1,
+    "retirement": {
+      "live_bytes": 0,
+      "peak_bytes": 141570328,
+      "allocations": 0,
+      "peak_allocations": 94,
+      "modules": 0,
+      "pending_commands": 0,
+      "completed_commands": 15849,
+      "device_ns": 451719936,
+      "uploaded_bytes": 5418320,
+      "downloaded_bytes": 5365152,
+      "copied_bytes": 5168,
+      "public_program_bytes": 0,
+      "public_programs": 0
+    }
+  },
+  "resources": {
+    "host_limit_bytes": 3221225472,
+    "threads": 4,
+    "cpu_quota_percent": 400,
+    "swap_bytes": 0,
+    "core_dump_bytes": 0,
+    "managed_gpu_limit_bytes": 268435456,
+    "maximum_gpu_allocation_bytes": 67108864,
+    "context_reserve_bytes": 4294967296,
+    "headroom_bytes": 1073741824,
+    "new_primitive_service_ram_peak_bytes": 424009728,
+    "new_primitive_managed_peak_bytes": null,
+    "new_primitive_peak_note": "device peak was not emitted; runtime enforced the recorded limits",
+    "post_exit_cgroup_counters": "unavailable; systemd retained exit status and service peak"
+  },
+  "sanitizer": {
+    "tool": "NVIDIA Compute Sanitizer memcheck",
+    "tests": 3,
+    "errors": 0,
+    "leaked_bytes": 0,
+    "leaked_allocations": 0
+  },
+  "feature_checks": {
+    "cpu": {
+      "name": "cpu-check",
+      "command": [
+        "cargo",
+        "check",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "-j",
+        "2",
+        "--features",
+        "block-v2-host,stream",
+        "--lib",
+        "--tests"
+      ],
+      "exit_code": 0
+    },
+    "cuda_without_stream": {
+      "name": "cuda-no-stream-check",
+      "command": [
+        "cargo",
+        "check",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "-j",
+        "2",
+        "--features",
+        "gpu-cuda,block-v2-host",
+        "--lib",
+        "--tests"
+      ],
+      "exit_code": 0
+    },
+    "opencl": {
+      "name": "opencl-check",
+      "command": [
+        "cargo",
+        "check",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "-j",
+        "2",
+        "--features",
+        "gpu,block-v2-host,stream",
+        "--lib",
+        "--tests"
+      ],
+      "exit_code": 0
+    },
+    "apple_metal": {
+      "name": "apple-metal-check",
+      "command": [
+        "cargo",
+        "check",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "-j",
+        "2",
+        "--features",
+        "gpu-metal,block-v2-host,stream",
+        "--target",
+        "aarch64-apple-darwin",
+        "--lib"
+      ],
+      "exit_code": 0
+    }
+  },
+  "architecture_compilation": [
+    {
+      "architecture": "compute_70",
+      "exit_code": 0,
+      "log": "nvrtc: warning: Architectures prior to '<compute/sm>_75' are deprecated and may be removed in a future release\n",
+      "source_sha256": "be46a0c5cbaae0d7f1a3b6814d53bd58626a33c662c1b0b194c8dc18d09f7421"
+    },
+    {
+      "architecture": "compute_120",
+      "exit_code": 0,
+      "log": "",
+      "source_sha256": "be46a0c5cbaae0d7f1a3b6814d53bd58626a33c662c1b0b194c8dc18d09f7421"
+    }
+  ],
+  "service_retirement": {
+    "record": "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-03/retirement.json",
+    "services_retired": 13,
+    "no_cuda_test_compute_processes": true
+  },
+  "superseded_failures": [
+    "qualification-01 Rust build errors and missing CUDA perm8 adapter",
+    "qualification-02 NVRTC helper initially lacked LD_LIBRARY_PATH",
+    "qualification-02 Apple Metal check exposed a leftover feature attribute; qualification-03 fixes it and preserves the exact tested CUDA executable"
+  ],
+  "limitations": [
+    "Maintained CUDA batch/tree APIs still reject; integration with proof orchestration, bounded serialization and private admission is outstanding.",
+    "No batch STARK or legacy tree-container proof has been produced by the new CUDA operations yet.",
+    "Batch differential execution covers up to eight padded tiles; 64-tile shapes have host admission coverage only.",
+    "V100 compilation passed; V100 and Apple Metal execution remain untested.",
+    "No throughput or speedup claim; performance and pool timing approval remain outstanding."
+  ],
+  "artifact_files": {
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-01/build-01.log": "183d6e31f431b78044f75be2efd75c7d2233c75b7e843eceb703e536045ea45a",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-01/build-02.log": "b6db8e7c3bb1aa82a2afdb2dc29223ac18afa27edf0786bfb4f5996ec1a8f6c2",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-01/cuda-binary.json": "46c44536f8c24f09c5157e444faa822b1b874e59f9b84fb4226a315d61898701",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-01/host-planners/command.json": "b942ce98e199cf4910e597a51342a83c5b74f864f3e9aa9caa50726fb6a82daf",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-01/host-planners/result.json": "c2212cfee27f68256bccc10d5c34a4f8973b4efb45d19874c4c298f4226374fe",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-01/host-planners/retired.json": "c7bc335b5f22a99881be125a5074213117bb23a42f0a58c379a00d6a2da2ddb8",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-01/host-planners/test.log": "047a59da19e73a2b231b2a0bb165bf77d1b39da9f1774be426638bc580af8bb2",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-01/nvrtc-pins.json": "767b0a0ff2147aad72f6234b5300e290d5f75256832372d3e803df34e9deb9e3",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-01/primitive-tests.py": "64f72d609c91f6908ae47438f9f04767ec7d285c7e04474beaeb41425d7054e0",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-01/primitives/command.json": "cbf78d96ba67554b3769de9e63c0bf080b9b19c42f9193a1b08fd17151363feb",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-01/primitives/result.json": "dc79b6c3d2b7b30f019f5fb36027ec3b417dccbebdca29cab93aa13c51d8a2a9",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-01/primitives/retired.json": "f34d23ba66e49eece1adfb071787323b97a65fb0aeccacf6e5be5b860396ce0d",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-01/primitives/test.log": "dab52f4794dafa3c2cf90c9007cb8734c18d1564a04b18b4218931b2211495cc",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-01/run.py": "de571c18ecfd1c6a11e59346970d52725bc9d3f9549ab6f316252bfe0d02f847",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-01/source-pins.json": "471e2af14e5d27da6958a98a3aa6647033bcee467514a33e2aff003cee2852ea",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/apple-metal-check.log": "eb20d2274f6e13b036f4c8951c0f3c3a14e95d856e01d769dc3d36963d288a12",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/build-03.log": "1cba3b26c949af7808c53fb5e59bb948bb0f7233e810bc85158b38564112b67d",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/checks.json": "e77b07ef7d287c6859e42bb83805aabe401a598e69160609f7d2298086997c43",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/checks.py": "6e71bbe00559d4eebe52e4483eb92ed67ef8ca6e33cb2610ce8e87d3a87195f7",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/compile-kernels.py": "6311732873cc80860590c951d6da1e12d90d03fc254af0e03b03ae11fa5fc064",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/cpu-audit/command.json": "41e51b92a1a8b7a4c959bcbc616c9bf23ffc9b27e44851517ad56cf740a9f0e3",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/cpu-audit/result.json": "7ffc175d23d7e20e389cd45a1c8a16662c586d99695c127bd614c885930b8e3d",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/cpu-audit/retired.json": "c7bc335b5f22a99881be125a5074213117bb23a42f0a58c379a00d6a2da2ddb8",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/cpu-audit/test.log": "bf0a7bfd9fd52ec653d4e2c8b24aa1e8a151355105e40d7640d2f9c943375db3",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/cpu-check.log": "6010753d45118970331b02170593f83d56de86d1fe66f35f3e6b5c613387e860",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/cuda-binary.json": "5745e50bf7dbb7c5c55c3aa2672d8794bf0a533995f2ada0ae1c0095973658c1",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/cuda-no-stream-check.log": "d4755136c3fd7807b98677fa7fa69a846d0d9a4747eed75246add2a631b15949",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/host-planners/command.json": "68575a8a98552da98cc11889f514f5c3aec442972ecf8d3acc588eb6117bfca3",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/host-planners/result.json": "f64f36500e2673d42e41405fb2c7894115f82557ba6b4b1aad1c1f3cb6e89088",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/host-planners/retired.json": "c7bc335b5f22a99881be125a5074213117bb23a42f0a58c379a00d6a2da2ddb8",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/host-planners/test.log": "047a59da19e73a2b231b2a0bb165bf77d1b39da9f1774be426638bc580af8bb2",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/memcheck/command.json": "fd99e94255d741afa18697851351dea3ca4a56018d1967017a3ed81b375f673c",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/memcheck/result.json": "ceec2b93b8a3d9fd6db3145f772d1646e5e05ad3b950e9005a6a4cfcc8173043",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/memcheck/retired.json": "c7bc335b5f22a99881be125a5074213117bb23a42f0a58c379a00d6a2da2ddb8",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/memcheck/test.log": "e217c20cfd5ba81d398fae3b7a113dab77b97512acbf2ca8f064ed1287da2e6b",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/budget.json": "9cc447a885cccf714795e58fb2c80de041b6e2e8d5b9f5b68671792df1a8ee2a",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/command.json": "dbd2121aa165e9d38f33e7edcef64d704bb032308608ce9076140efbd3128743",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/context-0.bin": "1d6075b1f8d4155a0fa2fc661c2d7f8f76f6104ca493cc2bac2caff111262b96",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/context-1.bin": "c08608e1d8139c2ca61dc6b251215c8fd886c739d173813a6f5c917d1f4fb090",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/context-2.bin": "1c37f15f876d613b85ad667412d6418ed72dd56567585431944a65d6df71ea37",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/context-3.bin": "9aed6a375cad04668a80f1fc7b93bdb1b6d88118263bd2145ed92d0c0c92f2b0",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/context-repeat.bin": "bd505489638bc3912f3389d78dc42e64eada2abd576aaaa3d4ee8d74ba713b82",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/legacy-0-0.proof": "55ecf0dd6ab491ac77e404509983f2320b64cdf05512ed627dabe692b1048deb",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/legacy-0-0.public": "9303d542bd3fc42a1001446b994b6224a726fee3764bbbf14945a906cc43c1c5",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/legacy-0-1.proof": "eee5c408d17805c9a4d0e8b7a3c74fe51f644f655a396715710b809843f8d1e5",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/legacy-0-1.public": "9303d542bd3fc42a1001446b994b6224a726fee3764bbbf14945a906cc43c1c5",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/legacy-1-0.proof": "305327758924c28f2bdf54f0c319a8b7ef06ab37d4a70bf0c8f397facb7224fc",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/legacy-1-0.public": "050363156a2ded33bd94aad822503526f697b7c750cb145d969fcee175d3f291",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/legacy-1-1.proof": "2a8ca900e2054e4f8ac3f6e3d93ecb6fb2ff1e548b0746e034454b05accdd64d",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/legacy-1-1.public": "050363156a2ded33bd94aad822503526f697b7c750cb145d969fcee175d3f291",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/measurements.json": "58bc872ce0a5f9abbd44966c2c2f303d6af86535a9e19699f746dd379cb87184",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/result.json": "c389f4e166363c5252b4ecf5c3e60d00b518289529f51d3dbe636de705a3e95c",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/retired.json": "c7bc335b5f22a99881be125a5074213117bb23a42f0a58c379a00d6a2da2ddb8",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/native-live/test.log": "3b35b320fe1f0f566e33d7b22ee8480c6afe3295edbac72617630376cf285471",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/nvrtc-compilation-missing-library-path.json": "b2182af0c604b79bbca022233d7e33a5cc009c6b6af0ff483131c29fdb41145b",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/nvrtc-compilation.json": "10881f5330fa60fb9f20536a77902f612f418f18c9fa0e30e1a574c0d60ce2f4",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/nvrtc-pins.json": "767b0a0ff2147aad72f6234b5300e290d5f75256832372d3e803df34e9deb9e3",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/opencl-check.log": "1d250b946bbc762c2ed85e1d235d550fe366fe8bb4305537083df54223c73e27",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/primitive-tests.py": "64f72d609c91f6908ae47438f9f04767ec7d285c7e04474beaeb41425d7054e0",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/primitives/command.json": "91dbaef5f4b27dc15d72e544d7493259a4cff607725a87b482bd59aba043b551",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/primitives/result.json": "c9e2d5d87f8430ca74967308b14613935e98dd0da00281f825a8d3b4915d6e97",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/primitives/retired.json": "c7bc335b5f22a99881be125a5074213117bb23a42f0a58c379a00d6a2da2ddb8",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/primitives/test.log": "1d8e689deb74f8ab89416e31a7fd55f67bc9968cd8f97b45ce756a82ca7126b5",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/regressions.py": "5faf794fcf6ce2c36abc7bd18679292c3919b691d2d67ab06d13cade916101f5",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/run.py": "9f625a59797a894292c00d6688e676641a8478ba87f79613c267e24c3da4ba35",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/sanitizer.py": "98cb9af7b2d0a58ea5c9553d5c8e8aeb8ba90598de07567f431ec81ad22d0e35",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/source-pins.json": "bb5cb62f2c8431f29bab5396ac0337da97776da933534fe3e39b63d402bf3eb0",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/wallet-receipts/command.json": "95790744bf548cce9cf65fd0a4c3b5f16c8fd8ec0eddec917e62b1337647ee63",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/wallet-receipts/result.json": "5f34e5565b282c95a04aa0f07ecf4e1f30f257af45fa54dd9027cddb4c3c1511",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/wallet-receipts/retired.json": "c7bc335b5f22a99881be125a5074213117bb23a42f0a58c379a00d6a2da2ddb8",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-02/wallet-receipts/test.log": "3fe2b26bb64d99af557e3888707619b17f6e07da07c46c12e14ea6503ab1290f",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-03/apple-metal-check.log": "17372bd2d3e80686ee4db855a4c98253a6d627f17ceef874f9ba90ab62ff8fbb",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-03/checks.json": "6884b5cbc12dc103385d85ceb3157d68dc423a357876fd2055ab397be447c158",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-03/cuda-binary-equivalence.json": "19d637991c9424f422d672ae0d028dabb2acd7035ff7f39500d08d38d5f68761",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-03/cuda-build.log": "eee9c60afb0332f9f438bec2591c3953aec445afa0f4c25c9745ba1993994e80",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-03/cuda-tests.d": "d537bc0168be83255d62d4d128bb49ea8ae74c0b1aeb39b3728f5d38477470b8",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-03/opencl-check.log": "5737dd742ea2ec031b66de5bf5a6ea8b04444663a3fc440d98e061c34e15415f",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-03/retirement.json": "6598b634cd07314a990e400b955835fdb9f5b6c71f44b53573311c9f48f66e60",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-03/source-changes.json": "bd723c22e0b061faa9d9de885f71db470be10f863e5f0793ccb3c3a634a62986",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-03/source-pins.json": "c2eb94b3e41218348ed224bcae20655b25e4155e4eab01b4a4be430ebc663f50",
+    "lattica-prover-p3/benchmark-results/cuda-wallet-batch-tree-20261019/qualification-03/validate.py": "7d9ef9ad4770cc231ac0071797d2204719668278aa087082c27166a72b4efe5f"
+  },
+  "apple_source_completeness": {
+    "status": "passed",
+    "indexed_mac_modules": 6,
+    "staged_source_changes": 17
+  },
+  "staged_source_pin_matches": 848
+}

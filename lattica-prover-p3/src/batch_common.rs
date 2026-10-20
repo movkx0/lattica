@@ -28,7 +28,7 @@ pub(crate) type FoldChunk = [Option<usize>; DIGEST];
 
 /// Shared AIR layout for device-owned batch trace assembly. Chunk entries are
 /// the same staged columns constrained by `eval_txroot_fold`.
-#[cfg(all(feature = "block-v2", feature = "gpu"))]
+#[cfg(all(feature = "block-v2", any(feature = "gpu", feature = "gpu-cuda")))]
 #[derive(Clone, Copy)]
 pub(crate) struct DeviceBatchGeometry<'a> {
     pub height: usize,

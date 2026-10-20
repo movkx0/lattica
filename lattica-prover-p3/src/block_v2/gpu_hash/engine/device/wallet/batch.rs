@@ -2,19 +2,11 @@
 //! device; padding, statement hashes, the root chain and all trace rows stay on it.
 use super::super::super::Engine;
 use super::*;
-use crate::batch_common::{DeviceBatchGeometry, MAX_BATCH_TILES};
+#[cfg(test)]
+use crate::batch_common::MAX_BATCH_TILES;
 use crate::proving::{Backend, Run, Stage};
 
-struct BatchPlan<'a> {
-    trace: MatrixSpec,
-    public: MatrixSpec,
-    geometry: MatrixSpec,
-    layout: DeviceBatchGeometry<'a>,
-    peak: [MatrixSpec; 8],
-    tiles: usize,
-    height: usize,
-}
-
+use crate::gpu_wallet::batch::BatchPlan;
 pub(super) fn admission_extra(host_allowance: usize) -> Result<(usize, usize), String> {
     let mut bytes = 0;
     let mut largest = 0;
@@ -41,125 +33,6 @@ pub(super) fn admission_extra(host_allowance: usize) -> Result<(usize, usize), S
         largest = largest.max(extra.iter().map(|s| s.bytes()).max().unwrap_or(0));
     }
     Ok((bytes, largest))
-}
-
-impl<'a> BatchPlan<'a> {
-    fn new(
-        layout: DeviceBatchGeometry<'a>,
-        count: usize,
-        single: Plan,
-        host_allowance: usize,
-    ) -> Result<Self, String> {
-        if count > MAX_BATCH_TILES {
-            return Err("batch exceeds MAX_BATCH_TILES".into());
-        }
-        let tiles = count.max(1).next_power_of_two();
-        let height = layout.height;
-        let rows = height.checked_mul(tiles).ok_or("batch height overflow")?;
-        if !height.is_power_of_two()
-            || height < 32
-            || layout.wallet_width < 8
-            || rows > u32::MAX as usize
-            || layout.wallet_width.checked_add(layout.public_width) != Some(layout.root_column)
-            || layout.root_column.checked_add(4) != Some(layout.batch_width)
-            || layout.fold_base.checked_add(layout.chunks.len()) != Some(layout.root_block)
-            || layout.root_block >= height / 32
-            || layout
-                .root_block
-                .checked_mul(32)
-                .and_then(|r| r.checked_add(31))
-                != Some(layout.root_output_row)
-            || layout.chunks.is_empty()
-            || layout
-                .chunks
-                .iter()
-                .flatten()
-                .flatten()
-                .any(|&col| col < layout.wallet_width || col >= layout.root_column)
-        {
-            return Err("unsupported batch trace geometry".into());
-        }
-        if single.trace
-            != MatrixSpec::new(
-                height.ilog2(),
-                layout.wallet_width,
-                Extension::Base,
-                RowOrder::Natural,
-                1,
-            )?
-            || single.public
-                != MatrixSpec::new(
-                    0,
-                    layout.public_width,
-                    Extension::Base,
-                    RowOrder::Natural,
-                    1,
-                )?
-        {
-            return Err("batch and wallet geometry differ".into());
-        }
-        let trace = MatrixSpec::new(
-            rows.ilog2(),
-            layout.batch_width,
-            Extension::Base,
-            RowOrder::Natural,
-            1,
-        )?;
-        let public = MatrixSpec::new(0, 4, Extension::Base, RowOrder::Natural, 1)?;
-        let geometry_words = layout
-            .chunks
-            .len()
-            .checked_mul(4)
-            .and_then(|n| n.checked_add(11))
-            .ok_or("batch geometry size overflow")?;
-        let single_bytes = single.staging_bytes()?;
-        let host_bytes = geometry_words
-            .checked_mul(8)
-            .and_then(|n| n.checked_add(single_bytes))
-            .ok_or("batch host staging overflow")?;
-        if host_bytes > host_allowance {
-            return Err("batch input staging exceeds host allowance".into());
-        }
-        let geometry = MatrixSpec::new(0, geometry_words, Extension::Base, RowOrder::Natural, 1)?;
-        let [a, b, c, d, e] = single.specs()?;
-        Ok(Self {
-            trace,
-            public,
-            geometry,
-            layout,
-            peak: [trace, public, geometry, a, b, c, d, e],
-            tiles,
-            height,
-        })
-    }
-
-    // Materialize only after host staging and aggregate device storage pass.
-    fn words(&self) -> Result<Vec<u64>, String> {
-        let layout = self.layout;
-        let mut words = staging_words(self.geometry.words())?;
-        words.extend([
-            self.height as u64,
-            layout.batch_width as u64,
-            layout.wallet_width as u64,
-            layout.public_width as u64,
-            layout.fold_base as u64,
-            layout.root_block as u64,
-            layout.root_column as u64,
-            layout.root_output_row as u64,
-            self.tiles as u64,
-            layout.chunks.len() as u64,
-            crate::domains::DOM_TXROOT,
-        ]);
-        words.extend(
-            layout
-                .chunks
-                .iter()
-                .flatten()
-                .map(|col| col.map_or(u64::MAX, |c| c as u64)),
-        );
-        debug_assert_eq!(words.len(), self.geometry.words());
-        Ok(words)
-    }
 }
 
 impl DeviceSession {

@@ -1291,6 +1291,21 @@ were unchanged. This is neither steady-state pool throughput nor a matched
 CPU/OpenCL comparison. The earlier Python launcher measurement has a different
 boundary and cannot establish a speedup here; pool timing approval remains open.
 
+The [batch/tree arithmetic qualification](evidence/cuda-wallet-batch-tree-2026-10-19.json)
+shares batch geometry, admission plans and kernel bodies between OpenCL and CUDA.
+CUDA JoinSplit and HTLC batch traces match every CPU trace element and root for
+counts 0, 1, 3, 4, 5 and 8. Tree-root arithmetic matches CPU folding and dummy
+padding through 1,024 public statements. Only validity words and the final tree
+root are read back during these operations. Invalid batch witnesses release
+their buffers and permit a successful retry on the same runtime. All three new
+device tests and three existing wallet receipt tests passed; the archived CPU
+auditor accepted all nine maintained wallet proofs and rejected their tampered
+variants. Compute Sanitizer reported zero memory errors and leaks. CPU, OpenCL,
+CUDA without streaming and Apple Metal compilation passed; Volta and Blackwell
+kernel compilation also passed. These are internal arithmetic components.
+Native batch/tree API routing, batch proof orchestration and bounded container
+serialization remain to be connected and qualified.
+
 This checkpoint does not qualify CUDA batch/tree wallet APIs, node/block
 processing, multi-GPU concurrency, V100 execution, or matched CPU/OpenCL speedup.
 Those requirements and the remaining implementation sequence stay open.

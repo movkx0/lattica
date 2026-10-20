@@ -39,12 +39,10 @@ mod periodic;
 pub(crate) use periodic::PeriodicShape;
 mod trace_commit;
 mod wallet;
-#[cfg(feature = "gpu")]
-mod wallet_batch_kernels;
 mod wallet_kernels;
 pub(super) use periodic::KERNEL_SRC as PERIODIC_KERNEL_SRC;
 #[cfg(feature = "gpu")]
-pub(super) use wallet_batch_kernels::KERNEL_SRC as WALLET_BATCH_KERNEL_SRC;
+pub(super) use crate::gpu_wallet::batch_kernels::KERNEL_SRC as WALLET_BATCH_KERNEL_SRC;
 mod witness;
 mod witness_kernels;
 pub(super) use htlc_kernels::KERNEL_SRC as HTLC_KERNEL_SRC;
