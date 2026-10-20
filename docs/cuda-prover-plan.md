@@ -1411,6 +1411,25 @@ unchanged. Wallet generation, network/consensus and native durable application
 are outside the timing boundary. This does not qualify full blocks, steady-state
 pools, timing approval, or a matched CPU/OpenCL speedup.
 
+The [native journal qualification](evidence/cuda-native-host-2026-10-19.json)
+applies two distinct four-input CUDA-produced branches through the unchanged CPU
+verifier and native state transition. All 55 application/recovery checks passed,
+including fresh-process reopening, reorganization, stale-head fencing, competing
+writers, five process-exit boundaries and injected ENOSPC/EIO errors. Independent
+streaming CPU audits agreed with all twenty resulting journals. The recovery
+runner now archives its capacity-module dependency and separates native stderr
+diagnostics from JSON restart receipts; two focused regression tests passed.
+The omitted-module failure and a subsequent local wrapper status mismatch are
+retained. These checks do not simulate power failure or measure delivery rate.
+
+This checkpoint also generates and independently verifies all 64 native CUDA
+wallet inputs: sixteen each of JoinSplit, HTLC redeem, HTLC refund and issuance.
+Their complete bodies agree with the independently derived native/Rust root,
+and the CPU planner identifies 63 recursive jobs across seven mode/level/count
+classes. That full root has not yet been proved or applied. Maintained CUDA
+wallet-launcher selection, full-capacity recursive work, approved pool operation,
+and complete controller/native-host recovery remain open.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)

@@ -39,6 +39,27 @@ def unchanged(pins):
             raise ValueError('qualification input changed: ' + item['path'])
 
 
+def freeze_tools(directory):
+    """Retain the complete project import set used by recovery subprocesses."""
+    directory.mkdir()
+    pins = []
+    for path in (Path(__file__), Path(H.__file__), Path(H.Capacity.__file__)):
+        shutil.copy2(path, directory / path.name)
+        pins.extend([pin(path), pin(directory / path.name)])
+    return pins
+
+
+def invoke_child(runner, config_path, directory, mode, value, token, output):
+    command = [sys.executable, runner, '--child', str(config_path),
+               str(directory), mode, value, token]
+    # Native verification emits diagnostics on stderr. Keep the restart receipt
+    # as a standalone JSON document and retain diagnostics in a separate log.
+    with output.open('xb') as log, output.with_suffix('.stderr.log').open('xb') as errors:
+        completed = subprocess.run(command, stdout=log, stderr=errors,
+                                   timeout=120, env={**os.environ, 'RAYON_NUM_THREADS': '2'})
+    return completed.returncode
+
+
 def require(condition, message):
     if not condition:
         raise ValueError(message)
@@ -134,10 +155,7 @@ def prepare(args, out):
         pins.extend([pin(body), pin(proof)])
     require(candidates[0] != candidates[1], 'two distinct candidate fixtures required')
     frozen = out / 'tools'
-    frozen.mkdir()
-    for path in (Path(__file__), Path(H.__file__)):
-        shutil.copy2(path, frozen / path.name)
-        pins.extend([pin(path), pin(frozen / path.name)])
+    pins.extend(freeze_tools(frozen))
     pins.extend(pin(path) for path in (args.library, args.registry, args.genesis))
     config = {'schema_version': 1, 'library': str(args.library.resolve(strict=True)),
               'registry': str(args.registry.resolve(strict=True)),
@@ -167,12 +185,8 @@ def qualify(config, config_path, out, result):
         return H.Store.create(out / name, verifier)
 
     def invoke(directory, mode, value, token, label):
-        command = [sys.executable, config['runner'], '--child', str(config_path),
-                   str(directory), mode, value, token]
-        with (out / (label + '.log')).open('xb') as log:
-            completed = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT,
-                                       timeout=120, env={**os.environ, 'RAYON_NUM_THREADS': '2'})
-        return completed.returncode
+        return invoke_child(config['runner'], config_path, directory, mode, value,
+                            token, out / (label + '.log'))
 
     genesis = verifier.replay([])[0]
     check('independent genesis has the expected native state',

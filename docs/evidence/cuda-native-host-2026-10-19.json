@@ -1,0 +1,582 @@
+{
+  "schema": "lattica-cuda-native-host-qualification-v1",
+  "date": "2026-10-19",
+  "status": "passed",
+  "source_parent_commit": "cfd22ff39670287ed767097ce2e7bc4ea038bf95",
+  "source_changes": [
+    {
+      "path": "lattica-prover-p3/scripts/qualify-block-v2-native-host.py",
+      "sha256": "1d770a2eb2cf8753e1353896d4ac481faf7cf0a37c45ea16c9b88dfa56a1b7db"
+    },
+    {
+      "path": "lattica-prover-p3/scripts/test-block-v2-native-host-tools.py",
+      "sha256": "629a533ba4b41100c8602846522d26c49ab9779cb998914f8ae4d4c1747786a4"
+    }
+  ],
+  "current_source_pins_verified": 885,
+  "prover_or_security_parameter_changes": false,
+  "frozen_runner_regression_tests_passed": 2,
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 5080",
+    "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "driver": "615.78.08"
+  },
+  "scope": "Two distinct four-input native CUDA wallet/recursive roots at height 10; independent CPU authorization, durable journal application and recovery. Additional full-capacity native wallet preparation only.",
+  "retained_first_branch": "docs/evidence/cuda-native-wallet-recursive-benchmark-2026-10-19.json",
+  "new_wallet_proofs": {
+    "alternate_branch": 4,
+    "full_capacity_preparation": 64
+  },
+  "new_recursive_proofs": 4,
+  "complete_cuda_recursive_reports": 24,
+  "host_qualification": {
+    "checks_passed": 55,
+    "checks": [
+      "independent genesis has the expected native state",
+      "real CPU verifier accepts both complete-body roots",
+      "native supply/nullifier/output/event totals",
+      "native supply/nullifier/output/event totals",
+      "different wallet inputs produce different native state",
+      "durable commit matches independent native replay",
+      "journal retains complete ciphertext body and exact root proof",
+      "fresh process reopens and verifies published branch",
+      "fresh process restores exact state and head",
+      "real-proof reorg restores alternate supply/events/notes/nullifiers",
+      "reorg retains previous immutable branch",
+      "rollback restores trusted genesis without head-token ABA",
+      "rollback fences stale writer",
+      "original real proof can be applied after explicit rollback",
+      "mismatched-body cannot publish",
+      "truncated-root cannot publish",
+      "wrong-height cannot publish",
+      "child exits at record_file_synced",
+      "recovery verifies published history at record_file_synced",
+      "orphan records are not adopted at record_file_synced",
+      "retry after crash at record_file_synced",
+      "child exits at record_directory_synced",
+      "recovery verifies published history at record_directory_synced",
+      "orphan records are not adopted at record_directory_synced",
+      "retry after crash at record_directory_synced",
+      "child exits at head_file_synced",
+      "recovery verifies published history at head_file_synced",
+      "orphan records are not adopted at head_file_synced",
+      "retry after crash at head_file_synced",
+      "child exits at head_replaced",
+      "recovery verifies published history at head_replaced",
+      "child exits at head_directory_synced",
+      "recovery verifies published history at head_directory_synced",
+      "storage error recovery 28 at record_file_synced",
+      "storage retry 28 at record_file_synced",
+      "storage error recovery 28 at record_directory_synced",
+      "storage retry 28 at record_directory_synced",
+      "storage error recovery 28 at head_file_synced",
+      "storage retry 28 at head_file_synced",
+      "storage error recovery 28 at head_replaced",
+      "indeterminate retry is fenced 28 at head_replaced",
+      "storage error recovery 28 at head_directory_synced",
+      "indeterminate retry is fenced 28 at head_directory_synced",
+      "storage error recovery 5 at record_file_synced",
+      "storage retry 5 at record_file_synced",
+      "storage error recovery 5 at record_directory_synced",
+      "storage retry 5 at record_directory_synced",
+      "storage error recovery 5 at head_file_synced",
+      "storage retry 5 at head_file_synced",
+      "storage error recovery 5 at head_replaced",
+      "indeterminate retry is fenced 5 at head_replaced",
+      "storage error recovery 5 at head_directory_synced",
+      "indeterminate retry is fenced 5 at head_directory_synced",
+      "one competing real-proof writer publishes and one is fenced",
+      "competing writer recovery matches winner"
+    ],
+    "stream_audited_journals": 20,
+    "durable_complete_body_application_qualified": true,
+    "process_exit_recovery_qualified": true,
+    "injected_storage_error_recovery_qualified": true,
+    "power_loss_recovery_tested": false,
+    "first_branch_state": {
+      "anchor": "febc3cbfc8c3585006bb043e468877b55e8b9365b19e5577e60beb20f2962a28",
+      "blocks": 1,
+      "event_root": "920bec34b2024500be66065b1634876ef47c4ecedafb0d070b85fdde1eaee1bb",
+      "events": 1,
+      "height": 10,
+      "nullifiers": 8,
+      "outputs": 136,
+      "state_root": "619d9a723c607960f6f9e2a097de70f27268b042f0961899784c81a716e82525",
+      "supply": {
+        "burned": "0",
+        "fees_paid": "0",
+        "issued": "64007",
+        "shielded_pool": "64007"
+      }
+    },
+    "alternate_branch_state": {
+      "anchor": "6e59593e83a1a7cad1d48bd8e1f4af8eb4a6d9ac17b9edcb2a1dc4c96f6f40ad",
+      "blocks": 1,
+      "event_root": "ab0d63407b8ae41eeee6f56548307c9d52e30ee9f68b4231aea14276a0b28829",
+      "events": 1,
+      "height": 10,
+      "nullifiers": 8,
+      "outputs": 136,
+      "state_root": "f65656e68c1865db460deca754cee40fe5815f0396be6d979fb0593556d75ec8",
+      "supply": {
+        "burned": "0",
+        "fees_paid": "0",
+        "issued": "64007",
+        "shielded_pool": "64007"
+      }
+    }
+  },
+  "full_capacity_preparation": {
+    "native_wallets": 64,
+    "independently_cpu_verified": 64,
+    "wallet_types": {
+      "joinsplit": 16,
+      "htlc_redeem": 16,
+      "htlc_refund": 16,
+      "issuance": 16
+    },
+    "recipient_ciphertexts_checked": 128,
+    "recursive_jobs": 63,
+    "recursive_proofs_started": 0,
+    "root_proved": false,
+    "block_applied": false,
+    "classes": [
+      {
+        "mode": 3,
+        "level": 2,
+        "count": 4,
+        "jobs": 16
+      },
+      {
+        "mode": 3,
+        "level": 3,
+        "count": 8,
+        "jobs": 8
+      },
+      {
+        "mode": 3,
+        "level": 4,
+        "count": 16,
+        "jobs": 4
+      },
+      {
+        "mode": 3,
+        "level": 5,
+        "count": 32,
+        "jobs": 2
+      },
+      {
+        "mode": 3,
+        "level": 6,
+        "count": 64,
+        "jobs": 1
+      },
+      {
+        "mode": 4,
+        "level": 1,
+        "count": 2,
+        "jobs": 16
+      },
+      {
+        "mode": 8,
+        "level": 1,
+        "count": 2,
+        "jobs": 16
+      }
+    ]
+  },
+  "resource_limits": {
+    "private_wallet_host_bytes": 3221225472,
+    "recursive_worker_host_bytes": 3221225472,
+    "coordinator_host_bytes": 1073741824,
+    "fleet_host_bytes": 4294967296,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "rayon_threads": 4,
+    "managed_gpu_bytes": 7516192768,
+    "context_gpu_bytes": 4294967296,
+    "cuda_max_allocation_bytes": 1073741824,
+    "cuda_headroom_bytes": 1073741824
+  },
+  "runs": [
+    {
+      "case": "native-application-cpu",
+      "status": "passed",
+      "host_memory_peak_bytes": 40882176,
+      "retired": true,
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/native-application-cpu/command.json",
+          "sha256": "accdb486fbc716415d69d111347c87a585f8932d68361924b78a333c9eacf609"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/native-application-cpu/result.json",
+          "sha256": "a16e4daaee08a622d2f88b59546ddca50919d2eee875e88bd349a4df11e9cd36"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/native-application-cpu/retired.json",
+          "sha256": "d7db5864eb969076780be52cb67361f197bf479d4f53898c804aae620bd3517f"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/native-application-cpu/test.log",
+          "sha256": "9dfd6e6d56e4c0ce248ef2ff1352ae78bf08cda8ade470a9f49fc6120b6d0965"
+        }
+      ]
+    },
+    {
+      "case": "alternate-wallets-cuda",
+      "status": "passed",
+      "host_memory_peak_bytes": 200663040,
+      "retired": true,
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-wallets-cuda/command.json",
+          "sha256": "5a456b838cf188bb7d9dd4cb0c57f621a348f41cee3152521c5fbca997bac77d"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-wallets-cuda/result.json",
+          "sha256": "8d169effb54b9da81208b958560e2254650225ea77c425605a57a9fd69715d44"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-wallets-cuda/retired.json",
+          "sha256": "86e4ee6c06d792ad65588413cef9d3b2334c98ba62e92cc61db69391d5e674d8"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-wallets-cuda/test.log",
+          "sha256": "eea760770ece8f81e3dc334b81a7ecc263fbb67afec8110bb0be47094d5aab71"
+        }
+      ],
+      "complete_cuda_wallet_reports": 4,
+      "entry_points": {
+        "cuda_context_joinsplit": 1,
+        "cuda_context_htlc": 2,
+        "cuda_context_issuance": 1
+      },
+      "cuda_retirement": {
+        "live_bytes": 0,
+        "peak_bytes": 141570328,
+        "allocations": 0,
+        "peak_allocations": 94,
+        "modules": 0,
+        "pending_commands": 0,
+        "completed_commands": 7818,
+        "device_ns": 230752672,
+        "uploaded_bytes": 4968536,
+        "downloaded_bytes": 3033952,
+        "copied_bytes": 3024,
+        "public_program_bytes": 0,
+        "public_programs": 0
+      }
+    },
+    {
+      "case": "alternate-plan-cpu",
+      "status": "passed",
+      "host_memory_peak_bytes": 17956864,
+      "retired": true,
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-plan-cpu/command.json",
+          "sha256": "0eb910a891e2078d114606cbb77467bcc4422c235596928c446a55119562386e"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-plan-cpu/result.json",
+          "sha256": "22853ea4001993620af0d6379c07e1fb9429b295889f9c3f3a1ebb6ddea59ef7"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-plan-cpu/retired.json",
+          "sha256": "c182ab3042f1b420cf8312efd79aedd2bda724faf85c1ec76f298409019836d7"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-plan-cpu/test.log",
+          "sha256": "4695e5d27fb55fea43805217f6d28588a3e2bbf6499778b9924badf6edcd80b7"
+        }
+      ]
+    },
+    {
+      "case": "full-wallets-cuda",
+      "status": "passed",
+      "host_memory_peak_bytes": 251969536,
+      "retired": true,
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/full-wallets-cuda/command.json",
+          "sha256": "5235b1b49c5b401e754f6aba1ad041a953f12bb5fc2ea19169fa276c57707cf6"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/full-wallets-cuda/result.json",
+          "sha256": "5d72138ae53b7c781c94a1774e2e6449eb025ccf473a8efb169e2e5d1c9043e9"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/full-wallets-cuda/retired.json",
+          "sha256": "aa85c7b1b3bad23e2003273e56a2189ead97e1ae7de2350d8cb14af5e97ae3a5"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/full-wallets-cuda/test.log",
+          "sha256": "43923e8cbb2b9ca475db524db6c375cdba631b90291843d2d7415fb4579a39c8"
+        }
+      ],
+      "complete_cuda_wallet_reports": 64,
+      "entry_points": {
+        "cuda_context_joinsplit": 16,
+        "cuda_context_htlc": 32,
+        "cuda_context_issuance": 16
+      },
+      "cuda_retirement": {
+        "live_bytes": 0,
+        "peak_bytes": 141570328,
+        "allocations": 0,
+        "peak_allocations": 94,
+        "modules": 0,
+        "pending_commands": 0,
+        "completed_commands": 124605,
+        "device_ns": 3688311968,
+        "uploaded_bytes": 13296056,
+        "downloaded_bytes": 48543456,
+        "copied_bytes": 48384,
+        "public_program_bytes": 0,
+        "public_programs": 0
+      }
+    },
+    {
+      "case": "full-plan-cpu",
+      "status": "passed",
+      "host_memory_peak_bytes": 61415424,
+      "retired": true,
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/full-plan-cpu/command.json",
+          "sha256": "4d021c8dd8071756bf4dffec37108a7387436b9006f43be87bf18af76c606ba0"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/full-plan-cpu/result.json",
+          "sha256": "d301c3140f039418937dc474fe470ef234b1a3b386745abb2efd6388d904b45b"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/full-plan-cpu/retired.json",
+          "sha256": "1f884a5d83ce4f87947dda555c2ca141560cbb49e00bad64c34964bcb57e342f"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/full-plan-cpu/test.log",
+          "sha256": "f002f591f5cdbbf886e06387fc71aa5f30e5714f1150ea43fb12d52bedf21513"
+        }
+      ]
+    },
+    {
+      "case": "streaming-audit-cpu",
+      "status": "passed",
+      "host_memory_peak_bytes": 41570304,
+      "retired": true,
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/streaming-audit-cpu/command.json",
+          "sha256": "cc53a84f2e931d4cc4d92a68be3568e7beff699e3eb5d1943a21d34d3225f81b"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/streaming-audit-cpu/result.json",
+          "sha256": "95c3a6b5cb33775259f82855c68250e75755018cc4440b1dfaf29f6c4857eca6"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/streaming-audit-cpu/retired.json",
+          "sha256": "0014bbb4397758ace0ce09bcd5c8a8622d76eb4593d55592408b7df870e45732"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/streaming-audit-cpu/test.log",
+          "sha256": "bf080424c7860e59a7c13e561c25f9ca61ef8dd01a413686aeeb342c03bb70dd"
+        }
+      ]
+    }
+  ],
+  "preserved_failed_attempts": [
+    {
+      "reason": "Archived restart runner omitted block_v2_capacity; application checks passed but the restart child could not import its dependencies.",
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/host-qualification/summary.json",
+          "sha256": "6d5feb054626a6841ac964d7411370fe8956558876c075db93ff2dc11bafa441"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/host-qualification/restart.log",
+          "sha256": "fc2fa4a9dd3807120466320c62de460f56e9bfceaffd04013599be56736e1fc0"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/native-recovery-qualification-cpu/result.json",
+          "sha256": "5103f1ffd319a7d346cf21c14c09c6ba9674a8cb562ec7701d895be7d3e41c04"
+        }
+      ]
+    },
+    {
+      "reason": "The repaired primary qualifier succeeded with 55 checks, but the local wrapper expected passed instead of succeeded. A separate successful streaming audit verifies the preserved journals.",
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/native-recovery-qualification-cpu/result.json",
+          "sha256": "da29108345e69e6d8befd6783a8897778f3add1325442069e05f926939c550a3"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/native-recovery-qualification-cpu/test.log",
+          "sha256": "e9e7c7613e4c0a90342978c6ba4be8b3c7291ad45df892f2992872af03278e32"
+        }
+      ]
+    }
+  ],
+  "supporting_artifacts": [
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/source-pins.json",
+      "sha256": "28ddf58d25c7ef7a5cfd64bcb2b50c3e0c16331fd516286ad41b7a7943efacb5"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/host-tools-tests.json",
+      "sha256": "0623fd0bb1f2ee47f69c66c0e6e2ca7ed4bfa423d4a86f13e2cc4a864992e247"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/host-tools-tests.log",
+      "sha256": "65b14b403b9324bc4ac58c9c744bb5c8d2e552a23fc7a23eee506c2c7a23c6ea"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/qualify_host.py",
+      "sha256": "b3555d94835511107dd9eb7fd621252f610c8adab8b64caa0a702c905c1d8a8b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/finish_host_audit.py",
+      "sha256": "51ac872fdc2e5d46c012e767eb4bc9a0ad9a5c53bffbef8bbd79a9dc5ef6850e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/native-host-result.json",
+      "sha256": "2347a77d2c1f47cf1d91d817bc8fb74f4d81b89e1a9e2f608bf2ae0f467e000c"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/build-retirement.json",
+      "sha256": "579be960fd5aabe58941a4c877e27113af516186c5d3b1419aa307a551391281"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/complete-dag-audit.log",
+      "sha256": "b65f9d9bb2f6480b610501960bb84c960c4549d718c0afd5595034526920a270"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/archived-root-audit.log",
+      "sha256": "418e7645b4dde67b3abe8ee5aa542476e64aafd2e29ad64bc6b37671dc3594e4"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/alternate-proof-inventory.json",
+      "sha256": "a0982643b7cdcac0cfa01d5c3fa487ed61943bb83c3e728af5840f24711426dd"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/host-qualification-command.json",
+      "sha256": "e747bd24882671ee86168f1fee73e464cba51e9dd9de23b13cfecdf25b515f70"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/host-qualification-launcher.log",
+      "sha256": "2ab3e11a26aa850de96eacc36735343f1654f26d59a72cd53ec8a538be3e4268"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/record_evidence.py",
+      "sha256": "ac1e65efded9153384bd60cea7b6795335300b6d5cd51c114343efb68d997fd0"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/host-qualification/summary.json",
+      "sha256": "7577118ffa23d1db56a72115174b01a2f7f9add7146977d04a3be430c0f4dd00"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/host-qualification/inputs.json",
+      "sha256": "27a1f7e6366053dd5290c36cf715703cfae811f3d48712d0b3fadfd063a64226"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/host-qualification/restart.log",
+      "sha256": "97749836c2d45294747eacf9c1f2c78ea18574be6c6a2056ee2647c9ee17f422"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-02/host-qualification/restart.stderr.log",
+      "sha256": "92e4eb71e9bda614975208640bbd5f16c3fbfc47afb2f4eb9cbe639020c7c3fa"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/source-pins.json",
+      "sha256": "1e14482d9dabf8e899ddc3cb70145bb10dc6e778b415943f052e19fa4b92fe77"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/build.py",
+      "sha256": "5bca9cfe187e0ed4e35bce6047b8b778950ba78e7f1cf30f886d9f1950c59dfd"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/build-results.json",
+      "sha256": "192548fd9ba0a0812aa947c23d414b8ba555844625155a6201f93e049c6a88bd"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/bridge-cpu/manifest.json",
+      "sha256": "8d287f7fa8a5208a518e84e033dd880f14d8bbdf9244235669b6529709c348fa"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/bridge-cuda/manifest.json",
+      "sha256": "b578ea94271e0198c038967323b0bd73289f6e621d1849642d621b2d39e3d925"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/first-native-application.json",
+      "sha256": "aac48999cbac99fbc082cb4aae60fbcebd06a9df47772b4e1dc1ead0cfa859c3"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate_fixture.py",
+      "sha256": "c5fb5e1ffa4340d2d9e006f88414c5d196808b8c35f777b282932ea940ae6885"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/full_fixture.py",
+      "sha256": "f1a61dd1d5124a2ec20636ce62639d80b9f788a0d575fa39019d5a6ed6afa1d6"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/prove_alternate.py",
+      "sha256": "8090afec7da6389baa385b13c6a4f4b44f7351443858eadb39e014ede729e755"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-command.json",
+      "sha256": "71cf162bbf5531e9419efbe3937b76bdacac646d7a292c399b5bbc4cc7d1cbb2"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-result.json",
+      "sha256": "fc1a8a2e63d49b16596aaa7720401e81fcc4fff73562190227b4be2ac9d814cd"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-input-pins.json",
+      "sha256": "ce4f839e0e1ed66223bd0bdff162707d0fcbdd1933bf33a5241ec2ae4b635e2e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-calibration.json",
+      "sha256": "fd308884de6233754879aba7bd21d71a400f21245696e60c101b6614dbb87b48"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-recursive/summary.json",
+      "sha256": "18651a4854da2c7a2cd794a8379130ba761051413fbcb907f32bafcaa905a1eb"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-recursive/config.json",
+      "sha256": "d0c4a61d4456dbddd9a4950b23c307eb5bc79574bbd33772347fa4edea4ea3bf"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-recursive/workers/gpu-01/prove.log",
+      "sha256": "440262c1c52d537fd5833711af433d85af6aa3838b5a0244180f4c1ec41c904f"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-recursive/workers/gpu-01/accounting.json",
+      "sha256": "d9235f063777ad047fa77b7ac7be2526ef9f8e4b51cb50736ea263f17f96104d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-recursive/owner/proofs/node.6.0",
+      "sha256": "0ff4b3272f2bf3f5baaea11fdc99e364593e5db6687bd0dafcbcba50434c4b88"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/alternate-fixture/manifest.json",
+      "sha256": "9b24eedf6e9500526b9a50379de671483722eaab95461426b559b50bd8da5c19"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/full-fixture/manifest.json",
+      "sha256": "171ad0f3df6bb6abad57f842b455ce08119f1d8eef69bd0c71f666df03b3c3ff"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/full-execution-plan.json",
+      "sha256": "58d192024774fbf2371da1eaab0f2caac6f20657e704764db9a4e5ed82cb920c"
+    }
+  ],
+  "limitations": [
+    "Correctness and process-crash/injected-error qualification, not power-loss testing or throughput measurement.",
+    "Repeated journal applications are test cases, not additional delivered user transactions.",
+    "Four-input native branches only; the full 64-input recursive root and its durable application remain unqualified.",
+    "Timing-approved pools, complete native controller/worker recovery, full 128-entry blocks and multi-GPU qualification remain open.",
+    "Independent CPU streaming audit confirms history validity; Store.read separately confirms durability."
+  ]
+}
