@@ -1,0 +1,497 @@
+{
+  "schema": "lattica-cuda-native-wallet-recursive-benchmark-v1",
+  "date": "2026-10-19",
+  "status": "passed",
+  "source_commit": "8971a2b6282cdf74487a26309fca844b3ba5f72f",
+  "source_pins_verified": 884,
+  "qualification": [
+    "docs/evidence/cuda-zig-host-2026-10-19.json",
+    "docs/evidence/cuda-witness-kernel-fix-2026-10-19.json"
+  ],
+  "fixture": {
+    "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-output-03/manifest.json",
+    "sha256": "100e564922ef6f0aff7f3b84283eea452489c6f353e571bb2c3d5aef9859f43f"
+  },
+  "input_composition": [
+    "native CUDA JoinSplit",
+    "native CUDA HTLC redeem",
+    "native CUDA HTLC refund",
+    "native CUDA issuance"
+  ],
+  "native_wallet_generation_included_in_timing": false,
+  "profile_capacity": 64,
+  "inputs_per_trial": 4,
+  "fresh_recursive_proofs_per_trial": 4,
+  "features": [
+    "gpu-cuda",
+    "block-v2-host",
+    "stream"
+  ],
+  "build_profile": "release",
+  "target_cpu": "x86-64-v3",
+  "executables": {
+    "cuda-cli": {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/cuda-cli",
+      "sha256": "8cee0ca7d7e8fd64b1a09540b354704c53809e341fd44fce9e647d6f8cb3659d"
+    },
+    "cpu-cli": {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/cpu-cli",
+      "sha256": "2f17e8ab7e42e63bc23a72a675b2584ba5e5647d60368555212a3838fc07e832"
+    }
+  },
+  "archived_cpu_auditor_sha256": "95a7b0e65bff3f88e9d75b89343f88d952829f8631106d10c884683c9a6c712a",
+  "gpu": {
+    "backend": "cuda",
+    "cuda": {
+      "compute_capability": 120,
+      "driver_api": 13040,
+      "global_bytes": 16703946752,
+      "max_grid_x": 2147483647,
+      "max_threads": 1024,
+      "max_threads_per_multiprocessor": 1536,
+      "multiprocessors": 84,
+      "name": "NVIDIA GeForce RTX 5080",
+      "ordinal": 0,
+      "pci": "0000:01:00.0",
+      "shared_bytes": 49152,
+      "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+    },
+    "nvidia": {
+      "driver": "615.78.08",
+      "free_bytes": 15927869440,
+      "name": "NVIDIA GeForce RTX 5080",
+      "pci": "00000000:01:00.0",
+      "total_bytes": 17094934528,
+      "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+    },
+    "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+  },
+  "resource_limits": {
+    "worker_host_bytes": 3221225472,
+    "coordinator_host_bytes": 1073741824,
+    "fleet_host_bytes": 4294967296,
+    "swap_bytes": 0,
+    "managed_gpu_bytes": 7516192768,
+    "context_gpu_bytes": 4294967296,
+    "max_allocation_bytes": 1073741824,
+    "gpu_headroom_bytes": 1073741824,
+    "rayon_threads": 4,
+    "cpu_quota_percent": "400%",
+    "fleet_slice": "lattica-v2-multi-cuda-zig-host-b02.slice"
+  },
+  "timing_boundary": "Whole maintained Python launcher, including controller preparation, fresh worker startup, four fresh recursive jobs with collection verification, shutdown and observed exit, accounting and public artifact cache retirement. Additional independent audits follow outside this interval.",
+  "warmups": 1,
+  "measured_trials": 3,
+  "median_seconds": 53.0840219189995,
+  "minimum_seconds": 53.02823088100013,
+  "maximum_seconds": 53.086792377000165,
+  "aggregated_inputs_per_hour": 271.2680667258568,
+  "non_issuance_inputs_per_hour": 203.4510500443926,
+  "all_16_recursive_proofs_independently_cpu_verified": true,
+  "all_root_and_statement_tampering_rejected": true,
+  "all_96_cuda_stage_reports_complete": true,
+  "all_gpu_owners_retired": true,
+  "all_worker_processes_exited": true,
+  "shared_fleet_limits_unchanged": true,
+  "pool_timing_approved": false,
+  "trials": [
+    {
+      "name": "warmup",
+      "measured": false,
+      "launcher_elapsed_seconds": 54.139637915001,
+      "root_sha256": "8f20fda9d44417597e2cb7ba695e9720373c8e008b2ea73840d996032b05c27a",
+      "fresh_recursive_proofs": 4,
+      "complete_cuda_reports": 24,
+      "managed_gpu_peak_bytes": 7450300432,
+      "worker_ram_peak_bytes": 1290596352,
+      "audit_outcomes": {
+        "complete-dag": 0,
+        "valid-root": 0,
+        "changed-statement": 1,
+        "changed-proof": 1
+      },
+      "fleet_memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "gpu_owners_retired": true,
+      "worker_processes_exited": true
+    },
+    {
+      "name": "trial-01",
+      "measured": true,
+      "launcher_elapsed_seconds": 53.0840219189995,
+      "root_sha256": "01d14f1cd89c17f87af7aaf58c8a5147af688961c0fbacef995e77e5ddf6194c",
+      "fresh_recursive_proofs": 4,
+      "complete_cuda_reports": 24,
+      "managed_gpu_peak_bytes": 7450300432,
+      "worker_ram_peak_bytes": 1227161600,
+      "audit_outcomes": {
+        "complete-dag": 0,
+        "valid-root": 0,
+        "changed-statement": 1,
+        "changed-proof": 1
+      },
+      "fleet_memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "gpu_owners_retired": true,
+      "worker_processes_exited": true
+    },
+    {
+      "name": "trial-02",
+      "measured": true,
+      "launcher_elapsed_seconds": 53.02823088100013,
+      "root_sha256": "2f723799f3841f0411289aa6f1c11c737a16246042eb08d508f5e553d833e42a",
+      "fresh_recursive_proofs": 4,
+      "complete_cuda_reports": 24,
+      "managed_gpu_peak_bytes": 7450300432,
+      "worker_ram_peak_bytes": 1253167104,
+      "audit_outcomes": {
+        "complete-dag": 0,
+        "valid-root": 0,
+        "changed-statement": 1,
+        "changed-proof": 1
+      },
+      "fleet_memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "gpu_owners_retired": true,
+      "worker_processes_exited": true
+    },
+    {
+      "name": "trial-03",
+      "measured": true,
+      "launcher_elapsed_seconds": 53.086792377000165,
+      "root_sha256": "33bb80ce94cfa728b6cc25e96daaba8ae599c6708c8b90b63e7ff41a5f5410d3",
+      "fresh_recursive_proofs": 4,
+      "complete_cuda_reports": 24,
+      "managed_gpu_peak_bytes": 7450300432,
+      "worker_ram_peak_bytes": 1232130048,
+      "audit_outcomes": {
+        "complete-dag": 0,
+        "valid-root": 0,
+        "changed-statement": 1,
+        "changed-proof": 1
+      },
+      "fleet_memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "gpu_owners_retired": true,
+      "worker_processes_exited": true
+    }
+  ],
+  "limitations": [
+    "Four-entry recursive aggregation with freshly generated native wallet inputs, not a full 64-entry block.",
+    "Whole launcher per fresh process; does not measure persistent pool steady-state throughput.",
+    "Wallet generation, network/consensus and native durable block application are excluded.",
+    "The input rate includes one issuance entry per four inputs; it is not delivered transaction throughput.",
+    "No matched CPU/OpenCL speedup or other-device comparison; no V100 execution.",
+    "Independent pool timing approval remains required."
+  ],
+  "artifacts": [
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/source-pins.json",
+      "sha256": "1e14482d9dabf8e899ddc3cb70145bb10dc6e778b415943f052e19fa4b92fe77"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/artifact-pins.json",
+      "sha256": "2e897ecd2eff78dd5ecaac7e3069c3111bb4ab1eb9652d3c966feba1ea28578e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/source-commit.txt",
+      "sha256": "b01aaf6b72eef5a8a41e11d757c9858df82d7c8c02db1ba581950fd19e4dbb98"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/benchmark.py",
+      "sha256": "d569c58b92d991fb7d02fa7c8edc58ea8cb801594eb324d36f521b5e4ff50c14"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/record_benchmark.py",
+      "sha256": "40b06b04bae5d4d9d9ae2117837dcb336d7455048d3d0faebb466c42c8366e96"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/calibration-request.json",
+      "sha256": "3be1542aaf17b31b93702e867d39ffd83aeee75fc43a3911b4602a1de763ced1"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/execution-plan.json",
+      "sha256": "4f6927b256d3f63142b2f08fb4d6f19a5f43b9597dc41075c06f54c22b2d2dc6"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/result.json",
+      "sha256": "32a5b4348ccdada71d432d2f398555cbdffe525fd85dce22f643bcc949ad1a00"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/shared-limits-before.txt",
+      "sha256": "b30b6aabc86d437d2be9a7db38df61b8b007df961ad7e9a4b0d9872c0c3761b1"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/shared-limits-after.txt",
+      "sha256": "b30b6aabc86d437d2be9a7db38df61b8b007df961ad7e9a4b0d9872c0c3761b1"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/warmup-result.json",
+      "sha256": "9f0bcbf4a69af5d61da6cf452ecce9c63e2cd8d1c2d2dd411615da31c1c10e4e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/warmup-command.json",
+      "sha256": "fed5808f5fc596e56c845c8eb875f283ee890c75d26e237a00eda15a46d815b0"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/warmup-launcher.log",
+      "sha256": "d3364c9ee3ebd791849f952405b991be92e8f3e72d055af95d7ecd60513566e3"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/warmup/summary.json",
+      "sha256": "2e9d3278569e035a9c87074382894f97fe064a469d14472feed107c412b809e9"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/warmup/config.json",
+      "sha256": "a88e988cbf854f571f598545bab78af76e934f47238b3d7a6e2281bf0e8ab2b3"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/warmup/workers/gpu-01/prove.log",
+      "sha256": "9e28accbb2af0f26b52235964f5f2ae6df072cb8c849dd05e2f3dd1bc8d7e4ad"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/warmup/workers/gpu-01/accounting.json",
+      "sha256": "e1356a4ac4a35d9b1bb87cf98d0ccecf9bcfdbe40b1d35d3b24738dc40583ca6"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/warmup/owner/accounting.json",
+      "sha256": "72e32c4cad8ba9c4731b03351f4047271dc5084ce050998fa952ce0397109ce7"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/warmup/accounting.json",
+      "sha256": "3baa52def84b3c100c19d6a5acb20fed923de35e19d7718a268e26028346fb81"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/warmup/owner/proofs/node.6.0",
+      "sha256": "8f20fda9d44417597e2cb7ba695e9720373c8e008b2ea73840d996032b05c27a"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/warmup-audit/changed-proof.log",
+      "sha256": "fa08b0ab983c8f24eab74c32c526b08f34e161ccc3319ad932fd1825e0dbfa76"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/warmup-audit/changed-statement.log",
+      "sha256": "ed4d243c0e9d0e394bd62a6cdd7ce2de632b0e321ca95d84a2c185134cb2e75b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/warmup-audit/complete-dag.log",
+      "sha256": "4232c797ea041f3d7331b813c31bd0e215ceb3309edf20f3d8c7bf7e401e4d4b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/warmup-audit/valid-root.log",
+      "sha256": "418e7645b4dde67b3abe8ee5aa542476e64aafd2e29ad64bc6b37671dc3594e4"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/warmup-audit/proof-inventory.json",
+      "sha256": "d1836f2f945f049306354808d6a1bafbc075684f32c5ee9b46b97b91b3ce13ae"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-01-result.json",
+      "sha256": "6bfa79c29930de432fa79bbb7186c57021495af39d275da7be67f9559b05300c"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-01-command.json",
+      "sha256": "2293b68f3f45ec27ca7ca1dabb42dfc447f83d807866bdf26c9ac2983c4aca6d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-01-launcher.log",
+      "sha256": "d3364c9ee3ebd791849f952405b991be92e8f3e72d055af95d7ecd60513566e3"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-01/summary.json",
+      "sha256": "ba99466ab5401fc55c9b8a522e760404c1a4850cf5ad7e4eea3f4a1e56f06303"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-01/config.json",
+      "sha256": "d6e3b1aae98d1ecc16e2d65ee36c78ead5f7c521f49944662f505712362cd12e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-01/workers/gpu-01/prove.log",
+      "sha256": "92a6f83f949658fe57644392ad515e25824ed43d789933302abef0df691013b8"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-01/workers/gpu-01/accounting.json",
+      "sha256": "6e5adca3ad07ba92866373466138e195f0b02649a1d6ce456bc4b317100fde07"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-01/owner/accounting.json",
+      "sha256": "74b39280857222cec8e95588a4925375643953aedb9c3e20b204344b967e78a3"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-01/accounting.json",
+      "sha256": "07bcb3b44c576a2959856fd2bb65d55d6ac957a15308dd5e20197b00c37e3c6f"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-01/owner/proofs/node.6.0",
+      "sha256": "01d14f1cd89c17f87af7aaf58c8a5147af688961c0fbacef995e77e5ddf6194c"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-01-audit/changed-proof.log",
+      "sha256": "fa08b0ab983c8f24eab74c32c526b08f34e161ccc3319ad932fd1825e0dbfa76"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-01-audit/changed-statement.log",
+      "sha256": "ed4d243c0e9d0e394bd62a6cdd7ce2de632b0e321ca95d84a2c185134cb2e75b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-01-audit/complete-dag.log",
+      "sha256": "4232c797ea041f3d7331b813c31bd0e215ceb3309edf20f3d8c7bf7e401e4d4b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-01-audit/valid-root.log",
+      "sha256": "418e7645b4dde67b3abe8ee5aa542476e64aafd2e29ad64bc6b37671dc3594e4"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-01-audit/proof-inventory.json",
+      "sha256": "e049b9af85a2be0568ba4cec57e0688759b39b1f4197c6402bab44161a12a673"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-02-result.json",
+      "sha256": "864b69619323c393ad73fd5373fb91dc659d09ec9ba2b267c10733c278917c9d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-02-command.json",
+      "sha256": "0a85ffe86881f497d12a5dbd5e44e9b9e2bd278dfce65a53ec3e4da23947bbfa"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-02-launcher.log",
+      "sha256": "d3364c9ee3ebd791849f952405b991be92e8f3e72d055af95d7ecd60513566e3"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-02/summary.json",
+      "sha256": "7f060007465d3b9a01a0c7bb3dfb171ec289edde369514a8e7e9a70695476d6c"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-02/config.json",
+      "sha256": "569721645df449c7aa0d398ad5fca6212586436aabd5c919e0eb5da80e0b6c41"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-02/workers/gpu-01/prove.log",
+      "sha256": "002af5a3c542634db5c97ae58d10eb8ffc3e7a106b81272fc09894e3d7f52c38"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-02/workers/gpu-01/accounting.json",
+      "sha256": "9440f7a24d43b1ebf31ebd58fc60c5ff7c20f5de2ed7e6fd28854c2a48aeca9e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-02/owner/accounting.json",
+      "sha256": "81e82567a8b2bd48275ac2414821b220e7607db82cfd6e6aba7733ff42b25820"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-02/accounting.json",
+      "sha256": "746dfc9d0a3982f1dfd98a64e35ddd2aee0c726a493a009dec631fe07e326706"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-02/owner/proofs/node.6.0",
+      "sha256": "2f723799f3841f0411289aa6f1c11c737a16246042eb08d508f5e553d833e42a"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-02-audit/changed-proof.log",
+      "sha256": "fa08b0ab983c8f24eab74c32c526b08f34e161ccc3319ad932fd1825e0dbfa76"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-02-audit/changed-statement.log",
+      "sha256": "ed4d243c0e9d0e394bd62a6cdd7ce2de632b0e321ca95d84a2c185134cb2e75b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-02-audit/complete-dag.log",
+      "sha256": "4232c797ea041f3d7331b813c31bd0e215ceb3309edf20f3d8c7bf7e401e4d4b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-02-audit/valid-root.log",
+      "sha256": "418e7645b4dde67b3abe8ee5aa542476e64aafd2e29ad64bc6b37671dc3594e4"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-02-audit/proof-inventory.json",
+      "sha256": "b5dc993339e084b5e4691f69cf14ce49f851714ce0b298fa202258a1a072f0bc"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-03-result.json",
+      "sha256": "dd1a4d61cee74e6b4186b758570953149e72545fccc059a9030ab04d2ba5b0a2"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-03-command.json",
+      "sha256": "0a52e3ec5321f09ba3b62f5cc912ad5e22849cb48dc4575bdf571062bee7681e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-03-launcher.log",
+      "sha256": "d3364c9ee3ebd791849f952405b991be92e8f3e72d055af95d7ecd60513566e3"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-03/summary.json",
+      "sha256": "3754e74f14f6f0928df0e1b2a06248261a0637684f2f210c7f607d3b92d2c337"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-03/config.json",
+      "sha256": "bd72e99839a13191a2b56ae9f1faf85c27cf422ae0e0259b7db0638c22c43c3b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-03/workers/gpu-01/prove.log",
+      "sha256": "ed877b131c66a517ce8cb0f165461bd16b9ef496099f601947914cb7173782fe"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-03/workers/gpu-01/accounting.json",
+      "sha256": "3dfb6427ed9b61891b5a491fd7966ec0fc66a922ee64e61272395e15049b143e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-03/owner/accounting.json",
+      "sha256": "37372daec94c4f28413568b5b761c995363d3e3d5d5674010c887001ab4472f6"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-03/accounting.json",
+      "sha256": "fa42f67f620ba22a84918b014e84d6da393245981b9d9e1c465fc6822d50f1e2"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-03/owner/proofs/node.6.0",
+      "sha256": "33bb80ce94cfa728b6cc25e96daaba8ae599c6708c8b90b63e7ff41a5f5410d3"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-03-audit/changed-proof.log",
+      "sha256": "fa08b0ab983c8f24eab74c32c526b08f34e161ccc3319ad932fd1825e0dbfa76"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-03-audit/changed-statement.log",
+      "sha256": "ed4d243c0e9d0e394bd62a6cdd7ce2de632b0e321ca95d84a2c185134cb2e75b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-03-audit/complete-dag.log",
+      "sha256": "4232c797ea041f3d7331b813c31bd0e215ceb3309edf20f3d8c7bf7e401e4d4b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-03-audit/valid-root.log",
+      "sha256": "418e7645b4dde67b3abe8ee5aa542476e64aafd2e29ad64bc6b37671dc3594e4"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-02/post-push-benchmark-01/trial-03-audit/proof-inventory.json",
+      "sha256": "73e9e6d2a5d13f8f493d7d5a92f78bac0307fca7ab19b3680f6fd8d5eafbf44f"
+    }
+  ]
+}

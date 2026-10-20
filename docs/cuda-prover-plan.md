@@ -1399,6 +1399,18 @@ the RTX 5080, including CPU differentials, admission/cleanup checks, native STAR
 verification and kernel compilation for Volta and Blackwell. The failed warmup
 is retained, and its worker and coordinator exited.
 
+The [post-push recursive benchmark at `8971a2b`](evidence/cuda-native-wallet-recursive-benchmark-2026-10-19.json)
+uses the four native CUDA wallet outputs as a fixed fixture for the maintained
+CUDA pool launcher. One warmup and three measured fresh-worker runs completed;
+the median whole-launcher interval was **53.084 seconds** (53.028–53.087), about
+**271 aggregated inputs per hour**. Each four-input set includes three
+non-issuance transactions and one issuance entry. All sixteen fresh recursive
+proofs passed independent CPU audits, all 96 reports completed their CUDA stages,
+and all GPU owners and worker processes retired. Shared fleet limits were
+unchanged. Wallet generation, network/consensus and native durable application
+are outside the timing boundary. This does not qualify full blocks, steady-state
+pools, timing approval, or a matched CPU/OpenCL speedup.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)

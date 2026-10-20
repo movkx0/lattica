@@ -141,6 +141,19 @@ audit. Full-capacity and end-to-end throughput remain unqualified; all candidate
 remain opt-in. The separate [CUDA arithmetic/transform checks](evidence/cuda-algebra-2026-10-18.json)
 validate native primitives and do not yet measure CUDA proof generation.
 
+The [native-wallet CUDA recursive screen at `8971a2b`](evidence/cuda-native-wallet-recursive-benchmark-2026-10-19.json)
+uses four fixed, CPU-verified native CUDA wallet outputs: JoinSplit, HTLC redeem,
+HTLC refund and issuance. One warmup and three measured runs produced a
+**53.084-second median** (53.028–53.087), or about **271 aggregated inputs/hour**.
+The timer covers the whole maintained Python launcher, including preparation,
+fresh worker startup, four recursive proofs with collection verification, and
+shutdown/accounting. Additional independent CPU audits followed outside timing;
+all sixteen recursive proofs passed. Wallet generation, network/consensus,
+native durable application and steady-state reuse are excluded. Compare against
+the same whole-launcher boundary; the rate includes one issuance entry per four
+inputs and is not delivered transaction throughput. Pool timing approval remains
+separate.
+
 The native CUDA wallet screen is the ignored release test
 `cuda_compute::wallet::tests::benchmark::cuda_wallet_request_benchmark`.
 Build the library tests with `--release --no-default-features --features
