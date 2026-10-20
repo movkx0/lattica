@@ -229,6 +229,9 @@ pub(crate) fn legacy_abi_admission() -> bool {
 }
 
 pub(crate) fn legacy_cpu_admission() -> Result<(), Error> {
+    if std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_some() {
+        return Err(Error::ComponentRejected);
+    }
     Request::from_env().and_then(|r| r.admit(&legacy_cpu()))
 }
 
@@ -264,7 +267,7 @@ impl Request {
     }
     pub fn admit(self, capabilities: &Capabilities) -> Result<(), Error> {
         let assigned = std::env::var_os("LATTICA_WALLET_WORKER_BUDGET").is_some();
-        #[cfg(all(feature = "block-v2", feature = "gpu"))]
+        #[cfg(all(feature = "block-v2", any(feature = "gpu", feature = "gpu-cuda")))]
         let assigned = assigned || crate::block_v2::wallet_worker::is_assigned();
         // A local wallet assignment cannot be downgraded through a Rust request,
         // a changed environment, or a CPU ABI that bypasses GPU selection.
@@ -434,11 +437,11 @@ impl Run {
         capabilities: Capabilities,
     ) -> Result<Self, Error> {
         request.admit(&capabilities)?;
-        #[cfg(all(feature = "block-v2", feature = "gpu"))]
+        #[cfg(all(feature = "block-v2", any(feature = "gpu", feature = "gpu-cuda")))]
         if crate::block_v2::wallet_worker::is_assigned() {
             crate::block_v2::wallet_worker::admit(request).map_err(|_| Error::ComponentRejected)?;
         }
-        #[cfg(not(all(feature = "block-v2", feature = "gpu")))]
+        #[cfg(not(all(feature = "block-v2", any(feature = "gpu", feature = "gpu-cuda"))))]
         if std::env::var_os("LATTICA_WALLET_WORKER_BUDGET").is_some() {
             return Err(Error::ComponentRejected);
         }

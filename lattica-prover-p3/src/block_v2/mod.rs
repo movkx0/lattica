@@ -58,10 +58,12 @@ mod statements;
 pub mod typed_fixture;
 pub mod typed_leaf;
 pub mod typed_recursive;
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "gpu", feature = "gpu-cuda"))]
 mod wallet_output;
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "gpu", feature = "gpu-cuda"))]
 pub(crate) mod wallet_worker;
+#[cfg(feature = "gpu-cuda")]
+pub(crate) mod cuda_wallet;
 
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 mod batched_fri;

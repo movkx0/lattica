@@ -65,7 +65,7 @@ fn initialize_with(
             // unwinding its initializer would otherwise leave it empty while
             // allocator ceilings may already be installed.
             std::panic::catch_unwind(|| {
-                if crate::block_v2::gpu_hash::is_enabled() {
+                if backend_initialized() {
                     return Err("wallet runtime admission must precede GPU initialization".into());
                 }
                 install_runtime(assignment)?;
@@ -76,6 +76,13 @@ fn initialize_with(
         .as_ref()
         .map_err(Clone::clone)?;
     check_ready(Some(assignment))
+}
+
+fn backend_initialized() -> bool {
+    #[cfg(feature = "gpu")]
+    return crate::block_v2::gpu_hash::is_enabled();
+    #[cfg(feature = "gpu-cuda")]
+    return crate::block_v2::cuda_wallet::has_context();
 }
 
 #[cfg(all(target_os = "linux", feature = "stream"))]

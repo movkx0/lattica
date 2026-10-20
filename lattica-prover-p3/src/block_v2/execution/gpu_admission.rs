@@ -25,12 +25,12 @@ mod stack_backing;
 
 // Share only stack observations with the private-wallet startup path. These
 // helpers confer no public assignment, registry or proving authority.
-#[cfg(all(feature = "gpu", feature = "stream"))]
+#[cfg(all(any(feature = "gpu", feature = "gpu-cuda"), feature = "stream"))]
 pub(crate) fn validate_wallet_caller_stack() -> Result<(), Error> {
     stack_backing::validate_caller(true)
 }
 
-#[cfg(all(feature = "gpu", feature = "stream"))]
+#[cfg(all(any(feature = "gpu", feature = "gpu-cuda"), feature = "stream"))]
 pub(crate) fn validate_wallet_rayon_stacks(threads: u32) -> Result<(), Error> {
     let reserved = super::worker_budget::rayon_stack_host_bytes(threads)?;
     rayon_stacks::validate_global(usize::try_from(threads)?, reserved)
@@ -59,6 +59,10 @@ pub struct Admission {
 
 impl Admission {
     pub fn from_env() -> Result<Self, Error> {
+        #[cfg(any(feature = "gpu", feature = "gpu-cuda"))]
+        if crate::block_v2::wallet_worker::is_assigned() {
+            return Err("public GPU worker cannot replace a pinned private wallet assignment".into());
+        }
         if std::env::var_os("LATTICA_WALLET_WORKER_BUDGET").is_some() {
             return Err(
                 "public GPU worker admission does not admit private wallet assignments".into(),

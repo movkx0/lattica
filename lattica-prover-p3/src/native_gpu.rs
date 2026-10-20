@@ -46,12 +46,17 @@ fn call(operation: impl FnOnce() -> Result<(), String> + std::panic::UnwindSafe)
     )
 }
 
-/// Initialize the explicitly configured complete OpenCL proving path.
+/// Initialize the explicitly configured complete wallet proving path.
+/// CUDA requires a private wallet resource assignment in a fresh Linux process.
 /// Configure the process environment before starting native or Rust proof work.
 #[no_mangle]
 pub extern "C" fn lattica_gpu_initialize_from_env() -> i32 {
     #[cfg(all(feature = "block-v2", feature = "gpu"))]
     return call(crate::block_v2::native_gpu::initialize);
+    #[cfg(all(feature = "block-v2", feature = "gpu-cuda"))]
+    if crate::block_v2::cuda_wallet::is_selected() {
+        return call(crate::block_v2::cuda_wallet::initialize);
+    }
     #[cfg(not(all(feature = "block-v2", feature = "gpu")))]
     UNAVAILABLE
 }
@@ -81,7 +86,8 @@ pub extern "C" fn lattica_gpu_public_worker_initialize_from_env() -> i32 {
 /// a clean protocol STOP and GPU teardown; no wallet or registry authority is
 /// granted. Call once in a fresh process, without prior GPU initialization.
 /// CUDA builds select this owned service only with an explicit `cuda` worker
-/// assignment; the standalone initialize/drain/shutdown exports stay unavailable.
+/// assignment; standalone lifecycle calls only control a separately assigned
+/// private wallet context and never this public worker runtime.
 ///
 /// Worker admission includes 65,537 bytes for the qualified caller's bootstrap
 /// buffer (including its EOF probe) and 65,536 bytes for retained launch-path
@@ -172,6 +178,10 @@ pub unsafe extern "C" fn lattica_gpu_public_worker_serve(
 pub extern "C" fn lattica_gpu_drain() -> i32 {
     #[cfg(all(feature = "block-v2", feature = "gpu"))]
     return call(crate::block_v2::gpu_hash::drain);
+    #[cfg(all(feature = "block-v2", feature = "gpu-cuda"))]
+    if crate::block_v2::cuda_wallet::is_selected() {
+        return call(crate::block_v2::cuda_wallet::drain);
+    }
     #[cfg(not(all(feature = "block-v2", feature = "gpu")))]
     UNAVAILABLE
 }
@@ -182,6 +192,10 @@ pub extern "C" fn lattica_gpu_drain() -> i32 {
 pub extern "C" fn lattica_gpu_shutdown() -> i32 {
     #[cfg(all(feature = "block-v2", feature = "gpu"))]
     return call(crate::block_v2::gpu_hash::shutdown);
+    #[cfg(all(feature = "block-v2", feature = "gpu-cuda"))]
+    if crate::block_v2::cuda_wallet::is_selected() {
+        return call(crate::block_v2::cuda_wallet::shutdown);
+    }
     #[cfg(not(all(feature = "block-v2", feature = "gpu")))]
     UNAVAILABLE
 }

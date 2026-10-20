@@ -2,7 +2,7 @@ use super::*;
 
 fn budget() -> Budget {
     Budget {
-        schema: "lattica-wallet-local-gpu-v1".into(),
+        schema: super::super::SCHEMA.into(),
         service: "lattica-wallet-runtime-test.service".into(),
         gpu_uuid: "GPU-00000000-0000-0000-0000-000000000000".into(),
         host_bytes: 3 << 30,
@@ -10,6 +10,11 @@ fn budget() -> Budget {
         managed_gpu_bytes: 1 << 30,
         context_gpu_bytes: 4 << 30,
         host_output_bytes: 1 << 30,
+        #[cfg(feature = "gpu-cuda")]
+        cuda: super::super::CudaBudget {
+            max_allocation_bytes: 1 << 30,
+            headroom_bytes: 1 << 30,
+        },
     }
 }
 
@@ -55,7 +60,7 @@ fn private_request_partition_rejects_overflow_and_impossible_thread_counts() {
     }
 }
 
-#[cfg(all(target_os = "linux", feature = "stream"))]
+#[cfg(all(feature = "gpu", target_os = "linux", feature = "stream"))]
 #[test]
 #[ignore = "fresh process in its bounded private-wallet service; no GPU required"]
 fn assigned_runtime_installs_once_and_bounds_heap_and_full_spill_requests() {
@@ -118,7 +123,12 @@ fn assigned_runtime_installs_once_and_bounds_heap_and_full_spill_requests() {
     eprintln!("wallet_runtime_qualified parse_started_no_threads=true limits_survive_reinitialization=true oversized_heap_and_spill_rejected=true failed_reservations_released=true policy_downgrade_rejected=true gpu_initialized=false");
 }
 
-#[cfg(all(target_os = "linux", target_env = "gnu", feature = "stream"))]
+#[cfg(all(
+    feature = "gpu",
+    target_os = "linux",
+    target_env = "gnu",
+    feature = "stream"
+))]
 #[test]
 #[ignore = "fresh process with deliberately oversized existing heap; no GPU required"]
 fn existing_heap_pressure_rejects_runtime_before_threads_or_gpu_and_cannot_retry() {
@@ -148,7 +158,7 @@ fn existing_heap_pressure_rejects_runtime_before_threads_or_gpu_and_cannot_retry
     eprintln!("wallet_runtime_pressure_rejected before_threads=true before_gpu=true retry_rejected=true assignment_removal_rejected=true");
 }
 
-#[cfg(all(target_os = "linux", feature = "stream"))]
+#[cfg(all(feature = "gpu", target_os = "linux", feature = "stream"))]
 #[test]
 #[ignore = "fresh process with an oversized existing Rayon pool; no GPU required"]
 fn oversized_existing_rayon_stacks_reject_and_leave_limits_pinned() {
@@ -185,7 +195,7 @@ fn oversized_existing_rayon_stacks_reject_and_leave_limits_pinned() {
     eprintln!("wallet_runtime_stack_rejected after_limits=true before_gpu=true retry_rejected=true assignment_removal_rejected=true");
 }
 
-#[cfg(all(target_os = "linux", not(feature = "stream")))]
+#[cfg(all(feature = "gpu", target_os = "linux", not(feature = "stream")))]
 #[test]
 #[ignore = "fresh assigned process built without the stream allocator; no GPU required"]
 fn assigned_runtime_without_stream_rejects_before_gpu_and_cannot_downgrade() {
@@ -207,7 +217,7 @@ fn assigned_runtime_without_stream_rejects_before_gpu_and_cannot_downgrade() {
     eprintln!("wallet_runtime_without_stream_rejected before_gpu=true retry_rejected=true assignment_removal_rejected=true");
 }
 
-#[cfg(all(target_os = "linux", feature = "stream"))]
+#[cfg(all(feature = "gpu", target_os = "linux", feature = "stream"))]
 #[test]
 #[ignore = "fresh process with an injected startup panic after installing limits; no GPU required"]
 fn panicking_installation_keeps_limits_and_failure_pinned() {

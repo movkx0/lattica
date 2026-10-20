@@ -108,6 +108,10 @@ pub(crate) fn prove_joinsplit_with_public(
     context: &Context,
     request: crate::proving::Request,
 ) -> Result<ProvedLeaf, LeafError> {
+    #[cfg(feature = "gpu-cuda")]
+    if super::cuda_wallet::is_selected() {
+        return super::cuda_wallet::prove_context_joinsplit(witness, context, request);
+    }
     #[cfg(feature = "gpu")]
     if gpu_wallet_selected() {
         return prove_joinsplit_on_gpu_with_public(witness, context, request);
@@ -234,6 +238,10 @@ pub fn prove_joinsplit_with_gpu_witness(
 
 /// Capabilities for the complete native wrapper before input parsing.
 pub(crate) fn wallet_request_capabilities() -> crate::proving::Capabilities {
+    #[cfg(feature = "gpu-cuda")]
+    if super::cuda_wallet::is_selected() {
+        return super::cuda_wallet::capabilities(crate::proving::Profile::BlockV2Cubic);
+    }
     #[cfg(feature = "gpu")]
     if gpu_wallet_selected() {
         return gpu_wallet_capabilities();
@@ -243,8 +251,17 @@ pub(crate) fn wallet_request_capabilities() -> crate::proving::Capabilities {
 
 #[must_use = "retain the admission guard until the wallet request finishes"]
 pub(crate) struct WalletRequestAdmission {
+    #[cfg(feature = "gpu-cuda")]
+    _cuda: Option<super::cuda_wallet::Admission>,
     #[cfg(feature = "gpu")]
     _context: Option<super::gpu_hash::device::DeviceSession>,
+}
+
+#[cfg(feature = "gpu-cuda")]
+impl WalletRequestAdmission {
+    pub(crate) fn cuda_output_allowance(&self) -> Option<usize> {
+        self._cuda.as_ref().map(super::cuda_wallet::Admission::host_output_bytes)
+    }
 }
 
 /// Admit policy/resources before decoding or synthetic preparation and retain
@@ -252,8 +269,15 @@ pub(crate) struct WalletRequestAdmission {
 pub(crate) fn admit_wallet_request(
     request: crate::proving::Request,
 ) -> Result<WalletRequestAdmission, crate::proving::Error> {
+    if std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_some() {
+        return Err(crate::proving::Error::ComponentRejected);
+    }
     request.admit(&wallet_request_capabilities())?;
     Ok(WalletRequestAdmission {
+        #[cfg(feature = "gpu-cuda")]
+        _cuda: if super::cuda_wallet::is_selected() {
+            Some(super::cuda_wallet::admit(request)?)
+        } else { None },
         #[cfg(feature = "gpu")]
         _context: if gpu_wallet_selected() {
             Some(

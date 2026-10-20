@@ -76,8 +76,8 @@ service now routes these sessions through the existing local worker protocol;
 The maintained paired Rust CLI now exposes CUDA inventory and an admitted,
 fenced persistent worker service. The Python shared launcher now qualifies
 explicit single-worker CUDA calibration with separate resource and timing
-identities. Timing-approved pool operation and public wallet routing remain
-outstanding.
+identities. Native wallet entry points now also support an explicitly assigned
+private CUDA context. Timing-approved pool operation remains outstanding.
 Public preprocessing now survives failed private proof attempts on a healthy
 runtime. Each salt replay uses an isolated temporary consumer; failed private
 randomness still retires across every alias. The public path accepts only
@@ -122,8 +122,9 @@ unsupported specialization shapes retain GPU interpretation. Current/next rows,
 alpha powers, selectors, constraints and vanishing-polynomial division execute
 on CUDA, with only a public domain-validity word read back per evaluation.
 
-Public wallet requests are not yet routed through CUDA.
-Cached twiddle tuning, public wallet backend selection, approved pool operation
+Native single-wallet and context-bound research requests now route through CUDA
+under their own private-wallet assignment. CUDA batch/tree wallet routing,
+cached twiddle tuning, approved pool operation
 and concurrency qualification remain outstanding. Prepared quotient handles
 support reuse without retaining witnesses or sampled parameters. A bounded
 public program cache now supports repeated preparation within an evaluator;
@@ -1243,6 +1244,39 @@ RTX 5080. Coordinator-process death, Python controller/host-node recovery,
 multiple GPUs and broader failure/workload cases remain open. The unchanged
 production CLI retains its separately recorded benchmark; fault-injection
 durations are not throughput measurements or pool timing approval.
+
+The [native CUDA wallet qualification](evidence/cuda-wallet-routing-2026-10-19.json)
+connects the maintained legacy ABI and context-bound JoinSplit, HTLC and issuance
+entry points to the native prover. Five prepared AIRs share one CUDA engine.
+Wallet-derived public values stay on device through proving; only the final
+statement is exported. The existing quadratic/cubic formats, hiding parameters,
+issuance authorization and HTLC height checks remain unchanged.
+
+The distinct `lattica-wallet-local-cuda-v1` assignment binds the service, GPU,
+host/thread limits and CUDA allocation/context/headroom budgets. Allocator
+admission precedes CUDA creation. A single caller retains admission from private
+decoding through native output export; nested wrappers share that ownership.
+Shutdown refuses live callers and retires every prepared handle before the
+runtime. Startup failure or completed shutdown requires a fresh process; removing the
+environment cannot downgrade proving to CPU. Public recursive assignments and
+unsupported CUDA batch/tree requests reject before private decoding. Final
+proof and host-export serializers use exact bounded allocations.
+
+All 56 CUDA host regressions, 22 CPU regressions and three existing CUDA wallet
+receipt/recovery tests passed. The live RTX 5080 service produced nine proofs
+with fourteen completed CUDA arithmetic stages each and no CPU witness-oracle
+calls. A separate CPU-only executable accepted all nine and rejected altered
+statements/proofs; all five context-bound outputs also rejected altered chains.
+Invalid witnesses produced no accepted proof. Concurrent callers, resource
+changes and policy downgrades were rejected, and the runtime retired with zero
+device owners. Managed VRAM peaked at 141,570,328 bytes and service RAM at
+164,470,784 bytes under 256 MiB managed GPU and 3 GiB host limits. Post-exit cgroup
+event counters were unavailable; systemd retained the service peak and exit
+status. These correctness timings do not establish transaction throughput.
+
+This checkpoint does not qualify CUDA batch/tree wallet APIs, node/block
+processing, multi-GPU concurrency, V100 execution, or matched CPU/OpenCL speedup.
+Those requirements and the remaining implementation sequence stay open.
 
 ## Implementation sequence
 

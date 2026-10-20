@@ -146,6 +146,10 @@ pub(crate) fn prove_htlc_with_public(
     context: &Context,
     request: crate::proving::Request,
 ) -> Result<ProvedLeaf, Error> {
+    #[cfg(feature = "gpu-cuda")]
+    if super::cuda_wallet::is_selected() {
+        return super::cuda_wallet::prove_context_htlc(witness, context, request);
+    }
     #[cfg(feature = "gpu")]
     if super::leaf::gpu_wallet_selected() {
         return prove_htlc_on_gpu_with_public(witness, context, request);
@@ -335,6 +339,10 @@ pub(crate) fn prove_issuance_with_public(
     authorized_mint: u64,
     request: crate::proving::Request,
 ) -> Result<ProvedLeaf, Error> {
+    #[cfg(feature = "gpu-cuda")]
+    if super::cuda_wallet::is_selected() {
+        return super::cuda_wallet::prove_issuance(witness, context, authorized_mint, request);
+    }
     #[cfg(feature = "gpu")]
     if super::leaf::gpu_wallet_selected() {
         return prove_issuance_on_gpu_with_public(witness, context, authorized_mint, request);

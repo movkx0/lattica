@@ -9,6 +9,10 @@ mod runtime;
 
 pub(crate) const ENV: &str = "LATTICA_WALLET_WORKER_BUDGET";
 const MAX_ASSIGNMENT_BYTES: u64 = 8192;
+#[cfg(feature = "gpu")]
+const SCHEMA: &str = "lattica-wallet-local-gpu-v1";
+#[cfg(feature = "gpu-cuda")]
+const SCHEMA: &str = "lattica-wallet-local-cuda-v1";
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -21,6 +25,23 @@ struct Budget {
     managed_gpu_bytes: u64,
     context_gpu_bytes: u64,
     host_output_bytes: u64,
+    #[cfg(feature = "gpu-cuda")]
+    cuda: CudaBudget,
+}
+
+#[cfg(feature = "gpu-cuda")]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+struct CudaBudget {
+    max_allocation_bytes: u64,
+    headroom_bytes: u64,
+}
+
+#[cfg(feature = "gpu-cuda")]
+pub(crate) struct CudaSettings {
+    pub uuid: String,
+    pub limits: crate::cuda_compute::Limits,
+    pub host_bytes: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -39,6 +60,20 @@ static ASSIGNMENT: OnceLock<Option<Assignment>> = OnceLock::new();
 impl Prepared {
     pub(crate) fn initialize_runtime(&self) -> Result<(), String> {
         runtime::initialize(self.0.as_ref())
+    }
+    #[cfg(feature = "gpu-cuda")]
+    pub(crate) fn cuda_settings(&self) -> Result<CudaSettings, String> {
+        let budget = &self
+            .0
+            .as_ref()
+            .ok_or("CUDA wallets require a private resource assignment")?
+            .budget;
+        Ok(CudaSettings {
+            uuid: budget.gpu_uuid.clone(),
+            limits: budget.cuda_limits()?,
+            host_bytes: usize::try_from(budget.host_output_bytes)
+                .map_err(|_| "CUDA wallet host limit overflow")?,
+        })
     }
 }
 
@@ -91,6 +126,7 @@ pub(crate) fn admit(request: Request) -> Result<(), String> {
 /// Pin the selected engine and its exclusive device lease across preparation.
 /// DeviceSession already prevents shutdown while its context reference is live.
 /// This does not reserve per-proof matrix or host allocation capacity.
+#[cfg(feature = "gpu")]
 pub(crate) fn retain_gpu_context() -> Result<super::gpu_hash::device::DeviceSession, String> {
     if !super::leaf::gpu_wallet_selected() {
         return Err("private wallet GPU backend is not selected".into());
@@ -100,15 +136,18 @@ pub(crate) fn retain_gpu_context() -> Result<super::gpu_hash::device::DeviceSess
     Ok(context)
 }
 
+#[cfg(feature = "gpu")]
 pub(crate) fn require_gpu_resources() -> Result<(), String> {
     if std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_some()
-        || super::resident_pcs::try_host_output_budget()? < super::machine::symbolic::HOST_BYTES as usize
+        || super::resident_pcs::try_host_output_budget()?
+            < super::machine::symbolic::HOST_BYTES as usize
     {
         return Err("private wallet request has no admitted host/resource contract".into());
     }
     Ok(())
 }
 
+#[cfg(feature = "gpu")]
 pub(crate) fn admit_gpu(
     request: Request,
 ) -> Result<super::gpu_hash::device::DeviceSession, String> {
@@ -121,6 +160,7 @@ pub(crate) fn admit_gpu(
 /// Retain the existing managed-device ceiling across an entire serial proof.
 /// Input wrappers use admit_gpu() only to pin the context; the actual prover
 /// owns this capacity once, so nested ABI/export wrappers do not reserve twice.
+#[cfg(feature = "gpu")]
 pub(crate) fn admit_gpu_proof(
     request: Request,
     minimum: super::gpu_hash::device::WalletProofMinimum,
@@ -129,13 +169,31 @@ pub(crate) fn admit_gpu_proof(
 }
 
 impl Budget {
+    #[cfg(feature = "gpu-cuda")]
+    fn cuda_limits(&self) -> Result<crate::cuda_compute::Limits, String> {
+        let word =
+            |n: u64| usize::try_from(n).map_err(|_| "CUDA wallet budget overflow".to_owned());
+        let limits = crate::cuda_compute::Limits {
+            managed_bytes: word(self.managed_gpu_bytes)?,
+            max_allocation_bytes: word(self.cuda.max_allocation_bytes)?,
+            context_reserve_bytes: word(self.context_gpu_bytes)?,
+            headroom_bytes: word(self.cuda.headroom_bytes)?,
+            ..crate::cuda_compute::Limits::default()
+        };
+        limits.validate()?;
+        if limits.headroom_bytes < 1 << 30 {
+            return Err("CUDA wallet requires the full device headroom margin".into());
+        }
+        Ok(limits)
+    }
+
     fn validate(&self) -> Result<(), String> {
         let service = self
             .service
             .strip_prefix("lattica-wallet-")
             .and_then(|s| s.strip_suffix(".service"))
             .ok_or("wallet worker service namespace")?;
-        if self.schema != "lattica-wallet-local-gpu-v1"
+        if self.schema != SCHEMA
             || service.is_empty()
             || self.service.len() > 200
             || !service
@@ -151,7 +209,7 @@ impl Budget {
             || self.threads == 0
             || self.threads > 256
             || self.managed_gpu_bytes == 0
-            || self.managed_gpu_bytes > super::gpu_hash::Limits::default().managed_bytes as u64
+            || self.managed_gpu_bytes > 8 << 30
             || self.context_gpu_bytes < 512 * (1 << 20)
             || self.context_gpu_bytes > i64::MAX as u64
             || self
@@ -164,6 +222,8 @@ impl Budget {
             return Err("invalid wallet worker resource assignment".into());
         }
         runtime::Limits::for_budget(self)?;
+        #[cfg(feature = "gpu-cuda")]
+        self.cuda_limits()?;
         Ok(())
     }
 
@@ -189,7 +249,7 @@ impl Budget {
 
 #[cfg(not(target_os = "linux"))]
 fn load(_: OsString) -> Result<Assignment, String> {
-    Err("wallet worker admission requires Linux cgroup v2 and OpenCL".into())
+    Err("wallet worker admission requires Linux cgroup v2".into())
 }
 
 #[cfg(target_os = "linux")]
@@ -354,8 +414,11 @@ fn runtime_limits(budget: &Budget) -> Result<(u64, u64), String> {
     Ok((metadata.dev(), metadata.ino()))
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "gpu"))]
 mod tests;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "gpu"))]
 pub(crate) mod admission_tests;
+
+#[cfg(all(test, feature = "gpu-cuda"))]
+mod cuda_tests;

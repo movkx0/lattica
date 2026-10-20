@@ -35,11 +35,11 @@
 extern "C" {
 #endif
 
-/* Process-local OpenCL prover lifecycle (requires Rust features block-v2,gpu).
+/* Process-local wallet prover lifecycle (block-v2 plus gpu or gpu-cuda).
  * Returns LATTICA_GPU_OK, LATTICA_GPU_REJECTED, or LATTICA_GPU_UNAVAILABLE.
  * These status codes are separate from the proving buffer-size return codes.
  *
- * Configure the environment once, before starting Rust/native proof work:
+ * OpenCL: configure the environment before starting Rust/native proof work:
  * - LATTICA_GPU_DEVICE_UUID: explicit GPU UUID; no default-device selection.
  * - LATTICA_V2_GPU_MANAGED_BYTES: explicit positive decimal byte allowance.
  * - Set LATTICA_V2_QUOTIENT_FUSION and all of the following GPU switches to 1:
@@ -54,6 +54,23 @@ extern "C" {
  * - The legacy LJSTREE1 container uses GPU leaf proofs and root binding when
  *   this backend is selected. Its format and CPU verifier remain unchanged;
  *   it is not a recursive proof or a network-format activation.
+ *
+ * CUDA: use a release Linux gpu-cuda,block-v2,stream build and a fresh bounded
+ * wallet service. LATTICA_WALLET_WORKER_BUDGET must name an owner-only JSON
+ * assignment with schema="lattica-wallet-local-cuda-v1", service, gpu_uuid,
+ * host_bytes, threads, managed_gpu_bytes, context_gpu_bytes, host_output_bytes,
+ * and cuda={max_allocation_bytes,headroom_bytes}. Context reserve is at least
+ * 4 GiB and headroom at least 1 GiB. Match LATTICA_GPU_DEVICE_UUID,
+ * LATTICA_V2_GPU_{MANAGED,CONTEXT}_BYTES, LATTICA_V2_HOST_OUTPUT_BYTES and
+ * RAYON_NUM_THREADS to that assignment; set LATTICA_PROVING_POLICY=gpu-required.
+ * The actual service must enforce host/CPU limits, zero swap and no core dumps.
+ * Startup pins host allocator limits before CUDA creation. Keep the calling
+ * stack within 8 MiB and the admitted Rayon/thread contract fixed. Only one
+ * caller may own private input admission at a time; nested wrappers retain it.
+ * Legacy single-wallet and context-bound research leaf proofs are supported.
+ * Batch and LJSTREE1 calls reject before private decoding. Public recursive
+ * assignments grant no wallet access. CUDA requires a fresh process after
+ * failed startup or shutdown; backend selection survives environment removal.
  *
  * Initialization never chooses a partial proving path or CPU fallback. Repeated
  * initialization with the same settings is allowed; changing a live engine's
@@ -98,8 +115,8 @@ int32_t lattica_gpu_public_worker_initialize_from_env(void);
  * cuda construction bounds (program_host_bytes, wires, input_values), plus
  * explicit GPU managed, per-allocation, context, headroom and host-output bytes.
  * It uses the same OS/allocator admission and protocol identity. CUDA runtime
- * ownership stays inside this call; separate initialize/drain/shutdown exports
- * remain unavailable in CUDA builds. OpenCL rejects a CUDA assignment.
+ * ownership stays inside this call; separate lifecycle exports only operate on
+ * a private wallet assignment, never this runtime. OpenCL rejects CUDA assignments.
  * bootstrap is the bounded local execution::native_worker::Bootstrap encoding
  * (1..65536 bytes), supplied by a trusted host independently of worker packets.
  * Its registry, profile, executable, policy context and launch directory are

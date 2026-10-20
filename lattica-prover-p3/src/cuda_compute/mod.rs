@@ -35,7 +35,7 @@ mod tests;
 mod transcript;
 mod transform;
 #[cfg(feature = "block-v2")]
-mod wallet;
+pub(crate) mod wallet;
 #[cfg(feature = "block-v2")]
 mod witness;
 
@@ -77,7 +77,7 @@ pub(crate) use random::{DeviceRandom, RandomWords, Randoms, ReplaySalts};
 pub(crate) use scalars::{DomainValues, Scalars};
 #[cfg(feature = "block-v2")]
 pub(crate) use stark::{
-    NativeStarkConfig, NativeStarkProof, PreparedStark, StarkRandomness, Starks,
+    NativeStarkConfig, NativeStarkProof, PreparedStark, StarkField, StarkRandomness, Starks,
 };
 pub(crate) use transcript::{Transcript, TranscriptAttempt, Transcripts};
 pub(crate) use transform::Transforms;

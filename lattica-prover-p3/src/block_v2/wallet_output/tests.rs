@@ -11,6 +11,33 @@ type Quadratic = crate::config::Challenge;
 type Cubic = crate::block_v2::profile::Challenge;
 const LIMIT: usize = 1 << 20;
 
+#[cfg(all(feature = "gpu-cuda", feature = "block-v2-host"))]
+#[test]
+fn native_cuda_export_matches_existing_wire_and_charges_all_retained_capacity() {
+    use p3_field::PrimeField64;
+    let wallet = super::super::recursive::WalletProof {
+        chain: [0x6d; 32], public: vec![Val::ONE; 26], proof: fixture::<Cubic>(),
+    };
+    let mut encoded_wallet = b"LBV2TW01".to_vec();
+    encoded_wallet.extend(postcard::to_allocvec(&wallet).unwrap());
+    let mut expected = b"LBV2WP01".to_vec();
+    expected.extend((encoded_wallet.len() as u32).to_le_bytes());
+    expected.extend((wallet.public.len() as u32).to_le_bytes());
+    expected.extend(encoded_wallet);
+    for value in &wallet.public { expected.extend(value.as_canonical_u64().to_le_bytes()); }
+    let mut backing = storage::Backing::new(LIMIT);
+    backing.proof(&wallet.proof).unwrap();
+    backing.vector(&wallet.public).unwrap();
+    let exact = backing.bytes() + expected.len();
+    let (result, requests) = measure(|| serialize_export(&wallet, exact));
+    assert_eq!(result.unwrap(), expected);
+    assert_eq!(requests.calls, 1);
+    assert_eq!(requests.bytes, expected.len());
+    let (rejected, requests) = measure(|| serialize_export(&wallet, exact - 1));
+    assert!(rejected.is_err());
+    assert_eq!(requests.calls, 0);
+}
+
 fn cap() -> Cap {
     MerkleCap::new(vec![[Val::NEG_ONE; 4]])
 }

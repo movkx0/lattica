@@ -6,7 +6,7 @@ use crate::gpu_wallet::{self, InputWords, Plan};
 use crate::proving::{Backend, Run, Stage};
 
 mod prove;
-pub(crate) use prove::{HtlcProver, JoinSplitProver, WalletProof, WalletProver};
+pub(crate) use prove::{capabilities, ContextHtlcProver, ContextJoinSplitProver, HtlcProver, IssuanceProver, JoinSplitProver, WalletProof, WalletProver};
 
 #[cfg(test)]
 mod tests;

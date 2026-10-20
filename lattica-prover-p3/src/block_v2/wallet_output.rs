@@ -175,3 +175,69 @@ pub(super) fn serialize<E: PcsField>(
     );
     Ok(bytes)
 }
+
+/// One exact output allocation for the existing native wallet envelope. Proof
+/// and public backing share the operation allowance with the final export.
+#[cfg(all(feature = "gpu-cuda", feature = "block-v2-host"))]
+pub(super) fn serialize_export(
+    wallet: &super::recursive::WalletProof,
+    allowance: usize,
+) -> Result<Vec<u8>, Error> {
+    use super::host::wallet::{EXPORT_MAGIC, MAX_EXPORT_BYTES, MAX_WALLET_BYTES};
+    use p3_field::PrimeField64;
+    let mut backing = storage::Backing::new(allowance);
+    backing.proof(&wallet.proof)?;
+    backing.vector(&wallet.public)?;
+    let public_bytes = wallet.public.len().checked_mul(8).ok_or(Error::SizeLimit)?;
+    let fixed = 24usize.checked_add(public_bytes).ok_or(Error::SizeLimit)?;
+    let available = allowance
+        .checked_sub(backing.bytes())
+        .ok_or(Error::HostLimit)?;
+    let output_limit = available.min(MAX_EXPORT_BYTES);
+    let payload_limit = output_limit
+        .checked_sub(fixed)
+        .ok_or(Error::HostLimit)?
+        .min(MAX_WALLET_BYTES - 8);
+    let payload = postcard::serialize_with_flavor(
+        wallet,
+        BoundedSize {
+            bytes: 0,
+            limit: payload_limit,
+        },
+    )
+    .map_err(|_| Error::SizeLimit)?;
+    let encoded = fixed + payload;
+    let mut bytes = Vec::new();
+    bytes
+        .try_reserve_exact(encoded)
+        .map_err(|_| Error::Allocation)?;
+    if bytes.capacity() != encoded {
+        return Err(Error::Allocation);
+    }
+    bytes.resize(encoded, 0);
+    bytes[..8].copy_from_slice(EXPORT_MAGIC);
+    bytes[8..12].copy_from_slice(
+        &u32::try_from(payload + 8)
+            .map_err(|_| Error::SizeLimit)?
+            .to_le_bytes(),
+    );
+    bytes[12..16].copy_from_slice(
+        &u32::try_from(wallet.public.len())
+            .map_err(|_| Error::SizeLimit)?
+            .to_le_bytes(),
+    );
+    bytes[16..24].copy_from_slice(b"LBV2TW01");
+    let written =
+        postcard::to_slice(wallet, &mut bytes[24..24 + payload]).map_err(|_| Error::Encoding)?;
+    if written.len() != payload {
+        return Err(Error::Encoding);
+    }
+    for (out, value) in bytes[24 + payload..]
+        .chunks_exact_mut(8)
+        .zip(&wallet.public)
+    {
+        out.copy_from_slice(&value.as_canonical_u64().to_le_bytes());
+    }
+    eprintln!("bounded_cuda_wallet_export retained_bytes={} encoded_bytes={encoded} allowance_bytes={allowance}", backing.bytes());
+    Ok(bytes)
+}

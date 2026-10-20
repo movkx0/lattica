@@ -119,6 +119,14 @@ pub fn prove(request_bytes: &[u8], witness: &[u8]) -> Result<Vec<u8>, Error> {
         )?,
     };
     typed_recursive::verify_wallet(&wallet, policy)?;
+    #[cfg(feature = "gpu-cuda")]
+    if let Some(allowance) = _admission.cuda_output_allowance() {
+        // The decoded proof and its original envelope must not overlap the
+        // final bounded output allocation. The caller's admission stays live.
+        drop(proved.envelope);
+        return super::super::wallet_output::serialize_export(&wallet, allowance)
+            .map_err(|_| "bounded CUDA wallet export rejected".into());
+    }
     let mut encoded_wallet = b"LBV2TW01".to_vec();
     encoded_wallet.extend(postcard::to_allocvec(&wallet)?);
     if encoded_wallet.len() > MAX_WALLET_BYTES {
@@ -171,11 +179,22 @@ pub unsafe extern "C" fn lattica_v2_research_wallet_prove_v1(
         return -1;
     }
     std::panic::catch_unwind(|| {
+        // Keep the CUDA permit through the final native copy as well as the
+        // nested Rust request. Shutdown cannot retire an in-flight ABI caller.
+        #[cfg(feature = "gpu-cuda")]
+        let _admission = match crate::proving::Request::from_env()
+            .and_then(leaf::admit_wallet_request)
+        {
+            Ok(admission) => admission,
+            Err(_) => return -2,
+        };
         // SAFETY: lengths were checked and inputs remain immutable for this call.
         let request = unsafe { std::slice::from_raw_parts(request, request_len) };
         let witness = unsafe { std::slice::from_raw_parts(witness, witness_len) };
         match prove(request, witness) {
             Ok(bytes) if bytes.len() <= output_cap => {
+                #[cfg(all(test, feature = "gpu-cuda"))]
+                super::super::cuda_wallet::tests::output_boundary();
                 // SAFETY: output capacity was checked; the owned result cannot alias it.
                 unsafe {
                     std::ptr::copy_nonoverlapping(bytes.as_ptr(), output, bytes.len());

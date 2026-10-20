@@ -3,6 +3,9 @@ use crate::{htlc_air as htlc, joinsplit_air as js};
 use p3_field::PrimeCharacteristicRing;
 use p3_goldilocks::Goldilocks as Val;
 
+#[path = "host_wallet_cuda_tests.rs"]
+mod cuda;
+
 fn request(kind: u64, height: u64, mint: u64) -> [u8; REQUEST_BYTES] {
     let mut bytes = [0; REQUEST_BYTES];
     bytes[..8].copy_from_slice(REQUEST_MAGIC);
