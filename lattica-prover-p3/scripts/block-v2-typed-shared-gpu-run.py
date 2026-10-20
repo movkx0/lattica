@@ -608,7 +608,7 @@ def owner(path):
             fleet = read(config['fleet_plan'])
             PoolCalibration.validate_result(collected, config['pool_calibration'], config['pool_workflow'],
                 fleet['pool_scheduling'], config.get('native_host'), config['workers'][0]['budget']['gpu']['uuid'],
-                directory / 'proofs')
+                directory / 'proofs', block_capacity=T.Capacity.configured(config))
             result.update(status='succeeded', pool_calibration=True, calibration_result=collected,
                 cpu_audited=False, durable_host_applied=False, native_blocks_applied=0,
                 elapsed_seconds=time.monotonic() - started)
@@ -1143,7 +1143,8 @@ def run(args, control=None):
                 raise ValueError('bounded CLI calibration owner failed')
             collected = result['calibration_result']
             PoolCalibration.validate_result(collected, config['pool_calibration'], workflow,
-                fleet['pool_scheduling'], config.get('native_host'), devices[0]['uuid'], owner_dir / 'proofs')
+                fleet['pool_scheduling'], config.get('native_host'), devices[0]['uuid'], owner_dir / 'proofs',
+                block_capacity=T.Capacity.configured(config))
             quiescent_fleet(owner_unit, report['attempts'])
             worker = config['workers'][0]
             accounting = read(Path(worker['directory']) / 'accounting.json')

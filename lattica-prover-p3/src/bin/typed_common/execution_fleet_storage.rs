@@ -30,6 +30,7 @@ pub(super) struct KnownShared {
     workers: usize,
     pool_bytes: u64,
     selection_bytes: u64,
+    shared_wallet_bytes: u64,
     endpoint_bytes: u64,
     preparation_bytes: u64,
     registry_wallet_bytes: u64,
@@ -43,6 +44,26 @@ pub(super) struct KnownShared {
 impl KnownShared {
     pub fn new(workers: usize) -> Result<Self, Error> {
         Self::with_pool_mode(workers, false)
+    }
+
+    /// One preparation attached to a newly created DAG. Selection admission
+    /// clones the verified wallet Arcs into that DAG; it never copies their
+    /// payloads. Charge those bytes once, through the DAG artifact allowance,
+    /// which is already reserved while preparation builds the selection.
+    /// Keep both owners' metadata and every temporary buffer in the sum.
+    /// Recovery and pools that can prepare another candidate cannot use this
+    /// overlap: their existing DAG may own different wallet allocations.
+    pub fn fresh_selection(workers: usize) -> Result<Self, Error> {
+        let mut known = Self::new(workers)?;
+        known.shared_wallet_bytes = (commitment::CAPACITY as u64)
+            .checked_mul(profile::MAX_PROOF_BYTES as u64)
+            .ok_or("shared wallet payload storage overflow")?;
+        if known.shared_wallet_bytes > known.selection_bytes
+            || known.shared_wallet_bytes > budget::ARTIFACT_BYTES
+        {
+            return Err("fresh selection exceeds shared wallet payload allowance".into());
+        }
+        Ok(known)
     }
 
     pub fn persistent(workers: usize) -> Result<Self, Error> {
@@ -69,6 +90,7 @@ impl KnownShared {
             workers,
             pool_bytes: u64::try_from(PoolStorage::new(durable)?.total_bytes()?)?,
             selection_bytes: u64::try_from(Selection::storage_plan()?.total_bytes()?)?,
+            shared_wallet_bytes: 0,
             // Reserve the persistent pool's larger launch inventory for either
             // shared execution mode; it is one owner across all local endpoints.
             endpoint_bytes: u64::try_from(
@@ -87,7 +109,7 @@ impl KnownShared {
     }
 
     pub fn total_bytes(&self) -> Result<u64, Error> {
-        [
+        let owners = [
             self.pool_bytes,
             self.selection_bytes,
             self.endpoint_bytes,
@@ -100,10 +122,13 @@ impl KnownShared {
             self.pool_transition_bytes,
         ]
         .into_iter()
-        .try_fold(0u64, |sum, bytes| {
+        .try_fold(0u64, |sum, bytes| -> Result<u64, Error> {
             sum.checked_add(bytes)
                 .ok_or_else(|| "shared coordinator storage overflow".into())
-        })
+        })?;
+        owners
+            .checked_sub(self.shared_wallet_bytes)
+            .ok_or_else(|| "shared coordinator wallet overlap exceeds owners".into())
     }
 
     pub fn admit(&self, shared_bytes: u64) -> Result<(), Error> {
@@ -115,7 +140,7 @@ impl KnownShared {
 
     fn print(&self, prefix: &str, workers: usize) -> Result<(), Error> {
         println!(
-            "{prefix} workers={workers} pool_bytes={} selection_bytes={} endpoint_bytes={} preparation_bytes={} registry_wallet_bytes={} ingress_bytes={} report_bytes={} pool_timing_bytes={} pool_calibration_bytes={} pool_transition_bytes={} known_bytes={} minimum_shared_bytes={}",
+            "{prefix} workers={workers} pool_bytes={} selection_bytes={} endpoint_bytes={} preparation_bytes={} registry_wallet_bytes={} ingress_bytes={} report_bytes={} pool_timing_bytes={} pool_calibration_bytes={} pool_transition_bytes={} shared_wallet_bytes={} known_bytes={} minimum_shared_bytes={}",
             self.pool_bytes,
             self.selection_bytes,
             self.endpoint_bytes,
@@ -126,6 +151,7 @@ impl KnownShared {
             self.pool_timing_bytes,
             self.pool_calibration_bytes,
             self.pool_transition_bytes,
+            self.shared_wallet_bytes,
             self.total_bytes()?,
             shared_reservation(self.workers)
         );
@@ -136,7 +162,7 @@ impl KnownShared {
 pub(super) fn probe() -> Result<(), Error> {
     input::Storage::new()?.print("production_preparation_ingress")?;
     for workers in [1, 16] {
-        let known = KnownShared::new(workers)?;
+        let known = KnownShared::fresh_selection(workers)?;
         known.admit(shared_reservation(workers))?;
         known.print("production_coordinator_shared", workers)?;
     }
@@ -151,7 +177,7 @@ mod tests {
     #[cfg(all(not(debug_assertions), target_arch = "x86_64"))]
     fn compiled_shared_owners_fit_the_reserved_floor_for_every_worker_count() {
         for workers in 1..=16 {
-            let mut known = KnownShared::new(workers).unwrap();
+            let mut known = KnownShared::fresh_selection(workers).unwrap();
             known
                 .print("candidate_coordinator_shared", workers)
                 .unwrap();
@@ -183,11 +209,34 @@ mod tests {
     #[test]
     #[cfg(all(not(debug_assertions), target_arch = "x86_64"))]
     fn long_lived_pool_cannot_use_the_bounded_phase_storage_reservation() {
-        let bounded = KnownShared::new(1).unwrap();
+        let bounded = KnownShared::fresh_selection(1).unwrap();
         let persistent = KnownShared::persistent(1).unwrap();
         assert!(persistent.total_bytes().unwrap() > 1 << 30);
         assert!(persistent.admit(COORDINATOR_SHARED_BYTES).is_err());
         assert!(persistent.total_bytes().unwrap() > bounded.total_bytes().unwrap());
         bounded.admit(COORDINATOR_SHARED_BYTES).unwrap();
+    }
+
+    #[test]
+    #[cfg(all(not(debug_assertions), target_arch = "x86_64"))]
+    fn wallet_overlap_is_exact_and_requires_a_fresh_single_selection() {
+        for workers in 1..=16 {
+            let fresh = KnownShared::fresh_selection(workers).unwrap();
+            let retained = KnownShared::new(workers).unwrap();
+            let persistent = KnownShared::persistent(workers).unwrap();
+            assert_eq!(retained.shared_wallet_bytes, 0);
+            assert_eq!(persistent.shared_wallet_bytes, 0);
+            assert_eq!(
+                retained.total_bytes().unwrap() - fresh.total_bytes().unwrap(),
+                (commitment::CAPACITY * profile::MAX_PROOF_BYTES) as u64
+            );
+            assert_eq!(fresh.selection_bytes, retained.selection_bytes);
+            assert_eq!(fresh.pool_bytes, retained.pool_bytes);
+            fresh.admit(shared_reservation(workers)).unwrap();
+            assert!(persistent.admit(shared_reservation(workers)).is_err());
+            if cfg!(feature = "block-v2-capacity-128") {
+                assert!(retained.admit(shared_reservation(workers)).is_err());
+            }
+        }
     }
 }

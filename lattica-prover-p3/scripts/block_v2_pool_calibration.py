@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import re
 
+import block_v2_capacity as Capacity
 import block_v2_pool_timing as T
 
 MAX_JOBS = 16
@@ -71,7 +72,7 @@ def stage(path, binary, device, budget, profile, environment):
                      'approved_for_pool_import': False}, pins
 
 
-def validate_result(value, request, workflow, window, native, uuid, directory):
+def validate_result(value, request, workflow, window, native, uuid, directory, *, block_capacity=Capacity.DEFAULT_CAPACITY):
     """Check collection receipts; a separate complete audit must approve timings."""
     if (value.get('schema_version') != 1 or value.get('status') != 'calibrated_cpu_audit_pending'
             or value.get('approved_for_pool_import') is not False
@@ -110,8 +111,7 @@ def validate_result(value, request, workflow, window, native, uuid, directory):
                 or observation['estimate_ms'] <= 0
                 or observation.get('estimate_source') not in ['Bootstrap', 'Live', 'ColdLive']
                 or observation['estimate_source'] == 'Bootstrap' and observation['estimate_ms'] != 180000
-                or not isinstance(observation.get('file'), str)
-                or not re.fullmatch(r'node\.[0-6]\.[0-9]{1,2}', observation['file'])):
+                or not Capacity.valid_node_file(observation.get('file'), block_capacity)):
             raise ValueError('calibration observation is not ordered live evidence')
         proof = T.regular(Path(directory) / observation['file'], 2 << 20)
         if len(proof) != observation['proof_bytes']:

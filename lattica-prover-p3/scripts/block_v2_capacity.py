@@ -1,5 +1,6 @@
 """Explicit block profiles. Planned sizes are never admitted as supported sizes."""
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -36,6 +37,18 @@ def root_file(config=None, *, capacity=None):
     if capacity is None:
         capacity = configured(config or {})
     return f"node.{depth(capacity)}.0"
+
+
+def valid_node_file(name, capacity=DEFAULT_CAPACITY):
+    """Accept only canonical proof names inside the selected tree geometry."""
+    capacity = validate(capacity)
+    if not isinstance(name, str):
+        return False
+    match = re.fullmatch(r'node\.([0-9])\.(0|[1-9][0-9]{0,2})', name)
+    if match is None:
+        return False
+    level, index = map(int, match.groups())
+    return level <= depth(capacity) and index < capacity >> level
 
 def require_binaries(capacity, *binaries):
     validate(capacity)

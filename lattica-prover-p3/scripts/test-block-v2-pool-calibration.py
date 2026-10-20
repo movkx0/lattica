@@ -117,7 +117,7 @@ class CalibrationTests(unittest.TestCase):
         binary.write_bytes(b'another executable')
         self.assertNotEqual(C.stage(self.path, binary, device, budget, {}, environment)[0]['identity'], request['identity'])
 
-    def receipt(self):
+    def receipt(self, block_capacity=64):
         request, _ = self.load()
         request['identity'] = [[3] * 32] * 5
         workflow = {'schema_version': 1, 'boot_id': 'x' * 36,
@@ -137,8 +137,25 @@ class CalibrationTests(unittest.TestCase):
                 'proof_bytes': len(b'structural proof bytes'), 'estimate_source': 'Bootstrap', 'file': 'node.1.0'}],
             'records': [{'path': str(self.root / 'timing-000.bin'), 'content_identity': [5] * 32}]}
         def check(value):
-            C.validate_result(value, request, workflow, window, None, 'GPU-test', self.root)
+            C.validate_result(value, request, workflow, window, None, 'GPU-test', self.root,
+                              block_capacity=block_capacity)
         return receipt, check
+
+    def test_receipt_names_are_bounded_by_the_selected_capacity(self):
+        receipt, check128 = self.receipt(128)
+        _, check64 = self.receipt(64)
+        for name in ('node.7.0', 'node.0.127'):
+            (self.root / name).write_bytes(b'structural proof bytes')
+            changed = copy.deepcopy(receipt)
+            changed['observations'][0]['file'] = name
+            check128(changed)
+            with self.assertRaises(ValueError):
+                check64(changed)
+        for name in ('node.7.1', 'node.0.128', 'node.8.0', 'node.1.00'):
+            changed = copy.deepcopy(receipt)
+            changed['observations'][0]['file'] = name
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                check128(changed)
 
     def test_receipt_validation_never_grants_timing_approval_or_application(self):
         receipt, check = self.receipt()

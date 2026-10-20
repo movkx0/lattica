@@ -12,7 +12,10 @@ from pathlib import Path
 import stat
 import time
 
+import block_v2_capacity as Capacity
+
 MAX_ENTRIES = 4096
+MAX_PINNED_ENTRIES = Capacity.MAX_TRANSACTIONS - 1
 MAX_DEPTH = 12
 MAX_BYTES = 512 << 20
 
@@ -29,7 +32,7 @@ def release_pinned(directory, pins, deadline_ms):
     root = Path(directory)
     if not root.is_absolute() or root.resolve(strict=True) != root:
         raise ValueError('pinned artifact directory must be canonical and nonsymlink')
-    if (type(pins) is not dict or not 1 <= len(pins) <= 63
+    if (type(pins) is not dict or not 1 <= len(pins) <= MAX_PINNED_ENTRIES
             or any(type(name) is not str or name in ('', '.', '..') or '/' in name
                    or type(pin) is not dict or set(pin) != {'bytes', 'sha256'}
                    or type(pin['bytes']) is not int or not 0 < pin['bytes'] <= 2 << 20

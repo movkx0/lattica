@@ -73,11 +73,25 @@ class CacheTests(unittest.TestCase):
                 C.release_pinned(alias, pins, self.deadline)
             advice.assert_not_called()
 
+    def test_full_128_prefix_inventory_is_retired_without_modifying_files(self):
+        # A paired 128-input prefix has 126 stable nodes plus its result receipt.
+        files = {f'node.{index}': b'public proof' for index in range(126)}
+        files['result.json'] = b'published receipt'
+        self.assertEqual(len(files), C.MAX_PINNED_ENTRIES)
+        for name, value in files.items():
+            (self.root / name).write_bytes(value)
+        with patch.object(C.os, 'fsync'), patch.object(C.os, 'posix_fadvise') as advice:
+            result = C.release_pinned(self.root, self.pins(files), self.deadline)
+        self.assertEqual(advice.call_count, len(files))
+        self.assertEqual(result['requested_bytes'], sum(map(len, files.values())))
+        self.assertFalse(result['proof_authority_granted'])
+        self.assertEqual({name: (self.root / name).read_bytes() for name in files}, files)
+
     def test_pinned_inventory_and_deadline_are_bounded_before_advice(self):
         value = b'proof'; (self.root / 'proof').write_bytes(value)
         pins = self.pins({'proof': value})
         bad = [{}, self.pins({'../proof': value}), self.pins({'/proof': value}),
-               {str(i): pins['proof'] for i in range(64)},
+               {str(i): pins['proof'] for i in range(C.MAX_PINNED_ENTRIES + 1)},
                {'proof': {'bytes': 0, 'sha256': pins['proof']['sha256']}},
                {'proof': {'bytes': (2 << 20) + 1, 'sha256': pins['proof']['sha256']}},
                {'proof': {'bytes': True, 'sha256': pins['proof']['sha256']}},

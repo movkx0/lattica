@@ -205,7 +205,7 @@ class IssuancePolicy:
                 raise ValueError('invalid grant height')
             normalized[height] = {}
             for index, amount in row.items():
-                if (type(index) is not int or not 0 <= index < 64 or
+                if (type(index) is not int or not 0 <= index < Capacity.MAX_TRANSACTIONS or
                         type(amount) is not int or not 0 < amount < 2**52):
                     raise ValueError('invalid issuance grant')
                 normalized[height][index] = amount

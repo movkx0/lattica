@@ -575,8 +575,28 @@ mod tests {
         std::fs::remove_dir_all(directory).unwrap();
     }
 
+    fn shared_reservation(plan: &mut Plan, shared: u64) {
+        plan.coordinator_shared_bytes = shared;
+        let per_job = (plan.coordinator_ram_bytes - shared) / plan.workers.len() as u64;
+        for worker in &mut plan.workers {
+            worker.assignment["host"]["coordinator_shared_bytes"] = json!(shared);
+            worker.assignment["host"]["coordinator_job_bytes"] = json!(per_job);
+        }
+    }
+
     fn native_plan() -> Plan {
         let mut plan = super::super::tests::plan();
+        // Recovery may retain wallet allocations from a different selection.
+        // Partition this fixture's existing 2 GiB coordinator allowance using
+        // the conservative owner bound; do not give it the fresh-DAG overlap.
+        let shared = storage::KnownShared::new(plan.workers.len())
+            .unwrap()
+            .total_bytes()
+            .unwrap()
+            .max(plan.coordinator_shared_bytes)
+            .div_ceil(1 << 20)
+            << 20;
+        shared_reservation(&mut plan, shared);
         let binding = json!({"schema_version":1,"head_token":vec![1u8;32],"generation":0,
             "configuration_sha256":vec![2u8;32],"complete_body_sha256":vec![3u8;32],
             "preparation_sha256":vec![4u8;32],"expected":{"schema_version":1,
@@ -587,6 +607,20 @@ mod tests {
             worker.assignment["native_host"] = binding.clone();
         }
         plan
+    }
+
+    #[test]
+    #[cfg(feature = "block-v2-capacity-128")]
+    fn recovery_cannot_use_the_fresh_selection_storage_credit() {
+        let mut plan = native_plan();
+        let fresh = storage::shared_reservation(plan.workers.len());
+        shared_reservation(&mut plan, fresh);
+        validate_plan(&plan).unwrap();
+        plan.recover_from = Some("/previous/proofs".into());
+        assert!(validate_plan(&plan)
+            .unwrap_err()
+            .to_string()
+            .contains("coordinator shared reservation below known storage"));
     }
 
     #[test]

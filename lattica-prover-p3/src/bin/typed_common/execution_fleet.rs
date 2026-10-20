@@ -223,6 +223,8 @@ fn validate_plan_shape(plan: &Plan) -> Result<Vec<(Resources, Resources)>, Error
     }
     let known = if plan.pool_requests.is_some() && !qualified {
         storage::KnownShared::persistent(plan.workers.len())?
+    } else if plan.pool_requests.is_none() && plan.recover_from.is_none() {
+        storage::KnownShared::fresh_selection(plan.workers.len())?
     } else {
         storage::KnownShared::new(plan.workers.len())?
     };

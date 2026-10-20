@@ -32,6 +32,35 @@ class CapacityTests(unittest.TestCase):
         self.assertEqual(C.root_file({'block_capacity':128, 'count':64}), 'node.7.0')
         self.assertEqual(C.root_file({'count':64}), 'node.6.0')
 
+    def test_proof_names_follow_selected_tree_geometry(self):
+        for name in ('node.0.0', 'node.0.63', 'node.1.31', 'node.6.0'):
+            self.assertTrue(C.valid_node_file(name, 64), name)
+            self.assertTrue(C.valid_node_file(name, 128), name)
+        for name in ('node.0.127', 'node.1.63', 'node.6.1', 'node.7.0'):
+            self.assertTrue(C.valid_node_file(name, 128), name)
+            self.assertFalse(C.valid_node_file(name, 64), name)
+        for name in (None, 1, 'node.0.128', 'node.1.64', 'node.7.1', 'node.8.0',
+                     'node.01.0', 'node.1.00', '../node.1.0', '/node.1.0', 'node.1.0\n'):
+            self.assertFalse(C.valid_node_file(name, 128), name)
+        with self.assertRaises(ValueError):
+            C.valid_node_file('node.8.0', 256)
+
+    def test_issuance_grants_cover_128_slots_without_waiving_late_grants(self):
+        policy = H.IssuancePolicy({10: {0: 7, 63: 8, 64: 9, 127: 10}})
+        grants = policy.for_block(10, 128)
+        self.assertEqual(len(grants), 128)
+        self.assertEqual([grants[index] for index in (0, 63, 64, 127)], [7, 8, 9, 10])
+        self.assertEqual(sum(grants), 34)
+        self.assertEqual(policy.for_prefix(10, 64), grants[:64])
+        for count in (64, 127):
+            with self.assertRaises(H.RejectedBlock):
+                policy.for_block(10, count)
+        for index in (-1, 128, 256, True, 1.0):
+            with self.subTest(index=index), self.assertRaises(ValueError):
+                H.IssuancePolicy({10: {index: 7}})
+        legacy = H.IssuancePolicy({10: {63: 7}})
+        self.assertEqual(legacy.sha256, H.sha(H.canonical({'10': {'63': 7}})))
+
     def test_binaries_must_agree_in_both_directions(self):
         with tempfile.TemporaryDirectory() as directory:
             binary = Path(directory) / 'probe'
