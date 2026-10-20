@@ -1,0 +1,900 @@
+{
+  "schema": "lattica-cuda-zig-host-qualification-v1",
+  "date": "2026-10-19",
+  "status": "passed",
+  "source_parent_commit": "46e2ef5b8e9940ea4bd2159e81e20e7499b88c12",
+  "source_files": [
+    {
+      "path": "build.zig",
+      "sha256": "903238c2e6c4a02b1cc91654b4c5f5d2c2cedf3ec9b979a99d7207d23d0f7514",
+      "bytes": 7885
+    },
+    {
+      "path": "lattica-prover-p3/scripts/build-block-v2-host.py",
+      "sha256": "8fff1c7684db1662a0403ab9b7a26b802c1523f1a0f6c50a10f3effa7cf225cf",
+      "bytes": 4480
+    },
+    {
+      "path": "src/ffi_integration.zig",
+      "sha256": "97dccec87c08c3d17c3f2630bccb235398cc795addbddd36bb281efd8f90b543",
+      "bytes": 8988
+    },
+    {
+      "path": "src/wallet.zig",
+      "sha256": "f5d374c18a50a18f9325b24dba584ab0b5b72416965fab2a08578868e1c4906a",
+      "bytes": 11412
+    },
+    {
+      "path": "src/gpu_process_options.zig",
+      "sha256": "5a14033cb765592b724070b54c7cd1cdd03e6a4d533780fc582313cfc51fac18",
+      "bytes": 545
+    },
+    {
+      "path": "src/gpu_test_runner.zig",
+      "sha256": "99f09df7e5592b5868fb3d2a84eb81b5e37b6ae7d088731b037511e2f18dbf3a",
+      "bytes": 466
+    }
+  ],
+  "full_source_pins": {
+    "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/source-pins.json",
+    "sha256": "506a420fb713d14b631805cc97709ba3ba08a4a5fcebf1c4151afdd51e0959d4",
+    "bytes": 114739
+  },
+  "source_pins_verified": 884,
+  "rust_prover_source_changed": false,
+  "security_parameters_changed": false,
+  "scope": "Linux native Zig wallet/FFI and host bridge correctness; default 64-entry profile. No recursive block or durable delivery measurement.",
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 5080",
+    "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "driver": "615.78.08"
+  },
+  "toolchain": {
+    "zig": "0.16.0",
+    "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)"
+  },
+  "resource_limits": {
+    "host_bytes": 3221225472,
+    "swap_bytes": 0,
+    "threads": 4,
+    "cpu_quota_percent": 400,
+    "tasks_max": 96,
+    "main_stack_bytes": 8388608,
+    "alternate_stack_admission_bytes": 65536,
+    "managed_gpu_bytes": 7516192768,
+    "context_gpu_bytes": 4294967296,
+    "host_output_bytes": 536870912,
+    "cuda_max_allocation_bytes": 1073741824,
+    "cuda_headroom_bytes": 1073741824,
+    "build_tasks_max": 512,
+    "observation_boundary": "Service exit status and MemoryPeak plus last observed live cgroup counters; counters are retained, not extrapolated after cgroup disappearance."
+  },
+  "libraries": {
+    "cuda": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/liblattica_prover_p3-cuda.a",
+      "sha256": "8515b705cd893c6f06b5b107b17b7ed409d65af1b4105cde30b78d6bfc04ac83"
+    },
+    "cpu": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/liblattica_prover_p3-cpu.a",
+      "sha256": "55bd1a206b09031e8f9671cbf0c74b3de4d9dbee33fd0fc6da217225e09b4120"
+    },
+    "opencl": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/liblattica_prover_p3-opencl.a",
+      "sha256": "e3c76c5c4005eff206676e9dfaa637d8540968529b9eac4de7da0cc72eaa4f57"
+    }
+  },
+  "builds": [
+    {
+      "name": "zig-cuda",
+      "command": [
+        "zig",
+        "build",
+        "install",
+        "build-ffi",
+        "-j2",
+        "-Doptimize=ReleaseSafe",
+        "-Dgpu-backend=cuda",
+        "-Dprover-library=/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/liblattica_prover_p3-cuda.a",
+        "--prefix",
+        "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/zig-cuda"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "bridge-cuda",
+      "command": [
+        "python3",
+        "lattica-prover-p3/scripts/build-block-v2-host.py",
+        "--gpu-backend",
+        "cuda",
+        "--rust-staticlib",
+        "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/liblattica_prover_p3-cuda.a",
+        "--output",
+        "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/bridge-cuda"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "zig-cpu",
+      "command": [
+        "zig",
+        "build",
+        "test",
+        "build-ffi",
+        "-j2",
+        "-Doptimize=ReleaseSafe",
+        "-Dprover-library=/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/liblattica_prover_p3-cpu.a",
+        "--prefix",
+        "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/zig-cpu"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "bridge-cpu",
+      "command": [
+        "python3",
+        "lattica-prover-p3/scripts/build-block-v2-host.py",
+        "--rust-staticlib",
+        "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/liblattica_prover_p3-cpu.a",
+        "--output",
+        "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/bridge-cpu"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "zig-opencl",
+      "command": [
+        "zig",
+        "build",
+        "install",
+        "build-ffi",
+        "-j2",
+        "-Doptimize=ReleaseSafe",
+        "-Dgpu-prover=true",
+        "-Dprover-library=/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/liblattica_prover_p3-opencl.a",
+        "--prefix",
+        "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/zig-opencl"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "bridge-opencl",
+      "command": [
+        "python3",
+        "lattica-prover-p3/scripts/build-block-v2-host.py",
+        "--gpu",
+        "--rust-staticlib",
+        "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/liblattica_prover_p3-opencl.a",
+        "--output",
+        "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/bridge-opencl"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "cuda_opencl_link_dependency": false,
+  "runs": [
+    {
+      "case": "ffi-cpu",
+      "status": "passed",
+      "program_sha256": "e4951480e8aa416231017861c513990bb18fcbd3e05ecace04a507284737e877",
+      "host_memory_peak_bytes": 279232512,
+      "service_retired": true,
+      "complete_stage_reports": 0,
+      "entry_points": {},
+      "cpu_reported_stages": [],
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/ffi-cpu/command.json",
+          "sha256": "ff3c1788e9d230dc63d7e0ea7d10345f61b26164ff6fe04a0038aa9f21214579",
+          "bytes": 1050
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/ffi-cpu/test.log",
+          "sha256": "4bf683ba1811b10dcca7d478b7f4788b9487b9dbdb6981b0411e9d8cc2674869",
+          "bytes": 2182
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/ffi-cpu/result.json",
+          "sha256": "108eaba86164699d8e76889736b263898a4a4d340064d963155102c8ec801700",
+          "bytes": 849
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/ffi-cpu/retired.json",
+          "sha256": "249d5278c89dd5e9918e08e7d040cc657542a9eebde3aded406f65d4423cf28d",
+          "bytes": 327
+        }
+      ],
+      "tests": {
+        "passed": 32,
+        "skipped": 1,
+        "failed": 0
+      }
+    },
+    {
+      "case": "ffi-cuda",
+      "status": "passed",
+      "program_sha256": "d7ba1ba37a0ad32f8ef9902224d32aa484527c45d2422dece7a6c934d66defaa",
+      "host_memory_peak_bytes": 169922560,
+      "service_retired": true,
+      "complete_stage_reports": 6,
+      "entry_points": {
+        "cuda_joinsplit": 4,
+        "cuda_htlc": 1,
+        "cuda_joinsplit_tree_root": 1
+      },
+      "cpu_reported_stages": [
+        "serialization"
+      ],
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/ffi-cuda/command.json",
+          "sha256": "d4ed32c2aaca6a5bc6aabd973da6b6d25de05ae0822a47872a2f347c7097ea7c",
+          "bytes": 1522
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/ffi-cuda/test.log",
+          "sha256": "0e8c2914e832fcb37dfed9d4fcf16a3301724c11f2b09a8f3e635b9fae2ff29b",
+          "bytes": 21022
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/ffi-cuda/result.json",
+          "sha256": "b078d39fab6dc9ebdacd1fb11d73c11a13dbffa60a5e5ed74072700e3609faca",
+          "bytes": 857
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/ffi-cuda/retired.json",
+          "sha256": "3730f0eea8e3ca02083e7dc862689b0bd2a6da9fc5787170469f025544702370",
+          "bytes": 335
+        }
+      ],
+      "assignment": {
+        "schema": "lattica-wallet-local-cuda-v1",
+        "service": "lattica-wallet-cuda-zig-host-20261019-q04-ffi-cuda.service",
+        "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "host_bytes": 3221225472,
+        "threads": 4,
+        "managed_gpu_bytes": 7516192768,
+        "context_gpu_bytes": 4294967296,
+        "host_output_bytes": 536870912,
+        "cuda": {
+          "max_allocation_bytes": 1073741824,
+          "headroom_bytes": 1073741824
+        }
+      },
+      "tests": {
+        "passed": 34,
+        "skipped": 2,
+        "failed": 0
+      },
+      "cuda_retirement": {
+        "live_bytes": 0,
+        "peak_bytes": 128564392,
+        "allocations": 0,
+        "peak_allocations": 93,
+        "modules": 0,
+        "pending_commands": 0,
+        "completed_commands": 7625,
+        "device_ns": 201372160,
+        "uploaded_bytes": 4801664,
+        "downloaded_bytes": 1956832,
+        "copied_bytes": 1760,
+        "public_program_bytes": 0,
+        "public_programs": 0
+      }
+    },
+    {
+      "case": "wallet-cuda",
+      "status": "passed",
+      "program_sha256": "2391c29cdfa3cedc8a0245a6d58ec60e82a4057d6d409eec769a3d4332453df9",
+      "host_memory_peak_bytes": 160313344,
+      "service_retired": true,
+      "complete_stage_reports": 1,
+      "entry_points": {
+        "cuda_joinsplit": 1
+      },
+      "cpu_reported_stages": [],
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/wallet-cuda/command.json",
+          "sha256": "b059ea7c16ae0b2d22cdaccc32707621291ca79b42f22f820fea2d71908f5e26",
+          "bytes": 1541
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/wallet-cuda/test.log",
+          "sha256": "bfec768015a4ef985fcc3b047ae3d48823738184ce1064e62a4b218ea0a5d5bc",
+          "bytes": 6885
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/wallet-cuda/result.json",
+          "sha256": "90c915cf3b2130fb4ab9e660960774b75f590f8e2e72cf238152e1eb1a057838",
+          "bytes": 859
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/wallet-cuda/retired.json",
+          "sha256": "9cebce843f2090724a653e83d637c0246f38bb7b39638628a3ebcd6d693cf9f5",
+          "bytes": 338
+        }
+      ],
+      "assignment": {
+        "schema": "lattica-wallet-local-cuda-v1",
+        "service": "lattica-wallet-cuda-zig-host-20261019-q04-wallet-cuda.service",
+        "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "host_bytes": 3221225472,
+        "threads": 4,
+        "managed_gpu_bytes": 7516192768,
+        "context_gpu_bytes": 4294967296,
+        "host_output_bytes": 536870912,
+        "cuda": {
+          "max_allocation_bytes": 1073741824,
+          "headroom_bytes": 1073741824
+        }
+      },
+      "cuda_retirement": {
+        "live_bytes": 0,
+        "peak_bytes": 91228544,
+        "allocations": 0,
+        "peak_allocations": 93,
+        "modules": 0,
+        "pending_commands": 0,
+        "completed_commands": 1552,
+        "device_ns": 39755552,
+        "uploaded_bytes": 4490104,
+        "downloaded_bytes": 388640,
+        "copied_bytes": 352,
+        "public_program_bytes": 0,
+        "public_programs": 0
+      }
+    },
+    {
+      "case": "ffi-opencl",
+      "status": "passed",
+      "program_sha256": "b19bc05867ab2ca78bcfc5c387f6c82c9d738a779a30f4cb603193724d168f66",
+      "host_memory_peak_bytes": 415219712,
+      "service_retired": true,
+      "complete_stage_reports": 6,
+      "entry_points": {
+        "legacy_joinsplit_gpu": 4,
+        "legacy_htlc_gpu": 1,
+        "legacy_joinsplit_tree_root_gpu": 1
+      },
+      "cpu_reported_stages": [
+        "serialization"
+      ],
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/ffi-opencl/command.json",
+          "sha256": "50de8f0701518d18d0bac1781a74f9a5c6381d744b4e66c9c81c18aa72b5c669",
+          "bytes": 2038
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/ffi-opencl/test.log",
+          "sha256": "1a2c019034551bc026787fc84bf7de697224664999499c0d7f94559af9df2f67",
+          "bytes": 344995
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/ffi-opencl/result.json",
+          "sha256": "efa2757b43526a303966587c28f84310d7d6ce0b672da8c45ad1efbe364529ea",
+          "bytes": 856
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/ffi-opencl/retired.json",
+          "sha256": "54211798c2dbe7d4f4b0ef95e29985913a0de8af0012948883528c4f0fd63483",
+          "bytes": 337
+        }
+      ],
+      "assignment": {
+        "schema": "lattica-wallet-local-gpu-v1",
+        "service": "lattica-wallet-cuda-zig-host-20261019-q04-ffi-opencl.service",
+        "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "host_bytes": 3221225472,
+        "threads": 4,
+        "managed_gpu_bytes": 7516192768,
+        "context_gpu_bytes": 4294967296,
+        "host_output_bytes": 536870912
+      },
+      "tests": {
+        "passed": 34,
+        "skipped": 2,
+        "failed": 0
+      },
+      "opencl_owners_retired": true
+    },
+    {
+      "case": "wallet-opencl",
+      "status": "passed",
+      "program_sha256": "297eb1b1e87abd2bd088466fa2ff29862f3f2d2780266386cb782ee8b7d730f3",
+      "host_memory_peak_bytes": 208195584,
+      "service_retired": true,
+      "complete_stage_reports": 1,
+      "entry_points": {
+        "legacy_joinsplit_gpu": 1
+      },
+      "cpu_reported_stages": [
+        "serialization"
+      ],
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/wallet-opencl/command.json",
+          "sha256": "841fa692d243972063bf36e23e6cabf7958598c4bb0e87782d3fdaa5d04fe8af",
+          "bytes": 2057
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/wallet-opencl/test.log",
+          "sha256": "23b12a96a51a9e6e366649deca66f7a1254da4e592144896fab2fa0fd8d0a675",
+          "bytes": 71315
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/wallet-opencl/result.json",
+          "sha256": "00688ca456eaa51a3fca42f255ebe1fd88e37c6b12b69e64d7ea25d3b9337fe1",
+          "bytes": 862
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/wallet-opencl/retired.json",
+          "sha256": "11de07c16ec783bd01e659aee79107ade55d0834bfe9e7c1ae8393ff44a61e28",
+          "bytes": 340
+        }
+      ],
+      "assignment": {
+        "schema": "lattica-wallet-local-gpu-v1",
+        "service": "lattica-wallet-cuda-zig-host-20261019-q04-wallet-opencl.service",
+        "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "host_bytes": 3221225472,
+        "threads": 4,
+        "managed_gpu_bytes": 7516192768,
+        "context_gpu_bytes": 4294967296,
+        "host_output_bytes": 536870912
+      },
+      "opencl_owners_retired": true
+    },
+    {
+      "case": "native-fixture-cuda-03",
+      "status": "passed",
+      "program_sha256": "e9db67955243120e49352dc87977cdfb96a1dc130b58cfac7a0ab5f4f74731af",
+      "host_memory_peak_bytes": 199958528,
+      "service_retired": true,
+      "complete_stage_reports": 4,
+      "entry_points": {
+        "cuda_context_joinsplit": 1,
+        "cuda_context_htlc": 2,
+        "cuda_context_issuance": 1
+      },
+      "cpu_reported_stages": [],
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cuda-03/command.json",
+          "sha256": "84527c72255aa0ad089146cec2cd33cefbe45c907123778b6b6794e200c4b81b",
+          "bytes": 1590
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cuda-03/test.log",
+          "sha256": "a05738ff81fc687df472e33f850e2e9e37e7a9678f74bee0bb97e1c0e7d9f6c0",
+          "bytes": 15624
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cuda-03/result.json",
+          "sha256": "7b10c35615b52bd9bdbe297dffbe30dd03647abd64d588ccfe78524803d95795",
+          "bytes": 870
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cuda-03/retired.json",
+          "sha256": "57d25572437f1867006d059af2d51cf3a372d428b3201c9e09fa5f4df4507fa7",
+          "bytes": 349
+        }
+      ],
+      "assignment": {
+        "schema": "lattica-wallet-local-cuda-v1",
+        "service": "lattica-wallet-cuda-zig-host-20261019-q04-native-fixture-cuda-03.service",
+        "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+        "host_bytes": 3221225472,
+        "threads": 4,
+        "managed_gpu_bytes": 7516192768,
+        "context_gpu_bytes": 4294967296,
+        "host_output_bytes": 536870912,
+        "cuda": {
+          "max_allocation_bytes": 1073741824,
+          "headroom_bytes": 1073741824
+        }
+      },
+      "cuda_retirement": {
+        "live_bytes": 0,
+        "peak_bytes": 141570328,
+        "allocations": 0,
+        "peak_allocations": 94,
+        "modules": 0,
+        "pending_commands": 0,
+        "completed_commands": 7827,
+        "device_ns": 230632800,
+        "uploaded_bytes": 4968536,
+        "downloaded_bytes": 3034000,
+        "copied_bytes": 3024,
+        "public_program_bytes": 0,
+        "public_programs": 0
+      }
+    },
+    {
+      "case": "native-audit-cpu",
+      "status": "passed",
+      "program_sha256": "e9db67955243120e49352dc87977cdfb96a1dc130b58cfac7a0ab5f4f74731af",
+      "host_memory_peak_bytes": 27095040,
+      "service_retired": true,
+      "complete_stage_reports": 0,
+      "entry_points": {},
+      "cpu_reported_stages": [],
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-audit-cpu/command.json",
+          "sha256": "fd1427bab19b3516355e8eba23f76b7ddb796fb3311ed0dca781e4b06cd21249",
+          "bytes": 1086
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-audit-cpu/test.log",
+          "sha256": "c5767e3740b92b2f374d9aa216c880b04a8f9659675e136d025d75373bdf93ee",
+          "bytes": 5756
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-audit-cpu/result.json",
+          "sha256": "3f91300c44d694a4fc1268ad119b72d504fd1ccb43745b6d7b2e43fce89092b3",
+          "bytes": 855
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-audit-cpu/retired.json",
+          "sha256": "8033992d348558161274ddcb549289cd45e1d6b50bcbb6fa8ea68184c43d60af",
+          "bytes": 336
+        }
+      ]
+    }
+  ],
+  "native_wallets": {
+    "kinds": [
+      "joinsplit",
+      "htlc_redeem",
+      "htlc_refund",
+      "issuance"
+    ],
+    "saved_proofs": 4,
+    "independently_cpu_verified": 4,
+    "recipient_ciphertexts_checked": 8,
+    "native_rust_expected_roots_equal": true,
+    "negative_cases": 8,
+    "audit": {
+      "status": "passed",
+      "wallet_count": 4,
+      "negative_cases": 8,
+      "cpu_probe_sha256": "2f17e8ab7e42e63bc23a72a675b2584ba5e5647d60368555212a3838fc07e832",
+      "cpu_bridge_sha256": "43a27618745aca99ac4c4faf7eaab0e4167fd1a3af979cbb389b50712e9c29c0",
+      "cases": [
+        {
+          "case": "original",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/cpu-probe",
+            "verify-wallets",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-output-03",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-output-03/expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/original.json"
+          ],
+          "expected_acceptance": true,
+          "exit_code": 0
+        },
+        {
+          "case": "changed-proof-0",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/cpu-probe",
+            "verify-wallets",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/changed-proof-0",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-output-03/expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/changed-proof-0.json"
+          ],
+          "expected_acceptance": false,
+          "exit_code": 1
+        },
+        {
+          "case": "changed-proof-1",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/cpu-probe",
+            "verify-wallets",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/changed-proof-1",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-output-03/expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/changed-proof-1.json"
+          ],
+          "expected_acceptance": false,
+          "exit_code": 1
+        },
+        {
+          "case": "changed-proof-2",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/cpu-probe",
+            "verify-wallets",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/changed-proof-2",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-output-03/expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/changed-proof-2.json"
+          ],
+          "expected_acceptance": false,
+          "exit_code": 1
+        },
+        {
+          "case": "changed-proof-3",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/cpu-probe",
+            "verify-wallets",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/changed-proof-3",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-output-03/expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/changed-proof-3.json"
+          ],
+          "expected_acceptance": false,
+          "exit_code": 1
+        },
+        {
+          "case": "changed-statement",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/cpu-probe",
+            "verify-wallets",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/changed-statement",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-output-03/expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/changed-statement.json"
+          ],
+          "expected_acceptance": false,
+          "exit_code": 1
+        },
+        {
+          "case": "reordered-body",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/cpu-probe",
+            "verify-wallets",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/reordered-body",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-output-03/expected.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/reordered-body.json"
+          ],
+          "expected_acceptance": false,
+          "exit_code": 1
+        },
+        {
+          "case": "unauthorized-issuance",
+          "command": [
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/cpu-probe",
+            "verify-wallets",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-output-03",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/wrong-policy.json",
+            "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/unauthorized-issuance.json"
+          ],
+          "expected_acceptance": false,
+          "exit_code": 1
+        },
+        {
+          "case": "original-native-body",
+          "native_return_code": 0,
+          "expected_acceptance": true,
+          "matches_expected_root": true
+        },
+        {
+          "case": "changed-native-body",
+          "native_return_code": 0,
+          "expected_acceptance": false,
+          "matches_expected_root": false
+        }
+      ]
+    },
+    "cpu_child_environment": {
+      "HOME": "/home/access",
+      "USER": "access",
+      "PATH": "/usr/bin:/bin",
+      "RAYON_NUM_THREADS": "4",
+      "LATTICA_PROVING_POLICY": "cpu-required"
+    },
+    "retained_registry_anchor": {
+      "path": "docs/evidence/gpu-native-tree-cache-2026-10-15.json",
+      "sha256": "58662b8bb626f2e2a931f251977e2dff0956f31c224caa5d0f43bb1f517ed304",
+      "bytes": 896247
+    }
+  },
+  "preserved_failed_attempts": [
+    {
+      "attempt": "qualification-01/ffi-cuda",
+      "reason": "Zig default alternate signal stack exceeded native caller admission; no CUDA context was started.",
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-01/ffi-cuda/test.log",
+          "sha256": "50a0208f0c2938434c2b61883da6fc007a649649182cc7521a1f9f608f8bd590",
+          "bytes": 2539
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-01/ffi-cuda/result.json",
+          "sha256": "02ced9f44cf1476660dd066599a4ea98eccfa62fca5e0d8405713d0c479ef094",
+          "bytes": 855
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-01/ffi-cuda/retired.json",
+          "sha256": "3f7694a53942ae73ef8328b83209e7be30d2f78dcd4d24afbfa33b6a8bdb7315",
+          "bytes": 387
+        }
+      ]
+    },
+    {
+      "attempt": "qualification-02/ffi-cuda",
+      "reason": "Test module std_options did not affect the standard test runner root; the alternate-stack rejection remained.",
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-02/ffi-cuda/test.log",
+          "sha256": "50a0208f0c2938434c2b61883da6fc007a649649182cc7521a1f9f608f8bd590",
+          "bytes": 2539
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-02/ffi-cuda/result.json",
+          "sha256": "16b27853d46072844f1710aaab921b1fa09f9c94472861da9c0981e2c26c913d",
+          "bytes": 855
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-02/ffi-cuda/retired.json",
+          "sha256": "857ddf531ae8ddaa3380c0ff66b26c56710bcc564d209723c7df4b19e99438c6",
+          "bytes": 387
+        }
+      ]
+    },
+    {
+      "attempt": "qualification-03",
+      "reason": "Initial wrapper imported prover_runtime.zig into two roots; Zig rejected the duplicated module file.",
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-03/zig-cuda-build.log",
+          "sha256": "795f1a0ff9751c05d499fb630264cd0df7071b243909d56c4706230ca32b7ec0",
+          "bytes": 2263
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-03/cuda-build-result.json",
+          "sha256": "5b874090cf29c803804db45551b66874b5e2a0ccf7fae2f1869889cf43e4ed00",
+          "bytes": 509
+        }
+      ]
+    },
+    {
+      "attempt": "qualification-04/native-fixture-cuda",
+      "reason": "Four CUDA leaves generated, but the CPU public-check subprocess inherited GPU settings and correctly refused them.",
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cuda/test.log",
+          "sha256": "3ef644e1ed27a6e8b14396a8edc434a288427b9e70c9996e450996a824459e38",
+          "bytes": 15909
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cuda/result.json",
+          "sha256": "fc71a1f1ad2eb2c955e1af0f6b3d7053b4f11e233779bdbb05a4d325aad92ad3",
+          "bytes": 869
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cuda/retired.json",
+          "sha256": "62fa1d61b164e22747794e2e988b21bfbdd7abf0cdcb5c2c982f4f9c8bf918f6",
+          "bytes": 403
+        }
+      ]
+    },
+    {
+      "attempt": "qualification-04/native-fixture-cuda-02",
+      "reason": "Audit adapter omitted subprocess.STDOUT; all GPU owners retired, but the fixture audit did not run.",
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cuda-02/test.log",
+          "sha256": "8edac01406a038bfb87e17e06c3d30d6cbaf9d2a5c338a15764ab6a29ab10829",
+          "bytes": 15941
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cuda-02/result.json",
+          "sha256": "3680df9f66b1033807d77212bbe29e22abac539966c63b3ac367b41ca29016dc",
+          "bytes": 872
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cuda-02/retired.json",
+          "sha256": "3a223fcd8baedca6c6759ded11907228b92b20f37012789356020d05c8ac8a22",
+          "bytes": 406
+        }
+      ]
+    }
+  ],
+  "supporting_artifacts": [
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/source-pins.json",
+      "sha256": "506a420fb713d14b631805cc97709ba3ba08a4a5fcebf1c4151afdd51e0959d4",
+      "bytes": 114739
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/build.py",
+      "sha256": "4747a7c116439864e0ee1b934ba631b6c88a0279ef81bf0b47ac24812bb214f7",
+      "bytes": 1425
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/run.py",
+      "sha256": "71ea05e526f2b1fda8629975ebf8d979d7c1f15cd7aba70ba81f8c3d46dc1992",
+      "bytes": 3745
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/run_cpu.py",
+      "sha256": "4e38d88474b1cbdd62518ad81fa7e085e3a6b296a01453f25a2ee495d38ff142",
+      "bytes": 3784
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/run_opencl.py",
+      "sha256": "bd70b8f9b3bb7ecf33867da460f028f7a8f30d42d0e0dc6eae998cb9b26e7a52",
+      "bytes": 4219
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/cpu-checks.py",
+      "sha256": "a36df975d4da6ebf9845f426f51e25d869f009f4f919315aae8130364b62e175",
+      "bytes": 1541
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/cuda-build-result.json",
+      "sha256": "0e4f73586076955d5c6a648868a88a02cb1df21efda95977cf4e284c0ff53f76",
+      "bytes": 1005
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/cpu-checks.json",
+      "sha256": "d7458d8e684dea26ef92f39227d52d861e02a58e07ed0b77f61c164c72b55577",
+      "bytes": 1922
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/build-retirement.json",
+      "sha256": "20e061cd3202ffa6050a20b411a35d6354ecfe855717c46addafbf71049e0dbd",
+      "bytes": 7813
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native_fixture.py",
+      "sha256": "11e7802009ee0aa07f6d648ef4808212d74e9921a5d9023c4041c44e9562279b",
+      "bytes": 1890
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native_fixture_02.py",
+      "sha256": "6059c296da42b332d5c59b421b9b5859b1623d0422630185fdc1101f8bda0acd",
+      "bytes": 2487
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native_fixture_03.py",
+      "sha256": "23253bfde62686f2204093e0040b4de83602ea7a4b9d0e870f90973bf49343a6",
+      "bytes": 2513
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/audit_fixture.py",
+      "sha256": "c554721e02186ef278ab3251240a17b69e32ce9630cf683952228ddc313679ea",
+      "bytes": 4016
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-03-cpu-env.json",
+      "sha256": "67475cfe437bfc9941cc411fc4443f8a971bd055285d8e24208d1662aaa18f61",
+      "bytes": 148
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-cpu-audit/report.json",
+      "sha256": "a5cc45cd886eccd473e1c629f9632984b6d977efc7ab5203485229b79cd0ab36",
+      "bytes": 6498
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/native-fixture-output-03/manifest.json",
+      "sha256": "100e564922ef6f0aff7f3b84283eea452489c6f353e571bb2c3d5aef9859f43f",
+      "bytes": 12285
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/bridge-cuda/manifest.json",
+      "sha256": "b333698dfb101ee7531998abb33c6e3a513ef7970ac712a1708d9892f7c81e01",
+      "bytes": 8108
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/bridge-cpu/manifest.json",
+      "sha256": "a923f6753a1d13a267bef1a3c5e9e6d660aaab3ec1a2c1a4425bcdbea3752900",
+      "bytes": 8099
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/bridge-opencl/manifest.json",
+      "sha256": "b2469635546f4a88499ec3d6bc879a122e83704aa0f4eb4ab2d46e6c38711f4b",
+      "bytes": 8146
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/record_evidence.py",
+      "sha256": "8e6f1a86ff960b3a54071cccbc95606440cdd0693b07e8429a656e523e949d17",
+      "bytes": 8841
+    }
+  ],
+  "limitations": [
+    "Correctness qualification, not a throughput benchmark.",
+    "GPU-required proof stages completed; serialization, Zig witness/body construction, lifecycle control and independent verification still use CPU.",
+    "Wallet demo node acceptance is in-memory legacy behavior, not durable recursive block delivery.",
+    "No new 64/128-entry recursive workload, timing-approved pool, concurrency or multi-GPU qualification.",
+    "No V100 or Apple hardware execution; existing OpenCL tests ran on this RTX 5080."
+  ]
+}

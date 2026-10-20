@@ -1369,6 +1369,27 @@ multi-GPU qualification, V100 execution, and matched CPU/OpenCL performance
 comparisons remain outstanding. Earlier 1,024-statement tree-root arithmetic
 tests do not qualify containers of that size.
 
+The [native Zig host qualification](evidence/cuda-zig-host-2026-10-19.json)
+connects explicit CUDA backend selection to the wallet, standalone FFI suite,
+and shared host bridge without linking OpenCL. Existing CPU defaults and legacy
+OpenCL options remain supported. GPU executables use admitted main/signal-stack
+settings; the FFI runner wraps Zig's standard runner to retain leak detection,
+error-log handling and test failure reporting. CUDA wallet tests now share one
+GPU lifetime and verify saved outputs after shutdown.
+
+On the RTX 5080, the CUDA and OpenCL FFI suites each passed 34 tests with two
+CPU-only skips; the CPU reference passed 32 tests with one GPU-only skip. Both
+wallet demos proved a transfer, accepted it at the legacy node, decrypted the
+recipient note and rejected replay. Four native CUDA fixtures covered JoinSplit,
+HTLC redeem/refund and issuance with real Zig witness/body construction. A
+separate CPU-only probe accepted all four; eight negative checks rejected changed
+proofs, statements, ordering, issuance authority or complete bodies. Native and
+Rust expected roots matched. All required CUDA stage reports completed and GPU
+owners retired. Rust proving code and security parameters were unchanged.
+These are host correctness checks, not a new throughput benchmark. Full recursive
+blocks, durable delivery, timing-approved pools and other-device qualification
+remain open.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)

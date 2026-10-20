@@ -1,4 +1,5 @@
 const std = @import("std");
+const GpuBackend = enum { opencl, cuda };
 
 // Lattica — quantum-safe shielded payments (Zig port).
 //
@@ -11,11 +12,16 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const block_capacity = b.option(u16, "block-capacity", "Research block capacity (64 or 128; must match the Rust library)") orelse 64;
     if (block_capacity != 64 and block_capacity != 128) @panic("supported block capacities are 64 and 128");
-    const gpu_prover = b.option(bool, "gpu-prover", "Use the native GPU prover for wallet demos and FFI tests (requires configured gpu-required policy)") orelse false;
+    const selected_gpu_backend = b.option(GpuBackend, "gpu-backend", "Native GPU backend (enables GPU proving; must match the Rust library)");
+    const gpu_prover = b.option(bool, "gpu-prover", "Use native GPU prover for wallet demos and FFI tests (defaults to OpenCL)") orelse (selected_gpu_backend != null);
+    if (selected_gpu_backend != null and !gpu_prover) @panic("gpu-backend requires gpu-prover=true");
+    const gpu_backend = selected_gpu_backend orelse .opencl;
+    if (gpu_prover and gpu_backend == .cuda and target.result.os.tag != .linux) @panic("the CUDA prover currently requires Linux");
     const prover_library = b.option([]const u8, "prover-library", "Path to the prebuilt Rust prover static library") orelse
         "lattica-prover-p3/target/release/liblattica_prover_p3.a";
     const prover_options = b.addOptions();
     prover_options.addOption(bool, "gpu_prover", gpu_prover);
+    prover_options.addOption(GpuBackend, "gpu_backend", gpu_backend);
     prover_options.addOption(u16, "block_capacity", block_capacity);
 
     const exe = b.addExecutable(.{
@@ -28,9 +34,10 @@ pub fn build(b: *std.Build) void {
     });
     exe.root_module.addOptions("prover_options", prover_options);
     if (gpu_prover) {
+        exe.stack_size = 8 << 20;
         exe.root_module.link_libc = true;
         exe.root_module.addObjectFile(.{ .cwd_relative = prover_library });
-        exe.root_module.linkSystemLibrary("OpenCL", .{});
+        if (gpu_backend == .opencl) exe.root_module.linkSystemLibrary("OpenCL", .{});
         if (target.result.os.tag == .linux) {
             exe.root_module.linkSystemLibrary("unwind", .{});
             exe.use_lld = true;
@@ -105,8 +112,22 @@ pub fn build(b: *std.Build) void {
     });
     ffi_it_mod.addOptions("prover_options", prover_options);
     ffi_it_mod.addObjectFile(.{ .cwd_relative = prover_library });
-    if (gpu_prover) ffi_it_mod.linkSystemLibrary("OpenCL", .{});
-    const ffi_it = b.addTest(.{ .name = "lattica-ffi-tests", .root_module = ffi_it_mod });
+    if (gpu_prover and gpu_backend == .opencl) ffi_it_mod.linkSystemLibrary("OpenCL", .{});
+    if (gpu_prover) {
+        // Wrap this toolchain's runner so allocator/leak checks and error-log
+        // handling stay identical, while the process obeys native stack admission.
+        ffi_it_mod.addImport("standard_test_runner", b.createModule(.{
+            .root_source_file = .{ .cwd_relative = b.graph.zig_lib_directory.join(b.allocator, &.{ "compiler", "test_runner.zig" }) catch @panic("out of memory") },
+            .target = target,
+            .optimize = optimize,
+        }));
+    }
+    const ffi_it = b.addTest(.{
+        .name = "lattica-ffi-tests",
+        .root_module = ffi_it_mod,
+        .test_runner = if (gpu_prover) .{ .path = b.path("src/gpu_test_runner.zig"), .mode = .simple } else null,
+    });
+    if (gpu_prover) ffi_it.stack_size = 8 << 20;
     if (target.result.os.tag == .linux) {
         ffi_it_mod.linkSystemLibrary("unwind", .{});
         // The self-hosted ELF linker can't handle crt1.o's .sframe (gcc 16).
@@ -122,4 +143,6 @@ pub fn build(b: *std.Build) void {
     ffi_step.dependOn(&run_ffi_it.step);
     const install_ffi = b.addInstallFileWithDir(ffi_it.getEmittedBin(), .bin, "lattica-ffi-tests");
     ffi_step.dependOn(&install_ffi.step);
+    b.step("build-ffi", "Build FFI tests for execution in a separately admitted worker")
+        .dependOn(&install_ffi.step);
 }

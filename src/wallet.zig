@@ -14,6 +14,7 @@ const node = @import("node.zig");
 const prover_options = @import("prover_options");
 pub const lattica_block_capacity = prover_options.block_capacity;
 const prover_runtime = @import("prover_runtime.zig");
+pub const std_options: std.Options = if (prover_options.gpu_prover) @import("gpu_process_options.zig").std_options else .{};
 
 /// First 6 bytes of `bytes` as 12 lowercase hex characters.
 fn hex6(bytes: []const u8) [12]u8 {

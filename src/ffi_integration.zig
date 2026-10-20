@@ -41,25 +41,56 @@ fn finishGpu() !void {
     try testing.expect(ffi.hasBatchBackend());
 }
 
-test "ffi integration: GPU tree container verifies after shutdown without activating tree acceptance" {
+// CUDA requires a fresh process after shutdown. Exercise the GPU routes in
+// one admitted lifetime and audit the retained outputs after retirement.
+test "ffi integration: GPU wallet routes share one lifetime" {
     if (!prover_options.gpu_prover) return error.SkipZigTest;
     ffi.clearJoinSplitTreeBackend();
     try prover_runtime.Gpu.initialize();
     errdefer prover_runtime.Gpu.shutdown() catch {};
     try testing.expect(!ffi.hasJoinSplitTreeBackend());
     try testing.expect(ffi.hasJoinSplitTreeProveBackend());
+    var joinsplit = try proveDemo(lattica_joinsplit_prove_demo, ffi.JoinSplitPublicInputs.ENCODED_LEN);
+    defer joinsplit.deinit();
+    var htlc = try proveDemo(lattica_htlc_prove_demo, ffi.HtlcPublicInputs.ENCODED_LEN);
+    defer htlc.deinit();
     const witnesses = [_]u8{0} ** (3 * 2464);
-    const result = try ffi.proveJoinSplitTree(testing.allocator, &witnesses, 3);
-    defer testing.allocator.free(result.proof);
+    const tree = try ffi.proveJoinSplitTree(testing.allocator, &witnesses, 3);
+    defer testing.allocator.free(tree.proof);
     try finishGpu();
+    if (prover_options.gpu_backend == .cuda) {
+        try testing.expectEqual(prover_abi.GPU_REJECTED, prover_abi.lattica_gpu_initialize_from_env());
+    }
+    try auditJoinSplit(&joinsplit);
+    try auditHtlc(&htlc);
     try testing.expect(!ffi.hasJoinSplitTreeBackend());
     ffi.setJoinSplitTreeBackend(&prover_abi.lattica_joinsplit_tree_verify);
     defer ffi.clearJoinSplitTreeBackend();
-    try testing.expect(ffi.verifyJoinSplitTree(result.proof, result.root, 3));
-    try testing.expect(!ffi.verifyJoinSplitTree(result.proof, result.root, 2));
-    var changed = result.root;
+    try testing.expect(ffi.verifyJoinSplitTree(tree.proof, tree.root, 3));
+    try testing.expect(!ffi.verifyJoinSplitTree(tree.proof, tree.root, 2));
+    var changed = tree.root;
     changed[0] ^= 1;
-    try testing.expect(!ffi.verifyJoinSplitTree(result.proof, changed, 3));
+    try testing.expect(!ffi.verifyJoinSplitTree(tree.proof, changed, 3));
+}
+
+const DemoProof = struct {
+    buffer: []u8,
+    proof_len: usize = 0,
+    pi: [256]u8 = undefined,
+    pi_len: usize = 0,
+
+    fn deinit(self: DemoProof) void {
+        testing.allocator.free(self.buffer);
+    }
+};
+
+fn proveDemo(comptime call: anytype, expected_public_len: usize) !DemoProof {
+    var result = DemoProof{ .buffer = try testing.allocator.alloc(u8, 1 << 20) };
+    errdefer result.deinit();
+    try testing.expectEqual(@as(i32, 0), call(result.buffer.ptr, result.buffer.len, &result.proof_len, &result.pi, result.pi.len, &result.pi_len));
+    try testing.expect(result.proof_len > 0 and result.proof_len <= result.buffer.len);
+    try testing.expectEqual(expected_public_len, result.pi_len);
+    return result;
 }
 
 const NullifierSet = std.AutoHashMap([32]u8, void);
@@ -74,22 +105,17 @@ fn applySpend(set: *NullifierSet, proof: []const u8, pi: []const u8, nfs: []cons
 }
 
 test "ffi integration: prove(rust) -> verify -> double-spend rejected" {
-    if (prover_options.gpu_prover) try prover_runtime.Gpu.initialize();
-    errdefer if (prover_options.gpu_prover) prover_runtime.Gpu.shutdown() catch {};
+    if (prover_options.gpu_prover) return error.SkipZigTest;
+    var output = try proveDemo(lattica_joinsplit_prove_demo, ffi.JoinSplitPublicInputs.ENCODED_LEN);
+    defer output.deinit();
+    try auditJoinSplit(&output);
+}
+
+fn auditJoinSplit(output: *DemoProof) !void {
     const a = testing.allocator;
-
-    // 1. Prove the demo join-split in Rust, across the ABI.
-    const proof = try a.alloc(u8, 1 << 20);
-    defer a.free(proof);
-    var pi: [256]u8 = undefined;
-    var proof_len: usize = 0;
-    var pi_len: usize = 0;
-    try testing.expectEqual(@as(i32, 0), lattica_joinsplit_prove_demo(proof.ptr, proof.len, &proof_len, &pi, pi.len, &pi_len));
-    try testing.expectEqual(ffi.JoinSplitPublicInputs.ENCODED_LEN, pi_len);
-    const proof_bytes = proof[0..proof_len];
-    const pi_bytes = pi[0..pi_len];
-    try finishGpu();
-
+    const proof_bytes = output.buffer[0..output.proof_len];
+    const pi = &output.pi;
+    const pi_bytes = pi[0..output.pi_len];
     // 2. The real Rust verifier accepts the real proof (the node's verify seam).
     ffi.setJoinSplitBackend(&lattica_joinsplit_verify); // node installs it at startup
     try testing.expectEqual(@as(i32, 0), lattica_joinsplit_verify(proof_bytes.ptr, proof_bytes.len, pi_bytes.ptr, pi_bytes.len));
@@ -117,22 +143,17 @@ test "ffi integration: prove(rust) -> verify -> double-spend rejected" {
 }
 
 test "ffi integration: real HTLC prove(rust) -> verify -> tamper rejected" {
-    if (prover_options.gpu_prover) try prover_runtime.Gpu.initialize();
-    errdefer if (prover_options.gpu_prover) prover_runtime.Gpu.shutdown() catch {};
-    const a = testing.allocator;
+    if (prover_options.gpu_prover) return error.SkipZigTest;
+    var output = try proveDemo(lattica_htlc_prove_demo, ffi.HtlcPublicInputs.ENCODED_LEN);
+    defer output.deinit();
+    try auditHtlc(&output);
+}
 
-    // 1. Prove the demo HTLC redeem in Rust, across the C ABI.
-    const proof = try a.alloc(u8, 1 << 20);
-    defer a.free(proof);
-    var pi: [256]u8 = undefined;
-    var proof_len: usize = 0;
-    var pi_len: usize = 0;
-    try testing.expectEqual(@as(i32, 0), lattica_htlc_prove_demo(proof.ptr, proof.len, &proof_len, &pi, pi.len, &pi_len));
-    try testing.expectEqual(ffi.HtlcPublicInputs.ENCODED_LEN, pi_len);
-    const pb = proof[0..proof_len];
+fn auditHtlc(output: *DemoProof) !void {
+    const pb = output.buffer[0..output.proof_len];
+    const pi = &output.pi;
+    const pi_len = output.pi_len;
     const pib = pi[0..pi_len];
-    try finishGpu();
-
     // 2. The real Rust HTLC verifier accepts the real proof (the node's verifyHtlc seam).
     ffi.setHtlcBackend(&lattica_htlc_verify);
     try testing.expectEqual(@as(i32, 0), lattica_htlc_verify(pb.ptr, pb.len, pib.ptr, pib.len));

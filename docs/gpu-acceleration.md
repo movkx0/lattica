@@ -7,6 +7,7 @@ Use [GPU benchmarking](gpu-benchmarking.md) for commands. This page describes th
 | Platform | Build feature | Execution and qualification |
 |---|---|---|
 | Linux OpenCL | `gpu` | Device buffers, GPU proving stages, and systemd resource controllers. The current inventory/admission scripts require NVIDIA UUIDs and `nvidia-smi`. |
+| Linux CUDA | `gpu-cuda` | Opt-in native CUDA workers and private wallet proving. See the [CUDA qualification scope](cuda-prover-plan.md); each device and workload still needs qualification. |
 | Apple Silicon | `gpu-metal` | Metal compute, shared-memory prefixes, compact salts, and public preprocessing sharing. Use native Mac qualification. |
 | CPU | Neither GPU feature | Independent verification, fixture preparation, reference proofs, and correctness checks. |
 
@@ -28,7 +29,13 @@ The full owned proving path holds its heavy memory phase through proof completio
 
 ## Native GPU wallet startup
 
-The native wallet integration is built with `-Dgpu-prover=true` and an explicit proving policy such as `gpu-required`. The default mock demonstration cannot satisfy a strict proving request. See the [native integration instructions](../lattica-prover-p3/scripts/block-v2-pool-README.txt) and retained [startup details](archive/gpu-acceleration-2026-10-17.md#native-gpu-wallet-startup) before using that path.
+Select `-Dgpu-backend=cuda` or `-Dgpu-backend=opencl` and pass a matching Rust static library with `-Dprover-library=PATH`. The existing `-Dgpu-prover=true` option still selects OpenCL. CUDA builds require Linux and do not link OpenCL. Build the Rust library with `--no-default-features --features block-v2-host,stream,gpu-cuda` for CUDA, or replace `gpu-cuda` with `gpu` for OpenCL; keep separate target directories.
+
+`zig build install build-ffi -Doptimize=ReleaseSafe -Dgpu-backend=cuda -Dprover-library=PATH` builds the wallet and standalone FFI tests without starting GPU work. The native bridge builder likewise accepts `--gpu-backend cuda`; its existing `--gpu` option still selects OpenCL. Neither build command authorizes or initializes a GPU worker.
+
+Run GPU executables in an admitted wallet service with `LATTICA_PROVING_POLICY=gpu-required`, an explicit device UUID, matched resource limits, and an 8 MiB stack limit. CUDA uses the `lattica-wallet-local-cuda-v1` assignment schema, including its per-allocation ceiling and headroom; OpenCL uses `lattica-wallet-local-gpu-v1` and its required stage switches. GPU Zig roots use bounded signal-stack settings and OS fatal-signal handling while preserving ordinary panic reports and runtime safety checks. CUDA initialization, proving, drain, and shutdown must share one process lifetime; reuse after shutdown requires a fresh process.
+
+The [Zig host qualification](evidence/cuda-zig-host-2026-10-19.json) covers CUDA and OpenCL wallet/FFI execution, a CPU FFI reference, and four native CUDA wallet fixtures with an independent CPU audit. It does not qualify recursive block delivery or sustained transaction throughput. See the [native integration instructions](../lattica-prover-p3/scripts/block-v2-pool-README.txt) and retained [OpenCL startup details](archive/gpu-acceleration-2026-10-17.md#native-gpu-wallet-startup) for the surrounding service workflow. The default mock demonstration cannot satisfy a strict proving request.
 
 ## Current limits
 

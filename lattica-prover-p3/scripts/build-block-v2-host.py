@@ -3,7 +3,8 @@
 
 Run only between timed campaigns. Build the Rust static library first with
 --no-default-features --features block-v2-host,stream. For Linux GPU wallet
-callers, add the gpu Rust feature and pass --gpu to link OpenCL. GPU startup
+callers, add gpu and pass --gpu-backend opencl, or add gpu-cuda and pass
+--gpu-backend cuda. The existing --gpu flag still selects OpenCL. GPU startup
 and resource admission remain explicit responsibilities of the wallet caller.
 """
 import argparse
@@ -30,12 +31,15 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--block-capacity', type=int, choices=(64, 128), default=64, help='must match the Rust block profile; 128 needs block-v2-capacity-128')
     parser.add_argument('--gpu', action='store_true', help='link the Linux OpenCL wallet bridge')
+    parser.add_argument('--gpu-backend', choices=('opencl', 'cuda'),
+                        help='explicit Linux GPU backend; must match the supplied Rust library')
     args = parser.parse_args()
+    gpu_backend = args.gpu_backend or ('opencl' if args.gpu else None)
     system = platform.system()
     if system not in ('Linux', 'Darwin'):
         parser.error('this research bridge currently targets Linux and macOS')
-    if args.gpu and system != 'Linux':
-        parser.error('--gpu currently requires Linux OpenCL')
+    if gpu_backend and system != 'Linux':
+        parser.error('GPU wallet bridges currently require Linux')
     library = args.rust_staticlib.resolve(strict=True)
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
@@ -49,10 +53,11 @@ def main():
          ['cc', '-shared', '-Wl,-z,defs', '-o', str(linked), str(obj), str(library),
           '-lpthread', '-ldl', '-lm', '-lrt', '-lutil', '-lgcc_s']),
     ]
-    if args.gpu:
+    if gpu_backend == 'opencl':
         commands[-1].append('-lOpenCL')
     report = {'schema_version': 1, 'status': 'running', 'platform': system,
-              'gpu_linked': args.gpu, 'block_capacity': args.block_capacity,
+              'gpu_linked': gpu_backend is not None, 'gpu_backend': gpu_backend,
+              'block_capacity': args.block_capacity,
               'rust_staticlib': pin(library), 'commands': [], 'production_ready': False,
               'sources': [pin(p) for p in sorted((ROOT / 'src').glob('*.zig'))] + [pin(Path(__file__))]}
     started = time.monotonic()
