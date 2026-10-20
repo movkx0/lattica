@@ -154,6 +154,16 @@ the same whole-launcher boundary; the rate includes one issuance entry per four
 inputs and is not delivered transaction throughput. Pool timing approval remains
 separate.
 
+The [128-input CUDA correctness run at `bcb8754`](evidence/cuda-full-recursion-128-2026-10-20.json)
+completed 127 recursive proofs and 544 complete CUDA reports, independent CPU
+audits, native durable application and a fresh-process journal audit. Its body
+contains 96 user transactions and 32 issuance entries. The run used eighteen
+separate bounded phases with imported, CPU-verified dependencies. Summed proof
+observations total 1,364.216 seconds, excluding wallet generation, separate CPU
+audits and native application. This is not a single deadline-qualified workflow
+or a transactions-per-hour measurement; timing-approved pools and multi-GPU
+qualification remain open.
+
 The native CUDA wallet screen is the ignored release test
 `cuda_compute::wallet::tests::benchmark::cuda_wallet_request_benchmark`.
 Build the library tests with `--release --no-default-features --features

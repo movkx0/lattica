@@ -13,6 +13,12 @@ progress.
 
 ## Current checkpoint
 
+The latest [128-input qualification](evidence/cuda-full-recursion-128-2026-10-20.json)
+completes all 127 CUDA recursive proofs, independent CPU verification, native
+durable application and a fresh-process journal audit. It uses eighteen separate
+bounded phases. Full-workflow timing, sustained throughput, 128-input recovery
+and pool admission, multi-GPU execution and V100 qualification remain open.
+
 The opt-in `gpu-cuda` feature provides an experimental Linux transport: explicit
 device selection, shared OpenCL/CUDA leases, bounded allocations, private-buffer
 cleanup, NVRTC compilation, kernel launches and completion events. Native CUDA
@@ -1444,7 +1450,29 @@ were 9.243 and 9.384 seconds; the sixteen four-input merges had a 10.346-second
 warm median. Wallet generation, separate CPU audits and native application are
 outside those proof timings. The preserved local checker and unused-seed failures
 did not require regenerating successful proofs. A timing-approved full workflow,
-128-input blocks, sustained delivery and multi-GPU qualification remain open.
+sustained delivery and multi-GPU qualification remain open.
+
+The separate [128-input qualification at `bcb8754`](evidence/cuda-full-recursion-128-2026-10-20.json)
+uses 128 fresh native CUDA wallet proofs and completes all 127 recursive jobs
+across eight mode/level/count classes. All 544 CUDA reports and independent CPU
+audits passed. Its 96 user transactions and 32 issuance entries were durably
+applied to a fresh native journal and audited again after process restart.
+The eighteen phases retained the 3 GiB worker, 1 GiB coordinator and 4 GiB fleet
+limits, with no runtime memory-limit events. The 1,364.216 seconds of summed proof
+observations exclude wallet generation, separate CPU audits and native
+application; they do not establish sustained throughput or one deadline-qualified
+workflow.
+
+This run exposed double-counted wallet payloads in fresh coordinator admission.
+The fix credits only the verified `Arc` payloads shared by one immutable selection
+and its newly created DAG. Metadata, temporary storage and job allowances remain
+charged; recovery and multi-candidate pools retain conservative accounting.
+Capacity-aware proof filenames, issuance grants through index 127 and 127-file
+public prefix cache retirement now pass validation. There are 171 passing CLI
+regressions across the 64/128 builds and 84 focused Python checks. The evidence
+preserves the rejected initial admission, the full-library test build's 3 GiB
+OOM, corrected recovery test budgets and a local cache-wrapper argument error.
+The CLI-only rebuilds and final runtime checks passed without increasing limits.
 
 The [maintained wallet-launcher qualification](evidence/cuda-wallet-launcher-2026-10-19.json)
 adds explicit CUDA backend/runtime selection, the CUDA private assignment schema,

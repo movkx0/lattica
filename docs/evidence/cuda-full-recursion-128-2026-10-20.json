@@ -1,0 +1,2193 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "date": "2026-10-20",
+  "completed_at": "2026-10-20T00:33:03.434019-04:00",
+  "source_commit": "bcb8754e6ad45a836dad17e30c9177aa6bd269d5",
+  "source_files": {
+    "lattica-prover-p3/scripts/block-v2-typed-shared-gpu-run.py": "e494b5b0416f76e3c7ff176a182d4b5b243a396e58a44df7dc6338b73880fd51",
+    "lattica-prover-p3/scripts/block_v2_capacity.py": "6f63807d5dca328989e0be348ef3df2f69610007389bc6460fde1e2e5ecb9bee",
+    "lattica-prover-p3/scripts/block_v2_host_store.py": "401b07d891676cea89fcf96f79f2231ce0bdbe30f6ed5cda7272c82af9944bc2",
+    "lattica-prover-p3/scripts/block_v2_pool_calibration.py": "d5467547b700175563d215544b71f0cc7afb61f622e9af23478862e85dcd666d",
+    "lattica-prover-p3/scripts/block_v2_public_artifact_cache.py": "9045a899bd5f63d3dcb52d368c80ed430547b55cae8efee00525ba695eae5ad8",
+    "lattica-prover-p3/scripts/test-block-v2-capacity.py": "5231ff849f0e7f3c6bde4d2816027967658ce4599dd730a978edfd0f04731674",
+    "lattica-prover-p3/scripts/test-block-v2-pool-calibration.py": "cacfc0cdcb23e6303cfb18fd7c9d90415267fd246a8a0a5b9f307c4ea46ea874",
+    "lattica-prover-p3/scripts/test-block-v2-public-artifact-cache.py": "6318f85c9f4a226bdec287f926bc98bae3d6adde715ae1358f6f51c3737507e5",
+    "lattica-prover-p3/src/bin/typed_common/execution_fleet.rs": "8c47ed4eddaaa1e55a27e1e8d72b440b9b4ddc6e4a0a7e0562513aac380f8b7c",
+    "lattica-prover-p3/src/bin/typed_common/execution_fleet_recover.rs": "6ddbe4e423aaccc988b33944465a21edd00c77b198fdb5bdc3f19074e4f45aaa",
+    "lattica-prover-p3/src/bin/typed_common/execution_fleet_storage.rs": "39a65977dd4729123f8c1f3f3b1ccba8c8993a7eff01873a9a4805e15b53452d"
+  },
+  "scope": "128-input CUDA DAG correctness in eighteen separately bounded phases; independent CPU audits, native durable application and fresh-process restart",
+  "device": {
+    "name": "NVIDIA GeForce RTX 5080",
+    "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "driver": "615.78.08",
+    "nvrtc": "12.9.1"
+  },
+  "count": 128,
+  "user_transactions": 96,
+  "issuance_entries": 32,
+  "fresh_wallet_proofs": 128,
+  "wallet_fixture_reused_from": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-01",
+  "fresh_recursive_proofs": 127,
+  "complete_cuda_reports": 544,
+  "independent_cpu_audit": true,
+  "native_blocks_applied": 1,
+  "fresh_process_restart": true,
+  "native_initial_state": {
+    "state_root": "25ee261f451035d8c4c0ffdecd27ae41b1b660db1e712f0ec0dde92c6a1f314d",
+    "event_root": "0000000000000000000000000000000000000000000000000000000000000000",
+    "anchor": "c1c4015febb6e15ff9702a24e7a396012cf51d7d80031b3ae09ea836e32e0a7f",
+    "supply": {
+      "issued": "128000",
+      "burned": "0",
+      "shielded_pool": "128000",
+      "fees_paid": "0"
+    },
+    "nullifiers": 0,
+    "outputs": 256,
+    "events": 0,
+    "blocks": 0,
+    "height": 9
+  },
+  "native_final_state": {
+    "state_root": "7f93fc9c45de4d2740f11940df72e17216f37473e41614cde7c8b41bfc65c717",
+    "event_root": "a64fae1a39fec29b14983ee307732469505112d894f74b95190251a7a450d427",
+    "anchor": "cedfec6d6a3b064df61c3915cdef8f7a3181e1aff7652362f8d6a8b12457e915",
+    "supply": {
+      "issued": "128224",
+      "burned": "0",
+      "shielded_pool": "128224",
+      "fees_paid": "0"
+    },
+    "nullifiers": 256,
+    "outputs": 512,
+    "events": 32,
+    "blocks": 1,
+    "height": 10
+  },
+  "classes": [
+    {
+      "mode": 3,
+      "level": 2,
+      "inputs": 4,
+      "proofs": 32,
+      "cold_seconds": [
+        13.286,
+        13.58,
+        14.017,
+        14.825
+      ],
+      "warm_samples": 28,
+      "warm_median_seconds": 10.874,
+      "proof_elapsed_seconds_sum": 361.198
+    },
+    {
+      "mode": 3,
+      "level": 3,
+      "inputs": 8,
+      "proofs": 16,
+      "cold_seconds": [
+        13.708,
+        14.365
+      ],
+      "warm_samples": 14,
+      "warm_median_seconds": 10.934999999999999,
+      "proof_elapsed_seconds_sum": 182.91
+    },
+    {
+      "mode": 3,
+      "level": 4,
+      "inputs": 16,
+      "proofs": 8,
+      "cold_seconds": [
+        14.556
+      ],
+      "warm_samples": 7,
+      "warm_median_seconds": 10.837,
+      "proof_elapsed_seconds_sum": 90.866
+    },
+    {
+      "mode": 3,
+      "level": 5,
+      "inputs": 32,
+      "proofs": 4,
+      "cold_seconds": [
+        13.588
+      ],
+      "warm_samples": 3,
+      "warm_median_seconds": 10.742,
+      "proof_elapsed_seconds_sum": 46.62
+    },
+    {
+      "mode": 3,
+      "level": 6,
+      "inputs": 64,
+      "proofs": 2,
+      "cold_seconds": [
+        14.653
+      ],
+      "warm_samples": 1,
+      "warm_median_seconds": 10.533,
+      "proof_elapsed_seconds_sum": 25.186
+    },
+    {
+      "mode": 3,
+      "level": 7,
+      "inputs": 128,
+      "proofs": 1,
+      "cold_seconds": [
+        14.083
+      ],
+      "warm_samples": 0,
+      "warm_median_seconds": null,
+      "proof_elapsed_seconds_sum": 14.083
+    },
+    {
+      "mode": 4,
+      "level": 1,
+      "inputs": 2,
+      "proofs": 32,
+      "cold_seconds": [
+        11.649,
+        12.195,
+        11.91,
+        12.811
+      ],
+      "warm_samples": 28,
+      "warm_median_seconds": 9.710999999999999,
+      "proof_elapsed_seconds_sum": 321.368
+    },
+    {
+      "mode": 8,
+      "level": 1,
+      "inputs": 2,
+      "proofs": 32,
+      "cold_seconds": [
+        12.884,
+        11.646,
+        12.432,
+        12.647
+      ],
+      "warm_samples": 28,
+      "warm_median_seconds": 9.7925,
+      "proof_elapsed_seconds_sum": 321.985
+    }
+  ],
+  "phases": [
+    {
+      "phase": 1,
+      "level": 1,
+      "mode": 4,
+      "fresh_proofs": 8,
+      "seed_proofs": 0,
+      "elapsed_seconds": 102.28977217900137,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 934588416
+    },
+    {
+      "phase": 2,
+      "level": 1,
+      "mode": 4,
+      "fresh_proofs": 8,
+      "seed_proofs": 0,
+      "elapsed_seconds": 107.50019134600007,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 884387840
+    },
+    {
+      "phase": 3,
+      "level": 1,
+      "mode": 4,
+      "fresh_proofs": 8,
+      "seed_proofs": 0,
+      "elapsed_seconds": 105.89903422799944,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 905187328
+    },
+    {
+      "phase": 4,
+      "level": 1,
+      "mode": 4,
+      "fresh_proofs": 8,
+      "seed_proofs": 0,
+      "elapsed_seconds": 109.09710541599998,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 885207040
+    },
+    {
+      "phase": 5,
+      "level": 1,
+      "mode": 8,
+      "fresh_proofs": 8,
+      "seed_proofs": 0,
+      "elapsed_seconds": 108.55136411499916,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 886484992
+    },
+    {
+      "phase": 6,
+      "level": 1,
+      "mode": 8,
+      "fresh_proofs": 8,
+      "seed_proofs": 0,
+      "elapsed_seconds": 102.042282927001,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 886341632
+    },
+    {
+      "phase": 7,
+      "level": 1,
+      "mode": 8,
+      "fresh_proofs": 8,
+      "seed_proofs": 0,
+      "elapsed_seconds": 106.89764826200008,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 882388992
+    },
+    {
+      "phase": 8,
+      "level": 1,
+      "mode": 8,
+      "fresh_proofs": 8,
+      "seed_proofs": 0,
+      "elapsed_seconds": 108.49072682500082,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 886665216
+    },
+    {
+      "phase": 9,
+      "level": 2,
+      "mode": 3,
+      "fresh_proofs": 8,
+      "seed_proofs": 16,
+      "elapsed_seconds": 120.30213326500052,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1186099200
+    },
+    {
+      "phase": 10,
+      "level": 2,
+      "mode": 3,
+      "fresh_proofs": 8,
+      "seed_proofs": 16,
+      "elapsed_seconds": 120.41672576199926,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1186910208
+    },
+    {
+      "phase": 11,
+      "level": 2,
+      "mode": 3,
+      "fresh_proofs": 8,
+      "seed_proofs": 16,
+      "elapsed_seconds": 119.9051636990007,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1186365440
+    },
+    {
+      "phase": 12,
+      "level": 2,
+      "mode": 3,
+      "fresh_proofs": 8,
+      "seed_proofs": 16,
+      "elapsed_seconds": 121.46520367500125,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1186422784
+    },
+    {
+      "phase": 13,
+      "level": 3,
+      "mode": 3,
+      "fresh_proofs": 8,
+      "seed_proofs": 16,
+      "elapsed_seconds": 119.86327945000085,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1186140160
+    },
+    {
+      "phase": 14,
+      "level": 3,
+      "mode": 3,
+      "fresh_proofs": 8,
+      "seed_proofs": 16,
+      "elapsed_seconds": 123.57611359699877,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1186426880
+    },
+    {
+      "phase": 15,
+      "level": 4,
+      "mode": 3,
+      "fresh_proofs": 8,
+      "seed_proofs": 16,
+      "elapsed_seconds": 120.87739363199944,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1186246656
+    },
+    {
+      "phase": 16,
+      "level": 5,
+      "mode": 3,
+      "fresh_proofs": 4,
+      "seed_proofs": 8,
+      "elapsed_seconds": 74.40292860000045,
+      "complete_cuda_reports": 18,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1192554496
+    },
+    {
+      "phase": 17,
+      "level": 6,
+      "mode": 3,
+      "fresh_proofs": 2,
+      "seed_proofs": 4,
+      "elapsed_seconds": 52.38298811500135,
+      "complete_cuda_reports": 10,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1187004416
+    },
+    {
+      "phase": 18,
+      "level": 7,
+      "mode": 3,
+      "fresh_proofs": 1,
+      "seed_proofs": 2,
+      "elapsed_seconds": 41.86911248300021,
+      "complete_cuda_reports": 6,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1186336768
+    }
+  ],
+  "cli_regressions": [
+    {
+      "capacity": 128,
+      "passed": 86,
+      "failed": 0,
+      "ignored": 3,
+      "memory_peak_bytes": 27738112
+    },
+    {
+      "capacity": 64,
+      "passed": 85,
+      "failed": 0,
+      "ignored": 3,
+      "memory_peak_bytes": 20086784
+    }
+  ],
+  "python_regressions": {
+    "passed": 84,
+    "failed": 0
+  },
+  "fresh_selection_storage": {
+    "payload_credit_bytes": 268435456,
+    "worker_count_checks": [
+      {
+        "workers": 1,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 17315140,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2798944,
+        "pool_timing_bytes": 452752,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 720169582,
+        "minimum_shared_bytes": 720371712
+      },
+      {
+        "workers": 2,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 17388304,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2807168,
+        "pool_timing_bytes": 505432,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 720303650,
+        "minimum_shared_bytes": 721420288
+      },
+      {
+        "workers": 3,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 17461468,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2815392,
+        "pool_timing_bytes": 558112,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 720437718,
+        "minimum_shared_bytes": 722468864
+      },
+      {
+        "workers": 4,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 17534632,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2823616,
+        "pool_timing_bytes": 610792,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 720571786,
+        "minimum_shared_bytes": 723517440
+      },
+      {
+        "workers": 5,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 17607796,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2831840,
+        "pool_timing_bytes": 663472,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 720705854,
+        "minimum_shared_bytes": 724566016
+      },
+      {
+        "workers": 6,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 17680960,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2840064,
+        "pool_timing_bytes": 716152,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 720839922,
+        "minimum_shared_bytes": 725614592
+      },
+      {
+        "workers": 7,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 17754124,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2848288,
+        "pool_timing_bytes": 768832,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 720973990,
+        "minimum_shared_bytes": 726663168
+      },
+      {
+        "workers": 8,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 17827288,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2856512,
+        "pool_timing_bytes": 821512,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 721108058,
+        "minimum_shared_bytes": 727711744
+      },
+      {
+        "workers": 9,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 17900452,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2864736,
+        "pool_timing_bytes": 874192,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 721242126,
+        "minimum_shared_bytes": 728760320
+      },
+      {
+        "workers": 10,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 17973616,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2872960,
+        "pool_timing_bytes": 926872,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 721376194,
+        "minimum_shared_bytes": 729808896
+      },
+      {
+        "workers": 11,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 18046780,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2881184,
+        "pool_timing_bytes": 979552,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 721510262,
+        "minimum_shared_bytes": 730857472
+      },
+      {
+        "workers": 12,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 18119944,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2889408,
+        "pool_timing_bytes": 1032232,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 721644330,
+        "minimum_shared_bytes": 731906048
+      },
+      {
+        "workers": 13,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 18193108,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2897632,
+        "pool_timing_bytes": 1084912,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 721778398,
+        "minimum_shared_bytes": 732954624
+      },
+      {
+        "workers": 14,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 18266272,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2905856,
+        "pool_timing_bytes": 1137592,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 721912466,
+        "minimum_shared_bytes": 734003200
+      },
+      {
+        "workers": 15,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 18339436,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2914080,
+        "pool_timing_bytes": 1190272,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 722046534,
+        "minimum_shared_bytes": 735051776
+      },
+      {
+        "workers": 16,
+        "pool_bytes": 604141452,
+        "selection_bytes": 283252640,
+        "endpoint_bytes": 18412600,
+        "preparation_bytes": 99240,
+        "registry_wallet_bytes": 41945020,
+        "ingress_bytes": 2211810,
+        "report_bytes": 2922304,
+        "pool_timing_bytes": 1242952,
+        "pool_calibration_bytes": 2833608,
+        "pool_transition_bytes": 33554432,
+        "shared_wallet_bytes": 268435456,
+        "known_bytes": 722180602,
+        "minimum_shared_bytes": 736100352
+      }
+    ],
+    "only_fresh_dag_single_selection": true,
+    "recovery_credit": false,
+    "multi_candidate_pool_credit": false
+  },
+  "public_prefix_cache_retirement": {
+    "files": 127,
+    "requested_bytes": 212178412,
+    "advice": "POSIX_FADV_DONTNEED",
+    "artifact_bytes_preserved": true,
+    "physical_release_measured": false,
+    "proof_authority_granted": false,
+    "elapsed_ms": 92,
+    "scope": "126 independently CPU-audited public nodes plus diagnostic result receipt after all consumers exited"
+  },
+  "limits_scope": "CUDA proof phases. Independent CPU audits, native application/restart and cache-retirement checks ran separately in 3 GiB, four-thread, zero-swap services. Build memory events are recorded separately and are not covered by the zero-event runtime claim.",
+  "limits": {
+    "worker_host_bytes": 3221225472,
+    "coordinator_host_bytes": 1073741824,
+    "fleet_host_bytes": 4294967296,
+    "swap_bytes": 0,
+    "threads": 4,
+    "managed_gpu_bytes": 7516192768,
+    "context_gpu_bytes": 4294967296,
+    "allocation_ceiling_bytes": 1073741824,
+    "headroom_bytes": 1073741824,
+    "dispatch_seconds": 150,
+    "worker_seconds": 180,
+    "workflow_seconds": 600
+  },
+  "preserved_failures": [
+    "qualification-01 rejected coordinator storage before GPU worker launch; zero recursive proofs from that attempt.",
+    "qualification-02 combined CLI/library test build reached the 3 GiB build cap and was OOM-killed. The CLI-only rebuild succeeded at the same cap; the full library test build remains unqualified.",
+    "Two qualification-02 recovery tests correctly rejected undersized fixture shared reservations. Fixtures now repartition their existing 2 GiB coordinator budget and the added negative regression preserves rejection.",
+    "The local prefix-retirement wrapper omitted the pins argument and raised TypeError before cache advice. The corrected wrapper reused the retained pinned inventory after rechecking that all consumers had exited; no proofs were regenerated."
+  ],
+  "limitations": [
+    "Every phase has a separate workflow clock. No single 600-second full-block workflow or timing-approved pool is qualified.",
+    "Proof observations exclude fresh wallet generation, separate CPU audits and durable native application. They do not establish transactions per hour.",
+    "Recovery and multi-candidate pool storage admission retain conservative independent-wallet accounting; the fresh overlap credit does not qualify those 128-input workflows.",
+    "File cache advice preserves public artifact bytes. Physical cache release was not measured and no proof or timing authority was granted.",
+    "No matched CUDA/OpenCL speed comparison, sustained delivery, power-loss recovery, multi-GPU result or V100 execution is established."
+  ],
+  "artifacts": [
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/source-pins.json",
+      "sha256": "98c89acad983962b0f8953b5ec457993ca794dec8c04a732cabace171fdfd6c3",
+      "bytes": 139621
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/source-parent.txt",
+      "sha256": "c597df7ca808fc1774c799978a324f110ec0e36e18be378d4ea260569e35a940",
+      "bytes": 41
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/source.patch",
+      "sha256": "e6605fa89109eac061dabea76fa5a2a0aefacb45525bc7c871a0e1e2cb3a77c9",
+      "bytes": 23502
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/fixture-reuse.json",
+      "sha256": "98c53225e2712f655e774d92446721243e5f5a492264be4407e7e63ddce9b308",
+      "bytes": 107903
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/executable-pins.json",
+      "sha256": "10fbee9f932cbb6f07affed79e7291e75776d0829df269708731e188d253cbf2",
+      "bytes": 253
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/input-pins.json",
+      "sha256": "c4b22abbb39f55d55a865b158168a646cf237917f9336c6c24288847f7c01cce",
+      "bytes": 57536
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/scope.json",
+      "sha256": "c76ce5a93f3d65b2a9bd6e6d5097e9195c9822041f902d36bac39ae39b592d4f",
+      "bytes": 281
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/result.json",
+      "sha256": "e29b5ff8f39a6387e51ce582ffa26ce40f4aed463349840c1964579fd96026db",
+      "bytes": 964
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/run.py",
+      "sha256": "4e0d1cf84ab663d1d50025f5ae43a1283637cce7eb4eaa1dc46f522060a8c25b",
+      "bytes": 3765
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/build-cli.py",
+      "sha256": "37d61463a1fabe5f068d3821af565e36e623dfea163f1dd15393cd0ebfa8791f",
+      "bytes": 2496
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/build-cli-results.json",
+      "sha256": "7ade39061e46d68d4b6916ee54add0ba2a421bbf6a7e0c1e4949e95dc19cc8c4",
+      "bytes": 1252
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/prove_full.py",
+      "sha256": "e2bc259b0fa043bf5ba4ad40fc599de811383e28524e55e57d8ceb5b73a92b74",
+      "bytes": 8651
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/apply_full.py",
+      "sha256": "e14ac886022a9fba1526eedf6c4ec7a96217426b7940b9579e298a1a7877b081",
+      "bytes": 4274
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/retire-prefix.py",
+      "sha256": "7b3909c1cb24506045b098316d9f94d876523815dbc2b9b0f1323fbbbdb7e52e",
+      "bytes": 3064
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/finish-prefix-retirement.py",
+      "sha256": "e7d1918d576f558983a73d17c14618dc9bb4f89fb1d7077e44cda962d07ec491",
+      "bytes": 2031
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/record_evidence.py",
+      "sha256": "044a5a5189601fac9b64b06915987e02abd4048d8592cb86befa3140778ddd3c",
+      "bytes": 12205
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/native-application.json",
+      "sha256": "45109b85b4f577cd0ef78ea20b368b50d4f619bba7e5a91fe8dd9e30f181ed25",
+      "bytes": 1904
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/native-restart-audit.json",
+      "sha256": "4910161e58e842097634c13831195d486a043f2405725f29c3f6309a865f0349",
+      "bytes": 2693
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/native-restart.log",
+      "sha256": "3c2ddc9f749a6e9b416c5b13e21f4b74230874a5871e486e14bb854b0ecd6c45",
+      "bytes": 75
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/native-restart.stderr.log",
+      "sha256": "0225a190d460f093dd61703700d9943afb7bfd940bd64cb6c6bc8fcf869c871d",
+      "bytes": 494
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/prefix-pins.json",
+      "sha256": "cafe80a6c7c9bd5f799c20fb332117063ec7ed121660af40d2880b0c2203d6ad",
+      "bytes": 15832
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/prefix-retirement.json",
+      "sha256": "1a000d9332263d6c0e31862b1dc0c73912bc2a5229038a496f309fe79b960e12",
+      "bytes": 17374
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/full-execution-plan.json",
+      "sha256": "3e08b8f3be24c5ed3371567e35a0ea68a41230dda6e1aa533b465dfafe011f58",
+      "bytes": 61511
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/full-fixture/manifest.json",
+      "sha256": "515440329e292aa0d15af12a0d0847d3e771e424553bfb7c52ae73409eaa782e",
+      "bytes": 106159
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-cli",
+      "sha256": "280c5eeab5b19d37ea2a9aea4b739b7ee8b87c078a7a6742d9004bcf27ac8cb4",
+      "bytes": 4740928
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cuda-cli",
+      "sha256": "4b2d254fef2ef149ac12ccbfd492796009ba75aad2876416a1a7bb5437e61f95",
+      "bytes": 8144880
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-root-audit/result.json",
+      "sha256": "be3d5bbe2601891ccf814a4e65466b45e7fd325f5580367a0da6b3c81649356f",
+      "bytes": 862
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-root-audit/retired.json",
+      "sha256": "84bf065323f57611520bcdcc486cc2639e5106fc93947fb231c5b588a58238cc",
+      "bytes": 344
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/native-application-cpu/result.json",
+      "sha256": "39b29bec547e85ce863161929e995c1ccd7b1e9c459d085e133e56baabf0e3ee",
+      "bytes": 868
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/native-application-cpu/retired.json",
+      "sha256": "f3b57f540d41366d77c1b789791c5d7e44d9f3ee768823177dd61180f6a925ad",
+      "bytes": 352
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/prefix-retirement-cpu/result.json",
+      "sha256": "61a0f68d617b208f0db5362d591475a957b67cbe24aba20315b10a1f91d2679d",
+      "bytes": 875
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/prefix-retirement-cpu/retired.json",
+      "sha256": "d2a85003adb901427fd2d36cf24cb5cd37054f7ea59d71b9b0a8edfdde834edf",
+      "bytes": 407
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/prefix-retirement-cpu/test.log",
+      "sha256": "52cec2acd3c959e27b2b6ced6cdc576bc23f548298aa9d5e780c39f4ac1953dd",
+      "bytes": 361
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/prefix-retirement-retry-cpu/result.json",
+      "sha256": "7c3b7991bb969bd384a51e427ec3f61c5d409dc7694ed059aee96be099ce8dcc",
+      "bytes": 878
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/prefix-retirement-retry-cpu/retired.json",
+      "sha256": "bd128122a965d35836fb8d3feddb67eee8e500c20bdff2d17a8b8a6d12e796f7",
+      "bytes": 357
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/build-cli/result.json",
+      "sha256": "6efaa29217eadec6560a886db0fc44461ed2817f56913cc859ddaa02bece14bb",
+      "bytes": 864
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/build-cli/retired.json",
+      "sha256": "45bae9e57d684a62c12f60dfde6b8c9f408ccac83c9abe03be0346c0f1c90da9",
+      "bytes": 339
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/build-64-tests/result.json",
+      "sha256": "281bd2b1e9f469931a349b2fb0b3e740d9c3a80d0d79c5763e57140e8d973eb6",
+      "bytes": 867
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/build-64-tests/retired.json",
+      "sha256": "de7249e5fd299dfa8be42e17a9378523babb3de6d9a5f994c59281fed642325e",
+      "bytes": 344
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-01/result.json",
+      "sha256": "65ad126eb9d2b8f64c73c423c301e762a038fe191c3480ee2028870a8eef5ef6",
+      "bytes": 6931
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-01/command.json",
+      "sha256": "be66f20f61f20a51161917873e19307b91ea7aec4758d4963c45caf46ad80028",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-01/request.json",
+      "sha256": "14d28870822b1d2e36825d03b37d26ddf35073262895cbcada0820f8ac72e0e9",
+      "bytes": 633
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-01/staged-request.json",
+      "sha256": "05418599ce9129850bd698cbc41ddb24defdae6ae6cec107ef50319276d40df9",
+      "bytes": 4617
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-01/cpu-inventory.json",
+      "sha256": "388ea6b806c61839dd5b90640be3c7cfda71315e5b29845451e10d8bf97849a6",
+      "bytes": 5856
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-01/recursive/config.json",
+      "sha256": "97ba523a1f3e0e8b3bdbd8f040e40b987a02aecb6287eb358f1064693cd7c82c",
+      "bytes": 119623
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-01/recursive/summary.json",
+      "sha256": "4b874be411f1f0a6ccc5cd19429ece47de7ca57413eede74b2fa6e9c719b8fb6",
+      "bytes": 75161
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-01/recursive/owner/proofs/calibration-result.json",
+      "sha256": "a7a867d0c448b48172a061d054892332f23a2a0a33f6017943ca447f30d8ce19",
+      "bytes": 9809
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-01/recursive/workers/gpu-01/prove.log",
+      "sha256": "59f72de4c365f1241195a761b58b77be7e566d13bbe940fe5fbf2033487fc995",
+      "bytes": 147145
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-01/result.json",
+      "sha256": "3f5f06d0c5f46046bd83d1946292a85c17a5ebf6bd43e8c2e011e7a51a478eaf",
+      "bytes": 863
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-01/retired.json",
+      "sha256": "9fdb39c64f9d59a1297326b082ec12a15aa94a3fc88e74eaff469973c625288a",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-02/result.json",
+      "sha256": "757cabd29b884cc73f997aa7c3c62ceb914151eddfe14091062d9e52fa2d5242",
+      "bytes": 6927
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-02/command.json",
+      "sha256": "42a827ce155b7c78a5a95a35ba1311290cd4b8d039f8e40f6ea8a559af2608bb",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-02/request.json",
+      "sha256": "4fc059023956e85dea7b1bec3babb4cd837fe5498ca9030ca6799113ccc22a07",
+      "bytes": 633
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-02/staged-request.json",
+      "sha256": "fb5d9345b89cc880cc71bf0c95fba5840dc4caee2cdf18293bf7a4c72801d8ed",
+      "bytes": 4612
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-02/cpu-inventory.json",
+      "sha256": "03767ab96a4a7404af9a666984194c650cacf2c5d3a5b2264cc55ca17f5825b6",
+      "bytes": 5860
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-02/recursive/config.json",
+      "sha256": "36762c62dc7eafa9cebe31fe095849adb6b8cc0d484862902a4d163986de502b",
+      "bytes": 119627
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-02/recursive/summary.json",
+      "sha256": "5368b84e9b254277eda3c450091eca9241cbe44238b54f4891bf1f582f75e797",
+      "bytes": 75173
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-02/recursive/owner/proofs/calibration-result.json",
+      "sha256": "540d093d6c4a84756148658ce42f70887231228fac09a07c679db05496111a32",
+      "bytes": 9814
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-02/recursive/workers/gpu-01/prove.log",
+      "sha256": "851238134213bded518fc724b5dfe9af86bac010eb5a29bd29eda5f057d8eaa1",
+      "bytes": 147134
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-02/result.json",
+      "sha256": "c45f3a022e38538245ca3826cddb6a0f257fc14fee282104ce239d9616089d00",
+      "bytes": 863
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-02/retired.json",
+      "sha256": "3e6b06a928fcea9af4361b0fbae588a390afa7f4c4d7c2b0faaf161f815e1c77",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-03/result.json",
+      "sha256": "c3c4a17203bbea6a2c147c68c1a5cbd945ae8d142d11052325dd4c08e6048ad0",
+      "bytes": 6934
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-03/command.json",
+      "sha256": "196ed2c588f2d87ceb501575896078ea23a24fdc3989591eec2aafe7a3f88f80",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-03/request.json",
+      "sha256": "21bf5b87cb4ac51577590f3a7d47d2e1c8de26e5bdaa9d95fc6776db04f49128",
+      "bytes": 633
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-03/staged-request.json",
+      "sha256": "60ea363213bc01dc2fe6bc00e2936c7c12090044694c606532f6ed5299d42aad",
+      "bytes": 4621
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-03/cpu-inventory.json",
+      "sha256": "86a4be94a90b8833a04bf2f01e71322bedf7537413b408cd004f33a12c4d43e2",
+      "bytes": 5862
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-03/recursive/config.json",
+      "sha256": "4429a5c4801d46229304b485ea22d97813243b1705f644763185c9da01bedde9",
+      "bytes": 119634
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-03/recursive/summary.json",
+      "sha256": "7b393e57d06e402bb9669ca5fe841a72e942cfbc9175c2b7bfee6294aae089a8",
+      "bytes": 75177
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-03/recursive/owner/proofs/calibration-result.json",
+      "sha256": "02553fb282ad5bf43dbfa2e7088ed30b797418fc4c0ccda5ee2ee638eb5d898f",
+      "bytes": 9808
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-03/recursive/workers/gpu-01/prove.log",
+      "sha256": "9a3db790200e92c46b44e3a0871a24609dc266be5919a29ddf048249ef21ded3",
+      "bytes": 147145
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-03/result.json",
+      "sha256": "9e0ec57ca4184b4e717194f3251085e69909a37ae194949d40d81f7bbd1eefb7",
+      "bytes": 861
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-03/retired.json",
+      "sha256": "94a0939b33e1165e017a0a1e69b78fa7c135bdd8482a066d8cf145f966b72369",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-04/result.json",
+      "sha256": "abc5e588f1b1301ea59c32ed158a00cd446cf05e272d0be3f1388b8939afd82f",
+      "bytes": 6951
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-04/command.json",
+      "sha256": "4c66fba13589caadedbfbf4f117d6df70e63152f44f51b4c66dda7735caddc67",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-04/request.json",
+      "sha256": "571a29a190bf4af5c90424e70ea0afe6cef81c2f2e33600070511d54a4f819d7",
+      "bytes": 633
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-04/staged-request.json",
+      "sha256": "e123a3ec3ed8d220c3328053757a5603c000420d02dfc5be8ee447b25023071d",
+      "bytes": 4629
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-04/cpu-inventory.json",
+      "sha256": "a665a8a569ba098427b8dbe3b0c06607beafcdbe7ab036aa909a7b26c90ce4cf",
+      "bytes": 5857
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-04/recursive/config.json",
+      "sha256": "916c7c92a048347f4d5729b2764f311f1087b768c9ea90bd92357ba5ef601f39",
+      "bytes": 119644
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-04/recursive/summary.json",
+      "sha256": "a9a84a4053ea695c2322ba335a4e18b12556ae0a9cb5045accf93f6b980c080f",
+      "bytes": 75201
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-04/recursive/owner/proofs/calibration-result.json",
+      "sha256": "8eeb468fa7e26a029b759209596dd8a18bffc716b36a7ef4d3cccdd4ada04e06",
+      "bytes": 9827
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-04/recursive/workers/gpu-01/prove.log",
+      "sha256": "61859f52935c33e4f8c1ad0300884afa0ac178ecf13d71aec33048a16353f1fa",
+      "bytes": 147143
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-04/result.json",
+      "sha256": "959b7032ec16cf425d0ef800f4766bfa82666426bd597da7088903e7ebc5ce8b",
+      "bytes": 862
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-04/retired.json",
+      "sha256": "44031f3073d7d322c8881c6f90b471784cd2293684d8dbf83f57406e5a25c930",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-05/result.json",
+      "sha256": "f63e086705d40424f646874ce578ce512ce55c1b8c6f4246475959dbcf0d4ec2",
+      "bytes": 6937
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-05/command.json",
+      "sha256": "ddb03452f267387efea242d2aa2d2409217e0675798e84ffb298b226778c78bb",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-05/request.json",
+      "sha256": "2a5e4812a23040dfc0bace42e6bc40ce6b2ed16121167c0c543527ad36503236",
+      "bytes": 633
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-05/staged-request.json",
+      "sha256": "76ffe661bea62ad5974fd77571cf9e4299c207418510fb485b9c9b2d76902784",
+      "bytes": 4620
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-05/cpu-inventory.json",
+      "sha256": "2a5b45ec1c66d7fd7e2423abae618645e15d0fd3346ef3b4aabc64ef4f7e1d4f",
+      "bytes": 5855
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-05/recursive/config.json",
+      "sha256": "1c365e68196f64d50b586e1295d01c8856d0a230707b9d0e0af449e38e8c5295",
+      "bytes": 119635
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-05/recursive/summary.json",
+      "sha256": "40689253222a340452d788d41ea4007e6b37272162353e63135892b90529e376",
+      "bytes": 75174
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-05/recursive/owner/proofs/calibration-result.json",
+      "sha256": "a286551170cf25ae42179bc8991374452ebc9ed57fb727494065d670b614c200",
+      "bytes": 9811
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-05/recursive/workers/gpu-01/prove.log",
+      "sha256": "5de804ed32bfff1ccad43f6bbd013e099727e113def140b8c0110012271f32ed",
+      "bytes": 147149
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-05/result.json",
+      "sha256": "aa97f53fb66de417ab73b1807dbb4e1fd4f3a3103cdf7277aa47fb00afd44bd2",
+      "bytes": 863
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-05/retired.json",
+      "sha256": "38af150ac13deb692505e9373cd94d40537a0fa6f501e2e8985719cc5492d752",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-06/result.json",
+      "sha256": "4f3fcb7ecd6bed58be484a5eb0b0dc362169ab1958bc10369c056f6c056ba301",
+      "bytes": 6943
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-06/command.json",
+      "sha256": "11dc655af36a8da15b914d1249fd77e2e863772d48d69c07a84d9e6c06674c28",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-06/request.json",
+      "sha256": "5f4d9dd0001e5f79c51b584489dc448fcec9ef1e1adea2e251a85cd68fa9d84d",
+      "bytes": 633
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-06/staged-request.json",
+      "sha256": "ffc4083ea9a83b0b49f281fddf265c0148a79420f568225253b667bc3705aaad",
+      "bytes": 4627
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-06/cpu-inventory.json",
+      "sha256": "9c2d22222e61126fa7699756b43839db025354c579690ee16e0a5d39c28ca5b5",
+      "bytes": 5857
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-06/recursive/config.json",
+      "sha256": "96f39e5193755e8fac0452ee7398adef9a88d2537eda39397729309dc37a085c",
+      "bytes": 119639
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-06/recursive/summary.json",
+      "sha256": "3b44801f750976f638f53f57d4377a63d1ef3beca1e65e5c20a6f9cd454fff4d",
+      "bytes": 75189
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-06/recursive/owner/proofs/calibration-result.json",
+      "sha256": "31f694d33607aa4fa4474c95abe6bf053f9f086c5db760708b8af5cb20327fe1",
+      "bytes": 9820
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-06/recursive/workers/gpu-01/prove.log",
+      "sha256": "f3461235cb7dadc2d5e973ddb943d0b5ad90e5240298a827743aacb1e0f061fb",
+      "bytes": 147130
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-06/result.json",
+      "sha256": "6c5160982abc8072d1ebb4106f8c03ca4427c99030918e41518b00e44e4c1d40",
+      "bytes": 862
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-06/retired.json",
+      "sha256": "b9687855f891087ed0467c516857708f664ba6fa89ec54ed446166bfc4737f0d",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-07/result.json",
+      "sha256": "393733783c2b1bac3350660e6d9a4aab18dd20cfb0e9c8dc0653a7a6437e529f",
+      "bytes": 6947
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-07/command.json",
+      "sha256": "4dcd9a03622f79d89fe7f92f5192e8697e5e11276db3ce6bf7a060ead35cd910",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-07/request.json",
+      "sha256": "80c39e93cef948b7b753f7718621b6b218c57932d6f0627f6e583803f63760e9",
+      "bytes": 633
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-07/staged-request.json",
+      "sha256": "a93c2f1c50c313bddc73c6235a2b0539f8664511484d0c0913423f9d08ccbea8",
+      "bytes": 4629
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-07/cpu-inventory.json",
+      "sha256": "9cce0e1e52ebd222a13d8f203b175b5cc6fcdd487247c2be743afaea3b418286",
+      "bytes": 5858
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-07/recursive/config.json",
+      "sha256": "6ece4b03056d17ac17cb0ab8870ed30fb477e35a26af2e60b2173f138ec1a74d",
+      "bytes": 119641
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-07/recursive/summary.json",
+      "sha256": "b0bd46b70adeeef1f2c41d09e06c37e585241d9a77b9e299c743993a9f88bb1a",
+      "bytes": 75186
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-07/recursive/owner/proofs/calibration-result.json",
+      "sha256": "0a5704b584dece80d1b6c794b5cc7b9b5dfdaf2e990f9b2ec0df772113bbb8c4",
+      "bytes": 9814
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-07/recursive/workers/gpu-01/prove.log",
+      "sha256": "ca4d36916711e38b4a863c5fc570d287320439a10ef260011def5580f7149b3d",
+      "bytes": 147135
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-07/result.json",
+      "sha256": "e1782394ae6754ea90073b9d533947cc4e5fc56ce61355e463e0d433e5f6b05a",
+      "bytes": 862
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-07/retired.json",
+      "sha256": "a1ad3d7d448c9226ee329fec3229db37065736ae50583a8c1a51fa504941c17e",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-08/result.json",
+      "sha256": "e6255b7d0e02cce1935f0cc16b7633cb207ca330f87d03aaed6a2708573d4488",
+      "bytes": 6942
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-08/command.json",
+      "sha256": "0ec35810634c9c31288014c74246390905aacaa0bd7f4d272b35d1779351a57b",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-08/request.json",
+      "sha256": "bae66c6d5c393f393b9ac8993bf9a24da2dd49079f099fb4ea5735a456e15428",
+      "bytes": 633
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-08/staged-request.json",
+      "sha256": "ecfdd3bda432c8f88d6d6b2924843b1584d4f3bc255b1823bf6a5abd5624e436",
+      "bytes": 4623
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-08/cpu-inventory.json",
+      "sha256": "8622ae4f19188199c8ddfd537ee7cda50ec5aea59d1437eb2ecbb24134382961",
+      "bytes": 5857
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-08/recursive/config.json",
+      "sha256": "21990a929299c03bea19986f492b177ae785aebb4b947c5f674ee00630e8e1b5",
+      "bytes": 119638
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-08/recursive/summary.json",
+      "sha256": "c640d6ad149861c9af0947382139476be65647f952f7100c7a801fd7f3d94417",
+      "bytes": 75182
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-08/recursive/owner/proofs/calibration-result.json",
+      "sha256": "b7fffe08c2af1a5dc651d410ec889aaa079aa1a48c6bcdf92387267788278f85",
+      "bytes": 9814
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-08/recursive/workers/gpu-01/prove.log",
+      "sha256": "bfbef88d4c7f5331e1d144103b83415e983e564d83fe1fe473ba6587e952722e",
+      "bytes": 147151
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-08/result.json",
+      "sha256": "58852cd3a2044bdc036f61730c5646ff5ba3706088c0e50f8f83cc4ed2fab7ef",
+      "bytes": 863
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-08/retired.json",
+      "sha256": "a9e6111c6ef8ad658998f7005035d581c42c1668e9da9796f2fe5e6f74f078ff",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-09/result.json",
+      "sha256": "00800d7ab05889f76e3573e92caa89bd7582d5baeb36835b059bf73d4a5d5e2a",
+      "bytes": 6939
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-09/command.json",
+      "sha256": "7575878c030b83733ebbd8267e81b444a2f5e3ab7a7665b9edf77aff73326ba7",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-09/request.json",
+      "sha256": "05f65cc64a11d84435d0647c9c8af4d30b6f2d2e5badd4b2f33d3072a06eff3b",
+      "bytes": 6065
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-09/staged-request.json",
+      "sha256": "76ed9c4449288bce3b346f22fcf6d2b283daf5e129f32f517f797f81bb2ce456",
+      "bytes": 14209
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-09/cpu-inventory.json",
+      "sha256": "a71c85078e9fba668eb842892cf04dc8e3a432bbf05d322c208c049d66a5d679",
+      "bytes": 10841
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-09/recursive/config.json",
+      "sha256": "51f8cf030d3ac592807c2d24b62ab80cb7322fe87abee964d835fe932481ef50",
+      "bytes": 137526
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-09/recursive/summary.json",
+      "sha256": "b3e09cb2a1203e5a3da86d0219f7ca16af6571c9d5faaf9c69089004c3917451",
+      "bytes": 94229
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-09/recursive/owner/proofs/calibration-result.json",
+      "sha256": "3b07516e167bdecb178298dbc7209e1a5874d1447ba868fbaf91539c0dbc7acc",
+      "bytes": 9815
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-09/recursive/workers/gpu-01/prove.log",
+      "sha256": "c428303c29249b6ddb8fcf884613a7282bb7fc8ae0fd2fc15d32f210b43f6c94",
+      "bytes": 129428
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-09/result.json",
+      "sha256": "d6b7cd9427bf9e020b2f80b62e2726e4d08f3646d5af541e4130457947c9f27b",
+      "bytes": 862
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-09/retired.json",
+      "sha256": "d05a288957dfed066d4a797794b2034958b57f54fff02efe6da418f4e4ca95ed",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-10/result.json",
+      "sha256": "dfb9be5047dbe68bf06ac7d5c8a8257588fa37efac5c56045b47fbb9398edfc7",
+      "bytes": 6964
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-10/command.json",
+      "sha256": "4f356a6d835214b5c269ec7c26255e8a3eb44e9fda2fd3d6bc6e124f5605f4ad",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-10/request.json",
+      "sha256": "0d92e90753ee444cd5c657e0e448e1a7ba0f9280d93344c51d9094254e8e7ade",
+      "bytes": 6075
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-10/staged-request.json",
+      "sha256": "30cc87a0bd21d6d8b0cdf6099a1572146f168124f19430b6e4d4d97e5e7044d2",
+      "bytes": 14230
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-10/cpu-inventory.json",
+      "sha256": "f6bfc06417cd59059e1eb68b13786fef7326eb003d34607c25625ba7e8dc0216",
+      "bytes": 10838
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-10/recursive/config.json",
+      "sha256": "472f950f7f4fbeb3231e4025a43e7ff6fc4caeff60903819ab1e0e4cabef8d24",
+      "bytes": 137567
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-10/recursive/summary.json",
+      "sha256": "d61f5a36a0d864f7886a050222ff3632c3216caf3cacb9b51e88a571888af91b",
+      "bytes": 94282
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-10/recursive/owner/proofs/calibration-result.json",
+      "sha256": "0393d5b92b31a174f37e15ff1791f1cc94225ce35d08a6b2eb8101311f91abc1",
+      "bytes": 9830
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-10/recursive/workers/gpu-01/prove.log",
+      "sha256": "64fc3f95c98184971f0ae14bef6eb6827488c7efc3e1965480006635dd5b0841",
+      "bytes": 129420
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-10/result.json",
+      "sha256": "052e1bada9111bcf9cc0ca44776d1fca2c3630f546a760dc026861e62bf4fee9",
+      "bytes": 862
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-10/retired.json",
+      "sha256": "0ca808a5649fc7255f9757cecdf2bfcf478a0df86179c0f005be379e498d4754",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-11/result.json",
+      "sha256": "5dca746e52d83000ad60ceac1d9b60c085476e18b38c0b08fd1bc8bd1e26af7f",
+      "bytes": 6947
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-11/command.json",
+      "sha256": "378af0ecdf98fdc41a3269b80f9454572fb261fd3c41b60d951b747641afd8b1",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-11/request.json",
+      "sha256": "ef3dafe5affebe5c42817b55dd55c97a4f8e1fb3a128344ac5c28585bc9fe083",
+      "bytes": 6075
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-11/staged-request.json",
+      "sha256": "3f87b82ba8b0e141e4cb6778720f670e009384a6830e28823ef1a6403f98b286",
+      "bytes": 14221
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-11/cpu-inventory.json",
+      "sha256": "6f6ec8e04e3ad132f317a1e6df8c0fe2e882345263d8bf76b8646de821af5cc6",
+      "bytes": 10838
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-11/recursive/config.json",
+      "sha256": "2e17c64e8de26519e03ae0afcd92d07a35997803b22461d080c85dd66031c160",
+      "bytes": 137558
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-11/recursive/summary.json",
+      "sha256": "da619ca83d423d7dd1b21773aa45e1e821fc138de7be333c87ec0855dcf8e019",
+      "bytes": 94269
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-11/recursive/owner/proofs/calibration-result.json",
+      "sha256": "5d6bd2a733201555f7e2234a7d1519fbc82a7959742461f9555d0168490dacb4",
+      "bytes": 9826
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-11/recursive/workers/gpu-01/prove.log",
+      "sha256": "cc5856cea1723e6be2cd88598d0047d9686e5bd1e5a27bf1ee6fe3d728fd6ad2",
+      "bytes": 129422
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-11/result.json",
+      "sha256": "03cd335dff68450c4e0d44fe16f08f56f4fcadbe182e5284cde65a1b1efd46cf",
+      "bytes": 862
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-11/retired.json",
+      "sha256": "1977b9adaeaffcf0668ea56aac7575973a067fa7fdc00aa6737b3a046ea3267a",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-12/result.json",
+      "sha256": "d38e9de3c2d3cc7261273960098a37ca2e57820dc059dbe427748bf6f25fcdb5",
+      "bytes": 6942
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-12/command.json",
+      "sha256": "dabb027b6e046a6133718ba308cc72ed5e07d1d7992832c656e6a5cd747a7be4",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-12/request.json",
+      "sha256": "feb29c106a70523d92be390f67eead7e98bc2e1bc1ac9c934077e2499b3a4e26",
+      "bytes": 6075
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-12/staged-request.json",
+      "sha256": "132046fd9ac0da0390ad59c93caf9919bf55b0ec8993e82066eb7daff1f8ee03",
+      "bytes": 14225
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-12/cpu-inventory.json",
+      "sha256": "00ee3d16bb5664fd0572d675abbfd4229a03b6028c1f4a903bf419a641998047",
+      "bytes": 10841
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-12/recursive/config.json",
+      "sha256": "f9e083f890600a38968b79640d4993da17b4f395187bd90254b530e4fd885955",
+      "bytes": 137562
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-12/recursive/summary.json",
+      "sha256": "fb0a3018b0554880588b1b53e4735824cfffe870821d66082ca2f4d1c18fb8fd",
+      "bytes": 94267
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-12/recursive/owner/proofs/calibration-result.json",
+      "sha256": "8a97581e5c90c4aae4e85f6f2c22975498dff8fa412af03f728da8896138dde9",
+      "bytes": 9817
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-12/recursive/workers/gpu-01/prove.log",
+      "sha256": "cf954758989e04f30dd2dbbbbdcd4ead3cc8ae65eabc71b50b89aeed28a0663b",
+      "bytes": 129417
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-12/result.json",
+      "sha256": "5831f69f641ff1d957a4c61ccdf79eed6a8592853a8416c58d256d573b02e303",
+      "bytes": 862
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-12/retired.json",
+      "sha256": "74e607d1bd7f014932a35a736f37580d9be554ecf3656f001ac387467d756acc",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-13/result.json",
+      "sha256": "859d05e29aac79a9ab99844cb8a6d843ad4c08800cd5e96ac3cbb7e7257e1850",
+      "bytes": 6952
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-13/command.json",
+      "sha256": "3e9d52257225dc0445178b51212cd79572c7619753b8c7f957ea1fcea3661b7e",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-13/request.json",
+      "sha256": "bc22ab36f0a27c47f3b164f2fb411f7d1fdae2e2745d16bea219dd15e85e6efa",
+      "bytes": 6065
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-13/staged-request.json",
+      "sha256": "73080495fa9ce5c8eee2fa37b594ea714a9333428ef673fb946bb24a9415c0b3",
+      "bytes": 14233
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-13/cpu-inventory.json",
+      "sha256": "32cf4e3461da5314c27c105aaf431602af94550bc6044471e493e45d42be891e",
+      "bytes": 10839
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-13/recursive/config.json",
+      "sha256": "cadcf0c84dfc6ee688a4ee6ef9c88b7f1c26086e4bdadcb3886e846b982bb1fc",
+      "bytes": 137550
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-13/recursive/summary.json",
+      "sha256": "3cb3e50a578698c35451d89de6482516c3844ea08f70312891350fe8687c8fa5",
+      "bytes": 94263
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-13/recursive/owner/proofs/calibration-result.json",
+      "sha256": "4ffed89bec0648812c79b812d3877c37000d733c57aa3b5b6d243ed0fc6173da",
+      "bytes": 9827
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-13/recursive/workers/gpu-01/prove.log",
+      "sha256": "4cc18e6bd2e4400322fc6257d4a7b415739297bd070ae90e4ebb2394ebc14fda",
+      "bytes": 129430
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-13/result.json",
+      "sha256": "283bdf22605489c70d239a150b5736c3f38dcd0a2b3552625a5df9a97ae44f3f",
+      "bytes": 861
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-13/retired.json",
+      "sha256": "b579bfaf36b0ec0bc9a5b1ba663cb9a0b2c8b8f66b1f1f10a460143452a539e6",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-14/result.json",
+      "sha256": "25b94b055f4b2c50ee1b8108bf26753b1ab95fdadd72b0c3ff7b3aaf2d01d8df",
+      "bytes": 6948
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-14/command.json",
+      "sha256": "a8a2fd3b3c33d0012fed6327595d5a1c7de21164613085943a35d678d734820a",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-14/request.json",
+      "sha256": "f1437ec26deff81f8ecaf87914e87b352b0d6f0d5b44cf4874855f74c7f19ce7",
+      "bytes": 6075
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-14/staged-request.json",
+      "sha256": "6c3e55897624ddd357e0b35071aad24c96f8d276086d317721cf718e231c5ce5",
+      "bytes": 14210
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-14/cpu-inventory.json",
+      "sha256": "7bc29e1de27514aa8e014df2e73c4976a89d173fc8faa77353c4a6b3be3ea71e",
+      "bytes": 10839
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-14/recursive/config.json",
+      "sha256": "56079453ffa987dd97d5c134b39b35193f83e49348c2da0357f0fc49d0e669af",
+      "bytes": 137547
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-14/recursive/summary.json",
+      "sha256": "35a74c07fe9c034c882db46ac53c0d54cf0c7237c13459f866ee42eedcfb78d8",
+      "bytes": 94240
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-14/recursive/owner/proofs/calibration-result.json",
+      "sha256": "b07c5466d1bfb2639d09c9e659e384d216ff337d1f0589a936e2cffc14cdf99a",
+      "bytes": 9808
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-14/recursive/workers/gpu-01/prove.log",
+      "sha256": "e1a34cf471fc55f55b668a7983c37110ba6ae5ec4a5c5e704b936d75cf90b522",
+      "bytes": 129423
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-14/result.json",
+      "sha256": "b668365e010c400cc2c981962b518882b4ddc72b650613c9869cb2856d3c2c03",
+      "bytes": 863
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-14/retired.json",
+      "sha256": "d4b3806188a935f244afa1ded9501da50021b3149c4fceeb7fc461a0446368cb",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-15/result.json",
+      "sha256": "77ff4420d39f3c0b15df9d026363bd4ecf06cb86cf82538bfaff8d391db8e315",
+      "bytes": 6955
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-15/command.json",
+      "sha256": "5feaf3a667abae7753e9dc5bf73ab0a2bafcad1682939c75586dea8e4917b13f",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-15/request.json",
+      "sha256": "673433076059f97b057c4f1ca5c5fa348ddfccdb78cc0235d13c1a2ff88b29cf",
+      "bytes": 6065
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-15/staged-request.json",
+      "sha256": "79e663c37d5383b3a70d06d924ecdc19d8dab76335e0bf2bf6b2356857759b36",
+      "bytes": 14224
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-15/cpu-inventory.json",
+      "sha256": "cbafc68620dff6a9209a1cc121995e68738f7e0aa6925f19feaceca46d73c663",
+      "bytes": 10847
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-15/recursive/config.json",
+      "sha256": "190333e82bcf3ca054efd993f7f523da2e496b157abcd1764f9b94221e348e4b",
+      "bytes": 137541
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-15/recursive/summary.json",
+      "sha256": "ecfcce8dd4b0309051fd48f24ea1c2c0f06d3863f1407225a0a7ec05d7ca574d",
+      "bytes": 94261
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-15/recursive/owner/proofs/calibration-result.json",
+      "sha256": "47037f221df75de87f4af0f7f38c1799b45f7fdc583acb483aef6db8d0abc15a",
+      "bytes": 9834
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-15/recursive/workers/gpu-01/prove.log",
+      "sha256": "7141f8e37218a2164f6b498dc7869e844b3e63d14881e440ee632e8c2198bda1",
+      "bytes": 129421
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-15/result.json",
+      "sha256": "1f74c99c6b9e43621f2aca1a6734e7b49614f67c0e9e2a368cd25f3acfde7de8",
+      "bytes": 862
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-15/retired.json",
+      "sha256": "5a43c9261dde59a7b45be485da25d776a8621c3cd6cec2644759c54ae4e68bbe",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-16/result.json",
+      "sha256": "55adad55cde55d7425614c0dcb4013c1df089b55c579dfb6d2b4eb1adad34bae",
+      "bytes": 4113
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-16/command.json",
+      "sha256": "31a0dde0c1a126c72c7f8070a9a808cb58baaf47dd7bec76f8a067e8f95a78cb",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-16/request.json",
+      "sha256": "c5fbbe7e89fae3bfe87b35239e2fbbc161a445fd75c58779e9b9c80084ca1463",
+      "bytes": 3059
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-16/staged-request.json",
+      "sha256": "0e829d493e319dcd539c44b76e27d00cb770cbcf27ac9faf3bdd744bcc4057b6",
+      "bytes": 8022
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-16/cpu-inventory.json",
+      "sha256": "93ff7cc736e27ef7b6ab93db86a41c272587a65a873331b7cb4c3cee228a2d46",
+      "bytes": 7090
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-16/recursive/config.json",
+      "sha256": "58c18e94229b760008529646f3bd07525ce5112736bdba82617fbd99c19e5cf4",
+      "bytes": 126911
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-16/recursive/summary.json",
+      "sha256": "fdb8c0a0949417f9fb82bf8b6df30cfc27ff906193ec8051c83b07442ccd6a4e",
+      "bytes": 79547
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-16/recursive/owner/proofs/calibration-result.json",
+      "sha256": "ce1132a5b97f3ae52d500f7ad737a83b877b6f925459fa3cdb8bf04eac37e5a1",
+      "bytes": 6978
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-16/recursive/workers/gpu-01/prove.log",
+      "sha256": "8aa17476280ceecf5f4d5bcf8c7062c9951fd131ac19299f3ae96458287e1108",
+      "bytes": 83327
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-16/result.json",
+      "sha256": "6356883f21fe190f454f62ab8d4aaa3b2eac8831256e3e11db242f7e7ad6f3df",
+      "bytes": 862
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-16/retired.json",
+      "sha256": "a3edfa894de6bdbbdeb17af055eb6010377b11968284d15edb627e15f61bd49c",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-17/result.json",
+      "sha256": "e5a4470ab692c00fbed219da9b5a4182e36b451ffbd3fa4b0a859e2cf4075ef4",
+      "bytes": 2688
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-17/command.json",
+      "sha256": "c94a6ea6d6dde8dc8db70026eed750539e24ee3587c69acfddcea94adf89e091",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-17/request.json",
+      "sha256": "9c746bfea0835f2707616cb3b5e6e56b88bd98b28b41a12817639daa1acf7c91",
+      "bytes": 1559
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-17/staged-request.json",
+      "sha256": "1b512ceff094270770036ca0d70fbc0c4076a13c3597bc67dcc18764596b3f8e",
+      "bytes": 4924
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-17/cpu-inventory.json",
+      "sha256": "139d3e88341f68fd7253287011e639b4087241d414359c9adb270d1fd3e43a8b",
+      "bytes": 5210
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-17/recursive/config.json",
+      "sha256": "69bdb6577e1f41689936bb78a08a8ea524133829868684acfa464e6919941b1f",
+      "bytes": 121605
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-17/recursive/summary.json",
+      "sha256": "3443747d5579ff16146508826b97f63b9c28aab6d5ec1f17bee0e6bbb92f32b8",
+      "bytes": 72210
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-17/recursive/owner/proofs/calibration-result.json",
+      "sha256": "40a4661aef51764729afced7e811ee41eaa6247c99952090f792105ba491a0b3",
+      "bytes": 5557
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-17/recursive/workers/gpu-01/prove.log",
+      "sha256": "9c8fe29addd4ef9c5db19434c59193f530105f172853de46362abe3ab11258af",
+      "bytes": 60277
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-17/result.json",
+      "sha256": "84afba000a83f003d503479a28c6b8da277346ccfc1c8de0a86a4490529e9f3b",
+      "bytes": 862
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-17/retired.json",
+      "sha256": "4980bf973765dde0a7346daaaecacd3b72d0facdbf9b6279dfb739a4dc9ad191",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-18/result.json",
+      "sha256": "e6672aa7e36c945c69cdc6866729287ccfcd1fe2a94feaa5ae2b70ea3ecd5843",
+      "bytes": 1979
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-18/command.json",
+      "sha256": "bc49ae176b2f8dc46243435ab18102e078e07f9b1236132596f105af19bf6e24",
+      "bytes": 1200
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-18/request.json",
+      "sha256": "c2134dbbad9a687bcf7858aba3ea761736fed3f4edab333c2be1039c1fec0763",
+      "bytes": 809
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-18/staged-request.json",
+      "sha256": "ea1a38050d76d9756553a4a8b180a49245b0cf524116c3d55d72244a09e39aad",
+      "bytes": 3378
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-18/cpu-inventory.json",
+      "sha256": "f3d09d023aa2b6b8f1d7b4770fefbf43373b9fd5487037fec74932c4931f4e6c",
+      "bytes": 4273
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-18/recursive/config.json",
+      "sha256": "b5b22a763a68bedd64e1d5df4f63793f0eab64e3ea700c6e56ca2a364d1bddac",
+      "bytes": 118955
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-18/recursive/summary.json",
+      "sha256": "928ec83aef318bda8ecd8f2a5504ef07b255160ecaaafcbf1a89aa42a9619e7d",
+      "bytes": 67864
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-18/recursive/owner/proofs/calibration-result.json",
+      "sha256": "cb167e00e048f077008b959dd3376640890852c4b632241583f484a7caef9bb3",
+      "bytes": 4238
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-18/recursive/workers/gpu-01/prove.log",
+      "sha256": "7bdf2c94bef33490bf753db155a2e87dde05f863def3c4a1a30b606a72d771e0",
+      "bytes": 48761
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-18/result.json",
+      "sha256": "2e0db92c87ff4a58b4bd3649fc2d790763b97a78f90dd930bd3fae5ec61b1d5d",
+      "bytes": 862
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-audit-18/retired.json",
+      "sha256": "9f3b28dd6f4ad512f9b945ebf370c2e5f8d9cef3929a21c6f2f20c40372f87f4",
+      "bytes": 342
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-cli-regressions/test.log",
+      "sha256": "877eec24eaa96eab9bb4737bff6003e01c0b8cfeff9300d8939c735795b7533b",
+      "bytes": 23532
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-cli-regressions/result.json",
+      "sha256": "a65342c13cfab91d488315529787628454377ca060775736de1a6c54877be4e8",
+      "bytes": 867
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-cli-regressions/retired.json",
+      "sha256": "6541dbc00cfb8e3e57611a4ba52aa3bbb7cbb0f23cc375ca562ed5b250e9172f",
+      "bytes": 349
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-64-cli-regressions/test.log",
+      "sha256": "fbe5531d0c08a78eab42d75a42de4cded415e08626931e2f47b667eb23f4da7c",
+      "bytes": 23420
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-64-cli-regressions/result.json",
+      "sha256": "9ff3d7faa0f897a59f7a1d13b8a55bad59de435f1fed548ede4e853e44c829c3",
+      "bytes": 872
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/cpu-64-cli-regressions/retired.json",
+      "sha256": "3a7d3540059e49bca39c54cd86f77b1a5183b89993f1dd900f6c7c7013a7e0bc",
+      "bytes": 352
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-01/source-pins.json",
+      "sha256": "1d362d84aa8ee0fd28791c74ad96303973fe38d5b6d00a1824716a36d1bec28c",
+      "bytes": 139620
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-01/registry-input-pins.json",
+      "sha256": "00d15a95d8f14353d32168e1e9c5a54b70bb6bd85c4bed8c3ca5737050d534bd",
+      "bytes": 5024
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-01/build-results.json",
+      "sha256": "b8176f6af32cc99b8d3d571ca50b4350993368a0fbd859484ac740ce7c44b9e3",
+      "bytes": 2005
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-01/build-retirement.json",
+      "sha256": "b4a6f2cf754477ad85c2fd17cd270a08ebdcea1abee066d84bf9c476bcf20661",
+      "bytes": 579
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-01/bridge-cpu/manifest.json",
+      "sha256": "576363c7b4b548fe5418a92fc426fe26d6849fb92ffa9b02e1cba05cccf9fc3f",
+      "bytes": 8309
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-01/bridge-cuda/manifest.json",
+      "sha256": "67ad11c49531c0895f979478b91fb23285999bcef342bd20a9a047bc1cc23969",
+      "bytes": 8317
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-01/full-wallets-cuda/result.json",
+      "sha256": "4913b85d038682adb696c2f4d8a40d83794a4a857e81745bd50822b2669011a4",
+      "bytes": 874
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-01/full-wallets-cuda/retired.json",
+      "sha256": "8fa6c1e182dec50a5305fcbe474c90569e7f30b1d324ebc0735c1d969e4eea49",
+      "bytes": 354
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-01/full-wallets-cuda/test.log",
+      "sha256": "ec8a881feccc112271eef6d751ef8b35f5c0cf4104ac5c2f2af628090d516285",
+      "bytes": 399013
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-01/phase-01/recursive/owner/prove.log",
+      "sha256": "8929e85d199c0a4d338c4957a36f69021f2a6d18911d428af8597fcd45462817",
+      "bytes": 81
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-01/storage-diagnostic-cpu/test.log",
+      "sha256": "d08150359444c11d5ab4838f14ff6fb8ec91deab7a0794476147dde76d7b48b0",
+      "bytes": 1103
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-01/host-regressions.json",
+      "sha256": "94df92902095d40ddd0a11cc2266fa5461b382252528a5eb1732d29e41680830",
+      "bytes": 301
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-01/host-regressions.log",
+      "sha256": "c859f8f58452304a0672ca4e0b1ff2fa35d592966d5a369688f6c070a93fda7e",
+      "bytes": 443
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-02/host-checks.json",
+      "sha256": "d4d2c144829be8e3ba50da9bf3c565902bb6b5fcb5d38bc81e286921e57a61ff",
+      "bytes": 231
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-02/host-checks/result.json",
+      "sha256": "e4e5dd836876c1e8e64156407041a1d885fd72b821d5b6f5e7e5d33ca57a3fdd",
+      "bytes": 861
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-02/host-checks/retired.json",
+      "sha256": "4169e2f46eefd7d1090a29e0b7db905f82599282f0e2b34fc8a3d9e6ca6693db",
+      "bytes": 341
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-02/test-block-v2-capacity.py.log",
+      "sha256": "3cd02e884955c8b49b809ce57755ae46aacba4d9ef1382b84e081568bb3f04a5",
+      "bytes": 105
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-02/test-block-v2-pool-calibration.py.log",
+      "sha256": "ff3b1438544d9aa2c552401f0123d54eac06b91b0295f3773671c14161e22544",
+      "bytes": 113
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-02/test-block-v2-public-artifact-cache.py.log",
+      "sha256": "edecde55c6deed9a44f005853dbf1b80bb79f5daf63b49aa23fa401cf6e41cc0",
+      "bytes": 114
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-02/build/result.json",
+      "sha256": "b510d46a41778d715719c9f230e48b5d15927f3b6c3b261ac0822bc757cb69d5",
+      "bytes": 866
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-02/build/retired.json",
+      "sha256": "6822075ed91ce35daa712335f250982208707d58facfa1076dcd928e8ae42f70",
+      "bytes": 395
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-02/cpu-cli-regressions/test.log",
+      "sha256": "10f5dd9c6022f5764bc715db3b24e35809d933df00d83728b6ada571905260c5",
+      "bytes": 24340
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-128-20261019/qualification-03/phase-18/recursive/owner/proofs/node.7.0",
+      "sha256": "7e291e75e777bcdfcd43758917efe8df94f1ae93ccd993b4d7dcced8f2238660",
+      "bytes": 1683948
+    }
+  ]
+}
