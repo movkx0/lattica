@@ -1426,9 +1426,36 @@ This checkpoint also generates and independently verifies all 64 native CUDA
 wallet inputs: sixteen each of JoinSplit, HTLC redeem, HTLC refund and issuance.
 Their complete bodies agree with the independently derived native/Rust root,
 and the CPU planner identifies 63 recursive jobs across seven mode/level/count
-classes. That full root has not yet been proved or applied. Maintained CUDA
-wallet-launcher selection, full-capacity recursive work, approved pool operation,
-and complete controller/native-host recovery remain open.
+classes. The subsequent qualification uses this fixture for the complete DAG.
+
+The [64-input CUDA qualification](evidence/cuda-full-recursion-2026-10-19.json)
+completes all 63 recursive jobs across seven mode/level/count classes, with 272
+complete CUDA stage reports and an independent CPU audit of every proof and the
+final root. The complete native body contains 48 user transactions and sixteen
+issuance entries. Its root was durably applied to a fresh test journal, audited
+through independent CPU replay, and reopened successfully in a fresh process.
+All ten calibration phases stayed inside the existing resource and deadline
+limits and retired their workers without memory-limit events.
+
+These are separate diagnostic phases with imported, independently verified
+dependencies. Their 651.263 seconds of summed proof observations do not measure
+one continuous workflow or sustained transaction throughput. Warm pair medians
+were 9.243 and 9.384 seconds; the sixteen four-input merges had a 10.346-second
+warm median. Wallet generation, separate CPU audits and native application are
+outside those proof timings. The preserved local checker and unused-seed failures
+did not require regenerating successful proofs. A timing-approved full workflow,
+128-input blocks, sustained delivery and multi-GPU qualification remain open.
+
+The [maintained wallet-launcher qualification](evidence/cuda-wallet-launcher-2026-10-19.json)
+adds explicit CUDA backend/runtime selection, the CUDA private assignment schema,
+and bounded native C/Zig integration. OpenCL remains the default and CPU
+integration keeps its existing process root. CUDA and OpenCL each pass twelve
+complete proving requests plus the expected invalid-HTLC rejection; the CPU
+reference passes independently. The C harness now checks fresh hiding before
+CUDA shutdown, verifies the proofs after retirement, rejects same-process
+reinitialization and exercises the next initialization in a fresh Zig process.
+OpenCL retains its same-process restart test. Five launcher regression tests
+pass. These are correctness checks rather than throughput measurements.
 
 ## Implementation sequence
 

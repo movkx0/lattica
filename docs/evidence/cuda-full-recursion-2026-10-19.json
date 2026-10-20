@@ -1,0 +1,907 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "date": "2026-10-19",
+  "source_parent_commit": "506331136cdf510af356a171aa97abc191a4cdf3",
+  "scope": "64-input CUDA DAG correctness in ten separate bounded calibration phases; native CPU application and restart",
+  "device": {
+    "name": "NVIDIA GeForce RTX 5080",
+    "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "driver": "615.78.08",
+    "nvrtc": "12.9.1"
+  },
+  "count": 64,
+  "user_transactions": 48,
+  "issuance_entries": 16,
+  "fresh_recursive_proofs": 63,
+  "complete_cuda_reports": 272,
+  "independent_cpu_audit": true,
+  "native_blocks_applied": 1,
+  "fresh_process_restart": true,
+  "native_final_state": {
+    "state_root": "606960a477d118999b7d934f89d22a5b017d6b1854a7c3e09e1473a079c2b3c9",
+    "event_root": "3864a158f23bd5e80b172d55f826cc333aa6bb0e89bc22446f10338be1f3a7e8",
+    "anchor": "2a5f9f0668a342ff6dd68c45c2bc289a005a006c0314718b3ec9334fcd57d806",
+    "supply": {
+      "issued": "64112",
+      "burned": "0",
+      "shielded_pool": "64112",
+      "fees_paid": "0"
+    },
+    "nullifiers": 128,
+    "outputs": 256,
+    "events": 16,
+    "blocks": 1,
+    "height": 10
+  },
+  "classes": [
+    {
+      "mode": 3,
+      "level": 2,
+      "inputs": 4,
+      "proofs": 16,
+      "cold_seconds": [
+        13.169,
+        13.296
+      ],
+      "warm_samples": 14,
+      "warm_median_seconds": 10.345500000000001,
+      "proof_elapsed_seconds_sum": 171.658
+    },
+    {
+      "mode": 3,
+      "level": 3,
+      "inputs": 8,
+      "proofs": 8,
+      "cold_seconds": [
+        13.156
+      ],
+      "warm_samples": 7,
+      "warm_median_seconds": 10.319,
+      "proof_elapsed_seconds_sum": 85.381
+    },
+    {
+      "mode": 3,
+      "level": 4,
+      "inputs": 16,
+      "proofs": 4,
+      "cold_seconds": [
+        13.827
+      ],
+      "warm_samples": 3,
+      "warm_median_seconds": 10.886,
+      "proof_elapsed_seconds_sum": 46.737
+    },
+    {
+      "mode": 3,
+      "level": 5,
+      "inputs": 32,
+      "proofs": 2,
+      "cold_seconds": [
+        15.144
+      ],
+      "warm_samples": 1,
+      "warm_median_seconds": 11.245,
+      "proof_elapsed_seconds_sum": 26.389
+    },
+    {
+      "mode": 3,
+      "level": 6,
+      "inputs": 64,
+      "proofs": 1,
+      "cold_seconds": [
+        14.205
+      ],
+      "warm_samples": 0,
+      "warm_median_seconds": null,
+      "proof_elapsed_seconds_sum": 14.205
+    },
+    {
+      "mode": 4,
+      "level": 1,
+      "inputs": 2,
+      "proofs": 16,
+      "cold_seconds": [
+        11.529,
+        11.679
+      ],
+      "warm_samples": 14,
+      "warm_median_seconds": 9.243,
+      "proof_elapsed_seconds_sum": 152.198
+    },
+    {
+      "mode": 8,
+      "level": 1,
+      "inputs": 2,
+      "proofs": 16,
+      "cold_seconds": [
+        11.727,
+        12.031
+      ],
+      "warm_samples": 14,
+      "warm_median_seconds": 9.383500000000002,
+      "proof_elapsed_seconds_sum": 154.695
+    }
+  ],
+  "phases": [
+    {
+      "phase": 1,
+      "level": 1,
+      "mode": 4,
+      "fresh_proofs": 8,
+      "seed_proofs": 0,
+      "elapsed_seconds": null,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 935796736
+    },
+    {
+      "phase": 2,
+      "level": 1,
+      "mode": 4,
+      "fresh_proofs": 8,
+      "seed_proofs": 0,
+      "elapsed_seconds": 90.38382502100103,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 886063104
+    },
+    {
+      "phase": 3,
+      "level": 1,
+      "mode": 8,
+      "fresh_proofs": 8,
+      "seed_proofs": 0,
+      "elapsed_seconds": 91.54251378899971,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 889737216
+    },
+    {
+      "phase": 4,
+      "level": 1,
+      "mode": 8,
+      "fresh_proofs": 8,
+      "seed_proofs": 0,
+      "elapsed_seconds": 92.0408520889996,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 885579776
+    },
+    {
+      "phase": 5,
+      "level": 2,
+      "mode": 3,
+      "fresh_proofs": 8,
+      "seed_proofs": 16,
+      "elapsed_seconds": 102.80541722399903,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1186631680
+    },
+    {
+      "phase": 6,
+      "level": 2,
+      "mode": 3,
+      "fresh_proofs": 8,
+      "seed_proofs": 16,
+      "elapsed_seconds": 103.90335138800037,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1181618176
+    },
+    {
+      "phase": 7,
+      "level": 3,
+      "mode": 3,
+      "fresh_proofs": 8,
+      "seed_proofs": 16,
+      "elapsed_seconds": 103.35365254700082,
+      "complete_cuda_reports": 34,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1187135488
+    },
+    {
+      "phase": 8,
+      "level": 4,
+      "mode": 3,
+      "fresh_proofs": 4,
+      "seed_proofs": 8,
+      "elapsed_seconds": 65.80213664500116,
+      "complete_cuda_reports": 18,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1186619392
+    },
+    {
+      "phase": 9,
+      "level": 5,
+      "mode": 3,
+      "fresh_proofs": 2,
+      "seed_proofs": 4,
+      "elapsed_seconds": 42.61486868999964,
+      "complete_cuda_reports": 10,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1185214464
+    },
+    {
+      "phase": 10,
+      "level": 6,
+      "mode": 3,
+      "fresh_proofs": 1,
+      "seed_proofs": 2,
+      "elapsed_seconds": 30.602759000999868,
+      "complete_cuda_reports": 6,
+      "memory_event_deltas": {
+        "high": 0,
+        "low": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0,
+        "sock_throttled": 0
+      },
+      "workers_retired": true,
+      "worker_memory_peak_bytes": 1183055872
+    }
+  ],
+  "limits": {
+    "worker_host_bytes": 3221225472,
+    "coordinator_host_bytes": 1073741824,
+    "fleet_host_bytes": 4294967296,
+    "swap_bytes": 0,
+    "threads": 4,
+    "managed_gpu_bytes": 7516192768,
+    "context_gpu_bytes": 4294967296,
+    "allocation_ceiling_bytes": 1073741824,
+    "headroom_bytes": 1073741824,
+    "dispatch_seconds": 150,
+    "worker_seconds": 180,
+    "workflow_seconds": 600
+  },
+  "preserved_failures": [
+    "Initial local checker expected uncached setup reports on every proof. The maintained first phase succeeded and was independently CPU audited without reproving.",
+    "Second phase initially supplied unrelated seeds; admission rejected it before launching a GPU worker. Retry supplied only direct dependencies."
+  ],
+  "limitations": [
+    "Each diagnostic phase has its own workflow clock. This is not a full block completed within one 600-second workflow or an approved pool.",
+    "Per-proof observations include cold setup where indicated. They exclude wallet generation, separate CPU audits and native durable application.",
+    "A CPU-only integration build overlapped part of the diagnostic campaign; timings are not a controlled hardware comparison.",
+    "The first wrapper did not retain phase-1 outer wall time; it is null rather than reconstructed.",
+    "No sustained throughput, power-loss recovery, 128-input block, V100 execution or multi-GPU result is established."
+  ],
+  "artifacts": [
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/source-pins.json",
+      "sha256": "1e14482d9dabf8e899ddc3cb70145bb10dc6e778b415943f052e19fa4b92fe77"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/input-pins.json",
+      "sha256": "0f92919dfcfb7758d1de4b3134526a74dc235a556d1e08a17697dfd34d45120d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/scope.json",
+      "sha256": "f437a9b5f9a9999cd5d1cbd4ce97d5fba7e3238c1fb6294686e3e69732f1a140"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/result.json",
+      "sha256": "b1fffc05a33a0950aebe70d84cc829aed374cf408d5cf102df927852a3722e0e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/prove_full.py",
+      "sha256": "72dc4c592903c59527016769b2c673f54e4745f71e1b7414171c4639c9eddca7"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/continue_full.py",
+      "sha256": "024d9586c87c4d1bffb2fa94757462993eb1500192cc90627982dba13cd41458"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/continue_full_02.py",
+      "sha256": "8613922fc7a06575a39e4d263558d44103ef77769962a27fc865b6f3ef2f2d3d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/run.py",
+      "sha256": "a78eabeb624e97f140f845b4f22d14f3133776ad04532388d70f455e49a55a35"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/apply_full.py",
+      "sha256": "be2cbff81a4d8b01a187b494a1419408366a2e58be7a3e9f179f0566bcbcf5b4"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/record_evidence.py",
+      "sha256": "bfadcdb767ddcd7574a638e18fa4f7d5a1187aabf158a69e13b4a092423fb036"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/initial-wrapper-failure.json",
+      "sha256": "903edfc2e2bf0f8ffad75ebca9d99346a8a4cddecd285b3017ed068cfc0851e5"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/seed-request-failure.json",
+      "sha256": "c9dbba1d0bb77e9b70545a6c2ab1eaee9bb4d170e66d0bd32c2f090a37b50755"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/native-application.json",
+      "sha256": "fb2034e8f03f243dbdb5cd3467ecc16e16cb79d584d6904e9d30f12670d112db"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/native-restart-audit.json",
+      "sha256": "0733c56af7fdd6579f18681ae7807a2b92d422221948884cef45029755876475"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/native-restart.log",
+      "sha256": "3c2ddc9f749a6e9b416c5b13e21f4b74230874a5871e486e14bb854b0ecd6c45"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/native-restart.stderr.log",
+      "sha256": "0225a190d460f093dd61703700d9943afb7bfd940bd64cb6c6bc8fcf869c871d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-02/recursive/summary.json",
+      "sha256": "9d592c1ec267d0a56236d4cc1407d66eb74995f374c00b60e504463bcd7fc4b1"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-02/recursive/owner/prove.log",
+      "sha256": "f72ddf84e1d87a861c8a6a559572b6ad7735f633f7bf94521b90bc74764a65ba"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-root-audit/result.json",
+      "sha256": "7eb681752fdacaeb9dda7499e4806c7647b2d952aa5a9b2f026026c7404ed44c"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-root-audit/retired.json",
+      "sha256": "6347beb0d930ac72326c1548e2e73a9ee53ff738a88f63c7be7f9169cfa5323b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/native-application-cpu/result.json",
+      "sha256": "feac3cfd568e169df434dcaba2d602d8c538d84f5026e54231bde3d4495acc5f"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/native-application-cpu/retired.json",
+      "sha256": "7f8cb23c4ffd2f022ed0cc6de813f5de1b558de2b1d8b7b44f121a89dac31d74"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/cuda-cli",
+      "sha256": "8cee0ca7d7e8fd64b1a09540b354704c53809e341fd44fce9e647d6f8cb3659d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/cpu-cli",
+      "sha256": "2f17e8ab7e42e63bc23a72a675b2584ba5e5647d60368555212a3838fc07e832"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/full-execution-plan.json",
+      "sha256": "58d192024774fbf2371da1eaab0f2caac6f20657e704764db9a4e5ed82cb920c"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/full-fixture/manifest.json",
+      "sha256": "171ad0f3df6bb6abad57f842b455ce08119f1d8eef69bd0c71f666df03b3c3ff"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/bridge-cpu/manifest.json",
+      "sha256": "8d287f7fa8a5208a518e84e033dd880f14d8bbdf9244235669b6529709c348fa"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-10/recursive/owner/proofs/node.6.0",
+      "sha256": "50470a0641c0c9e9fbe40896c1dc6ee004f29668a8befb8bc4a5a6153d4e28f8"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-01/result.json",
+      "sha256": "a94c2e4ca82147a736e2f588abe59e29f87a767250d746af4e4212914614fd3d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-01/command.json",
+      "sha256": "0f1dae9d750e091cc36873641c9e56fb75a3c031e245c693e7667550c22edec6"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-01/request.json",
+      "sha256": "177b4530bf64322a80771d92f3078811ed4c6836d269d58f0c644c8021eb9b73"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-01/staged-request.json",
+      "sha256": "ac9836faee14eace1c504cab505cdca0ebb1e715914178dce7acced908352201"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-01/cpu-inventory.json",
+      "sha256": "d691abc2c5155a624893fec610f624fbedab5d1af4b3f246a1c8927cf34e4361"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-01/recursive/config.json",
+      "sha256": "dd7014947ef0df7be684067ddc2fbf6a11c31572847c357e34dd9af50ff01448"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-01/recursive/summary.json",
+      "sha256": "ae9b9203f21e7720cc5c6041de1ee38c260e994fe0e68f4d23dbec1545e693a8"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-01/recursive/owner/proofs/calibration-result.json",
+      "sha256": "4b7ac2f41761fcf4169a785798d48d50b9765b82e74012c087f9314ae37b8725"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-01/recursive/workers/gpu-01/prove.log",
+      "sha256": "a1a1f933ef57a538e9aa9d14592a82f061088724bb63e738e1097eaffba027f3"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-01/result.json",
+      "sha256": "43f1232e54ad312ed60d73f581b4b8963c05fd31e992c6f1f81c0571e4879348"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-01/retired.json",
+      "sha256": "7226618844754c4a364e5ae3bf1dcef7cdf138fce1a0aa3dbb019f64c15b9e27"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-02-retry-01/result.json",
+      "sha256": "3f92a7e9900dc0ff62dc93c9aff0638c13d689f86472850d05d2f04ed0376b1d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-02-retry-01/command.json",
+      "sha256": "a792d6e5914d19e406a6fa4ac129286609ab0c9716f01bdf8a49fa939c861703"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-02-retry-01/request.json",
+      "sha256": "8c29d7a408e16298918a1ec732d8c6144a0d91be2548fd0b244b4216b97d0e63"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-02-retry-01/staged-request.json",
+      "sha256": "8d63d7d2c9a569b095fe45032342c602a1247857a7686b102d14ff8c5f94dad6"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-02-retry-01/cpu-inventory.json",
+      "sha256": "49da6d222559bf9bd0740032c620d6df142be9ab0cf30308c43cebe373b82ad1"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-02-retry-01/recursive/config.json",
+      "sha256": "334851031075004c4aba288ad8f16e34543fdce091f81f9d9c682484cc261224"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-02-retry-01/recursive/summary.json",
+      "sha256": "2ecb827836915564335d6e3f669d2400775f8869c6b72f6aecb4109de543b32a"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-02-retry-01/recursive/owner/proofs/calibration-result.json",
+      "sha256": "6d9b26d776b0d44e234c2eda917fe0ca70d38e2c68ca4b6e712fcf5488f862f3"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-02-retry-01/recursive/workers/gpu-01/prove.log",
+      "sha256": "f13b511ec1fc8accca73e68d8cba0d31f19d4aa06ba36a082221836b21b15c4d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-02/result.json",
+      "sha256": "1512d312112fe53f3984b8ed5bdcc1bde8f903b6832075f8549a71eb791286c6"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-02/retired.json",
+      "sha256": "c5dba579d6ada80629da5db5800c5a06020a48520716dfcac3c2dd8105875d7f"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-03/result.json",
+      "sha256": "8c5a867ca13fe09c07628b8e60aebc58d156e8484c8870cdd17e87a4175ceea5"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-03/command.json",
+      "sha256": "09a787f4ef50b280689e9aa9a15fdf6edfa9ccc7627b5a4d2a370f6a217a2026"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-03/request.json",
+      "sha256": "021149ac20bdb1180ef860ed90b8ab784a4ad1336d706b25b5743f613fdfee62"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-03/staged-request.json",
+      "sha256": "ca67243f8bc0f693dee1ef7b9ce58ebf44b2d16c2c16841ff38539129a0a5cb7"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-03/cpu-inventory.json",
+      "sha256": "99e3b10ad5c208e90c37da48c46ea626d64bf2bb244a9fc7459a361820478f85"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-03/recursive/config.json",
+      "sha256": "700eac42fb8c114db60e238d18b5efac1fb94bad9868a3f5a5837470512dd195"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-03/recursive/summary.json",
+      "sha256": "98e14749205b8eef3b34c02118a114e4bae291e066a55b469874c841a3966e23"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-03/recursive/owner/proofs/calibration-result.json",
+      "sha256": "9292c622dc4bd31be994556c59b6eb83f900a355fce9f8c4c7747aafe4d63d98"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-03/recursive/workers/gpu-01/prove.log",
+      "sha256": "2938dc3ac43457b15e9efcce3f9691c2a6d02ec6af09f4dbb656b64b9566ce03"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-03/result.json",
+      "sha256": "cb33497824353212613ea79b21fc7a93df0f331551d00d8f03fcf01c3ffa4871"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-03/retired.json",
+      "sha256": "5d75ac5529a7dcb3482b6cfd662a225a3ede7d99ed7ba53b40a2f5ba33349693"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-04/result.json",
+      "sha256": "db9224a18d877cdc762d5888b5316b16374681a15eebb417b2dba3135ed9173a"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-04/command.json",
+      "sha256": "77331c8d8aa3e8f3396cf46e902c19896622d5803035e48b26f91bd330b75781"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-04/request.json",
+      "sha256": "398efc315b9c583b9b5e9b68642c02440532d9c541fd90e4c79fabda7766a626"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-04/staged-request.json",
+      "sha256": "4263f78d317268f0add9ec684b38a00df9b75e0856e72111a5a1a9a3c7e18430"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-04/cpu-inventory.json",
+      "sha256": "79a37a9faab67302678257985c6ee06565ec1dd537b12253c7e9d2da3ec766ae"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-04/recursive/config.json",
+      "sha256": "36c386dd51e0a515b9f68a394fd5f722ee87dc2d3580f07328463d7575205767"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-04/recursive/summary.json",
+      "sha256": "2f3d394c8ad861b22ea77f1dc187ce7cfd973dad5191697b291acfa064d24b1f"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-04/recursive/owner/proofs/calibration-result.json",
+      "sha256": "e339632e42b796c8257984ce7a35c8eab51560431e17cd43cb34ec3f592e3c8d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-04/recursive/workers/gpu-01/prove.log",
+      "sha256": "8143a932144b6a81a3357a4dc734fa4a2c4ba8592af15f546acacf3d6b5ebafd"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-04/result.json",
+      "sha256": "558cb5ed0fc04e86f1303b7152ca6f831b394a3fef83432f7d357fe1da80012d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-04/retired.json",
+      "sha256": "1ab5a82e6644a49ee53c900f52fa4ff9edcab400c9b4bcbf36a826dd255c4bf9"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-05/result.json",
+      "sha256": "5e428868d896262d7a97fcc8fa170cfb74ee62f337bf49160a17dd686e44fe33"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-05/command.json",
+      "sha256": "b69034bca8e5644df3c12959341366de8cf658f8db389bbf76f99d919676369a"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-05/request.json",
+      "sha256": "56bf75d59a5de8166e0019b5ce038dfca7e0d5bfeec50ada0e9da03dbf038670"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-05/staged-request.json",
+      "sha256": "1f8bd30a4093f2cc2f01644d5fe59b463e392e1ab42b1ae218d9709345da65df"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-05/cpu-inventory.json",
+      "sha256": "aa4fb0e9b1aedace1a38c6b819e721221d7fba1745b7261dea54bc3feede13e1"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-05/recursive/config.json",
+      "sha256": "038a562826ef3082125ae5cafde05573afe16b0fff7faba784754079d6b7a53b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-05/recursive/summary.json",
+      "sha256": "b0befdcf676472c1c180d1db6d8b51bb9a52214376685943dfc09583439cc53c"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-05/recursive/owner/proofs/calibration-result.json",
+      "sha256": "8ca714e42f2edc2c1763dc65d563b12b08c2a64691e648bb0324115f85a44b0b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-05/recursive/workers/gpu-01/prove.log",
+      "sha256": "7f9da34f8739f34f193f1bce093ab45bcf64c54385b01ceec23806f37e37fc15"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-05/result.json",
+      "sha256": "9737ea01a52509297bff016cab7aafedddc0e9ba262f8b8a91932ba829e8502f"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-05/retired.json",
+      "sha256": "af4f5d114a792579b5b75e40826dfe880d09800108b96105a7b212252e3d2865"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-06/result.json",
+      "sha256": "a4013146e1880be10a2c5d84ab97fbad7689633ea01553f2a2cd8a494962caf6"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-06/command.json",
+      "sha256": "6f7a64269315b9ec178017aac2114b1b1f8b981e92330756fa03971c002c7ab5"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-06/request.json",
+      "sha256": "f8294407f8cae31379662602cd5f67d5bcc639abe512b51db0f1a9859d191fd9"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-06/staged-request.json",
+      "sha256": "0acc4f491fbbfcd8a7cf1f1bd17ad86ec6b87f6191192478757b970b0fe35008"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-06/cpu-inventory.json",
+      "sha256": "7dcf0f500e32e82b764136a0004e87d84305348315f2ed1398bd6afc17cf7e6a"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-06/recursive/config.json",
+      "sha256": "2dac07da6bc44ff75e522651a5dcf0f8bae69b8d11e3755e7558b404bd54bb84"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-06/recursive/summary.json",
+      "sha256": "6a4c5c1af91330a34e11d51bcba0302df6104a6b58a4cc66513dfb6710414a59"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-06/recursive/owner/proofs/calibration-result.json",
+      "sha256": "de24599e1a3d9fedba89fd8b004efe9e8ad19541876da7a259debbc1a93c70a2"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-06/recursive/workers/gpu-01/prove.log",
+      "sha256": "2cc1aac52d1d86fa29209ad4d211156fd1f628b58b598dc7e04dabbdca865e34"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-06/result.json",
+      "sha256": "7f4ea6f19fc14e6c5449194d48dff278c54efa34f6651484cc5e4251fc29aa79"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-06/retired.json",
+      "sha256": "0b4aa5095718e7a5f39a95e05175d397f857da4eab503b6d4f50c73c5cf469a9"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-07/result.json",
+      "sha256": "d99c932589b036057f2e9e33ffaa2fc71ea6d93282ae78cdd51ae1572e77cf5f"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-07/command.json",
+      "sha256": "f30d1bbc32986180904976ec55c021a588ea71217aed8848ab70dbcd6fd87656"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-07/request.json",
+      "sha256": "75e37e3385cd8131b6fe40258e29334ad11e5876ae18abf05c7f0e2f6a940884"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-07/staged-request.json",
+      "sha256": "31dd07dbc4266400f329b95579897e9419b700ece1b424d786ecbd0a68d0ebff"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-07/cpu-inventory.json",
+      "sha256": "7769ea25b102794eb455e4eb93f3aab591bc5849d2a3835ce190cf20f4b4a1b5"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-07/recursive/config.json",
+      "sha256": "3412c54cbfa413f1049dba32729375580b22f4ed89cc8383c7dc683078764fa0"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-07/recursive/summary.json",
+      "sha256": "87b15d4a7ebf749bdcc7e01454800e5068c93c0d7273d108d2eef0a18a86a332"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-07/recursive/owner/proofs/calibration-result.json",
+      "sha256": "d6d3027f7de152e3d1b405f8d1636c550ce5a352e2907683c8d87c4853628b1b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-07/recursive/workers/gpu-01/prove.log",
+      "sha256": "1e8607f5852fff460e033810baca60972ca7ed6649e6e9058be32ded787f4966"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-07/result.json",
+      "sha256": "354b1cbfa2ce78f70b258825ce99e7dd14c4360d3ec4c6fa0352780932beb00a"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-07/retired.json",
+      "sha256": "20b9109e5343ffa62f5a462b197883b19a7f2c48a022136180929151e094355b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-08/result.json",
+      "sha256": "d59069bf4843bda4b8e91377e3988f345262086ed935d4f695e6e1b24696645a"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-08/command.json",
+      "sha256": "a11bde89a990e45252e7f48c905a6cd55862d988a0bb0243f76d3b3d7bef90f3"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-08/request.json",
+      "sha256": "67d31c3e598f3f9ab614644f2ca246d0602fb00b89230e32d7067ccd8d93daee"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-08/staged-request.json",
+      "sha256": "d6679b546d44fe0e3e37f0b5d9633dbf872abd972340e6ab894e5d378a807d70"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-08/cpu-inventory.json",
+      "sha256": "67807380b2053b176d245cc9e2ce0de035de9663590d0415df94d8502fa7c3dc"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-08/recursive/config.json",
+      "sha256": "cd94b2920b5a38cd955ee44fc8e0d8dfad2248b81fdfe7079b9679af00fd59b4"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-08/recursive/summary.json",
+      "sha256": "59ef73d5f81b8a623a094e317d6665fc41e4092978970d6f925686f824d02d8b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-08/recursive/owner/proofs/calibration-result.json",
+      "sha256": "3561fa2374d85d14c96f28f48665160c77055fb8b254ab84ea0b8ff68c6260dc"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-08/recursive/workers/gpu-01/prove.log",
+      "sha256": "9748d268c978acefe0a0b58cffea9bf5135491906f07c1400f5e7733efb8859e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-08/result.json",
+      "sha256": "0cbc6f4404686852e3e4607d8e3ce8b7bd0a960866dfd5636213c57fc94f814f"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-08/retired.json",
+      "sha256": "e2018e07b3629be052d3e8e4f1523b9b00fbd9c8ae8ba3d1bab771756a0c0d9a"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-09/result.json",
+      "sha256": "52b8a09c61aaa49e1a34831e47be253e1c05c3d6feb91f8e4e89220e61939072"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-09/command.json",
+      "sha256": "c05069adc32f24b940fb37b03650f7026d5d5052695445f07f5371b37bac268e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-09/request.json",
+      "sha256": "3a2b745cf49d1fcd25bb356929ebc365aa7a5da85d72d4932cd015c39c4e8411"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-09/staged-request.json",
+      "sha256": "24fe1c88e0cc98f38e6bf5bcbd0d27a47deb7802bc41dc0d9a2a632b484b577e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-09/cpu-inventory.json",
+      "sha256": "48a7e546494384b1539c3670cd51e994e6db882baf2b9417475ec722b1c5df93"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-09/recursive/config.json",
+      "sha256": "d9fcc4f3791f4fc01b0414a63e3c7227efbc7f71481373cae091770261f22c4e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-09/recursive/summary.json",
+      "sha256": "7e5f1c5d1c15c54b2efe930e96f77071a88249925b9980aa9d1c7b7e37aad323"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-09/recursive/owner/proofs/calibration-result.json",
+      "sha256": "a630bd1556d458a58101a1bb6df7ea9bffb3ff257184f3deb0c514b0b9050cbc"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-09/recursive/workers/gpu-01/prove.log",
+      "sha256": "6786e8f499a1d2b6ba846d38dd53768b0ffba6201a9a8eccd5d62ecc7a1632ee"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-09/result.json",
+      "sha256": "3a9526a2d2f723fa7caf95ed8fd92cd00db4c14b731a4d1f68f68837d7c2f503"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-09/retired.json",
+      "sha256": "240b62e468d6b9059633137a599e6980fb3fc86bc51e7c501b49002408d18613"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-10/result.json",
+      "sha256": "41f844e99b86bb63d6dc649d6091687eecca0654285a275e83466764167492a0"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-10/command.json",
+      "sha256": "f58a1fa2dc52f24ce0e44f4add4ea51aae027d1c36bf4ceb6e2e938a56a5a846"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-10/request.json",
+      "sha256": "765ae8695f588cd8e9903d3d5871385fbdb2f2f54b86aaffa280a817d6c171af"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-10/staged-request.json",
+      "sha256": "ebad8a8117607ad9dfd088544ce81c7e81348312ff6122d3c9e5b0459380603c"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-10/cpu-inventory.json",
+      "sha256": "f0bad7c71e283d091cd51298277fd861fa887432a38a0a2b5f08f1b92ee0bf5d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-10/recursive/config.json",
+      "sha256": "58318ec60a658cf0daad5aca0c5eced80cb15318b1eddacfe3a9e3220060512a"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-10/recursive/summary.json",
+      "sha256": "54fa14b8e4295d9687996dd151a0f135686f17577a288dcc7c26d648f7777347"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-10/recursive/owner/proofs/calibration-result.json",
+      "sha256": "46dfccc5290cc58e7aa22552dadd9b0ff41f77c96206a6e7958c31460e88d43a"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/phase-10/recursive/workers/gpu-01/prove.log",
+      "sha256": "d238006ad8b82a945ca07d4087fc66304d1b78bd79b269b698c4f5be3425cb35"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-10/result.json",
+      "sha256": "b125c201f503e56eb06c458c5082a5d6f2deecceeeb6aa8c1d0b6f7e798f49bd"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-full-recursion-20261019/qualification-01/cpu-audit-10/retired.json",
+      "sha256": "cb7818a08a36272d0791f6fc8cf514773342b09e62c445a1bdcc6d6c231d4d1a"
+    }
+  ]
+}

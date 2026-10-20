@@ -20,7 +20,21 @@ import uuid
 
 def launch(args):
     if sys.platform != 'linux':
-        raise ValueError('wallet GPU workers require Linux cgroup v2 and OpenCL')
+        raise ValueError('wallet GPU workers require Linux cgroup v2')
+    backend = getattr(args, 'gpu_backend', 'opencl')
+    library_path = getattr(args, 'cuda_library_path', None)
+    if backend not in ('opencl', 'cuda'):
+        raise ValueError('wallet GPU backend must be opencl or cuda')
+    if backend == 'cuda':
+        if library_path is None:
+            raise ValueError('CUDA requires --cuda-library-path for the NVRTC runtime')
+        if args.storage != 'full':
+            raise ValueError('--storage compact is an OpenCL setting')
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'lattica-prover-p3/scripts'))
+        import block_v2_cuda_cli as Cuda
+        cuda_runtime = Cuda.runtime(library_path)
+    elif library_path is not None:
+        raise ValueError('--cuda-library-path requires --gpu-backend cuda')
     if 'LATTICA_V2_WORKER_BUDGET' in os.environ or 'LATTICA_WALLET_WORKER_BUDGET' in os.environ:
         raise ValueError('launch from the wallet owner, outside an existing worker assignment')
     if not re.fullmatch(r'GPU-[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}', args.gpu_uuid):
@@ -47,9 +61,12 @@ def launch(args):
         raise ValueError('the assignment directory must be owned by this user with mode 0700')
     service = 'lattica-wallet-' + uuid.uuid4().hex + '.service'
     assignment = state / (service + '.json')
-    budget = dict(schema='lattica-wallet-local-gpu-v1', service=service, gpu_uuid=args.gpu_uuid,
+    budget = dict(schema='lattica-wallet-local-cuda-v1' if backend == 'cuda' else 'lattica-wallet-local-gpu-v1',
+                  service=service, gpu_uuid=args.gpu_uuid,
                   host_bytes=3 << 30, threads=4, managed_gpu_bytes=args.managed_gpu_gib << 30,
                   context_gpu_bytes=4 << 30, host_output_bytes=args.host_output_gib << 30)
+    if backend == 'cuda':
+        budget['cuda'] = {'max_allocation_bytes': 1 << 30, 'headroom_bytes': 1 << 30}
     with os.fdopen(os.open(assignment, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600), 'w') as stream:
         json.dump(budget, stream, indent=2)
         stream.write('\n')
@@ -58,24 +75,28 @@ def launch(args):
         'LATTICA_PROVING_POLICY': 'gpu-required',
         'LATTICA_PROVING_REPORT': '1',
         'LATTICA_GPU_DEVICE_UUID': args.gpu_uuid,
+        'LATTICA_GPU_BACKEND': backend,
         'LATTICA_V2_GPU_MANAGED_BYTES': str(budget['managed_gpu_bytes']),
         'LATTICA_V2_GPU_CONTEXT_BYTES': str(budget['context_gpu_bytes']),
         'LATTICA_V2_HOST_OUTPUT_BYTES': str(budget['host_output_bytes']),
         'RAYON_NUM_THREADS': '4',
         'CARGO_BUILD_JOBS': '4',
     }
-    for suffix in ['HASH', 'RETAIN_TREES', 'RESIDENT_LDE', 'OPENINGS', 'QUOTIENT_LDE',
-                   'QUOTIENT_EVAL', 'QUOTIENT_RESIDENT', 'LOOKUP', 'OPENING_EVAL',
-                   'FRI_RESIDENT', 'PCS_DEVICE_ONLY', 'WITNESS', 'RANDOMNESS', 'TRANSCRIPT']:
-        environment['LATTICA_V2_GPU_' + suffix] = '1'
-    environment['LATTICA_V2_QUOTIENT_FUSION'] = '1'
-    for suffix in ['DIRECT_READBACK', 'LDE_WORKSPACE_BYTES', 'FRI_FOLD', 'QUERY_GATHER',
-                   'OPENING_DENOMINATOR_CACHE', 'OPENING_COMPACT', 'PIPELINE']:
-        environment['LATTICA_V2_GPU_' + suffix] = '0'
-    for suffix in ['COMPACT_PROVER_DATA', 'DIRECT_READBACK', 'OPENING_COMPACT', 'PARALLEL_READBACK']:
-        environment['LATTICA_V2_GPU_' + suffix] = '1' if args.storage == 'compact' else '0'
+    if backend == 'cuda':
+        environment['LD_LIBRARY_PATH'] = cuda_runtime['library_directory']
+    else:
+        for suffix in ['HASH', 'RETAIN_TREES', 'RESIDENT_LDE', 'OPENINGS', 'QUOTIENT_LDE',
+                       'QUOTIENT_EVAL', 'QUOTIENT_RESIDENT', 'LOOKUP', 'OPENING_EVAL',
+                       'FRI_RESIDENT', 'PCS_DEVICE_ONLY', 'WITNESS', 'RANDOMNESS', 'TRANSCRIPT']:
+            environment['LATTICA_V2_GPU_' + suffix] = '1'
+        environment['LATTICA_V2_QUOTIENT_FUSION'] = '1'
+        for suffix in ['DIRECT_READBACK', 'LDE_WORKSPACE_BYTES', 'FRI_FOLD', 'QUERY_GATHER',
+                       'OPENING_DENOMINATOR_CACHE', 'OPENING_COMPACT', 'PIPELINE']:
+            environment['LATTICA_V2_GPU_' + suffix] = '0'
+        for suffix in ['COMPACT_PROVER_DATA', 'DIRECT_READBACK', 'OPENING_COMPACT', 'PARALLEL_READBACK']:
+            environment['LATTICA_V2_GPU_' + suffix] = '1' if args.storage == 'compact' else '0'
     limits = ['MemoryMax=3G', 'MemorySwapMax=0', 'CPUQuota=400%', 'RuntimeMaxSec=180',
-              'KillMode=control-group', 'LimitCORE=0', 'TimeoutStopSec=10']
+              'KillMode=control-group', 'LimitCORE=0', 'LimitSTACK=8M', 'TasksMax=96', 'TimeoutStopSec=10']
     invocation = ['systemd-run', '--user', '--wait', '--pipe', '--collect', '--service-type=exec',
                   '--unit=' + service, '--working-directory=' + str(workdir),
                   *['--property=' + p for p in limits],
@@ -99,6 +120,10 @@ def launch(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--gpu-backend', choices=['opencl', 'cuda'], default='opencl',
+                        help='native backend matching the application library (default: opencl)')
+    parser.add_argument('--cuda-library-path', type=Path,
+                        help='CUDA 12.9 NVRTC library directory; required for CUDA')
     parser.add_argument('--gpu-uuid', required=True)
     parser.add_argument('--state-dir', type=Path, required=True,
                         help='owner-only directory retaining public resource assignments')

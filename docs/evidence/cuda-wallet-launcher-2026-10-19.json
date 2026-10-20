@@ -1,0 +1,260 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-19",
+  "status": "passed",
+  "source_parent_commit": "5063311",
+  "scope": "Maintained private wallet launchers and native C/Zig integration; CUDA, OpenCL and CPU reference",
+  "changes": [
+    "Explicit CUDA backend and NVRTC directory selection with unchanged OpenCL default",
+    "CUDA wallet assignment with bounded allocation and headroom; 8 MiB stack and 96-task process limit",
+    "Matching CUDA/OpenCL integration linkage and GPU-specific Zig process root",
+    "Same-process OpenCL restart and fresh-process CUDA lifecycle; both check repeated-witness fresh hiding"
+  ],
+  "host_tests_passed": 5,
+  "runs": [
+    {
+      "exit_code": 0,
+      "elapsed_seconds": 12.83065635999992,
+      "backend": "cuda",
+      "unit": "lattica-wallet-4e992d051aa640948fe4552d429d8c3b.service",
+      "retired": {
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "MainPID": "0"
+      },
+      "library": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/liblattica_prover_p3-cuda.a",
+      "library_sha256": "19604e1c3105ec5aad241682be89049fb065adfe4def5c96530f98615800b8a3",
+      "status": "passed",
+      "complete_gpu_reports": 12,
+      "expected_invalid_htlc_rejections": 1,
+      "entry_points": {
+        "cuda_joinsplit": 3,
+        "cuda_htlc": 5,
+        "cuda_joinsplit_batch": 2,
+        "cuda_htlc_batch": 2
+      },
+      "cpu_verification_after_shutdown": true,
+      "fresh_hiding": true,
+      "cuda_retirement": [
+        {
+          "live_bytes": 0,
+          "peak_bytes": 835641104,
+          "allocations": 0,
+          "peak_allocations": 143,
+          "modules": 0,
+          "pending_commands": 0,
+          "completed_commands": 10282,
+          "device_ns": 487405120,
+          "uploaded_bytes": 7593432,
+          "downloaded_bytes": 2236608,
+          "copied_bytes": 2016,
+          "public_program_bytes": 0,
+          "public_programs": 0
+        },
+        {
+          "live_bytes": 0,
+          "peak_bytes": 420973312,
+          "allocations": 0,
+          "peak_allocations": 143,
+          "modules": 0,
+          "pending_commands": 0,
+          "completed_commands": 12167,
+          "device_ns": 401345504,
+          "uploaded_bytes": 7732440,
+          "downloaded_bytes": 3004368,
+          "copied_bytes": 2720,
+          "public_program_bytes": 0,
+          "public_programs": 0
+        }
+      ]
+    },
+    {
+      "exit_code": 0,
+      "elapsed_seconds": 15.532698114000596,
+      "backend": "opencl",
+      "unit": "lattica-wallet-f27d2d266e684521b7ab891a45945eb2.service",
+      "retired": {
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "MainPID": "0"
+      },
+      "library": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/qualification-04/liblattica_prover_p3-opencl.a",
+      "library_sha256": "e3c76c5c4005eff206676e9dfaa637d8540968529b9eac4de7da0cc72eaa4f57",
+      "status": "passed",
+      "complete_gpu_reports": 12,
+      "expected_invalid_htlc_rejections": 1,
+      "entry_points": {
+        "legacy_joinsplit_gpu": 3,
+        "legacy_htlc_gpu": 5,
+        "legacy_joinsplit_batch_gpu": 2,
+        "legacy_htlc_batch_gpu": 2
+      },
+      "cpu_verification_after_shutdown": true,
+      "fresh_hiding": true
+    },
+    {
+      "exit_code": 0,
+      "elapsed_seconds": 23.495511178000015,
+      "backend": "cpu",
+      "unit": "lattica-cuda-launcher-cpu-reference-20261019-q03.service",
+      "retired": {
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "MainPID": "0"
+      },
+      "library": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-native-host-20261019/qualification-01/liblattica_prover_p3-cpu.a",
+      "library_sha256": "55bd1a206b09031e8f9671cbf0c74b3de4d9dbee33fd0fc6da217225e09b4120",
+      "status": "passed"
+    }
+  ],
+  "preserved_failures": [
+    "Initial legacy C harness expected same-process CUDA reinitialization after shutdown.",
+    "Second local wrapper rejected the harness intentional invalid-HTLC witness report despite a successful native run.",
+    "Third local wrapper expected opencl instead of serialized open_cl; the initial audit also incorrectly required CPU serialization to be a GPU stage. The final audit requires GPU execution for all arithmetic, allows only CPU serialization, and consumes the successful retained runs without repeating GPU work."
+  ],
+  "limitations": [
+    "Correctness and resource-bound integration checks, not a hardware speed comparison or sustained throughput benchmark.",
+    "The launchers remain Linux/NVIDIA UUID based; other GPU vendors require separate admission support and qualification."
+  ],
+  "artifacts": [
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/source-pins.json",
+      "sha256": "82677d8fdd0f9f3e047baab7563b03af3ffd4fa61da47d2e8e762bab2ea6119c"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/qualify_launchers.py",
+      "sha256": "9600ae76cb322a373f887f6839e06ecee1d985a014c8dc34dd431742ce1b4a68"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/preserved-failure.json",
+      "sha256": "f18983dc268c071765b6eaa39d5dcb5bcf43ea32070cbde363a8c98ce03369fc"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/audit_results.py",
+      "sha256": "ed938e84a5d7d0a0956282ec4d2685da822adbb788f9ec06cb1ae3b4c0fdc47f"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/audit_results_final.py",
+      "sha256": "0dbf61df5aa8ba4b983ef3b568c2e8ca0a6382df94b39d0617e819a576508fb1"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/audit-scope-correction.json",
+      "sha256": "410120655160f1af44eb89f5187f7267344599d601afff6df62e62ce0753e5b2"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/cuda/assignments/lattica-wallet-4e992d051aa640948fe4552d429d8c3b.service.json",
+      "sha256": "d93f14d2f53b22e6029bd543af7694da28a69f81027e793c8b5c939ef247da44"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/cuda/command.json",
+      "sha256": "07a687ee993635cc47c1187638078214eb58dbb22cd9671894d3597884e0c459"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/cuda/test.log",
+      "sha256": "b457c0fb26c580b6b302557377c056ebf4eea34bf922858e54ee0237ad4ccd78"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/cuda/result.json",
+      "sha256": "5c0015d3db0c238517cc7b129c51115df9c283636fd383b842f7a3185a13595d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/cuda/integration/ffi_it",
+      "sha256": "57bf575d8d40f6bda6b34f87d3c59ba982a732a3368152642b6ba0671ac74fa8"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/cuda/integration/it_node",
+      "sha256": "e4550faec7256899bf8620a0556a4c2e6f6928e374cfa4fadd1a6afe6d050ec5"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/opencl/assignments/lattica-wallet-f27d2d266e684521b7ab891a45945eb2.service.json",
+      "sha256": "fedc624a555e13462fdc0b8c146d6a25e2d0e1de48630b412904346f5d45c265"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/opencl/command.json",
+      "sha256": "d65fe283f7b1266caf094bd56f92d6e70ec9821dde9b294f28f50868f2bd91a1"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/opencl/test.log",
+      "sha256": "b7d7142793d0c6fb37813a5b08397ef4882fc1a06f938986b7f144d3dcc8c643"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/opencl/result.json",
+      "sha256": "4968ad33a16d9086ffc1e6ac39f284a3d2811dff0a50516a2a77ddb3508b627c"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/opencl/integration/ffi_it",
+      "sha256": "1ee6e557933ee6637de2b81d865bce761d6ae1da4b02b1b9e711ad0791245e4e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/opencl/integration/it_node",
+      "sha256": "95206bf30c40df6d24391cbd4c3c17bacc632b62c1cec1712915d43a74fbe915"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/cpu/command.json",
+      "sha256": "e332401f2c94ea1d7770f7676dcd427b9e1f32fb9bb6533e7a29db658ba7d13a"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/cpu/test.log",
+      "sha256": "8414ba22590f078c65f944196e5fd95970123f83f9ec056516d4c4a8b3ef12f0"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/cpu/result.json",
+      "sha256": "0a74315f4cbb1774cac84821e9e2217fcb3c13908861e6c8501e9cba002dad29"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/cpu/integration/ffi_it",
+      "sha256": "c7a22743eb12cd1c3c2d1854e589ce54f1e948f5a467c7cf93e0521e7b82288d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-03/cpu/integration/it_node",
+      "sha256": "d43522c48b9f6f3e230dbb2cec7ac2e06231ff735db6ae5653b7c135963f3ac2"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-01/host-tests.json",
+      "sha256": "a55592b1cbb9ca69a0a2b92da2165caf61f44e2b32b9f586d5577d6248130bb1"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-01/host-tests.log",
+      "sha256": "3872f5a85da677f909ec5c55a5821758c34e2394460567a29f8043b480cc1105"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-01/build-retirement.json",
+      "sha256": "82a6b5f2637ee2807989c5b7983453251d42c3246e1776b887bab611a7480632"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-01/cuda/result.json",
+      "sha256": "6e247cb6023e4c3528920004a9f3a1009262cb45f6393ee6d1259f844ea67e9e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-01/cuda/test.log",
+      "sha256": "45f88b383ddc25e22b8c1a060185f1d25e2a802e9c48febfa28047d282dce51b"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-01/source-pins.json",
+      "sha256": "bfac37f947e07078e3157b5f7fdb20feecd2926dc3ec19d65847b007b9e76e18"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-01/supporting-source-pins.json",
+      "sha256": "40041920d828ac420cd7ef133932a6f9947aead11d68844b0694b2947b53cb93"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-02/source-pins.json",
+      "sha256": "51825424b9ba9a5c59538344baa9e16103d31eccdd1fe000ad91fa86cfa2c4a0"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-02/cuda/result.json",
+      "sha256": "8cdd200e8d148db3cade4e486d3046ca45d7facc59f0206cf71210739995301f"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-02/cuda/test.log",
+      "sha256": "a672e2d74a44d5fb5a8a274f34400f4510055125c5a3f89ceba210bafe48ee09"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-wallet-launcher-20261019/qualification-02/preserved-failure.json",
+      "sha256": "2211abe2529f00e34c838f30be2cf66f606ac95a14f1fd1be6b400e12037ba40"
+    }
+  ]
+}

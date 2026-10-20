@@ -42,6 +42,15 @@ int main(int argc, char **argv) {
     assert(lattica_htlc_batch_prove(htlc_batch, sizeof htlc_batch, 3,
         results[3].bytes, PROOF_CAP, &results[3].len,
         results[3].public_values, 248, &results[3].public_len) == 0);
+#ifdef LATTICA_TEST_CUDA
+    /* Repeat the same witness before retiring CUDA's single process runtime. */
+    assert(lattica_joinsplit_prove_demo(results[4].bytes, PROOF_CAP, &results[4].len,
+        results[4].public_values, 248, &results[4].public_len) == 0);
+    assert(results[0].public_len == results[4].public_len &&
+        memcmp(results[0].public_values, results[4].public_values, results[0].public_len) == 0);
+    assert(results[0].len != results[4].len ||
+        memcmp(results[0].bytes, results[4].bytes, results[0].len) != 0);
+#endif
     assert(lattica_gpu_drain() == LATTICA_GPU_OK);
     assert(lattica_gpu_shutdown() == LATTICA_GPU_OK);
     assert(lattica_gpu_shutdown() == LATTICA_GPU_OK);
@@ -66,6 +75,15 @@ int main(int argc, char **argv) {
         &public_length) == 1);
     assert(output[0] == 0xa5 && public_output[0] == 0x5a && length == 17 && public_length == 19);
 
+#ifdef LATTICA_TEST_CUDA
+    /* CUDA owns one admitted runtime per process. The separate Zig harness
+       tests successful initialization again in a fresh process. */
+    assert(lattica_gpu_initialize_from_env() == LATTICA_GPU_REJECTED);
+    assert(lattica_joinsplit_verify(results[4].bytes, results[4].len,
+        results[4].public_values, results[4].public_len) == 0);
+    puts("native_gpu_cpu_verified proof=4 after_shutdown=true fresh_hiding=true");
+    puts("native_gpu_lifecycle_complete proofs=5 preserved_outputs=true standalone_c=true restart_requires_fresh_process=true");
+#else
     assert(lattica_gpu_initialize_from_env() == LATTICA_GPU_OK);
     assert(lattica_joinsplit_prove_demo(results[4].bytes, PROOF_CAP, &results[4].len,
         results[4].public_values, 248, &results[4].public_len) == 0);
@@ -79,5 +97,6 @@ int main(int argc, char **argv) {
     assert(lattica_gpu_drain() == LATTICA_GPU_REJECTED);
     puts("native_gpu_cpu_verified proof=4 after_shutdown=true fresh_hiding=true");
     puts("native_gpu_lifecycle_complete proofs=5 preserved_outputs=true standalone_c=true");
+#endif
     return 0;
 }
