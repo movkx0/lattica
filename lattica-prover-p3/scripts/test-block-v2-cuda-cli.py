@@ -200,6 +200,19 @@ class CudaAdmission(unittest.TestCase):
         for value in [True,0,8*GIB]:
             with self.subTest(value=value),self.assertRaises(ValueError):
                 C.validate_completion(event|{'cuda':stats|{'peak_bytes':value}},budget)
+        pooled = stats | dict(event_pairs=0, peak_event_pairs=2,
+                              event_pairs_created=2, event_pairs_reused=16)
+        C.validate_completion(event | {'cuda': pooled}, budget, 4)
+        for key in ['event_pairs', 'peak_event_pairs', 'event_pairs_created', 'event_pairs_reused']:
+            missing = dict(pooled); del missing[key]
+            with self.subTest(missing=key), self.assertRaises(ValueError):
+                C.validate_completion(event | {'cuda': missing}, budget)
+            for value in [True, -1, '0']:
+                with self.subTest(key=key, value=value), self.assertRaises(ValueError):
+                    C.validate_completion(event | {'cuda': pooled | {key: value}}, budget)
+        for changed in [dict(event_pairs=1), dict(peak_event_pairs=65)]:
+            with self.subTest(changed=changed), self.assertRaises(ValueError):
+                C.validate_completion(event | {'cuda': pooled | changed}, budget)
 
 
 if __name__=='__main__':unittest.main()

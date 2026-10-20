@@ -8,6 +8,7 @@ mod buffer;
 mod commitment;
 mod compiler;
 mod device;
+mod events;
 mod field;
 mod fri;
 #[cfg(feature = "block-v2")]

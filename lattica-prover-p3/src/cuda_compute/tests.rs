@@ -3,6 +3,9 @@
 use super::*;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
+#[path = "tests/events.rs"]
+mod events;
+
 const SOURCE: &str = r#"
 extern "C" __global__ void write_words(unsigned long long* output,
     unsigned int count, unsigned long long mask) {

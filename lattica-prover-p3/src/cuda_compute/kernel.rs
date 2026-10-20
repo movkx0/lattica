@@ -191,20 +191,10 @@ impl Kernel {
         let guard = state.enter()?;
         let reporting = state.reporting_ticket(self.stage)?;
         let reservation = state.budget.command()?;
-        let start = result::event::create(sys::CUevent_flags::CU_EVENT_DEFAULT).map_err(error)?;
-        let end = match result::event::create(sys::CUevent_flags::CU_EVENT_DEFAULT) {
-            Ok(event) => event,
-            Err(e) => {
-                cleanup(
-                    result::event::destroy(start).map_err(error),
-                    "partial event creation",
-                );
-                return Err(error(e));
-            }
-        };
+        let events = state.events.take(state)?;
+        let (start, end) = (events.start, events.end);
         let receipt = Completion {
-            start,
-            end,
+            events: Some(events),
             completed: false,
             _reservation: reservation,
             state: state.clone(),
@@ -235,8 +225,7 @@ impl Kernel {
 
 #[must_use = "CUDA completion must be observed; abandoning it invalidates this runtime"]
 pub(crate) struct Completion {
-    start: sys::CUevent,
-    end: sys::CUevent,
+    events: Option<super::events::Pair>,
     completed: bool,
     _reservation: Reservation,
     state: Arc<State>,
@@ -251,11 +240,15 @@ impl Completion {
     pub(crate) fn finish(mut self) -> Result<u64> {
         {
             let _guard = self.state.enter()?;
+            let events = self
+                .events
+                .as_ref()
+                .ok_or("CUDA completion lost timing events")?;
             unsafe {
-                result::event::synchronize(self.end).map_err(error)?;
+                result::event::synchronize(events.end).map_err(error)?;
             }
             let milliseconds =
-                unsafe { result::event::elapsed(self.start, self.end).map_err(error)? };
+                unsafe { result::event::elapsed(events.start, events.end).map_err(error)? };
             if !milliseconds.is_finite()
                 || milliseconds < 0.0
                 || milliseconds as f64 * 1e6 >= u64::MAX as f64
@@ -280,13 +273,12 @@ impl Drop for Completion {
             self.state.fail();
             cleanup(self.state.drain(), "abandoned command drain");
         }
-        cleanup(
-            unsafe { result::event::destroy(self.start).map_err(error) },
-            "start event destroy",
-        );
-        cleanup(
-            unsafe { result::event::destroy(self.end).map_err(error) },
-            "end event destroy",
-        );
+        if let Some(events) = self.events.take() {
+            if self.completed && !self.state.failed() {
+                cleanup(self.state.events.recycle(events), "timing event recycle");
+            } else {
+                drop(events);
+            }
+        }
     }
 }

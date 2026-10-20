@@ -13,6 +13,12 @@ progress.
 
 ## Current checkpoint
 
+The experimental CUDA runtime now reuses completed timing-event pairs within
+the existing command allowance. Its [event-pool qualification](evidence/cuda-event-pool-2026-10-20.json)
+records 94 passing CUDA checks, zero sanitizer errors or leaks, and successful
+abandoned-receipt and asynchronous-failure cleanup tests. Full recursive proof
+validation and matched performance comparisons for this change remain pending.
+
 The latest [128-input qualification](evidence/cuda-full-recursion-128-2026-10-20.json)
 completes all 127 CUDA recursive proofs, independent CPU verification, native
 durable application and a fresh-process journal audit. It uses eighteen separate

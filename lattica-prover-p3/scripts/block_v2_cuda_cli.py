@@ -143,3 +143,10 @@ def validate_completion(event, budget, expected=None):
             raise ValueError('CUDA worker completion lacks bounded work telemetry')
     if stats['peak_bytes'] > budget['gpu']['managed_bytes']:
         raise ValueError('CUDA worker exceeded its managed allocation budget')
+    # Older archived executables destroy events with each receipt. Pooled
+    # executables publish all four counters and must retire their cached owners.
+    event_keys = ['event_pairs', 'peak_event_pairs', 'event_pairs_created', 'event_pairs_reused']
+    if any(key in stats for key in event_keys):
+        if (any(type(stats.get(key)) is not int or stats[key] < 0 for key in event_keys)
+                or stats['event_pairs'] != 0 or stats['peak_event_pairs'] > 64):
+            raise ValueError('CUDA worker retained or exceeded its timing event allowance')

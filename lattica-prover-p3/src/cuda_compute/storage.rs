@@ -29,6 +29,7 @@ impl Schedule {
             || state.allocations > limits.max_allocations
             || state.modules > limits.max_modules
             || state.pending_commands != 0
+            || state.event_pairs > limits.max_pending
         {
             return Err("CUDA request requires an idle, admitted runtime".into());
         }

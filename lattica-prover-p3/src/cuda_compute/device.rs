@@ -108,6 +108,7 @@ pub(super) struct State {
     pub stream: Arc<CudaStream>,
     pub identity: Identity,
     pub budget: Arc<Budget>,
+    pub(super) events: super::events::Pool,
     queue: Mutex<()>,
     failed: AtomicBool,
     pub(super) reporting: Mutex<Option<Arc<super::reporting::Ledger>>>,
@@ -151,6 +152,7 @@ impl Runtime {
                 stream,
                 identity,
                 budget,
+                events: super::events::Pool::new(limits.max_pending),
                 queue: Mutex::new(()),
                 failed: AtomicBool::new(false),
                 reporting: Mutex::new(None),
@@ -193,6 +195,14 @@ impl Runtime {
         {
             return Err("CUDA worker still has retained device owners".into());
         }
+        {
+            let _guard = self.state.enter()?;
+            self.state.events.clear();
+        }
+        let snapshot = self.snapshot();
+        if snapshot.event_pairs != 0 {
+            return Err("CUDA worker still retained timing events".into());
+        }
         drop(self);
         Ok(snapshot)
     }
@@ -201,6 +211,9 @@ impl Runtime {
 impl State {
     pub fn fail(&self) {
         self.failed.store(true, Ordering::Release);
+    }
+    pub(super) fn failed(&self) -> bool {
+        self.failed.load(Ordering::Acquire)
     }
 
     pub fn cleanup_lock(&self) -> MutexGuard<'_, ()> {
@@ -231,6 +244,8 @@ impl Drop for State {
     fn drop(&mut self) {
         cleanup(self.drain(), "context drain");
         cleanup(self.context.check_err().map_err(error), "context status");
+        self.events.clear();
+        debug_assert_eq!(self.budget.snapshot().event_pairs, 0);
         debug_assert_eq!(self.budget.snapshot().live_bytes, 0);
     }
 }

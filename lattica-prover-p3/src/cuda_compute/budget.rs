@@ -60,6 +60,11 @@ pub struct Snapshot {
     pub modules: usize,
     /// Each pending command owns two CUDA timing events.
     pub pending_commands: usize,
+    /// Timing event pairs, including completed pairs retained for reuse.
+    pub event_pairs: usize,
+    pub peak_event_pairs: usize,
+    pub event_pairs_created: u64,
+    pub event_pairs_reused: u64,
     pub completed_commands: u64,
     pub device_ns: u128,
     /// Explicit u64 buffer transfers; excludes public module/driver metadata.
@@ -87,6 +92,7 @@ enum Kind {
     Allocation(usize),
     Module,
     Command,
+    EventPair,
     PublicProgram(usize),
 }
 
@@ -168,6 +174,13 @@ impl Budget {
                 }
                 state.pending_commands += 1;
             }
+            Kind::EventPair => {
+                if state.event_pairs == self.limits.max_pending {
+                    return Err("CUDA timing event allowance exhausted".into());
+                }
+                state.event_pairs += 1;
+                state.peak_event_pairs = state.peak_event_pairs.max(state.event_pairs);
+            }
         }
         Ok(Reservation {
             budget: self.clone(),
@@ -184,6 +197,21 @@ impl Budget {
     }
     pub fn command(self: &Arc<Self>) -> Result<Reservation> {
         self.reserve(Kind::Command)
+    }
+    pub fn event_pair(self: &Arc<Self>) -> Result<Reservation> {
+        self.reserve(Kind::EventPair)
+    }
+    pub fn event_pair_used(&self, created: bool) -> Result<()> {
+        let mut state = self.state.lock().map_err(|_| "CUDA accounting poisoned")?;
+        let counter = if created {
+            &mut state.event_pairs_created
+        } else {
+            &mut state.event_pairs_reused
+        };
+        *counter = counter
+            .checked_add(1)
+            .ok_or("CUDA timing event count overflow")?;
+        Ok(())
     }
     pub fn public_program(self: &Arc<Self>, bytes: usize) -> Result<Reservation> {
         self.reserve(Kind::PublicProgram(bytes))
@@ -219,6 +247,7 @@ impl Drop for Reservation {
             }
             Kind::Module => state.modules -= 1,
             Kind::Command => state.pending_commands -= 1,
+            Kind::EventPair => state.event_pairs -= 1,
         }
     }
 }
@@ -226,6 +255,32 @@ impl Drop for Reservation {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn timing_events_remain_reserved_after_command_retirement() {
+        let budget = Budget::new(Limits {
+            max_pending: 2,
+            ..Limits::default()
+        })
+        .unwrap();
+        let command = budget.command().unwrap();
+        let first = budget.event_pair().unwrap();
+        budget.event_pair_used(true).unwrap();
+        drop(command);
+        assert_eq!(budget.snapshot().pending_commands, 0);
+        assert_eq!(budget.snapshot().event_pairs, 1);
+        let second = budget.event_pair().unwrap();
+        budget.event_pair_used(true).unwrap();
+        assert!(budget.event_pair().is_err());
+        budget.event_pair_used(false).unwrap();
+        assert_eq!(budget.snapshot().event_pairs, 2);
+        assert_eq!(budget.snapshot().peak_event_pairs, 2);
+        assert_eq!(budget.snapshot().event_pairs_created, 2);
+        assert_eq!(budget.snapshot().event_pairs_reused, 1);
+        drop(first);
+        drop(second);
+        assert_eq!(budget.snapshot().event_pairs, 0);
+    }
     #[test]
     fn public_programs_charge_retained_host_capacity_and_count() {
         let budget = Budget::new(Limits::default()).unwrap();
