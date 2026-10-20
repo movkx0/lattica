@@ -1390,6 +1390,15 @@ These are host correctness checks, not a new throughput benchmark. Full recursiv
 blocks, durable delivery, timing-approved pools and other-device qualification
 remain open.
 
+The first subsequent recursive warmup exposed a duplicate `perm8` definition in
+the combined CUDA wallet/witness source and produced no root or timing sample.
+The [shared-kernel fix](evidence/cuda-witness-kernel-fix-2026-10-19.json) removes
+that duplicate and uses the existing wallet permutation without arithmetic or
+security changes. Six recursive witness tests and four wallet tests passed on
+the RTX 5080, including CPU differentials, admission/cleanup checks, native STARK
+verification and kernel compilation for Volta and Blackwell. The failed warmup
+is retained, and its worker and coordinator exited.
+
 ## Implementation sequence
 
 The [V100 results](../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt)

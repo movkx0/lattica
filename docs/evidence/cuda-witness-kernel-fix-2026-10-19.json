@@ -1,0 +1,211 @@
+{
+  "schema": "lattica-cuda-shared-witness-kernel-fix-v1",
+  "date": "2026-10-19",
+  "status": "passed",
+  "source_parent_commit": "4259f992f950531cbf46bab214cca3687e24fe41",
+  "source": {
+    "path": "lattica-prover-p3/src/cuda_compute/witness.cuh",
+    "sha256": "f986c001d59844d7f2c5dda560e65dfbc12e03cb7f9a708564e8298413a06cd4"
+  },
+  "shared_permutation": {
+    "path": "lattica-prover-p3/src/cuda_compute/wallet.cuh",
+    "sha256": "368173b07c31d6ac87487f1b42a7519935d144927c3418c91bb6edc298dbd3fb"
+  },
+  "change": "Remove the duplicate perm8 definition from the recursive witness adapter. The combined source now uses the existing wallet adapter implementation.",
+  "arithmetic_or_security_parameter_changes": false,
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 5080",
+    "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "driver": "615.78.08"
+  },
+  "source_pins_verified": 884,
+  "source_manifest": {
+    "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/source-pins.json",
+    "sha256": "1e14482d9dabf8e899ddc3cb70145bb10dc6e778b415943f052e19fa4b92fe77"
+  },
+  "builds": [
+    {
+      "label": "tests",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "-j2",
+        "--features",
+        "gpu-cuda,block-v2-host,stream",
+        "--lib",
+        "--no-run",
+        "--message-format=json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "production",
+      "command": [
+        "cargo",
+        "build",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "-j2",
+        "--features",
+        "gpu-cuda,block-v2-host,stream",
+        "--lib",
+        "--bin",
+        "block-v2-paired-probe"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "checks": [
+    {
+      "case": "recursive-witness",
+      "passed": 6,
+      "failed": 0,
+      "host_memory_peak_bytes": 156778496,
+      "service_retired": true,
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/recursive-witness/command.json",
+          "sha256": "9ddc2f13b94442da21fe128ffe942681b8b12640e3039edf6ddc0656941d5966"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/recursive-witness/result.json",
+          "sha256": "8e384d16b0894e1f17b83116c392fb635526d38a35b987c4b3e4e4cd6af08c7d"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/recursive-witness/retired.json",
+          "sha256": "652c3fe4870599fc4495bb6e555902bdfd7fd5c76a7d7039437452ad1e38c2dd"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/recursive-witness/test.log",
+          "sha256": "5e44c74cb14b4c044aa68bc6a0867bf8d0259c11ce0ed00249d12e91a72b3e6b"
+        }
+      ]
+    },
+    {
+      "case": "wallet-regression",
+      "passed": 4,
+      "failed": 0,
+      "host_memory_peak_bytes": 160350208,
+      "service_retired": true,
+      "artifacts": [
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/wallet-regression/command.json",
+          "sha256": "f2a59fdaa13dcdf9f93068acf4a4f89887856e0b812f0bbf7a164996f31b299f"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/wallet-regression/result.json",
+          "sha256": "17d069835258d942bb28861adbd37bc4cb2c1fafc86f5980d367f746cbca97cd"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/wallet-regression/retired.json",
+          "sha256": "889cd3b9e625ae99210947fe1978b8ff8fd8c76748c39f60f4046f01ab50ff11"
+        },
+        {
+          "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/wallet-regression/test.log",
+          "sha256": "e299a33f06b9757ea61c69b2c6a5dd4878f42b69929bcdd6b28cd76731d66eae"
+        }
+      ]
+    }
+  ],
+  "kernel_compilation_targets": [
+    70,
+    120
+  ],
+  "volta_hardware_execution": false,
+  "coverage": [
+    "Recursive witness/public/preprocessing CPU differentials and completion receipts.",
+    "Recursive allocation admission, execution failure cleanup, and resident lookup integration.",
+    "Wallet trace/public CPU differentials, invalid witness cleanup, native STARK CPU verification.",
+    "Combined recursive and standalone wallet kernel compilation for Volta and Blackwell."
+  ],
+  "preserved_benchmark_failure": {
+    "source_commit": "4259f992f950531cbf46bab214cca3687e24fe41",
+    "phase": "warmup",
+    "timing_samples_produced": 0,
+    "recursive_root_produced": false,
+    "error": "NVRTC compilation: perm8 already defined in combined wallet/witness source.",
+    "artifacts": [
+      {
+        "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-01/post-push-benchmark-01/warmup-launcher.log",
+        "sha256": "e59a93e4f6c6b2147971282eb313c729c106ab6242342aa97c6b645c86255e9c"
+      },
+      {
+        "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-01/post-push-benchmark-01/warmup/summary.json",
+        "sha256": "1451317b2a672ed5bc5f961a016bd8457cade2dda7756d3852dd9d6549d6f9a8"
+      },
+      {
+        "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-01/post-push-benchmark-01/warmup/workers/gpu-01/prove.log",
+        "sha256": "5c47ee9d0f3ed69dfe71292431f0372ee3ee0bf2a7d28e76e1e7d7c8c0644270"
+      },
+      {
+        "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/post-push-recursive-01/post-push-benchmark-01/failed-attempt-retirement.json",
+        "sha256": "7aeb4c15d2501fb1fa6765da1d0766481e0e4f041aa13f3c7924068e210767e5"
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/build.py",
+      "sha256": "8a2b961b5c55383ffe98494cb669d78cb34f80f2a795052097028f9beedcccfa"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/build-results.json",
+      "sha256": "5668a54440bc73346a498a5c181970192967b8ed7ebab6aafd4ff6eb6ab3a6e0"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/run.py",
+      "sha256": "b7111a519340511788d9b84d3240a12c8b5ae40f8d420eec69e775eadac267fb"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/checks.py",
+      "sha256": "dab49ab9c5dc44286115de7bdbe19b02200b05602ba91d413a1eeef332a4cb28"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/cuda-tests",
+      "sha256": "beccd1ef0e3319311b79e70f39009189fead55efb8914f57ff12dcf8954e565e"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/cuda-cli",
+      "sha256": "8cee0ca7d7e8fd64b1a09540b354704c53809e341fd44fce9e647d6f8cb3659d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/cuda-library.json",
+      "sha256": "c4f294f5d1d3ae0fcc2df5514a30fd63d5e36628012b90ac775663031b02ee94"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/test-image.json",
+      "sha256": "b2a2ac01471d26a1cfe7477012d8117e3c053d1f92abbdde1bfe0d8f58e63b6d"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/build-service.json",
+      "sha256": "e550a8bd90c3a2a51e9f747fb82432c9e6d1c7304f47ce2b8154f5c7e75e8ad6"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/tests-build.log",
+      "sha256": "6bd2cb3aabfe260ad1ea6c2a646124346acb2daf396a5c33a1e16713f9ba0f36"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/production-build.log",
+      "sha256": "96b15ba774ecd9781de38b35a56ec6786f32a3105faea246d999e835501b1915"
+    },
+    {
+      "path": "lattica-prover-p3/benchmark-results/cuda-zig-host-20261019/witness-fix-01/record_fix.py",
+      "sha256": "dbe525e1f075eaf7b1db51ce177e1276abb7c7a951a004a8386194fc14fcf42e"
+    }
+  ],
+  "limits": {
+    "host_bytes": 3221225472,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 400,
+    "rayon_threads": 4,
+    "task_limit": 96,
+    "stack_limit_bytes": 8388608
+  },
+  "scope": "Compilation and GPU correctness regression qualification. Recursive benchmark retry is separate; full block/durable delivery remains open."
+}
