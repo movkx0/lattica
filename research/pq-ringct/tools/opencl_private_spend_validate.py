@@ -70,7 +70,7 @@ def systemd_state(unit):
 def source_manifest():
     paths = set()
     for directory in [ROOT / 'lattica-prover-p3/src', ROOT / 'lattica-prover-p3/vendor',
-                      ROOT / 'research/pq-ringct', ROOT / 'research/pq-ringct-batch']:
+                      ROOT / 'research']:
         paths.update(path for path in directory.rglob('*')
                      if path.is_file() and '__pycache__' not in path.parts
                      and 'target' not in path.parts and '.tools' not in path.relative_to(ROOT).parts)
@@ -111,6 +111,8 @@ def build_plan(args):
     require(not args.record_artifact or (args.profile == 'build' and Path(argv[0]).name == 'cargo'
             and (argv[1:2] == ['build'] or (argv[1:2] == ['test'] and '--no-run' in argv))),
             '--record-artifact requires a Cargo build or test --no-run build profile')
+    if args.expect_result:
+        experiment_selection({'command': argv})
     require(all(Path(path).is_absolute() for path in args.record_artifact),
             'recorded artifact paths must be absolute')
     require(not args.expect_tests or Path(argv[0]).name == 'cargo' or args.build_label,
@@ -191,6 +193,49 @@ def driver_limits(plan):
     return limits
 
 
+def experiment_selection(plan):
+    """Bind independently selected experiments to correctness and measurement."""
+    argv = plan['command']
+    choices = {
+        '--metadata-capacity': ('256', '512'),
+        '--registration-telemetry': ('off', 'bounded'),
+        '--shake-wrappers': ('singleton', 'paired-v1'),
+    }
+    selected = {}
+    for option, allowed in choices.items():
+        require(not any(arg.startswith(option + '=') for arg in argv),
+                'use a separate value for ' + option)
+        require(argv.count(option) <= 1, 'duplicate ' + option)
+        value = allowed[0]
+        if option in argv:
+            index = argv.index(option)
+            require(index + 1 < len(argv), 'missing ' + option)
+            value = argv[index + 1]
+        require(value in allowed, 'unsupported ' + option)
+        selected[option[2:].replace('-', '_')] = int(value) if option == '--metadata-capacity' else value
+    selected['prepared_reuse'] = 'single_entry'
+    return selected
+
+
+def validate_experiments(result, plan):
+    expected = experiment_selection(plan)
+    baseline = experiment_selection({'command': []})
+    # Historical baseline results predate these optional selectors. A candidate
+    # must always report its exact selection; absence cannot mean a fallback.
+    actual = result.get('experiments', baseline)
+    require(actual == expected, 'driver experiment selection differs from command')
+    if 'experiments' in result:
+        require(set(actual) == set(baseline), 'unknown experiment report fields')
+        require(type(actual['metadata_capacity']) is int, 'invalid metadata capacity report')
+        context = result.get('context', {})
+        require(context.get('maximum_metadata_entries') == actual['metadata_capacity'],
+                'context metadata capacity differs from selection')
+        for case in result.get('cases', []):
+            require(case.get('experiments') == actual, 'case experiment selection differs')
+    else:
+        require(expected == baseline, 'candidate result omitted experiment selection')
+
+
 def prior_correctness(plan, sources, executable, runs):
     """Replay complete acceptance before launch; a build/unit pass is insufficient."""
     label = plan['correctness_label']
@@ -210,6 +255,8 @@ def prior_correctness(plan, sources, executable, runs):
     require(record.get('environment') == plan['environment']
             and driver_limits(record) == driver_limits(plan),
             'prior correctness resource/thread/GPU limits differ')
+    require(experiment_selection(record) == experiment_selection(plan),
+            'prior correctness experiment selection differs')
     require(record.get('raw_log') == str(log_path)
             and log_path.is_file() and sha(log_path) == record.get('raw_log_sha256'),
             'prior correctness log changed')
@@ -220,6 +267,7 @@ def prior_correctness(plan, sources, executable, runs):
             'prior correctness result differs from its log')
     result = results[0]
     validate_result(result)
+    validate_experiments(result, record)
     require(not result.get('benchmark_measured', False), 'prior run must be correctness mode')
     receipts = validate_receipts(content, result)
     require(receipts == record.get('receipt_acceptance'), 'prior receipt acceptance differs')
@@ -549,6 +597,7 @@ def validate_output(log, plan):
                    for line in content.splitlines() if line.startswith('OPENCL_OPT_RESULT ')]
         require(len(results) == 1, 'expected exactly one correctness result')
         validate_result(results[0])
+        validate_experiments(results[0], plan)
         plan['receipt_acceptance'] = validate_receipts(content, results[0])
         plan['correctness_result'] = results[0]
         plan['measurement_acceptance'] = validate_measurement(results[0], plan)

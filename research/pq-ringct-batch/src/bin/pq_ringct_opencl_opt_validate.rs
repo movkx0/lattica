@@ -5,7 +5,7 @@ use lattica_pq_ringct_batch::{
     PUBLIC_VALUES,
 };
 use lattica_pq_ringct_research::{
-    execution::ProvingContext,
+    execution::{MetadataCapacity, ProvingContext, RegistrationTelemetry},
     graph_crypto,
     graph_proofs::{GraphProofPlan, ResourceLimits},
     graph_tree::{GraphContext, Plan as GraphPlan},
@@ -17,7 +17,9 @@ use lattica_pq_ringct_research::{
         committed_backend::{self, source_binding::RegisteredGraphShape},
         Proof, Statement,
     },
-    spend_pipeline::{AesLayout, Budgets, CompositeLayout, SpendPipeline, TranscriptLayout},
+    spend_pipeline::{
+        AesLayout, Budgets, CompositeLayout, ShakeWrapperLayout, SpendPipeline, TranscriptLayout,
+    },
 };
 use lattica_prover_p3::block_v2::{
     machine::program::Val, native_gpu::private_spend::SpendLimits, profile::Config,
@@ -85,6 +87,29 @@ struct Arguments {
     limits: Limits,
     native_bytes: u64,
     benchmark: bool,
+    metadata_capacity: MetadataCapacity,
+    registration_telemetry: RegistrationTelemetry,
+    shake_wrappers: ShakeWrapperLayout,
+}
+
+impl Arguments {
+    fn experiments(&self) -> Value {
+        json!({
+            "metadata_capacity": match self.metadata_capacity {
+                MetadataCapacity::Entries256 => 256,
+                MetadataCapacity::Entries512 => 512,
+            },
+            "registration_telemetry": match self.registration_telemetry {
+                RegistrationTelemetry::Disabled => "off",
+                RegistrationTelemetry::Bounded => "bounded",
+            },
+            "prepared_reuse": "single_entry",
+            "shake_wrappers": match self.shake_wrappers {
+                ShakeWrapperLayout::Singleton => "singleton",
+                ShakeWrapperLayout::PairedV1 => "paired-v1",
+            },
+        })
+    }
 }
 fn arguments() -> Result<Option<Arguments>> {
     let mut values = BTreeMap::new();
@@ -97,7 +122,7 @@ fn arguments() -> Result<Option<Arguments>> {
             continue;
         }
         if key == "--help" {
-            println!("pq-ringct-opencl-opt-validate --output-dir NEW_DIRECTORY --counts 3|4|3,4 --host-bytes N --device-bytes N --max-rows N --native-bytes N [--benchmark]\nFull correctness checks; optional end-to-end workflow timing; fresh distinct native transactions, FreshOnly caches, one serial OpenCL context. Launch through opencl_private_spend_validate.py with the full resource profile.");
+            println!("pq-ringct-opencl-opt-validate --output-dir NEW_DIRECTORY --counts 3|4|3,4 --host-bytes N --device-bytes N --max-rows N --native-bytes N [--benchmark] [--metadata-capacity 256|512] [--registration-telemetry off|bounded] [--shake-wrappers singleton|paired-v1]\nFull correctness checks; optional end-to-end workflow timing; fresh distinct native transactions, FreshOnly caches, one serial OpenCL context. Launch through opencl_private_spend_validate.py with the full resource profile. Experimental layouts require admission before dispatch.");
             return Ok(None);
         }
         require(
@@ -108,6 +133,9 @@ fn arguments() -> Result<Option<Arguments>> {
                 "--device-bytes",
                 "--max-rows",
                 "--native-bytes",
+                "--metadata-capacity",
+                "--registration-telemetry",
+                "--shake-wrappers",
             ]
             .contains(&key.as_str()),
             "unknown argument",
@@ -116,6 +144,33 @@ fn arguments() -> Result<Option<Arguments>> {
         require(values.insert(key, value).is_none(), "duplicate argument")?;
     }
     let get = |name: &str| values.get(name).ok_or_else(|| format!("missing {name}"));
+    let metadata_capacity = match values
+        .get("--metadata-capacity")
+        .map(String::as_str)
+        .unwrap_or("256")
+    {
+        "256" => MetadataCapacity::Entries256,
+        "512" => MetadataCapacity::Entries512,
+        _ => return Err("metadata capacity must be 256 or 512".into()),
+    };
+    let registration_telemetry = match values
+        .get("--registration-telemetry")
+        .map(String::as_str)
+        .unwrap_or("off")
+    {
+        "off" => RegistrationTelemetry::Disabled,
+        "bounded" => RegistrationTelemetry::Bounded,
+        _ => return Err("registration telemetry must be off or bounded".into()),
+    };
+    let shake_wrappers = match values
+        .get("--shake-wrappers")
+        .map(String::as_str)
+        .unwrap_or("singleton")
+    {
+        "singleton" => ShakeWrapperLayout::Singleton,
+        "paired-v1" => ShakeWrapperLayout::PairedV1,
+        _ => return Err("SHAKE wrappers must be singleton or paired-v1".into()),
+    };
     let counts = match get("--counts")?.as_str() {
         "3" => vec![3],
         "4" => vec![4],
@@ -151,6 +206,9 @@ fn arguments() -> Result<Option<Arguments>> {
         limits,
         native_bytes,
         benchmark,
+        metadata_capacity,
+        registration_telemetry,
+        shake_wrappers,
     }))
 }
 
@@ -265,7 +323,8 @@ fn case(worker: &ProvingContext, args: &Arguments, count: u32) -> Result<Complet
             composites: CompositeLayout::Branches,
         },
         ProofCachePolicy::FreshOnly,
-    )?;
+    )?
+    .with_shake_wrapper_layout(args.shake_wrappers)?;
     let mut completed = Vec::new();
     let mut graph_contexts = Vec::new();
     let mut originals = Vec::new();
@@ -467,7 +526,7 @@ fn case(worker: &ProvingContext, args: &Arguments, count: u32) -> Result<Complet
     let artifact = directory.join("aggregate.postcard");
     save(&artifact, &bytes)?;
     require(read(&artifact)? == bytes, "persisted artifact changed")?;
-    let mut result = json!({"count":count,"fresh_distinct_transactions":digests.len(),"cache":statistics,
+    let mut result = json!({"count":count,"experiments":args.experiments(),"fresh_distinct_transactions":digests.len(),"cache":statistics,
         "source_identities":source_ids,"statement_digests":digests,"merges":merges,
         "changed_public_rejected_count":PUBLIC_VALUES,"changed_proof_rejected":true,
         "distinct_reordering_rejected":true,"distinct_substitution_rejected":true,
@@ -503,6 +562,7 @@ fn run() -> Result<()> {
     let failures = args.directory.join("failures");
     fs::create_dir(&failures)?;
     let worker = ProvingContext::opencl(args.limits)?;
+    worker.configure_registration(args.metadata_capacity, args.registration_telemetry)?;
     worker.set_failure_directory(failures)?;
     let mut cases = Vec::new();
     for &count in &args.counts {
@@ -574,6 +634,7 @@ fn run() -> Result<()> {
         results.push(case.result);
     }
     let mut result = json!({"schema":"pq-opencl-opt-correctness-v2","passed":true,"cases":results,
+        "experiments":args.experiments(),
         "context":context_report,"proving_scope":"native_private_spend_and_native_recursive_stark_proving",
         "fixture_generation":"cpu_ring_ask_inputs_only","native_private_spend_generation":"gpu_required",
         "independent_verification":"cpu",
