@@ -29,6 +29,7 @@ mod retention;
 mod shake_compile_memory;
 pub use shake_compile_memory::{ShakeGroupCompileFootprint, ShakeGroupFootprintError};
 mod preparation;
+pub(crate) mod shake_verification_memory;
 use preparation::with_endpoint_preparation;
 mod wide;
 pub use wide::{compile_wide_shake, compile_wide_shake_with_context};

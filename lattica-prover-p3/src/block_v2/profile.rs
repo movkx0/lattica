@@ -75,6 +75,7 @@ pub type Pcs = super::quotient_pcs::CandidatePcs;
 pub type Config = StarkConfig<Pcs, Challenge, Challenger>;
 
 pub(crate) mod verification;
+pub use verification::CpuVerificationConfigPlan;
 
 /// Inventory the selected path, not the features compiled into this binary.
 /// Existing GPU stages still perform host arithmetic/materialization around

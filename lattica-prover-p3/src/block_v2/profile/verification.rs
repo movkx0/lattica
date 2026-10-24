@@ -5,6 +5,55 @@ use super::{config_with_rngs, Config};
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 
+/// Source-audited construction of a fresh CPU verification configuration.
+/// This is a requested-heap payload bound, not a worker or RSS reservation.
+/// It excludes stacks, allocator overhead, callbacks and OS entropy internals.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct CpuVerificationConfigPlan {
+    requested_bytes: usize,
+}
+
+impl CpuVerificationConfigPlan {
+    /// No RNG, configuration, symbolic inference or allocation runs here.
+    pub fn new() -> Result<Self, &'static str> {
+        #[cfg(all(not(debug_assertions), target_arch = "x86_64"))]
+        {
+            if !<super::Pcs as p3_commit::Pcs<super::Challenge, super::Challenger>>::ZK {
+                return Err("CPU verification config requires the hiding profile");
+            }
+            Ok(Self {
+                requested_bytes: requested_bytes(),
+            })
+        }
+        #[cfg(not(all(not(debug_assertions), target_arch = "x86_64")))]
+        {
+            Err("bounded CPU verification requires release x86_64")
+        }
+    }
+
+    pub fn requested_bytes(self) -> usize {
+        self.requested_bytes
+    }
+
+    /// The caller must reserve this payload before calling. An insufficient
+    /// allowance is rejected before entropy acquisition or configuration work.
+    /// Fresh SysRng seeds avoid initializing rand's thread-local RNG. The
+    /// challenger, hiding, PCS and security parameters are unchanged, and this
+    /// configuration always selects CPU operations while a GPU session lives.
+    pub fn make_config(self, allowance: usize) -> Result<Config, &'static str> {
+        if allowance < self.requested_bytes {
+            return Err("CPU verification configuration payload allowance");
+        }
+        let salt = ChaCha20Rng::try_from_rng(&mut rand::rngs::SysRng)
+            .map_err(|_| "native verifier entropy unavailable")?;
+        let hiding = ChaCha20Rng::try_from_rng(&mut rand::rngs::SysRng)
+            .map_err(|_| "native verifier entropy unavailable")?;
+        Ok(super::config_with_cpu_selection(
+            salt, hiding, None, false, false, None, true,
+        ))
+    }
+}
+
 pub(crate) fn make_config() -> Result<Config, &'static str> {
     let salt = ChaCha20Rng::try_from_rng(&mut rand::rngs::SysRng)
         .map_err(|_| "native verifier entropy unavailable")?;
