@@ -682,6 +682,48 @@ pub struct ShakeGroupMember<'a> {
     pub proof: &'a shake_air::lane::LaneShakeProof,
 }
 
+/// An early, allocation-free rejection check. The recursive verifier below
+/// still emits all 108 equalities; host equality is never proof acceptance.
+fn check_shake_boundary(
+    left: &[Val; shake_air::PUBLIC_VALUES],
+    right: &[Val; shake_air::PUBLIC_VALUES],
+) -> Result<()> {
+    for (left_start, right_start, width) in [
+        (shake_air::END_STATE, shake_air::START_STATE, 100),
+        (shake_air::INPUT_END, shake_air::INPUT_START, 4),
+        (shake_air::OUTPUT_END, shake_air::OUTPUT_START, 4),
+    ] {
+        require(
+            left[left_start..left_start + width] == right[right_start..right_start + width],
+            "SHAKE wrapper interior state/input/output boundary mismatch",
+        )?;
+    }
+    Ok(())
+}
+
+fn check_shake_group_members(contract: &Contract, members: &[ShakeGroupMember<'_>]) -> Result<()> {
+    require(
+        matches!(contract.kind, Kind::Shake(_)),
+        "SHAKE proof used for non-SHAKE contract",
+    )?;
+    require(!members.is_empty(), "empty SHAKE wrapper group")?;
+    let mut end = members[0].first;
+    for member in members {
+        require(
+            member.first == end,
+            "missing, duplicate, overlapping or reordered SHAKE group segment",
+        )?;
+        end = contract.span(member.first, member.count)?.end();
+    }
+    for adjacent in members.windows(2) {
+        check_shake_boundary(
+            &adjacent[0].proof.public_values,
+            &adjacent[1].proof.public_values,
+        )?;
+    }
+    Ok(())
+}
+
 /// Verify a contiguous set of native SHAKE segments in one recursive program.
 /// Every native AIR retains its exact phase/count registration, and all 108
 /// state/input/output boundary fields are equated between consecutive children.
@@ -869,6 +911,9 @@ pub fn compile_shake_group_bounded_with_context(
     execution: Option<&crate::execution::ProvingContext>,
     limits: ConstructionLimits,
 ) -> Result<ShakeGroupCompileOutcome> {
+    // Reject malformed intervals and interior endpoints before acquiring an
+    // endpoint preparation session or allocating compiler/AIR storage.
+    check_shake_group_members(contract, members)?;
     with_endpoint_preparation(execution, |endpoint_root| {
         use shake_air::lane::batch::{BatchShakeAir, ShakeSegmentAir};
         let Kind::Shake(descriptor) = contract.kind else {

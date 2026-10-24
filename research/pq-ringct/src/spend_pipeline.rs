@@ -17,6 +17,7 @@ use crate::{
     proof_cache_policy::{CacheStatistics, Control, ProofCachePolicy},
     rust_verify::committed_backend::UnprovedRelationGraph,
 };
+pub use crate::graph_crypto::ShakeWrapperLayout;
 use std::path::Path;
 
 #[cfg(all(test, feature = "native-matrict"))]
@@ -110,6 +111,15 @@ impl CompleteGraphProof {
     }
 }
 impl SpendPipeline {
+    /// Select the wrapper research candidate independently of native batching,
+    /// transcript layout, AES layout and proof-payload caching. PairedV1 is
+    /// refused before any proof dispatch until resource and closure admission
+    /// is qualified; selecting it never silently runs Singleton instead.
+    pub fn with_shake_wrapper_layout(self, layout: ShakeWrapperLayout) -> Result<Self> {
+        layout.require_executable().map_err(err)?;
+        Ok(self)
+    }
+
     pub fn new(directory: impl AsRef<Path>, budgets: Budgets) -> Result<Self> {
         Self::new_with_policy(directory, budgets, ProofCachePolicy::default())
     }

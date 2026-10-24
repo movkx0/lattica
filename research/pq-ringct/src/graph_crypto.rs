@@ -27,6 +27,7 @@ mod layout;
 mod preparation;
 mod prover;
 mod retention;
+mod shake_wrappers;
 mod wide;
 mod wide_aes;
 pub use crate::component_tree::WideAesProof;
@@ -38,6 +39,9 @@ pub use cache::{
 pub use layout::{LayoutComparison, LayoutGeometry, WideShakePartitionEstimate};
 pub use prover::{CompleteRequestProof, NodeProvingReport, RequestProver, RequestProvingReport};
 pub use retention::{NativeRetentionShape, RetainedNativeChild};
+pub use shake_wrappers::{
+    ShakeWrapperCounts, ShakeWrapperLayout, ShakeWrapperSchedule, ShakeWrapperSpan,
+};
 pub use wide::WideShakeFactory;
 pub use wide_aes::WideAesFactory;
 #[cfg(all(test, feature = "native-trace-audit"))]

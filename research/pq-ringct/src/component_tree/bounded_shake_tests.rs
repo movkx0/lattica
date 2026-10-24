@@ -4,6 +4,27 @@ use super::*;
 use lattica_prover_p3::block_v2::machine::program::MAX_WIRES;
 use sha3::{Digest, Sha3_256};
 
+#[test]
+fn bounded_group_rejects_each_interior_boundary_mutation_before_compilation() {
+    let left = [Val::ZERO; shake_air::PUBLIC_VALUES];
+    let right = [Val::ZERO; shake_air::PUBLIC_VALUES];
+    check_shake_boundary(&left, &right).unwrap();
+    let indices = shake_indices();
+    assert_eq!(indices[0].len(), 108);
+    assert_eq!(indices[1].len(), 108);
+    for (&start, &end) in indices[0].iter().zip(&indices[1]) {
+        let mut mutated_left = left;
+        mutated_left[end] = Val::ONE;
+        assert!(check_shake_boundary(&mutated_left, &right).is_err());
+        let mut mutated_right = right;
+        mutated_right[start] = Val::ONE;
+        assert!(check_shake_boundary(&left, &mutated_right).is_err());
+        // Matching values are accepted by this cheap check only. Both native
+        // proofs and all recursive equality constraints are still required.
+        check_shake_boundary(&mutated_left, &mutated_right).unwrap();
+    }
+}
+
 fn limits() -> ConstructionLimits {
     ConstructionLimits {
         max_requested_program_bytes: 2 << 30,
