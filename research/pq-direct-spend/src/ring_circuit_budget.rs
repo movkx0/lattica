@@ -31,6 +31,7 @@ fn guard_phase(c: &ConstraintContext<'_, '_>, phase: &'static str) {
             "program_heap_request_allowance"
         };
         std::panic::resume_unwind(Box::new(Exhausted(CompilationFailure {
+            representation: super::REPRESENTATION,
             phase,
             logical_limit,
             program_byte_limit: PROGRAM_BYTES,
@@ -54,7 +55,7 @@ impl Backend for Limited<'_, '_, '_> {
     type Byte = ByteValue;
     fn constant(&mut self, value: u64, q: u64) -> ResidueValue {
         guard_phase(self.0, self.1);
-        self.0.constant(value, q)
+        super::public_constant(self.0, value, q).expect("frozen arithmetic constant is canonical")
     }
     fn add(&mut self, a: ResidueValue, b: ResidueValue, q: u64) -> ResidueValue {
         guard_phase(self.0, self.1);

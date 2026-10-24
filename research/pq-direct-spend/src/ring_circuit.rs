@@ -27,12 +27,14 @@ const WITNESS_BYTES: usize = 128 << 20;
 const MAX_WIRES: usize = 1 << 24;
 const MAX_INPUTS: usize = MAX_WIRES - 4;
 const AUXILIARY_BYTES: usize = 16 << 20;
+pub const REPRESENTATION: &str = "inline-public-constant-bits-v1";
 
 #[path = "ring_circuit_budget.rs"]
 mod budget;
 
 #[derive(Debug, Serialize)]
 pub struct Summary {
+    pub representation: &'static str,
     pub active_rows: usize,
     pub padded_rows: usize,
     pub wires: usize,
@@ -46,6 +48,7 @@ pub struct Summary {
 /// observed cgroup/RSS memory, and neither is a proof-performance measurement.
 #[derive(Debug, Serialize)]
 pub struct CompilationFailure {
+    pub representation: &'static str,
     pub phase: &'static str,
     pub logical_limit: &'static str,
     pub program_byte_limit: usize,
@@ -64,6 +67,7 @@ pub struct CompilationFailure {
 impl CompilationFailure {
     fn admission(error: Error) -> Self {
         Self {
+            representation: REPRESENTATION,
             phase: "admission_or_finalization",
             logical_limit: "not_observed_at_primitive_boundary",
             program_byte_limit: PROGRAM_BYTES,
@@ -78,6 +82,30 @@ impl CompilationFailure {
             error,
         }
     }
+}
+
+/// Only for constants derived from the expected public statement or frozen
+/// arithmetic profile. Private values must keep using residue/signed inputs.
+/// The existing canonical-from-bits gadget checks Booleanity, reconstruction and
+/// strict comparison; known 0/1 bits let the builder fold these checks exactly.
+fn public_constant(
+    c: &mut ConstraintContext<'_, '_>,
+    value: u64,
+    modulus: u64,
+) -> Result<ResidueValue, Error> {
+    if !matches!(modulus, Q | ring::QHAT) || value >= modulus {
+        return Err(Error::NonCanonical);
+    }
+    budget::guard(c);
+    let bits =
+        std::array::from_fn::<_, 32, _>(|i| c.builder.constant(Val::from_u64((value >> i) & 1)));
+    let modulus = pq_modular::Modulus::new(modulus as u32).map_err(|_| Error::NonCanonical)?;
+    let constrained = pq_modular::canonical_from_bits(c.builder, &bits, modulus)
+        .map_err(|_| Error::NonCanonical)?;
+    let expected = c.builder.constant(Val::from_u64(value));
+    c.builder.assert_equal(constrained.wire(), expected);
+    budget::guard(c);
+    Ok(ResidueValue { value, constrained })
 }
 
 pub struct CompiledRelation {
@@ -122,7 +150,7 @@ fn bits(
     let value_wire = c.input(value);
     let bit_wires =
         pq_modular::bounded_bits(c.builder, value_wire, 52).map_err(|_| Error::Range)?;
-    let mut result = [c.constant_residue(0, Q); 64];
+    let mut result = [public_constant(c, 0, Q).expect("zero is canonical"); 64];
     for i in 0..52 {
         budget::guard(c);
         let bit = c.residue((value >> i) & 1, Q);
@@ -254,12 +282,26 @@ fn compile_inner(
         let mat1: Vec<_> = params
             .mat1
             .iter()
-            .map(|row| row.map(|p| p.map(|v| c.constant_residue(v, Q))))
+            .map(|row| {
+                row.map(|p| {
+                    p.map(|v| {
+                        public_constant(&mut c, v, Q)
+                            .expect("admitted public coefficient is canonical")
+                    })
+                })
+            })
             .collect();
         let mat2: Vec<_> = params
             .mat2
             .iter()
-            .map(|row| row.map(|p| p.map(|v| c.constant_residue(v, Q))))
+            .map(|row| {
+                row.map(|p| {
+                    p.map(|v| {
+                        public_constant(&mut c, v, Q)
+                            .expect("admitted public coefficient is canonical")
+                    })
+                })
+            })
             .collect();
         let selectors: [Wire; 10] = std::array::from_fn(|i| {
             budget::guard(&c);
@@ -282,7 +324,11 @@ fn compile_inner(
                     c.signed(v, 1)
                 })
             });
-            let g = serials[i].map(|p| p.map(|v| c.constant_residue(v, Q)));
+            let g = serials[i].map(|p| {
+                p.map(|v| {
+                    public_constant(&mut c, v, Q).expect("admitted public coefficient is canonical")
+                })
+            });
             let pk = native::public_key(
                 &mut budget::Limited(&mut c, "input_ownership"),
                 &spending,
@@ -333,7 +379,9 @@ fn compile_inner(
             );
             checkpoint(&c)?;
             for (p, computed) in cn.iter().enumerate() {
-                let expected = s.output_coins[i][p].map(|v| c.constant_residue(v, Q));
+                let expected = s.output_coins[i][p].map(|v| {
+                    public_constant(&mut c, v, Q).expect("admitted public coefficient is canonical")
+                });
                 equal(&mut c, computed, &expected);
             }
         }
@@ -350,6 +398,7 @@ fn compile_inner(
     let counters = builder.construction_counters();
     let program = builder.finish(None).map_err(|_| Error::ResourceLimit)?;
     let summary = Summary {
+        representation: REPRESENTATION,
         active_rows: program.active_rows(),
         padded_rows: program.height(),
         wires: program.wire_count(),
@@ -364,4 +413,69 @@ fn compile_inner(
         public,
         summary,
     })
+}
+
+#[cfg(test)]
+mod public_constant_tests {
+    use super::*;
+
+    #[test]
+    fn public_constant_reconstructs_boundaries_without_private_hints() {
+        let mut builder = ProgramBuilder::new(0).unwrap();
+        let mut witness = Vec::new();
+        let mut crypto = CryptoObligations::new([0; 32]);
+        {
+            let mut c = ConstraintContext {
+                builder: &mut builder,
+                witness: &mut witness,
+                crypto: &mut crypto,
+            };
+            for modulus in [Q, ring::QHAT] {
+                for value in [0, 1, modulus / 2, modulus - 1] {
+                    let residue = public_constant(&mut c, value, modulus).unwrap();
+                    assert_eq!(residue.value, value);
+                    assert_eq!(u64::from(residue.constrained.modulus().value()), modulus);
+                    assert_eq!(
+                        c.builder.known_constant(residue.constrained.wire()),
+                        Some(Val::from_u64(value))
+                    );
+                }
+            }
+            assert!(c.witness.is_empty());
+            assert_eq!(c.builder.construction_counters().witnesses, 0);
+        }
+        // Execute the actual constant reconstruction/equality program, without
+        // either private hints or a native acceptance flag.
+        MachineAir::new(builder.finish(None).unwrap())
+            .trace(&[], &[])
+            .unwrap();
+    }
+
+    #[test]
+    fn invalid_public_constant_rejected_before_program_or_witness_growth() {
+        let mut builder = ProgramBuilder::new(0).unwrap();
+        let mut witness = Vec::new();
+        let mut crypto = CryptoObligations::new([0; 32]);
+        let mut c = ConstraintContext {
+            builder: &mut builder,
+            witness: &mut witness,
+            crypto: &mut crypto,
+        };
+        let before = c.builder.construction_counters();
+        for (value, modulus) in [
+            (Q, Q),
+            (Q + 1, Q),
+            (u64::MAX, Q),
+            (ring::QHAT, ring::QHAT),
+            (0, 1),
+            (0, Q + 1),
+        ] {
+            assert!(matches!(
+                public_constant(&mut c, value, modulus),
+                Err(Error::NonCanonical)
+            ));
+        }
+        assert_eq!(c.builder.construction_counters(), before);
+        assert!(c.witness.is_empty());
+    }
 }

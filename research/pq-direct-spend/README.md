@@ -7,7 +7,7 @@ splitting, minting or fees in this initial comparison.
 
 | Profile | Implemented | Unfinished / qualification boundary |
 | --- | --- | --- |
-| `ring-direct-v1` | Direct host relation and an optional bounded constrained-program compiler: one hidden choice among ten ordered account pairs; ternary lattice secrets; exact original NTT/Montgomery equations; input/output commitment openings; integer ranges/balance; AES-derived public serial linkage | No registered proof/proving orchestration, independent verifier reconstruction, recursive closure or artifact format. `ring::prove` always returns `IncompleteProofCoverage`. Compiler success and host checks are **not** proofs. Full compiler fit is unqualified until measured. |
+| `ring-direct-v1` | Direct host relation and an optional bounded constrained-program compiler: one hidden choice among ten ordered account pairs; ternary lattice secrets; exact original NTT/Montgomery equations; input/output commitment openings; integer ranges/balance; AES-derived public serial linkage | Current inline compiler refused the fixed 256 MiB program allowance during ownership constraints. No registered proof/proving orchestration, independent verifier reconstruction, recursive closure or artifact format. `ring::prove` always returns `IncompleteProofCoverage`. Host checks are **not** proofs. |
 | `private-note-direct-v1` | Existing join-split AIR, unchanged: ownership, depth-32 authenticated membership, commitments, nullifiers, ranges and balance. Strict profile/context/canonical statement admission; fresh CPU proving; independent CPU verification; bounded artifact round trip | Different keys, anonymity and ledger semantics. No RingCT graph or aggregate. GPU execution, matched complete-workflow measurements and security adoption review remain absent. |
 
 The ring compiler reuses the actual constrained arithmetic in
@@ -16,6 +16,16 @@ delegating NTT/product hooks and emits inline constraints. It refuses any pendin
 cryptographic obligation. It never creates a MatRiCT spend proof or proves the
 old MatRiCT verifier. The two differential host oracles are separately named and
 cannot be passed to a proof verifier as evidence.
+
+The current compiler representation is `inline-public-constant-bits-v1`. Exact
+public/fixed constants use the existing canonical-from-bits gadget with known
+Boolean constant wires, so constant folding eliminates redundant range hints.
+All private residues and signed keys retain their original constrained input
+paths. Production arithmetic modules are unchanged. This representation change
+removed the initial public-constant bottleneck, but the measured compiler still
+refused the same program allowance during private ownership constraints. It does
+not permit a ring proof; see [validation](VALIDATION.md) for both representations'
+preserved screening evidence.
 
 ## Public preprocessing and proof boundary
 
