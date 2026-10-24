@@ -208,3 +208,45 @@ graph/final aggregate closure and live ownership admission are still required.
 | --- | --- | --- |
 | `concurrent-b-opaque-shape-tests-1` | `20cc033714c48e56e17afd0c8d1c5731546f0656764c6897bf0df6cf321bdc2c` | `88cf4a41dbbe4e80253d6e7ad53e579d1b1f455943b199b878f5b78d385d078e` |
 | `concurrent-b-opaque-shape-qualification-1` | `bdef1aff63fbb2aa6b70d566ed7f93f952e63e4aace32859e9e7e64541fc168e` | `b4c769ce0ceb2420164cd8d318b8adc8aade76d81869cc13736ea656cdc16fc3` |
+
+## Exhaustive registered-height rejection gate
+
+The [finite-domain envelope](../../lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/REGISTERED_DESCENDANTS.md)
+enumerates every power-of-two child height from 8 through the accepted R4
+worker ceiling of 1048576. Four public widths (25, 28, 38 and 46) each have 18
+heights: all 72 bounded compilations passed. Class maxima are retained
+independently; no compiler monotonicity in height is assumed. Source-derived
+binding overhead is added before packing each binary descendant once.
+
+| Public width | Scalar maximum | Cubic maximum | Poseidon maximum |
+| --- | ---: | ---: | ---: |
+| 25 | 1325631 | 11804 | 83078 |
+| 28 | 1325686 | 11819 | 83079 |
+| 38 | 1325867 | 11869 | 83081 |
+| 46 | 1326013 | 11909 | 83083 |
+
+| Descendant | Active-row upper bound | Padded-row upper bound |
+| --- | ---: | ---: |
+| Component merge | 284939 | 524288 |
+| Graph merge | 284873 | 524288 |
+| Graph + graph aggregate | 284827 | 524288 |
+| Aggregate + graph | 284820 | 524288 |
+| Aggregate + aggregate | 284812 | 524288 |
+
+Agent A's read-only source review found no blocker for this conditional gate.
+The coordinator ran both the focused admission test and exhaustive ignored
+test in release with `block-v2-wide-lanes,stream`, two build/Rayon threads,
+one test thread, an 8 GiB process guard, a 6 GiB high watermark and zero swap.
+The test body took 21.65 seconds; the complete guarded build/test job took
+156.359277 seconds with a 3121336320-byte cgroup peak. All subprocesses were
+terminal and reaped; source and executable hashes remained unchanged.
+
+These bounds close the registered binary descendants only if their children
+already fit. Native SHAKE starting wrappers, native Transcript/Sparse consumers,
+SourceBinding framing and live ownership admission are still pending. No real
+proof, GPU benchmark or complete-workflow speedup is established, and PairedV1
+remains disabled.
+
+| Stem | Guard JSON SHA-256 | Raw log SHA-256 |
+| --- | --- | --- |
+| `concurrent-b-registered-height-envelope-1` | `76bbd1905fd95cbd2aa38b1968a7fbbd7712b04d4af86f76d2888b694a64d4e0` | `c719538e6bd00f97db8e4c0b387b3f800cfd3cfaf17f19fc3836d07622dfe548` |

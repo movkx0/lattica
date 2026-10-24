@@ -18,6 +18,8 @@ use p3_field::PrimeCharacteristicRing;
 
 mod storage;
 pub use storage::PlanningStorage;
+mod envelope;
+pub use envelope::{verifier_height_envelope, VerifierHeightEnvelope};
 
 pub const MAX_CHILDREN: usize = 4;
 
