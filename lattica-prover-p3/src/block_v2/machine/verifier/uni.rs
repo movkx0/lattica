@@ -12,6 +12,8 @@ use p3_air::{symbolic::SymbolicAirBuilder, Air, BaseAir};
 use p3_field::PrimeCharacteristicRing;
 use p3_uni_stark::Proof;
 
+pub mod shape;
+
 /// AIRs generic over `AirBuilder` can use this bounded recording implementation.
 pub use super::super::symbolic::Builder as BoundedSymbolicBuilder;
 
@@ -37,6 +39,30 @@ impl BoundedSymbolicAllowance {
         }
         Ok(())
     }
+}
+
+/// Inspect quotient geometry through the same bounded recorder/normalizer used
+/// by `verify_bounded`, dropping its graph before returning. This returns only
+/// geometry, never a template, program, proof or acceptance/admission token.
+///
+/// The caller must reserve both symbolic components and separately bound the
+/// trusted AIR callbacks' own allocations before entry. No periodic table is
+/// requested. An arbitrary caller-provided AIR is not resource-admitted here.
+pub fn quotient_chunks_bounded<A>(
+    air: &A,
+    height: usize,
+    allowance: BoundedSymbolicAllowance,
+) -> Result<usize, CompileError>
+where
+    A: BaseAir<Val> + Air<BoundedSymbolicBuilder>,
+{
+    validate_geometry(air, height)?;
+    allowance.check()?;
+    let (_, log_chunks) = super::super::symbolic::prepare_uni_bounded(air, Constants::cpu())?;
+    if log_chunks > profile::LOG_BLOWUP {
+        return Err(CompileError::Shape("quotient degree"));
+    }
+    Ok(1 << (log_chunks + 1))
 }
 
 /// Compile the same uni-STARK relation through bounded CPU symbolic recording.

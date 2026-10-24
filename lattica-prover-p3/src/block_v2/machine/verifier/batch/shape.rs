@@ -56,7 +56,9 @@ pub struct OperationCounts {
 }
 
 impl OperationCounts {
-    fn from_program(program: &Program) -> Self {
+    /// Count an already-owned program without allocation or evaluation. These
+    /// observed counts alone establish no bound for a different compilation.
+    pub fn from_program(program: &Program) -> Self {
         let mut counts = Self::default();
         for op in &program.operations {
             match op {

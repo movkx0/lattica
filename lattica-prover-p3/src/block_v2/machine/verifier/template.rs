@@ -166,6 +166,64 @@ fn batch_from_geometry(
     })
 }
 
+/// Invalid private shape fixture. The closed native planner reserves the
+/// source-derived three-round backing before this constructor. No production
+/// proof/key or caller-chosen callback receives the returned object.
+pub(super) fn uni_bounded_shape(
+    width: usize,
+    height: usize,
+    next: bool,
+    quotient_chunks: usize,
+) -> Result<p3_uni_stark::Proof<Config>, CompileError> {
+    if !(1..=1024).contains(&width) || !(8..=1 << 24).contains(&height)
+        || !height.is_power_of_two() || !quotient_chunks.is_power_of_two()
+        || quotient_chunks > 32 || profile::LOG_BLOWUP != 4
+        || profile::CAP_HEIGHT != 6 || profile::NUM_QUERIES != 128
+        || profile::NUM_RANDOM_CODEWORDS != 4
+    {
+        return Err(CompileError::Shape("native template pinned geometry"));
+    }
+    let degree = height.ilog2() as usize + 1;
+    let log_lde = degree + profile::LOG_BLOWUP;
+    let cap = |log: usize| MerkleCap::new(vec![[Val::ZERO; 4]; 1 << log.min(profile::CAP_HEIGHT)]);
+    let widths = [vec![3], vec![width], vec![3; quotient_chunks]];
+    let point_counts = [1, 1 + usize::from(next), 1];
+    let hiding = widths.iter().zip(point_counts).map(|(w, points)| {
+        w.iter().map(|_| vec![vec![Challenge::ZERO; profile::NUM_RANDOM_CODEWORDS]; points]).collect()
+    }).collect();
+    let queries = (0..profile::NUM_QUERIES).map(|_| QueryProof {
+        input_proof: widths.iter().map(|w| BatchOpening::new(
+            w.iter().map(|&n| vec![Val::ZERO; n + profile::NUM_RANDOM_CODEWORDS]).collect(),
+            (vec![vec![Val::ZERO; 4]; w.len()],
+                vec![[Val::ZERO; 4]; log_lde.saturating_sub(profile::CAP_HEIGHT)]),
+        )).collect(),
+        commit_phase_openings: (0..degree).map(|r| CommitPhaseProofStep {
+            log_arity: 1,
+            sibling_values: vec![Challenge::ZERO],
+            opening_proof: (vec![vec![Val::ZERO; 4]],
+                vec![[Val::ZERO; 4]; (log_lde - r - 1).saturating_sub(profile::CAP_HEIGHT)]),
+        }).collect(),
+    }).collect();
+    Ok(p3_uni_stark::Proof {
+        commitments: p3_uni_stark::Commitments {
+            trace: cap(log_lde), quotient_chunks: cap(log_lde), random: Some(cap(log_lde)),
+        },
+        opened_values: p3_uni_stark::OpenedValues {
+            trace_local: vec![Challenge::ZERO; width],
+            trace_next: next.then(|| vec![Challenge::ZERO; width]),
+            preprocessed_local: None, preprocessed_next: None,
+            quotient_chunks: vec![vec![Challenge::ZERO; 3]; quotient_chunks],
+            random: Some(vec![Challenge::ZERO; 3]),
+        },
+        opening_proof: (hiding, FriProof {
+            commit_phase_commits: (0..degree).map(|r| cap(log_lde-r-1)).collect(),
+            commit_pow_witnesses: vec![Val::ZERO; degree], query_proofs: queries,
+            final_poly: vec![Challenge::ZERO], query_pow_witness: Val::ZERO,
+        }),
+        degree_bits: degree,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::super::super::ProgramBuilder;

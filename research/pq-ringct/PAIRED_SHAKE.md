@@ -250,3 +250,57 @@ remains disabled.
 | Stem | Guard JSON SHA-256 | Raw log SHA-256 |
 | --- | --- | --- |
 | `concurrent-b-registered-height-envelope-1` | `76bbd1905fd95cbd2aa38b1968a7fbbd7712b04d4af86f76d2888b694a64d4e0` | `c719538e6bd00f97db8e4c0b387b3f800cfd3cfaf17f19fc3836d07622dfe548` |
+
+## Closed native-core and SourceBinding prerequisites
+
+The [closed native planner](src/component_tree/native_shape/BOUNDS.md) admits
+source-derived descriptor, periodic-table, callback, symbolic, template and
+input backing before constructing a SHAKE, Transcript or Sparse verifier core.
+It returns operation counts, input/wire counts and a streaming canonical
+manifest digest. Every invalid proof fixture and compiler program drops inside
+the helper. Generic AIR callers retain a separate explicit admission contract.
+
+Eight bounded cores matched the independent existing test-only compiler in all
+operation classes, input/wire counts and manifest SHA3-256. A deliberately tiny
+input allowance refused and a later fresh compilation succeeded.
+
+| Native core | Scalar | Cubic | Poseidon | Active rows | Padded rows |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| SHAKE absorb8 | 1175484 | 14942 | 63506 | 116749 | 131072 |
+| SHAKE padding | 1049106 | 14500 | 53907 | 101593 | 131072 |
+| SHAKE partial squeeze | 1047631 | 14267 | 53907 | 101496 | 131072 |
+| SHAKE squeeze8 | 1174686 | 14776 | 63506 | 116691 | 131072 |
+| Transcript mixed3 | 807050 | 10248 | 41121 | 77675 | 131072 |
+| Transcript maximum-events256 | 1509727 | 14154 | 76051 | 143714 | 262144 |
+| Sparse Alpha39 | 881824 | 13225 | 42450 | 82681 | 131072 |
+| Sparse X44 | 882110 | 13315 | 42450 | 82706 | 131072 |
+
+The native retained-proof capacity model now includes legitimate producer
+backing after hiding-suffix drains and FRI final-polynomial truncation. Logical
+lengths and cryptographic parameters are unchanged: main openings retain
+width+4, quotient/random openings retain 7, and the final polynomial can retain 16
+elements after truncation to 1. Both the pre-production storage bound and the
+later capacity audit use those source capacities; excessive spare capacity
+still refuses.
+
+Agent A's independent read-only review found no blocker. The coordinator's
+serialized release checks passed three focused native-shape tests, five
+retention tests, and the eight-case ignored parity/cleanup qualification.
+The qualification test body took 9.52 seconds with a 388947968-byte cgroup peak.
+All three guard services became terminal and reaped, with unchanged source and
+executable hashes inside each job. The same 8 GiB process/6 GiB high/zero-swap
+guard, two build/Rayon threads and one test thread were used. These are
+compiler/test measurements; no real proof or GPU workload was produced.
+
+| Qualification stem | Guard JSON SHA-256 | Raw log SHA-256 |
+| --- | --- | --- |
+| `concurrent-b-native-core-qualification-1` | `a83f3c675e7848f48d241bd03060fa8bda596c4b16be5aee8ba2756a8a7246f1` | `c4ffb913f16fc1f7538414d47039cf77a46fe2728850a357fc22aced351ed764` |
+
+Source-derived framing bounds cover the affected SHAKE wrapper, HashAlpha,
+HashX producer/consumer, ParametersPp and common graph SourceBinding paths.
+These helpers do not establish the actual complete request schedule, unchanged
+source/AES/algebra leaf closure, native/recursive output ownership, enclosing
+phase admission or final N3/N4 workflow acceptance. PairedV1 remains refused
+before dispatch. The next gate binds exact immutable Requests from the accepted
+serial SHAKE/AES, Branches, algebra64/NTT32/Mul32/cells2^27 configuration; an old
+persisted fixture can screen that schedule but cannot authorize fresh work.

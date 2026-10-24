@@ -1148,3 +1148,5 @@ mod parent_proof_tests;
 
 #[cfg(test)]
 mod bounded_shake_tests;
+
+pub mod native_shape;

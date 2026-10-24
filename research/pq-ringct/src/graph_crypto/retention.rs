@@ -77,6 +77,16 @@ impl Request {
 }
 
 impl NativeRetentionShape {
+    /// Resource-only envelope for a private trusted native planner. The caller
+    /// must separately validate its descriptor, at most 216 public inputs,
+    /// at most 32 quotient chunks, and the pinned hiding uni-STARK geometry.
+    /// This creates no producer reservation, proof, verification or acceptance
+    /// authority; it must never be used to attach accounting after production.
+    pub(crate) fn for_planner(width: usize, height: usize) -> Result<Self> {
+        require(height >= 8, "native planner minimum height")?;
+        Self::new(width, height)
+    }
+
     fn new(width: usize, height: usize) -> Result<Self> {
         require(
             width != 0 && height.is_power_of_two(),
@@ -145,13 +155,24 @@ impl NativeRetentionShape {
 
     fn heap_bound(self) -> Result<usize> {
         let mut bytes = mul(3, array_bytes::<Digest>(self.roots(self.log_lde)?)?)?;
-        bytes = add(bytes, mul(2, array_bytes::<Challenge>(self.width)?)?)?;
+        // hiding_pcs::open drains its suffix from these vectors without
+        // shrinking. Reserve their source allocation width, not final length.
+        bytes = add(
+            bytes,
+            mul(
+                2,
+                array_bytes::<Challenge>(add(self.width, self.random_width)?)?,
+            )?,
+        )?;
         bytes = add(bytes, array_bytes::<Vec<Challenge>>(self.quotient_limit)?)?;
         bytes = add(
             bytes,
-            mul(self.quotient_limit, array_bytes::<Challenge>(3)?)?,
+            mul(
+                self.quotient_limit,
+                array_bytes::<Challenge>(add(3, self.random_width)?)?,
+            )?,
         )?;
-        bytes = add(bytes, array_bytes::<Challenge>(3)?)?;
+        bytes = add(bytes, array_bytes::<Challenge>(add(3, self.random_width)?)?)?;
         bytes = add(bytes, array_bytes::<Vec<Vec<Vec<Challenge>>>>(3)?)?;
         for (matrices, points) in [(1, 1), (1, 2), (self.quotient_limit, 1)] {
             bytes = add(bytes, array_bytes::<Vec<Vec<Challenge>>>(matrices)?)?;
@@ -169,7 +190,9 @@ impl NativeRetentionShape {
             )?;
         }
         bytes = add(bytes, array_bytes::<Val>(self.degree)?)?;
-        bytes = add(bytes, array_bytes::<Challenge>(1)?)?;
+        // FRI truncates the final blowup-sized folded vector in place before
+        // its IDFT. Logical final length1 can retain the original16 backing.
+        bytes = add(bytes, array_bytes::<Challenge>(1 << profile::LOG_BLOWUP)?)?;
         let query_size = element_size(|proof| &proof.opening_proof.1.query_proofs);
         bytes = add(bytes, mul(capacity_limit(self.queries)?, query_size)?)?;
         let opening_size = element_size(|proof| &proof.opening_proof.1.query_proofs[0].input_proof);
@@ -228,7 +251,12 @@ impl NativeRetentionShape {
         let SegmentArtifact::Shake(artifact) = artifact else {
             return Err(Error("native retention artifact family".into()));
         };
-        let proof = &artifact.proof;
+        self.audit_planner_proof(&artifact.proof)
+    }
+
+    /// Capacity conformance after a separately admitted private template
+    /// construction. This resource audit never numerically verifies a proof.
+    pub(crate) fn audit_planner_proof(self, proof: &NativeProof) -> Result<()> {
         require(
             proof.degree_bits == self.degree,
             "native retention proof degree",
@@ -249,9 +277,13 @@ impl NativeRetentionShape {
             self.roots(self.log_lde)?,
         )?;
         let opened = &proof.opened_values;
-        audit.vector(&opened.trace_local, self.width, self.width)?;
+        audit.vector(
+            &opened.trace_local,
+            self.width,
+            add(self.width, self.random_width)?,
+        )?;
         let next = if let Some(values) = &opened.trace_next {
-            audit.vector(values, self.width, self.width)?;
+            audit.vector(values, self.width, add(self.width, self.random_width)?)?;
             1
         } else {
             0
@@ -267,7 +299,7 @@ impl NativeRetentionShape {
         )?;
         audit.vector(&opened.quotient_chunks, chunks, self.quotient_limit)?;
         for values in &opened.quotient_chunks {
-            audit.vector(values, 3, 3)?;
+            audit.vector(values, 3, add(3, self.random_width)?)?;
         }
         audit.vector(
             opened
@@ -275,7 +307,7 @@ impl NativeRetentionShape {
                 .as_ref()
                 .ok_or_else(|| Error("native retention random opening".into()))?,
             3,
-            3,
+            add(3, self.random_width)?,
         )?;
         let (hiding, fri) = &proof.opening_proof;
         audit.vector(hiding, 3, 3)?;
@@ -297,7 +329,7 @@ impl NativeRetentionShape {
             audit.cap(cap, self.roots(self.log_lde - round - 1)?)?;
         }
         audit.vector(&fri.commit_pow_witnesses, self.degree, self.degree)?;
-        audit.vector(&fri.final_poly, 1, 1)?;
+        audit.vector(&fri.final_poly, 1, 1 << profile::LOG_BLOWUP)?;
         audit.vector(&fri.query_proofs, self.queries, self.queries)?;
         for query in &fri.query_proofs {
             audit.vector(&query.input_proof, 3, 3)?;

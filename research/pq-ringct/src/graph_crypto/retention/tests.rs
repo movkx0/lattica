@@ -69,3 +69,28 @@ fn invalid_shapes_and_arithmetic_overflow_fail_closed() {
         assert!(NativeRetentionShape::new(800, height).is_err());
     }
 }
+
+#[test]
+fn producer_drains_and_truncation_preserve_charged_capacity() {
+    let mut opening = vec![profile::Challenge::ZERO; 3 + profile::NUM_RANDOM_CODEWORDS];
+    opening.truncate(3);
+    let mut final_poly = vec![profile::Challenge::ZERO; 1 << profile::LOG_BLOWUP];
+    final_poly.truncate(1);
+    let expected = (opening.capacity() + final_poly.capacity()) * size_of::<Challenge>();
+    let mut audit = CapacityAudit {
+        bytes: 0,
+        limit: expected,
+    };
+    audit
+        .vector(&opening, 3, 3 + profile::NUM_RANDOM_CODEWORDS)
+        .unwrap();
+    audit
+        .vector(&final_poly, 1, 1 << profile::LOG_BLOWUP)
+        .unwrap();
+    assert_eq!(audit.bytes, expected);
+    let excessive =
+        Vec::<Challenge>::with_capacity(capacity_limit(1 << profile::LOG_BLOWUP).unwrap() + 1);
+    assert!(audit
+        .capacity::<Challenge>(excessive.capacity(), 1 << profile::LOG_BLOWUP)
+        .is_err());
+}
