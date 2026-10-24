@@ -1,0 +1,28 @@
+[package]
+name = "lattica-pq-direct-spend-research"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Isolated direct-spend relation experiments; no production acceptance"
+
+[workspace]
+
+[features]
+default = []
+ring-circuit = ["lattica-pq-ringct-research/recursive", "lattica-prover-p3/block-v2"]
+native-reference = ["lattica-pq-ringct-research/native-matrict"]
+
+[dependencies]
+lattica-prover-p3 = { path = "../../lattica-prover-p3", default-features = false }
+lattica-pq-ringct-research = { path = "../pq-ringct", default-features = false }
+p3-field = "=0.6.1"
+p3-goldilocks = "=0.6.1"
+sha3 = "=0.10.8"
+aes = "=0.8.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[patch.crates-io]
+p3-lookup = { path = "../../lattica-prover-p3/vendor/p3-lookup" }
+p3-field = { path = "../../lattica-prover-p3/vendor/p3-field" }
+p3-symmetric = { path = "../../lattica-prover-p3/vendor/p3-symmetric" }
