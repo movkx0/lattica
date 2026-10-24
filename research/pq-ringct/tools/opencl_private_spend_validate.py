@@ -230,6 +230,11 @@ def validate_experiments(result, plan):
         context = result.get('context', {})
         require(context.get('maximum_metadata_entries') == actual['metadata_capacity'],
                 'context metadata capacity differs from selection')
+        require(context.get('registration_telemetry', {}).get('enabled')
+                is (actual['registration_telemetry'] == 'bounded'),
+                'context registration telemetry differs from selection')
+        require(context.get('prepared_reuse_mode') == actual['prepared_reuse'],
+                'context prepared reuse differs from selection')
         for case in result.get('cases', []):
             require(case.get('experiments') == actual, 'case experiment selection differs')
     else:

@@ -64,6 +64,8 @@ class ExperimentSelectionTests(unittest.TestCase):
         result = result_fixture(benchmark=True)
         result['experiments'] = runner.experiment_selection(plan)
         result['context']['maximum_metadata_entries'] = 512
+        result['context']['registration_telemetry'] = {'enabled': False}
+        result['context']['prepared_reuse_mode'] = 'single_entry'
         for case in result['cases']:
             case['experiments'] = dict(result['experiments'])
         return plan, result
@@ -91,6 +93,30 @@ class ExperimentSelectionTests(unittest.TestCase):
         plan['command'] += ['--registration-telemetry', 'bounded']
         with self.assertRaisesRegex(ValueError, 'differs from command'):
             runner.validate_experiments(result, plan)
+
+    def test_context_telemetry_must_match_selected_mode(self):
+        for mode in ('off', 'bounded'):
+            plan, result = self.candidate()
+            plan['command'] += ['--registration-telemetry', mode]
+            result['experiments']['registration_telemetry'] = mode
+            for case in result['cases']:
+                case['experiments']['registration_telemetry'] = mode
+            enabled = mode == 'bounded'
+            result['context']['registration_telemetry']['enabled'] = enabled
+            runner.validate_experiments(result, plan)
+            for wrong in (not enabled, None, int(enabled), str(enabled)):
+                with self.subTest(mode=mode, wrong=wrong):
+                    result['context']['registration_telemetry']['enabled'] = wrong
+                    with self.assertRaisesRegex(ValueError, 'context registration telemetry'):
+                        runner.validate_experiments(result, plan)
+
+    def test_context_prepared_reuse_cannot_silently_differ(self):
+        for mode in ('multi_entry', None):
+            plan, result = self.candidate()
+            result['context']['prepared_reuse_mode'] = mode
+            with self.subTest(mode=mode):
+                with self.assertRaisesRegex(ValueError, 'context prepared reuse'):
+                    runner.validate_experiments(result, plan)
 
 
 if __name__ == '__main__':

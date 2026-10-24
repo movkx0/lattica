@@ -43,7 +43,7 @@ def metrics(record):
         'proofs': {'native_stark': native, 'recursive_transaction': recursive_children,
                    'recursive_batch': merges, 'total_stark': native + recursive_children + merges},
         'timing_seconds': {
-            'registration_setup': context['registration_seconds'],
+            'registration_preprocessing': context['registration_seconds'],
             'registration_and_verifier_setup': context.get('registration_setup_seconds'),
             'native_private_spend': operations['native_spend_seconds'],
             'witness_preparation': operations['witness_preparation_seconds'],
