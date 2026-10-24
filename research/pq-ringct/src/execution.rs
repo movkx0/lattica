@@ -33,6 +33,7 @@ use std::{
 };
 
 mod diagnostics;
+pub(crate) mod retained_resources;
 mod telemetry;
 pub use telemetry::RegistrationTelemetry;
 use telemetry::{AccessOutcome, RegistrationTrace, ReleaseReason};
