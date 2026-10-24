@@ -52,6 +52,8 @@ struct State {
     prove_calls: u64,
     prove_succeeded: u64,
     prove_seconds: f64,
+    prove_active_rows: u64,
+    prove_padded_rows: u64,
     verify_calls: u64,
     verify_succeeded: u64,
     verify_seconds: f64,
@@ -104,11 +106,23 @@ impl Diagnostics {
         state.directory = Some(path);
         Ok(())
     }
-    pub(super) fn prove_finished(&self, seconds: f64, succeeded: bool) {
+    pub(super) fn prove_finished(
+        &self,
+        seconds: f64,
+        succeeded: bool,
+        active_rows: usize,
+        padded_rows: usize,
+    ) {
         let mut s = self.state.borrow_mut();
         s.prove_calls += 1;
         s.prove_succeeded += u64::from(succeeded);
         s.prove_seconds += seconds;
+        s.prove_active_rows += active_rows as u64;
+        s.prove_padded_rows += padded_rows as u64;
+    }
+    pub(super) fn has_work_attempted(&self) -> bool {
+        let s = self.state.borrow();
+        s.stark_work_attempted || s.witness_preparation.calls != 0 || s.native_spend.calls != 0
     }
     pub(super) fn mark_stark_work_attempted(&self) {
         self.state.borrow_mut().stark_work_attempted = true;
@@ -287,6 +301,11 @@ impl Diagnostics {
             "failures":s.failures,"failure_events_limit":MAX_EVENTS,
             "failure_artifact_limit":1,"failure_artifact_bytes_limit":MAX_ARTIFACT_BYTES,
             "failure_artifact_attempted":s.artifact_attempted});
+        report["prove_active_rows"] = json!(s.prove_active_rows);
+        report["prove_padded_rows"] = json!(s.prove_padded_rows);
+        report["prove_row_scope"] = json!(
+            "completed registered prove attempts, including failures; excludes native proofs"
+        );
         report["native_spend_calls"] = json!(s.native_spend.calls);
         report["stark_work_attempted"] = json!(s.stark_work_attempted);
         report["native_spend_succeeded"] = json!(s.native_spend.succeeded);
@@ -308,10 +327,7 @@ impl Diagnostics {
 #[cfg(all(test, feature = "opencl"))]
 mod native_spend_shutdown_tests {
     use super::*;
-    use lattica_prover_p3::{
-        block_v2::machine::ProgramBuilder,
-        proving::Report,
-    };
+    use lattica_prover_p3::{block_v2::machine::ProgramBuilder, proving::Report};
 
     fn validated_native_diagnostics() -> Diagnostics {
         let diagnostics = Diagnostics::new(1, Policy::GpuRequired, Value::Null);

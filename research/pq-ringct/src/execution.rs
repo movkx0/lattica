@@ -33,18 +33,36 @@ use std::{
 };
 
 mod diagnostics;
+mod telemetry;
+pub use telemetry::RegistrationTelemetry;
+use telemetry::{AccessOutcome, RegistrationTrace, ReleaseReason};
 #[cfg(feature = "opencl")]
 mod native;
 #[cfg(feature = "opencl")]
 mod private_spend;
 use diagnostics::Diagnostics;
 #[cfg(test)]
-mod tests;
-#[cfg(test)]
 mod shared_program_tests;
+#[cfg(test)]
+mod tests;
 
 pub const PUBLIC_METADATA_LIMIT_BYTES: usize = 64 << 20;
 const MAX_METADATA_ENTRIES: usize = 256;
+/// Entry experiments share exactly the same public byte and receipt limits.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum MetadataCapacity {
+    #[default]
+    Entries256,
+    Entries512,
+}
+impl MetadataCapacity {
+    fn entries(self) -> usize {
+        match self {
+            Self::Entries256 => MAX_METADATA_ENTRIES,
+            Self::Entries512 => 512,
+        }
+    }
+}
 // The receipt cache shares PUBLIC_METADATA_LIMIT_BYTES with verifier metadata;
 // it does not add to the worker's public metadata allowance.
 const MAX_IDENTITY_HINT_ENTRIES: usize = 4096;
@@ -117,6 +135,8 @@ pub struct RegisteredTemplate {
     request: Request,
     identity: Identity,
     diagnostics: Rc<Diagnostics>,
+    telemetry_access: Option<usize>,
+    metadata_payload_bytes: usize,
 }
 impl RegisteredTemplate {
     /// Allowance used to prepare this immutable backend owner.
@@ -158,8 +178,12 @@ impl RegisteredTemplate {
             .registered
             .prove_with_request(public, witness, self.request)
             .map_err(error);
-        self.diagnostics
-            .prove_finished(started.elapsed().as_secs_f64(), result.is_ok());
+        self.diagnostics.prove_finished(
+            started.elapsed().as_secs_f64(),
+            result.is_ok(),
+            self.air().program().active_rows(),
+            self.air().program().height(),
+        );
         if let Err(ref message) = result {
             self.diagnostics
                 .failure("prove", self.public_identity(), message, None);
@@ -260,6 +284,8 @@ struct Registry {
     identity_hints: IdentityHintCache<RegisteredIdentityReceipt>,
     // Both backing allocations and all verifier/cap heap payloads are charged.
     metadata_bytes: usize,
+    maximum_metadata_entries: usize,
+    trace: RegistrationTrace,
     registrations: u64,
     prepared_hits: u64,
     metadata_hits: u64,
@@ -267,19 +293,38 @@ struct Registry {
     identity_hint_hits: u64,
     prepared_evictions: u64,
     metadata_evictions: u64,
+    metadata_capacity_evictions: u64,
+    metadata_byte_evictions: u64,
+    metadata_identity_evictions: u64,
+    metadata_oversized_rejections: u64,
     registration_seconds: f64,
+    registration_setup_seconds: f64,
+    registered_active_rows: u64,
+    registered_padded_rows: u64,
 }
 impl Registry {
     fn new() -> Self {
-        let metadata = VecDeque::with_capacity(MAX_METADATA_ENTRIES);
+        Self::with_options(
+            MetadataCapacity::Entries256,
+            RegistrationTelemetry::Disabled,
+        )
+    }
+    fn with_options(capacity: MetadataCapacity, telemetry: RegistrationTelemetry) -> Self {
+        let maximum_metadata_entries = capacity.entries();
+        let metadata = VecDeque::with_capacity(maximum_metadata_entries);
         let identity_hints = IdentityHintCache::new();
-        let metadata_bytes =
-            metadata.capacity() * std::mem::size_of::<Metadata>() + identity_hints.backing_bytes();
+        let trace = RegistrationTrace::new(telemetry);
+        let metadata_bytes = metadata.capacity() * std::mem::size_of::<Metadata>()
+            + identity_hints.backing_bytes()
+            + trace.accounted_bytes();
+        assert!(metadata_bytes <= PUBLIC_METADATA_LIMIT_BYTES);
         Self {
             prepared: None,
             metadata,
             identity_hints,
             metadata_bytes,
+            maximum_metadata_entries,
+            trace,
             registrations: 0,
             prepared_hits: 0,
             metadata_hits: 0,
@@ -287,12 +332,20 @@ impl Registry {
             identity_hint_hits: 0,
             prepared_evictions: 0,
             metadata_evictions: 0,
+            metadata_capacity_evictions: 0,
+            metadata_byte_evictions: 0,
+            metadata_identity_evictions: 0,
+            metadata_oversized_rejections: 0,
             registration_seconds: 0.0,
+            registration_setup_seconds: 0.0,
+            registered_active_rows: 0,
+            registered_padded_rows: 0,
         }
     }
-    fn release(&mut self) {
-        if self.prepared.take().is_some() {
+    fn release(&mut self, reason: ReleaseReason) {
+        if let Some(prepared) = self.prepared.take() {
             self.prepared_evictions += 1;
+            self.trace.release(prepared.telemetry_access, reason);
         }
     }
     fn identity_hint(&self, identity: Identity) -> Option<&RegisteredIdentityReceipt> {
@@ -314,6 +367,7 @@ impl Registry {
         if let Err(message) = check_cached_cap(diagnostics, identity, &entry.cap, cap) {
             self.metadata_bytes -= entry.payload_bytes;
             self.metadata_evictions += 1;
+            self.metadata_identity_evictions += 1;
             self.identity_hints.remove(identity);
             return Err(message);
         }
@@ -327,7 +381,7 @@ impl Registry {
         identity: Identity,
         cap: &[[Val; 4]],
         verifier: Arc<RegisteredVerifier>,
-    ) -> Result<(), String> {
+    ) -> Result<usize, String> {
         let cap = cap.to_vec();
         let payload_bytes = verifier
             .cached_metadata_bytes()
@@ -343,13 +397,20 @@ impl Registry {
             })
             .ok_or("verifier cache size overflow")?;
         let container_bytes = self.metadata.capacity() * std::mem::size_of::<Metadata>()
-            + self.identity_hints.backing_bytes();
+            + self.identity_hints.backing_bytes()
+            + self.trace.accounted_bytes();
         if payload_bytes > PUBLIC_METADATA_LIMIT_BYTES.saturating_sub(container_bytes) {
-            return Ok(());
+            self.metadata_oversized_rejections += 1;
+            return Ok(payload_bytes);
         }
-        while self.metadata.len() == MAX_METADATA_ENTRIES
+        while self.metadata.len() == self.maximum_metadata_entries
             || self.metadata_bytes + payload_bytes > PUBLIC_METADATA_LIMIT_BYTES
         {
+            if self.metadata.len() == self.maximum_metadata_entries {
+                self.metadata_capacity_evictions += 1;
+            } else {
+                self.metadata_byte_evictions += 1;
+            }
             let old = self
                 .metadata
                 .pop_front()
@@ -364,7 +425,7 @@ impl Registry {
             verifier,
             payload_bytes,
         });
-        Ok(())
+        Ok(payload_bytes)
     }
 }
 
@@ -461,6 +522,23 @@ impl ProvingContext {
     pub fn set_failure_directory(&self, path: impl Into<PathBuf>) -> Result<(), String> {
         self.diagnostics.set_directory(path.into())
     }
+    /// Select an experiment before any execution work. Detailed observations
+    /// reserve backing and report scratch inside the shared 64 MiB allowance.
+    pub fn configure_registration(
+        &self,
+        capacity: MetadataCapacity,
+        telemetry: RegistrationTelemetry,
+    ) -> Result<(), String> {
+        let mut state = self
+            .registry
+            .try_borrow_mut()
+            .map_err(|_| "reentrant worker configuration")?;
+        if self.diagnostics.has_work_attempted() || state.trace.attempted() != 0 {
+            return Err("registration configuration must precede all execution work".into());
+        }
+        *state = Registry::with_options(capacity, telemetry);
+        Ok(())
+    }
     #[cfg(any(feature = "opencl", test))]
     fn drain_prepared(
         &self,
@@ -505,6 +583,9 @@ impl ProvingContext {
         })
     }
     pub fn release_prepared(&self) -> Result<(), String> {
+        self.release_prepared_with_reason(ReleaseReason::PhaseBoundary)
+    }
+    fn release_prepared_with_reason(&self, reason: ReleaseReason) -> Result<(), String> {
         let mut state = self
             .registry
             .try_borrow_mut()
@@ -513,7 +594,7 @@ impl ProvingContext {
         if self.session.is_some() {
             self.drain_prepared(&state, None, lattica_prover_p3::block_v2::gpu_hash::drain)?;
         }
-        state.release();
+        state.release(reason);
         Ok(())
     }
     /// Legacy CPU-only boundary; GPU-required workers reject before any work.
@@ -568,12 +649,17 @@ impl ProvingContext {
         f: impl FnOnce(&RegisteredTemplate) -> Result<T, String>,
     ) -> Result<T, String> {
         if host_bytes == 0 || host_bytes > self.host_bytes {
-            return Err("registered remaining-host allowance must be nonzero and within context allowance".into());
+            return Err(
+                "registered remaining-host allowance must be nonzero and within context allowance"
+                    .into(),
+            );
         }
         if self.request.policy != Policy::GpuRequired {
-            return Err("registered remaining-host allowance requires GPU-required execution".into());
+            return Err(
+                "registered remaining-host allowance requires GPU-required execution".into(),
+            );
         }
-        self.release_prepared()?;
+        self.release_prepared_with_reason(ReleaseReason::HostBudgetChanged)?;
         self.with_registered_shared_inner(program, host_bytes, f)
     }
 
@@ -596,76 +682,162 @@ impl ProvingContext {
             manifest: canonical,
             registration: hash.finalize().into(),
         };
-        let hit = state
-            .prepared
-            .as_ref()
-            .is_some_and(|p| {
-                p.identity == identity
-                    && p.host_allowance_bytes == host_bytes
-                    && p.air().program() == program.as_ref()
-            });
+        let access = state.trace.begin(identity, host_bytes, &program);
+        let hit = state.prepared.as_ref().is_some_and(|p| {
+            p.identity == identity
+                && p.host_allowance_bytes == host_bytes
+                && p.air().program() == program.as_ref()
+        });
+        let (metadata_payload_bytes, metadata_hit, receipt_hit);
         if hit {
             state.prepared_hits += 1;
+            state.trace.outcome(access, AccessOutcome::PreparedHit, 0.0);
+            let prepared = state.prepared.as_mut().expect("prepared cache hit");
+            prepared.telemetry_access = access;
+            metadata_payload_bytes = prepared.metadata_payload_bytes;
+            metadata_hit = false;
+            receipt_hit = false;
         } else {
-            // Evict before the next registration allocates any device state.
+            let reason = state
+                .prepared
+                .as_ref()
+                .map(|p| {
+                    if p.identity != identity {
+                        ReleaseReason::IdentityChanged
+                    } else if p.host_allowance_bytes != host_bytes {
+                        ReleaseReason::HostBudgetChanged
+                    } else {
+                        ReleaseReason::ProgramMismatch
+                    }
+                })
+                .unwrap_or(ReleaseReason::IdentityChanged);
+            // Drain and evict before the next registration allocates device state.
             #[cfg(feature = "opencl")]
             if self.session.is_some() {
-                self.drain_prepared(
+                if let Err(message) = self.drain_prepared(
                     &state,
                     Some(identity),
                     lattica_prover_p3::block_v2::gpu_hash::drain,
-                )?;
+                ) {
+                    state.trace.outcome(access, AccessOutcome::DrainFailed, 0.0);
+                    return Err(message);
+                }
             }
-            state.release();
+            state.release(reason);
             #[cfg(feature = "opencl")]
             if let Some(session) = &self.session {
-                self.check_row_admission(identity, program.height(), session.limits())?;
+                if let Err(message) =
+                    self.check_row_admission(identity, program.height(), session.limits())
+                {
+                    state
+                        .trace
+                        .outcome(access, AccessOutcome::AdmissionFailed, 0.0);
+                    return Err(message);
+                }
             }
+            let active_rows = program.active_rows() as u64;
+            let padded_rows = program.height() as u64;
             let identity_hint = state.identity_hint(identity).cloned();
             state.identity_hints_supplied += u64::from(identity_hint.is_some());
             let started = Instant::now();
-            let registered = RegisteredProgram::new_with_request_and_identity_hint(
-                MachineAir::from_shared_program(program),
-                host_bytes,
-                self.request,
-                identity_hint.as_ref(),
-            )
+            let result = (|| -> Result<(RegisteredTemplate, bool, bool), String> {
+                let registered = RegisteredProgram::new_with_request_and_identity_hint(
+                    MachineAir::from_shared_program(program),
+                    host_bytes,
+                    self.request,
+                    identity_hint.as_ref(),
+                )
                 .map_err(|e| {
                     let message = error(e);
-                    self.diagnostics.failure("registration", json!({"program_identity_sha3_256": hex(&identity.registration), "canonical_manifest_sha3_256": hex(&identity.manifest)}), &message, None);
+                    self.diagnostics.failure(
+                        "registration",
+                        identity.public_details(),
+                        &message,
+                        None,
+                    );
                     message
                 })?;
-            state.registration_seconds += started.elapsed().as_secs_f64();
-            state.registrations += 1;
-            state.identity_hint_hits += u64::from(registered.identity_hint_hit());
-            let verifier = match state.cached_verifier(
-                identity,
-                registered.preprocessing_cap().roots(),
-                &self.diagnostics,
-            )? {
-                Some(cached) => cached,
-                None => {
-                    let verifier = Arc::new(registered.verifier());
-                    state.remember(
+                state.registration_seconds += started.elapsed().as_secs_f64();
+                state.registrations += 1;
+                state.registered_active_rows += active_rows;
+                state.registered_padded_rows += padded_rows;
+                let receipt_hit = registered.identity_hint_hit();
+                state.identity_hint_hits += u64::from(receipt_hit);
+                let (verifier, payload, metadata_hit) = match state.cached_verifier(
+                    identity,
+                    registered.preprocessing_cap().roots(),
+                    &self.diagnostics,
+                )? {
+                    Some(cached) => (
+                        cached,
+                        state
+                            .metadata
+                            .back()
+                            .expect("promoted metadata")
+                            .payload_bytes,
+                        true,
+                    ),
+                    None => {
+                        let verifier = Arc::new(registered.verifier());
+                        let payload = state.remember(
+                            identity,
+                            registered.preprocessing_cap().roots(),
+                            Arc::clone(&verifier),
+                        )?;
+                        (verifier, payload, false)
+                    }
+                };
+                if let Some(receipt) = registered.identity_receipt() {
+                    state.identity_hints.remember(identity, receipt.clone());
+                }
+                Ok((
+                    RegisteredTemplate {
+                        registered,
+                        host_allowance_bytes: host_bytes,
+                        verifier,
+                        request: self.request,
                         identity,
-                        registered.preprocessing_cap().roots(),
-                        Arc::clone(&verifier),
-                    )?;
-                    verifier
+                        diagnostics: Rc::clone(&self.diagnostics),
+                        telemetry_access: access,
+                        metadata_payload_bytes: payload,
+                    },
+                    metadata_hit,
+                    receipt_hit,
+                ))
+            })();
+            let setup_seconds = started.elapsed().as_secs_f64();
+            state.registration_setup_seconds += setup_seconds;
+            let (prepared, hit_metadata, hit_receipt) = match result {
+                Ok(value) => value,
+                Err(message) => {
+                    state
+                        .trace
+                        .outcome(access, AccessOutcome::SetupFailed, setup_seconds);
+                    return Err(message);
                 }
             };
-            if let Some(receipt) = registered.identity_receipt() {
-                state.identity_hints.remember(identity, receipt.clone());
-            }
-            state.prepared = Some(RegisteredTemplate {
-                registered,
-                host_allowance_bytes: host_bytes,
-                verifier,
-                request: self.request,
-                identity,
-                diagnostics: Rc::clone(&self.diagnostics),
-            });
+            metadata_payload_bytes = prepared.metadata_payload_bytes;
+            metadata_hit = hit_metadata;
+            receipt_hit = hit_receipt;
+            state.prepared = Some(prepared);
+            state
+                .trace
+                .outcome(access, AccessOutcome::Registered, setup_seconds);
         }
+        let public_bytes = state.metadata_bytes;
+        let managed_device_bytes = if state.trace.enabled() {
+            self.observed_device_live_bytes()
+        } else {
+            None
+        };
+        state.trace.retained(
+            access,
+            public_bytes,
+            managed_device_bytes,
+            metadata_payload_bytes,
+            metadata_hit,
+            receipt_hit,
+        );
         let prepared = state
             .prepared
             .as_ref()
@@ -679,7 +851,17 @@ impl ProvingContext {
                 None,
             );
         }
+        state.trace.callback(access, result.is_ok());
         result
+    }
+
+    fn observed_device_live_bytes(&self) -> Option<u64> {
+        #[cfg(feature = "opencl")]
+        if self.session.is_some() {
+            return lattica_prover_p3::block_v2::gpu_hash::report("registration observation")
+                .map(|stats| stats.managed_live_bytes as u64);
+        }
+        None
     }
     pub fn report(&self) -> Value {
         let Ok(state) = self.registry.try_borrow() else {
@@ -699,14 +881,35 @@ impl ProvingContext {
             "identity_receipt_evictions":state.identity_hints.evictions,
             "identity_receipt_cache_bytes":state.identity_hints.backing_bytes(),
             "identity_receipt_cache_limit_bytes":IDENTITY_HINT_LIMIT_BYTES,
-            "identity_receipt_retained_bytes":state.identity_hints.entries.iter().map(|(_, receipt)| receipt.accounted_bytes()).sum::<usize>(),
-            "verifier_metadata_cache_bytes":state.metadata_bytes-state.identity_hints.backing_bytes(),
+            "identity_receipt_retained_bytes":state.identity_hints.entries.iter().map(|(_, receipt)| receipt.accounted_bytes()).sum::<usize>()});
+        let cache = json!({
+            "verifier_metadata_cache_bytes":state.metadata_bytes-state.identity_hints.backing_bytes()-state.trace.accounted_bytes(),
             "metadata_evictions":state.metadata_evictions, "metadata_entries":state.metadata.len(),
+            "maximum_metadata_entries":state.maximum_metadata_entries,
+            "metadata_entry_size_bytes":std::mem::size_of::<Metadata>(),
+            "metadata_backing_bytes":state.metadata.capacity()*std::mem::size_of::<Metadata>(),
+            "metadata_eviction_reasons":{"entry_capacity":state.metadata_capacity_evictions,
+                "shared_byte_limit":state.metadata_byte_evictions,"identity_cap_mismatch":state.metadata_identity_evictions},
+            "metadata_oversized_rejections":state.metadata_oversized_rejections,
             "metadata_cache_payload_bytes":state.metadata_bytes,
             "metadata_cache_payload_limit_bytes":PUBLIC_METADATA_LIMIT_BYTES,
-            "cache_accounting_includes":"combined verifier and GPU identity-receipt backing capacities, caps and public verifier payload",
-            "cache_accounting_excludes":"caller-owned keys, active prover, verification scratch, allocator and driver overhead",
+            "registration_telemetry_reserved_bytes":state.trace.accounted_bytes(),
+            "prepared_reuse_mode":"single_entry",
+            "registration_setup_seconds":state.registration_setup_seconds,
+            "registration_setup_scope":"core registration plus verifier metadata lookup/construction; excludes callback proving and verification",
+            "registered_active_rows":state.registered_active_rows,
+            "registered_padded_rows":state.registered_padded_rows,
+            "registered_row_scope":"successful core registrations, excluding prepared hits and native proofs",
+            "cache_accounting_includes":"combined verifier and GPU identity-receipt backing capacities, caps, public verifier payload and bounded telemetry backing/report reservation",
+            "cache_accounting_excludes":"caller-owned keys and retained report snapshots, active prover, verification scratch, allocator and driver overhead",
             "registration_seconds":state.registration_seconds, "operations":self.diagnostics.report()});
+        if let Value::Object(fields) = cache {
+            value
+                .as_object_mut()
+                .expect("context report object")
+                .extend(fields);
+        }
+        value["registration_telemetry"] = state.trace.report();
         #[cfg(feature = "opencl")]
         if self.session.is_some() {
             value["gpu"] = lattica_prover_p3::block_v2::gpu_hash::report("worker context observation")
@@ -716,7 +919,7 @@ impl ProvingContext {
         value
     }
     pub fn finish(self) -> Result<Value, String> {
-        self.release_prepared()?;
+        self.release_prepared_with_reason(ReleaseReason::SessionRetired)?;
         let mut report = self.report();
         #[cfg(feature = "opencl")]
         if let Some(session) = self.session {
@@ -735,7 +938,7 @@ impl ProvingContext {
     /// This returns cleanup telemetry without claiming successful proof or
     /// native-spend completion. Use `finish` for a completed operation receipt.
     pub fn close_without_completion(self) -> Result<Value, String> {
-        self.release_prepared()?;
+        self.release_prepared_with_reason(ReleaseReason::Cleanup)?;
         let mut report = self.report();
         #[cfg(feature = "opencl")]
         if let Some(session) = self.session {

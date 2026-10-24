@@ -85,6 +85,172 @@ fn identity_and_verifier_metadata_share_the_existing_byte_allowance() {
     assert!(registry.metadata_bytes <= PUBLIC_METADATA_LIMIT_BYTES);
 }
 
+#[test]
+fn metadata_experiments_and_observations_share_the_same_byte_limits() {
+    for capacity in [MetadataCapacity::Entries256, MetadataCapacity::Entries512] {
+        for telemetry in [
+            RegistrationTelemetry::Disabled,
+            RegistrationTelemetry::Bounded,
+        ] {
+            let registry = Registry::with_options(capacity, telemetry);
+            assert_eq!(registry.maximum_metadata_entries, capacity.entries());
+            assert_eq!(
+                registry.metadata_bytes,
+                registry.metadata.capacity() * std::mem::size_of::<Metadata>()
+                    + registry.identity_hints.backing_bytes()
+                    + registry.trace.accounted_bytes()
+            );
+            assert!(registry.metadata_bytes <= PUBLIC_METADATA_LIMIT_BYTES);
+            assert!(registry.identity_hints.backing_bytes() <= IDENTITY_HINT_LIMIT_BYTES);
+            assert_eq!(
+                registry.trace.accounted_bytes() == 0,
+                telemetry == RegistrationTelemetry::Disabled
+            );
+        }
+    }
+}
+
+#[test]
+fn registration_options_reject_late_and_reentrant_changes() {
+    let context = ProvingContext::cpu(1 << 30).unwrap();
+    assert_eq!(context.report()["maximum_metadata_entries"], 256);
+    assert_eq!(context.report()["registration_telemetry"]["enabled"], false);
+    context
+        .configure_registration(MetadataCapacity::Entries512, RegistrationTelemetry::Bounded)
+        .unwrap();
+    assert_eq!(context.report()["maximum_metadata_entries"], 512);
+    let busy = context.registry.borrow_mut();
+    assert!(context
+        .configure_registration(
+            MetadataCapacity::Entries256,
+            RegistrationTelemetry::Disabled
+        )
+        .is_err());
+    drop(busy);
+    assert!(context
+        .with_native_cpu(|| Err::<(), _>("injected native failure".into()))
+        .is_err());
+    assert!(context
+        .configure_registration(
+            MetadataCapacity::Entries256,
+            RegistrationTelemetry::Disabled
+        )
+        .is_err());
+    assert_eq!(context.report()["maximum_metadata_entries"], 512);
+}
+
+#[test]
+fn bounded_identity_trace_preserves_order_and_marks_truncation() {
+    let mut trace = RegistrationTrace::new(RegistrationTelemetry::Bounded);
+    let program = equality_program(2, 32, 1);
+    let bytes = trace.accounted_bytes();
+    let first = trace.begin(cache_identity(1), 1024, &program);
+    trace.outcome(first, AccessOutcome::Registered, 0.25);
+    trace.callback(first, true);
+    let second = trace.begin(cache_identity(2), 1024, &program);
+    trace.outcome(second, AccessOutcome::Registered, 0.5);
+    trace.callback(second, true);
+    let third = trace.begin(cache_identity(1), 1024, &program);
+    trace.outcome(third, AccessOutcome::Registered, 0.75);
+    trace.callback(third, true);
+    let fourth = trace.begin(cache_identity(1), 2048, &program);
+    trace.outcome(fourth, AccessOutcome::SetupFailed, 0.125);
+    trace.release(third, ReleaseReason::HostBudgetChanged);
+    let report = trace.report();
+    assert_eq!(report["complete"], true);
+    assert_eq!(report["rows"][0][5], Value::Null);
+    assert_eq!(report["rows"][1][5], Value::Null); // Same registration hash, different manifest.
+    assert_eq!(report["rows"][2][5], 1);
+    assert_eq!(report["rows"][3][5], Value::Null); // Different admitted allowance.
+    assert_eq!(report["rows"][2][6], ReleaseReason::HostBudgetChanged as u8);
+    let limit = report["maximum_accesses"].as_u64().unwrap();
+    for _ in 4..limit + 1 {
+        let index = trace.begin(cache_identity(1), 1024, &program);
+        trace.outcome(index, AccessOutcome::PreparedHit, 0.0);
+    }
+    let report = trace.report();
+    assert_eq!(report["recorded_accesses"], limit);
+    assert_eq!(report["dropped_accesses"], 1);
+    assert_eq!(report["complete"], false);
+    assert_eq!(trace.accounted_bytes(), bytes);
+    assert_eq!(report["prepared_retained_host_bytes"], Value::Null);
+    assert_eq!(report["prepared_retained_device_bytes"], Value::Null);
+}
+
+#[test]
+fn metadata_512_keeps_exact_lru_order_and_byte_eviction_reasons() {
+    let (verifier, cap) = public_verifier_fixture();
+    let context = ProvingContext::cpu(1 << 30).unwrap();
+    let mut registry = Registry::with_options(
+        MetadataCapacity::Entries512,
+        RegistrationTelemetry::Disabled,
+    );
+    for index in 0..512 {
+        registry
+            .remember(cache_identity(index), &cap, Arc::clone(&verifier))
+            .unwrap();
+    }
+    assert_eq!(registry.metadata.len(), 512);
+    assert!(registry
+        .cached_verifier(cache_identity(0), &cap, &context.diagnostics)
+        .unwrap()
+        .is_some());
+    registry
+        .remember(cache_identity(512), &cap, Arc::clone(&verifier))
+        .unwrap();
+    assert_eq!(
+        registry.metadata.front().unwrap().identity,
+        cache_identity(2)
+    );
+    assert_eq!(registry.metadata_capacity_evictions, 1);
+    assert_eq!(registry.metadata_byte_evictions, 0);
+
+    // Larger public cap backing reaches the shared byte limit before 512 entries.
+    // It needs no GPU state and exercises actual capacities, not synthetic counters.
+    let large_cap = vec![cap[0]; 16_384];
+    for index in 513..650 {
+        registry
+            .remember(cache_identity(index), &large_cap, Arc::clone(&verifier))
+            .unwrap();
+        assert!(registry.metadata_bytes <= PUBLIC_METADATA_LIMIT_BYTES);
+    }
+    assert!(registry.metadata_byte_evictions > 0);
+    assert_eq!(
+        registry.metadata_evictions,
+        registry.metadata_capacity_evictions + registry.metadata_byte_evictions
+    );
+    assert!(registry.metadata.len() < 512);
+}
+
+#[test]
+fn failed_callbacks_and_retirement_remain_observable_without_private_inputs() {
+    let context = ProvingContext::cpu(1 << 30).unwrap();
+    context
+        .configure_registration(MetadataCapacity::Entries512, RegistrationTelemetry::Bounded)
+        .unwrap();
+    context
+        .with_registered(equality_program(2, 32, 1), |_| Ok(()))
+        .unwrap();
+    assert!(context
+        .with_registered(equality_program(2, 32, 1), |_| Err::<(), _>(
+            "injected callback".into()
+        ))
+        .is_err());
+    let report = context.close_without_completion().unwrap();
+    assert_eq!(report["prepared_entries"], 0);
+    assert_eq!(report["session_closed"], true);
+    assert_eq!(report["completion_claimed"], false);
+    assert_eq!(
+        report["registration_telemetry"]["rows"][1][4],
+        AccessOutcome::PreparedHit as u8
+    );
+    assert_eq!(report["registration_telemetry"]["rows"][1][12], false);
+    assert_eq!(
+        report["registration_telemetry"]["rows"][1][6],
+        ReleaseReason::Cleanup as u8
+    );
+}
+
 fn public_verifier_fixture() -> (Arc<RegisteredVerifier>, Vec<[Val; 4]>) {
     let registered = RegisteredProgram::new_with_request(
         MachineAir::new(equality_program(2, 32, 1)),
@@ -211,6 +377,9 @@ fn contexts_have_separate_sessions_and_reject_reentrant_work() {
 }
 
 fn reuse_distinct_inputs(context: ProvingContext) {
+    context
+        .configure_registration(MetadataCapacity::Entries512, RegistrationTelemetry::Bounded)
+        .unwrap();
     let program = equality_program(2, 32, 1);
     let mut returned = Vec::new();
     let mut first_bytes = None;
@@ -276,10 +445,19 @@ fn reuse_distinct_inputs(context: ProvingContext) {
         report["metadata_cache_payload_bytes"].as_u64().unwrap(),
         report["verifier_metadata_cache_bytes"].as_u64().unwrap()
             + report["identity_receipt_cache_bytes"].as_u64().unwrap()
+            + report["registration_telemetry_reserved_bytes"]
+                .as_u64()
+                .unwrap()
     );
     let finished = context.finish().unwrap();
     assert_eq!(finished["prepared_entries"], 0);
     assert_eq!(finished["session_closed"], true);
+    assert_eq!(finished["registration_telemetry"]["complete"], true);
+    assert_eq!(finished["registration_telemetry"]["recorded_accesses"], 4);
+    assert_eq!(
+        finished["registration_telemetry"]["rows"][3][6],
+        ReleaseReason::SessionRetired as u8
+    );
     // Only public verification state escapes the context/session lifetime.
     for (proof, public, verifier) in returned {
         verifier.verify(&proof, &public).unwrap();
