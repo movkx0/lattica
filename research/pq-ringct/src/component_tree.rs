@@ -17,6 +17,7 @@ use lattica_prover_p3::block_v2::{
     profile::Config,
 };
 use p3_batch_stark::BatchProof;
+use p3_air::BaseAir;
 use p3_field::{PrimeCharacteristicRing, PrimeField64};
 use std::sync::Arc;
 
@@ -25,6 +26,8 @@ pub use crate::outer_cache::ProofCache as OuterProofCache;
 pub use cache::CacheOutcome;
 
 mod retention;
+mod shake_compile_memory;
+pub use shake_compile_memory::{ShakeGroupCompileFootprint, ShakeGroupFootprintError};
 mod preparation;
 use preparation::with_endpoint_preparation;
 mod wide;
@@ -837,6 +840,7 @@ pub fn compile_shake_group_with_context(
 /// Construction stages only. No stage registers or proves a wrapper.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ShakeGroupCompilePhase {
+    AuxiliaryAdmission,
     Initialize,
     Inputs { member: usize },
     NativeVerifier { member: usize },
@@ -893,14 +897,15 @@ fn shake_group_compile_error(
 ///
 /// This is a prerequisite only: it never enables grouping, performs fallback,
 /// registers a program or dispatches a native/outer proof. A resource refusal
-/// drops compiler-owned program/input storage before returning metadata. Later
-/// callers may choose bounded singleton compilation only for ResourceRefused;
-/// all Err values must propagate. Endpoint preparation uses the same execution
-/// context as the existing API and may perform GPU hashing before refusal.
+/// drops compiler-owned program/input storage before returning metadata;
+/// all Err values must propagate. No resource refusal authorizes a caller to
+/// retry after proof dispatch. Endpoint preparation uses the same execution
+/// context as the existing API, after auxiliary admission succeeds.
 ///
 /// ConstructionLimits is not an overall host cap. Callers must separately admit
-/// retained native proofs, both old/new ProofInputs value buffers, returned wire
-/// arrays, AIR/symbolic/periodic scratch, endpoint vectors and allocator overhead.
+/// retained native proofs and allocator overhead. The auxiliary allowance covers
+/// old/new ProofInputs buffers, returned wires, AIR/symbolic/periodic scratch,
+/// and endpoint helpers. It must be reserved alongside the builder allowance.
 /// Exact row/retained-LDE/device admission is still required on a Compiled node
 /// before any proof registration/dispatch. There is no unbounded retry here.
 pub fn compile_shake_group_bounded_with_context(
@@ -910,10 +915,19 @@ pub fn compile_shake_group_bounded_with_context(
 
     execution: Option<&crate::execution::ProvingContext>,
     limits: ConstructionLimits,
+    auxiliary_host_allowance: usize,
 ) -> Result<ShakeGroupCompileOutcome> {
     // Reject malformed intervals and interior endpoints before acquiring an
     // endpoint preparation session or allocating compiler/AIR storage.
     check_shake_group_members(contract, members)?;
+    // Validate each native geometry on the stack before classifying a resource
+    // refusal; malformed phase/count shapes never become retryable admission.
+    for member in members { shake_compile_memory::air(contract, member)?; }
+    let footprint = ShakeGroupCompileFootprint::for_group(members.len(), limits).map_err(err)?;
+    if footprint.auxiliary_peak_bytes > auxiliary_host_allowance {
+        return Ok(shake_group_refused(limits, ShakeGroupCompilePhase::AuxiliaryAdmission,
+            None, "SHAKE compiler auxiliary host allowance"));
+    }
     with_endpoint_preparation(execution, |endpoint_root| {
         use shake_air::lane::batch::{BatchShakeAir, ShakeSegmentAir};
         let Kind::Shake(descriptor) = contract.kind else {
@@ -986,13 +1000,21 @@ pub fn compile_shake_group_bounded_with_context(
                     b.construction_counters(),
                 ),
             };
-            if let Err(error) = verifier::uni::verify(
+            // The pinned fixed table was admitted before endpoint preparation;
+            // never ask the generic verifier to allocate an unknown AIR table.
+            let columns = air.periodic_columns();
+            require(columns.len() == shake_air::lane::PERIODIC_COLUMNS
+                && columns.iter().all(|c| c.len() == shake_air::lane::SCHEDULE_PERIOD),
+                "SHAKE compiler periodic geometry")?;
+            if let Err(error) = verifier::uni::verify_bounded(
                 &mut b,
                 &mut inputs,
                 air,
                 air.height(),
                 &child,
                 &member.proof.proof,
+                &columns,
+                footprint.symbolic,
             ) {
                 return shake_group_compile_error(
                     error, limits, ShakeGroupCompilePhase::NativeVerifier { member: member_index },

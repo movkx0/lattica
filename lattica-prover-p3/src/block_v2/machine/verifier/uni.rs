@@ -12,6 +12,67 @@ use p3_air::{symbolic::SymbolicAirBuilder, Air, BaseAir};
 use p3_field::PrimeCharacteristicRing;
 use p3_uni_stark::Proof;
 
+/// AIRs generic over `AirBuilder` can use this bounded recording implementation.
+pub use super::super::symbolic::Builder as BoundedSymbolicBuilder;
+
+/// Separate simultaneous reservations for bounded symbolic preparation and the
+/// normalized graph owned during lowering. These exclude caller AIR callbacks,
+/// periodic tables, ProofInputs, returned wire arrays and the program builder.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct BoundedSymbolicAllowance {
+    pub workspace_bytes: usize,
+    pub retained_graph_bytes: usize,
+}
+impl BoundedSymbolicAllowance {
+    pub const REQUIRED: Self = Self {
+        workspace_bytes: super::super::symbolic::HOST_BYTES as usize,
+        retained_graph_bytes: super::super::symbolic::UNI_RETAINED_HOST_BYTES,
+    };
+
+    fn check(self) -> Result<(), CompileError> {
+        if self.workspace_bytes < Self::REQUIRED.workspace_bytes
+            || self.retained_graph_bytes < Self::REQUIRED.retained_graph_bytes
+        {
+            return Err(CompileError::Shape("bounded uni symbolic allowance"));
+        }
+        Ok(())
+    }
+}
+
+/// Compile the same uni-STARK relation through bounded CPU symbolic recording.
+/// The caller must reserve both symbolic allowances before entry and separately
+/// admit its AIR-owned allocations and already-owned periodic table. This API
+/// never invokes `air.periodic_columns()` or retries the unbounded reference.
+/// Recording/normalization scratch drops before lowering; the at-most-64 MiB
+/// returned graph drops when `verify_prepared` returns. Its reservation must
+/// remain live throughout lowering, including overlap with compiler storage.
+pub fn verify_bounded<A>(
+    b: &mut ProgramBuilder,
+    inputs: &mut ProofInputs,
+    air: &A,
+    height: usize,
+    public: &[Wire],
+    proof: &Proof<Config>,
+    columns: &[Vec<Val>],
+    allowance: BoundedSymbolicAllowance,
+) -> Result<(), CompileError>
+where
+    A: BaseAir<Val> + Air<BoundedSymbolicBuilder>,
+{
+    validate_geometry(air, height)?;
+    if columns.len() != air.num_periodic_columns()
+        || columns.iter().any(|c| !c.len().is_power_of_two() || c.len() > height)
+    {
+        return Err(CompileError::Shape("bounded uni periodic geometry"));
+    }
+    allowance.check()?;
+    let prepared = super::super::symbolic::prepare_uni_bounded(air, Constants::cpu())?;
+    verify_prepared(
+        b, inputs, air, height, public, proof, Constants::cpu(), prepared,
+        &super::periodic::Borrowed(columns),
+    )
+}
+
 pub fn verify<A>(
     b: &mut ProgramBuilder,
     inputs: &mut ProofInputs,
@@ -274,6 +335,56 @@ mod tests {
         let mut inputs = ProofInputs::default();
         verify(&mut b, &mut inputs, &Counter, 8, &[public], proof).unwrap();
         (b.finish(None).unwrap(), inputs.values)
+    }
+
+    fn compile_bounded(proof: &Proof<Config>) -> (Program, Vec<Val>) {
+        use super::super::super::program::{ConstructionLimits, MAX_WIRES};
+        let mut b = ProgramBuilder::new_with_construction_limits(1, ConstructionLimits {
+            max_requested_program_bytes: 1 << 30,
+            max_wires: MAX_WIRES,
+            max_input_values: 1 << 20,
+        }).unwrap();
+        let public = b.public(0).unwrap();
+        let mut inputs = ProofInputs::default();
+        verify_bounded(&mut b, &mut inputs, &Counter, 8, &[public], proof, &[],
+            BoundedSymbolicAllowance::REQUIRED).unwrap();
+        (b.finish(None).unwrap(), inputs.values)
+    }
+
+    #[test]
+    fn bounded_uni_matches_reference_program_order_and_rejects_mutations() {
+        let public = [Val::from_u64(37)];
+        let trace = RowMajorMatrix::new((37..45).map(Val::from_u64).collect(), 1);
+        let config = profile::make_config();
+        let mut proof = p3_uni_stark::prove(&config, &Counter, trace, &public);
+        p3_uni_stark::verify(&config, &Counter, &proof, &public).unwrap();
+        let (reference, values) = compile(&proof);
+        let manifest = reference.manifest_fields();
+        drop(reference);
+        let (bounded, bounded_values) = compile_bounded(&proof);
+        assert_eq!(manifest, bounded.manifest_fields());
+        assert_eq!(values, bounded_values);
+        bounded.evaluate(&public, &bounded_values).unwrap();
+        assert!(bounded.evaluate(&[Val::from_u64(38)], &bounded_values).is_err());
+        drop(bounded);
+        proof.opened_values.trace_local[0] += profile::Challenge::ONE;
+        let (mutated, mutated_values) = compile_bounded(&proof);
+        assert_eq!(manifest, mutated.manifest_fields());
+        assert!(mutated.evaluate(&public, &mutated_values).is_err());
+    }
+
+    #[test]
+    fn bounded_uni_symbolic_components_are_admitted_separately() {
+        let required = BoundedSymbolicAllowance::REQUIRED;
+        assert_eq!(required.workspace_bytes, 192 << 20);
+        assert_eq!(required.retained_graph_bytes, 64 << 20);
+        required.check().unwrap();
+        for allowance in [
+            BoundedSymbolicAllowance { workspace_bytes: required.workspace_bytes - 1, ..required },
+            BoundedSymbolicAllowance { retained_graph_bytes: required.retained_graph_bytes - 1, ..required },
+        ] {
+            assert_eq!(allowance.check(), Err(CompileError::Shape("bounded uni symbolic allowance")));
+        }
     }
 
     #[test]

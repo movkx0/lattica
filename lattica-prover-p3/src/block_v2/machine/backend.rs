@@ -72,6 +72,41 @@ pub struct RegisteredVerifier {
 }
 
 impl RegisteredVerifier {
+    /// Allocation-free, source-qualified reservation for one independent
+    /// registered-machine verifier lifecycle, before allocating its trusted
+    /// preprocessing cap or metadata. Includes one already-owned proof capped
+    /// at 64 MiB. Callers still reserve their caches, owner/container overhead,
+    /// and allocator/process overhead separately; this is not native uni-STARK
+    /// verification or an enclosing worker admission token.
+    /// The reservation is valid only for the specified cap geometry/capacity;
+    /// existing construction checks revalidate the actual cap before setup.
+    ///
+    /// Only the pinned release x86_64 target has the source-derived bound. Other
+    /// profiles fail closed instead of exporting an estimated ceiling.
+    pub fn host_reservation_bytes(
+        publics: usize,
+        height: usize,
+        cap_roots: usize,
+        cap_capacity: usize,
+    ) -> Result<usize, ExecutionError> {
+        #[cfg(all(not(debug_assertions), target_arch = "x86_64"))]
+        {
+            verification_lifetimes::Plan::from_shape(
+                publics,
+                height,
+                cap_roots,
+                cap_capacity,
+                super::symbolic::verifier::Limits::default(),
+            )
+            .map(|plan| plan.peak_bytes)
+        }
+        #[cfg(not(all(not(debug_assertions), target_arch = "x86_64")))]
+        {
+            let _ = (publics, height, cap_roots, cap_capacity);
+            Err(ExecutionError::ProvingPolicy)
+        }
+    }
+
     /// Bound already-owned proof backing storage before constructing independent
     /// verifier metadata. This is not proof-shape or numerical verification.
     #[cfg(all(not(debug_assertions), target_arch = "x86_64"))]
@@ -1153,6 +1188,12 @@ mod verifier_tests;
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    #[cfg(not(all(not(debug_assertions), target_arch = "x86_64")))]
+    fn public_verifier_reservation_rejects_unqualified_profile() {
+        assert_eq!(super::RegisteredVerifier::host_reservation_bytes(1, 64, 64, 64),
+            Err(super::ExecutionError::ProvingPolicy));
+    }
     use super::super::air::{a_column, b_column, c_column};
     use super::*;
     use crate::block_v2::machine::ProgramBuilder;
