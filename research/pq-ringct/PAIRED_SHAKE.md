@@ -151,3 +151,60 @@ added to the source commit.
 | `concurrent-b-bounded-shake-tests-1` | `6249c70ee943524c53e95eb4093ad24d5a2e5d66f755a92ab0556aa1bf66a04f` | `ef4d37200c9f2a392bd5f1faa58b034427447115dd670676e4510905767b6bb4` |
 | `concurrent-b-paired-compiler-screen-1` | `f7d2792e548c745149694f5d7b4305d65784e7807e52dcf882d88a7150a53589` | `a48181aee77e2d06d53d9c716274801f5763cf83cf270cefa140ecd7c0b00dba` |
 | `concurrent-b-paired-resource-errors-1` | `96b9037563f8fffae416240df492dff80eb09653e0b7a3b7efc488f65da19cb3` | `840a454cbad3aae8fa063ebc2d14119f32a382606b440608779a83ee5202f1e8` |
+
+## Registered-verifier shape prerequisite
+
+`machine::verifier::batch::shape::verifier_core_bound` now accepts one through
+four trusted public child shapes and explicit construction/auxiliary limits.
+It admits every height, public width, cap length, template backing allocation
+and checked storage sum before constructing a template or compiler. It uses
+bounded symbolic registry preparation and substitutes a distinct unknown input
+for every preprocessing-cap word. Only operation-class counts, row/wire/input
+bounds and requested-storage diagnostics leave the API; every invalid template
+and compiled program is dropped internally.
+
+The [restricted source argument](../../lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/OPAQUE_CAPS.md)
+explains why cap specialization cannot increase scalar, cubic or Poseidon
+counts in this particular verifier. It does not assume a general monotone
+constant optimizer. The source-derived template reservation uses
+`3*(4*LANES+publics+1)` as the permutation-width ceiling, rather than the largest
+width observed in sampled compiles. The observed planner construction peak is
+not an actual specialized-compiler memory bound: cap Constants populate
+different interning maps from opaque Inputs. Actual compilers still require
+their independently enforced construction allowance.
+
+Agent A's independent review found no blocker for this prerequisite-only scope.
+The coordinator's serialized release checks used the unchanged two build/Rayon
+threads, one test thread, 8 GiB process guard, 6 GiB high watermark and zero swap:
+
+- Three focused shape/overflow/storage/packing tests passed.
+- Both ignored qualification tests passed with
+  `LATTICA_BOUNDED_BATCH_SHAPE_QUALIFICATION=1`. Zero, colliding and distinct caps
+  were dominated by the opaque core, and each concrete bounded program matched
+  the default reference program and input values. Four children at height
+  262144 also compiled within the original allowance; a deliberate one-input
+  refusal cleaned up before a fresh successful call.
+- All guard services became terminal and reaped; source and executable hashes
+  remained unchanged within each job. No real proof or GPU work ran.
+
+The original reservation was 2147483648 builder bytes, 536870912 auxiliary
+bytes, at most 1048576 input values and unchanged MAX_WIRES. Selected opaque
+core reports (outer public width 32) were:
+
+| Child public widths / heights | Scalar ops | Cubic ops | Poseidon ops | Active rows | Padded rows |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 0 / 8 | 621227 | 9214 | 28684 | 57012 | 65536 |
+| 32 / 262144 | 1216059 | 11549 | 74761 | 129285 | 131072 |
+| 64 / 8, 24 / 256 | 1397127 | 19593 | 69547 | 133092 | 262144 |
+
+The qualification test body took 9.50 seconds; its guarded build/test job took
+144.335959 seconds with a 3114397696-byte cgroup peak. These are compiler/test
+measurements, not proving performance or complete-workflow speedup. The existing
+PairedV1 refusal remains. Exhaustive configured-height envelopes, native wrapper
+starting bounds, consuming Transcript/Sparse/source-binding relations, whole
+graph/final aggregate closure and live ownership admission are still required.
+
+| Stem | Guard JSON SHA-256 | Raw log SHA-256 |
+| --- | --- | --- |
+| `concurrent-b-opaque-shape-tests-1` | `20cc033714c48e56e17afd0c8d1c5731546f0656764c6897bf0df6cf321bdc2c` | `88cf4a41dbbe4e80253d6e7ad53e579d1b1f455943b199b878f5b78d385d078e` |
+| `concurrent-b-opaque-shape-qualification-1` | `bdef1aff63fbb2aa6b70d566ed7f93f952e63e4aace32859e9e7e64541fc168e` | `b4c769ce0ceb2420164cd8d318b8adc8aade76d81869cc13736ea656cdc16fc3` |

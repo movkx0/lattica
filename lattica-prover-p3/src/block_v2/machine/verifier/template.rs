@@ -27,15 +27,47 @@ pub(crate) fn batch_with_constants(
         analysis::analyze_prepared(air, &prepared)
             .map_err(|_| CompileError::Shape("template AIR geometry"))?
     };
+    batch_from_geometry(air, a.quotient_chunks, a.permutation_width_base)
+}
+
+/// Private shape-planning construction; enclosing storage is admitted before
+/// this function. No invalid template or program escapes the bounds-only API.
+pub(super) fn batch_bounded_shape(air: &MachineAir) -> Result<BatchProof<Config>, CompileError> {
+    let (quotient_chunks, permutation_width_base) = {
+        let prepared = super::super::symbolic::verifier::prepare_registry(
+            air, super::super::symbolic::verifier::Limits::default(),
+        )?;
+        if prepared.log_chunks > profile::LOG_BLOWUP {
+            return Err(CompileError::Shape("bounded batch template quotient degree"));
+        }
+        (1 << (prepared.log_chunks + 1), (prepared.lookups.len() + 1) * 3)
+    };
+    // Packing cannot create more lookup columns than the 4*LANES + publics
+    // interactions emitted by MachineAir. This bound does not assume a sampled
+    // packed count (which can vary with the number of public values).
+    if air.width() > 94 || air.preprocessed_width() > 200
+        || permutation_width_base > 3 * (4 * super::super::program::LANES + air.num_public_values() + 1)
+        || quotient_chunks > 32 || air.num_periodic_columns() != 0
+    {
+        return Err(CompileError::Shape("bounded batch template dimensions"));
+    }
+    batch_from_geometry(air, quotient_chunks, permutation_width_base)
+}
+
+fn batch_from_geometry(
+    air: &MachineAir,
+    quotient_chunks: usize,
+    permutation_width_base: usize,
+) -> Result<BatchProof<Config>, CompileError> {
     let degree = air.program().height().ilog2() as usize + 1;
     let log_lde = degree + profile::LOG_BLOWUP;
     let cap = |log: usize| MerkleCap::new(vec![[Val::ZERO; 4]; 1 << log.min(profile::CAP_HEIGHT)]);
     let widths = [
         vec![3],
         vec![air.width()],
-        vec![3; a.quotient_chunks],
+        vec![3; quotient_chunks],
         vec![air.preprocessed_width()],
-        vec![a.permutation_width_base],
+        vec![permutation_width_base],
     ];
     let point_counts = [1, 1, 1, 1, 2];
     let random = widths
@@ -112,11 +144,11 @@ pub(crate) fn batch_with_constants(
                     trace_next: None,
                     preprocessed_local: Some(vec![Challenge::ZERO; air.preprocessed_width()]),
                     preprocessed_next: None,
-                    quotient_chunks: vec![vec![Challenge::ZERO; 3]; a.quotient_chunks],
+                    quotient_chunks: vec![vec![Challenge::ZERO; 3]; quotient_chunks],
                     random: Some(vec![Challenge::ZERO; 3]),
                 },
-                permutation_local: vec![Challenge::ZERO; a.permutation_width_base],
-                permutation_next: vec![Challenge::ZERO; a.permutation_width_base],
+                permutation_local: vec![Challenge::ZERO; permutation_width_base],
+                permutation_next: vec![Challenge::ZERO; permutation_width_base],
             }],
         },
         opening_proof: (

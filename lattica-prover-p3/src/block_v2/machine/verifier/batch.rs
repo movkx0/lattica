@@ -17,6 +17,8 @@ use p3_batch_stark::BatchProof;
 use p3_field::PrimeCharacteristicRing;
 use p3_lookup::Kind;
 
+pub mod shape;
+
 fn observe_usize(t: &mut Transcript, b: &mut ProgramBuilder, value: usize) {
     // BatchTranscript pads structural values to extension-field coefficients.
     let value = b.constant(Val::from_usize(value));
@@ -79,10 +81,38 @@ pub(crate) fn verify_with_constants(
     proof: &BatchProof<Config>,
     constants: Constants<'_>,
 ) -> Result<(), CompileError> {
+    let prepared = super::super::symbolic::prepare_machine(air, constants)?;
+    verify_prepared(b, inputs, air, public, preprocessing_cap, proof, constants, prepared)
+}
+
+/// Only the sealed bounds-only planner uses this CPU preparation path.
+fn verify_bounded_shape(
+    b: &mut ProgramBuilder,
+    inputs: &mut ProofInputs,
+    air: &MachineAir,
+    public: &[Wire],
+    preprocessing_cap: &[Digest],
+    proof: &BatchProof<Config>,
+) -> Result<(), CompileError> {
+    let prepared = super::super::symbolic::verifier::prepare_registry(
+        air, super::super::symbolic::verifier::Limits::default(),
+    )?;
+    verify_prepared(b, inputs, air, public, preprocessing_cap, proof, Constants::cpu(), prepared)
+}
+
+fn verify_prepared(
+    b: &mut ProgramBuilder,
+    inputs: &mut ProofInputs,
+    air: &MachineAir,
+    public: &[Wire],
+    preprocessing_cap: &[Digest],
+    proof: &BatchProof<Config>,
+    constants: Constants<'_>,
+    prepared: super::super::symbolic::Prepared,
+) -> Result<(), CompileError> {
     let height = air.program().height();
     let log_height = height.ilog2() as usize;
     let ext_db = log_height + 1;
-    let prepared = super::super::symbolic::prepare_machine(air, constants)?;
     let log_chunks = prepared.log_chunks;
     if log_chunks > profile::LOG_BLOWUP {
         return Err(CompileError::Shape("quotient degree"));
