@@ -41,6 +41,37 @@ fn descriptor_geometry_is_exact_before_owned_construction() {
         assert_eq!(g.width, air.width());
         assert_eq!(g.periodic_columns, air.num_periodic_columns());
     }
+    for kind in [uniform_air::Kind::SampleG4, uniform_air::Kind::ExpandAlpha2] {
+        let g = NativeDescriptor::Uniform(kind).geometry().unwrap();
+        let air = UniformAir::new(kind);
+        assert_eq!(
+            (g.width, g.height, g.periodic_columns),
+            (air.width(), air.height(), air.num_periodic_columns())
+        );
+    }
+    for count in [1, 8, 64] {
+        let descriptor = aes_lane_air::Descriptor {
+            domain: 0x4368,
+            start_counter: u32::MAX,
+            output_len: 16 * 64 + 1,
+        };
+        let d = NativeDescriptor::Aes {
+            descriptor,
+            first: 1,
+            count,
+        };
+        let g = d.geometry().unwrap();
+        let air = d.aes().unwrap();
+        assert_eq!(
+            (g.width, g.height, g.public_values, g.periodic_columns),
+            (
+                air.width(),
+                air.height,
+                air.num_public_values(),
+                air.num_periodic_columns()
+            )
+        );
+    }
     assert!(NativeDescriptor::Transcript(&[]).geometry().is_err());
     assert!(NativeDescriptor::Transcript(&[PartKind::Bytes32; 257])
         .geometry()
@@ -55,6 +86,41 @@ fn descriptor_geometry_is_exact_before_owned_construction() {
     }
     .geometry()
     .is_err());
+}
+
+#[test]
+#[ignore = "selected AES/Uniform compiler parity; coordinator serialized release guard required"]
+fn selected_aes_uniform_cores_match_reference() {
+    assert!(cfg!(all(not(debug_assertions), target_arch = "x86_64")));
+    assert_eq!(
+        std::env::var("LATTICA_NATIVE_CORE_SHAPE_QUALIFICATION").as_deref(),
+        Ok("1")
+    );
+    for (name, output_len, domain, start_counter, first, count) in [
+        ("aes-sample-g64", 1197 * 4, 0, 0, 0, 64),
+        ("aes-alpha-middle64", 2572, 0x4368, 0, 64, 64),
+        ("aes-alpha-tail33", 2572, 0x4368, 0, 128, 33),
+        ("aes-sparse-tail8", 127, 0x4368, 161, 0, 8),
+    ] {
+        let d = NativeDescriptor::Aes {
+            descriptor: aes_lane_air::Descriptor {
+                domain,
+                start_counter,
+                output_len,
+            },
+            first,
+            count,
+        };
+        let air = d.aes().unwrap();
+        qualify(name, d, &air, air.height);
+    }
+    for (name, kind) in [
+        ("uniform-sample-g4", uniform_air::Kind::SampleG4),
+        ("uniform-alpha2", uniform_air::Kind::ExpandAlpha2),
+    ] {
+        let air = UniformAir::new(kind);
+        qualify(name, NativeDescriptor::Uniform(kind), &air, air.height());
+    }
 }
 
 #[test]

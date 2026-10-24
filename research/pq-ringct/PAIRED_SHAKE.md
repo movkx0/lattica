@@ -304,3 +304,41 @@ phase admission or final N3/N4 workflow acceptance. PairedV1 remains refused
 before dispatch. The next gate binds exact immutable Requests from the accepted
 serial SHAKE/AES, Branches, algebra64/NTT32/Mul32/cells2^27 configuration; an old
 persisted fixture can screen that schedule but cannot authorize fresh work.
+
+### Selected serial AES and Uniform compiler qualification
+
+The closed native planner now covers the unchanged serial AES and Uniform
+families. Its private common storage preflight also reserves the larger public
+and periodic-table geometry needed by the remaining source/algebra families;
+this does not admit arbitrary AIR callbacks or change protocol parameters.
+Source-derived framing includes the unchanged AES, source, algebra and
+SampleG/ExpandAlpha consumer adapters. Agent A independently reviewed the code
+and matched the framing arithmetic without a blocker.
+
+The coordinator's serialized release checks passed three focused tests and
+the six-case ignored compiler parity test. Each bounded program matched the
+independent reference compiler in operation classes, input/wire counts and
+canonical manifest digest. No real proof was generated.
+
+| Native core | Scalar | Cubic | Poseidon | Active rows | Padded rows |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| AES SampleG64 | 1112044 | 11760 | 63559 | 113589 | 131072 |
+| AES Alpha middle64 | 1112051 | 11751 | 63559 | 113589 | 131072 |
+| AES Alpha tail33 | 1112052 | 11751 | 63559 | 113589 | 131072 |
+| AES Sparse8 | 980928 | 11324 | 53577 | 97845 | 131072 |
+| Uniform SampleG4 | 934442 | 13098 | 48499 | 90999 | 131072 |
+| Uniform Alpha2 | 894912 | 11460 | 45684 | 86232 | 131072 |
+
+The qualification test body took 6.12 seconds and the process cgroup peak was
+347365376 bytes. Both jobs used two build/Rayon threads, one test thread, an
+8 GiB process guard, 6 GiB high watermark and zero swap. The coordinator
+audited terminal/reaped status, unchanged source/executable identity and log
+hashes before thawing the worktree. These measurements cover compiler tests,
+not GPU proving or complete-workflow throughput. PairedV1 still refuses before
+dispatch; complete native/descendant closure and runtime ownership admission
+remain required.
+
+| Stem | Guard JSON SHA-256 | Raw log SHA-256 |
+| --- | --- | --- |
+| `concurrent-b-aes-uniform-shape-tests-1` | `2b54d4e6bd270882c0939bad65c0d6850c124f84f24f03a4d0fb5aeb14dcf071` | `3353af8e9dd5e72ff60e8de789b35f03b5bc3ae33bd6eee28e1e388a100d3819` |
+| `concurrent-b-aes-uniform-core-qualification-1` | `64d0c1133effe344b12a72622a8215f766a8d9b1d01212564e0731430001a0fa` | `7d75ad7d5313070f67e5d22768c273b9d718d31f3aea5b5aa2491f9b234ae8e8` |

@@ -50,14 +50,14 @@ where
     let width = air.width();
     let publics = air.num_public_values();
     if !(1..=1024).contains(&width)
-        || publics > 216
+        || publics > 384
         || !(8..=1 << 24).contains(&height)
         || !height.is_power_of_two()
         || columns.len() != air.num_periodic_columns()
-        || columns.len() > 128
+        || columns.len() > 256
         || columns
             .iter()
-            .any(|c| !c.len().is_power_of_two() || c.len() > height || c.len() > 256)
+            .any(|c| !c.len().is_power_of_two() || c.len() > height || c.len() > 65536)
     {
         return Err(CompileError::Shape("native core planner geometry"));
     }
@@ -67,7 +67,7 @@ where
     let mut builder = ProgramBuilder::new_with_construction_limits(0, construction)
         .map_err(|e| CompileError::from_builder_admission(e, "native core builder allowance"))?;
     let mut inputs = ProofInputs::default();
-    let values = [Val::ZERO; 216];
+    let values = [Val::ZERO; 384];
     let public = inputs.bases(&mut builder, &values[..publics])?;
     super::verify_bounded(
         &mut builder,

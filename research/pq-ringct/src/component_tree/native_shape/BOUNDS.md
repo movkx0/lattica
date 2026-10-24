@@ -1,7 +1,7 @@
 # Closed native-core and framing bounds
 
-`NativeDescriptor` has only the existing lane/batch SHAKE, Transcript and Sparse
-variants. Geometry preflight is allocation-free. SHAKE constructors allocate
+`NativeDescriptor` has only existing lane/batch SHAKE, serial AES, Transcript,
+Sparse and Uniform variants. Geometry preflight is allocation-free. SHAKE/AES constructors allocate
 nothing. Transcript has at most256 parts and one event per class transition,
 including its final inactive transition; its width is
 `101 + 2*events + 3*POSEIDON_WIDTH`. Sparse has82 periodic columns. All metadata
@@ -26,8 +26,10 @@ cumulative returned-wire payload. Program construction has its independent
 enforced `ConstructionLimits`. No observed allocation can authorize work that
 already happened. Actual template metadata is not numerical verification.
 
-`NativeRetentionShape` supplies the three-round template reservation with
-at most216 public inputs and32 quotient chunks. The pinned hiding PCS drains
+`NativeRetentionShape` supplies the three-round raw template reservation with
+at most32 quotient chunks. Public input backing is reserved separately; its
+SHAKE-specific input-count method is not used for other native families.
+The pinned hiding PCS drains
 four hiding fields without shrinking the main, quotient and random opening
 vectors. Their producer capacities are therefore bounded from `width+4` and
 `3+4`, while logical input counts remain `width` and3. FRI truncates the final
@@ -45,6 +47,23 @@ AIR expression children and windows are inside bounded symbolic quotas/shared
 owners. Poseidon AIR constants and intermediate arrays use stack storage.
 `main_next_row_columns` may allocate a width-sized usize vector. Large lowering
 memo/scratch/hint arrays are already charged to ConstructionLimits.
+
+Serial AES has31 periodic columns of period64, at most64 selected blocks,
+12 publics, and only the periodic31/phase4 expression Vecs plus12 public Vars
+in its AIR callback. Its S-box helper uses stack arrays. Uniform has two
+periodic columns of its exact height (2048 for SampleG4 or1024 for Alpha2),
+two callback expressions and eight public Vars. Both fit the existing128/216
+callback ceiling; their owned inline AIR headers are added explicitly.
+
+`ClosedNativeAllocations` is private to this module and its closed children.
+Its common preflight adds four times the periodic table and Vec headers,
+owned descriptor backing and source-specific construction helper backing,
+plus inline AIR headers. Callback Expr/Var Vec payloads receive the same
+factor4 for capacity/growth. The lower counts-only compiler accepts up to384
+native publics,256 periodic columns and periods up to65536 within trace
+height, covering the selected NTT32/product32 shapes without changing any
+protocol parameter. Callers must supply the closed source reservation first;
+these numeric maxima do not admit arbitrary callbacks.
 
 The generic core helper itself has the same caller-reservation contract as
 `verify_bounded`: arbitrary AIR callbacks are not admitted there. Only this
@@ -86,6 +105,23 @@ heap reservations.
   dual-domain32-byte digest bridge and28 component request Equals. ParametersPp
   includes both fresh32-byte openings, the fixed prefix's bit Constants and all
   byte commitments. Literal prefix length is computed from the source string.
+- Serial AES wrapper framing costs1366 scalar/four Poseidon: header1332,
+  input joins4, first/final endpoints8+4 and two six-field hashes18/four.
+- Statement source framing costs4812 scalar and `POLYNOMIALS+12` Poseidon:
+ 16 fresh serial words, four bundle Constants/eight Equals and two word bridges.
+  Private source framing costs2408 scalar and97 Poseidon: eight alpha words,
+  four bundle Constants/four Equals and one word bridge.
+- Fixed sources cost eight scalar operations per fixed polynomial/byte root.
+  Root-only native joins add one Equal per public field. Affine joins add
+  eight scalar and two/conversion or three/binary Poseidon calls per batch
+  member. Typed equality adds four Equals.
+- Alpha producer branches use the same1356-scalar framing as HashX. SampleG
+  adds3776 scalar/15 Poseidon outside its native Uniform/component cores.
+  The two-branch ExpandAlpha consumer adds5316 scalar/20 Poseidon outside
+  its producer cores. These include fresh32-byte key opening(s), exact
+  key32/domain8/counter4/length8 request hashes, all context/root Equals and
+  ordered output bundles. Both common graph framing contributions remain
+  separate and are charged once per graph leaf.
 
 Equal instructions do not propagate known constants. Fresh native/registered
 cores remain independent; shared constants and hashes can only remove work

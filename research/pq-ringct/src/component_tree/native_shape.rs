@@ -1,6 +1,7 @@
 //! Closed, counts-only native compiler planning. No proof or registration
 //! object escapes, and no production path is enabled by these measurements.
 use crate::{
+    aes_lane_air::{self, AesLaneAir},
     graph_crypto::NativeRetentionShape,
     shake_air::{
         self,
@@ -12,6 +13,7 @@ use crate::{
     },
     sparse_air::{self, SparseAir},
     transcript_air::{self, PartKind, TranscriptAir},
+    uniform_air::{self, UniformAir},
 };
 use core::mem::size_of;
 use lattica_prover_p3::block_v2::{
@@ -34,6 +36,11 @@ pub mod framing;
 /// In particular this is not an arbitrary AIR/callback interface.
 #[derive(Clone, Copy, Debug)]
 pub enum NativeDescriptor<'a> {
+    Aes {
+        descriptor: aes_lane_air::Descriptor,
+        first: usize,
+        count: usize,
+    },
     Shake {
         descriptor: shake_air::Descriptor,
         first: usize,
@@ -41,6 +48,7 @@ pub enum NativeDescriptor<'a> {
     },
     Transcript(&'a [PartKind]),
     Sparse(sparse_air::Kind),
+    Uniform(uniform_air::Kind),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -73,6 +81,18 @@ pub struct NativeCoreBound {
     pub storage: NativePlanningStorage,
 }
 
+/// Source-audited extra storage for closed native implementations in this
+/// module and its children. This is not a caller-selected AIR allowance.
+/// Values describe logical backing; the common preflight charges capacity
+/// and growth overlap before any owned descriptor or callback is constructed.
+struct ClosedNativeAllocations {
+    owned_backing_bytes: usize,
+    construction_extra_bytes: usize,
+    callback_expressions: usize,
+    callback_variables: usize,
+    inline_air_bytes: usize,
+}
+
 fn add(a: usize, b: usize) -> Result<usize, CompileError> {
     a.checked_add(b).ok_or(CompileError::ResourceAdmission(
         "native planner size overflow",
@@ -88,6 +108,24 @@ fn bytes<T>(count: usize) -> Result<usize, CompileError> {
 }
 
 impl NativeDescriptor<'_> {
+    fn aes(self) -> Result<AesLaneAir, CompileError> {
+        let Self::Aes {
+            descriptor,
+            first,
+            count,
+        } = self
+        else {
+            return Err(CompileError::Shape("native planner AES family"));
+        };
+        if count > 64 {
+            return Err(CompileError::Shape(
+                "native planner AES selected batch limit",
+            ));
+        }
+        AesLaneAir::segment(descriptor, first, count)
+            .map_err(|_| CompileError::Shape("native planner AES descriptor"))
+    }
+
     fn shake(self) -> Result<ShakeSegmentAir, CompileError> {
         let Self::Shake {
             descriptor,
@@ -116,6 +154,16 @@ impl NativeDescriptor<'_> {
     /// transcript parts/events, periodic columns, template or compiler.
     pub fn geometry(self) -> Result<NativeGeometry, CompileError> {
         let result = match self {
+            Self::Aes { .. } => {
+                let air = self.aes()?;
+                NativeGeometry {
+                    width: air.width(),
+                    height: air.height,
+                    public_values: aes_lane_air::PUBLIC_VALUES,
+                    periodic_columns: aes_lane_air::PERIODIC_COLUMNS,
+                    maximum_period: aes_lane_air::SCHEDULE_PERIOD,
+                }
+            }
             Self::Shake { .. } => {
                 let air = self.shake()?;
                 NativeGeometry {
@@ -152,13 +200,24 @@ impl NativeDescriptor<'_> {
                     maximum_period: sparse_air::HEIGHT,
                 }
             }
+            Self::Uniform(kind) => {
+                let air = UniformAir::new(kind);
+                NativeGeometry {
+                    width: air.width(),
+                    height: air.height(),
+                    public_values: 8,
+                    periodic_columns: 2,
+                    maximum_period: air.height(),
+                }
+            }
         };
         if !(1..=1024).contains(&result.width)
             || result.public_values > 216
             || !(8..=1 << 24).contains(&result.height)
             || !result.height.is_power_of_two()
             || result.periodic_columns > 128
-            || result.maximum_period > 256
+            || result.maximum_period > 65536
+            || result.maximum_period > result.height
         {
             return Err(CompileError::Shape("native planner closed geometry"));
         }
@@ -172,6 +231,46 @@ impl NativePlanningStorage {
         construction: ConstructionLimits,
     ) -> Result<Self, CompileError> {
         let geometry = descriptor.geometry()?;
+        let parts = match descriptor {
+            NativeDescriptor::Transcript(p) => p.len(),
+            _ => 0,
+        };
+        let descriptor_buffers = mul(parts, add(size_of::<PartKind>(), 3 * size_of::<usize>())?)?;
+        Self::for_closed_source(
+            geometry,
+            ClosedNativeAllocations {
+                owned_backing_bytes: descriptor_buffers,
+                construction_extra_bytes: 0,
+                // SHAKE47, Sparse104, Transcript32, AES31+4 and Uniform2
+                // expression Vec payloads; at most216 cloned public/periodic Vars.
+                callback_expressions: 128,
+                callback_variables: 216,
+                inline_air_bytes: size_of::<TranscriptAir>()
+                    + size_of::<ShakeSegmentAir>()
+                    + size_of::<SparseAir>()
+                    + size_of::<AesLaneAir>()
+                    + size_of::<UniformAir>(),
+            },
+            construction,
+        )
+    }
+
+    fn for_closed_source(
+        geometry: NativeGeometry,
+        source: ClosedNativeAllocations,
+        construction: ConstructionLimits,
+    ) -> Result<Self, CompileError> {
+        if !(1..=1024).contains(&geometry.width)
+            || geometry.public_values > 384
+            || !(8..=1 << 24).contains(&geometry.height)
+            || !geometry.height.is_power_of_two()
+            || geometry.periodic_columns > 256
+            || !geometry.maximum_period.is_power_of_two()
+            || geometry.maximum_period > 65536
+            || geometry.maximum_period > geometry.height
+        {
+            return Err(CompileError::Shape("native planner closed source geometry"));
+        }
         if construction.max_requested_program_bytes == 0
             || construction.max_wires > MAX_WIRES
             || construction.max_input_values > construction.max_wires
@@ -208,25 +307,29 @@ impl NativePlanningStorage {
             bytes::<Val>(mul(geometry.periodic_columns, geometry.maximum_period)?)?,
             bytes::<Vec<Val>>(geometry.periodic_columns)?,
         )?;
-        let parts = match descriptor {
-            NativeDescriptor::Transcript(p) => p.len(),
-            _ => 0,
-        };
-        let descriptor_buffers = mul(parts, add(size_of::<PartKind>(), 3 * size_of::<usize>())?)?;
         let descriptor_and_periodic_bytes = add(
-            mul(4, add(periodic, descriptor_buffers)?)?,
-            size_of::<TranscriptAir>() + size_of::<ShakeSegmentAir>() + size_of::<SparseAir>(),
+            mul(
+                4,
+                add(
+                    add(periodic, source.owned_backing_bytes)?,
+                    source.construction_extra_bytes,
+                )?,
+            )?,
+            source.inline_air_bytes,
         )?;
 
         type B = BoundedSymbolicBuilder;
         type E = <B as AirBuilder>::Expr;
         type V = <B as AirBuilder>::Var;
-        // AIR-owned Vec payload maxima from source: SHAKE42+5 expressions and
-        //216 public variables; Transcript32 expressions,8 public and4 periodic
-        // variables; Sparse82+8+6+8 expressions and8 public variables. Use128
-        // expressions/216 variables and factor4 for backing/growth. Symbolic
-        // Arc children and shared windows are already in the recorder quotas.
-        let callbacks = mul(4, add(bytes::<E>(128)?, bytes::<V>(216)?)?)?;
+        // Symbolic Arc children/windows are already in the recorder quotas;
+        // these are only the closed callback's own temporary Vec backings.
+        let callbacks = mul(
+            4,
+            add(
+                bytes::<E>(source.callback_expressions)?,
+                bytes::<V>(source.callback_variables)?,
+            )?,
+        )?;
         // BaseAir's default main_next_row_columns returns width usize values.
         // Private template widths[3], quotient Vec headers, transcript/bit
         // vectors and scalar CPU folding constants are separate helpers.
@@ -316,6 +419,7 @@ pub fn native_core_bound(
         ));
     }
     match descriptor {
+        NativeDescriptor::Aes { .. } => compile(&descriptor.aes()?, storage, construction),
         NativeDescriptor::Shake { .. } => compile(&descriptor.shake()?, storage, construction),
         NativeDescriptor::Transcript(parts) => {
             let air = TranscriptAir::new(parts.to_vec())
@@ -323,6 +427,7 @@ pub fn native_core_bound(
             compile(&air, storage, construction)
         }
         NativeDescriptor::Sparse(kind) => compile(&SparseAir::new(kind), storage, construction),
+        NativeDescriptor::Uniform(kind) => compile(&UniformAir::new(kind), storage, construction),
     }
 }
 

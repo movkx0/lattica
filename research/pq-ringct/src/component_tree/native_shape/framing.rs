@@ -46,6 +46,60 @@ pub const GRAPH_HEADER: OperationCounts = OperationCounts {
     cubic: 0,
     poseidon: 0,
 };
+
+/// Every fixed root emits four Constant/Equal pairs. Counting the two implicit
+/// byte roots again is conservative when passed the full leaf coverage count.
+pub fn fixed_sources(roots: usize) -> Result<OperationCounts, CompileError> {
+    Ok(ops(mul(8, roots)?, 0))
+}
+
+/// Sixteen fresh serial-word Inputs, source bundle initialization/equalities,
+/// and two32-byte word bridges (2392 scalar/four Poseidon each).
+pub const STATEMENT_SOURCE: OperationCounts = OperationCounts {
+    scalar: 16 + 4 + 8 + 2 * 2392,
+    cubic: 0,
+    poseidon: crate::statement_air::POLYNOMIALS + 4 + 2 * 4,
+};
+
+/// Eight fresh alpha-word Inputs, source bundle initialization/equalities,
+/// and one32-byte word bridge. Neither source wrapper changes native AIR.
+pub const PRIVATE_SOURCE: OperationCounts = OperationCounts {
+    scalar: 8 + 4 + 4 + 2392,
+    cubic: 0,
+    poseidon: crate::proof_air::POLYNOMIALS + 2 + 4,
+};
+
+/// Affine joins initialize four Constants, absorb two or three ordered roots
+/// per operation, then emit four Equals. Native core public inputs are separate.
+pub fn affine_join(count: usize, conversion: bool) -> Result<OperationCounts, CompileError> {
+    if count == 0 || count > 64 || !count.is_power_of_two() {
+        return Err(CompileError::Shape("selected affine framing count"));
+    }
+    Ok(ops(8, mul(if conversion { 2 } else { 3 }, count)?))
+}
+
+/// Native NTT/product/permutation/linear-map/g_bound joins equate each native
+/// public field to its exact graph root. No root is freshly opened here.
+pub fn native_root_join(publics: usize) -> Result<OperationCounts, CompileError> {
+    if publics == 0 || publics > 384 {
+        return Err(CompileError::Shape("selected native framing publics"));
+    }
+    Ok(ops(publics, 0))
+}
+
+pub const EQUALITY: OperationCounts = OperationCounts {
+    scalar: 4,
+    cubic: 0,
+    poseidon: 0,
+};
+
+/// Component header1332, input-root Equals4, both possible endpoint conditions
+/// (8+4), and two six-field hashes (18 scalar/four Poseidon).
+pub const AES_WRAPPER: OperationCounts = OperationCounts {
+    scalar: 1332 + 4 + 8 + 4 + 18,
+    cubic: 0,
+    poseidon: 4,
+};
 /// Component header plus both possible request endpoints, two110-field hashes
 /// and all108 boundary Equal constraints per adjacent native proof. Endpoint
 /// first/final bindings are charged even when this particular span omits them.
@@ -81,6 +135,38 @@ pub const HASH_X_PRODUCER: OperationCounts = OperationCounts {
     cubic: 0,
     poseidon: 0,
 };
+
+/// AlphaUniform/AlphaSparse use the same1324-scalar producer header, four
+/// output-root Equals and28 authenticated AES-request Equals as HashX.
+pub const ALPHA_PRODUCER: OperationCounts = HASH_X_PRODUCER;
+
+fn aes_key_opening() -> Result<OperationCounts, CompileError> {
+    byte_commitment(32)?.with_overhead(ops(32 * BYTE_INPUT + 4, 0))
+}
+fn aes_key_request() -> Result<OperationCounts, CompileError> {
+    // key32 || domain-le64 || counter-le32 || length-le64. Metadata contributes
+    //20 constant bytes (eight bit Constants each); key bytes are already owned.
+    byte_commitment(52)?.with_overhead(ops(20 * 8, 0))
+}
+
+/// Excludes common graph framing and component/Uniform cores. Four stream-root
+/// Inputs,28 component request Equals, four bundle Constants/eight Equals and
+/// four output-root absorbs are included.
+pub fn sample_g_consumer() -> Result<OperationCounts, CompileError> {
+    aes_key_opening()?
+        .with_overhead(aes_key_request()?)?
+        .with_overhead(ops(4 + 28 + 4 + 8, 4))
+}
+
+/// Excludes common graph framing and two38-public producer cores. Both typed
+/// branches bind24 context fields, share one key opening, commit their distinct
+/// request metadata, and join all ordered uniform/sparse outputs atomically.
+pub fn expand_alpha_branch_consumer() -> Result<OperationCounts, CompileError> {
+    aes_key_opening()?
+        .with_overhead(aes_key_request()?)?
+        .with_overhead(aes_key_request()?)?
+        .with_overhead(ops(2 * 24 + 8 + 4 + 8, 2))
+}
 
 /// Excludes SourceBinding initialization/graph header and both verifier cores.
 /// Includes24 producer-context Equals, transcript bundle/four Equals and eight

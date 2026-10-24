@@ -81,8 +81,11 @@ impl Request {
 
 impl NativeRetentionShape {
     /// Resource-only envelope for a private trusted native planner. The caller
-    /// must separately validate its descriptor, at most 216 public inputs,
-    /// at most 32 quotient chunks, and the pinned hiding uni-STARK geometry.
+    /// must separately validate its descriptor, at most32 quotient chunks,
+    /// and the pinned hiding uni-STARK geometry. Raw proof backing does not
+    /// contain public inputs; reserve those separately. `max_input_values`
+    /// remains the SHAKE-specific216-public envelope and must not be used for
+    /// another native family's input bound.
     /// This creates no producer reservation, proof, verification or acceptance
     /// authority; it must never be used to attach accounting after production.
     pub(crate) fn for_planner(width: usize, height: usize) -> Result<Self> {
