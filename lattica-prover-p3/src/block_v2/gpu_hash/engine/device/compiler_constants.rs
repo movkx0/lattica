@@ -1,8 +1,12 @@
-//! Bounded public compiler arithmetic. Every kernel fits the already admitted
-//! public-hash scratch envelope and releases it before the next operation.
+//! Bounded public compiler arithmetic. Constant kernels use admitted public-hash
+//! scratch; periodic interpolation admits separate bounded scratch. Both retire
+//! their temporary storage before the next compiler operation.
 use super::*;
 use crate::proving::{Backend, Run, Stage};
 use p3_field::{PrimeCharacteristicRing, PrimeField64};
+
+mod periodic;
+pub(crate) use periodic::{PERIODIC_MAX_ALLOCATION_BYTES, PERIODIC_WORKSPACE_BYTES};
 
 pub(crate) const MAX_PERIOD: usize = 1 << 16;
 const PERIOD_TILE: usize = 2048;
@@ -15,7 +19,8 @@ const _: () = assert!(MAX_SELECTORS as usize <= CONSTANT_WORDS);
 const _: () = assert!(8192 + 16 + PERIOD_TILE as u64 * 8 <= public_hash::HOST_BYTES);
 const _: () = assert!(8192 + 16 + CONSTANT_WORDS as u64 * 8 <= public_hash::HOST_BYTES);
 
-pub(crate) const KERNEL_SRC: &str = r#"
+pub(crate) const KERNEL_SRC: &str = concat!(
+    r#"
 inline ulong compiler_inv(ulong value) {
     return gl_pow(value, 0xfffffffeffffffffUL);
 }
@@ -45,24 +50,9 @@ __kernel void device_compiler_constants(__global const ulong *input,
         }
     }
 }
-__kernel void device_compiler_periodic(__global const ulong *input,
-    __global ulong *output, ulong root, uint length, uint input_start,
-    uint input_count, uint coefficient_start, uint count) {
-    uint k = get_global_id(0);
-    if (k >= count) return;
-    ulong step = gl_pow(compiler_inv(root), (ulong)coefficient_start + (ulong)k);
-    ulong power = gl_pow(step, (ulong)input_start);
-    ulong sum = input_start == 0 ? 0UL : output[k];
-    for (uint j = 0; j < input_count; ++j) {
-        sum = gl_add(sum, gl_mul(power, input[j]));
-        power = gl_mul(power, step);
-    }
-    if (input_start + input_count == length)
-        sum = gl_mul(sum, compiler_inv((ulong)length));
-    output[k] = gl_canon(sum);
-}
-
-"#;
+"#,
+    include_str!("compiler_constants/periodic.cl")
+);
 
 impl DeviceSession {
     pub(crate) fn compiler_inverse_generator(
@@ -92,112 +82,6 @@ impl DeviceSession {
             return Err("GPU compiler selector output length".into());
         }
         self.compiler_constants(&[first], 1, 0, 0, output, run)
-    }
-
-    pub(crate) fn compiler_periodic_into(
-        &self,
-        column: &[Val],
-        log_height: usize,
-        coefficients: &mut [Val],
-        run: &Run,
-    ) -> Result<(), String> {
-        let n = column.len();
-        if log_height > 32 || !n.is_power_of_two() || n > MAX_PERIOD || n > 1usize << log_height {
-            return Err("GPU compiler periodic column exceeds admission".into());
-        }
-        if coefficients.len() != n {
-            return Err("GPU compiler periodic output length".into());
-        }
-        run.check_device_stage(Stage::Preprocessing, Backend::OpenCl)
-            .map_err(|e| e.to_string())?;
-        let root = Val::TWO_ADIC_GENERATORS[n.ilog2() as usize].as_canonical_u64();
-        #[cfg(not(feature = "gpu"))]
-        {
-            let _ = root;
-            Err("GPU compiler constants are not implemented on Metal".into())
-        }
-        #[cfg(feature = "gpu")]
-        self.with_engine(|engine| {
-            let tile = n.min(PERIOD_TILE);
-            if tile as u64 * 16 > public_hash::WORKSPACE_BYTES
-                || tile as u64 * 8 > public_hash::MAX_ALLOCATION_BYTES
-            {
-                return Err("GPU compiler periodic scratch exceeds admission".into());
-            }
-            let spec = MatrixSpec::new(0, tile, Extension::Base, RowOrder::Natural, 1)?;
-            let _plan = Self::plan(engine, &[spec, spec])?;
-            let input = self.allocate(engine, spec)?;
-            let output = self.allocate(engine, spec)?;
-            // Fixed staging is independent of period and cannot grow.
-            let mut staging = [0u64; PERIOD_TILE];
-            let fence = engine.fence();
-            for coefficient_start in (0..n).step_by(tile) {
-                let count = tile.min(n - coefficient_start);
-                for input_start in (0..n).step_by(tile) {
-                    let input_count = tile.min(n - input_start);
-                    for (dst, src) in staging
-                        .iter_mut()
-                        .zip(&column[input_start..input_start + input_count])
-                    {
-                        *dst = src.as_canonical_u64();
-                    }
-                    input
-                        .storage
-                        .buffer
-                        .write(&staging[..input_count])
-                        .enq()
-                        .map_err(|e| e.to_string())?;
-                    let mut event = compute::Event::empty();
-                    // SAFETY: all tile dimensions are bounded by both buffers;
-                    // each work item owns one accumulator, initialized by tile 0.
-                    // Event recording drains each batch before staging reuse.
-                    unsafe {
-                        engine
-                            .pq
-                            .kernel_builder("device_compiler_periodic")
-                            .arg(&input.storage.buffer)
-                            .arg(&output.storage.buffer)
-                            .arg(root)
-                            .arg(n as u32)
-                            .arg(input_start as u32)
-                            .arg(input_count as u32)
-                            .arg(coefficient_start as u32)
-                            .arg(count as u32)
-                            .global_work_size(count)
-                            .build()
-                            .map_err(|e| e.to_string())?
-                            .cmd()
-                            .enew(&mut event)
-                            .enq()
-                            .map_err(|e| e.to_string())?;
-                    }
-                    let ns = engine.timeline.record("device_compiler_periodic", &event)?;
-                    run.observe_device(Stage::Preprocessing, Backend::OpenCl, 1, ns)
-                        .map_err(|e| e.to_string())?;
-                    engine.stats.uploaded_bytes += input_count as u64 * 8;
-                    self.session.stats.lock().unwrap().uploaded_bytes += input_count as u64 * 8;
-                }
-                output
-                    .storage
-                    .buffer
-                    .read(&mut staging[..count])
-                    .enq()
-                    .map_err(|e| e.to_string())?;
-                fence.finish()?;
-                if staging[..count].iter().any(|&v| v >= GOLDILOCKS_MODULUS) {
-                    return Err("GPU compiler coefficient is not canonical".into());
-                }
-                for (dst, &word) in coefficients[coefficient_start..coefficient_start + count]
-                    .iter_mut()
-                    .zip(&staging[..count])
-                {
-                    *dst = Val::new(word);
-                }
-                engine.stats.downloaded_bytes += count as u64 * 8;
-                self.session.stats.lock().unwrap().downloaded_bytes += count as u64 * 8;
-            }
-            Ok(())
-        })
     }
 
     pub(crate) fn compiler_quotient_into(

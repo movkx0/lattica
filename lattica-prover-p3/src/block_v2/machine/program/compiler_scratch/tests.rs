@@ -110,6 +110,65 @@ fn scratch_keeps_program_and_memo_reservations_after_scope_exit() {
     assert!(b.finish(None).is_ok());
 }
 
+#[test]
+fn sparse_periodic_emission_still_obeys_builder_allowance() {
+    use crate::block_v2::machine::{program::Val, verifier::expressions};
+    use p3_field::PrimeCharacteristicRing;
+    let mut column = vec![Val::ZERO; 128];
+    column[37] = Val::ONE;
+    let mut builder = ScopedProgramBuilder::new(3).unwrap();
+    builder.memory.limit = Some(1);
+    let mut output = [[Wire(42); 3]];
+    assert!(expressions::periodic_values_into(
+        &mut builder,
+        &[column],
+        [Wire(0), Wire(1), Wire(2)],
+        7,
+        crate::block_v2::machine::compiler_constants::Constants::cpu(),
+        &mut output,
+    )
+    .is_err());
+    assert_eq!(output, [[Wire(42); 3]]);
+    assert!(builder.resource_failure().is_some());
+    assert!(builder.finish(None).is_err());
+}
+
+#[test]
+fn progression_periodic_emission_obeys_scratch_and_operation_allowances() {
+    use crate::block_v2::machine::{program::Val, verifier::expressions};
+    use p3_field::PrimeCharacteristicRing;
+    // The same2048-root progression as a full Mul32 indicator. Its two public
+    // coefficient buffers alone need32784 bytes, exceeding the first quota.
+    let mut column = vec![Val::ZERO; 65536];
+    for i in 0..2048 {
+        column[18 + 19 * i] = Val::ONE;
+    }
+    for reject_operations in [false, true] {
+        let mut builder = ScopedProgramBuilder::new(3).unwrap();
+        if reject_operations {
+            builder.memory.wire_limit = 3;
+        } else {
+            builder.memory.limit = Some(32768);
+        }
+        let mut output = [[Wire(42); 3]];
+        assert!(expressions::periodic_values_into(
+            &mut builder,
+            &[column.clone()],
+            [Wire(0), Wire(1), Wire(2)],
+            16,
+            crate::block_v2::machine::compiler_constants::Constants::cpu(),
+            &mut output,
+        )
+        .is_err());
+        assert_eq!(output, [[Wire(42); 3]]);
+        assert!(builder.resource_failure().is_some());
+        if !reject_operations {
+            assert!(builder.memory.peak <= 32768);
+        }
+        assert!(builder.finish(None).is_err());
+    }
+}
+
 fn compiler_storage_rejection(
     constants: crate::block_v2::machine::compiler_constants::Constants<'_>,
 ) {
@@ -132,7 +191,12 @@ fn compiler_storage_rejection(
                 let mut output = [[Wire(42); 3]; 1];
                 let result = expressions::periodic_values_into(
                     &mut b,
-                    &[vec![Val::ONE; 4]],
+                    &[vec![
+                        Val::ONE,
+                        Val::from_u64(2),
+                        Val::from_u64(3),
+                        Val::from_u64(4),
+                    ]],
                     [Wire(0), Wire(1), Wire(2)],
                     2,
                     constants,
@@ -161,7 +225,9 @@ fn compiler_storage_rejection(
                     }
                     fn fill(&self, _: usize, output: &mut [Val]) -> Result<(), CompileError> {
                         self.0.set(self.0.get() + 1);
-                        output.fill(Val::ONE);
+                        for (index, value) in output.iter_mut().enumerate() {
+                            *value = Val::from_usize(index + 1);
+                        }
                         Ok(())
                     }
                 }

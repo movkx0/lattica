@@ -107,6 +107,8 @@ impl Stage {
 pub enum Profile {
     LegacyQuadratic,
     BlockV2Cubic,
+    /// Native MatRiCT n10 spend construction; no FRI/STARK profile claim.
+    MatrictN10,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -144,6 +146,7 @@ impl Capabilities {
             max_log_fri_arity: match profile {
                 Profile::LegacyQuadratic => 4,
                 Profile::BlockV2Cubic => 1,
+                Profile::MatrictN10 => 0,
             },
             stages: Stage::ARITHMETIC
                 .into_iter()
@@ -167,6 +170,9 @@ impl Capabilities {
     }
     pub fn stages(&self) -> &[StageCapability] {
         &self.stages
+    }
+    pub fn profile(&self) -> Profile {
+        self.profile
     }
     pub fn scope(&self) -> CoverageScope {
         self.scope

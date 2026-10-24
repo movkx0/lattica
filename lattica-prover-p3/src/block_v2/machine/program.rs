@@ -32,6 +32,35 @@ pub const MAX_WIRES: usize = 1 << 26;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Wire(pub(crate) usize);
 
+/// Read-only construction diagnostics. Heap-request accounting is not physical
+/// RSS, and a rejected builder may have stopped emitting operations early.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ConstructionCounters {
+    pub wires: usize,
+    pub witnesses: usize,
+    pub operations: usize,
+    pub wire_limit: usize,
+    pub input_limit: usize,
+    pub requested_bytes_peak: usize,
+    pub resource_failed: bool,
+}
+
+/// Explicit limits for host compilation of public verifier metadata.
+///
+/// The byte allowance covers the builder's existing heap-request accounting,
+/// including interning tables, operation-array growth overlap, compaction and
+/// final row packing. It is not a process RSS bound. Caller-owned child proofs,
+/// `ProofInputs` value backing, returned wire arrays, folding scratch and
+/// allocator overhead require separate enclosing reservations.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ConstructionLimits {
+    pub max_requested_program_bytes: usize,
+    /// Includes public inputs, witnesses and intermediate wires.
+    pub max_wires: usize,
+    /// Witness values only; public inputs are not included in this count.
+    pub max_input_values: usize,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ExecutionError {
     InvalidWire,
@@ -238,6 +267,15 @@ impl Program {
     }
 
     /// Canonical public program encoding. It contains no witness values.
+    /// Stream the same encoding without allocating a second program-sized Vec.
+    pub fn visit_manifest_fields(
+        &self,
+        emit: &mut dyn FnMut(u64) -> Result<(), String>,
+    ) -> Result<(), String> {
+        self.emit_manifest(emit)
+    }
+
+    /// Canonical public program encoding. It contains no witness values.
     pub fn manifest_fields(&self) -> Vec<u64> {
         let mut length = 0usize;
         self.emit_manifest(&mut |_| {
@@ -370,6 +408,31 @@ impl<'a> ScopedProgramBuilder<'a> {
         Self::with_constants(publics, Constants::cpu())
     }
 
+    /// Compile the same public program as `new`, with limits installed before
+    /// the first operation, interning-table entry or witness is allocated.
+    ///
+    /// This does not evaluate a private witness, create a proof, select a proving
+    /// backend or change constant-folding arithmetic. Failure remains sticky:
+    /// `finish` returns `TooLarge`, never a partial verifier program. Existing
+    /// callers of `new` and device compilation keep their existing limits.
+    pub fn new_with_construction_limits(
+        publics: usize,
+        limits: ConstructionLimits,
+    ) -> Result<Self, ExecutionError> {
+        if limits.max_requested_program_bytes == 0
+            || limits.max_wires > MAX_WIRES
+            || publics > limits.max_wires
+            || limits.max_input_values > limits.max_wires - publics
+        {
+            return Err(ExecutionError::TooLarge);
+        }
+        let mut builder = Self::new(publics)?;
+        builder.memory.limit = Some(limits.max_requested_program_bytes);
+        builder.memory.wire_limit = limits.max_wires;
+        builder.memory.input_limit = limits.max_input_values;
+        Ok(builder)
+    }
+
     pub(crate) fn with_constants(
         publics: usize,
         constants: Constants<'a>,
@@ -446,6 +509,26 @@ impl<'a> ScopedProgramBuilder<'a> {
         self.known.insert(out, value, &mut self.memory);
         out
     }
+    /// Inspect resource usage without altering limits, constraints or witnesses.
+    pub fn construction_counters(&self) -> ConstructionCounters {
+        ConstructionCounters {
+            wires: self.wires,
+            witnesses: self.witnesses,
+            operations: self.operations.len(),
+            wire_limit: self.memory.wire_limit,
+            input_limit: self.memory.input_limit,
+            requested_bytes_peak: self.memory.peak,
+            resource_failed: self.memory.failed,
+        }
+    }
+
+    /// Returns only compiler-proven constants. Witness input wires never enter
+    /// this map, so callers may specialize fixed arithmetic without inspecting
+    /// secret witness values or changing program shape based on them.
+    pub fn known_constant(&self, wire: Wire) -> Option<Val> {
+        self.known.get(&wire).copied()
+    }
+
     pub fn add(&mut self, a: Wire, b: Wire) -> Wire {
         if self.memory.failed {
             return Wire(0);
@@ -879,3 +962,5 @@ impl<'a> ScopedProgramBuilder<'a> {
 
 #[cfg(test)]
 mod packing_tests;
+#[cfg(test)]
+mod construction_limit_tests;

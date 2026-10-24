@@ -1,0 +1,38 @@
+[package]
+name = "lattica-pq-ringct-batch"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Isolated ordered aggregation of complete registered post-quantum RingCT graph proofs"
+
+[workspace]
+
+[features]
+default = []
+# Compile the shared outer-proof OpenCL backend; runtime policy remains explicit.
+opencl = ["lattica-pq-ringct-research/opencl"]
+
+[dependencies]
+lattica-pq-ringct-research = { path = "../pq-ringct", features = ["recursive-wide", "native-matrict"] }
+lattica-prover-p3 = { path = "../../lattica-prover-p3", default-features = false, features = ["block-v2", "block-v2-wide-lanes"] }
+p3-batch-stark = { version = "=0.6.1", features = ["parallel"] }
+p3-field = "=0.6.1"
+sha3 = "=0.10.8"
+serde_json = "1"
+postcard = { version = "=1.1.3", features = ["alloc"] }
+
+[[bin]]
+name = "pq-ringct-opencl-aggregate"
+path = "src/bin/pq_ringct_opencl_aggregate.rs"
+required-features = ["opencl"]
+
+[[bin]]
+name = "pq-ringct-opencl-opt-validate"
+path = "src/bin/pq_ringct_opencl_opt_validate.rs"
+required-features = ["opencl"]
+
+# Dependency workspaces do not supply patches to this standalone workspace.
+[patch.crates-io]
+p3-lookup = { path = "../../lattica-prover-p3/vendor/p3-lookup" }
+p3-field = { path = "../../lattica-prover-p3/vendor/p3-field" }
+p3-symmetric = { path = "../../lattica-prover-p3/vendor/p3-symmetric" }

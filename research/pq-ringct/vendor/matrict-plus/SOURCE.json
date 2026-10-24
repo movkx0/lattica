@@ -1,0 +1,154 @@
+{
+  "repository": "https://gitlab.com/raykzhao/matrict_plus",
+  "commit": "b24f3176d2db15ca55d91c8c9cbe1cef201c5d2d",
+  "retrieved_utc": "2026-10-19",
+  "license": "0BSD",
+  "variant": "n10",
+  "files": [
+    {
+      "path": "n10/comp.h",
+      "upstream_sha256": "bd8d51492935436aecdc65d1e9ee4dc31ba9a6e6cf29fc6dd7bd5fac8e1ecb94",
+      "vendored_sha256": "bd8d51492935436aecdc65d1e9ee4dc31ba9a6e6cf29fc6dd7bd5fac8e1ecb94"
+    },
+    {
+      "path": "n10/fastrandombytes.c",
+      "upstream_sha256": "9a9ec865903a0221fa38e3e30da0ed222215ed8c7a8325f305d79c7faeedb9f4",
+      "vendored_sha256": "942cf443c52beb16222faa41510c849e64b996dca9f51db79047ffb3b52961b3"
+    },
+    {
+      "path": "n10/fastrandombytes.h",
+      "upstream_sha256": "ef25d5e3039c4d99d224814b70f4ecf67b5bfe2ce5781763aa7a594af3c06e7d",
+      "vendored_sha256": "ef25d5e3039c4d99d224814b70f4ecf67b5bfe2ce5781763aa7a594af3c06e7d"
+    },
+    {
+      "path": "n10/gaussian_avx.c",
+      "upstream_sha256": "d595a3c2f359b4de09614e9875e4107f3630ba5f8173e342a886a18a47aab27e",
+      "vendored_sha256": "5900fcc9d5408ac971bf698935752be64e073dab33ecd45aea0d80404f20be42"
+    },
+    {
+      "path": "n10/gaussian_avx.h",
+      "upstream_sha256": "29b8f054fe9961649fa2f06b95462567177921a1c0ee5a18bd9d0f3ee2632d1c",
+      "vendored_sha256": "29b8f054fe9961649fa2f06b95462567177921a1c0ee5a18bd9d0f3ee2632d1c"
+    },
+    {
+      "path": "n10/hash.c",
+      "upstream_sha256": "14b64244df65f4bccd3a4f1a2b867ddad1a494623caa1f33ae248a9921e20307",
+      "vendored_sha256": "3d21c7f15113a7a3482a92e7e7dc6f00a26e04e3e4f05638645eabb6bf3c89d7"
+    },
+    {
+      "path": "n10/hash.h",
+      "upstream_sha256": "e9a0169d2745aafc3a0af2bddf9947864ab779450bd4efcc9238799fc9b861e7",
+      "vendored_sha256": "e9a0169d2745aafc3a0af2bddf9947864ab779450bd4efcc9238799fc9b861e7"
+    },
+    {
+      "path": "n10/keygen.c",
+      "upstream_sha256": "8eedeb1300f8c29fee7c8ff8620a559a91e81accc652cf8ab44ca80e65527620",
+      "vendored_sha256": "8eedeb1300f8c29fee7c8ff8620a559a91e81accc652cf8ab44ca80e65527620"
+    },
+    {
+      "path": "n10/keygen.h",
+      "upstream_sha256": "ba2fc3ff1e56056a501b66ee40c307eb38a0f519916333d118e1d227ec9c9082",
+      "vendored_sha256": "ba2fc3ff1e56056a501b66ee40c307eb38a0f519916333d118e1d227ec9c9082"
+    },
+    {
+      "path": "n10/littleendian.h",
+      "upstream_sha256": "d55405d02346da150166a5a12407d3bd0f4963477a9b970d75caa426cee0096f",
+      "vendored_sha256": "d55405d02346da150166a5a12407d3bd0f4963477a9b970d75caa426cee0096f"
+    },
+    {
+      "path": "n10/mint.c",
+      "upstream_sha256": "72454d30f84303f38472aaedeb7515251e579614aa732afe361125789fc9bbb3",
+      "vendored_sha256": "72454d30f84303f38472aaedeb7515251e579614aa732afe361125789fc9bbb3"
+    },
+    {
+      "path": "n10/mint.h",
+      "upstream_sha256": "8c1a4f3a6d1b2db3291db4ee30590adde096ab7ca3428dc54cb47005685e336d",
+      "vendored_sha256": "8c1a4f3a6d1b2db3291db4ee30590adde096ab7ca3428dc54cb47005685e336d"
+    },
+    {
+      "path": "n10/param.h",
+      "upstream_sha256": "943b8a82cfb6057e1985d76048d6bb2eb7af72a61e6beecb92df1fc8b4f37656",
+      "vendored_sha256": "943b8a82cfb6057e1985d76048d6bb2eb7af72a61e6beecb92df1fc8b4f37656"
+    },
+    {
+      "path": "n10/poly_mult.c",
+      "upstream_sha256": "878f4d2e4d2e087457af63a1e04684f8acb97ded19ae539ea4776fc7df2e2c82",
+      "vendored_sha256": "878f4d2e4d2e087457af63a1e04684f8acb97ded19ae539ea4776fc7df2e2c82"
+    },
+    {
+      "path": "n10/poly_mult.h",
+      "upstream_sha256": "d85de79ab9ec301fdba339481471b05e9f67cd6689eace587a730b6655d6bc88",
+      "vendored_sha256": "d85de79ab9ec301fdba339481471b05e9f67cd6689eace587a730b6655d6bc88"
+    },
+    {
+      "path": "n10/poly_param.h",
+      "upstream_sha256": "c28909ba4a8fbcebe0c28d7af152f5f3b773204490d766e9640c1b8e34c4f3ee",
+      "vendored_sha256": "c28909ba4a8fbcebe0c28d7af152f5f3b773204490d766e9640c1b8e34c4f3ee"
+    },
+    {
+      "path": "n10/poly_q.c",
+      "upstream_sha256": "918d0518f15fbbf074a05d94db21af21cd4c0d361e065a84f6a1fa59ffd1a3c6",
+      "vendored_sha256": "918d0518f15fbbf074a05d94db21af21cd4c0d361e065a84f6a1fa59ffd1a3c6"
+    },
+    {
+      "path": "n10/poly_q.h",
+      "upstream_sha256": "20aa078222daaa1fb5da5578a0222fac242c28e22c400d650f83cd4f19c78353",
+      "vendored_sha256": "20aa078222daaa1fb5da5578a0222fac242c28e22c400d650f83cd4f19c78353"
+    },
+    {
+      "path": "n10/poly_red.h",
+      "upstream_sha256": "5a2c62924ac0e994280dd2bc607f218659fd6d11c668ba4733b2f35182b973f7",
+      "vendored_sha256": "481741874d699c54726d7544122b9a21dc450435ed033b8be561f7e34a2977f8"
+    },
+    {
+      "path": "n10/sammat.c",
+      "upstream_sha256": "12fe5d64bdfceec080f81e022de6073c83b6063ba464182923a97cd47b64b6fc",
+      "vendored_sha256": "ea1f67945ad6bf611904d59ebc3bb2e30f0d0d7700efd1619efc668a729d971e"
+    },
+    {
+      "path": "n10/sammat.h",
+      "upstream_sha256": "9a54c18f77beee5d28f6b00a378a5d1a0d20a92f567929fc735d19a50408b301",
+      "vendored_sha256": "9a54c18f77beee5d28f6b00a378a5d1a0d20a92f567929fc735d19a50408b301"
+    },
+    {
+      "path": "n10/sampleb.c",
+      "upstream_sha256": "d36bee96ae048b5f487a378ad538242448d242d93c1930b0056eea28784862b8",
+      "vendored_sha256": "2cce88eeb3d2cee48dbfdb34cd2020afedc575c8c0035cbc2d7f5e262c235669"
+    },
+    {
+      "path": "n10/sampleb.h",
+      "upstream_sha256": "5877de5ae674bf300a6504b8d5bb75daaf9529ce324abbd22c4a5a1646679193",
+      "vendored_sha256": "5877de5ae674bf300a6504b8d5bb75daaf9529ce324abbd22c4a5a1646679193"
+    },
+    {
+      "path": "n10/setup.c",
+      "upstream_sha256": "110ce9904e252dfe5cdb5c872e007313ce22cc743b66dbbb363b0d53962131ba",
+      "vendored_sha256": "102046093c7e8b4a46a4c1d8623a97b686795c95893a2bfa412715daa3f2d0ea"
+    },
+    {
+      "path": "n10/setup.h",
+      "upstream_sha256": "6c381aed1123e8b8b3cc9a7ff5c50b7963679341d061865a50448eef092e3e66",
+      "vendored_sha256": "6c381aed1123e8b8b3cc9a7ff5c50b7963679341d061865a50448eef092e3e66"
+    },
+    {
+      "path": "n10/spend.c",
+      "upstream_sha256": "cd818c9f65a88f352644a15e623bab4433889615cc1cc6c9f9b680499bbdaccb",
+      "vendored_sha256": "9497aef23512f2ecc46908a82d7cdf96249f8ba4237ed4a9e82073d1d2cb5eaa"
+    },
+    {
+      "path": "n10/spend.h",
+      "upstream_sha256": "89e74a25fd4894dc4fb8437c99b0fecb84a1bf60a71c66c4d44660024edd1ec8",
+      "vendored_sha256": "89e74a25fd4894dc4fb8437c99b0fecb84a1bf60a71c66c4d44660024edd1ec8"
+    },
+    {
+      "path": "n10/verify.c",
+      "upstream_sha256": "154f36213c58312173ea99076f8c616831227761f282389eb88b9a64dc78c6cc",
+      "vendored_sha256": "154f36213c58312173ea99076f8c616831227761f282389eb88b9a64dc78c6cc"
+    },
+    {
+      "path": "n10/verify.h",
+      "upstream_sha256": "15872d97bc8c42dddf759af69305ab973007e0d3e99511535d0d03b99f9be5c8",
+      "vendored_sha256": "15872d97bc8c42dddf759af69305ab973007e0d3e99511535d0d03b99f9be5c8"
+    }
+  ]
+}

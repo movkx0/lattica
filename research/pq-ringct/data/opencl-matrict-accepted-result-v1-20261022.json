@@ -1,0 +1,2348 @@
+{
+  "assembled_utc": "2026-10-22T14:51:08.188262+00:00",
+  "cases": [
+    {
+      "acceptance_checks": {
+        "actual_gpu_merge_proofs": 2,
+        "all_subprocesses_terminal_and_reaped": true,
+        "cpu_verification": true,
+        "decoded_verification_after_gpu_shutdown": true,
+        "final_proof_opening_mutation_rejected": true,
+        "full_gpu_corrupted_child_witness_diagnostics_repeated": false,
+        "full_mode_evidence": {
+          "compiled_source_identity": "45474e83c067535bdbb66aeb34854d636071db84b74138ad6684006aec46d33b",
+          "cpu_preparation_targeted_reports": 670,
+          "exact_ordered_topology_checked": true,
+          "fixture_sha3_256": "0f2a2e44d7bff5597b3fc6f21ce4dfb8716201cdc0f2e32471ccda213e2d08b2",
+          "gpu_shutdown_before_result": true,
+          "gpu_targeted_report_count": 4
+        },
+        "gpu_reports": [
+          {
+            "capability_stages": [
+              {
+                "backend": "open_cl",
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "commitment"
+              }
+            ],
+            "completion_rejected": false,
+            "entry_point": "block_v2_preprocessing",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 6485,
+                "completed_calls": 6485,
+                "device_calls": 6484,
+                "device_ns": 47778586720,
+                "inclusive_ns": 1008064333,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 1637728,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 271275744,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 482324832,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              }
+            ],
+            "policy": "gpu_required",
+            "profile": "block_v2_cubic",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          {
+            "capability_stages": [
+              {
+                "backend": "open_cl",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "grinding"
+              }
+            ],
+            "completion_rejected": false,
+            "entry_point": "block_v2_registered_program",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 3948,
+                "completed_calls": 3948,
+                "device_calls": 3947,
+                "device_ns": 58241376,
+                "inclusive_ns": 118370795,
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 26,
+                "completed_calls": 26,
+                "device_calls": 26,
+                "device_ns": 76768,
+                "inclusive_ns": 0,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1287,
+                "completed_calls": 1287,
+                "device_calls": 1286,
+                "device_ns": 150307360,
+                "inclusive_ns": 220876625,
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2073,
+                "completed_calls": 2073,
+                "device_calls": 2072,
+                "device_ns": 624448256,
+                "inclusive_ns": 23338937613,
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 97,
+                "completed_calls": 97,
+                "device_calls": 97,
+                "device_ns": 29166496,
+                "inclusive_ns": 0,
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 149760,
+                "inclusive_ns": 0,
+                "stage": "grinding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 4,
+                "completed_calls": 4,
+                "device_calls": 4,
+                "device_ns": 21728,
+                "inclusive_ns": 0,
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 100,
+                "completed_calls": 100,
+                "device_calls": 100,
+                "device_ns": 101099200,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 179,
+                "completed_calls": 179,
+                "device_calls": 179,
+                "device_ns": 1422995328,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 89,
+                "completed_calls": 89,
+                "device_calls": 89,
+                "device_ns": 10789536,
+                "inclusive_ns": 0,
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 23,
+                "completed_calls": 23,
+                "device_calls": 23,
+                "device_ns": 908976000,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1220,
+                "completed_calls": 1220,
+                "device_calls": 1220,
+                "device_ns": 100016288,
+                "inclusive_ns": 0,
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 19,
+                "completed_calls": 19,
+                "device_calls": 19,
+                "device_ns": 824416,
+                "inclusive_ns": 0,
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 207,
+                "completed_calls": 207,
+                "device_calls": 207,
+                "device_ns": 50155552,
+                "inclusive_ns": 0,
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 7200,
+                "inclusive_ns": 0,
+                "stage": "final_polynomial"
+              }
+            ],
+            "policy": "gpu_required",
+            "profile": "block_v2_cubic",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          {
+            "capability_stages": [
+              {
+                "backend": "open_cl",
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "commitment"
+              }
+            ],
+            "completion_rejected": false,
+            "entry_point": "block_v2_preprocessing",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 6485,
+                "completed_calls": 6485,
+                "device_calls": 6484,
+                "device_ns": 47773066944,
+                "inclusive_ns": 1009664350,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 1617088,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 271812512,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 482984928,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              }
+            ],
+            "policy": "gpu_required",
+            "profile": "block_v2_cubic",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          {
+            "capability_stages": [
+              {
+                "backend": "open_cl",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "grinding"
+              }
+            ],
+            "completion_rejected": false,
+            "entry_point": "block_v2_registered_program",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 3948,
+                "completed_calls": 3948,
+                "device_calls": 3947,
+                "device_ns": 59668384,
+                "inclusive_ns": 120257261,
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 26,
+                "completed_calls": 26,
+                "device_calls": 26,
+                "device_ns": 80608,
+                "inclusive_ns": 0,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1287,
+                "completed_calls": 1287,
+                "device_calls": 1286,
+                "device_ns": 149927424,
+                "inclusive_ns": 220468889,
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2073,
+                "completed_calls": 2073,
+                "device_calls": 2072,
+                "device_ns": 624520800,
+                "inclusive_ns": 1118710417,
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 97,
+                "completed_calls": 97,
+                "device_calls": 97,
+                "device_ns": 29243072,
+                "inclusive_ns": 0,
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 151296,
+                "inclusive_ns": 0,
+                "stage": "grinding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 4,
+                "completed_calls": 4,
+                "device_calls": 4,
+                "device_ns": 18560,
+                "inclusive_ns": 0,
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 100,
+                "completed_calls": 100,
+                "device_calls": 100,
+                "device_ns": 100957408,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 179,
+                "completed_calls": 179,
+                "device_calls": 179,
+                "device_ns": 1423950336,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 89,
+                "completed_calls": 89,
+                "device_calls": 89,
+                "device_ns": 10738240,
+                "inclusive_ns": 0,
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 23,
+                "completed_calls": 23,
+                "device_calls": 23,
+                "device_ns": 909815680,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1220,
+                "completed_calls": 1220,
+                "device_calls": 1220,
+                "device_ns": 100143744,
+                "inclusive_ns": 0,
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 19,
+                "completed_calls": 19,
+                "device_calls": 19,
+                "device_ns": 822304,
+                "inclusive_ns": 0,
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 207,
+                "completed_calls": 207,
+                "device_calls": 207,
+                "device_ns": 50026784,
+                "inclusive_ns": 0,
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 3488,
+                "inclusive_ns": 0,
+                "stage": "final_polynomial"
+              }
+            ],
+            "policy": "gpu_required",
+            "profile": "block_v2_cubic",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          }
+        ],
+        "original_graph_dropped_before_final_verification": true,
+        "public_value_mutations_rejected": 25,
+        "service_stop_completed": true,
+        "source_inputs_unchanged": true,
+        "strict_gpu_stage_reports": 4,
+        "successful_process_exit": true
+      },
+      "cache": {
+        "initial_cache_state_independently_qualified": false,
+        "path": ".tools/pq-opencl/aggregate-cache/matrict-fixture0-v1",
+        "source_marker": {
+          "bytes": 64,
+          "path": ".tools/pq-opencl/aggregate-cache/matrict-fixture0-v1/.opencl-compiled-source-identity",
+          "sha256": "b8ac040be858163520c8e612534d57715ec7e4d9b36ea380f211042169a7dde5"
+        }
+      },
+      "count": 3,
+      "evidence": {
+        "artifact": {
+          "bytes": 1994837,
+          "codec": "diagnostic-postcard-public-and-proof-tuple",
+          "decoded_payload_reverified": true,
+          "includes_ledger_body": false,
+          "includes_original_statements": false,
+          "includes_trusted_registered_key": false,
+          "path": ".tools/pq-opencl/artifacts/opencl-matrict-n3-v1.postcard",
+          "sha256": "623890c436b2d3e518aff843ad9fce41acd8a05f90ae76032db1b1ef8b8a05d7",
+          "sha3_256": "deb5b334e59c83ad41dd7baa1c9a1f244e43ff69c0fbab65c3eb49416ab8b33f"
+        },
+        "byte_prerequisite_record": {
+          "bytes": 153630,
+          "path": ".tools/pq-opencl/runs/opencl-byte-v4.json",
+          "sha256": "9691590391c4435045fbde87c10452da452338bfb090048b519fcbc750dd3d54"
+        },
+        "external_resource_wrapper": null,
+        "log": {
+          "bytes": 825305,
+          "path": ".tools/pq-opencl/runs/opencl-matrict-n3-v1.log",
+          "sha256": "36e00560dce2f0881226cfdf46563aefaaab85358dd9654ef114aa62e142ba25"
+        },
+        "record": {
+          "bytes": 165993,
+          "path": ".tools/pq-opencl/runs/opencl-matrict-n3-v1.json",
+          "sha256": "be18a1c97b9275ac29cb92b355610aa301c5bf3339140982fa806d0d80ed176f"
+        }
+      },
+      "execution": {
+        "command": [
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/target-opencl/release/pq-ringct-opencl-aggregate",
+          "--host-bytes",
+          "34359738368",
+          "--device-bytes",
+          "8589934592",
+          "--max-rows",
+          "1048576",
+          "--mode",
+          "matrict",
+          "--output",
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/artifacts/opencl-matrict-n3-v1.postcard",
+          "--allow-cpu-child-preparation",
+          "--fixture",
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-research/.tools/pq-child-cache/pq-ringct-batch-accept-recovery-v2-r1/fixture-0.json",
+          "--cache-dir",
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/aggregate-cache/matrict-fixture0-v1",
+          "--count",
+          "3",
+          "--native-bytes",
+          "34359738368"
+        ],
+        "environment": {
+          "CARGO_BUILD_JOBS": "2",
+          "CARGO_HOME": "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/cargo-opencl",
+          "CARGO_TARGET_DIR": "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/target-opencl",
+          "HOME": "/home/access",
+          "LATTICA_PROVING_POLICY": "gpu-required",
+          "LATTICA_PROVING_REPORT": "1",
+          "LATTICA_V2_GPU_CONTEXT_BYTES": "4294967296",
+          "LATTICA_V2_GPU_DEVICE": "0",
+          "LATTICA_V2_GPU_FRI_FOLD": "1",
+          "LATTICA_V2_GPU_FRI_RESIDENT": "1",
+          "LATTICA_V2_GPU_HASH": "1",
+          "LATTICA_V2_GPU_LOOKUP": "1",
+          "LATTICA_V2_GPU_MANAGED_BYTES": "8589934592",
+          "LATTICA_V2_GPU_OPENINGS": "1",
+          "LATTICA_V2_GPU_OPENING_EVAL": "1",
+          "LATTICA_V2_GPU_PCS_DEVICE_ONLY": "1",
+          "LATTICA_V2_GPU_QUERY_GATHER": "1",
+          "LATTICA_V2_GPU_QUOTIENT_EVAL": "1",
+          "LATTICA_V2_GPU_QUOTIENT_LDE": "1",
+          "LATTICA_V2_GPU_QUOTIENT_RESIDENT": "1",
+          "LATTICA_V2_GPU_RANDOMNESS": "1",
+          "LATTICA_V2_GPU_RESIDENT_LDE": "1",
+          "LATTICA_V2_GPU_RETAIN_TREES": "1",
+          "LATTICA_V2_GPU_TRANSCRIPT": "1",
+          "LATTICA_V2_GPU_WITNESS": "1",
+          "LATTICA_V2_HOST_OUTPUT_BYTES": "34359738368",
+          "LATTICA_V2_QUOTIENT_FUSION": "1",
+          "PATH": "/home/access/code/lattica/.tools/rust-1.96.0/bin:/usr/bin:/bin",
+          "RAYON_NUM_THREADS": "8"
+        },
+        "post_stop_state": {
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "LoadState": "not-found",
+          "MainPID": "0"
+        },
+        "service_command": [
+          "/usr/bin/systemd-run",
+          "--user",
+          "--quiet",
+          "--unit=lattica-pq-opencl-opencl-matrict-n3-v1.service",
+          "--property=Type=exec",
+          "--property=RemainAfterExit=yes",
+          "--property=Restart=no",
+          "--property=MemoryMax=51539607552",
+          "--property=MemoryHigh=49392123904",
+          "--property=MemorySwapMax=0",
+          "--property=CPUQuota=800%",
+          "--property=TasksMax=256",
+          "--property=RuntimeMaxSec=86400",
+          "--property=TimeoutStopSec=10",
+          "--property=KillMode=control-group",
+          "--property=WorkingDirectory=/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl",
+          "--property=StandardOutput=append:/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/runs/opencl-matrict-n3-v1.log",
+          "--property=StandardError=inherit",
+          "/usr/bin/env",
+          "-i",
+          "PATH=/home/access/code/lattica/.tools/rust-1.96.0/bin:/usr/bin:/bin",
+          "HOME=/home/access",
+          "CARGO_HOME=/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/cargo-opencl",
+          "CARGO_TARGET_DIR=/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/target-opencl",
+          "RAYON_NUM_THREADS=8",
+          "CARGO_BUILD_JOBS=2",
+          "LATTICA_V2_GPU_DEVICE=0",
+          "LATTICA_V2_GPU_HASH=1",
+          "LATTICA_V2_GPU_RETAIN_TREES=1",
+          "LATTICA_V2_GPU_QUERY_GATHER=1",
+          "LATTICA_V2_GPU_RESIDENT_LDE=1",
+          "LATTICA_V2_GPU_OPENINGS=1",
+          "LATTICA_V2_QUOTIENT_FUSION=1",
+          "LATTICA_V2_GPU_QUOTIENT_LDE=1",
+          "LATTICA_V2_GPU_QUOTIENT_EVAL=1",
+          "LATTICA_V2_GPU_QUOTIENT_RESIDENT=1",
+          "LATTICA_V2_GPU_LOOKUP=1",
+          "LATTICA_V2_GPU_OPENING_EVAL=1",
+          "LATTICA_V2_GPU_FRI_RESIDENT=1",
+          "LATTICA_V2_GPU_PCS_DEVICE_ONLY=1",
+          "LATTICA_V2_GPU_WITNESS=1",
+          "LATTICA_V2_GPU_RANDOMNESS=1",
+          "LATTICA_V2_GPU_TRANSCRIPT=1",
+          "LATTICA_V2_GPU_FRI_FOLD=1",
+          "LATTICA_PROVING_REPORT=1",
+          "LATTICA_PROVING_POLICY=gpu-required",
+          "LATTICA_V2_GPU_MANAGED_BYTES=8589934592",
+          "LATTICA_V2_GPU_CONTEXT_BYTES=4294967296",
+          "LATTICA_V2_HOST_OUTPUT_BYTES=34359738368",
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/target-opencl/release/pq-ringct-opencl-aggregate",
+          "--host-bytes",
+          "34359738368",
+          "--device-bytes",
+          "8589934592",
+          "--max-rows",
+          "1048576",
+          "--mode",
+          "matrict",
+          "--output",
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/artifacts/opencl-matrict-n3-v1.postcard",
+          "--allow-cpu-child-preparation",
+          "--fixture",
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-research/.tools/pq-child-cache/pq-ringct-batch-accept-recovery-v2-r1/fixture-0.json",
+          "--cache-dir",
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/aggregate-cache/matrict-fixture0-v1",
+          "--count",
+          "3",
+          "--native-bytes",
+          "34359738368"
+        ],
+        "terminal_state": {
+          "ActiveState": "active",
+          "ExecMainCode": "1",
+          "ExecMainExitTimestampMonotonic": "139511201692",
+          "ExecMainStatus": "0",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "MemoryHigh": "49392123904",
+          "MemoryMax": "51539607552",
+          "MemoryPeak": "43645042688",
+          "MemorySwapMax": "0",
+          "NRestarts": "0",
+          "Result": "success",
+          "SubState": "exited"
+        }
+      },
+      "external_resource_profile": null,
+      "finished_utc": "2026-10-22T09:26:09.750369+00:00",
+      "fixture": {
+        "bytes": 833617,
+        "path": "../pq-ringct-research/.tools/pq-child-cache/pq-ringct-batch-accept-recovery-v2-r1/fixture-0.json",
+        "sha256": "b78c234c604cdbc2e44925715f6c900a739e24408223df60ab6a9b1846d5898a",
+        "sha3_256": "0f2a2e44d7bff5597b3fc6f21ce4dfb8716201cdc0f2e32471ccda213e2d08b2"
+      },
+      "fixture_pattern": "repeated_single_fixture",
+      "label": "opencl-matrict-n3-v1",
+      "measurements": {
+        "artifact_bytes": 1994837,
+        "cpu_child_preparation_seconds": 30380.28699607,
+        "host_cgroup_peak_bytes": 43645042688,
+        "managed_gpu_peak_bytes": 8536648960,
+        "merge_seconds_sum": 130.02809100000002,
+        "merges": [
+          {
+            "active_rows": 258478,
+            "aggregate_children": 0,
+            "child_spans": [
+              [
+                0,
+                1
+              ],
+              [
+                1,
+                1
+              ]
+            ],
+            "cpu_retained_lde_bytes": 31675383808,
+            "level": 1,
+            "native_parent_verification": true,
+            "padded_rows": 262144,
+            "prepared_proving_state_dropped": true,
+            "seconds": 76.116030832,
+            "span": [
+              0,
+              2
+            ],
+            "strict_gpu_request": true
+          },
+          {
+            "active_rows": 258545,
+            "aggregate_children": 1,
+            "child_spans": [
+              [
+                0,
+                2
+              ],
+              [
+                2,
+                1
+              ]
+            ],
+            "cpu_retained_lde_bytes": 31675383808,
+            "level": 2,
+            "native_parent_verification": true,
+            "padded_rows": 262144,
+            "prepared_proving_state_dropped": true,
+            "seconds": 53.912060168,
+            "span": [
+              0,
+              3
+            ],
+            "strict_gpu_request": true
+          }
+        ],
+        "runner_wall_seconds": 30512.85768011499,
+        "session": {
+          "allocations": 3362,
+          "commits": 48,
+          "device": {
+            "driver": "615.78.08",
+            "global_bytes": 16703946752,
+            "max_allocation_bytes": 4175986688,
+            "name": "NVIDIA GeForce RTX 5080",
+            "opencl_index": 0,
+            "pci": "0000:01:00.0",
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          "device_allowance_bytes": 8589934592,
+          "device_max_work_group_size": 1024,
+          "downloaded_bytes": 3490560,
+          "gpu_context_allowance_bytes": 4294967296,
+          "host_allowance_bytes": 34359738368,
+          "managed_peak_bytes": 8536648960,
+          "max_rows": 1048576,
+          "telemetry_scope": "Observed OpenCL allocations and commitments; proof acceptance and strict stage coverage are checked separately",
+          "uploaded_bytes": 1663401992
+        }
+      },
+      "profile": {
+        "blowup": 16,
+        "extension": "Goldilocks cubic trinomial",
+        "hiding": true,
+        "num_queries": 128,
+        "original_profile": true
+      },
+      "registered_graph_leaves": 91,
+      "resource_envelope": {
+        "cpu_quota": "800%",
+        "device_context_reserve_bytes": 4294967296,
+        "disk_reserve_bytes": 17179869184,
+        "fresh_memavailable_required_bytes": 53687091200,
+        "managed_device_allowance_bytes": 8589934592,
+        "memory_high_bytes": 49392123904,
+        "memory_max_bytes": 51539607552,
+        "runtime_seconds": 86400
+      },
+      "source_identity": "45474e83c067535bdbb66aeb34854d636071db84b74138ad6684006aec46d33b",
+      "started_utc": "2026-10-22T00:57:36.878728+00:00"
+    },
+    {
+      "acceptance_checks": {
+        "actual_gpu_merge_proofs": 3,
+        "all_subprocesses_terminal_and_reaped": true,
+        "cpu_verification": true,
+        "decoded_verification_after_gpu_shutdown": true,
+        "final_proof_opening_mutation_rejected": true,
+        "full_gpu_corrupted_child_witness_diagnostics_repeated": false,
+        "full_mode_evidence": {
+          "compiled_source_identity": "45474e83c067535bdbb66aeb34854d636071db84b74138ad6684006aec46d33b",
+          "cpu_preparation_targeted_reports": 335,
+          "exact_ordered_topology_checked": true,
+          "fixture_sha3_256": "0f2a2e44d7bff5597b3fc6f21ce4dfb8716201cdc0f2e32471ccda213e2d08b2",
+          "gpu_shutdown_before_result": true,
+          "gpu_targeted_report_count": 6
+        },
+        "gpu_reports": [
+          {
+            "capability_stages": [
+              {
+                "backend": "open_cl",
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "commitment"
+              }
+            ],
+            "completion_rejected": false,
+            "entry_point": "block_v2_preprocessing",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 6485,
+                "completed_calls": 6485,
+                "device_calls": 6484,
+                "device_ns": 47772238592,
+                "inclusive_ns": 1007084421,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 1642368,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 271486368,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 482562656,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              }
+            ],
+            "policy": "gpu_required",
+            "profile": "block_v2_cubic",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          {
+            "capability_stages": [
+              {
+                "backend": "open_cl",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "grinding"
+              }
+            ],
+            "completion_rejected": false,
+            "entry_point": "block_v2_registered_program",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 3948,
+                "completed_calls": 3948,
+                "device_calls": 3947,
+                "device_ns": 58332800,
+                "inclusive_ns": 118091670,
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 26,
+                "completed_calls": 26,
+                "device_calls": 26,
+                "device_ns": 70208,
+                "inclusive_ns": 0,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1287,
+                "completed_calls": 1287,
+                "device_calls": 1286,
+                "device_ns": 150759968,
+                "inclusive_ns": 221281972,
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2073,
+                "completed_calls": 2073,
+                "device_calls": 2072,
+                "device_ns": 597050560,
+                "inclusive_ns": 1091086113,
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 97,
+                "completed_calls": 97,
+                "device_calls": 97,
+                "device_ns": 29236736,
+                "inclusive_ns": 0,
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 417440,
+                "inclusive_ns": 0,
+                "stage": "grinding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 4,
+                "completed_calls": 4,
+                "device_calls": 4,
+                "device_ns": 16896,
+                "inclusive_ns": 0,
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 100,
+                "completed_calls": 100,
+                "device_calls": 100,
+                "device_ns": 101098080,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 179,
+                "completed_calls": 179,
+                "device_calls": 179,
+                "device_ns": 1422542848,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 89,
+                "completed_calls": 89,
+                "device_calls": 89,
+                "device_ns": 10737056,
+                "inclusive_ns": 0,
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 23,
+                "completed_calls": 23,
+                "device_calls": 23,
+                "device_ns": 908792896,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1220,
+                "completed_calls": 1220,
+                "device_calls": 1220,
+                "device_ns": 100081344,
+                "inclusive_ns": 0,
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 19,
+                "completed_calls": 19,
+                "device_calls": 19,
+                "device_ns": 820416,
+                "inclusive_ns": 0,
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 207,
+                "completed_calls": 207,
+                "device_calls": 207,
+                "device_ns": 50123232,
+                "inclusive_ns": 0,
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 3520,
+                "inclusive_ns": 0,
+                "stage": "final_polynomial"
+              }
+            ],
+            "policy": "gpu_required",
+            "profile": "block_v2_cubic",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          {
+            "capability_stages": [
+              {
+                "backend": "open_cl",
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "commitment"
+              }
+            ],
+            "completion_rejected": false,
+            "entry_point": "block_v2_preprocessing",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 6485,
+                "completed_calls": 6485,
+                "device_calls": 6484,
+                "device_ns": 47773521632,
+                "inclusive_ns": 1006714269,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 1618848,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 271872352,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 482765504,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              }
+            ],
+            "policy": "gpu_required",
+            "profile": "block_v2_cubic",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          {
+            "capability_stages": [
+              {
+                "backend": "open_cl",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "grinding"
+              }
+            ],
+            "completion_rejected": false,
+            "entry_point": "block_v2_registered_program",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 3948,
+                "completed_calls": 3948,
+                "device_calls": 3947,
+                "device_ns": 58658464,
+                "inclusive_ns": 119289455,
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 26,
+                "completed_calls": 26,
+                "device_calls": 26,
+                "device_ns": 73888,
+                "inclusive_ns": 0,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1287,
+                "completed_calls": 1287,
+                "device_calls": 1286,
+                "device_ns": 149901152,
+                "inclusive_ns": 220576823,
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2073,
+                "completed_calls": 2073,
+                "device_calls": 2072,
+                "device_ns": 595627456,
+                "inclusive_ns": 1089280161,
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 97,
+                "completed_calls": 97,
+                "device_calls": 97,
+                "device_ns": 29208192,
+                "inclusive_ns": 0,
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 150624,
+                "inclusive_ns": 0,
+                "stage": "grinding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 4,
+                "completed_calls": 4,
+                "device_calls": 4,
+                "device_ns": 17920,
+                "inclusive_ns": 0,
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 100,
+                "completed_calls": 100,
+                "device_calls": 100,
+                "device_ns": 101160736,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 179,
+                "completed_calls": 179,
+                "device_calls": 179,
+                "device_ns": 1423312992,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 89,
+                "completed_calls": 89,
+                "device_calls": 89,
+                "device_ns": 10784512,
+                "inclusive_ns": 0,
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 23,
+                "completed_calls": 23,
+                "device_calls": 23,
+                "device_ns": 908221504,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1220,
+                "completed_calls": 1220,
+                "device_calls": 1220,
+                "device_ns": 100010304,
+                "inclusive_ns": 0,
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 19,
+                "completed_calls": 19,
+                "device_calls": 19,
+                "device_ns": 817376,
+                "inclusive_ns": 0,
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 207,
+                "completed_calls": 207,
+                "device_calls": 207,
+                "device_ns": 49897184,
+                "inclusive_ns": 0,
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 3008,
+                "inclusive_ns": 0,
+                "stage": "final_polynomial"
+              }
+            ],
+            "policy": "gpu_required",
+            "profile": "block_v2_cubic",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          {
+            "capability_stages": [
+              {
+                "backend": "open_cl",
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "commitment"
+              }
+            ],
+            "completion_rejected": false,
+            "entry_point": "block_v2_preprocessing",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 6485,
+                "completed_calls": 6485,
+                "device_calls": 6484,
+                "device_ns": 47780059616,
+                "inclusive_ns": 1008217791,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 1616256,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 271857728,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 482799232,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              }
+            ],
+            "policy": "gpu_required",
+            "profile": "block_v2_cubic",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          {
+            "capability_stages": [
+              {
+                "backend": "open_cl",
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "final_polynomial"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "stage": "grinding"
+              }
+            ],
+            "completion_rejected": false,
+            "entry_point": "block_v2_registered_program",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 3946,
+                "completed_calls": 3946,
+                "device_calls": 3945,
+                "device_ns": 58381696,
+                "inclusive_ns": 118098810,
+                "stage": "witness_trace"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 26,
+                "completed_calls": 26,
+                "device_calls": 26,
+                "device_ns": 69216,
+                "inclusive_ns": 0,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1287,
+                "completed_calls": 1287,
+                "device_calls": 1286,
+                "device_ns": 149622752,
+                "inclusive_ns": 219829373,
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2073,
+                "completed_calls": 2073,
+                "device_calls": 2072,
+                "device_ns": 627999456,
+                "inclusive_ns": 1121846038,
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 97,
+                "completed_calls": 97,
+                "device_calls": 97,
+                "device_ns": 29204896,
+                "inclusive_ns": 0,
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 151552,
+                "inclusive_ns": 0,
+                "stage": "grinding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 4,
+                "completed_calls": 4,
+                "device_calls": 4,
+                "device_ns": 18976,
+                "inclusive_ns": 0,
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 100,
+                "completed_calls": 100,
+                "device_calls": 100,
+                "device_ns": 101014144,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 179,
+                "completed_calls": 179,
+                "device_calls": 179,
+                "device_ns": 1422742784,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 89,
+                "completed_calls": 89,
+                "device_calls": 89,
+                "device_ns": 10750336,
+                "inclusive_ns": 0,
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 23,
+                "completed_calls": 23,
+                "device_calls": 23,
+                "device_ns": 907908704,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1220,
+                "completed_calls": 1220,
+                "device_calls": 1220,
+                "device_ns": 100024352,
+                "inclusive_ns": 0,
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 19,
+                "completed_calls": 19,
+                "device_calls": 19,
+                "device_ns": 822688,
+                "inclusive_ns": 0,
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 207,
+                "completed_calls": 207,
+                "device_calls": 207,
+                "device_ns": 50079232,
+                "inclusive_ns": 0,
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 3200,
+                "inclusive_ns": 0,
+                "stage": "final_polynomial"
+              }
+            ],
+            "policy": "gpu_required",
+            "profile": "block_v2_cubic",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          }
+        ],
+        "original_graph_dropped_before_final_verification": true,
+        "public_value_mutations_rejected": 25,
+        "service_stop_completed": true,
+        "source_inputs_unchanged": true,
+        "strict_gpu_stage_reports": 6,
+        "successful_process_exit": true
+      },
+      "cache": {
+        "initial_cache_state_independently_qualified": false,
+        "path": ".tools/pq-opencl/aggregate-cache/matrict-fixture0-v1",
+        "source_marker": {
+          "bytes": 64,
+          "path": ".tools/pq-opencl/aggregate-cache/matrict-fixture0-v1/.opencl-compiled-source-identity",
+          "sha256": "b8ac040be858163520c8e612534d57715ec7e4d9b36ea380f211042169a7dde5"
+        }
+      },
+      "count": 4,
+      "evidence": {
+        "artifact": {
+          "bytes": 1995099,
+          "codec": "diagnostic-postcard-public-and-proof-tuple",
+          "decoded_payload_reverified": true,
+          "includes_ledger_body": false,
+          "includes_original_statements": false,
+          "includes_trusted_registered_key": false,
+          "path": ".tools/pq-opencl/artifacts/opencl-matrict-n4-r47-v1.postcard",
+          "sha256": "fa2e0a860fe8d66f262cf8685dfe4ad684450ba29d877258546cae61f7011122",
+          "sha3_256": "649a5de20fe987b80dd33532b78c21b9a43e5e7a78027fdc88752a7f9b0ec901"
+        },
+        "byte_prerequisite_record": {
+          "bytes": 153630,
+          "path": ".tools/pq-opencl/runs/opencl-byte-v4.json",
+          "sha256": "9691590391c4435045fbde87c10452da452338bfb090048b519fcbc750dd3d54"
+        },
+        "external_resource_wrapper": {
+          "bytes": 6830,
+          "path": ".tools/pq-opencl/control/run-pq-opencl-n4-stricter-resource-profile-v2.py",
+          "sha256": "186de083eb77dfb87cc3d560e55aa49c001e5db252eb4b2e9fc97852bb6210e1"
+        },
+        "log": {
+          "bytes": 462778,
+          "path": ".tools/pq-opencl/runs/opencl-matrict-n4-r47-v1.log",
+          "sha256": "d220e1ac1e69aa7a222dc729bb947400b6b466cd11e833acc8ea0b66f84aacaa"
+        },
+        "record": {
+          "bytes": 175386,
+          "path": ".tools/pq-opencl/runs/opencl-matrict-n4-r47-v1.json",
+          "sha256": "43100997a845993bd70650aa313edf0e86c020c325384809e0e3454d0abb5a5d"
+        }
+      },
+      "execution": {
+        "command": [
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/target-opencl/release/pq-ringct-opencl-aggregate",
+          "--host-bytes",
+          "34359738368",
+          "--device-bytes",
+          "8589934592",
+          "--max-rows",
+          "1048576",
+          "--mode",
+          "matrict",
+          "--output",
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/artifacts/opencl-matrict-n4-r47-v1.postcard",
+          "--allow-cpu-child-preparation",
+          "--fixture",
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-research/.tools/pq-child-cache/pq-ringct-batch-accept-recovery-v2-r1/fixture-0.json",
+          "--cache-dir",
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/aggregate-cache/matrict-fixture0-v1",
+          "--count",
+          "4",
+          "--native-bytes",
+          "34359738368"
+        ],
+        "environment": {
+          "CARGO_BUILD_JOBS": "2",
+          "CARGO_HOME": "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/cargo-opencl",
+          "CARGO_TARGET_DIR": "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/target-opencl",
+          "HOME": "/home/access",
+          "LATTICA_PROVING_POLICY": "gpu-required",
+          "LATTICA_PROVING_REPORT": "1",
+          "LATTICA_V2_GPU_CONTEXT_BYTES": "4294967296",
+          "LATTICA_V2_GPU_DEVICE": "0",
+          "LATTICA_V2_GPU_FRI_FOLD": "1",
+          "LATTICA_V2_GPU_FRI_RESIDENT": "1",
+          "LATTICA_V2_GPU_HASH": "1",
+          "LATTICA_V2_GPU_LOOKUP": "1",
+          "LATTICA_V2_GPU_MANAGED_BYTES": "8589934592",
+          "LATTICA_V2_GPU_OPENINGS": "1",
+          "LATTICA_V2_GPU_OPENING_EVAL": "1",
+          "LATTICA_V2_GPU_PCS_DEVICE_ONLY": "1",
+          "LATTICA_V2_GPU_QUERY_GATHER": "1",
+          "LATTICA_V2_GPU_QUOTIENT_EVAL": "1",
+          "LATTICA_V2_GPU_QUOTIENT_LDE": "1",
+          "LATTICA_V2_GPU_QUOTIENT_RESIDENT": "1",
+          "LATTICA_V2_GPU_RANDOMNESS": "1",
+          "LATTICA_V2_GPU_RESIDENT_LDE": "1",
+          "LATTICA_V2_GPU_RETAIN_TREES": "1",
+          "LATTICA_V2_GPU_TRANSCRIPT": "1",
+          "LATTICA_V2_GPU_WITNESS": "1",
+          "LATTICA_V2_HOST_OUTPUT_BYTES": "34359738368",
+          "LATTICA_V2_QUOTIENT_FUSION": "1",
+          "PATH": "/home/access/code/lattica/.tools/rust-1.96.0/bin:/usr/bin:/bin",
+          "RAYON_NUM_THREADS": "8"
+        },
+        "post_stop_state": {
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "LoadState": "not-found",
+          "MainPID": "0"
+        },
+        "service_command": [
+          "/usr/bin/systemd-run",
+          "--user",
+          "--quiet",
+          "--unit=lattica-pq-opencl-opencl-matrict-n4-r47-v1.service",
+          "--property=Type=exec",
+          "--property=RemainAfterExit=yes",
+          "--property=Restart=no",
+          "--property=MemoryMax=50465865728",
+          "--property=MemoryHigh=48318382080",
+          "--property=MemorySwapMax=0",
+          "--property=CPUQuota=800%",
+          "--property=TasksMax=256",
+          "--property=RuntimeMaxSec=86400",
+          "--property=TimeoutStopSec=10",
+          "--property=KillMode=control-group",
+          "--property=WorkingDirectory=/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl",
+          "--property=StandardOutput=append:/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/runs/opencl-matrict-n4-r47-v1.log",
+          "--property=StandardError=inherit",
+          "/usr/bin/env",
+          "-i",
+          "PATH=/home/access/code/lattica/.tools/rust-1.96.0/bin:/usr/bin:/bin",
+          "HOME=/home/access",
+          "CARGO_HOME=/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/cargo-opencl",
+          "CARGO_TARGET_DIR=/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/target-opencl",
+          "RAYON_NUM_THREADS=8",
+          "CARGO_BUILD_JOBS=2",
+          "LATTICA_V2_GPU_DEVICE=0",
+          "LATTICA_V2_GPU_HASH=1",
+          "LATTICA_V2_GPU_RETAIN_TREES=1",
+          "LATTICA_V2_GPU_QUERY_GATHER=1",
+          "LATTICA_V2_GPU_RESIDENT_LDE=1",
+          "LATTICA_V2_GPU_OPENINGS=1",
+          "LATTICA_V2_QUOTIENT_FUSION=1",
+          "LATTICA_V2_GPU_QUOTIENT_LDE=1",
+          "LATTICA_V2_GPU_QUOTIENT_EVAL=1",
+          "LATTICA_V2_GPU_QUOTIENT_RESIDENT=1",
+          "LATTICA_V2_GPU_LOOKUP=1",
+          "LATTICA_V2_GPU_OPENING_EVAL=1",
+          "LATTICA_V2_GPU_FRI_RESIDENT=1",
+          "LATTICA_V2_GPU_PCS_DEVICE_ONLY=1",
+          "LATTICA_V2_GPU_WITNESS=1",
+          "LATTICA_V2_GPU_RANDOMNESS=1",
+          "LATTICA_V2_GPU_TRANSCRIPT=1",
+          "LATTICA_V2_GPU_FRI_FOLD=1",
+          "LATTICA_PROVING_REPORT=1",
+          "LATTICA_PROVING_POLICY=gpu-required",
+          "LATTICA_V2_GPU_MANAGED_BYTES=8589934592",
+          "LATTICA_V2_GPU_CONTEXT_BYTES=4294967296",
+          "LATTICA_V2_HOST_OUTPUT_BYTES=34359738368",
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/target-opencl/release/pq-ringct-opencl-aggregate",
+          "--host-bytes",
+          "34359738368",
+          "--device-bytes",
+          "8589934592",
+          "--max-rows",
+          "1048576",
+          "--mode",
+          "matrict",
+          "--output",
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/artifacts/opencl-matrict-n4-r47-v1.postcard",
+          "--allow-cpu-child-preparation",
+          "--fixture",
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-research/.tools/pq-child-cache/pq-ringct-batch-accept-recovery-v2-r1/fixture-0.json",
+          "--cache-dir",
+          "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/aggregate-cache/matrict-fixture0-v1",
+          "--count",
+          "4",
+          "--native-bytes",
+          "34359738368"
+        ],
+        "terminal_state": {
+          "ActiveState": "active",
+          "ExecMainCode": "1",
+          "ExecMainExitTimestampMonotonic": "158415424131",
+          "ExecMainStatus": "0",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "MemoryHigh": "48318382080",
+          "MemoryMax": "50465865728",
+          "MemoryPeak": "15578959872",
+          "MemorySwapMax": "0",
+          "NRestarts": "0",
+          "Result": "success",
+          "SubState": "exited"
+        }
+      },
+      "external_resource_profile": {
+        "applied_limits": {
+          "fresh_memavailable_required_bytes": 52613349376,
+          "memory_high_bytes": 48318382080,
+          "memory_max_bytes": 50465865728
+        },
+        "name": "n4-max47-high45-admission49",
+        "original_limits": {
+          "fresh_memavailable_required_bytes": 53687091200,
+          "memory_high_bytes": 49392123904,
+          "memory_max_bytes": 51539607552
+        },
+        "runner_path": "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/research/pq-ringct/tools/opencl_qualify.py",
+        "runner_sha256": "d8c1fd90007ce46bd317d61adf63f2b82cc977d262faa638ad4750300b19067c",
+        "schema": "pq-opencl-n4-stricter-resource-profile-v1",
+        "wrapper_path": "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/control/run-pq-opencl-n4-stricter-resource-profile-v2.py",
+        "wrapper_sha256": "186de083eb77dfb87cc3d560e55aa49c001e5db252eb4b2e9fc97852bb6210e1"
+      },
+      "finished_utc": "2026-10-22T14:41:15.937998+00:00",
+      "fixture": {
+        "bytes": 833617,
+        "path": "../pq-ringct-research/.tools/pq-child-cache/pq-ringct-batch-accept-recovery-v2-r1/fixture-0.json",
+        "sha256": "b78c234c604cdbc2e44925715f6c900a739e24408223df60ab6a9b1846d5898a",
+        "sha3_256": "0f2a2e44d7bff5597b3fc6f21ce4dfb8716201cdc0f2e32471ccda213e2d08b2"
+      },
+      "fixture_pattern": "repeated_single_fixture",
+      "label": "opencl-matrict-n4-r47-v1",
+      "measurements": {
+        "artifact_bytes": 1995099,
+        "cpu_child_preparation_seconds": 8164.637076103,
+        "host_cgroup_peak_bytes": 15578959872,
+        "managed_gpu_peak_bytes": 8536630880,
+        "merge_seconds_sum": 161.699226049,
+        "merges": [
+          {
+            "active_rows": 258478,
+            "aggregate_children": 0,
+            "child_spans": [
+              [
+                0,
+                1
+              ],
+              [
+                1,
+                1
+              ]
+            ],
+            "cpu_retained_lde_bytes": 31675383808,
+            "level": 1,
+            "native_parent_verification": true,
+            "padded_rows": 262144,
+            "prepared_proving_state_dropped": true,
+            "seconds": 53.878015513,
+            "span": [
+              0,
+              2
+            ],
+            "strict_gpu_request": true
+          },
+          {
+            "active_rows": 258478,
+            "aggregate_children": 0,
+            "child_spans": [
+              [
+                2,
+                1
+              ],
+              [
+                3,
+                1
+              ]
+            ],
+            "cpu_retained_lde_bytes": 31675383808,
+            "level": 1,
+            "native_parent_verification": true,
+            "padded_rows": 262144,
+            "prepared_proving_state_dropped": true,
+            "seconds": 53.88171334,
+            "span": [
+              2,
+              2
+            ],
+            "strict_gpu_request": true
+          },
+          {
+            "active_rows": 258538,
+            "aggregate_children": 2,
+            "child_spans": [
+              [
+                0,
+                2
+              ],
+              [
+                2,
+                2
+              ]
+            ],
+            "cpu_retained_lde_bytes": 31675383808,
+            "level": 2,
+            "native_parent_verification": true,
+            "padded_rows": 262144,
+            "prepared_proving_state_dropped": true,
+            "seconds": 53.939497196,
+            "span": [
+              0,
+              4
+            ],
+            "strict_gpu_request": true
+          }
+        ],
+        "runner_wall_seconds": 8330.825276001997,
+        "session": {
+          "allocations": 5040,
+          "commits": 72,
+          "device": {
+            "driver": "615.78.08",
+            "global_bytes": 16703946752,
+            "max_allocation_bytes": 4175986688,
+            "name": "NVIDIA GeForce RTX 5080",
+            "opencl_index": 0,
+            "pci": "0000:01:00.0",
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          "device_allowance_bytes": 8589934592,
+          "device_max_work_group_size": 1024,
+          "downloaded_bytes": 5235872,
+          "gpu_context_allowance_bytes": 4294967296,
+          "host_allowance_bytes": 34359738368,
+          "managed_peak_bytes": 8536630880,
+          "max_rows": 1048576,
+          "telemetry_scope": "Observed OpenCL allocations and commitments; proof acceptance and strict stage coverage are checked separately",
+          "uploaded_bytes": 2495031024
+        }
+      },
+      "profile": {
+        "blowup": 16,
+        "extension": "Goldilocks cubic trinomial",
+        "hiding": true,
+        "num_queries": 128,
+        "original_profile": true
+      },
+      "registered_graph_leaves": 91,
+      "resource_envelope": {
+        "cpu_quota": "800%",
+        "device_context_reserve_bytes": 4294967296,
+        "disk_reserve_bytes": 17179869184,
+        "fresh_memavailable_required_bytes": 52613349376,
+        "managed_device_allowance_bytes": 8589934592,
+        "memory_high_bytes": 48318382080,
+        "memory_max_bytes": 50465865728,
+        "runtime_seconds": 86400
+      },
+      "source_identity": "45474e83c067535bdbb66aeb34854d636071db84b74138ad6684006aec46d33b",
+      "started_utc": "2026-10-22T12:22:25.098880+00:00"
+    }
+  ],
+  "evidence": {
+    "acceptance_helper": {
+      "bytes": 22037,
+      "path": "../../../../../../../tmp/audit-full-opencl-v2.py",
+      "sha256": "6a044f3c6605c4f199f6c7f72255d1d88b72d8160699a6ab1f9be5b42d4a7dbe"
+    },
+    "aggregate_build": {
+      "binary": {
+        "bytes": 25771808,
+        "path": ".tools/target-opencl/release/pq-ringct-opencl-aggregate",
+        "sha256": "4639f9c59903a71e3728f42670c8534f18fd0470401a745e426fdf1b8e4bac66"
+      },
+      "log": {
+        "bytes": 44784,
+        "path": ".tools/pq-opencl/runs/opencl-aggregate-build-v4.log",
+        "sha256": "2b8c2a3d67ec204d03b4ae63bdf310ec991866100a1f9393daa721861940ce4f"
+      },
+      "record": {
+        "bytes": 142575,
+        "path": ".tools/pq-opencl/runs/opencl-aggregate-build-v4.json",
+        "sha256": "3a5d87eda256ea963c49ab5aea4f447ed0b1b97de0eef7e639177f80d8f131e8"
+      }
+    },
+    "byte_prerequisite": {
+      "log": {
+        "bytes": 44253,
+        "path": ".tools/pq-opencl/runs/opencl-byte-v4.log",
+        "sha256": "3f85662c44f103d8644472200fa146692156a7d506ff27f57dd2da7cfe852a52"
+      },
+      "record": {
+        "bytes": 153630,
+        "path": ".tools/pq-opencl/runs/opencl-byte-v4.json",
+        "sha256": "9691590391c4435045fbde87c10452da452338bfb090048b519fcbc750dd3d54"
+      }
+    },
+    "collector": {
+      "bytes": 20436,
+      "path": "../../../../../../../tmp/collect-full-opencl-result-v2.py",
+      "sha256": "218f4e941bd9e1b37652597123b29a49af4111743c2543d71870fbf0f30bf7ec"
+    },
+    "frozen_cpu_baseline": {
+      "batch_record": {
+        "bytes": 1846675,
+        "path": "../pq-ringct-research/.tools/pq-logs/pq-ringct-batch-accept-recovery-v2-r1-prove.json",
+        "sha256": "b45e0cd7e97dfcb129ca7c42b8ba8f4c23c7ef13a44858a1ddac6d30b149a796"
+      },
+      "complete_spend_record": {
+        "bytes": 342962,
+        "path": "../pq-ringct-research/research/pq-ringct/data/complete-spend-acceptance-recovery-v2-1db18b9e1bece2fd.json",
+        "sha256": "35e6e6f74f9b4d3c31ade50b2b60fcc75e9beb24e9384ad9c70ee072046fb95e"
+      }
+    },
+    "prior_nested_diagnostic": {
+      "artifact": {
+        "bytes": 1994782,
+        "path": ".tools/pq-opencl/artifacts/opencl-recursive-v1.postcard",
+        "sha256": "eb90277ca61109adb42ad447ec7841c3874806463263d5d17df5da0380e3fe87"
+      },
+      "durable_result": {
+        "bytes": 12506,
+        "path": "research/pq-ringct/data/opencl-recursive-accepted-result-v1-20261021.json",
+        "sha256": "2663d7a0aea8c41b1381901de48bf66f4f9519fedfcc320fa7d654f47e0d6861"
+      },
+      "input_differences_from_full_runs": [
+        "research/pq-ringct/tools/opencl_qualify.py"
+      ],
+      "log": {
+        "bytes": 138865,
+        "path": ".tools/pq-opencl/runs/opencl-recursive-v1.log",
+        "sha256": "2a80de1df76ff40c3fd0262edcc941abac6f6103dbef9ab33dc1e62a5cd0aded"
+      },
+      "record": {
+        "bytes": 172354,
+        "path": ".tools/pq-opencl/runs/opencl-recursive-v1.json",
+        "sha256": "896c9dfa4c22915a70dbb8098d3e3261380a70992ef9c1de826cf3a21adaac0f"
+      },
+      "role": "Separate nested GPU corrupted-child witness evidence; not repeated by full N3/N4 runs"
+    },
+    "probe_build": {
+      "binary": {
+        "bytes": 8985952,
+        "path": ".tools/target-opencl/release/pq-ringct-opencl-probe",
+        "sha256": "3eaf0adae97c6cbc8df7f16f9bb86175a007ef89a5b098ec231073c31aa12db4"
+      },
+      "log": {
+        "bytes": 44705,
+        "path": ".tools/pq-opencl/runs/opencl-probe-build-v4.log",
+        "sha256": "d47d3a103489dd47b66e28ec4dbbcfc1d7c0ac3c71eda8423cd7bb10ab9cf2b9"
+      },
+      "record": {
+        "bytes": 142531,
+        "path": ".tools/pq-opencl/runs/opencl-probe-build-v4.json",
+        "sha256": "ceea31587b28bd2ed9eb5eaf1c98928a0705ca1eda723b9f3212212d728e9597"
+      }
+    },
+    "runner_guard_tests": {
+      "log": {
+        "bytes": 117,
+        "path": ".tools/pq-opencl/guard-tests-full-mode-v1.log",
+        "sha256": "eee9eca4b167c9dd35407f7031a553bd026e80959e9a95c986f6f52a3a0ab3c9"
+      },
+      "record": {
+        "bytes": 1699,
+        "path": ".tools/pq-opencl/guard-tests-full-mode-v1.json",
+        "sha256": "da42816bfce35f6c2e127196b74b535e93b242140f5864f29fc2d67a082156d6"
+      },
+      "scope": "Full-mode parser phase/topology/cache/fixture/OpenCL checks using actual serialized GPU report fixtures with synthetic aggregate payloads; accepted existing diagnostic artifacts rechecked. No compiler or GPU/proving workload launched.",
+      "tests_passed": 18
+    }
+  },
+  "limitations": [
+    "Both cases repeat one complete native fixture; they are not the CPU [A,B,A] and [A,B,A,B] workload and do not establish distinct ledger transaction validity.",
+    "The complete 91-leaf graph and trusted keys are prepared/verified on CPU before OpenCL initialization; only the new batch merges are GPU proofs.",
+    "No matched CPU/GPU speedup, total-compute savings, throughput, cold-start, production, or N8/N16 qualification is established.",
+    "Only the recorded NVIDIA RTX 5080 and driver have executed this workload; AMD portability remains unqualified.",
+    "Managed GPU peaks exclude untracked driver/display/context allocations and are not total physical VRAM consumption; the 4 GiB context reserve is an admission allowance.",
+    "Artifact byte counts include the serialized final public values and proof, excluding the trusted registered key, original statements, and ledger body; they are not transaction or block sizes.",
+    "Full N3/N4 GPU runs check 25 public mutations and one final proof-opening mutation each; they do not repeat separately accepted full CPU aggregate-child witness negatives or the nested GPU witness diagnostic.",
+    "Successful serial memory fit does not qualify concurrent CUDA/OpenCL proving or arbitrary batch sizes."
+  ],
+  "path_convention": "Evidence paths are relative to the OpenCL worktree root; ../ names the frozen CPU sibling worktree and relative traversal to /tmp names the external read-only audit helpers.",
+  "provenance": {
+    "all_recorded_final_inputs_match_current_files": true,
+    "authoritative_input_manifests": [
+      ".tools/pq-opencl/runs/opencl-matrict-n3-v1.json",
+      ".tools/pq-opencl/runs/opencl-matrict-n4-r47-v1.json"
+    ],
+    "current_builds_and_byte_prerequisite_match_full_manifest": true,
+    "historical_snapshots": "Historical source snapshots are not authoritative for these full runs; use the accepted per-run input_sha256 manifests",
+    "independent_review": {
+      "accepted": true,
+      "audit_helper_sha256": "6a044f3c6605c4f199f6c7f72255d1d88b72d8160699a6ab1f9be5b42d4a7dbe",
+      "cases": [
+        {
+          "all_checks_passed": true,
+          "artifact_bytes": 1994837,
+          "artifact_sha256": "623890c436b2d3e518aff843ad9fce41acd8a05f90ae76032db1b1ef8b8a05d7",
+          "artifact_sha3_256": "deb5b334e59c83ad41dd7baa1c9a1f244e43ff69c0fbab65c3eb49416ab8b33f",
+          "binary_sha256": "4639f9c59903a71e3728f42670c8534f18fd0470401a745e426fdf1b8e4bac66",
+          "build_record": "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/runs/opencl-aggregate-build-v4.json",
+          "build_record_sha256": "3a5d87eda256ea963c49ab5aea4f447ed0b1b97de0eef7e639177f80d8f131e8",
+          "cache_marker_sha256": "b8ac040be858163520c8e612534d57715ec7e4d9b36ea380f211042169a7dde5",
+          "case": 3,
+          "cpu_preparation_targeted_reports": 670,
+          "device": {
+            "driver": "615.78.08",
+            "global_bytes": 16703946752,
+            "max_allocation_bytes": 4175986688,
+            "name": "NVIDIA GeForce RTX 5080",
+            "opencl_index": 0,
+            "pci": "0000:01:00.0",
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          "external_resource_profile": null,
+          "fixture_sha256": "b78c234c604cdbc2e44925715f6c900a739e24408223df60ab6a9b1846d5898a",
+          "fixture_sha3_256": "0f2a2e44d7bff5597b3fc6f21ce4dfb8716201cdc0f2e32471ccda213e2d08b2",
+          "gpu_merges": 2,
+          "host_cgroup_peak_bytes": 43645042688,
+          "input_hash_count": 1024,
+          "log_sha256": "36e00560dce2f0881226cfdf46563aefaaab85358dd9654ef114aa62e142ba25",
+          "managed_gpu_peak_bytes": 8536648960,
+          "prerequisite_sha256": "9691590391c4435045fbde87c10452da452338bfb090048b519fcbc750dd3d54",
+          "probe_binary_sha256": "3eaf0adae97c6cbc8df7f16f9bb86175a007ef89a5b098ec231073c31aa12db4",
+          "probe_build_record_sha256": "ceea31587b28bd2ed9eb5eaf1c98928a0705ca1eda723b9f3212212d728e9597",
+          "record": "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/runs/opencl-matrict-n3-v1.json",
+          "record_sha256": "be18a1c97b9275ac29cb92b355610aa301c5bf3339140982fa806d0d80ed176f",
+          "runner_wall_seconds": 30512.85768011499,
+          "source_identity": "45474e83c067535bdbb66aeb34854d636071db84b74138ad6684006aec46d33b",
+          "strict_gpu_reports": 4
+        },
+        {
+          "all_checks_passed": true,
+          "artifact_bytes": 1995099,
+          "artifact_sha256": "fa2e0a860fe8d66f262cf8685dfe4ad684450ba29d877258546cae61f7011122",
+          "artifact_sha3_256": "649a5de20fe987b80dd33532b78c21b9a43e5e7a78027fdc88752a7f9b0ec901",
+          "binary_sha256": "4639f9c59903a71e3728f42670c8534f18fd0470401a745e426fdf1b8e4bac66",
+          "build_record": "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/runs/opencl-aggregate-build-v4.json",
+          "build_record_sha256": "3a5d87eda256ea963c49ab5aea4f447ed0b1b97de0eef7e639177f80d8f131e8",
+          "cache_marker_sha256": "b8ac040be858163520c8e612534d57715ec7e4d9b36ea380f211042169a7dde5",
+          "case": 4,
+          "cpu_preparation_targeted_reports": 335,
+          "device": {
+            "driver": "615.78.08",
+            "global_bytes": 16703946752,
+            "max_allocation_bytes": 4175986688,
+            "name": "NVIDIA GeForce RTX 5080",
+            "opencl_index": 0,
+            "pci": "0000:01:00.0",
+            "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+          },
+          "external_resource_profile": {
+            "applied_limits": {
+              "fresh_memavailable_required_bytes": 52613349376,
+              "memory_high_bytes": 48318382080,
+              "memory_max_bytes": 50465865728
+            },
+            "name": "n4-max47-high45-admission49",
+            "original_limits": {
+              "fresh_memavailable_required_bytes": 53687091200,
+              "memory_high_bytes": 49392123904,
+              "memory_max_bytes": 51539607552
+            },
+            "runner_path": "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/research/pq-ringct/tools/opencl_qualify.py",
+            "runner_sha256": "d8c1fd90007ce46bd317d61adf63f2b82cc977d262faa638ad4750300b19067c",
+            "schema": "pq-opencl-n4-stricter-resource-profile-v1",
+            "wrapper_path": "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/control/run-pq-opencl-n4-stricter-resource-profile-v2.py",
+            "wrapper_sha256": "186de083eb77dfb87cc3d560e55aa49c001e5db252eb4b2e9fc97852bb6210e1"
+          },
+          "fixture_sha256": "b78c234c604cdbc2e44925715f6c900a739e24408223df60ab6a9b1846d5898a",
+          "fixture_sha3_256": "0f2a2e44d7bff5597b3fc6f21ce4dfb8716201cdc0f2e32471ccda213e2d08b2",
+          "gpu_merges": 3,
+          "host_cgroup_peak_bytes": 15578959872,
+          "input_hash_count": 1024,
+          "log_sha256": "d220e1ac1e69aa7a222dc729bb947400b6b466cd11e833acc8ea0b66f84aacaa",
+          "managed_gpu_peak_bytes": 8536630880,
+          "prerequisite_sha256": "9691590391c4435045fbde87c10452da452338bfb090048b519fcbc750dd3d54",
+          "probe_binary_sha256": "3eaf0adae97c6cbc8df7f16f9bb86175a007ef89a5b098ec231073c31aa12db4",
+          "probe_build_record_sha256": "ceea31587b28bd2ed9eb5eaf1c98928a0705ca1eda723b9f3212212d728e9597",
+          "record": "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl/.tools/pq-opencl/runs/opencl-matrict-n4-r47-v1.json",
+          "record_sha256": "43100997a845993bd70650aa313edf0e86c020c325384809e0e3454d0abb5a5d",
+          "runner_wall_seconds": 8330.825276001997,
+          "source_identity": "45474e83c067535bdbb66aeb34854d636071db84b74138ad6684006aec46d33b",
+          "strict_gpu_reports": 6
+        }
+      ],
+      "evidence_only": true,
+      "input_hash_count": 1024,
+      "limitations": [
+        "No ledger validity or distinct-fixture qualification",
+        "No matched speedup, throughput, total-compute savings, or production qualification",
+        "No AMD execution qualification; managed counters are not total physical VRAM",
+        "Full GPU runs do not repeat the separately accepted CPU aggregate-child witness negatives"
+      ],
+      "schema": "full-opencl-independent-audit-v1",
+      "scope": "Full standalone MatRiCT N3/N4 GPU aggregation of one repeated native fixture; CPU graph preparation",
+      "status": "passed"
+    },
+    "input_hash_count": 1024
+  },
+  "qualified_scope": {
+    "actual_gpu_merge_proofs": 5,
+    "complete_ledger_transaction_qualified": false,
+    "complete_matrict_relation_qualified": true,
+    "counts": [
+      3,
+      4
+    ],
+    "cpu_role": "Complete graph/key preparation, native fixture verification, host orchestration, and parent/artifact verification",
+    "device": {
+      "driver": "615.78.08",
+      "global_bytes": 16703946752,
+      "max_allocation_bytes": 4175986688,
+      "name": "NVIDIA GeForce RTX 5080",
+      "opencl_index": 0,
+      "pci": "0000:01:00.0",
+      "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+    },
+    "distinct_native_fixtures": 1,
+    "fixture_pattern": "repeated_single_fixture",
+    "gpu_role": "Two fresh serial recursive merge proofs for N3 and three for N4; CPU graph preparation is not GPU work",
+    "performance_comparison_qualified": false,
+    "profile": {
+      "blowup": 16,
+      "extension": "Goldilocks cubic trinomial",
+      "hiding": true,
+      "num_queries": 128,
+      "original_profile": true
+    },
+    "registered_graph_leaves_per_fixture": 91,
+    "relation": "ordered complete standalone MatRiCT relations"
+  },
+  "schema": "lattica-pq-opencl-matrict-accepted-result-v1",
+  "status": "accepted_for_full_standalone_repeated_fixture_scope",
+  "timing_scope": {
+    "cache_note": "A shared source-specific cache may be reused; initial cache state and cold-start latency are not independently qualified by these records",
+    "cache_reuse_between_cases": true,
+    "cpu_child_preparation_seconds": "Graph lowering/planning, trusted graph/key reconstruction, source-specific cache/proof preparation, and complete graph verification; excludes preceding fixture decode/native verification",
+    "merge_seconds": "compile_merge, geometry admission, GPU registration/proving, and parent CPU verification; not GPU-only or proof-only duration",
+    "runner_wall_seconds": "Whole admitted process observation through service cleanup; includes CPU preparation and all verification"
+  },
+  "worktree": {
+    "branch": "codex/pq-ringct-opencl",
+    "path": "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl"
+  }
+}

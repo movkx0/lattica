@@ -112,6 +112,7 @@ path = "src/bin/block_v2_paired_probe.rs"
 required-features = ["block-v2", "stream"]
 
 [dependencies]
+sha3 = "=0.10.8"
 itertools = "0.14"
 serde_json = "1"
 p3-air = "0.6.1"
@@ -153,6 +154,10 @@ objc2-foundation = { version = "0.3.2", optional = true }
 objc2-metal = { version = "0.3.2", optional = true }
 
 [features]
+# Explicit deterministic native-spend qualification; never a production default.
+native-spend-oracle = ["gpu", "block-v2"]
+# Explicit full-column diagnostic readback; off in production builds.
+native-trace-audit = ["gpu", "block-v2"]
 
 # Isolated exact-integer component experiment; does not select a prover backend.
 cpu-sme2 = ["dep:libc"]

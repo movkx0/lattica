@@ -12,6 +12,8 @@ use p3_air::symbolic::{
 };
 use p3_field::{BasedVectorSpace, PrimeCharacteristicRing};
 
+mod periodic_polynomial;
+
 /// A borrowed row or a repeated pattern with the same checked indexing as a
 /// materialized vector. Repetition creates no field operations or heap storage.
 #[derive(Clone, Copy)]
@@ -82,8 +84,8 @@ impl<'a, 'backend> Lowerer<'a, 'backend> {
         }
     }
     pub fn base(&mut self, e: &SymbolicExpression<Val>) -> Result<Extension, CompileError> {
-        if self.b.resource_failure().is_some() {
-            return Err(CompileError::Shape("expression compiler host allowance"));
+        if let Some(error) = self.b.resource_failure() {
+            return Err(CompileError::from_builder_admission(error, "expression compiler host allowance"));
         }
         let key = e as *const _ as usize;
         if let Some(&value) = self.base_cache.get(&key) {
@@ -151,8 +153,8 @@ impl<'a, 'backend> Lowerer<'a, 'backend> {
         &mut self,
         e: &SymbolicExpressionExt<Val, Challenge>,
     ) -> Result<Extension, CompileError> {
-        if self.b.resource_failure().is_some() {
-            return Err(CompileError::Shape("expression compiler host allowance"));
+        if let Some(error) = self.b.resource_failure() {
+            return Err(CompileError::from_builder_admission(error, "expression compiler host allowance"));
         }
         let key = e as *const _ as usize;
         if let Some(&value) = self.extension_cache.get(&key) {
@@ -289,6 +291,22 @@ pub(super) fn periodic_value(
     if log_height > 32 || !n.is_power_of_two() || n as u64 > 1u64 << log_height {
         return Err(CompileError::Shape("periodic column height"));
     }
+    // CPU-only compilation optimization. Device compiler arithmetic retains
+    // its separately qualified path. The AIR column and interpolant are exact;
+    // only the recursive program used to evaluate that interpolant changes.
+    let column = if let Constants::Cpu(run) = constants {
+        let column = periodic_polynomial::minimal_period(column);
+        if let Some(value) = periodic_polynomial::sparse_value(b, column, zeta, log_height, run)? {
+            if let Some(error) = b.resource_failure() {
+                return Err(CompileError::from_builder_admission(error, "periodic compiler allowance"));
+            }
+            return Ok(value);
+        }
+        column
+    } else {
+        column
+    };
+    let n = column.len();
     let value =
         b.with_compiler_scratch("periodic-coefficients", n, Val::ZERO, |b, coefficients| {
             constants.periodic_into(column, log_height, coefficients)?;
@@ -301,8 +319,8 @@ pub(super) fn periodic_value(
             }
             Ok(value)
         })?;
-    if b.resource_failure().is_some() {
-        return Err(CompileError::Shape("periodic compiler allowance"));
+    if let Some(error) = b.resource_failure() {
+        return Err(CompileError::from_builder_admission(error, "periodic compiler allowance"));
     }
     Ok(value)
 }

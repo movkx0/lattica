@@ -7,6 +7,9 @@ use p3_field::{Field, PrimeCharacteristicRing, TwoAdicField};
 mod folding;
 pub(crate) use folding::{FoldOperation, Folding};
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Clone, Copy)]
 pub(crate) enum Constants<'a> {
     Cpu(Option<&'a Run>),
@@ -127,23 +130,52 @@ impl<'a> Constants<'a> {
         output: &mut [Val],
     ) -> Result<(), CompileError> {
         let n = column.len();
-        if log_height > 32 || !n.is_power_of_two() || n > 1usize << log_height || output.len() != n
+        if log_height > 32
+            || !n.is_power_of_two()
+            || n.ilog2() as usize > log_height
+            || output.len() != n
         {
             return Err(CompileError::Shape("periodic column height"));
         }
         match self {
             Self::Cpu(run) => Self::cpu_work(run, || {
-                let generator_inv = Val::two_adic_generator(n.ilog2() as usize).inverse();
+                let log_n = n.ilog2();
+                let mut step = Val::two_adic_generator(log_n as usize).inverse();
                 let inv_n = Val::from_usize(n).inverse();
-                for (k, out) in output.iter_mut().enumerate() {
-                    let step = generator_inv.exp_u64(k as u64);
-                    let mut power = Val::ONE;
-                    let mut sum = Val::ZERO;
-                    for &value in column {
-                        sum += power * value;
-                        power *= step;
+
+                // Inverse radix-2 DIF: use only caller-admitted storage. Each
+                // stage halves the transform size and squares its root, for
+                // O(n log n) field work and constant additional storage.
+                output.copy_from_slice(column);
+                let mut width = n;
+                while width > 1 {
+                    let half = width / 2;
+                    for block in output.chunks_exact_mut(width) {
+                        let (left, right) = block.split_at_mut(half);
+                        let mut power = Val::ONE;
+                        for (a, b) in left.iter_mut().zip(right) {
+                            let value = *a;
+                            *a = value + *b;
+                            *b = (value - *b) * power;
+                            power *= step;
+                        }
                     }
-                    *out = sum * inv_n;
+                    step *= step;
+                    width = half;
+                }
+
+                // DIF leaves coefficients in bit-reversed order. n=1 needs
+                // no permutation and must not shift by usize::BITS.
+                if n > 1 {
+                    for i in 0..n {
+                        let reversed = i.reverse_bits() >> (usize::BITS - log_n);
+                        if i < reversed {
+                            output.swap(i, reversed);
+                        }
+                    }
+                }
+                for value in output {
+                    *value *= inv_n;
                 }
             }),
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]

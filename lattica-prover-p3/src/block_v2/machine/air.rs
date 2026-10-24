@@ -132,9 +132,13 @@ fn permutation<E: PrimeCharacteristicRing>(
 
 impl MachineAir {
     pub fn new(program: Program) -> Self {
-        Self {
-            program: Arc::new(program),
-        }
+        Self::from_shared_program(Arc::new(program))
+    }
+    /// Share immutable compiler storage across inspection and registration.
+    /// The caller still accounts for the single live program allocation;
+    /// sharing ownership neither changes its manifest nor supplies admission.
+    pub fn from_shared_program(program: Arc<Program>) -> Self {
+        Self { program }
     }
     pub fn program(&self) -> &Program {
         &self.program

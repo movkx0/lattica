@@ -37,7 +37,7 @@ pub(crate) mod legacy_wallet;
 pub(crate) mod lookup_program;
 pub mod machine;
 #[cfg(feature = "gpu")]
-pub(crate) mod native_gpu;
+pub mod native_gpu;
 #[cfg(all(feature = "gpu", feature = "stream", target_os = "linux"))]
 pub(crate) mod native_public_gpu;
 #[cfg(feature = "stream")]

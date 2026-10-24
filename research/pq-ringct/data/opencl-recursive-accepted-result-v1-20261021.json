@@ -1,0 +1,297 @@
+{
+  "schema": "lattica-pq-opencl-recursive-accepted-result-v1",
+  "status": "accepted_for_diagnostic_scope",
+  "assembled_utc": "2026-10-21T19:07:10.333176+00:00",
+  "worktree": {
+    "path": "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl",
+    "branch": "codex/pq-ringct-opencl"
+  },
+  "path_convention": "All evidence paths are relative to this worktree root. Raw records and logs remain under .tools/pq-opencl.",
+  "qualified_scope": {
+    "nested_aggregation": "repeated byte relation binary recursive aggregation diagnostic",
+    "recursive_depth": 2,
+    "actual_gpu_proofs": 3,
+    "tree": "byte leaf -> pair(leaf, leaf) -> parent(pair, leaf)",
+    "recursive_component": "Full typed recursive verifier of the existing one-block AES-256-CTR component",
+    "device": {
+      "driver": "615.78.08",
+      "global_bytes": 16703946752,
+      "max_allocation_bytes": 4175986688,
+      "name": "NVIDIA GeForce RTX 5080",
+      "opencl_index": 0,
+      "pci": "0000:01:00.0",
+      "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c"
+    },
+    "profile": {
+      "extension": "Goldilocks cubic trinomial",
+      "hiding": true,
+      "blowup": 16,
+      "num_queries": 128,
+      "original_profile": true
+    }
+  },
+  "measurements": {
+    "nested_aggregation": {
+      "runner_wall_seconds": 105.38251461800246,
+      "managed_gpu_peak_bytes": 8498815240,
+      "host_cgroup_peak_bytes": 1329864704,
+      "artifact_bytes": 1994782,
+      "layers": [
+        {
+          "actual_stark_proof": true,
+          "changed_proof_rejected": true,
+          "changed_public_rejected": true,
+          "changed_public_rejected_count": 1,
+          "cpu_verification": true,
+          "depth": 0,
+          "prepared_proving_state_dropped": true,
+          "rows": 8,
+          "seconds": 19.378457103,
+          "strict_gpu_request": true
+        },
+        {
+          "actual_stark_proof": true,
+          "changed_proof_rejected": true,
+          "changed_public_rejected": true,
+          "changed_public_rejected_count": 2,
+          "cpu_verification": true,
+          "depth": 1,
+          "prepared_proving_state_dropped": true,
+          "rows": 131072,
+          "seconds": 24.806201339,
+          "strict_gpu_request": true
+        },
+        {
+          "actual_stark_proof": true,
+          "changed_proof_rejected": true,
+          "changed_public_rejected": true,
+          "changed_public_rejected_count": 3,
+          "cpu_verification": true,
+          "depth": 2,
+          "prepared_proving_state_dropped": true,
+          "rows": 262144,
+          "seconds": 58.183153445,
+          "strict_gpu_request": true
+        }
+      ],
+      "layer_timer_scope": "Registration, proving, and verification within each helper; not proof-only timings."
+    },
+    "aes_component": {
+      "runner_wall_seconds": 85.35533135999867,
+      "proving_seconds_excluding_registration": 32.87059305,
+      "proving_timer_scope": "PreparedNode::prove() duration includes its verification and excludes registration; not exclusively GPU proof-generation time.",
+      "native_cpu_child_generation_and_verification_seconds": 0.147637083,
+      "rows": 262144,
+      "managed_gpu_peak_bytes": 8509103304,
+      "host_cgroup_peak_bytes": 1638834176
+    }
+  },
+  "acceptance_checks": {
+    "strict_gpu_stage_reports": 6,
+    "registered_proof_reports": 3,
+    "arithmetic_stages_per_proof": 15,
+    "all_reports_gpu_required_and_complete": true,
+    "public_value_mutations_rejected": 6,
+    "proof_mutations_rejected": 3,
+    "recursive_witness_checks": [
+      {
+        "child_index": 0,
+        "evaluation_budget_bytes": 1073741824,
+        "evaluation_seconds": 0.019321314,
+        "execution_error": "Unsatisfied",
+        "mutated_field": "trace_local[0].basis[0]",
+        "negative_stark_proof_generated": false,
+        "original_witness_restored": true,
+        "principal_buffer_bound_bytes": 217927312,
+        "public_values_unchanged": true,
+        "same_compiled_program": true,
+        "valid_parent_positive_control": true
+      }
+    ],
+    "persisted_artifact_decoded_and_cpu_verified_after_gpu_shutdown": true,
+    "successful_process_exit": true,
+    "service_stop_completed": true,
+    "all_subprocesses_terminal_and_reaped": true,
+    "source_inputs_unchanged": true
+  },
+  "resource_envelope": {
+    "nested_managed_gpu_allowance_bytes": 8589934592,
+    "nested_gpu_context_reserve_bytes": 4294967296,
+    "nested_host_allowance_bytes": 8589934592,
+    "nested_cgroup_memory_max_bytes": 17179869184,
+    "nested_cgroup_swap_max_bytes": 0,
+    "aes_cgroup_memory_max_bytes": 42949672960,
+    "execution": "Serial GPU workloads; build/checks use two jobs; no system sleep or driver settings changed."
+  },
+  "provenance": {
+    "final_recursive_run_input_hash_count": 1024,
+    "all_recorded_final_inputs_match_current_files": true,
+    "current_builds_and_byte_prerequisite_match_final_manifest": true,
+    "earlier_records": "AES-v2 and the two Rust contract-test records differ only in the Python runner. All recorded Rust, native, dependency, and build inputs match the final manifest; refreshed build records match the unchanged actual release binaries.",
+    "historical_snapshots": "Historical source snapshots predate later batch synchronization. The final recursive run input_sha256 manifest is authoritative for accepted inputs.",
+    "independent_review": {
+      "reviewer": "/root/opencl_gpu_review",
+      "result": "passed",
+      "scope": "Read-only verification of all 1,024 current input hashes, raw log/result/stage agreement, mutation rejection, restored witness and valid parent, post-shutdown artifact verification, artifact hashes, prerequisite identity, resource limits, source preservation, and successful process termination."
+    }
+  },
+  "limitations": [
+    "The nested test repeats a byte relation; it does not execute the complete MatRiCT/RingCT batch relation.",
+    "Full MatRiCT aggregation APIs and CLI compile, but full MatRiCT GPU execution remains unqualified. The full CLI prepares one complete graph on CPU and repeats that single fixture; it is not the earlier CPU [A,B,A] / [A,B,A,B] acceptance workload.",
+    "Only NVIDIA RTX 5080 execution is qualified. AMD portability remains untested.",
+    "No matched CPU/GPU speedup, total-compute reduction, throughput, or production-readiness claim is established.",
+    "Managed GPU counters exclude untracked driver/display allocations and do not measure total physical VRAM consumption.",
+    "Diagnostic artifact size excludes trusted keys, original statements, and ledger bodies; it is not a transaction or block size.",
+    "Compilation, orchestration, verification, and native AES-child preparation include CPU work.",
+    "Serial diagnostic memory fit does not establish full MatRiCT memory fit or concurrent GPU workload capacity."
+  ],
+  "evidence": {
+    "recursive": {
+      "record": {
+        "path": ".tools/pq-opencl/runs/opencl-recursive-v1.json",
+        "bytes": 172354,
+        "sha256": "896c9dfa4c22915a70dbb8098d3e3261380a70992ef9c1de826cf3a21adaac0f"
+      },
+      "log": {
+        "path": ".tools/pq-opencl/runs/opencl-recursive-v1.log",
+        "bytes": 138865,
+        "sha256": "2a80de1df76ff40c3fd0262edcc941abac6f6103dbef9ab33dc1e62a5cd0aded"
+      },
+      "input_differences_from_final_recursive_run": [],
+      "artifact": {
+        "path": ".tools/pq-opencl/artifacts/opencl-recursive-v1.postcard",
+        "bytes": 1994782,
+        "sha256": "eb90277ca61109adb42ad447ec7841c3874806463263d5d17df5da0380e3fe87",
+        "sha3_256": "d03eed2a75478909bc18864e5b67900473412c566eb3d4e9b6d77c4dbd28088e"
+      }
+    },
+    "aes_component": {
+      "record": {
+        "path": ".tools/pq-opencl/runs/opencl-aes-v2.json",
+        "bytes": 153944,
+        "sha256": "4fdc062760512362b3908365ea7c8109aded198a549467142b5902c293922281"
+      },
+      "log": {
+        "path": ".tools/pq-opencl/runs/opencl-aes-v2.log",
+        "bytes": 51985,
+        "sha256": "87ee584685854c01324d07b7daea68ecccf393cfe603f9920c2a1b7382109371"
+      },
+      "input_differences_from_final_recursive_run": [
+        "research/pq-ringct/tools/opencl_qualify.py"
+      ]
+    },
+    "byte_prerequisite": {
+      "record": {
+        "path": ".tools/pq-opencl/runs/opencl-byte-v3.json",
+        "bytes": 153631,
+        "sha256": "66d8b839d12b340c3958b7522994b1ed4cb74e27e3a552a98f36227eb59aef45"
+      },
+      "log": {
+        "path": ".tools/pq-opencl/runs/opencl-byte-v3.log",
+        "bytes": 44255,
+        "sha256": "1e7ca8de5b1343170f5fdff6895c1009247b181fd31bfa31e541408ef94dd357"
+      },
+      "input_differences_from_final_recursive_run": []
+    },
+    "probe_build": {
+      "record": {
+        "path": ".tools/pq-opencl/runs/opencl-probe-build-v2-r3.json",
+        "bytes": 142542,
+        "sha256": "915e7623d94887b74d0deeacf85d7c0fe3efc52ce3a9efb6bb4363006dc24157"
+      },
+      "log": {
+        "path": ".tools/pq-opencl/runs/opencl-probe-build-v2-r3.log",
+        "bytes": 44705,
+        "sha256": "33de508503c7f3ee27b199627ce4e02a358b782edbe5030e86387d9cf93b7444"
+      },
+      "input_differences_from_final_recursive_run": [],
+      "binary": {
+        "path": ".tools/target-opencl/release/pq-ringct-opencl-probe",
+        "bytes": 8985952,
+        "sha256": "3eaf0adae97c6cbc8df7f16f9bb86175a007ef89a5b098ec231073c31aa12db4"
+      }
+    },
+    "aggregate_build": {
+      "record": {
+        "path": ".tools/pq-opencl/runs/opencl-aggregate-build-v3.json",
+        "bytes": 142574,
+        "sha256": "655a8dca73fbce662c67bb62e8ba10aa87ae85788408585840480b70276dc2e8"
+      },
+      "log": {
+        "path": ".tools/pq-opencl/runs/opencl-aggregate-build-v3.log",
+        "bytes": 44784,
+        "sha256": "2b8c2a3d67ec204d03b4ae63bdf310ec991866100a1f9393daa721861940ce4f"
+      },
+      "input_differences_from_final_recursive_run": [],
+      "binary": {
+        "path": ".tools/target-opencl/release/pq-ringct-opencl-aggregate",
+        "bytes": 25771808,
+        "sha256": "4639f9c59903a71e3728f42670c8534f18fd0470401a745e426fdf1b8e4bac66"
+      }
+    },
+    "probe_contract_tests": {
+      "record": {
+        "path": ".tools/pq-opencl/runs/opencl-probe-check-v1.json",
+        "bytes": 142463,
+        "sha256": "a6269ac7c824c83f690725fedcad94b57f098979d226a5d9f9b3a202aa47e1d2"
+      },
+      "log": {
+        "path": ".tools/pq-opencl/runs/opencl-probe-check-v1.log",
+        "bytes": 47780,
+        "sha256": "ac501c68ed3a3965fcf4b7bb0ba4846604a41a18198d486fd315856e9df52040"
+      },
+      "input_differences_from_final_recursive_run": [
+        "research/pq-ringct/tools/opencl_qualify.py"
+      ],
+      "tests_passed": 2
+    },
+    "batch_contract_tests": {
+      "record": {
+        "path": ".tools/pq-opencl/runs/opencl-aggregate-check-v1.json",
+        "bytes": 142454,
+        "sha256": "9469ab8b9cba51f8d5738caed169a737cecd87122a74b361fbce5c77158b5436"
+      },
+      "log": {
+        "path": ".tools/pq-opencl/runs/opencl-aggregate-check-v1.log",
+        "bytes": 43605,
+        "sha256": "da85897ca6a2bd68bca8a90a652adbd5ce49a976665825db6e09373072cbacac"
+      },
+      "input_differences_from_final_recursive_run": [
+        "research/pq-ringct/tools/opencl_qualify.py"
+      ],
+      "tests_passed": 6
+    },
+    "session_envelope_test": {
+      "record": {
+        "path": ".tools/pq-opencl/runs/opencl-session-envelope-check-v1.json",
+        "bytes": 578,
+        "sha256": "228203622c2310b9766ef02a803a55cb9d90d13ec486772441434e033da9abe2"
+      },
+      "log": {
+        "path": ".tools/pq-opencl/runs/opencl-session-envelope-check-v1.log",
+        "bytes": 210,
+        "sha256": "70b116e6c031015a418d46b14336ed38306d578ef962d6ffa3e2226f55b0a36a"
+      },
+      "binary": {
+        "path": ".tools/target-opencl/debug/deps/lattica_pq_ringct_research-fe8002304d73f97c",
+        "bytes": 301782664,
+        "sha256": "325a20d8108d4ef14b6f8b2cf98116a848c292a1a3bb63ca67d3e6d2e9d2a423"
+      },
+      "tests_passed": 1
+    },
+    "runner_guard_tests": {
+      "record": {
+        "path": ".tools/pq-opencl/guard-tests-wire-fix-v1.json",
+        "bytes": 1252,
+        "sha256": "d0f6da930ef96dc726a4b0a56d670956f2da8ca5ecea92107fb8913598556c9d"
+      },
+      "log": {
+        "path": ".tools/pq-opencl/guard-tests-wire-fix-v1.log",
+        "bytes": 112,
+        "sha256": "2f238a0257e6d46a70c81386904bf122354367dd5b963197cee3e97e6df95a8b"
+      },
+      "tests_passed": 13,
+      "recorded_runner_test_and_fixture_hashes_match": true
+    }
+  }
+}

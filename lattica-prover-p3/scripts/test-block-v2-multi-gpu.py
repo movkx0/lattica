@@ -517,9 +517,9 @@ class ResourceTests(unittest.TestCase):
         profile = self.witness_profile()
         # Shared arithmetic fixture in gpu_backend/resources.rs tests.
         self.assertEqual(R.witness_reservation(profile),
-                         dict(managed_bytes=144168, max_allocation_bytes=65536, host_bytes=(3409416 + (192 + 257 + 64 + 2 + 72) * R.MIB + 16 * 1024)))
+                         dict(managed_bytes=897816, max_allocation_bytes=524288, host_bytes=(3409416 + (192 + 257 + 64 + 2 + 72) * R.MIB + 16 * 1024)))
         cached = R.witness_reservation_for_bounds(profile['witness_bounds'], 3)
-        self.assertEqual(cached['managed_bytes'], 144168 + 2 * 65536)
+        self.assertEqual(cached['managed_bytes'], 897816 + 2 * 65536)
         self.assertEqual(cached['host_bytes'], (3409416 + (192 + 257 + 64 + 2 + 72) * R.MIB + 16 * 1024) + 2 * (1048576 + 262144 - 65536 + 65 * R.MIB + 16 * 1024))
         baseline = copy.deepcopy(profile)
         baseline['geometry']['gpu_witness'] = False
@@ -569,7 +569,7 @@ class ResourceTests(unittest.TestCase):
                       metadata_bytes=621708376, compiler_host_bytes=734973680,
                       program_host_bytes=1142607740, wires=3669207, input_values=419117)
         one = R.witness_reservation_for_bounds(bounds)
-        self.assertEqual(one, dict(managed_bytes=1041171584,
+        self.assertEqual(one, dict(managed_bytes=1041925232,
                          max_allocation_bytes=621708376, host_bytes=2610980304 + (257 + 64 + 257 + 1 + 72) * R.MIB))
         larger = dict(bounds, program_host_bytes=bounds['program_host_bytes'] + R.MIB)
         self.assertEqual(R.witness_reservation_for_bounds(larger)['host_bytes'],

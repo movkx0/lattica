@@ -672,8 +672,12 @@ def witness_reservation_for_bounds(bounds, cached_programs=1):
     input_staging = inputs * 3 + 8
     staging = max(input_staging, samples, trace * 2)
     transient = max(compiler + staging, source + input_staging)
-    result = {'managed_bytes': meta * cached_programs + work + (4096 + 4) * 8,
-              'max_allocation_bytes': max(meta, trace, preprocessing, wires, inputs, samples, 4096 * 8),
+    # Sequential public hashing / periodic inverse NTT compiler workspace.
+    # Mirrors device::compiler_constants; no change to the whole-worker cap.
+    compiler_periodic_words = 65536 + 65536 // 2 + 2
+    compiler_scratch = max((4096 + 4) * 8, compiler_periodic_words * 8)
+    result = {'managed_bytes': meta * cached_programs + work + compiler_scratch,
+              'max_allocation_bytes': max(meta, trace, preprocessing, wires, inputs, samples, 65536 * 8),
               'host_bytes': (retained + retained_compiler + retained_lookups + retained_pcs) * cached_programs + transient
                    + (2 + 72) * MIB + 65536 + 192 * MIB + 257 * MIB}
     if any(n > (1 << 64) - 1 for n in result.values()):

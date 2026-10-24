@@ -15,6 +15,8 @@ pub(crate) mod gpu_backend;
 pub(crate) mod gpu_program;
 pub mod merkle;
 pub mod program;
+pub mod pq_bytes;
+pub mod pq_modular;
 pub mod programs;
 pub(crate) mod symbolic;
 pub mod transcript;

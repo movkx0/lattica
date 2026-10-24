@@ -44,8 +44,8 @@ fn recompose_into(
             value = b.ext_add(value, term);
         }
         *out = value;
-        if b.resource_failure().is_some() {
-            return Err(CompileError::Shape("permutation compiler allowance"));
+        if let Some(error) = b.resource_failure() {
+            return Err(CompileError::from_builder_admission(error, "permutation compiler allowance"));
         }
     }
     Ok(())

@@ -1,0 +1,296 @@
+{
+  "schema": "pq-opencl-real-stage-report-test-fixture-v1",
+  "source_record": ".tools/pq-opencl/runs/opencl-byte-v2.json",
+  "source_record_sha256": "8c56f8744c8a80a22f2a3392f73a8c80212047eee7ef069eaeebd07a78e5eac3",
+  "source_raw_log_sha256": "cfcbe9741cf43b59b34f3916507dea359debdbfb6db6be7ecee21b828abd0dff",
+  "scope": "Actual serialized GPU stage reports copied from accepted byte probe; reused only to test aggregate evidence parsing, not proof validity.",
+  "reports": [
+    {
+      "schema": "lattica-proving-stages-v1",
+      "entry_point": "block_v2_preprocessing",
+      "policy": "gpu_required",
+      "capabilities": {
+        "scope": "preprocessing",
+        "profile": "block_v2_cubic",
+        "max_log_fri_arity": 1,
+        "stages": [
+          {
+            "stage": "preprocessing",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "transform",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "randomness",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "commitment",
+            "backend": "open_cl"
+          }
+        ]
+      },
+      "elapsed_ns": 113547104,
+      "succeeded": true,
+      "stage_coverage_complete": true,
+      "completion_rejected": false,
+      "observation_errors": 0,
+      "observations": [
+        {
+          "stage": "preprocessing",
+          "backend": "open_cl",
+          "calls": 28,
+          "completed_calls": 28,
+          "device_calls": 27,
+          "inclusive_ns": 3181745,
+          "device_ns": 100810176
+        },
+        {
+          "stage": "randomness",
+          "backend": "open_cl",
+          "calls": 1,
+          "completed_calls": 1,
+          "device_calls": 1,
+          "inclusive_ns": 0,
+          "device_ns": 17408
+        },
+        {
+          "stage": "transform",
+          "backend": "open_cl",
+          "calls": 1,
+          "completed_calls": 1,
+          "device_calls": 1,
+          "inclusive_ns": 0,
+          "device_ns": 64832
+        },
+        {
+          "stage": "commitment",
+          "backend": "open_cl",
+          "calls": 1,
+          "completed_calls": 1,
+          "device_calls": 1,
+          "inclusive_ns": 0,
+          "device_ns": 1504544
+        }
+      ],
+      "components": []
+    },
+    {
+      "schema": "lattica-proving-stages-v1",
+      "entry_point": "block_v2_registered_program",
+      "policy": "gpu_required",
+      "capabilities": {
+        "scope": "registered_proof",
+        "profile": "block_v2_cubic",
+        "max_log_fri_arity": 1,
+        "stages": [
+          {
+            "stage": "witness_trace",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "preprocessing",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "lookup",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "transform",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "quotient",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "randomness",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "hiding",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "commitment",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "opening",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "fri_fold",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "fri_query",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "final_polynomial",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "scalar",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "transcript",
+            "backend": "open_cl"
+          },
+          {
+            "stage": "grinding",
+            "backend": "open_cl"
+          }
+        ]
+      },
+      "elapsed_ns": 134172850,
+      "succeeded": true,
+      "stage_coverage_complete": true,
+      "completion_rejected": false,
+      "observation_errors": 0,
+      "observations": [
+        {
+          "stage": "witness_trace",
+          "backend": "open_cl",
+          "calls": 45,
+          "completed_calls": 45,
+          "device_calls": 44,
+          "inclusive_ns": 940560,
+          "device_ns": 172800
+        },
+        {
+          "stage": "preprocessing",
+          "backend": "open_cl",
+          "calls": 3,
+          "completed_calls": 3,
+          "device_calls": 3,
+          "inclusive_ns": 0,
+          "device_ns": 10656
+        },
+        {
+          "stage": "lookup",
+          "backend": "open_cl",
+          "calls": 8,
+          "completed_calls": 8,
+          "device_calls": 7,
+          "inclusive_ns": 1200101,
+          "device_ns": 416032
+        },
+        {
+          "stage": "quotient",
+          "backend": "open_cl",
+          "calls": 41,
+          "completed_calls": 41,
+          "device_calls": 40,
+          "inclusive_ns": 25933602,
+          "device_ns": 2860736
+        },
+        {
+          "stage": "transcript",
+          "backend": "open_cl",
+          "calls": 61,
+          "completed_calls": 61,
+          "device_calls": 61,
+          "inclusive_ns": 0,
+          "device_ns": 17091040
+        },
+        {
+          "stage": "grinding",
+          "backend": "open_cl",
+          "calls": 1,
+          "completed_calls": 1,
+          "device_calls": 1,
+          "inclusive_ns": 0,
+          "device_ns": 419744
+        },
+        {
+          "stage": "scalar",
+          "backend": "open_cl",
+          "calls": 4,
+          "completed_calls": 4,
+          "device_calls": 4,
+          "inclusive_ns": 0,
+          "device_ns": 16864
+        },
+        {
+          "stage": "randomness",
+          "backend": "open_cl",
+          "calls": 76,
+          "completed_calls": 76,
+          "device_calls": 76,
+          "inclusive_ns": 0,
+          "device_ns": 1186144
+        },
+        {
+          "stage": "transform",
+          "backend": "open_cl",
+          "calls": 179,
+          "completed_calls": 179,
+          "device_calls": 179,
+          "inclusive_ns": 0,
+          "device_ns": 2571168
+        },
+        {
+          "stage": "hiding",
+          "backend": "open_cl",
+          "calls": 75,
+          "completed_calls": 75,
+          "device_calls": 75,
+          "inclusive_ns": 0,
+          "device_ns": 314912
+        },
+        {
+          "stage": "commitment",
+          "backend": "open_cl",
+          "calls": 11,
+          "completed_calls": 11,
+          "device_calls": 11,
+          "inclusive_ns": 0,
+          "device_ns": 4966688
+        },
+        {
+          "stage": "opening",
+          "backend": "open_cl",
+          "calls": 240,
+          "completed_calls": 240,
+          "device_calls": 240,
+          "inclusive_ns": 0,
+          "device_ns": 1945984
+        },
+        {
+          "stage": "fri_fold",
+          "backend": "open_cl",
+          "calls": 7,
+          "completed_calls": 7,
+          "device_calls": 7,
+          "inclusive_ns": 0,
+          "device_ns": 36352
+        },
+        {
+          "stage": "fri_query",
+          "backend": "open_cl",
+          "calls": 114,
+          "completed_calls": 114,
+          "device_calls": 114,
+          "inclusive_ns": 0,
+          "device_ns": 498688
+        },
+        {
+          "stage": "final_polynomial",
+          "backend": "open_cl",
+          "calls": 1,
+          "completed_calls": 1,
+          "device_calls": 1,
+          "inclusive_ns": 0,
+          "device_ns": 3104
+        }
+      ],
+      "components": []
+    }
+  ]
+}

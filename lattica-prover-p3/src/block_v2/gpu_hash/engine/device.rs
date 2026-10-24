@@ -16,6 +16,7 @@ pub(crate) use host_storage::HostScope;
 pub(crate) use observation::ExecutionObservation;
 mod commit_storage;
 mod compiler_constants;
+pub(crate) use compiler_constants::{PERIODIC_MAX_ALLOCATION_BYTES, PERIODIC_WORKSPACE_BYTES};
 mod compiler_folding;
 pub(crate) use commit_storage::{CommitInputStorage, SampleLocation};
 mod evaluations;
@@ -39,6 +40,8 @@ mod periodic;
 pub(crate) use periodic::PeriodicShape;
 mod trace_commit;
 mod wallet;
+mod pq_sources;
+pub(super) use pq_sources::KERNEL_SRC as PQ_SOURCES_KERNEL_SRC;
 #[cfg(feature = "gpu")]
 mod wallet_batch_kernels;
 mod wallet_kernels;
@@ -724,3 +727,41 @@ impl DeviceSession {
 
 #[cfg(test)]
 mod tests;
+
+pub(super) const PQ_POSEIDON_KERNEL_SRC: &str = include_str!("device/pq_poseidon.cl");
+
+#[cfg(feature="gpu")]
+mod pq_sampling;
+#[cfg(feature="gpu")]
+pub(super) use pq_sampling::KERNEL_SRC as PQ_SAMPLING_KERNEL_SRC;
+
+#[cfg(feature="gpu")]
+mod research_arithmetic;
+#[cfg(feature="gpu")]
+pub(super) const RESEARCH_ARITHMETIC_KERNEL_SRC: &str = include_str!("device/research_arithmetic.cl");
+
+#[cfg(feature="gpu")]
+mod pq_crypto;
+#[cfg(feature="gpu")]
+pub(super) use pq_crypto::KERNEL_SRC as PQ_CRYPTO_KERNEL_SRC;
+
+#[cfg(feature="gpu")]
+mod pq_operations;
+#[cfg(feature="gpu")]
+pub(super) use pq_operations::KERNEL_SRC as PQ_OPERATIONS_KERNEL_SRC;
+#[cfg(feature = "gpu")]
+mod operations_hash;
+#[cfg(feature = "gpu")]
+pub(super) const OPERATIONS_HASH_KERNEL_SRC: &str = include_str!("device/operations_hash.cl");
+
+#[cfg(feature = "gpu")]
+mod pq_raw_crypto;
+#[cfg(feature = "gpu")]
+pub(super) use pq_raw_crypto::KERNEL_SRC as PQ_RAW_CRYPTO_KERNEL_SRC;
+#[cfg(feature = "gpu")]
+mod operations_arithmetic;
+#[cfg(feature = "gpu")]
+pub(super) const OPERATIONS_ARITHMETIC_KERNEL_SRC: &str = include_str!("device/operations_arithmetic.cl");
+
+#[cfg(feature = "gpu")]
+mod native_private_spend;

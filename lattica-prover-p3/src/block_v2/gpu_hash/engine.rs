@@ -658,6 +658,8 @@ struct Engine {
     #[cfg(feature = "gpu")]
     nvidia_shuffle: bool,
     #[cfg(feature = "gpu")]
+    native_private_spend_program: Option<ocl::Program>,
+    #[cfg(feature = "gpu")]
     event_receipts: device::EventReceipts,
     copy_queue: Queue,
     mode: TransferMode,
@@ -950,6 +952,19 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
                     device::STORAGE_KERNEL_SRC,
                     device::WITNESS_KERNEL_SRC,
                     device::WALLET_KERNEL_SRC,
+                    device::PQ_POSEIDON_KERNEL_SRC,
+                    #[cfg(feature="gpu")]
+                    device::PQ_OPERATIONS_KERNEL_SRC,
+                    device::OPERATIONS_HASH_KERNEL_SRC,
+                    #[cfg(feature="gpu")]
+                    device::PQ_CRYPTO_KERNEL_SRC,
+                    device::PQ_RAW_CRYPTO_KERNEL_SRC,
+                    #[cfg(feature="gpu")]
+                    device::RESEARCH_ARITHMETIC_KERNEL_SRC,
+                    device::OPERATIONS_ARITHMETIC_KERNEL_SRC,
+                    device::PQ_SOURCES_KERNEL_SRC,
+                    #[cfg(feature="gpu")]
+                    device::PQ_SAMPLING_KERNEL_SRC,
                     device::WALLET_BATCH_KERNEL_SRC,
                     device::PERIODIC_KERNEL_SRC,
                     device::HTLC_KERNEL_SRC,
@@ -1085,6 +1100,8 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
         nvidia_shuffle: !device::public_hash::nvidia::source_prefix(pq.device()).is_empty(),
         #[cfg(feature = "gpu")]
         event_receipts: device::EventReceipts::default(),
+        #[cfg(feature = "gpu")]
+        native_private_spend_program: None,
         #[cfg(feature = "gpu-metal")]
         _backend_transfer_lease: backend_transfer_lease,
         pq,

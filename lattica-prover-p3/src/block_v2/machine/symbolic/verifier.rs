@@ -50,6 +50,14 @@ pub(crate) fn prepare<A: BaseAir<Val> + Air<Builder>>(
     air: &A,
     limits: Limits,
 ) -> Result<LookupLayout, CompileError> {
+    prepare_with_retained_bytes(air, limits).map(|(layout, _)| layout)
+}
+
+/// Return the packer's capacity/Arc census alongside its immutable output.
+pub(crate) fn prepare_with_retained_bytes<A: BaseAir<Val> + Air<Builder>>(
+    air: &A,
+    limits: Limits,
+) -> Result<(LookupLayout, usize), CompileError> {
     limits.validate()?;
     let constants = Constants::cpu();
     let layout = AirLayout::from_air::<Val>(air);
@@ -93,10 +101,13 @@ pub(crate) fn prepare<A: BaseAir<Val> + Air<Builder>>(
         lookup::pack_limited(unpacked, 1 << log_chunks, limits.packing, limits.retained)?;
     eprintln!("bounded_verifier_metadata unpacked={} packed={} log_chunks={} retained_bytes={} recording_limit_bytes={} normalization_limit_bytes={} packing_limit_bytes={} retained_limit_bytes={} graph_workspace_limit_bytes={}",
         count, lookups.len(), log_chunks, bytes, limits.recording, limits.normalization, limits.packing, limits.retained, limits.workspace());
-    Ok(LookupLayout {
-        lookups,
-        log_chunks,
-    })
+    Ok((
+        LookupLayout {
+            lookups,
+            log_chunks,
+        },
+        bytes,
+    ))
 }
 
 /// Registry identity needs the final ordered constraints as well as lookups.

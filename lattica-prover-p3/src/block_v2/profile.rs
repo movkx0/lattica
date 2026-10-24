@@ -259,6 +259,21 @@ pub fn make_config() -> Config {
     )
 }
 
+/// Explicit reference-native execution while an unrelated owned GPU session
+/// is live. Proof parameters and fresh entropy match `make_config`; only this
+/// configuration's commitment backend is forced to CPU. No global switches.
+pub fn make_cpu_config() -> Config {
+    config_with_cpu_selection(
+        ChaCha20Rng::from_rng(&mut rand::rng()),
+        ChaCha20Rng::from_rng(&mut rand::rng()),
+        None,
+        false,
+        false,
+        None,
+        true,
+    )
+}
+
 /// Candidate execution proving only. Default verification and wallet proving
 /// never consult these switches. Each proof receives independent full-entropy
 /// seeds; optional quotient fusion draws a third seed, never cloning the inner
@@ -356,6 +371,27 @@ fn config_with_rngs_and_host_budget<E: super::pcs_field::PcsField>(
     public_preprocessing: bool,
     _host_budget: Option<usize>,
 ) -> super::pcs_field::ProvingConfig<E> {
+    config_with_cpu_selection(
+        salt_rng,
+        hiding_rng,
+        quotient_rng,
+        resident,
+        public_preprocessing,
+        _host_budget,
+        false,
+    )
+}
+
+fn config_with_cpu_selection<E: super::pcs_field::PcsField>(
+    salt_rng: ChaCha20Rng,
+    hiding_rng: ChaCha20Rng,
+    quotient_rng: Option<ChaCha20Rng>,
+    resident: bool,
+    public_preprocessing: bool,
+    _host_budget: Option<usize>,
+    force_cpu: bool,
+) -> super::pcs_field::ProvingConfig<E> {
+    assert!(!force_cpu || (!resident && quotient_rng.is_none() && !public_preprocessing));
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     if resident {
         super::challenger::resources::check_worker(super::quotient_pcs::gpu_transcript_enabled())
@@ -386,6 +422,12 @@ fn config_with_rngs_and_host_budget<E: super::pcs_field::PcsField>(
         CAP_HEIGHT,
         salt_rng,
     );
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    let val_mmcs = if force_cpu {
+        val_mmcs.cpu_only()
+    } else {
+        val_mmcs
+    };
     let challenge_mmcs = ExtensionMmcs::<Val, E, ValMmcs>::new(val_mmcs.clone());
     let mut parameters = fri(challenge_mmcs);
     parameters.max_log_arity = E::MAX_LOG_ARITY;

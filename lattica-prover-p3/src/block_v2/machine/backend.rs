@@ -13,6 +13,12 @@ pub(crate) const NATIVE_VERIFIER_COMPONENT_BYTES: u64 = 257 << 20;
 
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 pub(crate) mod cache_storage;
+mod identity_receipt;
+pub use identity_receipt::RegisteredIdentityReceipt;
+#[cfg(test)]
+mod identity_receipt_tests;
+mod proof_capacity;
+pub use proof_capacity::retained_proof_capacity_bytes;
 mod verification_call;
 pub(crate) fn verification_error(error: &impl core::fmt::Debug) -> String {
     verification_call::error(error)
@@ -36,6 +42,8 @@ struct PreparedProgram {
     data: ProverData<Config>,
     analysis: super::analysis::MachineAnalysis,
     preprocessing_receipt: crate::proving::CachedScope,
+    identity_receipt: Option<RegisteredIdentityReceipt>,
+    identity_hint_hit: bool,
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     gpu_witness: Option<super::super::gpu_hash::device::PreparedWitness>,
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
@@ -45,7 +53,7 @@ struct PreparedProgram {
 }
 
 enum SetupIdentity<'a> {
-    Standalone,
+    Standalone(Option<&'a RegisteredIdentityReceipt>),
     RegistryCap(&'a [[Val; 4]]),
 }
 
@@ -58,6 +66,7 @@ pub struct RegisteredVerifier {
     air: MachineAir,
     common: p3_batch_stark::CommonData<Config>,
     quotient_chunks: usize,
+    cached_metadata_bytes: usize,
     #[cfg(all(not(debug_assertions), target_arch = "x86_64"))]
     storage: verification_lifetimes::Plan,
 }
@@ -98,17 +107,80 @@ impl RegisteredVerifier {
         if cap.roots().len() != 1 << (degree + profile::LOG_BLOWUP).min(profile::CAP_HEIGHT) {
             return Err(ExecutionError::InvalidHeight);
         }
-        let symbolic = super::symbolic::verifier::prepare(&air, limits)
-            .map_err(|_| ExecutionError::CompilerBackend)?;
+        let (symbolic, lookup_bytes) =
+            super::symbolic::verifier::prepare_with_retained_bytes(&air, limits)
+                .map_err(|_| ExecutionError::CompilerBackend)?;
         let quotient_chunks = 1 << (symbolic.log_chunks + 1);
         let common = common_from_prepared(&air, cap, symbolic)?;
+        // This verifier owns an empty public-only Program, not the proving
+        // program. Nested lookup capacities/Arcs were counted by the packer.
+        // Include each remaining owned backing allocation (not RSS/allocator
+        // overhead, caller Arc ownership or temporary verification buffers).
+        let program = air.program();
+        if !program.operations.is_empty()
+            || program
+                .rows
+                .iter()
+                .any(|row| !matches!(row, super::program::Row::Public(_)))
+        {
+            return Err(ExecutionError::CompilerBackend);
+        }
+        let pre = common
+            .preprocessed
+            .as_ref()
+            .ok_or(ExecutionError::CompilerBackend)?;
+        let parts = [
+            Some(core::mem::size_of::<Self>()),
+            Some(
+                core::mem::size_of::<super::Program>()
+                    + 2 * core::mem::size_of::<usize>()
+                    + core::mem::align_of::<super::Program>(),
+            ),
+            program
+                .operations
+                .capacity()
+                .checked_mul(core::mem::size_of::<super::program::Op>()),
+            program
+                .rows
+                .capacity()
+                .checked_mul(core::mem::size_of::<super::program::Row>()),
+            program
+                .references
+                .capacity()
+                .checked_mul(core::mem::size_of::<u32>()),
+            pre.commitment
+                .root_capacity()
+                .checked_mul(core::mem::size_of::<[Val; 4]>()),
+            pre.instances.capacity().checked_mul(core::mem::size_of::<
+                Option<p3_batch_stark::common::PreprocessedInstanceMeta>,
+            >()),
+            pre.matrix_to_instance
+                .capacity()
+                .checked_mul(core::mem::size_of::<usize>()),
+            common
+                .lookups
+                .capacity()
+                .checked_mul(core::mem::size_of::<p3_lookup::Lookups<Val>>()),
+            Some(lookup_bytes),
+        ];
+        let cached_metadata_bytes = parts.into_iter().try_fold(0usize, |sum, bytes| {
+            sum.checked_add(bytes.ok_or(ExecutionError::TooLarge)?)
+                .ok_or(ExecutionError::TooLarge)
+        })?;
         Ok(Self {
             air,
             common,
             quotient_chunks,
+            cached_metadata_bytes,
             #[cfg(all(not(debug_assertions), target_arch = "x86_64"))]
             storage,
         })
+    }
+
+    /// Owned immutable payload reservation for a bounded in-process cache.
+    /// Verification scratch/proof bytes and enclosing cache/RSS are separate.
+    pub fn cached_metadata_bytes(&self) -> usize {
+        self.cached_metadata_bytes
     }
 
     /// Source-derived storage for this independently constructed verifier and
@@ -375,7 +447,8 @@ fn program_identity_device(
     constraints: &super::symbolic::Constraints,
     config: &Config,
     run: &crate::proving::Run,
-) -> Result<[u64; 4], String> {
+    hint: Option<&RegisteredIdentityReceipt>,
+) -> Result<([u64; 4], RegisteredIdentityReceipt, bool), String> {
     use p3_uni_stark::StarkGenericConfig;
     let fingerprint = super::fingerprint::bounded::encode(
         &constraints.base,
@@ -383,10 +456,21 @@ fn program_identity_device(
         &constraints.order,
         super::fingerprint::bounded::HOST_BYTES,
     )?;
+    const DOMAIN: u64 = 0x4c42563210;
+    let cache_fingerprint = identity_receipt::fingerprint_stream(DOMAIN, |emit| {
+        emit_program_identity(air, common, analysis, &fingerprint, emit)
+    })?;
+    if let Some(hint) = hint {
+        if let Some(id) = hint.matching_id(&cache_fingerprint) {
+            eprintln!("bounded_gpu_program_identity_reuse hit=true fields={} receipt_bytes={} full_stream_checked=true",
+                cache_fingerprint.fields(), hint.accounted_bytes());
+            return Ok((id, hint.clone(), true));
+        }
+    }
     let session = config.pcs().quotient_session()?;
     let before = session.stats();
     let id = session.hash_public_stream_reported(
-        0x4c42563210,
+        DOMAIN,
         |emit| emit_program_identity(air, common, analysis, &fingerprint, emit),
         run,
         crate::proving::Stage::Preprocessing,
@@ -398,7 +482,13 @@ fn program_identity_device(
         after.uploaded_bytes - before.uploaded_bytes, after.downloaded_bytes - before.downloaded_bytes);
     eprintln!("bounded_gpu_manifest host_batch_bytes={} fingerprint_capacity_bytes={} fingerprint_allowance_bytes={}",
         4096 * 8, fingerprint.capacity() * 8, super::fingerprint::bounded::HOST_BYTES);
-    Ok(id)
+    #[cfg(test)]
+    identity_receipt::full_gpu_hash_completed();
+    let field_count = cache_fingerprint.fields();
+    let receipt = RegisteredIdentityReceipt::from_gpu_result(id, cache_fingerprint);
+    eprintln!("bounded_gpu_program_identity_reuse hit=false hint_present={} fields={} receipt_bytes={} full_stream_checked=true",
+        hint.is_some(), field_count, receipt.accounted_bytes());
+    Ok((id, receipt, false))
 }
 
 fn verify_registered(
@@ -468,13 +558,26 @@ impl RegisteredProgram {
         budget: u64,
         request: crate::proving::Request,
     ) -> Result<Self, super::analysis::AdmissionError> {
+        Self::new_with_request_and_identity_hint(air, budget, request, None)
+    }
+
+    /// Optional bounded reuse of an identity already evaluated on the GPU.
+    /// Preprocessing, cap construction, admission and GPU receipt completion
+    /// always run normally. A hint is matched against the full current canonical
+    /// identity stream; it cannot authorize a different program or cap.
+    pub fn new_with_request_and_identity_hint(
+        air: MachineAir,
+        budget: u64,
+        request: crate::proving::Request,
+        hint: Option<&RegisteredIdentityReceipt>,
+    ) -> Result<Self, super::analysis::AdmissionError> {
         let run = crate::proving::Run::new(
             "block_v2_preprocessing",
             request,
             profile::preprocessing_capabilities(),
         )
         .map_err(super::analysis::AdmissionError::ProvingPolicy)?;
-        Self::new_in_run(air, budget, run)
+        Self::new_in_run_with_identity_hint(air, budget, run, hint)
     }
 
     pub(crate) fn new_in_run(
@@ -482,11 +585,29 @@ impl RegisteredProgram {
         budget: u64,
         run: crate::proving::Run,
     ) -> Result<Self, super::analysis::AdmissionError> {
-        let (prepared, id) = PreparedProgram::prepare(air, budget, run, SetupIdentity::Standalone)?;
+        Self::new_in_run_with_identity_hint(air, budget, run, None)
+    }
+
+    fn new_in_run_with_identity_hint(
+        air: MachineAir,
+        budget: u64,
+        run: crate::proving::Run,
+        hint: Option<&RegisteredIdentityReceipt>,
+    ) -> Result<Self, super::analysis::AdmissionError> {
+        let (prepared, id) =
+            PreparedProgram::prepare(air, budget, run, SetupIdentity::Standalone(hint))?;
         Ok(Self {
             prepared,
             id: id.expect("standalone identity computed"),
         })
+    }
+    /// Only GPU registrations expose a sealed receipt; CPU registrations never
+    /// mint or echo one, even if their caller supplies a GPU hint.
+    pub fn identity_receipt(&self) -> Option<&RegisteredIdentityReceipt> {
+        self.prepared.identity_receipt.as_ref()
+    }
+    pub fn identity_hint_hit(&self) -> bool {
+        self.prepared.identity_hint_hit
     }
     pub fn id(&self) -> [u64; 4] {
         self.id
@@ -707,24 +828,33 @@ impl PreparedProgram {
                 ))
             })
             .map_err(super::analysis::AdmissionError::ProvingPolicy)??;
+        let mut identity_receipt = None;
+        let mut identity_hint_hit = false;
         let id = match identity {
-            SetupIdentity::Standalone => {
+            SetupIdentity::Standalone(hint) => {
                 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
                 let id = if let Some(constraints) = symbolic_constraints {
-                    program_identity_device(
+                    let (id, receipt, hit) = program_identity_device(
                         &air,
                         &data.common,
                         &analysis,
                         &constraints,
                         &preprocessing_config,
                         &run,
+                        hint,
                     )
-                    .map_err(super::analysis::AdmissionError::Gpu)?
+                    .map_err(super::analysis::AdmissionError::Gpu)?;
+                    identity_receipt = Some(receipt);
+                    identity_hint_hit = hit;
+                    id
                 } else {
                     program_identity(&air, &data.common, &analysis)
                 };
                 #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
-                let id = program_identity(&air, &data.common, &analysis);
+                let id = {
+                    let _ = hint;
+                    program_identity(&air, &data.common, &analysis)
+                };
                 Some(id)
             }
             SetupIdentity::RegistryCap(expected) => {
@@ -757,6 +887,8 @@ impl PreparedProgram {
             data,
             analysis,
             preprocessing_receipt,
+            identity_receipt,
+            identity_hint_hit,
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
             gpu_witness,
             #[cfg(any(feature = "gpu", feature = "gpu-metal"))]

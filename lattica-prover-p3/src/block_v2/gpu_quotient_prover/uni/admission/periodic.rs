@@ -16,10 +16,19 @@ impl Source {
         rows: usize,
         allowance: usize,
     ) -> Result<Option<Self>, String> {
+        Self::new_with_source(air, air, rows, allowance)
+    }
+
+    pub(super) fn new_with_source<A: Air<symbolic::Builder>, S: StaticPeriodicSource + ?Sized>(
+        air: &A,
+        source: &S,
+        rows: usize,
+        allowance: usize,
+    ) -> Result<Option<Self>, String> {
         if !rows.is_power_of_two() {
             return Err("invalid periodic trace height".into());
         }
-        let count = air.count();
+        let count = source.count();
         if count != air.num_periodic_columns() {
             return Err("periodic column count differs from AIR layout".into());
         }
@@ -30,7 +39,7 @@ impl Source {
         // metadata. A missing column maps to the invalid zero-length period.
         let shape = PeriodicShape::new(
             rows.ilog2(),
-            (0..count).map(|index| air.len(index).unwrap_or(0)),
+            (0..count).map(|index| source.len(index).unwrap_or(0)),
         )?;
         // Retained fields, canonical word columns and flattened upload data,
         // both outer vectors, offset/length metadata, and captured lengths.
@@ -59,7 +68,11 @@ impl Source {
         }
         let mut lengths = reserved(count)?;
         for index in 0..count {
-            lengths.push(air.len(index).ok_or("periodic source metadata changed")?);
+            lengths.push(
+                source
+                    .len(index)
+                    .ok_or("periodic source metadata changed")?,
+            );
         }
         if PeriodicShape::new(rows.ilog2(), lengths.iter().copied())? != shape {
             return Err("periodic source metadata changed".into());
@@ -71,17 +84,18 @@ impl Source {
             columns.push(column);
         }
         // Validate the complete captured layout again before any fill callback.
-        if air.count() != count
+        if source.count() != count
             || air.num_periodic_columns() != count
             || lengths
                 .iter()
                 .enumerate()
-                .any(|(i, &len)| air.len(i) != Some(len))
+                .any(|(i, &len)| source.len(i) != Some(len))
         {
             return Err("periodic source metadata changed".into());
         }
         for (index, column) in columns.iter_mut().enumerate() {
-            air.fill(index, column)
+            source
+                .fill(index, column)
                 .map_err(|e| format!("periodic source fill: {e:?}"))?;
         }
         Ok(Some(Self {

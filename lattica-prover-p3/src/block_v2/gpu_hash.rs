@@ -12,10 +12,10 @@ pub use owned_data::OwnedInputs;
 pub(crate) mod engine;
 pub(crate) use engine::begin_memory_window;
 mod compact_salts;
-mod shared_preprocessing;
 #[cfg(feature = "gpu")]
 mod device_slots;
 mod prefix_storage;
+mod shared_preprocessing;
 pub(crate) use engine::fri_fold::fold as fold_fri;
 pub(crate) use engine::host_storage::RETAINED_HOST_BYTES as ENGINE_RETAINED_HOST_BYTES;
 pub(crate) use engine::opening_reduce::{
@@ -105,6 +105,14 @@ mod salt_data;
 pub use salt_data::SaltStore;
 
 impl CandidateMmcs {
+    /// Select the reference CPU commitment implementation for this new config.
+    /// This never changes the process-wide engine or another configuration.
+    pub(crate) fn cpu_only(mut self) -> Self {
+        self.gpu = false;
+        self.device_only = false;
+        self
+    }
+
     pub fn new(hash: MyHash, compress: MyCompress, cap_height: usize, rng: ChaCha20Rng) -> Self {
         Self {
             cpu: Arc::new(ValMmcs::new(hash, compress, cap_height, rng.clone())),
@@ -470,15 +478,31 @@ impl CandidateMmcs {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn commit_resident_retained_owned(
         &self,
-        inputs: Vec<(p3_field::coset::TwoAdicMultiplicativeCoset<Val>, RowMajorMatrix<Val>)>,
+        inputs: Vec<(
+            p3_field::coset::TwoAdicMultiplicativeCoset<Val>,
+            RowMajorMatrix<Val>,
+        )>,
         added_bits: usize,
         host_output_budget_bytes: usize,
         masks: Option<&[RowMajorMatrix<Val>]>,
         retention_bits: usize,
         capture: Option<(&device::DeviceSession, bool)>,
-    ) -> Result<(<Self as Mmcs<Val>>::Commitment, ProverData<RowMajorMatrix<Val>>), String> {
-        self.commit_resident_retained_owned_with_preprocessing(inputs, added_bits,
-            host_output_budget_bytes, masks, retention_bits, capture, false)
+    ) -> Result<
+        (
+            <Self as Mmcs<Val>>::Commitment,
+            ProverData<RowMajorMatrix<Val>>,
+        ),
+        String,
+    > {
+        self.commit_resident_retained_owned_with_preprocessing(
+            inputs,
+            added_bits,
+            host_output_budget_bytes,
+            masks,
+            retention_bits,
+            capture,
+            false,
+        )
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -542,7 +566,10 @@ impl CandidateMmcs {
         }
         let replay_salts = retention_bits != 0 && compact_salts::enabled()?;
         let (salts, salt_checkpoints) = {
-            let mut rng = self.rng.lock().map_err(|_| "resident salt stream poisoned")?;
+            let mut rng = self
+                .rng
+                .lock()
+                .map_err(|_| "resident salt stream poisoned")?;
             compact_salts::generate(&mut rng, plan.output_height(), inputs.len(), replay_salts)?
         };
         let requests: Vec<_> = inputs
@@ -557,16 +584,21 @@ impl CandidateMmcs {
             .collect();
         let output = if public_preprocessing && capture.is_none() {
             engine::lde_execute::public_preprocessing_lde_commit(
-                &requests, self.cap_height, host_output_budget_bytes, retention_bits,
+                &requests,
+                self.cap_height,
+                host_output_budget_bytes,
+                retention_bits,
             )?
-        } else { engine::lde_execute::retained_lde_commit_storage(
-            &requests,
-            masks,
-            self.cap_height,
-            host_output_budget_bytes,
-            self.lde_retention(retention_bits),
-            capture.map(|(session, _)| session),
-        )? };
+        } else {
+            engine::lde_execute::retained_lde_commit_storage(
+                &requests,
+                masks,
+                self.cap_height,
+                host_output_budget_bytes,
+                self.lde_retention(retention_bits),
+                capture.map(|(session, _)| session),
+            )?
+        };
         self.finish_lde_commit_with_salts(
             output,
             salts,
@@ -620,7 +652,9 @@ impl<M> ProverData<M> {
     /// counted per occurrence. Other PCS representations retain their existing
     /// explicit host/hybrid admission path and return None here.
     pub(crate) fn opening_host_backing(&self) -> Result<Option<usize>, String> {
-        let Self::DeviceOnly { owned, salts, tree } = self else { return Ok(None) };
+        let Self::DeviceOnly { owned, salts, tree } = self else {
+            return Ok(None);
+        };
         use cache_metadata::add;
         let mut bytes = core::mem::size_of::<Self>();
         bytes = add(bytes, owned.retained_host_backing()?)?;

@@ -1,7 +1,9 @@
 //! Additional witness resources. These are additive to the existing
 //! commitment/opening phase plan, never a reason to reduce its allowance.
 use super::super::{air, gpu_program, program::*};
-use crate::block_v2::gpu_hash::device::public_hash;
+use crate::block_v2::gpu_hash::device::{
+    public_hash, PERIODIC_MAX_ALLOCATION_BYTES, PERIODIC_WORKSPACE_BYTES,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(all(test, feature = "stream"))]
@@ -130,7 +132,9 @@ impl Bounds {
             .max(add(trace, add(samples, 8)?)?);
         let managed = add(
             add(mul(self.metadata_bytes, cached_programs)?, work)?,
-            public_hash::WORKSPACE_BYTES,
+            // Periodic inverse NTT and public hashing are sequential compiler
+            // operations. Reserve their maximum, not simultaneous payloads.
+            public_hash::WORKSPACE_BYTES.max(PERIODIC_WORKSPACE_BYTES),
         )?;
         // Uploaded instruction words are not retained on the host. The
         // compact launch schedule has a separate retained allowance. Historical
@@ -182,6 +186,7 @@ impl Bounds {
                 inputs,
                 samples,
                 public_hash::MAX_ALLOCATION_BYTES,
+                PERIODIC_MAX_ALLOCATION_BYTES,
                 8,
             ]
             .into_iter()
@@ -575,8 +580,8 @@ mod tests {
         assert_eq!(
             b.reservation(1).unwrap(),
             Reservation {
-                managed_bytes: 144168,
-                max_allocation_bytes: 65536,
+                managed_bytes: 897816,
+                max_allocation_bytes: 524288,
                 host_bytes: 3409416
                     + crate::block_v2::typed_recursive::storage::SESSION_HOST_BYTES
                     + crate::block_v2::gpu_hash::ENGINE_RETAINED_HOST_BYTES
@@ -590,7 +595,7 @@ mod tests {
         assert_eq!(b.admit_host(single.host_bytes).unwrap(), single);
         assert!(b.admit_host(single.host_bytes - 1).is_err());
         let cached = b.reservation(3).unwrap();
-        assert_eq!(cached.managed_bytes, 144168 + 2 * 65536);
+        assert_eq!(cached.managed_bytes, 897816 + 2 * 65536);
         assert_eq!(
             cached.host_bytes,
             3409416
@@ -696,7 +701,7 @@ mod tests {
         assert_eq!(
             b.reservation(1).unwrap(),
             Reservation {
-                managed_bytes: 1041171584,
+                managed_bytes: 1041925232,
                 max_allocation_bytes: 621708376,
                 host_bytes: 2610980304
                     + crate::block_v2::typed_recursive::storage::SESSION_HOST_BYTES
