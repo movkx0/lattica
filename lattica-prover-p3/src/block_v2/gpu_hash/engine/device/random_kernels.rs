@@ -60,39 +60,51 @@ __kernel void device_random_counts(__global const ulong *raw,
     barrier(CLK_LOCAL_MEM_FENCE);
     if (lane == 0U) counts[tile] = accepted[0];
 }
-// BATCH_WORDS / TILE_WORDS is at most 4096. Counts are at most 256,
-// so every scan sum fits in uint. The host rejects larger batches before
-// dispatch. Pad only to the next power of two, including partial tiles.
+// Scan bounded chunks so larger batches retain the same 16 KiB local array.
+// Counts are at most 256; the admitted batch sum fits in uint. Carry the
+// preceding chunks' total into every offset to preserve stable sample order.
 __attribute__((reqd_work_group_size(128, 1, 1)))
 __kernel void device_random_offsets(__global const ulong *counts,
     __global ulong *offsets, __global ulong *total, uint tiles) {
-    uint lane = get_local_id(0), width = 1U;
-    while (width < tiles) width <<= 1U;
+    uint lane = get_local_id(0);
     __local uint prefix[4096];
-    for (uint i = lane; i < width; i += 128U)
-        prefix[i] = i < tiles ? (uint)counts[i] : 0U;
+    __local uint carry, chunk_total;
+    if (lane == 0U) carry = 0U;
     barrier(CLK_LOCAL_MEM_FENCE);
-    for (uint stride = 1U; stride < width; stride <<= 1U) {
-        for (uint at = (lane + 1U) * (stride << 1U) - 1U;
-             at < width; at += 128U * (stride << 1U))
-            prefix[at] += prefix[at - stride];
+    for (uint first = 0U; first < tiles; first += 4096U) {
+        uint length = min(4096U, tiles - first), width = 1U;
+        while (width < length) width <<= 1U;
+        for (uint i = lane; i < width; i += 128U)
+            prefix[i] = i < length ? (uint)counts[first + i] : 0U;
         barrier(CLK_LOCAL_MEM_FENCE);
-    }
-    if (lane == 0U) {
-        total[0] = (ulong)prefix[width - 1U];
-        prefix[width - 1U] = 0U;
-    }
-    barrier(CLK_LOCAL_MEM_FENCE);
-    for (uint stride = width >> 1U; stride != 0U; stride >>= 1U) {
-        for (uint at = (lane + 1U) * (stride << 1U) - 1U;
-             at < width; at += 128U * (stride << 1U)) {
-            uint left = prefix[at - stride];
-            prefix[at - stride] = prefix[at];
-            prefix[at] += left;
+        for (uint stride = 1U; stride < width; stride <<= 1U) {
+            for (uint at = (lane + 1U) * (stride << 1U) - 1U;
+                 at < width; at += 128U * (stride << 1U))
+                prefix[at] += prefix[at - stride];
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+        if (lane == 0U) {
+            chunk_total = prefix[width - 1U];
+            prefix[width - 1U] = 0U;
         }
         barrier(CLK_LOCAL_MEM_FENCE);
+        for (uint stride = width >> 1U; stride != 0U; stride >>= 1U) {
+            for (uint at = (lane + 1U) * (stride << 1U) - 1U;
+                 at < width; at += 128U * (stride << 1U)) {
+                uint left = prefix[at - stride];
+                prefix[at - stride] = prefix[at];
+                prefix[at] += left;
+            }
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+        for (uint i = lane; i < length; i += 128U)
+            offsets[first + i] = (ulong)(carry + prefix[i]);
+        // Finish all reads of carry/prefix before advancing to the next chunk.
+        barrier(CLK_LOCAL_MEM_FENCE);
+        if (lane == 0U) carry += chunk_total;
+        barrier(CLK_LOCAL_MEM_FENCE);
     }
-    for (uint i = lane; i < tiles; i += 128U) offsets[i] = (ulong)prefix[i];
+    if (lane == 0U) total[0] = (ulong)carry;
 }
 __attribute__((reqd_work_group_size(128, 1, 1)))
 __kernel void device_random_scatter(__global const ulong *raw,

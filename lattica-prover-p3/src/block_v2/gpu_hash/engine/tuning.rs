@@ -6,6 +6,7 @@ mod gpu_tests;
 pub(super) struct Tuning {
     explicit: bool,
     pub events: bool,
+    pub fused_witness: bool,
     pub events256: bool,
     pub paths: bool,
     pub public_cache: bool,
@@ -16,6 +17,7 @@ pub(super) struct Tuning {
     pub commitment: bool,
     pub scale: bool,
     pub ntt: bool,
+    pub ntt_shared: bool,
 }
 
 impl Tuning {
@@ -46,6 +48,7 @@ impl Tuning {
         for item in value.split(',') {
             let selected = match item {
                 "events" => &mut result.events,
+                "fused_witness" => &mut result.fused_witness,
                 "events256" => &mut result.events256,
                 "paths" => &mut result.paths,
                 "public_cache" => &mut result.public_cache,
@@ -56,6 +59,7 @@ impl Tuning {
                 "commitment" => &mut result.commitment,
                 "scale" => &mut result.scale,
                 "ntt" => &mut result.ntt,
+                "ntt_shared" => &mut result.ntt_shared,
                 _ => return Err(format!("unknown GPU tuning candidate: {item}")),
             };
             if *selected {
@@ -94,8 +98,10 @@ impl Tuning {
             return;
         }
         self.events = true;
+        self.fused_witness = true;
         self.paths = true;
         self.public_cache = true;
+        self.ntt_shared = true;
         // Assigned workers retain the workspace in their existing admission
         // profile. The larger standalone benchmark budgets fund 256 MiB here;
         // explicit research selections must reserve it in their own profile.
@@ -108,6 +114,13 @@ impl Tuning {
 
     pub(super) fn ntt_powers(self, height: usize, width: usize) -> bool {
         self.ntt && height == 1 << 23 && matches!(width, 3 | 4 | 8 | 16)
+    }
+
+    /// Small transforms can lose more to an extra barrier than factor reuse saves.
+    /// Wide and tall shapes follow the measured V100 ranges; memory is admitted
+    /// independently before selecting the shared kernel.
+    pub(super) fn shared_ntt(self, height: usize, width: usize) -> bool {
+        self.ntt_shared && ((height >= 1 << 14 && width >= 16) || (height >= 1 << 18 && width >= 3))
     }
 }
 
@@ -142,6 +155,7 @@ mod tests {
         assert_eq!(Tuning::parse("", false).unwrap(), Tuning::default());
         for value in [
             "events",
+            "fused_witness",
             "events256",
             "paths",
             "public_cache",
@@ -152,6 +166,7 @@ mod tests {
             "commitment",
             "scale",
             "ntt",
+            "ntt_shared",
         ] {
             assert!(Tuning::parse(value, false).is_err());
             assert_ne!(Tuning::parse(value, true).unwrap(), Tuning::default());
@@ -177,7 +192,14 @@ mod tests {
         };
         let name = "Tesla V100-PCIE-32GB";
         let t = select(name, 16 << 30, false);
-        assert!(t.events && t.paths && t.public_cache && t.quotient256);
+        assert!(
+            t.events
+                && t.fused_witness
+                && t.paths
+                && t.public_cache
+                && t.quotient256
+                && t.ntt_shared
+        );
         assert!(!t.events256 && !t.tables && !t.hash32 && !t.hash_unroll);
         assert!(!select(name, 8 << 30, false).quotient256);
         assert!(!select(name, 16 << 30, true).quotient256);
@@ -187,16 +209,29 @@ mod tests {
         );
         let mut reference = Tuning::parse("reference", true).unwrap();
         reference.select_defaults(true, name, 16 << 30, false);
-        assert!(!reference.events && !reference.public_cache && !reference.quotient256);
+        assert!(
+            !reference.events
+                && !reference.fused_witness
+                && !reference.public_cache
+                && !reference.quotient256
+                && !reference.ntt_shared
+        );
         assert!(Tuning::parse("reference", false).is_err());
         let mut custom = Tuning::parse("events", true).unwrap();
         custom.select_defaults(true, name, 16 << 30, false);
-        assert!(custom.events && !custom.paths && !custom.public_cache && !custom.quotient256);
+        assert!(
+            custom.events
+                && !custom.fused_witness
+                && !custom.paths
+                && !custom.public_cache
+                && !custom.quotient256
+                && !custom.ntt_shared
+        );
     }
     #[test]
     fn transform_candidates_are_shape_limited() {
-        let all = Tuning::parse("scale,ntt", true).unwrap();
-        for log in [18, 19, 22, 23] {
+        let all = Tuning::parse("scale,ntt,ntt_shared", true).unwrap();
+        for log in [1, 8, 10, 12, 13, 14, 16, 18, 19, 22, 23] {
             for width in [1, 2, 3, 4, 8, 15, 16, 17, 94, 98, 200] {
                 assert_eq!(
                     all.ntt_powers(1 << log, width),
@@ -208,6 +243,11 @@ mod tests {
                 );
                 assert!(!Tuning::default().ntt_powers(1 << log, width));
                 assert!(!Tuning::default().shared_scale(1 << 18, 1 << log, width));
+                assert_eq!(
+                    all.shared_ntt(1 << log, width),
+                    (log >= 14 && width >= 16) || (log >= 18 && width >= 3)
+                );
+                assert!(!Tuning::default().shared_ntt(1 << log, width));
             }
         }
     }

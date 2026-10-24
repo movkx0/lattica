@@ -57,6 +57,15 @@ fn witness_schedule_preserves_hint_dependencies_and_compiler_budget() {
         for i in range.clone() {
             let c = &compiled.words
                 [HEADER_WORDS + i * INSTRUCTION_WORDS..HEADER_WORDS + (i + 1) * INSTRUCTION_WORDS];
+            #[cfg(feature = "gpu")]
+            assert_eq!(
+                c[17],
+                if i == range.start {
+                    range.len() as u64
+                } else {
+                    0
+                }
+            );
             let (reads, writes): (Vec<usize>, Vec<usize>) = match c[0] {
                 0 | 1 => (vec![], vec![c[1] as usize]),
                 2 | 3 => (vec![c[2] as usize, c[3] as usize], vec![c[1] as usize]),
@@ -213,6 +222,18 @@ fn gpu_witness_and_preprocessing_match_cpu_across_programs_and_fresh_sessions() 
     for shape in [(1, 1, 1), (7, 4, 33), (23, 9, 64), (257, 65, 64)] {
         programs.push(fixture(shape.0, shape.1, shape.2));
     }
+    // Cross the 64-level launch boundary and the 128-lane fusion limit with
+    // genuine read-after-write chains. The CPU AIR trace is the oracle.
+    for (width, depth) in [(1, 129), (127, 65), (128, 65), (129, 65)] {
+        let mut builder = ProgramBuilder::new(0).unwrap();
+        let mut wires: Vec<_> = (0..width).map(|_| builder.input()).collect();
+        for _ in 0..depth {
+            for wire in &mut wires {
+                *wire = builder.add(*wire, *wire);
+            }
+        }
+        programs.push(builder.finish(None).unwrap());
+    }
     for program in programs {
         let setup = DeviceSession::new().unwrap();
         let compiled = std::sync::Arc::new(WitnessProgram::compile(&program, 64 << 20).unwrap());
@@ -255,9 +276,13 @@ fn gpu_witness_and_preprocessing_match_cpu_across_programs_and_fresh_sessions() 
                 .map(|i| ((i as u64 * 7 + offset) % 117) + 1)
                 .collect();
             if !witness.is_empty() {
-                witness[8] = (offset & 1) as u64;
+                if witness.len() > 8 {
+                    witness[8] = (offset & 1) as u64;
+                }
                 witness[0] = 0xffff_ffff_0000_0000;
-                witness[1] = 0;
+                if witness.len() > 1 {
+                    witness[1] = 0;
+                }
             }
             let expected = air
                 .trace(

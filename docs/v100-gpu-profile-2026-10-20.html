@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V100 GPU prover — transform profiling and optimization, 20 October 2026</title>
+<style>
+body{font:16px/1.6 system-ui,-apple-system,sans-serif;color:#233440;background:#f5f7f8;margin:0}
+main{max-width:1100px;margin:auto;padding:40px 36px 80px;background:white}h1{font-size:2.4rem;line-height:1.15;margin:12px 0 20px;letter-spacing:-.03em}h2{font-size:1.45rem;margin-top:44px;border-top:1px solid #dbe3e9;padding-top:22px}h3{font-size:1.1rem}
+.eyebrow{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:#087e78;font-weight:700}.lead{font-size:1.12rem}.note,figcaption{font-size:.94rem;color:#536574}a{color:#175c88}table{border-collapse:collapse;width:100%;margin:20px 0;font-size:.9rem}th,td{border-bottom:1px solid #dfe6eb;padding:10px 12px;text-align:right;vertical-align:top}th:first-child,td:first-child{text-align:left}thead{background:#edf3f6}.scroll{overflow:auto}figure{margin:28px 0}figure svg{width:100%;height:auto}code{font-size:.8em;overflow-wrap:anywhere}pre{padding:18px;background:#edf3f6;overflow:auto;line-height:1.5}.process{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.process div{background:#edf3f6;border-left:3px solid #087e78;padding:14px}summary{cursor:pointer;font-weight:600}@media(max-width:600px){main{padding:24px 18px}h1{font-size:1.9rem}}
+</style></head><body><main>
+<div class="eyebrow">Tesla V100-PCIE-32GB · campaign began 19 October, report 20 October 2026</div>
+<h1>Shared twiddle factors in the GPU prover</h1>
+<p class="lead">Sharing transform factors reduced median aggregation time by 2.81–3.75% across the three tested workloads. Native wallet proving had mixed paired results and a 2.47% slower median. The selected implementation shares butterfly factors within each workgroup, with measured shape restrictions and explicit local-memory admission.</p>
+<p>The <a href="v100-gpu-profile-2026-10-19.html">previous campaign</a> and its evidence remain preserved. Its RNG batching, field arithmetic, guarded Poseidon2 diagonal and witness fusion are part of this campaign's baseline.</p>
+<h2>Complete-prover measurements</h2>
+<div class="scroll"><table><thead><tr><th>Workload</th><th>Baseline median (s)</th><th>Optimized median (s)</th><th>Median time reduction</th><th>Paired wins</th></tr></thead><tbody><tr><th>Four-input aggregation</th><td>36.897855</td><td>35.861694</td><td>2.81%</td><td>5/5</td></tr><tr><th>Eight-input aggregation</th><td>70.003775</td><td>67.934992</td><td>2.96%</td><td>5/5</td></tr><tr><th>Two concurrent eight-input jobs</th><td>136.731544</td><td>131.598916</td><td>3.75%</td><td>5/5</td></tr><tr><th>Native JoinSplit</th><td>0.320606</td><td>0.328514</td><td>-2.47%</td><td>9/20</td></tr></tbody></table></div>
+<p>Five alternating pairs were specified in advance for each aggregation workload and twenty for native wallet proving. Every sample is retained. Reductions in this table use the ratio of the two medians. Warmups, instrumented profiles and cache experiments are excluded from these medians.</p>
+<p>Native JoinSplit changed from 0.320606 to 0.328514 seconds, with wins in 9 of 20 pairs. Its median paired reduction was -0.44%. These results do not establish a native-wallet speedup; the aggregation gains should not be generalized to that workload.</p>
+<figure><svg xmlns:xlink="http://www.w3.org/1999/xlink" width="728.39952pt" height="388.862748pt" viewBox="0 0 728.39952 388.862748" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-10-20T01:40:45.383019</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="v100-gpu-profile-2026-10-20-timings-figure_1">
+  <g id="v100-gpu-profile-2026-10-20-timings-patch_1">
+   <path d="M 0 388.862748 
+L 728.39952 388.862748 
+L 728.39952 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="v100-gpu-profile-2026-10-20-timings-axes_1">
+   <g id="v100-gpu-profile-2026-10-20-timings-patch_2">
+    <path d="M 49.305469 330.194832 
+L 721.19952 330.194832 
+L 721.19952 32.318125 
+L 49.305469 32.318125 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-matplotlib.axis_1">
+    <g id="v100-gpu-profile-2026-10-20-timings-xtick_1">
+     <g id="v100-gpu-profile-2026-10-20-timings-line2d_1">
+      <defs>
+       <path id="v100-gpu-profile-2026-10-20-timings-m93405a5bfe" d="M 0 0 
+L 0 3.5 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m93405a5bfe" x="121.971126" y="330.194832" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-timings-text_1">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="121.971126" y="344.79327" transform="rotate(-0 121.971126 344.79327)">Four inputs</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-timings-xtick_2">
+     <g id="v100-gpu-profile-2026-10-20-timings-line2d_2">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m93405a5bfe" x="297.492038" y="330.194832" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-timings-text_2">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="297.492038" y="344.79327" transform="rotate(-0 297.492038 344.79327)">Eight inputs</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-timings-xtick_3">
+     <g id="v100-gpu-profile-2026-10-20-timings-line2d_3">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m93405a5bfe" x="473.01295" y="330.194832" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-timings-text_3">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(435.034825 345.793465)">Two concurrent</text>
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(433.76295 357.7962)">eight-input jobs</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-timings-xtick_4">
+     <g id="v100-gpu-profile-2026-10-20-timings-line2d_4">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m93405a5bfe" x="648.533862" y="330.194832" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-timings-text_4">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="648.533862" y="344.79327" transform="rotate(-0 648.533862 344.79327)">Native JoinSplit</text>
+     </g>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-matplotlib.axis_2">
+    <g id="v100-gpu-profile-2026-10-20-timings-ytick_1">
+     <g id="v100-gpu-profile-2026-10-20-timings-line2d_5">
+      <path d="M 49.305469 278.982809 
+L 721.19952 278.982809 
+" clip-path="url(#v100-gpu-profile-2026-10-20-timings-peedc1648ec)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-timings-line2d_6">
+      <defs>
+       <path id="v100-gpu-profile-2026-10-20-timings-m35bcf1aa14" d="M 0 0 
+L -3.5 0 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m35bcf1aa14" x="49.305469" y="278.982809" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-timings-text_5">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="42.305469" y="282.781637" transform="rotate(-0 42.305469 282.781637)">−10</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-timings-ytick_2">
+     <g id="v100-gpu-profile-2026-10-20-timings-line2d_7">
+      <path d="M 49.305469 224.930424 
+L 721.19952 224.930424 
+" clip-path="url(#v100-gpu-profile-2026-10-20-timings-peedc1648ec)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-timings-line2d_8">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m35bcf1aa14" x="49.305469" y="224.930424" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-timings-text_6">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="42.305469" y="228.729252" transform="rotate(-0 42.305469 228.729252)">−5</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-timings-ytick_3">
+     <g id="v100-gpu-profile-2026-10-20-timings-line2d_9">
+      <path d="M 49.305469 170.878039 
+L 721.19952 170.878039 
+" clip-path="url(#v100-gpu-profile-2026-10-20-timings-peedc1648ec)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-timings-line2d_10">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m35bcf1aa14" x="49.305469" y="170.878039" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-timings-text_7">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="42.305469" y="174.676868" transform="rotate(-0 42.305469 174.676868)">0</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-timings-ytick_4">
+     <g id="v100-gpu-profile-2026-10-20-timings-line2d_11">
+      <path d="M 49.305469 116.825655 
+L 721.19952 116.825655 
+" clip-path="url(#v100-gpu-profile-2026-10-20-timings-peedc1648ec)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-timings-line2d_12">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m35bcf1aa14" x="49.305469" y="116.825655" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-timings-text_8">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="42.305469" y="120.624483" transform="rotate(-0 42.305469 120.624483)">5</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-timings-ytick_5">
+     <g id="v100-gpu-profile-2026-10-20-timings-line2d_13">
+      <path d="M 49.305469 62.77327 
+L 721.19952 62.77327 
+" clip-path="url(#v100-gpu-profile-2026-10-20-timings-peedc1648ec)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-timings-line2d_14">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m35bcf1aa14" x="49.305469" y="62.77327" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-timings-text_9">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="42.305469" y="66.572098" transform="rotate(-0 42.305469 66.572098)">10</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-timings-text_10">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="14.798438" y="181.256479" transform="rotate(-90 14.798438 181.256479)">Paired time reduction (%)</text>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-line2d_15">
+    <path d="M 49.305469 170.878039 
+L 721.19952 170.878039 
+" clip-path="url(#v100-gpu-profile-2026-10-20-timings-peedc1648ec)" style="fill: none; stroke: #77818a; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-patch_3">
+    <path d="M 49.305469 330.194832 
+L 49.305469 32.318125 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-patch_4">
+    <path d="M 49.305469 330.194832 
+L 721.19952 330.194832 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-PathCollection_1">
+    <defs>
+     <path id="v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" d="M 0 3.082207 
+C 0.817411 3.082207 1.601453 2.757446 2.179449 2.179449 
+C 2.757446 1.601453 3.082207 0.817411 3.082207 0 
+C 3.082207 -0.817411 2.757446 -1.601453 2.179449 -2.179449 
+C 1.601453 -2.757446 0.817411 -3.082207 0 -3.082207 
+C -0.817411 -3.082207 -1.601453 -2.757446 -2.179449 -2.179449 
+C -2.757446 -1.601453 -3.082207 -0.817411 -3.082207 0 
+C -3.082207 0.817411 -2.757446 1.601453 -2.179449 2.179449 
+C -1.601453 2.757446 -0.817411 3.082207 0 3.082207 
+z
+" style="stroke: #087e78; stroke-opacity: 0.8"/>
+    </defs>
+    <g clip-path="url(#v100-gpu-profile-2026-10-20-timings-peedc1648ec)">
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="86.866944" y="127.57873" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="104.419035" y="145.111572" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="121.971126" y="140.520195" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="139.523218" y="138.100448" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="157.075309" y="139.654062" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-text_11">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #345b84" x="121.971126" y="113.57873" transform="rotate(-0 121.971126 113.57873)">2.89%  (n=5)</text>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-PathCollection_2">
+    <g clip-path="url(#v100-gpu-profile-2026-10-20-timings-peedc1648ec)">
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="262.387856" y="133.375414" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="279.939947" y="140.345551" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="297.492038" y="129.909993" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="315.04413" y="138.835504" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="332.596221" y="142.757536" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-text_12">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #345b84" x="297.492038" y="115.909993" transform="rotate(-0 297.492038 115.909993)">2.96%  (n=5)</text>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-PathCollection_3">
+    <g clip-path="url(#v100-gpu-profile-2026-10-20-timings-peedc1648ec)">
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="437.908768" y="134.742153" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="455.460859" y="129.984075" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="473.01295" y="131.623516" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="490.565042" y="126.989022" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="508.117133" y="130.297676" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-text_13">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #345b84" x="473.01295" y="112.989022" transform="rotate(-0 473.01295 112.989022)">3.75%  (n=5)</text>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-PathCollection_4">
+    <g clip-path="url(#v100-gpu-profile-2026-10-20-timings-peedc1648ec)">
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="613.42968" y="154.077436" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="617.124857" y="251.750341" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="620.820034" y="269.271349" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="624.515211" y="169.775548" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="628.210388" y="216.712928" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="631.905565" y="271.29445" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="635.600743" y="163.22222" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="639.29592" y="172.703791" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="642.991097" y="221.416239" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="646.686274" y="79.978398" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="650.381451" y="178.562926" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="654.076628" y="318.279764" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="657.771805" y="127.281273" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="661.466982" y="156.778372" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="665.162159" y="123.88523" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="668.857336" y="126.880573" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="672.552514" y="232.161012" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="676.247691" y="232.947183" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="679.942868" y="145.612633" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-timings-m3c7f51c78f" x="683.638045" y="213.704814" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-text_14">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #345b84" x="648.533862" y="65.978398" transform="rotate(-0 648.533862 65.978398)">-0.44%  (n=20)</text>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-text_15">
+    <text style="font-weight: 700; font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: start" x="49.305469" y="16.318125" transform="rotate(-0 49.305469 16.318125)">Warmed baseline / optimized comparisons</text>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-line2d_16">
+    <path d="M 79.846107 139.654062 
+L 164.096145 139.654062 
+" clip-path="url(#v100-gpu-profile-2026-10-20-timings-peedc1648ec)" style="fill: none; stroke: #345b84; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-line2d_17">
+    <path d="M 255.367019 138.835504 
+L 339.617057 138.835504 
+" clip-path="url(#v100-gpu-profile-2026-10-20-timings-peedc1648ec)" style="fill: none; stroke: #345b84; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-line2d_18">
+    <path d="M 430.887932 130.297676 
+L 515.137969 130.297676 
+" clip-path="url(#v100-gpu-profile-2026-10-20-timings-peedc1648ec)" style="fill: none; stroke: #345b84; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-timings-line2d_19">
+    <path d="M 606.408844 175.633359 
+L 690.658881 175.633359 
+" clip-path="url(#v100-gpu-profile-2026-10-20-timings-peedc1648ec)" style="fill: none; stroke: #345b84; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+  </g>
+  <g id="v100-gpu-profile-2026-10-20-timings-text_16">
+   <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #536574" transform="translate(11.39976 367.797299)">Dots: every pair. Bars: median paired reduction. Positive values mean less time.</text>
+   <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #536574" transform="translate(11.39976 378.59976)">The report table uses the ratio of the two medians; timer boundaries are documented per workload.</text>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="v100-gpu-profile-2026-10-20-timings-peedc1648ec">
+   <rect x="49.305469" y="32.318125" width="671.894051" height="297.876708"/>
+  </clipPath>
+ </defs>
+</svg>
+<figcaption>All paired results, including regressions. Bars show median paired percentage reductions, which can differ from the ratio of medians in the table.</figcaption></figure>
+<details><summary>Every qualification pair</summary><div class="scroll"><table><thead><tr><th>Workload</th><th>Pair</th><th>Order</th><th>Baseline (s)</th><th>Optimized (s)</th><th>Reduction</th></tr></thead><tbody><tr><td>Four-input aggregation</td><td>1</td><td>baseline → shared_bounded</td><td>37.467280</td><td>35.966600</td><td>4.01%</td></tr><tr><td>Four-input aggregation</td><td>2</td><td>shared_bounded → baseline</td><td>36.767827</td><td>35.891476</td><td>2.38%</td></tr><tr><td>Four-input aggregation</td><td>3</td><td>baseline → shared_bounded</td><td>36.897855</td><td>35.861694</td><td>2.81%</td></tr><tr><td>Four-input aggregation</td><td>4</td><td>shared_bounded → baseline</td><td>36.854703</td><td>35.737261</td><td>3.03%</td></tr><tr><td>Four-input aggregation</td><td>5</td><td>baseline → shared_bounded</td><td>36.905542</td><td>35.839597</td><td>2.89%</td></tr><tr><td>Eight-input aggregation</td><td>1</td><td>baseline → shared_bounded</td><td>70.376420</td><td>67.934992</td><td>3.47%</td></tr><tr><td>Eight-input aggregation</td><td>2</td><td>shared_bounded → baseline</td><td>69.984749</td><td>68.008140</td><td>2.82%</td></tr><tr><td>Eight-input aggregation</td><td>3</td><td>baseline → shared_bounded</td><td>70.510563</td><td>67.838452</td><td>3.79%</td></tr><tr><td>Eight-input aggregation</td><td>4</td><td>shared_bounded → baseline</td><td>69.983426</td><td>67.909099</td><td>2.96%</td></tr><tr><td>Eight-input aggregation</td><td>5</td><td>baseline → shared_bounded</td><td>70.003775</td><td>68.182818</td><td>2.60%</td></tr><tr><td>Two concurrent eight-input jobs</td><td>1</td><td>baseline → shared_bounded</td><td>136.592808</td><td>132.026957</td><td>3.34%</td></tr><tr><td>Two concurrent eight-input jobs</td><td>2</td><td>shared_bounded → baseline</td><td>136.706138</td><td>131.534807</td><td>3.78%</td></tr><tr><td>Two concurrent eight-input jobs</td><td>3</td><td>baseline → shared_bounded</td><td>137.056830</td><td>132.080083</td><td>3.63%</td></tr><tr><td>Two concurrent eight-input jobs</td><td>4</td><td>shared_bounded → baseline</td><td>137.063390</td><td>131.498809</td><td>4.06%</td></tr><tr><td>Two concurrent eight-input jobs</td><td>5</td><td>baseline → shared_bounded</td><td>136.731544</td><td>131.598916</td><td>3.75%</td></tr><tr><td>Native JoinSplit</td><td>1</td><td>baseline → shared_bounded</td><td>0.328157</td><td>0.323058</td><td>1.55%</td></tr><tr><td>Native JoinSplit</td><td>2</td><td>shared_bounded → baseline</td><td>0.315885</td><td>0.339517</td><td>-7.48%</td></tr><tr><td>Native JoinSplit</td><td>3</td><td>baseline → shared_bounded</td><td>0.310027</td><td>0.338245</td><td>-9.10%</td></tr><tr><td>Native JoinSplit</td><td>4</td><td>shared_bounded → baseline</td><td>0.376116</td><td>0.375733</td><td>0.10%</td></tr><tr><td>Native JoinSplit</td><td>5</td><td>baseline → shared_bounded</td><td>0.389855</td><td>0.406384</td><td>-4.24%</td></tr><tr><td>Native JoinSplit</td><td>6</td><td>shared_bounded → baseline</td><td>0.333756</td><td>0.364758</td><td>-9.29%</td></tr><tr><td>Native JoinSplit</td><td>7</td><td>baseline → shared_bounded</td><td>0.326004</td><td>0.323696</td><td>0.71%</td></tr><tr><td>Native JoinSplit</td><td>8</td><td>shared_bounded → baseline</td><td>0.310810</td><td>0.311335</td><td>-0.17%</td></tr><tr><td>Native JoinSplit</td><td>9</td><td>baseline → shared_bounded</td><td>0.318671</td><td>0.333568</td><td>-4.67%</td></tr><tr><td>Native JoinSplit</td><td>10</td><td>shared_bounded → baseline</td><td>0.339439</td><td>0.310898</td><td>8.41%</td></tr><tr><td>Native JoinSplit</td><td>11</td><td>baseline → shared_bounded</td><td>0.319625</td><td>0.321897</td><td>-0.71%</td></tr><tr><td>Native JoinSplit</td><td>12</td><td>shared_bounded → baseline</td><td>0.318108</td><td>0.361482</td><td>-13.64%</td></tr><tr><td>Native JoinSplit</td><td>13</td><td>baseline → shared_bounded</td><td>0.321586</td><td>0.308617</td><td>4.03%</td></tr><tr><td>Native JoinSplit</td><td>14</td><td>shared_bounded → baseline</td><td>0.309623</td><td>0.305585</td><td>1.30%</td></tr><tr><td>Native JoinSplit</td><td>15</td><td>baseline → shared_bounded</td><td>0.345217</td><td>0.330210</td><td>4.35%</td></tr><tr><td>Native JoinSplit</td><td>16</td><td>shared_bounded → baseline</td><td>0.319004</td><td>0.306021</td><td>4.07%</td></tr><tr><td>Native JoinSplit</td><td>17</td><td>baseline → shared_bounded</td><td>0.313576</td><td>0.331352</td><td>-5.67%</td></tr><tr><td>Native JoinSplit</td><td>18</td><td>shared_bounded → baseline</td><td>0.333859</td><td>0.353028</td><td>-5.74%</td></tr><tr><td>Native JoinSplit</td><td>19</td><td>baseline → shared_bounded</td><td>0.327070</td><td>0.319426</td><td>2.34%</td></tr><tr><td>Native JoinSplit</td><td>20</td><td>shared_bounded → baseline</td><td>0.314364</td><td>0.326818</td><td>-3.96%</td></tr></tbody></table></div></details>
+<p class="note">Four-input and wallet timers exclude initialization and the independent CPU audit. Eight-input timers cover worker launch through exit, including initialization, in-process verification, serialization and shutdown. Original wallet-proof creation is excluded from aggregation. These are fixed-fixture measurements on one V100.</p>
+<h2>What the fresh profiles showed</h2>
+<p>The initial eight-input profile recorded 15.57 seconds in LDE transforms and 15.31 seconds in row hashing. The four-input profile recorded 7.22 and 7.83 seconds respectively. Transforms already combine several FFT stages per launch; repeated field multiplication inside each tile was the next target.</p>
+<p>In the matched warmed four-input profiles, recorded transform event time changed from 7.2180 to 6.2830 seconds. This is a diagnostic kernel comparison, separate from the complete-prover qualification above.</p>
+<p>The eight-input profiles recorded 15.5694 seconds in LDE transforms before the change and 13.4939 seconds after it. The selected four-input profile still spent 7.8260 seconds in LDE row hashing and 3.0140 seconds in quotient kernels. These remain candidates for future profiling; this campaign does not claim improvements in those kernels.</p>
+<p>Native wallet proving has much less transform work: its warmed profiles recorded 13.029 versus 12.853 milliseconds in LDE transforms. Any resulting change in the complete native proving call must be assessed from the twenty uninstrumented pairs, rather than from this small kernel difference.</p>
+<figure><svg xmlns:xlink="http://www.w3.org/1999/xlink" width="728.39952pt" height="332.39952pt" viewBox="0 0 728.39952 332.39952" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-10-20T01:40:45.866183</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="v100-gpu-profile-2026-10-20-kernels-figure_1">
+  <g id="v100-gpu-profile-2026-10-20-kernels-patch_1">
+   <path d="M 0 332.39952 
+L 728.39952 332.39952 
+L 728.39952 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="v100-gpu-profile-2026-10-20-kernels-axes_1">
+   <g id="v100-gpu-profile-2026-10-20-kernels-patch_2">
+    <path d="M 113.414063 294.198739 
+L 721.19952 294.198739 
+L 721.19952 32.318125 
+L 113.414063 32.318125 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-kernels-matplotlib.axis_1">
+    <g id="v100-gpu-profile-2026-10-20-kernels-xtick_1">
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_1">
+      <path d="M 113.414063 294.198739 
+L 113.414063 32.318125 
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_2">
+      <defs>
+       <path id="v100-gpu-profile-2026-10-20-kernels-m4d3307849b" d="M 0 0 
+L 0 3.5 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-kernels-m4d3307849b" x="113.414063" y="294.198739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-text_1">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="113.414063" y="308.796395" transform="rotate(-0 113.414063 308.796395)">0</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-kernels-xtick_2">
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_3">
+      <path d="M 187.351763 294.198739 
+L 187.351763 32.318125 
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_4">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-kernels-m4d3307849b" x="187.351763" y="294.198739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-text_2">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="187.351763" y="308.796395" transform="rotate(-0 187.351763 308.796395)">1</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-kernels-xtick_3">
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_5">
+      <path d="M 261.289464 294.198739 
+L 261.289464 32.318125 
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_6">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-kernels-m4d3307849b" x="261.289464" y="294.198739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-text_3">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="261.289464" y="308.796395" transform="rotate(-0 261.289464 308.796395)">2</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-kernels-xtick_4">
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_7">
+      <path d="M 335.227164 294.198739 
+L 335.227164 32.318125 
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_8">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-kernels-m4d3307849b" x="335.227164" y="294.198739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-text_4">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="335.227164" y="308.796395" transform="rotate(-0 335.227164 308.796395)">3</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-kernels-xtick_5">
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_9">
+      <path d="M 409.164865 294.198739 
+L 409.164865 32.318125 
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_10">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-kernels-m4d3307849b" x="409.164865" y="294.198739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-text_5">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="409.164865" y="308.796395" transform="rotate(-0 409.164865 308.796395)">4</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-kernels-xtick_6">
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_11">
+      <path d="M 483.102565 294.198739 
+L 483.102565 32.318125 
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_12">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-kernels-m4d3307849b" x="483.102565" y="294.198739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-text_6">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="483.102565" y="308.796395" transform="rotate(-0 483.102565 308.796395)">5</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-kernels-xtick_7">
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_13">
+      <path d="M 557.040266 294.198739 
+L 557.040266 32.318125 
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_14">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-kernels-m4d3307849b" x="557.040266" y="294.198739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-text_7">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="557.040266" y="308.796395" transform="rotate(-0 557.040266 308.796395)">6</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-kernels-xtick_8">
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_15">
+      <path d="M 630.977967 294.198739 
+L 630.977967 32.318125 
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_16">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-kernels-m4d3307849b" x="630.977967" y="294.198739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-text_8">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="630.977967" y="308.796395" transform="rotate(-0 630.977967 308.796395)">7</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-kernels-xtick_9">
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_17">
+      <path d="M 704.915667 294.198739 
+L 704.915667 32.318125 
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_18">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-kernels-m4d3307849b" x="704.915667" y="294.198739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-text_9">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="704.915667" y="308.796395" transform="rotate(-0 704.915667 308.796395)">8</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-kernels-text_10">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="417.306791" y="322.797176" transform="rotate(-0 417.306791 322.797176)">Recorded GPU event duration sums (seconds; nonadditive)</text>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-kernels-matplotlib.axis_2">
+    <g id="v100-gpu-profile-2026-10-20-kernels-ytick_1">
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_19">
+      <defs>
+       <path id="v100-gpu-profile-2026-10-20-kernels-m8efb3b800e" d="M 0 0 
+L -3.5 0 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-kernels-m8efb3b800e" x="113.414063" y="67.518505" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-text_11">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="106.414063" y="71.317724" transform="rotate(-0 106.414063 71.317724)">LDE row hashing</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-kernels-ytick_2">
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_20">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-kernels-m8efb3b800e" x="113.414063" y="131.345123" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-text_12">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="106.414063" y="135.144342" transform="rotate(-0 106.414063 135.144342)">LDE transforms</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-kernels-ytick_3">
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_21">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-kernels-m8efb3b800e" x="113.414063" y="195.171741" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-text_13">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="106.414063" y="198.97096" transform="rotate(-0 106.414063 198.97096)">Quotient evaluation</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-kernels-ytick_4">
+     <g id="v100-gpu-profile-2026-10-20-kernels-line2d_22">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-kernels-m8efb3b800e" x="113.414063" y="258.998359" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-kernels-text_14">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="106.414063" y="262.797578" transform="rotate(-0 106.414063 262.797578)">Lookup expressions</text>
+     </g>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-kernels-patch_3">
+    <path d="M 113.414063 44.221789 
+L 692.257355 44.221789 
+L 692.257355 66.561106 
+L 113.414063 66.561106 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: #345b84"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-kernels-patch_4">
+    <path d="M 113.414063 108.048407 
+L 647.097284 108.048407 
+L 647.097284 130.387724 
+L 113.414063 130.387724 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: #345b84"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-kernels-patch_5">
+    <path d="M 113.414063 171.875025 
+L 336.231165 171.875025 
+L 336.231165 194.214342 
+L 113.414063 194.214342 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: #345b84"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-kernels-patch_6">
+    <path d="M 113.414063 235.701643 
+L 159.373423 235.701643 
+L 159.373423 258.04096 
+L 113.414063 258.04096 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: #345b84"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-kernels-patch_7">
+    <path d="M 113.414063 68.475904 
+L 692.051241 68.475904 
+L 692.051241 90.81522 
+L 113.414063 90.81522 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: #087e78"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-kernels-patch_8">
+    <path d="M 113.414063 132.302522 
+L 577.965894 132.302522 
+L 577.965894 154.641838 
+L 113.414063 154.641838 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: #087e78"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-kernels-patch_9">
+    <path d="M 113.414063 196.12914 
+L 336.262401 196.12914 
+L 336.262401 218.468456 
+L 113.414063 218.468456 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: #087e78"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-kernels-patch_10">
+    <path d="M 113.414063 259.955758 
+L 159.423854 259.955758 
+L 159.423854 282.295074 
+L 113.414063 282.295074 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-20-kernels-p621ff1c169)" style="fill: #087e78"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-kernels-patch_11">
+    <path d="M 113.414063 294.198739 
+L 113.414063 32.318125 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-kernels-patch_12">
+    <path d="M 113.414063 294.198739 
+L 721.19952 294.198739 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-kernels-text_15">
+    <text style="font-weight: 700; font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: start" x="113.414063" y="16.318125" transform="rotate(-0 113.414063 16.318125)">Warmed four-input profile</text>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-kernels-legend_1">
+    <g id="v100-gpu-profile-2026-10-20-kernels-patch_13">
+     <path d="M 633.01202 267.795614 
+L 653.01202 267.795614 
+L 653.01202 260.795614 
+L 633.01202 260.795614 
+z
+" style="fill: #345b84"/>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-kernels-text_16">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="661.01202" y="267.795614" transform="rotate(-0 661.01202 267.795614)">Baseline</text>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-kernels-patch_14">
+     <path d="M 633.01202 282.796395 
+L 653.01202 282.796395 
+L 653.01202 275.796395 
+L 633.01202 275.796395 
+z
+" style="fill: #087e78"/>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-kernels-text_17">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="661.01202" y="282.796395" transform="rotate(-0 661.01202 282.796395)">Optimized</text>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="v100-gpu-profile-2026-10-20-kernels-p621ff1c169">
+   <rect x="113.414063" y="32.318125" width="607.785457" height="261.880614"/>
+  </clipPath>
+ </defs>
+</svg>
+<figcaption>Recorded GPU event duration sums are nonadditive. Each workload also has retained host spans, submission timestamps, launch shapes and kernel-resource queries.</figcaption></figure>
+<div class="scroll"><table><thead><tr><th>Four-input host span</th><th>Baseline elapsed (s)</th><th>Optimized elapsed (s)</th></tr></thead><tbody><tr><th>recursive circuit construction</th><td>5.4947</td><td>5.4227</td></tr><tr><th>preprocessing setup</th><td>6.6060</td><td>6.5559</td></tr><tr><th>compute quotient</th><td>5.9684</td><td>5.7856</td></tr><tr><th>GPU opening proof</th><td>5.6239</td><td>5.3017</td></tr><tr><th>GPU event completion and timing</th><td>18.3359</td><td>17.4015</td></tr><tr><th>specialized OpenCL compilation</th><td>0.3143</td><td>0.3137</td></tr></tbody></table></div>
+<p>Host tracing covers public circuit construction, preprocessing, quotient setup, openings and event completion. Host spans are elapsed times, and process CPU counters include driver threads. Nested phases overlap. Gaps between recorded GPU events are not measurements of GPU idle time, and independent workers' device clock domains were not merged.</p>
+<h2>Experiments and the selected implementation</h2>
+<p>A number-theoretic transform (NTT) is the finite-field counterpart of an FFT. Its butterfly steps combine pairs of values using known field multipliers, commonly called twiddle factors. Reusing those public factors changes the execution cost while preserving the transform's mathematical result.</p>
+<p>The component screen compared ordinary powers, reuse of the public root squaring chain, shared row-scale powers, skipping identity factors, and sharing complete butterfly factors across columns. Independent Python-integer transforms checked forward/inverse operations, coset scaling, output ordering, irregular widths, in-place stages and memory fallback. Small cases were also checked against the direct DFT sum. All seventy variant/oracle cases passed; the small-shape extension repeated these checks.</p>
+<figure><svg xmlns:xlink="http://www.w3.org/1999/xlink" width="728.39952pt" height="394.622748pt" viewBox="0 0 728.39952 394.622748" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-10-20T01:40:46.250746</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="v100-gpu-profile-2026-10-20-components-figure_1">
+  <g id="v100-gpu-profile-2026-10-20-components-patch_1">
+   <path d="M 0 394.622748 
+L 728.39952 394.622748 
+L 728.39952 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="v100-gpu-profile-2026-10-20-components-axes_1">
+   <g id="v100-gpu-profile-2026-10-20-components-patch_2">
+    <path d="M 40.925781 329.798739 
+L 721.19952 329.798739 
+L 721.19952 32.318125 
+L 40.925781 32.318125 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-components-matplotlib.axis_1">
+    <g id="v100-gpu-profile-2026-10-20-components-xtick_1">
+     <g id="v100-gpu-profile-2026-10-20-components-line2d_1">
+      <defs>
+       <path id="v100-gpu-profile-2026-10-20-components-m65b42becf8" d="M 0 0 
+L 0 3.5 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-components-m65b42becf8" x="114.497706" y="329.798739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-components-text_1">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="114.497706" y="344.396395" transform="rotate(-0 114.497706 344.396395)">Root powers</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-components-xtick_2">
+     <g id="v100-gpu-profile-2026-10-20-components-line2d_2">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-components-m65b42becf8" x="292.207669" y="329.798739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-components-text_2">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="292.207669" y="344.397176" transform="rotate(-0 292.207669 344.397176)">Root + scale powers</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-components-xtick_3">
+     <g id="v100-gpu-profile-2026-10-20-components-line2d_3">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-components-m65b42becf8" x="469.917632" y="329.798739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-components-text_3">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="469.917632" y="344.397176" transform="rotate(-0 469.917632 344.397176)">Skip identity factor</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-components-xtick_4">
+     <g id="v100-gpu-profile-2026-10-20-components-line2d_4">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-components-m65b42becf8" x="647.627595" y="329.798739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-components-text_4">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="647.627595" y="344.397176" transform="rotate(-0 647.627595 344.397176)">Shared butterfly factors</text>
+     </g>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-components-matplotlib.axis_2">
+    <g id="v100-gpu-profile-2026-10-20-components-ytick_1">
+     <g id="v100-gpu-profile-2026-10-20-components-line2d_5">
+      <path d="M 40.925781 284.957165 
+L 721.19952 284.957165 
+" clip-path="url(#v100-gpu-profile-2026-10-20-components-pea4b0f716c)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-components-line2d_6">
+      <defs>
+       <path id="v100-gpu-profile-2026-10-20-components-m19d256ab76" d="M 0 0 
+L -3.5 0 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-components-m19d256ab76" x="40.925781" y="284.957165" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-components-text_5">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="33.925781" y="288.755994" transform="rotate(-0 33.925781 288.755994)">0</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-components-ytick_2">
+     <g id="v100-gpu-profile-2026-10-20-components-line2d_7">
+      <path d="M 40.925781 218.855587 
+L 721.19952 218.855587 
+" clip-path="url(#v100-gpu-profile-2026-10-20-components-pea4b0f716c)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-components-line2d_8">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-components-m19d256ab76" x="40.925781" y="218.855587" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-components-text_6">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="33.925781" y="222.654415" transform="rotate(-0 33.925781 222.654415)">5</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-components-ytick_3">
+     <g id="v100-gpu-profile-2026-10-20-components-line2d_9">
+      <path d="M 40.925781 152.754009 
+L 721.19952 152.754009 
+" clip-path="url(#v100-gpu-profile-2026-10-20-components-pea4b0f716c)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-components-line2d_10">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-components-m19d256ab76" x="40.925781" y="152.754009" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-components-text_7">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="33.925781" y="156.552837" transform="rotate(-0 33.925781 156.552837)">10</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-components-ytick_4">
+     <g id="v100-gpu-profile-2026-10-20-components-line2d_11">
+      <path d="M 40.925781 86.652431 
+L 721.19952 86.652431 
+" clip-path="url(#v100-gpu-profile-2026-10-20-components-pea4b0f716c)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-components-line2d_12">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-20-components-m19d256ab76" x="40.925781" y="86.652431" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-20-components-text_8">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="33.925781" y="90.451259" transform="rotate(-0 33.925781 90.451259)">15</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-20-components-text_9">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="14.798438" y="181.058432" transform="rotate(-90 14.798438 181.058432)">Reduction in median kernel time (%)</text>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-components-PathCollection_1">
+    <defs>
+     <path id="v100-gpu-profile-2026-10-20-components-m93b9d05246" d="M 0 2.5 
+C 0.663008 2.5 1.29895 2.236584 1.767767 1.767767 
+C 2.236584 1.29895 2.5 0.663008 2.5 0 
+C 2.5 -0.663008 2.236584 -1.29895 1.767767 -1.767767 
+C 1.29895 -2.236584 0.663008 -2.5 0 -2.5 
+C -0.663008 -2.5 -1.29895 -2.236584 -1.767767 -1.767767 
+C -2.236584 -1.29895 -2.5 -0.663008 -2.5 0 
+C -2.5 0.663008 -2.236584 1.29895 -1.767767 1.767767 
+C -1.29895 2.236584 -0.663008 2.5 0 2.5 
+z
+" style="stroke: #087e78; stroke-opacity: 0.65"/>
+    </defs>
+    <g clip-path="url(#v100-gpu-profile-2026-10-20-components-pea4b0f716c)">
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="78.955713" y="295.885869" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="82.696976" y="263.617686" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="86.438238" y="249.730932" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="90.1795" y="316.276893" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="93.920763" y="237.480894" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="97.662025" y="254.170129" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="101.403288" y="268.095988" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="105.14455" y="280.124796" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="108.885812" y="243.652171" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="112.627075" y="261.953258" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="116.368337" y="265.750443" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="120.1096" y="271.502519" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="123.850862" y="189.021412" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="127.592124" y="209.703275" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="131.333387" y="228.570239" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="135.074649" y="234.407034" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="138.815911" y="243.020119" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="142.557174" y="262.346225" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="146.298436" y="235.187412" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="150.039699" y="238.838508" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-components-PathCollection_2">
+    <g clip-path="url(#v100-gpu-profile-2026-10-20-components-pea4b0f716c)">
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="256.665676" y="273.68694" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="260.406939" y="284.279722" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="264.148201" y="259.410662" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="267.889464" y="179.219625" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="271.630726" y="235.654883" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="275.371988" y="273.185651" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="279.113251" y="272.373618" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="282.854513" y="260.562431" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="286.595776" y="240.943229" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="290.337038" y="286.02155" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="294.0783" y="262.14394" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="297.819563" y="254.883812" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="301.560825" y="184.962958" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="305.302087" y="208.105373" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="309.04335" y="228.036609" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="312.784612" y="213.219663" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="316.525875" y="240.43076" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="320.267137" y="255.761114" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="324.008399" y="228.643454" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="327.749662" y="211.276129" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-components-PathCollection_3">
+    <g clip-path="url(#v100-gpu-profile-2026-10-20-components-pea4b0f716c)">
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="434.37564" y="208.797765" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="438.116902" y="219.583839" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="441.858164" y="157.124856" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="445.599427" y="104.891041" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="449.340689" y="168.063965" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="453.081951" y="207.084073" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="456.823214" y="226.627354" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="460.564476" y="229.990415" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="464.305739" y="170.281457" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="468.047001" y="211.803421" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="471.788263" y="228.191848" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="475.529526" y="230.28103" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="479.270788" y="147.605655" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="483.012051" y="187.421422" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="486.753313" y="198.101675" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="490.494575" y="186.613236" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="494.235838" y="173.126803" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="497.9771" y="191.440573" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="501.718362" y="203.836063" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="505.459625" y="187.522313" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-components-PathCollection_4">
+    <g clip-path="url(#v100-gpu-profile-2026-10-20-components-pea4b0f716c)">
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="612.085603" y="142.20098" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="615.826865" y="144.048856" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="619.568127" y="90.165075" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="623.30939" y="76.515904" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="627.050652" y="56.734391" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="630.791915" y="77.59742" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="634.533177" y="183.889838" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="638.274439" y="184.344898" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="642.015702" y="45.839971" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="645.756964" y="72.657837" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="649.498226" y="177.604037" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="653.239489" y="165.094171" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="656.980751" y="145.062025" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="660.722014" y="114.578041" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="664.463276" y="60.207037" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="668.204538" y="61.298835" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="671.945801" y="49.117647" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="675.687063" y="82.150461" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="679.428326" y="59.830975" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-20-components-m93b9d05246" x="683.169588" y="48.82629" style="fill: #087e78; fill-opacity: 0.65; stroke: #087e78; stroke-opacity: 0.65"/>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-components-line2d_13">
+    <path d="M 71.847315 251.95053 
+L 157.148097 251.95053 
+" clip-path="url(#v100-gpu-profile-2026-10-20-components-pea4b0f716c)" style="fill: none; stroke: #345b84; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-components-line2d_14">
+    <path d="M 249.557278 247.913521 
+L 334.85806 247.913521 
+" clip-path="url(#v100-gpu-profile-2026-10-20-components-pea4b0f716c)" style="fill: none; stroke: #345b84; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-components-line2d_15">
+    <path d="M 427.267241 194.771124 
+L 512.568023 194.771124 
+" clip-path="url(#v100-gpu-profile-2026-10-20-components-pea4b0f716c)" style="fill: none; stroke: #345b84; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-components-line2d_16">
+    <path d="M 604.977204 79.87394 
+L 690.277986 79.87394 
+" clip-path="url(#v100-gpu-profile-2026-10-20-components-pea4b0f716c)" style="fill: none; stroke: #345b84; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-components-line2d_17">
+    <path d="M 40.925781 284.957165 
+L 721.19952 284.957165 
+" clip-path="url(#v100-gpu-profile-2026-10-20-components-pea4b0f716c)" style="fill: none; stroke: #77818a; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-components-patch_3">
+    <path d="M 40.925781 329.798739 
+L 40.925781 32.318125 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-components-patch_4">
+    <path d="M 40.925781 329.798739 
+L 721.19952 329.798739 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-20-components-text_10">
+    <text style="font-weight: 700; font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: start" x="40.925781" y="16.318125" transform="rotate(-0 40.925781 16.318125)">Large-transform component screen: twenty shapes and modes</text>
+   </g>
+  </g>
+  <g id="v100-gpu-profile-2026-10-20-components-text_11">
+   <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #536574" transform="translate(11.39976 373.557299)">Each dot compares eight interleaved repetitions for one shape/mode. Bars are unweighted medians across cases.</text>
+   <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #536574" transform="translate(11.39976 384.35976)">Small-transform regressions and their dispatch restrictions are documented separately.</text>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="v100-gpu-profile-2026-10-20-components-pea4b0f716c">
+   <rect x="40.925781" y="32.318125" width="680.273739" height="297.480614"/>
+  </clipPath>
+ </defs>
+</svg>
+<figcaption>The large-transform shared-factor candidate improved all twenty measured shape/mode cases. Complete proofs determine whether those kernel gains help the prover.</figcaption></figure>
+<p>The selected kernel computes each stage's butterfly factor once per workgroup and shares it across columns and repeated row blocks. It also reuses the root squaring chain and the row-scale origin/step calculation. This adds a half-tile of local words and one barrier per FFT stage. The host checks the complete requirement against the existing local-memory allowance, capped at 48 KiB after static usage. When that layout does not fit, the original cached and uncached kernels remain available.</p>
+<p>Previously, each butterfly multiplied an outer root factor by an inner power and then multiplied the data by that result. The first product repeats across columns and row blocks. The shared kernel forms those products once, synchronizes the workgroup, and reuses them while retaining the existing data multiplication. No transform stages or global buffers are added.</p>
+<p>Small transforms showed synchronization overhead. Default selection therefore requires the measured V100 and either at least 16,384 rows with 16 or more columns, or at least 262,144 rows with 3 or more columns. Explicit reference/research selections retain their controls. Legacy DFT programs retain their existing kernel and memory plan. The broad all-shape build is preserved as an experiment and was superseded before proof qualification.</p>
+<details><summary>Small-shape evidence and rejected cases</summary><div class="scroll"><table><thead><tr><th>Shape</th><th>Mode</th><th>Baseline (µs)</th><th>Shared prototype (µs)</th><th>Reduction</th></tr></thead><tbody><tr><td>32 × 16</td><td>forward</td><td>10.24</td><td>10.24</td><td>0.00%</td></tr><tr><td>32 × 16</td><td>inverse + scaling</td><td>11.26</td><td>12.29</td><td>-9.09%</td></tr><tr><td>256 × 1</td><td>forward</td><td>10.77</td><td>12.26</td><td>-13.82%</td></tr><tr><td>256 × 1</td><td>inverse + scaling</td><td>13.31</td><td>14.34</td><td>-7.69%</td></tr><tr><td>256 × 16</td><td>forward</td><td>37.38</td><td>32.77</td><td>12.33%</td></tr><tr><td>256 × 16</td><td>inverse + scaling</td><td>38.91</td><td>34.82</td><td>10.53%</td></tr><tr><td>1,024 × 3</td><td>forward</td><td>47.10</td><td>40.96</td><td>13.04%</td></tr><tr><td>1,024 × 3</td><td>inverse + scaling</td><td>52.22</td><td>143.36</td><td>-174.51%</td></tr><tr><td>1,024 × 16</td><td>forward</td><td>20.46</td><td>21.52</td><td>-5.16%</td></tr><tr><td>1,024 × 16</td><td>inverse + scaling</td><td>22.02</td><td>23.55</td><td>-6.98%</td></tr><tr><td>4,096 × 1</td><td>forward</td><td>161.28</td><td>161.76</td><td>-0.30%</td></tr><tr><td>4,096 × 1</td><td>inverse + scaling</td><td>193.54</td><td>193.54</td><td>0.00%</td></tr><tr><td>4,096 × 4</td><td>forward</td><td>20.48</td><td>22.53</td><td>-10.00%</td></tr><tr><td>4,096 × 4</td><td>inverse + scaling</td><td>22.50</td><td>24.58</td><td>-9.25%</td></tr><tr><td>4,096 × 16</td><td>forward</td><td>27.66</td><td>27.68</td><td>-0.06%</td></tr><tr><td>4,096 × 16</td><td>inverse + scaling</td><td>29.66</td><td>30.72</td><td>-3.56%</td></tr><tr><td>8,192 × 1</td><td>forward</td><td>21.50</td><td>23.54</td><td>-9.45%</td></tr><tr><td>8,192 × 1</td><td>inverse + scaling</td><td>24.61</td><td>27.62</td><td>-12.22%</td></tr><tr><td>8,192 × 3</td><td>forward</td><td>22.53</td><td>24.54</td><td>-8.95%</td></tr><tr><td>8,192 × 3</td><td>inverse + scaling</td><td>25.60</td><td>27.62</td><td>-7.88%</td></tr><tr><td>8,192 × 16</td><td>forward</td><td>38.91</td><td>36.86</td><td>5.26%</td></tr><tr><td>8,192 × 16</td><td>inverse + scaling</td><td>40.96</td><td>39.94</td><td>2.50%</td></tr><tr><td>16,384 × 1</td><td>forward</td><td>22.53</td><td>24.58</td><td>-9.09%</td></tr><tr><td>16,384 × 1</td><td>inverse + scaling</td><td>27.65</td><td>28.67</td><td>-3.70%</td></tr></tbody></table></div><p>The 1024 × 3 inverse/scaled prototype needed 6,154 local words, exceeding the 6,144-word cap. That prototype used the uncached fallback; the integration preserves the baseline cached fallback, which needs 5,642 words. The small screen used twenty interleaved repetitions per case and ran alongside a CPU release build; only GPU event timings are reported.</p></details>
+<h2>Correctness and resources</h2>
+<p>The final source passed 35 targeted tests: 16 host tests and 19 GPU tests. They cover local-memory boundaries, shared/reference transform dispatch, full CPU/GPU transform parity, scaling and ordering, coefficient guards, arithmetic, commitments, witness scheduling and rejection, cleanup, and native wallet proofs verified after GPU shutdown. CPU-only and GPU-without-tuning compile checks also passed. This does not claim the entire repository test suite passed.</p>
+<p>The benchmark ledger contains 108 independently CPU-audited outputs, representing 400 fresh benchmark proofs. All audits passed and output proof hashes are unique. Native wallet audits also reject changed public statement bytes. Required GPU stage counts remain sixteen for recursive proofs and fifteen for native wallet proofs.</p>
+<p>The existing managed-memory admission, driver reserve, host limits, zero-swap checks and 250 W power limit are preserved. The optimization changes workgroup-local scratch use; it adds no managed global buffer. Sampled NVML peaks can miss short-lived allocations, particularly for subsecond wallet runs, and are not used to claim a memory reduction.</p>
+<div class="scroll"><table><thead><tr><th>Qualification peak</th><th>Baseline VRAM (GiB)</th><th>Optimized VRAM (GiB)</th><th>Baseline RSS (GiB)</th><th>Optimized RSS (GiB)</th></tr></thead><tbody><tr><th>Four-input aggregation</th><td>11.996</td><td>11.746</td><td>1.236</td><td>1.238</td></tr><tr><th>Eight-input aggregation</th><td>9.168</td><td>9.168</td><td>1.243</td><td>1.246</td></tr><tr><th>Two concurrent eight-input jobs</th><td>17.148</td><td>17.918</td><td>2.459</td><td>2.475</td></tr></tbody></table></div>
+<p class="note">Concurrent values cover both workers. These are sampled maxima over the retained qualification series; they do not replace the allocator's admission bounds.</p>
+<h2>Energy and concurrency</h2>
+<div class="scroll"><table><thead><tr><th>Workload</th><th>Baseline median (Wh)</th><th>Optimized median (Wh)</th><th>Energy reduction</th></tr></thead><tbody><tr><th>Eight-input aggregation</th><td>2.6204</td><td>2.4628</td><td>6.01%</td></tr><tr><th>Two concurrent eight-input jobs</th><td>5.3218</td><td>4.9811</td><td>6.40%</td></tr></tbody></table></div>
+<p>Energy is NVML whole-board energy over the monitored worker/cohort window, not whole-system energy or attribution to one concurrent worker. A single eight-input worker uses four Rayon threads; concurrent workers use two each. The concurrent workload produces two independent roots from sixteen existing wallet proofs, with fourteen fresh recursive proofs.</p>
+<h2>Compilation and driver-cache behavior</h2>
+<div class="scroll"><table><thead><tr><th>Variant</th><th>Run</th><th>Initialization (s)</th><th>Aggregation (s)</th><th>Specialized compilation (s)</th><th>Cache files after</th></tr></thead><tbody><tr><td>baseline</td><td>first</td><td>36.279</td><td>166.138</td><td>129.996</td><td>6</td></tr><tr><td>baseline</td><td>repeat</td><td>0.441</td><td>36.941</td><td>0.333</td><td>6</td></tr><tr><td>shared_bounded</td><td>first</td><td>36.913</td><td>166.658</td><td>131.471</td><td>6</td></tr><tr><td>shared_bounded</td><td>repeat</td><td>0.448</td><td>36.009</td><td>0.319</td><td>6</td></tr></tbody></table></div>
+<p class="note">Specialized compilation is included in aggregation time. Initialization is measured separately. The empty-cache runs isolate driver-cache state; they still use the existing wallet-input fixtures.</p>
+<p>Each variant uses a separate initially empty <code>CUDA_CACHE_PATH</code> directory, followed by a repeat. The evidence records whether the driver populated the requested path. There is one first-use and one repeat observation per variant. Profiling adds <code>-cl-nv-verbose</code>, so normal and profiling cache entries are warmed independently. First-use profiles are retained alongside matched warmed four-input and wallet captures.</p>
+<h2>How the GPU proving process works</h2>
+<div class="process"><div><strong>1. Admit and compile public metadata</strong><br>The CPU checks budgets and builds AIR, witness schedules and public program/layout data.</div><div><strong>2. Construct the witness</strong><br>GPU kernels derive public values and fill the trace. Dependency waves and status checks enforce execution order.</div><div><strong>3. Hide and extend</strong><br>Fresh randomness supplies salts and masks. Inverse transforms interpolate coefficients; shifts, padding and forward transforms form the low-degree extension.</div><div><strong>4. Commit and challenge</strong><br>Poseidon2 hashes rows and builds Merkle trees. Transcript operations derive challenges; GPU lookups run where the proof profile requires them.</div><div><strong>5. Evaluate constraints</strong><br>The host compiles public quotient code. GPU specialized or interpreted evaluation combines constraints and constructs quotient commitments.</div><div><strong>6. Open and run FRI</strong><br>GPU kernels form opening polynomials, fold FRI layers, grind nonces and gather query/authentication data.</div><div><strong>7. Serialize and verify</strong><br>Bounded proof material returns to the host for serialization. This campaign independently verifies every output with the unchanged CPU verifier.</div></div>
+<p>Transforms, hashing and transcript operations recur throughout proving. Public programs and compiled code can be reused; private witness buffers, masks, salts and scratch belong to one attempt. The legacy wallet profile uses quadratic extension challenges and 96 FRI queries; recursive proofs use cubic challenges and 128 queries. Both retain hiding, 16-fold LDE blowup and 16 query-grinding bits. The optimization changes execution, not these proof parameters.</p>
+<p>Four existing wallet inputs produce two wrappers and one merge: three fresh recursive proofs. Eight inputs produce four wrappers and three merges: seven proofs. See the maintained <a href="gpu-acceleration.md">GPU proving guide</a> for the stage inventory and backend details.</p>
+<h2>Reproduction and evidence</h2>
+<p>Recorded device: Tesla V100-PCIE-32GB, GPU-447932d3-9f28-4277-3b46-3bac0f087af3, 580.173.02, 250.00 W. The container had a 5.76-core CPU quota, a 60.38 GiB memory limit and no swap. Measurements use OpenCL queue events, host spans and NVML board telemetry. They do not measure hardware occupancy or bandwidth saturation.</p>
+<p><a href="evidence/v100-gpu-profile-2026-10-20.json">Machine-readable evidence</a> contains every sample, parsed profiles, source and binary hashes, test results, component cases and cache controls. Raw logs, fixtures, frozen sources, binaries and controllers are retained in <code>benchmark-results/gpu-extensive-20261019-pass2</code>. Production-qualified flags remain false; other hardware and full-block delivery are outside these measurements.</p>
+<pre>python3 benchmark-results/gpu-extensive-20261019-pass2/campaign.py four shared_bounded replay-four-01
+python3 benchmark-results/gpu-extensive-20261019-pass2/campaign.py eight shared_bounded replay-eight-01 single
+python3 benchmark-results/gpu-extensive-20261019-pass2/campaign.py eight shared_bounded replay-concurrent-01 concurrent
+python3 benchmark-results/gpu-extensive-20261019-pass2/wallet.py sample shared_bounded replay-wallet-01</pre>
+<p class="note">Choose unused sample names. Source and control changes require a new frozen variant. Original admission checks, independent auditors and proof parameters are part of the experiment.</p>
+<details><summary>Changed source identities</summary><div class="scroll"><table><thead><tr><th>Source</th><th>Selected SHA-256</th></tr></thead><tbody><tr><td><a href='../lattica-prover-p3/src/gpu/ntt_cache.rs'>src/gpu/ntt_cache.rs</a></td><td><code>4e2d75fcc5f1dcef0bebb9bc2c518ac513c8d4ef4deb256d9d983fcc71097ff1</code></td></tr><tr><td><a href='../lattica-prover-p3/src/gpu/ntt_cached.cl'>src/gpu/ntt_cached.cl</a></td><td><code>5e947579b4331e77a8a47ed87e0ceb467f548743e4626d411bc6e2820a3c2595</code></td></tr><tr><td><a href='../lattica-prover-p3/src/block_v2/gpu_hash/engine.rs'>src/block_v2/gpu_hash/engine.rs</a></td><td><code>620a462cbcf0c058abe604e6e76e2c3d34d39b33f6955f0ae2a176e6fb9798ef</code></td></tr><tr><td><a href='../lattica-prover-p3/src/block_v2/gpu_hash/engine/lde_execute.rs'>src/block_v2/gpu_hash/engine/lde_execute.rs</a></td><td><code>de58676fc3d8a6239df051ecc8349e0f7f6debdfa1b757a9bec40463ef0777a6</code></td></tr><tr><td><a href='../lattica-prover-p3/src/block_v2/gpu_hash/engine/tuning.rs'>src/block_v2/gpu_hash/engine/tuning.rs</a></td><td><code>fa0f0f5335680af1087a97ba6e13af86cb0543b691eef44cab2298e27cd02f6a</code></td></tr><tr><td><a href='../lattica-prover-p3/src/block_v2/gpu_hash/engine/tuning/gpu_tests.rs'>src/block_v2/gpu_hash/engine/tuning/gpu_tests.rs</a></td><td><code>6fc1d99c5062cb76d6a627432b5b8494bb8a94d5ffde05fcfb2ae8b3e2a5393a</code></td></tr></tbody></table></div></details>
+</main></body></html>

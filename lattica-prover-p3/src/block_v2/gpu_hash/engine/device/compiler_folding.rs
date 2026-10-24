@@ -13,7 +13,7 @@ __kernel void device_compiler_fold(__global const ulong *input,
     else if (operation == 1) value[0] = gl_mul(a[0], b[0]);
     else if (operation == 2) {
         invertible = a[0] != 0UL;
-        value[0] = gl_pow(a[0], 0xfffffffeffffffffUL);
+        value[0] = gl_inverse(a[0]);
     } else if (operation == 3) opening_cubic_mul(a, b, value);
     else if (operation == 4) {
         invertible = (a[0] | a[1] | a[2]) != 0UL;

@@ -5,8 +5,8 @@ use super::*;
 pub(crate) const KERNEL_SRC: &str = r#"
 __kernel void device_transform_parameters(__global ulong *parameters,
     uint rows, ulong input_shift, ulong output_shift) {
-    parameters[0] = gl_pow((ulong)rows, 0xfffffffeffffffffUL);
-    parameters[1] = gl_mul(output_shift, gl_pow(input_shift, 0xfffffffeffffffffUL));
+    parameters[0] = gl_inverse((ulong)rows);
+    parameters[1] = gl_mul(output_shift, gl_inverse(input_shift));
 }
 __kernel void device_transform_order(__global const ulong *input,
     __global ulong *output, uint width, uint rows, uint log_rows) {

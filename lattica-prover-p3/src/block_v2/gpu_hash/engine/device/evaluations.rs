@@ -6,8 +6,8 @@ use p3_field::{Field, PrimeField64};
 pub(in crate::block_v2::gpu_hash::engine) const KERNEL_SRC: &str = r#"
 __kernel void device_evaluation_parameters(__global ulong *parameters,
     uint height, ulong shift, ulong generator) {
-    parameters[0] = gl_pow((ulong)height, 0xfffffffeffffffffUL);
-    parameters[1] = gl_mul(generator, gl_pow(shift, 0xfffffffeffffffffUL));
+    parameters[0] = gl_inverse((ulong)height);
+    parameters[1] = gl_mul(generator, gl_inverse(shift));
 }
 __kernel void device_evaluation_scale(__global ulong *coefficients,
     __global const ulong *parameters, uint height, uint columns) {

@@ -303,7 +303,10 @@ pub(in crate::block_v2::gpu_hash::engine) fn prepare(
     let started = std::time::Instant::now();
     let _span = tracing::info_span!(target: "lattica_block_v2_perf", "specialized OpenCL compilation").entered();
     let mut builder = ocl::Program::builder();
-    builder.devices(device).src(&source).cmplr_opt("-cl-std=CL1.2");
+    builder
+        .devices(device)
+        .src([crate::gpu::field::source_prefix(device), &source].concat())
+        .cmplr_opt("-cl-std=CL1.2");
     if super::super::switch("LATTICA_PROFILE_TIMELINE")? {
         builder.cmplr_opt("-cl-nv-verbose");
     }

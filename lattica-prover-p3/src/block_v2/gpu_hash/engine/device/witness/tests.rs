@@ -69,3 +69,52 @@ fn witness_plan_accounts_for_output_inputs_wires_status_and_persistent_metadata(
     assert!(Plan::new(&program, live, 64 << 20, 32 << 20, 1064 * 8 + 7).is_err());
     assert!(Plan::new(&program, live, plan.peak, plan.trace.bytes(), 1064 * 8 + 8).is_ok());
 }
+
+#[cfg(feature = "gpu")]
+#[test]
+#[ignore = "requires OpenCL GPU; serial <=3 GiB zero-swap service"]
+fn gpu_fused_witness_rejects_malformed_wave_markers_and_reuses_session() {
+    use crate::block_v2::gpu_hash::{self as engine, device::DeviceSession, Limits};
+    let _shutdown = engine::TestShutdownGuard;
+    engine::initialize_quotient_test_engine(Limits {
+        managed_bytes: 64 << 20,
+        tile_bytes: 1 << 20,
+        staging_bytes: 64 << 10,
+    })
+    .unwrap();
+    let session = DeviceSession::new().unwrap();
+    session
+        .with_engine(|engine| {
+            engine.tuning.fused_witness = true;
+            Ok(())
+        })
+        .unwrap();
+    let mut builder = ProgramBuilder::new(0).unwrap();
+    let mut wire = builder.input();
+    for _ in 0..129 {
+        wire = builder.add(wire, wire);
+    }
+    let source = builder.finish(None).unwrap();
+    for marker in [0, 65, 129, u64::MAX] {
+        let mut compiled = WitnessProgram::compile(&source, 1 << 20).unwrap();
+        let first = compiled.words[16] as usize;
+        compiled.words[first + 17] = marker;
+        let prepared = session.prepare_witness(Arc::new(compiled)).unwrap();
+        let before = engine::report("before malformed wave").unwrap();
+        assert_eq!(
+            prepared.trace(&session, &[], &[1], 1 << 20).err(),
+            Some(WitnessError::Execution(ExecutionError::Unsatisfied))
+        );
+        let after = engine::report("after malformed wave").unwrap();
+        assert_eq!(
+            before.device_matrix_live_bytes,
+            after.device_matrix_live_bytes
+        );
+        assert_eq!(before.device_matrices, after.device_matrices);
+    }
+    let prepared = session
+        .prepare_witness(Arc::new(WitnessProgram::compile(&source, 1 << 20).unwrap()))
+        .unwrap();
+    let trace = prepared.trace(&session, &[], &[1], 1 << 20).unwrap();
+    assert_eq!(trace.spec().rows(), source.height);
+}

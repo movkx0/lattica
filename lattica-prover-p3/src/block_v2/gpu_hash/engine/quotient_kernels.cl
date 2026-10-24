@@ -30,9 +30,16 @@ __kernel void QUOTIENT_EVALUATE(__global const ulong *code, uint instructions,
         for (uint j = 0; j < QUOTIENT_DEGREE; ++j) output[QUOTIENT_DEGREE * ((size_t)output_first + row) + j] = 0xffffffff00000001UL;
         return;
     }
-    ulong inverse_z = gl_pow(z, 0xfffffffeffffffffUL);
-    ulong first = gl_mul(z, gl_pow(gl_sub(x, 1UL), 0xfffffffeffffffffUL));
-    ulong last = gl_mul(z, gl_pow(transition, 0xfffffffeffffffffUL));
+    // The guard above makes all three denominators nonzero. Share one
+    // inversion of z*(x-1)*(x-trace_last); seven multiplies recover inverse_z
+    // and the two selectors, including their common numerator z.
+    ulong first_denominator = gl_sub(x, 1UL);
+    ulong denominator_product = gl_mul(first_denominator, transition);
+    ulong inverse_product = gl_inverse(gl_mul(z, denominator_product));
+    ulong inverse_z = gl_mul(denominator_product, inverse_product);
+    ulong scaled_inverse = gl_mul(z, gl_mul(z, inverse_product));
+    ulong first = gl_mul(transition, scaled_inverse);
+    ulong last = gl_mul(first_denominator, scaled_inverse);
     ulong accumulator[QUOTIENT_DEGREE] = {0};
 #ifdef QUOTIENT_SPECIALIZED
     QUOTIENT_SPECIALIZED(input, width, parameters, weights, scratch, rows, row,

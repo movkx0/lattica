@@ -5,7 +5,7 @@ pub(crate) const KERNEL_SRC: &str = concat!(
     r#"
 inline void opening_quadratic_inverse(__private const ulong *a, __private ulong *out) {
     ulong norm = gl_sub(gl_mul(a[0], a[0]), gl_mul(7UL, gl_mul(a[1], a[1])));
-    ulong inverse = gl_pow(norm, 0xfffffffeffffffffUL);
+    ulong inverse = gl_inverse(norm);
     out[0] = gl_mul(a[0], inverse);
     out[1] = gl_neg(gl_mul(a[1], inverse));
 }
@@ -35,7 +35,7 @@ __kernel void device_opening_parameters_quadratic(__global const ulong *points, 
     ulong shift_power = gl_pow(shift, (ulong)height);
     power[0] = gl_sub(power[0], shift_power);
     opening_quadratic_mul(z, power, scale);
-    ulong normalization = gl_pow(gl_mul((ulong)height, shift_power), 0xfffffffeffffffffUL);
+    ulong normalization = gl_inverse(gl_mul((ulong)height, shift_power));
     for (uint j = 0; j < 2; ++j) {
         parameters[4 * p + j] = gl_canon(inverse[j]);
         parameters[4 * p + 2 + j] = gl_canon(gl_mul(scale[j], normalization));

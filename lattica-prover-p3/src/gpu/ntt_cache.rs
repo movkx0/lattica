@@ -1,5 +1,16 @@
 //! Workgroup-local twiddle reuse with explicit local-memory admission.
 
+/// The bounded engine compiles this variant independently of research features.
+/// Legacy DFT programs keep their existing cached kernel and local-memory plan.
+pub(crate) fn shared_kernel_source() -> String {
+    format!(
+        "\n#define LATTICA_TUNED_NTT 1\n#define LATTICA_SHARED_NTT 1\n\
+         #define ntt_tile_cached ntt_tile_shared\n{}\n\
+         #undef ntt_tile_cached\n#undef LATTICA_SHARED_NTT\n#undef LATTICA_TUNED_NTT\n",
+        include_str!("ntt_cached.cl")
+    )
+}
+
 /// Expanded cache for the measured Volta device. Other devices retain the
 /// original budget. OpenCL reports static local usage before dynamic arguments
 /// are bound, so subtract that usage from the device's complete allowance.
@@ -25,8 +36,13 @@ pub(crate) fn local_word_limit(
         _ => return Err("GPU local memory response".into()),
     };
     let mut static_bytes = 0usize;
-    for name in ["ntt_tile_cached", "ntt_tile_cached_tuned", "ntt_tile_tables"] {
-        if name != "ntt_tile_cached" && !cfg!(feature = "gpu-tuning") {
+    for name in [
+        "ntt_tile_cached",
+        "ntt_tile_shared",
+        "ntt_tile_cached_tuned",
+        "ntt_tile_tables",
+    ] {
+        if !matches!(name, "ntt_tile_cached" | "ntt_tile_shared") && !cfg!(feature = "gpu-tuning") {
             continue;
         }
         let kernel =
@@ -101,9 +117,62 @@ pub(crate) fn power_words_with_limit(
     (tile + powers <= limit.min(6144)).then_some(powers)
 }
 
+/// Shared butterfly factors require another half-tile after existing powers.
+/// Declining this layout leaves the original cached/uncached choices available.
+pub(crate) fn shared_power_words_with_limit(
+    stages: usize,
+    log_columns: usize,
+    scaled: bool,
+    limit: usize,
+) -> Option<usize> {
+    let powers = power_words_with_limit(stages, log_columns, scaled, limit)?;
+    let rows = 1usize << stages;
+    let shared = powers + rows / 2;
+    ((rows << log_columns) + shared <= limit.min(6144)).then_some(shared)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{local_words, power_words, power_words_with_limit, preferred_column_bits};
+    use super::{
+        local_words, power_words, power_words_with_limit, preferred_column_bits,
+        shared_power_words_with_limit,
+    };
+
+    #[test]
+    fn shared_twiddles_admit_complete_storage_and_preserve_cached_fallback() {
+        for scaled in [false, true] {
+            let base = if scaled { 392 } else { 136 };
+            let shared = base + 128;
+            let exact = 4096 + shared;
+            assert_eq!(
+                shared_power_words_with_limit(8, 4, scaled, exact),
+                Some(shared)
+            );
+            assert_eq!(shared_power_words_with_limit(8, 4, scaled, exact - 1), None);
+            assert_eq!(power_words_with_limit(8, 4, scaled, exact - 1), Some(base));
+        }
+        for stages in 1..=12 {
+            for columns in 0..=4 {
+                for scaled in [false, true] {
+                    if let Some(words) =
+                        shared_power_words_with_limit(stages, columns, scaled, usize::MAX)
+                    {
+                        assert!((1usize << (stages + columns)) + words <= 6144);
+                        assert_eq!(
+                            words,
+                            (1usize << stages) + stages + if scaled { 1usize << stages } else { 0 }
+                        );
+                    }
+                }
+            }
+        }
+        for (stages, columns) in [(0, 0), (13, 0), (usize::MAX, 0), (1, usize::MAX)] {
+            assert_eq!(
+                shared_power_words_with_limit(stages, columns, true, usize::MAX),
+                None
+            );
+        }
+    }
 
     #[test]
     fn expanded_cache_subtracts_static_usage_and_checks_complete_local_storage() {

@@ -15,9 +15,13 @@ pub use replay::ReplaySalts;
 
 const STREAM_WORDS: u128 = 1 << 68; // rand_chacha positions count u32 words.
 const MAX_OUTPUT_WORDS: usize = 1 << 28;
-const BATCH_WORDS: usize = 1 << 20;
-// Keep the Rust admission bound within the OpenCL offset scan's local array.
-const _: () = assert!(TILE_WORDS == 256 && BATCH_WORDS <= TILE_WORDS * 4096);
+const MIN_BATCH_WORDS: usize = 1 << 20;
+#[cfg(feature = "gpu")]
+const BATCH_WORDS: usize = 1 << 22;
+#[cfg(not(feature = "gpu"))]
+const BATCH_WORDS: usize = MIN_BATCH_WORDS;
+// The offset scan visits bounded 4096-tile chunks in its fixed local array.
+const _: () = assert!(TILE_WORDS == 256 && BATCH_WORDS <= TILE_WORDS * 4096 * 4);
 const TILE_WORDS: usize = 256;
 // Two words per lane for counts/scatter; their local arrays use at most 1 KiB.
 // The offset scan has a separate 16 KiB local array plus compiler overhead.
@@ -51,29 +55,40 @@ impl Plan {
         {
             return Err("GPU random request exceeds bounded stream or output length".into());
         }
-        let batch_words = count.min(BATCH_WORDS);
-        // A request can start at any u32 position, including an odd word.
-        let raw_words = (batch_words * 2 + 15).div_ceil(16) * 8;
-        let tiles = batch_words.div_ceil(TILE_WORDS);
-        let mut peak_bytes = live;
-        for words in [count, raw_words, tiles, tiles, 1] {
-            let bytes = words
-                .checked_mul(8)
-                .ok_or("GPU random allocation overflow")?;
-            peak_bytes = peak_bytes
-                .checked_add(bytes)
-                .ok_or("GPU random live-byte overflow")?;
-            if bytes > max_alloc || peak_bytes > limit {
+        let output_bytes = count
+            .checked_mul(8)
+            .ok_or("GPU random allocation overflow")?;
+        let output_live = live
+            .checked_add(output_bytes)
+            .ok_or("GPU random live-byte overflow")?;
+        if output_bytes > max_alloc || output_live > limit {
+            return Err("GPU random output and scratch exceed admission".into());
+        }
+        let minimum = count.min(MIN_BATCH_WORDS);
+        let mut batch_words = count.min(BATCH_WORDS);
+        loop {
+            // A request can start at any u32 position, including an odd word.
+            let raw_words = (batch_words * 2 + 15).div_ceil(16) * 8;
+            let tiles = batch_words.div_ceil(TILE_WORDS);
+            let scratch_bytes = (raw_words + 2 * tiles + 1) * 8;
+            if let Some(peak_bytes) = output_live.checked_add(scratch_bytes) {
+                if peak_bytes <= limit && raw_words * 8 <= max_alloc && tiles * 8 <= max_alloc {
+                    return Ok(Self {
+                        output_words: count,
+                        batch_words,
+                        raw_words,
+                        tiles,
+                        peak_bytes,
+                    });
+                }
+            }
+            // Preserve the previous one-million-word admission boundary when
+            // the preferred batch does not fit the live managed-memory budget.
+            if batch_words == minimum {
                 return Err("GPU random output and scratch exceed admission".into());
             }
+            batch_words = (batch_words / 2).max(minimum);
         }
-        Ok(Self {
-            output_words: count,
-            batch_words,
-            raw_words,
-            tiles,
-            peak_bytes,
-        })
     }
 }
 
@@ -341,7 +356,7 @@ fn compact_with_layout(
     output_start: usize,
     layout: CompactionLayout,
 ) -> Result<(usize, u128), String> {
-    // The offset kernel has 4096 local scan entries. Fail before any dispatch
+    // Each offset-scan chunk has 4096 local entries. Fail before dispatch
     // if a caller bypasses the bounded batch plan.
     if count == 0 || count > BATCH_WORDS {
         return Err("random compaction exceeds bounded offset scan".into());
@@ -357,10 +372,13 @@ fn compact_with_layout(
         }
     };
     let work_items = tiles * COMPACTION_LANES;
-    let mut elapsed = 0;
-    let mut event = compute::Event::empty();
+    let mut count_event = compute::Event::empty();
+    let mut offset_event = compute::Event::empty();
+    let mut scatter_event = compute::Event::empty();
     // SAFETY: the caller's Plan admits all raw words, tile counters and the
-    // output suffix. Ordered kernels compute disjoint, stable scatter ranges.
+    // output suffix. The in-order queue keeps generation, counts, offsets,
+    // scatter and the status read ordered without intermediate host waits.
+    // The caller's fence retains/drains every allocation on error or unwind.
     unsafe {
         let mut kernel = engine.pq.kernel_builder(count_kernel);
         kernel
@@ -374,12 +392,10 @@ fn compact_with_layout(
             .build()
             .map_err(|e| e.to_string())?
             .cmd()
-            .enew(&mut event)
+            .enew(&mut count_event)
             .enq()
             .map_err(|e| e.to_string())?;
     }
-    elapsed += engine.timeline.record(count_kernel, &event)?;
-    event = compute::Event::empty();
     unsafe {
         let mut kernel = engine.pq.kernel_builder(offset_kernel);
         kernel
@@ -399,12 +415,10 @@ fn compact_with_layout(
             .build()
             .map_err(|e| e.to_string())?
             .cmd()
-            .enew(&mut event)
+            .enew(&mut offset_event)
             .enq()
             .map_err(|e| e.to_string())?;
     }
-    elapsed += engine.timeline.record(offset_kernel, &event)?;
-    event = compute::Event::empty();
     unsafe {
         let mut kernel = engine.pq.kernel_builder(scatter_kernel);
         kernel
@@ -420,11 +434,10 @@ fn compact_with_layout(
             .build()
             .map_err(|e| e.to_string())?
             .cmd()
-            .enew(&mut event)
+            .enew(&mut scatter_event)
             .enq()
             .map_err(|e| e.to_string())?;
     }
-    elapsed += engine.timeline.record(scatter_kernel, &event)?;
     let mut accepted = [0u64];
     total
         .buffer()
@@ -432,6 +445,11 @@ fn compact_with_layout(
         .enq()
         .map_err(|e| e.to_string())?;
     engine.pq.queue().finish().map_err(|e| e.to_string())?;
+    // Collect the same per-kernel receipts after the required status read has
+    // completed the whole batch, rather than serializing host submissions.
+    let elapsed = engine.timeline.record(count_kernel, &count_event)?
+        + engine.timeline.record(offset_kernel, &offset_event)?
+        + engine.timeline.record(scatter_kernel, &scatter_event)?;
     if accepted[0] > count as u64 {
         return Err("invalid GPU random status".into());
     }
@@ -618,10 +636,10 @@ impl DeviceRandom {
                         .enq()
                         .map_err(|e| e.to_string())?;
                 }
-                let block_ns = engine.timeline.record("device_random_chacha20", &event)?;
                 let (accepted, compact_ns) = compact(
                     engine, &raw, &counts, &offsets, &total, &output, offset, candidates, written,
                 )?;
+                let block_ns = engine.timeline.record("device_random_chacha20", &event)?;
                 elapsed += block_ns + compact_ns;
                 cursor.position += (candidates as u128) * 2;
                 written += accepted;

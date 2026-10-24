@@ -29,11 +29,30 @@ __kernel void lde_absorb(__global const ulong *input, __global ulong *states,
     ulong s[8];
     size_t state_base = ((size_t)row0 + row) * 8;
     for (uint k = 0; k < 8; ++k) s[k] = states[state_base + k];
-    uint at = rate_offset;
-    for (uint col = 0; col < width; ++col) {
-        s[at++] = input[row * (size_t)width + col];
-        if (at == 4) { perm8(s, rci, rcp, rcf, diag); at = 0; }
+    // Constant state indices let the OpenCL compiler keep the sponge in
+    // registers. Complete a preceding tile's partial block before absorbing
+    // whole blocks; an incomplete suffix remains pending for the next call.
+    uint col = 0u;
+    if (rate_offset != 0u && width != 0u) {
+        if (rate_offset <= 1u && col < width) s[1] = input[row * (size_t)width + col++];
+        if (rate_offset <= 2u && col < width) s[2] = input[row * (size_t)width + col++];
+        if (col < width) s[3] = input[row * (size_t)width + col++];
+        if (rate_offset + col == 4u) perm8(s, rci, rcp, rcf, diag);
+        else {
+            for (uint k = 0; k < 8; ++k) states[state_base + k] = s[k];
+            return;
+        }
     }
+    for (; width - col >= 4u; col += 4u) {
+        s[0] = input[row * (size_t)width + col];
+        s[1] = input[row * (size_t)width + col + 1];
+        s[2] = input[row * (size_t)width + col + 2];
+        s[3] = input[row * (size_t)width + col + 3];
+        perm8(s, rci, rcp, rcf, diag);
+    }
+    if (col < width) s[0] = input[row * (size_t)width + col++];
+    if (col < width) s[1] = input[row * (size_t)width + col++];
+    if (col < width) s[2] = input[row * (size_t)width + col];
     for (uint k = 0; k < 8; ++k) states[state_base + k] = s[k];
 }
 __kernel void lde_leaf_finalize(__global const ulong *states, __global ulong *leaves,
@@ -475,8 +494,18 @@ impl Engine {
                 } else { None }
             } else { None };
             #[cfg(feature = "gpu")]
+            let shared_power_words = if self.nvidia_shuffle && self.tuning.shared_ntt(height, width) {
+                crate::gpu::ntt_cache::shared_power_words_with_limit(
+                    count, log_c, last && (post_c != 1 || post_b != 1), self.ntt_local_words,
+                )
+            } else { None };
+            #[cfg(feature = "gpu")]
+            let use_shared_ntt = table.is_none() && shared_power_words.is_some();
+            #[cfg(feature = "gpu")]
             let kernel_name = if table.is_some() {
                 "ntt_tile_tables"
+            } else if use_shared_ntt {
+                "ntt_tile_shared"
             } else if power_words.is_some() {
                 if self.nvidia_shuffle && self.tuning.ntt_powers(height, width) {
                     "ntt_tile_cached_tuned"
@@ -484,6 +513,8 @@ impl Engine {
             } else {
                 "ntt_tile"
             };
+            #[cfg(feature = "gpu")]
+            let power_words = if use_shared_ntt { shared_power_words } else { power_words };
             #[cfg(feature = "gpu-metal")]
             let kernel_name = match (tables.is_some(), last && prefix.is_some()) {
                 (true, true) => "ntt_tile_cached_prefix",
@@ -1416,6 +1447,94 @@ impl Engine {
 mod tests {
     use super::*;
     use p3_field::PrimeCharacteristicRing;
+
+    #[cfg(feature = "gpu")]
+    #[test]
+    #[ignore = "requires OpenCL GPU; run serially in a bounded zero-swap service"]
+    fn gpu_scalar_absorb_matches_cpu_for_every_rate_offset_and_partial_block() {
+        use ocl::{Buffer, ProQue};
+        use p3_symmetric::Permutation;
+
+        let (platform, device, _) = crate::gpu_device::select().unwrap();
+        let pq = ProQue::builder()
+            .platform(platform)
+            .device(device)
+            .src([
+                crate::gpu_constants::opencl_poseidon2_prefix(),
+                crate::gpu::KERNEL_SRC,
+                KERNEL_SRC,
+            ].concat())
+            .dims(1)
+            .build()
+            .unwrap();
+        let upload = |words: &[u64]| -> Buffer<u64> {
+            pq.buffer_builder().len(words.len()).copy_host_slice(words).build().unwrap()
+        };
+        let (rci, rcp, rcf, diag) = crate::gpu_constants::poseidon2_consts();
+        let constants = [upload(&rci), upload(&rcp), upload(&rcf), upload(&diag)];
+        let perm = p3_goldilocks::default_goldilocks_poseidon2_8();
+        let p = Val::ORDER_U64;
+        let word = |i: usize| match i % 7 {
+            0 => 0,
+            1 => 1,
+            2 => p - 1,
+            3 => p,
+            4 => u64::MAX,
+            _ => (i as u64).wrapping_mul(0x9e37_79b9_7f4a_7c15),
+        };
+        for rows in [1usize, 3, 17, 33] {
+            for width in [0usize, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 15, 16, 17, 55, 64, 200] {
+                for rate in 0..4usize {
+                    let input: Vec<_> = (0..(rows * width).max(1)).map(word).collect();
+                    let mut initial = vec![99u64; (rows + 4) * 8];
+                    for (i, value) in initial[16..16 + rows * 8].iter_mut().enumerate() {
+                        *value = word(i + 123);
+                    }
+                    let mut expected = Vec::with_capacity(rows * 8);
+                    for row in 0..rows {
+                        let mut state: [Val; 8] = std::array::from_fn(|i| {
+                            Val::from_u64(initial[16 + row * 8 + i])
+                        });
+                        let mut at = rate;
+                        for col in 0..width {
+                            state[at] = Val::from_u64(input[row * width + col]);
+                            at += 1;
+                            if at == 4 {
+                                perm.permute_mut(&mut state);
+                                at = 0;
+                            }
+                        }
+                        expected.extend(state.map(|value| value.as_canonical_u64()));
+                    }
+                    let source = upload(&input);
+                    let states = upload(&initial);
+                    let mut builder = pq.kernel_builder("lde_absorb");
+                    builder
+                        .arg(&source)
+                        .arg(&states)
+                        .arg(2u32)
+                        .arg(rows as u32)
+                        .arg(width as u32)
+                        .arg(rate as u32)
+                        .global_work_size(rows.div_ceil(32) * 32);
+                    for constant in &constants {
+                        builder.arg(constant);
+                    }
+                    // SAFETY: active items own disjoint eight-word states;
+                    // rounded-up items exit before accessing either buffer.
+                    unsafe { builder.build().unwrap().enq().unwrap() };
+                    let mut actual = vec![0; initial.len()];
+                    states.read(&mut actual).enq().unwrap();
+                    pq.queue().finish().unwrap();
+                    assert_eq!(&actual[..16], &[99; 16]);
+                    assert_eq!(&actual[16 + rows * 8..], &[99; 16]);
+                    let canonical: Vec<_> = actual[16..16 + rows * 8]
+                        .iter().map(|value| value % p).collect();
+                    assert_eq!(canonical, expected, "rows={rows}, width={width}, rate={rate}");
+                }
+            }
+        }
+    }
 
     fn matrix(height: usize, width: usize, salt: u64) -> RowMajorMatrix<Val> {
         RowMajorMatrix::new(

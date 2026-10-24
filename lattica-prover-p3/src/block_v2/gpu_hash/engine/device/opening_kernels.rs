@@ -27,7 +27,7 @@ __kernel void device_opening_parameters(__global const ulong *points, __global u
     ulong shift_power = gl_pow(shift, (ulong)height);
     power[0] = gl_sub(power[0], shift_power);
     opening_cubic_mul(z, power, scale);
-    ulong normalization = gl_pow(gl_mul((ulong)height, shift_power), 0xfffffffeffffffffUL);
+    ulong normalization = gl_inverse(gl_mul((ulong)height, shift_power));
     for (uint j = 0; j < 3; ++j) {
         parameters[6 * p + j] = gl_canon(inverse[j]);
         parameters[6 * p + 3 + j] = gl_canon(gl_mul(scale[j], normalization));

@@ -3,11 +3,10 @@ pub(crate) const KERNEL_SRC: &str = r#"
 __kernel void device_witness_public(__global const ulong *input, __global ulong *wires, uint count) {
     uint i = get_global_id(0); if (i < count) wires[i] = input[i];
 }
-__kernel void device_witness_wave(__global const ulong *program, uint first, uint count,
+inline void device_witness_instruction(__global const ulong *program, uint instruction,
     __global const ulong *input, __global ulong *wires, __global uint *status,
     __global const ulong *rci, __global const ulong *rcp, __global const ulong *rcf, __global const ulong *diag) {
-    uint i = get_global_id(0); if (i >= count) return;
-    __global const ulong *c = program + program[16] + (size_t)(first+i)*18;
+    __global const ulong *c = program + program[16] + (size_t)instruction*18;
     ulong a[3], b[3], result[3], s[8], value = 0;
     uint index = 0;
     switch ((uint)c[0]) {
@@ -19,7 +18,7 @@ __kernel void device_witness_wave(__global const ulong *program, uint first, uin
     case 5: value = wires[c[1]]; if (value != 0 && value != 1) atomic_or(status,1U); break;
     case 6:
         value = wires[c[2]]; if (value == 0) atomic_or(status,1U);
-        wires[c[1]] = gl_canon(gl_pow(value,0xfffffffeffffffffUL)); break;
+        wires[c[1]] = gl_canon(gl_inverse(value)); break;
     case 7:
         value = wires[c[2]]; if (value != 0 && value != 1) atomic_or(status,1U);
         wires[c[1]] = value == 1 ? wires[c[4]] : wires[c[3]]; break;
@@ -46,6 +45,35 @@ __kernel void device_witness_wave(__global const ulong *program, uint first, uin
         wires[c[1]] = wires[program[c[2]+c[3]+index]]; break;
     }
 }
+__kernel void device_witness_wave(__global const ulong *program, uint first, uint count,
+    __global const ulong *input, __global ulong *wires, __global uint *status,
+    __global const ulong *rci, __global const ulong *rcp, __global const ulong *rcf, __global const ulong *diag) {
+    uint i = get_global_id(0); if (i >= count) return;
+    device_witness_instruction(program, first+i, input, wires, status, rci, rcp, rcf, diag);
+}
+
+// Exactly one workgroup executes at most 64 dependency levels. Global-memory
+// barriers publish SSA wire writes before the next level reads them. Bounds are
+// uniform across the group, including malformed-marker rejection paths.
+__kernel __attribute__((reqd_work_group_size(128, 1, 1)))
+void device_witness_fused(__global const ulong *program, uint first, uint end,
+    __global const ulong *input, __global ulong *wires, __global uint *status,
+    __global const ulong *rci, __global const ulong *rcp, __global const ulong *rcf, __global const ulong *diag) {
+    uint lane = get_local_id(0);
+    for (uint wave = 0; wave < 64 && first < end; ++wave) {
+        ulong count = program[program[16] + (size_t)first*18 + 17];
+        if (count == 0 || count > 128 || count > (ulong)(end-first)) {
+            if (lane == 0) atomic_or(status, 1U);
+            return;
+        }
+        if (lane < count)
+            device_witness_instruction(program, first+lane, input, wires, status, rci, rcp, rcf, diag);
+        barrier(CLK_GLOBAL_MEM_FENCE);
+        first += (uint)count;
+    }
+    if (first != end && lane == 0) atomic_or(status, 1U);
+}
+
 inline uint witness_port(uint port, uint lane, uint lanes) {
     return lane < 8 ? port*8+lane : 32+port*(lanes-8)+lane-8;
 }

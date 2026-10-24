@@ -348,7 +348,20 @@ fn gpu_tuning_expanded_ntt_cache_matches_cpu_for_orders_scaling_and_in_place_sta
             expanded > 4096,
             "this test must exercise the expanded V100 cache"
         );
-        for (log_rows, width) in [(8u32, 15usize), (8, 16), (8, 17), (16, 17)] {
+        let saved_tuning = engine.tuning;
+        engine.tuning.tables = false;
+        engine.tuning.ntt = false;
+        for (log_rows, width) in [
+            (1u32, 1usize),
+            (5, 3),
+            (8, 15),
+            (8, 16),
+            (8, 17),
+            (12, 1),
+            (14, 16),
+            (16, 17),
+            (18, 3),
+        ] {
             let rows = 1usize << log_rows;
             let input = words(rows * width);
             for inverse in [false, true] {
@@ -385,45 +398,50 @@ fn gpu_tuning_expanded_ntt_cache_matches_cpu_for_orders_scaling_and_in_place_sta
                             (value * shift.exp_u64((i / width) as u64)).as_canonical_u64()
                         })
                         .collect();
-                    for local_words in [4096, expanded] {
+                    for local_words in [4096, 4232, 4360, expanded] {
                         engine.ntt_local_words = local_words;
-                        for reversed in [false, true] {
-                            let mut initial = input.clone();
-                            initial.extend_from_slice(&[99; 5]);
-                            let source = buffer(engine, &initial);
-                            let output = buffer(engine, &vec![99; rows * width + 5]);
-                            let in_output = engine
-                                .lde_ntt(
-                                    &source,
-                                    &output,
-                                    &roots,
-                                    inverse,
-                                    rows,
-                                    width,
-                                    scale.as_canonical_u64(),
-                                    shift.as_canonical_u64(),
-                                    true,
-                                    reversed,
-                                    false,
-                                    None,
-                                )
-                                .unwrap();
-                            let actual = read(if in_output { &output } else { &source });
-                            for row in 0..rows {
-                                let stored = if reversed {
-                                    row.reverse_bits() >> (usize::BITS - log_rows)
-                                } else {
-                                    row
-                                };
-                                assert_eq!(&actual[stored * width..(stored + 1) * width],
+                        for shared in [false, true] {
+                            engine.tuning.ntt_shared = shared;
+                            for reversed in [false, true] {
+                                let mut initial = input.clone();
+                                initial.extend_from_slice(&[99; 5]);
+                                let source = buffer(engine, &initial);
+                                let output = buffer(engine, &vec![99; rows * width + 5]);
+                                let in_output = engine
+                                    .lde_ntt(
+                                        &source,
+                                        &output,
+                                        &roots,
+                                        inverse,
+                                        rows,
+                                        width,
+                                        scale.as_canonical_u64(),
+                                        shift.as_canonical_u64(),
+                                        true,
+                                        reversed,
+                                        false,
+                                        None,
+                                    )
+                                    .unwrap();
+                                let actual = read(if in_output { &output } else { &source });
+                                for row in 0..rows {
+                                    let stored = if reversed {
+                                        row.reverse_bits() >> (usize::BITS - log_rows)
+                                    } else {
+                                        row
+                                    };
+                                    assert_eq!(&actual[stored * width..(stored + 1) * width],
                                     &expected[row * width..(row + 1) * width],
-                                    "log={log_rows} width={width} inverse={inverse} reversed={reversed} local={local_words}");
+                                    "log={log_rows} width={width} inverse={inverse} reversed={reversed} local={local_words} shared={shared}");
+                                }
+                                assert_eq!(&actual[rows * width..], &[99; 5]);
                             }
-                            assert_eq!(&actual[rows * width..], &[99; 5]);
                         }
                     }
                 }
             }
         }
+        engine.ntt_local_words = expanded;
+        engine.tuning = saved_tuning;
     });
 }

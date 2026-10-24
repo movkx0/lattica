@@ -226,15 +226,31 @@ fn random_plan_covers_offset_scratch_and_rejects_overflow_or_stream_wrap() {
                 p.peak_bytes,
                 4096 + 8 * (count + p.raw_words + 2 * p.tiles + 1)
             );
-            assert!(Plan::new(count, position, 4096, p.peak_bytes - 1, usize::MAX).is_err());
-            assert!(Plan::new(
+            let smaller = Plan::new(count, position, 4096, p.peak_bytes - 1, usize::MAX);
+            if p.batch_words <= MIN_BATCH_WORDS {
+                assert!(smaller.is_err());
+            } else {
+                let smaller = smaller.unwrap();
+                assert!(smaller.batch_words < p.batch_words);
+                assert!(smaller.peak_bytes < p.peak_bytes);
+                assert_eq!(smaller.output_words, count);
+            }
+            let smaller = Plan::new(
                 count,
                 position,
                 4096,
                 usize::MAX,
-                count.max(p.raw_words) * 8 - 1
-            )
-            .is_err());
+                count.max(p.raw_words) * 8 - 1,
+            );
+            if p.batch_words > MIN_BATCH_WORDS && p.raw_words > count {
+                let smaller = smaller.unwrap();
+                assert!(smaller.batch_words < p.batch_words);
+                assert!(smaller.raw_words < p.raw_words);
+                assert_eq!(smaller.output_words, count);
+            } else {
+                assert!(smaller.is_err());
+            }
+            assert!(Plan::new(count, position, 4096, usize::MAX, count * 8 - 1).is_err());
         }
     }
     for (count, position) in [
@@ -248,6 +264,23 @@ fn random_plan_covers_offset_scratch_and_rejects_overflow_or_stream_wrap() {
         assert!(Plan::new(count, position, 0, usize::MAX, usize::MAX).is_err());
     }
     assert!(Plan::new(1, 0, usize::MAX, usize::MAX, usize::MAX).is_err());
+}
+
+#[test]
+fn random_plan_preserves_legacy_batch_under_memory_pressure() {
+    let count = BATCH_WORDS + 257;
+    let live = 4096;
+    let raw_words = (MIN_BATCH_WORDS * 2 + 15).div_ceil(16) * 8;
+    let tiles = MIN_BATCH_WORDS.div_ceil(TILE_WORDS);
+    let legacy_peak = live + (count + raw_words + 2 * tiles + 1) * 8;
+    let preferred = Plan::new(count, 15, live, usize::MAX, usize::MAX).unwrap();
+    assert_eq!(preferred.batch_words, BATCH_WORDS);
+    let bounded = Plan::new(count, 15, live, legacy_peak, usize::MAX).unwrap();
+    assert_eq!(bounded.batch_words, MIN_BATCH_WORDS);
+    assert_eq!(bounded.raw_words, raw_words);
+    assert_eq!(bounded.tiles, tiles);
+    assert_eq!(bounded.peak_bytes, legacy_peak);
+    assert!(Plan::new(count, 15, live, legacy_peak - 1, usize::MAX).is_err());
 }
 
 #[cfg(feature = "gpu")]
@@ -335,8 +368,32 @@ fn gpu_random_rejection_compaction_preserves_reference_order_and_scrubs_secrets(
     let _shutdown = super::super::super::TestShutdownGuard;
     initialize();
     let session = DeviceSession::new().unwrap();
-    for count in [1usize, 127, 128, 129, 255, 256, 257, 511, 512, 513, 4097,
-        32767, 32768, 32769, 65535, 65536, 65537, BATCH_WORDS - 256, BATCH_WORDS - 1, BATCH_WORDS] {
+    for count in [
+        1usize,
+        127,
+        128,
+        129,
+        255,
+        256,
+        257,
+        511,
+        512,
+        513,
+        4097,
+        32767,
+        32768,
+        32769,
+        65535,
+        65536,
+        65537,
+        MIN_BATCH_WORDS - 1,
+        MIN_BATCH_WORDS,
+        MIN_BATCH_WORDS + 1,
+        2 * MIN_BATCH_WORDS + 1,
+        BATCH_WORDS - 256,
+        BATCH_WORDS - 1,
+        BATCH_WORDS,
+    ] {
         for offset in [0u32, 1, 15] {
             for pattern in 0..3 {
                 let candidates: Vec<_> = (0..count)
@@ -403,14 +460,16 @@ fn gpu_random_rejection_compaction_preserves_reference_order_and_scrubs_secrets(
                             .fill(9u64, None)
                             .enq()
                             .map_err(|e| e.to_string())?;
-                    if count == 1 {
-                        for invalid in [0, BATCH_WORDS + 1, usize::MAX] {
-                            let error = compact(
-                                engine, &raw, &counts, &offsets, &total, &output, offset, invalid, 17,
-                            ).unwrap_err();
-                            assert!(error.contains("bounded offset scan"));
+                        if count == 1 {
+                            for invalid in [0, BATCH_WORDS + 1, usize::MAX] {
+                                let error = compact(
+                                    engine, &raw, &counts, &offsets, &total, &output, offset,
+                                    invalid, 17,
+                                )
+                                .unwrap_err();
+                                assert!(error.contains("bounded offset scan"));
+                            }
                         }
-                    }
                         let (n, _) = compact(
                             engine, &raw, &counts, &offsets, &total, &output, offset, count, 17,
                         )?;

@@ -306,9 +306,44 @@ impl PreparedWitness {
                 } else {
                     None
                 };
+                let fused_wave = if engine.tuning.fused_witness && !self.schedule.waves.is_empty() {
+                    Some(engine.pq.kernel_builder("device_witness_fused")
+                        .arg(&self.metadata.buffer).arg(0u32).arg(0u32)
+                        .arg(&input.buffer).arg(&wires.buffer).arg(&status.buffer)
+                        .arg(&engine.constants[0].buffer).arg(&engine.constants[1].buffer)
+                        .arg(&engine.constants[2].buffer).arg(&engine.constants[3].buffer)
+                        .global_work_size(128usize).local_work_size(128usize)
+                        .build().map_err(|e| e.to_string())?)
+                } else {
+                    None
+                };
                 let mut batch = super::event_batch::EventBatch::new(
                     engine, &session.session, crate::proving::Stage::WitnessTrace);
-                for wave in &self.schedule.waves {
+                let mut next = 0;
+                let mut fused_launches = 0;
+                let mut wave_launches = 0;
+                while next < self.schedule.waves.len() {
+                    let wave = &self.schedule.waves[next];
+                    if let Some(kernel) = &fused_wave {
+                        let end = narrow_wave_end(&self.schedule.waves, next);
+                        if end > next + 1 {
+                            let last = self.schedule.waves[end - 1].end;
+                            kernel.set_arg(1, wave.start as u32).map_err(|e| e.to_string())?;
+                            kernel.set_arg(2, last as u32).map_err(|e| e.to_string())?;
+                            let mut event = compute::Event::empty();
+                            // SAFETY: exactly one 128-thread workgroup executes
+                            // <=64 waves of <=128 disjoint writes. Its global
+                            // memory barriers preserve all SSA dependencies.
+                            unsafe {
+                                kernel.cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
+                            }
+                            batch.engine.timeline.launch("device_witness_fused", 128, Some(128), (last - wave.start) * 8);
+                            batch.record("device_witness_fused", event)?;
+                            fused_launches += 1;
+                            next = end;
+                            continue;
+                        }
+                    }
                     let uncached;
                     let kernel = if let Some(kernel) = &cached_wave {
                         kernel.set_arg(1, wave.start as u32).map_err(|e| e.to_string())?;
@@ -328,8 +363,11 @@ impl PreparedWitness {
                     }
                     batch.engine.timeline.launch("device_witness_wave", wave.len(), None, wave.len() * 8);
                     batch.record("device_witness_wave", event)?;
+                    wave_launches += 1;
+                    next += 1;
                 }
                 batch.finish()?;
+                eprintln!("bounded_gpu_witness_launches logical_waves={} wave_launches={wave_launches} fused_launches={fused_launches}", self.schedule.waves.len());
                 let mut status_word=[0u64;1];
                 status.buffer.read(&mut status_word[..]).enq().map_err(|e|e.to_string())?;
                 fence.finish()?;
@@ -366,3 +404,13 @@ impl PreparedWitness {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(feature = "gpu")]
+fn narrow_wave_end(waves: &[std::ops::Range<usize>], first: usize) -> usize {
+    first
+        + waves[first..]
+            .iter()
+            .take(64)
+            .take_while(|wave| wave.len() <= 128)
+            .count()
+}

@@ -71,7 +71,7 @@ mod tests {
 
 pub(crate) const KERNEL_SRC: &str = r#"
 __kernel void device_trace_normalization(__global ulong *parameter, uint height) {
-    parameter[0] = gl_pow((ulong)height, 0xfffffffeffffffffUL);
+    parameter[0] = gl_inverse((ulong)height);
 }
 __kernel void device_trace_columns(__global const ulong *trace, __global const ulong *random, __global ulong *output, uint height, uint width, uint random_columns, uint first, uint columns) {
     size_t i = get_global_id(0);

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V100 prover: explicit field carry instructions</title>
+<style>
+body{font:16px/1.55 system-ui,sans-serif;max-width:1120px;margin:40px auto;padding:0 22px;color:#203044}
+h1,h2{line-height:1.2}h1{font-size:2.1rem}h2{margin-top:2rem}
+table{border-collapse:collapse;width:100%;font-size:.9rem}td,th{text-align:left;padding:9px;border-bottom:1px solid #dce3eb}
+img{max-width:100%;height:auto}code{font-size:.88em}a{color:#086a82}.note{padding:14px 18px;background:#eef6f7;border-left:4px solid #167b82}
+</style>
+<h1>V100 prover: explicit field carry instructions</h1>
+<p>21 October 2026 · Sixth optimization pass · Tesla V100-PCIE-32GB</p>
+<p>This run compares the previous <code>internal_inverse</code> release with <code>field_carry</code>.
+Both use fresh proofs, the same fixtures and the same independent CPU verifier binaries.
+Earlier campaign evidence remains intact.</p>
+<p class="note">All seven aggregation pairs improved: median latency fell 9.38% for four inputs, 10.45% for eight inputs and 12.32% for two concurrent eight-input jobs. Native median latency fell 5.75%, with nine wins in twelve pairs and a 4.50% median paired reduction; the short native measurements remain variable. Sampled peak GPU memory rose by 672 MiB for the single eight-input workload and 640 MiB for concurrent jobs, while all unchanged resource budgets passed. The V100-gated candidate is retained for these measured gains on the fixed fixtures.</p>
+<h2>Complete-proof measurements</h2>
+<p>Values are seconds. Positive reductions indicate lower latency. The pooled-median ratio and median
+within-pair reduction answer different questions; both are retained along with every raw sample.</p>
+<table><thead><tr><th>Workload</th><th>Baseline median</th><th>Optimized median</th><th>Pooled reduction</th><th>Median paired reduction</th><th>Paired wins</th></tr></thead>
+<tbody><tr><th>Four-input aggregation</th><td>33.839157</td><td>30.666227</td><td>+9.38%</td><td>+9.70%</td><td>3/3</td></tr><tr><th>Eight-input aggregation</th><td>63.963903</td><td>57.280311</td><td>+10.45%</td><td>+10.45%</td><td>2/2</td></tr><tr><th>Two concurrent eight-input jobs</th><td>123.096835</td><td>107.931966</td><td>+12.32%</td><td>+12.32%</td><td>2/2</td></tr><tr><th>Native JoinSplit</th><td>0.320642</td><td>0.302193</td><td>+5.75%</td><td>+4.50%</td><td>9/12</td></tr></tbody></table>
+<img src="evidence/v100-gpu-profile-2026-10-21-pass6-timings.svg" alt="All paired complete-proof timings">
+<p>The native sequence is shown separately to make shifts and variability visible.</p>
+<img src="evidence/v100-gpu-profile-2026-10-21-pass6-native.svg" alt="Native latency in measurement order">
+<h2>Changes and arithmetic bounds</h2>
+<p>Goldilocks addition, subtraction and 128-bit reduction now use explicit PTX carry and borrow chains
+on the measured V100 device family. Each sequence stays inside one assembly block, so no condition code
+crosses a function or compiler boundary. The full-u64 lazy field representation is preserved.</p>
+<p>Reduction uses 2⁶⁴ ≡ 2³² − 1 and 2⁹⁶ ≡ −1 modulo p. Addition and subtraction retain both
+possible correction folds; dropping the second fold would be incorrect for arbitrary u64 inputs.
+The reducer's final correction cannot overflow, as shown in the accompanying arithmetic bounds.</p>
+<p>The host enables these instructions only for NVIDIA vendor 0x10de, a V100 device name, and compute
+capability 7.0. Missing capabilities and other devices retain the original portable OpenCL code.
+The selection is applied to the main engine, legacy DFT context and separately compiled specialized quotient programs.</p>
+<ul><li><code>src/gpu.rs</code></li><li><code>src/gpu/arithmetic_tests.rs</code></li><li><code>src/gpu/field.rs</code></li><li><code>src/block_v2/gpu_hash/engine.rs</code></li><li><code>src/block_v2/gpu_hash/engine/quotient/specialized.rs</code></li></ul>
+<p>Proof parameters, round constants, randomness, proof encoding, verifier behavior, NTT scheduling,
+resource admission and the 250 W power cap remain the same. The Metal implementation is separate.</p>
+<h2>Warmed diagnostic profiles</h2>
+<p>These are summed kernel-event durations, which can overlap and must not be added to obtain end-to-end latency.
+The row-hash kernel reports zero private bytes for both builds. No profile events were dropped.</p>
+<table><thead><tr><th>Workload</th><th>Kernel</th><th>Baseline seconds</th><th>Optimized seconds</th><th>Reduction</th></tr></thead>
+<tbody><tr><td>Four-input aggregation</td><td><code>lde_absorb</code></td><td>6.312790</td><td>4.851962</td><td>+23.14%</td></tr><tr><td>Four-input aggregation</td><td><code>lde_ntt</code></td><td>6.059979</td><td>5.642201</td><td>+6.89%</td></tr><tr><td>Four-input aggregation</td><td><code>device_extension_quotient</code></td><td>3.011084</td><td>2.232220</td><td>+25.87%</td></tr><tr><td>Native JoinSplit</td><td><code>lde_absorb</code></td><td>0.018277</td><td>0.013467</td><td>+26.32%</td></tr><tr><td>Native JoinSplit</td><td><code>lde_ntt</code></td><td>0.012394</td><td>0.010057</td><td>+18.86%</td></tr><tr><td>Native JoinSplit</td><td><code>device_extension_quotient</code></td><td>0.001657</td><td>0.001138</td><td>+31.32%</td></tr></tbody></table>
+<h2>Sampled resource peaks</h2>
+<p>Values are GiB, taking the highest sampled peak across the qualification runs.
+The original host, device-allocation and whole-device admission budgets remain in force.</p>
+<table><thead><tr><th>Workload</th><th>Baseline GPU</th><th>Optimized GPU</th><th>Baseline host RSS</th><th>Optimized host RSS</th></tr></thead>
+<tbody><tr><th>Eight-input aggregation</th><td>8.512</td><td>9.168</td><td>1.225</td><td>1.223</td></tr><tr><th>Two concurrent eight-input jobs</th><td>17.293</td><td>17.918</td><td>2.441</td><td>2.456</td></tr></tbody></table>
+<h2>Validation</h2>
+<p>43 targeted tests passed, plus CPU-only and GPU-without-tuning compilation.
+The strengthened permanent arithmetic oracle checks 266,369 input pairs for addition, subtraction,
+multiplication and full 128-bit reduction, on both portable and selected implementations. Edge cases cover
+both correction folds and noncanonical representatives. A host test checks the device gate. Existing inverse,
+matrix, quotient-selector, NTT, witness and native proof checks also exercise the integrated code.
+Isolated screens check 577 complete Poseidon2 permutations and 56 CPU NTT cases, including small direct DFT cross-checks.</p>
+<p>The benchmark ledger contains 60 independently CPU-audited outputs
+representing 192 fresh benchmark proofs. Output hashes are unique, every required GPU stage is covered,
+and native public-input tampering is rejected. All 691 selected source-file hashes match release and test builds.</p>
+<table><thead><tr><th>Targeted check</th><th>Passed</th></tr></thead><tbody><tr><td>field-device-guard</td><td>1</td></tr><tr><td>scalar-absorb-oracle</td><td>1</td></tr><tr><td>parameter-guard</td><td>1</td></tr><tr><td>tuning-policy</td><td>3</td></tr><tr><td>witness-host</td><td>6</td></tr><tr><td>witness-budget</td><td>1</td></tr><tr><td>ntt-local-memory</td><td>5</td></tr><tr><td>ntt-and-tuning-gpu-oracles</td><td>4</td></tr><tr><td>arithmetic-oracles</td><td>8</td></tr><tr><td>dft-and-commitment-oracles</td><td>6</td></tr><tr><td>witness-parity-reference</td><td>2</td></tr><tr><td>witness-parity-fusion</td><td>2</td></tr><tr><td>witness-rejection</td><td>2</td></tr><tr><td>native-wallet-entrypoints</td><td>1</td></tr></tbody></table>
+<h2>Other candidates screened</h2><ul><li>reduce_ptx: Correct and faster, but less gain than carrying addition and subtraction explicitly too.</li><li>addsub_ptx: Correct but only 1.45-3.34% row-hash gain without the reducer.</li><li>mul32: Correct, but 17.74-29.25% slower in the row-hash screen.</li><li>mask: Portable mask formulation gains 4.09-7.92% in row hashing, less than explicit carry instructions; not shipped.</li></ul>
+<h2>Timer boundaries</h2><ul><li><strong>Four-input aggregation</strong>: Aggregation call plus GPU drain; excludes context initialization, artifact output and CPU audit.</li><li><strong>Eight-input aggregation</strong>: Cohort launch to worker exit; includes initialization, start barrier, aggregation, artifact output and shutdown; excludes CPU audit.</li><li><strong>Two concurrent eight-input jobs</strong>: Cohort launch to last of two worker exits; includes both initializations, start barrier, aggregations, artifact output and shutdown; excludes CPU audits.</li><li><strong>Native JoinSplit</strong>: Native ABI proving call plus GPU drain; excludes context initialization, buffer setup, artifact output and CPU audit.</li></ul>
+<h2>Research used</h2><ul><li><a href="https://docs.nvidia.com/cuda/volta-tuning-guide/index.html">NVIDIA Volta Tuning Guide</a>: Guided checks of arithmetic dependency chains and register-resource tradeoffs; decisions use measured V100 timings.</li><li><a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-integer-arithmetic-instructions">NVIDIA PTX ISA: extended-precision integer arithmetic</a>: Defines the carry and borrow semantics of add.cc/addc/sub.cc/subc, and the requirement to keep each condition-code chain within one straight-line sequence.</li></ul>
+<h2>Scope and limits</h2><ul><li>One Tesla V100-PCIE-32GB, fixed aggregation fixtures and bounded resource settings.</li><li>Three four-input pairs, two eight-input pairs, two concurrent pairs and twelve native pairs; limited sample counts.</li><li>Warmed alternating pairs. First-use profiles and warmups are retained but excluded from the qualification medians.</li><li>Both pooled medians and within-pair reductions are reported; short native calls remain sensitive to timing variation.</li><li>Kernel event totals and inclusive host spans are not additive; gaps in event coverage do not establish GPU idle time.</li><li>No cold-cache, Apple GPU, full-block or production qualification in this run.</li></ul>
+<h2>Reproducibility</h2>
+<p><a href="evidence/v100-gpu-profile-2026-10-21-pass6.json">Machine-readable evidence and all measurements</a> ·
+<a href="../benchmark-results/gpu-extensive-20261021-pass6/incremental-review.patch">Incremental source patch</a> ·
+<a href="../benchmark-results/gpu-extensive-20261021-pass6/final-controller-source.tar.gz">Source, controllers and raw evidence archive</a></p>
+</html>

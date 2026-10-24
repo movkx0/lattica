@@ -236,6 +236,15 @@ impl WitnessProgram {
                 ..instruction_offset + (i + 1) * INSTRUCTION_WORDS]
                 .copy_from_slice(&instruction);
         }
+        // Word 17 is reserved by every instruction encoding. Store each wave's
+        // length at its first instruction so OpenCL can execute several narrow
+        // dependency levels without another allocation or host upload.
+        #[cfg(feature = "gpu")]
+        for wave in &waves {
+            let marker = instruction_offset + wave.start * INSTRUCTION_WORDS + 17;
+            debug_assert_eq!(data[marker], 0);
+            data[marker] = wave.len() as u64;
+        }
         assert_eq!(hint_at, row_offset);
         data[public_offset..].copy_from_slice(
             &program.references[..program.publics]

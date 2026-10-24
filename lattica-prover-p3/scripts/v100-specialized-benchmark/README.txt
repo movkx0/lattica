@@ -414,3 +414,605 @@ apply that patch to the pinned c325074 checkout and restore the frozen adapters
 from the archives; retain the separately pinned public fixtures and CPU auditor.
 Use fresh campaign directories and labels
 when changing source or controls; do not overwrite this evidence.
+
+2026-10-19: random-stream batching and queue scheduling
+
+A fresh campaign against bf8b7b44369deb4cbef950c372eff7f7ea19c212 measured
+the same four-input aggregation on the Tesla V100-PCIE-32GB. Five alternating
+pairs reduced median aggregation time from 39.391191213 to 38.580211758 seconds
+(2.059% less time, 2.102% more throughput). The optimized arm won all five pairs.
+These are warmed aggregation timings: producing the four input wallet proofs,
+GPU initialization and the independent CPU root audit are outside the timer.
+This result does not qualify full-block, concurrent-worker or other-device
+performance.
+
+OpenCL random generation now prefers 4,194,304 candidates per batch, with a
+bounded fallback to the previous 1,048,576-candidate batch when memory is tight.
+The prefix scan carries offsets through 4096-tile chunks using its existing
+16 KiB local array. Generation, counts, offsets and scatter are enqueued on the
+existing in-order queue before collecting their event timings. The status read,
+queue drain, failure fences, rejection ordering and secret cleanup remain in
+place. CPU and Metal retain the previous batch preference.
+
+The matched diagnostics recorded 6,070 baseline random batches and 1,591
+optimized batches. Their random kernel durations were 0.700145 and 0.542737
+seconds; gaps between the four kernels within each batch totaled 0.697625 and
+0.042897 seconds. No events were dropped (62,557 baseline / 44,641 optimized).
+Hash absorption, LDE NTT and quotient remained the largest recorded kernels.
+Uncovered trace intervals are not a measurement of GPU idle time. Diagnostics
+are excluded from the paired medians. The earlier wait-only experiment had a
+0.306% slower median and only two wins in five pairs; its evidence is retained.
+
+The final arm passed eight host tests, eleven OpenCL random-stream tests and
+two integration tests. An independent CPU prefix-sum oracle also matched 27
+GPU scan cases, including chunk boundaries, partial chunks, all-rejected inputs
+and output guards. All 14 final-campaign roots passed independent CPU audits,
+covering 42 fresh recursive proofs with all 16 required GPU stages. Together
+with the earlier experiment, the campaign retains 28 audited roots. Two other
+existing witness-pipeline fixtures fail identically on baseline and the
+wait-only candidate because their 64 MiB host allowance is below their compiler
+scratch requirement; those fixtures were not changed.
+
+Peak managed GPU accounting increased from 13,629,840,176 to 13,655,202,608 bytes
+(24.1875 MiB), within the unchanged 16 GiB managed limit. Host/GPU watchdogs and
+zero-swap admission remained enabled; no memory-pressure events occurred.
+The new program required about 36 seconds of cold OpenCL initialization in
+each compiler mode: profiling adds -cl-nv-verbose, so the normal warmup needs
+its own cache entry. All ten measured runs then initialized in 0.409-0.430
+seconds. Initialization and monitored process durations are preserved alongside
+the aggregation timings.
+
+The tracked summary is docs/evidence/v100-random-batching-2026-10-19.json at
+the repository root. Raw logs, telemetry, profiles, frozen source trees,
+binaries, test output and the complete local controller are in
+benchmark-results/gpu-opt-20261019. The summary pins source/binary hashes and
+includes every paired timing. The baseline, queue-only candidate and optimized
+snapshots are separate; the earlier benchmark campaigns remain untouched.
+
+For an exact local rerun from the repository root, choose unused sample names:
+  python3 benchmark-results/gpu-opt-20261019/campaign.py sample baseline replay-baseline-01
+  python3 benchmark-results/gpu-opt-20261019/campaign.py sample optimized replay-optimized-01
+  python3 benchmark-results/gpu-opt-20261019/campaign.py profile optimized replay-profile-01
+The controller verifies its frozen sources and binaries and retains the
+original admission checks and CPU auditor. For a rebuild, the controller's
+build and tests-build actions record the Cargo commands and compiler settings;
+use fresh labels and freeze the new binary before measuring it.
+
+2026-10-19: extensive arithmetic and witness profiling
+
+A fresh campaign compares the previous RNG-optimized worktree with cheaper
+Goldilocks subtraction, a coefficient-guarded Poseidon2 internal diagonal,
+and bounded fusion of narrow witness dependency levels. The final selection
+is the combined fused candidate. Five alternating pairs per workload give:
+
+  four-input aggregation: 38.447818 -> 36.816988 seconds
+    4.242% reduction in median time; 5/5 paired wins.
+  eight-input worker window: 73.479930 -> 71.401975 seconds
+    2.828% reduction in median time; 5/5 paired wins.
+  two concurrent eight-input worker windows: 143.899439 -> 137.291549 seconds
+    4.592% reduction in median time; 5/5 paired wins.
+  native JoinSplit proving: 0.334169 -> 0.375421 seconds
+    -12.345% reduction in median time; 3/5 paired wins.
+
+Four-input and native wallet timers exclude GPU initialization and the
+independent CPU audit. Eight-input measurements cover the complete worker
+launch-to-exit window. Wallet creation for aggregation inputs is excluded.
+Warmups, instrumented profiles, isolated screens and controlled cache runs
+are retained separately and are excluded from the qualification medians.
+
+The arithmetic-only screen won all three pairs (2.93% median paired gain).
+Witness fusion won four of five direct pairs (0.80% median paired gain,
+-0.99% to +1.58% range; effectively neutral unpaired medians). Its benefit
+is small and variable without instrumentation. Four-input witness launches
+fell from 21,415 to 1,304. Profiling overhead also falls with launch count,
+so the profile-only wall-time difference is not used as the speedup claim.
+
+The final source passed 26 targeted tests and CPU-only/OpenCL-without-tuning
+compile checks. Tests cover full-width field arithmetic, guarded and generic
+Poseidon2, CPU DFT/MMCS parity, full reference/fused witness trace parity,
+long chains and lane boundaries, invalid metadata/witnesses, memory admission,
+cleanup/session reuse, and native wallet proofs verified after GPU shutdown.
+The benchmark ledger has 142 audited roots or wallet proofs, representing
+506 fresh benchmark proofs. All audits passed and proof hashes are unique.
+Required GPU stage counts remain 16 for recursive proofs and 15 for native
+wallet proofs. Original RNG batching changes and all proof parameters are
+unchanged. Managed allocation peaks and admission budgets are preserved.
+
+The report includes NVML board energy, per-worker/cohort telemetry, a
+controlled empty-cache/repeat experiment, and a description of the complete
+GPU proving process. Source, binary, controller and fixture hashes are
+preserved. These are fixed-fixture V100 OpenCL results; production-qualified
+flags remain false, and other hardware/full-block delivery are not qualified.
+
+Repository report: docs/v100-gpu-profile-2026-10-19.html
+Process description: docs/gpu-acceleration.md
+Machine-readable evidence: docs/evidence/v100-gpu-profile-2026-10-19.json
+Local raw archive: benchmark-results/gpu-extensive-20261019
+The local final-controller-source.tar.gz and final-review.patch preserve
+the campaign code and complete changed/new files. final-integrity.json
+records the final source, artifact and frozen-evidence checks.
+
+For an exact local replay, choose unused sample names:
+  python3 benchmark-results/gpu-extensive-20261019/campaign.py four fused replay-four-01
+  python3 benchmark-results/gpu-extensive-20261019/campaign.py eight fused replay-eight-01 single
+  python3 benchmark-results/gpu-extensive-20261019/campaign.py eight fused replay-concurrent-01 concurrent
+  python3 benchmark-results/gpu-extensive-20261019/wallet.py sample fused replay-wallet-01
+Use a new label and directory for source or control changes. The source
+snapshots, build commands, CPU auditors and original admission checks are
+part of the frozen campaign; do not overwrite historical evidence.
+
+Native wallet follow-up:
+The initial five wallet pairs were mixed and had a slower candidate median.
+A fixed twenty-pair follow-up was added after the cache experiment; all samples are retained.
+  Additional twenty pairs: 0.323469 -> 0.323534 seconds; -0.020% median-time reduction, 11/20 paired wins.
+  All twenty-five pairs: 0.323885 -> 0.324833 seconds; -0.293% median-time reduction, 14/25 paired wins.
+The original qualification numbers above remain unchanged. See the report for paired reductions and individual results.
+
+The larger native-wallet follow-up was effectively unchanged; it does not show a repeatable end-to-end wallet improvement.
+The selected changes are retained for consistent aggregation gains.
+
+2026-10-20: shared NTT twiddle profiling
+
+A fresh campaign starts from the previously optimized final worktree.
+The selected change shares butterfly twiddle factors within each GPU workgroup.
+Extra local storage is admitted explicitly. Small shapes keep their existing
+path; the shared path selects wide transforms from 16,384 rows / 16 columns
+or tall transforms from 262,144 rows / 3 columns on the measured V100.
+The original cached fallback is retained when extra local storage does not fit.
+
+  four-input aggregation: 36.897855 -> 35.861694 seconds
+    2.808% reduction in median time; 5/5 paired wins.
+  eight-input worker window: 70.003775 -> 67.934992 seconds
+    2.955% reduction in median time; 5/5 paired wins.
+  two concurrent eight-input jobs: 136.731544 -> 131.598916 seconds
+    3.754% reduction in median time; 5/5 paired wins.
+  native JoinSplit: 0.320606 -> 0.328514 seconds
+    -2.467% reduction in median time; 9/20 paired wins.
+
+The protocol specified five alternating pairs for each aggregation workload
+and twenty for native wallet proving. Every result is retained. Warmups,
+diagnostic profiles and controlled cache measurements are separate from these
+medians. Four-input and wallet timers exclude initialization and external CPU
+audits; eight-input timers cover complete worker launch-to-exit windows.
+Aggregation starts from existing wallet proofs. Two concurrent jobs produce
+two independent eight-input roots, not one sixteen-input tree.
+
+The kernel screen covered independent integer CPU oracles and direct small
+DFT sums, full-output equality, and interleaved event timings across large
+and small shapes. Small-shape regressions drove the dispatch restrictions.
+The broad all-shape release build is preserved and was superseded before
+proof qualification. Source, binaries and every unsuccessful case remain
+in the local campaign archive.
+
+The selected source passed 35 targeted tests (16 host and 19 GPU) plus
+CPU-only and GPU-without-tuning compile checks. Tests cover exact local
+memory boundaries, shared/reference transforms and cached/uncached fallback,
+ordering, coset scaling, arithmetic, commitments, witness parity and rejection,
+and native wallet verification after GPU shutdown.
+The benchmark ledger contains 108 independently CPU-audited outputs,
+representing 400 fresh benchmark proofs. All audits passed and hashes are unique.
+Original RNG, Poseidon2, witness fusion, proof parameters, verifier and
+managed global allocation plans are preserved. Production-qualified flags
+remain false; these measurements cover this V100 and these fixed fixtures.
+
+Report: docs/v100-gpu-profile-2026-10-20.html
+Evidence: docs/evidence/v100-gpu-profile-2026-10-20.json
+Proving process: docs/gpu-acceleration.md
+Raw archive: benchmark-results/gpu-extensive-20261019-pass2
+The archive includes final-controller-source.tar.gz, final-review.patch and
+final-integrity.json. The report documents replay commands, timer boundaries,
+power observations and cold/repeated driver-cache behavior.
+
+2026-10-20: scalar sponge absorption and delayed sum reduction
+--------------------------------------------------------------
+
+This fresh campaign starts from the source-matched shared_bounded build
+preserved in gpu-extensive-20261019-pass2. Previous immutable evidence
+and frozen binaries remain unchanged; the proving guide is maintained.
+
+The OpenCL LDE absorb loop now uses constant state indices for pending
+prefixes, full four-word blocks and partial suffixes. The measured V100
+private allocation drops from 64 bytes to zero. The shared Poseidon2
+internal sum accumulates 32-bit limbs and reduces once. Both limb sums
+fit below 2^35, including arbitrary noncanonical u64 representatives.
+No proof parameters, verifier rules, randomness or memory limits change.
+
+Warmed, alternating complete-proof comparisons (seconds, medians):
+  Four inputs: 35.859733 -> 35.315009; +1.52% time reduction; 5/5 paired wins.
+  Eight inputs: 67.618271 -> 66.740613; +1.30% time reduction; 3/3 paired wins.
+  Two concurrent eight-input jobs: 132.127000 -> 129.255557; +2.17% time reduction; 3/3 paired wins.
+  Native JoinSplit: 0.322419 -> 0.342041; -6.09% time reduction; 12/20 paired wins.
+
+Both binaries became faster midway through the original native series,
+making its pooled medians disagree with its matched-pair comparison.
+One separate twenty-pair native follow-up was specified before running.
+Follow-up native medians: 0.317906 -> 0.313551;
++1.37% pooled median reduction, +1.65% median paired reduction,
+with 14/20 paired wins. Both complete series are retained.
+
+Four-input and native timers exclude initialization and artifact output.
+Eight-input timers run from cohort launch through worker exit, including
+initialization, barrier waiting, output and shutdown. CPU audits are outside
+all timers. First-use profiles and warmups are retained and excluded from
+the qualification medians. There is no cold-cache qualification in this run.
+
+37 targeted tests passed, plus CPU-only and GPU-without-tuning compile checks.
+The benchmark ledger contains 126 independently CPU-audited outputs representing
+302 fresh benchmark proofs. All required GPU stages are covered, hashes are
+unique, and native public-input tampering is rejected. This is measured
+V100 fixture evidence, not Apple, full-block or production qualification.
+
+Explicit 32-bit squaring, PTX squaring, balanced sums, carry-count sums,
+aligned-only absorption and additional loop unrolling were screened. Only
+the scalar absorption plus limb-sum combination was selected. The report
+links the NVIDIA primary documentation that guided these experiments.
+
+Report: docs/v100-gpu-profile-2026-10-20-pass3.html
+Evidence: docs/evidence/v100-gpu-profile-2026-10-20-pass3.json
+Raw archive: benchmark-results/gpu-extensive-20261020-pass3
+Review patch: benchmark-results/gpu-extensive-20261020-pass3/incremental-review.patch
+The archive also contains final-controller-source.tar.gz and final-integrity.json.
+Replay a frozen four-input build with a new output name:
+  python3 benchmark-results/gpu-extensive-20261020-pass3/campaign.py four scalar_limb replay-01
+Replay native proving and its independent CPU audit:
+  python3 benchmark-results/gpu-extensive-20261020-pass3/wallet.py sample scalar_limb replay-01
+These replay commands require the pinned local workspace and V100 environment.
+
+2026-10-20: external matrix reduction and fixed-stage bit reversal
+------------------------------------------------------------------
+
+This campaign starts from the exact scalar_limb source and release binaries
+preserved in gpu-extensive-20261020-pass3. Previous immutable evidence and
+CPU verifier binaries are preserved.
+
+The OpenCL Poseidon2 external matrix now accumulates 32-bit limbs and
+reduces once per output. Coefficients sum to 21, so each limb fits in 37
+bits and the reconstructed high word is at most 20. One modular fold
+and one carry correction suffice, including noncanonical u64 inputs.
+Bit reversal uses five fixed mask/shift stages, handling 0..32 bits.
+
+Warmed alternating complete-proof measurements (seconds, medians):
+  Four inputs: 35.659293 -> 34.374682;
+    +3.60% pooled median reduction, +3.60% median paired reduction, 3/3 paired wins.
+  Eight inputs: 67.212648 -> 65.057490;
+    +3.21% pooled median reduction, +3.21% median paired reduction, 2/2 paired wins.
+  Two concurrent eight-input jobs: 129.415464 -> 125.101093;
+    +3.33% pooled median reduction, +3.33% median paired reduction, 2/2 paired wins.
+  Native JoinSplit: 0.320216 -> 0.316293;
+    +1.23% pooled median reduction, +1.08% median paired reduction, 7/12 paired wins.
+
+The selected change lowers median latency by 3.60% for four-input aggregation, 3.21% for eight-input aggregation, and 3.33% for two concurrent eight-input jobs; all seven aggregation pairs favor the candidate. Native JoinSplit has a 1.23% lower pooled median and seven wins in twelve pairs, but paired changes range from a 5.53% regression to a 6.31% improvement. This run does not establish a stable native latency gain. All 60 benchmark outputs passed independent CPU verification.
+
+Four-input and native timers exclude initialization and artifact output.
+Eight-input cohort timers include initialization, barrier waiting, proof
+output and shutdown. CPU audits are outside every proving timer.
+All first-use profiles and warmups are retained separately.
+
+40 targeted tests passed, plus CPU-only and GPU-without-tuning compilation.
+60 independently CPU-audited outputs represent 192 fresh benchmark proofs.
+Required GPU stages are covered, hashes are unique, and native public-input
+tampering is rejected. Proof parameters, randomness, verifier rules,
+resource budgets, NTT admission and the 250 W cap remain unchanged.
+
+This is evidence for the tested V100 and fixed benchmark fixtures.
+The limited pair counts do not establish general production performance.
+Apple, cold-cache and full-block qualification require separate checks.
+
+Report: docs/v100-gpu-profile-2026-10-20-pass4.html
+Evidence: docs/evidence/v100-gpu-profile-2026-10-20-pass4.json
+Raw archive: benchmark-results/gpu-extensive-20261020-pass4
+Review patch: benchmark-results/gpu-extensive-20261020-pass4/incremental-review.patch
+The archive also contains final-controller-source.tar.gz and final-integrity.json.
+Replay a frozen four-input build with a new output name:
+  python3 benchmark-results/gpu-extensive-20261020-pass4/campaign.py four external_brev replay-01
+Replay native proving and the independent CPU audit:
+  python3 benchmark-results/gpu-extensive-20261020-pass4/wallet.py sample external_brev replay-01
+These commands require the pinned local workspace and V100 environment.
+
+2026-10-20: internal matrix reduction and shared quotient inversion
+-------------------------------------------------------------------
+
+This campaign starts from the exact external_brev source and release binaries
+preserved in gpu-extensive-20261020-pass4. Previous immutable evidence and
+CPU verifier binaries are preserved.
+
+The OpenCL Poseidon2 internal matrix folds the guarded fast diagonal into
+unreduced 32-bit limb sums, with exact nonnegative bounds. The common
+matrix reducer handles both external and internal layers.
+Field inversion uses a fixed 72-multiplication chain. The quotient
+kernel shares one inverse across three denominators after its existing
+nonzero-domain guard. The generic diagonal fallback remains available.
+
+Warmed alternating complete-proof measurements (seconds, medians):
+  Four inputs: 34.332247 -> 33.940245;
+    +1.14% pooled median reduction, +1.14% median paired reduction, 3/3 paired wins.
+  Eight inputs: 65.322456 -> 63.712023;
+    +2.47% pooled median reduction, +2.46% median paired reduction, 2/2 paired wins.
+  Two concurrent eight-input jobs: 125.428711 -> 123.472854;
+    +1.56% pooled median reduction, +1.56% median paired reduction, 2/2 paired wins.
+  Native JoinSplit: 0.306494 -> 0.309939;
+    -1.12% pooled median reduction, -0.13% median paired reduction, 6/12 paired wins.
+
+All seven aggregation pairs improved: median latency fell 1.14% for four inputs, 2.47% for eight inputs and 1.56% for two concurrent eight-input jobs. Native results were mixed: its pooled median was 1.12% slower, with six wins in twelve pairs and a median paired reduction of -0.13%. This run establishes no native speedup. The candidate is retained for its consistent aggregation gains on the tested V100 fixtures.
+
+Four-input and native timers exclude initialization and artifact output.
+Eight-input cohort timers include initialization, barrier waiting, proof
+output and shutdown. CPU audits are outside every proving timer.
+All first-use profiles and warmups are retained separately.
+
+42 targeted tests passed, plus CPU-only and GPU-without-tuning compilation.
+60 independently CPU-audited outputs represent 192 fresh benchmark proofs.
+Required GPU stages are covered, hashes are unique, and native public-input
+tampering is rejected. Proof parameters, randomness, verifier rules,
+resource budgets, NTT admission and the 250 W cap remain unchanged.
+
+This is evidence for the tested V100 and fixed benchmark fixtures.
+The limited pair counts do not establish general production performance.
+Apple, cold-cache and full-block qualification require separate checks.
+
+Report: docs/v100-gpu-profile-2026-10-20-pass5.html
+Evidence: docs/evidence/v100-gpu-profile-2026-10-20-pass5.json
+Raw archive: benchmark-results/gpu-extensive-20261020-pass5
+Review patch: benchmark-results/gpu-extensive-20261020-pass5/incremental-review.patch
+The archive also contains final-controller-source.tar.gz and final-integrity.json.
+Replay a frozen four-input build with a new output name:
+  python3 benchmark-results/gpu-extensive-20261020-pass5/campaign.py four internal_inverse replay-01
+Replay native proving and the independent CPU audit:
+  python3 benchmark-results/gpu-extensive-20261020-pass5/wallet.py sample internal_inverse replay-01
+These commands require the pinned local workspace and V100 environment.
+
+2026-10-21: explicit V100 field carry instructions
+--------------------------------------------------
+
+This campaign starts from the exact internal_inverse source and release binaries
+preserved in gpu-extensive-20261020-pass5. Previous immutable evidence and
+CPU verifier binaries are preserved.
+
+Goldilocks addition, subtraction and reduction use explicit PTX carry
+chains on NVIDIA V100 devices with compute capability 7.0. The original
+portable OpenCL arithmetic remains the fallback for all other devices.
+Each assembly block owns its condition-code chain and preserves both
+possible folds for arbitrary u64 field representatives. The main engine,
+legacy DFT path and specialized quotient programs share the device gate.
+
+Warmed alternating complete-proof measurements (seconds, medians):
+  Four inputs: 33.839157 -> 30.666227;
+    +9.38% pooled median reduction, +9.70% median paired reduction, 3/3 paired wins.
+  Eight inputs: 63.963903 -> 57.280311;
+    +10.45% pooled median reduction, +10.45% median paired reduction, 2/2 paired wins.
+  Two concurrent eight-input jobs: 123.096835 -> 107.931966;
+    +12.32% pooled median reduction, +12.32% median paired reduction, 2/2 paired wins.
+  Native JoinSplit: 0.320642 -> 0.302193;
+    +5.75% pooled median reduction, +4.50% median paired reduction, 9/12 paired wins.
+
+All seven aggregation pairs improved: median latency fell 9.38% for four inputs, 10.45% for eight inputs and 12.32% for two concurrent eight-input jobs. Native median latency fell 5.75%, with nine wins in twelve pairs and a 4.50% median paired reduction; the short native measurements remain variable. Sampled peak GPU memory rose by 672 MiB for the single eight-input workload and 640 MiB for concurrent jobs, while all unchanged resource budgets passed. The V100-gated candidate is retained for these measured gains on the fixed fixtures.
+
+Four-input and native timers exclude initialization and artifact output.
+Eight-input cohort timers include initialization, barrier waiting, proof
+output and shutdown. CPU audits are outside every proving timer.
+All first-use profiles and warmups are retained separately.
+
+43 targeted tests passed, plus CPU-only and GPU-without-tuning compilation.
+60 independently CPU-audited outputs represent 192 fresh benchmark proofs.
+Required GPU stages are covered, hashes are unique, and native public-input
+tampering is rejected. Proof parameters, randomness, verifier rules,
+resource budgets, NTT admission and the 250 W cap remain unchanged.
+
+This is evidence for the tested V100 and fixed benchmark fixtures.
+The limited pair counts do not establish general production performance.
+Apple, cold-cache and full-block qualification require separate checks.
+
+Report: docs/v100-gpu-profile-2026-10-21-pass6.html
+Evidence: docs/evidence/v100-gpu-profile-2026-10-21-pass6.json
+Raw archive: benchmark-results/gpu-extensive-20261021-pass6
+Review patch: benchmark-results/gpu-extensive-20261021-pass6/incremental-review.patch
+The archive also contains final-controller-source.tar.gz and final-integrity.json.
+Replay a frozen four-input build with a new output name:
+  python3 benchmark-results/gpu-extensive-20261021-pass6/campaign.py four field_carry replay-01
+Replay native proving and the independent CPU audit:
+  python3 benchmark-results/gpu-extensive-20261021-pass6/wallet.py sample field_carry replay-01
+These commands require the pinned local workspace and V100 environment.
+
+2026-10-21: delayed V100 cubic product reduction
+------------------------------------------------
+
+This campaign starts from the exact field_carry source and release binaries
+preserved in gpu-extensive-20261021-pass6. Previous immutable evidence and
+CPU verifier binaries are preserved.
+
+Cubic extension multiplication uses three dot products with one delayed
+reduction per output. Each dot product retains the carry beyond bit 127
+and uses B^4 = -B mod p for B=2^32. The existing V100 device gate selects
+the PTX implementation; portable cubic and quadratic code is unchanged.
+
+Warmed alternating complete-proof measurements (seconds, medians):
+  Four inputs: 30.601513 -> 30.420979;
+    +0.59% pooled median reduction, +0.48% median paired reduction, 2/3 paired wins.
+  Eight inputs: 59.156003 -> 57.079258;
+    +3.51% pooled median reduction, +3.51% median paired reduction, 2/2 paired wins.
+  Two concurrent eight-input jobs: 107.217330 -> 105.840166;
+    +1.28% pooled median reduction, +1.28% median paired reduction, 2/2 paired wins.
+  Native JoinSplit: 0.311007 -> 0.305699;
+    +1.71% pooled median reduction, +2.11% median paired reduction, 7/12 paired wins.
+
+Kept the V100 cubic dot-product reduction. Warmed median latency fell 0.59% for four inputs, 3.51% for eight inputs, and 1.28% for two concurrent eight-input jobs; six of seven aggregation pairs improved. Native results were mixed: a 1.71% lower pooled median with seven of twelve paired wins. Sampled GPU peaks increased by 460 MiB for a single eight-input job and 920 MiB for the concurrent cohort; all unchanged resource budgets passed. These are limited fixed-fixture V100 measurements, not general production qualification.
+
+Four-input and native timers exclude initialization and artifact output.
+Eight-input cohort timers include initialization, barrier waiting, proof
+output and shutdown. CPU audits are outside every proving timer.
+All first-use profiles and warmups are retained separately.
+
+45 targeted tests passed, plus CPU-only and GPU-without-tuning compilation.
+60 independently CPU-audited outputs represent 192 fresh benchmark proofs.
+Required GPU stages are covered, hashes are unique, and native public-input
+tampering is rejected. Proof parameters, randomness, verifier rules,
+resource budgets, NTT admission and the 250 W cap remain unchanged.
+
+This is evidence for the tested V100 and fixed benchmark fixtures.
+The limited pair counts do not establish general production performance.
+Apple, cold-cache and full-block qualification require separate checks.
+
+Report: docs/v100-gpu-profile-2026-10-21-pass7.html
+Evidence: docs/evidence/v100-gpu-profile-2026-10-21-pass7.json
+Raw archive: benchmark-results/gpu-extensive-20261021-pass7
+Review patch: benchmark-results/gpu-extensive-20261021-pass7/incremental-review.patch
+The archive also contains final-controller-source.tar.gz and final-integrity.json.
+Replay a frozen four-input build with a new output name:
+  python3 benchmark-results/gpu-extensive-20261021-pass7/campaign.py four extension_dot replay-01
+Replay native proving and the independent CPU audit:
+  python3 benchmark-results/gpu-extensive-20261021-pass7/wallet.py sample extension_dot replay-01
+These commands require the pinned local workspace and V100 environment.
+
+2026-10-21: bounded V100 matrix carries
+---------------------------------------
+
+Fresh baseline: exact source-matched extension_dot build from
+gpu-extensive-20261021-pass7. Previous immutable evidence and independent
+CPU verifier binaries are preserved.
+
+The existing V100 gate selects explicit PTX reconstruction/fold carries
+inside the bounded Poseidon matrix reducer. The portable preprocessed
+body is unchanged. NTT experiments were screened and rejected; NTT source
+and scheduling are unchanged. No proof parameters or verifier changes.
+
+Warmed alternating complete-proof measurements (seconds, medians):
+  Four inputs: 30.642396 -> 29.614815; +3.35% latency reduction.
+    Within-pair median +3.35%; faster in 3/3 pairs.
+  Eight inputs: 57.028974 -> 55.248946; +3.12% latency reduction.
+    Within-pair median +3.12%; faster in 2/2 pairs.
+  Two concurrent eight-input jobs: 106.733194 -> 102.648635; +3.83% latency reduction.
+    Within-pair median +3.82%; faster in 2/2 pairs.
+  Native JoinSplit: 0.310122 -> 0.296667; +4.34% latency reduction.
+    Within-pair median +2.99%; faster in 10/12 pairs.
+
+Retained the V100 matrix carry optimization. All seven aggregation pairs improved: median latency fell 3.35% for four inputs, 3.12% for eight inputs and 3.83% for two concurrent jobs. Native median latency fell 4.34%, with 10/12 paired wins and a 2.99% median within-pair reduction. All 45 targeted tests and 192 fresh benchmark proofs passed. These are bounded V100 fixture measurements with limited sample counts, not production qualification.
+
+Four-input/native timing excludes initialization and CPU auditing.
+Eight-input timing includes cohort startup, proof output and shutdown;
+CPU auditing is excluded. First-use profiles and warmups are separate.
+All 45 targeted tests and CPU-only/GPU-without-tuning compile checks passed.
+60 independently CPU-audited outputs represent 192 fresh benchmark proofs.
+Required GPU stages, unique proof/root hashes and public tamper checks passed.
+Resource budgets and the fixed 250 W power cap are unchanged. Per-workload
+sampled memory peaks and all paired timings are retained in the report.
+No Apple, cold-cache, full-block or production qualification is claimed.
+
+Report: docs/v100-gpu-profile-2026-10-21-pass8.html
+Structured evidence: docs/evidence/v100-gpu-profile-2026-10-21-pass8.json
+Raw campaign: benchmark-results/gpu-extensive-20261021-pass8
+Incremental patch: benchmark-results/gpu-extensive-20261021-pass8/incremental-review.patch
+Archive and integrity: final-controller-source.tar.gz and final-integrity.json.
+
+Fresh four-input replay (new tag; includes independent CPU audit):
+  python3 benchmark-results/gpu-extensive-20261021-pass8/campaign.py four matrix_carry replay-01
+Fresh native replay:
+  python3 benchmark-results/gpu-extensive-20261021-pass8/wallet.py sample matrix_carry replay-01
+Use the recorded pinned binaries and V100 environment.
+
+2026-10-21: rejected V100 round-constant addition experiment
+------------------------------------------------------------
+
+Fresh baseline: exact source-matched matrix_carry build from
+gpu-extensive-20261021-pass8. Previous immutable evidence and independent
+CPU verifier binaries are preserved.
+
+The candidate used one carry fold for canonical Poseidon round constants
+behind the existing V100 gate. It was rejected after mixed complete-proof
+timings and higher sampled peak VRAM. The exact pass-8 matrix_carry source
+is restored; no candidate source changes remain in the worktree.
+
+Warmed alternating complete-proof measurements (seconds, medians):
+  Four inputs: 29.712295 -> 29.630083; +0.28% latency reduction.
+    Within-pair median +0.28%; faster in 2/3 pairs.
+  Eight inputs: 55.267896 -> 55.459622; -0.35% latency reduction.
+    Within-pair median -0.35%; faster in 0/2 pairs.
+  Two concurrent eight-input jobs: 102.593129 -> 102.655379; -0.06% latency reduction.
+    Within-pair median -0.06%; faster in 1/2 pairs.
+  Native JoinSplit: 0.304917 -> 0.299436; +1.80% latency reduction.
+    Within-pair median +1.15%; faster in 8/12 pairs.
+
+Rejected the canonical round-constant addition candidate and restored the exact pass-8 optimized source. Matched row-hash event totals improved 1.99% for four-input aggregation and 2.93% for native proving, but only 3 of 7 aggregation pairs improved. Eight-input median latency regressed 0.35%; concurrent median latency regressed 0.06%. Four-input median latency improved 0.28%, and native median latency improved 1.80% (8 of 12 pairs). Sampled peak VRAM increased by 428 MiB for four-input aggregation and 920 MiB for concurrent jobs. These tradeoffs do not justify changing the current prover. All candidate tests and independent proof audits passed; every sample and the rejected patch are retained.
+
+Four-input/native timing excludes initialization and CPU auditing.
+Eight-input timing includes cohort startup, proof output and shutdown;
+CPU auditing is excluded. First-use profiles and warmups are separate.
+The evaluated candidate passed 46 tests and both feature compile checks.
+60 independently CPU-audited outputs represent 192 fresh benchmark proofs.
+Required GPU stages, unique proof/root hashes and public tamper checks passed.
+Resource budgets and the fixed 250 W power cap are unchanged. Per-workload
+sampled memory peaks and all paired timings are retained in the report.
+Rejected carry, multiplication, squaring, power and NTT-table screens are
+retained. No Apple, cold-cache, full-block or production qualification.
+
+Report: docs/v100-gpu-profile-2026-10-21-pass9.html
+Structured evidence: docs/evidence/v100-gpu-profile-2026-10-21-pass9.json
+Raw campaign: benchmark-results/gpu-extensive-20261021-pass9
+Incremental patch: benchmark-results/gpu-extensive-20261021-pass9/incremental-review.patch
+Archive and integrity: final-controller-source.tar.gz and final-integrity.json.
+
+Fresh four-input replay (new tag; includes independent CPU audit):
+  python3 benchmark-results/gpu-extensive-20261021-pass9/campaign.py four round_add replay-01
+Fresh native replay:
+  python3 benchmark-results/gpu-extensive-20261021-pass9/wallet.py sample round_add replay-01
+Use the recorded pinned binaries and V100 environment. The round_add
+label replays the rejected candidate; baseline replays the retained build.
+
+2026-10-21: V100 first-butterfly load fusion (pass 10)
+
+Selected label: ntt_load.
+Retained for consistent aggregation improvements in all seven paired comparisons: median time reductions of 1.71% for four inputs, 4.03% for eight inputs, and 2.07% for two concurrent eight-input jobs. Matched NTT event time fell 9.42%. Native timings have a small observed cost: the original pooled median was 4.53% slower, the fixed twenty-pair follow-up was essentially flat (+0.09% reduction), and the combined thirty-two-pair median was 0.49% slower (median paired regression 0.45%; 13/32 faster pairs). No native speedup is claimed. Qualification GPU peaks fell by 212 MiB for four inputs and 296 MiB for concurrent jobs, with a 66 MiB increase for single eight-input jobs; all resource budgets passed.
+four: 29.546746 -> 29.041878 seconds; +1.709% pooled median reduction; 3/3 faster pairs.
+single: 56.504475 -> 54.230047 seconds; +4.025% pooled median reduction; 2/2 faster pairs.
+concurrent: 102.668805 -> 100.546544 seconds; +2.067% pooled median reduction; 2/2 faster pairs.
+wallet: 0.303637 -> 0.317385 seconds; -4.528% pooled median reduction; 6/12 faster pairs.
+native followup: 0.305184 -> 0.304923 seconds; +0.085% pooled reduction; 7/20 faster pairs.
+native combined: 0.304537 -> 0.306023 seconds; -0.488% pooled reduction; 13/32 faster pairs.
+45 targeted tests passed; CPU-only and GPU-without-tuning checks passed.
+100 independently CPU-audited outputs contain 232 fresh proofs, including a fixed twenty-pair native follow-up. Original and follow-up native series are both retained. Required GPU
+stage coverage, unique root/proof hashes and native public tamper checks passed.
+The initial missing publication barrier was caught by the integer oracle,
+fixed before timings, and retained with its failed experimental source.
+The corrected screen passed 112 oracle configurations; the final source
+passed 56 more. All 22 active shared-NTT timed cases improved. Every timed
+case, including four unchanged-path controls, remains in the evidence.
+No new local storage, launch changes, proof parameter changes or power changes.
+No Apple, cold-cache, full-block or production qualification.
+Report: docs/v100-gpu-profile-2026-10-21-pass10.html
+Structured evidence: docs/evidence/v100-gpu-profile-2026-10-21-pass10.json
+Raw campaign: benchmark-results/gpu-extensive-20261021-pass10
+Incremental patch: benchmark-results/gpu-extensive-20261021-pass10/incremental-review.patch
+Archive and integrity: final-controller-source.tar.gz and final-integrity.json.
+Fresh four-input replay (new tag; includes independent CPU audit):
+python3 benchmark-results/gpu-extensive-20261021-pass10/campaign.py four ntt_load replay-01
+Fresh native replay:
+python3 benchmark-results/gpu-extensive-20261021-pass10/wallet.py sample ntt_load replay-01
+Use the pinned binaries and recorded V100 environment.
+
+2026-10-22: V100 NTT and S-box scheduling experiments (pass 11)
+Selected label: baseline.
+Retain the pass 10 implementation. Eight-lane S-box scheduling reduced the matched four-input row-hash GPU event sum by 0.330%, but complete aggregation medians changed by -0.105% (four inputs), +0.121% (eight inputs), and +0.007% (two concurrent jobs), with only 3 of 7 aggregate pairs faster. Native JoinSplit improved by 1.335% pooled and 1.135% paired, with 9 of 12 pairs faster; this positive result is retained and does not establish a broad aggregation benefit. Sampled single-job GPU peak increased 428 MiB; four-input peak was unchanged and concurrent peak was 1344 MiB lower. The candidate does not meet the prespecified requirement for broadly consistent complete-proof benefit. All four NTT candidates were rejected after large-transform regressions, and the two smaller S-box schedules were mixed.
+four: 28.933498 -> 28.963746 seconds; -0.105% pooled reduction; 1/3 faster pairs.
+single: 53.814758 -> 53.749466 seconds; +0.121% pooled reduction; 1/2 faster pairs.
+concurrent: 100.528306 -> 100.520784 seconds; +0.007% pooled reduction; 1/2 faster pairs.
+wallet: 0.303246 -> 0.299197 seconds; +1.335% pooled reduction; 9/12 faster pairs.
+45 targeted tests and CPU-only/GPU-without-tuning compatibility checks passed.
+60 independently CPU-audited outputs contain 192 fresh proofs. Required GPU
+coverage, unique proof/root hashes and native public tamper checks passed.
+Four NTT candidates passed 200 integer-oracle configurations but regressed
+important large shapes. Three hash schedules passed independent integer
+arithmetic and Poseidon2 oracles. Eight-lane scheduling advanced after a fixed
+24-pair confirmation on six hash workloads. All samples remain in evidence.
+No host allocations, launch geometry, proof parameters or power settings changed.
+Compiler caches were cleared before baseline first-use/warmup runs for storage;
+no compiler caches were cleared during qualification. Cold timings are retained separately.
+No Apple, cold-cache, full-block or production qualification.
+Report: docs/v100-gpu-profile-2026-10-22-pass11.html
+Structured evidence: docs/evidence/v100-gpu-profile-2026-10-22-pass11.json
+Raw campaign: benchmark-results/gpu-extensive-20261022-pass11
+Incremental patch: benchmark-results/gpu-extensive-20261022-pass11/incremental-review.patch
+Archive and integrity: final-controller-source.tar.gz and final-integrity.json.
+Fresh four-input replay (new tag; independent CPU audit):
+python3 benchmark-results/gpu-extensive-20261022-pass11/campaign.py four baseline replay-01
+Fresh native replay:
+python3 benchmark-results/gpu-extensive-20261022-pass11/wallet.py sample baseline replay-01
+Use pinned binaries and unchanged budgets. Every replay must use a fresh tag.

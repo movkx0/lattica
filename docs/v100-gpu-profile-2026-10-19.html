@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V100 GPU prover — profiling and optimization, 19 October 2026</title>
+<style>
+:root{color-scheme:light}body{font:16px/1.6 system-ui,-apple-system,sans-serif;color:#233440;background:#f5f7f8;margin:0}
+main{max-width:1100px;margin:auto;padding:40px 36px 80px;background:white}h1{font-size:2.4rem;line-height:1.15;letter-spacing:-.03em;margin:12px 0 20px;max-width:900px}
+h2{font-size:1.45rem;margin-top:48px;border-top:1px solid #dbe3e9;padding-top:22px}h3{font-size:1.1rem;margin-top:28px}
+p{max-width:1000px}.eyebrow{color:#087e78;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:.8rem}
+.lead{font-size:1.15rem}.note,figcaption{color:#536574;font-size:.94rem}a{color:#175c88}table{border-collapse:collapse;width:100%;margin:20px 0;font-size:.91rem}
+th,td{border-bottom:1px solid #dfe6eb;padding:10px 12px;text-align:right;vertical-align:top}th:first-child,td:first-child{text-align:left}thead{background:#edf3f6}tbody th{font-weight:600}
+figure{margin:30px 0}figure svg{width:100%;height:auto}code{font-size:.8em;overflow-wrap:anywhere}pre{padding:18px;background:#edf3f6;overflow:auto;line-height:1.5}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;list-style-position:inside;padding:0}.flow li{background:#edf5f4;border-top:3px solid #087e78;padding:16px;list-style:none}
+details{margin:24px 0}summary{cursor:pointer;font-weight:600}.scroll{overflow-x:auto}.sources td{text-align:left}
+@media(max-width:700px){main{padding:24px 16px}h1{font-size:1.9rem}.flow{grid-template-columns:1fr}}
+</style></head><body><main>
+<div class="eyebrow">Measured on Tesla V100-PCIE-32GB · 19 October 2026</div>
+<h1>GPU prover profiling and optimization</h1>
+<p><strong>All fifteen aggregation pairs improved.</strong> Warmed median times fell by 4.24% for four inputs, 2.83% for eight inputs, and 4.59% for two concurrent eight-input jobs. The larger native-wallet follow-up was effectively unchanged.</p>
+<p class="lead">This campaign profiles native wallet proving, four- and eight-input recursive aggregation, and two concurrent eight-input jobs. It compares the existing RNG-optimized prover with cheaper Goldilocks subtraction, a guarded Poseidon2 internal layer, and a separately evaluated witness schedule.</p>
+<p>The final implementation is <strong>fused</strong>. Each workload below has five alternating pairs, unchanged proof parameters, fresh proof randomness, resource monitoring, and an independent CPU audit of every result. The baseline already includes the earlier random-stream batching improvement; these results measure the additional changes.</p>
+<div class="scroll"><table><thead><tr><th>Workload</th><th>Baseline median (s)</th><th>Optimized median (s)</th><th>Median time reduction</th><th>Paired wins</th></tr></thead><tbody><tr><th>Four-input aggregation</th><td>38.4478</td><td>36.8170</td><td>4.24%</td><td>5/5</td></tr><tr><th>Eight-input aggregation</th><td>73.4799</td><td>71.4020</td><td>2.83%</td><td>5/5</td></tr><tr><th>Two concurrent eight-input jobs</th><td>143.8994</td><td>137.2915</td><td>4.59%</td><td>5/5</td></tr><tr><th>Native JoinSplit</th><td>0.3342</td><td>0.3754</td><td>-12.34%</td><td>3/5</td></tr></tbody></table></div>
+<p class="note">Four-input and wallet times exclude GPU initialization and the independent CPU audit. Eight-input times cover worker launch through exit, including initialization, in-process verification, serialization, and shutdown. These timer boundaries are preserved between arms within each workload. Five pairs characterize this fixture and machine; they do not establish a universal speedup.</p>
+<figure><svg xmlns:xlink="http://www.w3.org/1999/xlink" width="692.39952pt" height="373.886748pt" viewBox="0 0 692.39952 373.886748" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-10-19T22:53:01.746469</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="v100-gpu-profile-2026-10-19-timings-figure_1">
+  <g id="v100-gpu-profile-2026-10-19-timings-patch_1">
+   <path d="M 0 373.886748 
+L 692.39952 373.886748 
+L 692.39952 -0 
+L 0 -0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="v100-gpu-profile-2026-10-19-timings-axes_1">
+   <g id="v100-gpu-profile-2026-10-19-timings-patch_2">
+    <path d="M 49.305469 315.794832 
+L 685.19952 315.794832 
+L 685.19952 31.318125 
+L 49.305469 31.318125 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-matplotlib.axis_1">
+    <g id="v100-gpu-profile-2026-10-19-timings-xtick_1">
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_1">
+      <defs>
+       <path id="v100-gpu-profile-2026-10-19-timings-m36258ddd83" d="M 0 0 
+L 0 3.5 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m36258ddd83" x="115.180328" y="315.794832" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-text_1">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="115.180328" y="330.39327" transform="rotate(-0 115.180328 330.39327)">Four inputs</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-timings-xtick_2">
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_2">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m36258ddd83" x="283.228439" y="315.794832" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-text_2">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="283.228439" y="330.39327" transform="rotate(-0 283.228439 330.39327)">Eight inputs</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-timings-xtick_3">
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_3">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m36258ddd83" x="451.27655" y="315.794832" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-text_3">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(413.298425 331.393465)">Two concurrent</text>
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(412.02655 343.3962)">eight-input jobs</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-timings-xtick_4">
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_4">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m36258ddd83" x="619.324661" y="315.794832" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-text_4">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="619.324661" y="330.39327" transform="rotate(-0 619.324661 330.39327)">Native JoinSplit</text>
+     </g>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-matplotlib.axis_2">
+    <g id="v100-gpu-profile-2026-10-19-timings-ytick_1">
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_5">
+      <path d="M 49.305469 296.820334 
+L 685.19952 296.820334 
+" clip-path="url(#v100-gpu-profile-2026-10-19-timings-p538276a172)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_6">
+      <defs>
+       <path id="v100-gpu-profile-2026-10-19-timings-m67b2212c9a" d="M 0 0 
+L -3.5 0 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m67b2212c9a" x="49.305469" y="296.820334" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-text_5">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="42.305469" y="300.619162" transform="rotate(-0 42.305469 300.619162)">−15</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-timings-ytick_2">
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_7">
+      <path d="M 49.305469 251.238545 
+L 685.19952 251.238545 
+" clip-path="url(#v100-gpu-profile-2026-10-19-timings-p538276a172)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_8">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m67b2212c9a" x="49.305469" y="251.238545" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-text_6">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="42.305469" y="255.037373" transform="rotate(-0 42.305469 255.037373)">−10</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-timings-ytick_3">
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_9">
+      <path d="M 49.305469 205.656755 
+L 685.19952 205.656755 
+" clip-path="url(#v100-gpu-profile-2026-10-19-timings-p538276a172)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_10">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m67b2212c9a" x="49.305469" y="205.656755" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-text_7">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="42.305469" y="209.455583" transform="rotate(-0 42.305469 209.455583)">−5</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-timings-ytick_4">
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_11">
+      <path d="M 49.305469 160.074966 
+L 685.19952 160.074966 
+" clip-path="url(#v100-gpu-profile-2026-10-19-timings-p538276a172)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_12">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m67b2212c9a" x="49.305469" y="160.074966" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-text_8">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="42.305469" y="163.873794" transform="rotate(-0 42.305469 163.873794)">0</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-timings-ytick_5">
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_13">
+      <path d="M 49.305469 114.493177 
+L 685.19952 114.493177 
+" clip-path="url(#v100-gpu-profile-2026-10-19-timings-p538276a172)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_14">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m67b2212c9a" x="49.305469" y="114.493177" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-text_9">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="42.305469" y="118.292005" transform="rotate(-0 42.305469 118.292005)">5</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-timings-ytick_6">
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_15">
+      <path d="M 49.305469 68.911387 
+L 685.19952 68.911387 
+" clip-path="url(#v100-gpu-profile-2026-10-19-timings-p538276a172)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-line2d_16">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m67b2212c9a" x="49.305469" y="68.911387" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-timings-text_10">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="42.305469" y="72.710215" transform="rotate(-0 42.305469 72.710215)">10</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-timings-text_11">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="14.798438" y="173.556479" transform="rotate(-90 14.798438 173.556479)">Paired time reduction (%)</text>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-line2d_17">
+    <path d="M 49.305469 160.074966 
+L 685.19952 160.074966 
+" clip-path="url(#v100-gpu-profile-2026-10-19-timings-p538276a172)" style="fill: none; stroke: #6c7580; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-patch_3">
+    <path d="M 49.305469 315.794832 
+L 49.305469 31.318125 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-patch_4">
+    <path d="M 49.305469 315.794832 
+L 685.19952 315.794832 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-PathCollection_1">
+    <defs>
+     <path id="v100-gpu-profile-2026-10-19-timings-m41e6f8281a" d="M 0 3.464102 
+C 0.91869 3.464102 1.799877 3.099102 2.44949 2.44949 
+C 3.099102 1.799877 3.464102 0.91869 3.464102 0 
+C 3.464102 -0.91869 3.099102 -1.799877 2.44949 -2.44949 
+C 1.799877 -3.099102 0.91869 -3.464102 0 -3.464102 
+C -0.91869 -3.464102 -1.799877 -3.099102 -2.44949 -2.44949 
+C -3.099102 -1.799877 -3.464102 -0.91869 -3.464102 0 
+C -3.464102 0.91869 -3.099102 1.799877 -2.44949 2.44949 
+C -1.799877 3.099102 -0.91869 3.464102 0 3.464102 
+z
+" style="stroke: #087e78; stroke-opacity: 0.8"/>
+    </defs>
+    <g clip-path="url(#v100-gpu-profile-2026-10-19-timings-p538276a172)">
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="96.695036" y="125.65039" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="105.937682" y="123.795284" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="115.180328" y="119.838385" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="124.422974" y="121.188678" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="133.66562" y="119.336146" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-text_12">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #345b84" x="115.180328" y="108.188678" transform="rotate(-0 115.180328 108.188678)">4.27%</text>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-PathCollection_2">
+    <g clip-path="url(#v100-gpu-profile-2026-10-19-timings-p538276a172)">
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="264.743147" y="128.579862" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="273.985793" y="129.980573" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="283.228439" y="136.82689" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="292.471085" y="122.14097" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="301.713731" y="120.787279" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-text_13">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #345b84" x="283.228439" y="115.579862" transform="rotate(-0 283.228439 115.579862)">3.45%</text>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-PathCollection_3">
+    <g clip-path="url(#v100-gpu-profile-2026-10-19-timings-p538276a172)">
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="432.791258" y="120.911872" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="442.033904" y="120.465224" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="451.27655" y="114.046462" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="460.519196" y="123.241476" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="469.761842" y="121.686726" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-text_14">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #345b84" x="451.27655" y="107.911872" transform="rotate(-0 451.27655 107.911872)">4.30%</text>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-PathCollection_4">
+    <g clip-path="url(#v100-gpu-profile-2026-10-19-timings-p538276a172)">
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="600.839368" y="77.211517" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="610.082014" y="153.613513" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="619.324661" y="126.554526" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="628.567307" y="229.581982" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+     <use xlink:href="#v100-gpu-profile-2026-10-19-timings-m41e6f8281a" x="637.809953" y="306.678475" style="fill: #087e78; fill-opacity: 0.8; stroke: #087e78; stroke-opacity: 0.8"/>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-text_15">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #345b84" x="619.324661" y="140.613513" transform="rotate(-0 619.324661 140.613513)">0.71%</text>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-text_16">
+    <text style="font-weight: 700; font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: start" x="49.305469" y="16.318125" transform="rotate(-0 49.305469 16.318125)">Five alternating baseline / optimized pairs per workload</text>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-line2d_18">
+    <path d="M 78.209744 121.188678 
+L 152.150913 121.188678 
+" clip-path="url(#v100-gpu-profile-2026-10-19-timings-p538276a172)" style="fill: none; stroke: #345b84; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-line2d_19">
+    <path d="M 246.257855 128.579862 
+L 320.199023 128.579862 
+" clip-path="url(#v100-gpu-profile-2026-10-19-timings-p538276a172)" style="fill: none; stroke: #345b84; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-line2d_20">
+    <path d="M 414.305965 120.911872 
+L 488.247134 120.911872 
+" clip-path="url(#v100-gpu-profile-2026-10-19-timings-p538276a172)" style="fill: none; stroke: #345b84; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-timings-line2d_21">
+    <path d="M 582.354076 153.613513 
+L 656.295245 153.613513 
+" clip-path="url(#v100-gpu-profile-2026-10-19-timings-p538276a172)" style="fill: none; stroke: #345b84; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+  </g>
+  <g id="v100-gpu-profile-2026-10-19-timings-text_17">
+   <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #4d5965" transform="translate(17.87976 352.821299)">Dots: individual pairs. Bars and labels: median paired reduction. Positive values mean less time.</text>
+   <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #4d5965" transform="translate(17.87976 363.62376)">Four-input and wallet timers exclude initialization; eight-input timers cover the complete worker window.</text>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="v100-gpu-profile-2026-10-19-timings-p538276a172">
+   <rect x="49.305469" y="31.318125" width="635.894051" height="284.476707"/>
+  </clipPath>
+ </defs>
+</svg>
+<figcaption>All individual paired reductions are shown. Reported table reductions use the ratio of the two medians; plotted bars use the median of paired percentage reductions.</figcaption></figure>
+<details><summary>Individual paired measurements</summary><div class="scroll"><table><thead><tr><th>Workload</th><th>Pair</th><th>Order</th><th>Baseline (s)</th><th>Optimized (s)</th><th>Reduction</th></tr></thead><tbody><tr><td>Four-input aggregation</td><td>1</td><td>baseline → fused</td><td>38.261805</td><td>36.816988</td><td>3.78%</td></tr><tr><td>Four-input aggregation</td><td>2</td><td>fused → baseline</td><td>38.343271</td><td>36.817353</td><td>3.98%</td></tr><tr><td>Four-input aggregation</td><td>3</td><td>baseline → fused</td><td>38.447818</td><td>36.750859</td><td>4.41%</td></tr><tr><td>Four-input aggregation</td><td>4</td><td>fused → baseline</td><td>38.478455</td><td>36.837137</td><td>4.27%</td></tr><tr><td>Four-input aggregation</td><td>5</td><td>baseline → fused</td><td>38.451795</td><td>36.733476</td><td>4.47%</td></tr><tr><td>Eight-input aggregation</td><td>1</td><td>baseline → fused</td><td>73.346704</td><td>70.812729</td><td>3.45%</td></tr><tr><td>Eight-input aggregation</td><td>2</td><td>fused → baseline</td><td>73.839522</td><td>71.401975</td><td>3.30%</td></tr><tr><td>Eight-input aggregation</td><td>3</td><td>baseline → fused</td><td>73.479930</td><td>71.606082</td><td>2.55%</td></tr><tr><td>Eight-input aggregation</td><td>4</td><td>fused → baseline</td><td>74.587716</td><td>71.484053</td><td>4.16%</td></tr><tr><td>Eight-input aggregation</td><td>5</td><td>baseline → fused</td><td>73.317265</td><td>70.157597</td><td>4.31%</td></tr><tr><td>Two concurrent eight-input jobs</td><td>1</td><td>baseline → fused</td><td>144.014427</td><td>137.827690</td><td>4.30%</td></tr><tr><td>Two concurrent eight-input jobs</td><td>2</td><td>fused → baseline</td><td>143.065831</td><td>136.849751</td><td>4.34%</td></tr><tr><td>Two concurrent eight-input jobs</td><td>3</td><td>baseline → fused</td><td>143.965628</td><td>136.696802</td><td>5.05%</td></tr><tr><td>Two concurrent eight-input jobs</td><td>4</td><td>fused → baseline</td><td>143.899439</td><td>138.085365</td><td>4.04%</td></tr><tr><td>Two concurrent eight-input jobs</td><td>5</td><td>baseline → fused</td><td>143.326929</td><td>137.291549</td><td>4.21%</td></tr><tr><td>Native JoinSplit</td><td>1</td><td>baseline → fused</td><td>0.413180</td><td>0.375624</td><td>9.09%</td></tr><tr><td>Native JoinSplit</td><td>2</td><td>fused → baseline</td><td>0.387411</td><td>0.384665</td><td>0.71%</td></tr><tr><td>Native JoinSplit</td><td>3</td><td>baseline → fused</td><td>0.326653</td><td>0.314643</td><td>3.68%</td></tr><tr><td>Native JoinSplit</td><td>4</td><td>fused → baseline</td><td>0.334169</td><td>0.359647</td><td>-7.62%</td></tr><tr><td>Native JoinSplit</td><td>5</td><td>baseline → fused</td><td>0.323412</td><td>0.375421</td><td>-16.08%</td></tr></tbody></table></div></details>
+
+<h2>Native wallet variability and follow-up</h2>
+<p>The original wallet series won three of five pairs but had a slower optimized median. This prompted a fixed twenty-pair follow-up, scheduled after the cache experiment with the same binaries and controls. Every sample is retained. The original qualification table and figure above remain unchanged; the follow-up and pooled results appear below. Subsecond native proving has substantial host and driver overhead, so its result should be assessed separately from aggregation.</p>
+<div class="scroll"><table><thead><tr><th>Series</th><th>Baseline median (s)</th><th>Optimized median (s)</th><th>Median time reduction</th><th>Median paired reduction</th><th>Paired wins</th></tr></thead><tbody><tr><th>Original five pairs</th><td>0.3342</td><td>0.3754</td><td>-12.34%</td><td>0.71%</td><td>3/5</td></tr><tr><th>Additional twenty pairs</th><td>0.3235</td><td>0.3235</td><td>-0.02%</td><td>0.36%</td><td>11/20</td></tr><tr><th>All twenty-five pairs</th><td>0.3239</td><td>0.3248</td><td>-0.29%</td><td>0.56%</td><td>14/25</td></tr></tbody></table></div>
+<details><summary>All twenty additional wallet pairs</summary><div class="scroll"><table><thead><tr><th>Pair</th><th>Baseline (s)</th><th>Optimized (s)</th><th>Time reduction</th></tr></thead><tbody><tr><td>1</td><td>0.337312</td><td>0.308075</td><td>8.67%</td></tr><tr><td>2</td><td>0.323340</td><td>0.343406</td><td>-6.21%</td></tr><tr><td>3</td><td>0.328020</td><td>0.324435</td><td>1.09%</td></tr><tr><td>4</td><td>0.322801</td><td>0.320345</td><td>0.76%</td></tr><tr><td>5</td><td>0.328446</td><td>0.317331</td><td>3.38%</td></tr><tr><td>6</td><td>0.321459</td><td>0.326960</td><td>-1.71%</td></tr><tr><td>7</td><td>0.315758</td><td>0.315278</td><td>0.15%</td></tr><tr><td>8</td><td>0.320453</td><td>0.322633</td><td>-0.68%</td></tr><tr><td>9</td><td>0.323885</td><td>0.324833</td><td>-0.29%</td></tr><tr><td>10</td><td>0.320683</td><td>0.318888</td><td>0.56%</td></tr><tr><td>11</td><td>0.320719</td><td>0.341773</td><td>-6.56%</td></tr><tr><td>12</td><td>0.341357</td><td>0.326611</td><td>4.32%</td></tr><tr><td>13</td><td>0.329077</td><td>0.318766</td><td>3.13%</td></tr><tr><td>14</td><td>0.326701</td><td>0.309892</td><td>5.15%</td></tr><tr><td>15</td><td>0.332562</td><td>0.315513</td><td>5.13%</td></tr><tr><td>16</td><td>0.322285</td><td>0.345646</td><td>-7.25%</td></tr><tr><td>17</td><td>0.322421</td><td>0.330918</td><td>-2.64%</td></tr><tr><td>18</td><td>0.321274</td><td>0.327032</td><td>-1.79%</td></tr><tr><td>19</td><td>0.325778</td><td>0.317497</td><td>2.54%</td></tr><tr><td>20</td><td>0.323598</td><td>0.328938</td><td>-1.65%</td></tr></tbody></table></div></details>
+<p class="note">Each pair alternates execution order; odd pairs run baseline first. The follow-up was chosen after seeing the initial result, so the pooled result is descriptive, not a prespecified statistical confirmation. No sample was excluded.</p>
+<p>The twenty-pair follow-up measured 0.323469 → 0.323534 seconds, with 11/20 paired wins. This does not show a repeatable end-to-end native-wallet improvement. The selected changes are retained for their consistent aggregation gains.</p>
+<div class="scroll"><table><thead><tr><th>Native wallet stage</th><th>Baseline median GPU time (ms)</th><th>Optimized median GPU time (ms)</th><th>Time reduction</th></tr></thead><tbody><tr><th>Commitment</th><td>29.431</td><td>28.225</td><td>4.10%</td></tr><tr><th>Transform</th><td>14.098</td><td>13.339</td><td>5.38%</td></tr><tr><th>Transcript</th><td>22.897</td><td>21.619</td><td>5.58%</td></tr></tbody></table></div>
+<p class="note">Stage receipts cover all twenty-five pairs. These are recorded GPU event durations for individual stages, not an additive CPU/GPU time breakdown. Whole-proof timing also includes host and driver work.</p>
+<h2>What the profiles showed</h2>
+<p>The warm four-input baseline recorded 44,650 OpenCL events with zero dropped events. LDE row hashing and transforms dominated the recorded device execution. The optimized warm profile recorded 24,533 events; its recorded execution union was 23.349 seconds, compared with 24.808 seconds for baseline. These are instrumented observations, separate from the uninstrumented paired timing series. Fewer launches also mean fewer profile records; final speedup claims use the separate uninstrumented series.</p>
+<figure><svg xmlns:xlink="http://www.w3.org/1999/xlink" width="692.39952pt" height="353.99952pt" viewBox="0 0 692.39952 353.99952" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-10-19T22:53:02.264666</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="v100-gpu-profile-2026-10-19-kernels-figure_1">
+  <g id="v100-gpu-profile-2026-10-19-kernels-patch_1">
+   <path d="M 0 353.99952 
+L 692.39952 353.99952 
+L 692.39952 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="v100-gpu-profile-2026-10-19-kernels-axes_1">
+   <g id="v100-gpu-profile-2026-10-19-kernels-patch_2">
+    <path d="M 150.41875 315.798739 
+L 685.19952 315.798739 
+L 685.19952 31.318125 
+L 150.41875 31.318125 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-matplotlib.axis_1">
+    <g id="v100-gpu-profile-2026-10-19-kernels-xtick_1">
+     <g id="v100-gpu-profile-2026-10-19-kernels-line2d_1">
+      <path d="M 150.41875 315.798739 
+L 150.41875 31.318125 
+" clip-path="url(#v100-gpu-profile-2026-10-19-kernels-p5787c4e188)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-kernels-line2d_2">
+      <defs>
+       <path id="v100-gpu-profile-2026-10-19-kernels-m5191b6b23b" d="M 0 0 
+L 0 3.5 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-kernels-m5191b6b23b" x="150.41875" y="315.798739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-kernels-text_1">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="150.41875" y="330.396395" transform="rotate(-0 150.41875 330.396395)">0</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-kernels-xtick_2">
+     <g id="v100-gpu-profile-2026-10-19-kernels-line2d_3">
+      <path d="M 268.564228 315.798739 
+L 268.564228 31.318125 
+" clip-path="url(#v100-gpu-profile-2026-10-19-kernels-p5787c4e188)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-kernels-line2d_4">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-kernels-m5191b6b23b" x="268.564228" y="315.798739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-kernels-text_2">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="268.564228" y="330.396395" transform="rotate(-0 268.564228 330.396395)">2</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-kernels-xtick_3">
+     <g id="v100-gpu-profile-2026-10-19-kernels-line2d_5">
+      <path d="M 386.709706 315.798739 
+L 386.709706 31.318125 
+" clip-path="url(#v100-gpu-profile-2026-10-19-kernels-p5787c4e188)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-kernels-line2d_6">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-kernels-m5191b6b23b" x="386.709706" y="315.798739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-kernels-text_3">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="386.709706" y="330.396395" transform="rotate(-0 386.709706 330.396395)">4</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-kernels-xtick_4">
+     <g id="v100-gpu-profile-2026-10-19-kernels-line2d_7">
+      <path d="M 504.855184 315.798739 
+L 504.855184 31.318125 
+" clip-path="url(#v100-gpu-profile-2026-10-19-kernels-p5787c4e188)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-kernels-line2d_8">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-kernels-m5191b6b23b" x="504.855184" y="315.798739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-kernels-text_4">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="504.855184" y="330.396395" transform="rotate(-0 504.855184 330.396395)">6</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-kernels-xtick_5">
+     <g id="v100-gpu-profile-2026-10-19-kernels-line2d_9">
+      <path d="M 623.000661 315.798739 
+L 623.000661 31.318125 
+" clip-path="url(#v100-gpu-profile-2026-10-19-kernels-p5787c4e188)" style="fill: none; stroke: #e4e8ec; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-kernels-line2d_10">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-kernels-m5191b6b23b" x="623.000661" y="315.798739" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-kernels-text_5">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="623.000661" y="330.396395" transform="rotate(-0 623.000661 330.396395)">8</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-kernels-text_6">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle" x="417.809135" y="344.397176" transform="rotate(-0 417.809135 344.397176)">Sum of recorded GPU event durations (seconds; nonadditive)</text>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-matplotlib.axis_2">
+    <g id="v100-gpu-profile-2026-10-19-kernels-ytick_1">
+     <g id="v100-gpu-profile-2026-10-19-kernels-line2d_11">
+      <defs>
+       <path id="v100-gpu-profile-2026-10-19-kernels-md26e1c7e02" d="M 0 0 
+L -3.5 0 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-kernels-md26e1c7e02" x="150.41875" y="64.205899" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-kernels-text_7">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="143.41875" y="68.005118" transform="rotate(-0 143.41875 68.005118)">LDE row hashing</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-kernels-ytick_2">
+     <g id="v100-gpu-profile-2026-10-19-kernels-line2d_12">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-kernels-md26e1c7e02" x="150.41875" y="118.882166" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-kernels-text_8">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="143.41875" y="122.681384" transform="rotate(-0 143.41875 122.681384)">LDE transforms</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-kernels-ytick_3">
+     <g id="v100-gpu-profile-2026-10-19-kernels-line2d_13">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-kernels-md26e1c7e02" x="150.41875" y="173.558432" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-kernels-text_9">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="143.41875" y="177.357651" transform="rotate(-0 143.41875 177.357651)">Quotient evaluation</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-kernels-ytick_4">
+     <g id="v100-gpu-profile-2026-10-19-kernels-line2d_14">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-kernels-md26e1c7e02" x="150.41875" y="228.234698" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-kernels-text_10">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="143.41875" y="232.033917" transform="rotate(-0 143.41875 232.033917)">Lookup expressions</text>
+     </g>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-kernels-ytick_5">
+     <g id="v100-gpu-profile-2026-10-19-kernels-line2d_15">
+      <g>
+       <use xlink:href="#v100-gpu-profile-2026-10-19-kernels-md26e1c7e02" x="150.41875" y="282.910965" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="v100-gpu-profile-2026-10-19-kernels-text_11">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end" x="143.41875" y="286.710183" transform="rotate(-0 143.41875 286.710183)">Witness dependency levels</text>
+     </g>
+    </g>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-patch_3">
+    <path d="M 150.41875 44.249062 
+L 659.733769 44.249062 
+L 659.733769 63.385755 
+L 150.41875 63.385755 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-19-kernels-p5787c4e188)" style="fill: #345b84"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-patch_4">
+    <path d="M 150.41875 98.925328 
+L 599.60574 98.925328 
+L 599.60574 118.062022 
+L 150.41875 118.062022 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-19-kernels-p5787c4e188)" style="fill: #345b84"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-patch_5">
+    <path d="M 150.41875 153.601595 
+L 333.491708 153.601595 
+L 333.491708 172.738288 
+L 150.41875 172.738288 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-19-kernels-p5787c4e188)" style="fill: #345b84"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-patch_6">
+    <path d="M 150.41875 208.277861 
+L 186.411847 208.277861 
+L 186.411847 227.414554 
+L 150.41875 227.414554 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-19-kernels-p5787c4e188)" style="fill: #345b84"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-patch_7">
+    <path d="M 150.41875 262.954127 
+L 175.22018 262.954127 
+L 175.22018 282.090821 
+L 150.41875 282.090821 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-19-kernels-p5787c4e188)" style="fill: #345b84"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-patch_8">
+    <path d="M 150.41875 65.026043 
+L 612.86942 65.026043 
+L 612.86942 84.162736 
+L 150.41875 84.162736 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-19-kernels-p5787c4e188)" style="fill: #087e78"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-patch_9">
+    <path d="M 150.41875 119.70231 
+L 576.889973 119.70231 
+L 576.889973 138.839003 
+L 150.41875 138.839003 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-19-kernels-p5787c4e188)" style="fill: #087e78"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-patch_10">
+    <path d="M 150.41875 174.378576 
+L 328.523926 174.378576 
+L 328.523926 193.515269 
+L 150.41875 193.515269 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-19-kernels-p5787c4e188)" style="fill: #087e78"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-patch_11">
+    <path d="M 150.41875 229.054842 
+L 187.142916 229.054842 
+L 187.142916 248.191535 
+L 150.41875 248.191535 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-19-kernels-p5787c4e188)" style="fill: #087e78"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-patch_12">
+    <path d="M 150.41875 283.731109 
+L 168.342952 283.731109 
+L 168.342952 302.867802 
+L 150.41875 302.867802 
+z
+" clip-path="url(#v100-gpu-profile-2026-10-19-kernels-p5787c4e188)" style="fill: #087e78"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-patch_13">
+    <path d="M 150.41875 315.798739 
+L 150.41875 31.318125 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-patch_14">
+    <path d="M 150.41875 315.798739 
+L 685.19952 315.798739 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-text_12">
+    <text style="font-weight: 700; font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: start" x="150.41875" y="16.318125" transform="rotate(-0 150.41875 16.318125)">Warm four-input GPU profile</text>
+   </g>
+   <g id="v100-gpu-profile-2026-10-19-kernels-legend_1">
+    <g id="v100-gpu-profile-2026-10-19-kernels-patch_15">
+     <path d="M 597.01202 289.395614 
+L 617.01202 289.395614 
+L 617.01202 282.395614 
+L 597.01202 282.395614 
+z
+" style="fill: #345b84"/>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-kernels-text_13">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="625.01202" y="289.395614" transform="rotate(-0 625.01202 289.395614)">Baseline</text>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-kernels-patch_16">
+     <path d="M 597.01202 304.396395 
+L 617.01202 304.396395 
+L 617.01202 297.396395 
+L 597.01202 297.396395 
+z
+" style="fill: #087e78"/>
+    </g>
+    <g id="v100-gpu-profile-2026-10-19-kernels-text_14">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="625.01202" y="304.396395" transform="rotate(-0 625.01202 304.396395)">Optimized</text>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="v100-gpu-profile-2026-10-19-kernels-p5787c4e188">
+   <rect x="150.41875" y="31.318125" width="534.78077" height="284.480614"/>
+  </clipPath>
+ </defs>
+</svg>
+<figcaption>Event durations are nonadditive and do not include every device command. Host spans and recorded GPU intervals use different timing semantics.</figcaption></figure>
+<p>The baseline issued 21,415 witness dependency-level launches in the four-input trace. The selected implementation issued 1,304 corresponding launches. More than 95% of the baseline levels contained at most 128 operations, motivating the separate bounded fusion experiment. Full profiles also cover the eight-input worker and both workers in the concurrent cohort.</p>
+<p>Host tracing exposed substantial public circuit construction, preprocessing setup, quotient compilation, opening work, and event completion time. Entered host spans measure elapsed time, and process CPU counters include all process threads and driver activity. Nested phases overlap and cannot be added as a CPU-work breakdown. Gaps between recorded GPU events include host work and unrecorded device commands; they are not a measurement of GPU idle time. Independent workers' device clocks were not merged.</p>
+<p>The available Nsight Systems installation has no OpenCL trace option. This campaign therefore used native OpenCL queue/event metadata, kernel resource queries, host tracing, process counters, and NVML power telemetry. It makes no hardware occupancy or bandwidth-saturation claim.</p>
+
+<h2>Code changes and experiment decisions</h2>
+<ol>
+<li><strong>Goldilocks subtraction.</strong> Replace addition of a modular negation with subtraction and two bounded borrow corrections. The operation accepts arbitrary 64-bit lazy field representations, including noncanonical values, and remains equivalent modulo <code>2^64 − 2^32 + 1</code>.</li>
+<li><strong>Poseidon2 internal diagonal.</strong> Replace generic multiplications by the fixed width-eight diagonal with additions, subtractions, and modular halving. The host checks every exported diagonal coefficient before enabling this kernel variant. A different dependency-provided diagonal retains the generic path.</li>
+<li><strong>Witness scheduling.</strong> The retained witness optimization batches up to 64 consecutive dependency levels with at most 128 operations each into one 128-thread workgroup. A global-memory barrier separates levels. Wider levels retain the existing kernel. Wave lengths use the reserved final word of existing instruction records, so the managed allocation plan and upload size do not grow. The measured default is limited to the V100 device selection; explicit reference and tuning selections remain available.</li>
+</ol>
+<p>The arithmetic screen compared baseline, subtraction-only, diagonal-only, and combined kernels using independent integer oracles and interleaved GPU event timings. Individual hash shapes had mixed results for the isolated changes; the combined candidate was carried forward to complete proofs. Its three four-input screening pairs all improved, with a 2.93% median paired reduction. Fusion has its own five-pair comparison against the arithmetic candidate: median paired reduction 0.80%, range -0.99% to 1.58%, and 4/5 wins. Screening, warm-ups, diagnostic profiles, and controlled cache runs are excluded from final qualification medians. The machine-readable evidence retains their individual results and the final selection rationale.</p><p>Retain the combined arithmetic and bounded witness fusion candidate for final qualification. Arithmetic won all three initial pairs (2.93% median paired reduction). Fusion won four of five direct pairs with a small 0.80% median paired reduction and a -0.99% to +1.58% range; the unpaired medians are effectively neutral. The fusion result is treated as modest and variable, with a clear reduction in launch and instrumentation overhead. All 26 targeted checks passed and managed allocation peaks were unchanged. Final performance claims use the separate five-pair baseline/combined series across four workloads.</p>
+<p>The earlier RNG batching source remains unchanged. The new changes preserve the verifier, protocol parameters, hiding, fresh random streams, and proof formats. Apple Metal settings were not modified; hardware qualification here covers the stated V100 OpenCL environment.</p>
+
+<h2>Correctness and resource checks</h2>
+<p>The complete benchmark ledger contains <strong>142 independently audited roots or wallet proofs</strong>, representing <strong>506 fresh benchmark proofs</strong>. Every recorded result passed its CPU audit, and every root or wallet proof byte hash is unique. Recursive proofs require all sixteen arithmetic stages; the native wallet AIR requires fifteen because it has no lookup stage. Native wallet audits also reject a changed public statement.</p>
+<p>The selected source passed 26 targeted tests and both feature-compatibility checks. Targeted checks cover full-width integer field oracles, generic and specialized Poseidon2 permutations, dependency-coefficient fallback, DFT and coset LDE parity, Merkle and hiding commitment parity, and native wallet entrypoints checked by unchanged CPU verifiers after GPU shutdown. Witness tests compare complete CPU/GPU traces in reference and fused modes, including long chains, 127/128/129-lane boundaries, all supported instruction families, invalid witnesses, malformed wave markers, exact memory-admission boundaries, cleanup, and session reuse. The evidence lists exact test counts, binaries, feature checks, and retained unsuccessful setup attempts; it does not claim the entire repository test suite passed.</p>
+<p>The four-input service retained its 16 GiB managed GPU allowance, 4 GiB driver allowance, 32 GiB host budget, and 36 GiB RSS / 20 GiB VRAM watchdogs. Eight-input workers retained 11.25 GiB managed GPU and 4 GiB driver allowances per worker, 24 GiB host budgets, 26 GiB per-process RSS limits, and a 52 GiB combined RSS limit. Zero-swap admission and the original preflight checks remained active. Source and binary hashes were frozen separately for each variant.</p>
+
+<h2>Energy and concurrency</h2>
+<div class="scroll"><table><thead><tr><th>Workload</th><th>Baseline median (Wh)</th><th>Optimized median (Wh)</th><th>Energy reduction</th><th>Optimized Wh/input</th></tr></thead><tbody><tr><th>Eight-input aggregation</th><td>2.8030</td><td>2.6276</td><td>6.26%</td><td>0.3285</td></tr><tr><th>Two concurrent eight-input jobs</th><td>5.6904</td><td>5.3296</td><td>6.34%</td><td>0.3331</td></tr></tbody></table></div>
+<p>NVML energy covers the complete monitored worker window at the unchanged 250 W board power limit. It is board energy, not whole-system energy or an attribution to one concurrent worker. The single eight-input worker uses four Rayon threads; concurrent workers use two each. Both variants share those settings. Concurrent throughput describes two independent roots, with sixteen input wallet proofs and fourteen fresh recursive proofs in total. At the optimized medians, one eight-input worker yields 403.4 inputs/hour and the two-worker cohort yields 419.5 inputs/hour, a 1.040× throughput ratio. Individual jobs in the cohort share the GPU and have the longer cohort-scale latency.</p>
+
+<h2>Compilation and cache behavior</h2>
+<p>OpenCL program and specialized quotient compilation can dominate first-use latency. Profiling adds <code>-cl-nv-verbose</code>, so its driver-cache entry differs from a normal run. Both modes were warmed independently before the final paired series. Fresh processes still create fresh proofs while reusing public compiled code in the driver cache.</p>
+<div class="scroll"><table><thead><tr><th>Variant</th><th>Cache run</th><th>Initialization (s)</th><th>Aggregation (s)</th><th>Specialized compilation (s)</th><th>Cache files after</th></tr></thead><tbody><tr><td>baseline</td><td>first</td><td>36.019</td><td>159.556</td><td>121.362</td><td>6</td></tr><tr><td>baseline</td><td>repeat</td><td>0.431</td><td>38.665</td><td>0.341</td><td>6</td></tr><tr><td>fused</td><td>first</td><td>36.648</td><td>166.895</td><td>130.597</td><td>6</td></tr><tr><td>fused</td><td>repeat</td><td>0.445</td><td>36.789</td><td>0.327</td><td>6</td></tr></tbody></table></div>
+<p class="note">Controlled runs use separate initially empty <code>CUDA_CACHE_PATH</code> directories for each variant. The evidence records whether the driver populated those directories and includes the repeated run. These runs are outside the qualification timing series.</p>
+
+<p class="note">The cache table contains one first-use and one repeated sample per variant. The optimized build took longer to compile in this run. Both repeats returned to the warmed timing range; deployment planning should account for cache state and first-use latency.</p>
+<h2>How GPU proving works</h2>
+<ul class="flow"><li><strong>1 · Admit and compile</strong><br>CPU resource admission, public AIR and witness dependency metadata.</li><li><strong>2 · Build and commit</strong><br>GPU public values, witness rows, hiding, transforms, Poseidon2 and Merkle trees.</li><li><strong>3 · Prove constraints</strong><br>GPU transcript, lookup argument, quotient evaluation and commitments.</li><li><strong>4 · Open and verify</strong><br>GPU openings, FRI, grinding and bounded readback; CPU serialization and independent verification.</li></ul>
+<p>The host controls a pipeline of exact finite-field operations. Recursive witness operations execute in dependency order. GPU transforms expand polynomial evaluations, and hashing commits them. The transcript samples challenges in the verifier's prescribed order. Lookup and AIR constraints become a quotient polynomial; the prover commits its chunks, evaluates openings, folds the FRI codewords, and gathers the requested authentication paths. Intermediate private matrices remain in their owning device session or explicitly admitted storage. Public compilation and preprocessing may be reused, while private buffers and randomness belong to one proving attempt.</p>
+<p>Legacy wallet proofs use quadratic extension challenges and 96 FRI queries. Recursive proofs use cubic challenges and 128 queries. Both profiles keep hiding, a 16-fold LDE blowup, and 16 query grinding bits. A four-input tree has two pair wrappers and one merge; an eight-input tree has four wrappers and three merges. Aggregation starts with existing wallet proofs. The separate native JoinSplit benchmark measures creation of one fresh wallet proof from a fixed witness.</p>
+<p>See <a href="gpu-acceleration.md">GPU proving</a> for the complete stage inventory, source-level process description, ownership rules, and backend scope.</p>
+
+<h2>Reproduction and evidence</h2>
+<p><a href="evidence/v100-gpu-profile-2026-10-19.json">Machine-readable results and integrity metadata</a> contain every paired timing, profiling and screening summary, proof hashes, test results, source hashes, and timer definitions. Raw logs, frozen sources, binaries, fixtures, controllers, and telemetry are preserved in <code>benchmark-results/gpu-extensive-20261019</code>. Earlier campaigns are preserved separately.</p>
+<p>The machine uses a Tesla V100-PCIE-32GB (driver 580.173.02), an Intel Xeon E5-2650 v4, a 5.76-core cgroup CPU quota, and 64,831,356,928 bytes of cgroup memory with zero swap. Builds use the recorded Rust toolchain, native CPU code generation, and two Cargo jobs. Build commands and source snapshots are pinned in the evidence.</p>
+<pre><code># From the repository root; choose unused sample names.
+python3 benchmark-results/gpu-extensive-20261019/campaign.py four fused replay-four-01
+python3 benchmark-results/gpu-extensive-20261019/campaign.py eight fused replay-eight-01 single
+python3 benchmark-results/gpu-extensive-20261019/campaign.py eight fused replay-concurrent-01 concurrent
+python3 benchmark-results/gpu-extensive-20261019/wallet.py sample fused replay-wallet-01
+# profile-four, profile-eight, and wallet.py profile enable diagnostic tracing.</code></pre>
+<p>These commands run the frozen binaries and source manifests for this campaign and retain CPU audits and watchdogs. Rebuilds or changed controls require a new label and evidence directory. <a href="../lattica-prover-p3/scripts/v100-specialized-benchmark/README.txt">The benchmark README</a> describes the established controller and archive conventions.</p>
+<details><summary>Changed source and SHA-256 hashes</summary><div class="scroll"><table class="sources"><thead><tr><th>Source</th><th>SHA-256</th></tr></thead><tbody><tr><td><a href='../lattica-prover-p3/src/block_v2/gpu_hash/engine/device/witness/tests.rs'>src/block_v2/gpu_hash/engine/device/witness/tests.rs</a></td><td><code>d071e042a198d169a73017f1a70eef3f7ecfa6b47966391c04e30efef16588e5</code></td></tr><tr><td><a href='../lattica-prover-p3/src/block_v2/gpu_hash/engine/device/witness.rs'>src/block_v2/gpu_hash/engine/device/witness.rs</a></td><td><code>efb9abe3ebf9452b5e3b10009aaa13a26927b608faa304578de687c4b4b33502</code></td></tr><tr><td><a href='../lattica-prover-p3/src/block_v2/gpu_hash/engine/device/witness_kernels.rs'>src/block_v2/gpu_hash/engine/device/witness_kernels.rs</a></td><td><code>52f1f3ad820426c686526107cc5ecaa015793f9218bf99947f8ba3ee306e1926</code></td></tr><tr><td><a href='../lattica-prover-p3/src/block_v2/gpu_hash/engine/tuning.rs'>src/block_v2/gpu_hash/engine/tuning.rs</a></td><td><code>f57966e95d98262e620e6b5a79613ff266259f4121e0780d8af6efa66991dadc</code></td></tr><tr><td><a href='../lattica-prover-p3/src/block_v2/gpu_hash/engine.rs'>src/block_v2/gpu_hash/engine.rs</a></td><td><code>b72ea422e4dae814680c6d24ed340ebe8ce90531cb0a3ca6f70d52037bb87501</code></td></tr><tr><td><a href='../lattica-prover-p3/src/block_v2/machine/gpu_program/tests.rs'>src/block_v2/machine/gpu_program/tests.rs</a></td><td><code>f9c1c35674c9a7a71a95f985da4fc81cc877698b5623e92911e9161ffe02b9c4</code></td></tr><tr><td><a href='../lattica-prover-p3/src/block_v2/machine/gpu_program.rs'>src/block_v2/machine/gpu_program.rs</a></td><td><code>1d22870555233391fe9ded43a8e04199e275c8b6e8887d2ca28a394472bc62dc</code></td></tr><tr><td><a href='../lattica-prover-p3/src/gpu/arithmetic_tests.rs'>src/gpu/arithmetic_tests.rs</a></td><td><code>22dabeeeb36f4c93ac697a3c3deb00a07571f5a0b124b9cb953ccb1310fa3748</code></td></tr><tr><td><a href='../lattica-prover-p3/src/gpu.rs'>src/gpu.rs</a></td><td><code>f036ec1b4449b2b86935829d53187463a844b1d248a4c23aa62c1d711d75a3ec</code></td></tr><tr><td><a href='../lattica-prover-p3/src/gpu_constants.rs'>src/gpu_constants.rs</a></td><td><code>00fa678421fda1d8a8044333f343b2690a3caa646f304f8f2f542255f91cb3c1</code></td></tr></tbody></table></div></details>
+<p class="note">Scope: fixed public fixtures and this GPU/driver/resource profile. The work does not qualify original wallet production for every aggregation input, full-block deadlines, durable delivery, other GPUs, or macOS performance. All benchmark outputs retain <code>production_qualified=false</code>.</p>
+</main></body></html>

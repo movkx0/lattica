@@ -34,6 +34,7 @@ use rayon::prelude::*;
 use std::cell::RefCell;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+pub(crate) mod field;
 pub(crate) mod ntt_cache;
 
 /// Lightweight profiling counters (GPU NTT wall-time + call count), for the benchmark to attribute
@@ -75,15 +76,100 @@ pub(crate) const KERNEL_SRC: &str = concat!(
     r#"
 #define NEG_ORDER 0xFFFFFFFFUL
 #define GP        0xFFFFFFFF00000001UL
-inline ulong gl_reduce128(ulong lo,ulong hi){ uint hh=(uint)(hi>>32),hl=(uint)(hi&0xFFFFFFFFUL);
- ulong t0=lo-(ulong)hh; if(lo<(ulong)hh)t0-=NEG_ORDER; ulong t1=(ulong)hl*NEG_ORDER; ulong t2=t0+t1; if(t2<t0)t2+=NEG_ORDER; return t2; }
+inline ulong gl_reduce128(ulong lo,ulong hi){
+#ifdef LATTICA_NVIDIA_FIELD_CARRY
+  // Fold 2^64 = 2^32-1 and 2^96 = -1 modulo p. Each asm block
+  // owns its entire carry chain; no condition code crosses a call boundary.
+  ulong result;
+  asm("{ .reg .u64 t, v, correction; .reg .u32 flag;\n"
+      "sub.cc.u64 t, %1, %3;\n"
+      "subc.u32 flag, 0, 0;\n"
+      "cvt.u64.u32 correction, flag;\n"
+      "sub.u64 t, t, correction;\n"
+      "mul.wide.u32 v, %2, 0xffffffff;\n"
+      "add.cc.u64 t, t, v;\n"
+      "addc.u32 flag, 0, 0;\n"
+      "mul.wide.u32 correction, flag, 0xffffffff;\n"
+      "add.u64 %0, t, correction; }"
+      : "=l"(result) : "l"(lo), "r"((uint)hi), "l"(hi>>32));
+  return result;
+#else
+  uint hh=(uint)(hi>>32),hl=(uint)(hi&0xFFFFFFFFUL);
+  ulong t0=lo-(ulong)hh; if(lo<(ulong)hh)t0-=NEG_ORDER; ulong t1=(ulong)hl*NEG_ORDER; ulong t2=t0+t1; if(t2<t0)t2+=NEG_ORDER; return t2;
+#endif
+}
 inline ulong gl_mul(ulong a,ulong b){ return gl_reduce128(a*b, mul_hi(a,b)); }
-inline ulong gl_add(ulong a,ulong b){ ulong s=a+b; ulong o1=(s<a)?NEG_ORDER:0UL; ulong s2=s+o1; ulong o2=(s2<s)?NEG_ORDER:0UL; return s2+o2; }
+inline ulong gl_add(ulong a,ulong b){
+#ifdef LATTICA_NVIDIA_FIELD_CARRY
+  // Arbitrary u64 representatives can carry again during the first fold.
+  ulong result;
+  asm("{ .reg .u64 t, correction; .reg .u32 flag;\n"
+      "add.cc.u64 t, %1, %2;\n"
+      "addc.u32 flag, 0, 0;\n"
+      "mul.wide.u32 correction, flag, 0xffffffff;\n"
+      "add.cc.u64 t, t, correction;\n"
+      "addc.u32 flag, 0, 0;\n"
+      "mul.wide.u32 correction, flag, 0xffffffff;\n"
+      "add.u64 %0, t, correction; }"
+      : "=l"(result) : "l"(a), "l"(b));
+  return result;
+#else
+  ulong s=a+b; ulong o1=(s<a)?NEG_ORDER:0UL; ulong s2=s+o1; ulong o2=(s2<s)?NEG_ORDER:0UL; return s2+o2;
+#endif
+}
 inline ulong gl_neg(ulong b){ ulong c=(b>=GP)?(b-GP):b; return c==0UL?0UL:(GP-c); }
-inline ulong gl_sub(ulong a,ulong b){ return gl_add(a, gl_neg(b)); }
+// Subtract directly in the lazy Goldilocks representation. Each u64 borrow
+// contributes -2^64 = -(2^32-1) modulo p; arbitrary u64 inputs can borrow twice.
+inline ulong gl_sub(ulong a,ulong b){
+#ifdef LATTICA_NVIDIA_FIELD_CARRY
+  ulong result;
+  asm("{ .reg .u64 t, correction; .reg .u32 flag;\n"
+      "sub.cc.u64 t, %1, %2;\n"
+      "subc.u32 flag, 0, 0;\n"
+      "cvt.u64.u32 correction, flag;\n"
+      "sub.cc.u64 t, t, correction;\n"
+      "subc.u32 flag, 0, 0;\n"
+      "cvt.u64.u32 correction, flag;\n"
+      "sub.u64 %0, t, correction; }"
+      : "=l"(result) : "l"(a), "l"(b));
+  return result;
+#else
+ ulong difference=a-b, correction=(a<b)?NEG_ORDER:0UL;
+ ulong result=difference-correction;
+ return result-((result>difference)?NEG_ORDER:0UL);
+#endif
+}
 inline ulong gl_canon(ulong c){ return (c>=GP)?(c-GP):c; }
 inline ulong gl_pow(ulong b,ulong e){ ulong r=1UL; while(e){ if(e&1UL)r=gl_mul(r,b); b=gl_mul(b,b); e>>=1;} return r; }
-inline uint brev(uint x, uint bits){ uint r=0; for(uint i=0;i<bits;i++){ r=(r<<1)|(x&1u); x>>=1; } return r; }
+// Fixed public addition chain for p-2: 63 squares and nine other multiplies.
+// tN = x^(2^N-1); 2*((2^31-1)*(2^32+1))+1 = p-2.
+// Zero (including the lazy representative p) maps to zero, as with gl_pow.
+inline ulong gl_square_n(ulong x,uint n){
+  for(uint i=0;i<n;i++)x=gl_mul(x,x);
+  return x;
+}
+inline ulong gl_inverse(ulong x){
+  ulong t2=gl_mul(gl_mul(x,x),x);
+  ulong t3=gl_mul(gl_mul(t2,t2),x);
+  ulong t6=gl_mul(gl_square_n(t3,3u),t3);
+  ulong t12=gl_mul(gl_square_n(t6,6u),t6);
+  ulong t24=gl_mul(gl_square_n(t12,12u),t12);
+  ulong t30=gl_mul(gl_square_n(t24,6u),t6);
+  ulong t31=gl_mul(gl_mul(t30,t30),x);
+  ulong t63=gl_mul(gl_square_n(t31,32u),t31);
+  return gl_mul(gl_mul(t63,t63),x);
+}
+// Matrix row indices use 0..32 bits. Reverse all bits in five fixed stages
+// instead of looping over the public height; handle height one without a
+// shift by 32.
+inline uint brev(uint x, uint bits){
+  x=((x>>1)&0x55555555u)|((x&0x55555555u)<<1);
+  x=((x>>2)&0x33333333u)|((x&0x33333333u)<<2);
+  x=((x>>4)&0x0f0f0f0fu)|((x&0x0f0f0f0fu)<<4);
+  x=((x>>8)&0x00ff00ffu)|((x&0x00ff00ffu)<<8);
+  x=(x>>16)|(x<<16);
+  return bits==0u?0u:(x>>(32u-bits));
+}
 
 // ---- tiled NTT: radix-2 DIT, `lt` stages per kernel launch in local memory ----
 // The NTT is MEMORY-bound: one butterfly stage per launch means a full global round-trip per stage.
@@ -147,26 +233,95 @@ __kernel void ntt_tile(__global const ulong* in,__global ulong* out,const uint w
 }
 // ---- Poseidon2-Goldilocks width-8 (matches p3 `default_goldilocks_poseidon2_8`) ----
 inline ulong gl_pow7(ulong x){ ulong x2=gl_mul(x,x); ulong x3=gl_mul(x2,x); ulong x4=gl_mul(x2,x2); return gl_mul(x4,x3); }
-// apply_mat4 on x[0..4] (p3 external.rs; order matters — overwrite 0/2 after 1/3).
-inline void mat4(ulong* x){
-  ulong t01=gl_add(x[0],x[1]); ulong t23=gl_add(x[2],x[3]);
-  ulong t0123=gl_add(t01,t23); ulong t01123=gl_add(t0123,x[1]); ulong t01233=gl_add(t0123,x[3]);
-  x[3]=gl_add(t01233,gl_add(x[0],x[0]));
-  x[1]=gl_add(t01123,gl_add(x[2],x[2]));
-  x[0]=gl_add(t01123,t01);
-  x[2]=gl_add(t01233,t23);
+// Integer M4 on four 32-bit limbs. Each output's coefficients sum to seven.
+// The overwrite order matches p3 external.rs: write 1/3 before 0/2.
+inline void mat4_unreduced(ulong* x){
+  ulong t01=x[0]+x[1],t23=x[2]+x[3];
+  ulong t0123=t01+t23,t01123=t0123+x[1],t01233=t0123+x[3];
+  x[3]=t01233+2UL*x[0];
+  x[1]=t01123+2UL*x[2];
+  x[0]=t01123+t01;
+  x[2]=t01233+t23;
 }
-// external linear layer (mds_light_permutation, WIDTH 8): M4 per chunk, then outer circulant sums.
+// Only for bounded linear-layer limb sums: low,high <= 21*(2^32-1).
+// Reconstruct their exact 128-bit value; its high word is at most 20.
+// Folding that word modulo p can carry once. After a carry the result is
+// below 20*(2^32-1), so the final correction cannot overflow again.
+inline ulong gl_reduce_matrix_limbs(ulong low,ulong high){
+#ifdef LATTICA_NVIDIA_FIELD_CARRY
+    // The reconstructed high word is at most 20. Consume both carries
+    // directly; after the modular fold, adding NEG_ORDER cannot overflow.
+    ulong result;
+    asm("{ .reg .u64 t, correction; .reg .u32 carry;\n"
+        "add.cc.u64 t, %1, %2;\n"
+        "addc.u32 carry, %3, 0;\n"
+        "mul.wide.u32 correction, carry, 0xffffffff;\n"
+        "add.cc.u64 t, t, correction;\n"
+        "addc.u32 carry, 0, 0;\n"
+        "mul.wide.u32 correction, carry, 0xffffffff;\n"
+        "add.u64 %0, t, correction; }"
+        : "=l"(result) : "l"(low), "l"(high<<32), "r"((uint)(high>>32)));
+    return result;
+#else
+  ulong lo=low+(high<<32);
+  ulong hi=(high>>32)+(ulong)(lo<low);
+  ulong reduced=lo+hi*NEG_ORDER;
+  return reduced+((reduced<lo)?NEG_ORDER:0UL);
+#endif
+}
+// External linear layer, WIDTH 8: M4 per chunk, then outer circulant sums.
+// Coefficients sum to 21, so both limb accumulators fit in 37 bits even for
+// noncanonical u64 inputs. Reduce once per output instead of at every add.
 inline void extl(ulong* s){
-  mat4(s); mat4(s+4);
-  ulong z0=gl_add(s[0],s[4]),z1=gl_add(s[1],s[5]),z2=gl_add(s[2],s[6]),z3=gl_add(s[3],s[7]);
-  s[0]=gl_add(s[0],z0); s[1]=gl_add(s[1],z1); s[2]=gl_add(s[2],z2); s[3]=gl_add(s[3],z3);
-  s[4]=gl_add(s[4],z0); s[5]=gl_add(s[5],z1); s[6]=gl_add(s[6],z2); s[7]=gl_add(s[7],z3);
+  ulong low[8],high[8];
+  for(int i=0;i<8;i++){low[i]=(ulong)(uint)s[i];high[i]=s[i]>>32;}
+  mat4_unreduced(low);mat4_unreduced(low+4);
+  mat4_unreduced(high);mat4_unreduced(high+4);
+  for(int i=0;i<4;i++){
+    ulong l=low[i]+low[i+4],h=high[i]+high[i+4];
+    s[i]=gl_reduce_matrix_limbs(low[i]+l,high[i]+h);
+    s[i+4]=gl_reduce_matrix_limbs(low[i+4]+l,high[i+4]+h);
+  }
 }
 // internal linear layer (matmul_internal): s[i] = s[i]*diag[i] + sum(s).
+#ifdef LATTICA_POSEIDON2_FAST_DIAGONAL
+// The host enables this only for the matching p3 width-eight diagonal.
+// This remains valid for lazy, noncanonical u64 field representatives.
+inline ulong gl_half(ulong x){
+ return (x>>1)+((x&1UL)?0x7fffffff80000001UL:0UL);
+}
+#endif
+// Sum eight arbitrary u64 field representatives before reducing. Each limb
+// accumulator is below 2^35; reconstructing the 128-bit sum needs one carry.
+// This avoids seven dependent modular additions in every internal round.
+inline ulong gl_sum8(const ulong* s){
+  ulong lows=0UL,highs=0UL;
+  for(int i=0;i<8;i++){ lows+=(ulong)(uint)s[i];highs+=s[i]>>32; }
+  ulong lo=lows+(highs<<32);
+  return gl_reduce128(lo,(highs>>32)+(ulong)(lo<lows));
+}
+// Fold the fast diagonal into the unreduced state sum. For negative integer
+// coefficients -k, add k*p as limbs (k*(2^32+1), k*(2^32-2)); this keeps
+// both accumulators nonnegative without changing the field element. For the
+// negative half, high(half(x)) <= floor(high(x)/2)+2^31 gives the same bound.
+// All resulting limbs are below 12*2^32, within the reducer's 21*(2^32-1) cap.
 inline void intl(ulong* s,__global const ulong* diag){
-  ulong sum=0UL; for(int i=0;i<8;i++) sum=gl_add(sum,s[i]);
-  for(int i=0;i<8;i++) s[i]=gl_add(gl_mul(s[i],diag[i]),sum);
+#ifdef LATTICA_POSEIDON2_FAST_DIAGONAL
+  ulong low=0UL,high=0UL;
+  for(int i=0;i<8;i++){low+=(ulong)(uint)s[i];high+=s[i]>>32;}
+  ulong half3=gl_half(s[3]),half5=gl_half(s[5]);
+  s[0]=gl_reduce_matrix_limbs(low+(2UL<<32)+2UL-2UL*(ulong)(uint)s[0],high+2UL*0xfffffffeUL-2UL*(s[0]>>32));
+  s[1]=gl_reduce_matrix_limbs(low+(ulong)(uint)s[1],high+(s[1]>>32));
+  s[2]=gl_reduce_matrix_limbs(low+2UL*(ulong)(uint)s[2],high+2UL*(s[2]>>32));
+  s[3]=gl_reduce_matrix_limbs(low+(ulong)(uint)half3,high+(half3>>32));
+  s[4]=gl_reduce_matrix_limbs(low+3UL*(ulong)(uint)s[4],high+3UL*(s[4]>>32));
+  s[5]=gl_reduce_matrix_limbs(low+(1UL<<32)+1UL-(ulong)(uint)half5,high+0xfffffffeUL-(half5>>32));
+  s[6]=gl_reduce_matrix_limbs(low+(3UL<<32)+3UL-3UL*(ulong)(uint)s[6],high+3UL*0xfffffffeUL-3UL*(s[6]>>32));
+  s[7]=gl_reduce_matrix_limbs(low+(4UL<<32)+4UL-4UL*(ulong)(uint)s[7],high+4UL*0xfffffffeUL-4UL*(s[7]>>32));
+#else
+  ulong sum=gl_sum8(s);
+  for(int i=0;i<8;i++)s[i]=gl_add(gl_mul(s[i],diag[i]),sum);
+#endif
 }
 // full permutation: extl; 4 full (rc+x^7 all lanes, extl); 22 partial (rc+x^7 lane0, intl); 4 full.
 inline void perm8(ulong* s,__global const ulong* rci,__global const ulong* rcp,__global const ulong* rcf,__global const ulong* diag){
@@ -289,7 +444,14 @@ fn with_ctx<R>(f: impl FnOnce(&mut GpuCtx) -> R) -> R {
             let pq = ProQue::builder()
                 .platform(platform)
                 .device(device)
-                .src(KERNEL_SRC)
+                .src(
+                    [
+                        field::source_prefix(device),
+                        crate::gpu_constants::opencl_poseidon2_prefix(),
+                        KERNEL_SRC,
+                    ]
+                    .concat(),
+                )
                 .dims(1)
                 .build()
                 .expect(
@@ -1490,6 +1652,10 @@ impl Mmcs<Goldilocks> for GpuHidingMerkleMmcs {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "gpu/arithmetic_tests.rs"]
+mod arithmetic_tests;
 
 #[cfg(test)]
 mod tests {

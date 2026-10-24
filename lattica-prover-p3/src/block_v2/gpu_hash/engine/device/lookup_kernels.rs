@@ -7,7 +7,7 @@ inline void lookup_cubic_inverse(const ulong a[3], ulong out[3]) {
     ulong b1 = gl_sub(gl_mul(a[2], a[2]), gl_mul(a[0], a[1]));
     ulong b2 = gl_sub(gl_mul(a[1], a[1]), gl_mul(a[2], t));
     ulong norm = gl_add(gl_add(gl_mul(a[0], b0), gl_mul(a[2], b1)), gl_mul(a[1], b2));
-    ulong inv = gl_pow(norm, 0xfffffffeffffffffUL);
+    ulong inv = gl_inverse(norm);
     out[0] = gl_mul(b0, inv); out[1] = gl_mul(b1, inv); out[2] = gl_mul(b2, inv);
 }
 // D=2 uses Goldilocks[X]/(X^2-7); D=3 retains X^3-X-1.
@@ -22,7 +22,7 @@ inline void lookup_mul(uint degree, const ulong a[3], const ulong b[3], ulong ou
 inline void lookup_inverse(uint degree, const ulong a[3], ulong out[3]) {
     if (degree == 2) {
         ulong norm = gl_sub(gl_mul(a[0], a[0]), gl_mul(7UL, gl_mul(a[1], a[1])));
-        ulong inverse = gl_pow(norm, 0xfffffffeffffffffUL);
+        ulong inverse = gl_inverse(norm);
         out[0] = gl_mul(a[0], inverse);
         out[1] = gl_neg(gl_mul(a[1], inverse));
     } else {

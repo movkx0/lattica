@@ -991,6 +991,8 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
         program.src(
                 [
                     device::public_hash::nvidia::source_prefix(device),
+                    crate::gpu::field::source_prefix(device),
+                    crate::gpu_constants::opencl_poseidon2_prefix(),
                     if tuning.hash_unroll { "#define LATTICA_HASH_UNROLL 1\n" } else { "" },
                     crate::gpu::KERNEL_SRC,
                     RETAINED_PATH_KERNEL,
@@ -1025,6 +1027,7 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
                     device::COMPILER_FOLDING_KERNEL_SRC,
                     device::PUBLIC_HASH_KERNEL_SRC,
                     device::EVALUATIONS_KERNEL_SRC,
+                    &crate::gpu::ntt_cache::shared_kernel_source(),
                     &tuning::kernel_source(!device::public_hash::nvidia::source_prefix(device).is_empty()),
                 ]
                 .join("\n"),
@@ -1143,10 +1146,10 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
     );
     #[cfg(feature = "gpu")]
     if tuning != tuning::Tuning::default() {
-        eprintln!("bounded_gpu_tuning events={} events256={} paths={} public_cache={} tables={} quotient256={} hash32={} hash_unroll={} commitment={} scale={} ntt={} nvidia_supported={} production_qualified=false",
-            tuning.events, tuning.events256, tuning.paths, tuning.public_cache,
+        eprintln!("bounded_gpu_tuning events={} fused_witness={} events256={} paths={} public_cache={} tables={} quotient256={} hash32={} hash_unroll={} commitment={} scale={} ntt={} ntt_shared={} nvidia_supported={} production_qualified=false",
+            tuning.events, tuning.fused_witness, tuning.events256, tuning.paths, tuning.public_cache,
             tuning.tables, tuning.quotient256, tuning.hash32, tuning.hash_unroll,
-            tuning.commitment, tuning.scale, tuning.ntt,
+            tuning.commitment, tuning.scale, tuning.ntt, tuning.ntt_shared,
             !device::public_hash::nvidia::source_prefix(pq.device()).is_empty());
     }
     #[cfg(feature = "gpu")]

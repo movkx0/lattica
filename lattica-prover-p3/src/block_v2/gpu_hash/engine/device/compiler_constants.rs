@@ -17,7 +17,7 @@ const _: () = assert!(8192 + 16 + CONSTANT_WORDS as u64 * 8 <= public_hash::HOST
 
 pub(crate) const KERNEL_SRC: &str = r#"
 inline ulong compiler_inv(ulong value) {
-    return gl_pow(value, 0xfffffffeffffffffUL);
+    return gl_inverse(value);
 }
 __kernel void device_compiler_constants(__global const ulong *input,
     __global ulong *output, uint operation, uint count, uint size, ulong exponent) {

@@ -53,7 +53,7 @@ __kernel void device_htlc_regions(__global const ulong *w,__global const ulong *
             for(uint k=0;k<4;++k)hashlock[k]=w[i*stride+19+k];break;
         }
         uint inverse=4;for(uint k=0;k<4;++k)if(hashlock[k]!=0){inverse=k;break;}
-        if(inverse<4)JS_AT((hb+2)*32,g[34]+inverse)=gl_pow(hashlock[inverse],0xfffffffeffffffffUL);
+        if(inverse<4)JS_AT((hb+2)*32,g[34]+inverse)=gl_inverse(hashlock[inverse]);
         else JS_AT((hb+2)*32,g[35])=1;
     } else if(item<inputs+outputs) {
         uint j=item-inputs,base=inputs*g[7]+j*g[8];__global const ulong *v=w+out_start+11*j;

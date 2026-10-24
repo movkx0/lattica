@@ -89,8 +89,8 @@ __kernel void device_quotient_hiding_parameters(__global ulong *parameters,
     uint chunk = get_global_id(0);
     if (chunk >= chunks) return;
     ulong chunk_shift = gl_mul(shift, gl_pow(root, (ulong)chunk));
-    ulong ratio = gl_mul(generator, gl_pow(chunk_shift, 0xfffffffeffffffffUL));
-    parameters[3 * chunk] = gl_pow((ulong)height, 0xfffffffeffffffffUL);
+    ulong ratio = gl_mul(generator, gl_inverse(chunk_shift));
+    parameters[3 * chunk] = gl_inverse((ulong)height);
     parameters[3 * chunk + 1] = ratio;
     parameters[3 * chunk + 2] = gl_pow(ratio, (ulong)height);
 }
