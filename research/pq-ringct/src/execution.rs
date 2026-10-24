@@ -33,6 +33,7 @@ use std::{
 };
 
 mod diagnostics;
+pub(crate) mod phase_lifecycle;
 pub(crate) mod retained_resources;
 mod telemetry;
 pub use telemetry::RegistrationTelemetry;
@@ -443,6 +444,8 @@ pub struct ProvingContext {
     device: Value,
     #[cfg(feature = "opencl")]
     session: Option<crate::opencl::Session>,
+    // Inert until an execution-owned workflow binds its one accounting scope.
+    phases: phase_lifecycle::ContextPhases,
 }
 impl ProvingContext {
     pub fn cpu(host_bytes: u64) -> Result<Self, String> {
@@ -512,6 +515,7 @@ impl ProvingContext {
             device,
             #[cfg(feature = "opencl")]
             session,
+            phases: phase_lifecycle::ContextPhases::new(),
         })
     }
     pub fn host_bytes(&self) -> u64 {
