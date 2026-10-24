@@ -41,6 +41,7 @@ native-matrict = []
 native-spend-oracle = ["native-matrict", "opencl", "lattica-prover-p3/native-spend-oracle"]
 recursive = ["dep:lattica-prover-p3", "dep:p3-field", "dep:p3-batch-stark", "dep:p3-air", "dep:p3-uni-stark", "dep:p3-keccak-air", "dep:p3-matrix", "dep:p3-goldilocks", "dep:p3-poseidon2-air", "dep:p3-symmetric"]
 recursive-wide = ["recursive", "lattica-prover-p3/block-v2-wide-lanes"]
+metadata-screen = ["recursive-wide", "lattica-prover-p3/verifier-metadata-screen"]
 # Explicit research selection only. Compiling this feature does not initialize a GPU.
 opencl = ["recursive-wide", "lattica-prover-p3/gpu"]
 
@@ -48,3 +49,8 @@ opencl = ["recursive-wide", "lattica-prover-p3/gpu"]
 name = "pq-ringct-opencl-probe"
 path = "src/bin/pq_ringct_opencl_probe.rs"
 required-features = ["opencl"]
+
+[[bin]]
+name = "pq-ringct-registration-metadata-screen"
+path = "src/bin/pq_ringct_registration_metadata_screen.rs"
+required-features = ["metadata-screen"]

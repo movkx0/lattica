@@ -14,6 +14,8 @@ pub(crate) const NATIVE_VERIFIER_COMPONENT_BYTES: u64 = 257 << 20;
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 pub(crate) mod cache_storage;
 mod identity_receipt;
+#[cfg(feature = "verifier-metadata-screen")]
+pub mod metadata_screen;
 pub use identity_receipt::RegisteredIdentityReceipt;
 #[cfg(test)]
 mod identity_receipt_tests;
