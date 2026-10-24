@@ -342,6 +342,7 @@ dependencies = [
  "lattica-prover-p3",
  "p3-air",
  "p3-batch-stark",
+ "p3-commit",
  "p3-field",
  "p3-goldilocks",
  "p3-keccak-air",
