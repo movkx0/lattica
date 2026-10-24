@@ -123,7 +123,7 @@ impl ComponentArtifact {
 
 /// Preflight budgets, not an operating-system memory guard. The estimate is
 /// deliberately explicit and remains a heuristic until each batch is measured.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ResourceLimits {
     pub max_batch_count: usize,
     /// Separate family ceilings permit empirical local limits to override an
@@ -191,6 +191,7 @@ pub struct GraphProofPlan<'a> {
     shape_fingerprint: [u8; 32],
     source_fingerprint: [u8; 32],
     native_host_limit_bytes: u64,
+    resource_limits: ResourceLimits,
 }
 impl<'a> GraphProofPlan<'a> {
     /// The caller must obtain `registered` from its trusted network/relation
@@ -346,11 +347,16 @@ impl<'a> GraphProofPlan<'a> {
             shape_fingerprint: inventory::inventory(graph).shape_sha3_256(),
             source_fingerprint: compiled_source_fingerprint(),
             native_host_limit_bytes: limits.max_estimated_prover_bytes,
+            resource_limits: limits,
         };
         Ok(plan)
     }
     pub fn native_host_limit_bytes(&self) -> u64 {
         self.native_host_limit_bytes
+    }
+    /// Exact immutable partition limits used to construct this plan.
+    pub fn resource_limits(&self) -> ResourceLimits {
+        self.resource_limits
     }
     pub fn batches(&self) -> &[PlannedBatch] {
         &self.batches

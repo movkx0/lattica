@@ -692,6 +692,17 @@ impl Shape {
     }
 }
 
+/// Shared test observer; never combine this feature with core's stream allocator.
+#[cfg(all(
+    test,
+    not(debug_assertions),
+    target_arch = "x86_64",
+    feature = "native-verification-allocation-audit"
+))]
+pub(crate) fn observe_planner_allocations<T>(bound: usize, work: impl FnOnce() -> T) -> T {
+    tests::observation::measure_checked(bound, work)
+}
+
 #[cfg(all(test, not(debug_assertions), target_arch = "x86_64"))]
 mod tests {
     use super::*;
@@ -1237,7 +1248,7 @@ mod tests {
     // feature, which owns a different global allocator. The coordinator runs
     // these ignored process-wide observations serially, with bounded threads.
     #[cfg(feature = "native-verification-allocation-audit")]
-    mod observation {
+    pub(crate) mod observation {
         use super::*;
         use std::alloc::{GlobalAlloc, Layout, System};
         use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -1286,7 +1297,7 @@ mod tests {
                 ENABLED.store(false, Ordering::Release);
             }
         }
-        pub(super) fn measure_checked<T>(bound: usize, work: impl FnOnce() -> T) -> T {
+        pub(crate) fn measure_checked<T>(bound: usize, work: impl FnOnce() -> T) -> T {
             let _guard = LOCK.lock().unwrap();
             BYTES.store(0, Ordering::Relaxed);
             CALLS.store(0, Ordering::Relaxed);

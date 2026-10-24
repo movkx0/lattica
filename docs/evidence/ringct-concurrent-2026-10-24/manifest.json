@@ -1,0 +1,1785 @@
+{
+  "schema": "ringct-v100-handoff-evidence-v1",
+  "created_utc": "2026-10-24T20:26:47.568142+00:00",
+  "branch": "ringct/v100-handoff-20261024",
+  "source_complete_baseline_commit": "b9b8dbebe62ad20e6abbc9b38188b6de2bc1ca99",
+  "integration_parent_commit": "1fb8c78",
+  "integrated_native_family_commit": "3341af88d124f20fb2baa056d31612c5f0fd240e",
+  "purpose": "Portable source and historical evidence handoff; no V100 or speedup qualification.",
+  "performance_qualified": false,
+  "v100_tested": false,
+  "paired_workflow_draft": {
+    "wired": false,
+    "compiled": false,
+    "files_sha256": {
+      "research/pq-ringct/src/graph_proofs.rs": "bfcd74bdd709fcda944481c33d2affd07b0748015ab50b973afa2ca499a4e083",
+      "research/pq-ringct/src/spend_pipeline/paired_workflow.rs": "5bdb90c88362846c1da45cfac440ba63fc2306de3ec12975fc15c7fd55316a6b",
+      "research/pq-ringct/src/spend_pipeline/paired_workflow/tests.rs": "de9a86796828361775ccf6f9589317034d63db0820895b28390f2f2081730ecc",
+      "research/pq-ringct/src/spend_pipeline/paired_workflow/BOUNDS.md": "a83ce282908106d817778c5016f87a1ae8985b8fca23402e6a283846115ed8f5"
+    }
+  },
+  "agents_stopped": true,
+  "active_validation": null,
+  "validation_queue": [],
+  "supersedes": "campaign STATUS.json active job and validation queue, which were stale at handoff",
+  "pre_handoff_runs": 54,
+  "pre_handoff_status_counts": {
+    "passed": 45,
+    "failed_or_incomplete": 9
+  },
+  "handoff_build": {
+    "owner": "integration",
+    "label": "concurrent-v100-handoff-build-1",
+    "status": "passed",
+    "profile": "build",
+    "record": "runs/integration/concurrent-v100-handoff-build-1.json",
+    "log": "runs/integration/concurrent-v100-handoff-build-1.log",
+    "record_sha256": "f62cd3403e35847917aba49726390144d969a2baea339815815d1d44af2253a2",
+    "raw_log_sha256": "ef618e6c41a0e68677df7949f849e726dc89e40c5829dd28ea9db83f046b37dc",
+    "finished_utc": "2026-10-24T20:25:32.993418+00:00",
+    "wall_seconds": 94.24842974499916,
+    "all_subprocesses_terminal_and_reaped": true,
+    "source_inputs_unchanged": true,
+    "executable_unchanged": true,
+    "test_result_lines": [],
+    "handoff_build": true
+  },
+  "python_tests": {
+    "tests_run": 100,
+    "success": true,
+    "source_hashes_rechecked": 19
+  },
+  "archive": {
+    "path": "validation-records.tar.gz",
+    "bytes": 3883045,
+    "sha256": "7dc6c5dc0d52f5368258df7fc829b175616819d45179b2790fd5bdd139ab4850",
+    "members": {
+      "runs/integration/concurrent-integration-driver-build-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/concurrent-integration-driver-build-1.json",
+        "bytes": 164751,
+        "sha256": "4cbbb13af222cf8189745a6da19918266ad5fe81d3434c5874e2e8630706ce75"
+      },
+      "runs/integration/concurrent-integration-driver-build-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/concurrent-integration-driver-build-1.log",
+        "bytes": 75791,
+        "sha256": "0fb8fa3541d700368bb9682cb000439b8000f7643e8f3abae0123ce362297a33"
+      },
+      "runs/integration/concurrent-integration-driver-build-2.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/concurrent-integration-driver-build-2.json",
+        "bytes": 167269,
+        "sha256": "d8bae0d462ed1e6c82c8b49e5b8cd359276461419e3327bf96b495febc466b5b"
+      },
+      "runs/integration/concurrent-integration-driver-build-2.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/concurrent-integration-driver-build-2.log",
+        "bytes": 75791,
+        "sha256": "925ec7cc7c33be644e83b119407414a7c08f9ee4a6d50cb14bd1d9e41da52a34"
+      },
+      "runs/integration/concurrent-integration-native-transfer-fresh-proof-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/concurrent-integration-native-transfer-fresh-proof-1.json",
+        "bytes": 170367,
+        "sha256": "07f9c90d6acfbc83a40d4477b4a162b4eb226b9278bd180a16c05b9524c563a7"
+      },
+      "runs/integration/concurrent-integration-native-transfer-fresh-proof-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/concurrent-integration-native-transfer-fresh-proof-1.log",
+        "bytes": 74021,
+        "sha256": "12d2d50c15d5c79d1ae0a43d45d40540ac3c8c4a041521a75ab0105e1a2db3a0"
+      },
+      "runs/integration/concurrent-integration-native-transfer-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/concurrent-integration-native-transfer-tests-1.json",
+        "bytes": 170125,
+        "sha256": "4ff3e4825bb20682785667562155328ad278c73582fdeab79436f7d98caca0d7"
+      },
+      "runs/integration/concurrent-integration-native-transfer-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/concurrent-integration-native-transfer-tests-1.log",
+        "bytes": 78938,
+        "sha256": "c79ee8f43f2607491353a2dd098cdd7772ded1b8b12015f6992a6778cd928cb1"
+      },
+      "runs/integration/concurrent-integration-native-verifier-fresh-proof-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/concurrent-integration-native-verifier-fresh-proof-1.json",
+        "bytes": 169982,
+        "sha256": "52c811af2ab13f9c3990ac40e5e3355bfce1e690a4b7e974709a22da9a9dcf16"
+      },
+      "runs/integration/concurrent-integration-native-verifier-fresh-proof-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/concurrent-integration-native-verifier-fresh-proof-1.log",
+        "bytes": 72472,
+        "sha256": "9ff7541c51036b9bf5f66d70557e8680e9ca3ea2d96a0182c09a2b96bccf9786"
+      },
+      "runs/integration/concurrent-integration-native-verifier-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/concurrent-integration-native-verifier-tests-1.json",
+        "bytes": 169740,
+        "sha256": "883c143095726570209baf391b7729c3048813055d239ed9b636411adbc2dcb2"
+      },
+      "runs/integration/concurrent-integration-native-verifier-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/concurrent-integration-native-verifier-tests-1.log",
+        "bytes": 77125,
+        "sha256": "cee711bd6406b7062f9df1ea281988b0e348579e708ec26b1fe65fef784e4722"
+      },
+      "runs/integration/concurrent-v100-handoff-build-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/concurrent-v100-handoff-build-1.json",
+        "bytes": 171011,
+        "sha256": "f62cd3403e35847917aba49726390144d969a2baea339815815d1d44af2253a2"
+      },
+      "runs/integration/concurrent-v100-handoff-build-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/concurrent-v100-handoff-build-1.log",
+        "bytes": 106295,
+        "sha256": "ef618e6c41a0e68677df7949f849e726dc89e40c5829dd28ea9db83f046b37dc"
+      },
+      "runs/agent-a-registration/concurrent-a-execution-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-execution-tests-1.json",
+        "bytes": 164122,
+        "sha256": "4950d7ccc3e955813d5209e440b180cf438cb97396bb36a5cd245a0d2c5d1a5a"
+      },
+      "runs/agent-a-registration/concurrent-a-execution-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-execution-tests-1.log",
+        "bytes": 76877,
+        "sha256": "389d3173afb01f6577b776d3aa584333637956d24961177185caddba6cf30c50"
+      },
+      "runs/agent-a-registration/concurrent-a-execution-tests-2.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-execution-tests-2.json",
+        "bytes": 163736,
+        "sha256": "8272f8b3cd3169e8e46142c3a97c0beca717e0571e670e298a123ef0a0275ae2"
+      },
+      "runs/agent-a-registration/concurrent-a-execution-tests-2.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-execution-tests-2.log",
+        "bytes": 75739,
+        "sha256": "3ce48106edaf1c94b47c85a8ad1c79777cd8d817e162aeb412b7fc15fcc15dc5"
+      },
+      "runs/agent-a-registration/concurrent-a-fresh-witness-test-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-fresh-witness-test-1.json",
+        "bytes": 163942,
+        "sha256": "b28be2e5e0b257ff72e786174aed86d2cf1277d4a660590ce595c1a5094a0d65"
+      },
+      "runs/agent-a-registration/concurrent-a-fresh-witness-test-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-fresh-witness-test-1.log",
+        "bytes": 72714,
+        "sha256": "f9b87989af9df3299acf91cd4065fb2dbdda14645346586fd8bdefb34a96885b"
+      },
+      "runs/agent-a-registration/concurrent-a-metadata-admission-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-metadata-admission-tests-1.json",
+        "bytes": 164546,
+        "sha256": "9e80cb3da0428657300ac14fbf9e2161d46c67d6f6d0674547ea32479cfa3c91"
+      },
+      "runs/agent-a-registration/concurrent-a-metadata-admission-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-metadata-admission-tests-1.log",
+        "bytes": 20900,
+        "sha256": "692972b5148da1a7eec119afc304cd9db3648372fe0cb2aa8ad94b67b0321528"
+      },
+      "runs/agent-a-registration/concurrent-a-metadata-admission-tests-2.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-metadata-admission-tests-2.json",
+        "bytes": 164569,
+        "sha256": "26fc2113eeeeb8a6cc95ad45ad6f4608c9bcffb4f227c5c020a7f32525a54769"
+      },
+      "runs/agent-a-registration/concurrent-a-metadata-admission-tests-2.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-metadata-admission-tests-2.log",
+        "bytes": 17716,
+        "sha256": "eea689c130d6933751ccaff81b86601b152612736a2e2d4859da465814f4b28b"
+      },
+      "runs/agent-a-registration/concurrent-a-metadata-constructor-screen-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-metadata-constructor-screen-1.json",
+        "bytes": 164376,
+        "sha256": "2407e429ecbe77b630b3944f214fc0cebf5bb3a5caea70e15ecb943eb81d9d0f"
+      },
+      "runs/agent-a-registration/concurrent-a-metadata-constructor-screen-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-metadata-constructor-screen-1.log",
+        "bytes": 643330,
+        "sha256": "55c85854f7d5f09d28621a4260b3d3598c4a3d4a345f4a5924ac26e580a53db2"
+      },
+      "runs/agent-a-registration/concurrent-a-phase-lifecycle-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-phase-lifecycle-tests-1.json",
+        "bytes": 164957,
+        "sha256": "ffddf4b20aeec0e6957efa4de00e9d03582556f1659cb856b30b2670adf2f556"
+      },
+      "runs/agent-a-registration/concurrent-a-phase-lifecycle-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-phase-lifecycle-tests-1.log",
+        "bytes": 32721,
+        "sha256": "d15f7b8d46c70cecad7b217e9631e9cfb561c9f2af5be53b081a621ae0fb1080"
+      },
+      "runs/agent-a-registration/concurrent-a-phase-lifecycle-tests-2.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-phase-lifecycle-tests-2.json",
+        "bytes": 164957,
+        "sha256": "0e019dad7c86d49170dfb9f2e4eea821f2625aec7ef9b97fa126664f3e26fb79"
+      },
+      "runs/agent-a-registration/concurrent-a-phase-lifecycle-tests-2.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-phase-lifecycle-tests-2.log",
+        "bytes": 32834,
+        "sha256": "2eaba875a513c0761490c082772490ceadb24b91e6c2a3186e0d0b096f8d1423"
+      },
+      "runs/agent-a-registration/concurrent-a-retained-ledger-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-retained-ledger-tests-1.json",
+        "bytes": 164699,
+        "sha256": "71c6061b8ec095f5a57ea7c21a1fee8fe003f321665a797faa57d5fffb6295e1"
+      },
+      "runs/agent-a-registration/concurrent-a-retained-ledger-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/pq-opencl-opt/runs/concurrent-a-retained-ledger-tests-1.log",
+        "bytes": 32375,
+        "sha256": "eaf2e73884dfe512a9e648a8f526cdb26ed7f1ebe973d50040cd2c60cdbaacc3"
+      },
+      "runs/agent-b-shake/concurrent-b-aes-uniform-core-qualification-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-aes-uniform-core-qualification-1.json",
+        "bytes": 166087,
+        "sha256": "64d0c1133effe344b12a72622a8215f766a8d9b1d01212564e0731430001a0fa"
+      },
+      "runs/agent-b-shake/concurrent-b-aes-uniform-core-qualification-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-aes-uniform-core-qualification-1.log",
+        "bytes": 65467,
+        "sha256": "7d75ad7d5313070f67e5d22768c273b9d718d31f3aea5b5aa2491f9b234ae8e8"
+      },
+      "runs/agent-b-shake/concurrent-b-aes-uniform-shape-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-aes-uniform-shape-tests-1.json",
+        "bytes": 165738,
+        "sha256": "2b54d4e6bd270882c0939bad65c0d6850c124f84f24f03a4d0fb5aeb14dcf071"
+      },
+      "runs/agent-b-shake/concurrent-b-aes-uniform-shape-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-aes-uniform-shape-tests-1.log",
+        "bytes": 19452,
+        "sha256": "3353af8e9dd5e72ff60e8de789b35f03b5bc3ae33bd6eee28e1e388a100d3819"
+      },
+      "runs/agent-b-shake/concurrent-b-boundary-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-boundary-tests-1.json",
+        "bytes": 163729,
+        "sha256": "4a5e3a3bea269f4739f0fa90eefe80065d8719d25e0e68a2043c64434af15118"
+      },
+      "runs/agent-b-shake/concurrent-b-boundary-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-boundary-tests-1.log",
+        "bytes": 72195,
+        "sha256": "307e0d0972bfedbed9c797780cd04f23378a45e0f8c371ca4dbb14a75fc6b70a"
+      },
+      "runs/agent-b-shake/concurrent-b-bounded-shake-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-bounded-shake-tests-1.json",
+        "bytes": 163894,
+        "sha256": "6249c70ee943524c53e95eb4093ad24d5a2e5d66f755a92ab0556aa1bf66a04f"
+      },
+      "runs/agent-b-shake/concurrent-b-bounded-shake-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-bounded-shake-tests-1.log",
+        "bytes": 76442,
+        "sha256": "ef4d37200c9f2a392bd5f1faa58b034427447115dd670676e4510905767b6bb4"
+      },
+      "runs/agent-b-shake/concurrent-b-bounded-uni-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-bounded-uni-tests-1.json",
+        "bytes": 163956,
+        "sha256": "ec4afa478c3cac9110c21eaaf0a2ec89fa0f5276c7c9508e051395d05d13a23e"
+      },
+      "runs/agent-b-shake/concurrent-b-bounded-uni-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-bounded-uni-tests-1.log",
+        "bytes": 10883,
+        "sha256": "680d278d3de259c0851a807f7b6e6a61e6b0eb0909c8eb07f6d34128137d7b39"
+      },
+      "runs/agent-b-shake/concurrent-b-carry-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-carry-tests-1.json",
+        "bytes": 163811,
+        "sha256": "458d70058e87e5f0d53f8e0dad97fa39a59e4e7812ff44d7f4e6becd944342a8"
+      },
+      "runs/agent-b-shake/concurrent-b-carry-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-carry-tests-1.log",
+        "bytes": 71545,
+        "sha256": "75cd6613de18896f89eb8a6a125067a8cfffd3eeb1abe0c934851a0d8b957d6b"
+      },
+      "runs/agent-b-shake/concurrent-b-native-core-qualification-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-native-core-qualification-1.json",
+        "bytes": 165841,
+        "sha256": "a83f3c675e7848f48d241bd03060fa8bda596c4b16be5aee8ba2756a8a7246f1"
+      },
+      "runs/agent-b-shake/concurrent-b-native-core-qualification-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-native-core-qualification-1.log",
+        "bytes": 127688,
+        "sha256": "c4ffb913f16fc1f7538414d47039cf77a46fe2728850a357fc22aced351ed764"
+      },
+      "runs/agent-b-shake/concurrent-b-native-retention-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-native-retention-tests-1.json",
+        "bytes": 165462,
+        "sha256": "69fc980076f9054191e36f8a3ca817881ce3b676e9893cac58108756670d4068"
+      },
+      "runs/agent-b-shake/concurrent-b-native-retention-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-native-retention-tests-1.log",
+        "bytes": 15713,
+        "sha256": "9062093b593195841d745d863e47c103b505ccf2013ddfcdeff52f0785c72d38"
+      },
+      "runs/agent-b-shake/concurrent-b-native-shape-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-native-shape-tests-1.json",
+        "bytes": 165443,
+        "sha256": "76d77c0313c89891609e2728864d14a80c7974dfb6a9ca3683febe9f9eaac6c7"
+      },
+      "runs/agent-b-shake/concurrent-b-native-shape-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-native-shape-tests-1.log",
+        "bytes": 19270,
+        "sha256": "a8fa303ed7e6a8a4acbecfa20aca82e34c830fd4e264f03974f7a6b6808de913"
+      },
+      "runs/agent-b-shake/concurrent-b-opaque-shape-qualification-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-opaque-shape-qualification-1.json",
+        "bytes": 164753,
+        "sha256": "bdef1aff63fbb2aa6b70d566ed7f93f952e63e4aace32859e9e7e64541fc168e"
+      },
+      "runs/agent-b-shake/concurrent-b-opaque-shape-qualification-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-opaque-shape-qualification-1.log",
+        "bytes": 84082,
+        "sha256": "b4c769ce0ceb2420164cd8d318b8adc8aade76d81869cc13736ea656cdc16fc3"
+      },
+      "runs/agent-b-shake/concurrent-b-opaque-shape-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-opaque-shape-tests-1.json",
+        "bytes": 164490,
+        "sha256": "20cc033714c48e56e17afd0c8d1c5731546f0656764c6897bf0df6cf321bdc2c"
+      },
+      "runs/agent-b-shake/concurrent-b-opaque-shape-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-opaque-shape-tests-1.log",
+        "bytes": 11420,
+        "sha256": "88cf4a41dbbe4e80253d6e7ad53e579d1b1f455943b199b878f5b78d385d078e"
+      },
+      "runs/agent-b-shake/concurrent-b-paired-compiler-screen-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-paired-compiler-screen-1.json",
+        "bytes": 164286,
+        "sha256": "f7d2792e548c745149694f5d7b4305d65784e7807e52dcf882d88a7150a53589"
+      },
+      "runs/agent-b-shake/concurrent-b-paired-compiler-screen-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-paired-compiler-screen-1.log",
+        "bytes": 184120,
+        "sha256": "a48181aee77e2d06d53d9c716274801f5763cf83cf270cefa140ecd7c0b00dba"
+      },
+      "runs/agent-b-shake/concurrent-b-paired-resource-errors-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-paired-resource-errors-1.json",
+        "bytes": 164283,
+        "sha256": "96b9037563f8fffae416240df492dff80eb09653e0b7a3b7efc488f65da19cb3"
+      },
+      "runs/agent-b-shake/concurrent-b-paired-resource-errors-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-paired-resource-errors-1.log",
+        "bytes": 72426,
+        "sha256": "840a454cbad3aae8fa063ebc2d14119f32a382606b440608779a83ee5202f1e8"
+      },
+      "runs/agent-b-shake/concurrent-b-registered-height-envelope-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-registered-height-envelope-1.json",
+        "bytes": 165247,
+        "sha256": "76bbd1905fd95cbd2aa38b1968a7fbbd7712b04d4af86f76d2888b694a64d4e0"
+      },
+      "runs/agent-b-shake/concurrent-b-registered-height-envelope-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-registered-height-envelope-1.log",
+        "bytes": 222862,
+        "sha256": "c719538e6bd00f97db8e4c0b387b3f800cfd3cfaf17f19fc3836d07622dfe548"
+      },
+      "runs/agent-b-shake/concurrent-b-schedule-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-schedule-tests-1.json",
+        "bytes": 163731,
+        "sha256": "5aab7e21091edaf78ddf552a84f46a4c68d572801c3c3d0b30fdbdc8bfdf1627"
+      },
+      "runs/agent-b-shake/concurrent-b-schedule-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-schedule-tests-1.log",
+        "bytes": 76032,
+        "sha256": "2e7494593b618960ee843bc7670ce4ce225053e5240e16d7021e172033e78d70"
+      },
+      "runs/agent-b-shake/concurrent-b-schedule-tests-2.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-schedule-tests-2.json",
+        "bytes": 163731,
+        "sha256": "e10aa89d63f415c697cd96b9270a40fd8a4e4a3c12fb2a4ad8d17cdc485abea9"
+      },
+      "runs/agent-b-shake/concurrent-b-schedule-tests-2.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-schedule-tests-2.log",
+        "bytes": 72157,
+        "sha256": "5bbe2e40facfdd9a324121924bed593f8d5e9a59084e9fbb45f96967433b2208"
+      },
+      "runs/agent-b-shake/concurrent-b-verifier-lifetime-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-verifier-lifetime-tests-1.json",
+        "bytes": 163992,
+        "sha256": "7fa5caa78fd4564beeebf104343cf0afbfb3f37906134aa64df3c9a952dcc239"
+      },
+      "runs/agent-b-shake/concurrent-b-verifier-lifetime-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/concurrent-b-verifier-lifetime-tests-1.log",
+        "bytes": 8372,
+        "sha256": "f5e2933fd40d775a59b8165822347a3a7a763d6458380a2ba8536084f71ff6b1"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-constant-relation-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-constant-relation-tests-1.json",
+        "bytes": 165056,
+        "sha256": "501a7b2d286dc90044bf5c2e4b02e1d21141fd2003d1b4e93b9abfeb38f007d7"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-constant-relation-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-constant-relation-tests-1.log",
+        "bytes": 33147,
+        "sha256": "3b65703bfe2f1d553f9c6eef8193b87db3dbbd88e19292c45a19a0c95f368514"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-owner-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-owner-tests-1.json",
+        "bytes": 168025,
+        "sha256": "a1f50ee854975d0f3da11a9f4ef0cf90f1c5ecc59be87d0df2a120e11e10854b"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-owner-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-owner-tests-1.log",
+        "bytes": 30929,
+        "sha256": "7feb5d76b0ff467f7eeebfbbdd26914d9d0d582b1412714001804657fb2dd49d"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-allocations-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-allocations-1.json",
+        "bytes": 165724,
+        "sha256": "c12a7482fb4cf778d2e9e46fefdf28c01c7d2eba939de7bf02f884584885b5ca"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-allocations-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-allocations-1.log",
+        "bytes": 43675,
+        "sha256": "12c041a3559d5760b2e2ec8085b2cd1dee4cbeaf4d9e45eea906fd90f13d2b26"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-allocations-2.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-allocations-2.json",
+        "bytes": 165723,
+        "sha256": "900c22dc9f2bbdc04aa9637ab4ad4a004c91a7074bc29772548b03239bdd9f53"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-allocations-2.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-allocations-2.log",
+        "bytes": 43675,
+        "sha256": "22c819fce31668496872a0f22f093877b0af5de5332dda85cf19d978913e7cd5"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-allocations-3.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-allocations-3.json",
+        "bytes": 168190,
+        "sha256": "72af00fece2f009d9d99e2fb676847d71b123084998bd10896c36c4f76d2797a"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-allocations-3.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-allocations-3.log",
+        "bytes": 44204,
+        "sha256": "289ec9f9a8df6caff7781a0d24988033d83fd099d1884ff2c2af91215cacd477"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-fresh-proof-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-fresh-proof-1.json",
+        "bytes": 166256,
+        "sha256": "d728596ba271673a5daa9585cd5ab778a15d8dbc0d31ef0be54b03748756d39f"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-fresh-proof-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-fresh-proof-1.log",
+        "bytes": 30713,
+        "sha256": "f213683c0ef017fdc9ad15e5217b8e648ddbda8db612b9fa77c3e43fb7624b15"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-fresh-proof-2.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-fresh-proof-2.json",
+        "bytes": 165871,
+        "sha256": "f5d31380e8bf008a7de40f34cf8b9124aaf09097d5aba754b289531f5bdd618b"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-fresh-proof-2.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-fresh-proof-2.log",
+        "bytes": 30223,
+        "sha256": "529e96a01da62be90dc2711684309f369873273df3a4bf2af67fbaa7dcae01fb"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-fresh-proof-3.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-fresh-proof-3.json",
+        "bytes": 168306,
+        "sha256": "24cbe7a006b726acf33a06eaa12ded5e67e81174ccc58cc0fbac9a4c600aab23"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-fresh-proof-3.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-fresh-proof-3.log",
+        "bytes": 30769,
+        "sha256": "1a78a9395f9d93fe2bcd817fde9136dfb019f681fe7d0b261931b62fd687d7ff"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-tests-1.json",
+        "bytes": 165985,
+        "sha256": "8ceb26bbf8828bb9580d70457313fbd46e5c7ee2e50a030f4603477ba09200fe"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-tests-1.log",
+        "bytes": 30123,
+        "sha256": "fc2cf83857da88e7793f6e911536516cb3b6cb87e9831ea35eab9abbe85fe7ee"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-2.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-tests-2.json",
+        "bytes": 165983,
+        "sha256": "816adbde7da5b1b906d5be7678716cd7445b8ed93180077dfe7cd68a4f625de5"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-2.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-tests-2.log",
+        "bytes": 33307,
+        "sha256": "8bac18fd8ca9c631e24211f2f7de99fea207252b1698bc0a5ea779306e925c5c"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-3.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-tests-3.json",
+        "bytes": 165597,
+        "sha256": "666f5558c35fda4f5615c9e2f68ad3aaf586852975311a7f0256f15f495d503a"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-3.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-tests-3.log",
+        "bytes": 31483,
+        "sha256": "4654a06e08dac3453d852ebd01f1fb93af753468d00500b5878fc9bc5ea50eaa"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-4.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-tests-4.json",
+        "bytes": 165597,
+        "sha256": "0ac0fa065f1b836c1e453b810cb444e7db0077fd69e43d153a1a81fa79118938"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-4.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-tests-4.log",
+        "bytes": 31620,
+        "sha256": "a70c33f0a6f2abf4012a422b835efec5873ef9fad678147feaf138821aabd211"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-5.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-tests-5.json",
+        "bytes": 168064,
+        "sha256": "68d5545bc20244a6b50588ba422acd37d993bfb6da1efa933974863f6290da71"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-5.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-native-verifier-tests-5.log",
+        "bytes": 35749,
+        "sha256": "f8be4c02b5cbc4cff730c93ec2e8d489594d530c5eadb95c95095930540fc237"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-note-proof-test-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-note-proof-test-1.json",
+        "bytes": 165169,
+        "sha256": "cd7a1f9d16d702d80d361955db24878b791cdf27c685c0e0339cf3e651459418"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-note-proof-test-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-note-proof-test-1.log",
+        "bytes": 27557,
+        "sha256": "6e0c1f94a63a351eff510507e2cdfba76ed87c90623557c981d8e0af53127336"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-relation-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-relation-tests-1.json",
+        "bytes": 165284,
+        "sha256": "3ed0721d06109327295531b1f27e20f3fc3f22a3beac228563cbebf61488f5c5"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-relation-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-relation-tests-1.log",
+        "bytes": 31665,
+        "sha256": "b4dd66e6232e6ea0cb36abe891833484b4635e0c82d77e090cdb76020ce47e24"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-relation-tests-2.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-relation-tests-2.json",
+        "bytes": 164896,
+        "sha256": "19b3a8a9cdd993d0ad4407f7d1696d30dac8a21cb992c569aa89e36f96454ed4"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-relation-tests-2.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-relation-tests-2.log",
+        "bytes": 29361,
+        "sha256": "9cb2caa472eb12269d5ed5dedd2ae665effac627b7b5559cc1762fe2d2cd5efe"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-ring-compile-screen-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-ring-compile-screen-1.json",
+        "bytes": 165324,
+        "sha256": "fb70b25064c7bce6c0acb8e4dca2b292d67664ac994bfbcdcfea6ea773f78e0d"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-ring-compile-screen-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-ring-compile-screen-1.log",
+        "bytes": 27394,
+        "sha256": "add4e607962c339ad05065bd94689dac36f022c98dcba8fa82b287f56c71a2b6"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-ring-compile-screen-2.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-ring-compile-screen-2.json",
+        "bytes": 165326,
+        "sha256": "45a5dfa5035274ce4f39b664d68dbc18b460550a6597aaf8d3d826c513d7ed40"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-ring-compile-screen-2.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-ring-compile-screen-2.log",
+        "bytes": 31448,
+        "sha256": "807d6469babaf31cedd81c39b0093fe880c533482b8f261f79db5e38a8587a1f"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-ring-compile-screen-3.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-ring-compile-screen-3.json",
+        "bytes": 165437,
+        "sha256": "ab5921fb99e8fe70a3a3505644aac46a6575d8519d215d35b359b17a06ae6a2b"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-ring-compile-screen-3.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-ring-compile-screen-3.log",
+        "bytes": 27767,
+        "sha256": "b7987f2574a606b503f4aef2aa6db880c591a19d12270cc65b90cd0cf0556b88"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-unchanged-native-allocations-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-unchanged-native-allocations-1.json",
+        "bytes": 168710,
+        "sha256": "b9f15f225043b7f0b6d0790729162262ec32a17243bbd061c82ec6c22746e887"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-unchanged-native-allocations-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-unchanged-native-allocations-1.log",
+        "bytes": 30729,
+        "sha256": "b76334137853d41bdede668ebdec0f80905bf6bb10670758010eedea74745e05"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-unchanged-native-core-qualification-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-unchanged-native-core-qualification-1.json",
+        "bytes": 168777,
+        "sha256": "29580c6394b4dfe2ae433e5613739f5069fb39d183b5695d4398bedfb39239c5"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-unchanged-native-core-qualification-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-unchanged-native-core-qualification-1.log",
+        "bytes": 287857,
+        "sha256": "a9e9abfc9b330fed6214b077a4beb6639ea3e27d2d6e9ae0d7a35107a0d1a5cd"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-unchanged-native-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-unchanged-native-tests-1.json",
+        "bytes": 168488,
+        "sha256": "8c15e6913bbdcddf7b4f2788f0b6697b4a2cb7cc316e29693c0eedd364412078"
+      },
+      "runs/agent-c-direct-spend/concurrent-c-unchanged-native-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-c-direct-spend/.tools/pq-opencl-opt/runs/concurrent-c-unchanged-native-tests-1.log",
+        "bytes": 35140,
+        "sha256": "ea7b3fa82ea966d070f41e108aa4fd858314ff3b6104e3f187b42698aa03f03d"
+      },
+      "campaign/PLAN.txt": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/PLAN.txt",
+        "bytes": 4913,
+        "sha256": "39b8318de59d5e1558c0bb79689e895d68231cfef3afb5afa01c4afac5497233"
+      },
+      "campaign/checkpoint-manifest.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/checkpoint-manifest.json",
+        "bytes": 574869,
+        "sha256": "42ce11aca85dc0a414735999c177dedbdbcec1db3b2d99bf0bc447b4686c43a8"
+      },
+      "campaign/baseline-workflow-metrics.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/baseline-workflow-metrics.json",
+        "bytes": 4591,
+        "sha256": "ce9ffe6a41f07cdf6c284fe114ed72edb39abc48a0625b82adca0556688b5448"
+      },
+      "baseline/evidence/multipass-r4-new-5-correctness-terminal-accepted-check-1-receipts.json": {
+        "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/evidence/multipass-r4-new-5-correctness-terminal-accepted-check-1-receipts.json",
+        "bytes": 2114,
+        "sha256": "62eea2310bc7e2c517eeccf8e896549d418e79db7126b052b0a2c399d5a2bed3"
+      },
+      "baseline/evidence/multipass-r4-new-5-correctness-terminal-accepted-check-1-case-v2.json": {
+        "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/evidence/multipass-r4-new-5-correctness-terminal-accepted-check-1-case-v2.json",
+        "bytes": 4606,
+        "sha256": "017093bfed7bdc74d28795591351d846a816f61c11e92049c65908b516e14ae8"
+      },
+      "baseline/evidence/multipass-r4-new-5-correctness-terminal-accepted-check-1-native.json": {
+        "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/evidence/multipass-r4-new-5-correctness-terminal-accepted-check-1-native.json",
+        "bytes": 1259,
+        "sha256": "621b6ece43ee1ecc94e89b30df6b8b8efcca43ab247cc328790ed5c08161898b"
+      },
+      "baseline/evidence/multipass-r4-new-5-correctness-terminal-accepted-check-1-n3.json": {
+        "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/evidence/multipass-r4-new-5-correctness-terminal-accepted-check-1-n3.json",
+        "bytes": 2216,
+        "sha256": "be708bc05b802af47f4d5f85f7526771d0cbf721adad4e6c3b65b03c001e7697"
+      },
+      "baseline/evidence/multipass-r4-new-5-correctness-terminal-acceptance.json": {
+        "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/evidence/multipass-r4-new-5-correctness-terminal-acceptance.json",
+        "bytes": 2173,
+        "sha256": "b7a18e32e017ccaeb5999b03bea821045aeba9fcfd7cb91cd0a5d4985ef84047"
+      },
+      "baseline/runs/multipass-r4-new-5-correctness.json": {
+        "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/runs/multipass-r4-new-5-correctness.json",
+        "bytes": 184523,
+        "sha256": "f58b2f146dc638bab0e20ad15d0bf19c01c9de7503471a73b6baf2c076f2ca39"
+      },
+      "baseline/multipass-r4-new-5-correctness-artifacts/result.json": {
+        "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/multipass-r4-new-5-correctness-artifacts/result.json",
+        "bytes": 17440,
+        "sha256": "58e1fdcb9aa6aafba0ab91dac655c5b8d34fbdb518311b2acb0e5a5fb21d488c"
+      },
+      "baseline/evidence/multipass-r4-new-5-benchmark-terminal-accepted-check-1-receipts.json": {
+        "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/evidence/multipass-r4-new-5-benchmark-terminal-accepted-check-1-receipts.json",
+        "bytes": 2110,
+        "sha256": "57f2e2e4c54139f4b19384c4090526d74d95b32aa0c3c55df805848511f31757"
+      },
+      "baseline/evidence/multipass-r4-new-5-benchmark-terminal-accepted-check-1-case-v2.json": {
+        "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/evidence/multipass-r4-new-5-benchmark-terminal-accepted-check-1-case-v2.json",
+        "bytes": 4598,
+        "sha256": "93a7bac88d126717cf809fb78766e3fd841075fbc1310c01526e2763e570de35"
+      },
+      "baseline/evidence/multipass-r4-new-5-benchmark-terminal-accepted-check-1-native.json": {
+        "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/evidence/multipass-r4-new-5-benchmark-terminal-accepted-check-1-native.json",
+        "bytes": 1257,
+        "sha256": "1f8477ffba7cc5b9bf794b88436773203f571dff92cc3e56b3ed823025da40cc"
+      },
+      "baseline/evidence/multipass-r4-new-5-benchmark-terminal-accepted-check-1-n3.json": {
+        "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/evidence/multipass-r4-new-5-benchmark-terminal-accepted-check-1-n3.json",
+        "bytes": 2212,
+        "sha256": "831ffd145d35acdfd831c83e912a30753e9a9676646511439bd2a5825e12ea7a"
+      },
+      "baseline/evidence/multipass-r4-new-5-benchmark-terminal-acceptance.json": {
+        "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/evidence/multipass-r4-new-5-benchmark-terminal-acceptance.json",
+        "bytes": 2423,
+        "sha256": "37b77a116569855b4448eec1fd3c603588d4b28f7217d48918a561104197c833"
+      },
+      "baseline/runs/multipass-r4-new-5-benchmark.json": {
+        "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/runs/multipass-r4-new-5-benchmark.json",
+        "bytes": 190285,
+        "sha256": "7d5212333a0ca151a5e0606a31cc622e10b78310ebf2297c1598a1cc6199ca0b"
+      },
+      "baseline/multipass-r4-new-5-benchmark-artifacts/result.json": {
+        "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/multipass-r4-new-5-benchmark-artifacts/result.json",
+        "bytes": 20987,
+        "sha256": "395117e765a08d29952ed6660837eafd31a12ad600b0c31a9aae00c50b6ba09d"
+      },
+      "screening/prepared-reuse-ceiling-accepted.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/prepared-reuse-ceiling-accepted.json",
+        "bytes": 3766,
+        "sha256": "f6703da391556b5ad51580e1ed1848f1d7ff9a83158d2235412f14362f31278d"
+      },
+      "screening/registration-metadata-component-screen-accepted.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/registration-metadata-component-screen-accepted.json",
+        "bytes": 40854,
+        "sha256": "81a3e7d3a7a0859021910b82f2d276e82b012969511bc1c14fccd84a0d7133ed"
+      },
+      "screening/registration-replay-accepted.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/registration-replay-accepted.json",
+        "bytes": 1177,
+        "sha256": "74ea1225ad1f2a6d227b3ac60314ea38704921e4986eda54cc689800022e058c"
+      },
+      "screening/registration-screening-projection.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-a-registration/.tools/registration-screening-projection.json",
+        "bytes": 2158,
+        "sha256": "8f0c8e8d31c597ebc31de0755346377c976860889a3d3220e6736c508cda6d2a"
+      },
+      "python/comparison-python-tests-1.json": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/comparison-python-tests-1.json",
+        "bytes": 2431,
+        "sha256": "737657f5354d8b9324c1bc4ce80dcc73fce16aadd4b8867ed83b6c657a5094ad"
+      },
+      "python/comparison-python-tests-1.log": {
+        "original_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/comparison-python-tests-1.log",
+        "bytes": 200,
+        "sha256": "c3173d11a2ab7abe576af0b239b15ddaecc2c108b2b52b01bdb4738c0638e203"
+      }
+    },
+    "round_trip_hashes_verified": true
+  },
+  "runs": [
+    {
+      "owner": "integration",
+      "label": "concurrent-integration-driver-build-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/integration/concurrent-integration-driver-build-1.json",
+      "log": "runs/integration/concurrent-integration-driver-build-1.log",
+      "record_sha256": "4cbbb13af222cf8189745a6da19918266ad5fe81d3434c5874e2e8630706ce75",
+      "raw_log_sha256": "0fb8fa3541d700368bb9682cb000439b8000f7643e8f3abae0123ce362297a33",
+      "finished_utc": "2026-10-24T18:11:04.399604+00:00",
+      "wall_seconds": 96.25955170200905,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [],
+      "handoff_build": false
+    },
+    {
+      "owner": "integration",
+      "label": "concurrent-integration-driver-build-2",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/integration/concurrent-integration-driver-build-2.json",
+      "log": "runs/integration/concurrent-integration-driver-build-2.log",
+      "record_sha256": "d8bae0d462ed1e6c82c8b49e5b8cd359276461419e3327bf96b495febc466b5b",
+      "raw_log_sha256": "925ec7cc7c33be644e83b119407414a7c08f9ee4a6d50cb14bd1d9e41da52a34",
+      "finished_utc": "2026-10-24T18:37:02.809235+00:00",
+      "wall_seconds": 98.26950086202123,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [],
+      "handoff_build": false
+    },
+    {
+      "owner": "integration",
+      "label": "concurrent-integration-native-transfer-fresh-proof-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/integration/concurrent-integration-native-transfer-fresh-proof-1.json",
+      "log": "runs/integration/concurrent-integration-native-transfer-fresh-proof-1.log",
+      "record_sha256": "07f9c90d6acfbc83a40d4477b4a162b4eb226b9278bd180a16c05b9524c563a7",
+      "raw_log_sha256": "12d2d50c15d5c79d1ae0a43d45d40540ac3c8c4a041521a75ab0105e1a2db3a0",
+      "finished_utc": "2026-10-24T20:06:10.962505+00:00",
+      "wall_seconds": 8.094751192984404,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 327 filtered out; finished in 6.63s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "integration",
+      "label": "concurrent-integration-native-transfer-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/integration/concurrent-integration-native-transfer-tests-1.json",
+      "log": "runs/integration/concurrent-integration-native-transfer-tests-1.log",
+      "record_sha256": "4ff3e4825bb20682785667562155328ad278c73582fdeab79436f7d98caca0d7",
+      "raw_log_sha256": "c79ee8f43f2607491353a2dd098cdd7772ded1b8b12015f6992a6778cd928cb1",
+      "finished_utc": "2026-10-24T20:03:40.221663+00:00",
+      "wall_seconds": 102.27251825897838,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 7 passed; 0 failed; 1 ignored; 0 measured; 320 filtered out; finished in 0.03s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "integration",
+      "label": "concurrent-integration-native-verifier-fresh-proof-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/integration/concurrent-integration-native-verifier-fresh-proof-1.json",
+      "log": "runs/integration/concurrent-integration-native-verifier-fresh-proof-1.log",
+      "record_sha256": "52c811af2ab13f9c3990ac40e5e3355bfce1e690a4b7e974709a22da9a9dcf16",
+      "raw_log_sha256": "9ff7541c51036b9bf5f66d70557e8680e9ca3ea2d96a0182c09a2b96bccf9786",
+      "finished_utc": "2026-10-24T19:52:18.515162+00:00",
+      "wall_seconds": 8.096821930987062,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 321 filtered out; finished in 6.52s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "integration",
+      "label": "concurrent-integration-native-verifier-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/integration/concurrent-integration-native-verifier-tests-1.json",
+      "log": "runs/integration/concurrent-integration-native-verifier-tests-1.log",
+      "record_sha256": "883c143095726570209baf391b7729c3048813055d239ed9b636411adbc2dcb2",
+      "raw_log_sha256": "cee711bd6406b7062f9df1ea281988b0e348579e708ec26b1fe65fef784e4722",
+      "finished_utc": "2026-10-24T19:51:26.025132+00:00",
+      "wall_seconds": 106.28004821599461,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 5 passed; 0 failed; 1 ignored; 0 measured; 316 filtered out; finished in 0.04s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "integration",
+      "label": "concurrent-v100-handoff-build-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/integration/concurrent-v100-handoff-build-1.json",
+      "log": "runs/integration/concurrent-v100-handoff-build-1.log",
+      "record_sha256": "f62cd3403e35847917aba49726390144d969a2baea339815815d1d44af2253a2",
+      "raw_log_sha256": "ef618e6c41a0e68677df7949f849e726dc89e40c5829dd28ea9db83f046b37dc",
+      "finished_utc": "2026-10-24T20:25:32.993418+00:00",
+      "wall_seconds": 94.24842974499916,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [],
+      "handoff_build": true
+    },
+    {
+      "owner": "agent-a-registration",
+      "label": "concurrent-a-execution-tests-1",
+      "status": "failed_or_incomplete",
+      "profile": "build",
+      "record": "runs/agent-a-registration/concurrent-a-execution-tests-1.json",
+      "log": "runs/agent-a-registration/concurrent-a-execution-tests-1.log",
+      "record_sha256": "4950d7ccc3e955813d5209e440b180cf438cb97396bb36a5cd245a0d2c5d1a5a",
+      "raw_log_sha256": "389d3173afb01f6577b776d3aa584333637956d24961177185caddba6cf30c50",
+      "finished_utc": "2026-10-24T17:55:58.057700+00:00",
+      "wall_seconds": 64.19036988701555,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-a-registration",
+      "label": "concurrent-a-execution-tests-2",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-a-registration/concurrent-a-execution-tests-2.json",
+      "log": "runs/agent-a-registration/concurrent-a-execution-tests-2.log",
+      "record_sha256": "8272f8b3cd3169e8e46142c3a97c0beca717e0571e670e298a123ef0a0275ae2",
+      "raw_log_sha256": "3ce48106edaf1c94b47c85a8ad1c79777cd8d817e162aeb412b7fc15fcc15dc5",
+      "finished_utc": "2026-10-24T17:58:12.664214+00:00",
+      "wall_seconds": 42.150896619976265,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 24 passed; 0 failed; 3 ignored; 0 measured; 256 filtered out; finished in 0.14s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-a-registration",
+      "label": "concurrent-a-fresh-witness-test-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-a-registration/concurrent-a-fresh-witness-test-1.json",
+      "log": "runs/agent-a-registration/concurrent-a-fresh-witness-test-1.log",
+      "record_sha256": "b28be2e5e0b257ff72e786174aed86d2cf1277d4a660590ce595c1a5094a0d65",
+      "raw_log_sha256": "f9b87989af9df3299acf91cd4065fb2dbdda14645346586fd8bdefb34a96885b",
+      "finished_utc": "2026-10-24T17:58:53.948129+00:00",
+      "wall_seconds": 2.082656482991297,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.32s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-a-registration",
+      "label": "concurrent-a-metadata-admission-tests-1",
+      "status": "failed_or_incomplete",
+      "profile": "build",
+      "record": "runs/agent-a-registration/concurrent-a-metadata-admission-tests-1.json",
+      "log": "runs/agent-a-registration/concurrent-a-metadata-admission-tests-1.log",
+      "record_sha256": "9e80cb3da0428657300ac14fbf9e2161d46c67d6f6d0674547ea32479cfa3c91",
+      "raw_log_sha256": "692972b5148da1a7eec119afc304cd9db3648372fe0cb2aa8ad94b67b0321528",
+      "finished_utc": "2026-10-24T18:30:19.447737+00:00",
+      "wall_seconds": 110.2804053289874,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 764 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-a-registration",
+      "label": "concurrent-a-metadata-admission-tests-2",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-a-registration/concurrent-a-metadata-admission-tests-2.json",
+      "log": "runs/agent-a-registration/concurrent-a-metadata-admission-tests-2.log",
+      "record_sha256": "26fc2113eeeeb8a6cc95ad45ad6f4608c9bcffb4f227c5c020a7f32525a54769",
+      "raw_log_sha256": "eea689c130d6933751ccaff81b86601b152612736a2e2d4859da465814f4b28b",
+      "finished_utc": "2026-10-24T18:31:08.081424+00:00",
+      "wall_seconds": 2.0815941999899223,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 763 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-a-registration",
+      "label": "concurrent-a-metadata-constructor-screen-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-a-registration/concurrent-a-metadata-constructor-screen-1.json",
+      "log": "runs/agent-a-registration/concurrent-a-metadata-constructor-screen-1.log",
+      "record_sha256": "2407e429ecbe77b630b3944f214fc0cebf5bb3a5caea70e15ecb943eb81d9d0f",
+      "raw_log_sha256": "55c85854f7d5f09d28621a4260b3d3598c4a3d4a345f4a5924ac26e580a53db2",
+      "finished_utc": "2026-10-24T18:27:48.009305+00:00",
+      "wall_seconds": 76.22543225300615,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-a-registration",
+      "label": "concurrent-a-phase-lifecycle-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-a-registration/concurrent-a-phase-lifecycle-tests-1.json",
+      "log": "runs/agent-a-registration/concurrent-a-phase-lifecycle-tests-1.log",
+      "record_sha256": "ffddf4b20aeec0e6957efa4de00e9d03582556f1659cb856b30b2670adf2f556",
+      "raw_log_sha256": "d15f7b8d46c70cecad7b217e9631e9cfb561c9f2af5be53b081a621ae0fb1080",
+      "finished_utc": "2026-10-24T19:32:44.389603+00:00",
+      "wall_seconds": 70.20266248000553,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 169 filtered out; finished in 0.04s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-a-registration",
+      "label": "concurrent-a-phase-lifecycle-tests-2",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-a-registration/concurrent-a-phase-lifecycle-tests-2.json",
+      "log": "runs/agent-a-registration/concurrent-a-phase-lifecycle-tests-2.log",
+      "record_sha256": "0e019dad7c86d49170dfb9f2e4eea821f2625aec7ef9b97fa126664f3e26fb79",
+      "raw_log_sha256": "2eaba875a513c0761490c082772490ceadb24b91e6c2a3186e0d0b096f8d1423",
+      "finished_utc": "2026-10-24T19:45:15.878114+00:00",
+      "wall_seconds": 68.20105660599074,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 169 filtered out; finished in 0.04s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-a-registration",
+      "label": "concurrent-a-retained-ledger-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-a-registration/concurrent-a-retained-ledger-tests-1.json",
+      "log": "runs/agent-a-registration/concurrent-a-retained-ledger-tests-1.log",
+      "record_sha256": "71c6061b8ec095f5a57ea7c21a1fee8fe003f321665a797faa57d5fffb6295e1",
+      "raw_log_sha256": "eaf2e73884dfe512a9e648a8f526cdb26ed7f1ebe973d50040cd2c60cdbaacc3",
+      "finished_utc": "2026-10-24T19:00:20.665046+00:00",
+      "wall_seconds": 70.20790351301548,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 161 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-aes-uniform-core-qualification-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-aes-uniform-core-qualification-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-aes-uniform-core-qualification-1.log",
+      "record_sha256": "64d0c1133effe344b12a72622a8215f766a8d9b1d01212564e0731430001a0fa",
+      "raw_log_sha256": "7d75ad7d5313070f67e5d22768c273b9d718d31f3aea5b5aa2491f9b234ae8e8",
+      "finished_utc": "2026-10-24T20:00:11.026741+00:00",
+      "wall_seconds": 8.09569065400865,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 169 filtered out; finished in 6.12s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-aes-uniform-shape-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-aes-uniform-shape-tests-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-aes-uniform-shape-tests-1.log",
+      "record_sha256": "2b54d4e6bd270882c0939bad65c0d6850c124f84f24f03a4d0fb5aeb14dcf071",
+      "raw_log_sha256": "3353af8e9dd5e72ff60e8de789b35f03b5bc3ae33bd6eee28e1e388a100d3819",
+      "finished_utc": "2026-10-24T19:58:37.211740+00:00",
+      "wall_seconds": 76.22150460802368,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 3 passed; 0 failed; 2 ignored; 0 measured; 165 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-boundary-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-boundary-tests-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-boundary-tests-1.log",
+      "record_sha256": "4a5e3a3bea269f4739f0fa90eefe80065d8719d25e0e68a2043c64434af15118",
+      "raw_log_sha256": "307e0d0972bfedbed9c797780cd04f23378a45e0f8c371ca4dbb14a75fc6b70a",
+      "finished_utc": "2026-10-24T17:51:12.031472+00:00",
+      "wall_seconds": 2.079080324008828,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 3 passed; 0 failed; 2 ignored; 0 measured; 279 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-bounded-shake-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-bounded-shake-tests-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-bounded-shake-tests-1.log",
+      "record_sha256": "6249c70ee943524c53e95eb4093ad24d5a2e5d66f755a92ab0556aa1bf66a04f",
+      "raw_log_sha256": "ef4d37200c9f2a392bd5f1faa58b034427447115dd670676e4510905767b6bb4",
+      "finished_utc": "2026-10-24T18:22:17.729587+00:00",
+      "wall_seconds": 104.26745085799485,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 5 passed; 0 failed; 2 ignored; 0 measured; 279 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-bounded-uni-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-bounded-uni-tests-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-bounded-uni-tests-1.log",
+      "record_sha256": "ec4afa478c3cac9110c21eaaf0a2ec89fa0f5276c7c9508e051395d05d13a23e",
+      "raw_log_sha256": "680d278d3de259c0851a807f7b6e6a61e6b0eb0909c8eb07f6d34128137d7b39",
+      "finished_utc": "2026-10-24T18:19:31.588907+00:00",
+      "wall_seconds": 146.34057630799362,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 1047 filtered out; finished in 0.20s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-carry-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-carry-tests-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-carry-tests-1.log",
+      "record_sha256": "458d70058e87e5f0d53f8e0dad97fa39a59e4e7812ff44d7f4e6becd944342a8",
+      "raw_log_sha256": "75cd6613de18896f89eb8a6a125067a8cfffd3eeb1abe0c934851a0d8b957d6b",
+      "finished_utc": "2026-10-24T17:51:48.178980+00:00",
+      "wall_seconds": 2.0884244790067896,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 283 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-native-core-qualification-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-native-core-qualification-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-native-core-qualification-1.log",
+      "record_sha256": "a83f3c675e7848f48d241bd03060fa8bda596c4b16be5aee8ba2756a8a7246f1",
+      "raw_log_sha256": "c4ffb913f16fc1f7538414d47039cf77a46fe2728850a357fc22aced351ed764",
+      "finished_utc": "2026-10-24T19:41:00.910180+00:00",
+      "wall_seconds": 10.09904598700814,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 168 filtered out; finished in 9.52s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-native-retention-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-native-retention-tests-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-native-retention-tests-1.log",
+      "record_sha256": "69fc980076f9054191e36f8a3ca817881ce3b676e9893cac58108756670d4068",
+      "raw_log_sha256": "9062093b593195841d745d863e47c103b505ccf2013ddfcdeff52f0785c72d38",
+      "finished_utc": "2026-10-24T19:40:48.643427+00:00",
+      "wall_seconds": 2.0822872879798524,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 164 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-native-shape-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-native-shape-tests-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-native-shape-tests-1.log",
+      "record_sha256": "76d77c0313c89891609e2728864d14a80c7974dfb6a9ca3683febe9f9eaac6c7",
+      "raw_log_sha256": "a8fa303ed7e6a8a4acbecfa20aca82e34c830fd4e264f03974f7a6b6808de913",
+      "finished_utc": "2026-10-24T19:38:38.491067+00:00",
+      "wall_seconds": 70.20836827301537,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 3 passed; 0 failed; 1 ignored; 0 measured; 165 filtered out; finished in 0.02s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-opaque-shape-qualification-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-opaque-shape-qualification-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-opaque-shape-qualification-1.log",
+      "record_sha256": "bdef1aff63fbb2aa6b70d566ed7f93f952e63e4aace32859e9e7e64541fc168e",
+      "raw_log_sha256": "b4c769ce0ceb2420164cd8d318b8adc8aade76d81869cc13736ea656cdc16fc3",
+      "finished_utc": "2026-10-24T19:03:12.250599+00:00",
+      "wall_seconds": 144.33595885898103,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 1052 filtered out; finished in 9.50s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-opaque-shape-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-opaque-shape-tests-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-opaque-shape-tests-1.log",
+      "record_sha256": "20cc033714c48e56e17afd0c8d1c5731546f0656764c6897bf0df6cf321bdc2c",
+      "raw_log_sha256": "88cf4a41dbbe4e80253d6e7ad53e579d1b1f455943b199b878f5b78d385d078e",
+      "finished_utc": "2026-10-24T18:54:45.935274+00:00",
+      "wall_seconds": 144.3324777180096,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 3 passed; 0 failed; 2 ignored; 0 measured; 1049 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-paired-compiler-screen-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-paired-compiler-screen-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-paired-compiler-screen-1.log",
+      "record_sha256": "f7d2792e548c745149694f5d7b4305d65784e7807e52dcf882d88a7150a53589",
+      "raw_log_sha256": "a48181aee77e2d06d53d9c716274801f5763cf83cf270cefa140ecd7c0b00dba",
+      "finished_utc": "2026-10-24T18:23:01.375640+00:00",
+      "wall_seconds": 10.094896509981481,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 285 filtered out; finished in 8.84s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-paired-resource-errors-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-paired-resource-errors-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-paired-resource-errors-1.log",
+      "record_sha256": "96b9037563f8fffae416240df492dff80eb09653e0b7a3b7efc488f65da19cb3",
+      "raw_log_sha256": "840a454cbad3aae8fa063ebc2d14119f32a382606b440608779a83ee5202f1e8",
+      "finished_utc": "2026-10-24T18:23:21.146316+00:00",
+      "wall_seconds": 2.0817480870173313,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 285 filtered out; finished in 0.01s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-registered-height-envelope-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-registered-height-envelope-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-registered-height-envelope-1.log",
+      "record_sha256": "76bbd1905fd95cbd2aa38b1968a7fbbd7712b04d4af86f76d2888b694a64d4e0",
+      "raw_log_sha256": "c719538e6bd00f97db8e4c0b387b3f800cfd3cfaf17f19fc3836d07622dfe548",
+      "finished_utc": "2026-10-24T19:18:20.838006+00:00",
+      "wall_seconds": 156.35927654299303,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 1054 filtered out; finished in 21.65s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-schedule-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-schedule-tests-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-schedule-tests-1.log",
+      "record_sha256": "5aab7e21091edaf78ddf552a84f46a4c68d572801c3c3d0b30fdbdc8bfdf1627",
+      "raw_log_sha256": "2e7494593b618960ee843bc7670ce4ce225053e5240e16d7021e172033e78d70",
+      "finished_utc": "2026-10-24T17:50:51.902293+00:00",
+      "wall_seconds": 104.2585251769924,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 279 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-schedule-tests-2",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-schedule-tests-2.json",
+      "log": "runs/agent-b-shake/concurrent-b-schedule-tests-2.log",
+      "record_sha256": "e10aa89d63f415c697cd96b9270a40fd8a4e4a3c12fb2a4ad8d17cdc485abea9",
+      "raw_log_sha256": "5bbe2e40facfdd9a324121924bed593f8d5e9a59084e9fbb45f96967433b2208",
+      "finished_utc": "2026-10-24T17:53:54.790778+00:00",
+      "wall_seconds": 44.16272690799087,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 279 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-b-shake",
+      "label": "concurrent-b-verifier-lifetime-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-b-shake/concurrent-b-verifier-lifetime-tests-1.json",
+      "log": "runs/agent-b-shake/concurrent-b-verifier-lifetime-tests-1.log",
+      "record_sha256": "7fa5caa78fd4564beeebf104343cf0afbfb3f37906134aa64df3c9a952dcc239",
+      "raw_log_sha256": "f5e2933fd40d775a59b8165822347a3a7a763d6458380a2ba8536084f71ff6b1",
+      "finished_utc": "2026-10-24T18:20:12.810240+00:00",
+      "wall_seconds": 2.0872726969828364,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 1042 filtered out; finished in 0.17s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-constant-relation-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-constant-relation-tests-1.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-constant-relation-tests-1.log",
+      "record_sha256": "501a7b2d286dc90044bf5c2e4b02e1d21141fd2003d1b4e93b9abfeb38f007d7",
+      "raw_log_sha256": "3b65703bfe2f1d553f9c6eef8193b87db3dbbd88e19292c45a19a0c95f368514",
+      "finished_utc": "2026-10-24T18:24:53.876409+00:00",
+      "wall_seconds": 66.19769395500771,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 8 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.04s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-native-owner-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-native-owner-tests-1.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-native-owner-tests-1.log",
+      "record_sha256": "a1f50ee854975d0f3da11a9f4ef0cf90f1c5ecc59be87d0df2a120e11e10854b",
+      "raw_log_sha256": "7feb5d76b0ff467f7eeebfbbdd26914d9d0d582b1412714001804657fb2dd49d",
+      "finished_utc": "2026-10-24T19:55:44.175879+00:00",
+      "wall_seconds": 2.085368928994285,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 188 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-native-verifier-allocations-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-native-verifier-allocations-1.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-native-verifier-allocations-1.log",
+      "record_sha256": "c12a7482fb4cf778d2e9e46fefdf28c01c7d2eba939de7bf02f884584885b5ca",
+      "raw_log_sha256": "12c041a3559d5760b2e2ec8085b2cd1dee4cbeaf4d9e45eea906fd90f13d2b26",
+      "finished_utc": "2026-10-24T19:15:10.221203+00:00",
+      "wall_seconds": 2.081862094986718,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 169 filtered out; finished in 0.02s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-native-verifier-allocations-2",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-native-verifier-allocations-2.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-native-verifier-allocations-2.log",
+      "record_sha256": "900c22dc9f2bbdc04aa9637ab4ad4a004c91a7074bc29772548b03239bdd9f53",
+      "raw_log_sha256": "22c819fce31668496872a0f22f093877b0af5de5332dda85cf19d978913e7cd5",
+      "finished_utc": "2026-10-24T19:27:15.599924+00:00",
+      "wall_seconds": 2.08213897398673,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 170 filtered out; finished in 0.01s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-native-verifier-allocations-3",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-native-verifier-allocations-3.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-native-verifier-allocations-3.log",
+      "record_sha256": "72af00fece2f009d9d99e2fb676847d71b123084998bd10896c36c4f76d2797a",
+      "raw_log_sha256": "289ec9f9a8df6caff7781a0d24988033d83fd099d1884ff2c2af91215cacd477",
+      "finished_utc": "2026-10-24T19:55:55.776406+00:00",
+      "wall_seconds": 2.083458940993296,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 189 filtered out; finished in 0.02s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-native-verifier-fresh-proof-1",
+      "status": "failed_or_incomplete",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-native-verifier-fresh-proof-1.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-native-verifier-fresh-proof-1.log",
+      "record_sha256": "d728596ba271673a5daa9585cd5ab778a15d8dbc0d31ef0be54b03748756d39f",
+      "raw_log_sha256": "f213683c0ef017fdc9ad15e5217b8e648ddbda8db612b9fa77c3e43fb7624b15",
+      "finished_utc": "2026-10-24T19:19:31.314555+00:00",
+      "wall_seconds": 8.094279486016603,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 171 filtered out; finished in 6.45s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-native-verifier-fresh-proof-2",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-native-verifier-fresh-proof-2.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-native-verifier-fresh-proof-2.log",
+      "record_sha256": "f5d31380e8bf008a7de40f34cf8b9124aaf09097d5aba754b289531f5bdd618b",
+      "raw_log_sha256": "529e96a01da62be90dc2711684309f369873273df3a4bf2af67fbaa7dcae01fb",
+      "finished_utc": "2026-10-24T19:27:25.150063+00:00",
+      "wall_seconds": 8.093698170996504,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 172 filtered out; finished in 6.37s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-native-verifier-fresh-proof-3",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-native-verifier-fresh-proof-3.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-native-verifier-fresh-proof-3.log",
+      "record_sha256": "24cbe7a006b726acf33a06eaa12ded5e67e81174ccc58cc0fbac9a4c600aab23",
+      "raw_log_sha256": "1a78a9395f9d93fe2bcd817fde9136dfb019f681fe7d0b261931b62fd687d7ff",
+      "finished_utc": "2026-10-24T19:56:33.235485+00:00",
+      "wall_seconds": 8.09297168898047,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 191 filtered out; finished in 6.55s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-native-verifier-tests-1",
+      "status": "failed_or_incomplete",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-1.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-1.log",
+      "record_sha256": "8ceb26bbf8828bb9580d70457313fbd46e5c7ee2e50a030f4603477ba09200fe",
+      "raw_log_sha256": "fc2cf83857da88e7793f6e911536516cb3b6cb87e9831ea35eab9abbe85fe7ee",
+      "finished_utc": "2026-10-24T19:07:41.558807+00:00",
+      "wall_seconds": 46.16208387998631,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-native-verifier-tests-2",
+      "status": "failed_or_incomplete",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-2.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-2.log",
+      "record_sha256": "816adbde7da5b1b906d5be7678716cd7445b8ed93180077dfe7cd68a4f625de5",
+      "raw_log_sha256": "8bac18fd8ca9c631e24211f2f7de99fea207252b1698bc0a5ea779306e925c5c",
+      "finished_utc": "2026-10-24T19:11:35.331824+00:00",
+      "wall_seconds": 26.126158906990895,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: FAILED. 1 passed; 3 failed; 4 ignored; 0 measured; 164 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-native-verifier-tests-3",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-3.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-3.log",
+      "record_sha256": "666f5558c35fda4f5615c9e2f68ad3aaf586852975311a7f0256f15f495d503a",
+      "raw_log_sha256": "4654a06e08dac3453d852ebd01f1fb93af753468d00500b5878fc9bc5ea50eaa",
+      "finished_utc": "2026-10-24T19:14:44.789346+00:00",
+      "wall_seconds": 26.12748116700095,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 4 passed; 0 failed; 4 ignored; 0 measured; 164 filtered out; finished in 0.02s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-native-verifier-tests-4",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-4.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-4.log",
+      "record_sha256": "0ac0fa065f1b836c1e453b810cb444e7db0077fd69e43d153a1a81fa79118938",
+      "raw_log_sha256": "a70c33f0a6f2abf4012a422b835efec5873ef9fad678147feaf138821aabd211",
+      "finished_utc": "2026-10-24T19:26:14.490885+00:00",
+      "wall_seconds": 26.12696390997735,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 5 passed; 0 failed; 4 ignored; 0 measured; 164 filtered out; finished in 0.02s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-native-verifier-tests-5",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-5.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-native-verifier-tests-5.log",
+      "record_sha256": "68d5545bc20244a6b50588ba422acd37d993bfb6da1efa933974863f6290da71",
+      "raw_log_sha256": "f8be4c02b5cbc4cff730c93ec2e8d489594d530c5eadb95c95095930540fc237",
+      "finished_utc": "2026-10-24T19:54:40.195963+00:00",
+      "wall_seconds": 72.24358213300002,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 7 passed; 0 failed; 4 ignored; 0 measured; 181 filtered out; finished in 0.06s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-note-proof-test-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-note-proof-test-1.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-note-proof-test-1.log",
+      "record_sha256": "cd7a1f9d16d702d80d361955db24878b791cdf27c685c0e0339cf3e651459418",
+      "raw_log_sha256": "6e0c1f94a63a351eff510507e2cdfba76ed87c90623557c981d8e0af53127336",
+      "finished_utc": "2026-10-24T18:04:06.925751+00:00",
+      "wall_seconds": 4.087438602000475,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 2.25s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-relation-tests-1",
+      "status": "failed_or_incomplete",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-relation-tests-1.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-relation-tests-1.log",
+      "record_sha256": "3ed0721d06109327295531b1f27e20f3fc3f22a3beac228563cbebf61488f5c5",
+      "raw_log_sha256": "b4dd66e6232e6ea0cb36abe891833484b4635e0c82d77e090cdb76020ce47e24",
+      "finished_utc": "2026-10-24T18:01:49.358240+00:00",
+      "wall_seconds": 68.20253857699572,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-relation-tests-2",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-relation-tests-2.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-relation-tests-2.log",
+      "record_sha256": "19b3a8a9cdd993d0ad4407f7d1696d30dac8a21cb992c569aa89e36f96454ed4",
+      "raw_log_sha256": "9cb2caa472eb12269d5ed5dedd2ae665effac627b7b5559cc1762fe2d2cd5efe",
+      "finished_utc": "2026-10-24T18:02:34.878654+00:00",
+      "wall_seconds": 2.085353873000713,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 8 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.04s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-ring-compile-screen-1",
+      "status": "failed_or_incomplete",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-ring-compile-screen-1.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-ring-compile-screen-1.log",
+      "record_sha256": "fb70b25064c7bce6c0acb8e4dca2b292d67664ac994bfbcdcfea6ea773f78e0d",
+      "raw_log_sha256": "add4e607962c339ad05065bd94689dac36f022c98dcba8fa82b287f56c71a2b6",
+      "finished_utc": "2026-10-24T18:04:50.735861+00:00",
+      "wall_seconds": 2.0834230269829277,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-ring-compile-screen-2",
+      "status": "failed_or_incomplete",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-ring-compile-screen-2.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-ring-compile-screen-2.log",
+      "record_sha256": "45a5dfa5035274ce4f39b664d68dbc18b460550a6597aaf8d3d826c513d7ed40",
+      "raw_log_sha256": "807d6469babaf31cedd81c39b0093fe880c533482b8f261f79db5e38a8587a1f",
+      "finished_utc": "2026-10-24T18:13:22.228530+00:00",
+      "wall_seconds": 68.22018518901314,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-ring-compile-screen-3",
+      "status": "failed_or_incomplete",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-ring-compile-screen-3.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-ring-compile-screen-3.log",
+      "record_sha256": "ab5921fb99e8fe70a3a3505644aac46a6575d8519d215d35b359b17a06ae6a2b",
+      "raw_log_sha256": "b7987f2574a606b503f4aef2aa6db880c591a19d12270cc65b90cd0cf0556b88",
+      "finished_utc": "2026-10-24T18:25:10.754436+00:00",
+      "wall_seconds": 2.082953704026295,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-unchanged-native-allocations-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-unchanged-native-allocations-1.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-unchanged-native-allocations-1.log",
+      "record_sha256": "b9f15f225043b7f0b6d0790729162262ec32a17243bbd061c82ec6c22746e887",
+      "raw_log_sha256": "b76334137853d41bdede668ebdec0f80905bf6bb10670758010eedea74745e05",
+      "finished_utc": "2026-10-24T20:11:00.744636+00:00",
+      "wall_seconds": 2.086343769013183,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 199 filtered out; finished in 0.00s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-unchanged-native-core-qualification-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-unchanged-native-core-qualification-1.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-unchanged-native-core-qualification-1.log",
+      "record_sha256": "29580c6394b4dfe2ae433e5613739f5069fb39d183b5695d4398bedfb39239c5",
+      "raw_log_sha256": "a9e9abfc9b330fed6214b077a4beb6639ea3e27d2d6e9ae0d7a35107a0d1a5cd",
+      "finished_utc": "2026-10-24T20:13:08.698050+00:00",
+      "wall_seconds": 88.23736685101176,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 194 filtered out; finished in 26.14s"
+      ],
+      "handoff_build": false
+    },
+    {
+      "owner": "agent-c-direct-spend",
+      "label": "concurrent-c-unchanged-native-tests-1",
+      "status": "passed",
+      "profile": "build",
+      "record": "runs/agent-c-direct-spend/concurrent-c-unchanged-native-tests-1.json",
+      "log": "runs/agent-c-direct-spend/concurrent-c-unchanged-native-tests-1.log",
+      "record_sha256": "8c15e6913bbdcddf7b4f2788f0b6697b4a2cb7cc316e29693c0eedd364412078",
+      "raw_log_sha256": "ea7b3fa82ea966d070f41e108aa4fd858314ff3b6104e3f187b42698aa03f03d",
+      "finished_utc": "2026-10-24T20:09:49.263889+00:00",
+      "wall_seconds": 74.21410422000918,
+      "all_subprocesses_terminal_and_reaped": true,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "test_result_lines": [
+        "test result: ok. 4 passed; 0 failed; 3 ignored; 0 measured; 193 filtered out; finished in 0.01s"
+      ],
+      "handoff_build": false
+    }
+  ],
+  "omitted_baseline_raw_logs": [
+    {
+      "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/runs/multipass-r4-new-5-correctness.log",
+      "bytes": 249507375,
+      "sha256": "c304a75881b2071647dcf4e78784465c352499f5eece594ec292d32ee4d2cf42",
+      "reason": "Large historical baseline raw log; accepted audit records and log digest included instead."
+    },
+    {
+      "original_path": "/home/access/code/lattica/.tools/worktrees/pq-opencl-gpu-preparation/.tools/pq-opencl-opt/runs/multipass-r4-new-5-benchmark.log",
+      "bytes": 249516361,
+      "sha256": "198e0746c3370d57b4862920d056367f8cc0847d8de6d1d74db1d3f47b22202b",
+      "reason": "Large historical baseline raw log; accepted audit records and log digest included instead."
+    }
+  ],
+  "other_exclusions": [
+    "Build executables, target/registry caches and absolute cache symlinks.",
+    "Historical baseline aggregate proof artifact binaries; the accepted audit records and JSON results are included.",
+    "Stale campaign STATUS.json; this manifest records final terminal status instead.",
+    "Unrelated main-worktree CUDA and editor configuration edits."
+  ],
+  "diagnostic_public_fixture": {
+    "path": "research/pq-ringct/fixtures/diagnostic-context71-setup29.json",
+    "bytes": 833617,
+    "sha256": "b78c234c604cdbc2e44925715f6c900a739e24408223df60ab6a9b1846d5898a",
+    "accepted_n3_n4_fixture": false,
+    "fresh_proof": false
+  }
+}

@@ -31,6 +31,7 @@ use lattica_prover_p3::block_v2::{
 use p3_air::{Air, AirBuilder, BaseAir};
 
 pub mod framing;
+pub mod unchanged;
 
 /// Public descriptors of exactly the trusted implementations audited below.
 /// In particular this is not an arbitrary AIR/callback interface.

@@ -40,6 +40,63 @@ pub enum Error {
 pub struct LinearMapAir {
     descriptor: LinearMapDescriptor,
 }
+
+/// Allocation-free view of a constructor-validated, immutable descriptor.
+/// This does not register an AIR or authorize a proof. The backing count is
+/// for cloning the three Vecs by length, before constructing an owned AIR.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct LinearMapPlanningLayout {
+    pub width: usize,
+    pub height: usize,
+    pub public_values: usize,
+    pub periodic_columns: usize,
+    pub clone_backing_bytes: usize,
+}
+
+impl LinearMapDescriptor {
+    pub(crate) fn planning_layout(&self) -> Result<LinearMapPlanningLayout, Error> {
+        // Only descriptor::new can create these private fields. Keep the
+        // source limits explicit so future layout changes fail closed here.
+        let inputs = self.inputs.len();
+        if !(1..=16).contains(&inputs)
+            || self.coefficients.len() != inputs
+            || self.bits == 0
+            || self.bits > 32
+            || self.bits % 4 != 0
+            || self.bounds.len() > inputs + 2
+            || self.quotient_bound > i32::MAX as u64
+        {
+            return Err(Error::Descriptor);
+        }
+        let canonical = matches!(self.output, PolynomialKind::Canonical { .. });
+        let range_width = |bits: usize| 1 + bits + bits / 4;
+        let quotient_limit = 2 * self.quotient_bound + 1;
+        let quotient_bits = (64 - quotient_limit.leading_zeros() as usize)
+            .max(1)
+            .div_ceil(4)
+            * 4;
+        let public_values = 4 * (inputs + 1);
+        let width = 4 * inputs
+            + public_values
+            + 4 * range_width(self.bits)
+            + if canonical {
+                4 * range_width(quotient_bits)
+            } else {
+                0
+            }
+            + POSEIDON_WIDTH;
+        Ok(LinearMapPlanningLayout {
+            width,
+            height: 64 * (inputs + 1).next_power_of_two(),
+            public_values,
+            periodic_columns: 5 * inputs + 6 + self.bounds.len(),
+            clone_backing_bytes: inputs * core::mem::size_of::<PolynomialKind>()
+                + self.coefficients.len() * core::mem::size_of::<[i64; D]>()
+                + self.bounds.len() * core::mem::size_of::<u32>(),
+        })
+    }
+}
+
 fn field_signed(value: i64) -> Val {
     if value < 0 {
         -Val::from_u64(value.unsigned_abs())

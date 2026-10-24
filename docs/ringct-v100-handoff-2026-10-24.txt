@@ -1,0 +1,142 @@
+RingCT research handoff: RTX 5080 to Tesla V100 32GB
+2026-10-24
+
+This branch preserves the concurrent optimization campaign, including unfinished
+source. No candidate has qualified for a workflow speedup. V100 execution has
+not been tested. The paired SHAKE experiment still refuses before dispatch.
+
+Source and provenance
+
+The source-complete accepted baseline is commit
+b9b8dbebe62ad20e6abbc9b38188b6de2bc1ca99, based on efff6ec. It includes the
+previously untracked research source; starting from the older main branch would
+omit that work. This handoff also includes the later integrated campaign commits,
+agent C's native-family qualification (3341af8), and agent B's final draft.
+No production protocol migration is included.
+
+Portable evidence is under docs/evidence/ringct-concurrent-2026-10-24/.
+manifest.json inventories archive members, original paths, sizes and SHA-256
+hashes. validation-records.tar.gz contains all 54 pre-handoff guard records and
+logs (including nine failed/incomplete attempts), the final handoff build record,
+the accepted baseline audit records, source checkpoint manifest, cache-screening
+reports, and the 100-test Python guard/report result. The manifest states which
+large original baseline assets are omitted. Historical absolute paths are
+provenance, not paths expected to exist on the new machine.
+
+The earlier campaign STATUS.json contained a stale active-job entry. The portable
+manifest supersedes that job status: the original 54 jobs are terminal/reaped,
+all three agents stopped, and there is no queued validation to resume here.
+The final handoff build has its own terminal status in the manifest.
+
+Qualified and unfinished work
+
+Registration/public-state reuse:
+  Metadata capacity 256/512 and bounded telemetry are independently selectable.
+  Defaults remain capacity 256 and single-entry prepared public state. Replay
+  screened out the proposed cache expansions: optimistic metadata benefit was
+  about 0.02891% of baseline workflow time and eligible prepared-state benefit
+  about 0.11877%. 3,071 of 3,120 observed registrations exceeded the proposed
+  512 MiB idle GPU allowance. See research/pq-ringct/REGISTRATION_SCREENING.md
+  and REQUIRED_PHASE_BOUNDS.md. No larger prepared cache was promoted.
+
+Paired SHAKE:
+  Singleton remains the default. PairedV1 scheduling, grouped-verifier work,
+  retained-resource accounting and compiler-bound prerequisites are preserved.
+  The last native-family qualification passed 23 reference-parity cases, with
+  maximum padded rows 262,144 under the unchanged 1,048,576 ceiling.
+  These compiler results do not authorize runtime GPU dispatch.
+
+  Agent B's exact final draft is preserved in:
+    research/pq-ringct/src/spend_pipeline/paired_workflow.rs
+    research/pq-ringct/src/spend_pipeline/paired_workflow/tests.rs
+    research/pq-ringct/src/spend_pipeline/paired_workflow/BOUNDS.md
+  It has been peer reviewed and rustfmt checked, but remains UNWIRED and
+  UNCOMPILED. spend_pipeline.rs intentionally has no module declaration for it.
+  The accompanying GraphProofPlan resource_limits field/getter is included.
+  The final driver build does not compile or validate this unwired draft.
+
+  Next diagnostic step: wire the draft behind
+    #[cfg(all(test, feature = "native-matrict", feature = "recursive-wide"))]
+    mod paired_workflow;
+  Then compile and run its focused arithmetic test before the guarded, ignored
+  selected_r4_native_and_descendant_closure test. Resolve actual compile errors
+  before treating its source as implemented functionality. The ignored gate
+  expects all three environment values:
+    LATTICA_SELECTED_R4_SHAPE_QUALIFICATION=1
+    LATTICA_REGISTERED_CLOSURE_MAX_ROWS=1048576
+    LATTICA_GRAPH_FIXTURE_ARCHIVE=<repo>/research/pq-ringct/fixtures/diagnostic-context71-setup29.json
+  Ensure those variables reach the transient service; the guard constructs an
+  explicit environment. Use the coordinator's serialized, release-only guard.
+
+  The tracked fixture is public statement/proof data: 833,617 bytes, SHA-256
+  b78c234c604cdbc2e44925715f6c900a739e24408223df60ab6a9b1846d5898a.
+  Its adjacent provenance file preserves the original location. It is an older
+  diagnostic context [71;32], setup [29;32], not an accepted N3/N4 transaction
+  and not a fresh proof. Do not generate a replacement silently.
+
+  Runtime admission still needs complete graph/fixture/frontier/recursive-output
+  ownership, bounded reports/errors, exclusive typed adapters and public
+  preflight before the earlier native MatRiCT spend stage. A successful fixture
+  row screen alone cannot establish those bounds. See PAIRED_SHAKE.md and
+  src/spend_pipeline/paired_workflow/BOUNDS.md for the detailed limits.
+
+Direct-spend research:
+  research/pq-direct-spend remains isolated from production acceptance. The
+  private-note prototype produced and CPU-verified a proof with mutation checks.
+  The ring prototype compiler refused under the unchanged resource allowance.
+  Neither profile has a complete-workflow 2x result or adoption security review.
+  See that crate's README.md and VALIDATION.md for semantic differences.
+
+Historical RTX 5080 baseline
+
+Seven fresh N3/N4 transactions took 40067.428264729 seconds, or approximately
+0.62894 transactions/hour, including the complete correctness workflow. Counts
+were 1,554 native, 3,115 recursive transaction and five final batch proofs.
+This is a single historical baseline, not V100 throughput or a candidate win.
+The older 0.66 transactions/hour observation is not the selected baseline.
+
+Keep FreshOnly proof generation and GpuRequired execution for faithful RingCT
+candidates. Report public preprocessing reuse separately. Preserve the resource
+contract for matched comparisons:
+  8 GiB managed GPU memory, 4 GiB GPU context reserve;
+  32 GiB worker host allowance, 24 GiB native allowance;
+  47 GiB process cgroup cap, zero swap;
+  1,048,576 maximum rows, unchanged thread/security parameters.
+The V100's 32GB capacity does not automatically enlarge these allowances.
+
+Preparing the new machine
+
+Fetch and check out ringct/v100-handoff-20261024 from the repository remote.
+Rebuild from source; this snapshot deliberately omits caches and executables.
+The recorded Linux toolchain is Rust/Cargo 1.96.0. Install the required native
+dependencies and NVIDIA driver/OpenCL ICD, then populate the locked Cargo
+dependencies for research/pq-ringct-batch and research/pq-direct-spend.
+
+The current guard scripts hardcode /home/access and the toolchain path
+/home/access/code/lattica/.tools/rust-1.96.0/bin. Adapt these paths to the new
+machine in research/pq-ringct/tools/opencl_private_spend_validate.py (and the
+historical opencl_opt_validate.py where needed). They also use repository-local
+.tools/cargo-opencl and .tools/target-opencl. Do not copy the old absolute
+worktree/cache symlinks. The offline build requires dependencies already cached.
+
+The guard requires systemd user services and delegated cgroup memory controls.
+Check zero-swap enforcement, process admission, and the actual V100 device
+selection before executing jobs; GPU device index 0 is currently selected.
+Keep the guard limits and use one shared flock lock across all development
+worktrees. Parallel source development is allowed; builds and GPU runs remain
+serialized. Build profile is cpu-required, full workflow is gpu-required.
+
+After path setup, begin with a guarded release build of:
+  cargo build --locked --offline --release \
+    --manifest-path research/pq-ringct-batch/Cargo.toml \
+    --features opencl --bin pq-ringct-opencl-opt-validate
+Then rerun focused checks and qualify a fresh baseline on the V100. Old RTX
+receipts, binaries and timings cannot qualify the new device. Before any timed
+candidate comparison, complete fresh N3/N4 correctness, independent CPU
+verification, mutation and artifact round-trip checks, and terminal audits.
+
+Acceptance remains at least 5% lower median complete-workflow time for A/B with
+no case median regression above 2%, using three matched alternating pairs after
+screening. Keep direct-spend profiles separate; their continuation criterion is
+at least 2x complete-workflow improvement with no blocking semantic/security
+review issue. Failed and inconclusive experiments remain evidence.
