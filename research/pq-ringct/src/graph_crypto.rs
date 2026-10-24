@@ -39,6 +39,7 @@ pub use cache::{
 pub use layout::{LayoutComparison, LayoutGeometry, WideShakePartitionEstimate};
 pub use prover::{CompleteRequestProof, NodeProvingReport, RequestProver, RequestProvingReport};
 pub use retention::{NativeRetentionShape, RetainedNativeChild};
+pub(crate) use retention::{NativeProductionPlan, PendingNativeChild, ReservedNativeChild};
 pub use shake_wrappers::{
     ShakeWrapperCounts, ShakeWrapperLayout, ShakeWrapperSchedule, ShakeWrapperSpan,
 };

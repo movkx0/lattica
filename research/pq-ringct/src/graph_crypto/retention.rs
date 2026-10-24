@@ -10,6 +10,9 @@ use p3_air::BaseAir;
 use p3_field::{BasedVectorSpace, TwoAdicField};
 use p3_symmetric::MerkleCap;
 
+mod owned;
+pub(crate) use owned::{NativeProductionPlan, PendingNativeChild, ReservedNativeChild};
+
 type NativeProof = p3_uni_stark::Proof<profile::Config>;
 type Challenge = profile::Challenge;
 type Digest = [Val; 4];

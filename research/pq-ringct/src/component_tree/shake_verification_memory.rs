@@ -14,7 +14,7 @@
 //! callbacks, caller reports and the enclosing worker lifetimes are separate.
 
 use crate::execution::retained_resources::{
-    Bytes, Category, Ledger as ResourceLedger, Reservation,
+    Bytes, Category, Ledger as ResourceLedger, Requirements, Reservation,
 };
 use crate::shake_air::{self, lane::batch::ShakeSegmentAir};
 use core::mem::size_of;
@@ -384,6 +384,70 @@ impl Plan {
         proof_reservation: &'p Reservation,
         ledger: &ResourceLedger,
     ) -> Result<AdmittedVerification<'p>> {
+        let proof_backing_bytes =
+            self.audit_inputs(air, proof, public, proof_reservation, ledger)?;
+        let reservation = ledger
+            .admit_phase(Self::component_requirement())
+            .map_err(|_| BUDGET)?;
+        Ok(AdmittedVerification {
+            plan: self,
+            air,
+            proof,
+            public,
+            proof_backing_bytes,
+            _proof_reservation: proof_reservation,
+            _reservation: reservation,
+        })
+    }
+
+    pub fn component_requirement() -> Requirements {
+        Requirements::single(
+            Category::IndependentVerifier,
+            Bytes {
+                host: COMPONENT_BYTES as u64,
+                device: 0,
+            },
+        )
+    }
+
+    /// Consume exactly the verifier component split from a whole-phase
+    /// admission. This does not reserve again or confer native dispatch rights.
+    /// Wrong-ledger, mixed-category and incorrect-size tokens are refused.
+    pub fn admit_pre_reserved<'p>(
+        self,
+        air: &'p ShakeSegmentAir,
+        proof: &'p Proof<Config>,
+        public: &'p Vec<Val>,
+        proof_reservation: &'p Reservation,
+        reservation: Reservation,
+        ledger: &ResourceLedger,
+    ) -> Result<AdmittedVerification<'p>> {
+        require(reservation.belongs_to(ledger), BUDGET)?;
+        require(
+            reservation.requirements() == Self::component_requirement(),
+            BUDGET,
+        )?;
+        let proof_backing_bytes =
+            self.audit_inputs(air, proof, public, proof_reservation, ledger)?;
+        Ok(AdmittedVerification {
+            plan: self,
+            air,
+            proof,
+            public,
+            proof_backing_bytes,
+            _proof_reservation: proof_reservation,
+            _reservation: reservation,
+        })
+    }
+
+    fn audit_inputs(
+        self,
+        air: &ShakeSegmentAir,
+        proof: &Proof<Config>,
+        public: &Vec<Val>,
+        proof_reservation: &Reservation,
+        ledger: &ResourceLedger,
+    ) -> Result<usize> {
         require(Shape::new(air)? == self.shape, GEOMETRY)?;
         let allowance = ledger.snapshot().allowance;
         require(
@@ -399,30 +463,12 @@ impl Plan {
                 .min(PROOF_BACKING_CEILING as u64),
         )
         .map_err(|_| OVERFLOW)?;
-        let proof_backing_bytes =
-            self.proof_backing_bytes(proof, public, already_reserved_proof_bytes)?;
-        let reservation = ledger
-            .reserve(
-                Category::IndependentVerifier,
-                Bytes {
-                    host: COMPONENT_BYTES as u64,
-                    device: 0,
-                },
-            )
-            .map_err(|_| BUDGET)?;
-        Ok(AdmittedVerification {
-            plan: self,
-            air,
-            proof,
-            public,
-            proof_backing_bytes,
-            _proof_reservation: proof_reservation,
-            _reservation: reservation,
-        })
+        self.proof_backing_bytes(proof, public, already_reserved_proof_bytes)
     }
 }
 
-/// Only Plan::admit can issue this token. Its borrows pin every audited input;
+/// Only Plan's checked admission methods can issue this token. Its borrows pin
+/// every audited input;
 /// its non-clone reservation follows moves and releases on success/error/drop.
 pub struct AdmittedVerification<'p> {
     plan: Plan,
@@ -819,6 +865,169 @@ mod tests {
     }
 
     #[test]
+    fn pre_reserved_verifier_transfer_preserves_charge_through_failure_and_drop() {
+        use crate::execution::retained_resources::WorkerAllowance;
+        let ledger = ResourceLedger::new(WorkerAllowance {
+            host: (PROOF_BACKING_CEILING + COMPONENT_BYTES) as u64,
+            device: 0,
+        });
+        let native_requirement = Requirements::single(
+            Category::NativeProof,
+            Bytes {
+                host: PROOF_BACKING_CEILING as u64,
+                device: 0,
+            },
+        );
+        let mut requirements = Plan::component_requirement();
+        requirements
+            .add(
+                Category::NativeProof,
+                native_requirement.get(Category::NativeProof),
+            )
+            .unwrap();
+        let mut phase = ledger.admit_phase(requirements).unwrap();
+        let proof_reservation = phase.split(native_requirement).unwrap();
+        let verifier_reservation = phase.split(Plan::component_requirement()).unwrap();
+        let before = ledger.snapshot();
+        assert_eq!(ledger.remaining(), Bytes::ZERO);
+        let air = single();
+        let plan = Plan::new(&air).unwrap();
+        let (proof, public) = fixture(&air);
+        let token = plan
+            .admit_pre_reserved(
+                &air,
+                &proof,
+                &public,
+                &proof_reservation,
+                verifier_reservation,
+                &ledger,
+            )
+            .unwrap();
+        assert_eq!(ledger.snapshot(), before);
+        let moved = token;
+        drop(moved);
+        assert_eq!(
+            ledger.snapshot().current,
+            native_requirement.get(Category::NativeProof)
+        );
+        let verifier_reservation = ledger.admit_phase(Plan::component_requirement()).unwrap();
+        assert!(matches!(
+            plan.admit_pre_reserved(
+                &air,
+                &proof,
+                &public,
+                &proof_reservation,
+                verifier_reservation,
+                &ledger,
+            )
+            .unwrap()
+            .verify(),
+            Err(VerificationFailure::InvalidProof(_))
+        ));
+        assert_eq!(
+            ledger.snapshot().current,
+            native_requirement.get(Category::NativeProof)
+        );
+        drop(proof);
+        drop(public);
+        drop(proof_reservation);
+        drop(phase);
+        assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+    }
+
+    #[test]
+    fn pre_reserved_transfer_refuses_foreign_mixed_and_inexact_components() {
+        let allowance = TestBudget::new(COMPONENT_BYTES + 1).unwrap();
+        let foreign = TestBudget::new(COMPONENT_BYTES).unwrap();
+        let air = single();
+        let plan = Plan::new(&air).unwrap();
+        let (mut proof, public) = fixture(&air);
+        let foreign_component = foreign
+            .ledger
+            .admit_phase(Plan::component_requirement())
+            .unwrap();
+        assert_eq!(
+            plan.admit_pre_reserved(
+                &air,
+                &proof,
+                &public,
+                &allowance.proof,
+                foreign_component,
+                &allowance.ledger
+            )
+            .err(),
+            Some(BUDGET)
+        );
+        assert_eq!(foreign.reserved_bytes(), 0);
+        assert_eq!(allowance.reserved_bytes(), 0);
+        for bytes in [COMPONENT_BYTES - 1, COMPONENT_BYTES + 1] {
+            let component = allowance
+                .ledger
+                .reserve(
+                    Category::IndependentVerifier,
+                    Bytes {
+                        host: bytes as u64,
+                        device: 0,
+                    },
+                )
+                .unwrap();
+            assert_eq!(
+                plan.admit_pre_reserved(
+                    &air,
+                    &proof,
+                    &public,
+                    &allowance.proof,
+                    component,
+                    &allowance.ledger
+                )
+                .err(),
+                Some(BUDGET)
+            );
+            assert_eq!(allowance.reserved_bytes(), 0);
+        }
+        let mut mixed = Plan::component_requirement();
+        mixed
+            .add(Category::Report, Bytes { host: 1, device: 0 })
+            .unwrap();
+        let component = allowance.ledger.admit_phase(mixed).unwrap();
+        assert_eq!(
+            plan.admit_pre_reserved(
+                &air,
+                &proof,
+                &public,
+                &allowance.proof,
+                component,
+                &allowance.ledger
+            )
+            .err(),
+            Some(BUDGET)
+        );
+        assert_eq!(allowance.reserved_bytes(), 0);
+        assert_eq!(
+            allowance.ledger.snapshot().categories[Category::Report as usize].current,
+            Bytes::ZERO
+        );
+        proof.degree_bits += 1;
+        let component = allowance
+            .ledger
+            .admit_phase(Plan::component_requirement())
+            .unwrap();
+        assert_eq!(
+            plan.admit_pre_reserved(
+                &air,
+                &proof,
+                &public,
+                &allowance.proof,
+                component,
+                &allowance.ledger
+            )
+            .err(),
+            Some(ENVELOPE)
+        );
+        assert_eq!(allowance.reserved_bytes(), 0);
+    }
+
+    #[test]
     fn producer_drain_and_truncation_capacity_is_charged_without_relaxing_lengths() {
         fn with_capacity<T: Clone>(values: &[T], capacity: usize) -> Vec<T> {
             let mut retained = Vec::with_capacity(capacity);
@@ -981,6 +1190,30 @@ mod tests {
         assert_eq!(receipt.proof_backing_bytes, backing);
         assert_eq!(receipt.bounds, plan.bounds());
         assert_eq!(allowance.reserved_bytes(), 0);
+        let component = allowance
+            .ledger
+            .admit_phase(Plan::component_requirement())
+            .unwrap();
+        let pre_reserved = || {
+            plan.admit_pre_reserved(
+                &air,
+                &proof,
+                &public,
+                &allowance.proof,
+                component,
+                &allowance.ledger,
+            )
+            .unwrap()
+            .verify()
+            .unwrap()
+        };
+        #[cfg(feature = "native-verification-allocation-audit")]
+        let transferred =
+            observation::measure_checked(plan.bounds.cumulative_requested_bytes, pre_reserved);
+        #[cfg(not(feature = "native-verification-allocation-audit"))]
+        let transferred = pre_reserved();
+        assert_eq!(transferred, receipt);
+        assert_eq!(allowance.reserved_bytes(), 0);
         public[0] += Val::ONE;
         assert!(matches!(
             plan.admit(&air, &proof, &public, &allowance.proof, &allowance.ledger)
@@ -1092,6 +1325,27 @@ mod tests {
                 assert!(plan
                     .admit(&air, &proof, &public, &allowance.proof, &allowance.ledger)
                     .is_err());
+            });
+            let admitted = TestBudget::new(COMPONENT_BYTES).unwrap();
+            let component = admitted
+                .ledger
+                .admit_phase(Plan::component_requirement())
+                .unwrap();
+            measure_checked(0, || {
+                let token = Plan::new(&air)
+                    .unwrap()
+                    .admit_pre_reserved(
+                        &air,
+                        &proof,
+                        &public,
+                        &admitted.proof,
+                        component,
+                        &admitted.ledger,
+                    )
+                    .unwrap();
+                assert_eq!(admitted.reserved_bytes(), COMPONENT_BYTES);
+                drop(token);
+                assert_eq!(admitted.reserved_bytes(), 0);
             });
         }
 
