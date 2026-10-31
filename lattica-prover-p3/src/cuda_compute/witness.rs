@@ -265,6 +265,8 @@ impl Witnesses {
         if !witness.is_empty() {
             input.write(public.len(), witness)?;
         }
+        let mut submissions =
+            super::kernel::Submissions::new(&self.runtime, p.waves.len().saturating_add(2))?;
         // Public input copies and dependency waves have distinct, observed stage
         // tickets. A wave reads only preceding SSA values and writes disjoint wires.
         unsafe {
@@ -272,38 +274,35 @@ impl Witnesses {
                 for (kernel, target) in
                     [(&self.publics, public_output), (&self.wire_publics, &wires)]
                 {
-                    kernel
-                        .launch(
-                            super::transform::linear_launch(p.publics)?,
-                            &[
-                                Argument::Buffer(&input),
-                                Argument::Buffer(target),
-                                Argument::U32(p.publics as u32),
-                            ],
-                        )?
-                        .finish()?;
+                    submissions.push(kernel.launch(
+                        super::transform::linear_launch(p.publics)?,
+                        &[
+                            Argument::Buffer(&input),
+                            Argument::Buffer(target),
+                            Argument::U32(p.publics as u32),
+                        ],
+                    )?)?;
                 }
             }
             for wave in &p.waves {
-                self.wave
-                    .launch(
-                        super::transform::linear_launch(wave.len())?,
-                        &[
-                            Argument::Buffer(&prepared.metadata),
-                            Argument::U32(wave.start as u32),
-                            Argument::U32(wave.len() as u32),
-                            Argument::Buffer(&input),
-                            Argument::Buffer(&wires),
-                            Argument::Buffer(&status),
-                            Argument::Buffer(&self.constants[0]),
-                            Argument::Buffer(&self.constants[1]),
-                            Argument::Buffer(&self.constants[2]),
-                            Argument::Buffer(&self.constants[3]),
-                        ],
-                    )?
-                    .finish()?;
+                submissions.push(self.wave.launch(
+                    super::transform::linear_launch(wave.len())?,
+                    &[
+                        Argument::Buffer(&prepared.metadata),
+                        Argument::U32(wave.start as u32),
+                        Argument::U32(wave.len() as u32),
+                        Argument::Buffer(&input),
+                        Argument::Buffer(&wires),
+                        Argument::Buffer(&status),
+                        Argument::Buffer(&self.constants[0]),
+                        Argument::Buffer(&self.constants[1]),
+                        Argument::Buffer(&self.constants[2]),
+                        Argument::Buffer(&self.constants[3]),
+                    ],
+                )?)?;
             }
         }
+        submissions.finish()?;
         let mut failed = [0];
         status.read(0, &mut failed)?;
         if failed[0] != 0 {

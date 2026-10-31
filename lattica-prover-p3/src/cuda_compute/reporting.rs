@@ -141,6 +141,7 @@ impl Runtime {
     /// Capture only this synchronous attempt's observed CUDA completions. The
     /// caller still must finalize Run before publishing its returned artifact.
     pub(crate) fn reported<T>(&self, run: &Run, body: impl FnOnce() -> Result<T>) -> Result<T> {
+        let _profile = super::profile::range(c"cuda.prove");
         let allowed = run.cuda_inventory().map_err(error)?;
         let scope = {
             let _queue = self.state.enter()?;

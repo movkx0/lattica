@@ -20,6 +20,7 @@ mod matrix;
 mod opening;
 #[cfg(feature = "block-v2")]
 mod pcs;
+mod profile;
 #[cfg(feature = "block-v2")]
 mod public;
 mod query;

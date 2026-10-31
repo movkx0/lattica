@@ -1,0 +1,468 @@
+CUDA recursive aggregation: profiling and comparison
+====================================================
+
+Use the current Plonky3 capacity-128 profile, the same public wallet fixture,
+four worker threads, and matching CPU verification binaries for every arm.
+The maintained launcher enforces the existing CPU, RAM, scratch, GPU and
+teardown limits. Keep the GPU free of other proving jobs during comparisons.
+
+Build each binary separately and copy it before changing feature selections:
+
+  cargo build --offline --locked --release --no-default-features -j1 \
+    --features block-v2-wide-lanes,stream,block-v2-capacity-128,gpu-cuda \
+    --bin block-v2-paired-probe
+
+The independent CPU binary uses the same features without gpu-cuda. The OpenCL
+binary replaces gpu-cuda with gpu. Match the Rust toolchain and RUSTFLAGS.
+CUDA requires the pinned NVRTC 12.9 runtime; installing a newer Nsight release
+does not replace that requirement.
+
+Experimental features can be measured independently:
+
+  gpu-cuda-batched-submission  Bounded deferred completion waits.
+  gpu-cuda-transform-reuse     Shared tables of twiddles and row scaling powers.
+  gpu-cuda-quotient-tuning      64-thread quotient evaluation blocks.
+  gpu-cuda-lookup-tiling        Up to 16 MiB of bounded lookup tile workspace.
+  gpu-cuda-poseidon-diagonal   Exact arithmetic for fixed Poseidon coefficients.
+  gpu-cuda-quotient-workspace-large  Up to 256 MiB within the managed allowance.
+  gpu-cuda-quotient-tiles-32k   Up to 32k rows and 512 MiB within that allowance.
+
+These features imply gpu-cuda. They do not alter proof parameters, field
+semantics, verification, or the maximum managed memory allowance. Keep the
+generic feature selection as the control. Architecture-specific performance
+claims require measurements on the target GPU; SM70 compilation alone does
+not qualify V100 throughput.
+
+Run an uninstrumented comparison from lattica-prover-p3:
+
+  python3 scripts/bench-cuda-recursive.py \
+    --output /absolute/path/to/new-evidence-directory \
+    --fixture /absolute/path/to/public-capacity-128-fixture \
+    --cpu-binary /absolute/path/to/cpu-probe \
+    --arm baseline:cuda:/absolute/path/to/cuda-probe \
+    --arm candidate:cuda:/absolute/path/to/candidate-probe \
+    --gpu-uuid GPU-... --cuda-library-path /absolute/path/to/cuda-12.9.1/lib
+
+The default is one warmup per arm and size, followed by five repetitions with
+alternating arm order, for four and eight inputs. Every recursive proof and
+root is CPU-audited outside the timing interval. Source/binary fingerprints,
+per-run commands, telemetry, resource accounting and retirement receipts are
+saved with the results. The controller itself should run in a bounded user
+service when used for long campaigns.
+
+  python3 scripts/report-cuda-comparison.py /path/to/evidence/result.json \
+    --baseline baseline --candidate candidate --output /path/to/comparison.json
+
+Promotion requires at least 2% lower median proof-interval latency on an
+improving workload with at least 80% paired wins, and no workload median
+regression over 2% in either launcher or proof-interval time. Repeat an
+inconclusive comparison once. Reports reject incomplete, instrumented,
+unaudited, resource-failing, duplicate or unmatched samples.
+
+Four inputs contain three user transactions and one issuance entry; eight
+contain six user transactions and two issuance entries. Reported user rates
+are aggregation equivalents, excluding wallet generation, native/durable
+application and the separate CPU audits.
+
+Nsight diagnostics
+------------------
+
+Build the optional annotation helper against the installed Nsight NVTX SDK:
+
+  cc -O2 -shared -fPIC -I/usr/lib/nsight-systems/target-linux-x64/nvtx/include \
+    scripts/linux_profile_clock.c -o /absolute/path/to/nvtx.so -ldl
+
+Create a profiling assignment (all artifact paths must be absolute):
+
+  {"tool":"nsys","executable":"/usr/bin/nsys",
+   "nvtx_library":"/absolute/path/to/nvtx.so"}
+
+Use a separate fresh output directory and one CUDA arm, adding:
+
+  --linux-profile /absolute/path/to/profile.json --repetitions 1 --warmups 0
+
+This enables CUDA/NVTX/OS-runtime tracing, without hardware counters or CPU
+sampling. The shared worker still authenticates its own executable, arguments,
+PID, invocation and cgroup. A pinned helper transfers the service MainPID to
+the prover before exec; ExitType=cgroup retains the profiler until export
+finishes. The same memory limits and whole-cgroup cleanup remain in force.
+Unrelated environment variables are removed before launching Nsight.
+
+CUDA annotations contain static stage names and public program dimensions;
+they do not record witness contents, random seeds or challenges. Normal runs
+do not load the NVTX helper. Profiling results are marked instrumented and
+cannot be included in throughput comparisons.
+
+  nsys export --type sqlite --output /path/to/trace.sqlite /path/to/nsight.nsys-rep
+  python3 scripts/analyze-cuda-profile.py /path/to/trace.sqlite \
+    --output /path/to/profile-analysis.json
+
+The analysis separates kernel-active time, kernel geometry, CUDA API times
+and inclusive NVTX host ranges. Waits overlap GPU execution; nested host
+ranges must not be summed into a wall-time breakdown.
+
+Nsight Compute assignments use tool=ncu, executable and nvtx_library plus
+kernel, launch_skip, launch_count (1..8), and an explicit metrics list. For
+example, sass__inst_executed_per_opcode provides instruction diagnostics on
+supported tools/devices without broad counter collection. Clock and cache
+control are disabled. Capture only a few representative launches; avoid
+replaying every kernel of a recursive proof.
+
+Hardware counters may require administrator access. The launcher does not
+change global driver or perf permissions. If access is restricted, record
+unavailable metrics; a host administrator can enable NVIDIA profiling access
+before retrying. Nsight Compute
+2026.3 does not support Volta; use a compatible older release for a V100.
+Managed Nsight Compute captures follow the worker helper's exec handoff within
+the assigned cgroup. Standalone captures target only the application.
+The completion check accepts .ncu-rep and the .ncu-repz compressed format used
+by Nsight Compute 2026.3. Missing, empty or ambiguous reports fail the run.
+Inspect either format with ncu --import /path/to/report --page raw --csv.
+
+Validation
+----------
+
+Enable block-v2 when compiling CUDA tests: primitive-only builds omit lookup
+and witness coverage. The recursive benchmark builds already include it.
+Run ignored GPU tests serially with an explicit LATTICA_GPU_DEVICE_UUID and
+the pinned CUDA library path. Test asynchronous-error cases in separate
+processes, since they intentionally invalidate the CUDA context.
+
+Run Compute Sanitizer memcheck, racecheck and synccheck on changed modules,
+including the CPU-oracle transform, lookup and quotient tests. Compile checks
+cover Volta and Blackwell. Full recursive benchmarks remain the acceptance
+test; a passing primitive suite or faster microbenchmark alone is insufficient.
+
+The opt-in cuda_transform_reuse_benchmark test uses public synthetic matrices,
+checks each result against a CPU DFT outside timing, and reports warmup and
+measured rows when LATTICA_CUDA_TRANSFORM_BENCHMARK=1. Its timings include
+device allocation and transform execution, and are not transaction throughput.
+
+RTX 5080 qualification, 2026-10-29
+--------------------------------
+
+The combined transform-reuse, quotient-tuning and lookup-tiling candidate passed
+five alternating comparisons per size against baseline CUDA and OpenCL. Each arm
+was warmed once per size. All 216 recursive proofs and 36 roots, including
+warmups, passed independent CPU audits. Median proof-observation intervals:
+
+  Entries    Baseline CUDA    Combined CUDA    OpenCL       CUDA reduction
+        4         49.930 s         37.946 s     31.236 s             24.00%
+        8         96.180 s         73.092 s     59.462 s             24.00%
+
+The candidate won all ten paired comparisons against baseline CUDA and passed
+the 2% performance gate for both sizes. Whole-launcher medians fell 21.23% and
+22.53%, respectively. OpenCL remains faster. Both CUDA arms peaked at 6.94 GiB
+of managed GPU memory under the same limits. These measurements use retained
+wallet proofs and include root promotion; they do not measure full transactions
+or sustained block processing.
+
+Build the measured candidate with:
+
+  cargo build --offline --locked --release --no-default-features -j1 \
+    --features block-v2-wide-lanes,stream,block-v2-capacity-128,gpu-cuda-transform-reuse,gpu-cuda-quotient-tuning,gpu-cuda-lookup-tiling \
+    --bin block-v2-paired-probe
+
+All candidates remain opt-in. Submission batching did not meet the performance
+gate and is excluded from this combination. Individual tuning flags have only
+screening results; qualification applies to the measured combination, device
+and workloads. V100 execution, larger blocks and multi-GPU operation remain
+unqualified.
+
+Validation passed 202 CUDA checks, 87 Python checks, and 35 focused tests under
+each of memcheck, racecheck and synccheck, with zero errors or leaks. Volta and
+Blackwell kernel compilation passed. Nsight Systems captured complete proofs.
+After the host administrator enabled profiling and rebooted, the driver reported
+RmProfilingAdminOnly: 0. Two targeted Nsight Compute runs then passed, collecting
+instruction metrics and seven hardware metrics for one representative NTT
+launch each. All eight additional recursive proofs and two promoted roots
+passed independent CPU verification. Workers retired with the existing limits.
+
+The sampled optimized NTT used 34 registers per thread and 17,472 bytes of
+dynamic shared memory. Hardware counters measured 82.53% achieved occupancy,
+72.46% SM throughput and 61.77% DRAM throughput relative to the tool's sustained
+peak rates, with zero local-memory load/store sectors. The separate instruction
+capture reported zero register-spill instructions. These are single-launch
+diagnostics with uncontrolled clocks/caches, not additional throughput results
+or a before/after counter comparison. The hardware capture required nine replay
+passes. Earlier permission failures and the .ncu-repz compatibility failure are
+retained alongside both successful runs.
+
+CUDA memory peaks are parsed from the worker's structured
+records; absent measurements remain unknown rather than being reported as zero.
+
+Evidence and source/binary fingerprints:
+  docs/evidence/cuda-profile-optimization-2026-10-29.json
+
+The raw campaign, before/after traces, rejected submission candidate, failed
+attempts and source snapshots are retained in:
+  lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/
+
+Poseidon arithmetic follow-up (2026-10-29)
+----------------------------------------
+
+Add gpu-cuda-poseidon-diagonal to the previously qualified transform/quotient/
+lookup combination. It replaces fixed-coefficient multiplications in the
+width-8 Poseidon internal layer with equivalent additions, negation and exact
+halving. The generic path remains available without the feature.
+
+Five alternating repetitions per arm and size, after one warmup per arm:
+
+  Entries  Previous tuned CUDA  Plus Poseidon  OpenCL control
+        4              38.184 s      37.362 s        31.226 s
+        8              72.642 s      71.159 s        59.564 s
+
+These are median proof intervals, including root promotion. The candidate
+wins all ten CUDA pairs and lowers the medians by 2.15% and 2.04%. Whole-launcher
+medians fall from 44.469 to 43.466 seconds and from 79.707 to 78.207 seconds.
+All 216 proofs and 36 roots, including warmups and the OpenCL control, pass
+independent CPU verification. Managed CUDA memory still peaks at 6.94 GiB.
+
+Build this measured combination from lattica-prover-p3:
+
+  cargo build --offline --locked --release --no-default-features -j1 \
+    --features block-v2-wide-lanes,stream,block-v2-capacity-128,gpu-cuda-transform-reuse,gpu-cuda-quotient-tuning,gpu-cuda-lookup-tiling,gpu-cuda-poseidon-diagonal \
+    --bin block-v2-paired-probe
+
+The carry-instruction, quotient-load and constant-index absorption experiments
+did not provide a useful complete-proof improvement and are not included in
+this addition. Their source and screening evidence are retained locally.
+
+This qualification covers capacity-128 aggregation of retained wallet proofs
+on the desktop RTX 5080. It excludes wallet generation, durable application,
+separate CPU audits and sustained transaction throughput. V100 execution,
+larger blocks and multi-GPU operation require their own measurements.
+
+Evidence and exact source/binary pins:
+  docs/evidence/cuda-poseidon-optimization-2026-10-29.json
+  lattica-prover-p3/benchmark-results/cuda-hotspots-20261029/run-03/
+
+Quotient workspace follow-up (2026-10-30)
+---------------------------------------
+
+Add gpu-cuda-quotient-workspace-large to the previously qualified four tuning
+features. It raises the quotient's internal workspace cap from 64 to 256 MiB,
+allowing the measured workload to use 16,384-row tiles instead of 4,096 rows.
+The planner still checks remaining managed memory and each allocation limit.
+The worker retains its 7 GiB managed allowance, 4 GiB context allowance and
+1 GiB headroom; both CUDA arms still peak at 6.94 GiB of managed memory.
+
+One warmup per arm and size, followed by five alternating repetitions:
+
+  Entries  Previous tuned CUDA  Larger workspace  OpenCL control
+        4              35.432 s          31.042 s        30.097 s
+        8              66.896 s          58.384 s        57.402 s
+
+These are median proof-observation intervals, including root promotion.
+The candidate wins all ten CUDA pairs and reduces the medians by 12.39% and
+12.72%. Whole-launcher medians fall from 41.873 to 37.265 seconds and from
+73.964 to 65.247 seconds. All 216 proofs and 36 roots, including warmups and
+OpenCL controls, pass independent CPU verification. Use these fresh controls;
+absolute timings differ from earlier sessions with the same baseline binary.
+
+Median quotient device time falls from 7.437 to 3.141 seconds for four entries
+and from 14.684 to 6.257 seconds for eight. Quotient device calls per proof fall
+from 2,057 to 521. Separate Nsight captures confirm a 64-to-256 block grid with
+64 threads per block; sampled occupancy rises from 4.17% to 12.70%. Both use
+54 registers per thread and show zero measured local-memory traffic. These
+single-launch diagnostics are excluded from the performance comparison.
+All eight profiled proofs and two roots also pass CPU verification.
+
+Clocks were not locked. The GPU changed from P1 with a reported 14,801 MHz
+memory clock to P0/15,001 MHz before four-entry repetition three; all three arms within each round
+shared the observed state and memory clock. Every sample is retained. The
+runner now records memory clock and power state in its existing telemetry query.
+
+Build the measured combination from lattica-prover-p3:
+
+  cargo build --offline --locked --release --no-default-features -j1 \
+    --features block-v2-wide-lanes,stream,block-v2-capacity-128,gpu-cuda-transform-reuse,gpu-cuda-quotient-tuning,gpu-cuda-lookup-tiling,gpu-cuda-poseidon-diagonal,gpu-cuda-quotient-workspace-large \
+    --bin block-v2-paired-probe
+
+Final source passes 204 CUDA core tests, 21 substantive quotient checks with
+the original workspace, and 21 quotient tests under each of memcheck,
+racecheck and synccheck. The rebuilt candidate passes a four-proof/one-root
+CPU-audited smoke run. Wide-sum arithmetic and alternative small-block geometries remain
+unpromoted; their source and measurements are retained in the experiment archive.
+
+This qualification covers the selected capacity-128 aggregation workloads on
+the desktop RTX 5080. It excludes wallet generation, durable application,
+separate CPU audits and sustained transaction throughput. Other GPUs, larger
+blocks and multi-GPU operation need their own qualification. OpenCL remains
+faster in this comparison.
+
+Evidence, exact source/binary pins, validation and diagnostic captures:
+  docs/evidence/cuda-workspace-optimization-2026-10-30.json
+  lattica-prover-p3/benchmark-results/cuda-linear-20261029/
+
+Larger quotient tiles (2026-10-30)
+--------------------------------
+
+Add gpu-cuda-quotient-tiles-32k to the previous tuning combination. It raises
+the maximum quotient tile from 16,384 to 32,768 rows and its internal workspace
+cap from 256 to 512 MiB. Existing managed-memory and per-allocation admission
+still constrain every tile. Both CUDA arms peak at 6.94 GiB of managed memory
+under the same 7 GiB allowance; runtime and host budgets are unchanged.
+
+One warmup per arm and size, then five alternating measured repetitions:
+
+  Entries  Previous tuned CUDA  32k-tile CUDA  OpenCL control
+        4              30.930 s       29.840 s        30.046 s
+        8              58.697 s       56.499 s        57.534 s
+
+These are median proof-observation intervals, including root promotion.
+The candidate wins all ten CUDA pairs, reducing these medians by 3.52% and
+3.74%. Whole-launcher CUDA medians fall from 37.264 to 36.217 seconds and
+from 65.749 to 63.198 seconds. OpenCL launcher medians are 35.564 and
+63.545 seconds. All 216 comparison proofs and 36 roots pass CPU verification.
+
+CUDA baseline/candidate pairs shared the observed power state and memory-clock
+range within each round. Clocks were not locked, and some OpenCL snapshots
+differed; small cross-backend differences need caution. Every sample is retained.
+
+Median quotient device time falls from 3.144 to 2.061 seconds for four entries
+and from 6.282 to 4.105 seconds for eight. Device calls per proof fall
+from 521 to 265. Separate Nsight captures show sampled occupancy rising from
+12.70% to 25.40%, with 54 registers per thread in both arms. All 19 CUDA
+kernel source files are unchanged; host planning provides the larger grid.
+
+The full-counter candidate capture crossed the fixed worker VRAM envelope and
+was retired. Fresh occupancy-only captures for both arms passed under the same
+limits, with all eight proofs and two roots CPU-verified. Use the single metric
+sm__warps_active.avg.pct_of_peak_sustained_active for this bounded diagnostic.
+Failed and successful captures are preserved and excluded from qualification
+timings. The earlier full-counter baseline also passed four proofs and one root.
+
+Build the qualified combination from lattica-prover-p3:
+
+  cargo build --offline --locked --release --no-default-features -j1 \
+    --features block-v2-wide-lanes,stream,block-v2-capacity-128,gpu-cuda-transform-reuse,gpu-cuda-quotient-tuning,gpu-cuda-lookup-tiling,gpu-cuda-poseidon-diagonal,gpu-cuda-quotient-workspace-large,gpu-cuda-quotient-tiles-32k \
+    --bin block-v2-paired-probe
+
+The final source passes 205 CUDA core tests, 22 quotient checks with the previous
+256 MiB workspace, and 22 tests under each of memcheck, racecheck and synccheck.
+The rebuilt candidate also passes a four-proof/one-root CPU-audited smoke run.
+The 64k/1 GiB experiment passed correctness and sanitizers, but its small extra
+screening gain did not justify selecting it for matched performance qualification.
+
+This qualifies the selected capacity-128 aggregation workloads on the desktop
+RTX 5080. Wallet generation, durable application and separate CPU audits are
+excluded. Other GPUs, larger blocks, multi-GPU operation and sustained
+transaction throughput require separate qualification.
+
+Evidence and exact source/binary pins:
+  docs/evidence/cuda-quotient-tiles-optimization-2026-10-30.json
+  lattica-prover-p3/benchmark-results/cuda-tiles-20261030/
+
+Transform follow-up (2026-10-30)
+------------------------------
+
+The existing 32k-tile configuration remains recommended. Static NTT
+specialization plus shared twiddle tables passed correctness checks but missed
+the 2% adoption threshold. No experimental transform code was integrated.
+
+One warmup per arm and size, then five alternating measured repetitions on the
+desktop RTX 5080 produced these median proof-observation intervals:
+
+  Entries  Qualified CUDA  Transform candidate  OpenCL control
+        4        29.824 s             29.475 s        30.184 s
+        8        56.288 s             55.688 s        57.777 s
+
+The candidate wins all ten proof pairs, reducing the medians by 1.17% and 1.07%.
+Every paired proof reduction is below 2%; no repeat is recommended. Whole-launcher
+CUDA medians fall from 36.263 to 35.711 seconds and from 63.299 to 62.848 seconds.
+OpenCL launcher medians are 35.662 and 64.149 seconds. All 216 proofs and 36 roots,
+including warmups, pass independent CPU verification with no memory-limit events.
+
+Transform device-time medians fall from 4.545 to 4.259 seconds and from 9.201 to
+8.628 seconds. This local gain has limited impact on the full proof interval.
+Both CUDA arms peak at the same 6.94 GiB of managed memory under the existing
+7 GiB allowance. Host, GPU, thread and zero-swap limits remain unchanged.
+Active GPU samples share P1 and 14,801 MHz memory clocks; clocks were not locked.
+All samples and raw telemetry are retained, with no failed telemetry queries.
+
+Validation includes 206 CUDA core checks for the static variant, six combined
+transform checks, and five baseline transform checks. Each experimental variant
+also passes six checks under each of memcheck, racecheck and synccheck, with no
+errors, race hazards or memory leaks. SM70/SM120 compilation passes; GPU execution
+qualification is limited to the desktop RTX 5080.
+
+The global power-cache prototype failed memory-admission checks and was rejected.
+Shared-table-only and static-only screens also missed the performance threshold;
+the separate context/stream clearing microbenchmark showed negligible benefit.
+All 840 opening main source hashes remain unchanged, and all 19 owned services
+are retired. Experimental source and binaries remain archived separately.
+
+These capacity-128 measurements include aggregation and root promotion of retained
+wallet proofs. Wallet generation, durable application and separate CPU audits are
+excluded; this does not establish sustained transaction throughput.
+
+Evidence, exact source/binary pins, failed attempts and cleanup receipts:
+  docs/evidence/cuda-transform-optimization-review-2026-10-30.json
+  lattica-prover-p3/benchmark-results/cuda-transform-tables-20261030/run-06/
+
+Transform integration at user request (2026-10-30)
+-------------------------------------------------
+
+Following the comparison above, the user requested implementation of the measured
+candidate. The five reviewed files are integrated on main, with both optimizations
+still opt-in. The 1.17%/1.07% gains and the earlier below-threshold decision remain
+recorded; this is an explicit integration exception to that performance gate.
+
+Add gpu-cuda-transform-static,gpu-cuda-transform-twiddle-table to the qualified
+32k-tile combination above for subsequent tests. The final main source passes
+206 CUDA core tests, five fallback transform tests and six transform tests under
+each of memcheck, racecheck and synccheck, with no errors, hazards or leaks. A
+rebuilt four-proof/one-root smoke run passes independent CPU verification.
+Reviewed and measured kernel PTX match on SM70 and SM120. Runtime budgets are
+unchanged. Execution qualification remains limited to the desktop RTX 5080.
+
+  docs/evidence/cuda-transform-integration-2026-10-30.json
+  lattica-prover-p3/benchmark-results/cuda-transform-integration-20261030/run-01/
+
+Host allocation follow-up (2026-10-30)
+------------------------------------
+CPU sampling identified temporary operation wire vectors in program construction
+and CUDA witness preparation. Fixed-capacity inline lists now preserve the same
+port ordering, duplicate reads and hint semantics without those heap allocations.
+This shared host change needs no additional feature flag; use the integrated
+transform configuration above.
+
+One warmup per arm and size, then five alternating measured repetitions:
+
+  Entries  Previous CUDA  Inline wire lists  OpenCL control  CUDA reduction
+        4       29.648 s           28.304 s        30.222 s           4.53%
+        8       55.549 s           53.809 s        57.425 s           3.13%
+
+These are median proof-observation intervals. Whole-launcher medians fall from
+35.713 to 34.661 seconds and from 62.743 to 60.737 seconds. All ten CUDA pairs
+improve both measures. All 216 comparison proofs and 36 roots pass independent
+CPU verification, with no memory-limit events. Both CUDA arms peak at 6.94 GiB
+of managed GPU memory under the existing 7 GiB allowance.
+
+The candidate passes 54 focused CPU checks, 206 CUDA checks and six witness tests
+under each of memcheck, racecheck and synccheck, with no errors, hazards or leaks.
+The integrated main source matches all 842 candidate source fingerprints; Cargo
+reuses the byte-identical qualified CUDA executable. Its smoke run passes four
+independent CPU proof audits and one root audit. The OpenCL build passes six
+compiler/schedule checks and two GPU witness conformance checks.
+Sampled performance states and memory clocks match within every CUDA pair;
+clocks are not locked. The report preserves the P0/P1 transition and all telemetry.
+The separate RNG-fusion screen improves its first measured interval by only
+0.31% and remains outside main.
+
+For host diagnostics, Nsight assignments support cpu_sampling=true and
+cpu_backtrace="fp". Build into a separate target directory with
+RUSTFLAGS="-C force-frame-pointers=yes -C debuginfo=1" and preserve the binary pins.
+The successful diagnostic capture passes four proof audits and one root audit;
+its timings are excluded from performance comparisons. Some system/driver frames
+remain unresolved. Inclusive CPU sample counts are not wall-time estimates.
+
+These measurements cover aggregation and root promotion of retained wallet proofs
+on the desktop RTX 5080. Wallet generation, durable application and CPU audits
+are outside the timing boundary; sustained transaction throughput and other
+hardware require separate measurements.
+
+  docs/evidence/cuda-host-allocation-optimization-2026-10-30.json
+  lattica-prover-p3/benchmark-results/cuda-wire-ports-20261030/run-01/
+  lattica-prover-p3/benchmark-results/cuda-host-profile-20261030/run-01/

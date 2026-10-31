@@ -24,6 +24,7 @@ struct Allocation {
 
 impl Runtime {
     pub(crate) fn allocate(&self, words: usize) -> Result<Buffer> {
+        let _profile = super::profile::range(c"cuda.allocate");
         let bytes = words
             .checked_mul(8)
             .ok_or("CUDA allocation size overflow")?;
@@ -81,6 +82,7 @@ impl Buffer {
     }
 
     pub(crate) fn write(&self, first: usize, words: &[u64]) -> Result<()> {
+        let _profile = super::profile::range(c"cuda.upload");
         let range = self.range(first, words.len())?;
         if words.is_empty() {
             return Ok(());
@@ -101,6 +103,7 @@ impl Buffer {
     }
 
     pub(crate) fn read(&self, first: usize, words: &mut [u64]) -> Result<()> {
+        let _profile = super::profile::range(c"cuda.download");
         let range = self.range(first, words.len())?;
         if words.is_empty() {
             return Ok(());
@@ -160,6 +163,7 @@ impl Buffer {
 
 impl Drop for Allocation {
     fn drop(&mut self) {
+        let _profile = super::profile::range(c"cuda.free");
         let _guard = self.state.cleanup_lock();
         cleanup(self.state.drain(), "buffer drain");
         // All allocations are private by default. Clearing completes before

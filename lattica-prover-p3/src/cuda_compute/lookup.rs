@@ -16,7 +16,12 @@ use p3_air::symbolic::AirLayout;
 use p3_lookup::Lookup;
 use std::sync::Arc;
 
+#[cfg(not(feature = "gpu-cuda-lookup-tiling"))]
 const TILE_BYTES: usize = 2 << 20;
+// The planner still caps this by live managed storage and allocation limits.
+// More resident rows amortize the tiny single-block expression launches.
+#[cfg(feature = "gpu-cuda-lookup-tiling")]
+const TILE_BYTES: usize = 16 << 20;
 const PROGRAM_HOST_BYTES: usize = 16 << 20;
 
 fn source() -> String {
@@ -279,158 +284,148 @@ impl Lookups {
             .collect::<Result<Vec<_>>>()?;
         let terminal = self.runtime.allocate(extension.degree())?;
         let pre = preprocessed.unwrap_or(main);
+        let mut submissions =
+            super::kernel::Submissions::new(&self.runtime, self.runtime.limits().max_pending)?;
         for first in (0..spec.rows()).step_by(plan.rows) {
             let rows = plan.rows.min(spec.rows() - first);
             // The public compiler bounds every input/register/store offset.
             // All row windows and output allocations were admitted together.
             unsafe {
                 if program.expression_words != 0 {
-                    self.gather
-                        .launch(
-                            super::transform::linear_launch(rows * program.row_words)?,
-                            &[
-                                Argument::Buffer(&main.buffer),
-                                Argument::Buffer(&pre.buffer),
-                                Argument::Buffer(&main.buffer),
-                                Argument::Buffer(&input),
-                                Argument::U32(program.layout.main_width as u32),
-                                Argument::U32(program.layout.preprocessed_width as u32),
-                                Argument::U32(0),
-                                Argument::U32(u32::from(main.spec.order == RowOrder::BitReversed)),
-                                Argument::U32(u32::from(pre.spec.order == RowOrder::BitReversed)),
-                                Argument::U32(0),
-                                Argument::U32(spec.log_rows),
-                                Argument::U32(1),
-                                Argument::U32(first as u32),
-                                Argument::U32(rows as u32),
-                            ],
-                        )?
-                        .finish()?;
-                    self.expressions
-                        .launch(
-                            super::transform::linear_launch(rows)?,
-                            &[
-                                Argument::Buffer(&prepared.code),
-                                Argument::U32((program.instructions.len() / 5) as u32),
-                                Argument::Buffer(&input),
-                                Argument::U32(program.row_words as u32),
-                                Argument::Buffer(public),
-                                Argument::Buffer(&scratch),
-                                Argument::Buffer(&expressions),
-                                Argument::U32(program.expression_words as u32),
-                                Argument::U32(rows as u32),
-                                Argument::U32(first as u32),
-                                Argument::U32(spec.rows() as u32),
-                            ],
-                        )?
-                        .finish()?;
+                    submissions.push(self.gather.launch(
+                        super::transform::linear_launch(rows * program.row_words)?,
+                        &[
+                            Argument::Buffer(&main.buffer),
+                            Argument::Buffer(&pre.buffer),
+                            Argument::Buffer(&main.buffer),
+                            Argument::Buffer(&input),
+                            Argument::U32(program.layout.main_width as u32),
+                            Argument::U32(program.layout.preprocessed_width as u32),
+                            Argument::U32(0),
+                            Argument::U32(u32::from(main.spec.order == RowOrder::BitReversed)),
+                            Argument::U32(u32::from(pre.spec.order == RowOrder::BitReversed)),
+                            Argument::U32(0),
+                            Argument::U32(spec.log_rows),
+                            Argument::U32(1),
+                            Argument::U32(first as u32),
+                            Argument::U32(rows as u32),
+                        ],
+                    )?)?;
+                    submissions.push(self.expressions.launch(
+                        super::transform::linear_launch(rows)?,
+                        &[
+                            Argument::Buffer(&prepared.code),
+                            Argument::U32((program.instructions.len() / 5) as u32),
+                            Argument::Buffer(&input),
+                            Argument::U32(program.row_words as u32),
+                            Argument::Buffer(public),
+                            Argument::Buffer(&scratch),
+                            Argument::Buffer(&expressions),
+                            Argument::U32(program.expression_words as u32),
+                            Argument::U32(rows as u32),
+                            Argument::U32(first as u32),
+                            Argument::U32(spec.rows() as u32),
+                        ],
+                    )?)?;
                 }
                 let count = rows * program.tuple_count();
                 if count != 0 {
-                    self.denominators
-                        .launch(
-                            super::transform::linear_launch(count)?,
-                            &[
-                                Argument::Buffer(&expressions),
-                                Argument::U32(program.expression_words as u32),
-                                Argument::Buffer(&prepared.tuples),
-                                Argument::U32(program.tuple_count() as u32),
-                                Argument::Buffer(challenges),
-                                Argument::Buffer(&inverses),
-                                Argument::U32(rows as u32),
-                                Argument::U32(extension.degree() as u32),
-                            ],
-                        )?
-                        .finish()?;
-                    self.inverse
-                        .launch(
-                            Launch {
-                                blocks: count.div_ceil(128) as u32,
-                                threads: 128,
-                                shared_bytes: 0,
-                            },
-                            &[
-                                Argument::Buffer(&inverses),
-                                Argument::U32(count as u32),
-                                Argument::Buffer(&status),
-                                Argument::U32(extension.degree() as u32),
-                            ],
-                        )?
-                        .finish()?;
-                }
-                self.fractions
-                    .launch(
-                        super::transform::linear_launch(rows)?,
+                    submissions.push(self.denominators.launch(
+                        super::transform::linear_launch(count)?,
                         &[
-                            Argument::Buffer(&inverses),
                             Argument::Buffer(&expressions),
                             Argument::U32(program.expression_words as u32),
                             Argument::Buffer(&prepared.tuples),
-                            Argument::Buffer(&prepared.boundaries),
-                            Argument::U32(program.lookup_count() as u32),
                             Argument::U32(program.tuple_count() as u32),
-                            Argument::Buffer(&output),
-                            Argument::Buffer(&scans[0]),
+                            Argument::Buffer(challenges),
+                            Argument::Buffer(&inverses),
                             Argument::U32(rows as u32),
-                            Argument::U32(first as u32),
                             Argument::U32(extension.degree() as u32),
                         ],
-                    )?
-                    .finish()?;
+                    )?)?;
+                    submissions.push(self.inverse.launch(
+                        Launch {
+                            blocks: count.div_ceil(128) as u32,
+                            threads: 128,
+                            shared_bytes: 0,
+                        },
+                        &[
+                            Argument::Buffer(&inverses),
+                            Argument::U32(count as u32),
+                            Argument::Buffer(&status),
+                            Argument::U32(extension.degree() as u32),
+                        ],
+                    )?)?;
+                }
+                submissions.push(self.fractions.launch(
+                    super::transform::linear_launch(rows)?,
+                    &[
+                        Argument::Buffer(&inverses),
+                        Argument::Buffer(&expressions),
+                        Argument::U32(program.expression_words as u32),
+                        Argument::Buffer(&prepared.tuples),
+                        Argument::Buffer(&prepared.boundaries),
+                        Argument::U32(program.lookup_count() as u32),
+                        Argument::U32(program.tuple_count() as u32),
+                        Argument::Buffer(&output),
+                        Argument::Buffer(&scans[0]),
+                        Argument::U32(rows as u32),
+                        Argument::U32(first as u32),
+                        Argument::U32(extension.degree() as u32),
+                    ],
+                )?)?;
             }
         }
+        submissions.finish()?;
         let mut failed = [0];
         status.read(0, &mut failed)?;
         if failed[0] != 0 {
             return Err("active CUDA lookup denominator is zero".into());
         }
+        let mut submissions =
+            super::kernel::Submissions::new(&self.runtime, scans.len().saturating_mul(2))?;
         // Each 128-lane block writes one allocated parent total. Propagate the
         // parents back down before converting the inclusive scan to column zero.
         unsafe {
             for (index, values) in scans.iter().enumerate() {
                 let rows = plan.scan_rows[index];
-                self.scan
-                    .launch(
-                        Launch {
-                            blocks: rows.div_ceil(128) as u32,
-                            threads: 128,
-                            shared_bytes: 0,
-                        },
-                        &[
-                            Argument::Buffer(values),
-                            Argument::Buffer(scans.get(index + 1).unwrap_or(&terminal)),
-                            Argument::U32(rows as u32),
-                            Argument::U32(extension.degree() as u32),
-                        ],
-                    )?
-                    .finish()?;
-            }
-            for index in (0..scans.len() - 1).rev() {
-                self.offsets
-                    .launch(
-                        super::transform::linear_launch(plan.scan_rows[index])?,
-                        &[
-                            Argument::Buffer(&scans[index]),
-                            Argument::Buffer(&scans[index + 1]),
-                            Argument::U32(plan.scan_rows[index] as u32),
-                            Argument::U32(extension.degree() as u32),
-                        ],
-                    )?
-                    .finish()?;
-            }
-            self.accumulator
-                .launch(
-                    super::transform::linear_launch(spec.rows())?,
+                submissions.push(self.scan.launch(
+                    Launch {
+                        blocks: rows.div_ceil(128) as u32,
+                        threads: 128,
+                        shared_bytes: 0,
+                    },
                     &[
-                        Argument::Buffer(&scans[0]),
-                        Argument::Buffer(&output),
-                        Argument::U32(spec.rows() as u32),
-                        Argument::U32(spec.columns as u32),
+                        Argument::Buffer(values),
+                        Argument::Buffer(scans.get(index + 1).unwrap_or(&terminal)),
+                        Argument::U32(rows as u32),
                         Argument::U32(extension.degree() as u32),
                     ],
-                )?
-                .finish()?;
+                )?)?;
+            }
+            for index in (0..scans.len() - 1).rev() {
+                submissions.push(self.offsets.launch(
+                    super::transform::linear_launch(plan.scan_rows[index])?,
+                    &[
+                        Argument::Buffer(&scans[index]),
+                        Argument::Buffer(&scans[index + 1]),
+                        Argument::U32(plan.scan_rows[index] as u32),
+                        Argument::U32(extension.degree() as u32),
+                    ],
+                )?)?;
+            }
+            submissions.push(self.accumulator.launch(
+                super::transform::linear_launch(spec.rows())?,
+                &[
+                    Argument::Buffer(&scans[0]),
+                    Argument::Buffer(&output),
+                    Argument::U32(spec.rows() as u32),
+                    Argument::U32(spec.columns as u32),
+                    Argument::U32(extension.degree() as u32),
+                ],
+            )?)?;
         }
+        submissions.finish()?;
         Ok(LookupWitness {
             trace: Matrix {
                 spec,

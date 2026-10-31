@@ -158,6 +158,7 @@ impl Kernel {
         launch: Launch,
         arguments: &[Argument<'_>],
     ) -> Result<Completion> {
+        let _profile = super::profile::stage(self.stage);
         let state = &self.module.inner.state;
         if launch.blocks == 0
             || launch.blocks > state.identity.max_grid_x
@@ -232,12 +233,109 @@ pub(crate) struct Completion {
     reporting: Option<super::reporting::Ticket>,
 }
 
+/// A bounded group on one stream. Callers retain every argument allocation
+/// until `finish` returns, including on errors. Each command keeps its own
+/// timing events, budget reservation and stage-reporting ticket.
+#[cfg(any(feature = "gpu-cuda-batched-submission", test))]
+pub(super) struct SubmissionBatch {
+    state: Arc<State>,
+    receipts: Vec<Completion>,
+    limit: usize,
+}
+
+#[cfg(any(feature = "gpu-cuda-batched-submission", test))]
+impl SubmissionBatch {
+    pub fn new(runtime: &Runtime, commands: usize) -> Result<Self> {
+        let available = runtime
+            .limits()
+            .max_pending
+            .checked_sub(runtime.snapshot().pending_commands)
+            .ok_or("CUDA submission accounting exceeds command allowance")?;
+        let limit = available.min(commands);
+        if limit == 0 {
+            return Err("CUDA submission batch has no available command slots".into());
+        }
+        // Limits::validate bounds this allocation to at most 64 receipts.
+        Ok(Self {
+            state: runtime.state.clone(),
+            receipts: Vec::with_capacity(limit),
+            limit,
+        })
+    }
+
+    pub fn push(&mut self, completion: Completion) -> Result<()> {
+        if !Arc::ptr_eq(&self.state, &completion.state) || self.receipts.len() >= self.limit {
+            return Err("CUDA submission batch ownership or capacity changed".into());
+        }
+        self.receipts.push(completion);
+        if self.receipts.len() == self.limit {
+            self.flush()?;
+        }
+        Ok(())
+    }
+
+    fn flush(&mut self) -> Result<()> {
+        // The last event covers all preceding work on this stream. Earlier
+        // receipts still collect their own timestamps and reporting tickets.
+        // If any finish fails, dropping the rest invalidates/drains the runtime.
+        while let Some(completion) = self.receipts.pop() {
+            completion.finish()?;
+        }
+        Ok(())
+    }
+
+    pub fn finish(mut self) -> Result<()> {
+        self.flush()
+    }
+}
+
+/// Default builds finish each receipt immediately, without allocating a queue.
+/// The opt-in candidate may defer waits within one GPU dependency sequence.
+pub(super) struct Submissions {
+    #[cfg(feature = "gpu-cuda-batched-submission")]
+    batch: Option<SubmissionBatch>,
+}
+
+impl Submissions {
+    pub fn new(runtime: &Runtime, commands: usize) -> Result<Self> {
+        #[cfg(feature = "gpu-cuda-batched-submission")]
+        let batch = if commands > 1 {
+            Some(SubmissionBatch::new(runtime, commands)?)
+        } else {
+            None
+        };
+        #[cfg(not(feature = "gpu-cuda-batched-submission"))]
+        let _ = (runtime, commands);
+        Ok(Self {
+            #[cfg(feature = "gpu-cuda-batched-submission")]
+            batch,
+        })
+    }
+
+    pub fn push(&mut self, completion: Completion) -> Result<()> {
+        #[cfg(feature = "gpu-cuda-batched-submission")]
+        if let Some(batch) = &mut self.batch {
+            return batch.push(completion);
+        }
+        completion.finish().map(|_| ())
+    }
+
+    pub fn finish(self) -> Result<()> {
+        #[cfg(feature = "gpu-cuda-batched-submission")]
+        if let Some(batch) = self.batch {
+            return batch.finish();
+        }
+        Ok(())
+    }
+}
+
 impl Completion {
     pub(super) fn is_reported(&self) -> bool {
         self.reporting.is_some()
     }
 
     pub(crate) fn finish(mut self) -> Result<u64> {
+        let _profile = super::profile::range(c"cuda.wait");
         {
             let _guard = self.state.enter()?;
             let events = self

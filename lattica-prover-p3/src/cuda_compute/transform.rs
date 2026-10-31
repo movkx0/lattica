@@ -4,7 +4,45 @@ use super::{Argument, Buffer, Kernel, Launch, Limits, Matrix, Result, Runtime};
 use crate::gpu_matrix::{roots, MatrixSpec, MemoryPlan, RowOrder, GOLDILOCKS_MODULUS};
 use std::sync::Arc;
 
+#[cfg(not(feature = "gpu-cuda-transform-reuse"))]
 pub(super) const SOURCE: &str = concat!(include_str!("field.cuh"), include_str!("transform.cu"));
+#[cfg(all(
+    feature = "gpu-cuda-transform-reuse",
+    not(feature = "gpu-cuda-transform-twiddle-table"),
+    not(feature = "gpu-cuda-transform-static")
+))]
+pub(super) const SOURCE: &str = concat!(
+    "#define LATTICA_CUDA_TRANSFORM_REUSE 1\n",
+    include_str!("field.cuh"),
+    include_str!("transform.cu")
+);
+#[cfg(all(
+    feature = "gpu-cuda-transform-twiddle-table",
+    not(feature = "gpu-cuda-transform-static")
+))]
+pub(super) const SOURCE: &str = concat!(
+    "#define LATTICA_CUDA_TRANSFORM_REUSE 1\n#define LATTICA_CUDA_TRANSFORM_TWIDDLE_TABLE 1\n",
+    include_str!("field.cuh"),
+    include_str!("transform.cu")
+);
+#[cfg(all(
+    feature = "gpu-cuda-transform-static",
+    not(feature = "gpu-cuda-transform-twiddle-table")
+))]
+pub(super) const SOURCE: &str = concat!(
+    "#define LATTICA_CUDA_TRANSFORM_REUSE 1\n#define LATTICA_CUDA_TRANSFORM_STATIC 1\n",
+    include_str!("field.cuh"),
+    include_str!("transform.cu")
+);
+#[cfg(all(
+    feature = "gpu-cuda-transform-static",
+    feature = "gpu-cuda-transform-twiddle-table"
+))]
+pub(super) const SOURCE: &str = concat!(
+    "#define LATTICA_CUDA_TRANSFORM_REUSE 1\n#define LATTICA_CUDA_TRANSFORM_STATIC 1\n#define LATTICA_CUDA_TRANSFORM_TWIDDLE_TABLE 1\n",
+    include_str!("field.cuh"),
+    include_str!("transform.cu")
+);
 
 #[derive(Clone, Debug)]
 struct NttGroup {
@@ -12,6 +50,20 @@ struct NttGroup {
     stages: u32,
     log_columns: u32,
     launch: Launch,
+}
+
+fn ntt_shared_words(stages: u32, log_columns: u32) -> usize {
+    let elements = 1usize << (stages + log_columns);
+    if cfg!(feature = "gpu-cuda-transform-reuse") {
+        let twiddles = if cfg!(feature = "gpu-cuda-transform-twiddle-table") && log_columns >= 2 {
+            (1usize << stages) - 1
+        } else {
+            0
+        };
+        elements + (1usize << (stages - 1)) + stages as usize + twiddles
+    } else {
+        elements
+    }
 }
 
 fn ntt_groups(log_rows: u32, width: usize, shared_bytes: u32) -> Result<Vec<NttGroup>> {
@@ -28,7 +80,10 @@ fn ntt_groups(log_rows: u32, width: usize, shared_bytes: u32) -> Result<Vec<NttG
         .ok_or("CUDA transform width overflow")?
         .trailing_zeros()
         .min(4);
-    let cap = (tile_bits - column_bits).min(log_rows);
+    let mut cap = (tile_bits - column_bits).min(log_rows);
+    while ntt_shared_words(cap, column_bits) * 8 > shared_bytes as usize {
+        cap -= 1;
+    }
     let groups = log_rows.div_ceil(cap);
     let (base, extra) = (log_rows / groups, log_rows % groups);
     let mut first = 0;
@@ -47,7 +102,7 @@ fn ntt_groups(log_rows: u32, width: usize, shared_bytes: u32) -> Result<Vec<NttG
                 launch: Launch {
                     blocks,
                     threads: (elements / 2).clamp(32, 256) as u32,
-                    shared_bytes: (elements * 8) as u32,
+                    shared_bytes: (ntt_shared_words(stages, column_bits) * 8) as u32,
                 },
             };
             first += stages;
@@ -101,6 +156,8 @@ pub(super) fn storage_plan(
 pub(crate) struct Transforms {
     pub(super) runtime: Runtime,
     ntt: Kernel,
+    #[cfg(feature = "gpu-cuda-transform-static")]
+    static_ntt: [Kernel; 3],
     parameters: Kernel,
     scale: Kernel,
     pub(super) prefix: Kernel,
@@ -115,6 +172,12 @@ impl Transforms {
         result.ntt = result
             .ntt
             .with_stage(crate::proving::Stage::FinalPolynomial);
+        #[cfg(feature = "gpu-cuda-transform-static")]
+        {
+            result.static_ntt = result
+                .static_ntt
+                .map(|kernel| kernel.with_stage(crate::proving::Stage::FinalPolynomial));
+        }
         result.parameters = result
             .parameters
             .with_stage(crate::proving::Stage::FinalPolynomial);
@@ -129,6 +192,12 @@ impl Transforms {
         Ok(Self {
             runtime: runtime.clone(),
             ntt: module.kernel_for_stage("ntt_tile", crate::proving::Stage::Transform)?,
+            #[cfg(feature = "gpu-cuda-transform-static")]
+            static_ntt: [
+                module.kernel_for_stage("ntt_tile_s6", crate::proving::Stage::Transform)?,
+                module.kernel_for_stage("ntt_tile_s7", crate::proving::Stage::Transform)?,
+                module.kernel_for_stage("ntt_tile_s8", crate::proving::Stage::Transform)?,
+            ],
             parameters: module
                 .kernel_for_stage("transform_parameters", crate::proving::Stage::Transform)?,
             scale: module.kernel_for_stage("transform_scale", crate::proving::Stage::Transform)?,
@@ -211,6 +280,7 @@ impl Transforms {
             return Err("CUDA transform buffer bounds or aliasing".into());
         }
         let mut in_scratch = true;
+        let mut submissions = super::kernel::Submissions::new(&self.runtime, groups.len())?;
         for (i, group) in groups.iter().enumerate() {
             let first = i == 0;
             let reverse = i + 1 == groups.len() && output_order == RowOrder::BitReversed;
@@ -222,12 +292,22 @@ impl Transforms {
                 (scratch, scratch)
             };
             in_scratch = output.pointer() == scratch.pointer();
+            let kernel = &self.ntt;
+            #[cfg(feature = "gpu-cuda-transform-static")]
+            let kernel = if group.log_columns == 4
+                && group.launch.threads == 256
+                && (6..=8).contains(&group.stages)
+            {
+                &self.static_ntt[(group.stages - 6) as usize]
+            } else {
+                kernel
+            };
             // The tile planner partitions complete rows/columns into disjoint
             // blocks. First/last permutations use distinct storage; middle
-            // stages access only their block's own tile. Shared bytes match
-            // 2^(stages+log_columns) u64 words and roots cover every stage.
-            unsafe {
-                self.ntt.launch(
+            // stages access only their block's own tile. Shared bytes cover
+            // the tile and optional power tables; roots cover every stage.
+            let completion = unsafe {
+                kernel.launch(
                     group.launch,
                     &[
                         Argument::Buffer(input),
@@ -243,9 +323,10 @@ impl Transforms {
                         Argument::Buffer(roots),
                     ],
                 )?
-            }
-            .finish()?;
+            };
+            submissions.push(completion)?;
         }
+        submissions.finish()?;
         Ok(in_scratch)
     }
 
@@ -274,11 +355,16 @@ impl Transforms {
         {
             return Err("CUDA scale buffer bounds".into());
         }
+        let mut launch = linear_launch(words)?;
+        if cfg!(feature = "gpu-cuda-transform-reuse") {
+            // At most one distinct row per lane; includes partial final blocks.
+            launch.shared_bytes = launch.threads * 8;
+        }
         // One lane per output word; padded rows never read source. An exact
         // in-place source/output alias is safe because each lane reads itself.
         unsafe {
             self.scale.launch(
-                linear_launch(words)?,
+                launch,
                 &[
                     Argument::Buffer(source),
                     Argument::Buffer(output),

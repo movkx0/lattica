@@ -4,3 +4,5 @@
  */
 #include <nvtx3/nvToolsExt.h>
 void lattica_profile_mark(const char *label) { nvtxMarkA(label); }
+void lattica_profile_push(const char *label) { nvtxRangePushA(label); }
+void lattica_profile_pop(void) { nvtxRangePop(); }

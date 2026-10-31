@@ -5,6 +5,8 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 
 #[path = "tests/events.rs"]
 mod events;
+#[path = "tests/submission.rs"]
+mod submission;
 
 const SOURCE: &str = r#"
 extern "C" __global__ void write_words(unsigned long long* output,

@@ -167,6 +167,86 @@ fn cuda_poseidon2_matches_independent_cpu_permutation() {
 
 #[test]
 #[ignore = "requires CUDA and NVRTC; run serially"]
+fn cuda_poseidon_internal_matrix_matches_cpu_at_reduction_boundaries() {
+    let runtime = runtime(2 << 20, 1 << 20);
+    let source = format!(
+        "{SOURCE}\n{}",
+        r#"
+extern "C" __global__ void internal_matrix_probe(
+    const u64 *input, u64 *output, const u64 *constants, u32 rows) {
+    const u32 row = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row >= rows) return;
+    u64 state[8];
+    #pragma unroll
+    for (u32 i = 0; i < 8; ++i) state[i] = input[(u64)row * 8 + i];
+    poseidon_internal(state, constants);
+    #pragma unroll
+    for (u32 i = 0; i < 8; ++i) output[(u64)row * 8 + i] = gl_canon(state[i]);
+}
+"#
+    );
+    let module = runtime.compile(&source).unwrap();
+    let kernel = module.kernel("internal_matrix_probe").unwrap();
+    let edges = [
+        0,
+        1,
+        2,
+        3,
+        P - 2,
+        P - 1,
+        P,
+        P + 1,
+        P + 2,
+        u64::MAX - 1,
+        u64::MAX,
+        (1 << 63) - 1,
+        1 << 63,
+        (1 << 63) + 1,
+    ];
+    let mut raw: Vec<u64> = edges.into_iter().flat_map(|word| [word; 8]).collect();
+    raw.extend(raw_words(513 * 8, 0xda94_2042_e4dd_58b5));
+    let rows = raw.len() / 8;
+    let input = runtime.allocate(raw.len()).unwrap();
+    input.write(0, &raw).unwrap();
+    let output = runtime.allocate(raw.len()).unwrap();
+    let constants = poseidon_constants(&runtime).unwrap();
+    // Each live thread reads and writes exactly one eight-word state.
+    unsafe {
+        kernel.launch(
+            Launch {
+                blocks: rows.div_ceil(64) as u32,
+                threads: 64,
+                shared_bytes: 0,
+            },
+            &[
+                Argument::Buffer(&input),
+                Argument::Buffer(&output),
+                Argument::Buffer(&constants),
+                Argument::U32(rows as u32),
+            ],
+        )
+    }
+    .unwrap()
+    .finish()
+    .unwrap();
+    let (_, _, _, diagonal) = crate::gpu_constants::poseidon2_consts();
+    let expected: Vec<u64> = raw
+        .chunks_exact(8)
+        .flat_map(|words| {
+            let state: [Val; 8] = std::array::from_fn(|i| Val::from_u64(words[i]));
+            let sum: Val = state.iter().copied().sum();
+            (0..8)
+                .map(|i| (state[i] * Val::from_u64(diagonal[i]) + sum).as_canonical_u64())
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    let mut actual = vec![0; raw.len()];
+    output.read(0, &mut actual).unwrap();
+    assert_eq!(actual, expected);
+}
+
+#[test]
+#[ignore = "requires CUDA and NVRTC; run serially"]
 fn cuda_salted_commitments_and_paths_match_cpu_in_both_row_orders() {
     let runtime = runtime(16 << 20, 8 << 20);
     let program = Commitments::new(&runtime).unwrap();

@@ -118,6 +118,8 @@ pub(super) struct State {
 
 impl Runtime {
     pub(crate) fn new(uuid: &str, limits: Limits) -> Result<Self> {
+        super::profile::initialize()?;
+        let _profile = super::profile::range(c"cuda.initialize");
         let required = limits.validate()?;
         let normalized = normalized_uuid(uuid)?;
         let identity = inventory()?
@@ -235,6 +237,7 @@ impl State {
     }
 
     pub fn drain(&self) -> Result<()> {
+        let _profile = super::profile::range(c"cuda.drain");
         self.context.bind_to_thread().map_err(error)?;
         self.stream.synchronize().map_err(error)
     }

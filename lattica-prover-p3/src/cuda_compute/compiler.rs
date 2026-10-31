@@ -58,13 +58,17 @@ pub(super) fn identity() -> Result<ToolchainIdentity> {
     })
 }
 
-pub(super) fn options(capability: u32) -> [String; 4] {
-    [
+pub(super) fn options(capability: u32) -> Vec<String> {
+    let mut options = vec![
         format!("--gpu-architecture=compute_{capability}"),
         "--std=c++17".into(),
         "--generate-line-info".into(),
         "--modify-stack-limit=false".into(),
-    ]
+    ];
+    if cfg!(feature = "gpu-cuda-poseidon-diagonal") {
+        options.push("--define-macro=LATTICA_CUDA_POSEIDON_DIAGONAL=1".into());
+    }
+    options
 }
 
 pub(super) fn compile(source: &str, capability: u32) -> Result<Vec<u8>> {
@@ -75,6 +79,7 @@ pub(super) fn compile(source: &str, capability: u32) -> Result<Vec<u8>> {
 /// A valid specialization may exceed the fixed PTX envelope. That outcome is
 /// distinct from compiler/driver errors and permits the existing GPU interpreter.
 pub(super) fn compile_optional(source: &str, capability: u32) -> Result<Option<Vec<u8>>> {
+    let _profile = super::profile::range(c"cuda.compile");
     compile_with_limit(source, capability, MAX_IMAGE)
 }
 

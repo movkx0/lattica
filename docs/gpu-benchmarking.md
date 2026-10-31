@@ -14,6 +14,38 @@ Use a clean checkout of `main`, then pin one commit for the entire comparison. R
 
 Do not bypass resource admission to run another vendor. A backend compiling is not hardware qualification.
 
+For CUDA/OpenCL comparisons and Nsight diagnostics, use the
+[CUDA profiling guide](cuda-profiling.txt). It provides a capacity-128 harness
+with alternating trials, independent CPU proof audits, source/binary pins and
+separate instrumented runs, plus the measured RTX 5080 tuning configuration.
+The qualified [quotient tile comparison](evidence/cuda-quotient-tiles-optimization-2026-10-30.json)
+measures a further 3.52%/3.74% reduction in four/eight-entry CUDA proof intervals.
+Add opt-in `gpu-cuda-quotient-tiles-32k` to the prior tuning combination for larger
+tiles within the same memory limits. The guide reports both proof and launcher
+medians for CUDA and OpenCL, along with validation and profiling boundaries.
+
+The later [transform comparison](evidence/cuda-transform-optimization-review-2026-10-30.json)
+measures only 1.17%/1.07% lower four/eight-entry proof intervals from static NTT
+specialization plus shared twiddle tables. It misses the 2% adoption threshold;
+that comparison initially kept the existing CUDA build recipe. All 216 comparison proofs
+and 36 roots pass independent CPU verification. These are retained-proof
+aggregation measurements, not sustained transaction throughput.
+
+The [subsequent transform integration](evidence/cuda-transform-integration-2026-10-30.json)
+adds `gpu-cuda-transform-static,gpu-cuda-transform-twiddle-table` at the user's
+request. Use both flags with the 32k-tile combination for the next comparison.
+The exact main source passes core, fallback and sanitizer checks plus a rebuilt
+CPU-audited smoke test. This integration does not change the prior measured gain.
+
+The [host allocation follow-up](evidence/cuda-host-allocation-optimization-2026-10-30.json)
+replaces temporary operation wire vectors with bounded inline lists. Against the
+integrated transform configuration, five alternating pairs per size reduce median
+four/eight-entry CUDA proof intervals by 4.53%/3.13%, to 28.304/53.809 seconds.
+Whole-launcher medians improve by 2.94%/3.20%. All ten pairs favor the candidate;
+all 216 comparison proofs and 36 roots pass independent CPU verification. This
+shared host optimization needs no additional feature flag. Measurements cover
+retained-proof aggregation on the desktop RTX 5080, with the existing limits.
+
 ## Freeze the comparison
 
 Record the commit, dirty-tree status, CPU/RAM, GPU model/UUID/VRAM, driver/OpenCL runtime, power mode, and toolchain versions. Use AC power where applicable and stop other compute workloads.

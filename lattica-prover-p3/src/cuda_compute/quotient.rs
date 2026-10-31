@@ -19,8 +19,20 @@ pub(super) const SOURCE: &str = concat!(
     "\n#define QUOTIENT_DEGREE 3\n#define QUOTIENT_ALPHA quotient_alpha_3\n#define QUOTIENT_EVALUATE quotient_evaluate_3\n",
     include_str!("quotient.cu")
 );
-const WORKSPACE_BYTES: usize = 64 << 20;
-const MAX_TILE_ROWS: usize = 16 * 1024;
+// The planner intersects this internal cap with the remaining managed allowance
+// and each allocation limit before admitting the complete tile and output.
+const WORKSPACE_BYTES: usize = if cfg!(feature = "gpu-cuda-quotient-tiles-32k") {
+    512 << 20
+} else if cfg!(feature = "gpu-cuda-quotient-workspace-large") {
+    256 << 20
+} else {
+    64 << 20
+};
+const MAX_TILE_ROWS: usize = if cfg!(feature = "gpu-cuda-quotient-tiles-32k") {
+    32 * 1024
+} else {
+    16 * 1024
+};
 const MAX_PROGRAM_HOST_BYTES: usize = 16 << 20;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -145,6 +157,21 @@ fn launch(items: usize) -> Result<Launch> {
     })
 }
 
+fn evaluation_launch(rows: usize) -> Result<Launch> {
+    let mut geometry = launch(rows)?;
+    if cfg!(feature = "gpu-cuda-quotient-tuning") {
+        // The measured recursive tiles contain 4096 rows: 128-thread CTAs
+        // occupy only 32 SMs. Smaller CTAs distribute the same rows further,
+        // without increasing scratch or private-memory allowances.
+        geometry.threads = 64;
+        geometry.blocks = rows
+            .div_ceil(64)
+            .try_into()
+            .map_err(|_| "CUDA quotient evaluation grid overflow")?;
+    }
+    Ok(geometry)
+}
+
 impl Quotients {
     pub(crate) fn new(runtime: &Runtime) -> Result<Self> {
         let defaults = CacheLimits::default();
@@ -240,11 +267,23 @@ impl Quotients {
                 }
             }
         };
+        let preparation_ns = started.elapsed().as_nanos();
+        if super::profile::enabled() {
+            eprintln!(
+                "cuda_profile_program {}",
+                serde_json::json!({
+                    "instructions": program.instruction_count(), "registers": program.registers,
+                    "row_words": program.row_words, "source_bytes": source_bytes,
+                    "specialized": specialized.is_some(), "local_bytes": local_bytes,
+                    "preparation_ns": preparation_ns,
+                })
+            );
+        }
         Ok(PreparedQuotient {
             program,
             code,
             specialized,
-            preparation_ns: started.elapsed().as_nanos(),
+            preparation_ns,
             source_bytes,
             local_bytes,
             host_bytes,
@@ -443,7 +482,7 @@ impl Quotients {
             // owns a separate row. Inputs, scratch and output never alias.
             unsafe {
                 kernel.launch(
-                    launch(rows)?,
+                    evaluation_launch(rows)?,
                     &[
                         Argument::Buffer(&prepared.code),
                         Argument::U32(program.instruction_count() as u32),

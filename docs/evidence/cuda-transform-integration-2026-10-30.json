@@ -1,0 +1,97 @@
+{
+  "schema": "lattica-cuda-transform-integration-v1",
+  "date_utc": "2026-10-30",
+  "status": "integrated-and-validated-at-user-request",
+  "base_commit": "e860ab348cebe743f754446841120409c090ced1",
+  "authorization": {
+    "objective": "Implement the previous optimization run and then do another run and work on optimizing the CUDA GPU prover.",
+    "integrate_previous_candidate": true,
+    "prior_result": "docs/evidence/cuda-transform-optimization-review-2026-10-30.json",
+    "prior_performance_gate_met": false,
+    "reason": "User explicitly requested integration after reviewing the 1.17%/1.07% result. The previous evidence and its threshold decision remain unchanged.",
+    "future_candidate_adoption_gate": "At least 2% median proof-interval reduction with at least 80% paired wins on an improving workload; no workload median regression over 2% in proof or launcher time."
+  },
+  "prior_measurements": "docs/evidence/cuda-transform-optimization-review-2026-10-30.json",
+  "prior_median_proof_reductions_percent": [
+    1.1701984978540803,
+    1.0659465605457497
+  ],
+  "performance_gate_exception": "User requested integration after the prior comparison. Its below-threshold outcome is preserved; this smoke test is correctness validation, not a new performance qualification.",
+  "source_files_changed": [
+    "lattica-prover-p3/Cargo.toml",
+    "lattica-prover-p3/src/cuda_compute/transform.rs",
+    "lattica-prover-p3/src/cuda_compute/transform.cu",
+    "lattica-prover-p3/src/cuda_compute/transform/tests.rs",
+    "lattica-prover-p3/src/cuda_compute/transform/tests/twiddle_table.rs"
+  ],
+  "features": [
+    "gpu-cuda-transform-static",
+    "gpu-cuda-transform-twiddle-table"
+  ],
+  "validation": {
+    "status": "passed",
+    "selected_candidate_core_tests": 206,
+    "baseline_transform_tests": 5,
+    "sanitizers": [
+      {
+        "tool": "memcheck",
+        "tests": 6,
+        "status": "passed",
+        "log": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-transform-integration-20261030/run-01/memcheck-transform.log"
+      },
+      {
+        "tool": "racecheck",
+        "tests": 6,
+        "status": "passed",
+        "log": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-transform-integration-20261030/run-01/racecheck-transform.log"
+      },
+      {
+        "tool": "synccheck",
+        "tests": 6,
+        "status": "passed",
+        "log": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-transform-integration-20261030/run-01/synccheck-transform.log"
+      }
+    ]
+  },
+  "smoke_audits": {
+    "proofs": 4,
+    "roots": 1
+  },
+  "device_scope": "GPU execution on desktop RTX 5080 only. SM70/SM120 PTX compilation and equality do not qualify V100 execution.",
+  "limits": "Unchanged: worker 3 GiB and four threads, coordinator 1 GiB, zero swap, managed GPU 7 GiB, context 4 GiB, headroom 1 GiB, maximum allocation 1 GiB.",
+  "artifacts": {
+    "integration": {
+      "path": "lattica-prover-p3/benchmark-results/cuda-transform-integration-20261030/run-01/integration-result.json",
+      "sha256": "62c0db31c4442dc52b93cf93485c3445eb3d7c9b1d01e6c4278f231687665012"
+    },
+    "compiled_source": {
+      "path": "lattica-prover-p3/benchmark-results/cuda-transform-integration-20261030/run-01/compiled-source-pins.json",
+      "sha256": "0ac14577848eea6e195af52b9c5096bf0f0219003392329e02d00fbf25baafcf"
+    },
+    "source_archive": {
+      "path": "lattica-prover-p3/benchmark-results/cuda-transform-integration-20261030/run-01/compiled-source-complete.tar.gz",
+      "sha256": "b71b8e7cbe702a903827999828c2ed8863b8123c833c1434eecdb7f074c0cbb8"
+    },
+    "builds": {
+      "path": "lattica-prover-p3/benchmark-results/cuda-transform-integration-20261030/run-01/build-result.json",
+      "sha256": "9de8b4872bcbe4c3915191eebbf334a6760f1b97da28354b33156ef7b6e3ff56"
+    },
+    "validation": {
+      "path": "lattica-prover-p3/benchmark-results/cuda-transform-integration-20261030/run-01/validation-result.json",
+      "sha256": "2d92f9c4bc664ca624caed58c3b9de9693b466cfbddd160b41f35610c57df0d9"
+    },
+    "smoke": {
+      "path": "lattica-prover-p3/benchmark-results/cuda-transform-integration-20261030/run-01/smoke/result.json",
+      "sha256": "1bdbb9c833e26de1cf286588aa906126dc9e2b92f96dd4ebbb3013cc212ec62d"
+    },
+    "ptx": {
+      "path": "lattica-prover-p3/benchmark-results/cuda-transform-integration-20261030/run-01/ptx-attempt-02/proposed-ptx-equivalence.json",
+      "sha256": "e390880ab379159fa46474e90cf9bd23c285d12f1e1d56822b264ad678e35e8b"
+    },
+    "controller_retirement": {
+      "path": "lattica-prover-p3/benchmark-results/cuda-transform-integration-20261030/run-01/retired-controller-states.json",
+      "sha256": "7b058c871f5f95993d94d2e74cf6ead042322ad7ab74cfb940dfa240ee1e1b7b"
+    }
+  },
+  "setup_correction": "The first PTX compiler controller lacked LD_LIBRARY_PATH for NVRTC builtins. The retained second attempt used the pinned CUDA library path and passed exact PTX equality on SM70 and SM120."
+}

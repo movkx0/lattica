@@ -117,10 +117,23 @@ def launch_worker(path):
                          budget["cpu"]["quota_percent"], budget["cpu"]["allowed_cpus"], directory, config.get("runtime_seconds", 7200))
     command += ["--pipe", "--wait", "--property=BindsTo=" + config["owner_unit"],
                 "--property=After=" + config["owner_unit"]]
-    command += [f"--setenv={key}={value}" for key, value in G.environment(budget, directory).items()]
-    command += config["command"]
+    environment = G.environment(budget, directory)
+    worker_command = config["command"]
+    if config.get('linux_profile') is not None:
+        import block_v2_linux_profile as Profile
+        environment = {**{k: v for k, v in os.environ.items() if k in Profile.SAFE_ENV}, **environment}
+        worker_command, environment = Profile.command(config, budget, directory, worker_command, environment)
+        # The helper scrubs the manager environment after NOTIFY_SOCKET exists.
+        # The prover becomes MainPID; retain the profiler in the bounded cgroup
+        # until export finishes, without weakening Rust's executable checks.
+        command += ['--property=NotifyAccess=all', '--property=ExitType=cgroup']
+        worker_command = [sys.executable, str(Path(Profile.__file__).resolve()), '--worker-env', '--', *worker_command]
+    command += [f"--setenv={key}={value}" for key, value in environment.items()]
+    command += worker_command
     # stdin is the duplex Unix socket, inherited unchanged by the GPU process.
     result = subprocess.run(command)
+    if result.returncode == 0 and config.get('linux_profile') is not None:
+        Profile.completed_capture(config['linux_profile'], directory)
     raise SystemExit(result.returncode)
 
 
@@ -764,6 +777,12 @@ def check_prefix_workflows(directories, workflow):
 
 
 def run(args, control=None):
+    profiling, profile_pins = None, {}
+    if getattr(args, 'linux_profile', None) is not None:
+        if args.gpu_backend != 'cuda' or not args.pool_calibration or len(args.gpu_uuid) != 1:
+            raise ValueError('CUDA profiling requires one explicit calibration worker')
+        import block_v2_linux_profile as Profile
+        profiling, profile_pins = Profile.load(args.linux_profile)
     preseal = getattr(args, 'preseal', False)
     calibration_mode = PoolCalibration.check_mode(args)
     owned = Owned.check_mode(args)
@@ -835,7 +854,10 @@ def run(args, control=None):
     if owned:
         scripts.append(Owned.workload_path(block_capacity, backend))
     workload = getattr(args, "workload", None) or (Owned.workload_path(block_capacity, backend) if owned else Path(__file__).with_name("block-v2-multi-gpu-direct-readback-workload.json"))
+    if profiling is not None:
+        scripts.append(Path(Profile.__file__).resolve())
     pins = dict(T.pin(path) for path in [gpu, cpu, *inputs, *scripts, workload])
+    pins.update(profile_pins)
     if cuda_runtime is not None:
         pins.update(Cuda.runtime_pins(cuda_runtime))
     pins.update(workflow_pins)
@@ -898,6 +920,8 @@ def run(args, control=None):
         previous = Controller.read(Path(control['gate']) / 'intent.json').get('recovered_controller')
         if previous is not None:
             report['controller_recovery'] = {key: value for key, value in previous.items() if key != 'intent'}
+    if profiling is not None:
+        report.update(instrumented=True, linux_profile=profiling)
     owner_unit = "lattica-v2-multi-owner-" + secrets.token_hex(32) + ".service"
     try:
         if json.loads(G.systemctl("list-units", "lattica-v2-multi-*.service", "--state=active,activating,deactivating", "--output=json", "--no-pager")):
@@ -1053,6 +1077,9 @@ def run(args, control=None):
                 continue
             worker_config = {"schema_version": 1, "budget": budget, "directory": str(directory),
                              "owner_unit": owner_unit, "runtime_seconds": pool_runtime if pool_requests or calibration_mode else 7200, "command": [str(gpu), *arguments], "pins": copy.deepcopy(pins)}
+            if profiling is not None:
+                worker_config['linux_profile'] = profiling
+                worker_config['profile_shared_worker'] = True
             worker_config["pins"].update(dict([T.pin(directory / "budget.json")]))
             for path in inputs:
                 worker_config["pins"][str(owner_dir / "input" / path.name)] = pins[str(path)]
@@ -1315,6 +1342,8 @@ def argument_parser():
                         help='explicit 3/1/4 GiB owned public GPU qualification profile for a bounded worker')
     parser.add_argument('--gpu-backend', choices=('opencl', 'cuda'), default='opencl',
                         help='explicit worker backend; CUDA requires owned admission')
+    parser.add_argument('--linux-profile', type=Path,
+                        help='pinned Nsight diagnostic assignment; one CUDA calibration worker only')
     parser.add_argument('--cuda-library-path', type=Path,
                         help='CUDA 12.9 NVRTC library directory, pinned and passed to each worker')
     parser.add_argument('--fleet-slice',
@@ -1395,6 +1424,9 @@ def main():
     if args.workload:
         paths.append(args.workload.resolve(strict=True))
     pins = dict(T.pin(path) for path in paths)
+    if args.linux_profile:
+        import block_v2_linux_profile as Profile
+        pins.update(Profile.load(args.linux_profile)[1])
     if args.gpu_backend == 'cuda':
         args.cuda_library_path = args.cuda_library_path.resolve(strict=True)
         pins.update(Cuda.runtime_pins(Cuda.runtime(args.cuda_library_path)))

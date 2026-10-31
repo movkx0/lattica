@@ -164,6 +164,19 @@ gpu = ["dep:ocl", "dep:rayon", "dep:libc", "dep:p3-util"]
 # Native CUDA transport. Separate from the OpenCL default; proof integration is
 # qualified incrementally and must never advertise unavailable GPU stages.
 gpu-cuda = ["dep:cudarc", "dep:rayon", "dep:libc", "dep:p3-util", "dep:blake3"]
+# Retain bounded completion receipts across dependent CUDA kernels. Off until
+# independently audited full-proof comparisons qualify the workload.
+gpu-cuda-batched-submission = ["gpu-cuda"]
+# Independent, opt-in profiling candidates. Keep the generic SM70 path available.
+gpu-cuda-transform-reuse = ["gpu-cuda"]
+gpu-cuda-transform-twiddle-table = ["gpu-cuda-transform-reuse"]
+gpu-cuda-transform-static = ["gpu-cuda-transform-reuse"]
+gpu-cuda-quotient-tuning = ["gpu-cuda"]
+gpu-cuda-lookup-tiling = ["gpu-cuda"]
+gpu-cuda-poseidon-diagonal = ["gpu-cuda"]
+# Larger quotient tiles within the existing runtime memory limits.
+gpu-cuda-quotient-workspace-large = ["gpu-cuda"]
+gpu-cuda-quotient-tiles-32k = ["gpu-cuda-quotient-workspace-large"]
 # Opt-in performance candidates; production selection requires GPU qualification.
 gpu-tuning = ["gpu", "block-v2"]
 gpu-metal = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-metal", "dep:rayon", "dep:libc", "dep:p3-util"]

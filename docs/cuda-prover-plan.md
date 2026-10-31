@@ -13,11 +13,79 @@ progress.
 
 ## Current checkpoint
 
+The [transform integration](evidence/cuda-transform-integration-2026-10-30.json)
+adds opt-in `gpu-cuda-transform-static` and `gpu-cuda-transform-twiddle-table`
+at the user's request after the comparison below. The measured 1.17%/1.07%
+gain remains below the previous 2% threshold. The exact integrated source passes
+206 core checks, five fallback transform checks, all three sanitizer suites,
+and a rebuilt four-proof/one-root CPU-audited smoke run. Its reviewed GPU code
+matches the measured candidate's PTX on SM70 and SM120. Execution qualification
+remains limited to the desktop RTX 5080.
+
+The [transform follow-up](evidence/cuda-transform-optimization-review-2026-10-30.json)
+tested static NTT specialization plus shared twiddle tables against the qualified
+32k-tile build. Five alternating pairs per size reduce median four/eight-entry
+proof intervals from 29.824/56.288 to 29.475/55.688 seconds (1.17%/1.07%).
+Both missed the 2% adoption threshold, so that run did not promote the candidate.
+All 216 proofs and 36 roots passed independent CPU verification. The subsequent
+user-authorized integration above preserves that measured outcome.
+
+The [quotient tile qualification](evidence/cuda-quotient-tiles-optimization-2026-10-30.json)
+adds opt-in `gpu-cuda-quotient-tiles-32k` to the previous CUDA tuning combination.
+Five alternating pairs per size reduce median proof intervals from
+30.930/58.697 to 29.840/56.499 seconds for four/eight entries on the
+RTX 5080 (3.52%/3.74%). All ten pairs improve, with lower launcher medians,
+unchanged runtime budgets, and 216 proofs/36 roots independently CPU-verified.
+Final-source core, baseline-workspace, sanitizer and rebuilt smoke checks pass.
+The profiling guide records the complete build flags, OpenCL controls and
+bounded Nsight captures, including a retired full-counter VRAM-limit failure.
+
+The previous [quotient workspace qualification](evidence/cuda-workspace-optimization-2026-10-30.json)
+adds opt-in `gpu-cuda-quotient-workspace-large` to the previously tuned CUDA
+build. Larger tiles reduce median four/eight-entry proof intervals from
+35.432/66.896 to 31.042/58.384 seconds on the desktop RTX 5080 (12.39%/12.72%).
+All ten paired comparisons improve, with unchanged runtime budgets; all 216
+comparison proofs and 36 roots pass independent CPU verification. The final
+source passes core, fallback-workspace and sanitizer checks plus a rebuilt,
+CPU-audited smoke run. OpenCL remains faster. See the profiling guide for
+build flags, diagnostic captures and the scope of these measurements.
+
+The [Poseidon arithmetic qualification](evidence/cuda-poseidon-optimization-2026-10-29.json)
+adds opt-in `gpu-cuda-poseidon-diagonal` to the previously tuned CUDA build.
+Five alternating pairs per size on the desktop RTX 5080 reduce median proof
+intervals from 38.184 to 37.362 seconds for four entries and from 72.642 to
+71.159 seconds for eight entries (2.15% and 2.04%). All ten pairs improve, with
+no launcher-time regression; 216 proofs and 36 roots pass independent CPU
+verification. OpenCL remains faster. The profiling guide records the build
+recipe and the limited scope of these aggregation measurements.
+
+The [CUDA profiling and optimization qualification](evidence/cuda-profile-optimization-2026-10-29.json)
+adds Nsight capture, reproducible paired benchmarks and opt-in transform,
+quotient and lookup tuning. The combined candidate reduces median recursive
+proof intervals by 24.0% for both four and eight entries on the desktop RTX 5080,
+using the capacity-128 profile and unchanged resource limits. All 216 comparison
+proofs and 36 roots pass independent CPU verification. OpenCL remains faster;
+submission batching did not meet the performance gate. These results cover
+aggregation of retained wallet proofs, not sustained transaction throughput.
+The [profiling guide](cuda-profiling.txt) records build flags, validation and
+measurement boundaries. Nsight Systems and targeted Nsight Compute instruction
+and hardware-counter captures now pass. The latter followed administrator-enabled
+profiling access and a launcher fix for Nsight Compute 2026.3 compressed reports;
+eight additional proofs and two roots passed independent CPU audits. All tuning
+remains opt-in.
+
 The experimental CUDA runtime now reuses completed timing-event pairs within
 the existing command allowance. Its [event-pool qualification](evidence/cuda-event-pool-2026-10-20.json)
 records 94 passing CUDA checks, zero sanitizer errors or leaks, and successful
-abandoned-receipt and asynchronous-failure cleanup tests. Full recursive proof
-validation and matched performance comparisons for this change remain pending.
+abandoned-receipt and asynchronous-failure cleanup tests.
+The [paired comparison](evidence/cuda-event-pool-comparison-2026-10-20.json)
+completed 32 fresh-worker trials, with independent CPU audits of all 184
+recursive proofs and 32 roots. Median proof-observation intervals fell 0.79%
+for four inputs and 1.33% for eight inputs; whole-launcher reductions were
+0.86% and 0.80%. Neither workload meets the 2% performance gate. Both use the
+capacity-128 profile and include root promotion. Four-input results span a host
+restart, with both binaries rewarmed afterward. These are diagnostic aggregation
+measurements using retained wallet proofs, not sustained transaction throughput.
 
 The latest [128-input qualification](evidence/cuda-full-recursion-128-2026-10-20.json)
 completes all 127 CUDA recursive proofs, independent CPU verification, native

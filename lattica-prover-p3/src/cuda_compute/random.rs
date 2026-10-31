@@ -297,9 +297,10 @@ impl Randoms {
                 );
             }
         }
+        let mut submissions = super::kernel::Submissions::new(&self.runtime, 3)?;
         // Fixed 128-lane blocks cover two ordered candidates each. All scan
         // storage is bounded and every accepted output has a unique position.
-        unsafe {
+        submissions.push(unsafe {
             self.counts.launch(
                 Launch {
                     blocks: tiles as u32,
@@ -313,9 +314,8 @@ impl Randoms {
                     Argument::U32(count as u32),
                 ],
             )?
-        }
-        .finish()?;
-        unsafe {
+        })?;
+        submissions.push(unsafe {
             self.offsets.launch(
                 Launch {
                     blocks: 1,
@@ -329,9 +329,8 @@ impl Randoms {
                     Argument::U32(tiles as u32),
                 ],
             )?
-        }
-        .finish()?;
-        unsafe {
+        })?;
+        submissions.push(unsafe {
             self.scatter.launch(
                 Launch {
                     blocks: tiles as u32,
@@ -347,8 +346,8 @@ impl Randoms {
                     Argument::U64(first as u64),
                 ],
             )?
-        }
-        .finish()?;
+        })?;
+        submissions.finish()?;
         let mut accepted = [u64::MAX];
         total.read(0, &mut accepted)?;
         accepted_words(accepted[0], count)

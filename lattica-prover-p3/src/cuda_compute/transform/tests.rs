@@ -1,4 +1,17 @@
 use super::*;
+
+#[path = "tests/benchmark.rs"]
+mod benchmark;
+#[cfg(any(
+    feature = "gpu-cuda-transform-twiddle-table",
+    feature = "gpu-cuda-transform-static"
+))]
+#[path = "tests/twiddle_table.rs"]
+mod twiddle_table;
+
+#[cfg(feature = "gpu-cuda-batched-submission")]
+#[path = "tests/submission.rs"]
+mod submission;
 use crate::{
     config::{Dft, Val},
     gpu_matrix::{Extension, GOLDILOCKS_MODULUS as P},
@@ -97,6 +110,24 @@ fn ntt_tiles_cover_supported_shapes_with_bounded_shared_memory() {
                     assert!(group.stages > 0);
                     assert!(group.log_columns <= 4);
                     assert!(group.launch.shared_bytes <= shared);
+                    let tile_words = 1usize << (group.stages + group.log_columns);
+                    let tables = if cfg!(feature = "gpu-cuda-transform-reuse") {
+                        (1usize << (group.stages - 1))
+                            + group.stages as usize
+                            + if cfg!(feature = "gpu-cuda-transform-twiddle-table")
+                                && group.log_columns >= 2
+                            {
+                                (1usize << group.stages) - 1
+                            } else {
+                                0
+                            }
+                    } else {
+                        0
+                    };
+                    assert_eq!(
+                        group.launch.shared_bytes as usize,
+                        (tile_words + tables) * 8
+                    );
                     assert!(group.launch.threads <= 256 && group.launch.blocks > 0);
                 }
             }
@@ -131,6 +162,8 @@ fn cuda_lde_matches_cpu_cosets_orders_extensions_and_memory_bounds() {
         (0, 0, 3),
         (0, 3, 1),
         (3, 3, 7),
+        (4, 6, 17),  // row factors cross blocks; partial final block
+        (2, 4, 257), // a row spans several blocks, including extension limbs
         (3, 8, 2),
         (9, 13, 5),
         (13, 14, 1),

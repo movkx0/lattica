@@ -137,6 +137,80 @@ fn quotient_planner_charges_output_and_complete_tile_at_exact_boundary() {
     assert!((plan.input_words + plan.scratch_words + plan.weight_words + 1) * 8 <= WORKSPACE_BYTES);
 }
 
+fn wide_quotient_tiles_match_cpu(log_domain: u32, managed_bytes: usize, allocation_bytes: usize) {
+    type F = crate::block_v2::profile::Challenge;
+    const WIDTH: usize = 750;
+    const LOG_TRACE: u32 = 8;
+    let runtime = runtime(managed_bytes, allocation_bytes);
+    let evaluator = Quotients::new(&runtime).unwrap();
+    let mut p = simple(Extension::Cubic, 1);
+    p.layout.main_width = WIDTH;
+    p.row_words = 2 * WIDTH;
+    p.constraints = 2;
+    p.instructions.extend_from_slice(&[16, 0, 0, 1, 0]);
+    let p = Arc::new(p);
+    let generic = evaluator
+        .prepare(p.clone(), Specialization::Generic)
+        .unwrap();
+    let specialized = evaluator.prepare(p, Specialization::Prefer).unwrap();
+    assert!(specialized.specialized.is_some());
+    let height = 1usize << log_domain;
+    let spec = MatrixSpec::new(log_domain, WIDTH, Extension::Base, RowOrder::Natural, 7).unwrap();
+    let raw: Vec<u64> = (0..height * WIDTH).map(|i| i as u64 * 17 + 19).collect();
+    let main = runtime.upload_matrix(spec, &raw).unwrap();
+    drop(raw);
+    let alpha = constant::<F>();
+    let alpha_buffer = scalars(&runtime, &words(alpha));
+    let root = Val::two_adic_generator(log_domain as usize);
+    let mut x = Val::from_u64(7);
+    let mut expected = Vec::with_capacity(height * 3);
+    for row in 0..height {
+        // The bytecode folds the same (main[0] + 7)^2 constraint twice.
+        let value = Val::from_u64((row * WIDTH) as u64 * 17 + 19);
+        let numerator = (value + Val::from_u64(7)).square();
+        let denominator = x.exp_u64(1u64 << LOG_TRACE) - Val::ONE;
+        expected.extend(words(F::from(numerator / denominator) * (alpha + F::ONE)));
+        x *= root;
+    }
+    for prepared in [&generic, &specialized] {
+        let before = runtime.snapshot();
+        let result = evaluator
+            .evaluate(
+                prepared,
+                LOG_TRACE,
+                QuotientInputs {
+                    main: Some(&main),
+                    preprocessed: None,
+                    permutation: None,
+                },
+                &alpha_buffer,
+                None,
+            )
+            .unwrap();
+        let after = runtime.snapshot();
+        assert_eq!(after.uploaded_bytes, before.uploaded_bytes);
+        assert_eq!(after.downloaded_bytes - before.downloaded_bytes, 8);
+        assert_eq!(after.live_bytes - before.live_bytes, result.spec.bytes());
+        assert_eq!(result.read(result.spec.bytes()).unwrap(), expected);
+        drop(result);
+        assert_eq!(runtime.snapshot().live_bytes, before.live_bytes);
+    }
+}
+
+#[test]
+#[ignore = "requires CUDA and NVRTC; run serially"]
+fn cuda_wide_quotient_tiles_match_cpu_across_workspace_boundaries() {
+    wide_quotient_tiles_match_cpu(15, 1 << 30, 512 << 20);
+}
+
+#[test]
+#[ignore = "requires CUDA and NVRTC; run serially"]
+fn cuda_large_quotient_tiles_match_cpu_across_32k_and_64k_boundaries() {
+    // A 131,072-row domain crosses at least two tiles with every candidate.
+    // The public input is 750 MiB; the complete plan stays below 2 GiB.
+    wide_quotient_tiles_match_cpu(17, 2 << 30, 1 << 30);
+}
+
 #[test]
 fn shared_quotient_validation_rejects_bad_bounds_lifetimes_and_fold_order() {
     for extension in [Extension::Quadratic, Extension::Cubic] {

@@ -1,0 +1,3435 @@
+{
+  "schema": "lattica-cuda-profile-optimization-v1",
+  "date_utc": "2026-10-29",
+  "status": "validated_opt_in",
+  "base_commit": "e860ab348cebe743f754446841120409c090ced1",
+  "device": {
+    "ordinal": 0,
+    "uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "pci": "0000:01:00.0",
+    "name": "NVIDIA GeForce RTX 5080",
+    "global_bytes": 16703946752,
+    "compute_capability": 120,
+    "driver_api": 13040,
+    "max_threads": 1024,
+    "max_grid_x": 2147483647,
+    "shared_bytes": 49152,
+    "multiprocessors": 84,
+    "max_threads_per_multiprocessor": 1536
+  },
+  "features": {
+    "candidate": [
+      "gpu-cuda-transform-reuse",
+      "gpu-cuda-quotient-tuning",
+      "gpu-cuda-lookup-tiling"
+    ],
+    "submission_batching": "implemented, rejected by five-pair performance comparison; disabled",
+    "enabled_by_default": false
+  },
+  "proof_profile": {
+    "capacity": 128,
+    "common_features": [
+      "block-v2-wide-lanes",
+      "stream",
+      "block-v2-capacity-128"
+    ],
+    "threads": 4,
+    "security_parameters_changed": false,
+    "format_or_verifier_changed": false
+  },
+  "measurement_scope": "Fresh-worker recursive aggregation of retained wallet proofs, including root promotion. Each arm warmed once per size, then five alternating measured repetitions. Wallet generation, native/durable application, and separate CPU audits excluded. Rates are aggregation equivalents, not sustained end-to-end transaction throughput.",
+  "workloads": [
+    {
+      "entries": 4,
+      "user_transactions": 3,
+      "issuance_entries": 1,
+      "baseline": {
+        "proof_interval_seconds": 49.93,
+        "whole_launcher_seconds": 55.88246597899706,
+        "paired_samples": 5,
+        "managed_gpu_peak_bytes": 7450302264,
+        "worker_host_peak_bytes": 1256251392,
+        "aggregation_equivalent_user_transactions_per_hour": 193.26276696628037
+      },
+      "candidate": {
+        "proof_interval_seconds": 37.946,
+        "whole_launcher_seconds": 44.018013388005784,
+        "paired_samples": 5,
+        "managed_gpu_peak_bytes": 7450302264,
+        "worker_host_peak_bytes": 1273008128,
+        "aggregation_equivalent_user_transactions_per_hour": 245.35409866867892
+      },
+      "opencl": {
+        "proof_interval_seconds": 31.236,
+        "whole_launcher_seconds": 36.661100180994254,
+        "paired_samples": 5,
+        "managed_gpu_peak_bytes": 7467255616,
+        "worker_host_peak_bytes": 1241964544,
+        "aggregation_equivalent_user_transactions_per_hour": 294.590177236386
+      },
+      "proof_interval_reduction_percent": 24.001602243140397
+    },
+    {
+      "entries": 8,
+      "user_transactions": 6,
+      "issuance_entries": 2,
+      "baseline": {
+        "proof_interval_seconds": 96.18,
+        "whole_launcher_seconds": 103.09146173900808,
+        "paired_samples": 5,
+        "managed_gpu_peak_bytes": 7450302264,
+        "worker_host_peak_bytes": 1274822656,
+        "aggregation_equivalent_user_transactions_per_hour": 209.522686317939
+      },
+      "candidate": {
+        "proof_interval_seconds": 73.092,
+        "whole_launcher_seconds": 79.86411178499111,
+        "paired_samples": 5,
+        "managed_gpu_peak_bytes": 7450302264,
+        "worker_host_peak_bytes": 1273999360,
+        "aggregation_equivalent_user_transactions_per_hour": 270.4594030689426
+      },
+      "opencl": {
+        "proof_interval_seconds": 59.462,
+        "whole_launcher_seconds": 65.69489511000575,
+        "paired_samples": 5,
+        "managed_gpu_peak_bytes": 7467255616,
+        "worker_host_peak_bytes": 1262854144,
+        "aggregation_equivalent_user_transactions_per_hour": 328.79267047813863
+      },
+      "proof_interval_reduction_percent": 24.00499064254523
+    }
+  ],
+  "cuda_comparison": {
+    "schema": "lattica-cuda-comparison-v1",
+    "baseline": "baseline",
+    "candidate": "candidate",
+    "qualified": true,
+    "repeat_recommended": false,
+    "rule": "At least 2% lower median proof interval on an improving workload with >=80% paired wins; no workload median regression over 2% in either proof interval or launcher time.",
+    "workloads": [
+      {
+        "count": 4,
+        "pairs": 5,
+        "user_transactions": 3,
+        "issuance_entries": 1,
+        "whole_launcher_seconds": {
+          "baseline_median": 55.88246597899706,
+          "candidate_median": 44.018013388005784,
+          "median_reduction_percent": 21.231082743289154,
+          "paired_reductions_percent": [
+            21.31465215360184,
+            21.231128671825484,
+            22.055220176926362,
+            21.154345460833913,
+            21.358563353433404
+          ],
+          "candidate_faster_pairs": 5
+        },
+        "proof_observations_seconds": {
+          "baseline_median": 49.93,
+          "candidate_median": 37.946,
+          "median_reduction_percent": 24.001602243140397,
+          "paired_reductions_percent": [
+            23.803986044832982,
+            24.001602243140397,
+            24.403717294192727,
+            24.206556193074658,
+            23.879969572006253
+          ],
+          "candidate_faster_pairs": 5
+        },
+        "candidate_aggregation_equivalent_user_transactions_per_hour": 245.35409866867892
+      },
+      {
+        "count": 8,
+        "pairs": 5,
+        "user_transactions": 6,
+        "issuance_entries": 2,
+        "whole_launcher_seconds": {
+          "baseline_median": 103.09146173900808,
+          "candidate_median": 79.86411178499111,
+          "median_reduction_percent": 22.53081832598376,
+          "paired_reductions_percent": [
+            22.98478619182035,
+            22.53081832598376,
+            21.97672542644854,
+            22.365328202095846,
+            22.56514449623409
+          ],
+          "candidate_faster_pairs": 5
+        },
+        "proof_observations_seconds": {
+          "baseline_median": 96.18,
+          "candidate_median": 73.092,
+          "median_reduction_percent": 24.00499064254523,
+          "paired_reductions_percent": [
+            24.68660598179454,
+            24.00499064254523,
+            23.604457458586403,
+            24.170577097225653,
+            24.64402610127796
+          ],
+          "candidate_faster_pairs": 5
+        },
+        "candidate_aggregation_equivalent_user_transactions_per_hour": 270.4594030689426
+      }
+    ],
+    "scope": "Aggregation of retained wallet proofs; wallet generation, durable application and separate CPU audits excluded."
+  },
+  "opencl_comparison": {
+    "schema": "lattica-cuda-comparison-v1",
+    "baseline": "opencl",
+    "candidate": "candidate",
+    "qualified": false,
+    "repeat_recommended": false,
+    "rule": "At least 2% lower median proof interval on an improving workload with >=80% paired wins; no workload median regression over 2% in either proof interval or launcher time.",
+    "workloads": [
+      {
+        "count": 4,
+        "pairs": 5,
+        "user_transactions": 3,
+        "issuance_entries": 1,
+        "whole_launcher_seconds": {
+          "baseline_median": 36.661100180994254,
+          "candidate_median": 44.018013388005784,
+          "median_reduction_percent": -20.067355236724403,
+          "paired_reductions_percent": [
+            -19.776448804757194,
+            -20.252695103079787,
+            -20.082101083296557,
+            -19.90028966269022,
+            -20.19915189796255
+          ],
+          "candidate_faster_pairs": 0
+        },
+        "proof_observations_seconds": {
+          "baseline_median": 31.236,
+          "candidate_median": 37.946,
+          "median_reduction_percent": -21.4816237674478,
+          "paired_reductions_percent": [
+            -21.934159019444266,
+            -22.441999290116478,
+            -21.35676783198872,
+            -20.930828078486606,
+            -21.57107231920199
+          ],
+          "candidate_faster_pairs": 0
+        },
+        "candidate_aggregation_equivalent_user_transactions_per_hour": 245.35409866867892
+      },
+      {
+        "count": 8,
+        "pairs": 5,
+        "user_transactions": 6,
+        "issuance_entries": 2,
+        "whole_launcher_seconds": {
+          "baseline_median": 65.69489511000575,
+          "candidate_median": 79.86411178499111,
+          "median_reduction_percent": -21.568215690517633,
+          "paired_reductions_percent": [
+            -20.804693117216154,
+            -21.473424976566633,
+            -23.088206125341728,
+            -22.911355937899923,
+            -20.799518306699483
+          ],
+          "candidate_faster_pairs": 0
+        },
+        "proof_observations_seconds": {
+          "baseline_median": 59.462,
+          "candidate_median": 73.092,
+          "median_reduction_percent": -22.922202414987723,
+          "paired_reductions_percent": [
+            -21.994169489240512,
+            -22.8230549487481,
+            -24.17005818842286,
+            -23.95579255471261,
+            -21.211917975889083
+          ],
+          "candidate_faster_pairs": 0
+        },
+        "candidate_aggregation_equivalent_user_transactions_per_hour": 270.4594030689426
+      }
+    ],
+    "scope": "Aggregation of retained wallet proofs; wallet generation, durable application and separate CPU audits excluded."
+  },
+  "independent_cpu_audits": {
+    "comparison_proofs_including_warmups": 216,
+    "comparison_roots_including_warmups": 36,
+    "screen_proofs": 20,
+    "screen_roots": 5
+  },
+  "validation": {
+    "cuda_core_checks_passed": 202,
+    "sanitizers": [
+      {
+        "tool": "memcheck",
+        "module": "transform",
+        "passed": 5,
+        "log": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/memcheck-transform.log"
+      },
+      {
+        "tool": "memcheck",
+        "module": "quotient",
+        "passed": 20,
+        "log": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/memcheck-quotient.log"
+      },
+      {
+        "tool": "memcheck",
+        "module": "lookup",
+        "passed": 10,
+        "log": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/memcheck-lookup.log"
+      },
+      {
+        "tool": "racecheck",
+        "module": "transform",
+        "passed": 5,
+        "log": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/racecheck-transform.log"
+      },
+      {
+        "tool": "racecheck",
+        "module": "quotient",
+        "passed": 20,
+        "log": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/racecheck-quotient.log"
+      },
+      {
+        "tool": "racecheck",
+        "module": "lookup",
+        "passed": 10,
+        "log": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/racecheck-lookup.log"
+      },
+      {
+        "tool": "synccheck",
+        "module": "transform",
+        "passed": 5,
+        "log": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/synccheck-transform.log"
+      },
+      {
+        "tool": "synccheck",
+        "module": "quotient",
+        "passed": 20,
+        "log": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/synccheck-quotient.log"
+      },
+      {
+        "tool": "synccheck",
+        "module": "lookup",
+        "passed": 10,
+        "log": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/synccheck-lookup.log"
+      }
+    ],
+    "sm70_and_sm120_compilation": "passed in core suite",
+    "python_tests_passed": 87,
+    "source_integration": "same runtime source on main, with verified rustfmt-equivalent changes in two Rust files; benchmark memory reporting corrected separately from saved logs; shared-worker Nsight Compute exec tracing fixed and independently exercised afterward; compressed Nsight Compute report support added with 58 focused Python checks and two fully CPU-audited captures after host profiling access was enabled",
+    "cpu_and_opencl_binaries_identical_to_prior_comparison": true,
+    "final_checks": "Rust formatting, Python syntax, diff whitespace, source fidelity and all reported managed-memory peaks within the original 7 GiB limit passed. After the Nsight format fix, source hashes, evidence hashes, Python syntax, diff whitespace, instrumented-result exclusion, independent proof/root audits and worker retirement were checked again; all passed.",
+    "report_format_fix_checks": {
+      "status": "passed",
+      "unique_python_suite_total": 87,
+      "focused_checks": 58,
+      "commands": [
+        {
+          "command": "python3 lattica-prover-p3/scripts/test-cuda-profiling.py",
+          "passed": 10
+        },
+        {
+          "command": "python3 lattica-prover-p3/scripts/test-block-v2-linux-profile.py",
+          "passed": 4
+        },
+        {
+          "command": "python3 lattica-prover-p3/scripts/test-block-v2-typed-shared-gpu-run.py",
+          "passed": 44
+        }
+      ],
+      "scope": "Two new report-format regression tests plus reruns of the affected profiling and shared-launch suites. Other Python checks retain prior evidence; no CUDA runtime source changed."
+    }
+  },
+  "profiles": {
+    "baseline": {
+      "instrumented": true,
+      "kernel_totals": [
+        {
+          "name": "ntt_tile",
+          "calls": 4485,
+          "seconds": 12.379411371
+        },
+        {
+          "name": "quotient_evaluate_3",
+          "calls": 4096,
+          "seconds": 8.649611428
+        },
+        {
+          "name": "commitment_absorb",
+          "calls": 600,
+          "seconds": 5.446632814
+        },
+        {
+          "name": "device_lookup_expressions",
+          "calls": 8192,
+          "seconds": 2.980578194
+        },
+        {
+          "name": "public_hash",
+          "calls": 118,
+          "seconds": 0.82125284
+        },
+        {
+          "name": "device_lookup_fractions",
+          "calls": 8192,
+          "seconds": 0.590836789
+        },
+        {
+          "name": "transform_scale",
+          "calls": 569,
+          "seconds": 0.570070135
+        },
+        {
+          "name": "opening_inverses_3",
+          "calls": 10880,
+          "seconds": 0.265493139
+        },
+        {
+          "name": "commitment_compress",
+          "calls": 1448,
+          "seconds": 0.243287973
+        },
+        {
+          "name": "device_witness_wave",
+          "calls": 25644,
+          "seconds": 0.218918529
+        },
+        {
+          "name": "device_random_chacha20",
+          "calls": 8572,
+          "seconds": 0.137640049
+        },
+        {
+          "name": "device_lookup_batch_inverse",
+          "calls": 8192,
+          "seconds": 0.132099797
+        },
+        {
+          "name": "commitment_finalize_at",
+          "calls": 20,
+          "seconds": 0.123132314
+        },
+        {
+          "name": "hiding_randomization_columns",
+          "calls": 112,
+          "seconds": 0.115794218
+        },
+        {
+          "name": "quotient_gather",
+          "calls": 12288,
+          "seconds": 0.114427407
+        },
+        {
+          "name": "transcript_observe",
+          "calls": 288,
+          "seconds": 0.112510231
+        },
+        {
+          "name": "device_random_scatter",
+          "calls": 8572,
+          "seconds": 0.109561971
+        },
+        {
+          "name": "opening_reduce_3",
+          "calls": 10240,
+          "seconds": 0.064884528
+        },
+        {
+          "name": "public_periodic",
+          "calls": 476,
+          "seconds": 0.0623468
+        },
+        {
+          "name": "hiding_retain_prefix",
+          "calls": 368,
+          "seconds": 0.054544228
+        },
+        {
+          "name": "device_random_offsets",
+          "calls": 8572,
+          "seconds": 0.047158592
+        },
+        {
+          "name": "opening_accumulate_3",
+          "calls": 640,
+          "seconds": 0.043585027
+        },
+        {
+          "name": "opening_dot_3",
+          "calls": 640,
+          "seconds": 0.043242935
+        },
+        {
+          "name": "device_random_counts",
+          "calls": 8572,
+          "seconds": 0.04232476
+        },
+        {
+          "name": "device_preprocessing_rows",
+          "calls": 4,
+          "seconds": 0.041844757
+        },
+        {
+          "name": "commitment_finalize",
+          "calls": 76,
+          "seconds": 0.037927644
+        },
+        {
+          "name": "query_prefix",
+          "calls": 293,
+          "seconds": 0.027211035
+        },
+        {
+          "name": "opening_compress_3",
+          "calls": 80,
+          "seconds": 0.02529047
+        },
+        {
+          "name": "device_lookup_denominators",
+          "calls": 8192,
+          "seconds": 0.02191963
+        },
+        {
+          "name": "hiding_quotient_coefficients",
+          "calls": 256,
+          "seconds": 0.014519245
+        },
+        {
+          "name": "hiding_trace_columns",
+          "calls": 96,
+          "seconds": 0.012961595
+        },
+        {
+          "name": "device_witness_rows",
+          "calls": 4,
+          "seconds": 0.009774541
+        },
+        {
+          "name": "quotient_scatter",
+          "calls": 32,
+          "seconds": 0.005855173
+        },
+        {
+          "name": "hiding_quotient_columns",
+          "calls": 256,
+          "seconds": 0.005334076
+        },
+        {
+          "name": "quotient_alpha_3",
+          "calls": 32,
+          "seconds": 0.003735852
+        },
+        {
+          "name": "fri_fold_3_1",
+          "calls": 76,
+          "seconds": 0.003063813
+        },
+        {
+          "name": "transform_parameters",
+          "calls": 356,
+          "seconds": 0.0024784
+        },
+        {
+          "name": "transcript_sample",
+          "calls": 96,
+          "seconds": 0.002234744
+        },
+        {
+          "name": "opening_terms_3",
+          "calls": 80,
+          "seconds": 0.001345167
+        },
+        {
+          "name": "opening_parameters_3",
+          "calls": 80,
+          "seconds": 0.001128269
+        },
+        {
+          "name": "device_lookup_accumulator",
+          "calls": 4,
+          "seconds": 0.000488807
+        },
+        {
+          "name": "gather_rows",
+          "calls": 293,
+          "seconds": 0.00041818
+        },
+        {
+          "name": "transcript_grind_candidates",
+          "calls": 5,
+          "seconds": 0.000416229
+        },
+        {
+          "name": "public_fold",
+          "calls": 659,
+          "seconds": 0.00038167
+        },
+        {
+          "name": "opening_weights_3",
+          "calls": 80,
+          "seconds": 0.000220514
+        },
+        {
+          "name": "device_random_gather",
+          "calls": 156,
+          "seconds": 0.000187712
+        },
+        {
+          "name": "public_constants",
+          "calls": 21,
+          "seconds": 0.000176322
+        },
+        {
+          "name": "commitment_paths",
+          "calls": 84,
+          "seconds": 0.000172996
+        },
+        {
+          "name": "device_lookup_scan_blocks",
+          "calls": 12,
+          "seconds": 0.000124227
+        },
+        {
+          "name": "fri_gather",
+          "calls": 76,
+          "seconds": 9.7312e-05
+        },
+        {
+          "name": "transcript_grind_commit",
+          "calls": 5,
+          "seconds": 8.2561e-05
+        },
+        {
+          "name": "opening_scale_3",
+          "calls": 80,
+          "seconds": 7.9456e-05
+        },
+        {
+          "name": "transcript_grind_reduce",
+          "calls": 5,
+          "seconds": 6.1408e-05
+        },
+        {
+          "name": "fri_copy",
+          "calls": 80,
+          "seconds": 5.0848e-05
+        },
+        {
+          "name": "device_lookup_scan_offsets",
+          "calls": 8,
+          "seconds": 4.288e-05
+        },
+        {
+          "name": "quotient_domain",
+          "calls": 32,
+          "seconds": 4.2176e-05
+        },
+        {
+          "name": "hiding_quotient_parameters",
+          "calls": 4,
+          "seconds": 3.6256e-05
+        },
+        {
+          "name": "public_summary",
+          "calls": 7,
+          "seconds": 1.4784e-05
+        },
+        {
+          "name": "quotient_partition",
+          "calls": 4,
+          "seconds": 7.488e-06
+        },
+        {
+          "name": "scalar_lookup",
+          "calls": 4,
+          "seconds": 7.424e-06
+        },
+        {
+          "name": "device_witness_public",
+          "calls": 8,
+          "seconds": 5.248e-06
+        },
+        {
+          "name": "scalar_next_points",
+          "calls": 4,
+          "seconds": 3.968e-06
+        }
+      ],
+      "analysis": {
+        "schema": "lattica-cuda-profile-v1",
+        "sqlite": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/baseline-n4.sqlite",
+        "sha256": "dd23aa1505c6729d280793f775390622bacf21689a07f18767948c93ab8d2d87",
+        "device_timelines": [
+          {
+            "device_id": 0,
+            "kernel_calls": 143416,
+            "kernel_sum_seconds": 33.589088946,
+            "kernel_active_seconds": 33.589088946,
+            "first_to_last_kernel_seconds": 48.860214128
+          }
+        ],
+        "kernel_geometry": [
+          {
+            "name": "quotient_evaluate_3",
+            "calls": 4096,
+            "seconds": 8.649611428,
+            "grid_x": 32,
+            "block_x": 128,
+            "registers_per_thread": 54,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_absorb",
+            "calls": 448,
+            "seconds": 5.370723798,
+            "grid_x": 65536,
+            "block_x": 128,
+            "registers_per_thread": 68,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_lookup_expressions",
+            "calls": 8192,
+            "seconds": 2.980578194,
+            "grid_x": 1,
+            "block_x": 256,
+            "registers_per_thread": 30,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 556,
+            "seconds": 2.591138744,
+            "grid_x": 32768,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 16384,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 278,
+            "seconds": 2.185098735,
+            "grid_x": 65536,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 8192,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 168,
+            "seconds": 1.463297046,
+            "grid_x": 32768,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 32768,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 84,
+            "seconds": 0.897774842,
+            "grid_x": 65536,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 16384,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 112,
+            "seconds": 0.878507989,
+            "grid_x": 106496,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 8192,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "public_hash",
+            "calls": 118,
+            "seconds": 0.82125284,
+            "grid_x": 1,
+            "block_x": 1,
+            "registers_per_thread": 62,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 422,
+            "seconds": 0.743325483,
+            "grid_x": 32768,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 4096,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 276,
+            "seconds": 0.708497239,
+            "grid_x": 32768,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 8192,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 211,
+            "seconds": 0.672384858,
+            "grid_x": 65536,
+            "block_x": 128,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 2048,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_lookup_fractions",
+            "calls": 8192,
+            "seconds": 0.590836789,
+            "grid_x": 1,
+            "block_x": 256,
+            "registers_per_thread": 40,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 82,
+            "seconds": 0.519722964,
+            "grid_x": 65536,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 4096,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 112,
+            "seconds": 0.401217967,
+            "grid_x": 49152,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 8192,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 56,
+            "seconds": 0.285289957,
+            "grid_x": 53248,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 16384,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 556,
+            "seconds": 0.251595161,
+            "grid_x": 8192,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 4096,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "opening_inverses_3",
+            "calls": 10336,
+            "seconds": 0.24383161,
+            "grid_x": 256,
+            "block_x": 256,
+            "registers_per_thread": 38,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_witness_wave",
+            "calls": 24091,
+            "seconds": 0.181623928,
+            "grid_x": 1,
+            "block_x": 256,
+            "registers_per_thread": 66,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 56,
+            "seconds": 0.172910812,
+            "grid_x": 24576,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 16384,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 170,
+            "seconds": 0.13981639,
+            "grid_x": 4096,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 16384,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 28,
+            "seconds": 0.139110906,
+            "grid_x": 409600,
+            "block_x": 256,
+            "registers_per_thread": 28,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_random_chacha20",
+            "calls": 8388,
+            "seconds": 0.137053739,
+            "grid_x": 1024,
+            "block_x": 128,
+            "registers_per_thread": 38,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_lookup_batch_inverse",
+            "calls": 8192,
+            "seconds": 0.132099797,
+            "grid_x": 115,
+            "block_x": 128,
+            "registers_per_thread": 48,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 56,
+            "seconds": 0.129877105,
+            "grid_x": 16384,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 16384,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 84,
+            "seconds": 0.125372739,
+            "grid_x": 524288,
+            "block_x": 256,
+            "registers_per_thread": 28,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_finalize_at",
+            "calls": 20,
+            "seconds": 0.123132314,
+            "grid_x": 65536,
+            "block_x": 128,
+            "registers_per_thread": 66,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transcript_observe",
+            "calls": 288,
+            "seconds": 0.112510231,
+            "grid_x": 1,
+            "block_x": 1,
+            "registers_per_thread": 60,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_random_scatter",
+            "calls": 8388,
+            "seconds": 0.10911928,
+            "grid_x": 4096,
+            "block_x": 128,
+            "registers_per_thread": 22,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 86,
+            "seconds": 0.105966287,
+            "grid_x": 2048,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 32768,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "quotient_gather",
+            "calls": 4096,
+            "seconds": 0.103107342,
+            "grid_x": 22080,
+            "block_x": 128,
+            "registers_per_thread": 20,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 154,
+            "seconds": 0.100715551,
+            "grid_x": 229376,
+            "block_x": 256,
+            "registers_per_thread": 28,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 168,
+            "seconds": 0.098334261,
+            "grid_x": 8192,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 8192,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_compress",
+            "calls": 20,
+            "seconds": 0.091947161,
+            "grid_x": 32768,
+            "block_x": 128,
+            "registers_per_thread": 66,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 28,
+            "seconds": 0.065445643,
+            "grid_x": 192512,
+            "block_x": 256,
+            "registers_per_thread": 28,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "hiding_randomization_columns",
+            "calls": 32,
+            "seconds": 0.065155016,
+            "grid_x": 409600,
+            "block_x": 256,
+            "registers_per_thread": 16,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "opening_reduce_3",
+            "calls": 10240,
+            "seconds": 0.064884528,
+            "grid_x": 256,
+            "block_x": 256,
+            "registers_per_thread": 56,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "public_periodic",
+            "calls": 432,
+            "seconds": 0.061911341,
+            "grid_x": 16,
+            "block_x": 128,
+            "registers_per_thread": 38,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_compress",
+            "calls": 24,
+            "seconds": 0.05851891,
+            "grid_x": 16384,
+            "block_x": 128,
+            "registers_per_thread": 66,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 278,
+            "seconds": 0.056773442,
+            "grid_x": 4096,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 8192,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_random_offsets",
+            "calls": 8572,
+            "seconds": 0.047158592,
+            "grid_x": 1,
+            "block_x": 128,
+            "registers_per_thread": 24,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "opening_accumulate_3",
+            "calls": 640,
+            "seconds": 0.043585027,
+            "grid_x": 1,
+            "block_x": 256,
+            "registers_per_thread": 56,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 77,
+            "seconds": 0.042581562,
+            "grid_x": 196608,
+            "block_x": 256,
+            "registers_per_thread": 28,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_random_counts",
+            "calls": 8388,
+            "seconds": 0.042103095,
+            "grid_x": 4096,
+            "block_x": 128,
+            "registers_per_thread": 20,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_preprocessing_rows",
+            "calls": 4,
+            "seconds": 0.041844757,
+            "grid_x": 1024,
+            "block_x": 256,
+            "registers_per_thread": 40,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_absorb",
+            "calls": 8,
+            "seconds": 0.037380565,
+            "grid_x": 32768,
+            "block_x": 128,
+            "registers_per_thread": 68,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 47,
+            "seconds": 0.035076107,
+            "grid_x": 262144,
+            "block_x": 256,
+            "registers_per_thread": 28,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 28,
+            "seconds": 0.034951024,
+            "grid_x": 104448,
+            "block_x": 256,
+            "registers_per_thread": 28,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_compress",
+            "calls": 28,
+            "seconds": 0.03141729,
+            "grid_x": 8192,
+            "block_x": 128,
+            "registers_per_thread": 66,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "hiding_randomization_columns",
+            "calls": 32,
+            "seconds": 0.030640222,
+            "grid_x": 192512,
+            "block_x": 256,
+            "registers_per_thread": 16,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "hiding_retain_prefix",
+            "calls": 84,
+            "seconds": 0.030511225,
+            "grid_x": 32768,
+            "block_x": 256,
+            "registers_per_thread": 18,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 406,
+            "seconds": 0.027087577,
+            "grid_x": 512,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 8192,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "opening_compress_3",
+            "calls": 80,
+            "seconds": 0.02529047,
+            "grid_x": 2048,
+            "block_x": 256,
+            "registers_per_thread": 38,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_lookup_denominators",
+            "calls": 8192,
+            "seconds": 0.02191963,
+            "grid_x": 58,
+            "block_x": 256,
+            "registers_per_thread": 40,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "opening_inverses_3",
+            "calls": 544,
+            "seconds": 0.021661529,
+            "grid_x": 512,
+            "block_x": 256,
+            "registers_per_thread": 38,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 80,
+            "seconds": 0.021288764,
+            "grid_x": 98304,
+            "block_x": 256,
+            "registers_per_thread": 28,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "hiding_randomization_columns",
+            "calls": 32,
+            "seconds": 0.019497118,
+            "grid_x": 104448,
+            "block_x": 256,
+            "registers_per_thread": 16,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_finalize",
+            "calls": 4,
+            "seconds": 0.019384676,
+            "grid_x": 32768,
+            "block_x": 128,
+            "registers_per_thread": 64,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 82,
+            "seconds": 0.019053565,
+            "grid_x": 512,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 32768,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 82,
+            "seconds": 0.01858886,
+            "grid_x": 1024,
+            "block_x": 256,
+            "registers_per_thread": 37,
+            "dynamic_shared_bytes": 16384,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_absorb",
+            "calls": 8,
+            "seconds": 0.018452154,
+            "grid_x": 16384,
+            "block_x": 128,
+            "registers_per_thread": 68,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_compress",
+            "calls": 32,
+            "seconds": 0.018105392,
+            "grid_x": 4096,
+            "block_x": 128,
+            "registers_per_thread": 66,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "hiding_retain_prefix",
+            "calls": 208,
+            "seconds": 0.017957029,
+            "grid_x": 4096,
+            "block_x": 256,
+            "registers_per_thread": 18,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "opening_dot_3",
+            "calls": 32,
+            "seconds": 0.016889477,
+            "grid_x": 102400,
+            "block_x": 128,
+            "registers_per_thread": 28,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          }
+        ],
+        "api_times": [
+          {
+            "name": "cuEventSynchronize",
+            "calls": 143416,
+            "inclusive_seconds": 34.741464331,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuCtxSynchronize",
+            "calls": 22971,
+            "inclusive_seconds": 1.568244121,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuMemAlloc_v2",
+            "calls": 9859,
+            "inclusive_seconds": 0.581154684,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuMemFree_v2",
+            "calls": 9859,
+            "inclusive_seconds": 0.562811214,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuMemGetInfo_v2",
+            "calls": 9860,
+            "inclusive_seconds": 0.356012678,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuEventRecord",
+            "calls": 286832,
+            "inclusive_seconds": 0.261034364,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuLaunchKernel",
+            "calls": 143416,
+            "inclusive_seconds": 0.249723935,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuMemcpyHtoD_v2",
+            "calls": 3148,
+            "inclusive_seconds": 0.082218084,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuMemcpyDtoH_v2",
+            "calls": 10603,
+            "inclusive_seconds": 0.064739615,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuMemsetD8_v2",
+            "calls": 19718,
+            "inclusive_seconds": 0.034545737,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuStreamSynchronize",
+            "calls": 23740,
+            "inclusive_seconds": 0.007919517,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuModuleLoadData",
+            "calls": 15,
+            "inclusive_seconds": 0.007709504,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuModuleUnload",
+            "calls": 15,
+            "inclusive_seconds": 0.001317734,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuMemcpyDtoD_v2",
+            "calls": 104,
+            "inclusive_seconds": 0.000362544,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuStreamCreate",
+            "calls": 1,
+            "inclusive_seconds": 4.2362e-05,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuInit",
+            "calls": 2,
+            "inclusive_seconds": 4.09e-06,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuStreamDestroy_v2",
+            "calls": 1,
+            "inclusive_seconds": 3.65e-06,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuCtxSetCurrent",
+            "calls": 1,
+            "inclusive_seconds": 2.26e-06,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuEventCreate",
+            "calls": 2,
+            "inclusive_seconds": 1.79e-06,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuEventDestroy_v2",
+            "calls": 2,
+            "inclusive_seconds": 1.78e-06,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          }
+        ],
+        "host_ranges": [
+          {
+            "name": "cuda.prove",
+            "calls": 20,
+            "inclusive_host_seconds": 43.62422807
+          },
+          {
+            "name": "cuda.wait",
+            "calls": 143416,
+            "inclusive_host_seconds": 34.822391409
+          },
+          {
+            "name": "cuda.allocate",
+            "calls": 9859,
+            "inclusive_host_seconds": 1.698380351
+          },
+          {
+            "name": "cuda.free",
+            "calls": 9859,
+            "inclusive_host_seconds": 1.404386602
+          },
+          {
+            "name": "cuda.compile",
+            "calls": 19,
+            "inclusive_host_seconds": 1.027603051
+          },
+          {
+            "name": "cuda.initialize",
+            "calls": 1,
+            "inclusive_host_seconds": 0.178245887
+          },
+          {
+            "name": "cuda.lookup",
+            "calls": 40984,
+            "inclusive_host_seconds": 0.169554318
+          },
+          {
+            "name": "cuda.randomness",
+            "calls": 34444,
+            "inclusive_host_seconds": 0.141293755
+          },
+          {
+            "name": "cuda.upload",
+            "calls": 3148,
+            "inclusive_host_seconds": 0.109711853
+          },
+          {
+            "name": "cuda.witness",
+            "calls": 25652,
+            "inclusive_host_seconds": 0.105156124
+          },
+          {
+            "name": "cuda.opening",
+            "calls": 22800,
+            "inclusive_host_seconds": 0.093471052
+          },
+          {
+            "name": "cuda.download",
+            "calls": 10603,
+            "inclusive_host_seconds": 0.07633033
+          },
+          {
+            "name": "cuda.quotient",
+            "calls": 8228,
+            "inclusive_host_seconds": 0.034565181
+          },
+          {
+            "name": "cuda.transform",
+            "calls": 5410,
+            "inclusive_host_seconds": 0.02433476
+          },
+          {
+            "name": "cuda.drain",
+            "calls": 23730,
+            "inclusive_host_seconds": 0.016736669
+          },
+          {
+            "name": "cuda.commitment",
+            "calls": 2144,
+            "inclusive_host_seconds": 0.009009218
+          },
+          {
+            "name": "cuda.preprocessing",
+            "calls": 1212,
+            "inclusive_host_seconds": 0.005921954
+          },
+          {
+            "name": "cuda.hiding",
+            "calls": 1092,
+            "inclusive_host_seconds": 0.005866168
+          },
+          {
+            "name": "cuda.fri_query",
+            "calls": 746,
+            "inclusive_host_seconds": 0.003292252
+          },
+          {
+            "name": "cuda.transcript",
+            "calls": 384,
+            "inclusive_host_seconds": 0.001760689
+          },
+          {
+            "name": "cuda.scalar",
+            "calls": 148,
+            "inclusive_host_seconds": 0.000724057
+          },
+          {
+            "name": "cuda.public_values",
+            "calls": 77,
+            "inclusive_host_seconds": 0.00053962
+          },
+          {
+            "name": "cuda.fri_fold",
+            "calls": 76,
+            "inclusive_host_seconds": 0.00033956
+          },
+          {
+            "name": "cuda.grinding",
+            "calls": 15,
+            "inclusive_host_seconds": 6.9433e-05
+          },
+          {
+            "name": "cuda.final_polynomial",
+            "calls": 4,
+            "inclusive_host_seconds": 1.6481e-05
+          }
+        ],
+        "interpretation": "Instrumented diagnostics only. API waits overlap GPU work; host ranges nest. Neither may be added to kernel time or treated as removable overhead. Kernel-active time excludes transfers and memory initialization."
+      },
+      "provenance": {
+        "campaign": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-01/nsys-baseline-03",
+        "identity_sha256": "e36ce09ea70b4588724206ada0458dd931b788d19c7dfa7577f1088f86ead680",
+        "source_pins_sha256": "62b0c1eeb6edc54ddb76afae0f7e1f2b95f90381d488ab55ffa596d5c7bd22f9",
+        "binaries": {
+          "baseline": {
+            "backend": "cuda",
+            "binary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-01/cuda-baseline",
+            "sha256": "27d4d5ef1d7aea53066d5c5c5db82234d071b9b2cb337267263aefdf970ee501"
+          }
+        },
+        "scope": "Diagnostic before/after profiles. Performance qualification uses the separately rebuilt, matched-source uninstrumented campaign."
+      }
+    },
+    "candidate": {
+      "instrumented": true,
+      "kernel_totals": [
+        {
+          "name": "quotient_evaluate_3",
+          "calls": 4096,
+          "seconds": 8.05842651
+        },
+        {
+          "name": "commitment_absorb",
+          "calls": 600,
+          "seconds": 5.452426579
+        },
+        {
+          "name": "ntt_tile",
+          "calls": 4571,
+          "seconds": 4.898801403
+        },
+        {
+          "name": "public_hash",
+          "calls": 118,
+          "seconds": 0.82281136
+        },
+        {
+          "name": "device_lookup_expressions",
+          "calls": 1024,
+          "seconds": 0.413236955
+        },
+        {
+          "name": "transform_scale",
+          "calls": 569,
+          "seconds": 0.392956153
+        },
+        {
+          "name": "opening_inverses_3",
+          "calls": 10880,
+          "seconds": 0.264129278
+        },
+        {
+          "name": "commitment_compress",
+          "calls": 1448,
+          "seconds": 0.242327581
+        },
+        {
+          "name": "device_witness_wave",
+          "calls": 25644,
+          "seconds": 0.218660137
+        },
+        {
+          "name": "device_random_chacha20",
+          "calls": 8575,
+          "seconds": 0.137362427
+        },
+        {
+          "name": "commitment_finalize_at",
+          "calls": 20,
+          "seconds": 0.120428541
+        },
+        {
+          "name": "hiding_randomization_columns",
+          "calls": 112,
+          "seconds": 0.116443856
+        },
+        {
+          "name": "transcript_observe",
+          "calls": 288,
+          "seconds": 0.112260604
+        },
+        {
+          "name": "device_random_scatter",
+          "calls": 8575,
+          "seconds": 0.109308729
+        },
+        {
+          "name": "quotient_gather",
+          "calls": 5120,
+          "seconds": 0.108832625
+        },
+        {
+          "name": "device_lookup_fractions",
+          "calls": 1024,
+          "seconds": 0.092185191
+        },
+        {
+          "name": "opening_reduce_3",
+          "calls": 10240,
+          "seconds": 0.064513836
+        },
+        {
+          "name": "public_periodic",
+          "calls": 476,
+          "seconds": 0.062346175
+        },
+        {
+          "name": "hiding_retain_prefix",
+          "calls": 368,
+          "seconds": 0.055172903
+        },
+        {
+          "name": "device_random_offsets",
+          "calls": 8575,
+          "seconds": 0.047088899
+        },
+        {
+          "name": "opening_accumulate_3",
+          "calls": 640,
+          "seconds": 0.043530446
+        },
+        {
+          "name": "device_lookup_batch_inverse",
+          "calls": 1024,
+          "seconds": 0.04321479
+        },
+        {
+          "name": "opening_dot_3",
+          "calls": 640,
+          "seconds": 0.043075488
+        },
+        {
+          "name": "device_preprocessing_rows",
+          "calls": 4,
+          "seconds": 0.043022239
+        },
+        {
+          "name": "device_random_counts",
+          "calls": 8575,
+          "seconds": 0.042279876
+        },
+        {
+          "name": "commitment_finalize",
+          "calls": 76,
+          "seconds": 0.036966324
+        },
+        {
+          "name": "query_prefix",
+          "calls": 293,
+          "seconds": 0.026910821
+        },
+        {
+          "name": "opening_compress_3",
+          "calls": 80,
+          "seconds": 0.025807157
+        },
+        {
+          "name": "hiding_quotient_coefficients",
+          "calls": 256,
+          "seconds": 0.014447088
+        },
+        {
+          "name": "hiding_trace_columns",
+          "calls": 96,
+          "seconds": 0.012734273
+        },
+        {
+          "name": "device_lookup_denominators",
+          "calls": 1024,
+          "seconds": 0.010586859
+        },
+        {
+          "name": "device_witness_rows",
+          "calls": 4,
+          "seconds": 0.009871208
+        },
+        {
+          "name": "quotient_scatter",
+          "calls": 32,
+          "seconds": 0.005867036
+        },
+        {
+          "name": "hiding_quotient_columns",
+          "calls": 256,
+          "seconds": 0.005292475
+        },
+        {
+          "name": "quotient_alpha_3",
+          "calls": 32,
+          "seconds": 0.003701512
+        },
+        {
+          "name": "fri_fold_3_1",
+          "calls": 76,
+          "seconds": 0.003058724
+        },
+        {
+          "name": "transform_parameters",
+          "calls": 356,
+          "seconds": 0.002467106
+        },
+        {
+          "name": "transcript_sample",
+          "calls": 96,
+          "seconds": 0.002230488
+        },
+        {
+          "name": "opening_terms_3",
+          "calls": 80,
+          "seconds": 0.001335089
+        },
+        {
+          "name": "opening_parameters_3",
+          "calls": 80,
+          "seconds": 0.001125135
+        },
+        {
+          "name": "transcript_grind_candidates",
+          "calls": 8,
+          "seconds": 0.000665576
+        },
+        {
+          "name": "device_lookup_accumulator",
+          "calls": 4,
+          "seconds": 0.000468293
+        },
+        {
+          "name": "gather_rows",
+          "calls": 293,
+          "seconds": 0.000415849
+        },
+        {
+          "name": "public_fold",
+          "calls": 659,
+          "seconds": 0.000379233
+        },
+        {
+          "name": "opening_weights_3",
+          "calls": 80,
+          "seconds": 0.000218913
+        },
+        {
+          "name": "device_random_gather",
+          "calls": 156,
+          "seconds": 0.000207171
+        },
+        {
+          "name": "public_constants",
+          "calls": 21,
+          "seconds": 0.000175712
+        },
+        {
+          "name": "commitment_paths",
+          "calls": 84,
+          "seconds": 0.00017536
+        },
+        {
+          "name": "device_lookup_scan_blocks",
+          "calls": 12,
+          "seconds": 0.000123362
+        },
+        {
+          "name": "transcript_grind_reduce",
+          "calls": 8,
+          "seconds": 9.7729e-05
+        },
+        {
+          "name": "fri_gather",
+          "calls": 76,
+          "seconds": 9.7377e-05
+        },
+        {
+          "name": "transcript_grind_commit",
+          "calls": 8,
+          "seconds": 8.8929e-05
+        },
+        {
+          "name": "opening_scale_3",
+          "calls": 80,
+          "seconds": 8.5185e-05
+        },
+        {
+          "name": "fri_copy",
+          "calls": 80,
+          "seconds": 5.0624e-05
+        },
+        {
+          "name": "device_lookup_scan_offsets",
+          "calls": 8,
+          "seconds": 4.176e-05
+        },
+        {
+          "name": "quotient_domain",
+          "calls": 32,
+          "seconds": 4.1632e-05
+        },
+        {
+          "name": "hiding_quotient_parameters",
+          "calls": 4,
+          "seconds": 3.6288e-05
+        },
+        {
+          "name": "public_summary",
+          "calls": 7,
+          "seconds": 1.472e-05
+        },
+        {
+          "name": "quotient_partition",
+          "calls": 4,
+          "seconds": 7.521e-06
+        },
+        {
+          "name": "scalar_lookup",
+          "calls": 4,
+          "seconds": 7.521e-06
+        },
+        {
+          "name": "device_witness_public",
+          "calls": 8,
+          "seconds": 5.12e-06
+        },
+        {
+          "name": "scalar_next_points",
+          "calls": 4,
+          "seconds": 3.584e-06
+        }
+      ],
+      "analysis": {
+        "schema": "lattica-cuda-profile-v1",
+        "sqlite": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/candidate-n4.sqlite",
+        "sha256": "3afdcbab7cdc5f861f6ad4d13b978f3636f11e47e611d169c46971cacca7e24b",
+        "device_timelines": [
+          {
+            "device_id": 0,
+            "kernel_calls": 107683,
+            "kernel_sum_seconds": 22.170651335,
+            "kernel_active_seconds": 22.170651335,
+            "first_to_last_kernel_seconds": 37.078599926
+          }
+        ],
+        "kernel_geometry": [
+          {
+            "name": "quotient_evaluate_3",
+            "calls": 4096,
+            "seconds": 8.05842651,
+            "grid_x": 64,
+            "block_x": 64,
+            "registers_per_thread": 54,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_absorb",
+            "calls": 448,
+            "seconds": 5.374585964,
+            "grid_x": 65536,
+            "block_x": 128,
+            "registers_per_thread": 68,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 556,
+            "seconds": 1.015625556,
+            "grid_x": 32768,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 17472,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "public_hash",
+            "calls": 118,
+            "seconds": 0.82281136,
+            "grid_x": 1,
+            "block_x": 1,
+            "registers_per_thread": 62,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 168,
+            "seconds": 0.705270604,
+            "grid_x": 32768,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 33856,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 278,
+            "seconds": 0.541253608,
+            "grid_x": 65536,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 8760,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 112,
+            "seconds": 0.41496979,
+            "grid_x": 106496,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 8496,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_lookup_expressions",
+            "calls": 1024,
+            "seconds": 0.413236955,
+            "grid_x": 4,
+            "block_x": 256,
+            "registers_per_thread": 30,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 422,
+            "seconds": 0.345976223,
+            "grid_x": 32768,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 5184,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 84,
+            "seconds": 0.304929532,
+            "grid_x": 65536,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 16952,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "opening_inverses_3",
+            "calls": 10336,
+            "seconds": 0.242647544,
+            "grid_x": 256,
+            "block_x": 256,
+            "registers_per_thread": 38,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 112,
+            "seconds": 0.236814809,
+            "grid_x": 49152,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 8496,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 56,
+            "seconds": 0.192967909,
+            "grid_x": 53248,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 16952,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 164,
+            "seconds": 0.183594657,
+            "grid_x": 32768,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 9280,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_witness_wave",
+            "calls": 24091,
+            "seconds": 0.181420006,
+            "grid_x": 1,
+            "block_x": 256,
+            "registers_per_thread": 66,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 56,
+            "seconds": 0.172208456,
+            "grid_x": 24576,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 16952,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 112,
+            "seconds": 0.14306135,
+            "grid_x": 32768,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 8496,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_random_chacha20",
+            "calls": 7812,
+            "seconds": 0.127395984,
+            "grid_x": 1024,
+            "block_x": 128,
+            "registers_per_thread": 38,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 56,
+            "seconds": 0.122340604,
+            "grid_x": 16384,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 16952,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_finalize_at",
+            "calls": 20,
+            "seconds": 0.120428541,
+            "grid_x": 65536,
+            "block_x": 128,
+            "registers_per_thread": 66,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 211,
+            "seconds": 0.119815081,
+            "grid_x": 65536,
+            "block_x": 128,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 2616,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transcript_observe",
+            "calls": 288,
+            "seconds": 0.112260604,
+            "grid_x": 1,
+            "block_x": 1,
+            "registers_per_thread": 60,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 172,
+            "seconds": 0.111799124,
+            "grid_x": 32768,
+            "block_x": 128,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 3136,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 84,
+            "seconds": 0.109933305,
+            "grid_x": 524288,
+            "block_x": 256,
+            "registers_per_thread": 26,
+            "dynamic_shared_bytes": 2048,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_random_scatter",
+            "calls": 8388,
+            "seconds": 0.108864401,
+            "grid_x": 4096,
+            "block_x": 128,
+            "registers_per_thread": 22,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "quotient_gather",
+            "calls": 4096,
+            "seconds": 0.103613567,
+            "grid_x": 22080,
+            "block_x": 128,
+            "registers_per_thread": 20,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_compress",
+            "calls": 20,
+            "seconds": 0.093509949,
+            "grid_x": 32768,
+            "block_x": 128,
+            "registers_per_thread": 66,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_lookup_fractions",
+            "calls": 1024,
+            "seconds": 0.092185191,
+            "grid_x": 4,
+            "block_x": 256,
+            "registers_per_thread": 40,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 154,
+            "seconds": 0.089424719,
+            "grid_x": 229376,
+            "block_x": 256,
+            "registers_per_thread": 26,
+            "dynamic_shared_bytes": 2048,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 82,
+            "seconds": 0.086292668,
+            "grid_x": 65536,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 4664,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "hiding_randomization_columns",
+            "calls": 32,
+            "seconds": 0.065260725,
+            "grid_x": 409600,
+            "block_x": 256,
+            "registers_per_thread": 16,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "opening_reduce_3",
+            "calls": 10240,
+            "seconds": 0.064513836,
+            "grid_x": 256,
+            "block_x": 256,
+            "registers_per_thread": 56,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "public_periodic",
+            "calls": 432,
+            "seconds": 0.061912028,
+            "grid_x": 16,
+            "block_x": 128,
+            "registers_per_thread": 38,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 28,
+            "seconds": 0.060402178,
+            "grid_x": 409600,
+            "block_x": 256,
+            "registers_per_thread": 26,
+            "dynamic_shared_bytes": 2048,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 556,
+            "seconds": 0.059890291,
+            "grid_x": 8192,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 4400,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_compress",
+            "calls": 24,
+            "seconds": 0.056285814,
+            "grid_x": 16384,
+            "block_x": 128,
+            "registers_per_thread": 66,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_random_offsets",
+            "calls": 8575,
+            "seconds": 0.047088899,
+            "grid_x": 1,
+            "block_x": 128,
+            "registers_per_thread": 24,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "opening_accumulate_3",
+            "calls": 640,
+            "seconds": 0.043530446,
+            "grid_x": 1,
+            "block_x": 256,
+            "registers_per_thread": 56,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_lookup_batch_inverse",
+            "calls": 1024,
+            "seconds": 0.04321479,
+            "grid_x": 920,
+            "block_x": 128,
+            "registers_per_thread": 48,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_preprocessing_rows",
+            "calls": 4,
+            "seconds": 0.043022239,
+            "grid_x": 1024,
+            "block_x": 256,
+            "registers_per_thread": 40,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "device_random_counts",
+            "calls": 8388,
+            "seconds": 0.042056193,
+            "grid_x": 4096,
+            "block_x": 128,
+            "registers_per_thread": 20,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_absorb",
+            "calls": 8,
+            "seconds": 0.038023739,
+            "grid_x": 32768,
+            "block_x": 128,
+            "registers_per_thread": 68,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 77,
+            "seconds": 0.03615509,
+            "grid_x": 196608,
+            "block_x": 256,
+            "registers_per_thread": 26,
+            "dynamic_shared_bytes": 2048,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 86,
+            "seconds": 0.036029861,
+            "grid_x": 65536,
+            "block_x": 64,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 1592,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 168,
+            "seconds": 0.032612091,
+            "grid_x": 8192,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 8496,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_compress",
+            "calls": 28,
+            "seconds": 0.031313008,
+            "grid_x": 8192,
+            "block_x": 128,
+            "registers_per_thread": 66,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "hiding_randomization_columns",
+            "calls": 32,
+            "seconds": 0.031053801,
+            "grid_x": 192512,
+            "block_x": 256,
+            "registers_per_thread": 16,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "hiding_retain_prefix",
+            "calls": 84,
+            "seconds": 0.03064323,
+            "grid_x": 32768,
+            "block_x": 256,
+            "registers_per_thread": 18,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 47,
+            "seconds": 0.029430698,
+            "grid_x": 262144,
+            "block_x": 256,
+            "registers_per_thread": 26,
+            "dynamic_shared_bytes": 2048,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 278,
+            "seconds": 0.028589455,
+            "grid_x": 4096,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 8760,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 28,
+            "seconds": 0.028054059,
+            "grid_x": 192512,
+            "block_x": 256,
+            "registers_per_thread": 26,
+            "dynamic_shared_bytes": 2048,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "opening_compress_3",
+            "calls": 80,
+            "seconds": 0.025807157,
+            "grid_x": 2048,
+            "block_x": 256,
+            "registers_per_thread": 38,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "opening_inverses_3",
+            "calls": 544,
+            "seconds": 0.021481734,
+            "grid_x": 512,
+            "block_x": 256,
+            "registers_per_thread": 38,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_absorb",
+            "calls": 8,
+            "seconds": 0.019780694,
+            "grid_x": 16384,
+            "block_x": 128,
+            "registers_per_thread": 68,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "hiding_randomization_columns",
+            "calls": 32,
+            "seconds": 0.019616943,
+            "grid_x": 104448,
+            "block_x": 256,
+            "registers_per_thread": 16,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 80,
+            "seconds": 0.019059755,
+            "grid_x": 98304,
+            "block_x": 256,
+            "registers_per_thread": 26,
+            "dynamic_shared_bytes": 2048,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "hiding_retain_prefix",
+            "calls": 208,
+            "seconds": 0.018296833,
+            "grid_x": 4096,
+            "block_x": 256,
+            "registers_per_thread": 18,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_compress",
+            "calls": 32,
+            "seconds": 0.018047779,
+            "grid_x": 4096,
+            "block_x": 128,
+            "registers_per_thread": 66,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_finalize",
+            "calls": 4,
+            "seconds": 0.017980258,
+            "grid_x": 32768,
+            "block_x": 128,
+            "registers_per_thread": 64,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "ntt_tile",
+            "calls": 84,
+            "seconds": 0.017310801,
+            "grid_x": 4096,
+            "block_x": 256,
+            "registers_per_thread": 34,
+            "dynamic_shared_bytes": 16952,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "opening_dot_3",
+            "calls": 32,
+            "seconds": 0.016773205,
+            "grid_x": 102400,
+            "block_x": 128,
+            "registers_per_thread": 28,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "transform_scale",
+            "calls": 28,
+            "seconds": 0.015226082,
+            "grid_x": 104448,
+            "block_x": 256,
+            "registers_per_thread": 26,
+            "dynamic_shared_bytes": 2048,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "query_prefix",
+            "calls": 150,
+            "seconds": 0.014442969,
+            "grid_x": 14336,
+            "block_x": 256,
+            "registers_per_thread": 16,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          },
+          {
+            "name": "commitment_compress",
+            "calls": 728,
+            "seconds": 0.012467777,
+            "grid_x": 1,
+            "block_x": 128,
+            "registers_per_thread": 66,
+            "dynamic_shared_bytes": 0,
+            "local_bytes_per_thread": 0
+          }
+        ],
+        "api_times": [
+          {
+            "name": "cuEventSynchronize",
+            "calls": 107683,
+            "inclusive_seconds": 23.085561998,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuCtxSynchronize",
+            "calls": 22971,
+            "inclusive_seconds": 1.600826657,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuMemAlloc_v2",
+            "calls": 9859,
+            "inclusive_seconds": 0.580916171,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuMemFree_v2",
+            "calls": 9859,
+            "inclusive_seconds": 0.545958132,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuMemGetInfo_v2",
+            "calls": 9860,
+            "inclusive_seconds": 0.335038743,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuEventRecord",
+            "calls": 215366,
+            "inclusive_seconds": 0.195837192,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuLaunchKernel",
+            "calls": 107683,
+            "inclusive_seconds": 0.186569933,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuMemcpyHtoD_v2",
+            "calls": 3148,
+            "inclusive_seconds": 0.083234712,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuMemcpyDtoH_v2",
+            "calls": 10609,
+            "inclusive_seconds": 0.063654694,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuMemsetD8_v2",
+            "calls": 19718,
+            "inclusive_seconds": 0.033643034,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuModuleLoadData",
+            "calls": 15,
+            "inclusive_seconds": 0.008032728,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuStreamSynchronize",
+            "calls": 23746,
+            "inclusive_seconds": 0.007820234,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuModuleUnload",
+            "calls": 15,
+            "inclusive_seconds": 0.00121701,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuMemcpyDtoD_v2",
+            "calls": 104,
+            "inclusive_seconds": 0.000327729,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuStreamCreate",
+            "calls": 1,
+            "inclusive_seconds": 6.0443e-05,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuInit",
+            "calls": 2,
+            "inclusive_seconds": 3.76e-06,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuStreamDestroy_v2",
+            "calls": 1,
+            "inclusive_seconds": 3.44e-06,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuCtxSetCurrent",
+            "calls": 1,
+            "inclusive_seconds": 2.8e-06,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuEventDestroy_v2",
+            "calls": 2,
+            "inclusive_seconds": 1.771e-06,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          },
+          {
+            "name": "cuEventCreate",
+            "calls": 2,
+            "inclusive_seconds": 1.72e-06,
+            "table": "CUPTI_ACTIVITY_KIND_RUNTIME"
+          }
+        ],
+        "host_ranges": [
+          {
+            "name": "cuda.prove",
+            "calls": 20,
+            "inclusive_host_seconds": 31.845139788
+          },
+          {
+            "name": "cuda.wait",
+            "calls": 107683,
+            "inclusive_host_seconds": 23.145893607
+          },
+          {
+            "name": "cuda.allocate",
+            "calls": 9859,
+            "inclusive_host_seconds": 1.688170802
+          },
+          {
+            "name": "cuda.free",
+            "calls": 9859,
+            "inclusive_host_seconds": 1.406118852
+          },
+          {
+            "name": "cuda.compile",
+            "calls": 19,
+            "inclusive_host_seconds": 1.036068805
+          },
+          {
+            "name": "cuda.initialize",
+            "calls": 1,
+            "inclusive_host_seconds": 0.182547648
+          },
+          {
+            "name": "cuda.randomness",
+            "calls": 34456,
+            "inclusive_host_seconds": 0.141067524
+          },
+          {
+            "name": "cuda.upload",
+            "calls": 3148,
+            "inclusive_host_seconds": 0.112110931
+          },
+          {
+            "name": "cuda.witness",
+            "calls": 25652,
+            "inclusive_host_seconds": 0.10515102
+          },
+          {
+            "name": "cuda.opening",
+            "calls": 22800,
+            "inclusive_host_seconds": 0.093195224
+          },
+          {
+            "name": "cuda.download",
+            "calls": 10609,
+            "inclusive_host_seconds": 0.075380127
+          },
+          {
+            "name": "cuda.quotient",
+            "calls": 8228,
+            "inclusive_host_seconds": 0.034322599
+          },
+          {
+            "name": "cuda.transform",
+            "calls": 5496,
+            "inclusive_host_seconds": 0.024296662
+          },
+          {
+            "name": "cuda.lookup",
+            "calls": 5144,
+            "inclusive_host_seconds": 0.021314949
+          },
+          {
+            "name": "cuda.drain",
+            "calls": 23736,
+            "inclusive_host_seconds": 0.016642722
+          },
+          {
+            "name": "cuda.commitment",
+            "calls": 2144,
+            "inclusive_host_seconds": 0.008959646
+          },
+          {
+            "name": "cuda.preprocessing",
+            "calls": 1212,
+            "inclusive_host_seconds": 0.006010165
+          },
+          {
+            "name": "cuda.hiding",
+            "calls": 1092,
+            "inclusive_host_seconds": 0.005697283
+          },
+          {
+            "name": "cuda.fri_query",
+            "calls": 746,
+            "inclusive_host_seconds": 0.003207134
+          },
+          {
+            "name": "cuda.transcript",
+            "calls": 384,
+            "inclusive_host_seconds": 0.001753633
+          },
+          {
+            "name": "cuda.scalar",
+            "calls": 148,
+            "inclusive_host_seconds": 0.000736727
+          },
+          {
+            "name": "cuda.public_values",
+            "calls": 77,
+            "inclusive_host_seconds": 0.000541563
+          },
+          {
+            "name": "cuda.fri_fold",
+            "calls": 76,
+            "inclusive_host_seconds": 0.000339607
+          },
+          {
+            "name": "cuda.grinding",
+            "calls": 24,
+            "inclusive_host_seconds": 0.000105495
+          },
+          {
+            "name": "cuda.final_polynomial",
+            "calls": 4,
+            "inclusive_host_seconds": 1.649e-05
+          }
+        ],
+        "interpretation": "Instrumented diagnostics only. API waits overlap GPU work; host ranges nest. Neither may be added to kernel time or treated as removable overhead. Kernel-active time excludes transfers and memory initialization."
+      },
+      "provenance": {
+        "campaign": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/nsys-candidate",
+        "identity_sha256": "67086897ebd211d4d1880c82acad9ed6cad607c625d8ecff560b805800a8e808",
+        "source_pins_sha256": "d79a92dd8690a3cd49605607db4a17c86662b8b54aee7e24764f4d546c6ed087",
+        "binaries": {
+          "combined": {
+            "backend": "cuda",
+            "binary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/cuda-combined",
+            "sha256": "c5a96c5311e509655e50fd9a4fdd10e8e3f22ac58bd7a57d037aacf2ed235905"
+          }
+        },
+        "scope": "Diagnostic before/after profiles. Performance qualification uses the separately rebuilt, matched-source uninstrumented campaign."
+      }
+    }
+  },
+  "nsight_compute": {
+    "status": "passed",
+    "observed_at_utc": "2026-10-29T06:12:53.668320+00:00",
+    "instrumented": true,
+    "permission": {
+      "driver_parameter": "RmProfilingAdminOnly: 0",
+      "configuration": "options nvidia NVreg_RestrictProfilingToAdminUsers=0",
+      "applied_by": "host administrator; active after reboot"
+    },
+    "captures": [
+      {
+        "status": "passed",
+        "instrumented": true,
+        "kind": "software_instruction_metrics",
+        "profile": {
+          "tool": "ncu",
+          "executable": "/usr/bin/ncu",
+          "nvtx_library": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-01/nvtx.so",
+          "kernel": "ntt_tile",
+          "launch_skip": 75,
+          "launch_count": 1,
+          "metrics": [
+            "sass__inst_executed_per_opcode"
+          ]
+        },
+        "report": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-candidate-04/n4-combined-profile-1/recursive/workers/gpu-01/kernel-profile.ncu-repz",
+        "report_sha256": "89415947b56d1c7d07afa52f7f510378679f023a72c856eed097b0a52d988cb5",
+        "raw_metrics": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-instructions-04.csv",
+        "captured_launches": 1,
+        "cpu_verified_proofs": 4,
+        "cpu_verified_roots": 1,
+        "workers_retired": true,
+        "managed_gpu_peak_bytes": 7450302264,
+        "metrics": {
+          "Kernel Name": {
+            "value": "ntt_tile",
+            "unit": ""
+          },
+          "Block Size": {
+            "value": "(256, 1, 1)",
+            "unit": ""
+          },
+          "Grid Size": {
+            "value": "(32768, 1, 1)",
+            "unit": ""
+          },
+          "launch__registers_per_thread": {
+            "value": "34",
+            "unit": "register/thread"
+          },
+          "launch__shared_mem_per_block_dynamic": {
+            "value": "17.472000",
+            "unit": "Kbyte/block"
+          },
+          "sass__inst_executed_per_opcode": {
+            "value": "942080000",
+            "unit": ""
+          },
+          "sass__inst_executed_register_spilling": {
+            "value": "0",
+            "unit": "inst"
+          }
+        },
+        "scope": "One representative NTT launch; software instruction metrics only. Instrumented timings are excluded from throughput comparisons."
+      },
+      {
+        "status": "passed",
+        "instrumented": true,
+        "kind": "hardware_counters",
+        "profile": {
+          "tool": "ncu",
+          "executable": "/usr/bin/ncu",
+          "nvtx_library": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-01/nvtx.so",
+          "kernel": "ntt_tile",
+          "launch_skip": 75,
+          "launch_count": 1,
+          "metrics": [
+            "gpu__time_duration.sum",
+            "sm__throughput.avg.pct_of_peak_sustained_elapsed",
+            "gpu__compute_memory_throughput.avg.pct_of_peak_sustained_elapsed",
+            "gpu__dram_throughput.avg.pct_of_peak_sustained_elapsed",
+            "sm__warps_active.avg.pct_of_peak_sustained_active",
+            "l1tex__t_sectors_pipe_lsu_mem_local_op_ld.sum",
+            "l1tex__t_sectors_pipe_lsu_mem_local_op_st.sum"
+          ]
+        },
+        "report": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-candidate-05/n4-combined-profile-1/recursive/workers/gpu-01/kernel-profile.ncu-repz",
+        "report_sha256": "6340a1f494757efdecdcbf39eca30518e909285b76079e42bc8b4f159cf044c9",
+        "raw_metrics": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-hardware-05.csv",
+        "captured_launches": 1,
+        "cpu_verified_proofs": 4,
+        "cpu_verified_roots": 1,
+        "workers_retired": true,
+        "managed_gpu_peak_bytes": 7450302264,
+        "metrics": {
+          "Kernel Name": {
+            "value": "ntt_tile",
+            "unit": ""
+          },
+          "Block Size": {
+            "value": "(256, 1, 1)",
+            "unit": ""
+          },
+          "Grid Size": {
+            "value": "(32768, 1, 1)",
+            "unit": ""
+          },
+          "gpu__compute_memory_throughput.avg.pct_of_peak_sustained_elapsed": {
+            "value": "61.774040",
+            "unit": "%"
+          },
+          "gpu__dram_throughput.avg.pct_of_peak_sustained_elapsed": {
+            "value": "61.774040",
+            "unit": "%"
+          },
+          "gpu__time_duration.sum": {
+            "value": "1.812288",
+            "unit": "ms"
+          },
+          "l1tex__t_sectors_pipe_lsu_mem_local_op_ld.sum": {
+            "value": "0",
+            "unit": "sector"
+          },
+          "l1tex__t_sectors_pipe_lsu_mem_local_op_st.sum": {
+            "value": "0",
+            "unit": "sector"
+          },
+          "launch__occupancy_limit_shared_mem": {
+            "value": "5.000000",
+            "unit": "block"
+          },
+          "launch__registers_per_thread": {
+            "value": "34",
+            "unit": "register/thread"
+          },
+          "launch__shared_mem_per_block_dynamic": {
+            "value": "17.472000",
+            "unit": "Kbyte/block"
+          },
+          "sm__throughput.avg.pct_of_peak_sustained_elapsed": {
+            "value": "72.455982",
+            "unit": "%"
+          },
+          "sm__warps_active.avg.pct_of_peak_sustained_active": {
+            "value": "82.533184",
+            "unit": "%"
+          }
+        },
+        "scope": "One representative NTT launch, seven hardware metrics. Clock and cache control remain disabled. Nine replay passes; diagnostic only, not a throughput measurement."
+      }
+    ],
+    "cpu_verified_proofs": 8,
+    "cpu_verified_roots": 2,
+    "worker_handoff_fix": "Shared-worker captures follow the exec handoff within the assigned cgroup.",
+    "report_format_fix": "Accept one non-empty .ncu-rep or .ncu-repz capture; reject missing, empty, non-file and ambiguous reports.",
+    "scope": "Two diagnostic launches on the optimized RTX 5080 candidate. Instrumented runs are excluded from all throughput comparisons; no baseline hardware-counter comparison claimed.",
+    "prior_attempts": [
+      "ncu-candidate",
+      "ncu-candidate-02",
+      "ncu-candidate-03"
+    ]
+  },
+  "rejected_submission_candidate": {
+    "schema": "lattica-cuda-comparison-v1",
+    "baseline": "baseline",
+    "candidate": "batch",
+    "qualified": false,
+    "repeat_recommended": false,
+    "rule": "At least 2% lower median proof interval on an improving workload with >=80% paired wins; no workload median regression over 2% in either proof interval or launcher time.",
+    "workloads": [
+      {
+        "count": 4,
+        "pairs": 5,
+        "user_transactions": 3,
+        "issuance_entries": 1,
+        "whole_launcher_seconds": {
+          "baseline_median": 56.38209851499414,
+          "candidate_median": 56.483605696004815,
+          "median_reduction_percent": -0.18003441461775793,
+          "paired_reductions_percent": [
+            0.006763303388035435,
+            -0.18003441461775793,
+            -1.1701659674044018,
+            0.00218794224299268,
+            -0.9003775710958228
+          ],
+          "candidate_faster_pairs": 2
+        },
+        "proof_observations_seconds": {
+          "baseline_median": 50.052,
+          "candidate_median": 50.483,
+          "median_reduction_percent": -0.8611044513705757,
+          "paired_reductions_percent": [
+            -0.8771756524487806,
+            -0.32980350863252017,
+            -0.5479232907392939,
+            -0.8611044513705757,
+            -0.5838098104122835
+          ],
+          "candidate_faster_pairs": 0
+        },
+        "candidate_aggregation_equivalent_user_transactions_per_hour": 191.2059236820978
+      },
+      {
+        "count": 8,
+        "pairs": 5,
+        "user_transactions": 6,
+        "issuance_entries": 2,
+        "whole_launcher_seconds": {
+          "baseline_median": 103.64079538799706,
+          "candidate_median": 103.68759802199202,
+          "median_reduction_percent": -0.04515850521962239,
+          "paired_reductions_percent": [
+            -1.3641538591581792,
+            -2.551982314733303,
+            1.1088556021071172,
+            -0.04515850521962239,
+            -0.203220672739568
+          ],
+          "candidate_faster_pairs": 1
+        },
+        "proof_observations_seconds": {
+          "baseline_median": 96.788,
+          "candidate_median": 96.739,
+          "median_reduction_percent": 0.05062611067486733,
+          "paired_reductions_percent": [
+            -1.673915770984058,
+            -2.6637333581218448,
+            1.116761699285962,
+            0.05062611067486733,
+            0.13512951644422122
+          ],
+          "candidate_faster_pairs": 3
+        },
+        "candidate_aggregation_equivalent_user_transactions_per_hour": 208.31806707894484
+      }
+    ],
+    "scope": "Aggregation of retained wallet proofs; wallet generation, durable application and separate CPU audits excluded."
+  },
+  "builds": [
+    {
+      "name": "cuda-tests-reference",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "--features",
+        "block-v2-wide-lanes,stream,block-v2-capacity-128,gpu-cuda",
+        "-j1",
+        "--lib",
+        "--no-run",
+        "--message-format=json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 180.31339289899915,
+      "binary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/cuda-tests-reference",
+      "sha256": "768e11238982c3e6ed8f7245444dad60736e768db14f1799b097d4129aaf2407"
+    },
+    {
+      "name": "cuda-tests-combined",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "--features",
+        "block-v2-wide-lanes,stream,block-v2-capacity-128,gpu-cuda,gpu-cuda-transform-reuse,gpu-cuda-quotient-tuning,gpu-cuda-lookup-tiling",
+        "-j1",
+        "--lib",
+        "--no-run",
+        "--message-format=json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 181.24392901500687,
+      "binary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/cuda-tests-combined",
+      "sha256": "828516e9cef378e9d7b1b7260d9a5efeb6274d049a6b051ff293cfa40c6faab2"
+    },
+    {
+      "name": "cuda-reference",
+      "command": [
+        "cargo",
+        "build",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "--features",
+        "block-v2-wide-lanes,stream,block-v2-capacity-128,gpu-cuda",
+        "-j1",
+        "--bin",
+        "block-v2-paired-probe"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 101.61663127699285,
+      "binary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/cuda-reference",
+      "sha256": "aec380d908fe2512b2e5b00973520589c70a02f4c1a507a5ee30139d628530b8"
+    },
+    {
+      "name": "cuda-transform",
+      "command": [
+        "cargo",
+        "build",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "--features",
+        "block-v2-wide-lanes,stream,block-v2-capacity-128,gpu-cuda,gpu-cuda-transform-reuse",
+        "-j1",
+        "--bin",
+        "block-v2-paired-probe"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 101.2387060750043,
+      "binary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/cuda-transform",
+      "sha256": "92596d296fa91b47a494e89309e2948061a5fb86eb856e0358e2466639ac5f36"
+    },
+    {
+      "name": "cuda-quotient",
+      "command": [
+        "cargo",
+        "build",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "--features",
+        "block-v2-wide-lanes,stream,block-v2-capacity-128,gpu-cuda,gpu-cuda-quotient-tuning",
+        "-j1",
+        "--bin",
+        "block-v2-paired-probe"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 101.37218328900053,
+      "binary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/cuda-quotient",
+      "sha256": "be52c1eebfe0a222aab862c6914c5d142abc6b4a9464783b31d453c2130446d4"
+    },
+    {
+      "name": "cuda-lookup",
+      "command": [
+        "cargo",
+        "build",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "--features",
+        "block-v2-wide-lanes,stream,block-v2-capacity-128,gpu-cuda,gpu-cuda-lookup-tiling",
+        "-j1",
+        "--bin",
+        "block-v2-paired-probe"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 101.67678605898982,
+      "binary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/cuda-lookup",
+      "sha256": "75733f5b765af689f02967d9747abff297e26e376cffb90376674b760d5a43c2"
+    },
+    {
+      "name": "cuda-combined",
+      "command": [
+        "cargo",
+        "build",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "--features",
+        "block-v2-wide-lanes,stream,block-v2-capacity-128,gpu-cuda,gpu-cuda-transform-reuse,gpu-cuda-quotient-tuning,gpu-cuda-lookup-tiling",
+        "-j1",
+        "--bin",
+        "block-v2-paired-probe"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 101.09752659901278,
+      "binary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/cuda-combined",
+      "sha256": "c5a96c5311e509655e50fd9a4fdd10e8e3f22ac58bd7a57d037aacf2ed235905"
+    },
+    {
+      "name": "opencl",
+      "command": [
+        "cargo",
+        "build",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "--features",
+        "block-v2-wide-lanes,stream,block-v2-capacity-128,gpu",
+        "-j1",
+        "--bin",
+        "block-v2-paired-probe"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 121.54224860700197,
+      "binary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/opencl",
+      "sha256": "bbbc0b975f4a3a3cc0e5ccd0bf95214a3c95da2fc8dbe7ceecc6e59a394e6dee"
+    },
+    {
+      "name": "cpu",
+      "command": [
+        "cargo",
+        "build",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "--features",
+        "block-v2-wide-lanes,stream,block-v2-capacity-128",
+        "-j1",
+        "--bin",
+        "block-v2-paired-probe"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 75.08895759101142,
+      "binary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/cpu",
+      "sha256": "19d887d9a4d6c12d445d8b6543066324f23f575240322a8c4a61cc256675c8b5"
+    }
+  ],
+  "build_memory": "Initial 3 GiB build attempt hit its memory limit; successful builds used 8 GiB. GPU worker/benchmark budgets were unchanged.",
+  "retained_failed_attempts": [
+    "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-02",
+    "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-03",
+    "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-candidate",
+    "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-candidate-02",
+    "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-candidate-03"
+  ],
+  "limits": [
+    "Only RTX 5080 desktop execution qualified; V100 has compile coverage only.",
+    "Performance gate covers capacity-128 four/eight-entry workloads; larger blocks, wallet generation, distributed/multi-GPU operation, and sustained throughput remain unqualified.",
+    "Optional submission batching did not meet the performance gate and is not included in the selected candidate."
+  ],
+  "artifacts": {
+    "build-result.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/build-result.json",
+      "sha256": "eeb4dd00409e186dbbbeda28631ef4875702b714c96b16d9d99dd8c670db7703"
+    },
+    "compiled-source-pins.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/compiled-source-pins.json",
+      "sha256": "109a1347d19146ac533d649ab93ac7dea43f5df0f14bc385f5c7996c6d86cae4"
+    },
+    "source.patch": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/source.patch",
+      "sha256": "218d6128182b4c0cd08cc2f9b45a5ae171711564c72d600bc19ba05bef940a96"
+    },
+    "validated-source-changes.tar.gz": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/validated-source-changes.tar.gz",
+      "sha256": "873ac2ab5fcd359cc45aaeca81a2bd0b10ef806adeb18edad7cd18956f3c5ba2"
+    },
+    "integration-formatting.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/integration-formatting.json",
+      "sha256": "d9b17efdad21a0a5e78310dae7b6fdaddbf06bdeccb0a1a2c3c6ee404f1a1eb7"
+    },
+    "reporting-only-fix.patch": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/reporting-only-fix.patch",
+      "sha256": "fd3ba6e6feefa0114dc6238046f6938c4e18daa9563575d2d4cdbc9e80c26280"
+    },
+    "qualification-result.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/qualification-result.json",
+      "sha256": "b76b39434d4ae06b62ead43f2a52dc5fed9d751df391216a34ec6e9d29e1b3ad"
+    },
+    "screen/result.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/screen/result.json",
+      "sha256": "64ff66d8fafa2a02458f7297bdec92245d765a71dc852d0875248ada07547095"
+    },
+    "matched-candidate/result.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/matched-candidate/result.json",
+      "sha256": "dabebae03bf615e31b229440e47dae015047be49239fc36267dac8bb95300624"
+    },
+    "matched-candidate/result-with-memory.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/matched-candidate/result-with-memory.json",
+      "sha256": "899b59dac9df571a74087b78b030e2e5acefe388fd0e307c7f5306949daabe0a"
+    },
+    "matched-candidate/identity.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/matched-candidate/identity.json",
+      "sha256": "ec6350dbbf81f9fba8f8c420f7b2fb7bf08e38cf13ccc8e166430155ae775b11"
+    },
+    "nsys-candidate/result.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/nsys-candidate/result.json",
+      "sha256": "6c45ed75a3b1191c7f296ab56cf97a2f96ec450e0964747068ba053939f31f23"
+    },
+    "baseline-n4-analysis.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/baseline-n4-analysis.json",
+      "sha256": "d96b06935926ff796d8911005aac5bf7fb15a9b1b0a9d25dfb90655e025c8005"
+    },
+    "candidate-n4-analysis.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/candidate-n4-analysis.json",
+      "sha256": "8159f66253b91e008a3d0b13b09a581700e2c85b84c33753d096b358ee9d9ecd"
+    },
+    "cuda-comparison.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/cuda-comparison.json",
+      "sha256": "2926de8b04ff97b23407bad20b2f21ffc6369e6891b6b0cfed6676898fdf7de3"
+    },
+    "opencl-comparison.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/opencl-comparison.json",
+      "sha256": "0e53a369a6e9b35210fbae6b238db50905434516a354bde616622743c748758c"
+    },
+    "final-integration-source-pins.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/final-integration-source-pins.json",
+      "sha256": "8744920b119590f9ca7b6e63bc955d5b64a7b17e4b6af5a5436d5d05157f6d76"
+    },
+    "final-integration-delta.patch": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/final-integration-delta.patch",
+      "sha256": "93bdd4a9bb76e3c0e40f09aba75bc55dcb74cec9efcb49f82f5d116b17ad7f82"
+    },
+    "ncu-diagnostic-result.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-diagnostic-result.json",
+      "sha256": "1df207f4eed6f450709c32761a69d2bed1d199107b53a26b723030c43c86cc7d"
+    },
+    "ncu-diagnostic-result-attempt-01.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-diagnostic-result-attempt-01.json",
+      "sha256": "4b34af2f1e51f8aabea51306f973b25c81914b0f3d8dd0fbab15f035230e1786"
+    },
+    "ncu-command-02.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-command-02.json",
+      "sha256": "72654a055f5998cc0c42145e15972c605f998c9af2af3d2c63f285b4dc8508ef"
+    },
+    "qualification-before-ncu.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/qualification-before-ncu.json",
+      "sha256": "8c0297f6edabf6121d69edd13bf069da9d74c40e0815483615a8191d24675d86"
+    },
+    "ncu-diagnostic-result-attempt-03.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-diagnostic-result-attempt-03.json",
+      "sha256": "b101a7b5ff1ae2ee315a056f1c1c0fe1392ca3ce1d179d419a8369081e228c1f"
+    },
+    "ncu-diagnostic-result-04.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-diagnostic-result-04.json",
+      "sha256": "cf3729530092576afb0c9fad2c4a8f3192887faf0e12035e4c1fd83da16aa537"
+    },
+    "ncu-diagnostic-result-05.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-diagnostic-result-05.json",
+      "sha256": "0162c01f3ed4039778b3b1b1987a5974ca730e3590dc66ab46e0a7cf5e107137"
+    },
+    "ncu-post-permission-result.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-post-permission-result.json",
+      "sha256": "e54618b20c8c9600f51247af37c158f5576ee295db35f8cbc6f918e321e89d57"
+    },
+    "ncu-format-tests.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-format-tests.json",
+      "sha256": "fe183c59e7a0b9085993a077465feaf195291b84c82e1b79708f483678df37d9"
+    },
+    "ncu-format-integration-source-pins.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-format-integration-source-pins.json",
+      "sha256": "2b358a4b0d2b92f623d968da16119c6cf4661a34b3cf1bcb4364d07aa9105150"
+    },
+    "ncu-format-source-changes.tar.gz": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-format-source-changes.tar.gz",
+      "sha256": "9f37f8e1fb59ba34dac09dd76e8fcae7d2303870a08a9db65c40d2cce12aee7d"
+    },
+    "ncu-hardware-selected.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-hardware-selected.json",
+      "sha256": "b6ee06371a1333e76673674cea71e89e7f026eb50d04bbf3a6f300808d97d4cd"
+    },
+    "ncu-instructions-04.csv": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-instructions-04.csv",
+      "sha256": "e64cc52461a1c756a7b0d0d1b0ef6a2b072f11d083b0af804f7b84dafead074e"
+    },
+    "ncu-hardware-05.csv": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-hardware-05.csv",
+      "sha256": "38d1eb7c2a271b2cb534ec42e9ada745e64cf48862a094b505c72ec3c9a268b2"
+    },
+    "ncu-command-03.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-command-03.json",
+      "sha256": "00cfb67b6bdc532cc9d51f639325806f61149dd43c2e58cb9953bc3203132a88"
+    },
+    "ncu-launch-03.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-launch-03.json",
+      "sha256": "60116ef7be5ebf41b025233b5a89bb982ef2ceb96d810af740295263da4f4d33"
+    },
+    "ncu-command-04.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-command-04.json",
+      "sha256": "63fcdda0df8cfa35dd861bd858cf44e47b234838cebd6ec5679a23d4aca32cc7"
+    },
+    "ncu-launch-04.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-launch-04.json",
+      "sha256": "e697b83e0384af8f504d48e343bee73aeb74602057e81160d8eee53df9cac358"
+    },
+    "ncu-command-05.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-command-05.json",
+      "sha256": "d74970f3569875f37884a676665fef42d55a9d8527225e83cc8f7bf2bacc2b5f"
+    },
+    "ncu-launch-05.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-launch-05.json",
+      "sha256": "fbca780629440e7b227a8dd250e09e8624de6a34b6da409fba2436bcc1458fe3"
+    },
+    "ncu-candidate-04/result.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-candidate-04/result.json",
+      "sha256": "8240df0182ab9e1053b94a628b3e5fe8cfd86c5643822ae1608951fa35335f09"
+    },
+    "ncu-candidate-04/identity.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-candidate-04/identity.json",
+      "sha256": "a7c1f04a961ce5b72cea0deac5ac6eb03f3bc6fcc8dd65d298a9d0ac9c234622"
+    },
+    "ncu-candidate-04/n4-combined-profile-1/recursive/workers/gpu-01/kernel-profile.ncu-repz": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-candidate-04/n4-combined-profile-1/recursive/workers/gpu-01/kernel-profile.ncu-repz",
+      "sha256": "89415947b56d1c7d07afa52f7f510378679f023a72c856eed097b0a52d988cb5"
+    },
+    "ncu-candidate-05/result.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-candidate-05/result.json",
+      "sha256": "7300a2929936eb398f748536a01c3c3e456d856bfb9166f3d8881cfdc60e60a1"
+    },
+    "ncu-candidate-05/identity.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-candidate-05/identity.json",
+      "sha256": "d94e4ece370c4b3b7852b1e54ebe3b364efaf3c828c54e938f22e08a12241f01"
+    },
+    "ncu-candidate-05/n4-combined-profile-1/recursive/workers/gpu-01/kernel-profile.ncu-repz": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-candidate-05/n4-combined-profile-1/recursive/workers/gpu-01/kernel-profile.ncu-repz",
+      "sha256": "6340a1f494757efdecdcbf39eca30518e909285b76079e42bc8b4f159cf044c9"
+    },
+    "ncu-final-controller-status.json": {
+      "path": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/cuda-profile-opt-20261029/run-04/ncu-final-controller-status.json",
+      "sha256": "ef55d5e3257cfe7a52f3824f8debed81a4d5fe3b3f6c7f22e861ac363d476498"
+    }
+  }
+}

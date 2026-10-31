@@ -9,8 +9,8 @@ fn compact_poseidon_addresses_preserve_wire_boundaries() {
         input: input.map(|w| w as u32),
         output,
     };
-    assert_eq!(op.reads(), input.map(Wire));
-    assert_eq!(op.writes(), output.map(|w| Wire(w as usize)));
+    assert_eq!(&*op.reads(), &input.map(Wire));
+    assert_eq!(&*op.writes(), &output.map(|w| Wire(w as usize)));
 }
 
 #[test]

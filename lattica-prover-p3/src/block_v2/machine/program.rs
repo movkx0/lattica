@@ -11,9 +11,11 @@ mod compiler_scratch;
 mod construction;
 pub(super) use compiler_memo::CompilerMemo;
 mod manifest;
+mod ports;
 mod proof_inputs;
 mod storage;
 use construction::{Budget as ConstructionBudget, Map as ConstructionMap, Set as ConstructionSet};
+use ports::WirePorts;
 pub use proof_inputs::ProofInputs;
 
 pub type Val = Goldilocks;
@@ -114,21 +116,23 @@ pub(crate) enum Op {
 }
 
 impl Op {
-    pub(crate) fn reads(&self) -> Vec<Wire> {
+    pub(crate) fn reads(&self) -> WirePorts {
         match self {
             Self::Input { .. }
             | Self::Bit { .. }
             | Self::SelectHint { .. }
-            | Self::Constant { .. } => vec![],
-            Self::Add { a, b, .. } | Self::Mul { a, b, .. } | Self::Equal { a, b } => vec![*a, *b],
-            Self::Boolean { a } | Self::Inverse { a, .. } => vec![*a],
-            Self::Select { bit, a, b, .. } => vec![*a, *b, *bit],
-            Self::CubicMul { a, b, .. } => a.iter().chain(b).copied().collect(),
-            Self::CubicInverse { a, .. } => a.to_vec(),
-            Self::Poseidon { input, .. } => input.map(|w| Wire(w as usize)).to_vec(),
+            | Self::Constant { .. } => [].into(),
+            Self::Add { a, b, .. } | Self::Mul { a, b, .. } | Self::Equal { a, b } => {
+                [*a, *b].into()
+            }
+            Self::Boolean { a } | Self::Inverse { a, .. } => [*a].into(),
+            Self::Select { bit, a, b, .. } => [*a, *b, *bit].into(),
+            Self::CubicMul { a, b, .. } => [a[0], a[1], a[2], b[0], b[1], b[2]].into(),
+            Self::CubicInverse { a, .. } => (*a).into(),
+            Self::Poseidon { input, .. } => input.map(|w| Wire(w as usize)).into(),
         }
     }
-    pub(crate) fn writes(&self) -> Vec<Wire> {
+    pub(crate) fn writes(&self) -> WirePorts {
         match self {
             Self::Input { out, .. }
             | Self::Bit { out, .. }
@@ -137,10 +141,10 @@ impl Op {
             | Self::Add { out, .. }
             | Self::Mul { out, .. }
             | Self::Inverse { out, .. }
-            | Self::Select { out, .. } => vec![*out],
-            Self::CubicMul { out, .. } | Self::CubicInverse { out, .. } => out.to_vec(),
-            Self::Equal { .. } | Self::Boolean { .. } => vec![],
-            Self::Poseidon { output, .. } => output.map(|w| Wire(w as usize)).to_vec(),
+            | Self::Select { out, .. } => [*out].into(),
+            Self::CubicMul { out, .. } | Self::CubicInverse { out, .. } => (*out).into(),
+            Self::Equal { .. } | Self::Boolean { .. } => [].into(),
+            Self::Poseidon { output, .. } => output.map(|w| Wire(w as usize)).into(),
         }
     }
     pub(crate) fn code(&self) -> usize {
